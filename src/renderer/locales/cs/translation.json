@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Uložit nastavení synchronizace",
     "lastSync": "Poslední synchronizace",
     "cancelLogin": "Zrušit přihlášení",
-    "cancelLoginHint": "Přihlašování do jiné místnosti může skončit nejdříve v rádiu. Zrušit zastaví další pokusy v této místnosti."
+    "cancelLoginHint": "Přihlašování do jiné místnosti může skončit nejdříve v rádiu. Zrušit zastaví další pokusy v této místnosti.",
+    "emptyGuestLoginHint": "Prázdné pole hosta: použijte Pokračovat pouze pro čtení pro servery s prázdným heslem. Přihlášení vyžaduje heslo a pokud je pole prázdné, odešle \"hello\".",
+    "unreadPosts": "{{count}} nové"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

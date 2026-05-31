@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Synchronisierung",
     "lastSync": "Letzte Synchronisierung",
     "cancelLogin": "Anmeldung abbrechen",
-    "cancelLoginHint": "Eine weitere Raumanmeldung kann zuerst über das Radio abgeschlossen werden. Abbrechen stoppt weitere Versuche für diesen Raum."
+    "cancelLoginHint": "Eine weitere Raumanmeldung kann zuerst über das Radio abgeschlossen werden. Abbrechen stoppt weitere Versuche für diesen Raum.",
+    "emptyGuestLoginHint": "Leeres Gästefeld: Verwenden Sie Weiter schreibgeschützt für leere Passwortserver. Die Anmeldung erfordert ein Passwort und sendet \"Hallo\", wenn das Feld leer ist.",
+    "unreadPosts": "{{count}} neu"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

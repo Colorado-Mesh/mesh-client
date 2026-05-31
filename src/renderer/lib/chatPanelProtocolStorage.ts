@@ -198,3 +198,141 @@ export function subscribePersistedLastRead(listener: (protocol: MeshProtocol) =>
     persistedLastReadSubscribers.delete(listener);
   };
 }
+
+const MESHCORE_LAST_READ_SANITIZED_KEY = 'mesh-client:lastReadSanitized:meshcore';
+
+export function roomsLastReadStorageKey(): string {
+  return 'mesh-client:roomsLastRead:meshcore';
+}
+
+/** Load persisted last-seen post timestamp per room server node id. */
+export function loadPersistedRoomsLastRead(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(roomsLastReadStorageKey());
+    if (!raw) return {};
+    const parsed = parseStoredJson<Record<string, number>>(raw, 'RoomsPanel lastRead');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const result: Record<number, number> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      const nodeId = Number(k);
+      if (Number.isFinite(nodeId) && typeof v === 'number' && v > 0) {
+        result[nodeId >>> 0] = v;
+      }
+    }
+    return result;
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] loadPersistedRoomsLastRead failed ' + errLikeToLogString(e),
+    );
+  }
+  return {};
+}
+
+export function savePersistedRoomsLastRead(lastRead: Record<number, number>): void {
+  try {
+    const serialized: Record<string, number> = {};
+    for (const [nodeId, ts] of Object.entries(lastRead)) {
+      if (ts > 0) serialized[nodeId] = ts;
+    }
+    localStorage.setItem(roomsLastReadStorageKey(), JSON.stringify(serialized));
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] savePersistedRoomsLastRead failed ' + errLikeToLogString(e),
+    );
+  }
+}
+
+export function mergeRoomLastReadWatermark(
+  prev: Record<number, number>,
+  roomNodeId: number,
+  timestamp: number,
+): Record<number, number> {
+  if (timestamp <= 0) return prev;
+  const existing = prev[roomNodeId] ?? 0;
+  if (existing >= timestamp) return prev;
+  return { ...prev, [roomNodeId]: timestamp };
+}
+
+const roomsLastReadSubscribers = new Set<() => void>();
+
+export function notifyPersistedRoomsLastReadChanged(): void {
+  for (const cb of roomsLastReadSubscribers) {
+    cb();
+  }
+}
+
+export function subscribePersistedRoomsLastRead(listener: () => void): () => void {
+  roomsLastReadSubscribers.add(listener);
+  return () => {
+    roomsLastReadSubscribers.delete(listener);
+  };
+}
+
+/** Max message timestamp per chat view key (`ch:N`, `dm:peer`). */
+export function maxMessageTimestampByViewKey(
+  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+): Record<string, number> {
+  const maxByKey: Record<string, number> = {};
+  for (const msg of messages) {
+    const key = msg.to != null ? `dm:${msg.to >>> 0}` : `ch:${msg.channel}`;
+    const prev = maxByKey[key] ?? 0;
+    if (msg.timestamp > prev) maxByKey[key] = msg.timestamp;
+  }
+  return maxByKey;
+}
+
+/**
+ * Clamp MeshCore chat last-read watermarks that exceed device message times or client clock
+ * (legacy pre-#490 Date.now() bumps suppressed sidebar badges).
+ */
+export function sanitizeMeshcoreChatLastRead(
+  persisted: Readonly<Record<string, number>>,
+  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+): Record<string, number> {
+  const maxByKey = maxMessageTimestampByViewKey(messages);
+  const now = Date.now();
+  let changed = false;
+  const next: Record<string, number> = { ...persisted };
+  for (const [key, watermark] of Object.entries(persisted)) {
+    if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
+    const maxMsg = maxByKey[key] ?? 0;
+    let clamped = watermark;
+    if (watermark > now) clamped = maxMsg;
+    else if (maxMsg > 0 && watermark > maxMsg) clamped = maxMsg;
+    if (clamped !== watermark) {
+      next[key] = clamped;
+      changed = true;
+    }
+  }
+  return changed ? next : persisted;
+}
+
+/** One-time sanitize MeshCore chat lastRead after upgrade; persists when adjusted. */
+export function ensureMeshcoreChatLastReadSanitized(
+  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+): Record<string, number> {
+  const loaded = loadPersistedLastReadInitial('meshcore');
+  if (localStorage.getItem(MESHCORE_LAST_READ_SANITIZED_KEY) === '1') {
+    return loaded;
+  }
+  const sanitized = sanitizeMeshcoreChatLastRead(loaded, messages);
+  if (sanitized !== loaded) {
+    try {
+      localStorage.setItem(lastReadStorageKey('meshcore'), JSON.stringify(sanitized));
+    } catch (e) {
+      console.debug(
+        '[chatPanelProtocolStorage] persist sanitized meshcore lastRead failed ' +
+          errLikeToLogString(e),
+      );
+    }
+  }
+  try {
+    localStorage.setItem(MESHCORE_LAST_READ_SANITIZED_KEY, '1');
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] set meshcore lastRead sanitized flag failed ' +
+        errLikeToLogString(e),
+    );
+  }
+  return sanitized;
+}

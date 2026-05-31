@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Synchronisatie instellingen",
     "lastSync": "Laatste synchronisatie",
     "cancelLogin": "Inloggen annuleren",
-    "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte."
+    "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte.",
+    "emptyGuestLoginHint": "Leeg gastveld: gebruik Continue read-only voor blanco wachtwoordservers. Inloggen vereist een wachtwoord en stuurt \"hallo\" wanneer het veld leeg is.",
+    "unreadPosts": "{{count}} nieuw"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Simpan pengaturan sinkronisasi",
     "lastSync": "Sinkronisasi terakhir",
     "cancelLogin": "Batalkan Log Masuk",
-    "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini."
+    "cancelLoginHint": "Login ruangan lain mungkin selesai di radio terlebih dahulu. Batalkan upaya perhentian lebih lanjut untuk ruangan ini.",
+    "emptyGuestLoginHint": "Kolom tamu kosong: gunakan Lanjutkan hanya baca untuk server kata sandi kosong. Login memerlukan kata sandi dan mengirim \"halo\" saat kolom kosong.",
+    "unreadPosts": "{{count}} baru"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

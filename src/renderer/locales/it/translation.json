@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Salva le impostazioni di sincronizzazione",
     "lastSync": "Ultima sincronizzazione",
     "cancelLogin": "Annullo login",
-    "cancelLoginHint": "Il login di un'altra stanza potrebbe terminare prima alla radio. Annulla interrompe ulteriori tentativi per questa stanza."
+    "cancelLoginHint": "Il login di un'altra stanza potrebbe terminare prima alla radio. Annulla interrompe ulteriori tentativi per questa stanza.",
+    "emptyGuestLoginHint": "Campo ospite vuoto: utilizzare Continua in sola lettura per i server di password vuoti. L'accesso richiede una password e invia \"ciao\" quando il campo è vuoto.",
+    "unreadPosts": "{{count}} nuovo"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

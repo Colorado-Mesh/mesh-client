@@ -509,14 +509,22 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Guest / read-only login fails with timeout or "rejected"**:
 
-- When the room server **guest password is empty**, read-only login uses a **blank client password** (same as the official Android app). The SendLogin frame sends **zero password bytes** after the 32-byte room pubkey.
-- When the server **does** configure a guest password, use that value (some communities use **`hello`**).
+- When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
+- When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 
 **Room posts not visible in the official Android app**:
 
 - Outbound room BBS posts must use **SignedPlain** (`txtType` 2) with a **4-byte author pubkey prefix** before the message body. Plain channel text posts appear in mesh-client Chat only and are not stored in the room BBS on the server.
+
+**Garbled prefix (e.g. `ÑÇÕ0`) on official Android for mesh-client room posts**:
+
+- The prefix is the **first four bytes of the sender public key**, required by MeshCore `TXT_TYPE_SIGNED_PLAIN`. mesh-client strips it in the **Rooms** UI; if the official Android app shows those characters, it is displaying the raw wire body. Confirm the post still appears in the room BBS; report display stripping to the official Android client if needed. Debug logs include `[useMeshcoreRuntime] sendRoomPost txtType=2 prefix=…`.
+
+**Room unread badges**:
+
+- New room BBS posts increment the **Rooms** sidebar badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
 
 **No room history after login**:
 
@@ -533,11 +541,11 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
-2. Open **Rooms** → with **empty guest password** on the server, log in with a **blank** password (read-only). With a configured guest password, use that value.
+2. Open **Rooms** → with **empty guest password** on the server, click **Continue read-only** (not **Login** with an empty field). With a configured guest password, enter it and click **Login**.
 3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
-4. Confirm room posts appear in **Rooms**, not Chat channel pills.
-5. On **Connection** tab, receive a channel message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
-6. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` lines.
+4. Confirm room posts appear in **Rooms** with unread badges (not Chat channel pills).
+5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
+6. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` and `[useMeshcoreRuntime] sendRoomPost` lines.
 
 ### MeshCore: Trace Route or Ping trace times out
 

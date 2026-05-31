@@ -161,6 +161,11 @@ export function meshcoreRoomEffectiveGuestPassword(password: string): string {
   return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
 }
 
+/** True when Login sent the factory default guest password (empty field → hello). */
+export function meshcoreRoomUsedDefaultGuestPassword(password: string): boolean {
+  return password === MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
+}
+
 function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -171,13 +176,19 @@ export function meshcoreRoomLoginFailureMessage(err: unknown, password: string):
   const msg = errLikeToLogString(err).toLowerCase();
   if (msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied')) {
     if (password.length === 0) {
-      return 'Room login rejected. Try guest password "hello", or confirm this server allows read-only login.';
+      return 'Room login rejected. Use Continue read-only for blank guest password, or try guest password "hello".';
+    }
+    if (meshcoreRoomUsedDefaultGuestPassword(password)) {
+      return 'Room login rejected. If this server has no guest password, use Continue read-only instead of Login. Otherwise check the guest or admin password.';
     }
     return 'Room login rejected. Check the guest or admin password for this room server.';
   }
   if (msg.includes('timeout')) {
     if (password.length === 0) {
-      return 'Room login timed out. Try guest password "hello", or confirm this server allows read-only login.';
+      return 'Room login timed out. Use Continue read-only for blank guest password, or try guest password "hello".';
+    }
+    if (meshcoreRoomUsedDefaultGuestPassword(password)) {
+      return 'Room login timed out. If this server has no guest password, use Continue read-only instead of Login.';
     }
     return 'Room login timed out. The room may be out of range or not responding.';
   }

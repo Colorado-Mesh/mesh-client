@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "동기화 설정 저장",
     "lastSync": "마지막 동기화",
     "cancelLogin": "Login취소",
-    "cancelLoginHint": "다른 룸 로그인이 먼저 라디오에서 완료될 수 있습니다. 취소는 이 룸에 대한 추가 시도를 중지합니다."
+    "cancelLoginHint": "다른 룸 로그인이 먼저 라디오에서 완료될 수 있습니다. 취소는 이 룸에 대한 추가 시도를 중지합니다.",
+    "emptyGuestLoginHint": "비어 있는 게스트 필드: 빈 암호 서버에 대해 읽기 전용으로 계속 을 사용하세요. 로그인하려면 암호가 필요하며 필드가 비어 있으면 \"hello\" 를 보냅니다.",
+    "unreadPosts": "새 글 {{count}}개"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

@@ -3490,6 +3490,12 @@ export function useMeshcoreRuntime() {
           throw new Error('Local identity public key unavailable for room post');
         }
         const wireText = formatMeshcoreRoomPostWireText(authorPubKey, text);
+        const prefixHex = Array.from(authorPubKey.slice(0, 4))
+          .map((b) => (b & 0xff).toString(16).padStart(2, '0'))
+          .join('');
+        console.debug(
+          `[useMeshcoreRuntime] sendRoomPost txtType=${MESHCORE_TXT_TYPE_SIGNED_PLAIN} prefix=${prefixHex} bodyLen=${text.length} room=0x${nodeId.toString(16)}`,
+        );
         const result = await Promise.race([
           conn.sendTextMessage(pubKey, wireText, MESHCORE_TXT_TYPE_SIGNED_PLAIN),
           new Promise<never>((_, reject) => {
@@ -4482,22 +4488,27 @@ export function useMeshcoreRuntime() {
     }
   }, []);
 
+  const meshcoreMessagesFromStore = useMessageStore((s) =>
+    meshcoreIdentityId ? s.messages[meshcoreIdentityId] : undefined,
+  );
+  const meshcoreNodesFromStore = useNodeStore((s) =>
+    meshcoreIdentityId ? s.nodes[meshcoreIdentityId] : undefined,
+  );
+
   const resolvedMessages = useMemo(() => {
     if (!meshcoreIdentityId) return messages;
-    const byId = useMessageStore.getState().messages[meshcoreIdentityId];
-    if (!byId) return messages;
+    if (!meshcoreMessagesFromStore) return messages;
     const fromStore = meshcoreChatMessagesForDisplay(
-      messageRecordsToChatMessages(Object.values(byId)),
+      messageRecordsToChatMessages(Object.values(meshcoreMessagesFromStore)),
     );
     return fromStore.length > 0 ? fromStore : meshcoreChatMessagesForDisplay(messages);
-  }, [meshcoreIdentityId, messages]);
+  }, [meshcoreIdentityId, messages, meshcoreMessagesFromStore]);
   const resolvedNodes = useMemo(() => {
     if (!meshcoreIdentityId) return nodes;
-    const byId = useNodeStore.getState().nodes[meshcoreIdentityId];
-    if (!byId) return nodes;
-    const fromStore = nodeRecordsToMeshNodeMap(Object.values(byId));
+    if (!meshcoreNodesFromStore) return nodes;
+    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesFromStore));
     return fromStore.size > 0 ? fromStore : nodes;
-  }, [meshcoreIdentityId, nodes]);
+  }, [meshcoreIdentityId, nodes, meshcoreNodesFromStore]);
 
   useEffect(() => {
     if (!meshcoreIdentityId) return;

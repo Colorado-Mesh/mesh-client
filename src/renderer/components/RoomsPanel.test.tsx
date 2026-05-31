@@ -2,11 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
   meshcoreApplyRoomSession,
   meshcoreClearAllRoomSessions,
 } from '@/renderer/lib/meshcoreRoomSession';
-import type { MeshNode } from '@/renderer/lib/types';
+import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
+import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 
 import RoomsPanel from './RoomsPanel';
 
@@ -63,6 +65,11 @@ function renderRoomsPanel(
 }
 
 describe('RoomsPanel', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    meshcoreClearAllRoomSessions();
+  });
+
   it('shows login overlay for selected room when not logged in', () => {
     const room = makeRoom(0x1001, 'Test Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
@@ -167,5 +174,77 @@ describe('RoomsPanel', () => {
     fireEvent.click(screen.getByLabelText('roomsPanel.cancelLogin'));
     expect(onCancelRoomLogin).toHaveBeenCalledWith(room.node_id);
     expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+  });
+
+  it('disables Login when guest password field is empty', () => {
+    const room = makeRoom(0x1004, 'Empty Guest Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    fireEvent.change(screen.getByLabelText('roomsPanel.guestPasswordLabel'), {
+      target: { value: '' },
+    });
+    expect(screen.getByText('roomsPanel.loginButton')).toBeDisabled();
+    expect(screen.getByText('roomsPanel.emptyGuestLoginHint')).toBeInTheDocument();
+  });
+
+  it('shows inbound room posts from messages prop when logged in', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1005, 'Live Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    const messages: ChatMessage[] = [
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'From Android',
+        roomServerId: room.node_id,
+        authorId: 0x200,
+        authorName: 'Alice',
+        timestamp: 5000,
+        receivedVia: 'rf',
+      }),
+    ];
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      messages,
+      myNodeNum: 0x100,
+      isActive: true,
+    });
+    expect(screen.getByText('From Android')).toBeInTheDocument();
+  });
+
+  it('shows unread count on unselected room row', () => {
+    meshcoreClearAllRoomSessions();
+    const roomA = makeRoom(0x1005, 'Room A');
+    const roomB = makeRoom(0x1006, 'Room B');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    meshcoreApplyRoomSession(roomB.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    const messages: ChatMessage[] = [
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'New post',
+        roomServerId: roomA.node_id,
+        authorId: 0x200,
+        authorName: 'Alice',
+        timestamp: 5000,
+        receivedVia: 'rf',
+      }),
+    ];
+    expect(computeRoomUnreadCounts(messages, {}, new Set([0x100])).get(roomA.node_id)).toBe(1);
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomB.node_id,
+      messages,
+      myNodeNum: 0x100,
+    });
+    const roomAButton = screen.getByRole('button', { name: /Room A/i });
+    expect(roomAButton).toHaveAttribute('data-unread', '1');
   });
 });

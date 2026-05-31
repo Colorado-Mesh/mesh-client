@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
+import {
+  loadPersistedRoomsLastRead,
+  mergeRoomLastReadWatermark,
+  notifyPersistedRoomsLastReadChanged,
+  savePersistedRoomsLastRead,
+} from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { CliHistoryEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import {
@@ -17,6 +23,7 @@ import {
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
 } from '@/renderer/lib/meshcoreRoomSession';
+import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import {
   getMeshcoreRoomLastPostAt,
   getMeshcoreRoomSyncConfig,
@@ -29,6 +36,8 @@ interface Props {
   messages: ChatMessage[];
   myNodeNum: number;
   isConnected: boolean;
+  /** True when the Rooms tab panel is visible (for mark-read while viewing). */
+  isActive?: boolean;
   initialRoomTarget?: number | null;
   onInitialRoomConsumed?: () => void;
   onLoginRoom: (
@@ -58,6 +67,7 @@ export default function RoomsPanel({
   messages,
   myNodeNum,
   isConnected,
+  isActive = false,
   initialRoomTarget,
   onInitialRoomConsumed,
   onLoginRoom,
@@ -92,6 +102,14 @@ export default function RoomsPanel({
   const autoLoginAttempted = useRef<Set<number>>(new Set());
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const streamRef = useRef<HTMLDivElement>(null);
+  const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
+    loadPersistedRoomsLastRead(),
+  );
+
+  const ownNodeIdSet = useMemo(
+    () => (myNodeNum > 0 ? new Set([myNodeNum]) : new Set<number>()),
+    [myNodeNum],
+  );
 
   const refreshStoredRooms = useCallback(() => {
     setStoredRoomIds(new Set(listMeshcoreRoomCredentialNodeIds()));
@@ -134,6 +152,32 @@ export default function RoomsPanel({
     return counts;
   }, [messages]);
 
+  const roomUnreadCounts = useMemo(
+    () => computeRoomUnreadCounts(messages, persistedRoomsLastRead, ownNodeIdSet),
+    [messages, ownNodeIdSet, persistedRoomsLastRead],
+  );
+
+  const markSelectedRoomRead = useCallback(() => {
+    if (selectedRoomId == null || roomPosts.length === 0) return;
+    const latest = Math.max(...roomPosts.map((m) => m.timestamp));
+    setPersistedRoomsLastRead((prev) => {
+      const next = mergeRoomLastReadWatermark(prev, selectedRoomId, latest);
+      if (next === prev) return prev;
+      savePersistedRoomsLastRead(next);
+      notifyPersistedRoomsLastReadChanged();
+      return next;
+    });
+  }, [roomPosts, selectedRoomId]);
+
+  const handleStreamScroll = useCallback(() => {
+    const el = streamRef.current;
+    if (!el || !isActive) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distFromBottom < 50) {
+      markSelectedRoomRead();
+    }
+  }, [isActive, markSelectedRoomRead]);
+
   useEffect(() => {
     if (initialRoomTarget != null) {
       setSelectedRoomId(initialRoomTarget);
@@ -144,6 +188,16 @@ export default function RoomsPanel({
   useEffect(() => {
     streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight });
   }, [roomPosts.length, selectedRoomId]);
+
+  useEffect(() => {
+    if (!isActive || selectedRoomId == null || !meshcoreIsRoomLoggedIn(selectedRoomId)) return;
+    const el = streamRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distFromBottom < 50) {
+      markSelectedRoomRead();
+    }
+  }, [isActive, markSelectedRoomRead, roomPosts.length, selectedRoomId]);
 
   const loadSyncConfig = useCallback((nodeId: number) => {
     const config = getMeshcoreRoomSyncConfig(nodeId);
@@ -351,6 +405,7 @@ export default function RoomsPanel({
   );
 
   const loggedIn = selectedRoomId != null && meshcoreIsRoomLoggedIn(selectedRoomId);
+  const guestFieldEmpty = loginPassword.trim().length === 0;
   const selectedRoomLoginLoading =
     selectedRoomId != null && loginLoadingRoomIds.has(selectedRoomId);
   const loginError =
@@ -375,6 +430,7 @@ export default function RoomsPanel({
             ) : (
               roomServers.map((room) => {
                 const count = postCountByRoom.get(room.node_id) ?? 0;
+                const unread = roomUnreadCounts.get(room.node_id) ?? 0;
                 const isLogged = meshcoreIsRoomLoggedIn(room.node_id);
                 const hasSaved = storedRoomIds.has(room.node_id);
                 const isLoggingIn = loginLoadingRoomIds.has(room.node_id);
@@ -382,6 +438,7 @@ export default function RoomsPanel({
                   <button
                     key={room.node_id}
                     type="button"
+                    data-unread={unread > 0 && selectedRoomId !== room.node_id ? unread : 0}
                     onClick={() => {
                       handleSelectRoom(room.node_id);
                     }}
@@ -405,9 +462,20 @@ export default function RoomsPanel({
                         {isLogged ? '●' : isLoggingIn ? '◌' : hasSaved ? '◐' : '○'}
                       </span>
                       <span className="truncate">{room.long_name}</span>
+                      {unread > 0 && selectedRoomId !== room.node_id && (
+                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-0.5 pl-5 text-xs text-gray-500">
                       {t('roomsPanel.postCount', { count })}
+                      {unread > 0 && selectedRoomId !== room.node_id && (
+                        <>
+                          {' '}
+                          · {t('roomsPanel.unreadPosts', { count: unread > 99 ? '99+' : unread })}
+                        </>
+                      )}
                     </div>
                   </button>
                 );
@@ -428,6 +496,7 @@ export default function RoomsPanel({
               <div className="w-full max-w-sm space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4">
                 <h3 className="text-base font-semibold text-white">{t('roomsPanel.loginTitle')}</h3>
                 <p className="text-sm text-gray-400">{activeRoom?.long_name}</p>
+                <p className="text-xs text-gray-500">{t('roomsPanel.loginHelp')}</p>
                 <input
                   type="password"
                   value={loginPassword}
@@ -453,10 +522,13 @@ export default function RoomsPanel({
                   />
                   {t('roomsPanel.rememberPassword')}
                 </label>
+                {guestFieldEmpty && (
+                  <p className="text-xs text-amber-200/90">{t('roomsPanel.emptyGuestLoginHint')}</p>
+                )}
                 <button
                   type="button"
                   onClick={handleLogin}
-                  disabled={!isConnected}
+                  disabled={!isConnected || guestFieldEmpty}
                   className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 w-full rounded border px-3 py-2 text-sm font-medium disabled:opacity-40"
                 >
                   {t('roomsPanel.loginButton')}
@@ -579,7 +651,11 @@ export default function RoomsPanel({
                 </div>
               </div>
 
-              <div ref={streamRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2">
+              <div
+                ref={streamRef}
+                onScroll={handleStreamScroll}
+                className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2"
+              >
                 {roomPosts.length === 0 ? (
                   <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
                 ) : (

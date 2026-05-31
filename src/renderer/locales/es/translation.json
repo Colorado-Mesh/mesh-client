@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Ajustes de sincronización",
     "lastSync": "Última sincronización",
     "cancelLogin": "Cancelar inicio de sesión",
-    "cancelLoginHint": "Es posible que otro inicio de sesión en la sala termine primero en la radio. Cancelar detiene más intentos de esta sala."
+    "cancelLoginHint": "Es posible que otro inicio de sesión en la sala termine primero en la radio. Cancelar detiene más intentos de esta sala.",
+    "emptyGuestLoginHint": "Campo de invitado vacío: use Continuar solo lectura para servidores de contraseñas en blanco. El inicio de sesión requiere una contraseña y envía \"hola\" cuando el campo está vacío.",
+    "unreadPosts": "{{count}} nuevo"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

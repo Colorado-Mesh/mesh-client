@@ -11,11 +11,15 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import {
+  ensureMeshcoreChatLastReadSanitized,
   loadPersistedLastReadInitial,
+  loadPersistedRoomsLastRead,
   subscribePersistedLastRead,
+  subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { filterRegularChatMessages, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
@@ -542,6 +546,7 @@ function AppContent({
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({ meshtastic: 0, meshcore: 0 });
+  const [roomsLastReadRevision, setRoomsLastReadRevision] = useState(0);
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
   const prevMeshtasticMsgCountRef = useRef(0);
   const prevMeshcoreMsgCountRef = useRef(0);
@@ -764,6 +769,25 @@ function AppContent({
     });
   }, []);
 
+  useEffect(() => {
+    return subscribePersistedRoomsLastRead(() => {
+      setRoomsLastReadRevision((n) => n + 1);
+    });
+  }, []);
+
+  const meshcoreLastReadSanitizedRef = useRef(false);
+  useEffect(() => {
+    if (!meshcoreIdentityId || meshcoreLastReadSanitizedRef.current) return;
+    if (localStorage.getItem('mesh-client:lastReadSanitized:meshcore') === '1') {
+      meshcoreLastReadSanitizedRef.current = true;
+      return;
+    }
+    if (meshcoreUiMessages.length === 0) return;
+    ensureMeshcoreChatLastReadSanitized(meshcoreUiMessages);
+    meshcoreLastReadSanitizedRef.current = true;
+    setLastReadRevision((prev) => ({ ...prev, meshcore: prev.meshcore + 1 }));
+  }, [meshcoreIdentityId, meshcoreUiMessages]);
+
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
       meshtasticRuntime.selfNodeId,
@@ -792,15 +816,31 @@ function AppContent({
     );
   }, [lastReadRevision.meshtastic, meshtasticOwnNodeIdSet, meshtasticUiMessages]);
 
-  const meshcoreChatUnread = useMemo(() => {
+  const meshcoreChatLastRead = useMemo(() => {
     void lastReadRevision.meshcore;
+    if (localStorage.getItem('mesh-client:lastReadSanitized:meshcore') === '1') {
+      return loadPersistedLastReadInitial('meshcore');
+    }
+    return ensureMeshcoreChatLastReadSanitized(meshcoreUiMessages);
+  }, [lastReadRevision.meshcore, meshcoreUiMessages]);
+
+  const meshcoreChatUnread = useMemo(() => {
     return totalUnreadCount(
       meshcoreUiMessages,
-      loadPersistedLastReadInitial('meshcore'),
+      meshcoreChatLastRead,
       meshcoreOwnNodeIdSet,
       'meshcore',
     );
-  }, [lastReadRevision.meshcore, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
+  }, [meshcoreChatLastRead, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
+
+  const meshcoreRoomsUnread = useMemo(() => {
+    void roomsLastReadRevision;
+    return totalRoomsUnreadCount(
+      meshcoreUiMessages,
+      loadPersistedRoomsLastRead(),
+      meshcoreOwnNodeIdSet,
+    );
+  }, [roomsLastReadRevision, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
 
   /** Meshtastic + MeshCore nodes for Diagnostics (foreign MeshCore sender labels/links). */
   const nodesForDiagnostics = useMemo(() => {
@@ -1992,6 +2032,7 @@ function AppContent({
               active={activeTab}
               onChange={setActiveTab}
               chatUnread={protocol === 'meshtastic' ? meshtasticChatUnread : meshcoreChatUnread}
+              roomsUnread={protocol === 'meshcore' ? meshcoreRoomsUnread : 0}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
@@ -2491,9 +2532,10 @@ function AppContent({
                             >
                               <RoomsPanel
                                 nodes={meshcoreUiNodes}
-                                messages={meshcoreRuntime.messages}
+                                messages={meshcoreUiMessages}
                                 myNodeNum={meshcoreRuntime.selfNodeId}
                                 isConnected={isOperational}
+                                isActive={activePanelIndex === ROOMS_PANEL_INDEX}
                                 initialRoomTarget={pendingRoomTarget}
                                 onInitialRoomConsumed={handleRoomTargetConsumed}
                                 onLoginRoom={meshcorePanelActions.loginRoom}

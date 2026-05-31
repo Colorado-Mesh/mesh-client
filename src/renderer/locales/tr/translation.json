@@ -1996,7 +1996,9 @@
     "saveSyncConfig": "Eşitleme Ayarları",
     "lastSync": "Son senkronizasyon",
     "cancelLogin": "Girişi iptal et",
-    "cancelLoginHint": "Başka bir odada oturum açma işlemi önce radyoda bitebilir. İptal, bu oda için daha fazla deneme yapmayı durdurur."
+    "cancelLoginHint": "Başka bir odada oturum açma işlemi önce radyoda bitebilir. İptal, bu oda için daha fazla deneme yapmayı durdurur.",
+    "emptyGuestLoginHint": "Boş konuk alanı: boş parola sunucuları için Devam salt okunur kullanın. Giriş bir şifre gerektirir ve alan boş olduğunda \"merhaba\" gönderir.",
+    "unreadPosts": "{{count}} yeni"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",
