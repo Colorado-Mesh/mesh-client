@@ -1999,7 +1999,8 @@
     "cancelLoginHint": "Il login di un'altra stanza potrebbe terminare prima alla radio. Annulla interrompe ulteriori tentativi per questa stanza.",
     "emptyGuestLoginHint": "Campo ospite vuoto: usa «Continua in sola lettura» per i server senza password. L'accesso richiede una password e invia «hello» se il campo è vuoto.",
     "unreadPosts": "{{count}} nuovi",
-    "closeManage": "Chiudi"
+    "closeManage": "Chiudi",
+    "upgradeAccess": "Aggiorna per Accedere"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

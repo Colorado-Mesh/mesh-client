@@ -790,7 +790,54 @@ export default function RoomsPanel({
 
               <div className="border-t border-gray-700 p-3">
                 {!canPost ? (
-                  <p className="text-xs text-amber-200/90">{t('roomsPanel.readOnlyHint')}</p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-amber-200/90">{t('roomsPanel.readOnlyHint')}</p>
+                    <p className="text-xs font-medium text-gray-300">
+                      {t('roomsPanel.upgradeAccess')}
+                    </p>
+                    <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => {
+                        setLoginPassword(e.target.value);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !guestFieldEmpty) handleLogin();
+                      }}
+                      placeholder={t('roomsPanel.guestPasswordPlaceholder')}
+                      disabled={!isConnected || selectedRoomLoginLoading}
+                      className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                      aria-label={t('roomsPanel.guestPasswordLabel')}
+                    />
+                    <label className="flex items-center gap-2 text-xs text-gray-400">
+                      <input
+                        type="checkbox"
+                        checked={rememberPassword}
+                        onChange={(e) => {
+                          setRememberPassword(e.target.checked);
+                        }}
+                        disabled={!isConnected || selectedRoomLoginLoading}
+                      />
+                      {t('roomsPanel.rememberPassword')}
+                    </label>
+                    {guestFieldEmpty && (
+                      <p className="text-xs text-amber-200/90">
+                        {t('roomsPanel.emptyGuestLoginHint')}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleLogin}
+                      disabled={!isConnected || guestFieldEmpty || selectedRoomLoginLoading}
+                      className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 w-full rounded border px-3 py-2 text-sm font-medium disabled:opacity-40"
+                      aria-label={t('roomsPanel.upgradeAccess')}
+                    >
+                      {selectedRoomLoginLoading
+                        ? t('roomsPanel.loggingIn')
+                        : t('roomsPanel.upgradeAccess')}
+                    </button>
+                    {loginError && <p className="text-sm text-red-400">{loginError}</p>}
+                  </div>
                 ) : (
                   <ChatComposer
                     protocol="meshcore"

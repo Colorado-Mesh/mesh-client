@@ -1970,6 +1970,7 @@
     "continueReadOnly": "Continue read-only",
     "readOnlyBadge": "Read-only",
     "readOnlyHint": "You have read-only access. Log in with a guest or admin password to post.",
+    "upgradeAccess": "Upgrade access",
     "noPostsYet": "No posts in this room yet.",
     "postPlaceholder": "Post to room…",
     "postButton": "Post",

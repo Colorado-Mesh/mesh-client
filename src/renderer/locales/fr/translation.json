@@ -1999,7 +1999,8 @@
     "cancelLoginHint": "Une autre connexion à la salle peut se terminer en premier sur la radio. Annuler arrête d'autres tentatives pour cette pièce.",
     "emptyGuestLoginHint": "Champ invité vide : utilisez « Continuer en lecture seule » pour les serveurs sans mot de passe. La connexion nécessite un mot de passe et envoie « hello » si le champ est vide.",
     "unreadPosts": "{{count}} nouveaux",
-    "closeManage": "Fermer"
+    "closeManage": "Fermer",
+    "upgradeAccess": "Mise à niveau vers Access"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

@@ -85,7 +85,7 @@ describe('RoomsPanel', () => {
     expect(screen.getByText('roomsPanel.rememberPassword')).toBeInTheDocument();
   });
 
-  it('disables composer when session is read-only', () => {
+  it('disables composer when session is read-only and shows upgrade form', () => {
     meshcoreClearAllRoomSessions();
     const room = makeRoom(0x1002, 'Readonly Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
@@ -99,7 +99,33 @@ describe('RoomsPanel', () => {
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
 
     expect(screen.getByText('roomsPanel.readOnlyHint')).toBeInTheDocument();
+    expect(screen.getByLabelText('roomsPanel.guestPasswordLabel')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'roomsPanel.upgradeAccess' })).toBeInTheDocument();
     expect(screen.getByText('roomsPanel.autoSync')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('calls onLoginRoom when read-only user upgrades with guest password', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100b, 'Upgrade Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    const onLoginRoom = vi.fn().mockResolvedValue(undefined);
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.upgradeAccess' }));
+
+    await waitFor(() => {
+      expect(onLoginRoom).toHaveBeenCalledWith(
+        room.node_id,
+        'hello',
+        expect.objectContaining({ guestPassword: 'hello' }),
+      );
+    });
   });
 
   it('shows login form for room B while room A login is in progress', () => {

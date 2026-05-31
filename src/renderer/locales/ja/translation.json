@@ -1999,7 +1999,8 @@
     "cancelLoginHint": "最初にラジオで別の部屋のログインが終了する場合があります。キャンセルすると、この部屋へのこれ以上の試みが停止します。",
     "emptyGuestLoginHint": "空のゲストフィールド：空のパスワードサーバーの場合は、読み取り専用で続行を使用します。ログインにはパスワードが必要で、フィールドが空の場合に「hello」を送信します。",
     "unreadPosts": "新着 {{count}} 件",
-    "closeManage": "閉じる"
+    "closeManage": "閉じる",
+    "upgradeAccess": "アクセスをアップグレード"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

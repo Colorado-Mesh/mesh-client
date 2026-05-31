@@ -1999,7 +1999,8 @@
     "cancelLoginHint": "Eine weitere Raumanmeldung kann zuerst über das Radio abgeschlossen werden. Abbrechen stoppt weitere Versuche für diesen Raum.",
     "emptyGuestLoginHint": "Leeres Gästefeld: „Schreibgeschützt fortfahren“ für Server ohne Passwort. Login erfordert ein Passwort und sendet „hello“, wenn das Feld leer ist.",
     "unreadPosts": "{{count}} neu",
-    "closeManage": "Schließen"
+    "closeManage": "Schließen",
+    "upgradeAccess": "Upgrade-Zugang"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

@@ -1999,7 +1999,8 @@
     "cancelLoginHint": "Een andere ruimtelogin kan eerst op de radio eindigen. Annuleer stopt verdere pogingen voor deze ruimte.",
     "emptyGuestLoginHint": "Leeg gastveld: gebruik Doorgaan met alleen-lezen voor servers zonder wachtwoord. Inloggen vereist een wachtwoord en stuurt \"hello\" als het veld leeg is.",
     "unreadPosts": "{{count}} nieuw",
-    "closeManage": "Sluiten"
+    "closeManage": "Sluiten",
+    "upgradeAccess": "Toegang upgraden"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",
