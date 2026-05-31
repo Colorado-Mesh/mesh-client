@@ -535,7 +535,11 @@ declare global {
         prunePositionHistory: (days: number) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
         updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<unknown>;
-        updateMessagePacketId: (oldPacketId: number, newPacketId: number) => Promise<unknown>;
+        updateMessagePacketId: (
+          oldPacketId: number,
+          newPacketId: number,
+          senderId?: number,
+        ) => Promise<unknown>;
         saveMeshcoreMessage: (message: {
           sender_id?: number | null;
           sender_name?: string | null;

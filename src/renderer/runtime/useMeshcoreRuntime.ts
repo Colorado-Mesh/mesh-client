@@ -83,12 +83,13 @@ import type {
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import {
-  buildMeshcoreChannelIncomingMessage,
   findMeshcoreDmReplyParent,
   formatMeshcoreRoomPostWireText,
+  formatMeshcoreWireReplyPrefix,
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
+  parseMeshcoreChannelIncomingFromThread,
   resolveMeshcoreChannelMessageSender,
 } from '../lib/meshcoreChannelText';
 import {
@@ -129,7 +130,11 @@ import {
   setMeshcoreRoomLastPostAt,
   touchMeshcoreRoomLastSyncAt,
 } from '../lib/meshcoreRoomSyncStorage';
-import { meshcoreMessageStoreId, upsertMeshcoreMessageWithDedup } from '../lib/meshcoreStoreDedup';
+import {
+  meshcoreMessageStoreId,
+  meshcoreSortedStorePrior,
+  upsertMeshcoreMessageWithDedup,
+} from '../lib/meshcoreStoreDedup';
 import {
   buildMeshcoreSetOtherParamsFrame,
   enrichMeshCoreSelfInfo,
@@ -317,13 +322,12 @@ export function useMeshcoreRuntime() {
     [],
   );
   const messagesRef = useRef<ChatMessage[]>([]);
+  const mqttPlaceholderSavedRef = useRef<Set<number>>(new Set());
   const rawPacketsRef = useRef<RxPacketEntry[]>([]);
   // Stable ref to own node ID so event listeners don't form stale closures
   const myNodeNumRef = useRef<number>(0);
   // Pending ACK tracking: CRC key (raw and/or u32) → shared entry for one in-flight DM
   const pendingAcksRef = useRef<Map<number, PendingDmAckEntry>>(new Map());
-  /** MQTT-derived contacts persisted with a placeholder pubkey until 0x8A supplies a real key. */
-  const mqttPlaceholderSavedRef = useRef<Set<number>>(new Set());
   const selfInfoRef = useRef<MeshCoreSelfInfo | null>(null);
   /** Post-connect GPS refresh; assigned to {@link refreshOurPositionNoop} below (initConn runs earlier in the hook). */
   const refreshOurPositionMeshCoreRef = useRef<() => Promise<OurPosition | null>>(() =>
@@ -748,7 +752,12 @@ export function useMeshcoreRuntime() {
 
   const addMessage = useCallback((msg: ChatMessage): string | undefined => {
     const storeId = meshcoreIdentityIdRef.current;
-    let result: { inserted: boolean; message: ChatMessage; canonicalId: string };
+    let result: {
+      inserted: boolean;
+      storeUpdated: boolean;
+      message: ChatMessage;
+      canonicalId: string;
+    };
     if (storeId) {
       result = upsertMeshcoreMessageWithDedup(storeId, msg);
     } else {
@@ -769,7 +778,12 @@ export function useMeshcoreRuntime() {
           return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
         });
       });
-      result = { inserted, message: msg, canonicalId: meshcoreMessageStoreId(msg) };
+      result = {
+        inserted,
+        storeUpdated: inserted,
+        message: msg,
+        canonicalId: meshcoreMessageStoreId(msg),
+      };
     }
 
     const incomingKey = meshcoreMessageDedupeKey(result.message);
@@ -800,7 +814,7 @@ export function useMeshcoreRuntime() {
       });
     }
 
-    if (result.inserted) {
+    if (result.inserted || result.storeUpdated) {
       void window.electronAPI.db
         .saveMeshcoreMessage(messageToDbRow(result.message))
         .catch((e: unknown) => {
@@ -878,8 +892,10 @@ export function useMeshcoreRuntime() {
       }
       const normProbe = normalizeMeshcoreIncomingText(m.text);
       const rawForBuild = normProbe.senderName ? m.text : `${displayName}: ${m.text}`;
+      const storeId = meshcoreIdentityIdRef.current;
+      const prior = storeId ? meshcoreSortedStorePrior(storeId) : messagesRef.current;
       addMessage(
-        buildMeshcoreChannelIncomingMessage(messagesRef.current, {
+        parseMeshcoreChannelIncomingFromThread(prior, {
           rawText: rawForBuild,
           senderId: resolvedId,
           displayName,
@@ -1969,7 +1985,7 @@ export function useMeshcoreRuntime() {
             replyKey: replyId,
           });
           if (parent) {
-            textToSend = `@[${parent.sender_name}] ${text}`;
+            textToSend = `${formatMeshcoreWireReplyPrefix(parent.sender_name, replyId)} ${text}`;
             replyField = replyId;
           }
         }
@@ -2131,7 +2147,8 @@ export function useMeshcoreRuntime() {
               !(m.emoji != null && m.replyId != null),
           );
           if (parent) {
-            textToSend = `@[${parent.sender_name}] ${text}`;
+            const parentKey = parent.packetId ?? parent.timestamp;
+            textToSend = `${formatMeshcoreWireReplyPrefix(parent.sender_name, parentKey)} ${text}`;
             replyField = replyId;
           }
         }
@@ -4069,7 +4086,8 @@ export function useMeshcoreRuntime() {
         storeMessages.find((m) => m.packetId === replyId || m.timestamp === replyId) ??
         messagesRef.current.find((m) => m.packetId === replyId || m.timestamp === replyId);
       const targetName = reactedTo?.sender_name || 'Unknown';
-      const tapbackText = `@[${targetName}] ${parsed.glyph}`;
+      const replyKey = reactedTo ? (reactedTo.packetId ?? reactedTo.timestamp) : replyId;
+      const tapbackText = `${formatMeshcoreWireReplyPrefix(targetName, replyKey)} ${parsed.glyph}`;
       const conn = connRef.current;
       const me = myNodeNumRef.current;
 

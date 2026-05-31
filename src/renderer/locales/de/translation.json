@@ -264,7 +264,8 @@
       "cooldown": "Der Verlauf wurde kürzlich für diesen Router abgerufen. Warten Sie, bevor Sie erneut anfordern.",
       "offline_gate": "Warten Sie nach dem Wiederverbinden einige Minuten, bevor der automatische Abruf ausgeführt wird. Verwenden Sie „Vom Store & Forward einholen“ manuell.",
       "already_requested": "Für diesen Router wird bereits eine Verlaufsanforderung ausgeführt."
-    }
+    },
+    "replyRequiresPacketId": "Antwort erfordert die RF-Paket-ID der Nachricht (warten Sie auf Send Ack oder Refresh Chat)."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

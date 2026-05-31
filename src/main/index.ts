@@ -3841,29 +3841,41 @@ ipcMain.handle(
 );
 
 /** Replace optimistic temp `packet_id` with the real mesh id from `sendText()` (tapbacks key on `reply_id`). */
-ipcMain.handle('db:updateMessagePacketId', (_event, oldPacketId: number, newPacketId: number) => {
-  const oldPid = safeNonNegativeInt(oldPacketId);
-  const newPid = safeNonNegativeInt(newPacketId);
-  if (oldPid === newPid) return;
-  const db = getDatabase();
-  const deleteByPacketId = db.prepareOnce('DELETE FROM messages WHERE packet_id = ?');
-  try {
-    const updated = db
-      .prepareOnce('UPDATE messages SET packet_id = ? WHERE packet_id = ?')
-      .run(newPid, oldPid);
-    if (updated.changes > 0) return;
-    // RF echo may have inserted the real packet_id before this runs; drop orphan temp row.
-    deleteByPacketId.run(oldPid);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('UNIQUE constraint failed')) {
+ipcMain.handle(
+  'db:updateMessagePacketId',
+  (_event, oldPacketId: number, newPacketId: number, senderId?: number) => {
+    const oldPid = safeNonNegativeInt(oldPacketId);
+    const newPid = safeNonNegativeInt(newPacketId);
+    if (oldPid === newPid) return;
+    const db = getDatabase();
+    const deleteByPacketId = db.prepareOnce('DELETE FROM messages WHERE packet_id = ?');
+    try {
+      const scopedSenderId =
+        senderId != null && Number.isFinite(senderId) ? safeNonNegativeInt(senderId) : undefined;
+      const updated =
+        scopedSenderId != null
+          ? db
+              .prepareOnce(
+                'UPDATE messages SET packet_id = ? WHERE packet_id = ? AND sender_id = ?',
+              )
+              .run(newPid, oldPid, scopedSenderId)
+          : db
+              .prepareOnce('UPDATE messages SET packet_id = ? WHERE packet_id = ?')
+              .run(newPid, oldPid);
+      if (updated.changes > 0) return;
+      // RF echo may have inserted the real packet_id before this runs; drop orphan temp row.
       deleteByPacketId.run(oldPid);
-      return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('UNIQUE constraint failed')) {
+        deleteByPacketId.run(oldPid);
+        return;
+      }
+      console.error('[IPC] db:updateMessagePacketId failed:', sanitizeLogMessage(msg));
+      throw err;
     }
-    console.error('[IPC] db:updateMessagePacketId failed:', sanitizeLogMessage(msg));
-    throw err;
-  }
-});
+  },
+);
 
 // ─── IPC: Export database ───────────────────────────────────────────
 ipcMain.handle('db:export', async () => {

@@ -264,7 +264,8 @@
       "cooldown": "La cronologia è stata recuperata di recente per questo router. Attendi prima di richiedere di nuovo.",
       "offline_gate": "Attendere alcuni minuti dopo la riconnessione prima di eseguire il recupero automatico; utilizzare Recupera manualmente.",
       "already_requested": "È già in corso una richiesta di cronologia per questo router."
-    }
+    },
+    "replyRequiresPacketId": "Reply richiede il messaggio RF packet id (attendere invio ack o refresh chat)."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

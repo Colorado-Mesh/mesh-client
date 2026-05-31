@@ -125,7 +125,7 @@ export function useSendMessage(
             renameMessageId(identityId, provisionalId, resolvedId);
             if (isMeshtastic && meshtasticTempPacketId != null) {
               void window.electronAPI.db
-                .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0)
+                .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0, myNodeNum)
                 .catch((e: unknown) => {
                   console.debug(
                     '[useSendMessage] updateMessagePacketId failed ' + errLikeToLogString(e),

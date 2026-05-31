@@ -264,7 +264,8 @@
       "cooldown": "Niedawno pobrano historię tego routera. Poczekaj, zanim ponownie wyślesz żądanie.",
       "offline_gate": "Odczekaj kilka minut po ponownym połączeniu przed automatycznym pobieraniem cykli; użyj ręcznego nadrobienia zaległości.",
       "already_requested": "Żądanie historii dla tego routera jest już w toku."
-    }
+    },
+    "replyRequiresPacketId": "Odpowiedź wymaga identyfikatora pakietu RF wiadomości (poczekaj na potwierdzenie wysłania lub odśwież czat)."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

@@ -41,11 +41,14 @@ import {
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, computeDmUnreadCounts } from '../lib/chatUnreadCounts';
-import { meshcoreChatMessagesForDisplay } from '../lib/meshcoreChannelText';
+import {
+  findMeshcoreParentMessageForReply,
+  meshcoreChatMessagesForDisplay,
+} from '../lib/meshcoreChannelText';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
-import { truncateReplyPreviewText } from '../lib/replyPreview';
+import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
@@ -636,15 +639,7 @@ function ChatPanel({
     [ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
   );
 
-  // Lookup map for rendering quoted replies (packetId in Meshtastic, timestamp fallback in MeshCore)
-  const messageByReplyKey = useMemo(() => {
-    const map = new Map<number, ChatMessage>();
-    for (const msg of regularMessages) {
-      if (msg.packetId != null) map.set(msg.packetId, msg);
-      map.set(msg.timestamp, msg);
-    }
-    return map;
-  }, [regularMessages]);
+  // Meshtastic / MeshCore quoted replies use protocol-specific parent lookup (see quote render below).
 
   const unreadCounts = useMemo(
     () =>
@@ -1889,14 +1884,40 @@ function ChatPanel({
                           !msg.emoji &&
                           (() => {
                             const orig =
-                              msg.replyId != null ? messageByReplyKey.get(msg.replyId) : undefined;
-                            const quoteSnippet = orig
-                              ? truncateReplyPreviewText(orig.payload)
-                              : msg.replyPreviewText;
-                            const quotedLabel = orig
-                              ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
-                                orig.sender_name
-                              : msg.replyPreviewSender;
+                              msg.replyId != null
+                                ? protocol === 'meshtastic'
+                                  ? findMeshtasticParentMessageForReply(
+                                      regularMessages,
+                                      msg.replyId,
+                                      {
+                                        replyPreviewSender: msg.replyPreviewSender,
+                                        beforeTimestamp: msg.timestamp,
+                                        channel: msg.channel,
+                                        to: msg.to,
+                                        excludeSenderId: msg.sender_id,
+                                      },
+                                    )
+                                  : findMeshcoreParentMessageForReply(
+                                      regularMessages,
+                                      msg.replyId,
+                                      {
+                                        replyPreviewSender: msg.replyPreviewSender,
+                                        beforeTimestamp: msg.timestamp,
+                                        channel: msg.channel,
+                                        to: msg.to,
+                                        excludeSenderId: msg.sender_id,
+                                      },
+                                    )
+                                : undefined;
+                            const quoteSnippet =
+                              orig != null
+                                ? truncateReplyPreviewText(orig.payload)
+                                : msg.replyPreviewText?.trim() || undefined;
+                            const quotedLabel =
+                              orig != null
+                                ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
+                                  orig.sender_name
+                                : msg.replyPreviewSender?.trim() || undefined;
                             const canJumpToParent = msg.replyId != null && !!orig;
                             if (!quoteSnippet && !quotedLabel) return null;
                             const quoteClassName =

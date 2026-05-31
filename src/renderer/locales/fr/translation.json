@@ -264,7 +264,8 @@
       "cooldown": "L'historique a été récupéré récemment pour ce routeur. Attendez avant de refaire une demande.",
       "offline_gate": "Attendez quelques minutes après la reconnexion avant que la récupération automatique ne s'exécute ; utilisez Rattraper manuellement.",
       "already_requested": "Une demande d'historique est déjà en cours pour ce routeur."
-    }
+    },
+    "replyRequiresPacketId": "La réponse nécessite l'identifiant du paquet RF du message (attendez l'envoi de l'ack ou l'actualisation du chat)."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

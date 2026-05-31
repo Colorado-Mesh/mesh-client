@@ -12,6 +12,7 @@ import {
   meshcoreRoomMessageStoreId,
   upsertMeshcoreMessageWithDedup,
 } from './meshcoreStoreDedup';
+import type { ChatMessage } from './types';
 
 const ID = 'meshcore-dedup-test';
 
@@ -246,5 +247,45 @@ describe('meshcoreStoreDedup', () => {
 
     expect(result.inserted).toBe(false);
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
+  });
+
+  it('upgrades stale reply_id on cross-transport merge (historical row, RF refresh second)', () => {
+    const messageB: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'NV0N',
+      payload: 'Message B - reply to this please.',
+      channel: 6,
+      timestamp: 1780240608140,
+      status: 'acked',
+    };
+    upsertMeshcoreMessageWithDedup(ID, messageB);
+
+    const mqttStale: ChatMessage = {
+      sender_id: 203,
+      sender_name: 'Wherewolf',
+      payload: 'reply to b',
+      channel: 6,
+      timestamp: 1780240702000,
+      status: 'acked',
+      receivedVia: 'mqtt',
+      replyId: 1780239830519,
+      replyPreviewText: 'Thank you.',
+      replyPreviewSender: 'NV0N',
+      meshcoreDedupeKey: '@[NV0N] reply to b',
+    };
+    upsertMeshcoreMessageWithDedup(ID, mqttStale);
+
+    const rfRefreshed: ChatMessage = {
+      ...mqttStale,
+      receivedVia: 'rf',
+      replyId: 1780240608140,
+      replyPreviewText: 'Message B - reply to this please.',
+      replyPreviewSender: 'NV0N',
+      meshcoreDedupeKey: 'Wherewolf: @[NV0N] reply to b',
+    };
+    const result = upsertMeshcoreMessageWithDedup(ID, rfRefreshed);
+
+    expect(result.message.replyId).toBe(1780240608140);
+    expect(result.message.replyPreviewText).toContain('Message B');
   });
 });

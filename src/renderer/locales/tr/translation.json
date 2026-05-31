@@ -264,7 +264,8 @@
       "cooldown": "Bu yönlendirici için geçmiş yakın zamanda alındı. Yeniden istek göndermeden önce bekleyin.",
       "offline_gate": "Otomatik yakalama çalıştırmadan önce yeniden bağladıktan sonra birkaç dakika bekleyin; manuel olarak Yakala'yı kullanın.",
       "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor."
-    }
+    },
+    "replyRequiresPacketId": "Yanıt, RF paket kimliği mesajını gerektirir (mesajın gönderilmesini bekleyin veya sohbeti yenileyin)."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

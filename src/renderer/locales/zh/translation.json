@@ -264,7 +264,8 @@
       "cooldown": "最近已为此路由器获取历史记录。请稍候再请求。",
       "offline_gate": "重新连接后等待几分钟，然后自动提取运行；手动使用“追赶”。",
       "already_requested": "此路由器的历史记录请求已在进行中。"
-    }
+    },
+    "replyRequiresPacketId": "回复需要消息RF数据包ID （等待发送确认或刷新聊天）。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

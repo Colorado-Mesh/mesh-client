@@ -264,7 +264,8 @@
       "cooldown": "Pro tento směrovač byla nedávno načtena historie. Než požádáš znovu, počkej.",
       "offline_gate": "Před spuštěním automatického načítání počkejte několik minut po opětovném připojení; použijte možnost Dohnat ručně.",
       "already_requested": "Žádost o historii pro tento směrovač již probíhá."
-    }
+    },
+    "replyRequiresPacketId": "Odpověď vyžaduje ID RF paketu zprávy (počkejte na odeslání ack nebo obnovení chatu)."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

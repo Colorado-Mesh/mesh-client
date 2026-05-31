@@ -175,8 +175,21 @@ export function ChatComposer({
     const chunks = splitChatMessage(input.trim(), protocol, payloadLimit);
     if (chunks === null) return;
 
-    const replyKey = replyTo ? (replyTo.packetId ?? replyTo.timestamp) : undefined;
+    const replyKey =
+      replyTo == null
+        ? undefined
+        : protocol === 'meshtastic'
+          ? replyTo.packetId
+          : (replyTo.packetId ?? replyTo.timestamp);
     const textsToSend = chunks.length === 0 ? [input.trim()] : chunks;
+
+    if (replyTo && protocol === 'meshtastic' && (replyKey == null || replyKey === 0)) {
+      setChatActionError({
+        message: t('chatPanel.replyRequiresPacketId'),
+        viewKey,
+      });
+      return;
+    }
 
     const shouldQueue = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
 

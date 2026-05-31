@@ -15,10 +15,10 @@ import type {
   RxPacketEntry,
 } from '../../lib/meshcore/meshcoreHookTypes';
 import {
-  buildMeshcoreChannelIncomingMessage,
-  buildMeshcoreDmIncomingMessage,
   buildMeshcoreRoomIncomingMessage,
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
+  parseMeshcoreChannelIncomingFromThread,
+  parseMeshcoreDmIncomingFromThread,
   parseMeshcoreRoomPostPayload,
   resolveMeshcoreChannelMessageSender,
 } from '../../lib/meshcoreChannelText';
@@ -40,6 +40,7 @@ import {
 } from '../../lib/meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../../lib/meshcoreRawSelfFloodAdvertCoalesce';
 import { setMeshcoreRoomLastPostAt } from '../../lib/meshcoreRoomSyncStorage';
+import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -65,7 +66,7 @@ import {
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
 import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../../lib/timeConstants';
-import type { IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
+import type { ChatMessage, IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateMessageStatus, useMessageStore } from '../../stores/messageStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
@@ -145,6 +146,12 @@ export function attachMeshcoreLegacyConnEvents(
 
   /** PacketRouter + meshcoreIngest own parsed room posts when identity is bound. */
   const legacyOwnsRoomPosts = (): boolean => meshcoreIdentityIdRef.current == null;
+
+  const storePriorForIngest = (): ChatMessage[] => {
+    const storeId = meshcoreIdentityIdRef.current;
+    if (storeId) return meshcoreSortedStorePrior(storeId);
+    return [...messagesRef.current].sort((a, b) => a.timestamp - b.timestamp);
+  };
 
   const meshcorePersistentListenerRegs: {
     event: string | number;
@@ -683,7 +690,7 @@ export function attachMeshcoreLegacyConnEvents(
           }
         } else {
           addMessage({
-            ...buildMeshcoreDmIncomingMessage(messagesRef.current, {
+            ...parseMeshcoreDmIncomingFromThread(storePriorForIngest(), {
               rawText: d.text,
               senderId,
               displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
@@ -732,7 +739,7 @@ export function attachMeshcoreLegacyConnEvents(
           });
         }
         addMessage({
-          ...buildMeshcoreChannelIncomingMessage(messagesRef.current, {
+          ...parseMeshcoreChannelIncomingFromThread(storePriorForIngest(), {
             rawText: d.text,
             senderId: resolved.senderId,
             displayName: resolved.displayName,
@@ -866,7 +873,7 @@ export function attachMeshcoreLegacyConnEvents(
           now - e.ts <= MESHCORE_CHAT_CORRELATE_WINDOW_MS,
       );
     addMessage(
-      buildMeshcoreDmIncomingMessage(messagesRef.current, {
+      parseMeshcoreDmIncomingFromThread(storePriorForIngest(), {
         rawText: d.text,
         senderId,
         displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
@@ -962,7 +969,7 @@ export function attachMeshcoreLegacyConnEvents(
       });
     }
     addMessage(
-      buildMeshcoreChannelIncomingMessage(messagesRef.current, {
+      parseMeshcoreChannelIncomingFromThread(storePriorForIngest(), {
         rawText: d.text,
         senderId: resolved.senderId,
         displayName: resolved.displayName,

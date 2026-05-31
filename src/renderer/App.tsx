@@ -110,6 +110,7 @@ import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities
 import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
+import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { runStartupDbPrune } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './lib/storeRecordAdapters';
@@ -672,7 +673,7 @@ function AppContent({
   const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
   const meshcoreStoreMessages = useMessages(meshcoreIdentityId);
   const meshtasticUiMessages = useMemo(
-    () => messageRecordsToChatMessages(meshtasticStoreMessages),
+    () => repairMeshtasticReplyPreviews(messageRecordsToChatMessages(meshtasticStoreMessages)),
     [meshtasticStoreMessages],
   );
   const meshcoreUiMessages = useMemo(

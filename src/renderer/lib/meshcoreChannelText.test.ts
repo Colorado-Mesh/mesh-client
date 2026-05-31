@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { mapMeshcoreDbRowsToChatMessages } from '../hooks/meshcore/meshcoreHookPreamble';
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
@@ -20,6 +21,7 @@ import {
   meshcoreChatStubNodeIdFromDisplayName,
 } from './meshcoreUtils';
 import { REPLY_PREVIEW_MAX_LEN } from './replyPreview';
+import { chatMessageToMessageRecord, messageRecordToChatMessage } from './storeRecordAdapters';
 import type { ChatMessage } from './types';
 
 describe('resolveMeshcoreChannelMessageSender', () => {
@@ -352,6 +354,37 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
     expect(msg.replyPreviewSender).toBe('Target');
   });
 
+  it('prefers explicit wire reply key over latest-from-sender heuristic', () => {
+    const msg1: ChatMessage = {
+      sender_id: 10,
+      sender_name: 'Target',
+      payload: 'message 1',
+      channel: 0,
+      timestamp: baseTime,
+      status: 'acked',
+      packetId: 1001,
+    };
+    const msg2: ChatMessage = {
+      sender_id: 10,
+      sender_name: 'Target',
+      payload: 'message 2',
+      channel: 0,
+      timestamp: baseTime + 100,
+      status: 'acked',
+      packetId: 1002,
+    };
+    const msg = buildMeshcoreChannelIncomingMessage([msg1, msg2], {
+      rawText: 'Someone: @[Target#1001] replying to first',
+      senderId: 20,
+      displayName: 'Someone',
+      channel: 0,
+      timestamp: baseTime + 500,
+      receivedVia: 'rf',
+    });
+    expect(msg.replyId).toBe(1001);
+    expect(msg.replyPreviewText).toBe('message 1');
+  });
+
   it('truncates reply preview when parent payload is long', () => {
     const longParents: ChatMessage[] = [
       {
@@ -427,6 +460,15 @@ describe('parseMeshcoreBracketPrefix', () => {
       body: 'agreed, coffee',
     });
   });
+
+  it('parses mesh-client wire reply key suffix after #', () => {
+    expect(parseMeshcoreBracketPrefix('@[NV0N 01#1780235760847] thanks')).toEqual({
+      hadBracketPrefix: true,
+      targetName: 'NV0N 01',
+      wireReplyKey: 1780235760847,
+      body: 'thanks',
+    });
+  });
 });
 
 describe('repairMeshcoreDisplayMessages', () => {
@@ -476,6 +518,397 @@ describe('repairMeshcoreDisplayMessages', () => {
     expect(out[1]?.payload).toBe('agreed, a nice yirgacheffe');
     expect(out[1]?.replyId).toBe(88);
     expect(out[1]?.replyPreviewSender).toBe('🔥 W0RMT 03');
+  });
+
+  it('does not overwrite explicit replyId when newer messages from the same sender exist', () => {
+    const msg1: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'NV0N',
+      payload: 'message 1',
+      channel: 6,
+      timestamp: 1_000,
+      status: 'acked',
+      packetId: 1001,
+    };
+    const msg2: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'NV0N',
+      payload: 'message 2',
+      channel: 6,
+      timestamp: 2_000,
+      status: 'acked',
+      packetId: 1002,
+    };
+    const msg3: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'NV0N',
+      payload: 'message 3',
+      channel: 6,
+      timestamp: 3_000,
+      status: 'acked',
+      packetId: 1003,
+    };
+    const outboundReply: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'NV0N',
+      payload: 'test reply to message 2',
+      channel: 6,
+      timestamp: 4_000,
+      status: 'acked',
+      replyId: 1002,
+      replyPreviewText: 'message 2',
+      replyPreviewSender: 'NV0N',
+    };
+    const out = meshcoreChatMessagesForDisplay([msg1, msg2, msg3, outboundReply]);
+    expect(out[3]?.replyId).toBe(1002);
+    expect(out[3]?.replyPreviewText).toBe('message 2');
+  });
+
+  it('repairs stale incoming bracket reply when parent message arrived after first ingest', () => {
+    const oldMsg: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'oh man, still off... just one though. Thanks',
+      channel: 6,
+      timestamp: 1_789_000,
+      status: 'acked',
+    };
+    const message6: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Message 6 - someone please reply to this.',
+      channel: 6,
+      timestamp: 1_826_000,
+      status: 'acked',
+    };
+    const staleIncoming: ChatMessage = {
+      sender_id: 200,
+      sender_name: 'BC02',
+      payload: 'reply to message 6',
+      channel: 6,
+      timestamp: 1_829_000,
+      status: 'acked',
+      replyId: 1_789_000,
+      replyPreviewText: 'oh man, still off... just one though. Thanks',
+      replyPreviewSender: '🛜 NV0N 01',
+    };
+    const out = meshcoreChatMessagesForDisplay([oldMsg, message6, staleIncoming]);
+    expect(out[2]?.replyId).toBe(1_826_000);
+    expect(out[2]?.replyPreviewText).toContain('Message 6');
+  });
+
+  it('matches Alex-style quoted parent text from reply payload (DB repro)', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'thank you',
+      channel: 6,
+      timestamp: 1780238318795,
+      status: 'acked',
+    };
+    const message7: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'oh we have a 6 so that was 7.  Please reply to this one',
+      channel: 6,
+      timestamp: 1780238482088,
+      status: 'acked',
+    };
+    const alex: ChatMessage = {
+      sender_id: 200,
+      sender_name: '🆎 Alex KØALB',
+      payload: 'reply to "oh we have a 6 so that was 7.  Please reply to this one"',
+      channel: 6,
+      timestamp: 1780238999000,
+      status: 'acked',
+      replyId: 1780238318795,
+      replyPreviewText: 'thank you',
+      replyPreviewSender: '🛜 NV0N 01',
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, message7, alex]);
+    expect(out[2]?.replyId).toBe(1780238482088);
+    expect(out[2]?.replyPreviewText).toContain('oh we have a 6');
+  });
+
+  it('matches Wherewolf reply to 7 via short numeric hint', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'thank you',
+      channel: 6,
+      timestamp: 1780238318795,
+      status: 'acked',
+    };
+    const message7: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'oh we have a 6 so that was 7.  Please reply to this one',
+      channel: 6,
+      timestamp: 1780238482088,
+      status: 'acked',
+    };
+    const wherewolf: ChatMessage = {
+      sender_id: 300,
+      sender_name: '🫈Wherewolf Mane',
+      payload: 'reply to 7',
+      channel: 6,
+      timestamp: 1780239022000,
+      status: 'acked',
+      replyId: 1780238318795,
+      replyPreviewText: 'thank you',
+      replyPreviewSender: '🛜 NV0N 01',
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, message7, wherewolf]);
+    expect(out[2]?.replyId).toBe(1780238482088);
+    expect(out[2]?.replyPreviewText).toContain('was 7');
+  });
+
+  it('repairs StackCore reply to A against stale Thank you parent (DB repro)', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Thank you',
+      channel: 6,
+      timestamp: 1780239056187,
+      status: 'acked',
+    };
+    const messageA: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Message A - please reply to this. The history of replies is looking good now so 🤞',
+      channel: 6,
+      timestamp: 1780239277301,
+      status: 'acked',
+    };
+    const stackcore: ChatMessage = {
+      sender_id: 201,
+      sender_name: '⛷️ StackCore',
+      payload: 'reply to A',
+      channel: 6,
+      timestamp: 1780239611000,
+      status: 'acked',
+      replyId: 1780239056187,
+      replyPreviewText: 'Thank you',
+      replyPreviewSender: '🛜 NV0N 01',
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, messageA, stackcore]);
+    expect(out[2]?.replyId).toBe(1780239277301);
+    expect(out[2]?.replyPreviewText).toContain('Message A');
+  });
+
+  it('repairs Packman to A against stale Thank you parent (DB repro)', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Thank you',
+      channel: 6,
+      timestamp: 1780239056187,
+      status: 'acked',
+    };
+    const messageA: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Message A - please reply to this.',
+      channel: 6,
+      timestamp: 1780239277301,
+      status: 'acked',
+    };
+    const packman: ChatMessage = {
+      sender_id: 202,
+      sender_name: 'Packman Home',
+      payload: 'to A',
+      channel: 6,
+      timestamp: 1780239722000,
+      status: 'acked',
+      replyId: 1780239056187,
+      replyPreviewText: 'Thank you',
+      replyPreviewSender: '🛜 NV0N 01',
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, messageA, packman]);
+    expect(out[2]?.replyId).toBe(1780239277301);
+    expect(out[2]?.replyPreviewText).toContain('Message A');
+  });
+
+  it('repairs Wherewolf reply to b against stale Thank you. parent (DB repro)', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Thank you.',
+      channel: 6,
+      timestamp: 1780239830519,
+      status: 'acked',
+    };
+    const messageB: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload:
+        'Message B - reply to this please. 🙏  Looks like the fix I put in was only running on database hydration and not live replies.',
+      channel: 6,
+      timestamp: 1780240608140,
+      status: 'acked',
+    };
+    const wherewolf: ChatMessage = {
+      sender_id: 203,
+      sender_name: '🫈Wherewolf Mane',
+      payload: 'reply to b',
+      channel: 6,
+      timestamp: 1780240702000,
+      status: 'acked',
+      replyId: 1780239830519,
+      replyPreviewText: 'Thank you.',
+      replyPreviewSender: '🛜 NV0N 01',
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, messageB, wherewolf]);
+    expect(out[2]?.replyId).toBe(1780240608140);
+    expect(out[2]?.replyPreviewText).toContain('Message B');
+  });
+
+  it('overrides wrong explicit @[Name#key] when body says reply to b', () => {
+    const thankYou: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Thank you.',
+      channel: 6,
+      timestamp: 1780239830519,
+      status: 'acked',
+    };
+    const messageB: ChatMessage = {
+      sender_id: 100,
+      sender_name: '🛜 NV0N 01',
+      payload: 'Message B - reply to this please.',
+      channel: 6,
+      timestamp: 1780240608140,
+      status: 'acked',
+    };
+    const wherewolf: ChatMessage = {
+      sender_id: 203,
+      sender_name: '🫈Wherewolf Mane',
+      payload: 'reply to b',
+      channel: 6,
+      timestamp: 1780240702000,
+      status: 'acked',
+      replyId: 1780239830519,
+      replyPreviewText: 'Thank you.',
+      replyPreviewSender: '🛜 NV0N 01',
+      meshcoreDedupeKey: `🫈Wherewolf Mane: @[🛜 NV0N 01#1780239830519] reply to b`,
+    };
+    const out = meshcoreChatMessagesForDisplay([thankYou, messageB, wherewolf]);
+    expect(out[2]?.replyId).toBe(1780240608140);
+    expect(out[2]?.replyPreviewText).toContain('Message B');
+  });
+});
+
+describe('mapMeshcoreDbRowsToChatMessages reply repair', () => {
+  it('repairs Wherewolf reply to b from DB rows (live ingest stale reply_id)', () => {
+    const rows = [
+      {
+        id: 1986,
+        sender_id: 100,
+        sender_name: '🛜 NV0N 01',
+        payload: 'Thank you.',
+        channel_idx: 6,
+        timestamp: 1780239830519,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+        received_via: 'rf',
+        rx_packet_fingerprint: null,
+        reply_preview_text: null,
+        reply_preview_sender: null,
+        rx_hops: null,
+      },
+      {
+        id: 1988,
+        sender_id: 100,
+        sender_name: '🛜 NV0N 01',
+        payload:
+          'Message B - reply to this please. 🙏  Looks like the fix I put in was only running on database hydration and not live replies.',
+        channel_idx: 6,
+        timestamp: 1780240608140,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+        received_via: 'rf',
+        rx_packet_fingerprint: null,
+        reply_preview_text: null,
+        reply_preview_sender: null,
+        rx_hops: null,
+      },
+      {
+        id: 1989,
+        sender_id: 203,
+        sender_name: '🫈Wherewolf Mane',
+        payload: 'reply to b',
+        channel_idx: 6,
+        timestamp: 1780240702000,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: 1780239830519,
+        to_node: null,
+        received_via: 'mqtt',
+        rx_packet_fingerprint: null,
+        reply_preview_text: 'Thank you.',
+        reply_preview_sender: '🛜 NV0N 01',
+        rx_hops: null,
+      },
+    ];
+    const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+    const wherewolf = mapped.find((m) => m.payload === 'reply to b');
+    expect(wherewolf?.replyId).toBe(1780240608140);
+    expect(wherewolf?.replyPreviewText).toContain('Message B');
+  });
+
+  it('keeps Wherewolf reply repair through store record round-trip', () => {
+    const rows = [
+      {
+        id: 1988,
+        sender_id: 100,
+        sender_name: '🛜 NV0N 01',
+        payload: 'Message B - reply to this please.',
+        channel_idx: 6,
+        timestamp: 1780240608140,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+        received_via: 'rf',
+        rx_packet_fingerprint: null,
+        reply_preview_text: null,
+        reply_preview_sender: null,
+        rx_hops: null,
+      },
+      {
+        id: 1989,
+        sender_id: 203,
+        sender_name: '🫈Wherewolf Mane',
+        payload: 'reply to b',
+        channel_idx: 6,
+        timestamp: 1780240702000,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: 1780239830519,
+        to_node: null,
+        received_via: 'mqtt',
+        rx_packet_fingerprint: null,
+        reply_preview_text: 'Thank you.',
+        reply_preview_sender: '🛜 NV0N 01',
+        rx_hops: null,
+      },
+    ];
+    const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+    const records = mapped.map((m) => chatMessageToMessageRecord(m));
+    const roundTripped = meshcoreChatMessagesForDisplay(
+      records.map((r) => messageRecordToChatMessage(r)),
+    );
+    const wherewolf = roundTripped.find((m) => m.payload === 'reply to b');
+    expect(wherewolf?.replyId).toBe(1780240608140);
   });
 });
 

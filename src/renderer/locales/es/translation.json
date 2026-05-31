@@ -264,7 +264,8 @@
       "cooldown": "Recientemente se ha recuperado el historial de este router. Espera antes de volver a solicitar.",
       "offline_gate": "Espere unos minutos después de volver a conectarse antes de que se ejecute la recuperación automática; utilice Póngase al día manualmente.",
       "already_requested": "Ya hay una solicitud de historial en curso para este router."
-    }
+    },
+    "replyRequiresPacketId": "La respuesta requiere el ID del paquete de RF del mensaje (esperar a que se envíe el acuse de recibo o se actualice el chat)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

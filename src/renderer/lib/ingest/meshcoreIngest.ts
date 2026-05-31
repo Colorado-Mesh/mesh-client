@@ -16,17 +16,16 @@ import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
-  buildMeshcoreChannelIncomingMessage,
-  buildMeshcoreDmIncomingMessage,
   buildMeshcoreRoomIncomingMessage,
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
+  parseMeshcoreChannelIncomingFromThread,
+  parseMeshcoreDmIncomingFromThread,
   parseMeshcoreRoomPostPayload,
   resolveMeshcoreChannelMessageSender,
 } from '../meshcoreChannelText';
-import { upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
+import { meshcoreSortedStorePrior, upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
 import { meshcoreChatStubNodeIdFromDisplayName } from '../meshcoreUtils';
 import type { DomainEvent } from '../protocols/Protocol';
-import { messageRecordsToChatMessages } from '../storeRecordAdapters';
 import type { ChatMessage, IdentityId } from '../types';
 
 /** MeshCore contacts belong in meshcore_contacts SQLite, not the Meshtastic nodes table. */
@@ -36,8 +35,7 @@ function persistContactNodes(identityId: IdentityId): void {
 }
 
 function listChatMessages(identityId: IdentityId): ChatMessage[] {
-  const byId = useMessageStore.getState().messages[identityId] ?? {};
-  return messageRecordsToChatMessages(Object.values(byId));
+  return meshcoreSortedStorePrior(identityId);
 }
 
 function buildPrefixToNodeIdMap(identityId: IdentityId): Map<string, number> {
@@ -119,8 +117,10 @@ function handleTextMessage(
       ? event.payload.from
       : meshcoreChatStubNodeIdFromDisplayName(displayName);
 
-  const parsed: ChatMessage = isChannel
-    ? buildMeshcoreChannelIncomingMessage(messages, {
+  const sortedPrior = messages;
+
+  const parsedRaw: ChatMessage = isChannel
+    ? parseMeshcoreChannelIncomingFromThread(sortedPrior, {
         rawText: event.payload.payload,
         senderId,
         displayName,
@@ -129,7 +129,7 @@ function handleTextMessage(
         receivedVia: 'rf',
         rxHops: event.payload.hopCount,
       })
-    : buildMeshcoreDmIncomingMessage(messages, {
+    : parseMeshcoreDmIncomingFromThread(sortedPrior, {
         rawText: event.payload.payload,
         senderId,
         displayName,
@@ -142,9 +142,9 @@ function handleTextMessage(
       });
 
   const merged: ChatMessage = {
-    ...parsed,
-    status: record.status ?? parsed.status,
-    receivedVia: record.receivedVia ?? parsed.receivedVia,
+    ...parsedRaw,
+    status: record.status ?? parsedRaw.status,
+    receivedVia: record.receivedVia ?? parsedRaw.receivedVia,
   };
   const reconciled =
     isChannel && messages.length > 0
@@ -155,14 +155,16 @@ function handleTextMessage(
     return;
   }
 
-  const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
-    identityId,
-    reconciled,
-    event.payload.id,
-  );
+  const {
+    inserted,
+    storeUpdated,
+    message: stored,
+  } = upsertMeshcoreMessageWithDedup(identityId, reconciled, event.payload.id);
 
   const isEcho = myNodeNum > 0 && senderId === myNodeNum;
-  if (inserted && !isEcho) {
+  const replyUpgraded =
+    stored.replyId !== parsedRaw.replyId || stored.replyPreviewText !== parsedRaw.replyPreviewText;
+  if ((inserted || storeUpdated || replyUpgraded) && !isEcho) {
     void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
       console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
     });

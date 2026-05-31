@@ -129,7 +129,7 @@ import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
-import { enrichMeshtasticReplyPreviews } from '../lib/replyPreview';
+import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import {
   clearMeshtasticOutboundTempId,
@@ -289,6 +289,24 @@ export function useMeshtasticRuntime() {
   const pendingTempIdRef = useRef<number | undefined>(undefined);
   /** After device ack, optimistic `tempId` → RF `packet_id` so MQTT status callbacks still find the row. */
   const ackMeshPacketIdByTempIdRef = useRef<Map<number, number>>(new Map());
+  const outboundSendByTempIdRef = useRef<
+    Map<number, { sender_id: number; timestamp: number; payload: string; channel: number }>
+  >(new Map());
+
+  const meshtasticOutboundSendMatchesTempId = useCallback(
+    (m: ChatMessage, tempId: number): boolean => {
+      if (m.packetId === tempId) return true;
+      const meta = outboundSendByTempIdRef.current.get(tempId);
+      if (!meta) return false;
+      return (
+        m.sender_id === meta.sender_id &&
+        m.channel === meta.channel &&
+        m.payload === meta.payload &&
+        Math.abs(m.timestamp - meta.timestamp) <= 120_000
+      );
+    },
+    [],
+  );
   // True while the device is in the configuring phase (replaying queued packets); messages
   // received during this window are historical and should not increment the unread counter.
   const isConfiguringRef = useRef<boolean>(false);
@@ -645,6 +663,7 @@ export function useMeshtasticRuntime() {
     }
     unsubscribesRef.current = [];
     ackMeshPacketIdByTempIdRef.current.clear();
+    outboundSendByTempIdRef.current.clear();
   }, []);
 
   const clearConfigureTimeout = useCallback(() => {
@@ -2112,7 +2131,7 @@ export function useMeshtasticRuntime() {
           const storeKeyBeforeAck = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
           setMessages((prev) =>
             prev.map((m) =>
-              m.packetId === tempId
+              meshtasticOutboundSendMatchesTempId(m, tempId)
                 ? {
                     ...m,
                     status: 'acked' as const,
@@ -2128,9 +2147,13 @@ export function useMeshtasticRuntime() {
             trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
             updateMessageStatus(identityId, resolvedIdStr, 'acked');
           }
+          outboundSendByTempIdRef.current.delete(tempId);
+          const ackSenderId = messagesRef.current.find((m) =>
+            meshtasticOutboundSendMatchesTempId(m, tempId),
+          )?.sender_id;
           void (
             resolvedPid !== tempId
-              ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid)
+              ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid, ackSenderId)
               : Promise.resolve()
           )
             .then(() => window.electronAPI.db.updateMessageStatus(resolvedPid, 'acked'))
@@ -2144,7 +2167,9 @@ export function useMeshtasticRuntime() {
           // failed
           setMessages((prev) =>
             prev.map((m) =>
-              m.packetId === tempId ? { ...m, status: 'failed' as const, error } : m,
+              meshtasticOutboundSendMatchesTempId(m, tempId)
+                ? { ...m, status: 'failed' as const, error }
+                : m,
             ),
           );
           if (identityId) {
@@ -2152,6 +2177,7 @@ export function useMeshtasticRuntime() {
             updateMessageStatus(identityId, storeKey, 'failed', error);
             clearMeshtasticOutboundTempId(tempId);
           }
+          outboundSendByTempIdRef.current.delete(tempId);
           void window.electronAPI.db.updateMessageStatus(tempId, 'failed', error);
         }
       } else {
@@ -2180,7 +2206,7 @@ export function useMeshtasticRuntime() {
         }
       }
     },
-    [isDuplicate],
+    [isDuplicate, meshtasticOutboundSendMatchesTempId],
   );
 
   // Keep the ref in sync so TransportManager always invokes the latest handler
@@ -2203,6 +2229,22 @@ export function useMeshtasticRuntime() {
       }
       const tempId = Math.floor(Math.random() * 0xffffffff);
 
+      let wireReplyId: number | undefined;
+      if (replyId != null) {
+        const identityIdForReply = meshtasticIdentityIdRef.current;
+        const storeMsgsForReply = identityIdForReply
+          ? messageRecordsToChatMessages(
+              Object.values(useMessageStore.getState().messages[identityIdForReply] ?? {}),
+            )
+          : messagesRef.current;
+        wireReplyId = resolveMeshtasticWireReplyId(storeMsgsForReply, replyId);
+        if (wireReplyId == null || wireReplyId === 0) {
+          throw new Error(
+            'Reply requires the message RF packet id (wait for send ack or refresh chat).',
+          );
+        }
+      }
+
       // Determine initial MQTT display state (TransportManager will confirm/update asynchronously)
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const shouldUplink = !deviceRef.current
@@ -2220,11 +2262,17 @@ export function useMeshtasticRuntime() {
           status: deviceRef.current ? ('sending' as const) : undefined,
           mqttStatus: shouldUplink ? ('sending' as const) : undefined,
           to: destination != null && destination >>> 0 !== BROADCAST_ADDR ? destination : undefined,
-          replyId,
+          replyId: wireReplyId,
         },
         messagesRef.current,
         getNodeName,
       );
+      outboundSendByTempIdRef.current.set(tempId, {
+        sender_id: from,
+        timestamp: msg.timestamp,
+        payload: text,
+        channel,
+      });
       setMessages((prev) => trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES));
       void window.electronAPI.db.saveMessage(msg);
       const identityId = meshtasticIdentityIdRef.current;
@@ -2247,7 +2295,14 @@ export function useMeshtasticRuntime() {
         isDuplicate,
         onStatusUpdateRef,
       });
-      transportManagerRef.current.sendMessage(text, channel, destination, replyId, tempId, from);
+      transportManagerRef.current.sendMessage(
+        text,
+        channel,
+        destination,
+        wireReplyId,
+        tempId,
+        from,
+      );
     },
     [getNodeName, isDuplicate],
   );

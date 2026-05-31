@@ -264,7 +264,8 @@
       "cooldown": "Riwayat baru saja diambil untuk router ini. Tunggu sebelum meminta lagi.",
       "offline_gate": "Tunggu beberapa menit setelah tersambung kembali sebelum pengambilan otomatis berjalan; gunakan Kejar dari Toko & Teruskan secara manual.",
       "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini."
-    }
+    },
+    "replyRequiresPacketId": "Balas memerlukan id paket RF pesan (tunggu untuk mengirim ack atau refresh chat)."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

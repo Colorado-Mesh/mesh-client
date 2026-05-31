@@ -264,7 +264,8 @@
       "cooldown": "O histórico foi obtido recentemente para este roteador. Aguarde antes de solicitar novamente.",
       "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Atualizar a partir da Loja e Encaminhar manualmente.",
       "already_requested": "Uma solicitação de histórico já está em andamento para este roteador."
-    }
+    },
+    "replyRequiresPacketId": "A resposta requer a mensagem RF packet id (aguarde enviar ack ou atualizar chat)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

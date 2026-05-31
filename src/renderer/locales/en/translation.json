@@ -223,6 +223,7 @@
     "replyButton": "Reply",
     "reactButton": "React",
     "cancelReply": "Cancel reply",
+    "replyRequiresPacketId": "Reply requires the message RF packet id (wait for send ack or refresh chat).",
     "insertEmoji": "Insert emoji",
     "directMessage": "Direct message {{name}}",
     "composePlaceholderDm": "DM to {{name}}…",

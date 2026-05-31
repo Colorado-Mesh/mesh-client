@@ -264,7 +264,8 @@
       "cooldown": "Er is onlangs geschiedenis opgehaald voor deze router. Wacht voordat je opnieuw een aanvraag indient.",
       "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
       "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
-    }
+    },
+    "replyRequiresPacketId": "Beantwoorden vereist het bericht RF packet id (wacht op send ack of refresh chat)."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
