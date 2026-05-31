@@ -73,7 +73,7 @@ export const REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS = 1;
 export const REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS = 45_000;
 
 /** Must match MODULE_CONFIG_FETCHES length in meshtasticRemoteAdminSnapshot.ts. */
-export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = 13;
+export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = 15;
 
 /** Wall-clock cap for modules snapshot fetch (13 sequential multi-hop reads). */
 export const REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS =

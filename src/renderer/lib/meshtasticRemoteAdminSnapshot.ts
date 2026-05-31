@@ -38,6 +38,8 @@ const MODULE_CONFIG_FETCHES: {
   { type: Admin.AdminMessage_ModuleConfigType.AMBIENTLIGHTING_CONFIG, key: 'ambientLighting' },
   { type: Admin.AdminMessage_ModuleConfigType.DETECTIONSENSOR_CONFIG, key: 'detectionSensor' },
   { type: Admin.AdminMessage_ModuleConfigType.PAXCOUNTER_CONFIG, key: 'paxcounter' },
+  { type: Admin.AdminMessage_ModuleConfigType.TRAFFICMANAGEMENT_CONFIG, key: 'trafficManagement' },
+  { type: Admin.AdminMessage_ModuleConfigType.TAK_CONFIG, key: 'tak' },
 ];
 
 export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = MODULE_CONFIG_FETCHES.length;
@@ -74,6 +76,7 @@ function moduleConfigKeyFromResponse(value: unknown): string | undefined {
   if (rawCase === 'neighbor_info') return 'neighborInfo';
   if (rawCase === 'ambient_lighting') return 'ambientLighting';
   if (rawCase === 'detection_sensor') return 'detectionSensor';
+  if (rawCase === 'traffic_management') return 'trafficManagement';
   return rawCase;
 }
 

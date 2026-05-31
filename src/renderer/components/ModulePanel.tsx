@@ -66,6 +66,45 @@ interface Props {
 
 // ─── Reusable config components (same pattern as RadioPanel) ─────
 
+function ConfigSelect({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+  description,
+}: {
+  label: string;
+  value: number;
+  options: { value: number; label: string }[];
+  onChange: (val: number) => void;
+  disabled: boolean;
+  description?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-muted text-sm">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (!Number.isFinite(n)) return;
+          onChange(n);
+        }}
+        disabled={disabled}
+        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {description && <p className="text-muted text-xs">{description}</p>}
+    </div>
+  );
+}
+
 function ConfigToggle({
   label,
   checked,
@@ -327,6 +366,17 @@ function StatusOnlySection({ title, children }: { title: string; children: React
   );
 }
 
+const INPUT_EVENT_OPTIONS = [
+  { value: 0, label: 'None' },
+  { value: 10, label: 'Select (Enter)' },
+  { value: 17, label: 'Up' },
+  { value: 18, label: 'Down' },
+  { value: 19, label: 'Left' },
+  { value: 20, label: 'Right' },
+  { value: 27, label: 'Back (Esc)' },
+  { value: 24, label: 'Cancel' },
+];
+
 export default function ModulePanel({
   configTarget,
   moduleConfigs,
@@ -351,20 +401,38 @@ export default function ModulePanel({
 
   // ─── Telemetry module ──────────────────────────────────────────
   const telCfg = meshtasticConfigSlice(moduleConfigs.telemetry);
+  const [telDeviceTelemetryEnabled, setTelDeviceTelemetryEnabled] = useState<boolean>(
+    cfgBool(telCfg.deviceTelemetryEnabled, false),
+  );
   const [telDeviceInterval, setTelDeviceInterval] = useState<number>(
     cfgNum(telCfg.deviceUpdateInterval, 1800),
-  );
-  const [telEnvInterval, setTelEnvInterval] = useState<number>(
-    cfgNum(telCfg.environmentUpdateInterval, 1800),
   );
   const [telEnvEnabled, setTelEnvEnabled] = useState<boolean>(
     cfgBool(telCfg.environmentMeasurementEnabled, false),
   );
-  const [telPowerEnabled, setTelPowerEnabled] = useState<boolean>(
-    cfgBool(telCfg.powerMeasurementEnabled, false),
+  const [telEnvInterval, setTelEnvInterval] = useState<number>(
+    cfgNum(telCfg.environmentUpdateInterval, 1800),
+  );
+  const [telEnvScreenEnabled, setTelEnvScreenEnabled] = useState<boolean>(
+    cfgBool(telCfg.environmentScreenEnabled, false),
+  );
+  const [telEnvFahrenheit, setTelEnvFahrenheit] = useState<boolean>(
+    cfgBool(telCfg.environmentDisplayFahrenheit, false),
   );
   const [telAirQualityEnabled, setTelAirQualityEnabled] = useState<boolean>(
     cfgBool(telCfg.airQualityEnabled, false),
+  );
+  const [telAirQualityInterval, setTelAirQualityInterval] = useState<number>(
+    cfgNum(telCfg.airQualityInterval, 0),
+  );
+  const [telPowerEnabled, setTelPowerEnabled] = useState<boolean>(
+    cfgBool(telCfg.powerMeasurementEnabled, false),
+  );
+  const [telPowerInterval, setTelPowerInterval] = useState<number>(
+    cfgNum(telCfg.powerUpdateInterval, 0),
+  );
+  const [telPowerScreenEnabled, setTelPowerScreenEnabled] = useState<boolean>(
+    cfgBool(telCfg.powerScreenEnabled, false),
   );
 
   // ─── MQTT relay module ─────────────────────────────────────────
@@ -408,13 +476,44 @@ export default function ModulePanel({
   // ─── Canned messages ──────────────────────────────────────────
   const cannedCfg = meshtasticConfigSlice(moduleConfigs.cannedMessage);
   const [cannedEnabled, setCannedEnabled] = useState<boolean>(cfgBool(cannedCfg.enabled, false));
+  const [cannedRotary1Enabled, setCannedRotary1Enabled] = useState<boolean>(
+    cfgBool(cannedCfg.rotary1Enabled, false),
+  );
+  const [cannedPinA, setCannedPinA] = useState<number>(cfgNum(cannedCfg.inputbrokerPinA, 0));
+  const [cannedPinB, setCannedPinB] = useState<number>(cfgNum(cannedCfg.inputbrokerPinB, 0));
+  const [cannedPinPress, setCannedPinPress] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerPinPress, 0),
+  );
+  const [cannedEventCw, setCannedEventCw] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerEventCw, 0),
+  );
+  const [cannedEventCcw, setCannedEventCcw] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerEventCcw, 0),
+  );
+  const [cannedEventPress, setCannedEventPress] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerEventPress, 0),
+  );
+  const [cannedUpdown1Enabled, setCannedUpdown1Enabled] = useState<boolean>(
+    cfgBool(cannedCfg.updown1Enabled, false),
+  );
+  const [cannedAllowInputSource, setCannedAllowInputSource] = useState<string>(
+    cfgStr(cannedCfg.allowInputSource, ''),
+  );
+  const [cannedSendBell, setCannedSendBell] = useState<boolean>(cfgBool(cannedCfg.sendBell, false));
   const [cannedText, setCannedText] = useState<string>(cfgStr(cannedCfg.messages, ''));
 
   // ─── Serial module ─────────────────────────────────────────────
   const serialCfg = meshtasticConfigSlice(moduleConfigs.serial);
   const [serialEnabled, setSerialEnabled] = useState<boolean>(cfgBool(serialCfg.enabled, false));
   const [serialEcho, setSerialEcho] = useState<boolean>(cfgBool(serialCfg.echo, false));
-  const [serialBaud, setSerialBaud] = useState<number>(cfgNum(serialCfg.baud, 38400));
+  const [serialRxd, setSerialRxd] = useState<number>(cfgNum(serialCfg.rxd, 0));
+  const [serialTxd, setSerialTxd] = useState<number>(cfgNum(serialCfg.txd, 0));
+  const [serialBaud, setSerialBaud] = useState<number>(cfgNum(serialCfg.baud, 0));
+  const [serialTimeout, setSerialTimeout] = useState<number>(cfgNum(serialCfg.timeout, 0));
+  const [serialMode, setSerialMode] = useState<number>(cfgNum(serialCfg.mode, 0));
+  const [serialOverrideConsole, setSerialOverrideConsole] = useState<boolean>(
+    cfgBool(serialCfg.overrideConsoleSerialPort, false),
+  );
 
   // ─── Range test module ─────────────────────────────────────────
   const rangeCfg = meshtasticConfigSlice(moduleConfigs.rangeTest);
@@ -443,6 +542,66 @@ export default function ModulePanel({
   );
   const [detectStateBroadcast, setDetectStateBroadcast] = useState<number>(
     cfgNum(detectCfg.stateBroadcastSecs, 0),
+  );
+
+  // ─── Neighbor Info module ──────────────────────────────────────
+  const neighborInfoCfg = meshtasticConfigSlice(moduleConfigs.neighborInfo);
+  const [neighborInfoEnabled, setNeighborInfoEnabled] = useState<boolean>(
+    cfgBool(neighborInfoCfg.enabled, false),
+  );
+  const [neighborInfoUpdateInterval, setNeighborInfoUpdateInterval] = useState<number>(
+    cfgNum(neighborInfoCfg.updateInterval, 0),
+  );
+  const [neighborInfoTransmitOverLora, setNeighborInfoTransmitOverLora] = useState<boolean>(
+    cfgBool(neighborInfoCfg.transmitOverLora, false),
+  );
+
+  // ─── TAK module ────────────────────────────────────────────────
+  const takCfg = meshtasticConfigSlice(moduleConfigs.tak);
+  const [takTeam, setTakTeam] = useState<number>(cfgNum(takCfg.team, 0));
+  const [takRole, setTakRole] = useState<number>(cfgNum(takCfg.role, 0));
+
+  // ─── Traffic Management module ─────────────────────────────────
+  const trafficMgmtCfg = meshtasticConfigSlice(moduleConfigs.trafficManagement);
+  const [tmEnabled, setTmEnabled] = useState<boolean>(cfgBool(trafficMgmtCfg.enabled, false));
+  const [tmPositionDedupEnabled, setTmPositionDedupEnabled] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.positionDedupEnabled, false),
+  );
+  const [tmPositionPrecisionBits, setTmPositionPrecisionBits] = useState<number>(
+    cfgNum(trafficMgmtCfg.positionPrecisionBits, 0),
+  );
+  const [tmPositionMinIntervalSecs, setTmPositionMinIntervalSecs] = useState<number>(
+    cfgNum(trafficMgmtCfg.positionMinIntervalSecs, 0),
+  );
+  const [tmNodeinfoDirectResponse, setTmNodeinfoDirectResponse] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.nodeinfoDirectResponse, false),
+  );
+  const [tmNodeinfoDirectResponseMaxHops, setTmNodeinfoDirectResponseMaxHops] = useState<number>(
+    cfgNum(trafficMgmtCfg.nodeinfoDirectResponseMaxHops, 0),
+  );
+  const [tmRateLimitEnabled, setTmRateLimitEnabled] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.rateLimitEnabled, false),
+  );
+  const [tmRateLimitWindowSecs, setTmRateLimitWindowSecs] = useState<number>(
+    cfgNum(trafficMgmtCfg.rateLimitWindowSecs, 0),
+  );
+  const [tmRateLimitMaxPackets, setTmRateLimitMaxPackets] = useState<number>(
+    cfgNum(trafficMgmtCfg.rateLimitMaxPackets, 0),
+  );
+  const [tmDropUnknownEnabled, setTmDropUnknownEnabled] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.dropUnknownEnabled, false),
+  );
+  const [tmUnknownPacketThreshold, setTmUnknownPacketThreshold] = useState<number>(
+    cfgNum(trafficMgmtCfg.unknownPacketThreshold, 0),
+  );
+  const [tmExhaustHopTelemetry, setTmExhaustHopTelemetry] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.exhaustHopTelemetry, false),
+  );
+  const [tmExhaustHopPosition, setTmExhaustHopPosition] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.exhaustHopPosition, false),
+  );
+  const [tmRouterPreserveHops, setTmRouterPreserveHops] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.routerPreserveHops, false),
   );
 
   // ─── Pax counter module ────────────────────────────────────────
@@ -498,11 +657,17 @@ export default function ModulePanel({
   const [ringtoneText, setRingtoneText] = useState<string>(ringtone ?? '');
 
   useSyncFormFromConfig(moduleConfigs.telemetry, (cfg) => {
+    setTelDeviceTelemetryEnabled(cfgBool(cfg.deviceTelemetryEnabled, false));
     setTelDeviceInterval(cfgNum(cfg.deviceUpdateInterval, 1800));
-    setTelEnvInterval(cfgNum(cfg.environmentUpdateInterval, 1800));
     setTelEnvEnabled(cfgBool(cfg.environmentMeasurementEnabled, false));
-    setTelPowerEnabled(cfgBool(cfg.powerMeasurementEnabled, false));
+    setTelEnvInterval(cfgNum(cfg.environmentUpdateInterval, 1800));
+    setTelEnvScreenEnabled(cfgBool(cfg.environmentScreenEnabled, false));
+    setTelEnvFahrenheit(cfgBool(cfg.environmentDisplayFahrenheit, false));
     setTelAirQualityEnabled(cfgBool(cfg.airQualityEnabled, false));
+    setTelAirQualityInterval(cfgNum(cfg.airQualityInterval, 0));
+    setTelPowerEnabled(cfgBool(cfg.powerMeasurementEnabled, false));
+    setTelPowerInterval(cfgNum(cfg.powerUpdateInterval, 0));
+    setTelPowerScreenEnabled(cfgBool(cfg.powerScreenEnabled, false));
   });
 
   useSyncFormFromConfig(moduleConfigs.mqtt, (cfg) => {
@@ -553,6 +718,33 @@ export default function ModulePanel({
   useSyncFormFromConfig(moduleConfigs.paxcounter, (cfg) => {
     setPaxEnabled(cfgBool(cfg.enabled, false));
     setPaxInterval(cfgNum(cfg.paxcounterUpdateInterval, 0));
+  });
+  useSyncFormFromConfig(moduleConfigs.neighborInfo, (cfg) => {
+    setNeighborInfoEnabled(cfgBool(cfg.enabled, false));
+    setNeighborInfoUpdateInterval(cfgNum(cfg.updateInterval, 0));
+    setNeighborInfoTransmitOverLora(cfgBool(cfg.transmitOverLora, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.tak, (cfg) => {
+    setTakTeam(cfgNum(cfg.team, 0));
+    setTakRole(cfgNum(cfg.role, 0));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.trafficManagement, (cfg) => {
+    setTmEnabled(cfgBool(cfg.enabled, false));
+    setTmPositionDedupEnabled(cfgBool(cfg.positionDedupEnabled, false));
+    setTmPositionPrecisionBits(cfgNum(cfg.positionPrecisionBits, 0));
+    setTmPositionMinIntervalSecs(cfgNum(cfg.positionMinIntervalSecs, 0));
+    setTmNodeinfoDirectResponse(cfgBool(cfg.nodeinfoDirectResponse, false));
+    setTmNodeinfoDirectResponseMaxHops(cfgNum(cfg.nodeinfoDirectResponseMaxHops, 0));
+    setTmRateLimitEnabled(cfgBool(cfg.rateLimitEnabled, false));
+    setTmRateLimitWindowSecs(cfgNum(cfg.rateLimitWindowSecs, 0));
+    setTmRateLimitMaxPackets(cfgNum(cfg.rateLimitMaxPackets, 0));
+    setTmDropUnknownEnabled(cfgBool(cfg.dropUnknownEnabled, false));
+    setTmUnknownPacketThreshold(cfgNum(cfg.unknownPacketThreshold, 0));
+    setTmExhaustHopTelemetry(cfgBool(cfg.exhaustHopTelemetry, false));
+    setTmExhaustHopPosition(cfgBool(cfg.exhaustHopPosition, false));
+    setTmRouterPreserveHops(cfgBool(cfg.routerPreserveHops, false));
   });
 
   useSyncFormFromConfig(moduleConfigs.externalNotification, (cfg) => {
@@ -737,7 +929,19 @@ export default function ModulePanel({
             await onSetModuleConfig({
               payloadVariant: {
                 case: 'cannedMessage',
-                value: mergeMeshtasticConfigApplyValue(cannedCfg, { enabled: cannedEnabled }),
+                value: mergeMeshtasticConfigApplyValue(cannedCfg, {
+                  enabled: cannedEnabled,
+                  rotary1Enabled: cannedRotary1Enabled,
+                  inputbrokerPinA: cannedPinA,
+                  inputbrokerPinB: cannedPinB,
+                  inputbrokerPinPress: cannedPinPress,
+                  inputbrokerEventCw: cannedEventCw,
+                  inputbrokerEventCcw: cannedEventCcw,
+                  inputbrokerEventPress: cannedEventPress,
+                  updown1Enabled: cannedUpdown1Enabled,
+                  allowInputSource: cannedAllowInputSource,
+                  sendBell: cannedSendBell,
+                }),
               },
             });
             await onCommit();
@@ -762,6 +966,82 @@ export default function ModulePanel({
           checked={cannedEnabled}
           onChange={setCannedEnabled}
           disabled={disabled}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedRotary1Enabled')}
+          checked={cannedRotary1Enabled}
+          onChange={setCannedRotary1Enabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedRotary1EnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.cannedPinA')}
+          value={cannedPinA}
+          onChange={setCannedPinA}
+          disabled={disabled || !cannedRotary1Enabled}
+          min={0}
+          description={t('modulePanel.fields.cannedPinADesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.cannedPinB')}
+          value={cannedPinB}
+          onChange={setCannedPinB}
+          disabled={disabled || !cannedRotary1Enabled}
+          min={0}
+          description={t('modulePanel.fields.cannedPinBDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.cannedPinPress')}
+          value={cannedPinPress}
+          onChange={setCannedPinPress}
+          disabled={disabled || !cannedRotary1Enabled}
+          min={0}
+          description={t('modulePanel.fields.cannedPinPressDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.cannedEventCw')}
+          value={cannedEventCw}
+          onChange={setCannedEventCw}
+          disabled={disabled || !cannedRotary1Enabled}
+          options={INPUT_EVENT_OPTIONS}
+          description={t('modulePanel.fields.cannedEventCwDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.cannedEventCcw')}
+          value={cannedEventCcw}
+          onChange={setCannedEventCcw}
+          disabled={disabled || !cannedRotary1Enabled}
+          options={INPUT_EVENT_OPTIONS}
+          description={t('modulePanel.fields.cannedEventCcwDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.cannedEventPress')}
+          value={cannedEventPress}
+          onChange={setCannedEventPress}
+          disabled={disabled || !cannedRotary1Enabled}
+          options={INPUT_EVENT_OPTIONS}
+          description={t('modulePanel.fields.cannedEventPressDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedUpdown1Enabled')}
+          checked={cannedUpdown1Enabled}
+          onChange={setCannedUpdown1Enabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedUpdown1EnabledDesc')}
+        />
+        <ConfigText
+          label={t('modulePanel.fields.cannedAllowInputSource')}
+          value={cannedAllowInputSource}
+          onChange={setCannedAllowInputSource}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedAllowInputSourceDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedSendBell')}
+          checked={cannedSendBell}
+          onChange={setCannedSendBell}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedSendBellDesc')}
         />
         <div className="space-y-1">
           <label htmlFor="module-canned-messages" className="text-muted text-sm">
@@ -1069,6 +1349,177 @@ export default function ModulePanel({
         />
       </ModuleSection>
 
+      {/* ═══ Neighbor Info Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionNeighborInfo')}
+        onApply={() => {
+          applyMeshtasticModule('Neighbor Info', 'neighborInfo', neighborInfoCfg, {
+            enabled: neighborInfoEnabled,
+            updateInterval: neighborInfoUpdateInterval,
+            transmitOverLora: neighborInfoTransmitOverLora,
+          });
+        }}
+        applying={applyingSection === 'Neighbor Info'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.neighborInfoEnabled')}
+          checked={neighborInfoEnabled}
+          onChange={setNeighborInfoEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.neighborInfoEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.neighborInfoUpdateInterval')}
+          value={neighborInfoUpdateInterval}
+          onChange={setNeighborInfoUpdateInterval}
+          disabled={disabled || !neighborInfoEnabled}
+          min={0}
+          unit="seconds"
+          description={t('modulePanel.fields.neighborInfoUpdateIntervalDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.neighborInfoTransmitOverLora')}
+          checked={neighborInfoTransmitOverLora}
+          onChange={setNeighborInfoTransmitOverLora}
+          disabled={disabled || !neighborInfoEnabled}
+          description={t('modulePanel.fields.neighborInfoTransmitOverLoraDesc')}
+        />
+      </ModuleSection>
+
+      {/* ═══ Traffic Management Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionTrafficManagement')}
+        onApply={() => {
+          applyMeshtasticModule('Traffic Management', 'trafficManagement', trafficMgmtCfg, {
+            enabled: tmEnabled,
+            positionDedupEnabled: tmPositionDedupEnabled,
+            positionPrecisionBits: tmPositionPrecisionBits,
+            positionMinIntervalSecs: tmPositionMinIntervalSecs,
+            nodeinfoDirectResponse: tmNodeinfoDirectResponse,
+            nodeinfoDirectResponseMaxHops: tmNodeinfoDirectResponseMaxHops,
+            rateLimitEnabled: tmRateLimitEnabled,
+            rateLimitWindowSecs: tmRateLimitWindowSecs,
+            rateLimitMaxPackets: tmRateLimitMaxPackets,
+            dropUnknownEnabled: tmDropUnknownEnabled,
+            unknownPacketThreshold: tmUnknownPacketThreshold,
+            exhaustHopTelemetry: tmExhaustHopTelemetry,
+            exhaustHopPosition: tmExhaustHopPosition,
+            routerPreserveHops: tmRouterPreserveHops,
+          });
+        }}
+        applying={applyingSection === 'Traffic Management'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.tmEnabled')}
+          checked={tmEnabled}
+          onChange={setTmEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.tmEnabledDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmPositionDedupEnabled')}
+          checked={tmPositionDedupEnabled}
+          onChange={setTmPositionDedupEnabled}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmPositionDedupEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.tmPositionPrecisionBits')}
+          value={tmPositionPrecisionBits}
+          onChange={setTmPositionPrecisionBits}
+          disabled={disabled || !tmEnabled || !tmPositionDedupEnabled}
+          min={0}
+          max={32}
+          description={t('modulePanel.fields.tmPositionPrecisionBitsDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.tmPositionMinIntervalSecs')}
+          value={tmPositionMinIntervalSecs}
+          onChange={setTmPositionMinIntervalSecs}
+          disabled={disabled || !tmEnabled}
+          min={0}
+          unit="seconds"
+          description={t('modulePanel.fields.tmPositionMinIntervalSecsDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmNodeinfoDirectResponse')}
+          checked={tmNodeinfoDirectResponse}
+          onChange={setTmNodeinfoDirectResponse}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmNodeinfoDirectResponseDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.tmNodeinfoDirectResponseMaxHops')}
+          value={tmNodeinfoDirectResponseMaxHops}
+          onChange={setTmNodeinfoDirectResponseMaxHops}
+          disabled={disabled || !tmEnabled || !tmNodeinfoDirectResponse}
+          min={0}
+          description={t('modulePanel.fields.tmNodeinfoDirectResponseMaxHopsDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmRateLimitEnabled')}
+          checked={tmRateLimitEnabled}
+          onChange={setTmRateLimitEnabled}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmRateLimitEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.tmRateLimitWindowSecs')}
+          value={tmRateLimitWindowSecs}
+          onChange={setTmRateLimitWindowSecs}
+          disabled={disabled || !tmEnabled || !tmRateLimitEnabled}
+          min={0}
+          unit="seconds"
+          description={t('modulePanel.fields.tmRateLimitWindowSecsDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.tmRateLimitMaxPackets')}
+          value={tmRateLimitMaxPackets}
+          onChange={setTmRateLimitMaxPackets}
+          disabled={disabled || !tmEnabled || !tmRateLimitEnabled}
+          min={0}
+          description={t('modulePanel.fields.tmRateLimitMaxPacketsDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmDropUnknownEnabled')}
+          checked={tmDropUnknownEnabled}
+          onChange={setTmDropUnknownEnabled}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmDropUnknownEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.tmUnknownPacketThreshold')}
+          value={tmUnknownPacketThreshold}
+          onChange={setTmUnknownPacketThreshold}
+          disabled={disabled || !tmEnabled || !tmDropUnknownEnabled}
+          min={0}
+          description={t('modulePanel.fields.tmUnknownPacketThresholdDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmExhaustHopTelemetry')}
+          checked={tmExhaustHopTelemetry}
+          onChange={setTmExhaustHopTelemetry}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmExhaustHopTelemetryDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmExhaustHopPosition')}
+          checked={tmExhaustHopPosition}
+          onChange={setTmExhaustHopPosition}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmExhaustHopPositionDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.tmRouterPreserveHops')}
+          checked={tmRouterPreserveHops}
+          onChange={setTmRouterPreserveHops}
+          disabled={disabled || !tmEnabled}
+          description={t('modulePanel.fields.tmRouterPreserveHopsDesc')}
+        />
+      </ModuleSection>
+
       {/* ═══ Pax Counter Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionPaxCounter')}
@@ -1225,7 +1676,12 @@ export default function ModulePanel({
           const merged = buildMeshtasticModuleApplyValue('serial', serialCfg, {
             enabled: serialEnabled,
             echo: serialEcho,
+            rxd: serialRxd,
+            txd: serialTxd,
             baud: serialBaud,
+            timeout: serialTimeout,
+            mode: serialMode,
+            overrideConsoleSerialPort: serialOverrideConsole,
           });
           const validationError = validateMeshtasticSerialModuleApply(merged, t);
           if (validationError) {
@@ -1252,26 +1708,82 @@ export default function ModulePanel({
           disabled={disabled || !serialEnabled}
           description={t('modulePanel.fields.serialEchoDesc')}
         />
-        <div className="space-y-1">
-          <label htmlFor="module-serial-baud" className="text-muted text-sm">
-            {t('modulePanel.fields.baudRate')}
-          </label>
-          <select
-            id="module-serial-baud"
-            value={serialBaud}
-            onChange={(e) => {
-              setSerialBaud(Number(e.target.value));
-            }}
-            disabled={disabled || !serialEnabled}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
-          >
-            {[9600, 19200, 38400, 57600, 115200, 230400].map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </div>
+        <ConfigNumber
+          label={t('modulePanel.fields.serialRxd')}
+          value={serialRxd}
+          onChange={setSerialRxd}
+          disabled={disabled || !serialEnabled}
+          min={0}
+          description={t('modulePanel.fields.serialRxdDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.serialTxd')}
+          value={serialTxd}
+          onChange={setSerialTxd}
+          disabled={disabled || !serialEnabled}
+          min={0}
+          description={t('modulePanel.fields.serialTxdDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.baudRate')}
+          value={serialBaud}
+          onChange={setSerialBaud}
+          disabled={disabled || !serialEnabled}
+          options={[
+            { value: 0, label: 'Default' },
+            { value: 1, label: '110' },
+            { value: 2, label: '300' },
+            { value: 3, label: '600' },
+            { value: 4, label: '1200' },
+            { value: 5, label: '2400' },
+            { value: 6, label: '4800' },
+            { value: 7, label: '9600' },
+            { value: 8, label: '19200' },
+            { value: 9, label: '38400' },
+            { value: 10, label: '57600' },
+            { value: 11, label: '115200' },
+            { value: 12, label: '230400' },
+            { value: 13, label: '460800' },
+            { value: 14, label: '576000' },
+            { value: 15, label: '921600' },
+          ]}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.serialTimeout')}
+          value={serialTimeout}
+          onChange={setSerialTimeout}
+          disabled={disabled || !serialEnabled}
+          min={0}
+          unit="ms"
+          description={t('modulePanel.fields.serialTimeoutDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.serialMode')}
+          value={serialMode}
+          onChange={setSerialMode}
+          disabled={disabled || !serialEnabled}
+          options={[
+            { value: 0, label: 'Default' },
+            { value: 1, label: 'Simple' },
+            { value: 2, label: 'Proto' },
+            { value: 3, label: 'Text message' },
+            { value: 4, label: 'NMEA' },
+            { value: 5, label: 'CalTopo' },
+            { value: 6, label: 'WS85' },
+            { value: 7, label: 'VE.Direct' },
+            { value: 8, label: 'MeshSolar config' },
+            { value: 9, label: 'Log (all packets)' },
+            { value: 10, label: 'Log (text only)' },
+          ]}
+          description={t('modulePanel.fields.serialModeDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.serialOverrideConsole')}
+          checked={serialOverrideConsole}
+          onChange={setSerialOverrideConsole}
+          disabled={disabled || !serialEnabled}
+          description={t('modulePanel.fields.serialOverrideConsoleDesc')}
+        />
       </ModuleSection>
 
       {/* ═══ Store & Forward Module ═══ */}
@@ -1335,21 +1847,90 @@ export default function ModulePanel({
         />
       </ModuleSection>
 
+      {/* ═══ TAK Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionTak')}
+        onApply={() => {
+          applyMeshtasticModule('TAK', 'tak', takCfg, {
+            team: takTeam,
+            role: takRole,
+          });
+        }}
+        applying={applyingSection === 'TAK'}
+        disabled={disabled}
+      >
+        <ConfigSelect
+          label={t('modulePanel.fields.takTeam')}
+          value={takTeam}
+          onChange={setTakTeam}
+          disabled={disabled}
+          description={t('modulePanel.fields.takTeamDesc')}
+          options={[
+            { value: 0, label: t('modulePanel.fields.takTeamUnspecified') },
+            { value: 1, label: 'White' },
+            { value: 2, label: 'Yellow' },
+            { value: 3, label: 'Orange' },
+            { value: 4, label: 'Magenta' },
+            { value: 5, label: 'Red' },
+            { value: 6, label: 'Maroon' },
+            { value: 7, label: 'Purple' },
+            { value: 8, label: 'Dark Blue' },
+            { value: 9, label: 'Blue' },
+            { value: 10, label: 'Cyan' },
+            { value: 11, label: 'Teal' },
+            { value: 12, label: 'Green' },
+            { value: 13, label: 'Dark Green' },
+            { value: 14, label: 'Brown' },
+          ]}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.takRole')}
+          value={takRole}
+          onChange={setTakRole}
+          disabled={disabled}
+          description={t('modulePanel.fields.takRoleDesc')}
+          options={[
+            { value: 0, label: t('modulePanel.fields.takRoleUnspecified') },
+            { value: 1, label: 'Team Member' },
+            { value: 2, label: 'Team Lead' },
+            { value: 3, label: 'HQ' },
+            { value: 4, label: 'Sniper' },
+            { value: 5, label: 'Medic' },
+            { value: 6, label: 'Forward Observer' },
+            { value: 7, label: 'RTO' },
+            { value: 8, label: 'K9' },
+          ]}
+        />
+      </ModuleSection>
+
       {/* ═══ Telemetry Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionTelemetryModule')}
         onApply={() => {
           applyMeshtasticModule('Telemetry Module', 'telemetry', telCfg, {
+            deviceTelemetryEnabled: telDeviceTelemetryEnabled,
             deviceUpdateInterval: telDeviceInterval,
-            environmentUpdateInterval: telEnvInterval,
             environmentMeasurementEnabled: telEnvEnabled,
-            powerMeasurementEnabled: telPowerEnabled,
+            environmentUpdateInterval: telEnvInterval,
+            environmentScreenEnabled: telEnvScreenEnabled,
+            environmentDisplayFahrenheit: telEnvFahrenheit,
             airQualityEnabled: telAirQualityEnabled,
+            airQualityInterval: telAirQualityInterval,
+            powerMeasurementEnabled: telPowerEnabled,
+            powerUpdateInterval: telPowerInterval,
+            powerScreenEnabled: telPowerScreenEnabled,
           });
         }}
         applying={applyingSection === 'Telemetry Module'}
         disabled={disabled}
       >
+        <ConfigToggle
+          label={t('modulePanel.fields.telDeviceTelemetryEnabled')}
+          checked={telDeviceTelemetryEnabled}
+          onChange={setTelDeviceTelemetryEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.telDeviceTelemetryEnabledDesc')}
+        />
         <ConfigNumber
           label={t('modulePanel.fields.telDeviceInterval')}
           value={telDeviceInterval}
@@ -1361,33 +1942,77 @@ export default function ModulePanel({
           description={t('modulePanel.telemetryDeviceMetricsDescription')}
           tooltip={t('modulePanel.telemetryDeviceMetricsTooltip')}
         />
+        <ConfigToggle
+          label={t('modulePanel.fields.telEnvEnabled')}
+          checked={telEnvEnabled}
+          onChange={setTelEnvEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.telEnvEnabledDesc')}
+        />
         <ConfigNumber
           label={t('modulePanel.fields.telEnvInterval')}
           value={telEnvInterval}
           onChange={setTelEnvInterval}
-          disabled={disabled}
+          disabled={disabled || !telEnvEnabled}
           min={0}
           max={86400}
           unit="seconds"
           description={t('modulePanel.fields.telEnvIntervalDesc')}
         />
         <ConfigToggle
-          label={t('modulePanel.fields.telEnvEnabled')}
-          checked={telEnvEnabled}
-          onChange={setTelEnvEnabled}
-          disabled={disabled}
+          label={t('modulePanel.fields.telEnvScreenEnabled')}
+          checked={telEnvScreenEnabled}
+          onChange={setTelEnvScreenEnabled}
+          disabled={disabled || !telEnvEnabled}
+          description={t('modulePanel.fields.telEnvScreenEnabledDesc')}
         />
         <ConfigToggle
-          label={t('modulePanel.fields.telPowerEnabled')}
-          checked={telPowerEnabled}
-          onChange={setTelPowerEnabled}
-          disabled={disabled}
+          label={t('modulePanel.fields.telEnvFahrenheit')}
+          checked={telEnvFahrenheit}
+          onChange={setTelEnvFahrenheit}
+          disabled={disabled || !telEnvEnabled}
+          description={t('modulePanel.fields.telEnvFahrenheitDesc')}
         />
         <ConfigToggle
           label={t('modulePanel.fields.telAirQualityEnabled')}
           checked={telAirQualityEnabled}
           onChange={setTelAirQualityEnabled}
           disabled={disabled}
+          description={t('modulePanel.fields.telAirQualityEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.telAirQualityInterval')}
+          value={telAirQualityInterval}
+          onChange={setTelAirQualityInterval}
+          disabled={disabled || !telAirQualityEnabled}
+          min={0}
+          max={86400}
+          unit="seconds"
+          description={t('modulePanel.fields.telAirQualityIntervalDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.telPowerEnabled')}
+          checked={telPowerEnabled}
+          onChange={setTelPowerEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.telPowerEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.telPowerInterval')}
+          value={telPowerInterval}
+          onChange={setTelPowerInterval}
+          disabled={disabled || !telPowerEnabled}
+          min={0}
+          max={86400}
+          unit="seconds"
+          description={t('modulePanel.fields.telPowerIntervalDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.telPowerScreenEnabled')}
+          checked={telPowerScreenEnabled}
+          onChange={setTelPowerScreenEnabled}
+          disabled={disabled || !telPowerEnabled}
+          description={t('modulePanel.fields.telPowerScreenEnabledDesc')}
         />
       </ModuleSection>
     </div>
