@@ -34,23 +34,14 @@ export interface MeshcoreRoomLoginRpcConnection {
   sendToRadioFrame(data: Uint8Array): Promise<void>;
 }
 
-function writeCString(password: string, maxLength: number): Uint8Array {
-  const bytes = new Uint8Array(new ArrayBuffer(maxLength));
-  const encodedString = new TextEncoder().encode(password);
-  for (let i = 0; i < maxLength && i < encodedString.length; i++) {
-    bytes[i] = encodedString[i]!;
-  }
-  bytes[bytes.length - 1] = 0;
-  return bytes;
-}
-
 /** Build SendLogin radio frame (matches patched meshcore.js sendCommandSendLogin). */
 export function buildSendLoginFrame(publicKey: Uint8Array, password: string): Uint8Array {
   if (publicKey.length !== 32) {
     throw new Error('Room login requires a 32-byte public key');
   }
+  // Empty password = read-only ACL login; official Android sends 0 password bytes (writeString('')).
   const passwordField =
-    password.length === 0 ? writeCString(password, 16) : new TextEncoder().encode(password);
+    password.length === 0 ? new Uint8Array(0) : new TextEncoder().encode(password);
   const frame = new Uint8Array(1 + 32 + passwordField.length);
   frame[0] = MC_CMD_SEND_LOGIN;
   frame.set(publicKey, 1);

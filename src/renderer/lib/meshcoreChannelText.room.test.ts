@@ -4,6 +4,7 @@ import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHoo
 
 import {
   buildMeshcoreRoomIncomingMessage,
+  formatMeshcoreRoomPostWireText,
   parseMeshcoreRoomPostPayload,
 } from './meshcoreChannelText';
 
@@ -18,6 +19,17 @@ describe('parseMeshcoreRoomPostPayload', () => {
     const parsed = parseMeshcoreRoomPostPayload(raw, map);
     expect(parsed.authorId).toBe(0xdeadbeef);
     expect(parsed.payload).toBe('Hello room');
+  });
+});
+
+describe('formatMeshcoreRoomPostWireText', () => {
+  it('prepends first four pubkey bytes as chars', () => {
+    const pubKey = new Uint8Array(32);
+    pubKey.set([0x01, 0x02, 0x03, 0x04], 0);
+    const wire = formatMeshcoreRoomPostWireText(pubKey, 'Hello room');
+    expect(wire).toBe(String.fromCharCode(0x01, 0x02, 0x03, 0x04) + 'Hello room');
+    const map = new Map<string, number>([['01020304', 0xdeadbeef]]);
+    expect(parseMeshcoreRoomPostPayload(wire, map).payload).toBe('Hello room');
   });
 });
 

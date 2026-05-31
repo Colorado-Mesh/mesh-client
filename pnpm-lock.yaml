@@ -19,7 +19,7 @@ patchedDependencies:
     hash: 27a2418bae8605e0e5ab6f1fcfd391abd9dc3110433da5754e934f38475dab74
     path: patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch
   '@liamcottle/meshcore.js@1.13.0':
-    hash: adc81eb0e938c09ed8436a4dac5717c13b33a1dcfcb1907541cc6347e1dd155a
+    hash: 54aadb84d0488a89a60e625ffeb81eb0f70bcd573478f589195e057dcdcce02c
     path: patches/@liamcottle__meshcore.js@1.13.0.patch
   debug@4.4.3:
     hash: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
@@ -95,7 +95,7 @@ importers:
         version: 10.0.1(eslint@10.4.1(jiti@2.7.0))
       '@liamcottle/meshcore.js':
         specifier: ^1.13.0
-        version: 1.13.0(patch_hash=adc81eb0e938c09ed8436a4dac5717c13b33a1dcfcb1907541cc6347e1dd155a)
+        version: 1.13.0(patch_hash=54aadb84d0488a89a60e625ffeb81eb0f70bcd573478f589195e057dcdcce02c)
       '@meshtastic/core':
         specifier: npm:@jsr/meshtastic__core@^2.6.6
         version: '@jsr/meshtastic__core@2.6.6(patch_hash=714af0fd567c3a11b0ee94c68743dce951b199d388f217bd3cb5770a7b3e278a)(buffer@6.0.3)'
@@ -5108,7 +5108,7 @@ snapshots:
     transitivePeerDependencies:
       - buffer
 
-  '@liamcottle/meshcore.js@1.13.0(patch_hash=adc81eb0e938c09ed8436a4dac5717c13b33a1dcfcb1907541cc6347e1dd155a)':
+  '@liamcottle/meshcore.js@1.13.0(patch_hash=54aadb84d0488a89a60e625ffeb81eb0f70bcd573478f589195e057dcdcce02c)':
     dependencies:
       '@noble/curves': 1.9.7
       serialport: 13.0.0

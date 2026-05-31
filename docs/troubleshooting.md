@@ -509,9 +509,14 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Guest / read-only login fails with timeout or "rejected"**:
 
-- Many room servers reject blank passwords; use guest password **`hello`** or the password configured on the server.
-- Logs showing `unhandled frame: code=134` (push `0x86`) mean the room server sent **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
-- **Admin password** working while guest fails usually means the server ACL does not allow guest/read-only login with that password.
+- When the room server **guest password is empty**, read-only login uses a **blank client password** (same as the official Android app). The SendLogin frame sends **zero password bytes** after the 32-byte room pubkey.
+- When the server **does** configure a guest password, use that value (some communities use **`hello`**).
+- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
+- **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
+
+**Room posts not visible in the official Android app**:
+
+- Outbound room BBS posts must use **SignedPlain** (`txtType` 2) with a **4-byte author pubkey prefix** before the message body. Plain channel text posts appear in mesh-client Chat only and are not stored in the room BBS on the server.
 
 **No room history after login**:
 
@@ -528,10 +533,11 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
-2. Open **Rooms** → log in with explicit guest password **`hello`** (or admin if testing post/admin CLI).
-3. Confirm room posts appear in **Rooms**, not Chat channels.
-4. Open **Chat** on another channel; verify unread badges on channel pills when messages arrive.
-5. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` lines.
+2. Open **Rooms** → with **empty guest password** on the server, log in with a **blank** password (read-only). With a configured guest password, use that value.
+3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
+4. Confirm room posts appear in **Rooms**, not Chat channel pills.
+5. On **Connection** tab, receive a channel message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
+6. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` lines.
 
 ### MeshCore: Trace Route or Ping trace times out
 

@@ -560,6 +560,20 @@ export function parseMeshcoreRoomPostPayload(
   return { authorId, payload: text.slice(4) };
 }
 
+/** Build SignedPlain room post wire text (4-byte author pubkey prefix + body). */
+export function formatMeshcoreRoomPostWireText(authorPubKey: Uint8Array, text: string): string {
+  if (authorPubKey.length < 4) {
+    throw new Error('Room post requires at least 4 bytes of author public key');
+  }
+  const prefix = String.fromCharCode(
+    authorPubKey[0] & 0xff,
+    authorPubKey[1] & 0xff,
+    authorPubKey[2] & 0xff,
+    authorPubKey[3] & 0xff,
+  );
+  return prefix + text;
+}
+
 export interface BuildMeshcoreRoomIncomingOpts {
   rawText: string;
   roomServerId: number;

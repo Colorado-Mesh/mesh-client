@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
+import { OFFLINE_MESHCORE_IDENTITY_ID } from './lib/offlineProtocolIdentities';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
@@ -23,6 +24,17 @@ function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
   }
   useMessageStore.setState((s) => ({
     messages: { ...s.messages, [MESHTASTIC_TEST_IDENTITY]: byId },
+  }));
+}
+
+function syncMeshcoreMessagesToStore(messages: ChatMessage[]): void {
+  const byId: Record<string, ReturnType<typeof chatMessageToMessageRecord>> = {};
+  for (const msg of messages) {
+    const rec = chatMessageToMessageRecord(msg);
+    byId[rec.id] = rec;
+  }
+  useMessageStore.setState((s) => ({
+    messages: { ...s.messages, [OFFLINE_MESHCORE_IDENTITY_ID]: byId },
   }));
 }
 
@@ -802,5 +814,43 @@ describe('App accessibility', () => {
     render(<App />);
 
     expect(screen.queryByText('4')).not.toBeInTheDocument();
+  });
+
+  it('shows MeshCore Sidebar Chat unread badge from store messages on Connection tab', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    const selfNodeId = 0x12345678;
+    const ts = Date.now();
+    const messages = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Ops ping',
+        channel: 1,
+        timestamp: ts,
+        status: 'acked' as const,
+      },
+    ];
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: selfNodeId, connectionType: 'serial' },
+      selfNodeId,
+      channels: [
+        { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },
+        { index: 1, name: 'Ops', secret: new Uint8Array(16).fill(0x22) },
+      ],
+      messages,
+    });
+    syncMeshcoreMessagesToStore(messages);
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      myNodeNum: selfNodeId,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+    });
   });
 });

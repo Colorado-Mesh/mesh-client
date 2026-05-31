@@ -82,13 +82,12 @@ function createMockConn(): MeshcoreRoomLoginRpcConnection & {
 }
 
 describe('buildSendLoginFrame', () => {
-  it('encodes empty password as null-terminated 16-byte field', () => {
+  it('encodes empty password as zero-length field (read-only ACL)', () => {
     const key = makePubKey(1);
     const frame = buildSendLoginFrame(key, '');
     expect(frame[0]).toBe(26);
     expect(frame.slice(1, 33)).toEqual(key);
-    expect(frame.slice(33).length).toBe(16);
-    expect(frame[33]).toBe(0);
+    expect(frame.length).toBe(33);
   });
 
   it('encodes non-empty password as variable-length bytes', () => {
