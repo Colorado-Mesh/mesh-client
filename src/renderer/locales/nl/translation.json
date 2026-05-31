@@ -265,7 +265,7 @@
       "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
       "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
     },
-    "replyRequiresPacketId": "Beantwoorden vereist het bericht RF packet id (wacht op send ack of refresh chat).",
+    "replyRequiresPacketId": "Antwoorden vereist het RF-pakket-ID van het bericht (wacht op verzendbevestiging of ververs de chat).",
     "queueButton": "Wachtrij",
     "replyingTo": "Antwoorden op",
     "composeLimit": {
@@ -2013,20 +2013,20 @@
     "unreadPosts": "{{count}} nieuw",
     "closeManage": "Sluiten",
     "upgradeAccess": "Toegang upgraden",
-    "leavingRoom": "Latende",
+    "leavingRoom": "Verlaten…",
     "leaveRoomInProgress": "Ruimte verlaten…",
     "leaveRoomHint": "Wachten op je radio om uitloggen te bevestigen. Dit kan een paar seconden duren over het mesh.",
     "leaveRoomFailed": "Kan de ruimte niet verlaten",
-    "membersHeading": "leden",
-    "membersRecognizedHeading": "Herkende posters",
-    "membersRecognizedEmpty": "Er zijn nog geen herkende posters in deze ruimte.",
+    "membersHeading": "Leden",
+    "membersRecognizedHeading": "Bekende afzenders",
+    "membersRecognizedEmpty": "Er zijn nog geen bekende afzenders in deze ruimte.",
     "membersAclHeading": "Toegangscontrole (ACL)",
     "membersAclEmpty": "Geen ACL-vermeldingen geretourneerd. Remote `get acl` is vaak alleen serieel op ruimtefirmware.",
-    "membersAclRemoteHint": "ACL-advertentie kan leeg zijn via de radio, zelfs wanneer gebruikers toegang hebben. Gebruik USB-serieel of setperm in Manage hieronder.",
+    "membersAclRemoteHint": "De ACL-lijst kan via de radio leeg zijn, ook wanneer gebruikers toegang hebben. Gebruik USB-serieel of setperm in Beheren hieronder.",
     "membersRefreshAcl": "ACL vernieuwen",
     "membersAclLoading": "ACL laden...",
     "membersAclLastFetched": "ACL opgehaald {{time}}",
-    "membersAclFetchFailed": "Ophalen mislukt"
+    "membersAclFetchFailed": "ACL ophalen mislukt"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

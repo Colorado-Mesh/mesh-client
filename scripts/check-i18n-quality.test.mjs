@@ -496,6 +496,88 @@ describe('localeStringQualityIssues', () => {
     });
     expectIssue(issues, 'unreadPosts" is still identical to English');
   });
+
+  it('allows composeLimit.approaching identical numeric ratio', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'chatPanel.composeLimit.approaching',
+        val: '{{count}} / {{limit}}',
+        enVal: '{{count}} / {{limit}}',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags English replyRequiresPacketId phrases in Italian', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'chatPanel.replyRequiresPacketId',
+      val: 'Reply richiede il messaggio RF packet id (attendere invio ack o refresh chat).',
+      enVal: 'Reply requires the message RF packet id (wait for send ack or refresh chat).',
+    });
+    expectIssue(issues, 'still starts with English');
+    expectIssue(issues, 'send ack');
+  });
+
+  it('flags membersHeading garbage zdarma', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'roomsPanel.membersHeading',
+      val: 'zdarma',
+      enVal: 'Members',
+    });
+    expectIssue(issues, 'membersHeading looks like auto-translate garbage');
+  });
+
+  it('flags wall-poster false friend on membersRecognizedHeading', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'roomsPanel.membersRecognizedHeading',
+      val: 'Rozpoznane plakaty',
+      enVal: 'Recognized posters',
+    });
+    expectIssue(issues, 'wall-poster wording');
+  });
+
+  it('flags truncated membersAclFetchFailed without ACL', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'roomsPanel.membersAclFetchFailed',
+      val: 'Alınamadı',
+      enVal: 'Could not fetch ACL',
+    });
+    expectIssue(issues, 'must mention ACL');
+  });
+
+  it('flags TV remote false friend on membersAclEmpty', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'roomsPanel.membersAclEmpty',
+      val: 'La télécommande « get acl » est souvent en série.',
+      enVal: 'No ACL entries returned. Remote `get acl` is often serial-only on room firmware.',
+    });
+    expectIssue(issues, 'TV-remote false friend');
+  });
+
+  it('flags upgradeAccess vers Access in French', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'roomsPanel.upgradeAccess',
+      val: 'Mise à niveau vers Access',
+      enVal: 'Upgrade access',
+    });
+    expectIssue(issues, 'vers Access');
+  });
+
+  it('flags untranslated queueButton in Russian', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'chatPanel.queueButton',
+      val: 'Queue',
+      enVal: 'Queue',
+    });
+    expectIssue(issues, 'queueButton" is still identical to English');
+  });
 });
 
 describe('protectedBrandIssues', () => {

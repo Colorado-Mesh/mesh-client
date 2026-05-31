@@ -266,7 +266,7 @@
       "already_requested": "Запрос журнала уже выполняется для этого маршрутизатора."
     },
     "replyRequiresPacketId": "Для ответа требуется идентификатор радиочастотного пакета сообщения (дождитесь отправки ack или обновления чата).",
-    "queueButton": "Queue",
+    "queueButton": "Очередь",
     "replyingTo": "Ответить",
     "composeLimit": {
       "limitHint": "До {{limit}} символов в сообщении. Более длинный текст разбивается автоматически.",
@@ -2013,20 +2013,20 @@
     "unreadPosts": "{{count}} новых",
     "closeManage": "Закрыть",
     "upgradeAccess": "Обновить доступ",
-    "leavingRoom": "Уходит...",
+    "leavingRoom": "Выход…",
     "leaveRoomInProgress": "Выход из комнаты…",
     "leaveRoomHint": "Ожидание подтверждения выхода из системы с помощью радиоприемника. Это может занять несколько секунд.",
     "leaveRoomFailed": "Не удалось выйти из комнаты",
-    "membersHeading": "Члены",
-    "membersRecognizedHeading": "Признанные плакаты",
-    "membersRecognizedEmpty": "В этой комнате пока нет узнаваемых плакатов.",
+    "membersHeading": "Участники",
+    "membersRecognizedHeading": "Известные отправители",
+    "membersRecognizedEmpty": "В этой комнате пока нет известных отправителей.",
     "membersAclHeading": "Список управления доступом (ACL)",
-    "membersAclEmpty": "Записи ACL не возвращены. Пульт дистанционного управления «get acl» часто работает только с последовательным доступом в комнатной прошивке.",
+    "membersAclEmpty": "Записи ACL не возвращены. Удалённый `get acl` часто доступен только по последовательному порту в прошивке комнаты.",
     "membersAclRemoteHint": "Список ACL может быть пустым по радио, даже если у пользователей есть доступ. Используйте последовательный порт USB или setperm в разделе «Управление» ниже.",
     "membersRefreshAcl": "Обновить ACL",
     "membersAclLoading": "Загрузка ACL…",
     "membersAclLastFetched": "Получено ACL {{time}}",
-    "membersAclFetchFailed": "Получение не выполнено"
+    "membersAclFetchFailed": "Не удалось получить ACL"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",

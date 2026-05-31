@@ -204,6 +204,77 @@ export const STALE_ROOMS_LOGIN_HELP_RES = [
 /** Polish MT often uses "Nowość" (novelty) instead of "new" for unread counts. */
 export const PL_UNREAD_NOWOSC_RE = /Nowość/i;
 
+/** chatPanel.composeLimit.approaching is a numeric ratio; identical "{{count}} / {{limit}}" is OK. */
+export const COMPOSE_LIMIT_NUMERIC_LEAF_KEYS = new Set(['approaching']);
+
+export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'replyRequiresPacketId',
+  'queueButton',
+]);
+
+/** roomsPanel members / leave UX from recent MeshCore Rooms work. */
+export const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'membersHeading',
+  'membersRecognizedHeading',
+  'membersRecognizedEmpty',
+  'membersAclFetchFailed',
+  'upgradeAccess',
+  'leavingRoom',
+  'closeManage',
+]);
+
+/**
+ * English "Recognized posters" means users who posted, not wall posters / beneficiaries.
+ * Checked on membersRecognizedHeading and membersRecognizedEmpty.
+ */
+export const RECOGNIZED_POSTER_PHYSICAL_RES = [
+  /plak[aá]t/i,
+  /\bPlakat/i,
+  /\baffiches?\b/i,
+  /\bcartel(es)?\b/i,
+  /\bcartaz(es)?\b/i,
+  /\bmanifesti\b/i,
+  /плакат/i,
+  /海报/,
+  /ポスター/,
+  /포스터/,
+  /Bénéficiare/i,
+  /Cartazes reconhecidos/i,
+  /carteles reconocidos/i,
+];
+
+/** Obvious garbage for roomsPanel.membersHeading. */
+export const MEMBERS_HEADING_GARBAGE_RES = [
+  /^zdarma$/i,
+  /de la AEC/i,
+  /^office$/i,
+  /^Soci$/i,
+  /^pergi$/i,
+  /^йде$/i,
+  /^メンバ$/,
+  /^Latende$/i,
+  /^Partida$/i,
+  /^出庫$/,
+];
+
+const REPLY_REQUIRES_EN_LEADING_RE = /^Reply\s+(requires|richiede)\b/i;
+
+const REPLY_REQUIRES_EN_PHRASE_RES = [/\bsend ack\b/i, /\brefresh chat\b/i, /\bRF packet id\b/i];
+
+/** MT turns "remote" into TV remote control on membersAclEmpty. */
+const REMOTE_TV_FALSE_FRIEND_RES = [
+  /télécommande/i,
+  /Пульт дистанційного керування/i,
+  /пульт дистанционного управления/i,
+];
+
+const UPGRADE_ACCESS_FALSE_FRIENDS = [
+  { re: /vers Access/i, hint: 'use access-upgrade wording, not "vers Access"' },
+  { re: /升级到访问/, hint: 'use "提升访问权限", not "upgrade to visit"' },
+];
+
+const ACL_LISTING_AD_FALSE_FRIEND_RES = [/ACL-advertentie/i, /Iklan ACL/i];
+
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
 export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
 
@@ -535,6 +606,112 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     PL_UNREAD_NOWOSC_RE.test(val)
   ) {
     issues.push('unreadPosts uses "Nowość" (novelty) — use "nowe" or "nowych" for unread count');
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.composeLimit.') &&
+    !COMPOSE_LIMIT_NUMERIC_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.') &&
+    CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (locale !== 'en' && flatKey === 'chatPanel.replyRequiresPacketId') {
+    if (REPLY_REQUIRES_EN_LEADING_RE.test(val)) {
+      issues.push('replyRequiresPacketId still starts with English "Reply requires/richiede"');
+    }
+    for (const re of REPLY_REQUIRES_EN_PHRASE_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'replyRequiresPacketId still has English "send ack", "refresh chat", or "RF packet id" — translate',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}membersHeading`) {
+    for (const re of MEMBERS_HEADING_GARBAGE_RES) {
+      if (re.test(val)) {
+        issues.push('membersHeading looks like auto-translate garbage — use "Members" equivalent');
+        break;
+      }
+    }
+  }
+
+  if (
+    (flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedHeading` ||
+      flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedEmpty`) &&
+    enVal.includes('poster')
+  ) {
+    for (const re of RECOGNIZED_POSTER_PHYSICAL_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'membersRecognized* uses wall-poster wording — English means users who posted in the room',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}membersAclFetchFailed` &&
+    enVal.includes('ACL') &&
+    !/ACL/i.test(val)
+  ) {
+    issues.push(
+      'membersAclFetchFailed must mention ACL — do not truncate to generic "could not fetch"',
+    );
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclEmpty` && enVal.includes('Remote')) {
+    for (const re of REMOTE_TV_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'membersAclEmpty uses TV-remote false friend — use remote/distant wording for `get acl`',
+        );
+        break;
+      }
+    }
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclRemoteHint`) {
+    for (const re of ACL_LISTING_AD_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'membersAclRemoteHint confuses ACL listing with advertising (advertentie/iklan)',
+        );
+        break;
+      }
+    }
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}upgradeAccess`) {
+    for (const { re, hint } of UPGRADE_ACCESS_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`upgradeAccess: ${hint}`);
+      }
+    }
   }
 
   if (
