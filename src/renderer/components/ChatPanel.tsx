@@ -411,6 +411,11 @@ function ChatPanel({
 
   const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
 
+  const composerSelfDisplayName = useMemo(() => {
+    if (protocol !== 'meshcore') return undefined;
+    return nodeDisplayName(nodes.get(myNodeNum), protocol) || undefined;
+  }, [protocol, nodes, myNodeNum]);
+
   /** DM peer for a message, excluding broadcast and non-DM traffic. */
   const resolveDmPeer = useCallback(
     (msg: ChatMessage): number | undefined => {
@@ -2305,6 +2310,8 @@ function ChatPanel({
         connectionType={connectionType}
         isMqttOnly={isMqttOnly}
         isDmMode={isDmMode}
+        composerContext={viewMode === 'dm' ? 'dm' : 'channel'}
+        senderDisplayName={composerSelfDisplayName}
         placeholder={composePlaceholder}
         replyTo={replyTo}
         onReplyClear={() => {

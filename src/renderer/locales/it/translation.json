@@ -265,7 +265,18 @@
       "offline_gate": "Attendere alcuni minuti dopo la riconnessione prima di eseguire il recupero automatico; utilizzare Recupera manualmente.",
       "already_requested": "È già in corso una richiesta di cronologia per questo router."
     },
-    "replyRequiresPacketId": "Reply richiede il messaggio RF packet id (attendere invio ack o refresh chat)."
+    "replyRequiresPacketId": "Reply richiede il messaggio RF packet id (attendere invio ack o refresh chat).",
+    "queueButton": "Coda",
+    "replyingTo": "Rispondendo a",
+    "composeLimit": {
+      "limitHint": "Fino a {{limit}} caratteri per messaggio. Il testo più lungo viene diviso automaticamente.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} caratteri · {{parts}} messaggi",
+      "splitHint": "Inviati come pacchetti separati etichettati [1/N], [2/N],...",
+      "overMax": "Troppo lungo — massimo {{totalMax}} caratteri ({{maxParts}} messaggi)",
+      "sendParts_one": "Invia parte {{count}}",
+      "sendParts_other": "Invia parti {{count}}"
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

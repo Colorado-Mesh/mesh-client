@@ -230,6 +230,17 @@
     "composePlaceholderConnectFirst": "Connect to send messages",
     "composePlaceholderMqttOnly": "Type a message (via MQTT)…",
     "composePlaceholderDefault": "Enter message here",
+    "queueButton": "Queue",
+    "replyingTo": "Replying to",
+    "composeLimit": {
+      "limitHint": "Up to {{limit}} characters per message. Longer text is split automatically.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} characters · {{parts}} messages",
+      "splitHint": "Sent as separate packets labeled [1/N], [2/N], …",
+      "overMax": "Too long — maximum {{totalMax}} characters ({{maxParts}} messages)",
+      "sendParts_one": "Send {{count}} part",
+      "sendParts_other": "Send {{count}} parts"
+    },
     "copyMessage": "Copy message",
     "filterBySender": "Filter by sender",
     "clearSenderFilter": "Clear filter",

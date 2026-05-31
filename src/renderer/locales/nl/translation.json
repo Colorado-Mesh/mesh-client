@@ -265,7 +265,18 @@
       "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
       "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
     },
-    "replyRequiresPacketId": "Beantwoorden vereist het bericht RF packet id (wacht op send ack of refresh chat)."
+    "replyRequiresPacketId": "Beantwoorden vereist het bericht RF packet id (wacht op send ack of refresh chat).",
+    "queueButton": "Wachtrij",
+    "replyingTo": "Antwoorden op",
+    "composeLimit": {
+      "limitHint": "Tot {{limit}} tekens per bericht. Langere tekst wordt automatisch gesplitst.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} characters · {{parts}} berichten",
+      "splitHint": "Verzonden als afzonderlijke pakketten met het label [1/N], [2/N], …",
+      "overMax": "Te lang — maximaal {{totalMax}} tekens ({{maxParts}} berichten)",
+      "sendParts_one": "Verstuur {{count}} onderdeel",
+      "sendParts_other": "Verstuur {{count}} onderdelen"
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

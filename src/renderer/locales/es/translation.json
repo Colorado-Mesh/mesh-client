@@ -265,7 +265,18 @@
       "offline_gate": "Espere unos minutos después de volver a conectarse antes de que se ejecute la recuperación automática; utilice Póngase al día manualmente.",
       "already_requested": "Ya hay una solicitud de historial en curso para este router."
     },
-    "replyRequiresPacketId": "La respuesta requiere el ID del paquete de RF del mensaje (esperar a que se envíe el acuse de recibo o se actualice el chat)."
+    "replyRequiresPacketId": "La respuesta requiere el ID del paquete de RF del mensaje (esperar a que se envíe el acuse de recibo o se actualice el chat).",
+    "queueButton": "Lista de espera",
+    "replyingTo": "En respuesta a",
+    "composeLimit": {
+      "limitHint": "Hasta {{limit}} caracteres por mensaje. El texto más largo se divide automáticamente.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} caracteres · {{parts}} mensajes",
+      "splitHint": "Enviado como paquetes separados etiquetados [1/N], [2/N],...",
+      "overMax": "Demasiado largo: máximo {{totalMax}} caracteres ({{maxParts}} mensajes)",
+      "sendParts_one": "Enviar {{count}} pieza",
+      "sendParts_other": "Enviar {{count}} piezas"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

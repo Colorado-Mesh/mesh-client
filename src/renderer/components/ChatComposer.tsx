@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import 'emoji-picker-element';
 
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -10,8 +10,9 @@ import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
 import {
-  countMessageChars,
-  getChatPayloadLimit,
+  type ComposerWireContext,
+  computeComposerLimitStatus,
+  getComposerWireOverhead,
   MAX_CHUNKS,
   splitChatMessage,
 } from '../lib/chatComposerLimits';
@@ -44,6 +45,10 @@ export interface ChatComposerProps {
   placeholder?: string;
   disabled?: boolean;
   payloadLimit?: number;
+  /** MeshCore wire context for payload limit (ignored for Meshtastic). Default channel. */
+  composerContext?: ComposerWireContext;
+  /** MeshCore channel: advert/display name for dynamic payload limit. */
+  senderDisplayName?: string;
   /** Static send button label when not sending/chunking (e.g. "Post"). */
   sendButtonLabel?: string;
   /** Static sending label (e.g. "Posting…"). */
@@ -74,6 +79,8 @@ export function ChatComposer({
   placeholder,
   disabled = false,
   payloadLimit,
+  composerContext = 'channel',
+  senderDisplayName,
   sendButtonLabel,
   sendingButtonLabel,
   variant = 'chat',
@@ -91,6 +98,8 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
+  const limitHintId = useId();
+  const counterLiveId = useId();
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -109,12 +118,39 @@ export function ChatComposer({
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
 
-  const effectiveLimit = payloadLimit ?? getChatPayloadLimit(protocol);
-  const maxInputLength = effectiveLimit * MAX_CHUNKS;
+  const replyToSenderName = replyTo?.sender_name;
+
+  const limitStatus = useMemo(
+    () =>
+      computeComposerLimitStatus(input, protocol, {
+        payloadLimitOverride: payloadLimit,
+        composerContext,
+        senderDisplayName,
+        replyToSenderName,
+      }),
+    [input, protocol, payloadLimit, composerContext, senderDisplayName, replyToSenderName],
+  );
+
+  const wireOverheadFirstChunk = useMemo(
+    () =>
+      getComposerWireOverhead({
+        protocol,
+        replyToSenderName,
+      }),
+    [protocol, replyToSenderName],
+  );
+
+  const maxInputLength = limitStatus.totalMaxChars;
 
   const inputChunks = useMemo(
-    () => splitChatMessage(input.trim(), protocol, payloadLimit),
-    [input, protocol, payloadLimit],
+    () =>
+      splitChatMessage(
+        input.trim(),
+        protocol,
+        limitStatus.singleMessageLimit,
+        wireOverheadFirstChunk,
+      ),
+    [input, protocol, limitStatus.singleMessageLimit, wireOverheadFirstChunk],
   );
 
   const emptyMentionNodes = useMemo(() => new Map<number, MeshNode>(), []);
@@ -172,7 +208,12 @@ export function ChatComposer({
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || sending || disabled) return;
-    const chunks = splitChatMessage(input.trim(), protocol, payloadLimit);
+    const chunks = splitChatMessage(
+      input.trim(),
+      protocol,
+      limitStatus.singleMessageLimit,
+      wireOverheadFirstChunk,
+    );
     if (chunks === null) return;
 
     const replyKey =
@@ -257,12 +298,12 @@ export function ChatComposer({
     input,
     isConnected,
     isMqttOnly,
+    limitStatus.singleMessageLimit,
     onReplyClear,
     onSendChunk,
     onSendSuccess,
     outboxChannel,
     outboxDestination,
-    payloadLimit,
     protocol,
     queueOutboxProp,
     queueOutbox,
@@ -270,6 +311,7 @@ export function ChatComposer({
     sending,
     t,
     viewKey,
+    wireOverheadFirstChunk,
   ]);
 
   const handleKeyDown = useCallback(
@@ -349,19 +391,50 @@ export function ChatComposer({
           ? t('chatPanel.composePlaceholderMqttOnly')
           : t('chatPanel.composePlaceholderDefault'));
 
+  const limitHintText = t('chatPanel.composeLimit.limitHint', {
+    limit: limitStatus.singleMessageLimit,
+  });
+
   const showQueueButton = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
 
   const sendLabel = (() => {
     if (sending) {
       return sendingButtonLabel ?? t('chatPanel.sendButtonSending');
     }
-    if (showQueueButton) return 'Queue';
+    if (showQueueButton) return t('chatPanel.queueButton');
     if (inputChunks !== null && inputChunks.length > 0) {
-      return `Send ${inputChunks.length} Parts`;
+      return t('chatPanel.composeLimit.sendParts', { count: inputChunks.length });
     }
     if (sendButtonLabel) return sendButtonLabel;
     return isDmMode ? t('chatPanel.sendButtonDm') : t('chatPanel.sendButton');
   })();
+
+  const showCounter = limitStatus.phase !== 'ok';
+  const counterAtLimit =
+    limitStatus.phase === 'warn' &&
+    limitStatus.charCount >= limitStatus.singleMessageLimit - wireOverheadFirstChunk;
+
+  const counterMainText = (() => {
+    if (limitStatus.phase === 'overMax') {
+      return t('chatPanel.composeLimit.overMax', {
+        totalMax: limitStatus.totalMaxChars,
+        maxParts: MAX_CHUNKS,
+      });
+    }
+    if (limitStatus.phase === 'split') {
+      return t('chatPanel.composeLimit.split', {
+        count: limitStatus.charCount,
+        parts: limitStatus.chunkCount,
+      });
+    }
+    return t('chatPanel.composeLimit.approaching', {
+      count: limitStatus.charCount,
+      limit: limitStatus.singleMessageLimit,
+    });
+  })();
+
+  const counterLiveText =
+    limitStatus.phase === 'split' || limitStatus.phase === 'overMax' ? counterMainText : undefined;
 
   const textareaClass =
     variant === 'room'
@@ -421,7 +494,7 @@ export function ChatComposer({
             />
           </svg>
           <span className="text-gray-400">
-            Replying to{' '}
+            {t('chatPanel.replyingTo')}{' '}
             <span className="font-medium text-gray-200">
               {nodeDisplayName(nodes.get(replyTo.sender_id), protocol) || replyTo.sender_name}
             </span>
@@ -446,6 +519,15 @@ export function ChatComposer({
         <div role="alert" className="mb-2 px-1 text-sm text-red-400">
           {chatActionError.message}
         </div>
+      )}
+
+      <span id={limitHintId} className="sr-only">
+        {limitHintText}
+      </span>
+      {counterLiveText != null && (
+        <span id={counterLiveId} className="sr-only" aria-live="polite" aria-atomic="true">
+          {counterLiveText}
+        </span>
       )}
 
       <div className="flex min-w-0 gap-2">
@@ -490,6 +572,7 @@ export function ChatComposer({
             enterKeyHint="send"
             placeholder={composePlaceholder}
             aria-label={composePlaceholder}
+            aria-describedby={limitHintId}
             disabled={disabled || sending || (!isConnected && !allowOutbox)}
             className={`${textareaClass} ${!isConnected || sending ? 'opacity-60' : ''} ${disabled ? 'opacity-40' : ''}`}
             maxLength={maxInputLength}
@@ -529,20 +612,28 @@ export function ChatComposer({
         </button>
       </div>
 
-      {countMessageChars(input) > Math.floor(effectiveLimit * 0.8) && (
-        <div className="text-muted mt-1 text-right text-xs">
-          {inputChunks === null ? (
-            <span className="text-red-400">
-              {countMessageChars(input)}/{effectiveLimit} — too long (max {MAX_CHUNKS} parts)
-            </span>
-          ) : inputChunks.length > 0 ? (
-            <span>
-              {countMessageChars(input)}/{effectiveLimit} — will send as {inputChunks.length} parts
-            </span>
-          ) : (
-            <span>
-              {countMessageChars(input)}/{effectiveLimit}
-            </span>
+      {showCounter && (
+        <div className="mt-1 flex items-center justify-end gap-1 text-right text-xs">
+          <span
+            className={
+              limitStatus.phase === 'overMax'
+                ? 'text-red-400'
+                : limitStatus.phase === 'split' || counterAtLimit
+                  ? 'text-amber-400'
+                  : 'text-muted'
+            }
+          >
+            {counterMainText}
+          </span>
+          {limitStatus.phase === 'split' && (
+            <HelpTooltip text={t('chatPanel.composeLimit.splitHint')}>
+              <span
+                className="text-muted cursor-help select-none"
+                aria-label={t('chatPanel.composeLimit.splitHint')}
+              >
+                ⓘ
+              </span>
+            </HelpTooltip>
           )}
         </div>
       )}

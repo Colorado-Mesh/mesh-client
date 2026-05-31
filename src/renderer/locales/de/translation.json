@@ -265,7 +265,18 @@
       "offline_gate": "Warten Sie nach dem Wiederverbinden einige Minuten, bevor der automatische Abruf ausgeführt wird. Verwenden Sie „Vom Store & Forward einholen“ manuell.",
       "already_requested": "Für diesen Router wird bereits eine Verlaufsanforderung ausgeführt."
     },
-    "replyRequiresPacketId": "Antwort erfordert die RF-Paket-ID der Nachricht (warten Sie auf Send Ack oder Refresh Chat)."
+    "replyRequiresPacketId": "Antwort erfordert die RF-Paket-ID der Nachricht (warten Sie auf Send Ack oder Refresh Chat).",
+    "queueButton": "Warteschlange",
+    "replyingTo": "Antwort auf",
+    "composeLimit": {
+      "limitHint": "Bis zu {{limit}} Zeichen pro Nachricht. Längerer Text wird automatisch geteilt.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} Zeichen · {{parts}} Nachrichten",
+      "splitHint": "Gesendet als separate Pakete mit den Bezeichnungen [1/N], [2/N], …",
+      "overMax": "Zu lang — maximal {{totalMax}} Zeichen ({{maxParts}} Nachrichten)",
+      "sendParts_one": "{{count}} Teil senden",
+      "sendParts_other": "{{count}} Teile senden"
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

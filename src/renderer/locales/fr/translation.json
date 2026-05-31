@@ -265,7 +265,18 @@
       "offline_gate": "Attendez quelques minutes après la reconnexion avant que la récupération automatique ne s'exécute ; utilisez Rattraper manuellement.",
       "already_requested": "Une demande d'historique est déjà en cours pour ce routeur."
     },
-    "replyRequiresPacketId": "La réponse nécessite l'identifiant du paquet RF du message (attendez l'envoi de l'ack ou l'actualisation du chat)."
+    "replyRequiresPacketId": "La réponse nécessite l'identifiant du paquet RF du message (attendez l'envoi de l'ack ou l'actualisation du chat).",
+    "queueButton": "File d’attente",
+    "replyingTo": "En réponse à :",
+    "composeLimit": {
+      "limitHint": "Jusqu'à {{limit}} caractères par message. Le texte plus long est divisé automatiquement.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "Messages {{count}} caractères · {{parts}}",
+      "splitHint": "Envoyé sous forme de paquets séparés étiquetés [1/N], [2/N], …",
+      "overMax": "Trop long — maximum {{totalMax}} caractères (messages {{maxParts}})",
+      "sendParts_one": "Envoyer {{count}} pièce",
+      "sendParts_other": "Envoyer {{count}} pièces"
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

@@ -265,7 +265,18 @@
       "offline_gate": "Odczekaj kilka minut po ponownym połączeniu przed automatycznym pobieraniem cykli; użyj ręcznego nadrobienia zaległości.",
       "already_requested": "Żądanie historii dla tego routera jest już w toku."
     },
-    "replyRequiresPacketId": "Odpowiedź wymaga identyfikatora pakietu RF wiadomości (poczekaj na potwierdzenie wysłania lub odśwież czat)."
+    "replyRequiresPacketId": "Odpowiedź wymaga identyfikatora pakietu RF wiadomości (poczekaj na potwierdzenie wysłania lub odśwież czat).",
+    "queueButton": "Kolejka",
+    "replyingTo": "Odpowiadanie na",
+    "composeLimit": {
+      "limitHint": "Do {{limit}} znaków na wiadomość. Dłuższy tekst jest dzielony automatycznie.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} characters · {{parts}} wiadomości",
+      "splitHint": "Wysyłane jako oddzielne pakiety oznaczone [1/N], [2/N], …",
+      "overMax": "Zbyt długie — maksymalnie {{totalMax}} znaków ({{maxParts}} wiadomości)",
+      "sendParts_one": "Wyślij część {{count}}",
+      "sendParts_other": "Wyślij części {{count}}"
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

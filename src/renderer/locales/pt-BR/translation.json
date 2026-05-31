@@ -265,7 +265,18 @@
       "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Atualizar a partir da Loja e Encaminhar manualmente.",
       "already_requested": "Uma solicitação de histórico já está em andamento para este roteador."
     },
-    "replyRequiresPacketId": "A resposta requer a mensagem RF packet id (aguarde enviar ack ou atualizar chat)."
+    "replyRequiresPacketId": "A resposta requer a mensagem RF packet id (aguarde enviar ack ou atualizar chat).",
+    "queueButton": "Fila de espera",
+    "replyingTo": "Respondendo a",
+    "composeLimit": {
+      "limitHint": "Até {{limit}} caracteres por mensagem. O texto mais longo é dividido automaticamente.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} caracteres · {{parts}} mensagens",
+      "splitHint": "Enviado como pacotes separados rotulados [1/N], [2/N], …",
+      "overMax": "Muito longo — máximo de {{totalMax}} caracteres ({{maxParts}} mensagens)",
+      "sendParts_one": "Enviar peça {{count}}",
+      "sendParts_other": "Enviar {{count}} peças"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
-import { MESHCORE_PAYLOAD_LIMIT } from '@/renderer/lib/chatComposerLimits';
 import {
   loadPersistedRoomsLastRead,
   loadStarred,
@@ -1308,10 +1307,10 @@ export default function RoomsPanel({
                     connectionType={connectionType}
                     allowOutbox={false}
                     variant="room"
+                    composerContext="room"
                     placeholder={t('roomsPanel.postPlaceholder')}
                     sendButtonLabel={t('roomsPanel.postButton')}
                     sendingButtonLabel={t('roomsPanel.posting')}
-                    payloadLimit={MESHCORE_PAYLOAD_LIMIT - 4}
                     mentionNodes={mentionNodes}
                     onSendChunk={handleSendChunk}
                   />

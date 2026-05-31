@@ -265,7 +265,18 @@
       "offline_gate": "自動フェッチが実行されるまで、再接続後数分待ちます。手動でキャッチアップを使用してください。",
       "already_requested": "このルーターの履歴リクエストはすでに進行中です。"
     },
-    "replyRequiresPacketId": "応答には、メッセージRFパケットIDが必要です（送信確認またはチャットの更新を待ちます）。"
+    "replyRequiresPacketId": "応答には、メッセージRFパケットIDが必要です（送信確認またはチャットの更新を待ちます）。",
+    "queueButton": "キュー処理",
+    "replyingTo": "返信先：",
+    "composeLimit": {
+      "limitHint": "メッセージあたり最大{{limit}}文字。長いテキストは自動的に分割されます。",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}}文字 · {{parts}}メッセージ",
+      "splitHint": "[1/N]、[2/N]、…とラベル付けされた別々のパケットとして送信されます",
+      "overMax": "長すぎます — 最大{{totalMax}}文字（{{maxParts}}メッセージ）",
+      "sendParts_one": "{{count}}件を送信",
+      "sendParts_other": "{{count}}件を送信"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

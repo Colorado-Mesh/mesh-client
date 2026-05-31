@@ -265,7 +265,18 @@
       "offline_gate": "Otomatik yakalama çalıştırmadan önce yeniden bağladıktan sonra birkaç dakika bekleyin; manuel olarak Yakala'yı kullanın.",
       "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor."
     },
-    "replyRequiresPacketId": "Yanıt, RF paket kimliği mesajını gerektirir (mesajın gönderilmesini bekleyin veya sohbeti yenileyin)."
+    "replyRequiresPacketId": "Yanıt, RF paket kimliği mesajını gerektirir (mesajın gönderilmesini bekleyin veya sohbeti yenileyin).",
+    "queueButton": "Kuyruk (sıra)",
+    "replyingTo": "Yanıtlama",
+    "composeLimit": {
+      "limitHint": "Mesaj başına en fazla {{limit}} karakter. Daha uzun metin otomatik olarak bölünür.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} karakterler · {{parts}} mesajlar",
+      "splitHint": "[1/N], [2/N], … etiketli ayrı paketler olarak gönderilir",
+      "overMax": "Çok uzun — maksimum {{totalMax}} karakter ({{maxParts}} mesaj)",
+      "sendParts_one": "{{count}} parça gönder",
+      "sendParts_other": "{{count}} parça gönder"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

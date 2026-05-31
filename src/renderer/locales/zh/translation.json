@@ -265,7 +265,18 @@
       "offline_gate": "重新连接后等待几分钟，然后自动提取运行；手动使用“追赶”。",
       "already_requested": "此路由器的历史记录请求已在进行中。"
     },
-    "replyRequiresPacketId": "回复需要消息RF数据包ID （等待发送确认或刷新聊天）。"
+    "replyRequiresPacketId": "回复需要消息RF数据包ID （等待发送确认或刷新聊天）。",
+    "queueButton": "队列",
+    "replyingTo": "回复",
+    "composeLimit": {
+      "limitHint": "每条消息最多 {{limit}} 个字符。较长的文本会自动拆分。",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}} 个字符 · {{parts}} 条消息",
+      "splitHint": "作为标记为 [1/N]、[2/N]、… 的单独数据包发送",
+      "overMax": "太长 — 最多 {{totalMax}} 个字符（{{maxParts}} 条消息）",
+      "sendParts_one": "发送 {{count}} 部分",
+      "sendParts_other": "发送 {{count}} 部分"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

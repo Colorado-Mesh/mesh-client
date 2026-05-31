@@ -265,7 +265,18 @@
       "offline_gate": "자동 가져오기가 실행되기 전에 다시 연결한 후 몇 분 정도 기다리십시오. 수동으로 따라잡기를 사용하십시오.",
       "already_requested": "이 라우터에 대한 기록 요청이 이미 진행 중입니다."
     },
-    "replyRequiresPacketId": "회신하려면 메시지 RF 패킷 ID가 필요합니다 (ACK 전송 또는 채팅 새로 고침을 기다림)."
+    "replyRequiresPacketId": "회신하려면 메시지 RF 패킷 ID가 필요합니다 (ACK 전송 또는 채팅 새로 고침을 기다림).",
+    "queueButton": "Queue",
+    "replyingTo": "회신 대상:",
+    "composeLimit": {
+      "limitHint": "메시지당 최대 {{limit}}자. 더 긴 텍스트는 자동으로 분할됩니다.",
+      "approaching": "{{count}} / {{limit}}",
+      "split": "{{count}}자 · {{parts}}메시지",
+      "splitHint": "[1/N], [2/N], … 라벨이 붙은 별도의 패킷으로 전송됨",
+      "overMax": "너무 깁니다 — 최대 {{totalMax}}자 ({{maxParts}}메시지)",
+      "sendParts_one": "{{count}}개 보내기",
+      "sendParts_other": "{{count}}개 보내기"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
