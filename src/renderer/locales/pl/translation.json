@@ -2367,7 +2367,8 @@
     "repeaters": "Repeatery",
     "rf": "RF",
     "graph": "Wykres",
-    "rooms": "Pokoje"
+    "rooms": "Pokoje",
+    "admin": "Administracja"
   },
   "takServerPanel": {
     "title": "Serwer TAK",

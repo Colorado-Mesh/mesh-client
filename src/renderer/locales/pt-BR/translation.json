@@ -2367,7 +2367,8 @@
     "repeaters": "Repetidores",
     "rf": "Frequência de rádio (RF)",
     "graph": "Gráfico",
-    "rooms": "Salas"
+    "rooms": "Salas",
+    "admin": "Administração"
   },
   "takServerPanel": {
     "title": "Servidor TAK",

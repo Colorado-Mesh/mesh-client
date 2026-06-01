@@ -2367,7 +2367,8 @@
     "rf": "RF",
     "graph": "Grafik",
     "tak": "TAK",
-    "rooms": "Räume"
+    "rooms": "Räume",
+    "admin": "Verwaltung"
   },
   "takServerPanel": {
     "title": "TAK-Server",

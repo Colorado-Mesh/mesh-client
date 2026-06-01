@@ -2367,7 +2367,8 @@
     "repeaters": "Opakovače",
     "rf": "regionální facilitátor",
     "graph": "Graf",
-    "rooms": "Pokoje"
+    "rooms": "Pokoje",
+    "admin": "Správa"
   },
   "takServerPanel": {
     "title": "Server TAK",

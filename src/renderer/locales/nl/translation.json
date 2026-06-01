@@ -2367,7 +2367,8 @@
     "repeaters": "Repeaters",
     "rf": "RF",
     "graph": "Diagram",
-    "rooms": "Ruimtes"
+    "rooms": "Ruimtes",
+    "admin": "Beheer"
   },
   "takServerPanel": {
     "title": "TAK-server",

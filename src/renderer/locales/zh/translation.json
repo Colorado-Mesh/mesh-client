@@ -2367,7 +2367,8 @@
     "rf": "射频",
     "graph": "图",
     "tak": "TAK",
-    "rooms": "房间数"
+    "rooms": "房间数",
+    "admin": "管理"
   },
   "takServerPanel": {
     "title": "TAK服务器",

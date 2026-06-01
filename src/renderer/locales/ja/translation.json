@@ -2367,7 +2367,8 @@
     "repeaters": "リピーター",
     "rf": "RF",
     "graph": "グラフ",
-    "rooms": "客室数"
+    "rooms": "客室数",
+    "admin": "管理"
   },
   "takServerPanel": {
     "title": "TAKサーバー",

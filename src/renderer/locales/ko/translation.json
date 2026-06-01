@@ -2367,7 +2367,8 @@
     "repeaters": "중계기",
     "rf": "RF",
     "graph": "그래프",
-    "rooms": "방"
+    "rooms": "방",
+    "admin": "관리"
   },
   "takServerPanel": {
     "title": "TAK 서버",

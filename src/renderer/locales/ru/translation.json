@@ -2367,7 +2367,8 @@
     "repeaters": "Ретрансляторы",
     "rf": "RF",
     "graph": "График",
-    "rooms": "Комнаты"
+    "rooms": "Комнаты",
+    "admin": "Администрирование"
   },
   "takServerPanel": {
     "title": "TAK Сервер",

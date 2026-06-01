@@ -2367,7 +2367,8 @@
     "repeaters": "Tekrarlayıcılar",
     "rf": "RF",
     "graph": "Grafik",
-    "rooms": "Oda"
+    "rooms": "Oda",
+    "admin": "Yönetim"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",

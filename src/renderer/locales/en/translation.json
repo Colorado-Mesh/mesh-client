@@ -2367,7 +2367,8 @@
     "repeaters": "Repeaters",
     "rooms": "Rooms",
     "rf": "RF",
-    "graph": "Graph"
+    "graph": "Graph",
+    "admin": "Administration"
   },
   "takServerPanel": {
     "title": "TAK Server",
