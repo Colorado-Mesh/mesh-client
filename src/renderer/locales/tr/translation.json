@@ -1608,6 +1608,7 @@
     "channelN": "Kanal {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Cihaz Rolü",
+    "sectionGroupDevice": "Cihaz Yapılandırması",
     "sectionDeviceUser": "Cihaz Kullanıcısı / Kimliği",
     "sectionDisplay": "Görüntülemek",
     "sectionLora": "LoRa / Radyo",

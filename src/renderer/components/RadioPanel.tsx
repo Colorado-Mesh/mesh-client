@@ -636,7 +636,6 @@ export default function RadioPanel({
   onClearChannel,
   channelConfigs,
   isConnected,
-  telemetryDeviceUpdateInterval,
   deviceFixedPosition,
   onReboot,
   onShutdown,
@@ -783,16 +782,6 @@ export default function RadioPanel({
   const [useLongNodeName, setUseLongNodeName] = useState(false);
   const [enableMessageBubbles, setEnableMessageBubbles] = useState(false);
 
-  // ─── Telemetry (device metrics) ────────────────────────────────
-  const [deviceUpdateInterval, setDeviceUpdateInterval] = useState(1800);
-
-  // Sync telemetry interval from device config when received
-  useEffect(() => {
-    if (typeof telemetryDeviceUpdateInterval === 'number') {
-      setDeviceUpdateInterval(telemetryDeviceUpdateInterval);
-    }
-  }, [telemetryDeviceUpdateInterval]);
-
   useEffect(() => {
     if (typeof deviceFixedPosition === 'boolean') {
       setFixedPosition(deviceFixedPosition);
@@ -872,16 +861,6 @@ export default function RadioPanel({
     if (typeof cfg.wifiPsk === 'string') setWifiPsk(cfg.wifiPsk);
     if (typeof cfg.ntpServer === 'string') setNtpServer(cfg.ntpServer);
     if (typeof cfg.ethEnabled === 'boolean') setEthEnabled(cfg.ethEnabled);
-  });
-
-  useSyncFormFromConfig(meshtasticConfigSlices?.telemetry, (cfg) => {
-    const interval =
-      typeof cfg.deviceUpdateInterval === 'number'
-        ? cfg.deviceUpdateInterval
-        : typeof cfg.device_update_interval === 'number'
-          ? cfg.device_update_interval
-          : undefined;
-    if (typeof interval === 'number') setDeviceUpdateInterval(interval);
   });
 
   useEffect(() => {
@@ -1268,211 +1247,6 @@ export default function RadioPanel({
         <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
-      {/* ═══ Bluetooth ═══ */}
-      {capabilities?.hasBluetoothConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionBluetooth')}
-          onApply={() =>
-            applyConfig('Bluetooth', 'bluetooth', {
-              enabled: btEnabled,
-              mode: btPairingMode,
-              fixedPin: btFixedPin,
-            })
-          }
-          applying={applyingSection === 'Bluetooth'}
-          disabled={disabled}
-        >
-          <ConfigToggle
-            label={t('radioPanel.bluetoothEnabled')}
-            checked={btEnabled}
-            onChange={setBtEnabled}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.bluetoothToggleDesc')}
-          />
-          <ConfigSelect
-            label={t('radioPanel.btPairingModeLabel')}
-            value={btPairingMode}
-            options={btPairingModeOptions}
-            onChange={setBtPairingMode}
-            disabled={disabled || applyingSection !== null || !btEnabled}
-          />
-          <ConfigNumber
-            label={t('radioPanel.pairingPin')}
-            value={btFixedPin}
-            onChange={setBtFixedPin}
-            disabled={disabled || applyingSection !== null || !btEnabled || btPairingMode !== 1}
-            min={100000}
-            max={999999}
-            description={t('radioPanel.pairingPinDesc')}
-          />
-        </ConfigSection>
-      )}
-
-      {/* ═══ Channels ═══ */}
-      {capabilities?.hasChannelConfig !== false && (
-        <ChannelSection
-          channelConfigs={channelConfigs}
-          onSetChannel={onSetChannel}
-          onClearChannel={onClearChannel}
-          onCommit={onCommit}
-          disabled={disabled}
-          setStatus={setStatus}
-          meshtasticLoraConfig={meshtasticLoraConfig}
-          onApplyChannelSet={onApplyChannelSet}
-          remoteChannelFailedIndices={remoteChannelFailedIndices}
-          remoteChannelsTailStatus={remoteChannelsTailStatus}
-          onRetryRemoteChannelsTail={onRetryRemoteChannelsTail}
-        />
-      )}
-
-      {!capabilities?.hasChannelConfig && meshcoreChannels !== undefined && (
-        <MeshcoreChannelSection
-          channels={meshcoreChannels}
-          onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
-          onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
-          disabled={disabled}
-        />
-      )}
-
-      {capabilities?.hasCompanionContactManagementConfig &&
-        meshcoreSelfInfo &&
-        onApplyMeshcoreContactAutoAdd &&
-        onMeshcoreContactsShowPublicKeysChange &&
-        onMeshcoreContactsShowRefreshControlChange && (
-          <MeshcoreContactSettingsSection
-            selfInfo={meshcoreSelfInfo}
-            autoadd={meshcoreAutoadd ?? null}
-            disabled={disabled}
-            applying={applyingMeshcoreContactMgmt}
-            meshcoreContactsShowPublicKeys={meshcoreContactsShowPublicKeys}
-            onMeshcoreContactsShowPublicKeysChange={onMeshcoreContactsShowPublicKeysChange}
-            meshcoreContactsShowRefreshControl={meshcoreContactsShowRefreshControl}
-            onMeshcoreContactsShowRefreshControlChange={onMeshcoreContactsShowRefreshControlChange}
-            onApply={async (params) => {
-              setApplyingMeshcoreContactMgmt(true);
-              try {
-                await onApplyMeshcoreContactAutoAdd(params);
-                if (onRefreshMeshcoreAutoaddFromDevice) {
-                  await onRefreshMeshcoreAutoaddFromDevice();
-                }
-                addToast(t('radioPanel.contactManagementUpdated'), 'success');
-              } catch (e) {
-                console.warn(
-                  '[RadioPanel] meshcore contact management apply failed ' + errLikeToLogString(e),
-                );
-                addToast(
-                  e instanceof Error ? e.message : t('radioPanel.contactMgmtFailed'),
-                  'error',
-                );
-              } finally {
-                setApplyingMeshcoreContactMgmt(false);
-              }
-            }}
-            onClearAllContacts={onClearAllMeshcoreContacts}
-          />
-        )}
-
-      {/* ═══ Device Role ═══ */}
-      {capabilities?.hasDeviceRoleConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionDeviceRole')}
-          onApply={() =>
-            applyConfig('Device', 'device', {
-              role: deviceRole,
-              rebroadcastMode,
-              nodeInfoBroadcastSecs,
-              doubleTapAsButtonPress,
-              disableTripleClick,
-              tzdef,
-              ledHeartbeatDisabled,
-              buttonGpio,
-              buzzerGpio,
-            })
-          }
-          applying={applyingSection === 'Device'}
-          disabled={disabled}
-        >
-          <ConfigSelect
-            label={t('radioPanel.roleFieldLabel')}
-            value={deviceRole}
-            options={deviceRoleOptions}
-            onChange={setDeviceRole}
-            disabled={disabled || applyingSection !== null}
-            description={deviceRoleOptions.find((r) => r.value === deviceRole)?.description}
-          />
-          <ConfigSelect
-            label={t('radioPanel.rebroadcastModeLabel')}
-            value={rebroadcastMode}
-            options={rebroadcastModeOptions}
-            onChange={setRebroadcastMode}
-            disabled={disabled || applyingSection !== null}
-            description={
-              rebroadcastModeOptions.find((r) => r.value === rebroadcastMode)?.description
-            }
-          />
-          <ConfigNumber
-            label={t('radioPanel.nodeInfoBroadcastSecsLabel')}
-            value={nodeInfoBroadcastSecs}
-            onChange={setNodeInfoBroadcastSecs}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            unit="s"
-            description={t('radioPanel.nodeInfoBroadcastSecsDesc')}
-          />
-          <ConfigToggle
-            label={t('radioPanel.doubleTapAsButtonPressLabel')}
-            checked={doubleTapAsButtonPress}
-            onChange={setDoubleTapAsButtonPress}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.doubleTapAsButtonPressDesc')}
-          />
-          <ConfigToggle
-            label={t('radioPanel.disableTripleClickLabel')}
-            checked={disableTripleClick}
-            onChange={setDisableTripleClick}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.disableTripleClickDesc')}
-          />
-          <ConfigToggle
-            label={t('radioPanel.ledHeartbeatDisabledLabel')}
-            checked={ledHeartbeatDisabled}
-            onChange={setLedHeartbeatDisabled}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.ledHeartbeatDisabledDesc')}
-          />
-          <ConfigNumber
-            label={t('radioPanel.buttonGpioLabel')}
-            value={buttonGpio}
-            onChange={setButtonGpio}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            description={t('radioPanel.buttonGpioDesc')}
-          />
-          <ConfigNumber
-            label={t('radioPanel.buzzerGpioLabel')}
-            value={buzzerGpio}
-            onChange={setBuzzerGpio}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            description={t('radioPanel.buzzerGpioDesc')}
-          />
-          <div className="space-y-1">
-            <label className="text-muted text-sm">{t('radioPanel.tzdefLabel')}</label>
-            <input
-              type="text"
-              value={tzdef}
-              onChange={(e) => {
-                setTzdef(e.target.value);
-              }}
-              disabled={disabled || applyingSection !== null}
-              placeholder="e.g. EST5EDT,M3.2.0,M11.1.0"
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-            />
-            <p className="text-muted text-xs">{t('radioPanel.tzdefDesc')}</p>
-          </div>
-        </ConfigSection>
-      )}
-
       {/* ═══ Device User / Identity ═══ */}
       <ConfigSection
         title={t('radioPanel.sectionDeviceUser')}
@@ -1551,112 +1325,6 @@ export default function RadioPanel({
           </>
         )}
       </ConfigSection>
-
-      {/* ═══ Display ═══ */}
-      {capabilities?.hasDisplayConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionDisplay')}
-          onApply={() =>
-            applyConfig('Display', 'display', {
-              screenOnSecs,
-              units: displayUnits,
-              autoScreenCarouselSecs,
-              flipScreen,
-              oled,
-              displaymode,
-              headingBold,
-              wakeOnTapOrMotion,
-              use12hClock,
-              useLongNodeName,
-              enableMessageBubbles,
-            })
-          }
-          applying={applyingSection === 'Display'}
-          disabled={disabled}
-        >
-          <ConfigNumber
-            label={t('radioPanel.screenOnDurationLabel')}
-            value={screenOnSecs}
-            onChange={setScreenOnSecs}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            max={3600}
-            unit={t('radioPanel.secondsUnit')}
-            description={t('radioPanel.screenOnDurationDesc')}
-          />
-          <ConfigSelect
-            label={t('radioPanel.displayUnitsFieldLabel')}
-            value={displayUnits}
-            options={displayUnitOptions}
-            onChange={setDisplayUnits}
-            disabled={disabled || applyingSection !== null}
-          />
-          <ConfigNumber
-            label={t('radioPanel.autoScreenCarouselSecsLabel')}
-            value={autoScreenCarouselSecs}
-            onChange={setAutoScreenCarouselSecs}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            max={3600}
-            unit={t('radioPanel.secondsUnit')}
-            description={t('radioPanel.autoScreenCarouselSecsDesc')}
-          />
-          <ConfigSelect
-            label={t('radioPanel.oledTypeLabel')}
-            value={oled}
-            options={oledTypeOptions}
-            onChange={setOled}
-            disabled={disabled || applyingSection !== null}
-          />
-          <ConfigSelect
-            label={t('radioPanel.displayModeLabel')}
-            value={displaymode}
-            options={displayModeOptions}
-            onChange={setDisplaymode}
-            disabled={disabled || applyingSection !== null}
-          />
-          <ConfigToggle
-            label={t('radioPanel.flipScreenLabel')}
-            checked={flipScreen}
-            onChange={setFlipScreen}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.flipScreenDesc')}
-          />
-          <ConfigToggle
-            label={t('radioPanel.headingBoldLabel')}
-            checked={headingBold}
-            onChange={setHeadingBold}
-            disabled={disabled || applyingSection !== null}
-          />
-          <ConfigToggle
-            label={t('radioPanel.wakeOnTapOrMotionLabel')}
-            checked={wakeOnTapOrMotion}
-            onChange={setWakeOnTapOrMotion}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.wakeOnTapOrMotionDesc')}
-          />
-          <ConfigToggle
-            label={t('radioPanel.use12hClockLabel')}
-            checked={use12hClock}
-            onChange={setUse12hClock}
-            disabled={disabled || applyingSection !== null}
-          />
-          <ConfigToggle
-            label={t('radioPanel.useLongNodeNameLabel')}
-            checked={useLongNodeName}
-            onChange={setUseLongNodeName}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.useLongNodeNameDesc')}
-          />
-          <ConfigToggle
-            label={t('radioPanel.enableMessageBubblesLabel')}
-            checked={enableMessageBubbles}
-            onChange={setEnableMessageBubbles}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.enableMessageBubblesDesc')}
-          />
-        </ConfigSection>
-      )}
 
       {/* ═══ LoRa / Radio ═══ */}
       {onApplyLoraParams ? (
@@ -1951,6 +1619,175 @@ export default function RadioPanel({
         </ConfigSection>
       )}
 
+      {/* ═══ Channels ═══ */}
+      {capabilities?.hasChannelConfig !== false && (
+        <ChannelSection
+          channelConfigs={channelConfigs}
+          onSetChannel={onSetChannel}
+          onClearChannel={onClearChannel}
+          onCommit={onCommit}
+          disabled={disabled}
+          setStatus={setStatus}
+          meshtasticLoraConfig={meshtasticLoraConfig}
+          onApplyChannelSet={onApplyChannelSet}
+          remoteChannelFailedIndices={remoteChannelFailedIndices}
+          remoteChannelsTailStatus={remoteChannelsTailStatus}
+          onRetryRemoteChannelsTail={onRetryRemoteChannelsTail}
+        />
+      )}
+
+      {!capabilities?.hasChannelConfig && meshcoreChannels !== undefined && (
+        <MeshcoreChannelSection
+          channels={meshcoreChannels}
+          onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
+          onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
+          disabled={disabled}
+        />
+      )}
+
+      {capabilities?.hasCompanionContactManagementConfig &&
+        meshcoreSelfInfo &&
+        onApplyMeshcoreContactAutoAdd &&
+        onMeshcoreContactsShowPublicKeysChange &&
+        onMeshcoreContactsShowRefreshControlChange && (
+          <MeshcoreContactSettingsSection
+            selfInfo={meshcoreSelfInfo}
+            autoadd={meshcoreAutoadd ?? null}
+            disabled={disabled}
+            applying={applyingMeshcoreContactMgmt}
+            meshcoreContactsShowPublicKeys={meshcoreContactsShowPublicKeys}
+            onMeshcoreContactsShowPublicKeysChange={onMeshcoreContactsShowPublicKeysChange}
+            meshcoreContactsShowRefreshControl={meshcoreContactsShowRefreshControl}
+            onMeshcoreContactsShowRefreshControlChange={onMeshcoreContactsShowRefreshControlChange}
+            onApply={async (params) => {
+              setApplyingMeshcoreContactMgmt(true);
+              try {
+                await onApplyMeshcoreContactAutoAdd(params);
+                if (onRefreshMeshcoreAutoaddFromDevice) {
+                  await onRefreshMeshcoreAutoaddFromDevice();
+                }
+                addToast(t('radioPanel.contactManagementUpdated'), 'success');
+              } catch (e) {
+                console.warn(
+                  '[RadioPanel] meshcore contact management apply failed ' + errLikeToLogString(e),
+                );
+                addToast(
+                  e instanceof Error ? e.message : t('radioPanel.contactMgmtFailed'),
+                  'error',
+                );
+              } finally {
+                setApplyingMeshcoreContactMgmt(false);
+              }
+            }}
+            onClearAllContacts={onClearAllMeshcoreContacts}
+          />
+        )}
+
+      <h3 className="text-muted border-t border-gray-700 pt-4 text-sm font-medium">
+        {t('radioPanel.sectionGroupDevice')}
+      </h3>
+
+      {/* ═══ Device Role ═══ */}
+      {capabilities?.hasDeviceRoleConfig !== false && (
+        <ConfigSection
+          title={t('radioPanel.sectionDeviceRole')}
+          onApply={() =>
+            applyConfig('Device', 'device', {
+              role: deviceRole,
+              rebroadcastMode,
+              nodeInfoBroadcastSecs,
+              doubleTapAsButtonPress,
+              disableTripleClick,
+              tzdef,
+              ledHeartbeatDisabled,
+              buttonGpio,
+              buzzerGpio,
+            })
+          }
+          applying={applyingSection === 'Device'}
+          disabled={disabled}
+        >
+          <ConfigSelect
+            label={t('radioPanel.roleFieldLabel')}
+            value={deviceRole}
+            options={deviceRoleOptions}
+            onChange={setDeviceRole}
+            disabled={disabled || applyingSection !== null}
+            description={deviceRoleOptions.find((r) => r.value === deviceRole)?.description}
+          />
+          <ConfigSelect
+            label={t('radioPanel.rebroadcastModeLabel')}
+            value={rebroadcastMode}
+            options={rebroadcastModeOptions}
+            onChange={setRebroadcastMode}
+            disabled={disabled || applyingSection !== null}
+            description={
+              rebroadcastModeOptions.find((r) => r.value === rebroadcastMode)?.description
+            }
+          />
+          <ConfigNumber
+            label={t('radioPanel.nodeInfoBroadcastSecsLabel')}
+            value={nodeInfoBroadcastSecs}
+            onChange={setNodeInfoBroadcastSecs}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            unit="s"
+            description={t('radioPanel.nodeInfoBroadcastSecsDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.doubleTapAsButtonPressLabel')}
+            checked={doubleTapAsButtonPress}
+            onChange={setDoubleTapAsButtonPress}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.doubleTapAsButtonPressDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.disableTripleClickLabel')}
+            checked={disableTripleClick}
+            onChange={setDisableTripleClick}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.disableTripleClickDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.ledHeartbeatDisabledLabel')}
+            checked={ledHeartbeatDisabled}
+            onChange={setLedHeartbeatDisabled}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.ledHeartbeatDisabledDesc')}
+          />
+          <ConfigNumber
+            label={t('radioPanel.buttonGpioLabel')}
+            value={buttonGpio}
+            onChange={setButtonGpio}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            description={t('radioPanel.buttonGpioDesc')}
+          />
+          <ConfigNumber
+            label={t('radioPanel.buzzerGpioLabel')}
+            value={buzzerGpio}
+            onChange={setBuzzerGpio}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            description={t('radioPanel.buzzerGpioDesc')}
+          />
+          <div className="space-y-1">
+            <label className="text-muted text-sm">{t('radioPanel.tzdefLabel')}</label>
+            <input
+              type="text"
+              value={tzdef}
+              onChange={(e) => {
+                setTzdef(e.target.value);
+              }}
+              disabled={disabled || applyingSection !== null}
+              placeholder="e.g. EST5EDT,M3.2.0,M11.1.0"
+              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            />
+            <p className="text-muted text-xs">{t('radioPanel.tzdefDesc')}</p>
+          </div>
+        </ConfigSection>
+      )}
+
       {/* ═══ Position / GPS ═══ */}
       <ConfigSection
         title={t('radioPanel.sectionPositionGps')}
@@ -2235,32 +2072,6 @@ export default function RadioPanel({
         </ConfigSection>
       )}
 
-      {/* ═══ Telemetry ═══ */}
-      {capabilities?.hasTelemetryIntervalConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionTelemetry')}
-          onApply={() =>
-            applyConfig('Telemetry', 'telemetry', {
-              device_update_interval: deviceUpdateInterval,
-            })
-          }
-          applying={applyingSection === 'Telemetry'}
-          disabled={disabled}
-        >
-          <ConfigNumber
-            label={t('radioPanel.deviceMetricsIntervalLabel')}
-            value={deviceUpdateInterval}
-            onChange={setDeviceUpdateInterval}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            max={86400}
-            unit="seconds"
-            description={t('radioPanel.deviceMetricsDescription')}
-            tooltip={t('radioPanel.deviceMetricsTooltip')}
-          />
-        </ConfigSection>
-      )}
-
       {capabilities?.hasCompanionTelemetryPrivacyConfig &&
         meshcoreSelfInfo &&
         meshcoreContactsForTelemetry &&
@@ -2358,6 +2169,152 @@ export default function RadioPanel({
             onChange={setEthEnabled}
             disabled={disabled || applyingSection !== null}
             description={t('radioPanel.ethernetEnabledDesc')}
+          />
+        </ConfigSection>
+      )}
+
+      {/* ═══ Display ═══ */}
+      {capabilities?.hasDisplayConfig !== false && (
+        <ConfigSection
+          title={t('radioPanel.sectionDisplay')}
+          onApply={() =>
+            applyConfig('Display', 'display', {
+              screenOnSecs,
+              units: displayUnits,
+              autoScreenCarouselSecs,
+              flipScreen,
+              oled,
+              displaymode,
+              headingBold,
+              wakeOnTapOrMotion,
+              use12hClock,
+              useLongNodeName,
+              enableMessageBubbles,
+            })
+          }
+          applying={applyingSection === 'Display'}
+          disabled={disabled}
+        >
+          <ConfigNumber
+            label={t('radioPanel.screenOnDurationLabel')}
+            value={screenOnSecs}
+            onChange={setScreenOnSecs}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            max={3600}
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.screenOnDurationDesc')}
+          />
+          <ConfigSelect
+            label={t('radioPanel.displayUnitsFieldLabel')}
+            value={displayUnits}
+            options={displayUnitOptions}
+            onChange={setDisplayUnits}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigNumber
+            label={t('radioPanel.autoScreenCarouselSecsLabel')}
+            value={autoScreenCarouselSecs}
+            onChange={setAutoScreenCarouselSecs}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            max={3600}
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.autoScreenCarouselSecsDesc')}
+          />
+          <ConfigSelect
+            label={t('radioPanel.oledTypeLabel')}
+            value={oled}
+            options={oledTypeOptions}
+            onChange={setOled}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigSelect
+            label={t('radioPanel.displayModeLabel')}
+            value={displaymode}
+            options={displayModeOptions}
+            onChange={setDisplaymode}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigToggle
+            label={t('radioPanel.flipScreenLabel')}
+            checked={flipScreen}
+            onChange={setFlipScreen}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.flipScreenDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.headingBoldLabel')}
+            checked={headingBold}
+            onChange={setHeadingBold}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigToggle
+            label={t('radioPanel.wakeOnTapOrMotionLabel')}
+            checked={wakeOnTapOrMotion}
+            onChange={setWakeOnTapOrMotion}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.wakeOnTapOrMotionDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.use12hClockLabel')}
+            checked={use12hClock}
+            onChange={setUse12hClock}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigToggle
+            label={t('radioPanel.useLongNodeNameLabel')}
+            checked={useLongNodeName}
+            onChange={setUseLongNodeName}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.useLongNodeNameDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.enableMessageBubblesLabel')}
+            checked={enableMessageBubbles}
+            onChange={setEnableMessageBubbles}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.enableMessageBubblesDesc')}
+          />
+        </ConfigSection>
+      )}
+
+      {/* ═══ Bluetooth ═══ */}
+      {capabilities?.hasBluetoothConfig !== false && (
+        <ConfigSection
+          title={t('radioPanel.sectionBluetooth')}
+          onApply={() =>
+            applyConfig('Bluetooth', 'bluetooth', {
+              enabled: btEnabled,
+              mode: btPairingMode,
+              fixedPin: btFixedPin,
+            })
+          }
+          applying={applyingSection === 'Bluetooth'}
+          disabled={disabled}
+        >
+          <ConfigToggle
+            label={t('radioPanel.bluetoothEnabled')}
+            checked={btEnabled}
+            onChange={setBtEnabled}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.bluetoothToggleDesc')}
+          />
+          <ConfigSelect
+            label={t('radioPanel.btPairingModeLabel')}
+            value={btPairingMode}
+            options={btPairingModeOptions}
+            onChange={setBtPairingMode}
+            disabled={disabled || applyingSection !== null || !btEnabled}
+          />
+          <ConfigNumber
+            label={t('radioPanel.pairingPin')}
+            value={btFixedPin}
+            onChange={setBtFixedPin}
+            disabled={disabled || applyingSection !== null || !btEnabled || btPairingMode !== 1}
+            min={100000}
+            max={999999}
+            description={t('radioPanel.pairingPinDesc')}
           />
         </ConfigSection>
       )}

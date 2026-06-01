@@ -1608,6 +1608,7 @@
     "channelN": "Канал {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Роль устройства",
+    "sectionGroupDevice": "Настройки устройства",
     "sectionDeviceUser": "Пользователь устройства/Идентификация",
     "sectionDisplay": "Отображать",
     "sectionLora": "ЛоРа / Радио",

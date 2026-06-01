@@ -1608,6 +1608,7 @@
     "channelN": "Kanál {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Role zařízení",
+    "sectionGroupDevice": "Konfigurace zařízení",
     "sectionDeviceUser": "Uživatel / Identita zařízení",
     "sectionDisplay": "Zobrazit",
     "sectionLora": "LoRa / Rádio",

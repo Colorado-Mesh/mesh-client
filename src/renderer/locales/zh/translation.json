@@ -1608,6 +1608,7 @@
     "channelN": "频道 {{num}}",
     "sectionBluetooth": "蓝牙",
     "sectionDeviceRole": "设备角色",
+    "sectionGroupDevice": "设备配置",
     "sectionDeviceUser": "设备用户/身份",
     "sectionDisplay": "展示",
     "sectionLora": "LoRa/无线电",

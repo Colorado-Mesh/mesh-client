@@ -1608,6 +1608,7 @@
     "channelN": "Канал {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Роль пристрою",
+    "sectionGroupDevice": "Налаштування пристрою",
     "sectionDeviceUser": "Користувач/ідентифікатор пристрою",
     "sectionDisplay": "Дисплей",
     "sectionLora": "LoRa / Радіо",

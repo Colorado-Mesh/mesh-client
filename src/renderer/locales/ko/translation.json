@@ -1608,6 +1608,7 @@
     "channelN": "채널 {{num}}",
     "sectionBluetooth": "블루투스",
     "sectionDeviceRole": "장치 역할",
+    "sectionGroupDevice": "장치 구성",
     "sectionDeviceUser": "장치 사용자/ID",
     "sectionDisplay": "표시하다",
     "sectionLora": "LoRa / 라디오",

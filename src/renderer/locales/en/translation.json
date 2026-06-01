@@ -1634,6 +1634,7 @@
     "noChannels": "No channels configured.",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Device Role",
+    "sectionGroupDevice": "Device Configuration",
     "sectionDeviceUser": "Device User / Identity",
     "sectionDisplay": "Display",
     "sectionLora": "LoRa / Radio",

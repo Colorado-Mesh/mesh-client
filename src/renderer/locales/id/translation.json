@@ -1608,6 +1608,7 @@
     "channelN": "Saluran {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Peran Perangkat",
+    "sectionGroupDevice": "Konfigurasi Perangkat",
     "sectionDeviceUser": "Pengguna / Identitas Perangkat",
     "sectionDisplay": "Menampilkan",
     "sectionLora": "LoRa / Radio",

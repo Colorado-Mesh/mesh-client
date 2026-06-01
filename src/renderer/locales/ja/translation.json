@@ -1608,6 +1608,7 @@
     "channelN": "チャンネル {{num}}",
     "sectionBluetooth": "ブルートゥース",
     "sectionDeviceRole": "デバイスの役割",
+    "sectionGroupDevice": "デバイス設定",
     "sectionDeviceUser": "デバイスのユーザー/ID",
     "sectionDisplay": "画面",
     "sectionLora": "LoRa / ラジオ",

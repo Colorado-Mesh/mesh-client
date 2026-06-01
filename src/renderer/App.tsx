@@ -2586,8 +2586,6 @@ function AppContent({
                               storeForwardMessages={activeRuntime.storeForwardMessages}
                               rangeTestPackets={activeRuntime.rangeTestPackets}
                               serialMessages={activeRuntime.serialMessages}
-                              remoteHardwareMessages={activeRuntime.remoteHardwareMessages}
-                              ipTunnelMessages={activeRuntime.ipTunnelMessages}
                             />
                           </Suspense>
                         </ErrorBoundary>

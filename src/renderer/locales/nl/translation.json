@@ -1608,6 +1608,7 @@
     "channelN": "Kanaal {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Apparaatrol",
+    "sectionGroupDevice": "Apparaatconfiguratie",
     "sectionDeviceUser": "Apparaatgebruiker/identiteit",
     "sectionDisplay": "Weergave",
     "sectionLora": "LoRa / Radio",
