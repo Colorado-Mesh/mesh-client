@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Automatisch inloggen mislukt: {{error}}",
     "jumpToLatest": "Spring naar het laatste nieuws",
     "jumpToUnread": "Ga naar ongelezen",
-    "newMessagesDivider": "Nieuwe berichten"
+    "newMessagesDivider": "Nieuwe berichten",
+    "loggingInMarkerAria": "Inloggen op roomserver",
+    "savedPasswordNotLoggedIn": "Wachtwoord opgeslagen — open ruimte en log in",
+    "favorite": "Favoriete ruimte",
+    "unfavorite": "Verwijder van favorieten",
+    "loginAllSaved": "Alles inloggen",
+    "loginAllSavedAria": "Log in op alle opgeslagen roomservers",
+    "loginAllSavedTooltip": "Inlogwachtrij voor elke ruimte in de lijst (opgeslagen wachtwoord of standaard gast \"hello\"; één voor één)",
+    "loginAllSavedDisabledNotConnected": "Sluit je radio aan om in te loggen op ruimtes",
+    "loginAllSavedDisabledAllLoggedIn": "Alle ruimtes in de lijst zijn al ingelogd",
+    "loginAllInProgress": "Inloggen op {{count}} ruimtes (één voor één)…",
+    "loggingInQueue": "Inloggen op {{count}} ruimtes (nu: {{name}})…",
+    "loggingInOtherRoom": "Inloggen op {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

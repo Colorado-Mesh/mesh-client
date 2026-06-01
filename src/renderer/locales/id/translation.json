@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Gagal masuk otomatis: {{error}}",
     "jumpToLatest": "Langsung ke yang terbaru",
     "jumpToUnread": "Langsung ke belum dibaca",
-    "newMessagesDivider": "Pesan baru"
+    "newMessagesDivider": "Pesan baru",
+    "loggingInMarkerAria": "Masuk ke server ruangan",
+    "savedPasswordNotLoggedIn": "Kata sandi disimpan — buka ruangan dan masuk",
+    "favorite": "Ruangan favorit",
+    "unfavorite": "Hapus dari favorit",
+    "loginAllSaved": "Masuk semua",
+    "loginAllSavedAria": "Masuk ke semua server ruangan yang disimpan",
+    "loginAllSavedTooltip": "Login antrean untuk setiap ruangan dalam daftar (kata sandi tersimpan atau tamu default \"hello\"; satu per satu)",
+    "loginAllSavedDisabledNotConnected": "Sambungkan radio Anda untuk masuk ke ruangan",
+    "loginAllSavedDisabledAllLoggedIn": "Semua ruangan dalam daftar sudah masuk",
+    "loginAllInProgress": "Masuk ke {{count}} ruangan (satu per satu)…",
+    "loggingInQueue": "Masuk ke {{count}} ruangan (sekarang: {{name}})…",
+    "loggingInOtherRoom": "Masuk ke {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

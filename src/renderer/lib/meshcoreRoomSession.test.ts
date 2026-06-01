@@ -87,11 +87,10 @@ describe('meshcoreRoomSession', () => {
     await expect(meshcoreRoomLogin(conn, 42, pubKey, '', {})).rejects.toThrow(/read-only/i);
   });
 
-  it('retries login up to three times with backoff', async () => {
+  it('retries login up to two times with backoff', async () => {
     vi.useFakeTimers();
     meshcoreClearAllRoomSessions();
     mockRunMeshcoreRoomLogin
-      .mockRejectedValueOnce(new Error('timeout'))
       .mockRejectedValueOnce(new Error('timeout'))
       .mockResolvedValueOnce({ permissions: 2 });
     const conn = {
@@ -103,9 +102,8 @@ describe('meshcoreRoomSession', () => {
     const pubKey = new Uint8Array(32);
     const loginPromise = meshcoreRoomLogin(conn, 42, pubKey, 'hello', {});
     await vi.advanceTimersByTimeAsync(2_000);
-    await vi.advanceTimersByTimeAsync(2_000);
     await loginPromise;
-    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledTimes(3);
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledTimes(2);
     expect(meshcoreIsRoomLoggedIn(42)).toBe(true);
   });
 

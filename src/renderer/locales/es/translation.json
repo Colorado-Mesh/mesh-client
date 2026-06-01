@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Error al iniciar sesión automáticamente: {{error}}",
     "jumpToLatest": "Saltar a la última",
     "jumpToUnread": "Saltar a no leído",
-    "newMessagesDivider": "Nuevos mensajes"
+    "newMessagesDivider": "Nuevos mensajes",
+    "loggingInMarkerAria": "Iniciar sesión en el servidor de la sala",
+    "savedPasswordNotLoggedIn": "Contraseña guardada — abrir sala e iniciar sesión",
+    "favorite": "Sala favorita",
+    "unfavorite": "Eliminar de favoritos",
+    "loginAllSaved": "Iniciar sesión en todo",
+    "loginAllSavedAria": "Iniciar sesión en todos los servidores de sala guardados",
+    "loginAllSavedTooltip": "Inicio de sesión en cola para cada sala de la lista (contraseña guardada o invitado predeterminado \"hello\"; uno a la vez)",
+    "loginAllSavedDisabledNotConnected": "Conecta tu radio para iniciar sesión en las salas",
+    "loginAllSavedDisabledAllLoggedIn": "Todas las salas de la lista ya han iniciado sesión",
+    "loginAllInProgress": "Iniciando sesión en {{count}} salas (una a la vez)…",
+    "loggingInQueue": "Iniciando sesión en {{count}} salas (ahora: {{name}})…",
+    "loggingInOtherRoom": "Iniciando sesión en {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

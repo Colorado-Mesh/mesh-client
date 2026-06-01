@@ -35,13 +35,45 @@ export const MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS = 15_000;
 export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp';
 
 /** Hop-scaled floor for room login response wait (matches outbound DM ACK formula in useMeshcoreRuntime). */
-export function computeRoomLoginExtraTimeoutMs(hopsAway: number): number {
-  if (hopsAway <= 0) {
+export function computeRoomLoginExtraTimeoutMs(hopsAway?: number | null): number {
+  if (hopsAway == null || !Number.isFinite(hopsAway)) {
+    return MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS;
+  }
+  const hops = Math.trunc(hopsAway);
+  if (hops <= 0) {
     return MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS;
   }
-  const hopScaled = 3_000 + hopsAway * 2_500;
+  const hopScaled = 3_000 + hops * 2_500;
   return Math.max(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS, hopScaled);
 }
+
+/**
+ * Total wait for LoginSuccess/LoginFail after SendLogin SENT.
+ * Firmware `estTimeout` is often too low on multi-hop paths; apply a hop-scaled floor.
+ */
+/** Hard cap so multi-hop login cannot wait 6+ minutes (hopFloor was unbounded). */
+export const MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS = 90_000;
+
+export function computeRoomLoginResponseWaitMs(
+  hopsAway: number | null | undefined,
+  estTimeoutMs: number,
+): number {
+  const est = Number.isFinite(estTimeoutMs) && estTimeoutMs > 0 ? Math.trunc(estTimeoutMs) : 0;
+  const extra = computeRoomLoginExtraTimeoutMs(hopsAway);
+  const hops =
+    hopsAway != null && Number.isFinite(hopsAway) ? Math.max(0, Math.trunc(hopsAway)) : 0;
+  const hopFloor = hops <= 0 ? 0 : 45_000 + hops * 20_000;
+  return Math.min(MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS, Math.max(est + extra, hopFloor));
+}
+
+/** Max wall time for route resolve (flood + trace) before SendLogin. */
+export const MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS = 90_000;
+
+/** getContacts / setContactPath during login path sync. */
+export const MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS = 25_000;
+
+/** Entire loginRoom (resolve + sync + RPC) wall clock. */
+export const MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS = 120_000;
 
 /** Max wait for SendLogin `RESP_SENT` before rejecting; shorter on TCP/serial companion links. */
 export function computeRoomLoginSentWaitMs(
@@ -59,7 +91,7 @@ export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
 export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = 30_000;
 
 /** Room login attempts before giving up (matches MeshMonitor loginToRoom). */
-export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 3;
+export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 2;
 
 /** Delay between failed room login attempts. */
 export const MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS = 2_000;

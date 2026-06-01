@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Accesso automatico non riuscito: {{error}}",
     "jumpToLatest": "Vai al più recente",
     "jumpToUnread": "Non letto",
-    "newMessagesDivider": "Nuovi messaggi"
+    "newMessagesDivider": "Nuovi messaggi",
+    "loggingInMarkerAria": "Accesso al server della sala",
+    "savedPasswordNotLoggedIn": "Password salvata: apri la stanza e accedi",
+    "favorite": "Sala preferita",
+    "unfavorite": "Rimuovi dai preferiti",
+    "loginAllSaved": "Accedi a tutti",
+    "loginAllSavedAria": "Accedi a tutti i server di sala salvati",
+    "loginAllSavedTooltip": "Accedi in coda per ogni sala nell'elenco (password salvata o ospite predefinito \"hello\"; uno alla volta)",
+    "loginAllSavedDisabledNotConnected": "Collega la radio per accedere alle sale",
+    "loginAllSavedDisabledAllLoggedIn": "Tutte le sale nell'elenco sono già collegate",
+    "loginAllInProgress": "Accesso a {{count}} sale (una alla volta)…",
+    "loggingInQueue": "Accesso a {{count}} sale (ora: {{name}})…",
+    "loggingInOtherRoom": "Accesso a {{name}}..."
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

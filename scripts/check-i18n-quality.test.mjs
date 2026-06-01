@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { localeStringQualityIssues, protectedBrandIssues } from './check-i18n-quality.mjs';
+import {
+  interpolationPlaceholderIssues,
+  localeStringQualityIssues,
+  protectedBrandIssues,
+} from './check-i18n-quality.mjs';
 
 function expectIssue(issues, substring) {
   expect(issues.some((msg) => msg.includes(substring))).toBe(true);
@@ -455,6 +459,17 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'leave the field empty');
   });
 
+  it('flags translated hello password in roomsPanel loginAllSavedTooltip', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'roomsPanel.loginAllSavedTooltip',
+      val: 'Varsayılan misafir "merhaba"',
+      enVal:
+        'Queue login for every room in the list (saved password or default guest "hello"; one at a time)',
+    });
+    expectIssue(issues, 'wire password "hello"');
+  });
+
   it('flags translated hello password in roomsPanel emptyGuestLoginHint', () => {
     const issues = localeStringQualityIssues({
       locale: 'de',
@@ -577,6 +592,129 @@ describe('localeStringQualityIssues', () => {
       enVal: 'Queue',
     });
     expectIssue(issues, 'queueButton" is still identical to English');
+  });
+});
+
+describe('interpolationPlaceholderIssues', () => {
+  it('flags missing {{count}} when CAT left __ PH0 __ residue', () => {
+    const issues = interpolationPlaceholderIssues(
+      'Logging in to {{count}} rooms (one at a time)…',
+      '__ PH0 __ 개의 객실에 로그인 중…',
+    );
+    expectIssue(issues, 'placeholder names must match English');
+    expectIssue(issues, 'count');
+  });
+
+  it('passes when placeholder names match English', () => {
+    expect(
+      interpolationPlaceholderIssues(
+        'Logging in to {{count}} rooms (now: {{name}})…',
+        '{{count}} 件のルームにログイン中（現在: {{name}}）…',
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe('roomsPanel login-all false friends (recent MeshCore Rooms)', () => {
+  it('flags French chambres plural on loginAllInProgress', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'roomsPanel.loginAllInProgress',
+      val: 'Connexion à {{count}} chambres (une à la fois)…',
+      enVal: 'Logging in to {{count}} rooms (one at a time)…',
+    });
+    expectIssue(issues, 'roomsPanel false friend');
+    expectIssue(issues, 'salle');
+  });
+
+  it('flags German Zimmern on loginAllInProgress', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.loginAllInProgress',
+      val: 'Anmeldung in {{count}} Zimmern (eins nach dem anderen)…',
+      enVal: 'Logging in to {{count}} rooms (one at a time)…',
+    });
+    expectIssue(issues, 'Raum');
+  });
+
+  it('flags Dutch kamer on roomsPanel.favorite', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'roomsPanel.favorite',
+      val: 'Favoriete kamer',
+      enVal: 'Favorite room',
+    });
+    expectIssue(issues, 'ruimte');
+  });
+
+  it('flags Korean hotel 객실 on roomsPanel.favorite', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'roomsPanel.favorite',
+      val: '즐겨찾는 객실',
+      enVal: 'Favorite room',
+    });
+    expectIssue(issues, '룸');
+  });
+
+  it('flags Russian hotel номер on roomsPanel.favorite', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'roomsPanel.favorite',
+      val: 'Любимый номер',
+      enVal: 'Favorite room',
+    });
+    expectIssue(issues, 'комната');
+  });
+
+  it('flags Indonesian kamar on roomsPanel.loginAllSavedAria', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'roomsPanel.loginAllSavedAria',
+      val: 'Masuk ke semua server kamar yang disimpan',
+      enVal: 'Log in to all saved room servers',
+    });
+    expectIssue(issues, 'ruangan');
+  });
+
+  it('flags Italian hotel camera on roomsPanel.favorite', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'roomsPanel.favorite',
+      val: 'Camera preferita',
+      enVal: 'Favorite room',
+    });
+    expectIssue(issues, 'sala');
+    expectIssue(issues, 'camera');
+  });
+
+  it('flags spaced CAT __ PH 0 __ on roomsPanel.loggingInQueue', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'roomsPanel.loggingInQueue',
+      val: '__ PH 0 __ ROOMS （現在： __ PH 1 __ ）にログインしています…',
+      enVal: 'Logging in to {{count}} rooms (now: {{name}})…',
+    });
+    expectIssue(issues, 'CAT/XLIFF __ PH __ placeholder residue');
+  });
+
+  it('passes valid MeshCore Room login-all strings', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'roomsPanel.loginAllInProgress',
+        val: 'Anmeldung in {{count}} Räumen (eins nach dem anderen)…',
+        enVal: 'Logging in to {{count}} rooms (one at a time)…',
+      }),
+    ).toEqual([]);
+    expect(
+      localeStringQualityIssues({
+        locale: 'ja',
+        flatKey: 'roomsPanel.loginAllInProgress',
+        val: '{{count}} 件のルームにログイン中（1件ずつ）…',
+        enVal: 'Logging in to {{count}} rooms (one at a time)…',
+      }),
+    ).toEqual([]);
   });
 });
 

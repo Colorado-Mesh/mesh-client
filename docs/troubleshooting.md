@@ -514,13 +514,13 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 
-**Room posts not visible in the official Android app**:
+**Room post fails with "unsupported on this firmware"**:
 
-- Outbound room BBS posts must use **SignedPlain** (`txtType` 2) with a **4-byte author pubkey prefix** before the message body. Plain channel text posts appear in mesh-client Chat only and are not stored in the room BBS on the server.
+- The **companion radio** only accepts **`TXT_TYPE_PLAIN` (0)** for outbound `CMD_SEND_TXT_MSG`. mesh-client sends plain UTF-8 post text after a successful room login. **`TXT_TYPE_SIGNED_PLAIN` (2)** is for **inbound** room-server pushes (author prefix in the wire body); using it for outbound posts returns `ERR_CODE_UNSUPPORTED_CMD` (1). Log out and log in again, then post from the **Rooms** tab while connected over BLE/serial/TCP.
 
-**Garbled prefix (e.g. `ÑÇÕ0`) on official Android for mesh-client room posts**:
+**Garbled prefix (e.g. `ÑÇÕ0`) on inbound room posts**:
 
-- The prefix is the **first four bytes of the sender public key**, required by MeshCore `TXT_TYPE_SIGNED_PLAIN`. mesh-client strips it in the **Rooms** UI; if the official Android app shows those characters, it is displaying the raw wire body. Confirm the post still appears in the room BBS; report display stripping to the official Android client if needed. Debug logs include `[useMeshcoreRuntime] sendRoomPost txtType=2 prefix=…`.
+- Inbound **SignedPlain** pushes include the **first four bytes of the author public key** before the message body. mesh-client strips that prefix in the **Rooms** UI. If another client shows those characters, it is displaying the raw wire body from the room server.
 
 **Room unread badges**:
 

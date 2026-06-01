@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Falha no login automático: {{error}}",
     "jumpToLatest": "Pular para o mais recente",
     "jumpToUnread": "Ir para não lida",
-    "newMessagesDivider": "Novas mensagens"
+    "newMessagesDivider": "Novas mensagens",
+    "loggingInMarkerAria": "Iniciar sessão no servidor da sala",
+    "savedPasswordNotLoggedIn": "Senha salva — abra a sala e faça login",
+    "favorite": "Sala favorita",
+    "unfavorite": "remover dos favoritos",
+    "loginAllSaved": "Entrar em todos",
+    "loginAllSavedAria": "Faça login em todos os servidores de sala salvos",
+    "loginAllSavedTooltip": "Login na fila para cada sala da lista (senha salva ou convidado padrão \"hello\"; um de cada vez)",
+    "loginAllSavedDisabledNotConnected": "Conecte o rádio para fazer login nas salas",
+    "loginAllSavedDisabledAllLoggedIn": "Todas as salas da lista já estão conectadas",
+    "loginAllInProgress": "Fazendo login em {{count}} salas (uma de cada vez)…",
+    "loggingInQueue": "Fazendo login em {{count}} salas (agora: {{name}})…",
+    "loggingInOtherRoom": "Iniciando sessão em {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

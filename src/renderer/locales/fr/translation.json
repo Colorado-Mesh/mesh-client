@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Échec de la connexion automatique : {{error}}",
     "jumpToLatest": "Aller à la dernière",
     "jumpToUnread": "Aller à non lu",
-    "newMessagesDivider": "Nouveau message"
+    "newMessagesDivider": "Nouveau message",
+    "loggingInMarkerAria": "Connexion au serveur de salle",
+    "savedPasswordNotLoggedIn": "Mot de passe enregistré — ouvrez la salle et connectez-vous",
+    "favorite": "Salle favorite",
+    "unfavorite": "Supprimer des favoris",
+    "loginAllSaved": "Se connecter à tous",
+    "loginAllSavedAria": "Connectez-vous à tous les serveurs de salle enregistrés",
+    "loginAllSavedTooltip": "Connexion en file d'attente pour chaque salle de la liste (mot de passe enregistré ou invité par défaut « hello » ; une à la fois)",
+    "loginAllSavedDisabledNotConnected": "Connectez votre radio pour vous connecter aux salles",
+    "loginAllSavedDisabledAllLoggedIn": "Toutes les salles de la liste sont déjà connectées",
+    "loginAllInProgress": "Connexion à {{count}} salles (une à la fois)…",
+    "loggingInQueue": "Connexion à {{count}} salles (maintenant : {{name}})…",
+    "loggingInOtherRoom": "Connexion à {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Ошибка автоматического входа: {{error}}",
     "jumpToLatest": "Перейти к последним",
     "jumpToUnread": "Перейти к непрочитанным",
-    "newMessagesDivider": "Новые письма"
+    "newMessagesDivider": "Новые письма",
+    "loggingInMarkerAria": "Вход на сервер комнаты",
+    "savedPasswordNotLoggedIn": "Пароль сохранен — откройте комнату и войдите в систему",
+    "favorite": "Избранная комната",
+    "unfavorite": "Удалить из избранного",
+    "loginAllSaved": "Войти во все",
+    "loginAllSavedAria": "Войдите на все сохранённые серверы комнат",
+    "loginAllSavedTooltip": "Вход в очередь для каждой комнаты в списке (сохранённый пароль или гостевой «hello» по умолчанию; по одному)",
+    "loginAllSavedDisabledNotConnected": "Подключите радио, чтобы войти в комнаты",
+    "loginAllSavedDisabledAllLoggedIn": "Все комнаты в списке уже авторизованы",
+    "loginAllInProgress": "Вход в {{count}} комнат (по одному)…",
+    "loggingInQueue": "Вход в {{count}} комнат (сейчас: {{name}})…",
+    "loggingInOtherRoom": "Вход в {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",

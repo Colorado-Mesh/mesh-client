@@ -1,5 +1,9 @@
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
+import {
+  getMeshcoreRoomCredential,
+  listMeshcoreRoomCredentialNodeIds,
+} from './meshcoreRoomCredentialStorage';
 import { parseStoredJson } from './parseStoredJson';
 import { MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES } from './timeConstants';
 
@@ -58,14 +62,14 @@ export function getMeshcoreRoomSyncConfig(nodeId: number): MeshcoreRoomSyncConfi
   );
   const key = meshcoreRoomSyncSettingForNode(nodeId);
   const parsed = settings ? parseSyncConfig(settings[key]) : undefined;
-  return (
-    parsed ?? {
-      enabled: false,
-      intervalMinutes: MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES,
-      lastSyncAt: null,
-      autoLoginOnConnect: false,
-    }
-  );
+  const hasSavedPassword = getMeshcoreRoomCredential(nodeId) != null;
+  const autoLoginOnConnect = parsed?.autoLoginOnConnect ?? hasSavedPassword;
+  return {
+    enabled: parsed?.enabled ?? false,
+    intervalMinutes: parsed?.intervalMinutes ?? MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES,
+    lastSyncAt: parsed?.lastSyncAt ?? null,
+    autoLoginOnConnect,
+  };
 }
 
 export async function setMeshcoreRoomSyncConfig(
@@ -154,20 +158,27 @@ export function listMeshcoreRoomSyncEnabledNodeIds(): number[] {
 }
 
 export function listMeshcoreRoomAutoLoginOnConnectNodeIds(): number[] {
+  const ids = new Set<number>();
   const settings = parseStoredJson<Record<string, unknown>>(
     getAppSettingsRaw(),
     'meshcoreRoomSyncStorage list autoLogin',
   );
-  if (!settings) return [];
-  const prefix = MESHCORE_ROOM_SYNC_SETTING_PREFIX;
-  const ids: number[] = [];
-  for (const [key, value] of Object.entries(settings)) {
-    if (!key.startsWith(prefix)) continue;
-    const cfg = parseSyncConfig(value);
-    if (!cfg?.autoLoginOnConnect) continue;
-    const idStr = key.slice(prefix.length);
-    const nodeId = Number.parseInt(idStr, 10);
-    if (Number.isFinite(nodeId) && nodeId >= 0) ids.push(nodeId >>> 0);
+  if (settings) {
+    const prefix = MESHCORE_ROOM_SYNC_SETTING_PREFIX;
+    for (const key of Object.keys(settings)) {
+      if (!key.startsWith(prefix)) continue;
+      const idStr = key.slice(prefix.length);
+      const nodeId = Number.parseInt(idStr, 10);
+      if (!Number.isFinite(nodeId) || nodeId < 0) continue;
+      if (getMeshcoreRoomSyncConfig(nodeId >>> 0).autoLoginOnConnect) {
+        ids.add(nodeId >>> 0);
+      }
+    }
   }
-  return ids;
+  for (const nodeId of listMeshcoreRoomCredentialNodeIds()) {
+    if (getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect) {
+      ids.add(nodeId);
+    }
+  }
+  return [...ids];
 }

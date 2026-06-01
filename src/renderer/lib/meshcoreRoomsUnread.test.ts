@@ -19,6 +19,19 @@ describe('meshcoreRoomsUnread', () => {
     expect(counts.get(0x200)).toBe(1);
   });
 
+  it('skips sending and failed outbound rows', () => {
+    const stuck = buildMeshcoreRoomIncomingMessage({
+      rawText: 'stuck',
+      roomServerId: 0x200,
+      authorId: 0x300,
+      authorName: 'Alice',
+      timestamp: 5000,
+      receivedVia: 'rf',
+    });
+    stuck.status = 'sending';
+    expect(totalRoomsUnreadCount([stuck], {}, new Set())).toBe(0);
+  });
+
   it('skips own posts and history rows', () => {
     const own = buildMeshcoreRoomIncomingMessage({
       rawText: 'Mine',

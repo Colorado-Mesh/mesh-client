@@ -1,5 +1,6 @@
 import {
   computeRoomLoginExtraTimeoutMs,
+  computeRoomLoginResponseWaitMs,
   computeRoomLoginSentWaitMs,
   type MeshcoreCompanionTransport,
 } from './timeConstants';
@@ -49,6 +50,20 @@ export function buildSendLoginFrame(publicKey: Uint8Array, password: string): Ui
   return frame;
 }
 
+/** Accept Uint8Array and other array-likes from meshcore.js push payloads. */
+export function normalizeLoginPubKeyPrefix(prefix: unknown): Uint8Array | null {
+  if (prefix instanceof Uint8Array && prefix.length === 6) {
+    return prefix;
+  }
+  if (ArrayBuffer.isView(prefix) && prefix.byteLength === 6) {
+    return new Uint8Array(prefix.buffer, prefix.byteOffset, 6);
+  }
+  if (Array.isArray(prefix) && prefix.length === 6) {
+    return Uint8Array.from(prefix);
+  }
+  return null;
+}
+
 function pubKeyPrefixesEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== 6 || b.length !== 6) return false;
   let diff = 0;
@@ -86,7 +101,7 @@ export function runMeshcoreRoomLogin(
   },
 ): Promise<MeshcoreRoomLoginResponse> {
   const expectedPrefix = contactPublicKey.subarray(0, 6);
-  const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway ?? 0);
+  const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway);
   const sentWaitMs = computeRoomLoginSentWaitMs(opts?.companionTransport);
   const signal = opts?.signal;
 
@@ -137,9 +152,10 @@ export function runMeshcoreRoomLogin(
 
     const startResponseTimer = (): void => {
       if (settled || responseTimeoutId !== undefined) return;
+      const responseWaitMs = computeRoomLoginResponseWaitMs(opts?.hopsAway, estTimeoutMs);
       responseTimeoutId = setTimeout(() => {
         fail('timeout');
-      }, estTimeoutMs + extraTimeoutMs);
+      }, responseWaitMs);
     };
 
     const onAbort = (): void => {
@@ -154,8 +170,10 @@ export function runMeshcoreRoomLogin(
 
     const onLoginSuccess = (response: unknown): void => {
       const r = response as MeshcoreRoomLoginResponse;
-      const prefix = r.pubKeyPrefix;
-      if (!(prefix instanceof Uint8Array) || prefix.length !== 6) return;
+      const prefix = normalizeLoginPubKeyPrefix(r.pubKeyPrefix);
+      if (!prefix) {
+        return;
+      }
       if (!pubKeyPrefixesEqual(expectedPrefix, prefix)) {
         console.debug(
           `[meshcoreRoomLoginRpc] LoginSuccess prefix mismatch expected=${prefixToHex(expectedPrefix)} got=${prefixToHex(prefix)}`,
@@ -170,8 +188,8 @@ export function runMeshcoreRoomLogin(
 
     const onLoginFail = (response: unknown): void => {
       const r = response as MeshcoreRoomLoginResponse;
-      const prefix = r.pubKeyPrefix;
-      if (!(prefix instanceof Uint8Array) || prefix.length !== 6) return;
+      const prefix = normalizeLoginPubKeyPrefix(r.pubKeyPrefix);
+      if (!prefix) return;
       if (!pubKeyPrefixesEqual(expectedPrefix, prefix)) {
         console.debug(
           `[meshcoreRoomLoginRpc] LoginFail prefix mismatch expected=${prefixToHex(expectedPrefix)} got=${prefixToHex(prefix)}`,

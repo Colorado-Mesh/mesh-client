@@ -96,16 +96,17 @@ export const CJK_LOCALES = new Set(['zh', 'ja', 'ko']);
  * Matched by locale on roomsPanel.* and tabs.rooms.
  */
 export const ROOMS_PANEL_FALSE_FRIENDS = {
-  de: [{ re: /\bZimmer\b/i, hint: 'use "Raum" for MeshCore Room, not hotel "Zimmer"' }],
-  fr: [{ re: /\bchambre\b/i, hint: 'use "salle" for MeshCore Room, not hotel "chambre"' }],
-  es: [{ re: /\bhabitaci[oó]n\b/i, hint: 'use "sala" for MeshCore Room, not hotel "habitación"' }],
-  'pt-BR': [{ re: /\bquarto\b/i, hint: 'use "sala" for MeshCore Room, not hotel "quarto"' }],
+  de: [{ re: /\bZimmer/i, hint: 'use "Raum" for MeshCore Room, not hotel "Zimmer"' }],
+  fr: [{ re: /\bchambre/i, hint: 'use "salle" for MeshCore Room, not hotel "chambre"' }],
+  es: [{ re: /\bhabitaci[oó]n/i, hint: 'use "sala" for MeshCore Room, not hotel "habitación"' }],
+  'pt-BR': [{ re: /\bquarto/i, hint: 'use "sala" for MeshCore Room, not hotel "quarto"' }],
   ko: [
     {
       re: /객실|회의실/,
       hint: 'use "룸" for MeshCore Room, not hotel/meeting "객실/회의실"',
     },
   ],
+  it: [{ re: /\b[Cc]amera/i, hint: 'use "sala" for MeshCore Room, not hotel bedroom "camera"' }],
   ru: [
     {
       re: /номер/i,
@@ -116,7 +117,7 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
       hint: 'use "комната" for MeshCore Room admin copy, not generic "помещение"',
     },
   ],
-  id: [{ re: /\bkamar\b/i, hint: 'use "ruangan" for MeshCore Room, not hotel "kamar"' }],
+  id: [{ re: /\bkamar/i, hint: 'use "ruangan" for MeshCore Room, not hotel "kamar"' }],
   nl: [{ re: /\bgaas\b/i, hint: 'use "mesh" for the network, not fabric "gaas"' }],
   uk: [
     {
@@ -160,7 +161,11 @@ export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
 ]);
 
 /** Hints that describe the wire default guest password (literal hello, not a greeting translation). */
-export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set(['loginHelp', 'emptyGuestLoginHint']);
+export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
+  'loginHelp',
+  'emptyGuestLoginHint',
+  'loginAllSavedTooltip',
+]);
 
 /**
  * Auto-translate often replaces the MeshCore default password "hello" with a localized greeting.
@@ -280,6 +285,39 @@ export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChan
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
+
+/** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
+export function placeholderNameSet(s) {
+  const re = /\{\{\s*([^}]+?)\s*\}\}/g;
+  const out = new Set();
+  let m;
+  while ((m = re.exec(s))) {
+    out.add(m[1]);
+  }
+  return out;
+}
+
+function setsEqualStrings(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) {
+    if (!b.has(x)) return false;
+  }
+  return true;
+}
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @returns {string[]} Issues when locale {{name}} sets differ from English.
+ */
+export function interpolationPlaceholderIssues(enVal, val) {
+  const enPh = placeholderNameSet(enVal);
+  const locPh = placeholderNameSet(val);
+  if (setsEqualStrings(enPh, locPh)) return [];
+  const enList = [...enPh].sort().join(', ') || '(none)';
+  const locList = [...locPh].sort().join(', ') || '(none)';
+  return [`i18next placeholder names must match English (EN: {${enList}}, locale: {${locList}})`];
+}
 
 /** CAT / XLIFF / Memsource XML tags that must never ship in JSON values. */
 export const LOCALE_ARTIFACT_RES = [
@@ -507,7 +545,7 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     issues.push('roomsPanel false friend: use "ルーム" for MeshCore Room type, not hotel 部屋');
   }
 
-  if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer\b/.test(val)) {
+  if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer/i.test(val)) {
     issues.push('roomsPanel false friend: use "ruimte" for MeshCore Room, not hotel "kamer"');
   }
 

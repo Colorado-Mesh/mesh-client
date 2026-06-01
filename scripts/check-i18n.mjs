@@ -17,7 +17,11 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { localeStringQualityIssues, protectedBrandIssues } from './check-i18n-quality.mjs';
+import {
+  interpolationPlaceholderIssues,
+  localeStringQualityIssues,
+  protectedBrandIssues,
+} from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = join(__dirname, '../src/renderer/locales');
@@ -128,25 +132,6 @@ for (const dir of localeDirs) {
   }
 }
 
-/** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
-function placeholderNameSet(s) {
-  const re = /\{\{\s*([^}]+?)\s*\}\}/g;
-  const out = new Set();
-  let m;
-  while ((m = re.exec(s))) {
-    out.add(m[1]);
-  }
-  return out;
-}
-
-function setsEqualStrings(a, b) {
-  if (a.size !== b.size) return false;
-  for (const x of a) {
-    if (!b.has(x)) return false;
-  }
-  return true;
-}
-
 // These are protocol terms / acronyms intentionally displayed in English across all locales.
 // Checked by leaf key name so nesting differences don't matter.
 const VERBATIM_KEY_NAMES = new Set([
@@ -201,14 +186,8 @@ for (const dir of localeDirs) {
     if (typeof val !== 'string') continue;
     const enVal = en[key];
     if (typeof enVal !== 'string') continue;
-    const enPh = placeholderNameSet(enVal);
-    const locPh = placeholderNameSet(val);
-    if (!setsEqualStrings(enPh, locPh)) {
-      const enList = [...enPh].sort().join(', ') || '(none)';
-      const locList = [...locPh].sort().join(', ') || '(none)';
-      console.error(
-        `Placeholder mismatch in "${dir}" key "${key}": English has {${enList}} but locale has {${locList}}.`,
-      );
+    for (const issue of interpolationPlaceholderIssues(enVal, val)) {
+      console.error(`Placeholder mismatch in "${dir}" key "${key}": ${issue}.`);
       errors++;
     }
 

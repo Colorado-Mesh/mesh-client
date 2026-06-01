@@ -1046,7 +1046,10 @@ export function buildMeshcoreDmIncomingMessage(
   return { ...base, payload: opts.rawText };
 }
 
-/** meshcore.js `TxtTypes.SignedPlain` — room server pushed posts. */
+/** meshcore.js `TxtTypes.Plain` — outbound room BBS posts (companion SendTxtMsg). */
+export const MESHCORE_TXT_TYPE_PLAIN = 0;
+
+/** meshcore.js `TxtTypes.SignedPlain` — room server pushed posts to logged-in clients. */
 export const MESHCORE_TXT_TYPE_SIGNED_PLAIN = 2;
 
 export function parseMeshcoreRoomPostPayload(

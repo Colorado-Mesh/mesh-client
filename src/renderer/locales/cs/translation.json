@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Automatické přihlášení se nezdařilo: {{error}}",
     "jumpToLatest": "Přejít na nejnovější",
     "jumpToUnread": "Přejít na nepřečtené",
-    "newMessagesDivider": "Nové zprávy"
+    "newMessagesDivider": "Nové zprávy",
+    "loggingInMarkerAria": "Přihlášení na pokojový server",
+    "savedPasswordNotLoggedIn": "Heslo uloženo — otevřete místnost a přihlaste se",
+    "favorite": "Oblíbený pokoj",
+    "unfavorite": "Odebrat z oblíbených",
+    "loginAllSaved": "Přihlásit vše",
+    "loginAllSavedAria": "Přihlaste se ke všem serverům uložených místností",
+    "loginAllSavedTooltip": "Přihlášení ve frontě pro každý pokoj v seznamu (uložené heslo nebo výchozí host „hello“; jeden po druhém)",
+    "loginAllSavedDisabledNotConnected": "Připoj své rádio a přihlas se do pokojů",
+    "loginAllSavedDisabledAllLoggedIn": "Všechny pokoje v seznamu jsou již přihlášeny",
+    "loginAllInProgress": "Přihlašování do pokojů {{count}} (jeden po druhém)…",
+    "loggingInQueue": "Přihlašování do pokojů {{count}} (nyní: {{name}})…",
+    "loggingInOtherRoom": "Přihlašování do {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

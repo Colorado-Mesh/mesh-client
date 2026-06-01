@@ -35,6 +35,7 @@ import {
   meshcoreTracePathLenToHops,
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
+  resolveMeshcoreRoomLoginHopsAway,
 } from './meshcoreUtils';
 
 describe('MeshCore contact capacity thresholds', () => {
@@ -394,6 +395,21 @@ describe('meshcoreInferHopsFromOutPath', () => {
     expect(meshcoreInferHopsFromOutPath({ outPathLen: -1, outPath: new Uint8Array([9]) })).toBe(
       undefined,
     );
+  });
+});
+
+describe('resolveMeshcoreRoomLoginHopsAway', () => {
+  it('prefers positive hops_away on the node', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 4 }, new Uint8Array([1, 2]))).toBe(4);
+  });
+
+  it('infers from outPath when UI reports 0 hops', () => {
+    const outPath = new Uint8Array([1, 2, 3, 4]);
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 0 }, outPath)).toBe(3);
+  });
+
+  it('returns 0 for direct room with no path', () => {
+    expect(resolveMeshcoreRoomLoginHopsAway({ hops_away: 0 }, undefined)).toBe(0);
   });
 });
 

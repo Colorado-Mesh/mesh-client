@@ -19,6 +19,8 @@ import {
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { filterRegularChatMessages, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
+import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
@@ -129,6 +131,7 @@ import { MeshtasticRuntimeProvider } from './runtime/MeshtasticRuntimeContext';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
+import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
@@ -719,6 +722,14 @@ function AppContent({
     if (!meshcoreIdentityId) return;
     void refreshMeshcoreAllFromDb();
   }, [meshcoreIdentityId, refreshMeshcoreAllFromDb]);
+
+  useEffect(() => {
+    if (!meshcoreIdentityId) return;
+    const selfNum = useIdentityStore.getState().identities[meshcoreIdentityId]?.selfNodeNum;
+    if (selfNum != null && selfNum > 0) {
+      persistMeshcoreSelfNodeId(selfNum);
+    }
+  }, [meshcoreIdentityId]);
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
@@ -820,9 +831,18 @@ function AppContent({
   ]);
 
   const meshcoreOwnNodeIdSet = useMemo(() => {
-    const id = meshcoreRuntime.selfNodeId;
-    return id > 0 ? new Set([id]) : new Set<number>();
-  }, [meshcoreRuntime.selfNodeId]);
+    const identitySelfNodeNum =
+      meshcoreIdentityId != null
+        ? useIdentityStore.getState().identities[meshcoreIdentityId]?.selfNodeNum
+        : undefined;
+    const connectionMyNodeNum =
+      meshcoreIdentityId != null ? meshcoreConnectionView.state.myNodeNum : undefined;
+    return resolveMeshcoreOwnNodeIdSet({
+      runtimeSelfNodeId: meshcoreRuntime.selfNodeId,
+      identitySelfNodeNum,
+      connectionMyNodeNum,
+    });
+  }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
 
   const meshtasticChatUnread = useMemo(() => {
     void lastReadRevision.meshtastic;
@@ -853,12 +873,20 @@ function AppContent({
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
-    return totalRoomsUnreadCount(
+    const rawCount = totalRoomsUnreadCount(
       meshcoreUiMessages,
       loadPersistedRoomsLastRead(),
       meshcoreOwnNodeIdSet,
     );
-  }, [roomsLastReadRevision, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
+    const count =
+      meshcoreRuntime.state.status === 'configured' || meshcoreOwnNodeIdSet.size > 0 ? rawCount : 0;
+    return count;
+  }, [
+    roomsLastReadRevision,
+    meshcoreOwnNodeIdSet,
+    meshcoreUiMessages,
+    meshcoreRuntime.state.status,
+  ]);
 
   /** Meshtastic + MeshCore nodes for Diagnostics (foreign MeshCore sender labels/links). */
   const nodesForDiagnostics = useMemo(() => {
@@ -1975,18 +2003,31 @@ function AppContent({
                   : ''}
               </span>
             </div>
-            {activeConnectionView.state.myNodeNum > 0 && (
-              <span
-                aria-label={t('app.nodeLabel', {
-                  name: panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum),
-                })}
-                className="text-muted ml-2 text-xs whitespace-nowrap"
-              >
-                {t('app.nodeLabel', {
-                  name: panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum),
-                })}
-              </span>
-            )}
+            {activeConnectionView.state.myNodeNum > 0 &&
+              (protocol !== 'meshcore' || activeConnectionView.state.status === 'configured') && (
+                <span
+                  aria-label={t('app.nodeLabel', {
+                    name:
+                      protocol === 'meshcore'
+                        ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
+                          panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
+                        : panelActions.getPickerStyleNodeLabel(
+                            activeConnectionView.state.myNodeNum,
+                          ),
+                  })}
+                  className="text-muted ml-2 text-xs whitespace-nowrap"
+                >
+                  {t('app.nodeLabel', {
+                    name:
+                      protocol === 'meshcore'
+                        ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
+                          panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
+                        : panelActions.getPickerStyleNodeLabel(
+                            activeConnectionView.state.myNodeNum,
+                          ),
+                  })}
+                </span>
+              )}
             {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
             {queueShowBadge && activeQueue && (
               <HelpTooltip
@@ -2561,6 +2602,7 @@ function AppContent({
                                 initialRoomTarget={pendingRoomTarget}
                                 onInitialRoomConsumed={handleRoomTargetConsumed}
                                 onLoginRoom={meshcorePanelActions.loginRoom}
+                                onLoginAllSaved={meshcorePanelActions.loginAllSavedRooms}
                                 onCancelRoomLogin={meshcorePanelActions.cancelRoomLogin}
                                 onLeaveRoom={meshcorePanelActions.leaveRoom}
                                 onSendRoomPost={meshcorePanelActions.sendRoomPost}
@@ -2569,6 +2611,7 @@ function AppContent({
                                 meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                                 onClearCliHistory={meshcorePanelActions.clearCliHistory}
                                 onMessageNode={handleMessageNode}
+                                onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                 scrollToTopRef={scrollToTopRoomsRef}
                                 outerScrollMetricsRootRef={mainViewportRef}
                               />

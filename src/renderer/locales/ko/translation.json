@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "자동 로그인 실패: {{error}}",
     "jumpToLatest": "최근 페이지로 이동",
     "jumpToUnread": "읽지 않음으로 이동",
-    "newMessagesDivider": "새 메시지"
+    "newMessagesDivider": "새 메시지",
+    "loggingInMarkerAria": "룸 서버에 로그인",
+    "savedPasswordNotLoggedIn": "비밀번호 저장됨 — 방을 열고 로그인",
+    "favorite": "즐겨찾는 룸",
+    "unfavorite": "즐겨찾기에서 삭제하기",
+    "loginAllSaved": "모두 로그인",
+    "loginAllSavedAria": "저장된 모든 룸 서버에 로그인",
+    "loginAllSavedTooltip": "목록의 모든 룸에 대기열 로그인(저장된 비밀번호 또는 기본 게스트 \"hello\"; 한 번에 하나씩)",
+    "loginAllSavedDisabledNotConnected": "라디오를 연결하여 룸에 로그인하세요",
+    "loginAllSavedDisabledAllLoggedIn": "목록의 모든 룸이 이미 로그인되어 있습니다",
+    "loginAllInProgress": "{{count}}개 룸에 로그인 중(한 번에 하나씩)…",
+    "loggingInQueue": "{{count}}개 룸에 로그인 중(현재: {{name}})…",
+    "loggingInOtherRoom": "{{name}}에 로그인 중…"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

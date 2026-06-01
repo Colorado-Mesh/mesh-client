@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
+import { meshcoreRoomCredentialSettingForNode } from './meshcoreRoomCredentialStorage';
 import {
   getMeshcoreRoomSyncConfig,
   listMeshcoreRoomAutoLoginOnConnectNodeIds,
@@ -13,8 +14,18 @@ describe('meshcoreRoomSyncStorage', () => {
     localStorage.clear();
   });
 
-  it('defaults autoLoginOnConnect to false', () => {
+  it('defaults autoLoginOnConnect to false without saved password', () => {
     expect(getMeshcoreRoomSyncConfig(99).autoLoginOnConnect).toBe(false);
+  });
+
+  it('defaults autoLoginOnConnect to true when room password is saved', () => {
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(55),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'meshcoreRoomSyncStorage.test cred',
+    );
+    expect(getMeshcoreRoomSyncConfig(55).autoLoginOnConnect).toBe(true);
+    expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toContain(55);
   });
 
   it('persists autoLoginOnConnect in sync config blob', async () => {

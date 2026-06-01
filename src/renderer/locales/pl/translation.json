@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Automatyczne logowanie nie powiodło się: {{error}}",
     "jumpToLatest": "Przejdź do najnowszych",
     "jumpToUnread": "Przejdź do nieprzeczytanych",
-    "newMessagesDivider": "Nowe wiadomości"
+    "newMessagesDivider": "Nowe wiadomości",
+    "loggingInMarkerAria": "Logowanie do serwera pokojowego",
+    "savedPasswordNotLoggedIn": "Hasło zostało zapisane — otwórz pokój i zaloguj się",
+    "favorite": "Ulubiony pokój",
+    "unfavorite": "Usuń z ulubionych",
+    "loginAllSaved": "Zaloguj się do wszystkich",
+    "loginAllSavedAria": "Zaloguj się do wszystkich zapisanych serwerów pokojowych",
+    "loginAllSavedTooltip": "Logowanie do kolejki dla każdego pokoju na liście (zapisane hasło lub domyślny gość \"hello\"; pojedynczo)",
+    "loginAllSavedDisabledNotConnected": "Podłącz radio, aby zalogować się do pokoi",
+    "loginAllSavedDisabledAllLoggedIn": "Wszystkie pokoje na liście są już zalogowane",
+    "loginAllInProgress": "Logowanie do {{count}} pokoi (pojedynczo)…",
+    "loggingInQueue": "Logowanie do {{count}} pokoi (teraz: {{name}})…",
+    "loggingInOtherRoom": "Logowanie do {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

@@ -8,9 +8,11 @@ import {
 } from './meshcoreRoomLoginRpc';
 import {
   computeRoomLoginExtraTimeoutMs,
+  computeRoomLoginResponseWaitMs,
   computeRoomLoginSentWaitMs,
   MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS,
   MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS,
+  MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS,
   MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS,
   MESHCORE_ROOM_LOGIN_SENT_WAIT_MS,
 } from './timeConstants';
@@ -100,6 +102,18 @@ describe('buildSendLoginFrame', () => {
 describe('computeRoomLoginExtraTimeoutMs', () => {
   it('uses shorter floor for direct (0-hop) rooms', () => {
     expect(computeRoomLoginExtraTimeoutMs(0)).toBe(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS);
+  });
+
+  it('uses RF floor when hop count is unknown', () => {
+    expect(computeRoomLoginExtraTimeoutMs(undefined)).toBe(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
+    expect(computeRoomLoginExtraTimeoutMs(null)).toBe(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS);
+  });
+
+  it('applies hop-scaled response wait floor after SENT', () => {
+    expect(computeRoomLoginResponseWaitMs(2, 5_876)).toBe(85_000);
+    expect(computeRoomLoginResponseWaitMs(0, 2_000)).toBe(
+      2_000 + MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS,
+    );
   });
 
   it('uses RF floor for nearby multi-hop rooms', () => {
@@ -200,7 +214,9 @@ describe('runMeshcoreRoomLogin', () => {
     await Promise.resolve();
 
     conn.emit(MC_RESP_SENT, { estTimeout: 0 });
-    await vi.advanceTimersByTimeAsync(47_999);
+    const waitMs = computeRoomLoginResponseWaitMs(18, 0);
+    expect(waitMs).toBe(MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS);
+    await vi.advanceTimersByTimeAsync(waitMs - 1);
     await Promise.resolve();
 
     conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6), reserved: 1 });

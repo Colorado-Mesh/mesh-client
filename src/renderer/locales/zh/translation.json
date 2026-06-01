@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "自动登录失败：{{error}}",
     "jumpToLatest": "跳转到最新",
     "jumpToUnread": "跳至未读",
-    "newMessagesDivider": "新消息"
+    "newMessagesDivider": "新消息",
+    "loggingInMarkerAria": "登录到聊天室服务器",
+    "savedPasswordNotLoggedIn": "密码已保存—打开房间并登录",
+    "favorite": "收藏的教室",
+    "unfavorite": "从收藏夹中移除",
+    "loginAllSaved": "全部登录",
+    "loginAllSavedAria": "登录所有已保存的聊天室服务器",
+    "loginAllSavedTooltip": "列表中每个房间的队列登录（保存密码或默认房客“hello” ；一次一个）",
+    "loginAllSavedDisabledNotConnected": "连接收音机以登录房间",
+    "loginAllSavedDisabledAllLoggedIn": "列表中的所有房间都已登录",
+    "loginAllInProgress": "正在登录 {{count}} 个房间（一次一个）…",
+    "loggingInQueue": "正在登录 {{count}} 个房间（当前：{{name}}）…",
+    "loggingInOtherRoom": "正在登录 {{name}}…"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

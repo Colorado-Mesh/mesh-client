@@ -10,6 +10,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
+import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
+import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import {
   loadPersistedRoomsLastRead,
   loadStarred,
@@ -19,8 +21,10 @@ import {
   saveStarred,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { CliHistoryEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
+import { repairMeshcoreHydrationStaleRoomSends } from '@/renderer/lib/meshcoreDbCacheHydration';
 import {
   type MeshcoreRoomAclEntry,
   meshcoreRoomAclLevelLabel,
@@ -31,16 +35,24 @@ import {
   getMeshcoreRoomAutoLoginFailure,
   subscribeMeshcoreRoomAutoLoginFailureChanges,
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
-import { listMeshcoreRoomCredentialNodeIds } from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import {
+  listMeshcoreRoomCredentialNodeIds,
+  setMeshcoreRoomCredential,
+} from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import {
+  getMeshcoreRoomLoginQueueSnapshot,
+  meshcoreIsRoomLoginQueued,
+  meshcoreRoomLoginQueueSize,
+} from '@/renderer/lib/meshcoreRoomLoginQueue';
 import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
+  meshcoreCancelAllRoomLogins,
   meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanAdmin,
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
-  subscribeMeshcoreRoomSessionChanges,
 } from '@/renderer/lib/meshcoreRoomSession';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import {
@@ -87,6 +99,7 @@ interface Props {
       rememberPassword?: boolean;
     },
   ) => Promise<void>;
+  onLoginAllSaved?: (roomNodeIds: number[]) => Promise<void>;
   onCancelRoomLogin: (nodeId: number) => void;
   onLeaveRoom: (nodeId: number) => Promise<void>;
   onSendRoomPost: (nodeId: number, text: string) => Promise<void>;
@@ -95,6 +108,7 @@ interface Props {
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
   onMessageNode?: (nodeNum: number) => void;
+  onToggleFavorite?: (nodeId: number, favorited: boolean) => void;
   /** Ref for scroll-to-top (Rooms tab inner message stream). */
   scrollToTopRef?: React.RefObject<(() => void) | null>;
   /** Main app scrollport for distance-from-bottom when outer viewport scrolls. */
@@ -163,6 +177,7 @@ export default function RoomsPanel({
   initialRoomTarget,
   onInitialRoomConsumed,
   onLoginRoom,
+  onLoginAllSaved,
   onCancelRoomLogin,
   onLeaveRoom,
   onSendRoomPost,
@@ -171,6 +186,7 @@ export default function RoomsPanel({
   meshcoreCliErrors,
   onClearCliHistory,
   onMessageNode,
+  onToggleFavorite,
   scrollToTopRef,
   outerScrollMetricsRootRef,
 }: Props) {
@@ -178,11 +194,12 @@ export default function RoomsPanel({
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
-  const [loginLoadingRoomIds, setLoginLoadingRoomIds] = useState<Set<number>>(() => new Set());
+  /** Tracks in-flight login promises before the shared queue snapshot updates (tests / fast paths). */
+  const [localLoginRoomIds, setLocalLoginRoomIds] = useState<Set<number>>(() => new Set());
   const [leaveLoadingRoomIds, setLeaveLoadingRoomIds] = useState<Set<number>>(() => new Set());
   const [loginErrorsByRoom, setLoginErrorsByRoom] = useState<Map<number, string>>(() => new Map());
   const [leaveErrorsByRoom, setLeaveErrorsByRoom] = useState<Map<number, string>>(() => new Map());
-  const [, setRoomSessionEpoch] = useState(0);
+  const roomSessionRevision = useMeshcoreRoomSessionRevision();
   const [manageOpen, setManageOpen] = useState(false);
   const [cliInput, setCliInput] = useState('');
   const [cliPending, setCliPending] = useState(false);
@@ -202,6 +219,7 @@ export default function RoomsPanel({
   );
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
+  const loginQueueRevision = useMeshcoreRoomLoginQueueRevision();
   const streamRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
@@ -227,12 +245,6 @@ export default function RoomsPanel({
   }, []);
 
   useEffect(() => {
-    return subscribeMeshcoreRoomSessionChanges(() => {
-      setRoomSessionEpoch((n) => n + 1);
-    });
-  }, []);
-
-  useEffect(() => {
     return subscribeMeshcoreRoomAutoLoginFailureChanges(() => {
       setAutoLoginFailureEpoch((n) => n + 1);
     });
@@ -248,7 +260,12 @@ export default function RoomsPanel({
     () =>
       Array.from(nodes.values())
         .filter((n) => n.hw_model === 'Room')
-        .sort((a, b) => (a.long_name ?? '').localeCompare(b.long_name ?? '')),
+        .sort((a, b) => {
+          const aFav = a.favorited ? 1 : 0;
+          const bFav = b.favorited ? 1 : 0;
+          if (aFav !== bFav) return bFav - aFav;
+          return (a.long_name ?? '').localeCompare(b.long_name ?? '');
+        }),
     [nodes],
   );
 
@@ -256,9 +273,10 @@ export default function RoomsPanel({
 
   const roomPosts = useMemo(() => {
     if (selectedRoomId == null) return [];
-    return messages
+    const posts = messages
       .filter((m) => m.roomServerId === selectedRoomId)
       .sort((a, b) => a.timestamp - b.timestamp);
+    return repairMeshcoreHydrationStaleRoomSends(posts);
   }, [messages, selectedRoomId]);
 
   const newestPostTs = useMemo(() => {
@@ -414,18 +432,26 @@ export default function RoomsPanel({
     [loadSyncConfig, persistedRoomsLastRead],
   );
 
+  const loginQueueSnapshot = useMemo(() => {
+    void loginQueueRevision;
+    return getMeshcoreRoomLoginQueueSnapshot();
+  }, [loginQueueRevision]);
+  const loginQueueCount = meshcoreRoomLoginQueueSize();
+  const activeLoginRoomId = loginQueueSnapshot.activeNodeId;
+  const pendingLoginRoomIds = loginQueueSnapshot.pendingNodeIds;
+
   const startRoomLogin = useCallback(
     (nodeId: number, loginFn: () => Promise<void>) => {
       clearMeshcoreRoomAutoLoginFailure(nodeId);
       const gen = (loginAttemptGenRef.current.get(nodeId) ?? 0) + 1;
       loginAttemptGenRef.current.set(nodeId, gen);
-      setLoginLoadingRoomIds((prev) => new Set(prev).add(nodeId));
       setLoginErrorsByRoom((prev) => {
         if (!prev.has(nodeId)) return prev;
         const next = new Map(prev);
         next.delete(nodeId);
         return next;
       });
+      setLocalLoginRoomIds((prev) => new Set(prev).add(nodeId));
       void loginFn()
         .then(() => {
           if (loginAttemptGenRef.current.get(nodeId) !== gen) return;
@@ -440,7 +466,7 @@ export default function RoomsPanel({
         })
         .finally(() => {
           if (loginAttemptGenRef.current.get(nodeId) !== gen) return;
-          setLoginLoadingRoomIds((prev) => {
+          setLocalLoginRoomIds((prev) => {
             if (!prev.has(nodeId)) return prev;
             const next = new Set(prev);
             next.delete(nodeId);
@@ -451,20 +477,61 @@ export default function RoomsPanel({
     [refreshStoredRooms, t],
   );
 
+  const isRoomLoginInProgress = useCallback(
+    (nodeId: number): boolean => {
+      void loginQueueRevision;
+      return meshcoreIsRoomLoginQueued(nodeId) || localLoginRoomIds.has(nodeId);
+    },
+    [localLoginRoomIds, loginQueueRevision],
+  );
+
   const handleCancelLogin = useCallback(() => {
-    if (selectedRoomId == null) return;
-    onCancelRoomLogin(selectedRoomId);
-    loginAttemptGenRef.current.set(
-      selectedRoomId,
-      (loginAttemptGenRef.current.get(selectedRoomId) ?? 0) + 1,
-    );
-    setLoginLoadingRoomIds((prev) => {
-      if (!prev.has(selectedRoomId)) return prev;
+    if (loginQueueCount + localLoginRoomIds.size > 1) {
+      meshcoreCancelAllRoomLogins();
+      for (const nodeId of [activeLoginRoomId, ...pendingLoginRoomIds, ...localLoginRoomIds]) {
+        if (nodeId == null) continue;
+        loginAttemptGenRef.current.set(nodeId, (loginAttemptGenRef.current.get(nodeId) ?? 0) + 1);
+      }
+      setLocalLoginRoomIds(new Set());
+      return;
+    }
+    const nodeId = activeLoginRoomId ?? selectedRoomId;
+    if (nodeId == null) return;
+    onCancelRoomLogin(nodeId);
+    loginAttemptGenRef.current.set(nodeId, (loginAttemptGenRef.current.get(nodeId) ?? 0) + 1);
+    setLocalLoginRoomIds((prev) => {
+      if (!prev.has(nodeId)) return prev;
       const next = new Set(prev);
-      next.delete(selectedRoomId);
+      next.delete(nodeId);
       return next;
     });
-  }, [onCancelRoomLogin, selectedRoomId]);
+  }, [
+    activeLoginRoomId,
+    localLoginRoomIds,
+    loginQueueCount,
+    onCancelRoomLogin,
+    pendingLoginRoomIds,
+    selectedRoomId,
+  ]);
+
+  const handleLoginAllSaved = useCallback(() => {
+    if (!onLoginAllSaved) return;
+    const targets = roomServers
+      .filter((r) => !meshcoreIsRoomLoggedIn(r.node_id))
+      .map((r) => r.node_id);
+    if (targets.length === 0) return;
+    for (const nodeId of targets) {
+      loginAttemptGenRef.current.set(nodeId, (loginAttemptGenRef.current.get(nodeId) ?? 0) + 1);
+      setLocalLoginRoomIds((prev) => new Set(prev).add(nodeId));
+    }
+    void onLoginAllSaved(targets)
+      .catch((e: unknown) => {
+        console.warn('[RoomsPanel] loginAllSaved failed ' + errLikeToLogString(e));
+      })
+      .finally(() => {
+        setLocalLoginRoomIds(new Set());
+      });
+  }, [onLoginAllSaved, roomServers]);
 
   const handleLogin = useCallback(() => {
     if (selectedRoomId == null) return;
@@ -501,13 +568,30 @@ export default function RoomsPanel({
 
   const handleSaveSyncConfig = useCallback(async () => {
     if (selectedRoomId == null) return;
+    if (autoLoginOnConnect && !storedRoomIds.has(selectedRoomId)) {
+      const session = meshcoreGetRoomSession(selectedRoomId);
+      if (session) {
+        await setMeshcoreRoomCredential(selectedRoomId, {
+          guestPassword: session.guestPassword,
+          ...(session.adminPassword.length > 0 ? { adminPassword: session.adminPassword } : {}),
+        });
+        refreshStoredRooms();
+      }
+    }
     await setMeshcoreRoomSyncConfig(selectedRoomId, {
       enabled: syncEnabled,
       intervalMinutes: syncInterval,
       autoLoginOnConnect,
     });
     setSyncConfigDirty(false);
-  }, [autoLoginOnConnect, selectedRoomId, syncEnabled, syncInterval]);
+  }, [
+    autoLoginOnConnect,
+    refreshStoredRooms,
+    selectedRoomId,
+    storedRoomIds,
+    syncEnabled,
+    syncInterval,
+  ]);
 
   const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
 
@@ -737,10 +821,35 @@ export default function RoomsPanel({
     [aclLevel, aclPubkey, onSendRoomAdminCli, selectedRoomId],
   );
 
-  const loggedIn = selectedRoomId != null && meshcoreIsRoomLoggedIn(selectedRoomId);
+  const loggedIn = useMemo(() => {
+    void roomSessionRevision;
+    return selectedRoomId != null && meshcoreIsRoomLoggedIn(selectedRoomId);
+  }, [selectedRoomId, roomSessionRevision]);
   const guestFieldEmpty = loginPassword.trim().length === 0;
-  const selectedRoomLoginLoading =
-    selectedRoomId != null && loginLoadingRoomIds.has(selectedRoomId);
+  const selectedRoomLoginLoading = selectedRoomId != null && isRoomLoginInProgress(selectedRoomId);
+  const loginAllInProgress = localLoginRoomIds.size > 1 || loginQueueCount > 1;
+  const otherRoomLoginInProgress =
+    loginQueueCount + localLoginRoomIds.size > 0 &&
+    selectedRoomId != null &&
+    !isRoomLoginInProgress(selectedRoomId);
+  const activeLoginRoomName =
+    activeLoginRoomId != null
+      ? (nodes.get(activeLoginRoomId)?.long_name ?? String(activeLoginRoomId))
+      : '';
+  const roomsNotLoggedInCount = useMemo(() => {
+    void roomSessionRevision;
+    return roomServers.filter((r) => !meshcoreIsRoomLoggedIn(r.node_id)).length;
+  }, [roomServers, roomSessionRevision]);
+  const loginAllSavedDisabled = !isConnected || roomsNotLoggedInCount === 0;
+  const loginAllSavedDisabledReason = !isConnected
+    ? t('roomsPanel.loginAllSavedDisabledNotConnected')
+    : roomsNotLoggedInCount === 0
+      ? t('roomsPanel.loginAllSavedDisabledAllLoggedIn')
+      : '';
+  const loginButtonEnabled = isConnected && !guestFieldEmpty && !selectedRoomLoginLoading;
+  const loginButtonClass = loginButtonEnabled
+    ? 'border-brand-green bg-brand-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-brand-green/90'
+    : 'w-full cursor-not-allowed rounded border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-500';
   const selectedRoomLeaveLoading =
     selectedRoomId != null && leaveLoadingRoomIds.has(selectedRoomId);
   const loginError =
@@ -758,8 +867,30 @@ export default function RoomsPanel({
       {RemoteAuthModal}
       <div className="flex min-h-0 flex-1 gap-3">
         <div className="bg-secondary-dark flex w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700">
-          <div className="border-b border-gray-700 px-3 py-2 text-sm font-medium text-gray-200">
-            {t('roomsPanel.title')} <span className="text-gray-500">({roomServers.length})</span>
+          <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
+            <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
+              {t('roomsPanel.title')} <span className="text-gray-500">({roomServers.length})</span>
+            </span>
+            {onLoginAllSaved && roomServers.length > 0 ? (
+              <button
+                type="button"
+                onClick={handleLoginAllSaved}
+                disabled={loginAllSavedDisabled}
+                className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-medium ${
+                  loginAllSavedDisabled
+                    ? 'cursor-not-allowed border-gray-600 bg-gray-800 text-gray-500'
+                    : 'border-brand-green/60 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 cursor-pointer'
+                }`}
+                aria-label={t('roomsPanel.loginAllSavedAria')}
+                title={
+                  loginAllSavedDisabled && loginAllSavedDisabledReason
+                    ? loginAllSavedDisabledReason
+                    : t('roomsPanel.loginAllSavedTooltip')
+                }
+              >
+                {t('roomsPanel.loginAllSaved')}
+              </button>
+            ) : null}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {roomServers.length === 0 ? (
@@ -770,7 +901,7 @@ export default function RoomsPanel({
                 const unread = roomUnreadCounts.get(room.node_id) ?? 0;
                 const isLogged = meshcoreIsRoomLoggedIn(room.node_id);
                 const hasSaved = storedRoomIds.has(room.node_id);
-                const isLoggingIn = loginLoadingRoomIds.has(room.node_id);
+                const isLoggingIn = isRoomLoginInProgress(room.node_id) && !isLogged;
                 const isLeaving = leaveLoadingRoomIds.has(room.node_id);
                 const autoLoginFailed = getMeshcoreRoomAutoLoginFailure(room.node_id);
                 const showAutoLoginFailed =
@@ -779,45 +910,72 @@ export default function RoomsPanel({
                   ? 'text-brand-green'
                   : isLeaving
                     ? 'text-amber-300'
-                    : isLoggingIn
-                      ? 'text-amber-300'
-                      : hasSaved
-                        ? 'text-amber-400/90'
-                        : 'text-gray-500';
-                const markerGlyph = isLogged
-                  ? '●'
-                  : isLeaving || isLoggingIn
-                    ? '◌'
                     : hasSaved
-                      ? '◐'
-                      : '○';
+                      ? 'text-amber-400/90'
+                      : 'text-gray-500';
+                const markerGlyph = isLogged ? '●' : isLeaving ? '◌' : hasSaved ? '◐' : '○';
+                const markerTitle = isLogged
+                  ? undefined
+                  : showAutoLoginFailed
+                    ? autoLoginFailed
+                    : hasSaved
+                      ? t('roomsPanel.savedPasswordNotLoggedIn')
+                      : undefined;
                 return (
-                  <button
+                  <div
                     key={room.node_id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     data-unread={unread > 0 && selectedRoomId !== room.node_id ? unread : 0}
                     onClick={() => {
                       handleSelectRoom(room.node_id);
                     }}
-                    className={`w-full border-b border-gray-800 px-3 py-2 text-left transition-colors hover:bg-gray-800/60 ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectRoom(room.node_id);
+                      }
+                    }}
+                    className={`w-full cursor-pointer border-b border-gray-800 px-3 py-2 text-left transition-colors hover:bg-gray-800/60 ${
                       selectedRoomId === room.node_id ? 'bg-gray-800/80' : ''
                     }`}
                   >
                     <div className="flex items-center gap-2 text-sm text-gray-200">
-                      <span
-                        className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${
-                          showAutoLoginFailed ? 'ring-2 ring-red-500' : ''
-                        } ${markerColorClass}`}
-                        aria-hidden={!showAutoLoginFailed}
-                        aria-label={
-                          showAutoLoginFailed
-                            ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
-                            : undefined
-                        }
-                        title={showAutoLoginFailed ? autoLoginFailed : undefined}
-                      >
-                        {markerGlyph}
-                      </span>
+                      {onToggleFavorite ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleFavorite(room.node_id, !room.favorited);
+                          }}
+                          className="text-brand-yellow/70 hover:text-brand-yellow z-10 shrink-0 text-sm leading-none"
+                          aria-label={
+                            room.favorited ? t('roomsPanel.unfavorite') : t('roomsPanel.favorite')
+                          }
+                        >
+                          {room.favorited ? '★' : '☆'}
+                        </button>
+                      ) : null}
+                      {isLoggingIn ? (
+                        <span
+                          className={ROOM_LOGIN_PROGRESS_DOT}
+                          aria-label={t('roomsPanel.loggingInMarkerAria')}
+                          title={t('roomsPanel.loggingIn')}
+                        />
+                      ) : (
+                        <span
+                          className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${showAutoLoginFailed ? 'ring-1 ring-red-500' : ''} ${markerColorClass}`}
+                          aria-hidden={!showAutoLoginFailed}
+                          aria-label={
+                            showAutoLoginFailed
+                              ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
+                              : undefined
+                          }
+                          title={markerTitle}
+                        >
+                          {markerGlyph}
+                        </span>
+                      )}
                       <span className="truncate">{room.long_name}</span>
                       {unread > 0 && selectedRoomId !== room.node_id && (
                         <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
@@ -834,7 +992,7 @@ export default function RoomsPanel({
                         </>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               })
             )}
@@ -885,8 +1043,8 @@ export default function RoomsPanel({
                 <button
                   type="button"
                   onClick={handleLogin}
-                  disabled={!isConnected || guestFieldEmpty}
-                  className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 w-full rounded border px-3 py-2 text-sm font-medium disabled:opacity-40"
+                  disabled={!loginButtonEnabled}
+                  className={loginButtonClass}
                 >
                   {t('roomsPanel.loginButton')}
                 </button>
@@ -909,6 +1067,35 @@ export default function RoomsPanel({
                     </p>
                   )}
               </div>
+            </div>
+          )}
+
+          {loginAllInProgress && (
+            <div className="border-brand-green/30 bg-brand-green/10 text-brand-green border-b px-4 py-2 text-sm">
+              {t('roomsPanel.loginAllInProgress', {
+                count: Math.max(loginQueueCount, localLoginRoomIds.size),
+              })}
+            </div>
+          )}
+
+          {selectedRoomId && !loggedIn && otherRoomLoginInProgress && (
+            <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              <p>
+                {loginQueueCount > 1
+                  ? t('roomsPanel.loggingInQueue', {
+                      count: loginQueueCount,
+                      name: activeLoginRoomName,
+                    })
+                  : t('roomsPanel.loggingInOtherRoom', { name: activeLoginRoomName })}
+              </p>
+              <button
+                type="button"
+                onClick={handleCancelLogin}
+                className="mt-2 rounded border border-gray-600 bg-gray-800 px-3 py-1 text-xs text-gray-300 hover:bg-gray-700"
+                aria-label={t('roomsPanel.cancelLogin')}
+              >
+                {t('roomsPanel.cancelLogin')}
+              </button>
             </div>
           )}
 
@@ -950,21 +1137,6 @@ export default function RoomsPanel({
                 </span>
                 <label
                   className="flex items-center gap-1.5 text-xs text-gray-400"
-                  title={t('roomsPanel.autoSyncTooltip')}
-                >
-                  <input
-                    type="checkbox"
-                    checked={syncEnabled}
-                    onChange={(e) => {
-                      setSyncEnabled(e.target.checked);
-                      setSyncConfigDirty(true);
-                    }}
-                    aria-label={t('roomsPanel.autoSync')}
-                  />
-                  {t('roomsPanel.autoSync')}
-                </label>
-                <label
-                  className="flex items-center gap-1.5 text-xs text-gray-400"
                   title={t('roomsPanel.autoLoginOnConnectTooltip')}
                 >
                   <input
@@ -974,31 +1146,57 @@ export default function RoomsPanel({
                       setAutoLoginOnConnect(e.target.checked);
                       setSyncConfigDirty(true);
                     }}
-                    disabled={selectedRoomId == null || !storedRoomIds.has(selectedRoomId)}
+                    disabled={
+                      selectedRoomId == null ||
+                      (!storedRoomIds.has(selectedRoomId) &&
+                        !meshcoreIsRoomLoggedIn(selectedRoomId))
+                    }
                     aria-label={t('roomsPanel.autoLoginOnConnect')}
                   />
                   {t('roomsPanel.autoLoginOnConnect')}
                 </label>
-                {selectedRoomId != null && !storedRoomIds.has(selectedRoomId) && (
-                  <span className="text-[10px] text-gray-500">
-                    {t('roomsPanel.autoLoginRequiresSavedPassword')}
-                  </span>
-                )}
-                {syncEnabled && (
-                  <select
-                    value={syncInterval}
-                    onChange={(e) => {
-                      setSyncInterval(Number.parseInt(e.target.value, 10));
-                      setSyncConfigDirty(true);
-                    }}
-                    className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-200"
-                    aria-label={t('roomsPanel.syncIntervalLabel')}
-                  >
-                    <option value={60}>{t('roomsPanel.syncInterval60')}</option>
-                    <option value={120}>{t('roomsPanel.syncInterval120')}</option>
-                    <option value={240}>{t('roomsPanel.syncInterval240')}</option>
-                  </select>
-                )}
+                {selectedRoomId != null &&
+                  !storedRoomIds.has(selectedRoomId) &&
+                  !meshcoreIsRoomLoggedIn(selectedRoomId) && (
+                    <span className="text-[10px] text-gray-500">
+                      {t('roomsPanel.autoLoginRequiresSavedPassword')}
+                    </span>
+                  )}
+                <span className="mx-1 hidden text-gray-600 sm:inline" aria-hidden="true">
+                  |
+                </span>
+                <div
+                  className="flex flex-wrap items-center gap-1.5 rounded border border-gray-700/80 px-2 py-0.5"
+                  title={t('roomsPanel.autoSyncTooltip')}
+                >
+                  <label className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <input
+                      type="checkbox"
+                      checked={syncEnabled}
+                      onChange={(e) => {
+                        setSyncEnabled(e.target.checked);
+                        setSyncConfigDirty(true);
+                      }}
+                      aria-label={t('roomsPanel.autoSync')}
+                    />
+                    {t('roomsPanel.autoSync')}
+                  </label>
+                  {syncEnabled && (
+                    <select
+                      value={syncInterval}
+                      onChange={(e) => {
+                        setSyncInterval(Number.parseInt(e.target.value, 10));
+                        setSyncConfigDirty(true);
+                      }}
+                      className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-200"
+                      aria-label={t('roomsPanel.syncIntervalLabel')}
+                    >
+                      <option value={60}>{t('roomsPanel.syncInterval60')}</option>
+                      <option value={120}>{t('roomsPanel.syncInterval120')}</option>
+                      <option value={240}>{t('roomsPanel.syncInterval240')}</option>
+                    </select>
+                  )}
+                </div>
                 {syncConfigDirty && (
                   <button
                     type="button"
@@ -1480,8 +1678,8 @@ export default function RoomsPanel({
                     <button
                       type="button"
                       onClick={handleLogin}
-                      disabled={!isConnected || guestFieldEmpty || selectedRoomLoginLoading}
-                      className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 w-full rounded border px-3 py-2 text-sm font-medium disabled:opacity-40"
+                      disabled={!loginButtonEnabled}
+                      className={loginButtonClass}
                       aria-label={t('roomsPanel.upgradeAccess')}
                     >
                       {selectedRoomLoginLoading

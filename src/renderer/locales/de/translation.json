@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Auto-Login fehlgeschlagen: {{error}}",
     "jumpToLatest": "Zur neuesten Seite springen",
     "jumpToUnread": "Zum Ungelesenen springen",
-    "newMessagesDivider": "Neue Nachrichten"
+    "newMessagesDivider": "Neue Nachrichten",
+    "loggingInMarkerAria": "Anmeldung am Raumserver",
+    "savedPasswordNotLoggedIn": "Passwort gespeichert — Raum öffnen und einloggen",
+    "favorite": "Lieblingsraum",
+    "unfavorite": "Aus Favoriten entfernen",
+    "loginAllSaved": "Alles einloggen",
+    "loginAllSavedAria": "Melden Sie sich bei allen gespeicherten Raumservern an",
+    "loginAllSavedTooltip": "Anmeldung in der Warteschlange für jeden Raum in der Liste (gespeichertes Passwort oder Standard-Gast \"hello\"; einzeln)",
+    "loginAllSavedDisabledNotConnected": "Schließen Sie Ihr Radio an, um sich in den Räumen anzumelden",
+    "loginAllSavedDisabledAllLoggedIn": "Alle Räume in der Liste sind bereits angemeldet",
+    "loginAllInProgress": "Anmeldung in {{count}} Räumen (eins nach dem anderen)…",
+    "loggingInQueue": "Anmeldung in {{count}} Räumen (jetzt: {{name}})…",
+    "loggingInOtherRoom": "Anmelden bei {{name}}…"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

@@ -160,7 +160,7 @@ describe('RoomsPanel', () => {
     expect(screen.queryByText('roomsPanel.loggingIn')).not.toBeInTheDocument();
   });
 
-  it('allows starting login on room B while room A login is in progress', () => {
+  it('queues room B login while room A login is in progress', () => {
     meshcoreClearAllRoomSessions();
     const roomA = makeRoom(0x1001, 'Room A');
     const roomB = makeRoom(0x1002, 'Room B');
@@ -168,29 +168,25 @@ describe('RoomsPanel', () => {
       [roomA.node_id, roomA],
       [roomB.node_id, roomB],
     ]);
-    const onLoginRoom = vi.fn((nodeId: number) => {
-      if (nodeId === roomA.node_id) {
-        return new Promise<void>(() => {
+    const onLoginRoom = vi.fn(
+      () =>
+        new Promise<void>(() => {
           /* hang */
-        });
-      }
-      return Promise.resolve();
-    });
+        }),
+    );
 
     renderRoomsPanel(nodes, { initialRoomTarget: roomA.node_id, onLoginRoom });
     fireEvent.click(screen.getByText('roomsPanel.loginButton'));
     fireEvent.click(screen.getByText('Room B'));
     fireEvent.click(screen.getByText('roomsPanel.loginButton'));
 
-    expect(onLoginRoom).toHaveBeenCalledWith(
-      roomB.node_id,
-      expect.any(String),
-      expect.objectContaining({ guestPassword: expect.any(String) }),
-    );
-    expect(screen.getByText('roomsPanel.loggingIn')).toBeInTheDocument();
+    expect(onLoginRoom).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getAllByLabelText('roomsPanel.loggingInMarkerAria').length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
-  it('cancel login calls onCancelRoomLogin and restores the login form', () => {
+  it('cancel login calls onCancelRoomLogin and restores the login form', async () => {
     meshcoreClearAllRoomSessions();
     const room = makeRoom(0x1003, 'Cancel Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
@@ -208,11 +204,15 @@ describe('RoomsPanel', () => {
       onCancelRoomLogin,
     });
     fireEvent.click(screen.getByText('roomsPanel.loginButton'));
-    expect(screen.getByText('roomsPanel.loggingIn')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loggingIn')).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByLabelText('roomsPanel.cancelLogin'));
     expect(onCancelRoomLogin).toHaveBeenCalledWith(room.node_id);
-    expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    });
   });
 
   it('disables Login when guest password field is empty', () => {

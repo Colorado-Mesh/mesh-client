@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "Otomatik giriş başarısız: {{error}}",
     "jumpToLatest": "En yeniye atla",
     "jumpToUnread": "Okunmamışlara atla",
-    "newMessagesDivider": "Yeni mesajlar"
+    "newMessagesDivider": "Yeni mesajlar",
+    "loggingInMarkerAria": "Sunucuya giriş yapılıyor...",
+    "savedPasswordNotLoggedIn": "Şifre kaydedildi — odayı açın ve giriş yapın",
+    "favorite": "Favori oda",
+    "unfavorite": "Favorilerimden Sil",
+    "loginAllSaved": "Tümüne giriş yap",
+    "loginAllSavedAria": "Kaydedilen tüm oda sunucularında oturum açın",
+    "loginAllSavedTooltip": "Listedeki her oda için kuyrukta oturum açma (kayıtlı şifre veya varsayılan misafir \"hello\"; tek tek)",
+    "loginAllSavedDisabledNotConnected": "Odalarda oturum açmak için radyonuzu bağlayın",
+    "loginAllSavedDisabledAllLoggedIn": "Listedeki tüm odalar zaten giriş yapmış",
+    "loginAllInProgress": "{{count}} odaya giriş yapılıyor (tek tek)…",
+    "loggingInQueue": "{{count}} odaya giriş yapılıyor (şimdi: {{name}})…",
+    "loggingInOtherRoom": "{{name}} odasına giriş yapılıyor…"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

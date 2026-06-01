@@ -11,6 +11,7 @@ import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemo
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
+import { repairMeshcoreHydrationStaleRoomSends } from './meshcoreDbCacheHydration';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
   buildMeshtasticNodeMapFromDbRows,
@@ -103,7 +104,7 @@ export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Pro
     MESHCORE_DB_MESSAGE_LOAD_LIMIT,
   );
   const rows = dbMsgs as MeshcoreMessageDbRow[];
-  const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+  const mapped = repairMeshcoreHydrationStaleRoomSends(mapMeshcoreDbRowsToChatMessages(rows));
   void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
   upsertMessageRecordsForIdentity(

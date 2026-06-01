@@ -2035,7 +2035,19 @@
     "autoLoginFailedAria": "自動ログインに失敗しました：{{error}}",
     "jumpToLatest": "最新情報にジャンプ",
     "jumpToUnread": "未読へジャンプ",
-    "newMessagesDivider": "新着メッセージ"
+    "newMessagesDivider": "新着メッセージ",
+    "loggingInMarkerAria": "ルームサーバーにログインしています",
+    "savedPasswordNotLoggedIn": "パスワードを保存しました — ルームを開いてログイン",
+    "favorite": "お気に入りのルーム",
+    "unfavorite": "お気に入りから削除",
+    "loginAllSaved": "すべてログイン",
+    "loginAllSavedAria": "保存されたすべてのルームサーバーにログインする",
+    "loginAllSavedTooltip": "リスト内の各ルームを順にログイン（保存済みパスワードまたはデフォルトゲスト「hello」；一度に1件）",
+    "loginAllSavedDisabledNotConnected": "ラジオを接続してルームにログイン",
+    "loginAllSavedDisabledAllLoggedIn": "リスト内のすべてのルームはすでにログイン済みです",
+    "loginAllInProgress": "{{count}} 件のルームにログイン中（1件ずつ）…",
+    "loggingInQueue": "{{count}} 件のルームにログイン中（現在: {{name}}）…",
+    "loggingInOtherRoom": "{{name}} にログイン中…"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
