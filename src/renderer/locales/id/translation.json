@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Aktifkan Perangkat Keras Jarak Jauh",
+      "remoteHardwareEnabledDesc": "Izinkan node jarak jauh membaca dan menulis pin GPIO di perangkat ini.",
+      "remoteHardwareAllowUndefinedPins": "Izinkan Akses Pin Tak Terdefinisi",
+      "remoteHardwareAllowUndefinedPinsDesc": "Izinkan pembacaan/penulisan pin yang tidak tercantum dalam konfigurasi pin yang tersedia."
     },
     "applySection": "Terapkan {{section}}",
     "applyingButton": "Melamar...",

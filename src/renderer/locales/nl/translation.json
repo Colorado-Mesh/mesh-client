@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Externe hardware inschakelen",
+      "remoteHardwareEnabledDesc": "Staat externe knooppunten toe GPIO-pinnen op dit apparaat te lezen en schrijven.",
+      "remoteHardwareAllowUndefinedPins": "Toegang tot ongedefinieerde pinnen toestaan",
+      "remoteHardwareAllowUndefinedPinsDesc": "Staat het lezen/schrijven toe van pinnen die niet in de beschikbare pinconfiguratie staan."
     },
     "applySection": "Toepassen {{section}}",
     "applyingButton": "Toepassen...",

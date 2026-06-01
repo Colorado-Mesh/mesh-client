@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Activer le matériel distant",
+      "remoteHardwareEnabledDesc": "Permet aux nœuds distants de lire et d'écrire les broches GPIO sur cet appareil.",
+      "remoteHardwareAllowUndefinedPins": "Autoriser l'accès aux broches non définies",
+      "remoteHardwareAllowUndefinedPinsDesc": "Autorise la lecture/écriture des broches non listées dans la configuration des broches disponibles."
     },
     "applySection": "Appliquer {{section}}",
     "applyingButton": "Candidature...",

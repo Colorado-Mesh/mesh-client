@@ -527,6 +527,15 @@ export default function ModulePanel({
     cfgNum(detectCfg.stateBroadcastSecs, 0),
   );
 
+  // ─── Remote Hardware module ────────────────────────────────────
+  const remoteHardwareCfg = meshtasticConfigSlice(moduleConfigs.remoteHardware);
+  const [remoteHardwareEnabled, setRemoteHardwareEnabled] = useState<boolean>(
+    cfgBool(remoteHardwareCfg.enabled, false),
+  );
+  const [remoteHardwareAllowUndefinedPins, setRemoteHardwareAllowUndefinedPins] = useState<boolean>(
+    cfgBool(remoteHardwareCfg.allowUndefinedPinAccess, false),
+  );
+
   // ─── Neighbor Info module ──────────────────────────────────────
   const neighborInfoCfg = meshtasticConfigSlice(moduleConfigs.neighborInfo);
   const [neighborInfoEnabled, setNeighborInfoEnabled] = useState<boolean>(
@@ -696,6 +705,11 @@ export default function ModulePanel({
     setDetectName(cfgStr(cfg.name, ''));
     setDetectMinBroadcast(cfgNum(cfg.minimumBroadcastSecs, 0));
     setDetectStateBroadcast(cfgNum(cfg.stateBroadcastSecs, 0));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.remoteHardware, (cfg) => {
+    setRemoteHardwareEnabled(cfgBool(cfg.enabled, false));
+    setRemoteHardwareAllowUndefinedPins(cfgBool(cfg.allowUndefinedPinAccess, false));
   });
 
   useSyncFormFromConfig(moduleConfigs.paxcounter, (cfg) => {
@@ -1693,6 +1707,37 @@ export default function ModulePanel({
           description={t('modulePanel.fields.stateBroadcastIntervalDesc')}
         />
       </ModuleSection>
+
+      {/* ═══ Remote Hardware Module ═══ */}
+      {'remoteHardware' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionRemoteHardware')}
+          onApply={() => {
+            applyMeshtasticModule('Remote Hardware', 'remoteHardware', remoteHardwareCfg, {
+              enabled: remoteHardwareEnabled,
+              allowUndefinedPinAccess: remoteHardwareAllowUndefinedPins,
+            });
+          }}
+          applying={applyingSection === 'Remote Hardware'}
+          disabled={disabled}
+        >
+          <ConfigToggle
+            label={t('modulePanel.fields.remoteHardwareEnabled')}
+            checked={remoteHardwareEnabled}
+            onChange={setRemoteHardwareEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.remoteHardwareEnabledDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.remoteHardwareAllowUndefinedPins')}
+            checked={remoteHardwareAllowUndefinedPins}
+            onChange={setRemoteHardwareAllowUndefinedPins}
+            disabled={disabled || !remoteHardwareEnabled}
+            description={t('modulePanel.fields.remoteHardwareAllowUndefinedPinsDesc')}
+          />
+          <p className="text-muted text-xs">{t('modulePanel.fields.remoteHardwareHint')}</p>
+        </ModuleSection>
+      )}
 
       {/* ═══ Pax Counter Module ═══ */}
       {'paxcounter' in moduleConfigs && (

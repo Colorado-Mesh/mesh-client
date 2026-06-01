@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Povolit vzdálený hardware",
+      "remoteHardwareEnabledDesc": "Umožňuje vzdáleným uzlům číst a zapisovat GPIO piny na tomto zařízení.",
+      "remoteHardwareAllowUndefinedPins": "Povolit přístup k nedefinovaným pinům",
+      "remoteHardwareAllowUndefinedPinsDesc": "Povoluje čtení/zápis pinů neuvedených v konfiguraci dostupných pinů."
     },
     "applySection": "Použít {{section}}",
     "applyingButton": "Aplikace...",

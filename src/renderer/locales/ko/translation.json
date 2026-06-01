@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "원격 하드웨어 활성화",
+      "remoteHardwareEnabledDesc": "원격 노드가 이 장치의 GPIO 핀을 읽고 쓸 수 있도록 허용합니다.",
+      "remoteHardwareAllowUndefinedPins": "정의되지 않은 핀 접근 허용",
+      "remoteHardwareAllowUndefinedPinsDesc": "사용 가능한 핀 구성에 나열되지 않은 핀의 읽기/쓰기를 허용합니다."
     },
     "applySection": "{{section}} 적용",
     "applyingButton": "신청 중...",

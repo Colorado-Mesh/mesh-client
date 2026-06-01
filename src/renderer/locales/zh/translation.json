@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "启用远程硬件",
+      "remoteHardwareEnabledDesc": "允许远程节点读取和写入此设备上的 GPIO 引脚。",
+      "remoteHardwareAllowUndefinedPins": "允许访问未定义引脚",
+      "remoteHardwareAllowUndefinedPinsDesc": "允许读取/写入未在可用引脚配置中列出的引脚。"
     },
     "applySection": "申请 {{section}}",
     "applyingButton": "正在申请...",

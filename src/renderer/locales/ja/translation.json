@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "リモートハードウェアを有効にする",
+      "remoteHardwareEnabledDesc": "リモートノードがこのデバイスのGPIOピンを読み書きできるようにします。",
+      "remoteHardwareAllowUndefinedPins": "未定義ピンへのアクセスを許可",
+      "remoteHardwareAllowUndefinedPinsDesc": "利用可能なピン設定に記載されていないピンの読み書きを許可します。"
     },
     "applySection": "{{section}}を適用",
     "applyingButton": "申請中...",

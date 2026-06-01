@@ -1212,7 +1212,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Включить удалённое оборудование",
+      "remoteHardwareEnabledDesc": "Разрешить удалённым узлам читать и записывать GPIO-пины на этом устройстве.",
+      "remoteHardwareAllowUndefinedPins": "Разрешить доступ к неопределённым пинам",
+      "remoteHardwareAllowUndefinedPinsDesc": "Разрешить чтение/запись пинов, не указанных в конфигурации доступных пинов."
     },
     "applySection": "Применить {{section}}",
     "applyingButton": "Применение...",

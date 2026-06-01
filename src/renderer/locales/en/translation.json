@@ -1226,7 +1226,11 @@
       "takTeamUnspecified": "Unspecified (Cyan)",
       "takRole": "TAK member role",
       "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
-      "takRoleUnspecified": "Unspecified (Team Member)"
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Enable Remote Hardware",
+      "remoteHardwareEnabledDesc": "Allow remote nodes to read and write GPIO pins on this device.",
+      "remoteHardwareAllowUndefinedPins": "Allow Undefined Pin Access",
+      "remoteHardwareAllowUndefinedPinsDesc": "Allow reading/writing pins not listed in the available pins configuration."
     },
     "applySection": "Apply {{section}}",
     "applyingButton": "Applying...",
