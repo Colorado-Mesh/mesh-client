@@ -248,9 +248,9 @@ for (const dir of localeDirs) {
       val,
       enVal,
     })) {
-      console.error(
-        `Locale quality in "${dir}" key "${key}": ${issue}. LOC=${JSON.stringify(val)}`,
-      );
+      // Omit locale value text: CodeQL js/clear-text-logging flags LOC when val
+      // was checked against ROOMS_HELLO_PASSWORD_FALSE_FRIENDS (wire password hints).
+      console.error(`Locale quality in "${dir}" key "${key}": ${issue}.`);
       errors++;
     }
   }
