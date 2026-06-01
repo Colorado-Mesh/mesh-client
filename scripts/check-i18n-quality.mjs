@@ -338,7 +338,8 @@ export const LOCALE_ARTIFACT_RES = [
 ];
 
 /** Brand / product names preserved verbatim when present in English. */
-export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
+// GPIO is a hardware acronym that must not be translated or expanded in UI strings.
+export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT', 'GPIO'];
 
 const BRAND_WORD_RES = new Map([
   ['TAK', /\bTAK\b/g],

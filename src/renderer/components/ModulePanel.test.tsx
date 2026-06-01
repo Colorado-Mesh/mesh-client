@@ -309,6 +309,100 @@ describe('ModulePanel', () => {
     });
   });
 
+  it('renders Remote Hardware section when remoteHardware config is present', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          remoteHardware: {
+            enabled: false,
+            allowUndefinedPinAccess: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    // Section should be present when remoteHardware key exists
+    const rhDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Remote Hardware';
+    });
+    expect(rhDetails).toBeDefined();
+    await user.click(rhDetails!.querySelector('summary')!);
+
+    // Enable toggle should be present
+    const switches = rhDetails!.querySelectorAll('[role="switch"]');
+    expect(switches.length).toBeGreaterThanOrEqual(1);
+
+    // Apply button exists and is enabled
+    const applyBtn = screen.getByRole('button', { name: 'Apply Remote Hardware' });
+    expect(applyBtn).not.toBeDisabled();
+  });
+
+  it('applies Remote Hardware config with enabled + allowUndefinedPinAccess', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          remoteHardware: {
+            enabled: false,
+            allowUndefinedPinAccess: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const rhDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Remote Hardware';
+    });
+    expect(rhDetails).toBeDefined();
+    await user.click(rhDetails!.querySelector('summary')!);
+
+    // Toggle enabled on
+    const switches = rhDetails!.querySelectorAll('[role="switch"]');
+    await user.click(switches[0]);
+
+    await user.click(screen.getByRole('button', { name: 'Apply Remote Hardware' }));
+
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'remoteHardware',
+          value: expect.objectContaining({
+            enabled: true,
+            allowUndefinedPinAccess: false,
+          }),
+        },
+      });
+      expect(onCommit).toHaveBeenCalled();
+    });
+  });
+
+  it('does not render Remote Hardware section when remoteHardware config is absent', () => {
+    renderWithToast(<ModulePanel {...baseProps} />);
+
+    const rhDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Remote Hardware';
+    });
+    expect(rhDetails).toBeUndefined();
+  });
+
   it('disables local-only canned message and ringtone actions for a remote target', async () => {
     const user = userEvent.setup();
 

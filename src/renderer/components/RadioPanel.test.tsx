@@ -221,6 +221,52 @@ describe('RadioPanel channel URL import/export', () => {
   });
 });
 
+describe('RadioPanel Device Configuration section group divider', () => {
+  it('renders a Device Configuration heading that separates radio and device config groups', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    // The h3 divider heading must be present
+    const headings = document.querySelectorAll('h3');
+    const deviceConfigHeading = [...headings].find(
+      (h) => h.textContent?.trim() === 'Device Configuration',
+    );
+    expect(deviceConfigHeading).toBeDefined();
+  });
+
+  it('Radio group sections appear before Device Configuration heading', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    const allElements = [...document.querySelectorAll('details summary span, h3')];
+    const texts = allElements.map((el) => el.textContent?.trim());
+
+    const loraIdx = texts.findIndex((t) => t === 'LoRa / Radio');
+    const dividerIdx = texts.findIndex((t) => t === 'Device Configuration');
+    const deviceRoleIdx = texts.findIndex((t) => t === 'Device Role');
+    const bluetoothIdx = texts.findIndex((t) => t === 'Bluetooth');
+
+    expect(loraIdx).toBeGreaterThanOrEqual(0);
+    expect(dividerIdx).toBeGreaterThan(loraIdx);
+    expect(deviceRoleIdx).toBeGreaterThan(dividerIdx);
+    expect(bluetoothIdx).toBeGreaterThan(dividerIdx);
+  });
+});
+
 describe('RadioPanel collapsible section consistency', () => {
   it('all details elements have group class for chevron animation', () => {
     render(

@@ -1223,7 +1223,7 @@
     "statusLabels": {
       "serial": "串行",
       "ipTunnel": "IP隧道",
-      "gpio": "通用输入输出接口",
+      "gpio": "GPIO",
       "rangeTest": "范围测试",
       "storeForward": "收到S&F"
     },
