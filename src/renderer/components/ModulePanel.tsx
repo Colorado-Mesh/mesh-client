@@ -60,6 +60,8 @@ interface Props {
   storeForwardMessages?: Map<number, PacketMessage[]>;
   rangeTestPackets?: Map<number, PacketMessage[]>;
   serialMessages?: Map<number, PacketMessage[]>;
+  /** IP tunnel packet stream; null/absent = daemon not running. */
+  ipTunnelMessages?: Map<number, PacketMessage[]>;
 }
 
 // ─── Reusable config components (same pattern as RadioPanel) ─────
@@ -283,6 +285,25 @@ function ModuleSection({
   );
 }
 
+function StatusOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+        <span>{title}</span>
+        <svg
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="space-y-4 px-4 pb-4">{children}</div>
+    </details>
+  );
+}
+
 const RTTTL_PRESETS = [
   { name: 'Beep', value: 'Beep:d=8,o=5,b=180:a' },
   { name: 'Two Beeps', value: 'TwoBeeps:d=8,o=5,b=180:a,p,a' },
@@ -375,6 +396,7 @@ export default function ModulePanel({
   storeForwardMessages,
   rangeTestPackets,
   serialMessages,
+  ipTunnelMessages,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -2036,6 +2058,14 @@ export default function ModulePanel({
             </div>
           </div>
         </ModuleSection>
+      )}
+
+      {/* ═══ IP Tunnel ═══ */}
+      {ipTunnelMessages != null && (
+        <StatusOnlySection title={t('modulePanel.sectionIpTunnel')}>
+          <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
+          <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>
+        </StatusOnlySection>
       )}
     </div>
   );
