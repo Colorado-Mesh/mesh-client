@@ -267,6 +267,26 @@ describe('RadioPanel Device Configuration section group divider', () => {
   });
 });
 
+describe('RadioPanel — Device Commands and Danger Zone removed', () => {
+  it('does not render Device Commands or Danger Zone sections in RadioPanel', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    const headings = [...document.querySelectorAll('h3')];
+    const deviceCmds = headings.find((h) => h.textContent?.includes('Device Commands'));
+    const dangerZone = headings.find((h) => h.textContent?.includes('Danger Zone'));
+    expect(deviceCmds).toBeUndefined();
+    expect(dangerZone).toBeUndefined();
+  });
+});
+
 describe('RadioPanel collapsible section consistency', () => {
   it('all details elements have group class for chevron animation', () => {
     render(
