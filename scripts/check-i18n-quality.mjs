@@ -170,21 +170,29 @@ export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
 /**
  * Auto-translate often replaces the MeshCore default password "hello" with a localized greeting.
  * Only checked on ROOMS_PANEL_LITERAL_HELLO_KEYS when English mentions "hello".
+ * Returns opaque issue codes; human-readable log copy lives in check-i18n.mjs (CodeQL).
  */
-export const ROOMS_HELLO_PASSWORD_FALSE_FRIENDS = {
-  cs: [{ re: /\bahoj\b/i, hint: 'keep wire password "hello", not Czech greeting "ahoj"' }],
-  de: [{ re: /\bHallo\b/i, hint: 'keep wire password "hello", not German greeting "Hallo"' }],
-  es: [{ re: /\bhola\b/i, hint: 'keep wire password "hello", not Spanish greeting "hola"' }],
-  fr: [{ re: /bonjour/i, hint: 'keep wire password "hello", not French greeting "bonjour"' }],
-  id: [{ re: /\bhalo\b/i, hint: 'keep wire password "hello", not Indonesian greeting "halo"' }],
-  it: [{ re: /\bciao\b/i, hint: 'keep wire password "hello", not Italian greeting "ciao"' }],
-  'pt-BR': [{ re: /\bolá\b/i, hint: 'keep wire password "hello", not Portuguese greeting "olá"' }],
-  nl: [{ re: /\bhallo\b/i, hint: 'keep wire password "hello", not Dutch greeting "hallo"' }],
-  pl: [{ re: /\bwitaj\b/i, hint: 'keep wire password "hello", not Polish greeting "witaj"' }],
-  ru: [{ re: /привет/i, hint: 'keep wire password "hello", not Russian greeting "привет"' }],
-  tr: [{ re: /merhaba/i, hint: 'keep wire password "hello", not Turkish greeting "merhaba"' }],
-  uk: [{ re: /привіт/i, hint: 'keep wire password "hello", not Ukrainian greeting "привіт"' }],
+export const ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES = {
+  cs: [/\bahoj\b/i],
+  de: [/\bHallo\b/i],
+  es: [/\bhola\b/i],
+  fr: [/bonjour/i],
+  id: [/\bhalo\b/i],
+  it: [/\bciao\b/i],
+  'pt-BR': [/\bolá\b/i],
+  nl: [/\bhallo\b/i],
+  pl: [/\bwitaj\b/i],
+  ru: [/привет/i],
+  tr: [/merhaba/i],
+  uk: [/привіт/i],
 };
+
+/** Opaque locale-quality codes for MeshCore wire-password hint checks. */
+export const LOCALE_QUALITY_ROOMS_HELLO_MISSING_LITERAL = 'rooms-hello-missing-literal';
+
+export function roomsHelloFalseFriendIssueCode(locale) {
+  return `rooms-hello-false-friend:${locale}`;
+}
 
 /** Outdated loginHelp that tells users to leave the field empty instead of Continue read-only. */
 export const STALE_ROOMS_LOGIN_HELP_RES = [
@@ -629,11 +637,11 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     enVal.includes('"hello"')
   ) {
     if (!/hello/i.test(val)) {
-      issues.push('MeshCore default guest password must stay literal "hello" in this hint');
+      issues.push(LOCALE_QUALITY_ROOMS_HELLO_MISSING_LITERAL);
     }
-    for (const { re, hint } of ROOMS_HELLO_PASSWORD_FALSE_FRIENDS[locale] ?? []) {
+    for (const re of ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES[locale] ?? []) {
       if (re.test(val)) {
-        issues.push(`roomsPanel hello password: ${hint}`);
+        issues.push(roomsHelloFalseFriendIssueCode(locale));
       }
     }
   }

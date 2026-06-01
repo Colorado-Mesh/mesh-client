@@ -467,7 +467,7 @@ describe('localeStringQualityIssues', () => {
       enVal:
         'Queue login for every room in the list (saved password or default guest "hello"; one at a time)',
     });
-    expectIssue(issues, 'wire password "hello"');
+    expect(issues).toContain('rooms-hello-false-friend:tr');
   });
 
   it('flags translated hello password in roomsPanel emptyGuestLoginHint', () => {
@@ -478,7 +478,7 @@ describe('localeStringQualityIssues', () => {
       enVal:
         'Empty guest field: use Continue read-only for blank-password servers. Login requires a password and sends "hello" when the field is empty.',
     });
-    expectIssue(issues, 'wire password "hello"');
+    expect(issues).toContain('rooms-hello-false-friend:de');
   });
 
   it('flags English Continue read-only in Dutch emptyGuestLoginHint', () => {
