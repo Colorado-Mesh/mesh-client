@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { meshcoreChatStubNodeIdFromDisplayName } from '../../lib/meshcoreUtils';
 import type { ChatMessage } from '../../lib/types';
 import {
+  findMeshcoreChannelRfDuplicate,
   findMeshcoreCrossTransportDuplicate,
   findMeshcoreTapbackEchoDuplicate,
   mapMeshcoreCrossTransportUpgrade,
+  MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+  meshcoreChannelRfMatch,
   meshcoreCrossTransportMatch,
   meshcoreTapbackEchoMatch,
 } from './meshcoreHookPreamble';
@@ -127,5 +130,47 @@ describe('mapMeshcoreCrossTransportUpgrade', () => {
     const { messages, matched } = mapMeshcoreCrossTransportUpgrade([msg], unrelated);
     expect(matched).toBe(false);
     expect(messages[0]).toBe(msg);
+  });
+});
+
+describe('meshcoreChannelRfMatch', () => {
+  it('matches two RF hears on the same channel within the window', () => {
+    const first = baseMsg({ receivedVia: 'rf', timestamp: 1_700_000_000_000 });
+    const replay = baseMsg({
+      receivedVia: 'rf',
+      timestamp: first.timestamp + 60_000,
+    });
+    expect(meshcoreChannelRfMatch(first, replay)).toBe(true);
+    expect(findMeshcoreChannelRfDuplicate([first], replay)).toBe(first);
+  });
+
+  it('does not match when timestamps exceed the window', () => {
+    const first = baseMsg({ receivedVia: 'rf', timestamp: 0 });
+    const replay = baseMsg({
+      receivedVia: 'rf',
+      timestamp: MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS + 1,
+    });
+    expect(meshcoreChannelRfMatch(first, replay)).toBe(false);
+  });
+
+  it('does not match RF replay when the first row was MQTT-only', () => {
+    const mqtt = baseMsg({ receivedVia: 'mqtt', timestamp: 0 });
+    const rf = baseMsg({
+      receivedVia: 'rf',
+      timestamp: 60_000,
+    });
+    expect(meshcoreChannelRfMatch(mqtt, rf)).toBe(false);
+    expect(meshcoreCrossTransportMatch(mqtt, rf)).toBe(true);
+  });
+
+  it('does not match room posts or DMs', () => {
+    const channel = baseMsg({ receivedVia: 'rf', channel: 0 });
+    const dm = baseMsg({
+      receivedVia: 'rf',
+      channel: -1,
+      to: 0xdeadbeef,
+      timestamp: channel.timestamp + 1_000,
+    });
+    expect(meshcoreChannelRfMatch(channel, dm)).toBe(false);
   });
 });

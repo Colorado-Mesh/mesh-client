@@ -1,4 +1,5 @@
 import {
+  findMeshcoreChannelRfDuplicate,
   findMeshcoreCrossTransportDuplicate,
   findMeshcoreRoomPostDuplicate,
   findMeshcoreTapbackEchoDuplicate,
@@ -295,6 +296,28 @@ export function upsertMeshcoreMessageWithDedup(
     const canonicalId =
       preferredId ??
       findStoreRecordIdForMessage(identityId, crossDup) ??
+      meshcoreMessageStoreId(merged);
+    const record = chatMessageToMessageRecord(merged);
+    record.id = canonicalId;
+    upsertMessage(identityId, record);
+    const altId = meshcoreMessageStoreId(msg);
+    if (altId !== canonicalId) {
+      deleteMessage(identityId, altId);
+    }
+    return { inserted: false, storeUpdated: true, message: merged, canonicalId };
+  }
+
+  const channelRfDup = findMeshcoreChannelRfDuplicate(storeMessages, msg);
+  if (channelRfDup) {
+    const merged: ChatMessage = {
+      ...channelRfDup,
+      ...(meshcorePreferIncomingReplyFields(channelRfDup, msg) ?? {}),
+      receivedVia: mergeMeshcoreReceivedVia(channelRfDup.receivedVia, msg.receivedVia),
+      rxHops: channelRfDup.rxHops ?? msg.rxHops,
+    };
+    const canonicalId =
+      preferredId ??
+      findStoreRecordIdForMessage(identityId, channelRfDup) ??
       meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;

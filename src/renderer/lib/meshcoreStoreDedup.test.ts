@@ -76,6 +76,32 @@ describe('meshcoreStoreDedup', () => {
     expect(useMessageStore.getState().messages[ID]?.[result.canonicalId]?.receivedVia).toBe('both');
   });
 
+  it('merges duplicate RF channel hears within the channel RF window', () => {
+    const tsMs = 1_700_000_020_000;
+    const first = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: hello again',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, first);
+
+    const replay = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: hello again',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs + 60_000,
+      receivedVia: 'rf',
+    });
+    const result = upsertMeshcoreMessageWithDedup(ID, replay);
+
+    expect(result.inserted).toBe(false);
+    expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
+  });
+
   it('assigns room store ids for room server posts', () => {
     const roomId = 0xac200e59;
     const msg = {
