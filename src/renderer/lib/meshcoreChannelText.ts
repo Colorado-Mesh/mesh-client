@@ -676,7 +676,7 @@ function parseMeshcoreReplyQuotedNeedle(payload: string): string | undefined {
 function meshcoreFindParentFromReplyPayloadHint(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
-  targetName?: string,
+  targetName: string,
 ): ChatMessage | undefined {
   const payload = msg.payload.trim();
 
@@ -686,7 +686,7 @@ function meshcoreFindParentFromReplyPayloadHint(
     for (const m of prior) {
       if (!meshcoreThreadMatchesMessage(msg, m)) continue;
       if (m.timestamp >= msg.timestamp) continue;
-      if (targetName && !meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
+      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
       if (m.emoji != null && m.replyId != null) continue;
       if (!parentPayloadMatchesLetterRef(m.payload, letterToken)) continue;
       if (!best || m.timestamp > best.timestamp) best = m;
@@ -702,7 +702,7 @@ function meshcoreFindParentFromReplyPayloadHint(
     for (const m of prior) {
       if (!meshcoreThreadMatchesMessage(msg, m)) continue;
       if (m.timestamp >= msg.timestamp) continue;
-      if (targetName && !meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
+      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
       if (m.emoji != null && m.replyId != null) continue;
       const hay = normalizePayloadMatchText(m.payload);
       if (hay === quotedNeedle || hay.startsWith(quotedNeedle) || quotedNeedle.startsWith(hay)) {
@@ -718,7 +718,7 @@ function meshcoreFindParentFromReplyPayloadHint(
     for (const m of prior) {
       if (!meshcoreThreadMatchesMessage(msg, m)) continue;
       if (m.timestamp >= msg.timestamp) continue;
-      if (targetName && !meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
+      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
       if (m.emoji != null && m.replyId != null) continue;
       if (!parentPayloadMatchesNumericRef(m.payload, numRef)) continue;
       if (!best || m.timestamp > best.timestamp) best = m;

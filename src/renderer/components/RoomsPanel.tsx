@@ -1057,15 +1057,13 @@ export default function RoomsPanel({
                   {t('roomsPanel.continueReadOnly')}
                 </button>
                 {loginError && <p className="text-sm text-red-400">{loginError}</p>}
-                {selectedRoomId != null &&
-                  getMeshcoreRoomAutoLoginFailure(selectedRoomId) &&
-                  !loginError && (
-                    <p className="text-sm text-red-400" role="alert">
-                      {t('roomsPanel.autoLoginFailed', {
-                        error: getMeshcoreRoomAutoLoginFailure(selectedRoomId),
-                      })}
-                    </p>
-                  )}
+                {getMeshcoreRoomAutoLoginFailure(selectedRoomId) && !loginError && (
+                  <p className="text-sm text-red-400" role="alert">
+                    {t('roomsPanel.autoLoginFailed', {
+                      error: getMeshcoreRoomAutoLoginFailure(selectedRoomId),
+                    })}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1147,21 +1145,17 @@ export default function RoomsPanel({
                       setSyncConfigDirty(true);
                     }}
                     disabled={
-                      selectedRoomId == null ||
-                      (!storedRoomIds.has(selectedRoomId) &&
-                        !meshcoreIsRoomLoggedIn(selectedRoomId))
+                      !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
                     }
                     aria-label={t('roomsPanel.autoLoginOnConnect')}
                   />
                   {t('roomsPanel.autoLoginOnConnect')}
                 </label>
-                {selectedRoomId != null &&
-                  !storedRoomIds.has(selectedRoomId) &&
-                  !meshcoreIsRoomLoggedIn(selectedRoomId) && (
-                    <span className="text-[10px] text-gray-500">
-                      {t('roomsPanel.autoLoginRequiresSavedPassword')}
-                    </span>
-                  )}
+                {!storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId) && (
+                  <span className="text-[10px] text-gray-500">
+                    {t('roomsPanel.autoLoginRequiresSavedPassword')}
+                  </span>
+                )}
                 <span className="mx-1 hidden text-gray-600 sm:inline" aria-hidden="true">
                   |
                 </span>
