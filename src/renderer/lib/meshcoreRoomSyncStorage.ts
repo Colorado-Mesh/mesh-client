@@ -1,5 +1,9 @@
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
+import {
+  getMeshcoreRoomCredential,
+  listMeshcoreRoomCredentialNodeIds,
+} from './meshcoreRoomCredentialStorage';
 import { parseStoredJson } from './parseStoredJson';
 import { MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES } from './timeConstants';
 
@@ -11,6 +15,8 @@ export interface MeshcoreRoomSyncConfig {
   enabled: boolean;
   intervalMinutes: number;
   lastSyncAt: number | null;
+  /** When true, log in automatically on radio connect/reconnect (requires saved credentials). */
+  autoLoginOnConnect?: boolean;
 }
 
 export function meshcoreRoomSyncSettingForNode(nodeId: number): string {
@@ -44,7 +50,9 @@ function parseSyncConfig(raw: unknown): MeshcoreRoomSyncConfig | undefined {
       : MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES;
   const lastSyncAt =
     typeof o.lastSyncAt === 'number' && Number.isFinite(o.lastSyncAt) ? o.lastSyncAt : null;
-  return { enabled, intervalMinutes, lastSyncAt };
+  const autoLoginOnConnect =
+    o.autoLoginOnConnect === true || o.autoLoginOnConnect === 1 || o.autoLoginOnConnect === '1';
+  return { enabled, intervalMinutes, lastSyncAt, autoLoginOnConnect };
 }
 
 export function getMeshcoreRoomSyncConfig(nodeId: number): MeshcoreRoomSyncConfig {
@@ -54,18 +62,19 @@ export function getMeshcoreRoomSyncConfig(nodeId: number): MeshcoreRoomSyncConfi
   );
   const key = meshcoreRoomSyncSettingForNode(nodeId);
   const parsed = settings ? parseSyncConfig(settings[key]) : undefined;
-  return (
-    parsed ?? {
-      enabled: false,
-      intervalMinutes: MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES,
-      lastSyncAt: null,
-    }
-  );
+  const hasSavedPassword = getMeshcoreRoomCredential(nodeId) != null;
+  const autoLoginOnConnect = parsed?.autoLoginOnConnect ?? hasSavedPassword;
+  return {
+    enabled: parsed?.enabled ?? false,
+    intervalMinutes: parsed?.intervalMinutes ?? MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES,
+    lastSyncAt: parsed?.lastSyncAt ?? null,
+    autoLoginOnConnect,
+  };
 }
 
 export async function setMeshcoreRoomSyncConfig(
   nodeId: number,
-  config: Pick<MeshcoreRoomSyncConfig, 'enabled' | 'intervalMinutes'>,
+  config: Pick<MeshcoreRoomSyncConfig, 'enabled' | 'intervalMinutes' | 'autoLoginOnConnect'>,
 ): Promise<MeshcoreRoomSyncConfig> {
   const prev = getMeshcoreRoomSyncConfig(nodeId);
   const next: MeshcoreRoomSyncConfig = {
@@ -75,6 +84,7 @@ export async function setMeshcoreRoomSyncConfig(
       Math.trunc(config.intervalMinutes),
     ),
     lastSyncAt: prev.lastSyncAt,
+    autoLoginOnConnect: config.autoLoginOnConnect ?? prev.autoLoginOnConnect ?? false,
   };
   const settingKey = meshcoreRoomSyncSettingForNode(nodeId);
   const payload = JSON.stringify(next);
@@ -145,4 +155,30 @@ export function listMeshcoreRoomSyncEnabledNodeIds(): number[] {
     if (Number.isFinite(nodeId) && nodeId >= 0) ids.push(nodeId >>> 0);
   }
   return ids;
+}
+
+export function listMeshcoreRoomAutoLoginOnConnectNodeIds(): number[] {
+  const ids = new Set<number>();
+  const settings = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'meshcoreRoomSyncStorage list autoLogin',
+  );
+  if (settings) {
+    const prefix = MESHCORE_ROOM_SYNC_SETTING_PREFIX;
+    for (const key of Object.keys(settings)) {
+      if (!key.startsWith(prefix)) continue;
+      const idStr = key.slice(prefix.length);
+      const nodeId = Number.parseInt(idStr, 10);
+      if (!Number.isFinite(nodeId) || nodeId < 0) continue;
+      if (getMeshcoreRoomSyncConfig(nodeId >>> 0).autoLoginOnConnect) {
+        ids.add(nodeId >>> 0);
+      }
+    }
+  }
+  for (const nodeId of listMeshcoreRoomCredentialNodeIds()) {
+    if (getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect) {
+      ids.add(nodeId);
+    }
+  }
+  return [...ids];
 }

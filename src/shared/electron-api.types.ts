@@ -202,7 +202,11 @@ export interface ElectronAPI {
     clearNodePositions: () => Promise<void>;
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<void>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */
-    updateMessagePacketId: (oldPacketId: number, newPacketId: number) => Promise<void>;
+    updateMessagePacketId: (
+      oldPacketId: number,
+      newPacketId: number,
+      senderId?: number,
+    ) => Promise<void>;
 
     getMeshcoreMessages: (channelIdx?: number, limit?: number) => Promise<unknown[]>;
     searchMessages: (query: string, limit?: number) => Promise<SavedMessage[]>;

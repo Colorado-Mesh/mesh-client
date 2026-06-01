@@ -46,27 +46,30 @@ export function useSendMessage(
       }
       const handle = connectionDriver.getHandle(identityId);
 
-      // Meshtastic MQTT-only: no RF handle; runtime TransportManager owns publish + echo suppression.
-      if (!handle && identity.protocol.type === 'meshtastic') {
-        const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
-        if (mqttStatus !== 'connected') {
-          console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
-          return;
-        }
+      // Meshtastic: runtime TransportManager sends RF + MQTT concurrently (hybrid or MQTT-only).
+      if (identity.protocol.type === 'meshtastic') {
         const session = tryGetMeshtasticSession();
-        if (!session) {
-          console.warn('[useSendMessage] Meshtastic runtime not mounted');
+        if (session) {
+          const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
+          const hasMqtt = mqttStatus === 'connected';
+          if (!handle && !hasMqtt) {
+            console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
+            return;
+          }
+          const replyIdNum =
+            replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
+          session.sendChatMessage(
+            text,
+            channelIndex,
+            destination,
+            replyIdNum != null && !Number.isNaN(replyIdNum) ? replyIdNum : undefined,
+          );
           return;
         }
-        const replyIdNum =
-          replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
-        session.sendChatMessage(
-          text,
-          channelIndex,
-          destination,
-          replyIdNum != null && !Number.isNaN(replyIdNum) ? replyIdNum : undefined,
-        );
-        return;
+        if (!handle) {
+          console.warn('[useSendMessage] Meshtastic runtime not mounted and no RF handle');
+          return;
+        }
       }
 
       if (!handle) {
@@ -122,7 +125,7 @@ export function useSendMessage(
             renameMessageId(identityId, provisionalId, resolvedId);
             if (isMeshtastic && meshtasticTempPacketId != null) {
               void window.electronAPI.db
-                .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0)
+                .updateMessagePacketId(meshtasticTempPacketId, res.packetId >>> 0, myNodeNum)
                 .catch((e: unknown) => {
                   console.debug(
                     '[useSendMessage] updateMessagePacketId failed ' + errLikeToLogString(e),

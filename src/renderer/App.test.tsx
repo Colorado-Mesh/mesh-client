@@ -419,7 +419,6 @@ vi.mock('../preload', () => ({
       mqtt: {
         connect: vi.fn().mockResolvedValue(undefined),
         disconnect: vi.fn(),
-        onMeshcoreChat: vi.fn(),
       },
       tak: {
         getStatus: vi.fn().mockResolvedValue({ running: false }),

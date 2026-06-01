@@ -62,6 +62,19 @@ export interface MeshCoreConnection {
   close(): Promise<void>;
   getSelfInfo(timeout?: number): Promise<MeshCoreSelfInfoWire>;
   getContacts(): Promise<MeshCoreContactRaw[]>;
+  addOrUpdateContact(
+    publicKey: Uint8Array,
+    type: number,
+    flags: number,
+    outPathLen: number,
+    outPath: Uint8Array,
+    advName: string,
+    lastAdvert: number,
+    advLat: number,
+    advLon: number,
+  ): Promise<void>;
+  setContactPath(contact: MeshCoreContactRaw, path: number[]): Promise<void>;
+  resetPath(pubKey: Uint8Array): Promise<void>;
   getChannels(): Promise<MeshCoreChannelRaw[]>;
   getChannel(channelIdx: number): Promise<MeshCoreChannelRaw>;
   setChannel(channelIdx: number, name: string, secret: Uint8Array): Promise<void>;
@@ -154,8 +167,6 @@ export interface MeshCoreConnection {
   importContact(advertBytes: Uint8Array): Promise<void>;
   exportContact(pubKey?: Uint8Array | null): Promise<Uint8Array>;
   shareContact(pubKey: Uint8Array): Promise<void>;
-  // Contact path management
-  resetPath(pubKey: Uint8Array): Promise<void>;
   // Statistics
   getStats(statsType: number): Promise<MeshCoreStatsResponse<Record<string, unknown>>>;
   getStatsCore(): Promise<MeshCoreStatsResponse<MeshCoreCoreStatsData>>;

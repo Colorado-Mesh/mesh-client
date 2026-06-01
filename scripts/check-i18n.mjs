@@ -17,10 +17,48 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { localeStringQualityIssues, protectedBrandIssues } from './check-i18n-quality.mjs';
+import {
+  interpolationPlaceholderIssues,
+  localeStringQualityIssues,
+  protectedBrandIssues,
+} from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = join(__dirname, '../src/renderer/locales');
+
+/** Log copy for opaque rooms-hello-* codes from check-i18n-quality.mjs (kept here for CodeQL). */
+const ROOMS_HELLO_FALSE_FRIEND_LOG = {
+  cs: 'roomsPanel hello password: keep wire password "hello", not Czech greeting "ahoj"',
+  de: 'roomsPanel hello password: keep wire password "hello", not German greeting "Hallo"',
+  es: 'roomsPanel hello password: keep wire password "hello", not Spanish greeting "hola"',
+  fr: 'roomsPanel hello password: keep wire password "hello", not French greeting "bonjour"',
+  id: 'roomsPanel hello password: keep wire password "hello", not Indonesian greeting "halo"',
+  it: 'roomsPanel hello password: keep wire password "hello", not Italian greeting "ciao"',
+  'pt-BR': 'roomsPanel hello password: keep wire password "hello", not Portuguese greeting "olá"',
+  nl: 'roomsPanel hello password: keep wire password "hello", not Dutch greeting "hallo"',
+  pl: 'roomsPanel hello password: keep wire password "hello", not Polish greeting "witaj"',
+  ru: 'roomsPanel hello password: keep wire password "hello", not Russian greeting "привет"',
+  tr: 'roomsPanel hello password: keep wire password "hello", not Turkish greeting "merhaba"',
+  uk: 'roomsPanel hello password: keep wire password "hello", not Ukrainian greeting "привіт"',
+};
+
+const ROOMS_HELLO_MISSING_LITERAL_LOG =
+  'MeshCore default guest password must stay literal "hello" in this hint';
+
+function formatLocaleQualityIssueForLog(issue) {
+  if (issue === 'rooms-hello-missing-literal') {
+    return ROOMS_HELLO_MISSING_LITERAL_LOG;
+  }
+  const falseFriendPrefix = 'rooms-hello-false-friend:';
+  if (issue.startsWith(falseFriendPrefix)) {
+    const locale = issue.slice(falseFriendPrefix.length);
+    return (
+      ROOMS_HELLO_FALSE_FRIEND_LOG[locale] ??
+      `roomsPanel hello password false friend for locale "${locale}"`
+    );
+  }
+  return issue;
+}
 const SRC_DIR = join(__dirname, '../src/renderer');
 const EN_FILE = join(LOCALES_DIR, 'en/translation.json');
 
@@ -128,25 +166,6 @@ for (const dir of localeDirs) {
   }
 }
 
-/** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
-function placeholderNameSet(s) {
-  const re = /\{\{\s*([^}]+?)\s*\}\}/g;
-  const out = new Set();
-  let m;
-  while ((m = re.exec(s))) {
-    out.add(m[1]);
-  }
-  return out;
-}
-
-function setsEqualStrings(a, b) {
-  if (a.size !== b.size) return false;
-  for (const x of a) {
-    if (!b.has(x)) return false;
-  }
-  return true;
-}
-
 // These are protocol terms / acronyms intentionally displayed in English across all locales.
 // Checked by leaf key name so nesting differences don't matter.
 const VERBATIM_KEY_NAMES = new Set([
@@ -201,14 +220,8 @@ for (const dir of localeDirs) {
     if (typeof val !== 'string') continue;
     const enVal = en[key];
     if (typeof enVal !== 'string') continue;
-    const enPh = placeholderNameSet(enVal);
-    const locPh = placeholderNameSet(val);
-    if (!setsEqualStrings(enPh, locPh)) {
-      const enList = [...enPh].sort().join(', ') || '(none)';
-      const locList = [...locPh].sort().join(', ') || '(none)';
-      console.error(
-        `Placeholder mismatch in "${dir}" key "${key}": English has {${enList}} but locale has {${locList}}.`,
-      );
+    for (const issue of interpolationPlaceholderIssues(enVal, val)) {
+      console.error(`Placeholder mismatch in "${dir}" key "${key}": ${issue}.`);
       errors++;
     }
 
@@ -270,7 +283,7 @@ for (const dir of localeDirs) {
       enVal,
     })) {
       console.error(
-        `Locale quality in "${dir}" key "${key}": ${issue}. LOC=${JSON.stringify(val)}`,
+        `Locale quality in "${dir}" key "${key}": ${formatLocaleQualityIssueForLog(issue)}.`,
       );
       errors++;
     }

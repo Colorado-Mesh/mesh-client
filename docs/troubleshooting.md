@@ -509,14 +509,22 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Guest / read-only login fails with timeout or "rejected"**:
 
-- When the room server **guest password is empty**, read-only login uses a **blank client password** (same as the official Android app). The SendLogin frame sends **zero password bytes** after the 32-byte room pubkey.
-- When the server **does** configure a guest password, use that value (some communities use **`hello`**).
+- When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
+- When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 
-**Room posts not visible in the official Android app**:
+**Room post fails with "unsupported on this firmware"**:
 
-- Outbound room BBS posts must use **SignedPlain** (`txtType` 2) with a **4-byte author pubkey prefix** before the message body. Plain channel text posts appear in mesh-client Chat only and are not stored in the room BBS on the server.
+- The **companion radio** only accepts **`TXT_TYPE_PLAIN` (0)** for outbound `CMD_SEND_TXT_MSG`. mesh-client sends plain UTF-8 post text after a successful room login. **`TXT_TYPE_SIGNED_PLAIN` (2)** is for **inbound** room-server pushes (author prefix in the wire body); using it for outbound posts returns `ERR_CODE_UNSUPPORTED_CMD` (1). Log out and log in again, then post from the **Rooms** tab while connected over BLE/serial/TCP.
+
+**Garbled prefix (e.g. `ÑÇÕ0`) on inbound room posts**:
+
+- Inbound **SignedPlain** pushes include the **first four bytes of the author public key** before the message body. mesh-client strips that prefix in the **Rooms** UI. If another client shows those characters, it is displaying the raw wire body from the room server.
+
+**Room unread badges**:
+
+- New room BBS posts increment the **Rooms** sidebar badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
 
 **No room history after login**:
 
@@ -533,11 +541,11 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
-2. Open **Rooms** → with **empty guest password** on the server, log in with a **blank** password (read-only). With a configured guest password, use that value.
+2. Open **Rooms** → with **empty guest password** on the server, click **Continue read-only** (not **Login** with an empty field). With a configured guest password, enter it and click **Login**.
 3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
-4. Confirm room posts appear in **Rooms**, not Chat channel pills.
-5. On **Connection** tab, receive a channel message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
-6. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` lines.
+4. Confirm room posts appear in **Rooms** with unread badges (not Chat channel pills).
+5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
+6. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` and `[useMeshcoreRuntime] sendRoomPost` lines.
 
 ### MeshCore: Trace Route or Ping trace times out
 

@@ -91,6 +91,31 @@ export interface MeshtasticCrossTransportUpgradeResult {
   packetIdForDb?: number;
 }
 
+/**
+ * Wire reply_id uses firmware RF packet ids. MQTT uplink echoes carry broker-assigned ids —
+ * never let those replace an RF id or a pending device-ack row id.
+ */
+export function resolveMeshtasticCrossTransportPacketId(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+): number | undefined {
+  const existingPid = normalizeMeshtasticPacketId(existing.packetId);
+  const incomingPid = normalizeMeshtasticPacketId(incoming.packetId);
+  const existingFromRf = existing.receivedVia === 'rf' || existing.receivedVia === 'both';
+  const incomingFromRf = incoming.receivedVia === 'rf';
+
+  if (incomingFromRf && incomingPid) return incomingPid;
+  if (existingFromRf && existingPid) return existingPid;
+
+  // MQTT echo must not clobber device-ack / optimistic ids before RF is linked.
+  if (existingPid && incoming.receivedVia === 'mqtt' && !incomingFromRf) {
+    return existingPid;
+  }
+
+  if (incomingPid) return incomingPid;
+  return existingPid;
+}
+
 /** Upgrade the matching row to `receivedVia: 'both'` when the other transport already has this message. */
 export function mapMeshtasticCrossTransportUpgrade(
   messages: readonly ChatMessage[],
@@ -101,17 +126,12 @@ export function mapMeshtasticCrossTransportUpgrade(
   if (!hit) {
     return { messages: [...messages], matched: false };
   }
-  const incomingPid = normalizeMeshtasticPacketId(incoming.packetId);
-  const bestPid = incomingPid !== undefined && incomingPid !== 0 ? incomingPid : undefined;
-  const hitPid = normalizeMeshtasticPacketId(hit.packetId);
-  const packetIdForDb = bestPid ?? (hitPid !== undefined && hitPid !== 0 ? hitPid : undefined);
+  const packetIdForDb = resolveMeshtasticCrossTransportPacketId(hit, incoming);
   let matched = false;
   const next = messages.map((m) => {
     if (!meshtasticCrossTransportMatch(m, incoming, windowMs)) return m;
     matched = true;
-    const existingPid = normalizeMeshtasticPacketId(m.packetId);
-    const packetId =
-      bestPid ?? (existingPid !== undefined && existingPid !== 0 ? existingPid : m.packetId);
+    const packetId = resolveMeshtasticCrossTransportPacketId(m, incoming);
     return {
       ...m,
       receivedVia: 'both' as const,

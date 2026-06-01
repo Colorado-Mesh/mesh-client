@@ -151,5 +151,32 @@ describe(
       ).toBeDefined();
       db.close();
     });
+
+    it('idx_mc_msg_dedup: UPDATE by natural key upgrades sending row to acked', () => {
+      const db = openFreshUpgradedDb('mc-upsert.db');
+      const senderId = 42;
+      const ts = 1_700_000_000_000;
+      const channelIdx = -2;
+      const payload = 'room post body';
+      db.prepare(
+        `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp, status)
+         VALUES (?, 'Me', ?, ?, ?, 'sending')`,
+      ).run(senderId, payload, channelIdx, ts);
+      const updated = db
+        .prepare(
+          `UPDATE meshcore_messages SET status = 'acked', packet_id = ?
+           WHERE sender_id = ? AND timestamp = ? AND channel_idx = ? AND payload = ?`,
+        )
+        .run(0xdeadbeef, senderId, ts, channelIdx, payload);
+      expect(updated.changes).toBe(1);
+      const row = db
+        .prepare(
+          'SELECT status, packet_id FROM meshcore_messages WHERE sender_id = ? AND payload = ?',
+        )
+        .get(senderId, payload) as { status: string; packet_id: number };
+      expect(row.status).toBe('acked');
+      expect(row.packet_id).toBe(0xdeadbeef);
+      db.close();
+    });
   },
 );

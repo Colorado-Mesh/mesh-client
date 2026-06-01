@@ -72,6 +72,23 @@ export function meshcoreTracePathLenToHops(pathLen: number): number {
   return Math.max(0, Math.trunc(pathLen) - 1);
 }
 
+/** Build companion `outPath` bytes from a successful `tracePath` / TraceData response. */
+export function meshcoreTraceResultToOutPathBytes(
+  pathLen: number,
+  pathHashes: number[],
+  destPubKey: Uint8Array,
+): Uint8Array {
+  const len = Math.max(0, Math.trunc(pathLen));
+  if (len <= 0 || pathHashes.length === 0) {
+    return new Uint8Array([destPubKey[0] & 0xff]);
+  }
+  const take = Math.min(len, pathHashes.length);
+  const bytes = Uint8Array.from(pathHashes.slice(0, take).map((h) => h & 0xff));
+  if (bytes.length > 1) return bytes;
+  if (bytes.length === 1) return bytes;
+  return new Uint8Array([destPubKey[0] & 0xff]);
+}
+
 /** MeshCore companion lines that are transport metadata, not user channel chat (splitting on `:` would mispick `SNR:`). */
 export function isMeshcoreTransportStatusChatLine(text: string): boolean {
   const t = (text ?? '').trim();
@@ -422,6 +439,33 @@ export function meshcoreInferHopsFromOutPath(contact: {
     return Math.max(0, sliced.length - 1);
   }
   return undefined;
+}
+
+/**
+ * Hop count for room login timeout scaling when UI `hops_away` is 0/unknown but a route exists.
+ * Failure point: firmware reports direct (0 hops) while `outPath` still holds multi-hop bytes.
+ */
+export function resolveMeshcoreRoomLoginHopsAway(
+  node: Pick<MeshNode, 'hops_away'> | undefined,
+  outPathBytes?: Uint8Array,
+): number {
+  const hops = node?.hops_away;
+  if (typeof hops === 'number' && Number.isFinite(hops) && hops > 0) {
+    return Math.trunc(hops);
+  }
+  if (outPathBytes && outPathBytes.length > 0) {
+    const inferred = meshcoreInferHopsFromOutPath({ outPath: outPathBytes, outPathLen: -1 });
+    if (inferred != null && inferred > 0) {
+      return inferred;
+    }
+    if (outPathBytes.length > 1) {
+      return Math.max(1, outPathBytes.length - 1);
+    }
+  }
+  if (typeof hops === 'number' && Number.isFinite(hops) && hops >= 0) {
+    return Math.trunc(hops);
+  }
+  return 0;
 }
 
 /**

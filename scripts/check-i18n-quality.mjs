@@ -96,16 +96,17 @@ export const CJK_LOCALES = new Set(['zh', 'ja', 'ko']);
  * Matched by locale on roomsPanel.* and tabs.rooms.
  */
 export const ROOMS_PANEL_FALSE_FRIENDS = {
-  de: [{ re: /\bZimmer\b/i, hint: 'use "Raum" for MeshCore Room, not hotel "Zimmer"' }],
-  fr: [{ re: /\bchambre\b/i, hint: 'use "salle" for MeshCore Room, not hotel "chambre"' }],
-  es: [{ re: /\bhabitaci[oó]n\b/i, hint: 'use "sala" for MeshCore Room, not hotel "habitación"' }],
-  'pt-BR': [{ re: /\bquarto\b/i, hint: 'use "sala" for MeshCore Room, not hotel "quarto"' }],
+  de: [{ re: /\bZimmer/i, hint: 'use "Raum" for MeshCore Room, not hotel "Zimmer"' }],
+  fr: [{ re: /\bchambre/i, hint: 'use "salle" for MeshCore Room, not hotel "chambre"' }],
+  es: [{ re: /\bhabitaci[oó]n/i, hint: 'use "sala" for MeshCore Room, not hotel "habitación"' }],
+  'pt-BR': [{ re: /\bquarto/i, hint: 'use "sala" for MeshCore Room, not hotel "quarto"' }],
   ko: [
     {
       re: /객실|회의실/,
       hint: 'use "룸" for MeshCore Room, not hotel/meeting "객실/회의실"',
     },
   ],
+  it: [{ re: /\b[Cc]amera/i, hint: 'use "sala" for MeshCore Room, not hotel bedroom "camera"' }],
   ru: [
     {
       re: /номер/i,
@@ -116,7 +117,7 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
       hint: 'use "комната" for MeshCore Room admin copy, not generic "помещение"',
     },
   ],
-  id: [{ re: /\bkamar\b/i, hint: 'use "ruangan" for MeshCore Room, not hotel "kamar"' }],
+  id: [{ re: /\bkamar/i, hint: 'use "ruangan" for MeshCore Room, not hotel "kamar"' }],
   nl: [{ re: /\bgaas\b/i, hint: 'use "mesh" for the network, not fabric "gaas"' }],
   uk: [
     {
@@ -156,13 +157,175 @@ export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'postCount',
   'syncInterval120',
   'syncInterval240',
+  'unreadPosts',
 ]);
+
+/** Hints that describe the wire default guest password (literal hello, not a greeting translation). */
+export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
+  'loginHelp',
+  'emptyGuestLoginHint',
+  'loginAllSavedTooltip',
+]);
+
+/**
+ * Auto-translate often replaces the MeshCore default password "hello" with a localized greeting.
+ * Only checked on ROOMS_PANEL_LITERAL_HELLO_KEYS when English mentions "hello".
+ * Returns opaque issue codes; human-readable log copy lives in check-i18n.mjs (CodeQL).
+ */
+export const ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES = {
+  cs: [/\bahoj\b/i],
+  de: [/\bHallo\b/i],
+  es: [/\bhola\b/i],
+  fr: [/bonjour/i],
+  id: [/\bhalo\b/i],
+  it: [/\bciao\b/i],
+  'pt-BR': [/\bolá\b/i],
+  nl: [/\bhallo\b/i],
+  pl: [/\bwitaj\b/i],
+  ru: [/привет/i],
+  tr: [/merhaba/i],
+  uk: [/привіт/i],
+};
+
+/** Opaque locale-quality codes for MeshCore wire-password hint checks. */
+export const LOCALE_QUALITY_ROOMS_HELLO_MISSING_LITERAL = 'rooms-hello-missing-literal';
+
+export function roomsHelloFalseFriendIssueCode(locale) {
+  return `rooms-hello-false-friend:${locale}`;
+}
+
+/** Outdated loginHelp that tells users to leave the field empty instead of Continue read-only. */
+export const STALE_ROOMS_LOGIN_HELP_RES = [
+  /leave (?:it )?empty/i,
+  /leave blank/i,
+  /leer lassen/i,
+  /laissez vide/i,
+  /deixe em branco/i,
+  /dejar vac[ií]o/i,
+  /lasciare vuoto/i,
+  /ponechte pr[aá]zdn[eé]/i,
+  /pozostaw puste/i,
+  /biarkan kosong/i,
+  /boş bırak/i,
+  /留空/,
+  /空白のまま/,
+  /비워\s*둡/,
+  /залиште порожнім/i,
+  /оставьте пустым/i,
+];
+
+/** Polish MT often uses "Nowość" (novelty) instead of "new" for unread counts. */
+export const PL_UNREAD_NOWOSC_RE = /Nowość/i;
+
+/** chatPanel.composeLimit.approaching is a numeric ratio; identical "{{count}} / {{limit}}" is OK. */
+export const COMPOSE_LIMIT_NUMERIC_LEAF_KEYS = new Set(['approaching']);
+
+export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'replyRequiresPacketId',
+  'queueButton',
+]);
+
+/** roomsPanel members / leave UX from recent MeshCore Rooms work. */
+export const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'membersHeading',
+  'membersRecognizedHeading',
+  'membersRecognizedEmpty',
+  'membersAclFetchFailed',
+  'upgradeAccess',
+  'leavingRoom',
+  'closeManage',
+]);
+
+/**
+ * English "Recognized posters" means users who posted, not wall posters / beneficiaries.
+ * Checked on membersRecognizedHeading and membersRecognizedEmpty.
+ */
+export const RECOGNIZED_POSTER_PHYSICAL_RES = [
+  /plak[aá]t/i,
+  /\bPlakat/i,
+  /\baffiches?\b/i,
+  /\bcartel(es)?\b/i,
+  /\bcartaz(es)?\b/i,
+  /\bmanifesti\b/i,
+  /плакат/i,
+  /海报/,
+  /ポスター/,
+  /포스터/,
+  /Bénéficiare/i,
+  /Cartazes reconhecidos/i,
+  /carteles reconocidos/i,
+];
+
+/** Obvious garbage for roomsPanel.membersHeading. */
+export const MEMBERS_HEADING_GARBAGE_RES = [
+  /^zdarma$/i,
+  /de la AEC/i,
+  /^office$/i,
+  /^Soci$/i,
+  /^pergi$/i,
+  /^йде$/i,
+  /^メンバ$/,
+  /^Latende$/i,
+  /^Partida$/i,
+  /^出庫$/,
+];
+
+const REPLY_REQUIRES_EN_LEADING_RE = /^Reply\s+(requires|richiede)\b/i;
+
+const REPLY_REQUIRES_EN_PHRASE_RES = [/\bsend ack\b/i, /\brefresh chat\b/i, /\bRF packet id\b/i];
+
+/** MT turns "remote" into TV remote control on membersAclEmpty. */
+const REMOTE_TV_FALSE_FRIEND_RES = [
+  /télécommande/i,
+  /Пульт дистанційного керування/i,
+  /пульт дистанционного управления/i,
+];
+
+const UPGRADE_ACCESS_FALSE_FRIENDS = [
+  { re: /vers Access/i, hint: 'use access-upgrade wording, not "vers Access"' },
+  { re: /升级到访问/, hint: 'use "提升访问权限", not "upgrade to visit"' },
+];
+
+const ACL_LISTING_AD_FALSE_FRIEND_RES = [/ACL-advertentie/i, /Iklan ACL/i];
 
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
 export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
+
+/** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
+export function placeholderNameSet(s) {
+  const re = /\{\{\s*([^}]+?)\s*\}\}/g;
+  const out = new Set();
+  let m;
+  while ((m = re.exec(s))) {
+    out.add(m[1]);
+  }
+  return out;
+}
+
+function setsEqualStrings(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) {
+    if (!b.has(x)) return false;
+  }
+  return true;
+}
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @returns {string[]} Issues when locale {{name}} sets differ from English.
+ */
+export function interpolationPlaceholderIssues(enVal, val) {
+  const enPh = placeholderNameSet(enVal);
+  const locPh = placeholderNameSet(val);
+  if (setsEqualStrings(enPh, locPh)) return [];
+  const enList = [...enPh].sort().join(', ') || '(none)';
+  const locList = [...locPh].sort().join(', ') || '(none)';
+  return [`i18next placeholder names must match English (EN: {${enList}}, locale: {${locList}})`];
+}
 
 /** CAT / XLIFF / Memsource XML tags that must never ship in JSON values. */
 export const LOCALE_ARTIFACT_RES = [
@@ -390,7 +553,7 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     issues.push('roomsPanel false friend: use "ルーム" for MeshCore Room type, not hotel 部屋');
   }
 
-  if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer\b/.test(val)) {
+  if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer/i.test(val)) {
     issues.push('roomsPanel false friend: use "ruimte" for MeshCore Room, not hotel "kamer"');
   }
 
@@ -440,6 +603,161 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     UNTRANSLATED_READ_ONLY_BADGE_RE.test(val)
   ) {
     issues.push('translate readOnlyBadge — do not leave English "(read only)"');
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}loginHelp` &&
+    enVal.includes('Continue read-only')
+  ) {
+    for (const re of STALE_ROOMS_LOGIN_HELP_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'loginHelp still tells users to leave the field empty — mention Continue read-only and Login sending "hello"',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}emptyGuestLoginHint` &&
+    /Continue read-only/i.test(val)
+  ) {
+    issues.push(
+      'emptyGuestLoginHint still quotes English "Continue read-only" — use the locale continueReadOnly button label',
+    );
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_PANEL_LITERAL_HELLO_KEYS.has(leafKey) &&
+    enVal.includes('"hello"')
+  ) {
+    if (!/hello/i.test(val)) {
+      issues.push(LOCALE_QUALITY_ROOMS_HELLO_MISSING_LITERAL);
+    }
+    for (const re of ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(roomsHelloFalseFriendIssueCode(locale));
+      }
+    }
+  }
+
+  if (
+    locale === 'pl' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}unreadPosts` &&
+    PL_UNREAD_NOWOSC_RE.test(val)
+  ) {
+    issues.push('unreadPosts uses "Nowość" (novelty) — use "nowe" or "nowych" for unread count');
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.composeLimit.') &&
+    !COMPOSE_LIMIT_NUMERIC_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.') &&
+    CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (locale !== 'en' && flatKey === 'chatPanel.replyRequiresPacketId') {
+    if (REPLY_REQUIRES_EN_LEADING_RE.test(val)) {
+      issues.push('replyRequiresPacketId still starts with English "Reply requires/richiede"');
+    }
+    for (const re of REPLY_REQUIRES_EN_PHRASE_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'replyRequiresPacketId still has English "send ack", "refresh chat", or "RF packet id" — translate',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}membersHeading`) {
+    for (const re of MEMBERS_HEADING_GARBAGE_RES) {
+      if (re.test(val)) {
+        issues.push('membersHeading looks like auto-translate garbage — use "Members" equivalent');
+        break;
+      }
+    }
+  }
+
+  if (
+    (flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedHeading` ||
+      flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedEmpty`) &&
+    enVal.includes('poster')
+  ) {
+    for (const re of RECOGNIZED_POSTER_PHYSICAL_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'membersRecognized* uses wall-poster wording — English means users who posted in the room',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}membersAclFetchFailed` &&
+    enVal.includes('ACL') &&
+    !/ACL/i.test(val)
+  ) {
+    issues.push(
+      'membersAclFetchFailed must mention ACL — do not truncate to generic "could not fetch"',
+    );
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclEmpty` && enVal.includes('Remote')) {
+    for (const re of REMOTE_TV_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'membersAclEmpty uses TV-remote false friend — use remote/distant wording for `get acl`',
+        );
+        break;
+      }
+    }
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclRemoteHint`) {
+    for (const re of ACL_LISTING_AD_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'membersAclRemoteHint confuses ACL listing with advertising (advertentie/iklan)',
+        );
+        break;
+      }
+    }
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}upgradeAccess`) {
+    for (const { re, hint } of UPGRADE_ACCESS_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`upgradeAccess: ${hint}`);
+      }
+    }
   }
 
   if (

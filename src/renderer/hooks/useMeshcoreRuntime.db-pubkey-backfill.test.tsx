@@ -316,7 +316,7 @@ describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
 
     expect(sendTextMessageMock).toHaveBeenCalledWith(
       pubKeyBytesFromHex(PEER_PUBKEY_HEX),
-      '@[Alice] hi',
+      '@[Alice#77777] hi',
     );
 
     await waitFor(() => {

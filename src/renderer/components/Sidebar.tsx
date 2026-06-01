@@ -9,6 +9,8 @@ interface SidebarProps {
   onChange: (index: number) => void;
   /** Unread message count for Chat tab badge; 0 hides badge */
   chatUnread?: number;
+  /** Unread room BBS post count for Rooms tab badge (MeshCore); 0 hides badge */
+  roomsUnread?: number;
   /** Set of tab indices that are disabled (greyed out, non-clickable) */
   disabledTabs?: Set<number>;
   collapsed: boolean;
@@ -322,6 +324,7 @@ export default function Sidebar({
   active,
   onChange,
   chatUnread = 0,
+  roomsUnread = 0,
   disabledTabs,
   collapsed,
   onToggle,
@@ -344,8 +347,11 @@ export default function Sidebar({
           const isActive = safeActive === i;
           const isDisabled = disabledTabs?.has(i) ?? false;
           const showChatBadge = slotId === 'Chat' && chatUnread > 0;
-          const tabAriaLabel = showChatBadge
-            ? `${displayLabel} ${chatUnread > 99 ? '99+' : chatUnread} unread`
+          const showRoomsBadge = slotId === 'Rooms' && roomsUnread > 0;
+          const badgeCount = showChatBadge ? chatUnread : showRoomsBadge ? roomsUnread : 0;
+          const showBadge = showChatBadge || showRoomsBadge;
+          const tabAriaLabel = showBadge
+            ? `${displayLabel} ${badgeCount > 99 ? '99+' : badgeCount} unread`
             : displayLabel;
 
           return (
@@ -375,9 +381,9 @@ export default function Sidebar({
               {/* Icon wrapper — relative so badge can anchor to it */}
               <span className="relative shrink-0">
                 <TabIcon name={slotId} />
-                {showChatBadge && (
+                {showBadge && (
                   <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                    {chatUnread > 99 ? '99+' : chatUnread}
+                    {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}
               </span>

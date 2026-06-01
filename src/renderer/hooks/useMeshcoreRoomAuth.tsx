@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '@/renderer/lib/meshcoreRoomSession';
+import { meshcoreGetRoomSession } from '@/renderer/lib/meshcoreRoomSession';
 
 export type RoomAuthMode = 'guest' | 'admin';
 
@@ -9,6 +9,7 @@ interface PendingRoomAuth {
   nodeId: number;
   mode: RoomAuthMode;
   roomName: string;
+  hideReadonlyOption: boolean;
 }
 
 function RoomAuthFields({
@@ -128,13 +129,15 @@ export function useMeshcoreRoomAuth() {
       guestPassword: string;
       adminPassword: string;
     }> => {
-      if (mode === 'guest' && meshcoreIsRoomLoggedIn(nodeId)) {
+      if (mode === 'guest') {
         const session = meshcoreGetRoomSession(nodeId);
-        return Promise.resolve({
-          ok: true,
-          guestPassword: session?.guestPassword ?? '',
-          adminPassword: session?.adminPassword ?? '',
-        });
+        if (session && session.role !== 'none' && session.role !== 'readonly') {
+          return Promise.resolve({
+            ok: true,
+            guestPassword: session.guestPassword,
+            adminPassword: session.adminPassword,
+          });
+        }
       }
       if (mode === 'admin' && meshcoreGetRoomSession(nodeId)?.role === 'admin') {
         const session = meshcoreGetRoomSession(nodeId)!;
@@ -146,7 +149,13 @@ export function useMeshcoreRoomAuth() {
       }
       return new Promise((resolve) => {
         resolverRef.current = resolve;
-        setPending({ nodeId, mode, roomName });
+        const session = meshcoreGetRoomSession(nodeId);
+        setPending({
+          nodeId,
+          mode,
+          roomName,
+          hideReadonlyOption: mode === 'guest' && session?.role === 'readonly',
+        });
         setModalOpen(true);
       });
     },
@@ -183,6 +192,7 @@ export function useMeshcoreRoomAuth() {
             guestInputId={guestInputId}
             adminInputId={adminInputId}
             showAdmin={pending.mode === 'admin'}
+            hideReadonlyOption={pending.hideReadonlyOption}
             onCancel={() => {
               finishModal(false, 'cancel', '', '');
             }}
@@ -207,6 +217,7 @@ function ModalRoomAuthBody({
   guestInputId,
   adminInputId,
   showAdmin,
+  hideReadonlyOption,
   onCancel,
   onReadonly,
   onSave,
@@ -217,6 +228,7 @@ function ModalRoomAuthBody({
   guestInputId: string;
   adminInputId: string;
   showAdmin: boolean;
+  hideReadonlyOption: boolean;
   onCancel: () => void;
   onReadonly: () => void;
   onSave: (guestPassword: string, adminPassword: string) => void;
@@ -245,7 +257,7 @@ function ModalRoomAuthBody({
         >
           {cancelLabel}
         </button>
-        {!showAdmin && (
+        {!showAdmin && !hideReadonlyOption && (
           <button
             type="button"
             onClick={onReadonly}

@@ -33,6 +33,7 @@ import {
 import { errLikeToLogString } from '../errLikeToLogString';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import type { DomainEvent } from '../protocols/Protocol';
+import { retargetMeshtasticOutboundTempId } from '../sessions/meshtasticSession';
 import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../timeConstants';
 import type { IdentityId } from '../types';
 
@@ -101,6 +102,7 @@ class PacketRouter {
   dispatch(event: DomainEvent, identityId: IdentityId): void {
     switch (event.type) {
       case 'text_message': {
+        const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
         if (event.payload.id) {
           const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
           const optimistic = Object.values(byIdentity).find(
@@ -117,12 +119,17 @@ class PacketRouter {
             optimistic ?? findRoomPostOptimistic(Object.values(byIdentity), event.payload);
           if (roomOptimistic) {
             renameMessageId(identityId, roomOptimistic.id, event.payload.id);
+            if (isMeshtastic) {
+              const tempNum = Number.parseInt(roomOptimistic.id, 10);
+              if (Number.isFinite(tempNum) && tempNum > 0) {
+                retargetMeshtasticOutboundTempId(tempNum, event.payload.id);
+              }
+            }
           }
         }
         // Upsert (not add) so an outbound echo carrying the same packetId-derived
         // id merges into the optimistic row written by useSendMessage instead of
         // creating a duplicate.
-        const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
         if (isMeshtastic) {
           ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
             lastHeardAt: event.payload.timestamp,

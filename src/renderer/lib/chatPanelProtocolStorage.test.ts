@@ -3,15 +3,21 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearDraft,
   draftsStorageKey,
+  ensureMeshcoreChatLastReadSanitized,
   lastReadStorageKey,
   loadDraftsInitial,
   loadMutedViews,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
+  loadPersistedRoomsLastRead,
   loadStarred,
+  mergeRoomLastReadWatermark,
   openDmTabsStorageKey,
+  roomsLastReadStorageKey,
+  sanitizeMeshcoreChatLastRead,
   saveDraft,
   saveMutedViews,
+  savePersistedRoomsLastRead,
   saveStarred,
   type StarredMessage,
 } from './chatPanelProtocolStorage';
@@ -196,5 +202,50 @@ describe('loadStarred / saveStarred', () => {
     const items = Array.from({ length: 200 }, (_, i) => makeStarred({ starId: String(i) }));
     saveStarred('meshtastic', items);
     expect(loadStarred('meshtastic')).toHaveLength(200);
+  });
+});
+
+describe('sanitizeMeshcoreChatLastRead', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('clamps client-clock watermark above newest device message timestamp', () => {
+    const clientNow = 1_700_000_000_000;
+    const deviceTs = clientNow - 60_000;
+    const sanitized = sanitizeMeshcoreChatLastRead({ 'ch:0': clientNow }, [
+      { channel: 0, timestamp: deviceTs },
+    ]);
+    expect(sanitized['ch:0']).toBe(deviceTs);
+  });
+
+  it('ensureMeshcoreChatLastReadSanitized persists once and sets flag', () => {
+    const clientNow = 1_700_000_000_000;
+    const deviceTs = clientNow - 60_000;
+    localStorage.setItem(lastReadStorageKey('meshcore'), JSON.stringify({ 'ch:0': clientNow }));
+    const result = ensureMeshcoreChatLastReadSanitized([{ channel: 0, timestamp: deviceTs }]);
+    expect(result['ch:0']).toBe(deviceTs);
+    expect(localStorage.getItem('mesh-client:lastReadSanitized:meshcore')).toBe('1');
+    expect(JSON.parse(localStorage.getItem(lastReadStorageKey('meshcore'))!)).toEqual({
+      'ch:0': deviceTs,
+    });
+  });
+});
+
+describe('rooms last read storage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('round-trips room last-read watermarks', () => {
+    const merged = mergeRoomLastReadWatermark({}, 0xabc, 5000);
+    savePersistedRoomsLastRead(merged);
+    expect(loadPersistedRoomsLastRead()).toEqual({ 0xabc: 5000 });
+    expect(localStorage.getItem(roomsLastReadStorageKey())).toBeTruthy();
+  });
+
+  it('mergeRoomLastReadWatermark only advances forward', () => {
+    expect(mergeRoomLastReadWatermark({ 0xabc: 5000 }, 0xabc, 4000)).toEqual({ 0xabc: 5000 });
+    expect(mergeRoomLastReadWatermark({ 0xabc: 5000 }, 0xabc, 6000)).toEqual({ 0xabc: 6000 });
   });
 });

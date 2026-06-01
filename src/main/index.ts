@@ -3841,29 +3841,41 @@ ipcMain.handle(
 );
 
 /** Replace optimistic temp `packet_id` with the real mesh id from `sendText()` (tapbacks key on `reply_id`). */
-ipcMain.handle('db:updateMessagePacketId', (_event, oldPacketId: number, newPacketId: number) => {
-  const oldPid = safeNonNegativeInt(oldPacketId);
-  const newPid = safeNonNegativeInt(newPacketId);
-  if (oldPid === newPid) return;
-  const db = getDatabase();
-  const deleteByPacketId = db.prepareOnce('DELETE FROM messages WHERE packet_id = ?');
-  try {
-    const updated = db
-      .prepareOnce('UPDATE messages SET packet_id = ? WHERE packet_id = ?')
-      .run(newPid, oldPid);
-    if (updated.changes > 0) return;
-    // RF echo may have inserted the real packet_id before this runs; drop orphan temp row.
-    deleteByPacketId.run(oldPid);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('UNIQUE constraint failed')) {
+ipcMain.handle(
+  'db:updateMessagePacketId',
+  (_event, oldPacketId: number, newPacketId: number, senderId?: number) => {
+    const oldPid = safeNonNegativeInt(oldPacketId);
+    const newPid = safeNonNegativeInt(newPacketId);
+    if (oldPid === newPid) return;
+    const db = getDatabase();
+    const deleteByPacketId = db.prepareOnce('DELETE FROM messages WHERE packet_id = ?');
+    try {
+      const scopedSenderId =
+        senderId != null && Number.isFinite(senderId) ? safeNonNegativeInt(senderId) : undefined;
+      const updated =
+        scopedSenderId != null
+          ? db
+              .prepareOnce(
+                'UPDATE messages SET packet_id = ? WHERE packet_id = ? AND sender_id = ?',
+              )
+              .run(newPid, oldPid, scopedSenderId)
+          : db
+              .prepareOnce('UPDATE messages SET packet_id = ? WHERE packet_id = ?')
+              .run(newPid, oldPid);
+      if (updated.changes > 0) return;
+      // RF echo may have inserted the real packet_id before this runs; drop orphan temp row.
       deleteByPacketId.run(oldPid);
-      return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('UNIQUE constraint failed')) {
+        deleteByPacketId.run(oldPid);
+        return;
+      }
+      console.error('[IPC] db:updateMessagePacketId failed:', sanitizeLogMessage(msg));
+      throw err;
     }
-    console.error('[IPC] db:updateMessagePacketId failed:', sanitizeLogMessage(msg));
-    throw err;
-  }
-});
+  },
+);
 
 // ─── IPC: Export database ───────────────────────────────────────────
 ipcMain.handle('db:export', async () => {
@@ -4243,36 +4255,68 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
       typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 50) : null;
     const replyPreviewSender =
       typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null;
+    const rowParams = {
+      sender_id: m.sender_id != null ? Number(m.sender_id) : null,
+      sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
+      payload: m.payload as string,
+      channel_idx: m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
+      timestamp: m.timestamp,
+      status: typeof m.status === 'string' ? m.status : 'acked',
+      packet_id: m.packet_id != null ? Number(m.packet_id) : null,
+      emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
+      reply_id: replyId,
+      to_node: m.to_node != null ? Number(m.to_node) : null,
+      received_via,
+      rx_packet_fingerprint: rxFp,
+      reply_preview_text: replyPreviewText,
+      reply_preview_sender: replyPreviewSender,
+      rx_hops:
+        m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
+          ? Math.trunc(Number(m.rx_hops))
+          : null,
+      room_server_id:
+        m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
+          ? Math.trunc(Number(m.room_server_id))
+          : null,
+    };
+
+    // idx_mc_msg_dedup is a partial UNIQUE index (sender_id IS NOT NULL); SQLite cannot
+    // target it with INSERT ON CONFLICT(columns). Update by natural key, then insert.
+    const senderId = rowParams.sender_id;
+    if (senderId != null && Number.isFinite(senderId) && senderId >= 0) {
+      const updated = db
+        .prepareOnce(
+          'UPDATE meshcore_messages SET ' +
+            'sender_name = COALESCE(@sender_name, sender_name), ' +
+            'status = CASE ' +
+            "WHEN @status IN ('acked', 'failed') THEN @status " +
+            "WHEN status = 'acked' THEN status " +
+            'ELSE @status END, ' +
+            'packet_id = COALESCE(@packet_id, packet_id), ' +
+            'emoji = COALESCE(@emoji, emoji), ' +
+            'reply_id = COALESCE(@reply_id, reply_id), ' +
+            'to_node = COALESCE(@to_node, to_node), ' +
+            'received_via = COALESCE(@received_via, received_via), ' +
+            'rx_packet_fingerprint = COALESCE(@rx_packet_fingerprint, rx_packet_fingerprint), ' +
+            'reply_preview_text = COALESCE(@reply_preview_text, reply_preview_text), ' +
+            'reply_preview_sender = COALESCE(@reply_preview_sender, reply_preview_sender), ' +
+            'rx_hops = COALESCE(@rx_hops, rx_hops), ' +
+            'room_server_id = COALESCE(@room_server_id, room_server_id) ' +
+            'WHERE sender_id = @sender_id AND timestamp = @timestamp AND channel_idx = @channel_idx AND payload = @payload',
+        )
+        .run(rowParams);
+      if (updated.changes > 0) {
+        return updated;
+      }
+    }
+
     return db
       .prepareOnce(
         'INSERT OR IGNORE INTO meshcore_messages ' +
           '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id) ' +
           'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id)',
       )
-      .run({
-        sender_id: m.sender_id != null ? Number(m.sender_id) : null,
-        sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
-        payload: m.payload as string,
-        channel_idx: m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
-        timestamp: m.timestamp,
-        status: typeof m.status === 'string' ? m.status : 'acked',
-        packet_id: m.packet_id != null ? Number(m.packet_id) : null,
-        emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
-        reply_id: replyId,
-        to_node: m.to_node != null ? Number(m.to_node) : null,
-        received_via,
-        rx_packet_fingerprint: rxFp,
-        reply_preview_text: replyPreviewText,
-        reply_preview_sender: replyPreviewSender,
-        rx_hops:
-          m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
-            ? Math.trunc(Number(m.rx_hops))
-            : null,
-        room_server_id:
-          m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
-            ? Math.trunc(Number(m.room_server_id))
-            : null,
-      });
+      .run(rowParams);
   } catch (err) {
     console.error(
       '[IPC] db:saveMeshcoreMessage failed:',

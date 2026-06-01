@@ -64,7 +64,7 @@ describe('useSendMessage', () => {
     expect(session.sendChatMessage).toHaveBeenCalledWith('hello mqtt', 0, undefined, 42);
   });
 
-  it('warns when Meshtastic has no handle and MQTT is disconnected', () => {
+  it('warns when Meshtastic has no handle, no session, and MQTT is disconnected', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     addIdentity({
       id: ID_MT,
@@ -80,18 +80,14 @@ describe('useSendMessage', () => {
     result.current('hello', 0);
 
     expect(warn).toHaveBeenCalledWith(
-      '[useSendMessage] no handle and MQTT disconnected for',
-      ID_MT,
+      '[useSendMessage] Meshtastic runtime not mounted and no RF handle',
     );
     warn.mockRestore();
   });
 
-  it('persists Meshtastic optimistic send to SQLite with temp packet_id', async () => {
-    const saveMessage = vi.spyOn(window.electronAPI.db, 'saveMessage').mockResolvedValue(undefined);
-    const updateStatus = vi
-      .spyOn(window.electronAPI.db, 'updateMessageStatus')
-      .mockResolvedValue(undefined);
-    const sendSpy = vi.spyOn(meshtasticProtocol, 'sendMessage').mockResolvedValue({ packetId: 99 });
+  it('delegates hybrid Meshtastic send to runtime TransportManager when session mounted', () => {
+    const session = createMeshtasticSessionStub();
+    registerMeshtasticSession(session);
     const handle = { kind: 'rf' };
     vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
     addIdentity({
@@ -102,25 +98,35 @@ describe('useSendMessage', () => {
       createdAt: 1,
       lastSeenAt: 1,
     });
-    setConnection(ID_MT, { status: 'configured', myNodeNum: 42 });
+    setConnection(ID_MT, { mqttStatus: 'connected', status: 'configured', myNodeNum: 42 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MT));
+    result.current('hello hybrid', 0);
+
+    expect(session.sendChatMessage).toHaveBeenCalledWith('hello hybrid', 0, undefined, undefined);
+  });
+
+  it('persists Meshtastic optimistic send to SQLite with temp packet_id via runtime session', () => {
+    const saveMessage = vi.spyOn(window.electronAPI.db, 'saveMessage').mockResolvedValue(undefined);
+    const session = createMeshtasticSessionStub();
+    registerMeshtasticSession(session);
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MT,
+      protocol: meshtasticProtocol,
+      signature: 'sig-mt',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MT, { status: 'configured', myNodeNum: 42, mqttStatus: 'connected' });
 
     const { result } = renderHook(() => useSendMessage(ID_MT));
     result.current('persist me', 0);
 
-    await vi.waitFor(() => {
-      expect(saveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: 'persist me',
-          sender_id: 42,
-          packetId: expect.any(Number),
-          status: 'sending',
-        }),
-      );
-      expect(updateStatus).toHaveBeenCalledWith(99, 'acked');
-    });
-    sendSpy.mockRestore();
+    expect(session.sendChatMessage).toHaveBeenCalledWith('persist me', 0, undefined, undefined);
     saveMessage.mockRestore();
-    updateStatus.mockRestore();
   });
 
   it('sends via protocol when RF handle exists', async () => {

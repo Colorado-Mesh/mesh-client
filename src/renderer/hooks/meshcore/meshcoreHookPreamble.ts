@@ -754,7 +754,6 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       replyId: coerceOptionalDbInt(r.reply_id),
       to: r.to_node ?? undefined,
       receivedVia: meshcoreReceivedViaFromDb(r.received_via),
-      isHistory: true,
       rxPacketFingerprintHex:
         typeof r.rx_packet_fingerprint === 'string' &&
         /^[0-9A-Fa-f]{8}$/.test(r.rx_packet_fingerprint)

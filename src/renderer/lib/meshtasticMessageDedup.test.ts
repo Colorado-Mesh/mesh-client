@@ -140,24 +140,20 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
     expect(messages[0].rxHops).toBe(2);
   });
 
-  it('upgrades the correct row when multiple messages exist', () => {
-    const other = baseMsg({ payload: 'other msg', sender_id: 0x99999999, receivedVia: 'rf' });
-    const mqttTarget = baseMsg({ packetId: 0xaaaaaaaa, receivedVia: 'mqtt' });
-    const rf = baseMsg({
+  it('does not clobber optimistic/device id when MQTT echo arrives before RF', () => {
+    const optimistic = baseMsg({ packetId: 0x99999999, status: 'sending' });
+    const mqtt = baseMsg({
       packetId: 0xbbbbbbbb,
-      receivedVia: 'rf',
-      timestamp: mqttTarget.timestamp + 10_000,
+      receivedVia: 'mqtt',
+      timestamp: optimistic.timestamp + 5_000,
     });
-    const { messages, matched } = mapMeshtasticCrossTransportUpgrade([other, mqttTarget], rf);
-    expect(matched).toBe(true);
-    expect(messages[0]).toBe(other);
-    expect(messages[1].receivedVia).toBe('both');
+    const { messages } = mapMeshtasticCrossTransportUpgrade([optimistic], mqtt);
+    expect(messages[0].packetId).toBe(0x99999999);
   });
 });
 
 describe('Meshtastic runtime cross-transport integration — logic layer', () => {
-  it('MQTT path: upgrade-then-return skips saving duplicate when cross-dup found', () => {
-    // Simulates the MQTT handler in useMeshtasticRuntime: find duplicate → upgrade state → return early
+  it('MQTT path: upgrade-then-return keeps RF packetId when RF arrived first', () => {
     const rfMsg = baseMsg({ packetId: 0xaaaaaaaa, receivedVia: 'rf' });
     const mqttMsg = baseMsg({
       packetId: 0xbbbbbbbb,
@@ -171,8 +167,7 @@ describe('Meshtastic runtime cross-transport integration — logic layer', () =>
     const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade([rfMsg], mqttMsg);
     expect(matched).toBe(true);
     expect(next[0].receivedVia).toBe('both');
-    // Incoming MQTT packetId is preferred (non-zero)
-    expect(next[0].packetId).toBe(0xbbbbbbbb);
+    expect(next[0].packetId).toBe(0xaaaaaaaa);
   });
 
   it('RF path: upgrade-then-return skips saving duplicate when cross-dup found', () => {

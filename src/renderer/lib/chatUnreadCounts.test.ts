@@ -90,4 +90,34 @@ describe('chatUnreadCounts', () => {
     );
     expect(total).toBe(1);
   });
+
+  it('counts DB-hydrated MeshCore messages as unread when lastRead is behind', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 1, timestamp: 5000 })],
+      { 'ch:1': 1000 },
+      ownNodes,
+      'meshcore',
+    );
+    expect(counts.get(1)).toBe(1);
+  });
+
+  it('counts DB-hydrated Meshtastic messages as unread when lastRead is behind (parity guard)', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 1, timestamp: 5000 })],
+      { 'ch:1': 1000 },
+      ownNodes,
+      'meshtastic',
+    );
+    expect(counts.get(1)).toBe(1);
+  });
+
+  it('does not count DB-hydrated MeshCore messages marked isHistory (MsgWaiting backlog)', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 1, timestamp: 5000, isHistory: true })],
+      { 'ch:1': 1000 },
+      ownNodes,
+      'meshcore',
+    );
+    expect(counts.size).toBe(0);
+  });
 });

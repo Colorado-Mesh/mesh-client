@@ -3,10 +3,20 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
+  clearMeshcoreRoomLoginQueue,
+  dequeueMeshcoreRoomLogin,
+  enqueueMeshcoreRoomLogin,
+  resetMeshcoreRoomLoginQueue,
+} from './meshcoreRoomLoginQueue';
+import {
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
   type MeshcoreRoomLoginRpcConnection,
   runMeshcoreRoomLogin,
 } from './meshcoreRoomLoginRpc';
+import {
+  type MeshcoreRoomLogoutRpcConnection,
+  runMeshcoreRoomLogout,
+} from './meshcoreRoomLogoutRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
@@ -38,8 +48,22 @@ export const MESHCORE_ROOM_PERM_ADMIN = 3;
 
 const sessions = new Map<number, MeshcoreRoomSession>();
 
-/** Serializes room logins so concurrent BLE login frames do not collide. */
-let roomLoginChain: Promise<void> = Promise.resolve();
+type RoomSessionChangeListener = () => void;
+const roomSessionChangeListeners = new Set<RoomSessionChangeListener>();
+
+function notifyRoomSessionChanged(): void {
+  for (const listener of roomSessionChangeListeners) {
+    listener();
+  }
+}
+
+/** Subscribe to room session map changes (login, logout, clear). Returns unsubscribe. */
+export function subscribeMeshcoreRoomSessionChanges(cb: RoomSessionChangeListener): () => void {
+  roomSessionChangeListeners.add(cb);
+  return () => {
+    roomSessionChangeListeners.delete(cb);
+  };
+}
 
 /** Per-room login abort controllers (replaced on each new login for the same node). */
 const roomLoginAbortControllers = new Map<number, AbortController>();
@@ -50,6 +74,15 @@ export function meshcoreIsRoomLoginAbortError(err: unknown): boolean {
 
 export function meshcoreCancelRoomLogin(nodeId: number): void {
   roomLoginAbortControllers.get(nodeId)?.abort();
+  dequeueMeshcoreRoomLogin(nodeId);
+}
+
+/** Abort the active login and drop all queued room logins. */
+export function meshcoreCancelAllRoomLogins(): void {
+  for (const controller of roomLoginAbortControllers.values()) {
+    controller.abort();
+  }
+  clearMeshcoreRoomLoginQueue();
 }
 
 function throwIfRoomLoginAborted(signal: AbortSignal | undefined): void {
@@ -100,11 +133,15 @@ export function meshcoreClearAllRoomSessions(): void {
     controller.abort();
   }
   roomLoginAbortControllers.clear();
+  resetMeshcoreRoomLoginQueue();
   sessions.clear();
+  notifyRoomSessionChanged();
 }
 
 export function meshcoreClearRoomSession(nodeId: number): void {
+  if (!sessions.has(nodeId)) return;
   sessions.delete(nodeId);
+  notifyRoomSessionChanged();
 }
 
 function roleFromPermissionsByte(permissions: number): MeshcoreRoomRole {
@@ -152,13 +189,27 @@ export function meshcoreApplyRoomSession(
     loggedInAt: Date.now(),
     syncSince: params.syncSince,
   });
+  notifyRoomSessionChanged();
 }
 
 /** Default room guest password when firmware uses factory defaults (see MeshCore ROOM_PASSWORD). */
 export const MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD = 'hello';
 
+/** Thrown when multi-hop login has no route bytes after resolve/trace. */
+export const MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE =
+  'No route to this room server. Trace the node from the map or wait for path adverts, then try again.';
+
+/** Thrown when companion path programming (addOrUpdateContact) fails before SendLogin. */
+export const MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE =
+  'Could not program the route on your radio before login. Reconnect the device and try again.';
+
 export function meshcoreRoomEffectiveGuestPassword(password: string): string {
   return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
+}
+
+/** True when Login sent the factory default guest password (empty field → hello). */
+export function meshcoreRoomUsedDefaultGuestPassword(password: string): boolean {
+  return password === MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
 }
 
 function sleepMs(ms: number): Promise<void> {
@@ -171,13 +222,19 @@ export function meshcoreRoomLoginFailureMessage(err: unknown, password: string):
   const msg = errLikeToLogString(err).toLowerCase();
   if (msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied')) {
     if (password.length === 0) {
-      return 'Room login rejected. Try guest password "hello", or confirm this server allows read-only login.';
+      return 'Room login rejected. Use Continue read-only for blank guest password, or try guest password "hello".';
+    }
+    if (meshcoreRoomUsedDefaultGuestPassword(password)) {
+      return 'Room login rejected. If this server has no guest password, use Continue read-only instead of Login. Otherwise check the guest or admin password.';
     }
     return 'Room login rejected. Check the guest or admin password for this room server.';
   }
-  if (msg.includes('timeout')) {
+  if (msg.includes('timeout') || msg.includes('loginRoom') || msg.includes('program the route')) {
     if (password.length === 0) {
-      return 'Room login timed out. Try guest password "hello", or confirm this server allows read-only login.';
+      return 'Room login timed out. Use Continue read-only for blank guest password, or try guest password "hello".';
+    }
+    if (meshcoreRoomUsedDefaultGuestPassword(password)) {
+      return 'Room login timed out. If this server has no guest password, use Continue read-only instead of Login.';
     }
     return 'Room login timed out. The room may be out of range or not responding.';
   }
@@ -199,9 +256,14 @@ export async function meshcoreRoomLogin(
     signal?: AbortSignal;
     hopsAway?: number;
     companionTransport?: MeshcoreCompanionTransport;
+    /** When true, run SendLogin even if a session already exists (tryRelogin before post). */
+    forceRelogin?: boolean;
   },
 ): Promise<void> {
-  const run = async (): Promise<void> => {
+  return enqueueMeshcoreRoomLogin(nodeId, async () => {
+    if (meshcoreIsRoomLoggedIn(nodeId) && !opts?.forceRelogin) {
+      return;
+    }
     const signal = beginRoomLoginAbortSignal(nodeId, opts?.signal);
     const adminPassword = opts?.adminPassword ?? '';
     const guestPassword = opts?.guestPassword ?? password;
@@ -251,11 +313,37 @@ export async function meshcoreRoomLogin(
         roomLoginAbortControllers.delete(nodeId);
       }
     }
-  };
+  });
+}
 
-  const next = roomLoginChain.then(run, run);
-  roomLoginChain = next.catch(() => {});
-  await next;
+/** Minimal connection surface for room server logout. */
+export type MeshcoreRoomLogoutConn = MeshcoreRoomLogoutRpcConnection;
+
+export function meshcoreRoomLogoutFailureMessage(err: unknown): string {
+  const msg = errLikeToLogString(err).toLowerCase();
+  if (msg.includes('timeout')) {
+    return 'Room logout timed out. The room may be out of range or not responding.';
+  }
+  if (msg.includes('rejected')) {
+    return 'Room logout rejected by radio.';
+  }
+  return 'Could not leave room';
+}
+
+/**
+ * Logout from a room server and clear local session on success.
+ * Failure point: radio timeout or Err — throws; caller shows UI error; session kept.
+ */
+export async function meshcoreRoomLogout(
+  conn: MeshcoreRoomLogoutConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  opts?: {
+    companionTransport?: MeshcoreCompanionTransport;
+  },
+): Promise<void> {
+  await runMeshcoreRoomLogout(conn, pubKey, opts);
+  meshcoreClearRoomSession(nodeId);
 }
 
 /** Best-effort re-login using stored session passwords (e.g. before post or admin CLI). */
@@ -264,6 +352,10 @@ export async function meshcoreRoomTryRelogin(
   nodeId: number,
   pubKey: Uint8Array,
   mode: 'post' | 'admin',
+  opts?: {
+    hopsAway?: number;
+    companionTransport?: MeshcoreCompanionTransport;
+  },
 ): Promise<boolean> {
   const session = sessions.get(nodeId);
   if (!session) return false;
@@ -274,6 +366,9 @@ export async function meshcoreRoomTryRelogin(
   return meshcoreRoomLogin(conn, nodeId, pubKey, password, {
     adminPassword: session.adminPassword,
     guestPassword: session.guestPassword,
+    hopsAway: opts?.hopsAway,
+    companionTransport: opts?.companionTransport,
+    forceRelogin: true,
   }).then(
     () => true,
     () => false,

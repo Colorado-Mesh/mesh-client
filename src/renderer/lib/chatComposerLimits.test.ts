@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  computeComposerLimitStatus,
+  computeComposerTotalMaxChars,
   countMessageChars,
   getChatPayloadLimit,
+  getComposerWireOverhead,
+  getMeshcoreChannelPayloadLimit,
+  getMeshcoreRoomPayloadLimit,
   MAX_CHUNKS,
   MESHCORE_PAYLOAD_LIMIT,
   MESHTASTIC_PAYLOAD_LIMIT,
@@ -19,19 +24,96 @@ describe('getChatPayloadLimit', () => {
   });
 });
 
+describe('getMeshcoreChannelPayloadLimit', () => {
+  it('returns 157 for a 1-character display name', () => {
+    expect(getMeshcoreChannelPayloadLimit('A')).toBe(157);
+  });
+
+  it('returns 126 for a 32-character display name', () => {
+    expect(getMeshcoreChannelPayloadLimit('x'.repeat(32))).toBe(126);
+  });
+
+  it('caps name length at 32 characters', () => {
+    expect(getMeshcoreChannelPayloadLimit('x'.repeat(40))).toBe(126);
+  });
+});
+
+describe('getMeshcoreRoomPayloadLimit', () => {
+  it('returns 156 (160 minus 4-byte pubkey prefix)', () => {
+    expect(getMeshcoreRoomPayloadLimit()).toBe(156);
+  });
+});
+
+describe('getComposerWireOverhead', () => {
+  it('returns 0 for meshtastic replies', () => {
+    expect(getComposerWireOverhead({ protocol: 'meshtastic', replyToSenderName: 'Bob' })).toBe(0);
+  });
+
+  it('counts MeshCore reply prefix on first chunk', () => {
+    expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: 'Bob' })).toBe(7);
+  });
+});
+
 describe('countMessageChars', () => {
   it('counts ASCII correctly', () => {
     expect(countMessageChars('hello')).toBe(5);
   });
 
   it('counts emoji as one char each', () => {
-    // 🦊 is a single code point, not two UTF-16 chars
     expect(countMessageChars('🦊')).toBe(1);
     expect(countMessageChars('hi🦊')).toBe(3);
   });
 
   it('returns 0 for empty string', () => {
     expect(countMessageChars('')).toBe(0);
+  });
+});
+
+describe('computeComposerLimitStatus', () => {
+  it('returns ok phase below 80% threshold', () => {
+    const status = computeComposerLimitStatus('hello', 'meshtastic');
+    expect(status.phase).toBe('ok');
+    expect(status.charCount).toBe(5);
+  });
+
+  it('returns warn phase at 80%+ for meshtastic', () => {
+    const text = 'a'.repeat(183);
+    const status = computeComposerLimitStatus(text, 'meshtastic');
+    expect(status.phase).toBe('warn');
+    expect(status.showThreshold).toBe(182);
+  });
+
+  it('returns split phase when text exceeds single-message limit', () => {
+    const text = 'a'.repeat(250);
+    const status = computeComposerLimitStatus(text, 'meshtastic');
+    expect(status.phase).toBe('split');
+    expect(status.chunkCount).toBeGreaterThan(1);
+  });
+
+  it('uses dynamic meshcore channel limit from display name', () => {
+    const text = 'a'.repeat(130);
+    const shortName = computeComposerLimitStatus(text, 'meshcore', {
+      composerContext: 'channel',
+      senderDisplayName: 'A',
+    });
+    expect(shortName.singleMessageLimit).toBe(157);
+    expect(shortName.phase).toBe('warn');
+
+    const longName = computeComposerLimitStatus(text, 'meshcore', {
+      composerContext: 'channel',
+      senderDisplayName: 'x'.repeat(32),
+    });
+    expect(longName.singleMessageLimit).toBe(126);
+    expect(longName.phase).toBe('split');
+  });
+
+  it('returns overMax when text exceeds total max chars', () => {
+    const limit = MESHTASTIC_PAYLOAD_LIMIT;
+    const totalMax = computeComposerTotalMaxChars(limit);
+    const text = 'x'.repeat(totalMax + 1);
+    const status = computeComposerLimitStatus(text, 'meshtastic');
+    expect(status.phase).toBe('overMax');
+    expect(status.chunkCount).toBe(0);
   });
 });
 
@@ -47,31 +129,25 @@ describe('splitChatMessage', () => {
   });
 
   it('splits a message that exceeds the limit', () => {
-    // Use meshcore limit (133) to make a short test case.
-    // "[1/2] " prefix = 6 chars → body space = 127 chars.
-    // 200 chars = must split into 2 chunks.
     const text = 'a'.repeat(200);
     const chunks = splitChatMessage(text, 'meshcore');
     expect(chunks).not.toBeNull();
     expect(chunks!.length).toBe(2);
     expect(chunks![0].startsWith('[1/2] ')).toBe(true);
     expect(chunks![1].startsWith('[2/2] ')).toBe(true);
-    // All body chars should be present
     const bodies = chunks!.map((c) => c.replace(/^\[\d+\/\d+\] /, ''));
     expect(bodies.join('').length).toBe(200);
   });
 
   it('prefers word boundaries when splitting', () => {
-    // Build a string with a space that lands near the boundary
-    const limit = MESHCORE_PAYLOAD_LIMIT; // 133
-    const prefixLen = '[1/2] '.length; // 6
-    const bodySpace = limit - prefixLen; // 127
-    const chunk1Words = 'word '.repeat(25); // 125 chars, ends with space
+    const limit = MESHCORE_PAYLOAD_LIMIT;
+    const prefixLen = '[1/2] '.length;
+    const bodySpace = limit - prefixLen;
+    const chunk1Words = 'word '.repeat(25);
     const rest = 'overflow words here';
     const text = chunk1Words + rest;
     const chunks = splitChatMessage(text, 'meshcore');
     expect(chunks).not.toBeNull();
-    // First chunk body should not start with a space
     const body0 = chunks![0].replace(/^\[\d+\/\d+\] /, '');
     expect(body0.endsWith(' ')).toBe(false);
     expect(body0.length).toBeLessThanOrEqual(bodySpace);
@@ -81,23 +157,26 @@ describe('splitChatMessage', () => {
     const longToken = 'x'.repeat(300);
     const chunks = splitChatMessage(longToken, 'meshtastic');
     expect(chunks).not.toBeNull();
-    // Should produce multiple chunks
     expect(chunks!.length).toBeGreaterThan(1);
-    // Every chunk body should fit in the limit
     for (const chunk of chunks!) {
       expect(countMessageChars(chunk)).toBeLessThanOrEqual(MESHTASTIC_PAYLOAD_LIMIT);
     }
   });
 
+  it('accounts for reply wire overhead on first chunk only', () => {
+    const limit = 133;
+    const overhead = getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: 'Bob' });
+    const fitsWithout = 'a'.repeat(limit);
+    expect(splitChatMessage(fitsWithout, 'meshcore', limit, 0)).toEqual([]);
+    expect(splitChatMessage(fitsWithout, 'meshcore', limit, overhead)).not.toEqual([]);
+  });
+
   it('returns null when text requires more than MAX_CHUNKS chunks', () => {
-    // MAX_CHUNKS = 9 for meshcore (limit 133). "[9/9] " = 6 chars prefix → 127 body per chunk.
-    // 127 * 9 + 1 = 1144 chars needed to overflow 9 chunks.
     const text = 'x'.repeat(9 * 127 + 1);
     expect(splitChatMessage(text, 'meshcore')).toBeNull();
   });
 
   it('returns exactly MAX_CHUNKS chunks at the boundary (not null)', () => {
-    // 9 chunks of 127 chars each = 1143 chars max for meshcore
     const text = 'x'.repeat(9 * 127);
     const chunks = splitChatMessage(text, 'meshcore');
     expect(chunks).not.toBeNull();
