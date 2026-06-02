@@ -243,6 +243,7 @@ beforeEach(() => {
   });
   useMessageStore.setState({ messages: {} });
   useConnectionStore.setState({ connections: {} });
+  vi.mocked(window.electronAPI.setTrayUnread).mockClear();
   registerMeshtasticSession({
     prepareRfConnect: vi.fn().mockResolvedValue(undefined),
     attachRfSession: vi.fn().mockResolvedValue(undefined),
@@ -850,6 +851,115 @@ describe('App accessibility', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
+    });
+  });
+
+  it('includes MeshCore Rooms unread in the tray unread total', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    localStorage.setItem('mesh-client:meshcoreChatUnread', '7');
+    localStorage.setItem('mesh-client:meshcoreRoomsUnread', '99');
+    const selfNodeId = 0x12345678;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 0x200,
+        sender_name: 'Alice',
+        payload: 'Room ping',
+        channel: -2,
+        timestamp: Date.now(),
+        status: 'acked',
+        roomServerId: 0x1005,
+        to: 0x1005,
+      },
+    ];
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: selfNodeId, connectionType: 'serial' },
+      selfNodeId,
+      messages,
+    });
+    syncMeshcoreMessagesToStore(messages);
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      myNodeNum: selfNodeId,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(window.electronAPI.setTrayUnread).toHaveBeenCalledWith(1);
+    });
+    expect(localStorage.getItem('mesh-client:meshcoreRoomsUnread')).toBe('1');
+    expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('0');
+  });
+
+  it('sums meshtastic chat, meshcore chat, and rooms unread for tray badge', async () => {
+    const ts = Date.now();
+    const meshtasticMessages: ChatMessage[] = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Meshtastic ping',
+        channel: 0,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+    const meshcoreSelfNodeId = 0x12345678;
+    const meshcoreMessages: ChatMessage[] = [
+      {
+        sender_id: 0x301,
+        sender_name: 'Bob',
+        payload: 'MeshCore ping',
+        channel: 1,
+        timestamp: ts,
+        status: 'acked',
+      },
+      {
+        sender_id: 0x302,
+        sender_name: 'Carol',
+        payload: 'Room ping',
+        channel: -2,
+        timestamp: ts,
+        status: 'acked',
+        roomServerId: 0x1005,
+        to: 0x1005,
+      },
+    ];
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: 'serial' },
+      selfNodeId: 1,
+      messages: meshtasticMessages,
+    });
+    syncMeshtasticMessagesToStore(meshtasticMessages);
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: {
+        status: 'configured',
+        myNodeNum: meshcoreSelfNodeId,
+        connectionType: 'serial',
+      },
+      selfNodeId: meshcoreSelfNodeId,
+      channels: [
+        { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },
+        { index: 1, name: 'Ops', secret: new Uint8Array(16).fill(0x22) },
+      ],
+      messages: meshcoreMessages,
+    });
+    syncMeshcoreMessagesToStore(meshcoreMessages);
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      myNodeNum: meshcoreSelfNodeId,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(window.electronAPI.setTrayUnread).toHaveBeenCalledWith(3);
     });
   });
 });

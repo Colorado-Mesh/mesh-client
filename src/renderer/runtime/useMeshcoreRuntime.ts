@@ -3392,6 +3392,7 @@ export function useMeshcoreRuntime() {
         adminPassword?: string;
         guestPassword?: string;
         rememberPassword?: boolean;
+        forceRelogin?: boolean;
       },
     ): Promise<void> => {
       let pubKey = pubKeyMapRef.current.get(nodeId);
@@ -3431,7 +3432,7 @@ export function useMeshcoreRuntime() {
       if (!conn) {
         throw new Error('Not connected to device');
       }
-      if (meshcoreIsRoomLoggedIn(nodeId)) {
+      if (meshcoreIsRoomLoggedIn(nodeId) && !opts?.forceRelogin) {
         return;
       }
       const guestPassword = opts?.guestPassword ?? password;
@@ -3483,6 +3484,7 @@ export function useMeshcoreRuntime() {
               guestPassword,
               hopsAway,
               companionTransport: meshcoreConnectTypeRef.current,
+              forceRelogin: opts?.forceRelogin,
             });
           });
           if (opts?.rememberPassword) {
@@ -3837,10 +3839,10 @@ export function useMeshcoreRuntime() {
       const storeId = meshcoreIdentityIdRef.current;
       const canonicalId = addMessage(tempMsg);
       try {
-        console.debug(
-          `[useMeshcoreRuntime] sendRoomPost txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${text.length} room=0x${nodeId.toString(16)}`,
-        );
         const hopsAway = nodesRef.current.get(nodeId)?.hops_away ?? 0;
+        console.debug(
+          `[useMeshcoreRuntime] sendRoomPost mode=post txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
+        );
         const session = meshcoreGetRoomSession(nodeId);
         const postOpts = {
           hopsAway,
@@ -3864,6 +3866,9 @@ export function useMeshcoreRuntime() {
             msg.includes('not logged in on the radio') &&
             connRef.current
           ) {
+            console.debug(
+              `[useMeshcoreRuntime] sendRoomPost mode=admin-retry txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
+            );
             await repeaterRemoteRpcRef.current(async () => {
               const activeConn = connRef.current;
               if (!activeConn) return;
@@ -3872,6 +3877,7 @@ export function useMeshcoreRuntime() {
                 adminPassword,
                 hopsAway,
                 companionTransport: meshcoreConnectTypeRef.current,
+                forceRelogin: true,
               });
             });
             result = await repeaterRemoteRpcRef.current(sendOnce);

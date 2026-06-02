@@ -97,6 +97,7 @@ interface Props {
       adminPassword?: string;
       guestPassword?: string;
       rememberPassword?: boolean;
+      forceRelogin?: boolean;
     },
   ) => Promise<void>;
   onLoginAllSaved?: (roomNodeIds: number[]) => Promise<void>;
@@ -773,7 +774,11 @@ export default function RoomsPanel({
       return;
     }
     startRoomLogin(nodeId, async () => {
-      await onLoginRoom(nodeId, adminPassword, { adminPassword, guestPassword });
+      await onLoginRoom(nodeId, adminPassword, {
+        adminPassword,
+        guestPassword,
+        forceRelogin: true,
+      });
       setManageOpen(true);
     });
   }, [

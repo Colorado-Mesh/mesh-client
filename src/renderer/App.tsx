@@ -259,6 +259,7 @@ export interface UpdateState {
 
 const MESHTASTIC_UNREAD_KEY = 'mesh-client:meshtasticChatUnread';
 const MESHCORE_UNREAD_KEY = 'mesh-client:meshcoreChatUnread';
+const MESHCORE_ROOMS_UNREAD_KEY = 'mesh-client:meshcoreRoomsUnread';
 const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
 /** Legacy key (pre–footer indicator): `checkOnStartup` / `dismissedVersion` — removed on launch so updates always check on startup. */
 const LEGACY_UPDATE_SETTINGS_KEY = 'mesh-client:updateSettings';
@@ -279,6 +280,15 @@ function persistUnread(protocol: 'meshtastic' | 'meshcore', count: number): void
     localStorage.setItem(key, String(n));
   } catch (e) {
     console.debug('[App] persistUnread quota/private mode ' + errLikeToLogString(e));
+  }
+}
+
+function persistMeshcoreRoomsUnread(count: number): void {
+  try {
+    const n = Math.max(0, Math.min(Math.floor(count) || 0, 99999));
+    localStorage.setItem(MESHCORE_ROOMS_UNREAD_KEY, String(n));
+  } catch (e) {
+    console.debug('[App] persistMeshcoreRoomsUnread quota/private mode ' + errLikeToLogString(e));
   }
 }
 
@@ -1677,8 +1687,14 @@ function AppContent({
   }, [meshcoreChatUnread]);
 
   useEffect(() => {
-    window.electronAPI.setTrayUnread(meshtasticChatUnread + meshcoreChatUnread);
-  }, [meshtasticChatUnread, meshcoreChatUnread]);
+    persistMeshcoreRoomsUnread(meshcoreRoomsUnread);
+  }, [meshcoreRoomsUnread]);
+
+  useEffect(() => {
+    window.electronAPI.setTrayUnread(
+      meshtasticChatUnread + meshcoreChatUnread + meshcoreRoomsUnread,
+    );
+  }, [meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread]);
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
   const advertSentRef = useRef(false);

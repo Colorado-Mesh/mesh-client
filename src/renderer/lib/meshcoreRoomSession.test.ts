@@ -5,6 +5,7 @@ import {
   meshcoreApplyRoomSession,
   meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
+  meshcoreGetRoomSession,
   meshcoreIsRoomLoggedIn,
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
@@ -72,6 +73,83 @@ describe('meshcoreRoomSession', () => {
     });
     expect(meshcoreIsRoomLoggedIn(42)).toBe(true);
     expect(meshcoreRoomCanPost(42)).toBe(true);
+  });
+
+  it('skips relogin when already logged in without forceRelogin', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 2 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    await meshcoreRoomLogin(conn, 42, pubKey, 'hello', {
+      guestPassword: 'hello',
+      adminPassword: '',
+    });
+
+    expect(mockRunMeshcoreRoomLogin).not.toHaveBeenCalled();
+    expect(meshcoreGetRoomSession(42)?.role).toBe('readwrite');
+  });
+
+  it('forceRelogin upgrades an existing read-only session to admin', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+
+    await meshcoreRoomLogin(conn, 42, pubKey, 'password', {
+      guestPassword: '',
+      adminPassword: 'password',
+      forceRelogin: true,
+    });
+
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledTimes(1);
+    expect(meshcoreGetRoomSession(42)?.role).toBe('admin');
+  });
+
+  it('forceRelogin upgrades an existing guest session to admin', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    meshcoreApplyRoomSession(42, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    await meshcoreRoomLogin(conn, 42, pubKey, 'password', {
+      guestPassword: 'hello',
+      adminPassword: 'password',
+      forceRelogin: true,
+    });
+
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledTimes(1);
+    expect(meshcoreGetRoomSession(42)?.role).toBe('admin');
   });
 
   it('login throws a helpful message on timeout', async () => {
