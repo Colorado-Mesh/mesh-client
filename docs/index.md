@@ -53,9 +53,10 @@ For development setup and local build/test workflow, see:
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
   - Renderer hook/runtime/store boundaries — see [AGENTS.md](../AGENTS.md#renderer-hook-architecture-dual-protocol) and [ARCHITECTURE.md](../ARCHITECTURE.md)
-- **MeshCore Roadmap**
-  - [Feature Parity](meshcore-meshtastic-parity.md)
+- **MeshCore**
+  - [Feature Parity](meshcore-meshtastic-parity.md) (includes **Rooms** BBS and shared **ChatComposer**)
   - [MQTT Auth](letsmesh-mqtt-auth.md)
+  - Room login/posts — [Troubleshooting](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 - **Support**
   - [Diagnostics](diagnostics.md)
   - [Troubleshooting](troubleshooting.md)
