@@ -397,10 +397,11 @@ function ChatPanel({
       if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
       else if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
       if (peer == null) return undefined;
+      if (protocol === 'meshcore' && nodes.get(peer)?.hw_model === 'Room') return undefined;
       if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
       return peer >>> 0;
     },
-    [isOwnNode, protocol],
+    [isOwnNode, nodes, protocol],
   );
 
   const scrollToTop = useCallback(() => {

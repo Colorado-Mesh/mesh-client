@@ -7,6 +7,11 @@ import {
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from '../meshcoreChannelText';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
+import {
+  isMeshcoreRoomServerContactType,
+  meshcoreRoomMessageId,
+  meshcoreRoomWireLooksLikeRoom,
+} from '../meshcoreRoomMessageRouting';
 import { isMeshcoreTransportStatusChatLine, pubkeyToNodeId } from '../meshcoreUtils';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -169,18 +174,19 @@ export class MeshCoreProtocol implements Protocol {
     // identities does not pollute the map.
     const pubKeyByNodeId = new Map<number, Uint8Array>();
     const nodeIdByPrefix = new Map<string, number>();
+    const roomNodeIds = new Set<number>();
 
     const onAdvert = (data: unknown) => {
       this.decodeAdvert(data, pubKeyByNodeId, nodeIdByPrefix).forEach(emit);
     };
     const onDm = (data: unknown) => {
-      this.decodeDirectMessage(data, nodeIdByPrefix).forEach(emit);
+      this.decodeDirectMessage(data, nodeIdByPrefix, roomNodeIds).forEach(emit);
     };
     const onChannel = (data: unknown) => {
       this.decodeChannelMessage(data).forEach(emit);
     };
     const onContact = (data: unknown) => {
-      this.decodeContact(data, pubKeyByNodeId, nodeIdByPrefix).forEach(emit);
+      this.decodeContact(data, pubKeyByNodeId, nodeIdByPrefix, roomNodeIds).forEach(emit);
     };
     const onRx = (data: unknown) => {
       this.decodeRx(data).forEach(emit);
@@ -494,7 +500,11 @@ export class MeshCoreProtocol implements Protocol {
     ];
   }
 
-  private decodeDirectMessage(raw: unknown, nodeIdByPrefix: Map<string, number>): DomainEvent[] {
+  private decodeDirectMessage(
+    raw: unknown,
+    nodeIdByPrefix: Map<string, number>,
+    roomNodeIds: Set<number>,
+  ): DomainEvent[] {
     const d = raw as {
       pubKeyPrefix: Uint8Array;
       text: string;
@@ -510,20 +520,31 @@ export class MeshCoreProtocol implements Protocol {
       .join('');
     const senderId = nodeIdByPrefix.get(prefix) ?? 0;
     const isSignedPlain = d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN;
+    if (isSignedPlain && senderId !== 0) {
+      roomNodeIds.add(senderId);
+    }
+    const isKnownRoomNode = senderId !== 0 && roomNodeIds.has(senderId);
+    const isRoomWire = meshcoreRoomWireLooksLikeRoom({
+      txtType: d.txtType,
+      senderNodeId: senderId,
+      isKnownRoomNode,
+    });
+    const roomServerId = isRoomWire && senderId !== 0 ? senderId : undefined;
     return [
       {
         type: 'text_message',
         payload: {
-          id: isSignedPlain
-            ? `room:${senderId}:${d.senderTimestamp}`
-            : `${senderId}:${d.senderTimestamp}`,
+          id:
+            roomServerId != null
+              ? meshcoreRoomMessageId(roomServerId, d.senderTimestamp)
+              : `${senderId}:${d.senderTimestamp}`,
           from: senderId,
           to: 0,
           payload: d.text,
-          channelIndex: isSignedPlain ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
+          channelIndex: isRoomWire ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
           timestamp: d.senderTimestamp * 1000,
           ...(d.txtType != null ? { txtType: d.txtType } : {}),
-          ...(isSignedPlain ? { roomServerId: senderId } : {}),
+          ...(roomServerId != null ? { roomServerId } : {}),
         },
       },
     ];
@@ -553,15 +574,21 @@ export class MeshCoreProtocol implements Protocol {
     raw: unknown,
     pubKeyByNodeId: Map<number, Uint8Array>,
     nodeIdByPrefix: Map<string, number>,
+    roomNodeIds: Set<number>,
   ): DomainEvent[] {
     const d = raw as {
       publicKey?: Uint8Array;
+      type?: number;
       advLat?: number;
       advLon?: number;
       lastAdvert?: number;
       advName?: string;
     };
     if (!(d.publicKey instanceof Uint8Array) || d.publicKey.length !== 32) return [];
+    const nodeId = pubkeyToNodeId(d.publicKey);
+    if (nodeId !== 0 && isMeshcoreRoomServerContactType(d.type)) {
+      roomNodeIds.add(nodeId);
+    }
     return this.decodeAdvert(
       {
         publicKey: d.publicKey,

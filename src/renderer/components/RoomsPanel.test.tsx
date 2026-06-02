@@ -131,7 +131,7 @@ describe('RoomsPanel', () => {
       expect(onLoginRoom).toHaveBeenCalledWith(
         room.node_id,
         'hello',
-        expect.objectContaining({ guestPassword: 'hello' }),
+        expect.objectContaining({ guestPassword: 'hello', forceRelogin: true }),
       );
     });
   });

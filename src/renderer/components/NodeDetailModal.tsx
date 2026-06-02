@@ -18,6 +18,7 @@ import type {
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
+import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '../lib/meshcoreRoomSession';
 import {
   MESHCORE_CHAT_STUB_ID_MAX,
   MESHCORE_CHAT_STUB_ID_MIN,
@@ -56,7 +57,7 @@ interface NodeDetailModalProps {
   onLoginRoom?: (
     nodeId: number,
     password: string,
-    opts?: { adminPassword?: string; guestPassword?: string },
+    opts?: { adminPassword?: string; guestPassword?: string; forceRelogin?: boolean },
   ) => Promise<void>;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
@@ -173,10 +174,15 @@ export default function NodeDetailModal({
         const auth = await ensureRoomAuth(nodeId, mode === 'admin' ? 'admin' : 'guest', roomName);
         if (!auth.ok || !onLoginRoom) return false;
         const password = mode === 'admin' ? auth.adminPassword : auth.guestPassword;
+        const session = meshcoreGetRoomSession(nodeId);
+        const forceRelogin =
+          meshcoreIsRoomLoggedIn(nodeId) &&
+          (session?.role === 'readonly' || (mode === 'admin' && session?.role !== 'admin'));
         try {
           await onLoginRoom(nodeId, password, {
             adminPassword: auth.adminPassword,
             guestPassword: auth.guestPassword,
+            forceRelogin,
           });
           return true;
         } catch (e) {

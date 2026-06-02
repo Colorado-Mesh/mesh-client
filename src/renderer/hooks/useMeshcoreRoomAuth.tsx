@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { meshcoreGetRoomSession } from '@/renderer/lib/meshcoreRoomSession';
+import {
+  meshcoreGetRoomSession,
+  meshcoreRoomEffectiveGuestPassword,
+} from '@/renderer/lib/meshcoreRoomSession';
 
 export type RoomAuthMode = 'guest' | 'admin';
 
@@ -107,9 +110,11 @@ export function useMeshcoreRoomAuth() {
         setPending(null);
         return;
       }
+      const effectiveGuest =
+        mode === 'readonly' ? '' : meshcoreRoomEffectiveGuestPassword(guestPassword);
       resolverRef.current?.({
         ok: true,
-        guestPassword: mode === 'readonly' ? '' : guestPassword,
+        guestPassword: effectiveGuest,
         adminPassword,
       });
       resolverRef.current = null;
@@ -271,7 +276,8 @@ function ModalRoomAuthBody({
           onClick={() => {
             onSave(guestPassword, adminPassword);
           }}
-          className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium"
+          disabled={!showAdmin && hideReadonlyOption && guestPassword.trim().length === 0}
+          className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40"
         >
           {continueLabel}
         </button>
