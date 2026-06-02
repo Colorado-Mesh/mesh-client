@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 import Sidebar from './Sidebar';
 
@@ -156,6 +157,21 @@ describe('Sidebar', () => {
       />,
     );
     expect(screen.getByText('99+')).toBeInTheDocument();
+  });
+
+  it('has no axe violations when Chat unread badge shows 99+', async () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Chat']}
+        active={0}
+        onChange={onChange}
+        chatUnread={150}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(await axe(screen.getByText('99+'))).toHaveNoViolations();
   });
 
   it('does not invoke onChange for disabled tabs', () => {

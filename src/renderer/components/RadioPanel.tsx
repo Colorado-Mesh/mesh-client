@@ -9,6 +9,7 @@ import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/mes
 import {
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
+  meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
@@ -36,6 +37,8 @@ import {
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
+import { ConfigApplyNotice } from './ConfigApplyNotice';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
@@ -69,12 +72,7 @@ interface Props {
   onClearChannel: (index: number) => Promise<void>;
   channelConfigs: ChannelConfig[];
   isConnected: boolean;
-  telemetryDeviceUpdateInterval?: number | null;
   deviceFixedPosition?: boolean | null;
-  onReboot: (seconds: number) => Promise<void>;
-  onShutdown: (seconds: number) => Promise<void>;
-  onFactoryReset: () => Promise<void>;
-  onResetNodeDb: (preserveFavorites?: boolean) => Promise<void>;
   ourPosition?: OurPosition | null;
   onSendPositionToDevice?: (lat: number, lon: number, alt?: number) => Promise<void>;
   deviceOwner?: { longName: string; shortName: string; isLicensed: boolean } | null;
@@ -83,9 +81,6 @@ interface Props {
     shortName: string;
     isLicensed: boolean;
   }) => Promise<void>;
-  onRebootOta?: (delay: number) => Promise<void>;
-  onEnterDfu?: () => Promise<void>;
-  onFactoryResetConfig?: () => Promise<void>;
   capabilities?: ProtocolCapabilities;
   meshcoreChannels?: { index: number; name: string; secret: Uint8Array }[];
   onMeshcoreSetChannel?: (idx: number, name: string, secret: Uint8Array) => Promise<void>;
@@ -185,9 +180,40 @@ const DEVICE_ROLES = [
   { value: 10, label: 'TAK Tracker', description: 'TAK tracker mode' },
 ];
 
+const REBROADCAST_MODES = [
+  { value: 0, label: 'All' },
+  { value: 1, label: 'All Skip Decoding' },
+  { value: 2, label: 'Local Only' },
+  { value: 3, label: 'Known Only' },
+  { value: 4, label: 'None' },
+  { value: 5, label: 'Core Portnums Only' },
+];
+
 const DISPLAY_UNITS = [
   { value: 0, label: 'Metric' },
   { value: 1, label: 'Imperial' },
+];
+
+const OLED_TYPES = [
+  { value: 0, label: 'Auto' },
+  { value: 1, label: 'SSD1306' },
+  { value: 2, label: 'SH1106' },
+  { value: 3, label: 'SH1107 (128x64)' },
+  { value: 4, label: 'SH1107 (128x128)' },
+  { value: 5, label: 'SH1107 Rotated' },
+];
+
+const DISPLAY_MODES = [
+  { value: 0, label: 'Default' },
+  { value: 1, label: 'Two Color' },
+  { value: 2, label: 'Inverted' },
+  { value: 3, label: 'Color' },
+];
+
+const BT_PAIRING_MODES = [
+  { value: 0, label: 'Random PIN' },
+  { value: 1, label: 'Fixed PIN' },
+  { value: 2, label: 'No PIN' },
 ];
 
 /** Contact count badge with offload button for MeshCore */
@@ -474,73 +500,6 @@ function keySizeDefaultPsk(size: KeySize): Uint8Array {
   }
 }
 
-// ─── Confirmation Modal ─────────────────────────────────────────
-function ConfirmModal({
-  title,
-  message,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onCancel,
-  preserveFavorites,
-  onPreserveFavoritesChange,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  preserveFavorites?: boolean;
-  onPreserveFavoritesChange?: (value: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button
-        type="button"
-        aria-label={t('common.cancel')}
-        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-      <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-muted text-sm leading-relaxed">{message}</p>
-        {onPreserveFavoritesChange != null && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={preserveFavorites ?? false}
-              onChange={(e) => {
-                onPreserveFavoritesChange(e.target.checked);
-              }}
-              className="accent-brand-green"
-              aria-label={t('radioPanel.resetNodeDbPreserveFavorites')}
-            />
-            {t('radioPanel.resetNodeDbPreserveFavorites')}
-          </label>
-        )}
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={onCancel}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
-              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function WifiPasswordField({
   value,
   onChange,
@@ -587,16 +546,6 @@ function WifiPasswordField({
   );
 }
 
-interface PendingAction {
-  name: string;
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  showPreserveFavorites?: boolean;
-  action: () => Promise<void>;
-}
-
 export default function RadioPanel({
   configTarget,
   onSetConfig,
@@ -605,19 +554,11 @@ export default function RadioPanel({
   onClearChannel,
   channelConfigs,
   isConnected,
-  telemetryDeviceUpdateInterval,
   deviceFixedPosition,
-  onReboot,
-  onShutdown,
-  onFactoryReset,
-  onResetNodeDb,
   ourPosition,
   onSendPositionToDevice,
   deviceOwner,
   onSetOwner,
-  onRebootOta,
-  onEnterDfu,
-  onFactoryResetConfig,
   capabilities,
   meshcoreChannels,
   onMeshcoreSetChannel,
@@ -669,6 +610,13 @@ export default function RadioPanel({
   const [codingRate, setCodingRate] = useState(8);
   const [txPower, setTxPower] = useState(17);
   const [rxBoostedGain, setRxBoostedGain] = useState(false);
+  const [txEnabled, setTxEnabled] = useState(true);
+  const [channelNum, setChannelNum] = useState(0);
+  const [overrideDutyCycle, setOverrideDutyCycle] = useState(false);
+  const [overrideFrequency, setOverrideFrequency] = useState(0);
+  const [paFanDisabled, setPaFanDisabled] = useState(false);
+  const [ignoreMqtt, setIgnoreMqtt] = useState(false);
+  const [configOkToMqtt, setConfigOkToMqtt] = useState(false);
   // MeshCore: selfInfo freq/BW units vary by firmware — normalize in meshcoreUtils.
   const [radioFreqHz, setRadioFreqHz] = useState(() =>
     loraConfig?.freq != null ? meshcoreSelfInfoFreqToDisplayHz(loraConfig.freq) : 915000000,
@@ -686,6 +634,14 @@ export default function RadioPanel({
 
   // ─── Device settings ──────────────────────────────────────────
   const [deviceRole, setDeviceRole] = useState(0);
+  const [rebroadcastMode, setRebroadcastMode] = useState(0);
+  const [nodeInfoBroadcastSecs, setNodeInfoBroadcastSecs] = useState(900);
+  const [doubleTapAsButtonPress, setDoubleTapAsButtonPress] = useState(false);
+  const [disableTripleClick, setDisableTripleClick] = useState(false);
+  const [tzdef, setTzdef] = useState('');
+  const [ledHeartbeatDisabled, setLedHeartbeatDisabled] = useState(false);
+  const [buttonGpio, setButtonGpio] = useState(0);
+  const [buzzerGpio, setBuzzerGpio] = useState(0);
 
   // ─── Position settings ────────────────────────────────────────
   const [positionBroadcastSecs, setPositionBroadcastSecs] = useState(900);
@@ -722,20 +678,20 @@ export default function RadioPanel({
   // ─── Bluetooth settings ───────────────────────────────────────
   const [btEnabled, setBtEnabled] = useState(true);
   const [btFixedPin, setBtFixedPin] = useState(123456);
+  const [btPairingMode, setBtPairingMode] = useState(0);
 
   // ─── Display settings ─────────────────────────────────────────
   const [screenOnSecs, setScreenOnSecs] = useState(60);
   const [displayUnits, setDisplayUnits] = useState(0);
-
-  // ─── Telemetry (device metrics) ────────────────────────────────
-  const [deviceUpdateInterval, setDeviceUpdateInterval] = useState(1800);
-
-  // Sync telemetry interval from device config when received
-  useEffect(() => {
-    if (typeof telemetryDeviceUpdateInterval === 'number') {
-      setDeviceUpdateInterval(telemetryDeviceUpdateInterval);
-    }
-  }, [telemetryDeviceUpdateInterval]);
+  const [autoScreenCarouselSecs, setAutoScreenCarouselSecs] = useState(0);
+  const [flipScreen, setFlipScreen] = useState(false);
+  const [oled, setOled] = useState(0);
+  const [displaymode, setDisplaymode] = useState(0);
+  const [headingBold, setHeadingBold] = useState(false);
+  const [wakeOnTapOrMotion, setWakeOnTapOrMotion] = useState(false);
+  const [use12hClock, setUse12hClock] = useState(false);
+  const [useLongNodeName, setUseLongNodeName] = useState(false);
+  const [enableMessageBubbles, setEnableMessageBubbles] = useState(false);
 
   useEffect(() => {
     if (typeof deviceFixedPosition === 'boolean') {
@@ -746,15 +702,39 @@ export default function RadioPanel({
   useSyncFormFromConfig(meshtasticConfigSlices?.bluetooth, (cfg) => {
     if (typeof cfg.enabled === 'boolean') setBtEnabled(cfg.enabled);
     if (typeof cfg.fixedPin === 'number') setBtFixedPin(cfg.fixedPin);
+    if (typeof cfg.mode === 'number') setBtPairingMode(cfg.mode);
   });
 
   useSyncFormFromConfig(meshtasticConfigSlices?.device, (cfg) => {
     if (typeof cfg.role === 'number') setDeviceRole(cfg.role);
+    if (typeof cfg.rebroadcastMode === 'number') setRebroadcastMode(cfg.rebroadcastMode);
+    if (typeof cfg.nodeInfoBroadcastSecs === 'number')
+      setNodeInfoBroadcastSecs(cfg.nodeInfoBroadcastSecs);
+    if (typeof cfg.doubleTapAsButtonPress === 'boolean')
+      setDoubleTapAsButtonPress(cfg.doubleTapAsButtonPress);
+    if (typeof cfg.disableTripleClick === 'boolean') setDisableTripleClick(cfg.disableTripleClick);
+    if (typeof cfg.tzdef === 'string') setTzdef(cfg.tzdef);
+    if (typeof cfg.ledHeartbeatDisabled === 'boolean')
+      setLedHeartbeatDisabled(cfg.ledHeartbeatDisabled);
+    if (typeof cfg.buttonGpio === 'number') setButtonGpio(cfg.buttonGpio);
+    if (typeof cfg.buzzerGpio === 'number') setBuzzerGpio(cfg.buzzerGpio);
   });
 
   useSyncFormFromConfig(meshtasticConfigSlices?.display, (cfg) => {
     if (typeof cfg.screenOnSecs === 'number') setScreenOnSecs(cfg.screenOnSecs);
     if (typeof cfg.units === 'number') setDisplayUnits(cfg.units);
+    if (typeof cfg.autoScreenCarouselSecs === 'number')
+      setAutoScreenCarouselSecs(cfg.autoScreenCarouselSecs);
+    if (typeof cfg.flipScreen === 'boolean') setFlipScreen(cfg.flipScreen);
+    if (typeof cfg.oled === 'number') setOled(cfg.oled);
+    const displayModeVal = cfg.displaymode ?? cfg.displayMode;
+    if (typeof displayModeVal === 'number') setDisplaymode(displayModeVal);
+    if (typeof cfg.headingBold === 'boolean') setHeadingBold(cfg.headingBold);
+    if (typeof cfg.wakeOnTapOrMotion === 'boolean') setWakeOnTapOrMotion(cfg.wakeOnTapOrMotion);
+    if (typeof cfg.use12hClock === 'boolean') setUse12hClock(cfg.use12hClock);
+    if (typeof cfg.useLongNodeName === 'boolean') setUseLongNodeName(cfg.useLongNodeName);
+    if (typeof cfg.enableMessageBubbles === 'boolean')
+      setEnableMessageBubbles(cfg.enableMessageBubbles);
   });
 
   useSyncFormFromConfig(meshtasticConfigSlices?.position, (cfg) => {
@@ -795,16 +775,6 @@ export default function RadioPanel({
     if (typeof cfg.ethEnabled === 'boolean') setEthEnabled(cfg.ethEnabled);
   });
 
-  useSyncFormFromConfig(meshtasticConfigSlices?.telemetry, (cfg) => {
-    const interval =
-      typeof cfg.deviceUpdateInterval === 'number'
-        ? cfg.deviceUpdateInterval
-        : typeof cfg.device_update_interval === 'number'
-          ? cfg.device_update_interval
-          : undefined;
-    if (typeof interval === 'number') setDeviceUpdateInterval(interval);
-  });
-
   useEffect(() => {
     const loraRaw = meshtasticLoraConfig ?? meshtasticConfigSlices?.lora;
     const lora = meshtasticConfigSlice(loraRaw);
@@ -818,6 +788,13 @@ export default function RadioPanel({
     if (typeof lora.codingRate === 'number') setCodingRate(lora.codingRate);
     if (typeof lora.txPower === 'number') setTxPower(lora.txPower);
     if (typeof lora.sx126xRxBoostedGain === 'boolean') setRxBoostedGain(lora.sx126xRxBoostedGain);
+    if (typeof lora.txEnabled === 'boolean') setTxEnabled(lora.txEnabled);
+    if (typeof lora.channelNum === 'number') setChannelNum(lora.channelNum);
+    if (typeof lora.overrideDutyCycle === 'boolean') setOverrideDutyCycle(lora.overrideDutyCycle);
+    if (typeof lora.overrideFrequency === 'number') setOverrideFrequency(lora.overrideFrequency);
+    if (typeof lora.paFanDisabled === 'boolean') setPaFanDisabled(lora.paFanDisabled);
+    if (typeof lora.ignoreMqtt === 'boolean') setIgnoreMqtt(lora.ignoreMqtt);
+    if (typeof lora.configOkToMqtt === 'boolean') setConfigOkToMqtt(lora.configOkToMqtt);
   }, [meshtasticLoraConfig, meshtasticConfigSlices?.lora]);
 
   useEffect(() => {
@@ -830,9 +807,6 @@ export default function RadioPanel({
   const [status, setStatus] = useState<string | null>(null);
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
 
-  // ─── Device command confirmation ──────────────────────────────
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [nodeDbPreserveFavorites, setNodeDbPreserveFavorites] = useState(false);
   const { addToast } = useToast();
   const { t } = useTranslation();
   const deviceRoleOptions = useMemo(
@@ -844,11 +818,47 @@ export default function RadioPanel({
       })),
     [t],
   );
+  const rebroadcastModeOptions = useMemo(
+    () =>
+      REBROADCAST_MODES.map((m) => ({
+        value: m.value,
+        label: t(`radioPanel.rebroadcastModes.${m.value}.label`),
+        description: t(`radioPanel.rebroadcastModes.${m.value}.description`),
+      })),
+    [t],
+  );
   const displayUnitOptions = useMemo(
     () =>
       DISPLAY_UNITS.map((u) => ({
         value: u.value,
         label: t(`radioPanel.displayUnits.${u.value}.label`),
+      })),
+    [t],
+  );
+
+  const oledTypeOptions = useMemo(
+    () =>
+      OLED_TYPES.map((o) => ({
+        value: o.value,
+        label: t(`radioPanel.oledTypes.${o.value}.label`),
+      })),
+    [t],
+  );
+
+  const displayModeOptions = useMemo(
+    () =>
+      DISPLAY_MODES.map((m) => ({
+        value: m.value,
+        label: t(`radioPanel.displayModes.${m.value}.label`),
+      })),
+    [t],
+  );
+
+  const btPairingModeOptions = useMemo(
+    () =>
+      BT_PAIRING_MODES.map((m) => ({
+        value: m.value,
+        label: t(`radioPanel.btPairingModes.${m.value}.label`),
       })),
     [t],
   );
@@ -861,15 +871,29 @@ export default function RadioPanel({
   const loraDisabled =
     disabled || (configTarget?.mode === 'remote' && meshtasticLoraConfig == null);
 
+  const deviceConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.device);
+  const displayConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.display);
+  const bluetoothConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.bluetooth);
+  const powerConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.power);
+  const positionConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.position);
+  const networkConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.network);
+  const deviceApplyDisabled = disabled || !deviceConfigReady;
+  const displayApplyDisabled = disabled || !displayConfigReady;
+  const bluetoothApplyDisabled = disabled || !bluetoothConfigReady;
+  const powerApplyDisabled = disabled || !powerConfigReady;
+  const positionApplyDisabled =
+    disabled || !positionConfigReady || capabilities?.hasFullPositionConfig === false;
+  const networkApplyDisabled = disabled || !networkConfigReady;
+
   const applyConfig = async (
-    section: string,
+    sectionLabel: string,
     configCase: string,
     configValue: Record<string, unknown>,
   ) => {
     if (!isConnected) return;
     clearMeshtasticClientNotification();
-    setApplyingSection(section);
-    setStatus(`Applying ${section}...`);
+    setApplyingSection(configCase);
+    setStatus(t('radioPanel.applyStatusApplying', { section: sectionLabel }));
     const deviceSlice =
       configCase === 'lora' && meshtasticLoraConfig
         ? meshtasticLoraConfig
@@ -884,24 +908,27 @@ export default function RadioPanel({
       });
       try {
         await onCommit();
-        setStatus(`${section} applied successfully. Device may briefly reboot.`);
+        setStatus(t('radioPanel.applyStatusSuccess', { section: sectionLabel }));
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
         setStatus(
-          `${section} sent, but commit failed: ${formatMeshtasticModuleApplyError(err, t)}`,
+          t('radioPanel.applyStatusCommitFailed', {
+            section: sectionLabel,
+            message: formatMeshtasticModuleApplyError(err, t),
+          }),
         );
       }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
-      setStatus(`Failed: ${formatMeshtasticModuleApplyError(err, t)}`);
+      setStatus(
+        t('radioPanel.applyStatusFailed', {
+          message: formatMeshtasticModuleApplyError(err, t),
+        }),
+      );
     } finally {
       setApplyingSection(null);
     }
   };
-
-  const executeWithConfirmation = useCallback((action: PendingAction) => {
-    setPendingAction(action);
-  }, []);
 
   const handleSendAdvert = async () => {
     if (!onSendAdvert) return;
@@ -936,23 +963,6 @@ export default function RadioPanel({
       setSyncClockLoading(false);
     }
   };
-
-  const handleConfirm = useCallback(async () => {
-    if (!pendingAction) return;
-    setPendingAction(null);
-    try {
-      await pendingAction.action();
-      addToast(t('radioPanel.actionCompleted', { name: pendingAction.name }), 'success');
-    } catch (err) {
-      console.warn('[RadioPanel] pending action failed ' + errLikeToLogString(err));
-      addToast(
-        t('radioPanel.actionFailed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
-        }),
-        'error',
-      );
-    }
-  }, [pendingAction, addToast, t]);
 
   const handleImportConfig = useCallback(() => {
     const input = document.createElement('input');
@@ -1146,139 +1156,30 @@ export default function RadioPanel({
         <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
-      {/* ═══ Bluetooth ═══ */}
-      {capabilities?.hasBluetoothConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionBluetooth')}
-          onApply={() =>
-            applyConfig('Bluetooth', 'bluetooth', {
-              enabled: btEnabled,
-              fixedPin: btFixedPin,
-            })
-          }
-          applying={applyingSection === 'Bluetooth'}
-          disabled={disabled}
-        >
-          <ConfigToggle
-            label={t('radioPanel.bluetoothEnabled')}
-            checked={btEnabled}
-            onChange={setBtEnabled}
-            disabled={disabled || applyingSection !== null}
-            description={t('radioPanel.bluetoothToggleDesc')}
-          />
-          <ConfigNumber
-            label={t('radioPanel.pairingPin')}
-            value={btFixedPin}
-            onChange={setBtFixedPin}
-            disabled={disabled || applyingSection !== null || !btEnabled}
-            min={100000}
-            max={999999}
-            description={t('radioPanel.pairingPinDesc')}
-          />
-        </ConfigSection>
-      )}
-
-      {/* ═══ Channels ═══ */}
-      {capabilities?.hasChannelConfig !== false && (
-        <ChannelSection
-          channelConfigs={channelConfigs}
-          onSetChannel={onSetChannel}
-          onClearChannel={onClearChannel}
-          onCommit={onCommit}
-          disabled={disabled}
-          setStatus={setStatus}
-          meshtasticLoraConfig={meshtasticLoraConfig}
-          onApplyChannelSet={onApplyChannelSet}
-          remoteChannelFailedIndices={remoteChannelFailedIndices}
-          remoteChannelsTailStatus={remoteChannelsTailStatus}
-          onRetryRemoteChannelsTail={onRetryRemoteChannelsTail}
-        />
-      )}
-
-      {!capabilities?.hasChannelConfig && meshcoreChannels !== undefined && (
-        <MeshcoreChannelSection
-          channels={meshcoreChannels}
-          onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
-          onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
-          disabled={disabled}
-        />
-      )}
-
-      {capabilities?.hasCompanionContactManagementConfig &&
-        meshcoreSelfInfo &&
-        onApplyMeshcoreContactAutoAdd &&
-        onMeshcoreContactsShowPublicKeysChange &&
-        onMeshcoreContactsShowRefreshControlChange && (
-          <MeshcoreContactSettingsSection
-            selfInfo={meshcoreSelfInfo}
-            autoadd={meshcoreAutoadd ?? null}
-            disabled={disabled}
-            applying={applyingMeshcoreContactMgmt}
-            meshcoreContactsShowPublicKeys={meshcoreContactsShowPublicKeys}
-            onMeshcoreContactsShowPublicKeysChange={onMeshcoreContactsShowPublicKeysChange}
-            meshcoreContactsShowRefreshControl={meshcoreContactsShowRefreshControl}
-            onMeshcoreContactsShowRefreshControlChange={onMeshcoreContactsShowRefreshControlChange}
-            onApply={async (params) => {
-              setApplyingMeshcoreContactMgmt(true);
-              try {
-                await onApplyMeshcoreContactAutoAdd(params);
-                if (onRefreshMeshcoreAutoaddFromDevice) {
-                  await onRefreshMeshcoreAutoaddFromDevice();
-                }
-                addToast(t('radioPanel.contactManagementUpdated'), 'success');
-              } catch (e) {
-                console.warn(
-                  '[RadioPanel] meshcore contact management apply failed ' + errLikeToLogString(e),
-                );
-                addToast(
-                  e instanceof Error ? e.message : t('radioPanel.contactMgmtFailed'),
-                  'error',
-                );
-              } finally {
-                setApplyingMeshcoreContactMgmt(false);
-              }
-            }}
-            onClearAllContacts={onClearAllMeshcoreContacts}
-          />
-        )}
-
-      {/* ═══ Device Role ═══ */}
-      {capabilities?.hasDeviceRoleConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionDeviceRole')}
-          onApply={() => applyConfig('Device', 'device', { role: deviceRole })}
-          applying={applyingSection === 'Device'}
-          disabled={disabled}
-        >
-          <ConfigSelect
-            label={t('radioPanel.roleFieldLabel')}
-            value={deviceRole}
-            options={deviceRoleOptions}
-            onChange={setDeviceRole}
-            disabled={disabled || applyingSection !== null}
-            description={deviceRoleOptions.find((r) => r.value === deviceRole)?.description}
-          />
-        </ConfigSection>
-      )}
+      <ConfigApplyNotice />
 
       {/* ═══ Device User / Identity ═══ */}
       <ConfigSection
         title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
-          setApplyingSection('User');
-          setStatus('Applying User...');
+          setApplyingSection('user');
+          setStatus(t('radioPanel.applyUserApplying'));
           try {
             await onSetOwner({ longName, shortName, isLicensed });
-            setStatus('User applied successfully!');
+            setStatus(t('radioPanel.applyUserSuccess'));
           } catch (err) {
             console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
-            setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            setStatus(
+              t('radioPanel.applyStatusFailed', {
+                message: err instanceof Error ? err.message : t('common.unknown'),
+              }),
+            );
           } finally {
             setApplyingSection(null);
           }
         }}
-        applying={applyingSection === 'User'}
+        applying={applyingSection === 'user'}
         disabled={disabled || !onSetOwner}
       >
         <div className="space-y-1">
@@ -1340,39 +1241,6 @@ export default function RadioPanel({
         )}
       </ConfigSection>
 
-      {/* ═══ Display ═══ */}
-      {capabilities?.hasDisplayConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionDisplay')}
-          onApply={() =>
-            applyConfig('Display', 'display', {
-              screenOnSecs,
-              units: displayUnits,
-            })
-          }
-          applying={applyingSection === 'Display'}
-          disabled={disabled}
-        >
-          <ConfigNumber
-            label={t('radioPanel.screenOnDurationLabel')}
-            value={screenOnSecs}
-            onChange={setScreenOnSecs}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            max={3600}
-            unit={t('radioPanel.secondsUnit')}
-            description={t('radioPanel.screenOnDurationDesc')}
-          />
-          <ConfigSelect
-            label={t('radioPanel.displayUnitsFieldLabel')}
-            value={displayUnits}
-            options={displayUnitOptions}
-            onChange={setDisplayUnits}
-            disabled={disabled || applyingSection !== null}
-          />
-        </ConfigSection>
-      )}
-
       {/* ═══ LoRa / Radio ═══ */}
       {onApplyLoraParams ? (
         /* MeshCore path: direct radio params (freq, bw, sf, cr, txPower) */
@@ -1380,8 +1248,10 @@ export default function RadioPanel({
           title={t('radioPanel.sectionLora')}
           onApply={async () => {
             if (!onApplyLoraParams) return;
-            setApplyingSection('LoRa');
-            setStatus('Applying LoRa...');
+            setApplyingSection('lora');
+            setStatus(
+              t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionLora') }),
+            );
             try {
               await onApplyLoraParams({
                 freq: radioFreqHz,
@@ -1390,18 +1260,22 @@ export default function RadioPanel({
                 cr: codingRate,
                 txPower,
               });
-              setStatus('LoRa applied successfully!');
+              setStatus(t('radioPanel.applyLoraSuccess'));
             } catch (err) {
               console.warn(
                 '[RadioPanel] setLoRaConfig failed:',
                 err instanceof Error ? err.message : err,
               );
-              setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+              setStatus(
+                t('radioPanel.applyStatusFailed', {
+                  message: err instanceof Error ? err.message : t('common.unknown'),
+                }),
+              );
             } finally {
               setApplyingSection(null);
             }
           }}
-          applying={applyingSection === 'LoRa'}
+          applying={applyingSection === 'lora'}
           disabled={loraDisabled}
         >
           <div className="space-y-1">
@@ -1481,11 +1355,18 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionLora')}
           onApply={() =>
-            applyConfig('LoRa', 'lora', {
+            applyConfig(t('radioPanel.sectionLora'), 'lora', {
               region,
               modemPreset,
               usePreset,
               hopLimit,
+              txEnabled,
+              channelNum,
+              overrideDutyCycle,
+              overrideFrequency,
+              paFanDisabled,
+              ignoreMqtt,
+              configOkToMqtt,
               ...(usePreset
                 ? {}
                 : {
@@ -1497,7 +1378,7 @@ export default function RadioPanel({
                   }),
             })
           }
-          applying={applyingSection === 'LoRa'}
+          applying={applyingSection === 'lora'}
           disabled={loraDisabled}
         >
           <ConfigSelect
@@ -1603,6 +1484,235 @@ export default function RadioPanel({
             </div>
             <p className="text-muted text-xs">{t('radioPanel.hopLimitDescription')}</p>
           </div>
+          <ConfigToggle
+            label={t('radioPanel.txEnabledLabel')}
+            checked={txEnabled}
+            onChange={setTxEnabled}
+            disabled={loraDisabled || applyingSection !== null}
+            description={t('radioPanel.txEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('radioPanel.channelNumLabel')}
+            value={channelNum}
+            onChange={setChannelNum}
+            disabled={loraDisabled || applyingSection !== null}
+            min={0}
+            max={7}
+            description={t('radioPanel.channelNumDesc')}
+          />
+          <ConfigNumber
+            label={t('radioPanel.overrideFrequencyLabel')}
+            value={overrideFrequency}
+            onChange={setOverrideFrequency}
+            disabled={loraDisabled || applyingSection !== null}
+            min={0}
+            unit="MHz"
+            description={t('radioPanel.overrideFrequencyDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.ignoreMqttLabel')}
+            checked={ignoreMqtt}
+            onChange={setIgnoreMqtt}
+            disabled={loraDisabled || applyingSection !== null}
+            description={t('radioPanel.ignoreMqttDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.configOkToMqttLabel')}
+            checked={configOkToMqtt}
+            onChange={setConfigOkToMqtt}
+            disabled={loraDisabled || applyingSection !== null}
+            description={t('radioPanel.configOkToMqttDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.overrideDutyCycleLabel')}
+            checked={overrideDutyCycle}
+            onChange={setOverrideDutyCycle}
+            disabled={loraDisabled || applyingSection !== null}
+            description={t('radioPanel.overrideDutyCycleDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.paFanDisabledLabel')}
+            checked={paFanDisabled}
+            onChange={setPaFanDisabled}
+            disabled={loraDisabled || applyingSection !== null}
+            description={t('radioPanel.paFanDisabledDesc')}
+          />
+        </ConfigSection>
+      )}
+
+      {/* ═══ Channels ═══ */}
+      {capabilities?.hasChannelConfig !== false && (
+        <ChannelSection
+          channelConfigs={channelConfigs}
+          onSetChannel={onSetChannel}
+          onClearChannel={onClearChannel}
+          onCommit={onCommit}
+          disabled={disabled}
+          setStatus={setStatus}
+          meshtasticLoraConfig={meshtasticLoraConfig}
+          onApplyChannelSet={onApplyChannelSet}
+          remoteChannelFailedIndices={remoteChannelFailedIndices}
+          remoteChannelsTailStatus={remoteChannelsTailStatus}
+          onRetryRemoteChannelsTail={onRetryRemoteChannelsTail}
+        />
+      )}
+
+      {!capabilities?.hasChannelConfig && meshcoreChannels !== undefined && (
+        <MeshcoreChannelSection
+          channels={meshcoreChannels}
+          onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
+          onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
+          disabled={disabled}
+        />
+      )}
+
+      {capabilities?.hasCompanionContactManagementConfig &&
+        meshcoreSelfInfo &&
+        onApplyMeshcoreContactAutoAdd &&
+        onMeshcoreContactsShowPublicKeysChange &&
+        onMeshcoreContactsShowRefreshControlChange && (
+          <MeshcoreContactSettingsSection
+            selfInfo={meshcoreSelfInfo}
+            autoadd={meshcoreAutoadd ?? null}
+            disabled={disabled}
+            applying={applyingMeshcoreContactMgmt}
+            meshcoreContactsShowPublicKeys={meshcoreContactsShowPublicKeys}
+            onMeshcoreContactsShowPublicKeysChange={onMeshcoreContactsShowPublicKeysChange}
+            meshcoreContactsShowRefreshControl={meshcoreContactsShowRefreshControl}
+            onMeshcoreContactsShowRefreshControlChange={onMeshcoreContactsShowRefreshControlChange}
+            onApply={async (params) => {
+              setApplyingMeshcoreContactMgmt(true);
+              try {
+                await onApplyMeshcoreContactAutoAdd(params);
+                if (onRefreshMeshcoreAutoaddFromDevice) {
+                  await onRefreshMeshcoreAutoaddFromDevice();
+                }
+                addToast(t('radioPanel.contactManagementUpdated'), 'success');
+              } catch (e) {
+                console.warn(
+                  '[RadioPanel] meshcore contact management apply failed ' + errLikeToLogString(e),
+                );
+                addToast(
+                  e instanceof Error ? e.message : t('radioPanel.contactMgmtFailed'),
+                  'error',
+                );
+              } finally {
+                setApplyingMeshcoreContactMgmt(false);
+              }
+            }}
+            onClearAllContacts={onClearAllMeshcoreContacts}
+          />
+        )}
+
+      <h3 className="border-t border-gray-700 pt-4 text-xl font-semibold text-gray-200">
+        {t('radioPanel.sectionGroupDevice')}
+      </h3>
+
+      {/* ═══ Device Role ═══ */}
+      {capabilities?.hasDeviceRoleConfig !== false && (
+        <ConfigSection
+          title={t('radioPanel.sectionDeviceRole')}
+          onApply={() =>
+            applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
+              role: deviceRole,
+              rebroadcastMode,
+              nodeInfoBroadcastSecs,
+              doubleTapAsButtonPress,
+              disableTripleClick,
+              tzdef,
+              ledHeartbeatDisabled,
+              buttonGpio,
+              buzzerGpio,
+            })
+          }
+          applying={applyingSection === 'device'}
+          disabled={deviceApplyDisabled}
+        >
+          {!deviceConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', {
+                section: t('radioPanel.sectionDeviceRole'),
+              })}
+            </p>
+          )}
+          <ConfigSelect
+            label={t('radioPanel.roleFieldLabel')}
+            value={deviceRole}
+            options={deviceRoleOptions}
+            onChange={setDeviceRole}
+            disabled={disabled || applyingSection !== null}
+            description={deviceRoleOptions.find((r) => r.value === deviceRole)?.description}
+          />
+          <ConfigSelect
+            label={t('radioPanel.rebroadcastModeLabel')}
+            value={rebroadcastMode}
+            options={rebroadcastModeOptions}
+            onChange={setRebroadcastMode}
+            disabled={disabled || applyingSection !== null}
+            description={
+              rebroadcastModeOptions.find((r) => r.value === rebroadcastMode)?.description
+            }
+          />
+          <ConfigNumber
+            label={t('radioPanel.nodeInfoBroadcastSecsLabel')}
+            value={nodeInfoBroadcastSecs}
+            onChange={setNodeInfoBroadcastSecs}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            unit="s"
+            description={t('radioPanel.nodeInfoBroadcastSecsDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.doubleTapAsButtonPressLabel')}
+            checked={doubleTapAsButtonPress}
+            onChange={setDoubleTapAsButtonPress}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.doubleTapAsButtonPressDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.disableTripleClickLabel')}
+            checked={disableTripleClick}
+            onChange={setDisableTripleClick}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.disableTripleClickDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.ledHeartbeatDisabledLabel')}
+            checked={ledHeartbeatDisabled}
+            onChange={setLedHeartbeatDisabled}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.ledHeartbeatDisabledDesc')}
+          />
+          <ConfigNumber
+            label={t('radioPanel.buttonGpioLabel')}
+            value={buttonGpio}
+            onChange={setButtonGpio}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            description={t('radioPanel.buttonGpioDesc')}
+          />
+          <ConfigNumber
+            label={t('radioPanel.buzzerGpioLabel')}
+            value={buzzerGpio}
+            onChange={setBuzzerGpio}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            description={t('radioPanel.buzzerGpioDesc')}
+          />
+          <div className="space-y-1">
+            <label className="text-muted text-sm">{t('radioPanel.tzdefLabel')}</label>
+            <input
+              type="text"
+              value={tzdef}
+              onChange={(e) => {
+                setTzdef(e.target.value);
+              }}
+              disabled={disabled || applyingSection !== null}
+              placeholder={t('radioPanel.tzdefPlaceholder')}
+              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            />
+            <p className="text-muted text-xs">{t('radioPanel.tzdefDesc')}</p>
+          </div>
         </ConfigSection>
       )}
 
@@ -1613,7 +1723,7 @@ export default function RadioPanel({
           capabilities?.hasFullPositionConfig === false
             ? undefined
             : () =>
-                applyConfig('Position', 'position', {
+                applyConfig(t('radioPanel.sectionPositionGps'), 'position', {
                   positionBroadcastSecs,
                   gpsUpdateInterval,
                   fixedPosition,
@@ -1624,9 +1734,16 @@ export default function RadioPanel({
                   broadcastSmartMinimumIntervalSecs: smartPositionMinInterval,
                 })
         }
-        applying={applyingSection === 'Position'}
-        disabled={disabled || capabilities?.hasFullPositionConfig === false}
+        applying={applyingSection === 'position'}
+        disabled={positionApplyDisabled}
       >
+        {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
+          <p className="text-xs text-yellow-300/90">
+            {t('radioPanel.waitingForConfigSection', {
+              section: t('radioPanel.sectionPositionGps'),
+            })}
+          </p>
+        )}
         {capabilities?.hasFullPositionConfig !== false && (
           <>
             <ConfigNumber
@@ -1823,7 +1940,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionPower')}
           onApply={() =>
-            applyConfig('Power', 'power', {
+            applyConfig(t('radioPanel.sectionPower'), 'power', {
               isPowerSaving,
               minWakeSecs,
               waitBluetoothSecs,
@@ -1832,9 +1949,14 @@ export default function RadioPanel({
               onBatteryShutdownAfterSecs,
             })
           }
-          applying={applyingSection === 'Power'}
-          disabled={disabled}
+          applying={applyingSection === 'power'}
+          disabled={powerApplyDisabled}
         >
+          {!powerConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionPower') })}
+            </p>
+          )}
           <ConfigToggle
             label={t('radioPanel.powerSavingModeLabel')}
             checked={isPowerSaving}
@@ -1890,32 +2012,6 @@ export default function RadioPanel({
         </ConfigSection>
       )}
 
-      {/* ═══ Telemetry ═══ */}
-      {capabilities?.hasTelemetryIntervalConfig !== false && (
-        <ConfigSection
-          title={t('radioPanel.sectionTelemetry')}
-          onApply={() =>
-            applyConfig('Telemetry', 'telemetry', {
-              device_update_interval: deviceUpdateInterval,
-            })
-          }
-          applying={applyingSection === 'Telemetry'}
-          disabled={disabled}
-        >
-          <ConfigNumber
-            label={t('radioPanel.deviceMetricsIntervalLabel')}
-            value={deviceUpdateInterval}
-            onChange={setDeviceUpdateInterval}
-            disabled={disabled || applyingSection !== null}
-            min={0}
-            max={86400}
-            unit="seconds"
-            description={t('radioPanel.deviceMetricsDescription')}
-            tooltip={t('radioPanel.deviceMetricsTooltip')}
-          />
-        </ConfigSection>
-      )}
-
       {capabilities?.hasCompanionTelemetryPrivacyConfig &&
         meshcoreSelfInfo &&
         meshcoreContactsForTelemetry &&
@@ -1950,7 +2046,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionWifi')}
           onApply={() =>
-            applyConfig('Network', 'network', {
+            applyConfig(t('radioPanel.sectionWifi'), 'network', {
               wifiEnabled,
               wifiSsid,
               wifiPsk,
@@ -1958,9 +2054,14 @@ export default function RadioPanel({
               ethEnabled,
             })
           }
-          applying={applyingSection === 'Network'}
-          disabled={disabled}
+          applying={applyingSection === 'network'}
+          disabled={networkApplyDisabled}
         >
+          {!networkConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionWifi') })}
+            </p>
+          )}
           <ConfigToggle
             label={t('radioPanel.wifiEnabledLabel')}
             checked={wifiEnabled}
@@ -2017,6 +2118,164 @@ export default function RadioPanel({
         </ConfigSection>
       )}
 
+      {/* ═══ Display ═══ */}
+      {capabilities?.hasDisplayConfig !== false && (
+        <ConfigSection
+          title={t('radioPanel.sectionDisplay')}
+          onApply={() =>
+            applyConfig(t('radioPanel.sectionDisplay'), 'display', {
+              screenOnSecs,
+              units: displayUnits,
+              autoScreenCarouselSecs,
+              flipScreen,
+              oled,
+              displaymode,
+              headingBold,
+              wakeOnTapOrMotion,
+              use12hClock,
+              useLongNodeName,
+              enableMessageBubbles,
+            })
+          }
+          applying={applyingSection === 'display'}
+          disabled={displayApplyDisabled}
+        >
+          {!displayConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionDisplay') })}
+            </p>
+          )}
+          <ConfigNumber
+            label={t('radioPanel.screenOnDurationLabel')}
+            value={screenOnSecs}
+            onChange={setScreenOnSecs}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            max={3600}
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.screenOnDurationDesc')}
+          />
+          <ConfigSelect
+            label={t('radioPanel.displayUnitsFieldLabel')}
+            value={displayUnits}
+            options={displayUnitOptions}
+            onChange={setDisplayUnits}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigNumber
+            label={t('radioPanel.autoScreenCarouselSecsLabel')}
+            value={autoScreenCarouselSecs}
+            onChange={setAutoScreenCarouselSecs}
+            disabled={disabled || applyingSection !== null}
+            min={0}
+            max={3600}
+            unit={t('radioPanel.secondsUnit')}
+            description={t('radioPanel.autoScreenCarouselSecsDesc')}
+          />
+          <ConfigSelect
+            label={t('radioPanel.oledTypeLabel')}
+            value={oled}
+            options={oledTypeOptions}
+            onChange={setOled}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigSelect
+            label={t('radioPanel.displayModeLabel')}
+            value={displaymode}
+            options={displayModeOptions}
+            onChange={setDisplaymode}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigToggle
+            label={t('radioPanel.flipScreenLabel')}
+            checked={flipScreen}
+            onChange={setFlipScreen}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.flipScreenDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.headingBoldLabel')}
+            checked={headingBold}
+            onChange={setHeadingBold}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigToggle
+            label={t('radioPanel.wakeOnTapOrMotionLabel')}
+            checked={wakeOnTapOrMotion}
+            onChange={setWakeOnTapOrMotion}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.wakeOnTapOrMotionDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.use12hClockLabel')}
+            checked={use12hClock}
+            onChange={setUse12hClock}
+            disabled={disabled || applyingSection !== null}
+          />
+          <ConfigToggle
+            label={t('radioPanel.useLongNodeNameLabel')}
+            checked={useLongNodeName}
+            onChange={setUseLongNodeName}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.useLongNodeNameDesc')}
+          />
+          <ConfigToggle
+            label={t('radioPanel.enableMessageBubblesLabel')}
+            checked={enableMessageBubbles}
+            onChange={setEnableMessageBubbles}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.enableMessageBubblesDesc')}
+          />
+        </ConfigSection>
+      )}
+
+      {/* ═══ Bluetooth ═══ */}
+      {capabilities?.hasBluetoothConfig !== false && (
+        <ConfigSection
+          title={t('radioPanel.sectionBluetooth')}
+          onApply={() =>
+            applyConfig(t('radioPanel.sectionBluetooth'), 'bluetooth', {
+              enabled: btEnabled,
+              mode: btPairingMode,
+              fixedPin: btFixedPin,
+            })
+          }
+          applying={applyingSection === 'bluetooth'}
+          disabled={bluetoothApplyDisabled}
+        >
+          {!bluetoothConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', {
+                section: t('radioPanel.sectionBluetooth'),
+              })}
+            </p>
+          )}
+          <ConfigToggle
+            label={t('radioPanel.bluetoothEnabled')}
+            checked={btEnabled}
+            onChange={setBtEnabled}
+            disabled={disabled || applyingSection !== null}
+            description={t('radioPanel.bluetoothToggleDesc')}
+          />
+          <ConfigSelect
+            label={t('radioPanel.btPairingModeLabel')}
+            value={btPairingMode}
+            options={btPairingModeOptions}
+            onChange={setBtPairingMode}
+            disabled={disabled || applyingSection !== null || !btEnabled}
+          />
+          <ConfigNumber
+            label={t('radioPanel.pairingPin')}
+            value={btFixedPin}
+            onChange={setBtFixedPin}
+            disabled={disabled || applyingSection !== null || !btEnabled || btPairingMode !== 1}
+            min={100000}
+            max={999999}
+            description={t('radioPanel.pairingPinDesc')}
+          />
+        </ConfigSection>
+      )}
+
       {/* Status */}
       {status && (
         <div
@@ -2031,12 +2290,6 @@ export default function RadioPanel({
           {status}
         </div>
       )}
-
-      {/* Info */}
-      <div className="bg-deep-black text-muted space-y-1 rounded-lg p-4 text-sm">
-        <p>{t('radioPanel.flashMemoryNote')}</p>
-        <p>{t('radioPanel.restartWarning')}</p>
-      </div>
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
       {(onSendAdvert || onSyncClock || capabilities?.hasCompanionContactManagementConfig) && (
@@ -2079,175 +2332,6 @@ export default function RadioPanel({
             )}
           </div>
         </div>
-      )}
-
-      {/* Device Commands — keep at bottom of Radio panel, directly above Danger Zone; do not reorder */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-orange-400">{t('radioPanel.deviceCommands')}</h3>
-        <div className="space-y-2 rounded-lg border border-orange-900 p-4">
-          <p className="text-xs text-orange-400/80">
-            {t('radioPanel.deviceCommandsImmediateWarning')}
-          </p>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.enterDfuName'),
-                  title: t('radioPanel.enterDfuTitle'),
-                  message: t('radioPanel.enterDfuMessage'),
-                  confirmLabel: t('radioPanel.enterDfuConfirm'),
-                  action: () => onEnterDfu?.() ?? Promise.resolve(),
-                });
-              }}
-              disabled={!isConnected || !onEnterDfu}
-              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-            >
-              {t('radioPanel.enterDfuButton')}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.rebootName'),
-                  title: t('radioPanel.rebootTitle'),
-                  message: capabilities?.hasCompanionContactManagementConfig
-                    ? t('radioPanel.rebootMessageMeshcore')
-                    : t('radioPanel.rebootMessageMeshtastic'),
-                  confirmLabel: t('radioPanel.rebootConfirm'),
-                  action: () => onReboot(2),
-                });
-              }}
-              disabled={!isConnected}
-              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-            >
-              {t('radioPanel.rebootButton')}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.rebootOtaName'),
-                  title: t('radioPanel.rebootOtaTitle'),
-                  message: t('radioPanel.rebootOtaMessage'),
-                  confirmLabel: t('radioPanel.rebootOtaConfirm'),
-                  action: () => onRebootOta?.(10) ?? Promise.resolve(),
-                });
-              }}
-              disabled={!isConnected || !onRebootOta}
-              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-            >
-              {t('radioPanel.rebootOtaButton')}
-            </button>
-
-            {capabilities?.hasNodeDbReset !== false && (
-              <button
-                type="button"
-                onClick={() => {
-                  setNodeDbPreserveFavorites(false);
-                  executeWithConfirmation({
-                    name: t('radioPanel.resetNodeDbName'),
-                    title: t('radioPanel.resetNodeDbTitle'),
-                    message: t('radioPanel.resetNodeDbMessage'),
-                    confirmLabel: t('radioPanel.resetNodeDbConfirm'),
-                    showPreserveFavorites: configTarget?.mode === 'remote',
-                    action: () => onResetNodeDb(nodeDbPreserveFavorites),
-                  });
-                }}
-                disabled={!isConnected}
-                className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-              >
-                {t('radioPanel.resetNodeDbButton')}
-              </button>
-            )}
-
-            {capabilities?.hasShutdown !== false && (
-              <button
-                type="button"
-                onClick={() => {
-                  executeWithConfirmation({
-                    name: t('radioPanel.shutdownName'),
-                    title: t('radioPanel.shutdownTitle'),
-                    message: t('radioPanel.shutdownMessage'),
-                    confirmLabel: t('radioPanel.shutdownConfirm'),
-                    action: () => onShutdown(2),
-                  });
-                }}
-                disabled={!isConnected}
-                className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-              >
-                {t('radioPanel.shutdownButton')}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Danger Zone — keep at bottom of Radio panel after Device Commands; do not reorder */}
-      {capabilities?.hasFactoryReset !== false && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-red-400">{t('radioPanel.dangerZone')}</h3>
-          <div className="space-y-2 rounded-lg border border-red-900 p-4">
-            <p className="text-xs text-red-400/80">{t('radioPanel.dangerZonePermanent')}</p>
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.factoryResetConfigName'),
-                  title: t('radioPanel.factoryResetConfigTitle'),
-                  message: t('radioPanel.factoryResetConfigMessage'),
-                  confirmLabel: t('radioPanel.factoryResetConfigConfirm'),
-                  danger: true,
-                  action: () => onFactoryResetConfig?.() ?? Promise.resolve(),
-                });
-              }}
-              disabled={!isConnected || !onFactoryResetConfig}
-              className="w-full rounded-lg border border-red-800/60 bg-red-900/40 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/60 disabled:opacity-50"
-            >
-              {t('radioPanel.factoryResetConfigButton')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.factoryResetName'),
-                  title: t('radioPanel.factoryResetTitle'),
-                  message: t('radioPanel.factoryResetMessage'),
-                  confirmLabel: t('radioPanel.factoryResetConfirm'),
-                  danger: true,
-                  action: () => onFactoryReset(),
-                });
-              }}
-              disabled={!isConnected}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:opacity-50"
-            >
-              {t('radioPanel.factoryResetButton')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {pendingAction && (
-        <ConfirmModal
-          title={pendingAction.title}
-          message={pendingAction.message}
-          confirmLabel={pendingAction.confirmLabel}
-          danger={pendingAction.danger}
-          preserveFavorites={
-            pendingAction.showPreserveFavorites ? nodeDbPreserveFavorites : undefined
-          }
-          onPreserveFavoritesChange={
-            pendingAction.showPreserveFavorites ? setNodeDbPreserveFavorites : undefined
-          }
-          onConfirm={handleConfirm}
-          onCancel={() => {
-            setPendingAction(null);
-            setNodeDbPreserveFavorites(false);
-          }}
-        />
       )}
     </div>
   );
@@ -2642,6 +2726,7 @@ function ChannelUrlImportExport({
           }
           confirmLabel={t('radioPanel.channelUrl.confirmApply')}
           danger={confirmApply.mode === 'replace'}
+          confirmDisabled={applying}
           onConfirm={() => void runApply(confirmApply)}
           onCancel={() => {
             setConfirmApply(null);

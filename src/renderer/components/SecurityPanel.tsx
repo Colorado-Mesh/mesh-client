@@ -12,6 +12,7 @@ import {
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
+import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { useToast } from './Toast';
 
 interface SecurityConfig {
@@ -497,6 +498,8 @@ export default function SecurityPanel({
       {configTarget?.mode === 'remote' && configTarget.error && (
         <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
+
+      <ConfigApplyNotice />
 
       {/* ── DM Keys ─────────────────────────────────────────────── */}
       <section className="space-y-4">

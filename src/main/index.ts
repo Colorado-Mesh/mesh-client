@@ -2984,6 +2984,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMqttClientId',
   'meshtasticConfigureTargetNodeNum',
   'meshtasticLastRfSelfNodeId',
+  'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',

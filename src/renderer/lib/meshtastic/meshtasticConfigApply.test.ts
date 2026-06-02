@@ -4,6 +4,7 @@ import {
   buildMeshtasticModuleApplyValue,
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
+  meshtasticConfigSliceHydrated,
   stripMeshtasticProtobufMeta,
 } from './meshtasticConfigApply';
 
@@ -11,6 +12,12 @@ describe('meshtasticConfigApply', () => {
   it('meshtasticConfigSlice returns empty object for non-records', () => {
     expect(meshtasticConfigSlice(null)).toEqual({});
     expect(meshtasticConfigSlice([])).toEqual({});
+  });
+
+  it('meshtasticConfigSliceHydrated is false until slice has fields', () => {
+    expect(meshtasticConfigSliceHydrated(null)).toBe(false);
+    expect(meshtasticConfigSliceHydrated({})).toBe(false);
+    expect(meshtasticConfigSliceHydrated({ role: 0 })).toBe(true);
   });
 
   it('strips protobuf metadata', () => {

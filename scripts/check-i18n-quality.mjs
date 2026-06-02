@@ -131,7 +131,37 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
       hint: 'use "pokój" for MeshCore Room, not physical-space "pomieszczenie"',
     },
   ],
+  ja: [{ re: /部屋/, hint: 'use "ルーム" for MeshCore Room, not hotel 部屋' }],
 };
+
+/** Dutch MT often uses commercial "advertentie" for mesh presence adverts / flood adverts. */
+/** Substring match — Dutch compounds like "overstromingsadvertentie" have no \\b before advertentie. */
+export const NL_MESH_ADVERT_FALSE_FRIEND_RE = /advertentie/i;
+
+/** Keys or English copy that refer to MeshCore/Meshtastic adverts (not TV/commercial ads). */
+export function isMeshAdvertUiKey(flatKey, enVal) {
+  return (
+    /advert|floodAdvert/i.test(flatKey) ||
+    /\bflood advert\b/i.test(enVal) ||
+    /\badvert\b/i.test(enVal)
+  );
+}
+
+/** German MT confuses Meshtastic device roles with unrelated business/woodworking terms. */
+export const DE_DEVICE_ROLE_FALSE_FRIENDS = [
+  {
+    re: /\bOberfräse\b/,
+    hint: '"Oberfräse" is woodworking equipment — use "Router" for the device role',
+  },
+  {
+    re: /\bAuftraggeber\b/,
+    hint: '"Auftraggeber" means contractor/principal — use "Client" for the device role',
+  },
+  {
+    re: /\bKundenstamm\b/,
+    hint: '"Kundenstamm" means customer base — use "Client-Basis" for Client Base role',
+  },
+];
 
 /** Default-password hint placeholders — must stay short literals, not MT sentences. */
 export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS = new Set([
@@ -338,7 +368,8 @@ export const LOCALE_ARTIFACT_RES = [
 ];
 
 /** Brand / product names preserved verbatim when present in English. */
-export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT'];
+// GPIO is a hardware acronym that must not be translated or expanded in UI strings.
+export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT', 'GPIO'];
 
 const BRAND_WORD_RES = new Map([
   ['TAK', /\bTAK\b/g],
@@ -551,6 +582,36 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (locale === 'ja' && flatKey === 'nodesPanel.meshcoreTypeRoom' && /部屋/.test(val)) {
     issues.push('roomsPanel false friend: use "ルーム" for MeshCore Room type, not hotel 部屋');
+  }
+
+  if (
+    locale === 'nl' &&
+    isMeshAdvertUiKey(flatKey, enVal) &&
+    NL_MESH_ADVERT_FALSE_FRIEND_RE.test(val)
+  ) {
+    issues.push(
+      'nl mesh-advert false friend: use "advert" or "flood-advert", not commercial "advertentie"',
+    );
+  }
+
+  if (
+    locale === 'de' &&
+    (flatKey.startsWith('radioPanel.deviceRoles') || flatKey.startsWith('roleInfo.roles.'))
+  ) {
+    for (const { re, hint } of DE_DEVICE_ROLE_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`de device role false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}guestPasswordPlaceholder` &&
+    enVal === 'hello' &&
+    val.toLowerCase() !== 'hello'
+  ) {
+    issues.push('guestPasswordPlaceholder must stay literal wire password "hello"');
   }
 
   if (locale === 'nl' && isMeshcoreRoomUiKey(flatKey) && /\b[Kk]amer/i.test(val)) {

@@ -1010,12 +1010,15 @@
     "sectionExternalNotification": "Modul Pemberitahuan Eksternal",
     "sectionIpTunnel": "Terowongan IP",
     "sectionMqttRelay": "Relai MQTT (Sisi Perangkat)",
+    "sectionNeighborInfo": "Modul Info Tetangga",
     "sectionPaxCounter": "Modul Penghitung Pax",
+    "sectionTrafficManagement": "Modul Manajemen Lalu Lintas",
     "sectionRemoteHardware": "Perangkat Keras Jarak Jauh",
     "sectionRangeTest": "Modul Uji Jangkauan",
     "sectionRtttlRingtone": "Nada Dering RTTTL",
     "sectionSerialModule": "Modul Seri",
     "sectionStoreForward": "Modul Simpan & Teruskan",
+    "sectionTak": "Modul TAK",
     "sectionTelemetryModule": "Modul Telemetri",
     "fields": {
       "ledEnabled": "LED diaktifkan",
@@ -1024,6 +1027,26 @@
       "brightnessCurrent": "Kecerahan/arus: {{value}}",
       "brightnessHint": "Arus penggerak LED (0–31). Lebih tinggi = lebih terang.",
       "cannedMessagesEnabled": "Pesan kalengan diaktifkan",
+      "cannedRotary1Enabled": "Encoder putar #1 diaktifkan",
+      "cannedRotary1EnabledDesc": "Aktifkan perangkat input rotary encoder #1 (encoder bodoh dengan pulsa A/B).",
+      "cannedPinA": "Pin GPIO — pembuat enkode A",
+      "cannedPinADesc": "Nomor pin GPIO untuk port A encoder putar.",
+      "cannedPinB": "Pin GPIO — pembuat enkode B",
+      "cannedPinBDesc": "Nomor pin GPIO untuk port B encoder putar.",
+      "cannedPinPress": "Pin GPIO — tekan",
+      "cannedPinPressDesc": "Nomor pin GPIO untuk port tekan/tombol encoder putar.",
+      "cannedEventCw": "Acara pada rotasi CW",
+      "cannedEventCwDesc": "Peristiwa masukan dihasilkan dengan putaran searah jarum jam.",
+      "cannedEventCcw": "Acara pada rotasi CCW",
+      "cannedEventCcwDesc": "Peristiwa masukan dihasilkan pada rotasi berlawanan arah jarum jam.",
+      "cannedEventPress": "Acara di media",
+      "cannedEventPressDesc": "Peristiwa masukan yang dihasilkan pada pers encoder.",
+      "cannedUpdown1Enabled": "Input atas/bawah/pilih diaktifkan",
+      "cannedUpdown1EnabledDesc": "Aktifkan perangkat input Atas/Bawah/Pilih (encoder putar RAK atau 3 tombol). Menggunakan pin GPIO A/B/tekan di atas.",
+      "cannedAllowInputSource": "Izinkan sumber masukan",
+      "cannedAllowInputSourceDesc": "Sumber input diterima oleh pesan terekam (misalnya rotEnc1, upDownEnc1, scanAndSelect, cardkb, serialkb, atau _any).",
+      "cannedSendBell": "Kirim karakter lonceng",
+      "cannedSendBellDesc": "Kirim karakter lonceng dengan pesan terekam keluar (berguna dengan modul Pemberitahuan Eksternal).",
       "detectionSensorEnabled": "Sensor deteksi diaktifkan",
       "detectionSensorDesc": "Peristiwa deteksi siaran (PIR, sensor pintu, dll.) ke mesh.",
       "sensorName": "Nama sensornya",
@@ -1077,6 +1100,40 @@
       "tlsEnabled": "TLS diaktifkan",
       "mapReportingEnabled": "Pelaporan peta diaktifkan",
       "mapReportingEnabledDesc": "Publikasikan posisi node secara berkala ke peta Meshtastic.",
+      "neighborInfoEnabled": "Info tetangga diaktifkan",
+      "neighborInfoEnabledDesc": "Siarkan secara berkala daftar mesh tetangga yang didengar oleh node ini.",
+      "neighborInfoUpdateInterval": "Interval pembaruan",
+      "neighborInfoUpdateIntervalDesc": "Seberapa sering menyiarkan info tetangga (detik). Minimal 14400 (4 jam). 0 = gunakan bawaan.",
+      "neighborInfoTransmitOverLora": "Transmisikan melalui LoRa",
+      "neighborInfoTransmitOverLoraDesc": "Juga siarkan info tetangga melalui LoRa (tidak tersedia pada saluran/kunci default).",
+      "tmEnabled": "Manajemen lalu lintas diaktifkan",
+      "tmEnabledDesc": "Pengaktifan master untuk modul Manajemen Lalu Lintas.",
+      "tmPositionDedupEnabled": "Deduplikasi posisi",
+      "tmPositionDedupEnabledDesc": "Jatuhkan siaran posisi redundan dari node yang sama.",
+      "tmPositionPrecisionBits": "Posisikan bit presisi",
+      "tmPositionPrecisionBitsDesc": "Sedikit presisi yang digunakan saat membandingkan posisi untuk deduplikasi (0–32).",
+      "tmPositionMinIntervalSecs": "Interval posisi minimum",
+      "tmPositionMinIntervalSecsDesc": "Detik minimum antara pembaruan posisi yang diterima dari node yang sama. 0 = tidak ada batasan.",
+      "tmNodeinfoDirectResponse": "Respon langsung NodeInfo",
+      "tmNodeinfoDirectResponseDesc": "Jawab permintaan NodeInfo langsung dari cache lokal alih-alih membanjiri mesh.",
+      "tmNodeinfoDirectResponseMaxHops": "Max berharap mendapat tanggapan langsung",
+      "tmNodeinfoDirectResponseMaxHopsDesc": "Hanya tanggapi secara langsung jika pemohon setidaknya berjarak sejauh ini.",
+      "tmRateLimitEnabled": "Pembatasan kecepatan per node",
+      "tmRateLimitEnabledDesc": "Batasi node cerewet yang melebihi batas paket dalam jangka waktu tertentu.",
+      "tmRateLimitWindowSecs": "Jendela batas tarif",
+      "tmRateLimitWindowSecsDesc": "Jendela waktu dalam hitungan detik digunakan untuk perhitungan batas kecepatan.",
+      "tmRateLimitMaxPackets": "Paket maksimal per jendela",
+      "tmRateLimitMaxPacketsDesc": "Paket maksimum diperbolehkan dari satu node dalam jendela batas kecepatan.",
+      "tmDropUnknownEnabled": "Jatuhkan paket yang tidak dikenal",
+      "tmDropUnknownEnabledDesc": "Hapus paket yang tidak dapat didekripsi atau tidak diketahui dari node yang melebihi ambang batas.",
+      "tmUnknownPacketThreshold": "Ambang batas paket tidak diketahui",
+      "tmUnknownPacketThresholdDesc": "Jumlah paket yang tidak diketahui dari sebuah node sebelum pelepasan dimulai.",
+      "tmExhaustHopTelemetry": "Exhaust hop pada telemetri yang direlai",
+      "tmExhaustHopTelemetryDesc": "Setel hop_limit ke 0 untuk siaran telemetri yang direlai (paket sendiri tidak terpengaruh).",
+      "tmExhaustHopPosition": "Exhaust hop pada posisi relay",
+      "tmExhaustHopPositionDesc": "Setel hop_limit ke 0 untuk siaran posisi relai (paket sendiri tidak terpengaruh).",
+      "tmRouterPreserveHops": "Router mempertahankan hop",
+      "tmRouterPreserveHopsDesc": "Pertahankan hop_limit untuk lalu lintas router-ke-router.",
       "paxCounterEnabled": "Penghitung Pax diaktifkan",
       "paxCounterEnabledDesc": "Hitung perangkat Bluetooth dan WiFi terdekat sebagai metrik kepadatan kerumunan.",
       "paxUpdateInterval": "Interval pembaruan",
@@ -1099,12 +1156,27 @@
       "sfMaxStoredDesc": "Catatan maksimum disimpan di perangkat.",
       "sfHistoryMaxDesc": "Pesan maksimal yang akan dikembalikan ketika node meminta riwayat.",
       "sfHistoryWindowDesc": "Seberapa jauh waktu untuk membalas pesan (detik).",
+      "telDeviceTelemetryEnabled": "Kirim telemetri perangkat",
+      "telDeviceTelemetryEnabledDesc": "Menyiarkan metrik perangkat (baterai, voltase, pemanfaatan saluran) ke mesh melalui modul telemetri.",
       "telDeviceInterval": "Interval metrik perangkat",
-      "telEnvInterval": "Interval metrik lingkungan",
-      "telEnvIntervalDesc": "Seberapa sering mengirim suhu/kelembaban/tekanan. 0 = dinonaktifkan.",
       "telEnvEnabled": "Pengukuran lingkungan diaktifkan",
-      "telPowerEnabled": "Pengukuran daya diaktifkan",
+      "telEnvEnabledDesc": "Aktifkan pengumpulan dan penyiaran pembacaan sensor lingkungan (suhu, kelembaban, tekanan).",
+      "telEnvInterval": "Interval metrik lingkungan",
+      "telEnvIntervalDesc": "Seberapa sering mengirim pembacaan sensor lingkungan ke mesh. 0 = dinonaktifkan.",
+      "telEnvScreenEnabled": "Metrik lingkungan di layar",
+      "telEnvScreenEnabledDesc": "Tampilkan pembacaan sensor lingkungan pada tampilan perangkat.",
+      "telEnvFahrenheit": "Tampilan dalam Fahrenheit",
+      "telEnvFahrenheitDesc": "Tampilkan pembacaan suhu dalam Fahrenheit, bukan Celcius di perangkat.",
       "telAirQualityEnabled": "Kualitas udara diaktifkan",
+      "telAirQualityEnabledDesc": "Aktifkan pengumpulan dan penyiaran pembacaan sensor kualitas udara.",
+      "telAirQualityInterval": "Interval kualitas udara",
+      "telAirQualityIntervalDesc": "Seberapa sering mengirimkan metrik kualitas udara ke mesh. 0 = gunakan bawaan.",
+      "telPowerEnabled": "Pengukuran daya diaktifkan",
+      "telPowerEnabledDesc": "Aktifkan pengumpulan dan penyiaran metrik daya dari sensor INA yang terpasang.",
+      "telPowerInterval": "Interval metrik daya",
+      "telPowerIntervalDesc": "Seberapa sering mengirim metrik daya ke mesh. 0 = gunakan bawaan.",
+      "telPowerScreenEnabled": "Metrik daya di layar",
+      "telPowerScreenEnabledDesc": "Tampilkan metrik daya pada tampilan perangkat.",
       "messagesOnePerLine": "Pesan (satu pesan per baris, masing-masing maksimal 30 karakter)",
       "cannedMessagesPlaceholder": "Halo\nOke\nDalam perjalananku\nButuh bantuan",
       "cannedMessagesHint": "Masukkan satu pesan per baris. Digunakan dengan tombol periferal input.",
@@ -1113,6 +1185,16 @@
       "invalidRtttl": "RTTTL tidak valid — Nama yang diharapkan:d=N,o=N,b=N:catatan",
       "serialModuleEnabledDesc": "Aktifkan penerusan data port serial melalui mesh.",
       "serialEchoDesc": "Echo menerima data serial kembali ke pengirim.",
+      "serialRxd": "pin RX",
+      "serialRxdDesc": "Nomor pin GPIO untuk serial RX. 0 = gunakan bawaan.",
+      "serialTxd": "pin TX",
+      "serialTxdDesc": "Nomor pin GPIO untuk serial TX. 0 = gunakan bawaan.",
+      "serialTimeout": "Batas waktu",
+      "serialTimeoutDesc": "Milidetik untuk menunggu sebelum mengirim paket. 0 = gunakan bawaan.",
+      "serialMode": "Modus serial",
+      "serialModeDesc": "Mode pengoperasian untuk modul serial.",
+      "serialOverrideConsole": "Ganti port serial konsol",
+      "serialOverrideConsoleDesc": "Gunakan port serial utama (konsol) untuk modul serial, bukan port sekunder.",
       "sfEnabledDesc": "Pesan buffer untuk node yang bergabung kembali dengan mesh.",
       "sfNumRecordsDesc": "Pesan maksimum untuk disimpan. 0 = gunakan bawaan.",
       "ipTunnelHint": "Paket IP Tunnel meneruskan lalu lintas jaringan melalui mesh. Konfigurasikan pengaturan terowongan dalam konfigurasi jaringan perangkat.",
@@ -1124,7 +1206,17 @@
       "historyReturnWindowDesc": "Seberapa jauh waktu untuk membalas pesan (detik).",
       "remoteHardwareHint": "Pesan GPIO diterima secara otomatis ketika diaktifkan pada perangkat. Konfigurasikan pin GPIO di pengaturan perangkat keras perangkat.",
       "mqttProxyToClientEnabled": "Proksi ke klien",
-      "mqttProxyToClientEnabledDesc": "Rutekan MQTT melalui aplikasi yang terhubung alih-alih tumpukan jaringan radio itu sendiri. Diperlukan pada perangkat tanpa Wi-Fi/Ethernet saat relai MQTT diaktifkan."
+      "mqttProxyToClientEnabledDesc": "Rutekan MQTT melalui aplikasi yang terhubung alih-alih tumpukan jaringan radio itu sendiri. Diperlukan pada perangkat tanpa Wi-Fi/Ethernet saat relai MQTT diaktifkan.",
+      "takTeam": "Warna tim TAK",
+      "takTeamDesc": "Warna tim ditampilkan di ATAK/WinTAK. Default (Tidak ditentukan) menggunakan Cyan.",
+      "takTeamUnspecified": "Tidak ditentukan (Cyan)",
+      "takRole": "Peran anggota TAK",
+      "takRoleDesc": "Peran anggota ditampilkan di ATAK/WinTAK. Default (Tidak ditentukan) menggunakan Anggota Tim.",
+      "takRoleUnspecified": "Tidak ditentukan (Anggota Tim)",
+      "remoteHardwareEnabled": "Aktifkan Perangkat Keras Jarak Jauh",
+      "remoteHardwareEnabledDesc": "Izinkan node jarak jauh membaca dan menulis pin GPIO di perangkat ini.",
+      "remoteHardwareAllowUndefinedPins": "Izinkan Akses Pin Tak Terdefinisi",
+      "remoteHardwareAllowUndefinedPinsDesc": "Izinkan pembacaan/penulisan pin yang tidak tercantum dalam konfigurasi pin yang tersedia."
     },
     "applySection": "Terapkan {{section}}",
     "applyingButton": "Melamar...",
@@ -1148,7 +1240,13 @@
       "mqttDefaultServerPort": "Jangan sertakan port di alamat broker Meshtastic MQTT publik (gunakan mqtt.meshtastic.org tanpa :port).",
       "mqttProxyRequired": "Radio ini tidak memiliki Wi-Fi. Aktifkan \"Proksi ke klien\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih-alih MQTT sisi perangkat.",
       "serialOverrideRequiresMode": "Penimpaan konsol serial diaktifkan pada perangkat. Atur mode serial yang valid di radio sebelum mengaktifkan modul serial di sini."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Aktifkan Perangkat Keras Jarak Jauh?",
+    "remoteHardwareConfirmEnableMessage": "Node jarak jauh akan dapat membaca dan menulis pin GPIO pada perangkat ini melalui mesh. Hanya aktifkan jika Anda mempercayai pengguna mesh Anda dan telah mengonfigurasi akses PIN.",
+    "remoteHardwareConfirmEnableLabel": "Fungsikan",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Izinkan akses PIN yang tidak ditentukan?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Setiap pin GPIO dapat dibaca atau ditulis dari jarak jauh, termasuk pin yang tidak tercantum dalam konfigurasi perangkat keras Anda. Hal ini meningkatkan risiko keamanan.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Izinkan pin yang tidak terdefinisi"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",
@@ -1314,7 +1412,7 @@
     "position": "Posisi",
     "lastTrackedPosition": "Posisi Terakhir yang Dilacak",
     "gpsWarningPrefix": "Peringatan GPS:",
-    "routingHealth": "Kesehatan Perutean",
+    "routingHealth": "Kesehatan routing",
     "noRoutingIssues": "Tidak ada masalah perutean yang terdeteksi",
     "routeStability": "Stabilitas rute (1 jam)",
     "hopCount24h": "Jumlah lompatan — 24 jam",
@@ -1507,7 +1605,6 @@
     "title": "Konfigurasi Radio",
     "frequencyHint": "Frekuensi operasi. Periksa peraturan setempat.",
     "ntpHint": "Biarkan kosong untuk server NTP default.",
-    "restartWarning": "Perangkat mungkin restart sebentar setelah menerapkan LoRa atau pengaturan perangkat baru.",
     "deviceActions": "Tindakan Perangkat",
     "deviceCommands": "Perintah Perangkat",
     "dangerZone": "Zona Bahaya",
@@ -1520,6 +1617,7 @@
     "channelN": "Saluran {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Peran Perangkat",
+    "sectionGroupDevice": "Konfigurasi Perangkat",
     "sectionDeviceUser": "Pengguna / Identitas Perangkat",
     "sectionDisplay": "Menampilkan",
     "sectionLora": "LoRa / Radio",
@@ -1531,7 +1629,6 @@
     "yourNamePlaceholder": "Nama Anda",
     "namePlaceholder": "NAMA",
     "networkNamePlaceholder": "Nama jaringan",
-    "flashMemoryNote": "Perubahan ditulis ke memori flash perangkat dan tetap ada selama reboot.",
     "encryptionNone": "Tidak ada (tidak ada enkripsi)",
     "encryptionSimple": "Sederhana (kunci Meshtastic default)",
     "generateRandomKey": "Hasilkan kunci acak",
@@ -1568,11 +1665,11 @@
         "description": "Klien yang tidak mengirimkan"
       },
       "2": {
-        "label": "Perute",
+        "label": "Router",
         "description": "Router/repeater khusus"
       },
       "3": {
-        "label": "Klien Perute",
+        "label": "Klien Router",
         "description": "Mode router + klien"
       },
       "4": {
@@ -1817,7 +1914,131 @@
     "resetNodeDbPreserveFavorites": "Pertahankan node favorit di perangkat",
     "offloadReconcileStillFull": "Offload selesai tetapi radio masih melaporkan kontak penuh ({{count}}/350). Sambungkan kembali dan coba lagi.",
     "offloadReconcileStillNearFull": "Offload selesai tetapi radio masih melaporkan penggunaan kontak yang tinggi ({{count}}/350).",
-    "offloadReconcileRefreshFailed": "Pembongkaran muatan selesai, tetapi penyegaran kontak gagal. Sambungkan kembali dan segarkan kontak."
+    "offloadReconcileRefreshFailed": "Pembongkaran muatan selesai, tetapi penyegaran kontak gagal. Sambungkan kembali dan segarkan kontak.",
+    "txEnabledLabel": "TX Enabled",
+    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "channelNumLabel": "Channel Number",
+    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
+    "rebroadcastModeLabel": "Rebroadcast Mode",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
+    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
+    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
+    "disableTripleClickLabel": "Disable Triple-click",
+    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "rebroadcastModes": {
+      "0": {
+        "label": "All",
+        "description": "Rebroadcast all packets (default)."
+      },
+      "1": {
+        "label": "All Skip Decoding",
+        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      },
+      "2": {
+        "label": "Local Only",
+        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      },
+      "3": {
+        "label": "Known Only",
+        "description": "Only rebroadcast from nodes in the local node database."
+      },
+      "4": {
+        "label": "None",
+        "description": "Do not rebroadcast any packets."
+      },
+      "5": {
+        "label": "Core Portnums Only",
+        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      }
+    },
+    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
+    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
+    "oledTypeLabel": "OLED Type",
+    "flipScreenLabel": "Flip Screen",
+    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "displayModeLabel": "Display Mode",
+    "headingBoldLabel": "Bold Heading",
+    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
+    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "use12hClockLabel": "12-Hour Clock",
+    "useLongNodeNameLabel": "Use Long Node Name",
+    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
+    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "oledTypes": {
+      "0": {
+        "label": "Auto"
+      },
+      "1": {
+        "label": "SSD1306"
+      },
+      "2": {
+        "label": "SH1106"
+      },
+      "3": {
+        "label": "SH1107 (128x64)"
+      },
+      "4": {
+        "label": "SH1107 (128x128)"
+      },
+      "5": {
+        "label": "SH1107 Rotated"
+      }
+    },
+    "displayModes": {
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Two Color"
+      },
+      "2": {
+        "label": "Inverted"
+      },
+      "3": {
+        "label": "Color"
+      }
+    },
+    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModes": {
+      "0": {
+        "label": "Random PIN"
+      },
+      "1": {
+        "label": "Fixed PIN"
+      },
+      "2": {
+        "label": "No PIN"
+      }
+    },
+    "tzdefPlaceholder": "misalnya EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Menunggu pengaturan {{section}} dari perangkat…",
+    "applyStatusApplying": "Menerapkan {{section}}…",
+    "applyStatusSuccess": "{{section}} berhasil diterapkan. Perangkat dapat dinyalakan ulang secara singkat.",
+    "applyStatusCommitFailed": "{{section}} terkirim, tetapi komitmen gagal: {{message}}",
+    "applyStatusFailed": "Gagal: {{message}}",
+    "applyUserApplying": "Menerapkan identitas pengguna…",
+    "applyUserSuccess": "Identitas pengguna berhasil diterapkan!",
+    "applyLoraSuccess": "Pengaturan LoRa berhasil diterapkan!"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -1945,8 +2166,8 @@
     "roles": {
       "client": "Klien",
       "clientMute": "Klien Bisu",
-      "router": "Perute",
-      "routerClient": "Klien Perute",
+      "router": "Router",
+      "routerClient": "Klien Router",
       "repeater": "Pengulang",
       "tracker": "Pelacak",
       "sensor": "Sensor",
@@ -2159,7 +2380,8 @@
     "repeaters": "Repeater",
     "rf": "RF",
     "graph": "Grafik",
-    "rooms": "Ruang"
+    "rooms": "Ruang",
+    "admin": "Administrasi"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2250,5 +2472,9 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
+  },
+  "configApplyNotice": {
+    "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
+    "restartNote": "Perangkat dapat memulai ulang secara singkat saat Anda menerapkan pengaturan."
   }
 }

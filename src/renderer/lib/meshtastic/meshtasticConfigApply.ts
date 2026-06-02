@@ -6,6 +6,11 @@ export function meshtasticConfigSlice(raw: unknown): Record<string, unknown> {
   return {};
 }
 
+/** True when a config slice has arrived from the device (safe to apply without overwriting with form defaults). */
+export function meshtasticConfigSliceHydrated(raw: unknown): boolean {
+  return Object.keys(meshtasticConfigSlice(raw)).length > 0;
+}
+
 /** Strip protobuf metadata before sending config back to the radio. */
 export function stripMeshtasticProtobufMeta(cfg: Record<string, unknown>): Record<string, unknown> {
   const rest = { ...cfg };

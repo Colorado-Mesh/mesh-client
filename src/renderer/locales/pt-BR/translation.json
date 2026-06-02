@@ -1010,12 +1010,15 @@
     "sectionExternalNotification": "Módulo de Notificação Externa",
     "sectionIpTunnel": "Túnel IP",
     "sectionMqttRelay": "Retransmissão MQTT (lado do dispositivo)",
+    "sectionNeighborInfo": "Módulo de Informações do Vizinho",
     "sectionPaxCounter": "Módulo Contador Pax",
+    "sectionTrafficManagement": "Módulo de Gestão de Tráfego",
     "sectionRemoteHardware": "Hardware remoto",
     "sectionRangeTest": "Módulo de teste de alcance",
     "sectionRtttlRingtone": "Toque de RTTTL",
     "sectionSerialModule": "Módulo serial",
     "sectionStoreForward": "Módulo de armazenamento e encaminhamento",
+    "sectionTak": "Módulo TAK",
     "sectionTelemetryModule": "Módulo de Telemetria",
     "fields": {
       "ledEnabled": "LED ativado",
@@ -1024,6 +1027,26 @@
       "brightnessCurrent": "Brilho/atual: {{value}}",
       "brightnessHint": "Corrente da unidade de LED (0–31). Mais alto = mais brilhante.",
       "cannedMessagesEnabled": "Mensagens automáticas ativadas",
+      "cannedRotary1Enabled": "Codificador rotativo #1 ativado",
+      "cannedRotary1EnabledDesc": "Ative o dispositivo de entrada do codificador rotativo #1 (codificador burro com pulsos A/B).",
+      "cannedPinA": "Pino GPIO — codificador A",
+      "cannedPinADesc": "Número do pino GPIO para a porta A do codificador rotativo.",
+      "cannedPinB": "Pino GPIO — codificador B",
+      "cannedPinBDesc": "Número do pino GPIO para a porta B do codificador rotativo.",
+      "cannedPinPress": "Pino GPIO — pressione",
+      "cannedPinPressDesc": "Número do pino GPIO para porta de pressão/botão do codificador rotativo.",
+      "cannedEventCw": "Evento na rotação CW",
+      "cannedEventCwDesc": "Evento de entrada gerado na rotação no sentido horário.",
+      "cannedEventCcw": "Evento na rotação CCW",
+      "cannedEventCcwDesc": "Evento de entrada gerado na rotação anti-horária.",
+      "cannedEventPress": "Evento na imprensa",
+      "cannedEventPressDesc": "Evento de entrada gerado na prensa do codificador.",
+      "cannedUpdown1Enabled": "Entrada para cima/baixo/seleção ativada",
+      "cannedUpdown1EnabledDesc": "Ative o dispositivo de entrada Up/Down/Select (codificador rotativo RAK ou 3 botões). Usa pinos A/B/pressione GPIO acima.",
+      "cannedAllowInputSource": "Permitir fonte de entrada",
+      "cannedAllowInputSourceDesc": "Fonte de entrada aceita por mensagens enlatadas (por exemplo, rotEnc1, upDownEnc1, scanAndSelect, cardkb, serialkb ou _any).",
+      "cannedSendBell": "Enviar caractere de sino",
+      "cannedSendBellDesc": "Envie um caractere de sino com mensagens enlatadas de saída (útil com o módulo de Notificação Externa).",
       "detectionSensorEnabled": "Sensor de detecção ativado",
       "detectionSensorDesc": "Transmita eventos de detecção (PIR, sensor de porta, etc.) para a malha.",
       "sensorName": "Nome do sensor",
@@ -1077,6 +1100,40 @@
       "tlsEnabled": "TLS ativado",
       "mapReportingEnabled": "Relatórios de mapas ativados",
       "mapReportingEnabledDesc": "Publique periodicamente a posição do nó no mapa Meshtastic.",
+      "neighborInfoEnabled": "Informações do vizinho ativadas",
+      "neighborInfoEnabledDesc": "Transmita periodicamente uma lista de vizinhos de malha ouvidos por este nó.",
+      "neighborInfoUpdateInterval": "Intervalo de atualização",
+      "neighborInfoUpdateIntervalDesc": "Com que frequência transmitir informações do vizinho (segundos). Mínimo 14400 (4 horas). 0 = usar padrão.",
+      "neighborInfoTransmitOverLora": "Transmitir por LoRa",
+      "neighborInfoTransmitOverLoraDesc": "Transmita também as informações do vizinho pelo LoRa (não disponível no canal/tecla padrão).",
+      "tmEnabled": "Gestão de tráfego ativada",
+      "tmEnabledDesc": "Habilitar mestre para o módulo de Gerenciamento de Tráfego.",
+      "tmPositionDedupEnabled": "Deduplicação de posição",
+      "tmPositionDedupEnabledDesc": "Solte as transmissões de posição redundantes do mesmo nó.",
+      "tmPositionPrecisionBits": "Precisão da posição",
+      "tmPositionPrecisionBitsDesc": "Bits de precisão usados ao comparar posições para desduplicação (0–32).",
+      "tmPositionMinIntervalSecs": "Intervalo mínimo de posição",
+      "tmPositionMinIntervalSecsDesc": "Mínimo de segundos entre as atualizações de posição aceitas do mesmo nó. 0 = sem limite.",
+      "tmNodeinfoDirectResponse": "Resposta direta NodeInfo",
+      "tmNodeinfoDirectResponseDesc": "Atenda as solicitações do NodeInfo diretamente do cache local, em vez de inundar a malha.",
+      "tmNodeinfoDirectResponseMaxHops": "Máximo de saltos para resposta direta",
+      "tmNodeinfoDirectResponseMaxHopsDesc": "Só responda diretamente se o solicitante estiver a pelo menos esse número de saltos de distância.",
+      "tmRateLimitEnabled": "Limitação de taxa por nó",
+      "tmRateLimitEnabledDesc": "Acelere os nós de conversação que excedem o limite de pacotes dentro da janela de tempo.",
+      "tmRateLimitWindowSecs": "Janela de limite de taxa",
+      "tmRateLimitWindowSecsDesc": "Janela de tempo em segundos usada para cálculos de limite de taxa.",
+      "tmRateLimitMaxPackets": "Máximo de pacotes por janela",
+      "tmRateLimitMaxPacketsDesc": "Máximo de pacotes permitidos de um nó dentro da janela de limite de taxa.",
+      "tmDropUnknownEnabled": "Soltar pacotes desconhecidos",
+      "tmDropUnknownEnabledDesc": "Descarte pacotes não decifráveis ou desconhecidos de nós que excedam o limite.",
+      "tmUnknownPacketThreshold": "Limite de pacote desconhecido",
+      "tmUnknownPacketThresholdDesc": "Número de pacotes desconhecidos de um nó antes do início da queda.",
+      "tmExhaustHopTelemetry": "Saltos de exaustão em telemetria retransmitida",
+      "tmExhaustHopTelemetryDesc": "Defina hop_limit como 0 para transmissões de telemetria retransmitidas (pacotes próprios não afetados).",
+      "tmExhaustHopPosition": "Saltos de exaustão na posição de relé",
+      "tmExhaustHopPositionDesc": "Defina hop_limit para 0 para transmissões de posição retransmitidas (pacotes próprios não afetados).",
+      "tmRouterPreserveHops": "Router preserve hops",
+      "tmRouterPreserveHopsDesc": "Preserve hop_limit para o tráfego de roteador para roteador.",
       "paxCounterEnabled": "Contador Pax ativado",
       "paxCounterEnabledDesc": "Conte os dispositivos Bluetooth e WiFi próximos como uma métrica de densidade de multidão.",
       "paxUpdateInterval": "Intervalo de atualização",
@@ -1099,12 +1156,27 @@
       "sfMaxStoredDesc": "Máximo de registros retidos no dispositivo.",
       "sfHistoryMaxDesc": "Máximo de mensagens a serem retornadas quando um nó solicita histórico.",
       "sfHistoryWindowDesc": "Quanto tempo atrás no tempo para retornar mensagens (segundos).",
+      "telDeviceTelemetryEnabled": "Enviar telemetria do dispositivo",
+      "telDeviceTelemetryEnabledDesc": "Transmita as métricas do dispositivo (bateria, tensão, utilização do canal) para a malha através do módulo de telemetria.",
       "telDeviceInterval": "Intervalo de métricas do dispositivo",
-      "telEnvInterval": "Intervalo de métricas de ambiente",
-      "telEnvIntervalDesc": "Com que frequência enviar temperatura/umidade/pressão. 0 = desabilitado.",
-      "telEnvEnabled": "Medição ambiental ativada",
-      "telPowerEnabled": "Medição de potência ativada",
+      "telEnvEnabled": "Medição de ambiente ativada",
+      "telEnvEnabledDesc": "Habilite a coleta e transmissão de leituras do sensor de ambiente (temperatura, umidade, pressão).",
+      "telEnvInterval": "Intervalo de métricas do ambiente",
+      "telEnvIntervalDesc": "Com que frequência enviar leituras do sensor de ambiente para a malha. 0 = desativado.",
+      "telEnvScreenEnabled": "Métricas ambientais na tela",
+      "telEnvScreenEnabledDesc": "Mostre as leituras do sensor de ambiente no visor do dispositivo.",
+      "telEnvFahrenheit": "Exibição em Fahrenheit",
+      "telEnvFahrenheitDesc": "Mostre as leituras de temperatura em Fahrenheit em vez de Celsius no dispositivo.",
       "telAirQualityEnabled": "Qualidade do ar ativada",
+      "telAirQualityEnabledDesc": "Habilite a coleta e transmissão de leituras do sensor de qualidade do ar.",
+      "telAirQualityInterval": "Intervalo de qualidade do ar",
+      "telAirQualityIntervalDesc": "Com que frequência enviar métricas de qualidade do ar para a malha. 0 = usar padrão.",
+      "telPowerEnabled": "Medição de energia ativada",
+      "telPowerEnabledDesc": "Habilite a coleta e transmissão de métricas de potência de um sensor INA conectado.",
+      "telPowerInterval": "Intervalo de métricas de potência",
+      "telPowerIntervalDesc": "Com que frequência enviar métricas de potência para a malha. 0 = usar padrão.",
+      "telPowerScreenEnabled": "Métricas de potência na tela",
+      "telPowerScreenEnabledDesc": "Mostrar métricas de potência no visor do dispositivo.",
       "messagesOnePerLine": "Mensagens (uma por linha, no máximo 30 caracteres cada)",
       "cannedMessagesPlaceholder": "Olá\nOK\nNo meu caminho\nPrecisa de ajuda",
       "cannedMessagesHint": "Insira uma mensagem por linha. Usado com os botões periféricos de entrada.",
@@ -1113,6 +1185,16 @@
       "invalidRtttl": "RTTTL inválido — Nome esperado:d=N,o=N,b=N:notes",
       "serialModuleEnabledDesc": "Habilite o encaminhamento de dados da porta serial por meio da malha.",
       "serialEchoDesc": "Echo recebeu dados seriais de volta ao remetente.",
+      "serialRxd": "Pino RX",
+      "serialRxdDesc": "Número PIN GPIO para RX serial. 0 = usar padrão.",
+      "serialTxd": "Pino TX",
+      "serialTxdDesc": "Número PIN GPIO para TX serial. 0 = usar padrão.",
+      "serialTimeout": "Tempo Esgotado",
+      "serialTimeoutDesc": "Milissegundos para esperar antes de enviar um pacote. 0 = usar padrão.",
+      "serialMode": "Número de série",
+      "serialModeDesc": "Modo de operação para o módulo serial.",
+      "serialOverrideConsole": "Substituir porta serial do console",
+      "serialOverrideConsoleDesc": "Use a porta serial primária (console) para o módulo serial em vez de uma porta secundária.",
       "sfEnabledDesc": "Mensagens de buffer para nós que se juntam novamente à malha.",
       "sfNumRecordsDesc": "Máximo de mensagens a serem armazenadas. 0 = usar padrão.",
       "ipTunnelHint": "Os pacotes do IP Tunnel encaminham o tráfego de rede através da malha. Defina as configurações do túnel na configuração de rede do dispositivo.",
@@ -1124,7 +1206,17 @@
       "historyReturnWindowDesc": "Quanto tempo atrás no tempo para retornar mensagens (segundos).",
       "remoteHardwareHint": "As mensagens GPIO são recebidas automaticamente quando habilitadas no dispositivo. Configure os pinos GPIO nas configurações de hardware do dispositivo.",
       "mqttProxyToClientEnabled": "Proxy para o cliente",
-      "mqttProxyToClientEnabledDesc": "Encaminhe o MQTT através do aplicativo conectado em vez da própria pilha de rede do rádio. Necessário em dispositivos sem Wi-Fi/Ethernet quando o relé MQTT está ativado."
+      "mqttProxyToClientEnabledDesc": "Encaminhe o MQTT através do aplicativo conectado em vez da própria pilha de rede do rádio. Necessário em dispositivos sem Wi-Fi/Ethernet quando o relé MQTT está ativado.",
+      "takTeam": "Cor da equipe TAK",
+      "takTeamDesc": "Cor da equipe mostrada em ATAK/WinTAK. O padrão (não especificado) usa ciano.",
+      "takTeamUnspecified": "Não especificado (ciano)",
+      "takRole": "Papel de membro TAK",
+      "takRoleDesc": "Função do membro mostrada no ATAK/WinTAK. O padrão (não especificado) usa o membro da equipe.",
+      "takRoleUnspecified": "Não especificado (membro da equipe)",
+      "remoteHardwareEnabled": "Habilitar hardware remoto",
+      "remoteHardwareEnabledDesc": "Permite que nós remotos leiam e escrevam pinos GPIO neste dispositivo.",
+      "remoteHardwareAllowUndefinedPins": "Permitir acesso a pinos não definidos",
+      "remoteHardwareAllowUndefinedPinsDesc": "Permite leitura/escrita de pinos não listados na configuração de pinos disponíveis."
     },
     "applySection": "Aplicar {{section}}",
     "applyingButton": "Aplicando...",
@@ -1148,7 +1240,13 @@
       "mqttDefaultServerPort": "Não inclua uma porta no endereço público do corretor Meshtastic MQTT (use mqtt.meshtastic.org com no :port).",
       "mqttProxyRequired": "Este rádio não tem Wi-Fi. Ative \"Proxy para cliente\" para que o aplicativo encaminhe o MQTT ou use o LoRa \"OK para MQTT\" em vez do MQTT do lado do dispositivo.",
       "serialOverrideRequiresMode": "A substituição do console serial está ativada no dispositivo. Defina um modo serial válido no rádio antes de ativar o módulo serial aqui."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Ativar Hardware Remoto?",
+    "remoteHardwareConfirmEnableMessage": "Os nós remotos poderão ler e gravar pinos GPIO neste dispositivo sobre a malha. Ative apenas se você confiar em seus usuários de malha e tiver configurado o acesso por PIN.",
+    "remoteHardwareConfirmEnableLabel": "Ativar",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Permitir acesso por PIN indefinido?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Qualquer pino GPIO pode ser lido ou gravado remotamente, incluindo pinos não listados na sua configuração de hardware. Isso aumenta o risco de segurança.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Permitir pinos indefinidos"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",
@@ -1507,7 +1605,6 @@
     "title": "Configuração de rádio",
     "frequencyHint": "Frequência de operação. Verifique os regulamentos locais.",
     "ntpHint": "Deixe em branco para o servidor NTP padrão.",
-    "restartWarning": "O dispositivo pode reiniciar brevemente após aplicar novas configurações de LoRa ou do dispositivo.",
     "deviceActions": "Ações do dispositivo",
     "deviceCommands": "Comandos do dispositivo",
     "dangerZone": "Zona de perigo",
@@ -1520,6 +1617,7 @@
     "channelN": "Canal {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Função do dispositivo",
+    "sectionGroupDevice": "Configuração do dispositivo",
     "sectionDeviceUser": "Usuário/Identidade do dispositivo",
     "sectionDisplay": "Mostrar",
     "sectionLora": "LoRa/Rádio",
@@ -1531,7 +1629,6 @@
     "yourNamePlaceholder": "Seu nome",
     "namePlaceholder": "NOME",
     "networkNamePlaceholder": "Nome da rede",
-    "flashMemoryNote": "As alterações são gravadas na memória flash do dispositivo e persistem durante as reinicializações.",
     "encryptionNone": "Nenhum (sem criptografia)",
     "encryptionSimple": "Simples (chave Meshtastic padrão)",
     "generateRandomKey": "Gerar chave aleatória",
@@ -1817,7 +1914,131 @@
     "resetNodeDbPreserveFavorites": "Preservar os nós favoritos no dispositivo",
     "offloadReconcileStillFull": "Descarregamento concluído, mas o rádio ainda relata contatos completos ({{count}}/350). Reconecte e tente novamente.",
     "offloadReconcileStillNearFull": "Descarregamento concluído, mas o rádio ainda relata alto uso de contato ({{count}}/350).",
-    "offloadReconcileRefreshFailed": "Descarregamento concluído, mas a atualização do contato falhou. Reconecte e atualize os contatos."
+    "offloadReconcileRefreshFailed": "Descarregamento concluído, mas a atualização do contato falhou. Reconecte e atualize os contatos.",
+    "txEnabledLabel": "TX Enabled",
+    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "channelNumLabel": "Channel Number",
+    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
+    "rebroadcastModeLabel": "Rebroadcast Mode",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
+    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
+    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
+    "disableTripleClickLabel": "Disable Triple-click",
+    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "rebroadcastModes": {
+      "0": {
+        "label": "All",
+        "description": "Rebroadcast all packets (default)."
+      },
+      "1": {
+        "label": "All Skip Decoding",
+        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      },
+      "2": {
+        "label": "Local Only",
+        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      },
+      "3": {
+        "label": "Known Only",
+        "description": "Only rebroadcast from nodes in the local node database."
+      },
+      "4": {
+        "label": "None",
+        "description": "Do not rebroadcast any packets."
+      },
+      "5": {
+        "label": "Core Portnums Only",
+        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      }
+    },
+    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
+    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
+    "oledTypeLabel": "OLED Type",
+    "flipScreenLabel": "Flip Screen",
+    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "displayModeLabel": "Display Mode",
+    "headingBoldLabel": "Bold Heading",
+    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
+    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "use12hClockLabel": "12-Hour Clock",
+    "useLongNodeNameLabel": "Use Long Node Name",
+    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
+    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "oledTypes": {
+      "0": {
+        "label": "Auto"
+      },
+      "1": {
+        "label": "SSD1306"
+      },
+      "2": {
+        "label": "SH1106"
+      },
+      "3": {
+        "label": "SH1107 (128x64)"
+      },
+      "4": {
+        "label": "SH1107 (128x128)"
+      },
+      "5": {
+        "label": "SH1107 Rotated"
+      }
+    },
+    "displayModes": {
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Two Color"
+      },
+      "2": {
+        "label": "Inverted"
+      },
+      "3": {
+        "label": "Color"
+      }
+    },
+    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModes": {
+      "0": {
+        "label": "Random PIN"
+      },
+      "1": {
+        "label": "Fixed PIN"
+      },
+      "2": {
+        "label": "No PIN"
+      }
+    },
+    "tzdefPlaceholder": "por exemplo, EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Aguardando as configurações de {{section}} do dispositivo...",
+    "applyStatusApplying": "Aplicando {{section}}…",
+    "applyStatusSuccess": "{{section}} aplicado com sucesso. O dispositivo pode ser reinicializado brevemente.",
+    "applyStatusCommitFailed": "{{section}} enviado, mas falha no commit: {{message}}",
+    "applyStatusFailed": "Reprovado: {{message}}",
+    "applyUserApplying": "Aplicando identidade de usuário...",
+    "applyUserSuccess": "Identidade do usuário aplicada com sucesso!",
+    "applyLoraSuccess": "Configurações LoRa aplicadas com sucesso!"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -1969,7 +2190,7 @@
     "loginHelp": "Digite a senha do convidado para participar e postar. O padrão geralmente é «hello». Para servidores sem senha de convidado, use «Continuar somente leitura» (o login envia «hello» quando o campo está vazio).",
     "adminLoginHelp": "Digite a senha do administrador da sala para gerenciar as configurações e ACLs. O padrão geralmente é \"senha\".",
     "guestPasswordLabel": "Senha do Convidado",
-    "guestPasswordPlaceholder": "olá",
+    "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Senha de administrador",
     "adminPasswordPlaceholder": "senha",
     "loginButton": "Login",
@@ -2159,7 +2380,8 @@
     "repeaters": "Repetidores",
     "rf": "Frequência de rádio (RF)",
     "graph": "Gráfico",
-    "rooms": "Salas"
+    "rooms": "Salas",
+    "admin": "Administração"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -2250,5 +2472,9 @@
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
     "menuToastErrorTitle": "verificação de atualização falhou"
+  },
+  "configApplyNotice": {
+    "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",
+    "restartNote": "O dispositivo pode ser reiniciado brevemente ao aplicar as configurações."
   }
 }

@@ -243,7 +243,7 @@
     "dmNodeBattery": "{{pct}}% pil",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} şerbetçiotu",
+    "dmNodeHopsPlural": "{{count}} atlama",
     "quickDm": "Doğrudan mesaj {{name}}",
     "muteConversation": "Bu konuşmayı sessize al",
     "unmuteConversation": "Bu konuşmanın sesini aç",
@@ -1010,12 +1010,15 @@
     "sectionExternalNotification": "Dış Bildirim Modülü",
     "sectionIpTunnel": "IP Tüneli",
     "sectionMqttRelay": "MQTT Rölesi (Cihaz Tarafı)",
+    "sectionNeighborInfo": "Komşu Bilgi Modülü",
     "sectionPaxCounter": "Yolcu Sayaç Modülü",
+    "sectionTrafficManagement": "Trafik Yönetim Modülü",
     "sectionRemoteHardware": "Uzak Donanım",
     "sectionRangeTest": "Menzil Test Modülü",
     "sectionRtttlRingtone": "RTTTL Zil Sesi",
     "sectionSerialModule": "Seri Modül",
     "sectionStoreForward": "Sakla ve İlet Modülü",
+    "sectionTak": "TAK Modülü",
     "sectionTelemetryModule": "Telemetri Modülü",
     "fields": {
       "ledEnabled": "LED etkin",
@@ -1024,6 +1027,26 @@
       "brightnessCurrent": "Parlaklık / akım: {{value}}",
       "brightnessHint": "LED sürücü akımı (0–31). Daha yüksek = daha parlak.",
       "cannedMessagesEnabled": "Hazır mesajlar etkinleştirildi",
+      "cannedRotary1Enabled": "Döner kodlayıcı #1 etkinleştirildi",
+      "cannedRotary1EnabledDesc": "Döner kodlayıcı #1 giriş cihazını etkinleştirin (A/B darbeli aptal kodlayıcı).",
+      "cannedPinA": "GPIO pini — kodlayıcı A",
+      "cannedPinADesc": "Döner kodlayıcı A bağlantı noktası için GPIO pin numarası.",
+      "cannedPinB": "GPIO pini — kodlayıcı B",
+      "cannedPinBDesc": "Döner kodlayıcı B bağlantı noktası için GPIO pin numarası.",
+      "cannedPinPress": "GPIO pini — basın",
+      "cannedPinPressDesc": "Döner kodlayıcı basma/düğme bağlantı noktası için GPIO pin numarası.",
+      "cannedEventCw": "CW rotasyonunda olay",
+      "cannedEventCwDesc": "Saat yönünde dönüşte oluşturulan giriş olayı.",
+      "cannedEventCcw": "CCW rotasyonunda olay",
+      "cannedEventCcwDesc": "Saat yönünün tersine dönüşte oluşturulan giriş olayı.",
+      "cannedEventPress": "Basında yer alan olay",
+      "cannedEventPressDesc": "Kodlayıcıya basıldığında oluşturulan giriş olayı.",
+      "cannedUpdown1Enabled": "Yukarı/aşağı/giriş seç etkin",
+      "cannedUpdown1EnabledDesc": "Yukarı/Aşağı/Giriş cihazını seç (RAK döner kodlayıcı veya 3 düğme) etkinleştirin. Yukarıdaki A/B/press GPIO pinlerini kullanır.",
+      "cannedAllowInputSource": "Giriş kaynağına izin ver",
+      "cannedAllowInputSourceDesc": "Hazır mesajlar tarafından kabul edilen giriş kaynağı (örn. rotEnc1, upDownEnc1, scanAndSelect,cardkb, serikb veya _any).",
+      "cannedSendBell": "Zil karakterini gönder",
+      "cannedSendBellDesc": "Giden hazır mesajlarla birlikte bir zil karakteri gönderin (Harici Bildirim modülüyle kullanışlıdır).",
       "detectionSensorEnabled": "Algılama sensörü etkin",
       "detectionSensorDesc": "Algılama olaylarını (PIR, kapı sensörü vb.) ağa yayınlayın.",
       "sensorName": "Sensör adı",
@@ -1077,6 +1100,40 @@
       "tlsEnabled": "TLS etkin",
       "mapReportingEnabled": "Harita raporlama etkin",
       "mapReportingEnabledDesc": "Düğüm konumunu periyodik olarak Meshtastic haritasına yayınlayın.",
+      "neighborInfoEnabled": "Komşu bilgisi etkinleştirildi",
+      "neighborInfoEnabledDesc": "Bu düğüm tarafından duyulan ağ komşularının bir listesini periyodik olarak yayınlayın.",
+      "neighborInfoUpdateInterval": "Güncelleme aralığı",
+      "neighborInfoUpdateIntervalDesc": "Komşu bilgilerinin yayınlanma sıklığı (saniye). Minimum 14400 (4 saat). 0 = varsayılanı kullan.",
+      "neighborInfoTransmitOverLora": "LoRa üzerinden aktarım",
+      "neighborInfoTransmitOverLoraDesc": "Ayrıca komşu bilgilerini LoRa üzerinden yayınlayın (varsayılan kanalda/anahtarda mevcut değildir).",
+      "tmEnabled": "Trafik yönetimi etkinleştirildi",
+      "tmEnabledDesc": "Trafik Yönetimi modülü için ana etkinleştirme.",
+      "tmPositionDedupEnabled": "Konum tekilleştirme",
+      "tmPositionDedupEnabledDesc": "Aynı düğümden yedek konum yayınlarını bırakın.",
+      "tmPositionPrecisionBits": "Hassas uçları konumlandırın",
+      "tmPositionPrecisionBitsDesc": "Tekilleştirme için konumları karşılaştırırken kullanılan hassasiyet parçaları (0-32).",
+      "tmPositionMinIntervalSecs": "Minimum konum aralığı",
+      "tmPositionMinIntervalSecsDesc": "Aynı düğümden kabul edilen konum güncellemeleri arasındaki minimum saniye. 0 = sınır yok.",
+      "tmNodeinfoDirectResponse": "NodeInfo doğrudan yanıtı",
+      "tmNodeinfoDirectResponseDesc": "Ağa taşmak yerine NodeInfo isteklerini doğrudan yerel önbellekten yanıtlayın.",
+      "tmNodeinfoDirectResponseMaxHops": "Max doğrudan yanıt vermeyi tercih ediyor",
+      "tmNodeinfoDirectResponseMaxHopsDesc": "Yalnızca istekte bulunan kişi en azından bu kadar uzaktaysa doğrudan yanıt verin.",
+      "tmRateLimitEnabled": "Düğüm başına hız sınırlaması",
+      "tmRateLimitEnabledDesc": "Zaman penceresi içinde paket sınırını aşan konuşkan düğümleri kısıtlayın.",
+      "tmRateLimitWindowSecs": "Oran sınırı penceresi",
+      "tmRateLimitWindowSecsDesc": "Hız sınırı hesaplamaları için kullanılan saniye cinsinden zaman penceresi.",
+      "tmRateLimitMaxPackets": "Pencere başına maksimum paket",
+      "tmRateLimitMaxPacketsDesc": "Hız sınırı penceresi dahilinde bir düğümden izin verilen maksimum paketler.",
+      "tmDropUnknownEnabled": "Bilinmeyen paketleri bırak",
+      "tmDropUnknownEnabledDesc": "Eşiği aşan düğümlerden şifresi çözülemeyen veya bilinmeyen paketleri bırakın.",
+      "tmUnknownPacketThreshold": "Bilinmeyen paket eşiği",
+      "tmUnknownPacketThresholdDesc": "Bırakma başlamadan önce bir düğümden gelen bilinmeyen paketlerin sayısı.",
+      "tmExhaustHopTelemetry": "Aktarılan telemetride egzoz atlamaları",
+      "tmExhaustHopTelemetryDesc": "Aktarılan telemetri yayınları için hop_limit'i 0'a ayarlayın (kendi paketleri etkilenmez).",
+      "tmExhaustHopPosition": "Egzoz aktarılan konumda atlıyor",
+      "tmExhaustHopPositionDesc": "Aktarılan konum yayınları için hop_limit'i 0'a ayarlayın (kendi paketleri etkilenmez).",
+      "tmRouterPreserveHops": "Yönlendirici atlamaları korur",
+      "tmRouterPreserveHopsDesc": "Yönlendiriciden yönlendiriciye trafik için hop_limit'i koruyun.",
       "paxCounterEnabled": "Yolcu sayacı etkinleştirildi",
       "paxCounterEnabledDesc": "Kalabalık yoğunluğu ölçümü olarak yakındaki Bluetooth ve WiFi cihazlarını sayın.",
       "paxUpdateInterval": "Güncelleme aralığı",
@@ -1099,12 +1156,27 @@
       "sfMaxStoredDesc": "Cihazda tutulan maksimum kayıt.",
       "sfHistoryMaxDesc": "Bir düğüm geçmiş isteğinde bulunduğunda döndürülecek maksimum ileti sayısı.",
       "sfHistoryWindowDesc": "Mesajların geri döndürülmesi için zaman açısından ne kadar geriye gidildiği (saniye).",
+      "telDeviceTelemetryEnabled": "Cihaz telemetrisini gönder",
+      "telDeviceTelemetryEnabledDesc": "Cihaz ölçümlerini (pil, voltaj, kanal kullanımı) telemetri modülü aracılığıyla ağa yayınlayın.",
       "telDeviceInterval": "Cihaz ölçüm aralığı",
-      "telEnvInterval": "Ortam ölçüm aralığı",
-      "telEnvIntervalDesc": "Sıcaklık/nem/basıncın ne sıklıkla gönderileceği. 0 = devre dışı.",
       "telEnvEnabled": "Ortam ölçümü etkinleştirildi",
-      "telPowerEnabled": "Güç ölçümü etkinleştirildi",
+      "telEnvEnabledDesc": "Ortam sensörü okumalarının (sıcaklık, nem, basınç) toplanmasını ve yayınlanmasını etkinleştirin.",
+      "telEnvInterval": "Ortam ölçüm aralığı",
+      "telEnvIntervalDesc": "Ortam sensörü okumalarının ağa ne sıklıkla gönderileceği. 0 = devre dışı.",
+      "telEnvScreenEnabled": "Ekrandaki ortam ölçümleri",
+      "telEnvScreenEnabledDesc": "Ortam sensörü okumalarını cihaz ekranında gösterin.",
+      "telEnvFahrenheit": "Fahrenheit cinsinden görüntüleme",
+      "telEnvFahrenheitDesc": "Sıcaklık ölçümlerini cihazda Celsius yerine Fahrenheit cinsinden gösterin.",
       "telAirQualityEnabled": "Hava kalitesi etkinleştirildi",
+      "telAirQualityEnabledDesc": "Hava kalitesi sensörü okumalarının toplanmasını ve yayınlanmasını etkinleştirin.",
+      "telAirQualityInterval": "Hava kalitesi aralığı",
+      "telAirQualityIntervalDesc": "Hava kalitesi ölçümlerinin ağa ne sıklıkla gönderileceği. 0 = varsayılanı kullan.",
+      "telPowerEnabled": "Güç ölçümü etkinleştirildi",
+      "telPowerEnabledDesc": "Bağlı bir INA sensöründen güç ölçümlerinin toplanmasını ve yayınlanmasını etkinleştirin.",
+      "telPowerInterval": "Güç ölçüm aralığı",
+      "telPowerIntervalDesc": "Güç ölçümlerinin ağa ne sıklıkta gönderileceği. 0 = varsayılanı kullan.",
+      "telPowerScreenEnabled": "Ekrandaki güç ölçümleri",
+      "telPowerScreenEnabledDesc": "Güç ölçümlerini cihaz ekranında gösterin.",
       "messagesOnePerLine": "Mesajlar (her satıra bir tane, her biri maksimum 30 karakter)",
       "cannedMessagesPlaceholder": "Merhaba\ntamam\nyolumda\nYardıma ihtiyacım var",
       "cannedMessagesHint": "Her satıra bir mesaj girin. Giriş çevre birimleri düğmeleriyle birlikte kullanılır.",
@@ -1113,6 +1185,16 @@
       "invalidRtttl": "Geçersiz RTTTL — beklenen Ad:d=N,o=N,b=N:notes",
       "serialModuleEnabledDesc": "Ağ üzerinden seri bağlantı noktası verilerinin iletilmesini etkinleştirin.",
       "serialEchoDesc": "Echo gönderene seri veriyi geri aldı.",
+      "serialRxd": "RX pimi",
+      "serialRxdDesc": "Seri RX için GPIO pin numarası. 0 = varsayılanı kullan.",
+      "serialTxd": "Teksas pini",
+      "serialTxdDesc": "Seri TX için GPIO pin numarası. 0 = varsayılanı kullan.",
+      "serialTimeout": "Zaman aşımı",
+      "serialTimeoutDesc": "Bir paket göndermeden önce beklenecek milisaniye. 0 = varsayılanı kullan.",
+      "serialMode": "Seri mod",
+      "serialModeDesc": "Seri modül için çalışma modu.",
+      "serialOverrideConsole": "Konsol seri bağlantı noktasını geçersiz kıl",
+      "serialOverrideConsoleDesc": "Seri modül için ikincil bağlantı noktası yerine birincil seri bağlantı noktasını (konsol) kullanın.",
       "sfEnabledDesc": "Ağa yeniden katılan düğümler için mesajları tamponlayın.",
       "sfNumRecordsDesc": "Saklanacak maksimum mesaj sayısı. 0 = varsayılanı kullan.",
       "ipTunnelHint": "IP Tüneli paketleri ağ trafiğini ağ üzerinden iletir. Cihaz ağ yapılandırmasında tünel ayarlarını yapılandırın.",
@@ -1124,7 +1206,17 @@
       "historyReturnWindowDesc": "Mesajların geri döndürülmesi için zaman açısından ne kadar geriye gidildiği (saniye).",
       "remoteHardwareHint": "GPIO mesajları cihazda etkinleştirildiğinde otomatik olarak alınır. GPIO pinlerini cihazın donanım ayarlarında yapılandırın.",
       "mqttProxyToClientEnabled": "İstemciye proxy",
-      "mqttProxyToClientEnabledDesc": "MQTT'yi radyonun kendi ağ yığını yerine bağlı uygulama üzerinden yönlendirin. MQTT rölesi etkinleştirildiğinde Wi-Fi/Ethernet olmayan cihazlarda gereklidir."
+      "mqttProxyToClientEnabledDesc": "MQTT'yi radyonun kendi ağ yığını yerine bağlı uygulama üzerinden yönlendirin. MQTT rölesi etkinleştirildiğinde Wi-Fi/Ethernet olmayan cihazlarda gereklidir.",
+      "takTeam": "TAK takım rengi",
+      "takTeamDesc": "ATAK/WinTAK'ta gösterilen takım rengi. Varsayılan (Belirtilmemiş) Camgöbeği kullanır.",
+      "takTeamUnspecified": "Belirtilmemiş (Mavi)",
+      "takRole": "TAK üye rolü",
+      "takRoleDesc": "ATAK/WinTAK'ta gösterilen üye rolü. Varsayılan (Belirtilmemiş) Ekip Üyesini kullanır.",
+      "takRoleUnspecified": "Belirtilmemiş (Ekip Üyesi)",
+      "remoteHardwareEnabled": "Uzak Donanımı Etkinleştir",
+      "remoteHardwareEnabledDesc": "Uzak düğümlerin bu cihazdaki GPIO pinlerini okumasına ve yazmasına izin verir.",
+      "remoteHardwareAllowUndefinedPins": "Tanımsız Pin Erişimine İzin Ver",
+      "remoteHardwareAllowUndefinedPinsDesc": "Kullanılabilir pin yapılandırmasında listelenmeyen pinlerin okunmasına/yazılmasına izin verir."
     },
     "applySection": "{{section}} uygula",
     "applyingButton": "Başvuruluyor...",
@@ -1148,7 +1240,13 @@
       "mqttDefaultServerPort": "Meshtastic MQTT broker adresine bir bağlantı noktası eklemeyin (:port olmadan mqtt.meshtastic.org kullanın).",
       "mqttProxyRequired": "Bu telsizde Wi-Fi yok. Uygulamanın MQTT'yi iletmesi için \"İstemciye proxy\" seçeneğini etkinleştirin veya cihaz tarafındaki MQTT yerine LoRa \"OK to MQTT\" kullanın.",
       "serialOverrideRequiresMode": "Cihazda seri konsol geçersiz kılma etkinleştirilmiştir. Burada seri modülü etkinleştirmeden önce radyoda geçerli bir seri modu ayarlayın."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Uzaktan Donanım Etkinleştirilsin mi?",
+    "remoteHardwareConfirmEnableMessage": "Uzak node'lar mesh üzerinden bu cihaz üzerindeki GPIO pinlerini okuyup yazabilecektir. Yalnızca mesh kullanıcılarınıza güveniyorsanız ve PIN erişimini yapılandırdıysanız etkinleştirin.",
+    "remoteHardwareConfirmEnableLabel": "Etkinleştir",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Tanımsız PIN erişimine izin verilsin mi?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Donanım yapılandırmanızda listelenmeyen pinler de dahil olmak üzere herhangi bir GPIO PIN'i uzaktan okunabilir veya yazılabilir. Bu da güvenlik riskini artırmaktadır.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Tanımsız pinlere izin ver"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",
@@ -1479,7 +1577,7 @@
     "warn": "Marjinal sinyal",
     "poor": "Zayıf sinyal",
     "me": "Bu düğüm",
-    "directLink": "Direkt (0 şerbetçiotu)",
+    "directLink": "Direkt (0 atlama)",
     "relayLink": "Röle üzerinden (1 atlama)",
     "hiddenCount": "{{shown}}/{{total}} düğüm gösteriliyor (bağlantısız düğümler gizli)"
   },
@@ -1507,7 +1605,6 @@
     "title": "Radyo Yapılandırması",
     "frequencyHint": "Çalışma frekansı. Yerel düzenlemeleri kontrol edin.",
     "ntpHint": "Varsayılan NTP sunucusu için boş bırakın.",
-    "restartWarning": "Yeni LoRa veya cihaz ayarları uygulandıktan sonra cihaz kısa süreliğine yeniden başlatılabilir.",
     "deviceActions": "Cihaz Eylemleri",
     "deviceCommands": "Cihaz Komutları",
     "dangerZone": "Tehlikeli Bölge",
@@ -1520,6 +1617,7 @@
     "channelN": "Kanal {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Cihaz Rolü",
+    "sectionGroupDevice": "Cihaz Yapılandırması",
     "sectionDeviceUser": "Cihaz Kullanıcısı / Kimliği",
     "sectionDisplay": "Görüntülemek",
     "sectionLora": "LoRa / Radyo",
@@ -1531,7 +1629,6 @@
     "yourNamePlaceholder": "Adınız",
     "namePlaceholder": "İSİM",
     "networkNamePlaceholder": "Ağ adı",
-    "flashMemoryNote": "Değişiklikler cihazın flash belleğine yazılır ve yeniden başlatmalarda kalıcı olur.",
     "encryptionNone": "Yok (şifreleme yok)",
     "encryptionSimple": "Basit (varsayılan Meshtastic tuşu)",
     "generateRandomKey": "Rastgele anahtar oluştur",
@@ -1817,7 +1914,131 @@
     "resetNodeDbPreserveFavorites": "Cihazdaki favori düğümleri koru",
     "offloadReconcileStillFull": "Boşaltma tamamlandı, ancak telsiz hala tam temaslıları bildiriyor ({{count}}/350). Yeniden bağlanın ve yeniden deneyin.",
     "offloadReconcileStillNearFull": "Boşaltma tamamlandı, ancak telsiz hala yüksek temas kullanımı bildiriyor ({{count}}/350).",
-    "offloadReconcileRefreshFailed": "Boşaltma tamamlandı, ancak kişi yenileme başarısız oldu. Kişileri yeniden bağlayın ve yenileyin."
+    "offloadReconcileRefreshFailed": "Boşaltma tamamlandı, ancak kişi yenileme başarısız oldu. Kişileri yeniden bağlayın ve yenileyin.",
+    "txEnabledLabel": "TX Enabled",
+    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "channelNumLabel": "Channel Number",
+    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
+    "rebroadcastModeLabel": "Rebroadcast Mode",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
+    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
+    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
+    "disableTripleClickLabel": "Disable Triple-click",
+    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "rebroadcastModes": {
+      "0": {
+        "label": "All",
+        "description": "Rebroadcast all packets (default)."
+      },
+      "1": {
+        "label": "All Skip Decoding",
+        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      },
+      "2": {
+        "label": "Local Only",
+        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      },
+      "3": {
+        "label": "Known Only",
+        "description": "Only rebroadcast from nodes in the local node database."
+      },
+      "4": {
+        "label": "None",
+        "description": "Do not rebroadcast any packets."
+      },
+      "5": {
+        "label": "Core Portnums Only",
+        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      }
+    },
+    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
+    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
+    "oledTypeLabel": "OLED Type",
+    "flipScreenLabel": "Flip Screen",
+    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "displayModeLabel": "Display Mode",
+    "headingBoldLabel": "Bold Heading",
+    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
+    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "use12hClockLabel": "12-Hour Clock",
+    "useLongNodeNameLabel": "Use Long Node Name",
+    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
+    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "oledTypes": {
+      "0": {
+        "label": "Auto"
+      },
+      "1": {
+        "label": "SSD1306"
+      },
+      "2": {
+        "label": "SH1106"
+      },
+      "3": {
+        "label": "SH1107 (128x64)"
+      },
+      "4": {
+        "label": "SH1107 (128x128)"
+      },
+      "5": {
+        "label": "SH1107 Rotated"
+      }
+    },
+    "displayModes": {
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Two Color"
+      },
+      "2": {
+        "label": "Inverted"
+      },
+      "3": {
+        "label": "Color"
+      }
+    },
+    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModes": {
+      "0": {
+        "label": "Random PIN"
+      },
+      "1": {
+        "label": "Fixed PIN"
+      },
+      "2": {
+        "label": "No PIN"
+      }
+    },
+    "tzdefPlaceholder": "örn. EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Cihazdan {{section}} ayarları bekleniyor…",
+    "applyStatusApplying": "{{section}} uygulanıyor…",
+    "applyStatusSuccess": "{{section}} başarıyla uygulandı. Cihaz kısa bir süre yeniden başlatılabilir.",
+    "applyStatusCommitFailed": "{{section}} gönderildi, ancak işlem başarısız oldu: {{message}}",
+    "applyStatusFailed": "Başarısız: {{message}}",
+    "applyUserApplying": "Kullanıcı kimliği uygulanıyor…",
+    "applyUserSuccess": "Kullanıcı kimliği başarıyla uygulandı!",
+    "applyLoraSuccess": "LoRa ayarları başarıyla uygulandı!"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -1969,7 +2190,7 @@
     "loginHelp": "Katılmak ve yayınlamak için misafir şifresini girin. Varsayılan genellikle \"hello\"dır. Misafir şifresi olmayan sunucular için \"Salt okunur olarak devam et\" kullanın (giriş alan boşken \"hello\" gönderir).",
     "adminLoginHelp": "Ayarları ve ACL'leri yönetmek için oda yöneticisi şifresini girin. Varsayılan genellikle \"parola\" dır.",
     "guestPasswordLabel": "Misafir parolası",
-    "guestPasswordPlaceholder": "merhaba",
+    "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Admin Şifresi",
     "adminPasswordPlaceholder": "şifre",
     "loginButton": "Oturum Aç",
@@ -2159,7 +2380,8 @@
     "repeaters": "Tekrarlayıcılar",
     "rf": "RF",
     "graph": "Grafik",
-    "rooms": "Oda"
+    "rooms": "Oda",
+    "admin": "Yönetim"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -2250,5 +2472,9 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+  },
+  "configApplyNotice": {
+    "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
+    "restartNote": "Ayarları uyguladığınızda cihaz kısa bir süre yeniden başlatılabilir."
   }
 }

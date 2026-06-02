@@ -1010,12 +1010,15 @@
     "sectionExternalNotification": "外部通知モジュール",
     "sectionIpTunnel": "IPトンネル",
     "sectionMqttRelay": "MQTT リレー (デバイス側)",
+    "sectionNeighborInfo": "近隣住民情報モジュール",
     "sectionPaxCounter": "パックスカウンターモジュール",
+    "sectionTrafficManagement": "トラフィック管理モジュール",
     "sectionRemoteHardware": "リモートハードウェア",
     "sectionRangeTest": "範囲テストモジュール",
     "sectionRtttlRingtone": "RTTTL 着信音",
     "sectionSerialModule": "シリアルモジュール",
     "sectionStoreForward": "ストア&フォワードモジュール",
+    "sectionTak": "TAKモジュール",
     "sectionTelemetryModule": "テレメトリモジュール",
     "fields": {
       "ledEnabled": "LED 有効",
@@ -1024,6 +1027,26 @@
       "brightnessCurrent": "明るさ/電流: {{value}}",
       "brightnessHint": "LED 駆動電流 (0 ～ 31)。高い＝明るい。",
       "cannedMessagesEnabled": "定型メッセージを有効にする",
+      "cannedRotary1Enabled": "ロータリーエンコーダ# 1有効",
+      "cannedRotary1EnabledDesc": "ロータリーエンコーダ＃ 1入力デバイス（ A/Bパルス付きダムエンコーダ）を有効にします。",
+      "cannedPinA": "GPIOピン—エンコーダA",
+      "cannedPinADesc": "ロータリーエンコーダAポート用GPIOピン番号。",
+      "cannedPinB": "GPIOピン—エンコーダB",
+      "cannedPinBDesc": "ロータリーエンコーダBポート用GPIOピン番号。",
+      "cannedPinPress": "GPIOピン—プレス",
+      "cannedPinPressDesc": "ロータリーエンコーダプレス/ボタンポート用GPIOピン番号。",
+      "cannedEventCw": "CW回転のイベント",
+      "cannedEventCwDesc": "時計回りの回転で生成された入力イベント。",
+      "cannedEventCcw": "CCWローテーションのイベント",
+      "cannedEventCcwDesc": "反時計回りの回転で生成された入力イベント。",
+      "cannedEventPress": "プレスイベント",
+      "cannedEventPressDesc": "エンコーダプレスで生成された入力イベント。",
+      "cannedUpdown1Enabled": "UP/DOWN/SELECT入力有効",
+      "cannedUpdown1EnabledDesc": "Up/Down/Select入力デバイス（ RAKロータリーエンコーダまたは3つのボタン）を有効にします。上記のA/B/PRESS GPIOピンを使用します。",
+      "cannedAllowInputSource": "入力ソースを許可する",
+      "cannedAllowInputSourceDesc": "キャンドメッセージで受け入れられた入力ソース（ rotEnc 1、upDownEnc 1、scanAndSelect、cardkb、serialkb、または_anyなど）。",
+      "cannedSendBell": "ベル文字を送信",
+      "cannedSendBellDesc": "発信キャンドメッセージを含むベル文字を送信します（外部通知モジュールで役立ちます）。",
       "detectionSensorEnabled": "検知センサー有効",
       "detectionSensorDesc": "検出イベント (PIR、ドア センサーなど) をメッシュにブロードキャストします。",
       "sensorName": "センサー名",
@@ -1077,6 +1100,40 @@
       "tlsEnabled": "TLS が有効になっている",
       "mapReportingEnabled": "マップレポートの有効化",
       "mapReportingEnabledDesc": "ノードの位置を定期的に Meshtastic マップに公開します。",
+      "neighborInfoEnabled": "近隣住民情報が有効になっています",
+      "neighborInfoEnabledDesc": "このノードで聴取されたメッシュネイバーのリストを定期的にブロードキャストします。",
+      "neighborInfoUpdateInterval": "更新間隔",
+      "neighborInfoUpdateIntervalDesc": "ネイバー情報をブロードキャストする頻度（秒）。最小14400 （ 4時間）。0 =デフォルトを使用します。",
+      "neighborInfoTransmitOverLora": "LoRa経由で送信",
+      "neighborInfoTransmitOverLoraDesc": "また、LoRa経由でネイバー情報をブロードキャストします（デフォルトのチャンネル/キーでは利用できません）。",
+      "tmEnabled": "トラフィック管理が有効になっています",
+      "tmEnabledDesc": "トラフィック管理モジュールのマスター有効化。",
+      "tmPositionDedupEnabled": "位置重複排除",
+      "tmPositionDedupEnabledDesc": "同じノードからの冗長位置ブロードキャストをドロップします。",
+      "tmPositionPrecisionBits": "位置決め精度ビット",
+      "tmPositionPrecisionBitsDesc": "重複排除の位置を比較するときに使用される精度のビット（ 0 -32 ）。",
+      "tmPositionMinIntervalSecs": "最小位置間隔",
+      "tmPositionMinIntervalSecsDesc": "同じノードから受け入れられた位置の更新間の最小秒数。0 =制限なし。",
+      "tmNodeinfoDirectResponse": "NodeInfo直接応答",
+      "tmNodeinfoDirectResponseDesc": "メッシュをフラッディングする代わりに、ローカルキャッシュから直接NodeInfo要求に応答します。",
+      "tmNodeinfoDirectResponseMaxHops": "直接応答の最大ホップ数",
+      "tmNodeinfoDirectResponseMaxHopsDesc": "要求者が少なくともこれだけの距離にいる場合にのみ、直接応答してください。",
+      "tmRateLimitEnabled": "ノードごとのレート制限",
+      "tmRateLimitEnabledDesc": "時間枠内にパケット制限を超えたスロットルチャットノード。",
+      "tmRateLimitWindowSecs": "レート制限ウィンドウ",
+      "tmRateLimitWindowSecsDesc": "レート制限の計算に使用される秒単位の時間ウィンドウ。",
+      "tmRateLimitMaxPackets": "ウィンドウあたりの最大パケット数",
+      "tmRateLimitMaxPacketsDesc": "レート制限ウィンドウ内の1つのノードから許可される最大パケット数。",
+      "tmDropUnknownEnabled": "不明なパケットをドロップする",
+      "tmDropUnknownEnabledDesc": "しきい値を超えるノードからの復号不可能または未知のパケットをドロップします。",
+      "tmUnknownPacketThreshold": "不明なパケットのしきい値",
+      "tmUnknownPacketThresholdDesc": "ドロップが開始される前にノードから送信された未知のパケットの数。",
+      "tmExhaustHopTelemetry": "中継されたテレメトリーでのホップの排気",
+      "tmExhaustHopTelemetryDesc": "中継されたテレメトリ ブロードキャストの場合は、hop_limit を 0 に設定します (自身のパケットは影響を受けません)。",
+      "tmExhaustHopPosition": "中継位置での排気ホップ",
+      "tmExhaustHopPositionDesc": "中継された位置ブロードキャストの場合は、hop_limit を 0 に設定します (自身のパケットは影響を受けません)。",
+      "tmRouterPreserveHops": "ルーター保持ホップ",
+      "tmRouterPreserveHopsDesc": "ルーター間のトラフィックのために hop_limit を保持します。",
       "paxCounterEnabled": "パックスカウンターが有効になりました",
       "paxCounterEnabledDesc": "近くの Bluetooth および WiFi デバイスを群集密度メトリックとしてカウントします。",
       "paxUpdateInterval": "更新間隔",
@@ -1099,12 +1156,27 @@
       "sfMaxStoredDesc": "デバイス上に保持される最大レコード数。",
       "sfHistoryMaxDesc": "ノードが履歴を要求したときに返される最大メッセージ数。",
       "sfHistoryWindowDesc": "メッセージを返す時間をどれだけ遡るか (秒)。",
+      "telDeviceTelemetryEnabled": "デバイステレメトリを送信する",
+      "telDeviceTelemetryEnabledDesc": "テレメトリ モジュールを介してデバイス メトリクス (バッテリ、電圧、チャネル使用率) をメッシュにブロードキャストします。",
       "telDeviceInterval": "デバイスメトリック間隔",
-      "telEnvInterval": "環境メトリック間隔",
-      "telEnvIntervalDesc": "温度/湿度/圧力を送信する頻度。 0 = 無効。",
       "telEnvEnabled": "環境測定可能",
-      "telPowerEnabled": "電力測定が有効になっている",
+      "telEnvEnabledDesc": "環境センサーの測定値 (温度、湿度、圧力) の収集とブロードキャストを有効にします。",
+      "telEnvInterval": "環境メトリック間隔",
+      "telEnvIntervalDesc": "環境センサーの読み取り値をメッシュに送信する頻度。 0 = 無効。",
+      "telEnvScreenEnabled": "画面上の環境メトリクス",
+      "telEnvScreenEnabledDesc": "環境センサーの測定値をデバイスのディスプレイに表示します。",
+      "telEnvFahrenheit": "華氏で表示",
+      "telEnvFahrenheitDesc": "デバイス上の温度測定値を摂氏ではなく華氏で表示します。",
       "telAirQualityEnabled": "大気質の有効化",
+      "telAirQualityEnabledDesc": "大気質センサーの測定値の収集とブロードキャストを有効にします。",
+      "telAirQualityInterval": "空気品質間隔",
+      "telAirQualityIntervalDesc": "空気品質メトリクスをメッシュに送信する頻度。 0 = デフォルトを使用します。",
+      "telPowerEnabled": "電力測定が有効になっている",
+      "telPowerEnabledDesc": "接続された INA センサーからの電力メトリクスの収集とブロードキャストを有効にします。",
+      "telPowerInterval": "電力メトリック間隔",
+      "telPowerIntervalDesc": "電力メトリクスをメッシュに送信する頻度。 0 = デフォルトを使用します。",
+      "telPowerScreenEnabled": "画面上の電力メトリクス",
+      "telPowerScreenEnabledDesc": "デバイスのディスプレイに電力メトリクスを表示します。",
       "messagesOnePerLine": "メッセージ (1 行に 1 つ、それぞれ最大 30 文字)",
       "cannedMessagesPlaceholder": "こんにちは\nOK\n途中\n助けが必要です",
       "cannedMessagesHint": "1 行に 1 つのメッセージを入力します。入力周辺ボタンと併用します。",
@@ -1113,6 +1185,16 @@
       "invalidRtttl": "無効な RTTTL — 予期される名前:d=N,o=N,b=N:notes",
       "serialModuleEnabledDesc": "メッシュ経由のシリアル ポート データ転送を有効にします。",
       "serialEchoDesc": "Echo は送信者に返送されたシリアル データを受信しました。",
+      "serialRxd": "RXピン",
+      "serialRxdDesc": "シリアル RX の GPIO ピン番号。 0 = デフォルトを使用します。",
+      "serialTxd": "TXピン",
+      "serialTxdDesc": "シリアル TX の GPIO ピン番号。 0 = デフォルトを使用します。",
+      "serialTimeout": "タイムアウト",
+      "serialTimeoutDesc": "パケットを送信する前に待機するミリ秒数。 0 = デフォルトを使用します。",
+      "serialMode": "シリアルモード",
+      "serialModeDesc": "シリアルモジュールの動作モード。",
+      "serialOverrideConsole": "コンソールのシリアルポートを上書きする",
+      "serialOverrideConsoleDesc": "シリアル モジュールにはセカンダリ ポートではなくプライマリ シリアル ポート (コンソール) を使用します。",
       "sfEnabledDesc": "メッシュに再参加するノードのメッセージをバッファーします。",
       "sfNumRecordsDesc": "保存する最大メッセージ数。 0 = デフォルトを使用します。",
       "ipTunnelHint": "IP トンネル パケットは、メッシュ経由でネットワーク トラフィックを転送します。デバイスのネットワーク構成でトンネル設定を構成します。",
@@ -1124,7 +1206,17 @@
       "historyReturnWindowDesc": "メッセージを返す時間をどれだけ遡るか (秒)。",
       "remoteHardwareHint": "GPIO メッセージは、デバイスで有効にすると自動的に受信されます。デバイスのハードウェア設定で GPIO ピンを構成します。",
       "mqttProxyToClientEnabled": "クライアントへのプロキシ",
-      "mqttProxyToClientEnabledDesc": "ラジオ独自のネットワークスタックではなく、接続されたアプリを介してMQTTをルーティングします。MQTTリレーが有効になっている場合、Wi-Fi/イーサネットがないデバイスで必要です。"
+      "mqttProxyToClientEnabledDesc": "ラジオ独自のネットワークスタックではなく、接続されたアプリを介してMQTTをルーティングします。MQTTリレーが有効になっている場合、Wi-Fi/イーサネットがないデバイスで必要です。",
+      "takTeam": "TAKチームカラー",
+      "takTeamDesc": "ATAK/WinTAKで表示されるチームカラー。デフォルト (未指定) はシアンを使用します。",
+      "takTeamUnspecified": "指定なし（シアン）",
+      "takRole": "TAKメンバーの役割",
+      "takRoleDesc": "ATAK/WinTAK に表示されるメンバーの役割。デフォルト (未指定) はチームメンバーを使用します。",
+      "takRoleUnspecified": "不特定 (チームメンバー)",
+      "remoteHardwareEnabled": "リモートハードウェアを有効にする",
+      "remoteHardwareEnabledDesc": "リモートノードがこのデバイスのGPIOピンを読み書きできるようにします。",
+      "remoteHardwareAllowUndefinedPins": "未定義ピンへのアクセスを許可",
+      "remoteHardwareAllowUndefinedPinsDesc": "利用可能なピン設定に記載されていないピンの読み書きを許可します。"
     },
     "applySection": "{{section}}を適用",
     "applyingButton": "申請中...",
@@ -1148,7 +1240,13 @@
       "mqttDefaultServerPort": "パブリックMeshtastic MQTTブローカーアドレスにポートを含めないでください（: portなしでmqtt.meshtastic.orgを使用してください）。",
       "mqttProxyRequired": "このラジオにはWi-Fiがありません。「クライアントへのプロキシ」を有効にしてアプリがMQTTを転送するか、デバイス側MQTTの代わりにLoRa「OK to MQTT」を使用します。",
       "serialOverrideRequiresMode": "シリアルコンソールオーバーライドがデバイスで有効になっています。ここでシリアルモジュールを有効にする前に、無線で有効なシリアルモードを設定します。"
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "リモートハードウェアを有効にしますか？",
+    "remoteHardwareConfirmEnableMessage": "リモートノードは、メッシュを介してこのデバイス上のGPIOピンの読み取りと書き込みを行うことができます。メッシュユーザーを信頼し、PINアクセスを設定している場合にのみ有効にします。",
+    "remoteHardwareConfirmEnableLabel": "有効にする",
+    "remoteHardwareConfirmUndefinedPinsTitle": "未定義のPINアクセスを許可しますか？",
+    "remoteHardwareConfirmUndefinedPinsMessage": "GPIOピンは、ハードウェア構成に記載されていないピンを含め、リモートで読み取りまたは書き込みできます。これにより、セキュリティリスクが高まります。",
+    "remoteHardwareConfirmUndefinedPinsLabel": "未定義のピンを許可する"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",
@@ -1507,7 +1605,6 @@
     "title": "無線構成",
     "frequencyHint": "動作周波数。現地の規制を確認してください。",
     "ntpHint": "デフォルトの NTP サーバーの場合は空のままにします。",
-    "restartWarning": "新しい LoRa またはデバイス設定を適用した後、デバイスが一時的に再起動する場合があります。",
     "deviceActions": "デバイスのアクション",
     "deviceCommands": "デバイスコマンド",
     "dangerZone": "危険地帯",
@@ -1520,6 +1617,7 @@
     "channelN": "チャンネル {{num}}",
     "sectionBluetooth": "ブルートゥース",
     "sectionDeviceRole": "デバイスの役割",
+    "sectionGroupDevice": "デバイス設定",
     "sectionDeviceUser": "デバイスのユーザー/ID",
     "sectionDisplay": "画面",
     "sectionLora": "LoRa / ラジオ",
@@ -1531,7 +1629,6 @@
     "yourNamePlaceholder": "あなたの名前",
     "namePlaceholder": "名前",
     "networkNamePlaceholder": "ネットワーク名",
-    "flashMemoryNote": "変更はデバイスのフラッシュ メモリに書き込まれ、再起動後も保持されます。",
     "encryptionNone": "なし (暗号化なし)",
     "encryptionSimple": "シンプル (デフォルトの Meshtastic キー)",
     "generateRandomKey": "ランダムキーを生成する",
@@ -1817,7 +1914,131 @@
     "resetNodeDbPreserveFavorites": "デバイス上のお気に入りのノードを保持する",
     "offloadReconcileStillFull": "オフロードが完了しましたが、無線はまだ満杯の連絡先を報告しています（{{count}}/350）。再接続して再試行してください。",
     "offloadReconcileStillNearFull": "オフロードは完了しましたが、無線は連絡先の使用率が高いと報告しています（{{count}}/350）。",
-    "offloadReconcileRefreshFailed": "オフロードが完了しましたが、連絡先の更新に失敗しました。連絡先を再接続して更新します。"
+    "offloadReconcileRefreshFailed": "オフロードが完了しましたが、連絡先の更新に失敗しました。連絡先を再接続して更新します。",
+    "txEnabledLabel": "TX Enabled",
+    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "channelNumLabel": "Channel Number",
+    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
+    "rebroadcastModeLabel": "Rebroadcast Mode",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
+    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
+    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
+    "disableTripleClickLabel": "Disable Triple-click",
+    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "rebroadcastModes": {
+      "0": {
+        "label": "All",
+        "description": "Rebroadcast all packets (default)."
+      },
+      "1": {
+        "label": "All Skip Decoding",
+        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      },
+      "2": {
+        "label": "Local Only",
+        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      },
+      "3": {
+        "label": "Known Only",
+        "description": "Only rebroadcast from nodes in the local node database."
+      },
+      "4": {
+        "label": "None",
+        "description": "Do not rebroadcast any packets."
+      },
+      "5": {
+        "label": "Core Portnums Only",
+        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      }
+    },
+    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
+    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
+    "oledTypeLabel": "OLED Type",
+    "flipScreenLabel": "Flip Screen",
+    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "displayModeLabel": "Display Mode",
+    "headingBoldLabel": "Bold Heading",
+    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
+    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "use12hClockLabel": "12-Hour Clock",
+    "useLongNodeNameLabel": "Use Long Node Name",
+    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
+    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "oledTypes": {
+      "0": {
+        "label": "Auto"
+      },
+      "1": {
+        "label": "SSD1306"
+      },
+      "2": {
+        "label": "SH1106"
+      },
+      "3": {
+        "label": "SH1107 (128x64)"
+      },
+      "4": {
+        "label": "SH1107 (128x128)"
+      },
+      "5": {
+        "label": "SH1107 Rotated"
+      }
+    },
+    "displayModes": {
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Two Color"
+      },
+      "2": {
+        "label": "Inverted"
+      },
+      "3": {
+        "label": "Color"
+      }
+    },
+    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModes": {
+      "0": {
+        "label": "Random PIN"
+      },
+      "1": {
+        "label": "Fixed PIN"
+      },
+      "2": {
+        "label": "No PIN"
+      }
+    },
+    "tzdefPlaceholder": "例： EST 5 EDT、M3.2.0、M11.1.0",
+    "waitingForConfigSection": "デバイスから {{section}} 設定を待っています…",
+    "applyStatusApplying": "{{section}}を適用しています…",
+    "applyStatusSuccess": "{{section}}が正常に適用されました。デバイスが一時的に再起動する可能性があります。",
+    "applyStatusCommitFailed": "{{section}}が送信されましたが、コミットに失敗しました: {{message}}",
+    "applyStatusFailed": "失敗: {{message}}",
+    "applyUserApplying": "ユーザーIDを適用しています…",
+    "applyUserSuccess": "ユーザーIDが正常に適用されました！",
+    "applyLoraSuccess": "設定が適用されました。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -1979,12 +2200,12 @@
     "continueReadOnly": "読み取り専用を続ける",
     "readOnlyBadge": "読み取り専用",
     "readOnlyHint": "読み取り専用アクセス権があります。投稿するには、ゲストパスワードまたは管理者パスワードでログインしてください。",
-    "noPostsYet": "この部屋にはまだ投稿がありません。",
-    "postPlaceholder": "部屋に投稿…",
+    "noPostsYet": "このルームにはまだ投稿がありません。",
+    "postPlaceholder": "ルームに投稿…",
     "postButton": "投稿",
     "posting": "投稿中…",
     "manageRoom": "管理",
-    "manageHeading": "部屋の管理",
+    "manageHeading": "ルームの管理",
     "cliPlaceholder": "管理CLIコマンド…",
     "cliSend": "送信",
     "clearCli": "CLIをクリア",
@@ -1996,7 +2217,7 @@
     "aclLevelReadWrite": "読み取り/書き込み（投稿可能）",
     "aclLevelAdmin": "管理者",
     "aclApply": "ACLを適用",
-    "adminPasswordRequired": "この部屋を管理するには管理者パスワードが必要です。",
+    "adminPasswordRequired": "このルームを管理するには管理者パスワードが必要です。",
     "postFailed": "ルームへの投稿に失敗しました",
     "leaveRoom": "チャットルームを退出",
     "rememberPassword": "パスワードを記憶させる",
@@ -2009,7 +2230,7 @@
     "saveSyncConfig": "同期設定",
     "lastSync": "前回同期",
     "cancelLogin": "ログインをキャンセル",
-    "cancelLoginHint": "最初にラジオで別の部屋のログインが終了する場合があります。キャンセルすると、この部屋へのこれ以上の試みが停止します。",
+    "cancelLoginHint": "最初にラジオで別のルームのログインが終了する場合があります。キャンセルすると、このルームへのこれ以上の試みが停止します。",
     "emptyGuestLoginHint": "空のゲストフィールド：空のパスワードサーバーの場合は、読み取り専用で続行を使用します。ログインにはパスワードが必要で、フィールドが空の場合に「hello」を送信します。",
     "unreadPosts": "新着 {{count}} 件",
     "closeManage": "閉じる",
@@ -2017,7 +2238,7 @@
     "leavingRoom": "退出中…",
     "leaveRoomInProgress": "ルームを退出中…",
     "leaveRoomHint": "ラジオでログアウトが確認されるのを待っています。これにはメッシュ上で数秒かかる場合があります。",
-    "leaveRoomFailed": "部屋を出ることができませんでした",
+    "leaveRoomFailed": "ルームを退出できませんでした",
     "membersHeading": "メンバー",
     "membersRecognizedHeading": "認識された投稿者",
     "membersRecognizedEmpty": "このルームにはまだ認識された投稿者がいません。",
@@ -2159,7 +2380,8 @@
     "repeaters": "リピーター",
     "rf": "RF",
     "graph": "グラフ",
-    "rooms": "客室数"
+    "rooms": "客室数",
+    "admin": "管理"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -2250,5 +2472,9 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "configApplyNotice": {
+    "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
+    "restartNote": "設定を適用すると、デバイスが一時的に再起動することがあります。"
   }
 }

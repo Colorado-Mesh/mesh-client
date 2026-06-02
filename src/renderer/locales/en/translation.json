@@ -333,6 +333,10 @@
     "days": "days",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Applied settings are saved to the device's flash memory and persist across reboots.",
+    "restartNote": "The device may briefly restart when you apply settings."
+  },
   "configureNode": {
     "label": "Configure node",
     "localDevice": "This device (local)",
@@ -1012,6 +1016,12 @@
     "readOnly": "Read-only",
     "connectToDevice": "Connect to a device to modify module configuration.",
     "waitingForModuleConfig": "Waiting for module config from device…",
+    "remoteHardwareConfirmEnableTitle": "Enable Remote Hardware?",
+    "remoteHardwareConfirmEnableMessage": "Remote nodes will be able to read and write GPIO pins on this device over the mesh. Only enable if you trust your mesh users and have configured pin access.",
+    "remoteHardwareConfirmEnableLabel": "Enable",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Allow undefined pin access?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Any GPIO pin may be read or written remotely, including pins not listed in your hardware configuration. This increases security risk.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Allow undefined pins",
     "selectPreset": "Select a preset…",
     "telemetryDeviceMetricsDescription": "Mesh broadcast: how often battery, voltage, and channel utilization are sent over LoRa via the telemetry module. 0 = disabled. Connected app: when linked, device metrics to this client often refresh about every 60 s—separate from the mesh/module interval.",
     "telemetryDeviceMetricsTooltip": "Meshtastic firmware sends device metrics to a connected client roughly once per minute for local monitoring, regardless of the mesh telemetry interval. Official reference: https://meshtastic.org/docs/configuration/module/telemetry",
@@ -1024,12 +1034,15 @@
     "sectionExternalNotification": "External Notification Module",
     "sectionIpTunnel": "IP Tunnel",
     "sectionMqttRelay": "MQTT Relay (Device-Side)",
+    "sectionNeighborInfo": "Neighbor Info Module",
     "sectionPaxCounter": "Pax Counter Module",
+    "sectionTrafficManagement": "Traffic Management Module",
     "sectionRemoteHardware": "Remote Hardware",
     "sectionRangeTest": "Range Test Module",
     "sectionRtttlRingtone": "RTTTL Ringtone",
     "sectionSerialModule": "Serial Module",
     "sectionStoreForward": "Store & Forward Module",
+    "sectionTak": "TAK Module",
     "sectionTelemetryModule": "Telemetry Module",
     "fields": {
       "ledEnabled": "LED enabled",
@@ -1038,6 +1051,26 @@
       "brightnessCurrent": "Brightness / current: {{value}}",
       "brightnessHint": "LED drive current (0–31). Higher = brighter.",
       "cannedMessagesEnabled": "Canned messages enabled",
+      "cannedRotary1Enabled": "Rotary encoder #1 enabled",
+      "cannedRotary1EnabledDesc": "Enable the rotary encoder #1 input device (dumb encoder with A/B pulses).",
+      "cannedPinA": "GPIO pin — encoder A",
+      "cannedPinADesc": "GPIO pin number for rotary encoder A port.",
+      "cannedPinB": "GPIO pin — encoder B",
+      "cannedPinBDesc": "GPIO pin number for rotary encoder B port.",
+      "cannedPinPress": "GPIO pin — press",
+      "cannedPinPressDesc": "GPIO pin number for rotary encoder press/button port.",
+      "cannedEventCw": "Event on CW rotation",
+      "cannedEventCwDesc": "Input event generated on clockwise rotation.",
+      "cannedEventCcw": "Event on CCW rotation",
+      "cannedEventCcwDesc": "Input event generated on counter-clockwise rotation.",
+      "cannedEventPress": "Event on press",
+      "cannedEventPressDesc": "Input event generated on encoder press.",
+      "cannedUpdown1Enabled": "Up/down/select input enabled",
+      "cannedUpdown1EnabledDesc": "Enable the Up/Down/Select input device (RAK rotary encoder or 3 buttons). Uses A/B/press GPIO pins above.",
+      "cannedAllowInputSource": "Allow input source",
+      "cannedAllowInputSourceDesc": "Input source accepted by canned messages (e.g. rotEnc1, upDownEnc1, scanAndSelect, cardkb, serialkb, or _any).",
+      "cannedSendBell": "Send bell character",
+      "cannedSendBellDesc": "Send a bell character with outgoing canned messages (useful with External Notification module).",
       "detectionSensorEnabled": "Detection sensor enabled",
       "detectionSensorDesc": "Broadcast detection events (PIR, door sensor, etc.) to the mesh.",
       "sensorName": "Sensor name",
@@ -1093,6 +1126,40 @@
       "tlsEnabled": "TLS enabled",
       "mapReportingEnabled": "Map reporting enabled",
       "mapReportingEnabledDesc": "Periodically publish node position to the Meshtastic map.",
+      "neighborInfoEnabled": "Neighbor info enabled",
+      "neighborInfoEnabledDesc": "Periodically broadcast a list of mesh neighbors heard by this node.",
+      "neighborInfoUpdateInterval": "Update interval",
+      "neighborInfoUpdateIntervalDesc": "How often to broadcast neighbor info (seconds). Minimum 14400 (4 hours). 0 = use default.",
+      "neighborInfoTransmitOverLora": "Transmit over LoRa",
+      "neighborInfoTransmitOverLoraDesc": "Also broadcast neighbor info over LoRa (not available on default channel/key).",
+      "tmEnabled": "Traffic management enabled",
+      "tmEnabledDesc": "Master enable for the Traffic Management module.",
+      "tmPositionDedupEnabled": "Position deduplication",
+      "tmPositionDedupEnabledDesc": "Drop redundant position broadcasts from the same node.",
+      "tmPositionPrecisionBits": "Position precision bits",
+      "tmPositionPrecisionBitsDesc": "Bits of precision used when comparing positions for deduplication (0–32).",
+      "tmPositionMinIntervalSecs": "Min position interval",
+      "tmPositionMinIntervalSecsDesc": "Minimum seconds between accepted position updates from the same node. 0 = no limit.",
+      "tmNodeinfoDirectResponse": "NodeInfo direct response",
+      "tmNodeinfoDirectResponseDesc": "Answer NodeInfo requests directly from local cache instead of flooding the mesh.",
+      "tmNodeinfoDirectResponseMaxHops": "Max hops for direct response",
+      "tmNodeinfoDirectResponseMaxHopsDesc": "Only respond directly if the requestor is at least this many hops away.",
+      "tmRateLimitEnabled": "Per-node rate limiting",
+      "tmRateLimitEnabledDesc": "Throttle chatty nodes that exceed the packet limit within the time window.",
+      "tmRateLimitWindowSecs": "Rate limit window",
+      "tmRateLimitWindowSecsDesc": "Time window in seconds used for rate limit calculations.",
+      "tmRateLimitMaxPackets": "Max packets per window",
+      "tmRateLimitMaxPacketsDesc": "Maximum packets allowed from one node within the rate limit window.",
+      "tmDropUnknownEnabled": "Drop unknown packets",
+      "tmDropUnknownEnabledDesc": "Drop undecryptable or unknown packets from nodes that exceed the threshold.",
+      "tmUnknownPacketThreshold": "Unknown packet threshold",
+      "tmUnknownPacketThresholdDesc": "Number of unknown packets from a node before dropping begins.",
+      "tmExhaustHopTelemetry": "Exhaust hops on relayed telemetry",
+      "tmExhaustHopTelemetryDesc": "Set hop_limit to 0 for relayed telemetry broadcasts (own packets unaffected).",
+      "tmExhaustHopPosition": "Exhaust hops on relayed position",
+      "tmExhaustHopPositionDesc": "Set hop_limit to 0 for relayed position broadcasts (own packets unaffected).",
+      "tmRouterPreserveHops": "Router preserve hops",
+      "tmRouterPreserveHopsDesc": "Preserve hop_limit for router-to-router traffic.",
       "paxCounterEnabled": "Pax counter enabled",
       "paxCounterEnabledDesc": "Count nearby Bluetooth and WiFi devices as a crowd density metric.",
       "paxUpdateInterval": "Update interval",
@@ -1115,12 +1182,27 @@
       "sfMaxStoredDesc": "Maximum records retained on device.",
       "sfHistoryMaxDesc": "Max messages to return when a node requests history.",
       "sfHistoryWindowDesc": "How far back in time to return messages (seconds).",
+      "telDeviceTelemetryEnabled": "Send device telemetry",
+      "telDeviceTelemetryEnabledDesc": "Broadcast device metrics (battery, voltage, channel utilization) to the mesh via the telemetry module.",
       "telDeviceInterval": "Device metrics interval",
-      "telEnvInterval": "Environment metrics interval",
-      "telEnvIntervalDesc": "How often to send temperature/humidity/pressure. 0 = disabled.",
       "telEnvEnabled": "Environment measurement enabled",
-      "telPowerEnabled": "Power measurement enabled",
+      "telEnvEnabledDesc": "Enable collection and broadcast of environment sensor readings (temperature, humidity, pressure).",
+      "telEnvInterval": "Environment metrics interval",
+      "telEnvIntervalDesc": "How often to send environment sensor readings to the mesh. 0 = disabled.",
+      "telEnvScreenEnabled": "Environment metrics on screen",
+      "telEnvScreenEnabledDesc": "Show environment sensor readings on the device display.",
+      "telEnvFahrenheit": "Display in Fahrenheit",
+      "telEnvFahrenheitDesc": "Show temperature readings in Fahrenheit instead of Celsius on-device.",
       "telAirQualityEnabled": "Air quality enabled",
+      "telAirQualityEnabledDesc": "Enable collection and broadcast of air quality sensor readings.",
+      "telAirQualityInterval": "Air quality interval",
+      "telAirQualityIntervalDesc": "How often to send air quality metrics to the mesh. 0 = use default.",
+      "telPowerEnabled": "Power measurement enabled",
+      "telPowerEnabledDesc": "Enable collection and broadcast of power metrics from an attached INA sensor.",
+      "telPowerInterval": "Power metrics interval",
+      "telPowerIntervalDesc": "How often to send power metrics to the mesh. 0 = use default.",
+      "telPowerScreenEnabled": "Power metrics on screen",
+      "telPowerScreenEnabledDesc": "Show power metrics on the device display.",
       "messagesOnePerLine": "Messages (one per line, max 30 chars each)",
       "cannedMessagesPlaceholder": "Hello\nOK\nOn my way\nNeed help",
       "cannedMessagesHint": "Enter one message per line. Used with the input peripheral buttons.",
@@ -1129,6 +1211,16 @@
       "invalidRtttl": "Invalid RTTTL — expected Name:d=N,o=N,b=N:notes",
       "serialModuleEnabledDesc": "Enable serial port data forwarding via the mesh.",
       "serialEchoDesc": "Echo received serial data back to sender.",
+      "serialRxd": "RX pin",
+      "serialRxdDesc": "GPIO pin number for serial RX. 0 = use default.",
+      "serialTxd": "TX pin",
+      "serialTxdDesc": "GPIO pin number for serial TX. 0 = use default.",
+      "serialTimeout": "Timeout",
+      "serialTimeoutDesc": "Milliseconds to wait before sending a packet. 0 = use default.",
+      "serialMode": "Serial mode",
+      "serialModeDesc": "Operating mode for the serial module.",
+      "serialOverrideConsole": "Override console serial port",
+      "serialOverrideConsoleDesc": "Use the primary serial port (console) for the serial module instead of a secondary port.",
       "sfEnabledDesc": "Buffer messages for nodes that rejoin the mesh.",
       "sfNumRecordsDesc": "Maximum messages to store. 0 = use default.",
       "ipTunnelHint": "IP Tunnel packets forward network traffic through the mesh. Configure tunnel settings in the device network configuration.",
@@ -1138,7 +1230,17 @@
       "historyReturnWindow": "History return window",
       "historyReturnMaxDesc": "Max messages to return when a node requests history.",
       "historyReturnWindowDesc": "How far back in time to return messages (seconds).",
-      "remoteHardwareHint": "GPIO messages are received automatically when enabled on the device. Configure GPIO pins in the device hardware settings."
+      "remoteHardwareHint": "GPIO messages are received automatically when enabled on the device. Configure GPIO pins in the device hardware settings.",
+      "takTeam": "TAK team color",
+      "takTeamDesc": "Team color shown in ATAK/WinTAK. Default (Unspecified) uses Cyan.",
+      "takTeamUnspecified": "Unspecified (Cyan)",
+      "takRole": "TAK member role",
+      "takRoleDesc": "Member role shown in ATAK/WinTAK. Default (Unspecified) uses Team Member.",
+      "takRoleUnspecified": "Unspecified (Team Member)",
+      "remoteHardwareEnabled": "Enable Remote Hardware",
+      "remoteHardwareEnabledDesc": "Allow remote nodes to read and write GPIO pins on this device.",
+      "remoteHardwareAllowUndefinedPins": "Allow Undefined Pin Access",
+      "remoteHardwareAllowUndefinedPinsDesc": "Allow reading/writing pins not listed in the available pins configuration."
     },
     "applySection": "Apply {{section}}",
     "applyingButton": "Applying...",
@@ -1510,7 +1612,6 @@
     "title": "Radio Configuration",
     "frequencyHint": "Operating frequency. Check local regulations.",
     "ntpHint": "Leave empty for default NTP server.",
-    "restartWarning": "The device may briefly restart after applying new LoRa or device settings.",
     "deviceActions": "Device Actions",
     "deviceCommands": "Device Commands",
     "floodAdvertButton": "Flood Advert",
@@ -1546,6 +1647,7 @@
     "noChannels": "No channels configured.",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Device Role",
+    "sectionGroupDevice": "Device Configuration",
     "sectionDeviceUser": "Device User / Identity",
     "sectionDisplay": "Display",
     "sectionLora": "LoRa / Radio",
@@ -1557,7 +1659,6 @@
     "yourNamePlaceholder": "Your Name",
     "namePlaceholder": "NAME",
     "networkNamePlaceholder": "Network name",
-    "flashMemoryNote": "Changes are written to the device's flash memory and persist across reboots.",
     "encryptionNone": "None (no encryption)",
     "encryptionSimple": "Simple (default Meshtastic key)",
     "generateRandomKey": "Generate random key",
@@ -1572,6 +1673,14 @@
     "keySizeTooltip": "None = no encryption. Simple = default Meshtastic key (shared by all default-config devices — not private). AES-128/256 = custom private key. All nodes on this channel must use the same key.",
     "encryptionKeyTooltip": "Base64-encoded encryption key. AES-128 = 16 bytes (24 base64 chars). AES-256 = 32 bytes (44 base64 chars). Use 'Generate' for a random key, or paste a shared key from another node.",
     "connectToConfigure": "Connect to a device to modify configuration.",
+    "waitingForConfigSection": "Waiting for {{section}} settings from the device…",
+    "applyStatusApplying": "Applying {{section}}…",
+    "applyStatusSuccess": "{{section}} applied successfully. Device may briefly reboot.",
+    "applyStatusCommitFailed": "{{section}} sent, but commit failed: {{message}}",
+    "applyStatusFailed": "Failed: {{message}}",
+    "applyUserApplying": "Applying user identity…",
+    "applyUserSuccess": "User identity applied successfully!",
+    "applyLoraSuccess": "LoRa settings applied successfully!",
     "importConfigJson": "Import Config JSON",
     "offloadContacts": "Offload",
     "deviceMetricsDescription": "Mesh broadcast: how often battery, voltage, and channel utilization are sent over LoRa. 0 = disabled; default 1800 s (30 min). Connected app: when linked over Bluetooth, serial, or Wi-Fi, the firmware often still pushes device metrics to this client about every 60 s for on-screen freshness—that is not the same as your mesh interval.",
@@ -1738,6 +1847,48 @@
     "meshcoreGenerateRandomKey": "Generate random",
     "meshcoreChannelNameLabel": "Name",
     "roleFieldLabel": "Role",
+    "rebroadcastModeLabel": "Rebroadcast Mode",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
+    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
+    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
+    "disableTripleClickLabel": "Disable Triple-click",
+    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "tzdefPlaceholder": "e.g. EST5EDT,M3.2.0,M11.1.0",
+    "rebroadcastModes": {
+      "0": {
+        "label": "All",
+        "description": "Rebroadcast all packets (default)."
+      },
+      "1": {
+        "label": "All Skip Decoding",
+        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      },
+      "2": {
+        "label": "Local Only",
+        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      },
+      "3": {
+        "label": "Known Only",
+        "description": "Only rebroadcast from nodes in the local node database."
+      },
+      "4": {
+        "label": "None",
+        "description": "Do not rebroadcast any packets."
+      },
+      "5": {
+        "label": "Core Portnums Only",
+        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      }
+    },
     "longNameFieldLabel": "Long Name",
     "shortNameFieldLabel": "Short Name",
     "meshcoreNameFieldLabel": "Name",
@@ -1798,6 +1949,20 @@
     "saveChannel": "Save Channel",
     "hopLimitLabel": "Hop Limit",
     "hopLimitDescription": "Number of times a message can be relayed (1–7). Higher = more reach, more airtime. Default: 3.",
+    "txEnabledLabel": "TX Enabled",
+    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "channelNumLabel": "Channel Number",
+    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
     "sx126xRxBoostedDesc": "Enable boosted LNA gain for better receive sensitivity (SX1262/1268 chips only).",
     "positionBroadcastIntervalDesc": "How often to broadcast position. 0 = use default (900s). Set higher to conserve airtime.",
     "gpsUpdateIntervalDesc": "How often to poll the GPS module. 0 = use default.",
@@ -1817,7 +1982,67 @@
     "wifiEnabledDesc": "Enable the device's WiFi radio. Requires reboot to take effect.",
     "wifiSsidLabel": "WiFi SSID",
     "ntpServerLabel": "NTP Server",
-    "ethernetEnabledDesc": "Enable hardware Ethernet (supported on select devices)."
+    "ethernetEnabledDesc": "Enable hardware Ethernet (supported on select devices).",
+    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
+    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
+    "oledTypeLabel": "OLED Type",
+    "flipScreenLabel": "Flip Screen",
+    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "displayModeLabel": "Display Mode",
+    "headingBoldLabel": "Bold Heading",
+    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
+    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "use12hClockLabel": "12-Hour Clock",
+    "useLongNodeNameLabel": "Use Long Node Name",
+    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
+    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "oledTypes": {
+      "0": {
+        "label": "Auto"
+      },
+      "1": {
+        "label": "SSD1306"
+      },
+      "2": {
+        "label": "SH1106"
+      },
+      "3": {
+        "label": "SH1107 (128x64)"
+      },
+      "4": {
+        "label": "SH1107 (128x128)"
+      },
+      "5": {
+        "label": "SH1107 Rotated"
+      }
+    },
+    "displayModes": {
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Two Color"
+      },
+      "2": {
+        "label": "Inverted"
+      },
+      "3": {
+        "label": "Color"
+      }
+    },
+    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModes": {
+      "0": {
+        "label": "Random PIN"
+      },
+      "1": {
+        "label": "Fixed PIN"
+      },
+      "2": {
+        "label": "No PIN"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filter packets",
@@ -2159,7 +2384,8 @@
     "repeaters": "Repeaters",
     "rooms": "Rooms",
     "rf": "RF",
-    "graph": "Graph"
+    "graph": "Graph",
+    "admin": "Administration"
   },
   "takServerPanel": {
     "title": "TAK Server",

@@ -10,6 +10,7 @@ import {
   buildMeshtasticModuleApplyValue,
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
+  meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import {
   buildMeshtasticMqttModuleApplyValue,
@@ -21,6 +22,8 @@ import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/m
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
+import { ConfigApplyNotice } from './ConfigApplyNotice';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
 
@@ -61,10 +64,50 @@ interface Props {
   rangeTestPackets?: Map<number, PacketMessage[]>;
   serialMessages?: Map<number, PacketMessage[]>;
   remoteHardwareMessages?: Map<number, PacketMessage[]>;
+  /** IP tunnel packet stream; null/absent = daemon not running. */
   ipTunnelMessages?: Map<number, PacketMessage[]>;
 }
 
 // ─── Reusable config components (same pattern as RadioPanel) ─────
+
+function ConfigSelect({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+  description,
+}: {
+  label: string;
+  value: number;
+  options: { value: number; label: string }[];
+  onChange: (val: number) => void;
+  disabled: boolean;
+  description?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-muted text-sm">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (!Number.isFinite(n)) return;
+          onChange(n);
+        }}
+        disabled={disabled}
+        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {description && <p className="text-muted text-xs">{description}</p>}
+    </div>
+  );
+}
 
 function ConfigToggle({
   label,
@@ -208,14 +251,21 @@ function ModuleSection({
   onApply,
   applying,
   disabled,
+  sliceReady = true,
+  showSliceWaiting = false,
 }: {
   title: string;
   children: React.ReactNode;
   onApply: () => void;
   applying: boolean;
   disabled: boolean;
+  /** When false, Apply stays disabled until device module slice is hydrated. */
+  sliceReady?: boolean;
+  /** Show "waiting for settings" hint (pass when connected and slice not ready). */
+  showSliceWaiting?: boolean;
 }) {
   const { t } = useTranslation();
+  const applyDisabled = disabled || applying || !sliceReady;
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
@@ -230,11 +280,16 @@ function ModuleSection({
         </svg>
       </summary>
       <div className="space-y-4 px-4 pb-4">
+        {showSliceWaiting && !sliceReady && (
+          <p className="text-xs text-yellow-300/90">
+            {t('radioPanel.waitingForConfigSection', { section: title })}
+          </p>
+        )}
         {children}
         <button
           type="button"
           onClick={onApply}
-          disabled={disabled || applying}
+          disabled={applyDisabled}
           className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
         >
           {applying
@@ -242,6 +297,25 @@ function ModuleSection({
             : t('modulePanel.applySection', { section: title })}
         </button>
       </div>
+    </details>
+  );
+}
+
+function StatusOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+        <span>{title}</span>
+        <svg
+          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="space-y-4 px-4 pb-4">{children}</div>
     </details>
   );
 }
@@ -314,18 +388,16 @@ function ModuleStatus({
   );
 }
 
-function StatusOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
-  const { t } = useTranslation();
-  return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
-        <span>{title}</span>
-        <span className="text-xs text-gray-500">{t('modulePanel.readOnly')}</span>
-      </summary>
-      <div className="space-y-3 px-4 pb-4">{children}</div>
-    </details>
-  );
-}
+const INPUT_EVENT_OPTIONS = [
+  { value: 0, label: 'None' },
+  { value: 10, label: 'Select (Enter)' },
+  { value: 17, label: 'Up' },
+  { value: 18, label: 'Down' },
+  { value: 19, label: 'Left' },
+  { value: 20, label: 'Right' },
+  { value: 27, label: 'Back (Esc)' },
+  { value: 24, label: 'Cancel' },
+];
 
 export default function ModulePanel({
   configTarget,
@@ -345,26 +417,51 @@ export default function ModulePanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const secondsUnit = t('radioPanel.secondsUnit');
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const remoteTarget = configTarget?.mode === 'remote';
+  const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(moduleConfigs[key]);
+  const moduleSectionProps = (key: string) => ({
+    sliceReady: moduleSliceReady(key),
+    showSliceWaiting: isConnected,
+  });
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  const [rhPendingConfirm, setRhPendingConfirm] = useState<'enable' | 'undefinedPins' | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
   const telCfg = meshtasticConfigSlice(moduleConfigs.telemetry);
+  const [telDeviceTelemetryEnabled, setTelDeviceTelemetryEnabled] = useState<boolean>(
+    cfgBool(telCfg.deviceTelemetryEnabled, false),
+  );
   const [telDeviceInterval, setTelDeviceInterval] = useState<number>(
     cfgNum(telCfg.deviceUpdateInterval, 1800),
-  );
-  const [telEnvInterval, setTelEnvInterval] = useState<number>(
-    cfgNum(telCfg.environmentUpdateInterval, 1800),
   );
   const [telEnvEnabled, setTelEnvEnabled] = useState<boolean>(
     cfgBool(telCfg.environmentMeasurementEnabled, false),
   );
-  const [telPowerEnabled, setTelPowerEnabled] = useState<boolean>(
-    cfgBool(telCfg.powerMeasurementEnabled, false),
+  const [telEnvInterval, setTelEnvInterval] = useState<number>(
+    cfgNum(telCfg.environmentUpdateInterval, 1800),
+  );
+  const [telEnvScreenEnabled, setTelEnvScreenEnabled] = useState<boolean>(
+    cfgBool(telCfg.environmentScreenEnabled, false),
+  );
+  const [telEnvFahrenheit, setTelEnvFahrenheit] = useState<boolean>(
+    cfgBool(telCfg.environmentDisplayFahrenheit, false),
   );
   const [telAirQualityEnabled, setTelAirQualityEnabled] = useState<boolean>(
     cfgBool(telCfg.airQualityEnabled, false),
+  );
+  const [telAirQualityInterval, setTelAirQualityInterval] = useState<number>(
+    cfgNum(telCfg.airQualityInterval, 0),
+  );
+  const [telPowerEnabled, setTelPowerEnabled] = useState<boolean>(
+    cfgBool(telCfg.powerMeasurementEnabled, false),
+  );
+  const [telPowerInterval, setTelPowerInterval] = useState<number>(
+    cfgNum(telCfg.powerUpdateInterval, 0),
+  );
+  const [telPowerScreenEnabled, setTelPowerScreenEnabled] = useState<boolean>(
+    cfgBool(telCfg.powerScreenEnabled, false),
   );
 
   // ─── MQTT relay module ─────────────────────────────────────────
@@ -408,13 +505,44 @@ export default function ModulePanel({
   // ─── Canned messages ──────────────────────────────────────────
   const cannedCfg = meshtasticConfigSlice(moduleConfigs.cannedMessage);
   const [cannedEnabled, setCannedEnabled] = useState<boolean>(cfgBool(cannedCfg.enabled, false));
+  const [cannedRotary1Enabled, setCannedRotary1Enabled] = useState<boolean>(
+    cfgBool(cannedCfg.rotary1Enabled, false),
+  );
+  const [cannedPinA, setCannedPinA] = useState<number>(cfgNum(cannedCfg.inputbrokerPinA, 0));
+  const [cannedPinB, setCannedPinB] = useState<number>(cfgNum(cannedCfg.inputbrokerPinB, 0));
+  const [cannedPinPress, setCannedPinPress] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerPinPress, 0),
+  );
+  const [cannedEventCw, setCannedEventCw] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerEventCw, 0),
+  );
+  const [cannedEventCcw, setCannedEventCcw] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerEventCcw, 0),
+  );
+  const [cannedEventPress, setCannedEventPress] = useState<number>(
+    cfgNum(cannedCfg.inputbrokerEventPress, 0),
+  );
+  const [cannedUpdown1Enabled, setCannedUpdown1Enabled] = useState<boolean>(
+    cfgBool(cannedCfg.updown1Enabled, false),
+  );
+  const [cannedAllowInputSource, setCannedAllowInputSource] = useState<string>(
+    cfgStr(cannedCfg.allowInputSource, ''),
+  );
+  const [cannedSendBell, setCannedSendBell] = useState<boolean>(cfgBool(cannedCfg.sendBell, false));
   const [cannedText, setCannedText] = useState<string>(cfgStr(cannedCfg.messages, ''));
 
   // ─── Serial module ─────────────────────────────────────────────
   const serialCfg = meshtasticConfigSlice(moduleConfigs.serial);
   const [serialEnabled, setSerialEnabled] = useState<boolean>(cfgBool(serialCfg.enabled, false));
   const [serialEcho, setSerialEcho] = useState<boolean>(cfgBool(serialCfg.echo, false));
-  const [serialBaud, setSerialBaud] = useState<number>(cfgNum(serialCfg.baud, 38400));
+  const [serialRxd, setSerialRxd] = useState<number>(cfgNum(serialCfg.rxd, 0));
+  const [serialTxd, setSerialTxd] = useState<number>(cfgNum(serialCfg.txd, 0));
+  const [serialBaud, setSerialBaud] = useState<number>(cfgNum(serialCfg.baud, 0));
+  const [serialTimeout, setSerialTimeout] = useState<number>(cfgNum(serialCfg.timeout, 0));
+  const [serialMode, setSerialMode] = useState<number>(cfgNum(serialCfg.mode, 0));
+  const [serialOverrideConsole, setSerialOverrideConsole] = useState<boolean>(
+    cfgBool(serialCfg.overrideConsoleSerialPort, false),
+  );
 
   // ─── Range test module ─────────────────────────────────────────
   const rangeCfg = meshtasticConfigSlice(moduleConfigs.rangeTest);
@@ -443,6 +571,75 @@ export default function ModulePanel({
   );
   const [detectStateBroadcast, setDetectStateBroadcast] = useState<number>(
     cfgNum(detectCfg.stateBroadcastSecs, 0),
+  );
+
+  // ─── Remote Hardware module ────────────────────────────────────
+  const remoteHardwareCfg = meshtasticConfigSlice(moduleConfigs.remoteHardware);
+  const [remoteHardwareEnabled, setRemoteHardwareEnabled] = useState<boolean>(
+    cfgBool(remoteHardwareCfg.enabled, false),
+  );
+  const [remoteHardwareAllowUndefinedPins, setRemoteHardwareAllowUndefinedPins] = useState<boolean>(
+    cfgBool(remoteHardwareCfg.allowUndefinedPinAccess, false),
+  );
+
+  // ─── Neighbor Info module ──────────────────────────────────────
+  const neighborInfoCfg = meshtasticConfigSlice(moduleConfigs.neighborInfo);
+  const [neighborInfoEnabled, setNeighborInfoEnabled] = useState<boolean>(
+    cfgBool(neighborInfoCfg.enabled, false),
+  );
+  const [neighborInfoUpdateInterval, setNeighborInfoUpdateInterval] = useState<number>(
+    cfgNum(neighborInfoCfg.updateInterval, 0),
+  );
+  const [neighborInfoTransmitOverLora, setNeighborInfoTransmitOverLora] = useState<boolean>(
+    cfgBool(neighborInfoCfg.transmitOverLora, false),
+  );
+
+  // ─── TAK module ────────────────────────────────────────────────
+  const takCfg = meshtasticConfigSlice(moduleConfigs.tak);
+  const [takTeam, setTakTeam] = useState<number>(cfgNum(takCfg.team, 0));
+  const [takRole, setTakRole] = useState<number>(cfgNum(takCfg.role, 0));
+
+  // ─── Traffic Management module ─────────────────────────────────
+  const trafficMgmtCfg = meshtasticConfigSlice(moduleConfigs.trafficManagement);
+  const [tmEnabled, setTmEnabled] = useState<boolean>(cfgBool(trafficMgmtCfg.enabled, false));
+  const [tmPositionDedupEnabled, setTmPositionDedupEnabled] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.positionDedupEnabled, false),
+  );
+  const [tmPositionPrecisionBits, setTmPositionPrecisionBits] = useState<number>(
+    cfgNum(trafficMgmtCfg.positionPrecisionBits, 0),
+  );
+  const [tmPositionMinIntervalSecs, setTmPositionMinIntervalSecs] = useState<number>(
+    cfgNum(trafficMgmtCfg.positionMinIntervalSecs, 0),
+  );
+  const [tmNodeinfoDirectResponse, setTmNodeinfoDirectResponse] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.nodeinfoDirectResponse, false),
+  );
+  const [tmNodeinfoDirectResponseMaxHops, setTmNodeinfoDirectResponseMaxHops] = useState<number>(
+    cfgNum(trafficMgmtCfg.nodeinfoDirectResponseMaxHops, 0),
+  );
+  const [tmRateLimitEnabled, setTmRateLimitEnabled] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.rateLimitEnabled, false),
+  );
+  const [tmRateLimitWindowSecs, setTmRateLimitWindowSecs] = useState<number>(
+    cfgNum(trafficMgmtCfg.rateLimitWindowSecs, 0),
+  );
+  const [tmRateLimitMaxPackets, setTmRateLimitMaxPackets] = useState<number>(
+    cfgNum(trafficMgmtCfg.rateLimitMaxPackets, 0),
+  );
+  const [tmDropUnknownEnabled, setTmDropUnknownEnabled] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.dropUnknownEnabled, false),
+  );
+  const [tmUnknownPacketThreshold, setTmUnknownPacketThreshold] = useState<number>(
+    cfgNum(trafficMgmtCfg.unknownPacketThreshold, 0),
+  );
+  const [tmExhaustHopTelemetry, setTmExhaustHopTelemetry] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.exhaustHopTelemetry, false),
+  );
+  const [tmExhaustHopPosition, setTmExhaustHopPosition] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.exhaustHopPosition, false),
+  );
+  const [tmRouterPreserveHops, setTmRouterPreserveHops] = useState<boolean>(
+    cfgBool(trafficMgmtCfg.routerPreserveHops, false),
   );
 
   // ─── Pax counter module ────────────────────────────────────────
@@ -498,11 +695,17 @@ export default function ModulePanel({
   const [ringtoneText, setRingtoneText] = useState<string>(ringtone ?? '');
 
   useSyncFormFromConfig(moduleConfigs.telemetry, (cfg) => {
+    setTelDeviceTelemetryEnabled(cfgBool(cfg.deviceTelemetryEnabled, false));
     setTelDeviceInterval(cfgNum(cfg.deviceUpdateInterval, 1800));
-    setTelEnvInterval(cfgNum(cfg.environmentUpdateInterval, 1800));
     setTelEnvEnabled(cfgBool(cfg.environmentMeasurementEnabled, false));
-    setTelPowerEnabled(cfgBool(cfg.powerMeasurementEnabled, false));
+    setTelEnvInterval(cfgNum(cfg.environmentUpdateInterval, 1800));
+    setTelEnvScreenEnabled(cfgBool(cfg.environmentScreenEnabled, false));
+    setTelEnvFahrenheit(cfgBool(cfg.environmentDisplayFahrenheit, false));
     setTelAirQualityEnabled(cfgBool(cfg.airQualityEnabled, false));
+    setTelAirQualityInterval(cfgNum(cfg.airQualityInterval, 0));
+    setTelPowerEnabled(cfgBool(cfg.powerMeasurementEnabled, false));
+    setTelPowerInterval(cfgNum(cfg.powerUpdateInterval, 0));
+    setTelPowerScreenEnabled(cfgBool(cfg.powerScreenEnabled, false));
   });
 
   useSyncFormFromConfig(moduleConfigs.mqtt, (cfg) => {
@@ -550,9 +753,41 @@ export default function ModulePanel({
     setDetectStateBroadcast(cfgNum(cfg.stateBroadcastSecs, 0));
   });
 
+  useSyncFormFromConfig(moduleConfigs.remoteHardware, (cfg) => {
+    setRemoteHardwareEnabled(cfgBool(cfg.enabled, false));
+    setRemoteHardwareAllowUndefinedPins(cfgBool(cfg.allowUndefinedPinAccess, false));
+  });
+
   useSyncFormFromConfig(moduleConfigs.paxcounter, (cfg) => {
     setPaxEnabled(cfgBool(cfg.enabled, false));
     setPaxInterval(cfgNum(cfg.paxcounterUpdateInterval, 0));
+  });
+  useSyncFormFromConfig(moduleConfigs.neighborInfo, (cfg) => {
+    setNeighborInfoEnabled(cfgBool(cfg.enabled, false));
+    setNeighborInfoUpdateInterval(cfgNum(cfg.updateInterval, 0));
+    setNeighborInfoTransmitOverLora(cfgBool(cfg.transmitOverLora, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.tak, (cfg) => {
+    setTakTeam(cfgNum(cfg.team, 0));
+    setTakRole(cfgNum(cfg.role, 0));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.trafficManagement, (cfg) => {
+    setTmEnabled(cfgBool(cfg.enabled, false));
+    setTmPositionDedupEnabled(cfgBool(cfg.positionDedupEnabled, false));
+    setTmPositionPrecisionBits(cfgNum(cfg.positionPrecisionBits, 0));
+    setTmPositionMinIntervalSecs(cfgNum(cfg.positionMinIntervalSecs, 0));
+    setTmNodeinfoDirectResponse(cfgBool(cfg.nodeinfoDirectResponse, false));
+    setTmNodeinfoDirectResponseMaxHops(cfgNum(cfg.nodeinfoDirectResponseMaxHops, 0));
+    setTmRateLimitEnabled(cfgBool(cfg.rateLimitEnabled, false));
+    setTmRateLimitWindowSecs(cfgNum(cfg.rateLimitWindowSecs, 0));
+    setTmRateLimitMaxPackets(cfgNum(cfg.rateLimitMaxPackets, 0));
+    setTmDropUnknownEnabled(cfgBool(cfg.dropUnknownEnabled, false));
+    setTmUnknownPacketThreshold(cfgNum(cfg.unknownPacketThreshold, 0));
+    setTmExhaustHopTelemetry(cfgBool(cfg.exhaustHopTelemetry, false));
+    setTmExhaustHopPosition(cfgBool(cfg.exhaustHopPosition, false));
+    setTmRouterPreserveHops(cfgBool(cfg.routerPreserveHops, false));
   });
 
   useSyncFormFromConfig(moduleConfigs.externalNotification, (cfg) => {
@@ -582,18 +817,22 @@ export default function ModulePanel({
   });
 
   const ambientHex = `#${[ambientRed, ambientGreen, ambientBlue].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  const parseAmbientHexByte = (hex: string) => {
+    const n = parseInt(hex, 16);
+    return Number.isFinite(n) ? Math.min(255, Math.max(0, n)) : 0;
+  };
   const handleAmbientColorChange = (hex: string) => {
-    setAmbientRed(parseInt(hex.slice(1, 3), 16));
-    setAmbientGreen(parseInt(hex.slice(3, 5), 16));
-    setAmbientBlue(parseInt(hex.slice(5, 7), 16));
+    setAmbientRed(parseAmbientHexByte(hex.slice(1, 3)));
+    setAmbientGreen(parseAmbientHexByte(hex.slice(3, 5)));
+    setAmbientBlue(parseAmbientHexByte(hex.slice(5, 7)));
   };
 
-  const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
+  const applyModule = async (sectionLabel: string, moduleCase: string, value: unknown) => {
     clearMeshtasticClientNotification();
-    setApplyingSection(sectionName);
+    setApplyingSection(moduleCase);
     try {
       await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
-      addToast(t('modulePanel.sectionSent', { name: sectionName }), 'success');
+      addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       try {
         await onCommit();
       } catch (err: unknown) {
@@ -619,13 +858,13 @@ export default function ModulePanel({
   };
 
   const applyMeshtasticModule = (
-    sectionName: string,
+    sectionLabel: string,
     moduleCase: string,
     deviceSlice: unknown,
     uiOverrides: Record<string, unknown>,
   ) => {
     void applyModule(
-      sectionName,
+      sectionLabel,
       moduleCase,
       buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides),
     );
@@ -654,336 +893,18 @@ export default function ModulePanel({
         <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
+      <ConfigApplyNotice />
+
       {Object.keys(moduleConfigs).length === 0 && isConnected && (
         <div className="bg-deep-black/50 text-muted rounded-lg border border-gray-700 px-4 py-3 text-sm">
           {t('modulePanel.waitingForModuleConfig')}
         </div>
       )}
 
-      {/* ═══ Ambient Lighting Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionAmbientLighting')}
-        onApply={() => {
-          applyMeshtasticModule('Ambient Lighting', 'ambientLighting', ambientCfg, {
-            ledState: ambientLedState,
-            red: ambientRed,
-            green: ambientGreen,
-            blue: ambientBlue,
-            current: ambientCurrent,
-          });
-        }}
-        applying={applyingSection === 'Ambient Lighting'}
-        disabled={disabled}
-      >
-        <ConfigToggle
-          label={t('modulePanel.fields.ledEnabled')}
-          checked={ambientLedState}
-          onChange={setAmbientLedState}
-          disabled={disabled}
-          description={t('modulePanel.fields.ledEnabledDesc')}
-        />
-        <div className="space-y-1">
-          <label htmlFor="module-ambient-color" className="text-muted text-sm">
-            {t('modulePanel.fields.color')}
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              id="module-ambient-color"
-              type="color"
-              value={ambientHex}
-              onChange={(e) => {
-                handleAmbientColorChange(e.target.value);
-              }}
-              disabled={disabled || !ambientLedState}
-              className="bg-secondary-dark h-9 w-16 cursor-pointer rounded border border-gray-600 p-0.5 disabled:opacity-50"
-            />
-            <span className="font-mono text-sm text-gray-400">{ambientHex.toUpperCase()}</span>
-            <span className="text-muted text-xs">
-              R:{ambientRed} G:{ambientGreen} B:{ambientBlue}
-            </span>
-          </div>
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="module-ambient-current" className="text-muted text-sm">
-            {t('modulePanel.fields.brightnessCurrent', { value: ambientCurrent })}
-          </label>
-          <input
-            id="module-ambient-current"
-            type="range"
-            min={0}
-            max={31}
-            value={ambientCurrent}
-            onChange={(e) => {
-              setAmbientCurrent(Number(e.target.value));
-            }}
-            disabled={disabled || !ambientLedState}
-            className="accent-readable-green w-full disabled:opacity-50"
-          />
-          <p className="text-muted text-xs">{t('modulePanel.fields.brightnessHint')}</p>
-        </div>
-      </ModuleSection>
-
-      {/* ═══ Canned Messages ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionCannedMessages')}
-        onApply={async () => {
-          setApplyingSection('Canned Messages');
-          try {
-            const lines = cannedText
-              .split('\n')
-              .map((l) => l.trim())
-              .filter(Boolean);
-            await onSetCannedMessages(lines);
-            await onSetModuleConfig({
-              payloadVariant: {
-                case: 'cannedMessage',
-                value: mergeMeshtasticConfigApplyValue(cannedCfg, { enabled: cannedEnabled }),
-              },
-            });
-            await onCommit();
-            addToast(t('modulePanel.cannedMessagesApplied'), 'success');
-          } catch (err) {
-            console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
-            addToast(
-              t('modulePanel.failed', {
-                message: formatMeshtasticModuleApplyError(err, t),
-              }),
-              'error',
-            );
-          } finally {
-            setApplyingSection(null);
-          }
-        }}
-        applying={applyingSection === 'Canned Messages'}
-        disabled={disabled || remoteTarget}
-      >
-        <ConfigToggle
-          label={t('modulePanel.fields.cannedMessagesEnabled')}
-          checked={cannedEnabled}
-          onChange={setCannedEnabled}
-          disabled={disabled}
-        />
-        <div className="space-y-1">
-          <label htmlFor="module-canned-messages" className="text-muted text-sm">
-            {t('modulePanel.fields.messagesOnePerLine')}
-          </label>
-          <textarea
-            id="module-canned-messages"
-            value={cannedText}
-            onChange={(e) => {
-              setCannedText(e.target.value);
-            }}
-            disabled={disabled || !cannedEnabled}
-            rows={6}
-            placeholder={t('modulePanel.fields.cannedMessagesPlaceholder')}
-            spellCheck={false}
-            className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
-          />
-          <p className="text-muted text-xs">{t('modulePanel.fields.cannedMessagesHint')}</p>
-        </div>
-      </ModuleSection>
-
-      {/* ═══ Detection Sensor Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionDetectionSensor')}
-        onApply={() => {
-          applyMeshtasticModule('Detection Sensor', 'detectionSensor', detectCfg, {
-            enabled: detectEnabled,
-            name: detectName,
-            minimumBroadcastSecs: detectMinBroadcast,
-            stateBroadcastSecs: detectStateBroadcast,
-          });
-        }}
-        applying={applyingSection === 'Detection Sensor'}
-        disabled={disabled}
-      >
-        <ConfigToggle
-          label={t('modulePanel.fields.detectionSensorEnabled')}
-          checked={detectEnabled}
-          onChange={setDetectEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.detectionSensorDesc')}
-        />
-        <ConfigText
-          label={t('modulePanel.fields.sensorName')}
-          value={detectName}
-          onChange={setDetectName}
-          disabled={disabled || !detectEnabled}
-          description={t('modulePanel.fields.sensorNameDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.minBroadcastInterval')}
-          value={detectMinBroadcast}
-          onChange={setDetectMinBroadcast}
-          disabled={disabled || !detectEnabled}
-          min={0}
-          unit="seconds"
-          description={t('modulePanel.fields.minBroadcastIntervalDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.stateBroadcastInterval')}
-          value={detectStateBroadcast}
-          onChange={setDetectStateBroadcast}
-          disabled={disabled || !detectEnabled}
-          min={0}
-          unit="seconds"
-          description={t('modulePanel.fields.stateBroadcastIntervalDesc')}
-        />
-      </ModuleSection>
-
-      {/* ═══ External Notification Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionExternalNotification')}
-        onApply={() => {
-          applyMeshtasticModule('External Notification', 'externalNotification', extNotifCfg, {
-            enabled: extEnabled,
-            active: extActive,
-            output: extOutput,
-            outputBuzzer: extOutputBuzzer,
-            outputVibra: extOutputVibra,
-            outputMs: extOutputMs,
-            nagTimeout: extNagTimeout,
-            alertMessage: extAlertMessage,
-            alertMessageBuzzer: extAlertMessageBuzzer,
-            alertMessageVibra: extAlertMessageVibra,
-            alertBell: extAlertBell,
-            alertBellBuzzer: extAlertBellBuzzer,
-            alertBellVibra: extAlertBellVibra,
-            usePwm: extUsePwm,
-            useI2sAsBuzzer: extUseI2sAsBuzzer,
-          });
-        }}
-        applying={applyingSection === 'External Notification'}
-        disabled={disabled}
-      >
-        <ConfigToggle
-          label={t('modulePanel.fields.extNotifModuleEnabled')}
-          checked={extEnabled}
-          onChange={setExtEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.extNotifModuleDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.activeHigh')}
-          checked={extActive}
-          onChange={setExtActive}
-          disabled={disabled || !extEnabled}
-          description={t('modulePanel.fields.activeHighDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.primaryOutputGpio')}
-          value={extOutput}
-          onChange={setExtOutput}
-          disabled={disabled || !extEnabled}
-          min={0}
-          max={48}
-          description={t('modulePanel.fields.primaryOutputGpioDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.buzzerGpio')}
-          value={extOutputBuzzer}
-          onChange={setExtOutputBuzzer}
-          disabled={disabled || !extEnabled}
-          min={0}
-          max={48}
-          description={t('modulePanel.fields.buzzerGpioDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.vibrationGpio')}
-          value={extOutputVibra}
-          onChange={setExtOutputVibra}
-          disabled={disabled || !extEnabled}
-          min={0}
-          max={48}
-          description={t('modulePanel.fields.vibrationGpioDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.outputDuration')}
-          value={extOutputMs}
-          onChange={setExtOutputMs}
-          disabled={disabled || !extEnabled}
-          min={0}
-          max={32767}
-          unit="ms"
-          description={t('modulePanel.fields.outputDurationDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.nagTimeout')}
-          value={extNagTimeout}
-          onChange={setExtNagTimeout}
-          disabled={disabled || !extEnabled}
-          min={0}
-          max={32767}
-          unit="seconds"
-          description={t('modulePanel.fields.nagTimeoutDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.alertOnMessage')}
-          checked={extAlertMessage}
-          onChange={setExtAlertMessage}
-          disabled={disabled || !extEnabled}
-          description={t('modulePanel.fields.alertOnMessageDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.buzzerOnMessage')}
-          checked={extAlertMessageBuzzer}
-          onChange={setExtAlertMessageBuzzer}
-          disabled={disabled || !extEnabled || !extAlertMessage}
-          description={t('modulePanel.fields.buzzerOnMessageDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.vibrationOnMessage')}
-          checked={extAlertMessageVibra}
-          onChange={setExtAlertMessageVibra}
-          disabled={disabled || !extEnabled || !extAlertMessage}
-          description={t('modulePanel.fields.vibrationOnMessageDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.alertOnBell')}
-          checked={extAlertBell}
-          onChange={setExtAlertBell}
-          disabled={disabled || !extEnabled}
-          description={t('modulePanel.fields.alertOnBellDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.buzzerOnBell')}
-          checked={extAlertBellBuzzer}
-          onChange={setExtAlertBellBuzzer}
-          disabled={disabled || !extEnabled || !extAlertBell}
-          description={t('modulePanel.fields.buzzerOnBellDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.vibrationOnBell')}
-          checked={extAlertBellVibra}
-          onChange={setExtAlertBellVibra}
-          disabled={disabled || !extEnabled || !extAlertBell}
-          description={t('modulePanel.fields.vibrationOnBellDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.usePwmBuzzer')}
-          checked={extUsePwm}
-          onChange={setExtUsePwm}
-          disabled={disabled || !extEnabled}
-          description={t('modulePanel.fields.usePwmBuzzerDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.useI2sBuzzer')}
-          checked={extUseI2sAsBuzzer}
-          onChange={setExtUseI2sAsBuzzer}
-          disabled={disabled || !extEnabled}
-          description={t('modulePanel.fields.useI2sBuzzerDesc')}
-        />
-      </ModuleSection>
-
-      {/* ═══ IP Tunnel ═══ */}
-      <StatusOnlySection title={t('modulePanel.sectionIpTunnel')}>
-        <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
-        <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>
-      </StatusOnlySection>
-
       {/* ═══ MQTT Relay Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionMqttRelay')}
+        {...moduleSectionProps('mqtt')}
         onApply={() => {
           const validationError = validateMqttRelayBeforeApply();
           if (validationError) {
@@ -991,12 +912,12 @@ export default function ModulePanel({
             return;
           }
           void applyModule(
-            'MQTT Relay',
+            t('modulePanel.sectionMqttRelay'),
             'mqtt',
             buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork),
           );
         }}
-        applying={applyingSection === 'MQTT Relay'}
+        applying={applyingSection === 'mqtt'}
         disabled={disabled}
       >
         <ConfigToggle
@@ -1069,53 +990,348 @@ export default function ModulePanel({
         />
       </ModuleSection>
 
-      {/* ═══ Pax Counter Module ═══ */}
+      {/* ═══ Serial Module ═══ */}
       <ModuleSection
-        title={t('modulePanel.sectionPaxCounter')}
+        title={t('modulePanel.sectionSerialModule')}
+        {...moduleSectionProps('serial')}
         onApply={() => {
-          applyMeshtasticModule('Pax Counter', 'paxcounter', paxCfg, {
-            enabled: paxEnabled,
-            paxcounterUpdateInterval: paxInterval,
+          const merged = buildMeshtasticModuleApplyValue('serial', serialCfg, {
+            enabled: serialEnabled,
+            echo: serialEcho,
+            rxd: serialRxd,
+            txd: serialTxd,
+            baud: serialBaud,
+            timeout: serialTimeout,
+            mode: serialMode,
+            overrideConsoleSerialPort: serialOverrideConsole,
           });
+          const validationError = validateMeshtasticSerialModuleApply(merged, t);
+          if (validationError) {
+            addToast(validationError, 'error');
+            return;
+          }
+          void applyModule(t('modulePanel.sectionSerialModule'), 'serial', merged);
         }}
-        applying={applyingSection === 'Pax Counter'}
+        applying={applyingSection === 'serial'}
         disabled={disabled}
       >
+        <ModuleStatus packets={serialMessages} label={t('modulePanel.statusLabels.serial')} />
         <ConfigToggle
-          label={t('modulePanel.fields.paxCounterEnabled')}
-          checked={paxEnabled}
-          onChange={setPaxEnabled}
+          label={t('modulePanel.fields.serialModuleEnabled')}
+          checked={serialEnabled}
+          onChange={setSerialEnabled}
           disabled={disabled}
-          description={t('modulePanel.fields.paxCounterEnabledDesc')}
+          description={t('modulePanel.fields.serialModuleEnabledDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.echoMode')}
+          checked={serialEcho}
+          onChange={setSerialEcho}
+          disabled={disabled || !serialEnabled}
+          description={t('modulePanel.fields.serialEchoDesc')}
         />
         <ConfigNumber
-          label={t('modulePanel.fields.paxUpdateInterval')}
-          value={paxInterval}
-          onChange={setPaxInterval}
-          disabled={disabled || !paxEnabled}
+          label={t('modulePanel.fields.serialRxd')}
+          value={serialRxd}
+          onChange={setSerialRxd}
+          disabled={disabled || !serialEnabled}
           min={0}
-          unit="seconds"
-          description={t('modulePanel.fields.paxUpdateIntervalDesc')}
+          description={t('modulePanel.fields.serialRxdDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.serialTxd')}
+          value={serialTxd}
+          onChange={setSerialTxd}
+          disabled={disabled || !serialEnabled}
+          min={0}
+          description={t('modulePanel.fields.serialTxdDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.baudRate')}
+          value={serialBaud}
+          onChange={setSerialBaud}
+          disabled={disabled || !serialEnabled}
+          options={[
+            { value: 0, label: 'Default' },
+            { value: 1, label: '110' },
+            { value: 2, label: '300' },
+            { value: 3, label: '600' },
+            { value: 4, label: '1200' },
+            { value: 5, label: '2400' },
+            { value: 6, label: '4800' },
+            { value: 7, label: '9600' },
+            { value: 8, label: '19200' },
+            { value: 9, label: '38400' },
+            { value: 10, label: '57600' },
+            { value: 11, label: '115200' },
+            { value: 12, label: '230400' },
+            { value: 13, label: '460800' },
+            { value: 14, label: '576000' },
+            { value: 15, label: '921600' },
+          ]}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.serialTimeout')}
+          value={serialTimeout}
+          onChange={setSerialTimeout}
+          disabled={disabled || !serialEnabled}
+          min={0}
+          unit="ms"
+          description={t('modulePanel.fields.serialTimeoutDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.serialMode')}
+          value={serialMode}
+          onChange={setSerialMode}
+          disabled={disabled || !serialEnabled}
+          options={[
+            { value: 0, label: 'Default' },
+            { value: 1, label: 'Simple' },
+            { value: 2, label: 'Proto' },
+            { value: 3, label: 'Text message' },
+            { value: 4, label: 'NMEA' },
+            { value: 5, label: 'CalTopo' },
+            { value: 6, label: 'WS85' },
+            { value: 7, label: 'VE.Direct' },
+            { value: 8, label: 'MeshSolar config' },
+            { value: 9, label: 'Log (all packets)' },
+            { value: 10, label: 'Log (text only)' },
+          ]}
+          description={t('modulePanel.fields.serialModeDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.serialOverrideConsole')}
+          checked={serialOverrideConsole}
+          onChange={setSerialOverrideConsole}
+          disabled={disabled || !serialEnabled}
+          description={t('modulePanel.fields.serialOverrideConsoleDesc')}
         />
       </ModuleSection>
 
-      {/* ═══ Remote Hardware ═══ */}
-      <StatusOnlySection title={t('modulePanel.sectionRemoteHardware')}>
-        <ModuleStatus packets={remoteHardwareMessages} label={t('modulePanel.statusLabels.gpio')} />
-        <p className="text-muted text-xs">{t('modulePanel.fields.remoteHardwareHint')}</p>
-      </StatusOnlySection>
+      {/* ═══ External Notification Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionExternalNotification')}
+        {...moduleSectionProps('externalNotification')}
+        onApply={() => {
+          applyMeshtasticModule(
+            t('modulePanel.sectionExternalNotification'),
+            'externalNotification',
+            extNotifCfg,
+            {
+              enabled: extEnabled,
+              active: extActive,
+              output: extOutput,
+              outputBuzzer: extOutputBuzzer,
+              outputVibra: extOutputVibra,
+              outputMs: extOutputMs,
+              nagTimeout: extNagTimeout,
+              alertMessage: extAlertMessage,
+              alertMessageBuzzer: extAlertMessageBuzzer,
+              alertMessageVibra: extAlertMessageVibra,
+              alertBell: extAlertBell,
+              alertBellBuzzer: extAlertBellBuzzer,
+              alertBellVibra: extAlertBellVibra,
+              usePwm: extUsePwm,
+              useI2sAsBuzzer: extUseI2sAsBuzzer,
+            },
+          );
+        }}
+        applying={applyingSection === 'externalNotification'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.extNotifModuleEnabled')}
+          checked={extEnabled}
+          onChange={setExtEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.extNotifModuleDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.activeHigh')}
+          checked={extActive}
+          onChange={setExtActive}
+          disabled={disabled || !extEnabled}
+          description={t('modulePanel.fields.activeHighDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.primaryOutputGpio')}
+          value={extOutput}
+          onChange={setExtOutput}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={48}
+          description={t('modulePanel.fields.primaryOutputGpioDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.buzzerGpio')}
+          value={extOutputBuzzer}
+          onChange={setExtOutputBuzzer}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={48}
+          description={t('modulePanel.fields.buzzerGpioDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.vibrationGpio')}
+          value={extOutputVibra}
+          onChange={setExtOutputVibra}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={48}
+          description={t('modulePanel.fields.vibrationGpioDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.outputDuration')}
+          value={extOutputMs}
+          onChange={setExtOutputMs}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={32767}
+          unit="ms"
+          description={t('modulePanel.fields.outputDurationDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.nagTimeout')}
+          value={extNagTimeout}
+          onChange={setExtNagTimeout}
+          disabled={disabled || !extEnabled}
+          min={0}
+          max={32767}
+          unit={secondsUnit}
+          description={t('modulePanel.fields.nagTimeoutDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.alertOnMessage')}
+          checked={extAlertMessage}
+          onChange={setExtAlertMessage}
+          disabled={disabled || !extEnabled}
+          description={t('modulePanel.fields.alertOnMessageDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.buzzerOnMessage')}
+          checked={extAlertMessageBuzzer}
+          onChange={setExtAlertMessageBuzzer}
+          disabled={disabled || !extEnabled || !extAlertMessage}
+          description={t('modulePanel.fields.buzzerOnMessageDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.vibrationOnMessage')}
+          checked={extAlertMessageVibra}
+          onChange={setExtAlertMessageVibra}
+          disabled={disabled || !extEnabled || !extAlertMessage}
+          description={t('modulePanel.fields.vibrationOnMessageDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.alertOnBell')}
+          checked={extAlertBell}
+          onChange={setExtAlertBell}
+          disabled={disabled || !extEnabled}
+          description={t('modulePanel.fields.alertOnBellDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.buzzerOnBell')}
+          checked={extAlertBellBuzzer}
+          onChange={setExtAlertBellBuzzer}
+          disabled={disabled || !extEnabled || !extAlertBell}
+          description={t('modulePanel.fields.buzzerOnBellDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.vibrationOnBell')}
+          checked={extAlertBellVibra}
+          onChange={setExtAlertBellVibra}
+          disabled={disabled || !extEnabled || !extAlertBell}
+          description={t('modulePanel.fields.vibrationOnBellDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.usePwmBuzzer')}
+          checked={extUsePwm}
+          onChange={setExtUsePwm}
+          disabled={disabled || !extEnabled}
+          description={t('modulePanel.fields.usePwmBuzzerDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.useI2sBuzzer')}
+          checked={extUseI2sAsBuzzer}
+          onChange={setExtUseI2sAsBuzzer}
+          disabled={disabled || !extEnabled}
+          description={t('modulePanel.fields.useI2sBuzzerDesc')}
+        />
+      </ModuleSection>
+
+      {/* ═══ Store & Forward Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionStoreForward')}
+        {...moduleSectionProps('storeForward')}
+        onApply={() => {
+          applyMeshtasticModule(t('modulePanel.sectionStoreForward'), 'storeForward', sfCfg, {
+            enabled: sfEnabled,
+            heartbeat: sfHeartbeat,
+            records: sfNumRecords,
+            historyReturnMax: sfHistoryMax,
+            historyReturnWindow: sfHistoryWindow,
+          });
+        }}
+        applying={applyingSection === 'storeForward'}
+        disabled={disabled}
+      >
+        <ModuleStatus
+          packets={storeForwardMessages}
+          label={t('modulePanel.statusLabels.storeForward')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.storeForwardEnabled')}
+          checked={sfEnabled}
+          onChange={setSfEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.sfEnabledDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.sendHeartbeat')}
+          checked={sfHeartbeat}
+          onChange={setSfHeartbeat}
+          disabled={disabled || !sfEnabled}
+          description={t('modulePanel.fields.sfHeartbeatDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.maxStoredRecords')}
+          value={sfNumRecords}
+          onChange={setSfNumRecords}
+          disabled={disabled || !sfEnabled}
+          min={0}
+          description={t('modulePanel.fields.sfNumRecordsDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.historyReturnMax')}
+          value={sfHistoryMax}
+          onChange={setSfHistoryMax}
+          disabled={disabled || !sfEnabled}
+          min={1}
+          max={300}
+          description={t('modulePanel.fields.historyReturnMaxDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.historyReturnWindow')}
+          value={sfHistoryWindow}
+          onChange={setSfHistoryWindow}
+          disabled={disabled || !sfEnabled}
+          min={0}
+          unit={secondsUnit}
+          description={t('modulePanel.fields.historyReturnWindowDesc')}
+        />
+      </ModuleSection>
 
       {/* ═══ Range Test Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionRangeTest')}
+        {...moduleSectionProps('rangeTest')}
         onApply={() => {
-          applyMeshtasticModule('Range Test', 'rangeTest', rangeCfg, {
+          applyMeshtasticModule(t('modulePanel.sectionRangeTest'), 'rangeTest', rangeCfg, {
             enabled: rangeEnabled,
             sender: rangeSenderInterval,
             save: rangeSave,
           });
         }}
-        applying={applyingSection === 'Range Test'}
+        applying={applyingSection === 'rangeTest'}
         disabled={disabled}
       >
         <ModuleStatus packets={rangeTestPackets} label={t('modulePanel.statusLabels.rangeTest')} />
@@ -1132,7 +1348,7 @@ export default function ModulePanel({
           disabled={disabled || !rangeEnabled}
           min={0}
           max={3600}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.senderIntervalDesc')}
         />
         <ConfigToggle
@@ -1144,12 +1360,733 @@ export default function ModulePanel({
         />
       </ModuleSection>
 
+      {/* ═══ Telemetry Module ═══ */}
+      {'telemetry' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionTelemetryModule')}
+          {...moduleSectionProps('telemetry')}
+          onApply={() => {
+            applyMeshtasticModule(t('modulePanel.sectionTelemetryModule'), 'telemetry', telCfg, {
+              deviceTelemetryEnabled: telDeviceTelemetryEnabled,
+              deviceUpdateInterval: telDeviceInterval,
+              environmentMeasurementEnabled: telEnvEnabled,
+              environmentUpdateInterval: telEnvInterval,
+              environmentScreenEnabled: telEnvScreenEnabled,
+              environmentDisplayFahrenheit: telEnvFahrenheit,
+              airQualityEnabled: telAirQualityEnabled,
+              airQualityInterval: telAirQualityInterval,
+              powerMeasurementEnabled: telPowerEnabled,
+              powerUpdateInterval: telPowerInterval,
+              powerScreenEnabled: telPowerScreenEnabled,
+            });
+          }}
+          applying={applyingSection === 'telemetry'}
+          disabled={disabled}
+        >
+          <ConfigToggle
+            label={t('modulePanel.fields.telDeviceTelemetryEnabled')}
+            checked={telDeviceTelemetryEnabled}
+            onChange={setTelDeviceTelemetryEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telDeviceTelemetryEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telDeviceInterval')}
+            value={telDeviceInterval}
+            onChange={setTelDeviceInterval}
+            disabled={disabled || !telDeviceTelemetryEnabled}
+            min={0}
+            max={86400}
+            unit={t('radioPanel.secondsUnit')}
+            description={t('modulePanel.telemetryDeviceMetricsDescription')}
+            tooltip={t('modulePanel.telemetryDeviceMetricsTooltip')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telEnvEnabled')}
+            checked={telEnvEnabled}
+            onChange={setTelEnvEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telEnvEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telEnvInterval')}
+            value={telEnvInterval}
+            onChange={setTelEnvInterval}
+            disabled={disabled || !telEnvEnabled}
+            min={0}
+            max={86400}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.telEnvIntervalDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telEnvScreenEnabled')}
+            checked={telEnvScreenEnabled}
+            onChange={setTelEnvScreenEnabled}
+            disabled={disabled || !telEnvEnabled}
+            description={t('modulePanel.fields.telEnvScreenEnabledDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telEnvFahrenheit')}
+            checked={telEnvFahrenheit}
+            onChange={setTelEnvFahrenheit}
+            disabled={disabled || !telEnvEnabled}
+            description={t('modulePanel.fields.telEnvFahrenheitDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telAirQualityEnabled')}
+            checked={telAirQualityEnabled}
+            onChange={setTelAirQualityEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telAirQualityEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telAirQualityInterval')}
+            value={telAirQualityInterval}
+            onChange={setTelAirQualityInterval}
+            disabled={disabled || !telAirQualityEnabled}
+            min={0}
+            max={86400}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.telAirQualityIntervalDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telPowerEnabled')}
+            checked={telPowerEnabled}
+            onChange={setTelPowerEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telPowerEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telPowerInterval')}
+            value={telPowerInterval}
+            onChange={setTelPowerInterval}
+            disabled={disabled || !telPowerEnabled}
+            min={0}
+            max={86400}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.telPowerIntervalDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telPowerScreenEnabled')}
+            checked={telPowerScreenEnabled}
+            onChange={setTelPowerScreenEnabled}
+            disabled={disabled || !telPowerEnabled}
+            description={t('modulePanel.fields.telPowerScreenEnabledDesc')}
+          />
+        </ModuleSection>
+      )}
+
+      {/* ═══ Canned Messages ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionCannedMessages')}
+        {...moduleSectionProps('cannedMessage')}
+        onApply={async () => {
+          setApplyingSection('cannedMessage');
+          try {
+            const lines = cannedText
+              .split('\n')
+              .map((l) => l.trim())
+              .filter(Boolean);
+            await onSetCannedMessages(lines);
+            await onSetModuleConfig({
+              payloadVariant: {
+                case: 'cannedMessage',
+                value: mergeMeshtasticConfigApplyValue(cannedCfg, {
+                  enabled: cannedEnabled,
+                  rotary1Enabled: cannedRotary1Enabled,
+                  inputbrokerPinA: cannedPinA,
+                  inputbrokerPinB: cannedPinB,
+                  inputbrokerPinPress: cannedPinPress,
+                  inputbrokerEventCw: cannedEventCw,
+                  inputbrokerEventCcw: cannedEventCcw,
+                  inputbrokerEventPress: cannedEventPress,
+                  updown1Enabled: cannedUpdown1Enabled,
+                  allowInputSource: cannedAllowInputSource,
+                  sendBell: cannedSendBell,
+                }),
+              },
+            });
+            await onCommit();
+            addToast(t('modulePanel.cannedMessagesApplied'), 'success');
+          } catch (err) {
+            console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
+            addToast(
+              t('modulePanel.failed', {
+                message: formatMeshtasticModuleApplyError(err, t),
+              }),
+              'error',
+            );
+          } finally {
+            setApplyingSection(null);
+          }
+        }}
+        applying={applyingSection === 'cannedMessage'}
+        disabled={disabled || remoteTarget}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedMessagesEnabled')}
+          checked={cannedEnabled}
+          onChange={setCannedEnabled}
+          disabled={disabled}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedRotary1Enabled')}
+          checked={cannedRotary1Enabled}
+          onChange={setCannedRotary1Enabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedRotary1EnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.cannedPinA')}
+          value={cannedPinA}
+          onChange={setCannedPinA}
+          disabled={disabled || !cannedRotary1Enabled}
+          min={0}
+          description={t('modulePanel.fields.cannedPinADesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.cannedPinB')}
+          value={cannedPinB}
+          onChange={setCannedPinB}
+          disabled={disabled || !cannedRotary1Enabled}
+          min={0}
+          description={t('modulePanel.fields.cannedPinBDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.cannedPinPress')}
+          value={cannedPinPress}
+          onChange={setCannedPinPress}
+          disabled={disabled || !cannedRotary1Enabled}
+          min={0}
+          description={t('modulePanel.fields.cannedPinPressDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.cannedEventCw')}
+          value={cannedEventCw}
+          onChange={setCannedEventCw}
+          disabled={disabled || !cannedRotary1Enabled}
+          options={INPUT_EVENT_OPTIONS}
+          description={t('modulePanel.fields.cannedEventCwDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.cannedEventCcw')}
+          value={cannedEventCcw}
+          onChange={setCannedEventCcw}
+          disabled={disabled || !cannedRotary1Enabled}
+          options={INPUT_EVENT_OPTIONS}
+          description={t('modulePanel.fields.cannedEventCcwDesc')}
+        />
+        <ConfigSelect
+          label={t('modulePanel.fields.cannedEventPress')}
+          value={cannedEventPress}
+          onChange={setCannedEventPress}
+          disabled={disabled || !cannedRotary1Enabled}
+          options={INPUT_EVENT_OPTIONS}
+          description={t('modulePanel.fields.cannedEventPressDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedUpdown1Enabled')}
+          checked={cannedUpdown1Enabled}
+          onChange={setCannedUpdown1Enabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedUpdown1EnabledDesc')}
+        />
+        <ConfigText
+          label={t('modulePanel.fields.cannedAllowInputSource')}
+          value={cannedAllowInputSource}
+          onChange={setCannedAllowInputSource}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedAllowInputSourceDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.cannedSendBell')}
+          checked={cannedSendBell}
+          onChange={setCannedSendBell}
+          disabled={disabled}
+          description={t('modulePanel.fields.cannedSendBellDesc')}
+        />
+        <div className="space-y-1">
+          <label htmlFor="module-canned-messages" className="text-muted text-sm">
+            {t('modulePanel.fields.messagesOnePerLine')}
+          </label>
+          <textarea
+            id="module-canned-messages"
+            value={cannedText}
+            onChange={(e) => {
+              setCannedText(e.target.value);
+            }}
+            disabled={disabled || !cannedEnabled}
+            rows={6}
+            placeholder={t('modulePanel.fields.cannedMessagesPlaceholder')}
+            spellCheck={false}
+            className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+          />
+          <p className="text-muted text-xs">{t('modulePanel.fields.cannedMessagesHint')}</p>
+        </div>
+      </ModuleSection>
+
+      {/* ═══ Neighbor Info Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionNeighborInfo')}
+        {...moduleSectionProps('neighborInfo')}
+        onApply={() => {
+          applyMeshtasticModule(
+            t('modulePanel.sectionNeighborInfo'),
+            'neighborInfo',
+            neighborInfoCfg,
+            {
+              enabled: neighborInfoEnabled,
+              updateInterval: neighborInfoUpdateInterval,
+              transmitOverLora: neighborInfoTransmitOverLora,
+            },
+          );
+        }}
+        applying={applyingSection === 'neighborInfo'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.neighborInfoEnabled')}
+          checked={neighborInfoEnabled}
+          onChange={setNeighborInfoEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.neighborInfoEnabledDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.neighborInfoUpdateInterval')}
+          value={neighborInfoUpdateInterval}
+          onChange={setNeighborInfoUpdateInterval}
+          disabled={disabled || !neighborInfoEnabled}
+          min={0}
+          unit={secondsUnit}
+          description={t('modulePanel.fields.neighborInfoUpdateIntervalDesc')}
+        />
+        <ConfigToggle
+          label={t('modulePanel.fields.neighborInfoTransmitOverLora')}
+          checked={neighborInfoTransmitOverLora}
+          onChange={setNeighborInfoTransmitOverLora}
+          disabled={disabled || !neighborInfoEnabled}
+          description={t('modulePanel.fields.neighborInfoTransmitOverLoraDesc')}
+        />
+      </ModuleSection>
+
+      {/* ═══ Ambient Lighting Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionAmbientLighting')}
+        {...moduleSectionProps('ambientLighting')}
+        onApply={() => {
+          applyMeshtasticModule(
+            t('modulePanel.sectionAmbientLighting'),
+            'ambientLighting',
+            ambientCfg,
+            {
+              ledState: ambientLedState,
+              red: ambientRed,
+              green: ambientGreen,
+              blue: ambientBlue,
+              current: ambientCurrent,
+            },
+          );
+        }}
+        applying={applyingSection === 'ambientLighting'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.ledEnabled')}
+          checked={ambientLedState}
+          onChange={setAmbientLedState}
+          disabled={disabled}
+          description={t('modulePanel.fields.ledEnabledDesc')}
+        />
+        <div className="space-y-1">
+          <label htmlFor="module-ambient-color" className="text-muted text-sm">
+            {t('modulePanel.fields.color')}
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              id="module-ambient-color"
+              type="color"
+              value={ambientHex}
+              onChange={(e) => {
+                handleAmbientColorChange(e.target.value);
+              }}
+              disabled={disabled || !ambientLedState}
+              className="bg-secondary-dark h-9 w-16 cursor-pointer rounded border border-gray-600 p-0.5 disabled:opacity-50"
+            />
+            <span className="font-mono text-sm text-gray-400">{ambientHex.toUpperCase()}</span>
+            <span className="text-muted text-xs">
+              R:{ambientRed} G:{ambientGreen} B:{ambientBlue}
+            </span>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="module-ambient-current" className="text-muted text-sm">
+            {t('modulePanel.fields.brightnessCurrent', { value: ambientCurrent })}
+          </label>
+          <input
+            id="module-ambient-current"
+            type="range"
+            min={0}
+            max={31}
+            value={ambientCurrent}
+            onChange={(e) => {
+              setAmbientCurrent(Number(e.target.value));
+            }}
+            disabled={disabled || !ambientLedState}
+            className="accent-readable-green w-full disabled:opacity-50"
+          />
+          <p className="text-muted text-xs">{t('modulePanel.fields.brightnessHint')}</p>
+        </div>
+      </ModuleSection>
+
+      {/* ═══ Detection Sensor Module ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionDetectionSensor')}
+        {...moduleSectionProps('detectionSensor')}
+        onApply={() => {
+          applyMeshtasticModule(
+            t('modulePanel.sectionDetectionSensor'),
+            'detectionSensor',
+            detectCfg,
+            {
+              enabled: detectEnabled,
+              name: detectName,
+              minimumBroadcastSecs: detectMinBroadcast,
+              stateBroadcastSecs: detectStateBroadcast,
+            },
+          );
+        }}
+        applying={applyingSection === 'detectionSensor'}
+        disabled={disabled}
+      >
+        <ConfigToggle
+          label={t('modulePanel.fields.detectionSensorEnabled')}
+          checked={detectEnabled}
+          onChange={setDetectEnabled}
+          disabled={disabled}
+          description={t('modulePanel.fields.detectionSensorDesc')}
+        />
+        <ConfigText
+          label={t('modulePanel.fields.sensorName')}
+          value={detectName}
+          onChange={setDetectName}
+          disabled={disabled || !detectEnabled}
+          description={t('modulePanel.fields.sensorNameDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.minBroadcastInterval')}
+          value={detectMinBroadcast}
+          onChange={setDetectMinBroadcast}
+          disabled={disabled || !detectEnabled}
+          min={0}
+          unit={secondsUnit}
+          description={t('modulePanel.fields.minBroadcastIntervalDesc')}
+        />
+        <ConfigNumber
+          label={t('modulePanel.fields.stateBroadcastInterval')}
+          value={detectStateBroadcast}
+          onChange={setDetectStateBroadcast}
+          disabled={disabled || !detectEnabled}
+          min={0}
+          unit={secondsUnit}
+          description={t('modulePanel.fields.stateBroadcastIntervalDesc')}
+        />
+      </ModuleSection>
+
+      {/* ═══ Remote Hardware Module ═══ */}
+      {'remoteHardware' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionRemoteHardware')}
+          {...moduleSectionProps('remoteHardware')}
+          onApply={() => {
+            applyMeshtasticModule(
+              t('modulePanel.sectionRemoteHardware'),
+              'remoteHardware',
+              remoteHardwareCfg,
+              {
+                enabled: remoteHardwareEnabled,
+                allowUndefinedPinAccess: remoteHardwareEnabled && remoteHardwareAllowUndefinedPins,
+              },
+            );
+          }}
+          applying={applyingSection === 'remoteHardware'}
+          disabled={disabled}
+        >
+          {remoteHardwareMessages != null && (
+            <ModuleStatus
+              packets={remoteHardwareMessages}
+              label={t('modulePanel.statusLabels.gpio')}
+            />
+          )}
+          <ConfigToggle
+            label={t('modulePanel.fields.remoteHardwareEnabled')}
+            checked={remoteHardwareEnabled}
+            onChange={(enabled) => {
+              if (enabled && !remoteHardwareEnabled) {
+                setRhPendingConfirm('enable');
+                return;
+              }
+              setRemoteHardwareEnabled(enabled);
+              if (!enabled) setRemoteHardwareAllowUndefinedPins(false);
+            }}
+            disabled={disabled}
+            description={t('modulePanel.fields.remoteHardwareEnabledDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.remoteHardwareAllowUndefinedPins')}
+            checked={remoteHardwareAllowUndefinedPins}
+            onChange={(allow) => {
+              if (allow && !remoteHardwareAllowUndefinedPins) {
+                setRhPendingConfirm('undefinedPins');
+                return;
+              }
+              setRemoteHardwareAllowUndefinedPins(allow);
+            }}
+            disabled={disabled || !remoteHardwareEnabled}
+            description={t('modulePanel.fields.remoteHardwareAllowUndefinedPinsDesc')}
+          />
+          <p className="text-muted text-xs">{t('modulePanel.fields.remoteHardwareHint')}</p>
+        </ModuleSection>
+      )}
+
+      {/* ═══ Pax Counter Module ═══ */}
+      {'paxcounter' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionPaxCounter')}
+          {...moduleSectionProps('paxcounter')}
+          onApply={() => {
+            applyMeshtasticModule(t('modulePanel.sectionPaxCounter'), 'paxcounter', paxCfg, {
+              enabled: paxEnabled,
+              paxcounterUpdateInterval: paxInterval,
+            });
+          }}
+          applying={applyingSection === 'paxcounter'}
+          disabled={disabled}
+        >
+          <ConfigToggle
+            label={t('modulePanel.fields.paxCounterEnabled')}
+            checked={paxEnabled}
+            onChange={setPaxEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.paxCounterEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.paxUpdateInterval')}
+            value={paxInterval}
+            onChange={setPaxInterval}
+            disabled={disabled || !paxEnabled}
+            min={0}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.paxUpdateIntervalDesc')}
+          />
+        </ModuleSection>
+      )}
+
+      {/* ═══ Traffic Management Module ═══ */}
+      {'trafficManagement' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionTrafficManagement')}
+          {...moduleSectionProps('trafficManagement')}
+          onApply={() => {
+            applyMeshtasticModule(
+              t('modulePanel.sectionTrafficManagement'),
+              'trafficManagement',
+              trafficMgmtCfg,
+              {
+                enabled: tmEnabled,
+                positionDedupEnabled: tmPositionDedupEnabled,
+                positionPrecisionBits: tmPositionPrecisionBits,
+                positionMinIntervalSecs: tmPositionMinIntervalSecs,
+                nodeinfoDirectResponse: tmNodeinfoDirectResponse,
+                nodeinfoDirectResponseMaxHops: tmNodeinfoDirectResponseMaxHops,
+                rateLimitEnabled: tmRateLimitEnabled,
+                rateLimitWindowSecs: tmRateLimitWindowSecs,
+                rateLimitMaxPackets: tmRateLimitMaxPackets,
+                dropUnknownEnabled: tmDropUnknownEnabled,
+                unknownPacketThreshold: tmUnknownPacketThreshold,
+                exhaustHopTelemetry: tmExhaustHopTelemetry,
+                exhaustHopPosition: tmExhaustHopPosition,
+                routerPreserveHops: tmRouterPreserveHops,
+              },
+            );
+          }}
+          applying={applyingSection === 'trafficManagement'}
+          disabled={disabled}
+        >
+          <ConfigToggle
+            label={t('modulePanel.fields.tmEnabled')}
+            checked={tmEnabled}
+            onChange={setTmEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.tmEnabledDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmPositionDedupEnabled')}
+            checked={tmPositionDedupEnabled}
+            onChange={setTmPositionDedupEnabled}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmPositionDedupEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.tmPositionPrecisionBits')}
+            value={tmPositionPrecisionBits}
+            onChange={setTmPositionPrecisionBits}
+            disabled={disabled || !tmEnabled || !tmPositionDedupEnabled}
+            min={0}
+            max={32}
+            description={t('modulePanel.fields.tmPositionPrecisionBitsDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.tmPositionMinIntervalSecs')}
+            value={tmPositionMinIntervalSecs}
+            onChange={setTmPositionMinIntervalSecs}
+            disabled={disabled || !tmEnabled}
+            min={0}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.tmPositionMinIntervalSecsDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmNodeinfoDirectResponse')}
+            checked={tmNodeinfoDirectResponse}
+            onChange={setTmNodeinfoDirectResponse}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmNodeinfoDirectResponseDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.tmNodeinfoDirectResponseMaxHops')}
+            value={tmNodeinfoDirectResponseMaxHops}
+            onChange={setTmNodeinfoDirectResponseMaxHops}
+            disabled={disabled || !tmEnabled || !tmNodeinfoDirectResponse}
+            min={0}
+            description={t('modulePanel.fields.tmNodeinfoDirectResponseMaxHopsDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmRateLimitEnabled')}
+            checked={tmRateLimitEnabled}
+            onChange={setTmRateLimitEnabled}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmRateLimitEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.tmRateLimitWindowSecs')}
+            value={tmRateLimitWindowSecs}
+            onChange={setTmRateLimitWindowSecs}
+            disabled={disabled || !tmEnabled || !tmRateLimitEnabled}
+            min={0}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.tmRateLimitWindowSecsDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.tmRateLimitMaxPackets')}
+            value={tmRateLimitMaxPackets}
+            onChange={setTmRateLimitMaxPackets}
+            disabled={disabled || !tmEnabled || !tmRateLimitEnabled}
+            min={0}
+            description={t('modulePanel.fields.tmRateLimitMaxPacketsDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmDropUnknownEnabled')}
+            checked={tmDropUnknownEnabled}
+            onChange={setTmDropUnknownEnabled}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmDropUnknownEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.tmUnknownPacketThreshold')}
+            value={tmUnknownPacketThreshold}
+            onChange={setTmUnknownPacketThreshold}
+            disabled={disabled || !tmEnabled || !tmDropUnknownEnabled}
+            min={0}
+            description={t('modulePanel.fields.tmUnknownPacketThresholdDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmExhaustHopTelemetry')}
+            checked={tmExhaustHopTelemetry}
+            onChange={setTmExhaustHopTelemetry}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmExhaustHopTelemetryDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmExhaustHopPosition')}
+            checked={tmExhaustHopPosition}
+            onChange={setTmExhaustHopPosition}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmExhaustHopPositionDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.tmRouterPreserveHops')}
+            checked={tmRouterPreserveHops}
+            onChange={setTmRouterPreserveHops}
+            disabled={disabled || !tmEnabled}
+            description={t('modulePanel.fields.tmRouterPreserveHopsDesc')}
+          />
+        </ModuleSection>
+      )}
+
+      {/* ═══ TAK Module ═══ */}
+      {'tak' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionTak')}
+          {...moduleSectionProps('tak')}
+          onApply={() => {
+            applyMeshtasticModule(t('modulePanel.sectionTak'), 'tak', takCfg, {
+              team: takTeam,
+              role: takRole,
+            });
+          }}
+          applying={applyingSection === 'tak'}
+          disabled={disabled}
+        >
+          <ConfigSelect
+            label={t('modulePanel.fields.takTeam')}
+            value={takTeam}
+            onChange={setTakTeam}
+            disabled={disabled}
+            description={t('modulePanel.fields.takTeamDesc')}
+            options={[
+              { value: 0, label: t('modulePanel.fields.takTeamUnspecified') },
+              { value: 1, label: 'White' },
+              { value: 2, label: 'Yellow' },
+              { value: 3, label: 'Orange' },
+              { value: 4, label: 'Magenta' },
+              { value: 5, label: 'Red' },
+              { value: 6, label: 'Maroon' },
+              { value: 7, label: 'Purple' },
+              { value: 8, label: 'Dark Blue' },
+              { value: 9, label: 'Blue' },
+              { value: 10, label: 'Cyan' },
+              { value: 11, label: 'Teal' },
+              { value: 12, label: 'Green' },
+              { value: 13, label: 'Dark Green' },
+              { value: 14, label: 'Brown' },
+            ]}
+          />
+          <ConfigSelect
+            label={t('modulePanel.fields.takRole')}
+            value={takRole}
+            onChange={setTakRole}
+            disabled={disabled}
+            description={t('modulePanel.fields.takRoleDesc')}
+            options={[
+              { value: 0, label: t('modulePanel.fields.takRoleUnspecified') },
+              { value: 1, label: 'Team Member' },
+              { value: 2, label: 'Team Lead' },
+              { value: 3, label: 'HQ' },
+              { value: 4, label: 'Sniper' },
+              { value: 5, label: 'Medic' },
+              { value: 6, label: 'Forward Observer' },
+              { value: 7, label: 'RTO' },
+              { value: 8, label: 'K9' },
+            ]}
+          />
+        </ModuleSection>
+      )}
+
       {/* ═══ RTTTL Ringtone ═══ */}
       {onSetRingtone && (
         <ModuleSection
           title={t('modulePanel.sectionRtttlRingtone')}
           onApply={async () => {
-            setApplyingSection('RTTTL Ringtone');
+            setApplyingSection('rtttlRingtone');
             try {
               await onSetRingtone(ringtoneText);
               await onCommit();
@@ -1166,7 +2103,7 @@ export default function ModulePanel({
               setApplyingSection(null);
             }
           }}
-          applying={applyingSection === 'RTTTL Ringtone'}
+          applying={applyingSection === 'rtttlRingtone'}
           disabled={disabled || remoteTarget}
         >
           <div className="space-y-1">
@@ -1218,178 +2155,43 @@ export default function ModulePanel({
         </ModuleSection>
       )}
 
-      {/* ═══ Serial Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionSerialModule')}
-        onApply={() => {
-          const merged = buildMeshtasticModuleApplyValue('serial', serialCfg, {
-            enabled: serialEnabled,
-            echo: serialEcho,
-            baud: serialBaud,
-          });
-          const validationError = validateMeshtasticSerialModuleApply(merged, t);
-          if (validationError) {
-            addToast(validationError, 'error');
-            return;
-          }
-          void applyModule('Serial Module', 'serial', merged);
-        }}
-        applying={applyingSection === 'Serial Module'}
-        disabled={disabled}
-      >
-        <ModuleStatus packets={serialMessages} label={t('modulePanel.statusLabels.serial')} />
-        <ConfigToggle
-          label={t('modulePanel.fields.serialModuleEnabled')}
-          checked={serialEnabled}
-          onChange={setSerialEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.serialModuleEnabledDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.echoMode')}
-          checked={serialEcho}
-          onChange={setSerialEcho}
-          disabled={disabled || !serialEnabled}
-          description={t('modulePanel.fields.serialEchoDesc')}
-        />
-        <div className="space-y-1">
-          <label htmlFor="module-serial-baud" className="text-muted text-sm">
-            {t('modulePanel.fields.baudRate')}
-          </label>
-          <select
-            id="module-serial-baud"
-            value={serialBaud}
-            onChange={(e) => {
-              setSerialBaud(Number(e.target.value));
-            }}
-            disabled={disabled || !serialEnabled}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
-          >
-            {[9600, 19200, 38400, 57600, 115200, 230400].map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </div>
-      </ModuleSection>
+      {/* ═══ IP Tunnel ═══ */}
+      {ipTunnelMessages != null && (
+        <StatusOnlySection title={t('modulePanel.sectionIpTunnel')}>
+          <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
+          <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>
+        </StatusOnlySection>
+      )}
 
-      {/* ═══ Store & Forward Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionStoreForward')}
-        onApply={() => {
-          applyMeshtasticModule('Store & Forward', 'storeForward', sfCfg, {
-            enabled: sfEnabled,
-            heartbeat: sfHeartbeat,
-            records: sfNumRecords,
-            historyReturnMax: sfHistoryMax,
-            historyReturnWindow: sfHistoryWindow,
-          });
-        }}
-        applying={applyingSection === 'Store & Forward'}
-        disabled={disabled}
-      >
-        <ModuleStatus
-          packets={storeForwardMessages}
-          label={t('modulePanel.statusLabels.storeForward')}
+      {rhPendingConfirm === 'enable' && (
+        <ConfirmModal
+          title={t('modulePanel.remoteHardwareConfirmEnableTitle')}
+          message={t('modulePanel.remoteHardwareConfirmEnableMessage')}
+          confirmLabel={t('modulePanel.remoteHardwareConfirmEnableLabel')}
+          onConfirm={() => {
+            setRemoteHardwareEnabled(true);
+            setRhPendingConfirm(null);
+          }}
+          onCancel={() => {
+            setRhPendingConfirm(null);
+          }}
         />
-        <ConfigToggle
-          label={t('modulePanel.fields.storeForwardEnabled')}
-          checked={sfEnabled}
-          onChange={setSfEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.sfEnabledDesc')}
+      )}
+      {rhPendingConfirm === 'undefinedPins' && (
+        <ConfirmModal
+          title={t('modulePanel.remoteHardwareConfirmUndefinedPinsTitle')}
+          message={t('modulePanel.remoteHardwareConfirmUndefinedPinsMessage')}
+          confirmLabel={t('modulePanel.remoteHardwareConfirmUndefinedPinsLabel')}
+          danger
+          onConfirm={() => {
+            setRemoteHardwareAllowUndefinedPins(true);
+            setRhPendingConfirm(null);
+          }}
+          onCancel={() => {
+            setRhPendingConfirm(null);
+          }}
         />
-        <ConfigToggle
-          label={t('modulePanel.fields.sendHeartbeat')}
-          checked={sfHeartbeat}
-          onChange={setSfHeartbeat}
-          disabled={disabled || !sfEnabled}
-          description={t('modulePanel.fields.sfHeartbeatDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.maxStoredRecords')}
-          value={sfNumRecords}
-          onChange={setSfNumRecords}
-          disabled={disabled || !sfEnabled}
-          min={0}
-          description={t('modulePanel.fields.sfNumRecordsDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.historyReturnMax')}
-          value={sfHistoryMax}
-          onChange={setSfHistoryMax}
-          disabled={disabled || !sfEnabled}
-          min={1}
-          max={300}
-          description={t('modulePanel.fields.historyReturnMaxDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.historyReturnWindow')}
-          value={sfHistoryWindow}
-          onChange={setSfHistoryWindow}
-          disabled={disabled || !sfEnabled}
-          min={0}
-          unit="seconds"
-          description={t('modulePanel.fields.historyReturnWindowDesc')}
-        />
-      </ModuleSection>
-
-      {/* ═══ Telemetry Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionTelemetryModule')}
-        onApply={() => {
-          applyMeshtasticModule('Telemetry Module', 'telemetry', telCfg, {
-            deviceUpdateInterval: telDeviceInterval,
-            environmentUpdateInterval: telEnvInterval,
-            environmentMeasurementEnabled: telEnvEnabled,
-            powerMeasurementEnabled: telPowerEnabled,
-            airQualityEnabled: telAirQualityEnabled,
-          });
-        }}
-        applying={applyingSection === 'Telemetry Module'}
-        disabled={disabled}
-      >
-        <ConfigNumber
-          label={t('modulePanel.fields.telDeviceInterval')}
-          value={telDeviceInterval}
-          onChange={setTelDeviceInterval}
-          disabled={disabled}
-          min={0}
-          max={86400}
-          unit="seconds"
-          description={t('modulePanel.telemetryDeviceMetricsDescription')}
-          tooltip={t('modulePanel.telemetryDeviceMetricsTooltip')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.telEnvInterval')}
-          value={telEnvInterval}
-          onChange={setTelEnvInterval}
-          disabled={disabled}
-          min={0}
-          max={86400}
-          unit="seconds"
-          description={t('modulePanel.fields.telEnvIntervalDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telEnvEnabled')}
-          checked={telEnvEnabled}
-          onChange={setTelEnvEnabled}
-          disabled={disabled}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telPowerEnabled')}
-          checked={telPowerEnabled}
-          onChange={setTelPowerEnabled}
-          disabled={disabled}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telAirQualityEnabled')}
-          checked={telAirQualityEnabled}
-          onChange={setTelAirQualityEnabled}
-          disabled={disabled}
-        />
-      </ModuleSection>
+      )}
     </div>
   );
 }

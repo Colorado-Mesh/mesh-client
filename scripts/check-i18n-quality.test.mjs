@@ -345,15 +345,7 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'roomsPanel password placeholder must be a short literal');
   });
 
-  it('passes valid roomsPanel password placeholders', () => {
-    expect(
-      localeStringQualityIssues({
-        locale: 'de',
-        flatKey: 'roomsPanel.guestPasswordPlaceholder',
-        val: 'hallo',
-        enVal: 'hello',
-      }),
-    ).toEqual([]);
+  it('passes valid roomsPanel admin password placeholders', () => {
     expect(
       localeStringQualityIssues({
         locale: 'fr',
@@ -384,6 +376,48 @@ describe('localeStringQualityIssues', () => {
     });
     expectIssue(issues, 'roomsPanel false friend');
     expectIssue(issues, 'habitación');
+  });
+
+  it('flags nl advertentie for mesh flood advert copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'appPanel.floodAdvertHelp',
+      val: 'Verzendt een overstromingsadvertentie wanneer verbonden.',
+      enVal: 'Sends a flood advert when connected.',
+    });
+    expectIssue(issues, 'nl mesh-advert false friend');
+  });
+
+  it('flags de Oberfräse on device role router', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'radioPanel.deviceRoles.2.label',
+      val: 'Oberfräse',
+      enVal: 'Router',
+    });
+    expectIssue(issues, 'de device role false friend');
+    expectIssue(issues, 'Oberfräse');
+  });
+
+  it('flags translated guestPasswordPlaceholder instead of literal hello', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'roomsPanel.guestPasswordPlaceholder',
+      val: 'hola',
+      enVal: 'hello',
+    });
+    expectIssue(issues, 'guestPasswordPlaceholder must stay literal wire password "hello"');
+  });
+
+  it('flags ja hotel 部屋 on roomsPanel.postPlaceholder', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'roomsPanel.postPlaceholder',
+      val: '部屋に投稿…',
+      enVal: 'Post to room…',
+    });
+    expectIssue(issues, 'roomsPanel false friend');
+    expectIssue(issues, 'ルーム');
   });
 
   it('flags legal false friend on mqttProxyToClientEnabled', () => {

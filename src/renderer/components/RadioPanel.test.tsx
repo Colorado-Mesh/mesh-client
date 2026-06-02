@@ -80,6 +80,27 @@ describe('RadioPanel HelpTooltip coverage — LoRa params', () => {
 });
 
 describe('RadioPanel remote target safeguards', () => {
+  it('disables Device apply until device config slice is hydrated', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected meshtasticConfigSlices={{}} />
+      </ToastProvider>,
+    );
+
+    const deviceDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device Role';
+    });
+    expect(deviceDetails).toBeDefined();
+    await user.click(deviceDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for Device Role settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Device Role' })).toBeDisabled();
+  });
+
   it('disables LoRa apply when a remote target is ready but LoRa config was not fetched', async () => {
     const user = userEvent.setup();
     render(
@@ -107,27 +128,55 @@ describe('RadioPanel remote target safeguards', () => {
 
     expect(screen.getByRole('button', { name: 'Apply LoRa / Radio' })).toBeDisabled();
   });
-});
 
-describe('RadioPanel HelpTooltip coverage — Telemetry', () => {
-  it('Device metrics update interval has a help tooltip and mesh vs client copy', async () => {
+  it('disables Position apply until position config slice is hydrated', async () => {
     const user = userEvent.setup();
     render(
       <ToastProvider>
-        <RadioPanel {...defaultProps} isConnected />
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          meshtasticConfigSlices={{ device: { role: 0 } }}
+        />
       </ToastProvider>,
     );
 
-    const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
+    const positionDetails = [...document.querySelectorAll('details')].find((d) => {
       const span = d.querySelector(':scope > summary > span');
-      return span?.textContent?.trim() === 'Telemetry';
+      return span?.textContent?.trim() === 'Position / GPS';
     });
-    expect(telemetryDetails).toBeTruthy();
-    await user.click(telemetryDetails!.querySelector('summary')!);
+    expect(positionDetails).toBeDefined();
+    await user.click(positionDetails!.querySelector('summary')!);
 
-    expect(hasTooltipNext('Device metrics update interval')).toBe(true);
-    expect(screen.getByText(/Mesh broadcast/i)).toBeInTheDocument();
-    expect(screen.getByText(/Connected app/i)).toBeInTheDocument();
+    expect(
+      screen.getByText('Waiting for Position / GPS settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Position / GPS' })).toBeDisabled();
+  });
+
+  it('disables WiFi apply until network config slice is hydrated', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          meshtasticConfigSlices={{ device: { role: 0 } }}
+        />
+      </ToastProvider>,
+    );
+
+    const networkDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'WiFi / Network';
+    });
+    expect(networkDetails).toBeDefined();
+    await user.click(networkDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for WiFi / Network settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply WiFi / Network' })).toBeDisabled();
   });
 });
 
@@ -240,6 +289,72 @@ describe('RadioPanel channel URL import/export', () => {
       expect.objectContaining({ mode: 'replace', settings: expect.any(Array) }),
       expect.objectContaining({ applyLora: true }),
     );
+  });
+});
+
+describe('RadioPanel Device Configuration section group divider', () => {
+  it('renders a Device Configuration heading that separates radio and device config groups', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    // The h3 divider heading must be present
+    const headings = document.querySelectorAll('h3');
+    const deviceConfigHeading = [...headings].find(
+      (h) => h.textContent?.trim() === 'Device Configuration',
+    );
+    expect(deviceConfigHeading).toBeDefined();
+  });
+
+  it('Radio group sections appear before Device Configuration heading', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    const allElements = [...document.querySelectorAll('details summary span, h3')];
+    const texts = allElements.map((el) => el.textContent?.trim());
+
+    const loraIdx = texts.findIndex((t) => t === 'LoRa / Radio');
+    const dividerIdx = texts.findIndex((t) => t === 'Device Configuration');
+    const deviceRoleIdx = texts.findIndex((t) => t === 'Device Role');
+    const bluetoothIdx = texts.findIndex((t) => t === 'Bluetooth');
+
+    expect(loraIdx).toBeGreaterThanOrEqual(0);
+    expect(dividerIdx).toBeGreaterThan(loraIdx);
+    expect(deviceRoleIdx).toBeGreaterThan(dividerIdx);
+    expect(bluetoothIdx).toBeGreaterThan(dividerIdx);
+  });
+});
+
+describe('RadioPanel — Device Commands and Danger Zone removed', () => {
+  it('does not render Device Commands or Danger Zone sections in RadioPanel', () => {
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          onApplyLoraParams={vi.fn().mockResolvedValue(undefined)}
+          loraConfig={{ freq: 915_000_000, bw: 125_000, sf: 12, cr: 5, txPower: 20 }}
+        />
+      </ToastProvider>,
+    );
+
+    const headings = [...document.querySelectorAll('h3')];
+    const deviceCmds = headings.find((h) => h.textContent?.includes('Device Commands'));
+    const dangerZone = headings.find((h) => h.textContent?.includes('Danger Zone'));
+    expect(deviceCmds).toBeUndefined();
+    expect(dangerZone).toBeUndefined();
   });
 });
 

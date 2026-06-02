@@ -1010,12 +1010,15 @@
     "sectionExternalNotification": "Modul externího upozornění",
     "sectionIpTunnel": "IP tunel",
     "sectionMqttRelay": "Relé MQTT (na straně zařízení)",
+    "sectionNeighborInfo": "Sousedský informační modul",
     "sectionPaxCounter": "Modul počítadla počtu osob",
+    "sectionTrafficManagement": "Modul řízení dopravy",
     "sectionRemoteHardware": "Vzdálený hardware",
     "sectionRangeTest": "Testovací modul rozsahu",
     "sectionRtttlRingtone": "RTTTL vyzvánění",
     "sectionSerialModule": "Sériový modul",
     "sectionStoreForward": "Modul Store & Forward",
+    "sectionTak": "Modul TAK",
     "sectionTelemetryModule": "Telemetrický modul",
     "fields": {
       "ledEnabled": "LED povolena",
@@ -1024,6 +1027,26 @@
       "brightnessCurrent": "Jas / proud: {{value}}",
       "brightnessHint": "Proud pohonu LED (0–31). Vyšší = jasnější.",
       "cannedMessagesEnabled": "Předpřipravené zprávy povoleny",
+      "cannedRotary1Enabled": "Rotační kodér č.1 povolen",
+      "cannedRotary1EnabledDesc": "Povolte vstupní zařízení rotačního kodéru č.1 (němý kodér s impulzy A/B).",
+      "cannedPinA": "GPIO PIN — enkodér A",
+      "cannedPinADesc": "Číslo PIN GPIO pro port rotačního kodéru A.",
+      "cannedPinB": "GPIO PIN — enkodér B",
+      "cannedPinBDesc": "Číslo PIN GPIO pro port rotačního kodéru B.",
+      "cannedPinPress": "GPIO PIN — stiskněte",
+      "cannedPinPressDesc": "Číslo PIN GPIO pro otočný kodér stiskněte/tlačítko port.",
+      "cannedEventCw": "Událost při rotaci CW",
+      "cannedEventCwDesc": "Vstupní událost vygenerovaná při rotaci ve směru hodinových ručiček.",
+      "cannedEventCcw": "Událost na rotaci CCW",
+      "cannedEventCcwDesc": "Vstupní událost generovaná při otáčení proti směru hodinových ručiček.",
+      "cannedEventPress": "Událost při tisku",
+      "cannedEventPressDesc": "Vstupní událost vygenerovaná na stisku kodéru.",
+      "cannedUpdown1Enabled": "Vstup nahoru/dolů/výběr povolen",
+      "cannedUpdown1EnabledDesc": "Povolte vstupní zařízení Nahoru/Dolů/Výběr (rotační kodér rak nebo 3 tlačítka). Používá A/B/stiskněte GPIO kolíky výše.",
+      "cannedAllowInputSource": "Povolit vstupní zdroj",
+      "cannedAllowInputSourceDesc": "Vstupní zdroj přijatý konzervovanými zprávami (např. rotEnc1, upDownEnc1, scanAndSelect, cardkb, serialkb nebo _any).",
+      "cannedSendBell": "Odeslat znak zvonku",
+      "cannedSendBellDesc": "Odeslat znak zvonku s odchozími konzervovanými zprávami (užitečné s modulem Externí oznámení).",
       "detectionSensorEnabled": "Detekční senzor povolen",
       "detectionSensorDesc": "Vysílání událostí detekce (PIR, dveřní senzor atd.) do sítě.",
       "sensorName": "Název senzoru",
@@ -1077,6 +1100,40 @@
       "tlsEnabled": "TLS povoleno",
       "mapReportingEnabled": "Hlášení map povoleno",
       "mapReportingEnabledDesc": "Pravidelně publikujte polohu uzlu na mapě Meshtastic.",
+      "neighborInfoEnabled": "Informace o sousedovi povoleny",
+      "neighborInfoEnabledDesc": "Pravidelně vysílejte seznam sousedů sítě slyšených tímto uzlem.",
+      "neighborInfoUpdateInterval": "Interval aktualizace",
+      "neighborInfoUpdateIntervalDesc": "Jak často vysílat informace o sousedovi (sekundy). Minimálně 14400 (4 hodiny). 0 = výchozí použití.",
+      "neighborInfoTransmitOverLora": "Přenos přes LoRa",
+      "neighborInfoTransmitOverLoraDesc": "Vysílejte také informace o sousedovi přes LoRa (není k dispozici na výchozím kanálu/klíči).",
+      "tmEnabled": "Řízení dopravy povoleno",
+      "tmEnabledDesc": "Hlavní povolení pro modul Řízení dopravy.",
+      "tmPositionDedupEnabled": "Deduplikace pozice",
+      "tmPositionDedupEnabledDesc": "Přetáhněte vysílání redundantní pozice ze stejného uzlu.",
+      "tmPositionPrecisionBits": "Bity přesné polohy",
+      "tmPositionPrecisionBitsDesc": "Bity přesnosti použité při porovnávání pozic pro deduplikaci (0–32).",
+      "tmPositionMinIntervalSecs": "Min. interval polohy",
+      "tmPositionMinIntervalSecsDesc": "Minimální počet sekund mezi přijatými aktualizacemi polohy ze stejného uzlu. 0 = bez omezení.",
+      "tmNodeinfoDirectResponse": "NodeInfo přímá odpověď",
+      "tmNodeinfoDirectResponseDesc": "Odpovězte na požadavky NodeInfo přímo z místní mezipaměti namísto zaplavení sítě.",
+      "tmNodeinfoDirectResponseMaxHops": "Maximální počet chmelů pro přímou reakci",
+      "tmNodeinfoDirectResponseMaxHopsDesc": "Odpovězte přímo pouze v případě, že je žadatel alespoň tolik chmele daleko.",
+      "tmRateLimitEnabled": "Omezení rychlosti na uzel",
+      "tmRateLimitEnabledDesc": "Škrtit ukecané uzly, které překročí limit paketů v časovém okně.",
+      "tmRateLimitWindowSecs": "Okno limitu sazeb",
+      "tmRateLimitWindowSecsDesc": "Časové okno v sekundách použité pro výpočty limitů sazeb.",
+      "tmRateLimitMaxPackets": "Maximální počet paketů na okno",
+      "tmRateLimitMaxPacketsDesc": "Maximální povolený počet paketů z jednoho uzlu v okně limitu rychlosti.",
+      "tmDropUnknownEnabled": "Odhoďte neznámé pakety",
+      "tmDropUnknownEnabledDesc": "Odhoďte nešifrovatelné nebo neznámé pakety z uzlů, které překračují prahovou hodnotu.",
+      "tmUnknownPacketThreshold": "Neznámý práh paketu",
+      "tmUnknownPacketThresholdDesc": "Počet neznámých paketů z uzlu před zahájením upouštění.",
+      "tmExhaustHopTelemetry": "Odsávací chmel na reléové telemetrii",
+      "tmExhaustHopTelemetryDesc": "Nastavte hop_limit na 0 pro přenášené telemetrické vysílání (vlastní pakety neovlivněny).",
+      "tmExhaustHopPosition": "Odsávací chmel v poloze relé",
+      "tmExhaustHopPositionDesc": "Nastavte hop_limit na 0 pro vysílání přenášených pozic (vlastní pakety neovlivněny).",
+      "tmRouterPreserveHops": "Směrovač konzervuje chmel",
+      "tmRouterPreserveHopsDesc": "Zachovat hop_limit pro provoz mezi směrovači.",
       "paxCounterEnabled": "Počítadlo počtu povoleno",
       "paxCounterEnabledDesc": "Počítejte blízká zařízení Bluetooth a WiFi jako metriku hustoty davu.",
       "paxUpdateInterval": "Interval aktualizace",
@@ -1099,12 +1156,27 @@
       "sfMaxStoredDesc": "Maximální počet záznamů uložených v zařízení.",
       "sfHistoryMaxDesc": "Maximální počet zpráv, které se mají vrátit, když uzel požaduje historii.",
       "sfHistoryWindowDesc": "Jak daleko zpět v čase vrátit zprávy (v sekundách).",
+      "telDeviceTelemetryEnabled": "Odeslat telemetrii zařízení",
+      "telDeviceTelemetryEnabledDesc": "Vysílejte metriky zařízení (baterie, napětí, využití kanálu) do sítě prostřednictvím telemetrického modulu.",
       "telDeviceInterval": "Interval metrik zařízení",
-      "telEnvInterval": "Interval metrik prostředí",
-      "telEnvIntervalDesc": "Jak často posílat teplotu/vlhkost/tlak. 0 = zakázáno.",
       "telEnvEnabled": "Měření prostředí povoleno",
+      "telEnvEnabledDesc": "Povolit sběr a vysílání údajů ze senzorů prostředí (teplota, vlhkost, tlak).",
+      "telEnvInterval": "Interval metrik prostředí",
+      "telEnvIntervalDesc": "Jak často odesílat údaje ze senzorů prostředí do sítě. 0 = zakázáno.",
+      "telEnvScreenEnabled": "Metriky prostředí na obrazovce",
+      "telEnvScreenEnabledDesc": "Zobrazit údaje ze senzoru prostředí na displeji zařízení.",
+      "telEnvFahrenheit": "Zobrazit ve stupních Fahrenheita",
+      "telEnvFahrenheitDesc": "Zobrazit naměřené hodnoty teploty ve stupních Fahrenheita místo stupňů Celsia na zařízení.",
+      "telAirQualityEnabled": "Kvalita ovzduší povolena",
+      "telAirQualityEnabledDesc": "Povolit sběr a vysílání údajů ze senzorů kvality ovzduší.",
+      "telAirQualityInterval": "Interval kvality ovzduší",
+      "telAirQualityIntervalDesc": "Jak často odesílat metriky kvality ovzduší do sítě. 0 = použít výchozí.",
       "telPowerEnabled": "Měření výkonu povoleno",
-      "telAirQualityEnabled": "Kvalita vzduchu povolena",
+      "telPowerEnabledDesc": "Povolte sběr a vysílání metrik výkonu z připojeného senzoru ina.",
+      "telPowerInterval": "Interval metrik výkonu",
+      "telPowerIntervalDesc": "Jak často posílat metriky výkonu do sítě. 0 = použít výchozí.",
+      "telPowerScreenEnabled": "Metriky výkonu na obrazovce",
+      "telPowerScreenEnabledDesc": "Zobrazit metriky napájení na displeji zařízení.",
       "messagesOnePerLine": "Zprávy (jedna na řádek, každá max. 30 znaků)",
       "cannedMessagesPlaceholder": "Dobrý den\nOK\nJsem na cestě\nPotřebujete pomoc",
       "cannedMessagesHint": "Zadejte jednu zprávu na řádek. Používá se se vstupními periferními tlačítky.",
@@ -1113,6 +1185,16 @@
       "invalidRtttl": "Neplatný RTTTL – očekávaný název:d=N,o=N,b=N:notes",
       "serialModuleEnabledDesc": "Povolit předávání dat sériového portu přes síť.",
       "serialEchoDesc": "Echo přijalo sériová data zpět k odesílateli.",
+      "serialRxd": "RX PIN",
+      "serialRxdDesc": "Číslo PIN GPIO pro sériové RX. 0 = použijte výchozí.",
+      "serialTxd": "TX PIN",
+      "serialTxdDesc": "Číslo PIN GPIO pro sériový TX. 0 = použijte výchozí.",
+      "serialTimeout": "Čas.limit",
+      "serialTimeoutDesc": "Milisekundy čekání před odesláním paketu. 0 = použít výchozí.",
+      "serialMode": "Sériový režim",
+      "serialModeDesc": "Provozní režim pro sériový modul.",
+      "serialOverrideConsole": "Přepsat sériový port konzole",
+      "serialOverrideConsoleDesc": "Použijte primární sériový port (konzoli) pro sériový modul namísto sekundárního portu.",
       "sfEnabledDesc": "Ukládat zprávy pro uzly, které se znovu připojí k síti.",
       "sfNumRecordsDesc": "Maximální počet zpráv k uložení. 0 = použít výchozí.",
       "ipTunnelHint": "Pakety IP tunelu předávají síťový provoz přes síť. Nakonfigurujte nastavení tunelu v konfiguraci sítě zařízení.",
@@ -1124,7 +1206,17 @@
       "historyReturnWindowDesc": "Jak daleko zpět v čase vrátit zprávy (v sekundách).",
       "remoteHardwareHint": "Zprávy GPIO jsou přijímány automaticky, když je zařízení povoleno. Nakonfigurujte piny GPIO v nastavení hardwaru zařízení.",
       "mqttProxyToClientEnabled": "Proxy ke klientovi",
-      "mqttProxyToClientEnabledDesc": "Směrování MQTT přes připojenou aplikaci namísto vlastního síťového zásobníku rádia. Vyžaduje se na zařízeních bez Wi-Fi/Ethernetu, pokud je povoleno relé MQTT."
+      "mqttProxyToClientEnabledDesc": "Směrování MQTT přes připojenou aplikaci namísto vlastního síťového zásobníku rádia. Vyžaduje se na zařízeních bez Wi-Fi/Ethernetu, pokud je povoleno relé MQTT.",
+      "takTeam": "Barva týmu TAK",
+      "takTeamDesc": "Barva týmu zobrazená v atak/WinTAK. Výchozí (nespecifikováno) používá azurová.",
+      "takTeamUnspecified": "Nespecifikováno (azurová)",
+      "takRole": "Role člena TAK",
+      "takRoleDesc": "Role člena zobrazená v atak/WinTAK. Výchozí (nespecifikováno) používá člena týmu.",
+      "takRoleUnspecified": "Nespecifikováno (člen týmu)",
+      "remoteHardwareEnabled": "Povolit vzdálený hardware",
+      "remoteHardwareEnabledDesc": "Umožňuje vzdáleným uzlům číst a zapisovat GPIO piny na tomto zařízení.",
+      "remoteHardwareAllowUndefinedPins": "Povolit přístup k nedefinovaným pinům",
+      "remoteHardwareAllowUndefinedPinsDesc": "Povoluje čtení/zápis pinů neuvedených v konfiguraci dostupných pinů."
     },
     "applySection": "Použít {{section}}",
     "applyingButton": "Aplikace...",
@@ -1148,7 +1240,13 @@
       "mqttDefaultServerPort": "Nezahrnujte port do veřejné adresy makléře Meshtastic MQTT (použijte mqtt.meshtastic.org bez :port).",
       "mqttProxyRequired": "Toto rádio nemá Wi-Fi. Povolte „Proxy ke klientovi“, aby aplikace předávala MQTT, nebo použijte LoRa „OK to MQTT“ namísto MQTT na straně zařízení.",
       "serialOverrideRequiresMode": "Na zařízení je povoleno přepsání sériové konzoly. Před povolením sériového modulu zde nastavte platný sériový režim v rádiu."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Povolit vzdálený hardware?",
+    "remoteHardwareConfirmEnableMessage": "Vzdálené uzly budou moci číst a zapisovat piny GPIO na tomto zařízení přes síť. Povolit pouze v případě, že důvěřujete uživatelům mesh a máte nakonfigurovaný přístup PIN.",
+    "remoteHardwareConfirmEnableLabel": "Povolit",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Povolit nedefinovaný přístup PIN?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Jakýkoli PIN GPIO může být čten nebo zapsán na dálku, včetně pinů, které nejsou uvedeny ve vaší hardwarové konfiguraci. Tím se zvyšuje bezpečnostní riziko.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Povolit nedefinované kolíky"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",
@@ -1507,7 +1605,6 @@
     "title": "Konfigurace rádia",
     "frequencyHint": "Provozní frekvence. Zkontrolujte místní předpisy.",
     "ntpHint": "Pro výchozí server NTP ponechte prázdné.",
-    "restartWarning": "Zařízení se může krátce restartovat po použití nového LoRa nebo nastavení zařízení.",
     "deviceActions": "Akce zařízení",
     "deviceCommands": "Příkazy zařízení",
     "dangerZone": "Nebezpečná zóna",
@@ -1520,6 +1617,7 @@
     "channelN": "Kanál {{num}}",
     "sectionBluetooth": "Bluetooth",
     "sectionDeviceRole": "Role zařízení",
+    "sectionGroupDevice": "Konfigurace zařízení",
     "sectionDeviceUser": "Uživatel / Identita zařízení",
     "sectionDisplay": "Zobrazit",
     "sectionLora": "LoRa / Rádio",
@@ -1531,7 +1629,6 @@
     "yourNamePlaceholder": "Vaše jméno",
     "namePlaceholder": "JMÉNO",
     "networkNamePlaceholder": "Název sítě",
-    "flashMemoryNote": "Změny jsou zapsány do flash paměti zařízení a přetrvávají po restartování.",
     "encryptionNone": "Žádné (žádné šifrování)",
     "encryptionSimple": "Jednoduché (výchozí klíč Meshtastic)",
     "generateRandomKey": "Vygenerujte náhodný klíč",
@@ -1817,7 +1914,131 @@
     "resetNodeDbPreserveFavorites": "Zachovat oblíbené uzly v zařízení",
     "offloadReconcileStillFull": "Vyložení dokončeno, ale rádio stále hlásí plné kontakty ({{count}}/350). Připojte se znovu a zkuste to znovu.",
     "offloadReconcileStillNearFull": "Vyložení bylo dokončeno, ale rádio stále hlásí vysoké využití kontaktu ({{count}}/350).",
-    "offloadReconcileRefreshFailed": "Odstranění bylo dokončeno, ale obnovení kontaktu se nezdařilo. Znovu připojte a obnovte kontakty."
+    "offloadReconcileRefreshFailed": "Odstranění bylo dokončeno, ale obnovení kontaktu se nezdařilo. Znovu připojte a obnovte kontakty.",
+    "txEnabledLabel": "TX Enabled",
+    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "channelNumLabel": "Channel Number",
+    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
+    "rebroadcastModeLabel": "Rebroadcast Mode",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
+    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
+    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
+    "disableTripleClickLabel": "Disable Triple-click",
+    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "rebroadcastModes": {
+      "0": {
+        "label": "All",
+        "description": "Rebroadcast all packets (default)."
+      },
+      "1": {
+        "label": "All Skip Decoding",
+        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+      },
+      "2": {
+        "label": "Local Only",
+        "description": "Only rebroadcast packets from nodes heard directly on RF."
+      },
+      "3": {
+        "label": "Known Only",
+        "description": "Only rebroadcast from nodes in the local node database."
+      },
+      "4": {
+        "label": "None",
+        "description": "Do not rebroadcast any packets."
+      },
+      "5": {
+        "label": "Core Portnums Only",
+        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+      }
+    },
+    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
+    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
+    "oledTypeLabel": "OLED Type",
+    "flipScreenLabel": "Flip Screen",
+    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "displayModeLabel": "Display Mode",
+    "headingBoldLabel": "Bold Heading",
+    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
+    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "use12hClockLabel": "12-Hour Clock",
+    "useLongNodeNameLabel": "Use Long Node Name",
+    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
+    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "oledTypes": {
+      "0": {
+        "label": "Auto"
+      },
+      "1": {
+        "label": "SSD1306"
+      },
+      "2": {
+        "label": "SH1106"
+      },
+      "3": {
+        "label": "SH1107 (128x64)"
+      },
+      "4": {
+        "label": "SH1107 (128x128)"
+      },
+      "5": {
+        "label": "SH1107 Rotated"
+      }
+    },
+    "displayModes": {
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Two Color"
+      },
+      "2": {
+        "label": "Inverted"
+      },
+      "3": {
+        "label": "Color"
+      }
+    },
+    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModes": {
+      "0": {
+        "label": "Random PIN"
+      },
+      "1": {
+        "label": "Fixed PIN"
+      },
+      "2": {
+        "label": "No PIN"
+      }
+    },
+    "tzdefPlaceholder": "např. EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Čekání na {{section}} nastavení ze zařízení…",
+    "applyStatusApplying": "Uplatnění {{section}}…",
+    "applyStatusSuccess": "{{section}} úspěšně použito. Zařízení se může krátce restartovat.",
+    "applyStatusCommitFailed": "{{section}} odesláno, ale odevzdání selhalo: {{message}}",
+    "applyStatusFailed": "Nezdařilo se: {{message}}",
+    "applyUserApplying": "Aplikuje se identita uživatele...",
+    "applyUserSuccess": "Identita uživatele byla úspěšně použita!",
+    "applyLoraSuccess": "Nastavení LoRa bylo úspěšně použito!"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -2159,7 +2380,8 @@
     "repeaters": "Opakovače",
     "rf": "regionální facilitátor",
     "graph": "Graf",
-    "rooms": "Pokoje"
+    "rooms": "Pokoje",
+    "admin": "Správa"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2250,5 +2472,9 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "configApplyNotice": {
+    "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
+    "restartNote": "Zařízení se může krátce restartovat, když použijete nastavení."
   }
 }
