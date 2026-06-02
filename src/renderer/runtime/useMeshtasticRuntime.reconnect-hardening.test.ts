@@ -17,9 +17,10 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toMatch(/reconnectGenerationRef\.current \+= 1/);
   });
 
-  it('verifies Noble BLE link before marking reconnect success (serial/tcp skip verify)', () => {
-    expect(SOURCE).toContain('isNobleBleConnected');
+  it('verifies Noble BLE link after configure, not before open (disconnect must allow fresh connect)', () => {
     expect(SOURCE).toContain('verifyMeshtasticRfLink');
+    expect(SOURCE).toContain('RF link lost after reconnect configure');
+    expect(SOURCE).not.toContain('RF link not ready before reconnect open');
     expect(SOURCE).toMatch(/if \(type !== 'ble'\) return true/);
   });
 

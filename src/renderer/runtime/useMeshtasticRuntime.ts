@@ -1827,9 +1827,6 @@ export function useMeshtasticRuntime() {
 
     let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
     try {
-      if (!(await verifyMeshtasticRfLink(params.type))) {
-        throw new Error('RF link not ready before reconnect open');
-      }
       opened = await openMeshtasticTransport(params.type, {
         httpAddress: params.httpAddress,
         blePeripheralId: params.blePeripheralId,

@@ -1969,9 +1969,6 @@ export function useMeshcoreRuntime() {
 
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
     try {
-      if (!(await verifyMeshcoreRfLink(params.rfType))) {
-        throw new Error('RF link not ready before MeshCore reconnect open');
-      }
       await prepareRfConnect(params.rfType);
       opened = await openMeshCoreTransport(params.rfType, {
         blePeripheralId: params.blePeripheralId,

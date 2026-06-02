@@ -23,6 +23,8 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toMatch(/rfType: 'serial'/);
     expect(RUNTIME_SOURCE).toMatch(/rfType === 'tcp'/);
     expect(RUNTIME_SOURCE).toContain('verifyMeshcoreRfLink');
+    expect(RUNTIME_SOURCE).toContain('RF link lost after MeshCore reconnect attach');
+    expect(RUNTIME_SOURCE).not.toContain('RF link not ready before MeshCore reconnect open');
   });
 
   it('exports power suspend/resume handlers wired to reconnect', () => {

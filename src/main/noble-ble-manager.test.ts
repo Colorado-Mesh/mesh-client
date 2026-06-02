@@ -202,4 +202,10 @@ describe('NobleBleManager.connect — scan-before-connect when cache miss (regre
     expect(SOURCE).toMatch(/not in cache — scanning up to \$\{NOBLE_PERIPHERAL_SCAN_WAIT_MS\}ms/);
     expect(SOURCE).toContain('export const NOBLE_PERIPHERAL_SCAN_WAIT_MS = 30_000');
   });
+
+  it('releases ephemeral scan interest when cache-miss wait settles', () => {
+    expect(SOURCE).toContain('releaseEphemeralScanInterest');
+    expect(SOURCE).toMatch(/if \(hadScanInterest\) return/);
+    expect(SOURCE).toMatch(/releaseEphemeralScanInterest\(\)/);
+  });
 });

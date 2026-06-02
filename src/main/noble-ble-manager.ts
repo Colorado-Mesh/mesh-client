@@ -607,11 +607,25 @@ export class NobleBleManager extends EventEmitter {
         });
       }, timeoutMs);
 
+      const releaseEphemeralScanInterest = () => {
+        if (hadScanInterest) return;
+        this.scanRequesters.delete(sessionId);
+        void (
+          this.scanRequesters.size === 0 ? this.doStopScanning() : this.doStartScanning()
+        ).catch((err: unknown) => {
+          console.debug(
+            '[NobleBleManager] waitForPeripheralDuringScan scan teardown ',
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+        });
+      };
+
       const finish = (fn: () => void) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
         this.off('deviceDiscovered', onDiscovered);
+        releaseEphemeralScanInterest();
         fn();
       };
 
