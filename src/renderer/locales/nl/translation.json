@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "Neem geen poort op in het openbare Meshtastic MQTT broker-adres (gebruik mqtt.meshtastic.org met no :port).",
       "mqttProxyRequired": "Deze radio heeft geen wifi. Schakel \"Proxy naar client\" in zodat de app MQTT doorstuurt, of gebruik LoRa \"OK naar MQTT\" in plaats van MQTT aan de apparaatzijde.",
       "serialOverrideRequiresMode": "Seriële console override is ingeschakeld op het apparaat. Stel een geldige seriële modus in op de radio voordat u de seriële module hier inschakelt."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Hardware op afstand inschakelen?",
+    "remoteHardwareConfirmEnableMessage": "Externe knooppunten kunnen GPIO-pinnen op dit apparaat lezen en schrijven via het netwerk. Alleen inschakelen als u uw mesh-gebruikers vertrouwt en geconfigureerde pintoegang hebt.",
+    "remoteHardwareConfirmEnableLabel": "Activeer",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Ongedefinieerde PIN-toegang toestaan?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Elke GPIO-pincode kan op afstand worden gelezen of geschreven, inclusief pinnen die niet in uw hardwareconfiguratie staan. Dit verhoogt het beveiligingsrisico.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Ongedefinieerde pins toestaan"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Verwijderen uit favorieten",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "bijv. EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "bijv. EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Wachten op {{section}} -instellingen van het apparaat..."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

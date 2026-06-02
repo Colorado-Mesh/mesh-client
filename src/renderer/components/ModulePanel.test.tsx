@@ -377,9 +377,9 @@ describe('ModulePanel', () => {
     expect(rhDetails).toBeDefined();
     await user.click(rhDetails!.querySelector('summary')!);
 
-    // Toggle enabled on
     const switches = rhDetails!.querySelectorAll('[role="switch"]');
     await user.click(switches[0]);
+    await user.click(screen.getByRole('button', { name: 'Enable' }));
 
     await user.click(screen.getByRole('button', { name: 'Apply Remote Hardware' }));
 
@@ -451,7 +451,9 @@ describe('ModulePanel', () => {
 
     const switches = rhDetails!.querySelectorAll('[role="switch"]');
     await user.click(switches[0]);
+    await user.click(screen.getByRole('button', { name: 'Enable' }));
     await user.click(switches[1]);
+    await user.click(screen.getByRole('button', { name: 'Allow undefined pins' }));
     await user.click(screen.getByRole('button', { name: 'Apply Remote Hardware' }));
 
     await waitFor(() => {
@@ -465,6 +467,34 @@ describe('ModulePanel', () => {
         },
       });
     });
+  });
+
+  it('requires confirmation before enabling remote hardware module', async () => {
+    const user = userEvent.setup();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          remoteHardware: { enabled: false, allowUndefinedPinAccess: false },
+        }}
+      />,
+    );
+
+    const rhDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Remote Hardware';
+    });
+    await user.click(rhDetails!.querySelector('summary')!);
+    await user.click(rhDetails!.querySelectorAll('[role="switch"]')[0]);
+
+    expect(screen.getByRole('dialog', { name: 'Enable Remote Hardware?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enable' }));
+    expect(rhDetails!.querySelectorAll('[role="switch"]')[0]).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   it('clears allowUndefinedPinAccess in apply payload when module is disabled', async () => {

@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "Jangan sertakan port di alamat broker Meshtastic MQTT publik (gunakan mqtt.meshtastic.org tanpa :port).",
       "mqttProxyRequired": "Radio ini tidak memiliki Wi-Fi. Aktifkan \"Proksi ke klien\" sehingga aplikasi meneruskan MQTT, atau gunakan LoRa \"OK to MQTT\" alih-alih MQTT sisi perangkat.",
       "serialOverrideRequiresMode": "Penimpaan konsol serial diaktifkan pada perangkat. Atur mode serial yang valid di radio sebelum mengaktifkan modul serial di sini."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Aktifkan Perangkat Keras Jarak Jauh?",
+    "remoteHardwareConfirmEnableMessage": "Node jarak jauh akan dapat membaca dan menulis pin GPIO pada perangkat ini melalui mesh. Hanya aktifkan jika Anda mempercayai pengguna mesh Anda dan telah mengonfigurasi akses PIN.",
+    "remoteHardwareConfirmEnableLabel": "Fungsikan",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Izinkan akses PIN yang tidak ditentukan?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Setiap pin GPIO dapat dibaca atau ditulis dari jarak jauh, termasuk pin yang tidak tercantum dalam konfigurasi perangkat keras Anda. Hal ini meningkatkan risiko keamanan.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Izinkan pin yang tidak terdefinisi"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "misalnya EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "misalnya EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Menunggu pengaturan {{section}} dari perangkat…"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

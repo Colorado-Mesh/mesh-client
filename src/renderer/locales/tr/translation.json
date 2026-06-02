@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "Meshtastic MQTT broker adresine bir bağlantı noktası eklemeyin (:port olmadan mqtt.meshtastic.org kullanın).",
       "mqttProxyRequired": "Bu telsizde Wi-Fi yok. Uygulamanın MQTT'yi iletmesi için \"İstemciye proxy\" seçeneğini etkinleştirin veya cihaz tarafındaki MQTT yerine LoRa \"OK to MQTT\" kullanın.",
       "serialOverrideRequiresMode": "Cihazda seri konsol geçersiz kılma etkinleştirilmiştir. Burada seri modülü etkinleştirmeden önce radyoda geçerli bir seri modu ayarlayın."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Uzaktan Donanım Etkinleştirilsin mi?",
+    "remoteHardwareConfirmEnableMessage": "Uzak node'lar mesh üzerinden bu cihaz üzerindeki GPIO pinlerini okuyup yazabilecektir. Yalnızca mesh kullanıcılarınıza güveniyorsanız ve PIN erişimini yapılandırdıysanız etkinleştirin.",
+    "remoteHardwareConfirmEnableLabel": "Etkinleştir",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Tanımsız PIN erişimine izin verilsin mi?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Donanım yapılandırmanızda listelenmeyen pinler de dahil olmak üzere herhangi bir GPIO PIN'i uzaktan okunabilir veya yazılabilir. Bu da güvenlik riskini artırmaktadır.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Tanımsız pinlere izin ver"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "örn. EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "örn. EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Cihazdan {{section}} ayarları bekleniyor…"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

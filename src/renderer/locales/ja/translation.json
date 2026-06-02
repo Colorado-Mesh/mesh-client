@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "パブリックMeshtastic MQTTブローカーアドレスにポートを含めないでください（: portなしでmqtt.meshtastic.orgを使用してください）。",
       "mqttProxyRequired": "このラジオにはWi-Fiがありません。「クライアントへのプロキシ」を有効にしてアプリがMQTTを転送するか、デバイス側MQTTの代わりにLoRa「OK to MQTT」を使用します。",
       "serialOverrideRequiresMode": "シリアルコンソールオーバーライドがデバイスで有効になっています。ここでシリアルモジュールを有効にする前に、無線で有効なシリアルモードを設定します。"
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "リモートハードウェアを有効にしますか？",
+    "remoteHardwareConfirmEnableMessage": "リモートノードは、メッシュを介してこのデバイス上のGPIOピンの読み取りと書き込みを行うことができます。メッシュユーザーを信頼し、PINアクセスを設定している場合にのみ有効にします。",
+    "remoteHardwareConfirmEnableLabel": "有効にする",
+    "remoteHardwareConfirmUndefinedPinsTitle": "未定義のPINアクセスを許可しますか？",
+    "remoteHardwareConfirmUndefinedPinsMessage": "GPIOピンは、ハードウェア構成に記載されていないピンを含め、リモートで読み取りまたは書き込みできます。これにより、セキュリティリスクが高まります。",
+    "remoteHardwareConfirmUndefinedPinsLabel": "未定義のピンを許可する"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "例： EST 5 EDT、M3.2.0、M11.1.0"
+    "tzdefPlaceholder": "例： EST 5 EDT、M3.2.0、M11.1.0",
+    "waitingForConfigSection": "デバイスから {{section}} 設定を待っています…"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

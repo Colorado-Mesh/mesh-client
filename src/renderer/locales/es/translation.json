@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "No incluya un puerto en la dirección pública del corredor MQTT de Meshtastic (use mqtt.meshtastic.org con no :port).",
       "mqttProxyRequired": "Esta radio no tiene wifi. Habilite \"Proxy al cliente\" para que la aplicación reenvíe MQTT, o use LoRa \"OK a MQTT\" en lugar de MQTT del lado del dispositivo.",
       "serialOverrideRequiresMode": "La anulación de la consola serie está habilitada en el dispositivo. Establezca un modo serie válido en la radio antes de habilitar el módulo serie aquí."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "¿Habilitar hardware remoto?",
+    "remoteHardwareConfirmEnableMessage": "Los nodos remotos podrán leer y escribir pines GPIO en este dispositivo sobre la malla. Solo habilite si confía en sus usuarios de malla y ha configurado el acceso al PIN.",
+    "remoteHardwareConfirmEnableLabel": "Habilitar",
+    "remoteHardwareConfirmUndefinedPinsTitle": "¿Permitir acceso a PIN indefinido?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Cualquier PIN GPIO puede leerse o escribirse de forma remota, incluidos los pines que no figuran en la configuración de hardware. Esto aumenta el riesgo de seguridad.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Permitir pines indefinidos"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Eliminar de favoritos",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "por ejemplo, EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "por ejemplo, EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Esperando la configuración de {{section}} desde el dispositivo..."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",

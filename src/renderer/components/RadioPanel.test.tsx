@@ -80,6 +80,27 @@ describe('RadioPanel HelpTooltip coverage — LoRa params', () => {
 });
 
 describe('RadioPanel remote target safeguards', () => {
+  it('disables Device apply until device config slice is hydrated', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected meshtasticConfigSlices={{}} />
+      </ToastProvider>,
+    );
+
+    const deviceDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Device Role';
+    });
+    expect(deviceDetails).toBeDefined();
+    await user.click(deviceDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for Device Role settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Device Role' })).toBeDisabled();
+  });
+
   it('disables LoRa apply when a remote target is ready but LoRa config was not fetched', async () => {
     const user = userEvent.setup();
     render(

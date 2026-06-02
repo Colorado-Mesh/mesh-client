@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
+import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
-
-// ─── Confirmation Modal (same pattern as RadioPanel) ─────────────────────────
 
 interface PendingAction {
   name: string;
@@ -16,77 +15,6 @@ interface PendingAction {
   danger?: boolean;
   showPreserveFavorites?: boolean;
   action: () => Promise<void>;
-}
-
-function ConfirmModal({
-  title,
-  message,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onCancel,
-  preserveFavorites,
-  onPreserveFavoritesChange,
-  confirmDisabled,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  preserveFavorites?: boolean;
-  onPreserveFavoritesChange?: (value: boolean) => void;
-  confirmDisabled?: boolean;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button
-        type="button"
-        aria-label={t('common.cancel')}
-        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-      <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-muted text-sm leading-relaxed">{message}</p>
-        {onPreserveFavoritesChange != null && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={preserveFavorites ?? false}
-              onChange={(e) => {
-                onPreserveFavoritesChange(e.target.checked);
-              }}
-              className="accent-brand-green"
-              aria-label={t('radioPanel.resetNodeDbPreserveFavorites')}
-            />
-            {t('radioPanel.resetNodeDbPreserveFavorites')}
-          </label>
-        )}
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={confirmDisabled}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── AdminPanel ───────────────────────────────────────────────────────────────

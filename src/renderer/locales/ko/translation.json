@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "공용 Meshtastic MQTT 브로커 주소에 포트를 포함하지 마십시오 (: port가 없는 mqtt.meshtastic.org 사용).",
       "mqttProxyRequired": "이 라디오에는 Wi-Fi가 없습니다. 앱이 MQTT를 전달하도록 \"클라이언트에 프록시\" 를 활성화하거나 장치 측 MQTT 대신 LoRa \"MQTT에 확인\" 을 사용하십시오.",
       "serialOverrideRequiresMode": "장치에서 직렬 콘솔 재정의가 활성화되어 있습니다. 여기에서 직렬 모듈을 활성화하기 전에 라디오에서 유효한 직렬 모드를 설정하십시오."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "원격 하드웨어를 활성화하시겠습니까?",
+    "remoteHardwareConfirmEnableMessage": "원격 노드는 메시를 통해 이 장치에서 GPIO 핀을 읽고 쓸 수 있습니다. 메시 사용자를 신뢰하고 PIN 액세스를 구성한 경우에만 활성화하십시오.",
+    "remoteHardwareConfirmEnableLabel": "활성화",
+    "remoteHardwareConfirmUndefinedPinsTitle": "정의되지 않은 PIN 액세스를 허용하시겠습니까?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "GPIO 핀은 하드웨어 구성에 나열되지 않은 핀을 포함하여 원격으로 읽거나 쓸 수 있습니다. 이로 인해 보안 위험이 증가합니다.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "정의되지 않은 핀 허용"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "즐겨찾기에서 제거",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "예: EST5EDT, M3.2.0, M11.1.0"
+    "tzdefPlaceholder": "예: EST5EDT, M3.2.0, M11.1.0",
+    "waitingForConfigSection": "기기에서 {{section}} 설정을 기다리는 중…"
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

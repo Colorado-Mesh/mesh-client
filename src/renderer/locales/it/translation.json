@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "Non includere una porta nell'indirizzo pubblico del broker MQTT Meshtastic (utilizzare mqtt.meshtastic.org con no :port).",
       "mqttProxyRequired": "Questa radio non ha Wi-Fi. Abilitare \"Proxy al client\" in modo che l'app inoltri MQTT o utilizzare LoRa \"OK to MQTT\" invece di MQTT sul lato dispositivo.",
       "serialOverrideRequiresMode": "L'override della console seriale è abilitato sul dispositivo. Impostare una modalità seriale valida sulla radio prima di abilitare il modulo seriale qui."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Abilitare l'hardware remoto?",
+    "remoteHardwareConfirmEnableMessage": "I nodi remoti saranno in grado di leggere e scrivere i pin GPIO su questo dispositivo sulla mesh. Abilita solo se ti fidi dei tuoi utenti mesh e hai configurato l'accesso pin.",
+    "remoteHardwareConfirmEnableLabel": "Abilita",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Consentire l'accesso pin indefinito?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Qualsiasi pin GPIO può essere letto o scritto in remoto, inclusi i pin non elencati nella configurazione hardware. Ciò aumenta il rischio per la sicurezza.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Consenti pin non definiti"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Rimuovi dai preferiti",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "es. EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "es. EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "In attesa delle impostazioni di {{section}} dal dispositivo..."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",

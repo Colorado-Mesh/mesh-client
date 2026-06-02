@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "Не включайте порт до публічної адреси брокера Meshtastic MQTT (використовуйте mqtt.meshtastic.org без :port).",
       "mqttProxyRequired": "У цьому радіо немає Wi-Fi. Увімкніть «Проксі для клієнта», щоб програма пересилала MQTT, або використовуйте LoRa «OK to MQTT» замість MQTT на стороні пристрою.",
       "serialOverrideRequiresMode": "На пристрої ввімкнено перемикання послідовної консолі. Встановіть дійсний послідовний режим на радіо, перш ніж увімкнути послідовний модуль тут."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Увімкнути віддалене обладнання?",
+    "remoteHardwareConfirmEnableMessage": "Віддалені вузли зможуть читати та записувати контакти GPIO на цьому пристрої через сіть. Увімкніть, лише якщо ви довіряєте користувачам мережі та налаштували доступ до PIN-коду.",
+    "remoteHardwareConfirmEnableLabel": "Увімкнути",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Дозволити доступ до невизначеного PIN-коду?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Будь-який PIN-код GPIO можна зчитувати або записувати віддалено, включаючи контакти, не зазначені у конфігурації апаратного забезпечення. Це підвищує ризик для безпеки.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Дозволити невизначені PIN-коди"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Видалити з обраного",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "наприклад, EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "наприклад, EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Очікування {{section}} налаштувань від пристрою…"
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",

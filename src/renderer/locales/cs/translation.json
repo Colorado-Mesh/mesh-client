@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "Nezahrnujte port do veřejné adresy makléře Meshtastic MQTT (použijte mqtt.meshtastic.org bez :port).",
       "mqttProxyRequired": "Toto rádio nemá Wi-Fi. Povolte „Proxy ke klientovi“, aby aplikace předávala MQTT, nebo použijte LoRa „OK to MQTT“ namísto MQTT na straně zařízení.",
       "serialOverrideRequiresMode": "Na zařízení je povoleno přepsání sériové konzoly. Před povolením sériového modulu zde nastavte platný sériový režim v rádiu."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Povolit vzdálený hardware?",
+    "remoteHardwareConfirmEnableMessage": "Vzdálené uzly budou moci číst a zapisovat piny GPIO na tomto zařízení přes síť. Povolit pouze v případě, že důvěřujete uživatelům mesh a máte nakonfigurovaný přístup PIN.",
+    "remoteHardwareConfirmEnableLabel": "Povolit",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Povolit nedefinovaný přístup PIN?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Jakýkoli PIN GPIO může být čten nebo zapsán na dálku, včetně pinů, které nejsou uvedeny ve vaší hardwarové konfiguraci. Tím se zvyšuje bezpečnostní riziko.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Povolit nedefinované kolíky"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "např. EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "např. EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "Čekání na {{section}} nastavení ze zařízení…"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

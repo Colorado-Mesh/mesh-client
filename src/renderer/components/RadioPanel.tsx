@@ -9,6 +9,7 @@ import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/mes
 import {
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
+  meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
@@ -36,6 +37,7 @@ import {
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
@@ -497,73 +499,6 @@ function keySizeDefaultPsk(size: KeySize): Uint8Array {
   }
 }
 
-// ─── Confirmation Modal ─────────────────────────────────────────
-function ConfirmModal({
-  title,
-  message,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onCancel,
-  preserveFavorites,
-  onPreserveFavoritesChange,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  preserveFavorites?: boolean;
-  onPreserveFavoritesChange?: (value: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button
-        type="button"
-        aria-label={t('common.cancel')}
-        className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-      <div className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gray-200">{title}</h3>
-        <p className="text-muted text-sm leading-relaxed">{message}</p>
-        {onPreserveFavoritesChange != null && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={preserveFavorites ?? false}
-              onChange={(e) => {
-                onPreserveFavoritesChange(e.target.checked);
-              }}
-              className="accent-brand-green"
-              aria-label={t('radioPanel.resetNodeDbPreserveFavorites')}
-            />
-            {t('radioPanel.resetNodeDbPreserveFavorites')}
-          </label>
-        )}
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={onCancel}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
-              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function WifiPasswordField({
   value,
   onChange,
@@ -934,6 +869,15 @@ export default function RadioPanel({
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const loraDisabled =
     disabled || (configTarget?.mode === 'remote' && meshtasticLoraConfig == null);
+
+  const deviceConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.device);
+  const displayConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.display);
+  const bluetoothConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.bluetooth);
+  const powerConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.power);
+  const deviceApplyDisabled = disabled || !deviceConfigReady;
+  const displayApplyDisabled = disabled || !displayConfigReady;
+  const bluetoothApplyDisabled = disabled || !bluetoothConfigReady;
+  const powerApplyDisabled = disabled || !powerConfigReady;
 
   const applyConfig = async (
     section: string,
@@ -1657,8 +1601,15 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'Device'}
-          disabled={disabled}
+          disabled={deviceApplyDisabled}
         >
+          {!deviceConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', {
+                section: t('radioPanel.sectionDeviceRole'),
+              })}
+            </p>
+          )}
           <ConfigSelect
             label={t('radioPanel.roleFieldLabel')}
             value={deviceRole}
@@ -1967,8 +1918,13 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'Power'}
-          disabled={disabled}
+          disabled={powerApplyDisabled}
         >
+          {!powerConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionPower') })}
+            </p>
+          )}
           <ConfigToggle
             label={t('radioPanel.powerSavingModeLabel')}
             checked={isPowerSaving}
@@ -2145,8 +2101,13 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'Display'}
-          disabled={disabled}
+          disabled={displayApplyDisabled}
         >
+          {!displayConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionDisplay') })}
+            </p>
+          )}
           <ConfigNumber
             label={t('radioPanel.screenOnDurationLabel')}
             value={screenOnSecs}
@@ -2243,8 +2204,15 @@ export default function RadioPanel({
             })
           }
           applying={applyingSection === 'Bluetooth'}
-          disabled={disabled}
+          disabled={bluetoothApplyDisabled}
         >
+          {!bluetoothConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', {
+                section: t('radioPanel.sectionBluetooth'),
+              })}
+            </p>
+          )}
           <ConfigToggle
             label={t('radioPanel.bluetoothEnabled')}
             checked={btEnabled}

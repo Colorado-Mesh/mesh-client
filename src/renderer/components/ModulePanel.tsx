@@ -21,6 +21,7 @@ import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/m
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
 
@@ -402,9 +403,11 @@ export default function ModulePanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const secondsUnit = t('radioPanel.secondsUnit');
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const remoteTarget = configTarget?.mode === 'remote';
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  const [rhPendingConfirm, setRhPendingConfirm] = useState<'enable' | 'undefinedPins' | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
   const telCfg = meshtasticConfigSlice(moduleConfigs.telemetry);
@@ -1161,7 +1164,7 @@ export default function ModulePanel({
           disabled={disabled || !extEnabled}
           min={0}
           max={32767}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.nagTimeoutDesc')}
         />
         <ConfigToggle
@@ -1278,7 +1281,7 @@ export default function ModulePanel({
           onChange={setSfHistoryWindow}
           disabled={disabled || !sfEnabled}
           min={0}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.historyReturnWindowDesc')}
         />
       </ModuleSection>
@@ -1310,7 +1313,7 @@ export default function ModulePanel({
           disabled={disabled || !rangeEnabled}
           min={0}
           max={3600}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.senderIntervalDesc')}
         />
         <ConfigToggle
@@ -1376,7 +1379,7 @@ export default function ModulePanel({
             disabled={disabled || !telEnvEnabled}
             min={0}
             max={86400}
-            unit="seconds"
+            unit={secondsUnit}
             description={t('modulePanel.fields.telEnvIntervalDesc')}
           />
           <ConfigToggle
@@ -1407,7 +1410,7 @@ export default function ModulePanel({
             disabled={disabled || !telAirQualityEnabled}
             min={0}
             max={86400}
-            unit="seconds"
+            unit={secondsUnit}
             description={t('modulePanel.fields.telAirQualityIntervalDesc')}
           />
           <ConfigToggle
@@ -1424,7 +1427,7 @@ export default function ModulePanel({
             disabled={disabled || !telPowerEnabled}
             min={0}
             max={86400}
-            unit="seconds"
+            unit={secondsUnit}
             description={t('modulePanel.fields.telPowerIntervalDesc')}
           />
           <ConfigToggle
@@ -1611,7 +1614,7 @@ export default function ModulePanel({
           onChange={setNeighborInfoUpdateInterval}
           disabled={disabled || !neighborInfoEnabled}
           min={0}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.neighborInfoUpdateIntervalDesc')}
         />
         <ConfigToggle
@@ -1720,7 +1723,7 @@ export default function ModulePanel({
           onChange={setDetectMinBroadcast}
           disabled={disabled || !detectEnabled}
           min={0}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.minBroadcastIntervalDesc')}
         />
         <ConfigNumber
@@ -1729,7 +1732,7 @@ export default function ModulePanel({
           onChange={setDetectStateBroadcast}
           disabled={disabled || !detectEnabled}
           min={0}
-          unit="seconds"
+          unit={secondsUnit}
           description={t('modulePanel.fields.stateBroadcastIntervalDesc')}
         />
       </ModuleSection>
@@ -1762,6 +1765,10 @@ export default function ModulePanel({
             label={t('modulePanel.fields.remoteHardwareEnabled')}
             checked={remoteHardwareEnabled}
             onChange={(enabled) => {
+              if (enabled && !remoteHardwareEnabled) {
+                setRhPendingConfirm('enable');
+                return;
+              }
               setRemoteHardwareEnabled(enabled);
               if (!enabled) setRemoteHardwareAllowUndefinedPins(false);
             }}
@@ -1771,7 +1778,13 @@ export default function ModulePanel({
           <ConfigToggle
             label={t('modulePanel.fields.remoteHardwareAllowUndefinedPins')}
             checked={remoteHardwareAllowUndefinedPins}
-            onChange={setRemoteHardwareAllowUndefinedPins}
+            onChange={(allow) => {
+              if (allow && !remoteHardwareAllowUndefinedPins) {
+                setRhPendingConfirm('undefinedPins');
+                return;
+              }
+              setRemoteHardwareAllowUndefinedPins(allow);
+            }}
             disabled={disabled || !remoteHardwareEnabled}
             description={t('modulePanel.fields.remoteHardwareAllowUndefinedPinsDesc')}
           />
@@ -1805,7 +1818,7 @@ export default function ModulePanel({
             onChange={setPaxInterval}
             disabled={disabled || !paxEnabled}
             min={0}
-            unit="seconds"
+            unit={secondsUnit}
             description={t('modulePanel.fields.paxUpdateIntervalDesc')}
           />
         </ModuleSection>
@@ -1865,7 +1878,7 @@ export default function ModulePanel({
             onChange={setTmPositionMinIntervalSecs}
             disabled={disabled || !tmEnabled}
             min={0}
-            unit="seconds"
+            unit={secondsUnit}
             description={t('modulePanel.fields.tmPositionMinIntervalSecsDesc')}
           />
           <ConfigToggle
@@ -1896,7 +1909,7 @@ export default function ModulePanel({
             onChange={setTmRateLimitWindowSecs}
             disabled={disabled || !tmEnabled || !tmRateLimitEnabled}
             min={0}
-            unit="seconds"
+            unit={secondsUnit}
             description={t('modulePanel.fields.tmRateLimitWindowSecsDesc')}
           />
           <ConfigNumber
@@ -2084,6 +2097,36 @@ export default function ModulePanel({
           <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
           <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>
         </StatusOnlySection>
+      )}
+
+      {rhPendingConfirm === 'enable' && (
+        <ConfirmModal
+          title={t('modulePanel.remoteHardwareConfirmEnableTitle')}
+          message={t('modulePanel.remoteHardwareConfirmEnableMessage')}
+          confirmLabel={t('modulePanel.remoteHardwareConfirmEnableLabel')}
+          onConfirm={() => {
+            setRemoteHardwareEnabled(true);
+            setRhPendingConfirm(null);
+          }}
+          onCancel={() => {
+            setRhPendingConfirm(null);
+          }}
+        />
+      )}
+      {rhPendingConfirm === 'undefinedPins' && (
+        <ConfirmModal
+          title={t('modulePanel.remoteHardwareConfirmUndefinedPinsTitle')}
+          message={t('modulePanel.remoteHardwareConfirmUndefinedPinsMessage')}
+          confirmLabel={t('modulePanel.remoteHardwareConfirmUndefinedPinsLabel')}
+          danger
+          onConfirm={() => {
+            setRemoteHardwareAllowUndefinedPins(true);
+            setRhPendingConfirm(null);
+          }}
+          onCancel={() => {
+            setRhPendingConfirm(null);
+          }}
+        />
       )}
     </div>
   );

@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "N'incluez pas de port dans l'adresse publique du courtier Meshtastic MQTT (utilisez mqtt.meshtastic.org avec no :port).",
       "mqttProxyRequired": "Cette radio n'a pas de Wi-Fi. Activez « Proxy au client » pour que l'application transfère MQTT, ou utilisez LoRa « OK to MQTT » au lieu de MQTT côté appareil.",
       "serialOverrideRequiresMode": "Le remplacement de la console série est activé sur l'appareil. Définissez un mode série valide sur la radio avant d'activer le module série ici."
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "Activer le matériel distant ?",
+    "remoteHardwareConfirmEnableMessage": "Les nœuds distants seront en mesure de lire et d'écrire des broches GPIO sur ce périphérique sur le maillage. Ne l'activez que si vous faites confiance à vos utilisateurs maillés et que vous avez configuré l'accès au code PIN.",
+    "remoteHardwareConfirmEnableLabel": "Activer",
+    "remoteHardwareConfirmUndefinedPinsTitle": "Autoriser l'accès au code PIN non défini ?",
+    "remoteHardwareConfirmUndefinedPinsMessage": "Toute broche GPIO peut être lue ou écrite à distance, y compris les broches non répertoriées dans votre configuration matérielle. Cela augmente les risques de sécurité.",
+    "remoteHardwareConfirmUndefinedPinsLabel": "Autoriser les broches non définies"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Supprimer des favoris",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "par exemple EST5EDT,M3.2.0,M11.1.0"
+    "tzdefPlaceholder": "par exemple EST5EDT,M3.2.0,M11.1.0",
+    "waitingForConfigSection": "En attente des paramètres {{section}} de l'appareil…"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

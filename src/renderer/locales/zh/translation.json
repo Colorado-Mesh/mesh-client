@@ -1240,7 +1240,13 @@
       "mqttDefaultServerPort": "不要在公共Meshtastic MQTT代理地址中包含端口（使用mqtt.meshtastic.org ，不带： port ）。",
       "mqttProxyRequired": "这台收音机没有无线网络。启用“代理到客户端” ，以便应用程序转发MQTT ，或使用LoRa “OK to MQTT”而不是设备端MQTT。",
       "serialOverrideRequiresMode": "设备上启用了串行控制台覆盖。在此处启用串行模块之前，请在收音机上设置有效的串行模式。"
-    }
+    },
+    "remoteHardwareConfirmEnableTitle": "启用远程硬件？",
+    "remoteHardwareConfirmEnableMessage": "远程节点将能够在此设备上通过网格读取和写入GPIO引脚。仅当您信任网格用户并已配置PIN访问权限时才启用。",
+    "remoteHardwareConfirmEnableLabel": "启用",
+    "remoteHardwareConfirmUndefinedPinsTitle": "是否允许未定义的PIN访问？",
+    "remoteHardwareConfirmUndefinedPinsMessage": "任何GPIO引脚都可以远程读取或写入，包括硬件配置中未列出的引脚。这增加了安全风险。",
+    "remoteHardwareConfirmUndefinedPinsLabel": "允许未定义的引脚"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "从收藏夹中移除",
@@ -2026,7 +2032,8 @@
         "label": "No PIN"
       }
     },
-    "tzdefPlaceholder": "例如EST5EDT、M3.2.0、M11.1.0"
+    "tzdefPlaceholder": "例如EST5EDT、M3.2.0、M11.1.0",
+    "waitingForConfigSection": "正在等待设备的 {{section}} 设置…"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
