@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
     "restartNote": "Zařízení se může krátce restartovat, když použijete nastavení."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Připojení ztraceno — rádio odpojeno",
+    "staleLoss": "Připojení může být ztraceno — v poslední době nebyla přijata žádná data",
+    "reconnect": "Znovu připojit",
+    "reconnectingAttempt": "Opětovné připojení... Pokus {{attempt}}/{{max}}"
   }
 }

@@ -194,3 +194,12 @@ describe('NobleBleManager.connect — release other session on same peripheral (
     expect(SOURCE).toContain('await this.disconnect(sessionId, { notify: false })');
   });
 });
+
+describe('NobleBleManager.connect — scan-before-connect when cache miss (regression)', () => {
+  it('waits up to NOBLE_PERIPHERAL_SCAN_WAIT_MS for peripheral during scan', () => {
+    expect(SOURCE).toContain('NOBLE_PERIPHERAL_SCAN_WAIT_MS');
+    expect(SOURCE).toContain('waitForPeripheralDuringScan');
+    expect(SOURCE).toMatch(/not in cache — scanning up to \$\{NOBLE_PERIPHERAL_SCAN_WAIT_MS\}ms/);
+    expect(SOURCE).toContain('export const NOBLE_PERIPHERAL_SCAN_WAIT_MS = 30_000');
+  });
+});

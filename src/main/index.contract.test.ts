@@ -215,6 +215,11 @@ describe('MQTT IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishNodeInfo'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishPosition'");
   });
+
+  it('registers mqtt power suspend/resume handlers for sleep/wake recovery', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:powerResume'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:powerSuspend'");
+  });
 });
 
 describe('HTTP bridge IPC handlers (source contract)', () => {

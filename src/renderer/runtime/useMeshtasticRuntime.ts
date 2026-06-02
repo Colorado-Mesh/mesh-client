@@ -146,6 +146,7 @@ import {
   traceRouteEventsToResultsMap,
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
+import { delayUnlessSuspended } from '../lib/systemPowerState';
 import { MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS } from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
@@ -200,6 +201,19 @@ const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
 const MAX_RECONNECT_ATTEMPTS = 5;
+
+async function verifyMeshtasticRfLink(type: ConnectionType): Promise<boolean> {
+  if (type !== 'ble') return true;
+  if (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux')) {
+    return true;
+  }
+  try {
+    return await window.electronAPI.isNobleBleConnected('meshtastic');
+  } catch {
+    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
+    return false;
+  }
+}
 
 function getOrCreateVirtualNodeId(): number {
   const key = 'mesh-client:mqttVirtualNodeId';
@@ -1704,9 +1718,15 @@ export function useMeshtasticRuntime() {
 
   // ─── Connection lost handler ──────────────────────────────────
   const handleConnectionLost = useCallback(() => {
-    if (isReconnectingRef.current) return;
-    console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
-    isReconnectingRef.current = true;
+    reconnectGenerationRef.current += 1;
+    if (!isReconnectingRef.current) {
+      console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
+      isReconnectingRef.current = true;
+    } else {
+      console.warn(
+        '[useMeshtasticRuntime] Connection lost during reconnect — restarting reconnect cycle',
+      );
+    }
 
     void (async () => {
       clearPostCommitRebootRecovery();
@@ -1761,6 +1781,12 @@ export function useMeshtasticRuntime() {
     if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
       isReconnectingRef.current = false;
       reconnectAttemptRef.current = 0;
+      cleanupSubscriptions();
+      stopWatchdog();
+      stopGpsInterval();
+      deviceRef.current = null;
+      meshtasticDriverConnectedRef.current = false;
+      meshtasticPendingDriverIdentityRef.current = null;
       setState((s) => ({
         ...s,
         status: 'disconnected',
@@ -1787,13 +1813,23 @@ export function useMeshtasticRuntime() {
     console.debug(
       `[useMeshtasticRuntime] reconnect: waiting ${delay}ms before attempt ${reconnectAttemptRef.current}/${MAX_RECONNECT_ATTEMPTS}`,
     );
-    await new Promise((r) => setTimeout(r, delay));
+    const delayResult = await delayUnlessSuspended(delay, () =>
+      !isReconnectingRef.current ? true : reconnectGenerationRef.current !== generation,
+    );
+    if (delayResult === 'aborted') return;
+    if (delayResult === 'suspended') {
+      isReconnectingRef.current = false;
+      return;
+    }
 
     // Check if user manually disconnected or started a new connection during the wait
     if (!isReconnectingRef.current || reconnectGenerationRef.current !== generation) return;
 
     let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
     try {
+      if (!(await verifyMeshtasticRfLink(params.type))) {
+        throw new Error('RF link not ready before reconnect open');
+      }
       opened = await openMeshtasticTransport(params.type, {
         httpAddress: params.httpAddress,
         blePeripheralId: params.blePeripheralId,
@@ -1806,6 +1842,13 @@ export function useMeshtasticRuntime() {
       await configureMeshtasticDeviceWithRetry(opened.device, {
         logTag: 'useMeshtasticRuntime reconnect',
       });
+
+      if (reconnectGenerationRef.current !== generation) {
+        throw new Error('Reconnect superseded during configure');
+      }
+      if (!(await verifyMeshtasticRfLink(params.type))) {
+        throw new Error('RF link lost after reconnect configure');
+      }
 
       // Success
       console.debug(
@@ -1836,7 +1879,27 @@ export function useMeshtasticRuntime() {
       // Retry
       void attemptReconnectRef.current();
     }
-  }, [wireSubscriptions, openMeshtasticTransport]);
+  }, [
+    wireSubscriptions,
+    openMeshtasticTransport,
+    cleanupSubscriptions,
+    stopWatchdog,
+    stopGpsInterval,
+  ]);
+
+  const onPowerSuspend = useCallback(() => {
+    reconnectGenerationRef.current += 1;
+    isReconnectingRef.current = false;
+  }, []);
+
+  const onPowerResume = useCallback(() => {
+    if (!connectionParamsRef.current) return;
+    console.debug('[useMeshtasticRuntime] power resume — resetting reconnect budget');
+    reconnectAttemptRef.current = 0;
+    reconnectGenerationRef.current += 1;
+    isReconnectingRef.current = false;
+    handleConnectionLostRef.current();
+  }, []);
 
   // Keep the ref in sync
   attemptReconnectRef.current = attemptReconnect;
@@ -3666,6 +3729,8 @@ export function useMeshtasticRuntime() {
       connect,
       connectAutomatic,
       disconnect,
+      onPowerSuspend,
+      onPowerResume,
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,
@@ -3769,6 +3834,8 @@ export function useMeshtasticRuntime() {
       connect,
       connectAutomatic,
       disconnect,
+      onPowerSuspend,
+      onPowerResume,
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,

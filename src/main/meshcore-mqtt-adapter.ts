@@ -67,6 +67,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   /** True when a token refresh was requested on close — hold reconnect until updateToken() fires. */
   private pendingReconnect = false;
   private pendingReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Short-circuit JWT reconnect backoff after macOS wake. */
+  private powerWakeReconnect = false;
   /** Grace period before expiry to trigger proactive refresh (5 minutes in ms). */
   private static readonly TOKEN_GRACE_PERIOD_MS = 5 * 60 * 1000;
   /** Proactive refresh schedule (50 minutes in ms = 90% of 60-minute token). */
@@ -496,10 +498,13 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       );
 
       if (isJwtBroker) {
-        const delay = computeMqttReconnectDelayMs({
-          protocol: 'meshcore',
-          attempt: this.retryCount,
-        });
+        const delay = this.powerWakeReconnect
+          ? 500
+          : computeMqttReconnectDelayMs({
+              protocol: 'meshcore',
+              attempt: this.retryCount,
+            });
+        this.powerWakeReconnect = false;
         console.warn(
           `[MeshCore MQTT] JWT broker: waiting ${delay}ms before token refresh (attempt ${this.retryCount}/${maxRetries})`,
         );
@@ -612,5 +617,57 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       ...(args.hash ? { hash: args.hash } : {}),
     };
     this.client.publish(topic, JSON.stringify(payload), { qos: 0 });
+  }
+
+  /** Pause watchdog while macOS is suspended (timers freeze and cause false positives). */
+  handlePowerSuspend(): void {
+    this.clearConnectionWatchdog();
+    this.clearReconnectTimer();
+    if (this.pendingReconnectTimer) {
+      clearTimeout(this.pendingReconnectTimer);
+      this.pendingReconnectTimer = null;
+    }
+  }
+
+  /** Reset watchdog baseline and reconnect after wake when settings remain active. */
+  handlePowerResume(): void {
+    this.lastPacketReceivedAt = Date.now();
+    this.clearConnectionWatchdog();
+    if (!this.lastSettings) return;
+    console.debug('[MeshCore MQTT] power resume — scheduling reconnect');
+    this.retryCount = 0;
+    this.powerWakeReconnect = true;
+    this.clearReconnectTimer();
+    if (this.pendingReconnectTimer) {
+      clearTimeout(this.pendingReconnectTimer);
+      this.pendingReconnectTimer = null;
+    }
+    this.pendingReconnect = false;
+    if (this.client) {
+      this.client.removeAllListeners();
+      this.client.end(true);
+      this.client = null;
+    }
+    if (this.status === 'error') {
+      this.status = 'disconnected';
+    }
+    if (this.status === 'connected' || this.status === 'connecting') {
+      this.setStatus('disconnected');
+    }
+    const settings = this.lastSettings;
+    if (settings.tokenExpiresAt) {
+      this.pendingReconnect = true;
+      this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, settings.server ?? '');
+      this.pendingReconnectTimer = setTimeout(() => {
+        if (this.pendingReconnect && this.lastSettings) {
+          console.warn('[MeshCore MQTT] power resume token refresh timed out — reconnecting');
+          this.pendingReconnect = false;
+          this.pendingReconnectTimer = null;
+          this._doConnect(this.lastSettings);
+        }
+      }, 5_000);
+    } else {
+      this._doConnect(settings);
+    }
   }
 }

@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
     "restartNote": "Ayarları uyguladığınızda cihaz kısa bir süre yeniden başlatılabilir."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Bağlantı kesildi — radyo bağlantısı kesildi",
+    "staleLoss": "Bağlantı kaybolabilir — yakın zamanda veri alınmadı",
+    "reconnect": "Yeniden bağlanınız",
+    "reconnectingAttempt": "Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi"
   }
 }

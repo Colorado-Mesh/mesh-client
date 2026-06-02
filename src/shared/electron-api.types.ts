@@ -427,6 +427,8 @@ export interface ElectronAPI {
   mqtt: {
     connect: (settings: unknown) => Promise<void>;
     disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<void>;
+    powerResume: () => Promise<void>;
+    powerSuspend: () => Promise<void>;
     onStatus: (
       cb: (payload: { status: string; protocol: 'meshtastic' | 'meshcore' }) => void,
     ) => () => void;
@@ -545,6 +547,7 @@ export interface ElectronAPI {
     peripheralId: string,
   ) => Promise<NobleBleConnectResult>;
   disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
+  isNobleBleConnected: (sessionId: NobleBleSessionId) => Promise<boolean>;
   nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
 
   // ─── Serial port selection ───────────────────────────────────────────────────

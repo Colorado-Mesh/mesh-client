@@ -46,6 +46,7 @@ import { useDualProtocolPanelActions } from './hooks/useDualProtocolPanelActions
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
+import { usePowerRecovery } from './hooks/usePowerRecovery';
 import {
   useProtocolConnect,
   useProtocolConnectionActions,
@@ -94,6 +95,7 @@ import {
   parseMeshCoreBuildDate,
   semverGt,
 } from './lib/firmwareCheck';
+import { loadLastConnection } from './lib/lastConnectionStorage';
 import {
   validateLetsMeshManualCredentials,
   validateLetsMeshPresetConnect,
@@ -115,6 +117,7 @@ import { parseStoredJson } from './lib/parseStoredJson';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
+import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { runStartupDbPrune } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './lib/storeRecordAdapters';
@@ -669,6 +672,18 @@ function AppContent({
   const protocolDisconnect = useProtocolDisconnect();
   const meshtasticConnection = useProtocolConnectionActions('meshtastic');
   const meshcoreConnection = useProtocolConnectionActions('meshcore');
+
+  usePowerRecovery({
+    meshtastic: {
+      onPowerSuspend: meshtasticRuntime.onPowerSuspend,
+      onPowerResume: meshtasticRuntime.onPowerResume,
+    },
+    meshcore: {
+      onPowerSuspend: meshcoreRuntime.onPowerSuspend,
+      onPowerResume: meshcoreRuntime.onPowerResume,
+    },
+  });
+
   const { meshtastic: meshtasticPanelActions, meshcore: meshcorePanelActions } =
     useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime);
   const activeFacade = useProtocolFacade(protocol, {
@@ -1729,34 +1744,48 @@ function AppContent({
   ]);
 
   // Manual reconnect from banner
+  const reconnectInFlightRef = useRef(false);
   const handleReconnect = useCallback(() => {
-    const lastType = activeConnectionView.state.connectionType ?? 'ble';
-    void protocolDisconnect(protocol).then(() => {
-      setTimeout(() => {
-        if (protocol === 'meshtastic' && lastType === 'ble') {
-          const raw = localStorage.getItem('mesh-client:lastConnection:meshtastic');
-          const parsed = parseStoredJson<{ bleDeviceId?: string }>(raw, 'App handleReconnect BLE');
-          const bleDeviceId = parsed?.bleDeviceId;
-          if (!bleDeviceId) {
-            console.warn('[App] handleReconnect missing BLE peripheral ID');
-            return;
-          }
-          meshtasticConnection
-            .connectAutomatic('ble', undefined, undefined, bleDeviceId)
+    if (reconnectInFlightRef.current) return;
+    reconnectInFlightRef.current = true;
+
+    const lastStored = loadLastConnection(protocol);
+    const lastType =
+      activeConnectionView.state.connectionType ?? lastStored?.type ?? ('ble' as const);
+
+    void protocolDisconnect(protocol)
+      .then(() => {
+        setTimeout(() => {
+          const finish = () => {
+            reconnectInFlightRef.current = false;
+          };
+
+          void reconnectRfFromLastConnection(protocol, lastType, {
+            connectBleAutomatic: (bleDeviceId) =>
+              protocol === 'meshtastic'
+                ? meshtasticConnection.connectAutomatic('ble', undefined, undefined, bleDeviceId)
+                : meshcoreConnection.connectAutomatic('ble', undefined, undefined, bleDeviceId),
+            connectBleDirect: (bleDeviceId) =>
+              protocolConnect(protocol, 'ble', undefined, bleDeviceId),
+            connectSerialAutomatic: (serialPortId) =>
+              protocol === 'meshtastic'
+                ? meshtasticConnection.connectAutomatic('serial', undefined, serialPortId)
+                : meshcoreConnection.connectAutomatic('serial', undefined, serialPortId),
+            connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
+          })
             .catch((err: unknown) => {
-              console.warn(
-                '[App] handleReconnect BLE auto-connect failed ' + errLikeToLogString(err),
-              );
-            });
-          return;
-        }
-        protocolConnect(protocol, lastType).catch((err: unknown) => {
-          console.warn('[App] handleReconnect connect failed ' + errLikeToLogString(err));
-        });
-      }, 500);
-    });
+              logRfReconnectFailure('[App] handleReconnect failed', err);
+            })
+            .finally(finish);
+        }, 500);
+      })
+      .catch((err: unknown) => {
+        reconnectInFlightRef.current = false;
+        logRfReconnectFailure('[App] handleReconnect disconnect failed', err);
+      });
   }, [
     activeConnectionView.state.connectionType,
+    meshcoreConnection,
     meshtasticConnection,
     protocol,
     protocolConnect,
@@ -2068,6 +2097,7 @@ function AppContent({
         {/* Connection Status Banner */}
         <ConnectionBanner
           status={activeConnectionView.state.status}
+          connectionLoss={deviceLoss}
           reconnectAttempt={activeConnectionView.state.reconnectAttempt}
           onReconnect={handleReconnect}
         />
@@ -3357,27 +3387,49 @@ function FirmwareUpdateNotifier({
 // ─── Connection Status Banner ─────────────────────────────────────
 function ConnectionBanner({
   status,
+  connectionLoss,
   reconnectAttempt,
   onReconnect,
 }: {
   status: string;
+  connectionLoss?: boolean;
   reconnectAttempt?: number;
   onReconnect: () => void;
 }) {
+  const { t } = useTranslation();
+
+  if (status === 'disconnected' && connectionLoss) {
+    return (
+      <div className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-red-400">⚠</span>
+          <span className="text-sm text-red-200">{t('connectionBanner.disconnectedLoss')}</span>
+        </div>
+        <button
+          type="button"
+          onClick={onReconnect}
+          aria-label={t('connectionBanner.reconnect')}
+          className="text-sm font-medium text-red-300 underline hover:text-red-100"
+        >
+          {t('connectionBanner.reconnect')}
+        </button>
+      </div>
+    );
+  }
+
   if (status === 'stale') {
     return (
       <div className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2">
         <div className="flex items-center gap-2">
           <span className="text-yellow-400">⚠</span>
-          <span className="text-sm text-yellow-200">
-            Connection may be lost — no data received recently
-          </span>
+          <span className="text-sm text-yellow-200">{t('connectionBanner.staleLoss')}</span>
         </div>
         <button
           onClick={onReconnect}
+          aria-label={t('connectionBanner.reconnect')}
           className="text-sm font-medium text-yellow-300 underline hover:text-yellow-100"
         >
-          Reconnect
+          {t('connectionBanner.reconnect')}
         </button>
       </div>
     );
@@ -3388,7 +3440,10 @@ function ConnectionBanner({
       <div className="flex items-center gap-2 border-b border-orange-700 bg-orange-900/80 px-4 py-2">
         <span className="inline-block animate-spin text-orange-400">⟳</span>
         <span className="animate-pulse text-sm text-orange-200">
-          Reconnecting... attempt {reconnectAttempt ?? 1}/5
+          {t('connectionBanner.reconnectingAttempt', {
+            attempt: reconnectAttempt ?? 1,
+            max: 5,
+          })}
         </span>
       </div>
     );

@@ -23,6 +23,7 @@ import {
   resolveMeshtasticTextMessagePayload,
 } from '../shared/meshtasticTextMessagePayload';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
+import { isTransientNetworkError } from '../shared/networkTransientErrors';
 import {
   formatMeshtasticNodeId,
   meshtasticShortNameAfterClearingDefault,
@@ -587,20 +588,13 @@ export class MQTTManager extends EventEmitter {
     this.client.on('error', (err: Error & { code?: string | number }) => {
       // Transient network errors will trigger 'close' → our backoff handler; don't
       // flip status to "error" for them — that would hide the "connecting" state.
-      const code = String(err.code ?? '');
-      const isCodeTransient =
-        code === 'ECONNRESET' ||
-        code === 'ECONNREFUSED' ||
-        code === 'ETIMEDOUT' ||
-        code === 'ENOTFOUND';
-      // mqtt.js emits these with no .code; they're transient broker/proxy conditions.
-      const isMsgTransient =
-        err.message === 'Keepalive timeout' || err.message === 'connack timeout';
-      const isTransient = isCodeTransient || isMsgTransient;
+      const isTransient = isTransientNetworkError(err);
       if (err.message === 'connack timeout') {
         this.preferFastMqttReconnect = true;
       }
       if (isTransient) {
+        const isMsgTransient =
+          err.message === 'Keepalive timeout' || err.message === 'connack timeout';
         if (isMsgTransient) {
           console.warn(
             '[Meshtastic MQTT] Connection timeout (will reconnect):',
@@ -1074,6 +1068,43 @@ export class MQTTManager extends EventEmitter {
 
   getClientId(): string {
     return this.clientId;
+  }
+
+  /** After macOS sleep/wake: reset retry budget and reconnect when settings are still active. */
+  handlePowerResume(): void {
+    if (!this.currentSettings) return;
+    console.debug('[Meshtastic MQTT] power resume — scheduling reconnect'); // log-filter-ok Meshtastic MQTT logs → App log panel
+    this.preferFastMqttReconnect = true;
+    this.retryCount = 0;
+    this.clearConnectAckTimer();
+    this.clearWssPing();
+    this.clearKeepaliveReschedule();
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.status === 'error') {
+      this.status = 'disconnected';
+    }
+    if (this.client) {
+      this.client.removeAllListeners();
+      this.client.end(true);
+      this.client = null;
+    }
+    if (this.status === 'connected' || this.status === 'connecting') {
+      this.setStatus('disconnected');
+    }
+    this._doConnect(this.currentSettings);
+  }
+
+  /** Pause reconnect timers while the system is suspended. */
+  handlePowerSuspend(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.clearWssPing();
+    this.clearKeepaliveReschedule();
   }
 
   private setStatus(s: MQTTStatus): void {

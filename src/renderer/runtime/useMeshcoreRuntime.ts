@@ -65,6 +65,7 @@ import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
+import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import type {
   CayenneLppEntry,
@@ -219,6 +220,7 @@ import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
+import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
   MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
@@ -259,6 +261,21 @@ export type {
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 export type { CliHistoryEntry } from '../lib/repeaterCommandService';
+
+const MESHCORE_MAX_RECONNECT_ATTEMPTS = 5;
+
+async function verifyMeshcoreRfLink(rfType: 'ble' | 'serial' | 'tcp'): Promise<boolean> {
+  if (rfType !== 'ble') return true;
+  if (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux')) {
+    return true;
+  }
+  try {
+    return await window.electronAPI.isNobleBleConnected('meshcore');
+  } catch {
+    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
+    return false;
+  }
+}
 
 export function useMeshcoreRuntime() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
@@ -330,6 +347,17 @@ export function useMeshcoreRuntime() {
   const meshcoreDriverConnectedRef = useRef(false);
   const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
   const bleConnectInProgressRef = useRef(false);
+  const meshcoreConnectionParamsRef = useRef<{
+    rfType: 'ble' | 'serial' | 'tcp';
+    httpAddress?: string;
+    blePeripheralId?: string;
+    serialPortId?: string | null;
+  } | null>(null);
+  const meshcoreReconnectAttemptRef = useRef(0);
+  const meshcoreReconnectGenerationRef = useRef(0);
+  const meshcoreIsReconnectingRef = useRef(false);
+  const handleMeshcoreConnectionLostRef = useRef<() => void>(() => {});
+  const attemptMeshcoreReconnectRef = useRef<() => Promise<void>>(async () => {});
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
   const meshcoreSetupGenerationRef = useRef(0);
   // Map pubKeyPrefix (6-byte hex) → nodeId for DM routing
@@ -1295,6 +1323,7 @@ export function useMeshcoreRuntime() {
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
+      handleConnectionLostRef: handleMeshcoreConnectionLostRef,
     }),
     [
       addMessage,
@@ -1303,6 +1332,14 @@ export function useMeshcoreRuntime() {
       meshcorePreviousNodesBaselineForBuild,
     ],
   );
+
+  useEffect(() => {
+    return window.electronAPI.onNobleBleDisconnected((sessionId) => {
+      if (sessionId !== 'meshcore') return;
+      if (!meshcoreConnectionParamsRef.current) return;
+      handleMeshcoreConnectionLostRef.current();
+    });
+  }, []);
 
   const setupEventListeners = useCallback(
     (conn: MeshCoreConnection) => attachMeshcoreLegacyConnEvents(conn, meshcoreLegacyConnEventsCtx),
@@ -1881,6 +1918,144 @@ export function useMeshcoreRuntime() {
     [teardownMeshcoreConnEventListeners, reloadMeshcoreNodesFromDb],
   );
 
+  const attemptMeshcoreReconnect = useCallback(async () => {
+    const params = meshcoreConnectionParamsRef.current;
+    if (!params) {
+      meshcoreIsReconnectingRef.current = false;
+      return;
+    }
+
+    if (meshcoreReconnectAttemptRef.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS) {
+      meshcoreIsReconnectingRef.current = false;
+      meshcoreReconnectAttemptRef.current = 0;
+      setState((s) => ({
+        ...s,
+        status: 'disconnected',
+        connectionType: null,
+        connectionLoss: true,
+      }));
+      return;
+    }
+
+    const generation = meshcoreReconnectGenerationRef.current;
+    meshcoreReconnectAttemptRef.current += 1;
+    setState((s) => ({
+      ...s,
+      status: 'reconnecting',
+      connectionLoss: true,
+      reconnectAttempt: meshcoreReconnectAttemptRef.current,
+    }));
+
+    const delay = Math.min(2000 * Math.pow(2, meshcoreReconnectAttemptRef.current - 1), 32_000);
+    console.debug(
+      `[useMeshcoreRuntime] reconnect: waiting ${delay}ms before attempt ${meshcoreReconnectAttemptRef.current}/${MESHCORE_MAX_RECONNECT_ATTEMPTS}`,
+    );
+    const delayResult = await delayUnlessSuspended(delay, () =>
+      !meshcoreIsReconnectingRef.current
+        ? true
+        : meshcoreReconnectGenerationRef.current !== generation,
+    );
+    if (delayResult === 'aborted') return;
+    if (delayResult === 'suspended') {
+      meshcoreIsReconnectingRef.current = false;
+      return;
+    }
+    if (
+      !meshcoreIsReconnectingRef.current ||
+      meshcoreReconnectGenerationRef.current !== generation
+    ) {
+      return;
+    }
+
+    let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
+    try {
+      if (!(await verifyMeshcoreRfLink(params.rfType))) {
+        throw new Error('RF link not ready before MeshCore reconnect open');
+      }
+      await prepareRfConnect(params.rfType);
+      opened = await openMeshCoreTransport(params.rfType, {
+        blePeripheralId: params.blePeripheralId,
+        host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
+        portSignature: params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
+      });
+      await attachRfSession(opened.driverIdentityId, params.rfType);
+      if (meshcoreReconnectGenerationRef.current !== generation) {
+        throw new Error('MeshCore reconnect superseded during attach');
+      }
+      if (!(await verifyMeshcoreRfLink(params.rfType))) {
+        throw new Error('RF link lost after MeshCore reconnect attach');
+      }
+      console.debug(
+        `[useMeshcoreRuntime] Reconnect succeeded on attempt ${meshcoreReconnectAttemptRef.current}`,
+      );
+      meshcoreReconnectAttemptRef.current = 0;
+      meshcoreIsReconnectingRef.current = false;
+    } catch (err) {
+      if (opened?.driverIdentityId) {
+        await connectionDriver.disconnect(opened.driverIdentityId).catch((e: unknown) => {
+          console.debug(
+            '[useMeshcoreRuntime] reconnect failure driver disconnect ' + errLikeToLogString(e),
+          );
+        });
+      }
+      console.warn(
+        `[useMeshcoreRuntime] Reconnect attempt ${meshcoreReconnectAttemptRef.current} failed: ` +
+          errLikeToLogString(err),
+      );
+      void attemptMeshcoreReconnectRef.current();
+    }
+  }, [attachRfSession, prepareRfConnect]);
+
+  attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
+
+  const handleMeshcoreConnectionLost = useCallback(() => {
+    if (!meshcoreConnectionParamsRef.current) return;
+    meshcoreReconnectGenerationRef.current += 1;
+    if (!meshcoreIsReconnectingRef.current) {
+      console.warn('[useMeshcoreRuntime] Connection lost — initiating reconnect');
+      meshcoreIsReconnectingRef.current = true;
+    } else {
+      console.warn(
+        '[useMeshcoreRuntime] Connection lost during reconnect — restarting reconnect cycle',
+      );
+    }
+
+    void (async () => {
+      meshcoreSetupGenerationRef.current += 1;
+      const driverIdentity =
+        meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current;
+      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      connRef.current = null;
+      meshcoreDriverConnectedRef.current = false;
+      meshcorePendingDriverIdentityRef.current = null;
+      if (driverIdentity) {
+        await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          console.debug(
+            '[useMeshcoreRuntime] handleMeshcoreConnectionLost driver disconnect ' +
+              errLikeToLogString(e),
+          );
+        });
+      }
+      void attemptMeshcoreReconnectRef.current();
+    })();
+  }, [teardownMeshcoreConnEventListeners]);
+
+  handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
+
+  const onPowerSuspend = useCallback(() => {
+    meshcoreReconnectGenerationRef.current += 1;
+    meshcoreIsReconnectingRef.current = false;
+  }, []);
+
+  const onPowerResume = useCallback(() => {
+    if (!meshcoreConnectionParamsRef.current) return;
+    console.debug('[useMeshcoreRuntime] power resume — resetting reconnect budget');
+    meshcoreReconnectAttemptRef.current = 0;
+    meshcoreReconnectGenerationRef.current += 1;
+    meshcoreIsReconnectingRef.current = false;
+    handleMeshcoreConnectionLostRef.current();
+  }, []);
+
   const connect = useCallback(
     async (type: 'ble' | 'serial' | 'tcp', tcpHost?: string, blePeripheralId?: string) => {
       await prepareRfConnect(type);
@@ -1899,6 +2074,15 @@ export function useMeshcoreRuntime() {
           host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
         });
         await attachRfSession(opened.driverIdentityId, type);
+        meshcoreConnectionParamsRef.current = {
+          rfType: type,
+          httpAddress: type === 'tcp' ? tcpHost : undefined,
+          blePeripheralId: type === 'ble' ? blePeripheralId : undefined,
+          serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
+        };
+        meshcoreReconnectAttemptRef.current = 0;
+        meshcoreIsReconnectingRef.current = false;
+        meshcoreReconnectGenerationRef.current += 1;
       } catch (err) {
         const isSetupAbort =
           err instanceof DOMException &&
@@ -1983,7 +2167,16 @@ export function useMeshcoreRuntime() {
       type: 'ble' | 'serial' | 'http',
       httpAddress?: string,
       lastSerialPortId?: string | null,
+      blePeripheralId?: string,
     ) => {
+      if (type === 'ble') {
+        const resolvedBleId = blePeripheralId ?? resolveLastBlePeripheralId('meshcore');
+        if (!resolvedBleId) {
+          throw new Error('No BLE device remembered for MeshCore auto-connect');
+        }
+        await connect('ble', undefined, resolvedBleId);
+        return;
+      }
       if (type === 'serial') {
         await prepareRfConnect('serial');
         let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
@@ -1992,6 +2185,12 @@ export function useMeshcoreRuntime() {
             portSignature: lastSerialPortId,
           });
           await attachRfSession(opened.driverIdentityId, 'serial');
+          meshcoreConnectionParamsRef.current = {
+            rfType: 'serial',
+            serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
+          };
+          meshcoreReconnectAttemptRef.current = 0;
+          meshcoreIsReconnectingRef.current = false;
         } catch (err) {
           const isSetupAbort =
             err instanceof DOMException &&
@@ -2033,6 +2232,10 @@ export function useMeshcoreRuntime() {
   );
 
   const disconnect = useCallback(async () => {
+    meshcoreConnectionParamsRef.current = null;
+    meshcoreIsReconnectingRef.current = false;
+    meshcoreReconnectAttemptRef.current = 0;
+    meshcoreReconnectGenerationRef.current += 1;
     await finalizeDriverDisconnect({ disconnectDriver: true });
   }, [finalizeDriverDisconnect]);
 
@@ -4967,6 +5170,8 @@ export function useMeshcoreRuntime() {
       meshcoreLocalStats: nodesRef.current.get(myNodeNumRef.current)?.meshcore_local_stats ?? null,
       connect,
       disconnect,
+      onPowerSuspend,
+      onPowerResume,
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,
@@ -5099,6 +5304,8 @@ export function useMeshcoreRuntime() {
       meshcoreIdentityId,
       connect,
       disconnect,
+      onPowerSuspend,
+      onPowerResume,
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,

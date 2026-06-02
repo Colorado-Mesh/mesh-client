@@ -314,6 +314,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     connect: (settings: unknown) => ipcRenderer.invoke('mqtt:connect', settings),
     disconnect: (protocol?: 'meshtastic' | 'meshcore') =>
       ipcRenderer.invoke('mqtt:disconnect', protocol),
+    powerResume: () => ipcRenderer.invoke('mqtt:powerResume'),
+    powerSuspend: () => ipcRenderer.invoke('mqtt:powerSuspend'),
     onStatus: (cb: (payload: { status: string; protocol: 'meshtastic' | 'meshcore' }) => void) => {
       const handler = (
         _: unknown,
@@ -549,6 +551,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('noble-ble-connect', sessionId, peripheralId),
   disconnectNobleBle: (sessionId: NobleBleSessionId): Promise<void> =>
     ipcRenderer.invoke('noble-ble-disconnect', sessionId),
+  isNobleBleConnected: (sessionId: NobleBleSessionId): Promise<boolean> =>
+    ipcRenderer.invoke('noble-ble-is-connected', sessionId),
   nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array): Promise<void> =>
     ipcRenderer.invoke('noble-ble-to-radio', sessionId, bytes),
 

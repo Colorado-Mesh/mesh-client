@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",
     "restartNote": "Das Gerät kann kurzzeitig neu gestartet werden, wenn Sie die Einstellungen anwenden."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Verbindung unterbrochen — Funkverbindung getrennt",
+    "staleLoss": "Verbindung kann verloren gehen — in letzter Zeit wurden keine Daten empfangen",
+    "reconnect": "Erneut verbinden",
+    "reconnectingAttempt": "Wiederverbinden… Versuch {{attempt}}/{{max}}"
   }
 }

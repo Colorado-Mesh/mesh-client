@@ -20,6 +20,9 @@ const MESHCORE_SERVICE_UUID = '6e400001b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_RX_UUID = '6e400002b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_TX_UUID = '6e400003b5a3f393e0a9e50e24dcca9e';
 
+/** How long connect() waits for a cached peripheral to reappear after sleep/wake. */
+export const NOBLE_PERIPHERAL_SCAN_WAIT_MS = 30_000;
+
 export interface NobleBleDisconnectOptions {
   /** When false, skip emitting `disconnected` (e.g. connect() teardown before reconnect). */
   notify?: boolean;
@@ -571,6 +574,63 @@ export class NobleBleManager extends EventEmitter {
     await this.doStopScanning();
   }
 
+  /**
+   * Scan until `peripheralId` appears in `knownPeripherals` (e.g. after macOS sleep clears cache).
+   * Failure point: radio off or out of range — caller surfaces connect error.
+   */
+  private waitForPeripheralDuringScan(
+    sessionId: NobleSessionId,
+    peripheralId: string,
+    timeoutMs: number,
+  ): Promise<any> {
+    const cached = this.knownPeripherals.get(peripheralId);
+    if (cached) return Promise.resolve(cached);
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const onDiscovered = (device: { deviceId: string }) => {
+        if (device.deviceId !== peripheralId) return;
+        const peripheral = this.knownPeripherals.get(peripheralId);
+        if (!peripheral) return;
+        finish(() => {
+          resolve(peripheral);
+        });
+      };
+
+      const timer = setTimeout(() => {
+        finish(() => {
+          reject(
+            new Error(
+              `BLE peripheral not found: ${peripheralId}. Scan for devices before connecting.`,
+            ),
+          );
+        });
+      }, timeoutMs);
+
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        this.off('deviceDiscovered', onDiscovered);
+        fn();
+      };
+
+      this.on('deviceDiscovered', onDiscovered);
+      const hadScanInterest = this.scanRequesters.has(sessionId);
+      if (!hadScanInterest) {
+        this.scanRequesters.add(sessionId);
+      }
+      void this.doStartScanning().catch((err: unknown) => {
+        if (!hadScanInterest) {
+          this.scanRequesters.delete(sessionId);
+        }
+        finish(() => {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        });
+      });
+    });
+  }
+
   private doStartScanning(): Promise<void> {
     if (!noble) return Promise.resolve();
     // Idempotent: if a scan is already active (e.g. kicked by stateChange handler concurrently),
@@ -816,8 +876,13 @@ export class NobleBleManager extends EventEmitter {
 
       peripheral = this.knownPeripherals.get(peripheralId);
       if (!peripheral) {
-        throw new Error(
-          `BLE peripheral not found: ${peripheralId}. Scan for devices before connecting.`,
+        console.debug(
+          `[BLE:${sessionId}] peripheral ${peripheralId} not in cache — scanning up to ${NOBLE_PERIPHERAL_SCAN_WAIT_MS}ms`,
+        );
+        peripheral = await this.waitForPeripheralDuringScan(
+          sessionId,
+          peripheralId,
+          NOBLE_PERIPHERAL_SCAN_WAIT_MS,
         );
       }
       console.debug(

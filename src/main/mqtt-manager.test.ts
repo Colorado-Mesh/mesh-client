@@ -2396,11 +2396,14 @@ function getLastMockMqttClient(): {
   };
 }
 
-function lastHandler(client: { on: ReturnType<typeof vi.fn> }, event: string): () => void {
+function lastHandler(
+  client: { on: ReturnType<typeof vi.fn> },
+  event: string,
+): (...args: unknown[]) => void {
   const hits = client.on.mock.calls.filter((c: unknown[]) => c[0] === event);
   const fn = hits[hits.length - 1]?.[1];
   if (typeof fn !== 'function') throw new Error(`no ${event} handler`);
-  return fn as () => void;
+  return fn as (...args: unknown[]) => void;
 }
 
 describe('MQTTManager reconnect backoff + connect watchdog', () => {
@@ -2446,6 +2449,30 @@ describe('MQTTManager reconnect backoff + connect watchdog', () => {
     vi.advanceTimersByTime(12_000);
     expect(client.end).toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('timed out before MQTT session'));
+  });
+
+  it('does not set terminal error status for ENETDOWN (transient interface-down)', () => {
+    const manager = new MQTTManager();
+    manager.connect(settings);
+    const client = getLastMockMqttClient();
+    const enetdown = Object.assign(new Error('read ENETDOWN'), { code: 'ENETDOWN' });
+    lastHandler(client, 'error')(enetdown);
+    expect(manager.getStatus()).not.toBe('error');
+  });
+
+  it('handlePowerResume reconnects after ENETDOWN left status in error', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const manager = new MQTTManager();
+    manager.connect(settings);
+    const client = getLastMockMqttClient();
+    const enetdown = Object.assign(new Error('read ENETDOWN'), { code: 'ENETDOWN' });
+    lastHandler(client, 'error')(enetdown);
+    lastHandler(client, 'close')();
+    (manager as unknown as { status: string }).status = 'error';
+    vi.mocked(mqtt.connect).mockClear();
+    manager.handlePowerResume();
+    expect(manager.getStatus()).not.toBe('error');
+    expect(vi.mocked(mqtt.connect)).toHaveBeenCalledTimes(1);
   });
 });
 
