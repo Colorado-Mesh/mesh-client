@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "예: EST5EDT, M3.2.0, M11.1.0",
-    "waitingForConfigSection": "기기에서 {{section}} 설정을 기다리는 중…"
+    "waitingForConfigSection": "기기에서 {{section}} 설정을 기다리는 중…",
+    "applyStatusApplying": "{{section}} 적용 중…",
+    "applyStatusSuccess": "{{section}}이(가) 성공적으로 적용되었습니다. 장치가 잠시 재부팅될 수 있습니다.",
+    "applyStatusCommitFailed": "{{section}}이(가) 전송되었지만 커밋에 실패했습니다: {{message}}",
+    "applyStatusFailed": "실패: {{message}}",
+    "applyUserApplying": "사용자 ID 적용 중...",
+    "applyUserSuccess": "사용자 ID가 성공적으로 적용되었습니다!",
+    "applyLoraSuccess": "LoRa 설정이 성공적으로 적용되었습니다!"
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

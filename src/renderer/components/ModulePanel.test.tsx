@@ -43,6 +43,30 @@ describe('ModulePanel', () => {
     expect(screen.getByText('Waiting for module config from device…')).toBeInTheDocument();
   });
 
+  it('disables telemetry apply until module slice is hydrated', async () => {
+    const user = userEvent.setup();
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          telemetry: {},
+        }}
+      />,
+    );
+
+    const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Telemetry Module';
+    });
+    expect(telemetryDetails).toBeDefined();
+    await user.click(telemetryDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for Telemetry Module settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Telemetry Module' })).toBeDisabled();
+  });
+
   it('applies telemetry module with updated device interval and preserves hidden fields', async () => {
     const user = userEvent.setup();
     const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);

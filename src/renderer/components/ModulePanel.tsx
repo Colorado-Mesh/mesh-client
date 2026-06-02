@@ -10,6 +10,7 @@ import {
   buildMeshtasticModuleApplyValue,
   mergeMeshtasticConfigApplyValue,
   meshtasticConfigSlice,
+  meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import {
   buildMeshtasticMqttModuleApplyValue,
@@ -250,14 +251,21 @@ function ModuleSection({
   onApply,
   applying,
   disabled,
+  sliceReady = true,
+  showSliceWaiting = false,
 }: {
   title: string;
   children: React.ReactNode;
   onApply: () => void;
   applying: boolean;
   disabled: boolean;
+  /** When false, Apply stays disabled until device module slice is hydrated. */
+  sliceReady?: boolean;
+  /** Show "waiting for settings" hint (pass when connected and slice not ready). */
+  showSliceWaiting?: boolean;
 }) {
   const { t } = useTranslation();
+  const applyDisabled = disabled || applying || !sliceReady;
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
@@ -272,11 +280,16 @@ function ModuleSection({
         </svg>
       </summary>
       <div className="space-y-4 px-4 pb-4">
+        {showSliceWaiting && !sliceReady && (
+          <p className="text-xs text-yellow-300/90">
+            {t('radioPanel.waitingForConfigSection', { section: title })}
+          </p>
+        )}
         {children}
         <button
           type="button"
           onClick={onApply}
-          disabled={disabled || applying}
+          disabled={applyDisabled}
           className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
         >
           {applying
@@ -407,6 +420,11 @@ export default function ModulePanel({
   const secondsUnit = t('radioPanel.secondsUnit');
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const remoteTarget = configTarget?.mode === 'remote';
+  const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(moduleConfigs[key]);
+  const moduleSectionProps = (key: string) => ({
+    sliceReady: moduleSliceReady(key),
+    showSliceWaiting: isConnected,
+  });
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
   const [rhPendingConfirm, setRhPendingConfirm] = useState<'enable' | 'undefinedPins' | null>(null);
 
@@ -799,10 +817,14 @@ export default function ModulePanel({
   });
 
   const ambientHex = `#${[ambientRed, ambientGreen, ambientBlue].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  const parseAmbientHexByte = (hex: string) => {
+    const n = parseInt(hex, 16);
+    return Number.isFinite(n) ? Math.min(255, Math.max(0, n)) : 0;
+  };
   const handleAmbientColorChange = (hex: string) => {
-    setAmbientRed(parseInt(hex.slice(1, 3), 16));
-    setAmbientGreen(parseInt(hex.slice(3, 5), 16));
-    setAmbientBlue(parseInt(hex.slice(5, 7), 16));
+    setAmbientRed(parseAmbientHexByte(hex.slice(1, 3)));
+    setAmbientGreen(parseAmbientHexByte(hex.slice(3, 5)));
+    setAmbientBlue(parseAmbientHexByte(hex.slice(5, 7)));
   };
 
   const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
@@ -882,6 +904,7 @@ export default function ModulePanel({
       {/* ═══ MQTT Relay Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionMqttRelay')}
+        {...moduleSectionProps('mqtt')}
         onApply={() => {
           const validationError = validateMqttRelayBeforeApply();
           if (validationError) {
@@ -970,6 +993,7 @@ export default function ModulePanel({
       {/* ═══ Serial Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionSerialModule')}
+        {...moduleSectionProps('serial')}
         onApply={() => {
           const merged = buildMeshtasticModuleApplyValue('serial', serialCfg, {
             enabled: serialEnabled,
@@ -1087,6 +1111,7 @@ export default function ModulePanel({
       {/* ═══ External Notification Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionExternalNotification')}
+        {...moduleSectionProps('externalNotification')}
         onApply={() => {
           applyMeshtasticModule('External Notification', 'externalNotification', extNotifCfg, {
             enabled: extEnabled,
@@ -1231,6 +1256,7 @@ export default function ModulePanel({
       {/* ═══ Store & Forward Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionStoreForward')}
+        {...moduleSectionProps('storeForward')}
         onApply={() => {
           applyMeshtasticModule('Store & Forward', 'storeForward', sfCfg, {
             enabled: sfEnabled,
@@ -1292,6 +1318,7 @@ export default function ModulePanel({
       {/* ═══ Range Test Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionRangeTest')}
+        {...moduleSectionProps('rangeTest')}
         onApply={() => {
           applyMeshtasticModule('Range Test', 'rangeTest', rangeCfg, {
             enabled: rangeEnabled,
@@ -1332,6 +1359,7 @@ export default function ModulePanel({
       {'telemetry' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionTelemetryModule')}
+          {...moduleSectionProps('telemetry')}
           onApply={() => {
             applyMeshtasticModule(t('modulePanel.sectionTelemetryModule'), 'telemetry', telCfg, {
               deviceTelemetryEnabled: telDeviceTelemetryEnabled,
@@ -1446,6 +1474,7 @@ export default function ModulePanel({
       {/* ═══ Canned Messages ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionCannedMessages')}
+        {...moduleSectionProps('cannedMessage')}
         onApply={async () => {
           setApplyingSection('Canned Messages');
           try {
@@ -1594,6 +1623,7 @@ export default function ModulePanel({
       {/* ═══ Neighbor Info Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionNeighborInfo')}
+        {...moduleSectionProps('neighborInfo')}
         onApply={() => {
           applyMeshtasticModule('Neighbor Info', 'neighborInfo', neighborInfoCfg, {
             enabled: neighborInfoEnabled,
@@ -1632,6 +1662,7 @@ export default function ModulePanel({
       {/* ═══ Ambient Lighting Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionAmbientLighting')}
+        {...moduleSectionProps('ambientLighting')}
         onApply={() => {
           applyMeshtasticModule('Ambient Lighting', 'ambientLighting', ambientCfg, {
             ledState: ambientLedState,
@@ -1695,6 +1726,7 @@ export default function ModulePanel({
       {/* ═══ Detection Sensor Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionDetectionSensor')}
+        {...moduleSectionProps('detectionSensor')}
         onApply={() => {
           applyMeshtasticModule('Detection Sensor', 'detectionSensor', detectCfg, {
             enabled: detectEnabled,
@@ -1744,6 +1776,7 @@ export default function ModulePanel({
       {'remoteHardware' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionRemoteHardware')}
+          {...moduleSectionProps('remoteHardware')}
           onApply={() => {
             applyMeshtasticModule(
               t('modulePanel.sectionRemoteHardware'),
@@ -1799,6 +1832,7 @@ export default function ModulePanel({
       {'paxcounter' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionPaxCounter')}
+          {...moduleSectionProps('paxcounter')}
           onApply={() => {
             applyMeshtasticModule('Pax Counter', 'paxcounter', paxCfg, {
               enabled: paxEnabled,
@@ -1831,25 +1865,31 @@ export default function ModulePanel({
       {'trafficManagement' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionTrafficManagement')}
+          {...moduleSectionProps('trafficManagement')}
           onApply={() => {
-            applyMeshtasticModule('Traffic Management', 'trafficManagement', trafficMgmtCfg, {
-              enabled: tmEnabled,
-              positionDedupEnabled: tmPositionDedupEnabled,
-              positionPrecisionBits: tmPositionPrecisionBits,
-              positionMinIntervalSecs: tmPositionMinIntervalSecs,
-              nodeinfoDirectResponse: tmNodeinfoDirectResponse,
-              nodeinfoDirectResponseMaxHops: tmNodeinfoDirectResponseMaxHops,
-              rateLimitEnabled: tmRateLimitEnabled,
-              rateLimitWindowSecs: tmRateLimitWindowSecs,
-              rateLimitMaxPackets: tmRateLimitMaxPackets,
-              dropUnknownEnabled: tmDropUnknownEnabled,
-              unknownPacketThreshold: tmUnknownPacketThreshold,
-              exhaustHopTelemetry: tmExhaustHopTelemetry,
-              exhaustHopPosition: tmExhaustHopPosition,
-              routerPreserveHops: tmRouterPreserveHops,
-            });
+            applyMeshtasticModule(
+              t('modulePanel.sectionTrafficManagement'),
+              'trafficManagement',
+              trafficMgmtCfg,
+              {
+                enabled: tmEnabled,
+                positionDedupEnabled: tmPositionDedupEnabled,
+                positionPrecisionBits: tmPositionPrecisionBits,
+                positionMinIntervalSecs: tmPositionMinIntervalSecs,
+                nodeinfoDirectResponse: tmNodeinfoDirectResponse,
+                nodeinfoDirectResponseMaxHops: tmNodeinfoDirectResponseMaxHops,
+                rateLimitEnabled: tmRateLimitEnabled,
+                rateLimitWindowSecs: tmRateLimitWindowSecs,
+                rateLimitMaxPackets: tmRateLimitMaxPackets,
+                dropUnknownEnabled: tmDropUnknownEnabled,
+                unknownPacketThreshold: tmUnknownPacketThreshold,
+                exhaustHopTelemetry: tmExhaustHopTelemetry,
+                exhaustHopPosition: tmExhaustHopPosition,
+                routerPreserveHops: tmRouterPreserveHops,
+              },
+            );
           }}
-          applying={applyingSection === 'Traffic Management'}
+          applying={applyingSection === t('modulePanel.sectionTrafficManagement')}
           disabled={disabled}
         >
           <ConfigToggle
@@ -1966,13 +2006,14 @@ export default function ModulePanel({
       {'tak' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionTak')}
+          {...moduleSectionProps('tak')}
           onApply={() => {
-            applyMeshtasticModule('TAK', 'tak', takCfg, {
+            applyMeshtasticModule(t('modulePanel.sectionTak'), 'tak', takCfg, {
               team: takTeam,
               role: takRole,
             });
           }}
-          applying={applyingSection === 'TAK'}
+          applying={applyingSection === t('modulePanel.sectionTak')}
           disabled={disabled}
         >
           <ConfigSelect

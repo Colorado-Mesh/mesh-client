@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "例如EST5EDT、M3.2.0、M11.1.0",
-    "waitingForConfigSection": "正在等待设备的 {{section}} 设置…"
+    "waitingForConfigSection": "正在等待设备的 {{section}} 设置…",
+    "applyStatusApplying": "正在应用{{section}}…",
+    "applyStatusSuccess": "{{section}}已成功应用。设备可能会短暂重新启动。",
+    "applyStatusCommitFailed": "{{section}}已发送，但提交失败：{{message}}",
+    "applyStatusFailed": "失败：{{message}}",
+    "applyUserApplying": "正在应用用户身份…",
+    "applyUserSuccess": "用户身份已成功应用！",
+    "applyLoraSuccess": "LoRa设置已成功应用！"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

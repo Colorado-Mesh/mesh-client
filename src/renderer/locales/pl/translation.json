@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "np. EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Oczekiwanie na ustawienia {{section}} z urządzenia…"
+    "waitingForConfigSection": "Oczekiwanie na ustawienia {{section}} z urządzenia…",
+    "applyStatusApplying": "Stosowanie {{section}}…",
+    "applyStatusSuccess": "{{section}} zastosowano pomyślnie. Urządzenie może się na chwilę zrestartować.",
+    "applyStatusCommitFailed": "{{section}} wysłano, ale zatwierdzenie nie powiodło się: {{message}}",
+    "applyStatusFailed": "Niepowodzenie: {{message}}",
+    "applyUserApplying": "Stosowanie tożsamości użytkownika…",
+    "applyUserSuccess": "Tożsamość użytkownika została pomyślnie zastosowana!",
+    "applyLoraSuccess": "Ustawienia LoRa zostały pomyślnie zastosowane!"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

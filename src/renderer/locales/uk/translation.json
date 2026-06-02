@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "наприклад, EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Очікування {{section}} налаштувань від пристрою…"
+    "waitingForConfigSection": "Очікування {{section}} налаштувань від пристрою…",
+    "applyStatusApplying": "Застосування {{section}}…",
+    "applyStatusSuccess": "{{section}} успішно застосовано. Пристрій може ненадовго перезавантажитися.",
+    "applyStatusCommitFailed": "{{section}} надіслано, але не вдалося здійснити фіксацію: {{message}}",
+    "applyStatusFailed": "Помилка: {{message}}",
+    "applyUserApplying": "Застосування ідентифікації користувача...",
+    "applyUserSuccess": "Ідентифікатор користувача успішно застосовано!",
+    "applyLoraSuccess": "Налаштування LoRa успішно застосовано!"
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",

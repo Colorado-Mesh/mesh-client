@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "misalnya EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Menunggu pengaturan {{section}} dari perangkat…"
+    "waitingForConfigSection": "Menunggu pengaturan {{section}} dari perangkat…",
+    "applyStatusApplying": "Menerapkan {{section}}…",
+    "applyStatusSuccess": "{{section}} berhasil diterapkan. Perangkat dapat dinyalakan ulang secara singkat.",
+    "applyStatusCommitFailed": "{{section}} terkirim, tetapi komitmen gagal: {{message}}",
+    "applyStatusFailed": "Gagal: {{message}}",
+    "applyUserApplying": "Menerapkan identitas pengguna…",
+    "applyUserSuccess": "Identitas pengguna berhasil diterapkan!",
+    "applyLoraSuccess": "Pengaturan LoRa berhasil diterapkan!"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

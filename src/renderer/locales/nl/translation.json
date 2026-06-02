@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "bijv. EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Wachten op {{section}} -instellingen van het apparaat..."
+    "waitingForConfigSection": "Wachten op {{section}} -instellingen van het apparaat...",
+    "applyStatusApplying": "{{section}} toepassen…",
+    "applyStatusSuccess": "{{section}} succesvol toegepast. Het apparaat kan even opnieuw opstarten.",
+    "applyStatusCommitFailed": "{{section}} verzonden, maar vastlegging mislukt: {{message}}",
+    "applyStatusFailed": "Mislukt: {{message}}",
+    "applyUserApplying": "Gebruikersidentiteit toepassen...",
+    "applyUserSuccess": "Gebruikersidentiteit succesvol toegepast!",
+    "applyLoraSuccess": "LoRa-instellingen succesvol toegepast!"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

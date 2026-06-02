@@ -875,20 +875,25 @@ export default function RadioPanel({
   const displayConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.display);
   const bluetoothConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.bluetooth);
   const powerConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.power);
+  const positionConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.position);
+  const networkConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.network);
   const deviceApplyDisabled = disabled || !deviceConfigReady;
   const displayApplyDisabled = disabled || !displayConfigReady;
   const bluetoothApplyDisabled = disabled || !bluetoothConfigReady;
   const powerApplyDisabled = disabled || !powerConfigReady;
+  const positionApplyDisabled =
+    disabled || !positionConfigReady || capabilities?.hasFullPositionConfig === false;
+  const networkApplyDisabled = disabled || !networkConfigReady;
 
   const applyConfig = async (
-    section: string,
+    sectionLabel: string,
     configCase: string,
     configValue: Record<string, unknown>,
   ) => {
     if (!isConnected) return;
     clearMeshtasticClientNotification();
-    setApplyingSection(section);
-    setStatus(`Applying ${section}...`);
+    setApplyingSection(configCase);
+    setStatus(t('radioPanel.applyStatusApplying', { section: sectionLabel }));
     const deviceSlice =
       configCase === 'lora' && meshtasticLoraConfig
         ? meshtasticLoraConfig
@@ -903,16 +908,23 @@ export default function RadioPanel({
       });
       try {
         await onCommit();
-        setStatus(`${section} applied successfully. Device may briefly reboot.`);
+        setStatus(t('radioPanel.applyStatusSuccess', { section: sectionLabel }));
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
         setStatus(
-          `${section} sent, but commit failed: ${formatMeshtasticModuleApplyError(err, t)}`,
+          t('radioPanel.applyStatusCommitFailed', {
+            section: sectionLabel,
+            message: formatMeshtasticModuleApplyError(err, t),
+          }),
         );
       }
     } catch (err) {
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
-      setStatus(`Failed: ${formatMeshtasticModuleApplyError(err, t)}`);
+      setStatus(
+        t('radioPanel.applyStatusFailed', {
+          message: formatMeshtasticModuleApplyError(err, t),
+        }),
+      );
     } finally {
       setApplyingSection(null);
     }
@@ -1151,19 +1163,23 @@ export default function RadioPanel({
         title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
-          setApplyingSection('User');
-          setStatus('Applying User...');
+          setApplyingSection('user');
+          setStatus(t('radioPanel.applyUserApplying'));
           try {
             await onSetOwner({ longName, shortName, isLicensed });
-            setStatus('User applied successfully!');
+            setStatus(t('radioPanel.applyUserSuccess'));
           } catch (err) {
             console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
-            setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            setStatus(
+              t('radioPanel.applyStatusFailed', {
+                message: err instanceof Error ? err.message : t('common.unknown'),
+              }),
+            );
           } finally {
             setApplyingSection(null);
           }
         }}
-        applying={applyingSection === 'User'}
+        applying={applyingSection === 'user'}
         disabled={disabled || !onSetOwner}
       >
         <div className="space-y-1">
@@ -1232,8 +1248,10 @@ export default function RadioPanel({
           title={t('radioPanel.sectionLora')}
           onApply={async () => {
             if (!onApplyLoraParams) return;
-            setApplyingSection('LoRa');
-            setStatus('Applying LoRa...');
+            setApplyingSection('lora');
+            setStatus(
+              t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionLora') }),
+            );
             try {
               await onApplyLoraParams({
                 freq: radioFreqHz,
@@ -1242,18 +1260,22 @@ export default function RadioPanel({
                 cr: codingRate,
                 txPower,
               });
-              setStatus('LoRa applied successfully!');
+              setStatus(t('radioPanel.applyLoraSuccess'));
             } catch (err) {
               console.warn(
                 '[RadioPanel] setLoRaConfig failed:',
                 err instanceof Error ? err.message : err,
               );
-              setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+              setStatus(
+                t('radioPanel.applyStatusFailed', {
+                  message: err instanceof Error ? err.message : t('common.unknown'),
+                }),
+              );
             } finally {
               setApplyingSection(null);
             }
           }}
-          applying={applyingSection === 'LoRa'}
+          applying={applyingSection === 'lora'}
           disabled={loraDisabled}
         >
           <div className="space-y-1">
@@ -1333,7 +1355,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionLora')}
           onApply={() =>
-            applyConfig('LoRa', 'lora', {
+            applyConfig(t('radioPanel.sectionLora'), 'lora', {
               region,
               modemPreset,
               usePreset,
@@ -1356,7 +1378,7 @@ export default function RadioPanel({
                   }),
             })
           }
-          applying={applyingSection === 'LoRa'}
+          applying={applyingSection === 'lora'}
           disabled={loraDisabled}
         >
           <ConfigSelect
@@ -1591,7 +1613,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionDeviceRole')}
           onApply={() =>
-            applyConfig('Device', 'device', {
+            applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
               role: deviceRole,
               rebroadcastMode,
               nodeInfoBroadcastSecs,
@@ -1603,7 +1625,7 @@ export default function RadioPanel({
               buzzerGpio,
             })
           }
-          applying={applyingSection === 'Device'}
+          applying={applyingSection === 'device'}
           disabled={deviceApplyDisabled}
         >
           {!deviceConfigReady && isConnected && (
@@ -1701,7 +1723,7 @@ export default function RadioPanel({
           capabilities?.hasFullPositionConfig === false
             ? undefined
             : () =>
-                applyConfig('Position', 'position', {
+                applyConfig(t('radioPanel.sectionPositionGps'), 'position', {
                   positionBroadcastSecs,
                   gpsUpdateInterval,
                   fixedPosition,
@@ -1712,9 +1734,16 @@ export default function RadioPanel({
                   broadcastSmartMinimumIntervalSecs: smartPositionMinInterval,
                 })
         }
-        applying={applyingSection === 'Position'}
-        disabled={disabled || capabilities?.hasFullPositionConfig === false}
+        applying={applyingSection === 'position'}
+        disabled={positionApplyDisabled}
       >
+        {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
+          <p className="text-xs text-yellow-300/90">
+            {t('radioPanel.waitingForConfigSection', {
+              section: t('radioPanel.sectionPositionGps'),
+            })}
+          </p>
+        )}
         {capabilities?.hasFullPositionConfig !== false && (
           <>
             <ConfigNumber
@@ -1911,7 +1940,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionPower')}
           onApply={() =>
-            applyConfig('Power', 'power', {
+            applyConfig(t('radioPanel.sectionPower'), 'power', {
               isPowerSaving,
               minWakeSecs,
               waitBluetoothSecs,
@@ -1920,7 +1949,7 @@ export default function RadioPanel({
               onBatteryShutdownAfterSecs,
             })
           }
-          applying={applyingSection === 'Power'}
+          applying={applyingSection === 'power'}
           disabled={powerApplyDisabled}
         >
           {!powerConfigReady && isConnected && (
@@ -2017,7 +2046,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionWifi')}
           onApply={() =>
-            applyConfig('Network', 'network', {
+            applyConfig(t('radioPanel.sectionWifi'), 'network', {
               wifiEnabled,
               wifiSsid,
               wifiPsk,
@@ -2025,9 +2054,14 @@ export default function RadioPanel({
               ethEnabled,
             })
           }
-          applying={applyingSection === 'Network'}
-          disabled={disabled}
+          applying={applyingSection === 'network'}
+          disabled={networkApplyDisabled}
         >
+          {!networkConfigReady && isConnected && (
+            <p className="text-xs text-yellow-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionWifi') })}
+            </p>
+          )}
           <ConfigToggle
             label={t('radioPanel.wifiEnabledLabel')}
             checked={wifiEnabled}
@@ -2089,7 +2123,7 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionDisplay')}
           onApply={() =>
-            applyConfig('Display', 'display', {
+            applyConfig(t('radioPanel.sectionDisplay'), 'display', {
               screenOnSecs,
               units: displayUnits,
               autoScreenCarouselSecs,
@@ -2103,7 +2137,7 @@ export default function RadioPanel({
               enableMessageBubbles,
             })
           }
-          applying={applyingSection === 'Display'}
+          applying={applyingSection === 'display'}
           disabled={displayApplyDisabled}
         >
           {!displayConfigReady && isConnected && (
@@ -2200,13 +2234,13 @@ export default function RadioPanel({
         <ConfigSection
           title={t('radioPanel.sectionBluetooth')}
           onApply={() =>
-            applyConfig('Bluetooth', 'bluetooth', {
+            applyConfig(t('radioPanel.sectionBluetooth'), 'bluetooth', {
               enabled: btEnabled,
               mode: btPairingMode,
               fixedPin: btFixedPin,
             })
           }
-          applying={applyingSection === 'Bluetooth'}
+          applying={applyingSection === 'bluetooth'}
           disabled={bluetoothApplyDisabled}
         >
           {!bluetoothConfigReady && isConnected && (
@@ -2692,6 +2726,7 @@ function ChannelUrlImportExport({
           }
           confirmLabel={t('radioPanel.channelUrl.confirmApply')}
           danger={confirmApply.mode === 'replace'}
+          confirmDisabled={applying}
           onConfirm={() => void runApply(confirmApply)}
           onCancel={() => {
             setConfirmApply(null);

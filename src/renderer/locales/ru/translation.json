@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "например, EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Ожидание {{section}} настроек от устройства…"
+    "waitingForConfigSection": "Ожидание {{section}} настроек от устройства…",
+    "applyStatusApplying": "Применение {{section}}…",
+    "applyStatusSuccess": "{{section}} успешно применен. Устройство может ненадолго перезагрузиться.",
+    "applyStatusCommitFailed": "{{section}} отправлено, но фиксация не удалась: {{message}}",
+    "applyStatusFailed": "Ошибка: {{message}}",
+    "applyUserApplying": "Применение удостоверения пользователя...",
+    "applyUserSuccess": "Удостоверение пользователя успешно применено!",
+    "applyLoraSuccess": "Настройки LoRa успешно применены!"
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

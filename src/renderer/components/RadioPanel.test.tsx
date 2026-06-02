@@ -128,6 +128,56 @@ describe('RadioPanel remote target safeguards', () => {
 
     expect(screen.getByRole('button', { name: 'Apply LoRa / Radio' })).toBeDisabled();
   });
+
+  it('disables Position apply until position config slice is hydrated', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          meshtasticConfigSlices={{ device: { role: 0 } }}
+        />
+      </ToastProvider>,
+    );
+
+    const positionDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Position / GPS';
+    });
+    expect(positionDetails).toBeDefined();
+    await user.click(positionDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for Position / GPS settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Position / GPS' })).toBeDisabled();
+  });
+
+  it('disables WiFi apply until network config slice is hydrated', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          meshtasticConfigSlices={{ device: { role: 0 } }}
+        />
+      </ToastProvider>,
+    );
+
+    const networkDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'WiFi / Network';
+    });
+    expect(networkDetails).toBeDefined();
+    await user.click(networkDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for WiFi / Network settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply WiFi / Network' })).toBeDisabled();
+  });
 });
 
 describe('RadioPanel HelpTooltip coverage — channel edit form', () => {

@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "par exemple EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "En attente des paramètres {{section}} de l'appareil…"
+    "waitingForConfigSection": "En attente des paramètres {{section}} de l'appareil…",
+    "applyStatusApplying": "Application de {{section}}…",
+    "applyStatusSuccess": "{{section}} appliqué avec succès. L'appareil peut redémarrer brièvement.",
+    "applyStatusCommitFailed": "{{section}} envoyé, mais la validation a échoué : {{message}}",
+    "applyStatusFailed": "Échec : {{message}}",
+    "applyUserApplying": "Application de l'identité de l'utilisateur…",
+    "applyUserSuccess": "Identité de l'utilisateur appliquée avec succès !",
+    "applyLoraSuccess": "Paramètres LoRa appliqués avec succès !"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

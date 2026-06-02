@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "např. EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Čekání na {{section}} nastavení ze zařízení…"
+    "waitingForConfigSection": "Čekání na {{section}} nastavení ze zařízení…",
+    "applyStatusApplying": "Uplatnění {{section}}…",
+    "applyStatusSuccess": "{{section}} úspěšně použito. Zařízení se může krátce restartovat.",
+    "applyStatusCommitFailed": "{{section}} odesláno, ale odevzdání selhalo: {{message}}",
+    "applyStatusFailed": "Nezdařilo se: {{message}}",
+    "applyUserApplying": "Aplikuje se identita uživatele...",
+    "applyUserSuccess": "Identita uživatele byla úspěšně použita!",
+    "applyLoraSuccess": "Nastavení LoRa bylo úspěšně použito!"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

@@ -5,6 +5,7 @@ import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 import { errLikeToLogString } from './errLikeToLogString';
 import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 import { parseMeshtasticAdminKeyBase64 } from './meshtasticRemoteAdminKeyStorage';
+import { REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT } from './meshtasticRemoteAdminModuleFetches';
 
 interface AdminMessagePayloadVariant {
   case: string;
@@ -72,10 +73,9 @@ export const REMOTE_ADMIN_ESSENTIAL_MAX_ATTEMPTS = 1;
 /** Wall-clock cap for security config snapshot fetch. */
 export const REMOTE_ADMIN_SECURITY_LOADING_WATCHDOG_MS = 45_000;
 
-/** Must match MODULE_CONFIG_FETCHES length in meshtasticRemoteAdminSnapshot.ts. */
-export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = 15;
+export { REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT };
 
-/** Wall-clock cap for modules snapshot fetch (13 sequential multi-hop reads). */
+/** Wall-clock cap for modules snapshot fetch (sequential multi-hop reads). */
 export const REMOTE_ADMIN_MODULES_LOADING_WATCHDOG_MS =
   REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT * 8_000 + 30_000;
 

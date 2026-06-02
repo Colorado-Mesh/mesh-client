@@ -56,4 +56,19 @@ describe('ConfirmModal', () => {
     await user.click(screen.getByRole('button', { name: 'Yes' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
+
+  it('disables confirm button when confirmDisabled is true', () => {
+    render(
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure?"
+        confirmLabel="Yes"
+        confirmDisabled
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Yes' })).toBeDisabled();
+  });
 });

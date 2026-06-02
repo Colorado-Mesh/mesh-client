@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "por exemplo, EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Aguardando as configurações de {{section}} do dispositivo..."
+    "waitingForConfigSection": "Aguardando as configurações de {{section}} do dispositivo...",
+    "applyStatusApplying": "Aplicando {{section}}…",
+    "applyStatusSuccess": "{{section}} aplicado com sucesso. O dispositivo pode ser reinicializado brevemente.",
+    "applyStatusCommitFailed": "{{section}} enviado, mas falha no commit: {{message}}",
+    "applyStatusFailed": "Reprovado: {{message}}",
+    "applyUserApplying": "Aplicando identidade de usuário...",
+    "applyUserSuccess": "Identidade do usuário aplicada com sucesso!",
+    "applyLoraSuccess": "Configurações LoRa aplicadas com sucesso!"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",

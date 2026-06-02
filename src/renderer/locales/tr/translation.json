@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "örn. EST5EDT,M3.2.0,M11.1.0",
-    "waitingForConfigSection": "Cihazdan {{section}} ayarları bekleniyor…"
+    "waitingForConfigSection": "Cihazdan {{section}} ayarları bekleniyor…",
+    "applyStatusApplying": "{{section}} uygulanıyor…",
+    "applyStatusSuccess": "{{section}} başarıyla uygulandı. Cihaz kısa bir süre yeniden başlatılabilir.",
+    "applyStatusCommitFailed": "{{section}} gönderildi, ancak işlem başarısız oldu: {{message}}",
+    "applyStatusFailed": "Başarısız: {{message}}",
+    "applyUserApplying": "Kullanıcı kimliği uygulanıyor…",
+    "applyUserSuccess": "Kullanıcı kimliği başarıyla uygulandı!",
+    "applyLoraSuccess": "LoRa ayarları başarıyla uygulandı!"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

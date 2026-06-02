@@ -2031,7 +2031,14 @@
       }
     },
     "tzdefPlaceholder": "例： EST 5 EDT、M3.2.0、M11.1.0",
-    "waitingForConfigSection": "デバイスから {{section}} 設定を待っています…"
+    "waitingForConfigSection": "デバイスから {{section}} 設定を待っています…",
+    "applyStatusApplying": "{{section}}を適用しています…",
+    "applyStatusSuccess": "{{section}}が正常に適用されました。デバイスが一時的に再起動する可能性があります。",
+    "applyStatusCommitFailed": "{{section}}が送信されましたが、コミットに失敗しました: {{message}}",
+    "applyStatusFailed": "失敗: {{message}}",
+    "applyUserApplying": "ユーザーIDを適用しています…",
+    "applyUserSuccess": "ユーザーIDが正常に適用されました！",
+    "applyLoraSuccess": "設定が適用されました。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
