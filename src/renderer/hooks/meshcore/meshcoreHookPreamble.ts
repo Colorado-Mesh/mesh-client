@@ -25,7 +25,19 @@ import {
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
 import { mergeMeshcoreLastHeardFromAdvert } from '../../lib/nodeStatus';
-import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../../lib/timeConstants';
+import {
+  MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
+  MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+  MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+  MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
+} from '../../lib/timeConstants';
+
+export {
+  MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
+  MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+  MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+  MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
+} from '../../lib/timeConstants';
 import type { ChatMessage, DeviceState, MeshNode } from '../../lib/types';
 
 /** MeshCore expected ACK CRCs are uint32; meshcore.js / BLE may surface them as signed. Normalize for Map keys, React state, and SQLite packet_id. */
@@ -277,7 +289,6 @@ export function meshcoreMessageDedupeKey(msg: ChatMessage): string {
   ].join('|');
 }
 
-export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5_000;
 const MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT = 200;
 
 function normalizeMeshcoreSenderNameForDedup(name: string | undefined): string {
@@ -331,6 +342,56 @@ export function meshcoreCrossTransportMatch(
   return true;
 }
 
+function meshcoreIsBroadcastChannelMessage(msg: ChatMessage): boolean {
+  return msg.channel != null && msg.channel >= 0 && msg.roomServerId == null;
+}
+
+function meshcoreReceivedViaIncludesRf(via: ChatMessage['receivedVia']): boolean {
+  return via === 'rf' || via === 'both';
+}
+
+/** Same broadcast channel text heard again on RF (repeater re-hear), not RF/MQTT cross-path. */
+export function meshcoreChannelRfMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
+): boolean {
+  if (
+    !meshcoreIsBroadcastChannelMessage(existing) ||
+    !meshcoreIsBroadcastChannelMessage(incoming)
+  ) {
+    return false;
+  }
+  if (existing.emoji != null || incoming.emoji != null) return false;
+  if (!meshcoreReceivedViaIncludesRf(existing.receivedVia)) return false;
+  if (incoming.receivedVia !== 'rf') return false;
+  if (meshcoreTransportsAreCross(existing, incoming)) return false;
+  if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
+  if (existing.channel !== incoming.channel) return false;
+  if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
+  if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
+  const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
+  const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
+  if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
+  if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
+  return true;
+}
+
+export function findMeshcoreChannelRfDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
+): ChatMessage | undefined {
+  const start = Math.max(0, messages.length - MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT);
+  for (let i = messages.length - 1; i >= start; i--) {
+    const existing = messages[i];
+    if (meshcoreChannelRfMatch(existing, incoming, windowMs)) {
+      return existing;
+    }
+  }
+  return undefined;
+}
+
 function meshcoreRoomServerIdForDedup(msg: ChatMessage): number | undefined {
   if (msg.roomServerId != null) return msg.roomServerId;
   if (msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null) return msg.to;
@@ -369,8 +430,6 @@ export function findMeshcoreRoomPostDuplicate(
   }
   return undefined;
 }
-
-export const MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS = 30_000;
 
 /** Outbound tapback (local optimistic) vs RF/MQTT echo of `@[Name] emoji` — same transport allowed. */
 export function meshcoreTapbackEchoMatch(

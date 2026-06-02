@@ -136,6 +136,31 @@ describe('RoomsPanel', () => {
     });
   });
 
+  it('forces admin relogin when managing from a read-only session', async () => {
+    const room = makeRoom(0x100c, 'Admin Elevate Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: '',
+      adminPassword: '',
+      role: 'readonly',
+    });
+    const onLoginRoom = vi.fn().mockResolvedValue(undefined);
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginRoom });
+
+    fireEvent.click(screen.getByText('roomsPanel.manageRoom'));
+
+    await waitFor(() => {
+      expect(onLoginRoom).toHaveBeenCalledWith(
+        room.node_id,
+        'password',
+        expect.objectContaining({
+          adminPassword: 'password',
+          forceRelogin: true,
+        }),
+      );
+    });
+  });
+
   it('shows login form for room B while room A login is in progress', () => {
     meshcoreClearAllRoomSessions();
     const roomA = makeRoom(0x1001, 'Room A');

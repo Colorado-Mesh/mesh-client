@@ -87,8 +87,17 @@ export function computeRoomLoginSentWaitMs(
 /** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
 export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
 
+/** RF vs MQTT duplicate merge for channel/DM text (delayed dual ingress). */
+export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
+
+/** Same broadcast channel message heard twice on RF (repeater re-hear) within this window. */
+export const MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
+
 /** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
-export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = 30_000;
+export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = MS_PER_MINUTE;
+
+/** Outbound tapback vs RF/MQTT echo of `@[Name] emoji`. */
+export const MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS = MS_PER_MINUTE;
 
 /** Room login attempts before giving up (matches MeshMonitor loginToRoom). */
 export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 2;
