@@ -827,12 +827,12 @@ export default function ModulePanel({
     setAmbientBlue(parseAmbientHexByte(hex.slice(5, 7)));
   };
 
-  const applyModule = async (sectionName: string, moduleCase: string, value: unknown) => {
+  const applyModule = async (sectionLabel: string, moduleCase: string, value: unknown) => {
     clearMeshtasticClientNotification();
-    setApplyingSection(sectionName);
+    setApplyingSection(moduleCase);
     try {
       await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
-      addToast(t('modulePanel.sectionSent', { name: sectionName }), 'success');
+      addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       try {
         await onCommit();
       } catch (err: unknown) {
@@ -858,13 +858,13 @@ export default function ModulePanel({
   };
 
   const applyMeshtasticModule = (
-    sectionName: string,
+    sectionLabel: string,
     moduleCase: string,
     deviceSlice: unknown,
     uiOverrides: Record<string, unknown>,
   ) => {
     void applyModule(
-      sectionName,
+      sectionLabel,
       moduleCase,
       buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides),
     );
@@ -912,12 +912,12 @@ export default function ModulePanel({
             return;
           }
           void applyModule(
-            'MQTT Relay',
+            t('modulePanel.sectionMqttRelay'),
             'mqtt',
             buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork),
           );
         }}
-        applying={applyingSection === 'MQTT Relay'}
+        applying={applyingSection === 'mqtt'}
         disabled={disabled}
       >
         <ConfigToggle
@@ -1010,9 +1010,9 @@ export default function ModulePanel({
             addToast(validationError, 'error');
             return;
           }
-          void applyModule('Serial Module', 'serial', merged);
+          void applyModule(t('modulePanel.sectionSerialModule'), 'serial', merged);
         }}
-        applying={applyingSection === 'Serial Module'}
+        applying={applyingSection === 'serial'}
         disabled={disabled}
       >
         <ModuleStatus packets={serialMessages} label={t('modulePanel.statusLabels.serial')} />
@@ -1113,25 +1113,30 @@ export default function ModulePanel({
         title={t('modulePanel.sectionExternalNotification')}
         {...moduleSectionProps('externalNotification')}
         onApply={() => {
-          applyMeshtasticModule('External Notification', 'externalNotification', extNotifCfg, {
-            enabled: extEnabled,
-            active: extActive,
-            output: extOutput,
-            outputBuzzer: extOutputBuzzer,
-            outputVibra: extOutputVibra,
-            outputMs: extOutputMs,
-            nagTimeout: extNagTimeout,
-            alertMessage: extAlertMessage,
-            alertMessageBuzzer: extAlertMessageBuzzer,
-            alertMessageVibra: extAlertMessageVibra,
-            alertBell: extAlertBell,
-            alertBellBuzzer: extAlertBellBuzzer,
-            alertBellVibra: extAlertBellVibra,
-            usePwm: extUsePwm,
-            useI2sAsBuzzer: extUseI2sAsBuzzer,
-          });
+          applyMeshtasticModule(
+            t('modulePanel.sectionExternalNotification'),
+            'externalNotification',
+            extNotifCfg,
+            {
+              enabled: extEnabled,
+              active: extActive,
+              output: extOutput,
+              outputBuzzer: extOutputBuzzer,
+              outputVibra: extOutputVibra,
+              outputMs: extOutputMs,
+              nagTimeout: extNagTimeout,
+              alertMessage: extAlertMessage,
+              alertMessageBuzzer: extAlertMessageBuzzer,
+              alertMessageVibra: extAlertMessageVibra,
+              alertBell: extAlertBell,
+              alertBellBuzzer: extAlertBellBuzzer,
+              alertBellVibra: extAlertBellVibra,
+              usePwm: extUsePwm,
+              useI2sAsBuzzer: extUseI2sAsBuzzer,
+            },
+          );
         }}
-        applying={applyingSection === 'External Notification'}
+        applying={applyingSection === 'externalNotification'}
         disabled={disabled}
       >
         <ConfigToggle
@@ -1258,7 +1263,7 @@ export default function ModulePanel({
         title={t('modulePanel.sectionStoreForward')}
         {...moduleSectionProps('storeForward')}
         onApply={() => {
-          applyMeshtasticModule('Store & Forward', 'storeForward', sfCfg, {
+          applyMeshtasticModule(t('modulePanel.sectionStoreForward'), 'storeForward', sfCfg, {
             enabled: sfEnabled,
             heartbeat: sfHeartbeat,
             records: sfNumRecords,
@@ -1266,7 +1271,7 @@ export default function ModulePanel({
             historyReturnWindow: sfHistoryWindow,
           });
         }}
-        applying={applyingSection === 'Store & Forward'}
+        applying={applyingSection === 'storeForward'}
         disabled={disabled}
       >
         <ModuleStatus
@@ -1320,13 +1325,13 @@ export default function ModulePanel({
         title={t('modulePanel.sectionRangeTest')}
         {...moduleSectionProps('rangeTest')}
         onApply={() => {
-          applyMeshtasticModule('Range Test', 'rangeTest', rangeCfg, {
+          applyMeshtasticModule(t('modulePanel.sectionRangeTest'), 'rangeTest', rangeCfg, {
             enabled: rangeEnabled,
             sender: rangeSenderInterval,
             save: rangeSave,
           });
         }}
-        applying={applyingSection === 'Range Test'}
+        applying={applyingSection === 'rangeTest'}
         disabled={disabled}
       >
         <ModuleStatus packets={rangeTestPackets} label={t('modulePanel.statusLabels.rangeTest')} />
@@ -1375,7 +1380,7 @@ export default function ModulePanel({
               powerScreenEnabled: telPowerScreenEnabled,
             });
           }}
-          applying={applyingSection === t('modulePanel.sectionTelemetryModule')}
+          applying={applyingSection === 'telemetry'}
           disabled={disabled}
         >
           <ConfigToggle
@@ -1476,7 +1481,7 @@ export default function ModulePanel({
         title={t('modulePanel.sectionCannedMessages')}
         {...moduleSectionProps('cannedMessage')}
         onApply={async () => {
-          setApplyingSection('Canned Messages');
+          setApplyingSection('cannedMessage');
           try {
             const lines = cannedText
               .split('\n')
@@ -1515,7 +1520,7 @@ export default function ModulePanel({
             setApplyingSection(null);
           }
         }}
-        applying={applyingSection === 'Canned Messages'}
+        applying={applyingSection === 'cannedMessage'}
         disabled={disabled || remoteTarget}
       >
         <ConfigToggle
@@ -1625,13 +1630,18 @@ export default function ModulePanel({
         title={t('modulePanel.sectionNeighborInfo')}
         {...moduleSectionProps('neighborInfo')}
         onApply={() => {
-          applyMeshtasticModule('Neighbor Info', 'neighborInfo', neighborInfoCfg, {
-            enabled: neighborInfoEnabled,
-            updateInterval: neighborInfoUpdateInterval,
-            transmitOverLora: neighborInfoTransmitOverLora,
-          });
+          applyMeshtasticModule(
+            t('modulePanel.sectionNeighborInfo'),
+            'neighborInfo',
+            neighborInfoCfg,
+            {
+              enabled: neighborInfoEnabled,
+              updateInterval: neighborInfoUpdateInterval,
+              transmitOverLora: neighborInfoTransmitOverLora,
+            },
+          );
         }}
-        applying={applyingSection === 'Neighbor Info'}
+        applying={applyingSection === 'neighborInfo'}
         disabled={disabled}
       >
         <ConfigToggle
@@ -1664,15 +1674,20 @@ export default function ModulePanel({
         title={t('modulePanel.sectionAmbientLighting')}
         {...moduleSectionProps('ambientLighting')}
         onApply={() => {
-          applyMeshtasticModule('Ambient Lighting', 'ambientLighting', ambientCfg, {
-            ledState: ambientLedState,
-            red: ambientRed,
-            green: ambientGreen,
-            blue: ambientBlue,
-            current: ambientCurrent,
-          });
+          applyMeshtasticModule(
+            t('modulePanel.sectionAmbientLighting'),
+            'ambientLighting',
+            ambientCfg,
+            {
+              ledState: ambientLedState,
+              red: ambientRed,
+              green: ambientGreen,
+              blue: ambientBlue,
+              current: ambientCurrent,
+            },
+          );
         }}
-        applying={applyingSection === 'Ambient Lighting'}
+        applying={applyingSection === 'ambientLighting'}
         disabled={disabled}
       >
         <ConfigToggle
@@ -1728,14 +1743,19 @@ export default function ModulePanel({
         title={t('modulePanel.sectionDetectionSensor')}
         {...moduleSectionProps('detectionSensor')}
         onApply={() => {
-          applyMeshtasticModule('Detection Sensor', 'detectionSensor', detectCfg, {
-            enabled: detectEnabled,
-            name: detectName,
-            minimumBroadcastSecs: detectMinBroadcast,
-            stateBroadcastSecs: detectStateBroadcast,
-          });
+          applyMeshtasticModule(
+            t('modulePanel.sectionDetectionSensor'),
+            'detectionSensor',
+            detectCfg,
+            {
+              enabled: detectEnabled,
+              name: detectName,
+              minimumBroadcastSecs: detectMinBroadcast,
+              stateBroadcastSecs: detectStateBroadcast,
+            },
+          );
         }}
-        applying={applyingSection === 'Detection Sensor'}
+        applying={applyingSection === 'detectionSensor'}
         disabled={disabled}
       >
         <ConfigToggle
@@ -1788,7 +1808,7 @@ export default function ModulePanel({
               },
             );
           }}
-          applying={applyingSection === t('modulePanel.sectionRemoteHardware')}
+          applying={applyingSection === 'remoteHardware'}
           disabled={disabled}
         >
           {remoteHardwareMessages != null && (
@@ -1834,12 +1854,12 @@ export default function ModulePanel({
           title={t('modulePanel.sectionPaxCounter')}
           {...moduleSectionProps('paxcounter')}
           onApply={() => {
-            applyMeshtasticModule('Pax Counter', 'paxcounter', paxCfg, {
+            applyMeshtasticModule(t('modulePanel.sectionPaxCounter'), 'paxcounter', paxCfg, {
               enabled: paxEnabled,
               paxcounterUpdateInterval: paxInterval,
             });
           }}
-          applying={applyingSection === 'Pax Counter'}
+          applying={applyingSection === 'paxcounter'}
           disabled={disabled}
         >
           <ConfigToggle
@@ -1889,7 +1909,7 @@ export default function ModulePanel({
               },
             );
           }}
-          applying={applyingSection === t('modulePanel.sectionTrafficManagement')}
+          applying={applyingSection === 'trafficManagement'}
           disabled={disabled}
         >
           <ConfigToggle
@@ -2013,7 +2033,7 @@ export default function ModulePanel({
               role: takRole,
             });
           }}
-          applying={applyingSection === t('modulePanel.sectionTak')}
+          applying={applyingSection === 'tak'}
           disabled={disabled}
         >
           <ConfigSelect
@@ -2066,7 +2086,7 @@ export default function ModulePanel({
         <ModuleSection
           title={t('modulePanel.sectionRtttlRingtone')}
           onApply={async () => {
-            setApplyingSection('RTTTL Ringtone');
+            setApplyingSection('rtttlRingtone');
             try {
               await onSetRingtone(ringtoneText);
               await onCommit();
@@ -2083,7 +2103,7 @@ export default function ModulePanel({
               setApplyingSection(null);
             }
           }}
-          applying={applyingSection === 'RTTTL Ringtone'}
+          applying={applyingSection === 'rtttlRingtone'}
           disabled={disabled || remoteTarget}
         >
           <div className="space-y-1">
