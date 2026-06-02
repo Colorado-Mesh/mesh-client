@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
     "restartNote": "Perangkat dapat memulai ulang secara singkat saat Anda menerapkan pengaturan."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Koneksi terputus — radio terputus",
+    "staleLoss": "Koneksi mungkin terputus — tidak ada data yang diterima baru - baru ini",
+    "reconnect": "Sambung ulang",
+    "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}"
   }
 }

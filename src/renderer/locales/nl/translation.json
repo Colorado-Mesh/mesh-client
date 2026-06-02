@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
     "restartNote": "Het apparaat kan kort opnieuw opstarten wanneer u instellingen toepast."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Verbinding verbroken — radio losgekoppeld",
+    "staleLoss": "De verbinding kan verloren gaan — er zijn onlangs geen gegevens ontvangen",
+    "reconnect": "Opnieuw verbinden",
+    "reconnectingAttempt": "Opnieuw verbinden… poging {{attempt}}/{{max}}"
   }
 }

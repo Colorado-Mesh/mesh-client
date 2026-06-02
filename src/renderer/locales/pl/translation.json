@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",
     "restartNote": "Po zastosowaniu ustawień urządzenie może się na chwilę zrestartować."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Utracono połączenie — rozłączono radio",
+    "staleLoss": "Połączenie może zostać utracone — brak danych otrzymanych ostatnio",
+    "reconnect": "Połącz ponownie",
+    "reconnectingAttempt": "Ponowne łączenie… próba {{attempt}}/{{max}}"
   }
 }

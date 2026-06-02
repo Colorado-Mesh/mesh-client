@@ -142,6 +142,8 @@ const electronAPIMock = {
   mqtt: {
     connect: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn().mockResolvedValue(undefined),
+    powerResume: vi.fn().mockResolvedValue(undefined),
+    powerSuspend: vi.fn().mockResolvedValue(undefined),
     onStatus: vi.fn().mockReturnValue(() => {}),
     onError: vi.fn().mockReturnValue(() => {}),
     onWarning: vi.fn().mockReturnValue(() => {}),
@@ -173,6 +175,7 @@ const electronAPIMock = {
   stopNobleBleScanning: vi.fn().mockResolvedValue(undefined),
   connectNobleBle: vi.fn().mockResolvedValue({ ok: true }),
   disconnectNobleBle: vi.fn().mockResolvedValue(undefined),
+  isNobleBleConnected: vi.fn().mockResolvedValue(true),
   nobleBleToRadio: vi.fn().mockResolvedValue(undefined),
   onSerialPortsDiscovered: vi.fn().mockReturnValue(() => {}),
   selectSerialPort: vi.fn(),

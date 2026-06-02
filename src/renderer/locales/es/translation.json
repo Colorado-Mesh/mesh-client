@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
     "restartNote": "El dispositivo puede reiniciarse brevemente cuando se aplica la configuración."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Conexión perdida — radio desconectada",
+    "staleLoss": "La conexión puede perderse: no se han recibido datos recientemente",
+    "reconnect": "Reconectar",
+    "reconnectingAttempt": "Volviendo a conectar… intento {{attempt}}/{{max}}"
   }
 }

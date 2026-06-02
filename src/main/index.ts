@@ -2401,6 +2401,12 @@ ipcMain.handle('noble-ble-disconnect', async (_event, sessionId: unknown) => {
   }
   await nobleBleManager.disconnect(sessionId);
 });
+ipcMain.handle('noble-ble-is-connected', (_event, sessionId: unknown) => {
+  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
+    throw new Error('noble-ble-is-connected: sessionId must be meshtastic or meshcore');
+  }
+  return nobleBleManager.isConnected(sessionId);
+});
 ipcMain.handle('noble-ble-to-radio', async (_event, sessionId: unknown, bytes: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-to-radio: sessionId must be meshtastic or meshcore');
@@ -2566,6 +2572,32 @@ ipcMain.handle('mqtt:disconnect', (_event, protocol?: 'meshtastic' | 'meshcore')
   } catch (err) {
     console.error(
       '[IPC] mqtt:disconnect failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+ipcMain.handle('mqtt:powerResume', () => {
+  try {
+    console.debug('[IPC] mqtt:powerResume');
+    mqttManager.handlePowerResume();
+    meshcoreMqttAdapter.handlePowerResume();
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:powerResume failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+ipcMain.handle('mqtt:powerSuspend', () => {
+  try {
+    console.debug('[IPC] mqtt:powerSuspend');
+    mqttManager.handlePowerSuspend();
+    meshcoreMqttAdapter.handlePowerSuspend();
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:powerSuspend failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5521,6 +5553,8 @@ void app.whenReady().then(() => {
     // ─── Power monitor: notify renderer on suspend/resume ──────────
     powerMonitor.on('suspend', () => {
       console.debug('[main] System suspending');
+      mqttManager.handlePowerSuspend();
+      meshcoreMqttAdapter.handlePowerSuspend();
       mainWindow?.webContents.send('power:suspend');
     });
     powerMonitor.on('resume', () => {

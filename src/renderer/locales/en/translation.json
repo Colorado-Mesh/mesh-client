@@ -350,6 +350,12 @@
     "sessionNone": "Admin session not established — loading or connect local radio",
     "establishingSession": "Establishing admin session…"
   },
+  "connectionBanner": {
+    "disconnectedLoss": "Connection lost — radio disconnected",
+    "staleLoss": "Connection may be lost — no data received recently",
+    "reconnect": "Reconnect",
+    "reconnectingAttempt": "Reconnecting… attempt {{attempt}}/{{max}}"
+  },
   "connectionPanel": {
     "maxReconnectAttempts": "Max MQTT reconnect attempts",
     "letsMeshRegion": "LetsMesh region",

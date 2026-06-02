@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
     "restartNote": "Il dispositivo potrebbe riavviarsi brevemente quando si applicano le impostazioni."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Connessione persa — radio scollegata",
+    "staleLoss": "La connessione potrebbe essere persa — nessun dato ricevuto di recente",
+    "reconnect": "Connessione",
+    "reconnectingAttempt": "Riconnessione in corso... tentativo {{attempt}}/{{max}}"
   }
 }

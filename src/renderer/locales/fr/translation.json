@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
     "restartNote": "L'appareil peut redémarrer brièvement lorsque vous appliquez les paramètres."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Connexion perdue — radio déconnectée",
+    "staleLoss": "La connexion peut être perdue — aucune donnée reçue récemment",
+    "reconnect": "Reconnecter",
+    "reconnectingAttempt": "Reconnexion... tentative {{attempt}}/{{max}}"
   }
 }

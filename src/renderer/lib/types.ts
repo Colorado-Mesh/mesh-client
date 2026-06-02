@@ -766,6 +766,8 @@ declare global {
       mqtt: {
         connect: (settings: MQTTSettings) => Promise<void>;
         disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<void>;
+        powerResume: () => Promise<void>;
+        powerSuspend: () => Promise<void>;
         onStatus: (
           cb: (payload: { status: MQTTStatus; protocol: 'meshtastic' | 'meshcore' }) => void,
         ) => () => void;
@@ -905,6 +907,7 @@ declare global {
         peripheralId: string,
       ) => Promise<NobleBleConnectResult>;
       disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
+      isNobleBleConnected: (sessionId: NobleBleSessionId) => Promise<boolean>;
       nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
       getLinuxBleCapabilityStatus: () => Promise<LinuxBleCapabilityStatus>;
       onSerialPortsDiscovered: (cb: (ports: SerialPortInfo[]) => void) => () => void;
@@ -931,6 +934,8 @@ declare global {
       quitApp: () => Promise<void>;
       getPlatform: () => string;
       showEmojiPanel: () => Promise<void>;
+      onPowerSuspend: (cb: () => void) => () => void;
+      onPowerResume: (cb: () => void) => () => void;
       clipboard: {
         writeText: (text: string) => Promise<void>;
       };

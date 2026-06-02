@@ -2476,5 +2476,11 @@
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
     "restartNote": "設定を適用すると、デバイスが一時的に再起動することがあります。"
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "接続が切断されました—無線が切断されました",
+    "staleLoss": "接続が失われる可能性があります—最近受信したデータはありません",
+    "reconnect": "再接続",
+    "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目"
   }
 }

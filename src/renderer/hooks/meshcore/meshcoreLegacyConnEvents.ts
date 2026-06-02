@@ -141,6 +141,7 @@ export function attachMeshcoreLegacyConnEvents(
     addCliHistoryEntry,
     teardownMeshcoreConnEventListeners,
     meshcorePreviousNodesBaselineForBuild,
+    handleConnectionLostRef,
   } = ctx;
 
   /** PacketRouter + meshcoreIngest own parsed room posts when identity is bound. */
@@ -1389,9 +1390,11 @@ export function attachMeshcoreLegacyConnEvents(
   });
 
   onMeshcoreConn('disconnected', () => {
+    let shouldReconnect = false;
     setState((prev) => {
       const wasOperational =
         prev.status === 'connected' || prev.status === 'configured' || prev.status === 'stale';
+      shouldReconnect = wasOperational;
       return {
         ...prev,
         status: 'disconnected',
@@ -1415,6 +1418,9 @@ export function attachMeshcoreLegacyConnEvents(
       }
       if (staleConn) {
         void staleConn.close().catch(() => {});
+      }
+      if (shouldReconnect) {
+        handleConnectionLostRef.current();
       }
     });
   });
