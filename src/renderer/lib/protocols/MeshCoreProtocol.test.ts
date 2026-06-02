@@ -116,6 +116,40 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     teardown();
   });
+
+  it('emits room-shaped text_message for PLAIN direct messages from known room contacts', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    const EVENT_NEW_CONTACT = 138;
+    conn.emit(EVENT_NEW_CONTACT, {
+      publicKey,
+      type: 3,
+      advName: 'PizzaParty',
+      lastAdvert: 1_700_000_000,
+      advLat: 0,
+      advLon: 0,
+      flags: 0,
+    });
+    conn.emit(EVENT_DIRECT_MESSAGE, {
+      pubKeyPrefix: publicKey.slice(0, 6),
+      text: 'Bot Stats (24h):',
+      senderTimestamp: 1_700_000_200,
+      txtType: 0,
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text).toMatchObject({
+      type: 'text_message',
+      payload: expect.objectContaining({
+        channelIndex: -2,
+        roomServerId: expect.any(Number),
+        id: expect.stringMatching(/^room:/),
+        payload: 'Bot Stats (24h):',
+      }),
+    });
+    teardown();
+  });
 });
 
 describe('MeshCoreProtocol capability-gated operations', () => {

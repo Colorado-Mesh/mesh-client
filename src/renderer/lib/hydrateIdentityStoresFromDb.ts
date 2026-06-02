@@ -11,7 +11,10 @@ import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemo
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
 import type { MeshcoreContactDbRow, MeshcoreMessageDbRow } from './meshcore/meshcoreHookTypes';
-import { repairMeshcoreHydrationStaleRoomSends } from './meshcoreDbCacheHydration';
+import {
+  meshcoreRoomServerIdsFromContacts,
+  repairMeshcoreHydratedMessages,
+} from './meshcoreDbCacheHydration';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
   buildMeshtasticNodeMapFromDbRows,
@@ -99,12 +102,16 @@ export function syncMeshtasticNodesMapToIdentityStore(
 }
 
 export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Promise<void> {
-  const dbMsgs = await window.electronAPI.db.getMeshcoreMessages(
-    undefined,
-    MESHCORE_DB_MESSAGE_LOAD_LIMIT,
-  );
+  const [dbMsgs, contactRows] = await Promise.all([
+    window.electronAPI.db.getMeshcoreMessages(undefined, MESHCORE_DB_MESSAGE_LOAD_LIMIT),
+    window.electronAPI.db.getMeshcoreContacts(),
+  ]);
   const rows = dbMsgs as MeshcoreMessageDbRow[];
-  const mapped = repairMeshcoreHydrationStaleRoomSends(mapMeshcoreDbRowsToChatMessages(rows));
+  const roomServerIds = meshcoreRoomServerIdsFromContacts(contactRows as MeshcoreContactDbRow[]);
+  const mapped = repairMeshcoreHydratedMessages(
+    mapMeshcoreDbRowsToChatMessages(rows),
+    roomServerIds,
+  );
   void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
   upsertMessageRecordsForIdentity(

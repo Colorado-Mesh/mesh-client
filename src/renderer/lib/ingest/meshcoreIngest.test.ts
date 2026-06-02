@@ -167,6 +167,50 @@ describe('attachMeshcoreIngest', () => {
     );
   });
 
+  it('routes PLAIN room server system lines with full body (no author prefix strip)', () => {
+    const roomId = 0xac200e59;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [roomId]: {
+            nodeId: roomId,
+            longName: 'PizzaParty',
+            hwModel: 'Room',
+          },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const msgId = `${roomId}:1700000300`;
+    upsertMessage(ID, {
+      id: msgId,
+      from: roomId,
+      to: 0,
+      payload: 'Bot Stats (24h):',
+      channelIndex: -1,
+      timestamp: 1_700_000_300_000,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: roomId,
+        to: 0,
+        payload: 'Bot Stats (24h):',
+        channelIndex: -2,
+        timestamp: 1_700_000_300_000,
+        txtType: 0,
+        roomServerId: roomId,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[msgId];
+    expect(row?.roomServerId).toBe(roomId);
+    expect(row?.payload).toBe('Bot Stats (24h):');
+    expect(row?.channelIndex).toBe(-2);
+  });
+
   it('parses SignedPlain room posts when room node is not yet in nodeStore', () => {
     const roomId = 0xdeadbeee;
     const msgId = `room:${roomId}:1700000200`;

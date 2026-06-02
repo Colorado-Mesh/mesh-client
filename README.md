@@ -75,7 +75,9 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - Edit channels: name, PSK, and role; 18 region presets and 7 modem presets
 - **Channel URL import/export** (Radio tab): generate, copy, preview, and apply `https://meshtastic.org/e/#…` or `meshtastic://` links (same ChannelSet protobuf format as the Android/web clients); replace all channels or add-only mode
 - Device roles: Client, Router, Tracker, Sensor, TAK, and more
-- Per-channel MQTT gateway uplink (RF → MQTT); device reboot, shutdown, and factory reset
+- **Display**, **Bluetooth**, and **Power** settings on the Radio tab (screen/LED, pairing, sleep, and power limits)
+- Per-channel MQTT gateway uplink (RF → MQTT)
+- **Administration** tab: reboot, shutdown, factory reset, NodeDB reset (optional preserve favorites), reboot-to-OTA, and enter DFU (local radio only; OTA/DFU disabled when **Configure node** targets a remote node)
 
 **MQTT**
 
@@ -90,13 +92,14 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **Module Configuration**
 
 - Telemetry module (device, environment, air quality intervals), MQTT relay settings, Canned Messages, Serial module, Range Test, Store & Forward, Detection Sensor, Pax Counter, **External Notification**, **Ambient Lighting**, and **RTTTL** (ringtone); all editable from the Modules tab; module sections are listed **alphabetically**
-- **Module status displays**: Range Test, Serial, Store & Forward, Remote Hardware (GPIO), and IP Tunnel show packet counts and last-received timestamps when the corresponding module is enabled on the device
+- **Remote Hardware (GPIO)**: configure pins and apply module settings; live GPIO status stream when the module is enabled
+- **Module status displays**: Range Test, Serial, Store & Forward, Remote Hardware (GPIO), and IP Tunnel (status-only) show packet counts and last-received timestamps when the corresponding module is enabled on the device
 - **Store & Forward chat history**: after RF configure, the client may request `CLIENT_HISTORY` on the first primary router heartbeat (capped messages/window, 15 min cooldown, 5 min offline gate; opt-out in App settings). Use **Catch up from Store & Forward** in Chat for manual fetch. Replayed text shows a **Store & Forward** badge; MQTT reconnect floods within ~30 s are treated as history and deduped
 
 **Security (PKI)** (Meshtastic only)
 
 - **Security** tab (between Telemetry and App): admin / PKI key management; backup, restore, regenerate, and apply keys and related toggles from the device. Not available in MeshCore mode (no matching firmware surface; the tab is hidden).
-- **PKC remote node administration** (firmware 2.5+): **Configure node** selector on Radio, Modules, and Security tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail when a per-node admin key is saved; **Copy** public key in Security for one-time trust setup. Paste a remote node’s admin public key in node detail (base64, `base64:…`, or 64-char hex). PKI uses the mesh NodeDB key when present, with stored admin-key fallback. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
+- **PKC remote node administration** (firmware 2.5+): **Configure node** selector on Radio, Modules, Security, and Administration tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail when a per-node admin key is saved; **Copy** public key in Security for one-time trust setup. Paste a remote node’s admin public key in node detail (base64, `base64:…`, or 64-char hex). PKI uses the mesh NodeDB key when present, with stored admin-key fallback. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
 
 **Network Diagnostics**
 
@@ -144,8 +147,9 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - Send/receive messages across channels with per-transport delivery badges and delivery ACK / failure states
 - **Durable outbox**: outgoing messages are queued in SQLite and retried until delivered; survive app restarts and connection drops
 - **Long message chunking**: messages over the payload limit are auto-split into sequential `[N/T]`-prefixed chunks (word-boundary split, max 9 chunks); MeshCore MQTT-only connections are guarded from sending when no RF path is available
-- **Spellcheck**: the message composer uses a textarea with inline misspelling marks; right‑click for replacements (Electron main process configures the spellchecker for **Meshtastic** and **MeshCore**)
-- **Emoji reactions / tapbacks**: 12 quick-pick reactions plus compose emoji (native panel on macOS/Windows; `emoji-picker-element` on Linux); Meshtastic wire tapbacks decode payload UTF-8 glyphs (flags, ZWJ sequences, and legacy index 1–12); reply-to-message with quoted preview in bubble
+- **Shared composer** (`ChatComposer`): drafts, mentions, chunking, spellcheck, and emoji picker used by **Chat** and **MeshCore Rooms**; right‑click misspelling replacements (Electron spellchecker for both protocols)
+- **Emoji reactions / tapbacks**: 12 quick-pick reactions plus compose emoji (native panel on macOS/Windows; `emoji-picker-element` on Linux); Meshtastic wire tapbacks decode payload UTF-8 glyphs (flags, ZWJ sequences, and legacy index 1–12); MeshCore tapbacks via channel text lines; reply-to-message with quoted preview in bubble (including room BBS posts)
+- **System tray**: docked/minimized on macOS and Windows shows an unread indicator when chat or MeshCore **Rooms** traffic arrives while the window is in the background
 - **`@[Display Name]` tokens** (Meshtastic / MeshCore reply, tapback, path, and inline-reference syntax) render as compact inline labels in the bubble instead of raw brackets; see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#chat-mention-tokens)
 - Unread message divider that persists across restarts; auto-scrolls on tab switch
 - Direct messages (DMs) to individual nodes; **DM info header** shows battery, last heard, and SNR for the peer
@@ -207,7 +211,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pill in the header to bring MeshCore into view; the Meshtastic session stays connected in the background. **Meshtastic** shows **13** main tabs (including **Security**, **TAK**, **Stats**, and **Sniffer**); **MeshCore** shows **11** (**Security** and **TAK** are hidden; the sixth tab is **Repeaters** instead of **Modules**). **Stats** and **Sniffer** are available in both protocol modes. Network Diagnostics and the rest of the shell stay available.
+MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pill in the header to bring MeshCore into view; the Meshtastic session stays connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **15** tabs (**Security** and **TAK** are hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only). **Stats**, **Sniffer**, **RF**, and **Graph** are available in both protocol modes.
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -228,8 +232,16 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 - Channel messaging and **direct messages (DMs)** with delivery ACK tracking (`expectedAckCrc`) and failure timeout; **DM threads can be closed** from the chat UI
 - **Transport badges** on received messages; **RF**, **MQTT**, or **both** (persisted as `received_via` in `meshcore_messages`); MQTT JSON chat can be used when RF is down
+- **Inbound dedup** (`meshcoreStoreDedup.ts`): merges duplicate RF/MQTT echoes, companion TX echoes, and tapback self-echoes so chat and Rooms stay readable
 - Incoming push events: periodic advert (0x80), path update (0x81), send confirmed (0x82), message waiting (0x83), new contact (0x8A), incoming DM (7), incoming channel message (8)
 - All messages and contacts persisted to SQLite (`meshcore_messages`, `meshcore_contacts` tables)
+
+**Room servers (BBS)** — **Rooms** tab (RF only; not MQTT)
+
+- Login to room-server contacts (guest read-only or admin post); **Continue read-only** when the server guest password is empty (zero-byte password, matching the official Android client)
+- Post plain UTF-8 after login; inbound **SignedPlain** pushes show author prefix stripped in the UI
+- **Remember password**, **Auto-sync** (periodic re-login while connected, minimum 60 minutes per room), per-room unread badges (sidebar **Rooms** tab; separate from **Chat** badges)
+- Room admin CLI in the Rooms panel; session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 
 **Diagnostics & Remote Queries**
 
@@ -260,7 +272,7 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 **Device Control**
 
-- **Reboot**: Radio tab Danger Zone; issues `reboot()` to the connected MeshCore device with a protocol-aware confirmation message
+- **Administration** tab: **Reboot** when connected (Meshtastic also gets shutdown, factory reset, NodeDB reset, reboot-to-OTA, and enter DFU on the same tab)
 - _Not available for MeshCore_ (not implemented in the meshcore.js library): shutdown, factory reset, reset NodeDB, reboot-to-OTA, enter DFU mode
 
 **Transport Notes**

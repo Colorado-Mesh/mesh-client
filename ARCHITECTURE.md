@@ -31,7 +31,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 ## Dual protocol (Meshtastic + MeshCore)
 
-Both stacks can run at once: independent connections, header switcher for focus, inactive protocol stays connected, per-protocol unread badges (Meshtastic green, MeshCore cyan). Capabilities differ (e.g. Meshtastic: Security/Modules/TAK; MeshCore: Repeaters, contact groups, MeshCore MQTT adapter).
+Both stacks can run at once: independent connections, header switcher for focus, inactive protocol stays connected, per-protocol unread badges (Meshtastic green, MeshCore cyan for Chat; MeshCore **Rooms** has a separate sidebar badge). Capabilities differ (e.g. Meshtastic: Security/Modules/TAK; MeshCore: Repeaters, **Rooms** BBS, contact groups, MeshCore MQTT adapter). Sidebar tab slots are fixed in `App.tsx` (`TAB_SLOT_IDS`); **Rooms** requires `hasRoomServersPanel`, **Security**/`TAK` require Meshtastic capabilities (~16 vs ~15 visible tabs).
 
 **Feature gating:** use `ProtocolCapabilities` via `useRadioProvider(protocol)` from `src/renderer/lib/radio/providerFactory.ts`; do not branch on raw `protocol === 'meshcore'` strings.
 
@@ -96,24 +96,32 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 - **PKC remote admin (Meshtastic, local radio required):** `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminSnapshot.ts` (tab-scoped partial fetch), `meshtasticRemoteAdminKeyStorage.ts` (per-node keys in `app_settings`), `ConfigureNodeSelector.tsx`; serialized with S&F via `meshtasticBacklogUtils.ts` (`remoteAdminReadsActiveCount`).
 - **MeshCore:** `meshcore-mqtt-adapter.ts` (JSON v1 envelope); LetsMesh JWT in `letsMeshJwt.ts`.
 
+### MeshCore Rooms
+
+- **UI:** `RoomsPanel.tsx` + shared `ChatComposer.tsx`; unread `meshcoreRoomsUnread.ts`.
+- **Runtime:** `useMeshcoreRuntime.ts` coordinates login queue, auto-sync (`meshcoreRoomSyncScheduler.ts`), and ingest dedup (`meshcoreStoreDedup.ts`).
+- **RPC/helpers:** `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, `meshcoreRoomSession.ts`, `meshcoreChannelText.ts` (SignedPlain / tapbacks). RF-only (not MQTT). User guide: [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers).
+
 ### UI
 
-- Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Stores: module defaults; persist vs SQLite IPC as elsewhere.
+- Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + `TAB_CAPABILITY_REQUIREMENTS` in `App.tsx`. **Administration:** `AdminPanel.tsx` (device commands / Danger Zone; Meshtastic OTA/DFU). **Config apply feedback:** `ConfigApplyNotice.tsx`. Stores: module defaults; persist vs SQLite IPC as elsewhere.
 
 ### Common issues
 
-| Symptom                  | Where to check                                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Connection fails         | `ConnectionDriver`, `hooks/useProtocolConnection.ts`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts` |
-| Send fails               | `hooks/useSendMessage.ts`, runtime send APIs, `TransportManager`                                                         |
-| UI stale                 | Zustand store, effect deps                                                                                               |
-| Empty chat/nodes offline | `hydrateIdentityStoresFromDb`, runtime connect-time DB cache, `hooks/useDbRefresh.ts`                                    |
-| BLE timeout              | `noble-ble-manager.ts`, `bleConnectErrors`                                                                               |
-| Serial missing           | `serialPortSignature.ts`                                                                                                 |
-| MQTT loop                | `mqtt-manager.ts`                                                                                                        |
-| MQTT decrypt fail        | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                                                                        |
-| MQTT-only sender         | `meshtasticMqttIdentity.ts`, `runtime/useMeshtasticRuntime.ts`, `hooks/useSendMessage.ts`                                |
-| Remote admin fail        | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts`                                                         |
-| Garbled chat insert      | `meshtasticBacklogUtils.ts` readable-text filter                                                                         |
-| DB errors                | `database.ts` migrations                                                                                                 |
-| Log gaps                 | `log-service.ts`, log tags                                                                                               |
+| Symptom                  | Where to check                                                                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection fails         | `ConnectionDriver`, `hooks/useProtocolConnection.ts`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts`                        |
+| Send fails               | `hooks/useSendMessage.ts`, runtime send APIs, `TransportManager`                                                                                |
+| UI stale                 | Zustand store, effect deps                                                                                                                      |
+| Empty chat/nodes offline | `hydrateIdentityStoresFromDb`, runtime connect-time DB cache, `hooks/useDbRefresh.ts`                                                           |
+| BLE timeout              | `noble-ble-manager.ts`, `bleConnectErrors`                                                                                                      |
+| Serial missing           | `serialPortSignature.ts`                                                                                                                        |
+| MQTT loop                | `mqtt-manager.ts`                                                                                                                               |
+| MQTT decrypt fail        | `mqtt-manager.ts`, `meshtasticChannelPskInput.ts`                                                                                               |
+| MQTT-only sender         | `meshtasticMqttIdentity.ts`, `runtime/useMeshtasticRuntime.ts`, `hooks/useSendMessage.ts`                                                       |
+| Remote admin fail        | `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminKeyStorage.ts`                                                                                |
+| Garbled chat insert      | `meshtasticBacklogUtils.ts` readable-text filter                                                                                                |
+| MeshCore dup/echo chat   | `meshcoreStoreDedup.ts`, `meshcoreChannelText.ts`                                                                                               |
+| Room BBS login/post      | `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, [troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10) |
+| DB errors                | `database.ts` migrations                                                                                                                        |
+| Log gaps                 | `log-service.ts`, log tags                                                                                                                      |

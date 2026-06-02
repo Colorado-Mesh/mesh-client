@@ -102,7 +102,11 @@ import {
   parseAutoaddConfigResponse,
 } from '../lib/meshcoreContactAutoAdd';
 import { queueLenFromMeshCoreCoreStatsRaw } from '../lib/meshcoreCoreStatsQueue';
-import { repairMeshcoreHydrationStaleRoomSends } from '../lib/meshcoreDbCacheHydration';
+import {
+  meshcoreRoomServerIdsFromContacts,
+  meshcoreRoomServerIdsFromNodes,
+  repairMeshcoreHydratedMessages,
+} from '../lib/meshcoreDbCacheHydration';
 import { awaitDualNobleBleMeshtasticSettle } from '../lib/meshcoreDualNobleBleInit';
 import {
   buildMeshcoreGetNeighboursRequest,
@@ -722,8 +726,9 @@ export function useMeshcoreRuntime() {
         }
       }
       const meshcoreRows = dbMsgs as MeshcoreMessageDbRow[];
-      const mapped = repairMeshcoreHydrationStaleRoomSends(
+      const mapped = repairMeshcoreHydratedMessages(
         mapMeshcoreDbRowsToChatMessages(meshcoreRows),
+        meshcoreRoomServerIdsFromNodes(initial.values()),
       );
       void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
       const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
@@ -1393,8 +1398,11 @@ export function useMeshcoreRuntime() {
             window.electronAPI.db.getMeshcoreMessages(undefined, 500),
           )) as MeshcoreMessageDbRow[];
           if (dbMsgs.length > 0) {
-            const mapped = repairMeshcoreHydrationStaleRoomSends(
+            const contactRows =
+              (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+            const mapped = repairMeshcoreHydratedMessages(
               mapMeshcoreDbRowsToChatMessages(dbMsgs),
+              meshcoreRoomServerIdsFromContacts(contactRows),
             );
             setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
             setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
@@ -1450,11 +1458,13 @@ export function useMeshcoreRuntime() {
             window.electronAPI.db.getMeshcoreMessages(undefined, 500),
             window.electronAPI.db.getNodes(),
           ]);
-          const mapped = repairMeshcoreHydrationStaleRoomSends(
+          const contactRows = rows as MeshcoreContactDbRow[];
+          const mapped = repairMeshcoreHydratedMessages(
             mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]),
+            meshcoreRoomServerIdsFromContacts(contactRows),
           );
           const cachedNodes = buildMeshcoreNodeMapFromDb(
-            rows as MeshcoreContactDbRow[],
+            contactRows,
             savedNodes as MeshcoreSavedNodeHopRow[],
             mapped,
           );
@@ -4879,7 +4889,10 @@ export function useMeshcoreRuntime() {
         undefined,
         500,
       )) as MeshcoreMessageDbRow[];
-      const mapped = repairMeshcoreHydrationStaleRoomSends(mapMeshcoreDbRowsToChatMessages(dbMsgs));
+      const mapped = repairMeshcoreHydratedMessages(
+        mapMeshcoreDbRowsToChatMessages(dbMsgs),
+        meshcoreRoomServerIdsFromNodes(nodesRef.current.values()),
+      );
       void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
       setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
       setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));

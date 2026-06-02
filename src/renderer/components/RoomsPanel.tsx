@@ -35,6 +35,7 @@ import {
   getMeshcoreRoomAutoLoginFailure,
   subscribeMeshcoreRoomAutoLoginFailureChanges,
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
+import { mergeDisplayedRoomPostChunks } from '@/renderer/lib/meshcoreRoomChunkMerge';
 import {
   listMeshcoreRoomCredentialNodeIds,
   setMeshcoreRoomCredential,
@@ -277,7 +278,7 @@ export default function RoomsPanel({
     const posts = messages
       .filter((m) => m.roomServerId === selectedRoomId)
       .sort((a, b) => a.timestamp - b.timestamp);
-    return repairMeshcoreHydrationStaleRoomSends(posts);
+    return repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts));
   }, [messages, selectedRoomId]);
 
   const newestPostTs = useMemo(() => {
@@ -538,11 +539,13 @@ export default function RoomsPanel({
     if (selectedRoomId == null) return;
     const nodeId = selectedRoomId;
     const password = meshcoreRoomEffectiveGuestPassword(loginPassword);
+    const forceRelogin = meshcoreGetRoomSession(nodeId)?.role === 'readonly';
     startRoomLogin(nodeId, async () => {
       await onLoginRoom(nodeId, password, {
         guestPassword: password,
         adminPassword: '',
         rememberPassword,
+        forceRelogin,
       });
       if (rememberPassword) refreshStoredRooms();
       setLoginPassword(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);

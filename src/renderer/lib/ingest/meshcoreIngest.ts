@@ -6,7 +6,6 @@
  */
 import {
   isMeshcoreRoomChatMessage,
-  MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreReconcileChannelSenderIds,
   messageToDbRow,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
@@ -17,12 +16,15 @@ import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
   buildMeshcoreRoomIncomingMessage,
-  MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
-  parseMeshcoreRoomPostPayload,
   resolveMeshcoreChannelMessageSender,
 } from '../meshcoreChannelText';
+import {
+  isMeshcoreRoomServerHwModel,
+  meshcoreRoomPostBodyFromWire,
+  meshcoreRoomWireLooksLikeRoom,
+} from '../meshcoreRoomMessageRouting';
 import { meshcoreSortedStorePrior, upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
 import { meshcoreChatStubNodeIdFromDisplayName } from '../meshcoreUtils';
 import type { DomainEvent } from '../protocols/Protocol';
@@ -52,6 +54,22 @@ function buildPrefixToNodeIdMap(identityId: IdentityId): Map<string, number> {
   return map;
 }
 
+function resolveRoomServerIdForIngest(
+  identityId: IdentityId,
+  event: Extract<DomainEvent, { type: 'text_message' }>['payload'],
+): number {
+  if (event.roomServerId != null && event.roomServerId !== 0) {
+    return event.roomServerId;
+  }
+  if (
+    event.from !== 0 &&
+    isMeshcoreRoomServerHwModel(useNodeStore.getState().nodes[identityId]?.[event.from]?.hwModel)
+  ) {
+    return event.from;
+  }
+  return event.from;
+}
+
 function handleTextMessage(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'text_message' }>,
@@ -66,17 +84,26 @@ function handleTextMessage(
   const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
   const messages = listChatMessages(identityId);
   const isChannel = event.payload.id.startsWith('ch:');
-  const roomServerId = event.payload.roomServerId ?? event.payload.from;
-  const looksLikeRoom =
-    event.payload.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN ||
-    event.payload.roomServerId != null ||
-    event.payload.channelIndex === MESHCORE_ROOM_MESSAGE_CHANNEL ||
-    event.payload.id.startsWith('room:');
+  const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
+  const isKnownRoomNode = isMeshcoreRoomServerHwModel(fromNode?.hwModel);
+  const looksLikeRoom = meshcoreRoomWireLooksLikeRoom({
+    txtType: event.payload.txtType,
+    roomServerId: event.payload.roomServerId,
+    channelIndex: event.payload.channelIndex,
+    messageId: event.payload.id,
+    senderNodeId: event.payload.from,
+    isKnownRoomNode,
+  });
+  const roomServerId = resolveRoomServerIdForIngest(identityId, event.payload);
   const isRoomEvent = looksLikeRoom && roomServerId !== 0;
 
   if (isRoomEvent) {
     const prefixMap = buildPrefixToNodeIdMap(identityId);
-    const { authorId, payload } = parseMeshcoreRoomPostPayload(event.payload.payload, prefixMap);
+    const { authorId, payload } = meshcoreRoomPostBodyFromWire(
+      event.payload.payload,
+      event.payload.txtType,
+      prefixMap,
+    );
     const authorNode =
       authorId !== 0 ? useNodeStore.getState().nodes[identityId]?.[authorId] : undefined;
     const authorName =

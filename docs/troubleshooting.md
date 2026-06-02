@@ -530,6 +530,24 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 - Firmware only **pushes new posts** after a successful login; it does not backfill old BBS messages. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected.
 
+**pyMC / server console shows posts but Rooms tab does not (cross-client)**:
+
+- The room **server log** (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts **pushed to your radio while you are logged in** to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use **Auto-sync** to periodic re-login).
+- For a fair test: keep **both** clients logged into the **same room** while connected, then post from one side and confirm the other receives it within ~30 seconds on RF.
+- mesh-client sends outbound room posts as **`TXT_TYPE_PLAIN`**; inbound BBS pushes use **`TXT_TYPE_SIGNED_PLAIN`** (author prefix stripped in the Rooms UI).
+
+**Room bot stats or system lines in Chat as a DM like `!ac200e59`**:
+
+- That tab label is the room server node id (`!` + 8-digit hex), not a person. Room-server **PLAIN** lines (e.g. `Bot Stats (24h):`) belong in the **Rooms** tab, not **Chat → DMs**. Current builds route `hw_model === 'Room'` traffic to Rooms; reload or refresh messages after upgrading if old rows were stored as DMs.
+
+**Read-only → write upgrade does nothing**:
+
+- After **Continue read-only**, use **Upgrade access** (or **Login** with the guest password) so the client sends a fresh **SendLogin** with `forceRelogin`. Enter the real guest password (often **`hello`**); empty field Login is disabled on the main overlay to avoid sending `hello` when the server expects blank read-only login.
+
+**Long room posts show as `[1/2]`, `[2/2]`…**:
+
+- MeshCore room wire limit is ~160 bytes per post. mesh-client splits longer text into multiple posts with `[i/N]` prefixes. The **Rooms** tab merges consecutive chunks from the same sender for display; other clients may show separate lines.
+
 **Queue badge stuck at `Q: 255/256`**:
 
 - Usually means the companion radio outbound queue is nearly full, or (on older builds) CORE stats were mis-parsed. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.

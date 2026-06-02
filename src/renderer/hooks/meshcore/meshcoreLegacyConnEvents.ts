@@ -16,10 +16,8 @@ import type {
 } from '../../lib/meshcore/meshcoreHookTypes';
 import {
   buildMeshcoreRoomIncomingMessage,
-  MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
-  parseMeshcoreRoomPostPayload,
   resolveMeshcoreChannelMessageSender,
 } from '../../lib/meshcoreChannelText';
 import {
@@ -39,6 +37,7 @@ import {
   meshcoreRfResolvePathSender,
 } from '../../lib/meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../../lib/meshcoreRawSelfFloodAdvertCoalesce';
+import { meshcoreRoomPostBodyFromWire } from '../../lib/meshcoreRoomMessageRouting';
 import { setMeshcoreRoomLastPostAt } from '../../lib/meshcoreRoomSyncStorage';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
 import {
@@ -669,8 +668,9 @@ export function attachMeshcoreLegacyConnEvents(
           if (!legacyOwnsRoomPosts()) {
             void setMeshcoreRoomLastPostAt(senderId, d.senderTimestamp * 1000);
           } else {
-            const { authorId, payload } = parseMeshcoreRoomPostPayload(
+            const { authorId, payload } = meshcoreRoomPostBodyFromWire(
               d.text,
+              undefined,
               pubKeyPrefixMapRef.current,
             );
             const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
@@ -818,15 +818,16 @@ export function attachMeshcoreLegacyConnEvents(
       return;
     }
 
-    // Room server pushed post (SignedPlain) — not a DM to the room infrastructure node.
-    if (d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN && sender?.hw_model === 'Room') {
+    // Room server BBS post (SignedPlain or PLAIN system lines) — not a personal DM.
+    if (sender?.hw_model === 'Room') {
       const postTs = d.senderTimestamp * 1000;
       if (!legacyOwnsRoomPosts()) {
         void setMeshcoreRoomLastPostAt(senderId, postTs);
         return;
       }
-      const { authorId, payload } = parseMeshcoreRoomPostPayload(
+      const { authorId, payload } = meshcoreRoomPostBodyFromWire(
         d.text,
+        d.txtType,
         pubKeyPrefixMapRef.current,
       );
       const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
