@@ -400,7 +400,7 @@ export default function Sidebar({
               <span className="relative shrink-0">
                 <TabIcon name={slotId} />
                 {showBadge && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
                     {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}

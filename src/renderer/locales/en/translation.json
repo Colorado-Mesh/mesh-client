@@ -1846,6 +1846,7 @@
     "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
     "tzdefLabel": "Timezone (POSIX)",
     "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "tzdefPlaceholder": "e.g. EST5EDT,M3.2.0,M11.1.0",
     "rebroadcastModes": {
       "0": {
         "label": "All",

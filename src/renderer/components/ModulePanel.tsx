@@ -60,6 +60,7 @@ interface Props {
   storeForwardMessages?: Map<number, PacketMessage[]>;
   rangeTestPackets?: Map<number, PacketMessage[]>;
   serialMessages?: Map<number, PacketMessage[]>;
+  remoteHardwareMessages?: Map<number, PacketMessage[]>;
   /** IP tunnel packet stream; null/absent = daemon not running. */
   ipTunnelMessages?: Map<number, PacketMessage[]>;
 }
@@ -396,6 +397,7 @@ export default function ModulePanel({
   storeForwardMessages,
   rangeTestPackets,
   serialMessages,
+  remoteHardwareMessages,
   ipTunnelMessages,
 }: Props) {
   const { addToast } = useToast();
@@ -1321,117 +1323,119 @@ export default function ModulePanel({
       </ModuleSection>
 
       {/* ═══ Telemetry Module ═══ */}
-      <ModuleSection
-        title={t('modulePanel.sectionTelemetryModule')}
-        onApply={() => {
-          applyMeshtasticModule('Telemetry Module', 'telemetry', telCfg, {
-            deviceTelemetryEnabled: telDeviceTelemetryEnabled,
-            deviceUpdateInterval: telDeviceInterval,
-            environmentMeasurementEnabled: telEnvEnabled,
-            environmentUpdateInterval: telEnvInterval,
-            environmentScreenEnabled: telEnvScreenEnabled,
-            environmentDisplayFahrenheit: telEnvFahrenheit,
-            airQualityEnabled: telAirQualityEnabled,
-            airQualityInterval: telAirQualityInterval,
-            powerMeasurementEnabled: telPowerEnabled,
-            powerUpdateInterval: telPowerInterval,
-            powerScreenEnabled: telPowerScreenEnabled,
-          });
-        }}
-        applying={applyingSection === 'Telemetry Module'}
-        disabled={disabled}
-      >
-        <ConfigToggle
-          label={t('modulePanel.fields.telDeviceTelemetryEnabled')}
-          checked={telDeviceTelemetryEnabled}
-          onChange={setTelDeviceTelemetryEnabled}
+      {'telemetry' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionTelemetryModule')}
+          onApply={() => {
+            applyMeshtasticModule(t('modulePanel.sectionTelemetryModule'), 'telemetry', telCfg, {
+              deviceTelemetryEnabled: telDeviceTelemetryEnabled,
+              deviceUpdateInterval: telDeviceInterval,
+              environmentMeasurementEnabled: telEnvEnabled,
+              environmentUpdateInterval: telEnvInterval,
+              environmentScreenEnabled: telEnvScreenEnabled,
+              environmentDisplayFahrenheit: telEnvFahrenheit,
+              airQualityEnabled: telAirQualityEnabled,
+              airQualityInterval: telAirQualityInterval,
+              powerMeasurementEnabled: telPowerEnabled,
+              powerUpdateInterval: telPowerInterval,
+              powerScreenEnabled: telPowerScreenEnabled,
+            });
+          }}
+          applying={applyingSection === t('modulePanel.sectionTelemetryModule')}
           disabled={disabled}
-          description={t('modulePanel.fields.telDeviceTelemetryEnabledDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.telDeviceInterval')}
-          value={telDeviceInterval}
-          onChange={setTelDeviceInterval}
-          disabled={disabled}
-          min={0}
-          max={86400}
-          unit="seconds"
-          description={t('modulePanel.telemetryDeviceMetricsDescription')}
-          tooltip={t('modulePanel.telemetryDeviceMetricsTooltip')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telEnvEnabled')}
-          checked={telEnvEnabled}
-          onChange={setTelEnvEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.telEnvEnabledDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.telEnvInterval')}
-          value={telEnvInterval}
-          onChange={setTelEnvInterval}
-          disabled={disabled || !telEnvEnabled}
-          min={0}
-          max={86400}
-          unit="seconds"
-          description={t('modulePanel.fields.telEnvIntervalDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telEnvScreenEnabled')}
-          checked={telEnvScreenEnabled}
-          onChange={setTelEnvScreenEnabled}
-          disabled={disabled || !telEnvEnabled}
-          description={t('modulePanel.fields.telEnvScreenEnabledDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telEnvFahrenheit')}
-          checked={telEnvFahrenheit}
-          onChange={setTelEnvFahrenheit}
-          disabled={disabled || !telEnvEnabled}
-          description={t('modulePanel.fields.telEnvFahrenheitDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telAirQualityEnabled')}
-          checked={telAirQualityEnabled}
-          onChange={setTelAirQualityEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.telAirQualityEnabledDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.telAirQualityInterval')}
-          value={telAirQualityInterval}
-          onChange={setTelAirQualityInterval}
-          disabled={disabled || !telAirQualityEnabled}
-          min={0}
-          max={86400}
-          unit="seconds"
-          description={t('modulePanel.fields.telAirQualityIntervalDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telPowerEnabled')}
-          checked={telPowerEnabled}
-          onChange={setTelPowerEnabled}
-          disabled={disabled}
-          description={t('modulePanel.fields.telPowerEnabledDesc')}
-        />
-        <ConfigNumber
-          label={t('modulePanel.fields.telPowerInterval')}
-          value={telPowerInterval}
-          onChange={setTelPowerInterval}
-          disabled={disabled || !telPowerEnabled}
-          min={0}
-          max={86400}
-          unit="seconds"
-          description={t('modulePanel.fields.telPowerIntervalDesc')}
-        />
-        <ConfigToggle
-          label={t('modulePanel.fields.telPowerScreenEnabled')}
-          checked={telPowerScreenEnabled}
-          onChange={setTelPowerScreenEnabled}
-          disabled={disabled || !telPowerEnabled}
-          description={t('modulePanel.fields.telPowerScreenEnabledDesc')}
-        />
-      </ModuleSection>
+        >
+          <ConfigToggle
+            label={t('modulePanel.fields.telDeviceTelemetryEnabled')}
+            checked={telDeviceTelemetryEnabled}
+            onChange={setTelDeviceTelemetryEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telDeviceTelemetryEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telDeviceInterval')}
+            value={telDeviceInterval}
+            onChange={setTelDeviceInterval}
+            disabled={disabled || !telDeviceTelemetryEnabled}
+            min={0}
+            max={86400}
+            unit={t('radioPanel.secondsUnit')}
+            description={t('modulePanel.telemetryDeviceMetricsDescription')}
+            tooltip={t('modulePanel.telemetryDeviceMetricsTooltip')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telEnvEnabled')}
+            checked={telEnvEnabled}
+            onChange={setTelEnvEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telEnvEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telEnvInterval')}
+            value={telEnvInterval}
+            onChange={setTelEnvInterval}
+            disabled={disabled || !telEnvEnabled}
+            min={0}
+            max={86400}
+            unit="seconds"
+            description={t('modulePanel.fields.telEnvIntervalDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telEnvScreenEnabled')}
+            checked={telEnvScreenEnabled}
+            onChange={setTelEnvScreenEnabled}
+            disabled={disabled || !telEnvEnabled}
+            description={t('modulePanel.fields.telEnvScreenEnabledDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telEnvFahrenheit')}
+            checked={telEnvFahrenheit}
+            onChange={setTelEnvFahrenheit}
+            disabled={disabled || !telEnvEnabled}
+            description={t('modulePanel.fields.telEnvFahrenheitDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telAirQualityEnabled')}
+            checked={telAirQualityEnabled}
+            onChange={setTelAirQualityEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telAirQualityEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telAirQualityInterval')}
+            value={telAirQualityInterval}
+            onChange={setTelAirQualityInterval}
+            disabled={disabled || !telAirQualityEnabled}
+            min={0}
+            max={86400}
+            unit="seconds"
+            description={t('modulePanel.fields.telAirQualityIntervalDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telPowerEnabled')}
+            checked={telPowerEnabled}
+            onChange={setTelPowerEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.telPowerEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.telPowerInterval')}
+            value={telPowerInterval}
+            onChange={setTelPowerInterval}
+            disabled={disabled || !telPowerEnabled}
+            min={0}
+            max={86400}
+            unit="seconds"
+            description={t('modulePanel.fields.telPowerIntervalDesc')}
+          />
+          <ConfigToggle
+            label={t('modulePanel.fields.telPowerScreenEnabled')}
+            checked={telPowerScreenEnabled}
+            onChange={setTelPowerScreenEnabled}
+            disabled={disabled || !telPowerEnabled}
+            description={t('modulePanel.fields.telPowerScreenEnabledDesc')}
+          />
+        </ModuleSection>
+      )}
 
       {/* ═══ Canned Messages ═══ */}
       <ModuleSection
@@ -1735,18 +1739,32 @@ export default function ModulePanel({
         <ModuleSection
           title={t('modulePanel.sectionRemoteHardware')}
           onApply={() => {
-            applyMeshtasticModule('Remote Hardware', 'remoteHardware', remoteHardwareCfg, {
-              enabled: remoteHardwareEnabled,
-              allowUndefinedPinAccess: remoteHardwareAllowUndefinedPins,
-            });
+            applyMeshtasticModule(
+              t('modulePanel.sectionRemoteHardware'),
+              'remoteHardware',
+              remoteHardwareCfg,
+              {
+                enabled: remoteHardwareEnabled,
+                allowUndefinedPinAccess: remoteHardwareEnabled && remoteHardwareAllowUndefinedPins,
+              },
+            );
           }}
-          applying={applyingSection === 'Remote Hardware'}
+          applying={applyingSection === t('modulePanel.sectionRemoteHardware')}
           disabled={disabled}
         >
+          {remoteHardwareMessages != null && (
+            <ModuleStatus
+              packets={remoteHardwareMessages}
+              label={t('modulePanel.statusLabels.gpio')}
+            />
+          )}
           <ConfigToggle
             label={t('modulePanel.fields.remoteHardwareEnabled')}
             checked={remoteHardwareEnabled}
-            onChange={setRemoteHardwareEnabled}
+            onChange={(enabled) => {
+              setRemoteHardwareEnabled(enabled);
+              if (!enabled) setRemoteHardwareAllowUndefinedPins(false);
+            }}
             disabled={disabled}
             description={t('modulePanel.fields.remoteHardwareEnabledDesc')}
           />

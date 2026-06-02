@@ -69,7 +69,6 @@ interface Props {
   onClearChannel: (index: number) => Promise<void>;
   channelConfigs: ChannelConfig[];
   isConnected: boolean;
-  telemetryDeviceUpdateInterval?: number | null;
   deviceFixedPosition?: boolean | null;
   ourPosition?: OurPosition | null;
   onSendPositionToDevice?: (lat: number, lon: number, alt?: number) => Promise<void>;
@@ -792,7 +791,8 @@ export default function RadioPanel({
       setAutoScreenCarouselSecs(cfg.autoScreenCarouselSecs);
     if (typeof cfg.flipScreen === 'boolean') setFlipScreen(cfg.flipScreen);
     if (typeof cfg.oled === 'number') setOled(cfg.oled);
-    if (typeof cfg.displaymode === 'number') setDisplaymode(cfg.displaymode);
+    const displayModeVal = cfg.displaymode ?? cfg.displayMode;
+    if (typeof displayModeVal === 'number') setDisplaymode(displayModeVal);
     if (typeof cfg.headingBold === 'boolean') setHeadingBold(cfg.headingBold);
     if (typeof cfg.wakeOnTapOrMotion === 'boolean') setWakeOnTapOrMotion(cfg.wakeOnTapOrMotion);
     if (typeof cfg.use12hClock === 'boolean') setUse12hClock(cfg.use12hClock);
@@ -1732,7 +1732,7 @@ export default function RadioPanel({
                 setTzdef(e.target.value);
               }}
               disabled={disabled || applyingSection !== null}
-              placeholder="e.g. EST5EDT,M3.2.0,M11.1.0"
+              placeholder={t('radioPanel.tzdefPlaceholder')}
               className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
             />
             <p className="text-muted text-xs">{t('radioPanel.tzdefDesc')}</p>

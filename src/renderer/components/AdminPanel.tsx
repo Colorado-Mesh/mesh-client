@@ -27,6 +27,7 @@ function ConfirmModal({
   onCancel,
   preserveFavorites,
   onPreserveFavoritesChange,
+  confirmDisabled,
 }: {
   title: string;
   message: string;
@@ -36,6 +37,7 @@ function ConfirmModal({
   onCancel: () => void;
   preserveFavorites?: boolean;
   onPreserveFavoritesChange?: (value: boolean) => void;
+  confirmDisabled?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -65,14 +67,17 @@ function ConfirmModal({
         )}
         <div className="flex gap-3 pt-2">
           <button
+            type="button"
             onClick={onCancel}
             className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
+            disabled={confirmDisabled}
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
               danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
             }`}
           >
@@ -116,24 +121,35 @@ export default function AdminPanel({
 
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [nodeDbPreserveFavorites, setNodeDbPreserveFavorites] = useState(false);
+  const [confirmInFlight, setConfirmInFlight] = useState(false);
+
+  const isRemoteTarget = configTarget?.mode === 'remote';
+  const localOnlyCommandsDisabled = !isConnected || isRemoteTarget;
 
   const executeWithConfirmation = useCallback((action: PendingAction) => {
     setPendingAction(action);
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!pendingAction) return;
+    if (!pendingAction || confirmInFlight) return;
+    setConfirmInFlight(true);
     try {
-      await pendingAction.action();
+      if (pendingAction.showPreserveFavorites) {
+        await onResetNodeDb(nodeDbPreserveFavorites);
+      } else {
+        await pendingAction.action();
+      }
       addToast(t('radioPanel.actionCompleted', { name: pendingAction.name }), 'success');
-    } catch {
+    } catch (err: unknown) {
       // catch-no-log-ok toast handles user feedback
-      addToast(t('radioPanel.actionFailed', { name: pendingAction.name }), 'error');
+      const message = err instanceof Error ? err.message : pendingAction.name;
+      addToast(t('radioPanel.actionFailed', { message }), 'error');
     } finally {
+      setConfirmInFlight(false);
       setPendingAction(null);
       setNodeDbPreserveFavorites(false);
     }
-  }, [pendingAction, addToast, t]);
+  }, [pendingAction, confirmInFlight, nodeDbPreserveFavorites, onResetNodeDb, addToast, t]);
 
   return (
     <div className="w-full space-y-4">
@@ -164,7 +180,7 @@ export default function AdminPanel({
                   action: () => onEnterDfu?.() ?? Promise.resolve(),
                 });
               }}
-              disabled={!isConnected || !onEnterDfu}
+              disabled={localOnlyCommandsDisabled || !onEnterDfu}
               className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
               {t('radioPanel.enterDfuButton')}
@@ -200,7 +216,7 @@ export default function AdminPanel({
                   action: () => onRebootOta?.(10) ?? Promise.resolve(),
                 });
               }}
-              disabled={!isConnected || !onRebootOta}
+              disabled={localOnlyCommandsDisabled || !onRebootOta}
               className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
               {t('radioPanel.rebootOtaButton')}
@@ -216,8 +232,8 @@ export default function AdminPanel({
                     title: t('radioPanel.resetNodeDbTitle'),
                     message: t('radioPanel.resetNodeDbMessage'),
                     confirmLabel: t('radioPanel.resetNodeDbConfirm'),
-                    showPreserveFavorites: configTarget?.mode === 'remote',
-                    action: () => onResetNodeDb(nodeDbPreserveFavorites),
+                    showPreserveFavorites: isRemoteTarget,
+                    action: () => onResetNodeDb(false),
                   });
                 }}
                 disabled={!isConnected}
@@ -306,8 +322,12 @@ export default function AdminPanel({
           onPreserveFavoritesChange={
             pendingAction.showPreserveFavorites ? setNodeDbPreserveFavorites : undefined
           }
-          onConfirm={handleConfirm}
+          confirmDisabled={confirmInFlight}
+          onConfirm={() => {
+            void handleConfirm();
+          }}
           onCancel={() => {
+            if (confirmInFlight) return;
             setPendingAction(null);
             setNodeDbPreserveFavorites(false);
           }}

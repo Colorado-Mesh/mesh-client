@@ -40,6 +40,7 @@ import {
   saveStarred,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
+import { getDistFromChatBottom } from '../lib/chatScrollUtils';
 import { computeChannelUnreadCounts, computeDmUnreadCounts } from '../lib/chatUnreadCounts';
 import {
   findMeshcoreParentMessageForReply,
@@ -310,35 +311,6 @@ function mergeReadWatermarks(
     next[key] = value;
   }
   return next;
-}
-
-/**
- * Distance from the “bottom” of the chat (latest messages). Uses the **maximum** of:
- * - Inner `overflow-y-auto` distance when the message list overflows, and
- * - Message-end sentinel vs `outerScrollRoot` (app main viewport), so we still
- *   detect “not at latest” when the inner scroller is at max but the shell scroll
- *   has moved the thread off-screen (or vice versa).
- */
-export function getDistFromChatBottom(
-  inner: HTMLDivElement | null,
-  messagesEnd: HTMLDivElement | null,
-  outerScrollRoot: HTMLElement | null,
-): number | null {
-  if (!inner) return null;
-
-  let dist = 0;
-
-  if (inner.scrollHeight > inner.clientHeight + 1) {
-    dist = Math.max(dist, inner.scrollHeight - inner.scrollTop - inner.clientHeight);
-  }
-
-  if (outerScrollRoot && messagesEnd) {
-    const rootRect = outerScrollRoot.getBoundingClientRect();
-    const endRect = messagesEnd.getBoundingClientRect();
-    dist = Math.max(dist, Math.max(0, endRect.bottom - rootRect.bottom));
-  }
-
-  return dist;
 }
 
 export interface ChatPanelProps {
@@ -1185,7 +1157,7 @@ function ChatPanel({
               >
                 {ch.name}
                 {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
                     {unread > 99 ? '99+' : unread}
                   </span>
                 )}
@@ -1497,7 +1469,7 @@ function ChatPanel({
                   x
                 </button>
                 {showDmUnreadBadge && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
                     {dmUnread > 99 ? '99+' : dmUnread}
                   </span>
                 )}

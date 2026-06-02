@@ -63,8 +63,8 @@ import {
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
+import { getDistFromChatBottom } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
-import { getDistFromChatBottom } from './ChatPanel';
 import { ChatPayloadText } from './ChatPayloadText';
 import { MessageStatusBadge } from './MessageStatusBadge';
 
@@ -983,7 +983,7 @@ export default function RoomsPanel({
                       )}
                       <span className="truncate">{room.long_name}</span>
                       {unread > 0 && selectedRoomId !== room.node_id && (
-                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <span className="ml-auto shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                           {unread > 99 ? '99+' : unread}
                         </span>
                       )}

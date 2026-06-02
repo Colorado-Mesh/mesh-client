@@ -5,8 +5,9 @@ import { axe } from 'vitest-axe';
 
 import * as chatNotifications from '../lib/chatNotifications';
 import { draftsStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
+import { getDistFromChatBottom } from '../lib/chatScrollUtils';
 import type { ChatMessage, MeshNode } from '../lib/types';
-import ChatPanel, { getDistFromChatBottom } from './ChatPanel';
+import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
 vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));

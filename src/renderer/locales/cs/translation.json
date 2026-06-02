@@ -2025,7 +2025,8 @@
       "2": {
         "label": "No PIN"
       }
-    }
+    },
+    "tzdefPlaceholder": "např. EST5EDT,M3.2.0,M11.1.0"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

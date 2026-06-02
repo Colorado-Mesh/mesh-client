@@ -1181,9 +1181,6 @@ function AppContent({
   const effectiveDeviceOwner = isRemoteConfigureTarget
     ? (activeRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
     : activeRuntime.deviceOwner;
-  const effectiveTelemetryInterval = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.telemetryDeviceUpdateInterval ?? null)
-    : activeRuntime.telemetryDeviceUpdateInterval;
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
     ? (activeRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
     : activeRuntime.deviceFixedPosition;
@@ -2401,7 +2398,6 @@ function AppContent({
                                   : undefined
                               }
                               isConnected={isOperational}
-                              telemetryDeviceUpdateInterval={effectiveTelemetryInterval}
                               deviceFixedPosition={effectiveDeviceFixedPosition}
                               ourPosition={activeRuntime.ourPosition}
                               onSendPositionToDevice={panelActions.sendPositionToDevice}
@@ -2570,6 +2566,7 @@ function AppContent({
                               storeForwardMessages={activeRuntime.storeForwardMessages}
                               rangeTestPackets={activeRuntime.rangeTestPackets}
                               serialMessages={activeRuntime.serialMessages}
+                              remoteHardwareMessages={activeRuntime.remoteHardwareMessages}
                               ipTunnelMessages={activeRuntime.ipTunnelMessages}
                             />
                           </Suspense>
