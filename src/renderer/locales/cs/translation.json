@@ -1605,7 +1605,6 @@
     "title": "Konfigurace rádia",
     "frequencyHint": "Provozní frekvence. Zkontrolujte místní předpisy.",
     "ntpHint": "Pro výchozí server NTP ponechte prázdné.",
-    "restartWarning": "Zařízení se může krátce restartovat po použití nového LoRa nebo nastavení zařízení.",
     "deviceActions": "Akce zařízení",
     "deviceCommands": "Příkazy zařízení",
     "dangerZone": "Nebezpečná zóna",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Vaše jméno",
     "namePlaceholder": "JMÉNO",
     "networkNamePlaceholder": "Název sítě",
-    "flashMemoryNote": "Změny jsou zapsány do flash paměti zařízení a přetrvávají po restartování.",
     "encryptionNone": "Žádné (žádné šifrování)",
     "encryptionSimple": "Jednoduché (výchozí klíč Meshtastic)",
     "generateRandomKey": "Vygenerujte náhodný klíč",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "configApplyNotice": {
+    "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
+    "restartNote": "Zařízení se může krátce restartovat, když použijete nastavení."
   }
 }

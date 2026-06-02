@@ -1605,7 +1605,6 @@
     "title": "Konfiguracja radia",
     "frequencyHint": "Częstotliwość robocza. Sprawdź lokalne przepisy.",
     "ntpHint": "Pozostaw puste dla domyślnego serwera NTP.",
-    "restartWarning": "Urządzenie może na chwilę ponownie się uruchomić po zastosowaniu nowych ustawień LoRa lub urządzenia.",
     "deviceActions": "Działania urządzenia",
     "deviceCommands": "Polecenia urządzenia",
     "dangerZone": "Strefa zagrożenia",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Twoje imię",
     "namePlaceholder": "NAZWA",
     "networkNamePlaceholder": "Nazwa sieci",
-    "flashMemoryNote": "Zmiany są zapisywane w pamięci flash urządzenia i pozostają trwałe po ponownym uruchomieniu.",
     "encryptionNone": "Brak (bez szyfrowania)",
     "encryptionSimple": "Prosty (domyślny klawisz Meshtastic)",
     "generateRandomKey": "Wygeneruj losowy klucz",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
+  },
+  "configApplyNotice": {
+    "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",
+    "restartNote": "Po zastosowaniu ustawień urządzenie może się na chwilę zrestartować."
   }
 }

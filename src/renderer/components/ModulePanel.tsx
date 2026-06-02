@@ -21,6 +21,7 @@ import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/m
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
+import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
@@ -869,6 +870,8 @@ export default function ModulePanel({
       {configTarget?.mode === 'remote' && configTarget.error && (
         <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
+
+      <ConfigApplyNotice />
 
       {Object.keys(moduleConfigs).length === 0 && isConnected && (
         <div className="bg-deep-black/50 text-muted rounded-lg border border-gray-700 px-4 py-3 text-sm">

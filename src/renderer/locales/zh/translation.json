@@ -1605,7 +1605,6 @@
     "title": "无线电配置",
     "frequencyHint": "工作频率。检查当地法规。",
     "ntpHint": "对于默认 NTP 服务器，保留为空。",
-    "restartWarning": "应用新的 LoRa 或设备设置后，设备可能会短暂重新启动。",
     "deviceActions": "设备操作",
     "deviceCommands": "设备命令",
     "dangerZone": "危险区",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "你的名字",
     "namePlaceholder": "姓名",
     "networkNamePlaceholder": "网络名称",
-    "flashMemoryNote": "更改将写入设备的闪存并在重新启动后保留。",
     "encryptionNone": "无（无加密）",
     "encryptionSimple": "简单（默认 Meshtastic 键）",
     "generateRandomKey": "生成随机密钥",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
+  },
+  "configApplyNotice": {
+    "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
+    "restartNote": "应用设置时，设备可能会短暂重新启动。"
   }
 }

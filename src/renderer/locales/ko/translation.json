@@ -1605,7 +1605,6 @@
     "title": "라디오 구성",
     "frequencyHint": "작동 주파수. 현지 규정을 확인하세요.",
     "ntpHint": "기본 NTP 서버의 경우 비워 두세요.",
-    "restartWarning": "새로운 LoRa 또는 장치 설정을 적용한 후 장치가 잠시 다시 시작될 수 있습니다.",
     "deviceActions": "장치 작업",
     "deviceCommands": "장치 명령",
     "dangerZone": "위험지대",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "당신의 이름",
     "namePlaceholder": "이름",
     "networkNamePlaceholder": "네트워크 이름",
-    "flashMemoryNote": "변경 사항은 장치의 플래시 메모리에 기록되고 재부팅 후에도 유지됩니다.",
     "encryptionNone": "없음(암호화 없음)",
     "encryptionSimple": "단순(기본 Meshtastic 키)",
     "generateRandomKey": "무작위 키 생성",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
+  },
+  "configApplyNotice": {
+    "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
+    "restartNote": "설정을 적용할 때 장치가 잠시 다시 시작될 수 있습니다."
   }
 }

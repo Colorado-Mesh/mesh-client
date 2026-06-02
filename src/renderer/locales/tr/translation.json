@@ -1605,7 +1605,6 @@
     "title": "Radyo Yapılandırması",
     "frequencyHint": "Çalışma frekansı. Yerel düzenlemeleri kontrol edin.",
     "ntpHint": "Varsayılan NTP sunucusu için boş bırakın.",
-    "restartWarning": "Yeni LoRa veya cihaz ayarları uygulandıktan sonra cihaz kısa süreliğine yeniden başlatılabilir.",
     "deviceActions": "Cihaz Eylemleri",
     "deviceCommands": "Cihaz Komutları",
     "dangerZone": "Tehlikeli Bölge",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Adınız",
     "namePlaceholder": "İSİM",
     "networkNamePlaceholder": "Ağ adı",
-    "flashMemoryNote": "Değişiklikler cihazın flash belleğine yazılır ve yeniden başlatmalarda kalıcı olur.",
     "encryptionNone": "Yok (şifreleme yok)",
     "encryptionSimple": "Basit (varsayılan Meshtastic tuşu)",
     "generateRandomKey": "Rastgele anahtar oluştur",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+  },
+  "configApplyNotice": {
+    "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
+    "restartNote": "Ayarları uyguladığınızda cihaz kısa bir süre yeniden başlatılabilir."
   }
 }

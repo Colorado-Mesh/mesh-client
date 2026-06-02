@@ -1605,7 +1605,6 @@
     "title": "Radioconfiguratie",
     "frequencyHint": "Bedrijfsfrequentie. Controleer de lokale regelgeving.",
     "ntpHint": "Laat leeg voor standaard NTP-server.",
-    "restartWarning": "Het apparaat kan kort opnieuw opstarten nadat nieuwe LoRa- of apparaatinstellingen zijn toegepast.",
     "deviceActions": "Apparaatacties",
     "deviceCommands": "Apparaatopdrachten",
     "dangerZone": "Gevarenzone",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Jouw naam",
     "namePlaceholder": "NAAM",
     "networkNamePlaceholder": "Netwerknaam",
-    "flashMemoryNote": "Wijzigingen worden naar het flashgeheugen van het apparaat geschreven en blijven bij opnieuw opstarten behouden.",
     "encryptionNone": "Geen (geen codering)",
     "encryptionSimple": "Eenvoudig (standaard Meshtastic-sleutel)",
     "generateRandomKey": "Genereer willekeurige sleutel",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
+  },
+  "configApplyNotice": {
+    "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
+    "restartNote": "Het apparaat kan kort opnieuw opstarten wanneer u instellingen toepast."
   }
 }

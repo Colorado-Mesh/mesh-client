@@ -37,6 +37,7 @@ import {
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
+import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
@@ -1143,6 +1144,8 @@ export default function RadioPanel({
         <p className="text-sm text-red-400">{t(configTarget.error)}</p>
       )}
 
+      <ConfigApplyNotice />
+
       {/* ═══ Device User / Identity ═══ */}
       <ConfigSection
         title={t('radioPanel.sectionDeviceUser')}
@@ -1579,7 +1582,7 @@ export default function RadioPanel({
           />
         )}
 
-      <h3 className="text-muted border-t border-gray-700 pt-4 text-sm font-medium">
+      <h3 className="border-t border-gray-700 pt-4 text-xl font-semibold text-gray-200">
         {t('radioPanel.sectionGroupDevice')}
       </h3>
 
@@ -2253,12 +2256,6 @@ export default function RadioPanel({
           {status}
         </div>
       )}
-
-      {/* Info */}
-      <div className="bg-deep-black text-muted space-y-1 rounded-lg p-4 text-sm">
-        <p>{t('radioPanel.flashMemoryNote')}</p>
-        <p>{t('radioPanel.restartWarning')}</p>
-      </div>
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
       {(onSendAdvert || onSyncClock || capabilities?.hasCompanionContactManagementConfig) && (

@@ -333,6 +333,10 @@
     "days": "days",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Applied settings are saved to the device's flash memory and persist across reboots.",
+    "restartNote": "The device may briefly restart when you apply settings."
+  },
   "configureNode": {
     "label": "Configure node",
     "localDevice": "This device (local)",
@@ -1608,7 +1612,6 @@
     "title": "Radio Configuration",
     "frequencyHint": "Operating frequency. Check local regulations.",
     "ntpHint": "Leave empty for default NTP server.",
-    "restartWarning": "The device may briefly restart after applying new LoRa or device settings.",
     "deviceActions": "Device Actions",
     "deviceCommands": "Device Commands",
     "floodAdvertButton": "Flood Advert",
@@ -1656,7 +1659,6 @@
     "yourNamePlaceholder": "Your Name",
     "namePlaceholder": "NAME",
     "networkNamePlaceholder": "Network name",
-    "flashMemoryNote": "Changes are written to the device's flash memory and persist across reboots.",
     "encryptionNone": "None (no encryption)",
     "encryptionSimple": "Simple (default Meshtastic key)",
     "generateRandomKey": "Generate random key",

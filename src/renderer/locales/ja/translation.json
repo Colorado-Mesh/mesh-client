@@ -1605,7 +1605,6 @@
     "title": "無線構成",
     "frequencyHint": "動作周波数。現地の規制を確認してください。",
     "ntpHint": "デフォルトの NTP サーバーの場合は空のままにします。",
-    "restartWarning": "新しい LoRa またはデバイス設定を適用した後、デバイスが一時的に再起動する場合があります。",
     "deviceActions": "デバイスのアクション",
     "deviceCommands": "デバイスコマンド",
     "dangerZone": "危険地帯",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "あなたの名前",
     "namePlaceholder": "名前",
     "networkNamePlaceholder": "ネットワーク名",
-    "flashMemoryNote": "変更はデバイスのフラッシュ メモリに書き込まれ、再起動後も保持されます。",
     "encryptionNone": "なし (暗号化なし)",
     "encryptionSimple": "シンプル (デフォルトの Meshtastic キー)",
     "generateRandomKey": "ランダムキーを生成する",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "configApplyNotice": {
+    "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
+    "restartNote": "設定を適用すると、デバイスが一時的に再起動することがあります。"
   }
 }

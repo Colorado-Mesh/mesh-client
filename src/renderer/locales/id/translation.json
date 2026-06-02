@@ -1605,7 +1605,6 @@
     "title": "Konfigurasi Radio",
     "frequencyHint": "Frekuensi operasi. Periksa peraturan setempat.",
     "ntpHint": "Biarkan kosong untuk server NTP default.",
-    "restartWarning": "Perangkat mungkin restart sebentar setelah menerapkan LoRa atau pengaturan perangkat baru.",
     "deviceActions": "Tindakan Perangkat",
     "deviceCommands": "Perintah Perangkat",
     "dangerZone": "Zona Bahaya",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Nama Anda",
     "namePlaceholder": "NAMA",
     "networkNamePlaceholder": "Nama jaringan",
-    "flashMemoryNote": "Perubahan ditulis ke memori flash perangkat dan tetap ada selama reboot.",
     "encryptionNone": "Tidak ada (tidak ada enkripsi)",
     "encryptionSimple": "Sederhana (kunci Meshtastic default)",
     "generateRandomKey": "Hasilkan kunci acak",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
+  },
+  "configApplyNotice": {
+    "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
+    "restartNote": "Perangkat dapat memulai ulang secara singkat saat Anda menerapkan pengaturan."
   }
 }

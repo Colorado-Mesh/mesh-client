@@ -1605,7 +1605,6 @@
     "title": "Configuración de radio",
     "frequencyHint": "Frecuencia de funcionamiento. Consulte las regulaciones locales.",
     "ntpHint": "Déjelo vacío para el servidor NTP predeterminado.",
-    "restartWarning": "Es posible que el dispositivo se reinicie brevemente después de aplicar una nueva configuración de LoRa o del dispositivo.",
     "deviceActions": "Acciones del dispositivo",
     "deviceCommands": "Comandos del dispositivo",
     "dangerZone": "Zona de peligro",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Su nombre",
     "namePlaceholder": "NOMBRE",
     "networkNamePlaceholder": "Nombre de la red",
-    "flashMemoryNote": "Los cambios se escriben en la memoria flash del dispositivo y persisten tras los reinicios.",
     "encryptionNone": "Ninguno (sin cifrado)",
     "encryptionSimple": "Simple (tecla Meshtastic predeterminada)",
     "generateRandomKey": "Generar clave aleatoria",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
+  },
+  "configApplyNotice": {
+    "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
+    "restartNote": "El dispositivo puede reiniciarse brevemente cuando se aplica la configuración."
   }
 }

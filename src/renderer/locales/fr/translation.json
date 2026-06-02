@@ -1605,7 +1605,6 @@
     "title": "Configuration radio",
     "frequencyHint": "Fréquence de fonctionnement. Vérifiez les réglementations locales.",
     "ntpHint": "Laissez vide pour le serveur NTP par défaut.",
-    "restartWarning": "L'appareil peut redémarrer brièvement après avoir appliqué de nouveaux paramètres LoRa ou de l'appareil.",
     "deviceActions": "Actions sur l'appareil",
     "deviceCommands": "Commandes de périphérique",
     "dangerZone": "Zone dangereuse",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Votre nom",
     "namePlaceholder": "NOM",
     "networkNamePlaceholder": "Nom du réseau",
-    "flashMemoryNote": "Les modifications sont écrites dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
     "encryptionNone": "Aucun (pas de cryptage)",
     "encryptionSimple": "Simple (clé Meshtastic par défaut)",
     "generateRandomKey": "Générer une clé aléatoire",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",
     "menuToastErrorTitle": "Échec de la vérification de"
+  },
+  "configApplyNotice": {
+    "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
+    "restartNote": "L'appareil peut redémarrer brièvement lorsque vous appliquez les paramètres."
   }
 }

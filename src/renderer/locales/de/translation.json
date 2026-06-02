@@ -1605,7 +1605,6 @@
     "title": "Funkkonfiguration",
     "frequencyHint": "Betriebsfrequenz. Überprüfen Sie die örtlichen Vorschriften.",
     "ntpHint": "Für den Standard-NTP-Server leer lassen.",
-    "restartWarning": "Nach der Anwendung neuer LoRa- oder Geräteeinstellungen wird das Gerät möglicherweise kurzzeitig neu gestartet.",
     "deviceActions": "Geräteaktionen",
     "deviceCommands": "Gerätebefehle",
     "dangerZone": "Gefahrenzone",
@@ -1630,7 +1629,6 @@
     "yourNamePlaceholder": "Ihr Name",
     "namePlaceholder": "NAME",
     "networkNamePlaceholder": "Netzwerkname",
-    "flashMemoryNote": "Änderungen werden in den Flash-Speicher des Geräts geschrieben und bleiben auch nach Neustarts bestehen.",
     "encryptionNone": "Keine (keine Verschlüsselung)",
     "encryptionSimple": "Einfach (Standard-Meshtastic-Taste)",
     "generateRandomKey": "Zufallsschlüssel generieren",
@@ -2467,5 +2465,9 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+  },
+  "configApplyNotice": {
+    "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",
+    "restartNote": "Das Gerät kann kurzzeitig neu gestartet werden, wenn Sie die Einstellungen anwenden."
   }
 }
