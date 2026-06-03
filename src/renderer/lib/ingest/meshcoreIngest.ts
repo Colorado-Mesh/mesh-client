@@ -14,6 +14,7 @@ import { useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { ensureMeshcoreChatSenderInNodeStore } from '../meshcore/meshcoreChatSenderNode';
 import {
   buildMeshcoreRoomIncomingMessage,
   parseMeshcoreChannelIncomingFromThread,
@@ -52,6 +53,36 @@ function buildPrefixToNodeIdMap(identityId: IdentityId): Map<string, number> {
     }
   }
   return map;
+}
+
+function chatSourceFromReceivedVia(receivedVia: string | undefined): {
+  source: 'rf' | 'mqtt';
+  heardViaMqtt: boolean;
+} {
+  if (receivedVia === 'mqtt') return { source: 'mqtt', heardViaMqtt: true };
+  if (receivedVia === 'both') return { source: 'rf', heardViaMqtt: true };
+  return { source: 'rf', heardViaMqtt: false };
+}
+
+function bumpMeshcoreChatSenderLastHeard(
+  identityId: IdentityId,
+  nodeId: number,
+  opts: {
+    timestampMs: number;
+    displayName?: string;
+    receivedVia?: string;
+    hopCount?: number;
+  },
+): void {
+  if (nodeId <= 0) return;
+  const { source, heardViaMqtt } = chatSourceFromReceivedVia(opts.receivedVia);
+  ensureMeshcoreChatSenderInNodeStore(identityId, nodeId, {
+    lastHeardAtMs: opts.timestampMs,
+    displayName: opts.displayName,
+    source,
+    heardViaMqtt,
+    ...(opts.hopCount != null ? { hopsAway: opts.hopCount } : {}),
+  });
 }
 
 function resolveRoomServerIdForIngest(
@@ -124,6 +155,14 @@ function handleTextMessage(
       event.payload.id,
     );
     const isEcho = myNodeNum > 0 && authorId === myNodeNum;
+    if (!isEcho) {
+      bumpMeshcoreChatSenderLastHeard(identityId, authorId, {
+        timestampMs: event.payload.timestamp,
+        displayName: authorName !== 'Unknown' ? authorName : undefined,
+        receivedVia: record.receivedVia,
+        hopCount: event.payload.hopCount,
+      });
+    }
     if (inserted && !isEcho) {
       void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
         console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
@@ -193,6 +232,14 @@ function handleTextMessage(
   } = upsertMeshcoreMessageWithDedup(identityId, reconciled, event.payload.id);
 
   const isEcho = myNodeNum > 0 && senderId === myNodeNum;
+  if (!isEcho) {
+    bumpMeshcoreChatSenderLastHeard(identityId, senderId, {
+      timestampMs: event.payload.timestamp,
+      displayName: displayName !== 'Unknown' ? displayName : undefined,
+      receivedVia: record.receivedVia,
+      hopCount: event.payload.hopCount,
+    });
+  }
   const replyUpgraded =
     stored.replyId !== priorReplyId ||
     stored.replyPreviewText !== priorReplyPreviewText ||

@@ -70,6 +70,7 @@ import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStore
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
+import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -943,7 +944,16 @@ export function useMeshcoreRuntime() {
       });
       const resolvedId = resolved.senderId;
       const displayName = resolved.displayName;
+      const storeId = meshcoreIdentityIdRef.current;
       if (resolvedId !== 0) {
+        if (storeId) {
+          ensureMeshcoreChatSenderInNodeStore(storeId, resolvedId, {
+            lastHeardAtMs: ts,
+            displayName: m.senderName ?? displayName,
+            source: 'mqtt',
+            heardViaMqtt: true,
+          });
+        }
         setNodes((prev) => {
           const next = new Map(prev);
           const existing = next.get(resolvedId);
@@ -986,7 +996,6 @@ export function useMeshcoreRuntime() {
       }
       const normProbe = normalizeMeshcoreIncomingText(m.text);
       const rawForBuild = normProbe.senderName ? m.text : `${displayName}: ${m.text}`;
-      const storeId = meshcoreIdentityIdRef.current;
       const prior = storeId ? meshcoreSortedStorePrior(storeId) : messagesRef.current;
       addMessage(
         parseMeshcoreChannelIncomingFromThread(prior, {

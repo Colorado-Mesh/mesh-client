@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import type {
   CliEntry,
   NeighborInfoEvent,
@@ -14,6 +15,7 @@ import type {
   WaypointEvent,
 } from '../lib/protocols/Protocol';
 import type { IdentityId, MeshCoreLocalStats, MeshNeighbor } from '../lib/types';
+import { getIdentity } from './identityStore';
 import { omitRecordKey } from './storeUtils';
 
 export interface NodeRecord {
@@ -127,6 +129,7 @@ function mergeNode(
 export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
   useNodeStore.setState((s) => {
     const byId = s.nodes[identityId] ?? {};
+    const existing = byId[event.nodeId];
     const {
       nodeId,
       longName,
@@ -135,15 +138,28 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
       hwModel,
       isLicensed,
       role,
-      lastHeardAt,
+      lastHeardAt: eventLastHeardAt,
       publicKey,
     } = event;
+    let lastHeardAt = eventLastHeardAt;
+    if (
+      getIdentity(identityId)?.protocol.type === 'meshcore' &&
+      eventLastHeardAt != null &&
+      Number.isFinite(eventLastHeardAt)
+    ) {
+      const merged = mergeMeshcoreLastHeardFromAdvert(
+        eventLastHeardAt,
+        existing?.lastHeardAt,
+        Math.floor(Date.now() / 1000),
+      );
+      if (merged > 0) lastHeardAt = merged;
+    }
     return {
       nodes: {
         ...s.nodes,
         [identityId]: {
           ...byId,
-          [nodeId]: mergeNode(byId[nodeId], nodeId, {
+          [nodeId]: mergeNode(existing, nodeId, {
             longName,
             shortName,
             macAddr,

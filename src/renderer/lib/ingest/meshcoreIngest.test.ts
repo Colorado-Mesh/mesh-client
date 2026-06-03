@@ -7,6 +7,7 @@ import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreChatStubNodeIdFromDisplayName,
 } from '../meshcoreUtils';
+import { getNodeStatus } from '../nodeStatus';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
@@ -70,6 +71,51 @@ describe('attachMeshcoreIngest', () => {
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({ sender_id: null, sender_name: 'Unknown' }),
     );
+  });
+
+  it('bumps nodeStore lastHeardAt when a channel message arrives from a known sender', () => {
+    const senderId = meshcoreChatStubNodeIdFromDisplayName('WORMT');
+    const oldLastHeardSec = Math.floor(Date.now() / 1000) - 172_800;
+    const msgTs = Date.now();
+    const msgId = `ch:0:${Math.floor(msgTs / 1000)}`;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [senderId]: {
+            nodeId: senderId,
+            longName: 'WORMT',
+            hwModel: 'Chat',
+            lastHeardAt: oldLastHeardSec,
+          },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    upsertMessage(ID, {
+      id: msgId,
+      from: 0,
+      to: 0,
+      payload: 'WORMT: Morning mesh',
+      channelIndex: 0,
+      timestamp: msgTs,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: 0,
+        to: 0,
+        payload: 'WORMT: Morning mesh',
+        channelIndex: 0,
+        timestamp: msgTs,
+        hopCount: 3,
+      },
+    });
+    const node = useNodeStore.getState().nodes[ID][senderId];
+    expect(node.lastHeardAt).toBeGreaterThan(oldLastHeardSec);
+    expect(getNodeStatus(node.lastHeardAt ?? 0)).toBe('online');
   });
 
   it('relinks channel ingest to named sender when history has same channel+payload', () => {
