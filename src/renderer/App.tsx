@@ -1965,7 +1965,7 @@ function AppContent({
               >
                 Meshtastic
                 {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
-                  <span className="bg-brand-green/30 text-brand-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
+                  <span className="bg-brand-green text-deep-black ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
                     {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
                   </span>
                 )}
@@ -1986,7 +1986,7 @@ function AppContent({
               >
                 MeshCore
                 {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600/30 px-0.5 text-[10px] font-bold text-cyan-400">
+                  <span className="text-deep-black ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-400 px-0.5 text-[10px] font-bold">
                     {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
                   </span>
                 )}
@@ -2654,7 +2654,7 @@ function AppContent({
                       role="tabpanel"
                       aria-labelledby="tab-7"
                       hidden={activePanelIndex !== 7}
-                      className="w-full min-w-0"
+                      className="h-full w-full min-w-0"
                     >
                       {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
                       protocol === 'meshcore' ? (
