@@ -833,6 +833,8 @@ export default function ConnectionPanel({
   const meshcoreLinuxReconnectPairingCheckRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
+  /** Prior store status for distinguishing pre-connect BLE scan from failed RF attempts. */
+  const prevStoreStatusRef = useRef(state.status);
   /** Mount-only auto-connect reads latest props/state via refs so the effect can stay `[]`. */
   const deviceStateRef = useRef(state);
   deviceStateRef.current = state;
@@ -914,16 +916,28 @@ export default function ConnectionPanel({
         setLastConnection(conn);
       }
     } else if (state.status === 'disconnected') {
-      const awaitingManualSelection =
-        (connectionType === 'ble' || connectionType === 'serial') && connecting;
-      if (awaitingManualSelection || showBlePicker || showSerialPicker) {
-        return;
+      const prevStatus = prevStoreStatusRef.current;
+      const hadRfAttempt =
+        prevStatus === 'connecting' ||
+        prevStatus === 'connected' ||
+        prevStatus === 'configured' ||
+        prevStatus === 'stale' ||
+        prevStatus === 'reconnecting' ||
+        state.connectionType !== null;
+
+      if (hadRfAttempt) {
+        setConnectionStage('');
+        setConnecting(false);
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        if (showBlePicker || showSerialPicker) {
+          setShowBlePicker(false);
+          setShowSerialPicker(false);
+        }
       }
-      setConnectionStage('');
-      setConnecting(false);
-      isAutoConnectingRef.current = false;
-      setIsAutoConnecting(false);
     }
+
+    prevStoreStatusRef.current = state.status;
   }, [
     state.status,
     state.connectionType,
@@ -1555,6 +1569,7 @@ export default function ConnectionPanel({
               setShowRePairButton(true);
               setShowBlePicker(false);
               setConnectionStage('connectionPanel.stagePairingFailed');
+              setConnecting(false);
             } else {
               setConnecting(false);
               setConnectionStage('');
@@ -1639,10 +1654,50 @@ export default function ConnectionPanel({
     state.status === 'stale' ||
     state.status === 'reconnecting';
 
+  const handleExitApp = useCallback(
+    async (variant: 'connected' | 'idle' | 'connecting') => {
+      if (variant === 'connecting') {
+        await handleCancelConnection();
+      } else if (isConnected) {
+        await Promise.race([
+          onDisconnect(),
+          new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
+        ]);
+      }
+      if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
+        markMqttUserDisconnect();
+        void window.electronAPI.mqtt.disconnect();
+      }
+      await window.electronAPI.quitApp();
+    },
+    [handleCancelConnection, isConnected, mqttStatus, onDisconnect],
+  );
+
+  const renderExitActions = (variant: 'connected' | 'idle' | 'connecting') => {
+    const useDisconnectAndQuit =
+      isConnected || variant === 'connecting' || mqttStatus === 'connected';
+    const labelKey = useDisconnectAndQuit
+      ? 'connectionPanel.disconnectAndQuit'
+      : 'connectionPanel.quit';
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          void handleExitApp(variant);
+        }}
+        className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
+        aria-label={t(labelKey)}
+      >
+        {t(labelKey)}
+      </button>
+    );
+  };
+
   // ─── Connecting Progress View ───────────────────────────────────
   if (connecting && !isConnected) {
     return (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
+        <div className="w-full">{renderExitActions('connecting')}</div>
         <Spinner className="text-bright-green h-12 w-12" />
         <div className="space-y-2 text-center">
           <h2 className="text-xl font-semibold text-gray-200">
@@ -2577,21 +2632,7 @@ export default function ConnectionPanel({
   if (isConnected) {
     return (
       <div className="w-full space-y-6">
-        <button
-          onClick={async () => {
-            // Cap wait so quit always runs if transport teardown hangs (e.g. Windows serial/BLE).
-            await Promise.race([
-              onDisconnect(),
-              new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
-            ]);
-            markMqttUserDisconnect();
-            void window.electronAPI.mqtt.disconnect();
-            await window.electronAPI.quitApp();
-          }}
-          className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
-        >
-          {t('connectionPanel.disconnectAndQuit')}
-        </button>
+        {renderExitActions('connected')}
 
         <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
           <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
@@ -2713,28 +2754,7 @@ export default function ConnectionPanel({
   // ─── Disconnected View ─────────────────────────────────────────
   return (
     <div className="w-full space-y-6">
-      {mqttStatus === 'connected' && (
-        <button
-          type="button"
-          onClick={() => {
-            markMqttUserDisconnect();
-            void window.electronAPI.mqtt.disconnect();
-            void window.electronAPI.quitApp();
-          }}
-          className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
-        >
-          {t('connectionPanel.disconnectAndQuit')}
-        </button>
-      )}
-      {protocol === 'meshcore' && mqttStatus !== 'connected' && (
-        <button
-          type="button"
-          onClick={() => window.electronAPI.quitApp()}
-          className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
-        >
-          {t('connectionPanel.quit')}
-        </button>
-      )}
+      {renderExitActions('idle')}
 
       {/* Last Connection — one-click reconnect card */}
       {lastConnection && !connecting && (

@@ -2026,7 +2026,7 @@ export function useMeshtasticRuntime() {
         driverIdentityId ??
         meshtasticIdentityIdRef.current ??
         meshtasticPendingDriverIdentityRef.current;
-      if (meshtasticDriverConnectedRef.current && identityToDisconnect) {
+      if (identityToDisconnect) {
         await connectionDriver.disconnect(identityToDisconnect).catch((e: unknown) => {
           console.debug(
             '[useMeshtasticRuntime] handleRfConnectFailure driver disconnect ' +

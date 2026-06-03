@@ -1,7 +1,11 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
+import { flushSync } from 'react-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
+
+import type { SerialPort } from '@/shared/electron-api.types';
 
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import type { DeviceState } from '../lib/types';
@@ -509,6 +513,186 @@ describe('ConnectionPanel MQTT cancel while connecting', () => {
     const cancelBtn = within(mqttCard as HTMLElement).getByRole('button', { name: /^Cancel$/i });
     await user.click(cancelBtn);
     expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore');
+  });
+});
+
+describe('ConnectionPanel exit actions', () => {
+  it('shows Quit on Meshtastic disconnected view when MQTT is off', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
+  });
+
+  it('shows Quit on MeshCore disconnected view when MQTT is off', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
+  });
+
+  it('shows Disconnect & Quit while RF connect is in progress', async () => {
+    const user = userEvent.setup();
+    let resolveConnect!: () => void;
+    const onConnect = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveConnect = resolve;
+        }),
+    );
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /tcp\/ip/i }));
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
+    resolveConnect();
+    await waitFor(() => {
+      expect(onConnect).toHaveBeenCalled();
+    });
+  });
+
+  it('shows Quit after connect failure returns to disconnected view', async () => {
+    const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onConnect = vi.fn().mockRejectedValue(new Error('Connection refused'));
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /wifi\/http/i }));
+    const hostInput = within(radioCard as HTMLElement).getByLabelText(/device address/i);
+    fireEvent.change(hostInput, { target: { value: '192.168.1.10' } });
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText('Radio Connection')).toBeInTheDocument();
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('shows Disconnect & Quit on disconnected view when MQTT is connected', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connected"
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
+  });
+
+  it('shows Disconnect & Quit while serial port picker is open', async () => {
+    const user = userEvent.setup();
+    let capturedCb: ((ports: SerialPort[]) => void) | undefined;
+    vi.mocked(window.electronAPI.onSerialPortsDiscovered).mockImplementation((cb) => {
+      capturedCb = cb;
+      return () => {};
+    });
+    const onConnect = vi.fn(() => new Promise<void>(() => {}));
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /USB Serial/i }));
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    expect(onConnect).toHaveBeenCalledWith('serial', 'meshtastic.local');
+    expect(capturedCb).toBeDefined();
+
+    act(() => {
+      flushSync(() => {
+        capturedCb!([
+          { portId: 'port-1', displayName: 'Meshtastic USB', portName: '/dev/ttyUSB0' },
+        ]);
+      });
+    });
+
+    expect(screen.getByText('Select Serial Port')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
+  });
+
+  it('shows Quit after HTTP reconnect failure from last-connection card', async () => {
+    const user = userEvent.setup();
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'http', httpAddress: '192.168.1.10' }),
+    );
+    const onConnect = vi.fn().mockRejectedValue(new Error('Connection refused'));
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
+      });
+      expect(onConnect).toHaveBeenCalledWith('http', '192.168.1.10');
+      expect(screen.getByText('Radio Connection')).toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      consoleWarnSpy.mockRestore();
+    }
   });
 });
 
