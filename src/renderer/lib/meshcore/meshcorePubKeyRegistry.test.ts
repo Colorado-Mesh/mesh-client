@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearMeshcorePubKeyRegistry,
@@ -6,10 +6,12 @@ import {
   meshcorePubKeyRegistrySize,
   registerMeshcorePubKey,
   resolveMeshcoreNodeIdFromPubKeyPrefix,
+  setMeshcorePubKeyRegistryRefSync,
 } from './meshcorePubKeyRegistry';
 
 describe('meshcorePubKeyRegistry', () => {
   beforeEach(() => {
+    setMeshcorePubKeyRegistryRefSync(null);
     clearMeshcorePubKeyRegistry();
   });
 
@@ -23,5 +25,15 @@ describe('meshcorePubKeyRegistry', () => {
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
     expect(resolveMeshcoreNodeIdFromPubKeyPrefix(prefix)).toBe(0x1234);
+  });
+
+  it('notifies ref sync after register and clear', () => {
+    const sync = vi.fn();
+    setMeshcorePubKeyRegistryRefSync(sync);
+    const pk = new Uint8Array(32).fill(7);
+    registerMeshcorePubKey(0xabcd, pk);
+    expect(sync).toHaveBeenCalledTimes(1);
+    clearMeshcorePubKeyRegistry();
+    expect(sync).toHaveBeenCalledTimes(2);
   });
 });

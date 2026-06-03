@@ -123,6 +123,8 @@ export function attachMeshcoreLegacyConnEvents(
   conn: MeshCoreConnection,
   ctx: MeshcoreLegacyConnEventsCtx,
 ): () => void {
+  // Driver + MeshCoreProtocol own 128/7/8/129/138/rx when identity ingest is active; handlers
+  // below for those codes are legacy fallbacks (e.g. pre-driver connect). Event 130 stays here.
   const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 129, 138, 'rx']);
   const {
     meshcoreIdentityIdRef,

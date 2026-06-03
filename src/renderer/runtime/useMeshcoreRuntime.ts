@@ -95,6 +95,7 @@ import {
   copyMeshcorePubKeyRegistryToRefs,
   registerMeshcorePubKey,
   replaceMeshcorePubKeyRegistry,
+  setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import {
   findMeshcoreDmReplyParent,
@@ -5318,6 +5319,13 @@ export function useMeshcoreRuntime() {
     setMeshcoreDmAckPendingImpl(scheduleMeshcoreDmAckPendingImpl);
     return () => setMeshcoreDmAckPendingImpl(null);
   }, [scheduleMeshcoreDmAckPendingImpl]);
+
+  useEffect(() => {
+    setMeshcorePubKeyRegistryRefSync(() => {
+      copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
+    });
+    return () => setMeshcorePubKeyRegistryRefSync(null);
+  }, []);
 
   useEffect(() => {
     registerMeshcoreSession({
