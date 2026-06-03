@@ -12,7 +12,6 @@ export const REMOTE_ADMIN_MODULE_CONFIG_FETCHES: {
   { type: Admin.AdminMessage_ModuleConfigType.RANGETEST_CONFIG, key: 'rangeTest' },
   { type: Admin.AdminMessage_ModuleConfigType.TELEMETRY_CONFIG, key: 'telemetry' },
   { type: Admin.AdminMessage_ModuleConfigType.CANNEDMSG_CONFIG, key: 'cannedMessage' },
-  { type: Admin.AdminMessage_ModuleConfigType.AUDIO_CONFIG, key: 'audio' },
   { type: Admin.AdminMessage_ModuleConfigType.REMOTEHARDWARE_CONFIG, key: 'remoteHardware' },
   { type: Admin.AdminMessage_ModuleConfigType.NEIGHBORINFO_CONFIG, key: 'neighborInfo' },
   { type: Admin.AdminMessage_ModuleConfigType.AMBIENTLIGHTING_CONFIG, key: 'ambientLighting' },

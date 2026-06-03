@@ -1820,6 +1820,11 @@ export function useMeshtasticRuntime() {
     if (delayResult === 'aborted') return;
     if (delayResult === 'suspended') {
       isReconnectingRef.current = false;
+      setState((s) => ({
+        ...s,
+        status: 'disconnected',
+        connectionLoss: true,
+      }));
       return;
     }
 
@@ -2019,6 +2024,8 @@ export function useMeshtasticRuntime() {
     async (driverIdentityId?: string): Promise<void> => {
       clearConfigureTimeout();
       console.error('[useMeshtasticRuntime] Connection failed');
+      isReconnectingRef.current = false;
+      reconnectGenerationRef.current += 1;
       cleanupSubscriptions();
       stopWatchdog();
       deviceRef.current = null;

@@ -9,7 +9,8 @@ const isLinux =
   typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
 
 /**
- * Noble macOS/Windows: scan until the known peripheral appears, then invoke connect.
+ * Noble macOS/Windows: connect immediately (main process uses knownPeripherals cache),
+ * then scan until the peripheral appears if connect fails, then retry connect.
  * Linux Web Bluetooth and serial/HTTP/TCP reconnect use {@link rfReconnectHelper} instead.
  */
 export async function reconnectBleWithScan(
@@ -21,6 +22,16 @@ export async function reconnectBleWithScan(
   if (isLinux) {
     await connect();
     return;
+  }
+
+  // Fast path: main connect() resolves from Noble cache without a new discovery event.
+  try {
+    await connect();
+    return;
+  } catch (err) {
+    console.debug(
+      '[bleReconnectHelper] immediate connect failed — scanning ' + errLikeToLogString(err),
+    );
   }
 
   const sessionId: NobleBleSessionId = protocol;

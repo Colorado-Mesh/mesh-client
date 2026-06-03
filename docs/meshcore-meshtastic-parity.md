@@ -52,7 +52,15 @@ Room servers (`hw_model === 'Room'`, contact type 3) are BBS nodes on the mesh. 
 
 **Unread:** Room BBS traffic increments the **Rooms** sidebar badge ([`meshcoreRoomsUnread.ts`](../src/renderer/lib/meshcoreRoomsUnread.ts)) and system-tray unread when backgrounded; it does not increment the **Chat** tab badge.
 
-**Dedup:** [`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts) merges duplicate RF/MQTT and tapback echoes for chat and rooms.
+**Dedup:** [`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts) merges duplicate RF/MQTT and tapback echoes for chat and rooms (cross-transport and channel RF **5 min**; room/tapback **60 s**).
+
+## MeshCore: identity-scoped UI stores
+
+Live Chat and Nodes read **identity-scoped** `nodeStore` / `messageStore` (keyed by `identityId`). Hook-local refs in `useMeshcoreRuntime` (`nodesRef`, pubkeys) remain for send/RPC until contact rebuild syncs. Hydration: [`hydrateIdentityStoresFromDb.ts`](../src/renderer/lib/hydrateIdentityStoresFromDb.ts). **Chat-driven `last_heard`** (`meshcoreIngest`, `ensureMeshcoreChatSenderInNodeStore`) updates node freshness on text traffic, not only adverts.
+
+## MeshCore: Rooms scroll UX
+
+**Rooms** tab scroll layout matches **Chat**: outer scroll container, unread divider, jump-to-unread button, and persisted last-read via `meshcoreRoomsUnread` / localStorage. Uses [`chatScrollUtils.ts`](../src/renderer/lib/chatScrollUtils.ts) (`getDistFromChatBottom`).
 
 Operational troubleshooting: [troubleshooting.md](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10).
 

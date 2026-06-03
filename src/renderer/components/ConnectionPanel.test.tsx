@@ -545,6 +545,26 @@ describe('ConnectionPanel exit actions', () => {
     expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
   });
 
+  it('shows Disconnect & Quit while status is reconnecting', () => {
+    render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'reconnecting',
+          connectionType: 'ble',
+          connectionLoss: true,
+          reconnectAttempt: 2,
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
+  });
+
   it('shows Disconnect & Quit while RF connect is in progress', async () => {
     const user = userEvent.setup();
     let resolveConnect!: () => void;

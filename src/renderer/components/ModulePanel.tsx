@@ -253,6 +253,7 @@ function ModuleSection({
   disabled,
   sliceReady = true,
   showSliceWaiting = false,
+  globalApplyLocked = false,
 }: {
   title: string;
   children: React.ReactNode;
@@ -263,9 +264,11 @@ function ModuleSection({
   sliceReady?: boolean;
   /** Show "waiting for settings" hint (pass when connected and slice not ready). */
   showSliceWaiting?: boolean;
+  /** When true, Apply is disabled while any module section is applying. */
+  globalApplyLocked?: boolean;
 }) {
   const { t } = useTranslation();
-  const applyDisabled = disabled || applying || !sliceReady;
+  const applyDisabled = disabled || applying || !sliceReady || globalApplyLocked;
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
@@ -424,6 +427,7 @@ export default function ModulePanel({
   const moduleSectionProps = (key: string) => ({
     sliceReady: moduleSliceReady(key),
     showSliceWaiting: isConnected,
+    globalApplyLocked: applyingSection !== null,
   });
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
   const [rhPendingConfirm, setRhPendingConfirm] = useState<'enable' | 'undefinedPins' | null>(null);
@@ -2086,6 +2090,10 @@ export default function ModulePanel({
         <ModuleSection
           title={t('modulePanel.sectionRtttlRingtone')}
           onApply={async () => {
+            if (ringtoneText.length > 0 && !isValidRtttl(ringtoneText)) {
+              addToast(t('modulePanel.fields.invalidRtttl'), 'error');
+              return;
+            }
             setApplyingSection('rtttlRingtone');
             try {
               await onSetRingtone(ringtoneText);
@@ -2105,6 +2113,7 @@ export default function ModulePanel({
           }}
           applying={applyingSection === 'rtttlRingtone'}
           disabled={disabled || remoteTarget}
+          globalApplyLocked={applyingSection !== null}
         >
           <div className="space-y-1">
             <label htmlFor="module-rtttl-preset" className="text-muted text-sm">

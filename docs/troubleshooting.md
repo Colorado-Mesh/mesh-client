@@ -58,6 +58,36 @@ See [development-environment.md](development-environment.md#windows) for Python 
   ```
 - MeshCore devices must be in Bluetooth Companion mode. If you still see bonds without a PIN, remove the device in `bluetoothctl` or use **Remove & Re-pair Device**, then connect again.
 
+### macOS sleep / wake and auto-reconnect
+
+After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before RF auto-reconnect runs.
+
+- **Noble BLE (macOS/Windows):** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
+- **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
+- **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
+- **Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker).
+
+### MeshCore contact age prune and favorites
+
+Startup maintenance can delete stale MeshCore contacts by age. Important details:
+
+- **`last_advert` is Unix seconds**, not milliseconds. Invalid retention day counts are ignored (they previously caused mass deletes).
+- **Favorited contacts are exempt** from age-based deletion.
+- Contacts with **`NULL last_advert`** are never age-pruned (only count-based limits apply).
+- If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (`patchNodeFavorited` on the active connection identity).
+
+### MeshCore duplicate chat messages
+
+The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cross-transport and channel RF replay). Room posts and tapbacks use a **60 second** window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.
+
+### Meshtastic Modules tab: “waiting for settings”
+
+If a module section stays on **Waiting for … settings from the device** with Apply disabled:
+
+- The connected firmware may not expose that module key.
+- **Remote configure** may still be loading module slices; retry the configure load or check the local radio link.
+- **Apply stays disabled** until the device slice hydrates — this prevents overwriting device config with form defaults.
+
 ### Serial port not detected
 
 See [development-environment.md](development-environment.md) for OS-specific serial setup and driver guidance.

@@ -18,6 +18,12 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('delayUnlessSuspended');
   });
 
+  it('normalizes reconnect UI to disconnected when backoff aborts due to suspend', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /if \(delayResult === 'suspended'\) \{[\s\S]*?status: 'disconnected'[\s\S]*?connectionLoss: true/,
+    );
+  });
+
   it('persists connection params for ble, serial, and tcp reconnect', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreConnectionParamsRef');
     expect(RUNTIME_SOURCE).toMatch(/rfType: 'serial'/);

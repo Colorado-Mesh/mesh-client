@@ -12,6 +12,12 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toMatch(/delayResult === 'suspended'/);
   });
 
+  it('normalizes reconnect UI to disconnected when backoff aborts due to suspend', () => {
+    expect(SOURCE).toMatch(
+      /if \(delayResult === 'suspended'\) \{[\s\S]*?status: 'disconnected'[\s\S]*?connectionLoss: true/,
+    );
+  });
+
   it('restarts reconnect when disconnect fires during an in-flight reconnect', () => {
     expect(SOURCE).toMatch(/Connection lost during reconnect — restarting reconnect cycle/);
     expect(SOURCE).toMatch(/reconnectGenerationRef\.current \+= 1/);
@@ -33,6 +39,13 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
     expect(SOURCE).toMatch(
       /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}deviceRef\.current = null/,
+    );
+  });
+
+  it('clears reconnect refs in handleRfConnectFailure', () => {
+    expect(SOURCE).toMatch(/handleRfConnectFailure[\s\S]{0,400}isReconnectingRef\.current = false/);
+    expect(SOURCE).toMatch(
+      /handleRfConnectFailure[\s\S]{0,400}reconnectGenerationRef\.current \+= 1/,
     );
   });
 
