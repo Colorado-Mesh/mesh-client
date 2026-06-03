@@ -89,6 +89,13 @@ import type {
   MeshcoreTraceResultEntry,
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
+import { refreshMeshcoreOutPathAfterPathUpdated } from '../lib/meshcore/meshcorePathUpdatedRuntime';
+import {
+  clearMeshcorePubKeyRegistry,
+  copyMeshcorePubKeyRegistryToRefs,
+  registerMeshcorePubKey,
+  replaceMeshcorePubKeyRegistry,
+} from '../lib/meshcore/meshcorePubKeyRegistry';
 import {
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
@@ -196,6 +203,7 @@ import {
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
+  meshcoreMinimalNodeFromAdvertEvent,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -246,7 +254,7 @@ import type {
 import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { updateMessageStatus, useMessageStore } from '../stores/messageStore';
-import { useNodeStore } from '../stores/nodeStore';
+import { patchMeshcoreNodeLastHeardAt, useNodeStore } from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 
@@ -622,6 +630,14 @@ export function useMeshcoreRuntime() {
     nodesRef.current = nodes;
     setMeshcoreDiagnosticsNodes(nodes, myNodeNumRef.current);
   }, [nodes, state.myNodeNum]);
+
+  // Push runtime node map into identity-scoped Zustand after commit (mirrors Meshtastic #375 path).
+  useEffect(() => {
+    const storeId =
+      meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null;
+    if (!storeId) return;
+    syncMeshcoreNodesMapToIdentityStore(storeId, nodes);
+  }, [nodes, meshcoreIdentityId]);
 
   useEffect(() => {
     meshcoreTraceResultsRef.current = meshcoreTraceResults;
@@ -1106,6 +1122,15 @@ export function useMeshcoreRuntime() {
         const dbRow = contactToDbRow(contact, undefined, onRadio, now, hopsToSave);
         pendingDbRows.push(dbRow);
       }
+      replaceMeshcorePubKeyRegistry(
+        contacts
+          .map((contact): [number, Uint8Array] => [
+            pubkeyToNodeId(contact.publicKey),
+            contact.publicKey,
+          ])
+          .filter(([id]) => id !== 0),
+      );
+      copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
       if (pendingDbRows.length > 0) {
         void window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows).catch((e: unknown) => {
           console.warn(
@@ -1249,6 +1274,53 @@ export function useMeshcoreRuntime() {
     [applyMeshcoreNodesToUi],
   );
 
+  const handleMeshcorePathUpdatedFromIngest = useCallback(
+    (nodeId: number, publicKey: Uint8Array, isNewContact: boolean) => {
+      registerMeshcorePubKey(nodeId, publicKey);
+      copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
+      if (!meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId)) {
+        meshcoreSessionPathUpdatedNodeIdsRef.current.add(nodeId);
+        setMeshcorePingRouteReadyEpoch((e) => e + 1);
+      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (isNewContact) {
+        setNodes((prev) => {
+          const built = meshcoreMinimalNodeFromAdvertEvent(publicKey, { nowSec });
+          if (!built) return prev;
+          const nick = nicknameMapRef.current.get(nodeId);
+          const nodeWithNick = nick
+            ? { ...built.node, long_name: nick, short_name: '' }
+            : built.node;
+          const next = new Map(prev);
+          next.set(nodeId, nodeWithNick);
+          return next;
+        });
+      } else {
+        setNodes((prev) => {
+          const existing = prev.get(nodeId);
+          if (!existing) return prev;
+          const next = new Map(prev);
+          next.set(nodeId, {
+            ...existing,
+            last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+          });
+          return next;
+        });
+      }
+      meshcorePathUpdatePendingRef.current.add(nodeId);
+      const conn = connRef.current;
+      if (conn) {
+        void refreshMeshcoreOutPathAfterPathUpdated(
+          conn,
+          nodeId,
+          outPathMapRef.current,
+          meshcorePathUpdatePendingRef.current,
+        );
+      }
+    },
+    [],
+  );
+
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
   const meshcoreConnEventListenersTeardownRef = useRef<(() => void) | null>(null);
   const teardownMeshcoreConnEventListeners = useCallback(
@@ -1280,6 +1352,7 @@ export function useMeshcoreRuntime() {
       meshcoreIdentityIdRef.current = null;
       meshcorePendingDriverIdentityRef.current = null;
       setMeshcoreIdentityId(null);
+      clearMeshcorePubKeyRegistry();
       meshcoreConnEventListenersTeardownRef.current?.();
       meshcoreConnEventListenersTeardownRef.current = null;
     },
@@ -1589,7 +1662,9 @@ export function useMeshcoreRuntime() {
         meshcoreIngestDetachRef.current();
       }
       if (identityId) {
-        meshcoreIngestDetachRef.current = attachMeshcoreIngest(identityId);
+        meshcoreIngestDetachRef.current = attachMeshcoreIngest(identityId, {
+          onPathUpdated: handleMeshcorePathUpdatedFromIngest,
+        });
         setConnection(identityId, {
           status: 'configured',
           connectionType: transportType === 'tcp' ? 'http' : transportType,
@@ -1759,6 +1834,7 @@ export function useMeshcoreRuntime() {
       applyMeshcoreNodesToUi,
       buildNodesFromContacts,
       deferMeshcoreDbContactMerge,
+      handleMeshcorePathUpdatedFromIngest,
       meshcorePreviousNodesBaselineForBuild,
       refreshMeshcoreAutoaddFromDevice,
       resolveMeshcoreStoreIdentityId,
@@ -2863,28 +2939,35 @@ export function useMeshcoreRuntime() {
   );
 
   /** Successful Status/Ping prove reachability; sync `last_heard` when firmware `lastAdvert` is stale. */
-  const bumpMeshcoreNodeLastHeardFromRpc = useCallback((nodeId: number) => {
-    const existing = nodesRef.current.get(nodeId);
-    if (!existing) return;
-    const nowSec = Math.floor(Date.now() / 1000);
-    const lat = existing.latitude ?? null;
-    const lon = existing.longitude ?? null;
-    setNodes((prev) => {
-      const cur = prev.get(nodeId);
-      if (!cur) return prev;
-      const next = new Map(prev);
-      next.set(nodeId, { ...cur, last_heard: nowSec });
-      return next;
-    });
-    void window.electronAPI.db
-      .updateMeshcoreContactAdvert(nodeId, nowSec, lat, lon)
-      .catch((e: unknown) => {
-        console.warn(
-          '[useMeshcoreRuntime] updateMeshcoreContactAdvert (RPC bump) error ' +
-            errLikeToLogString(e),
-        );
+  const bumpMeshcoreNodeLastHeardFromRpc = useCallback(
+    (nodeId: number) => {
+      const existing = nodesRef.current.get(nodeId);
+      if (!existing) return;
+      const nowSec = Math.floor(Date.now() / 1000);
+      const lat = existing.latitude ?? null;
+      const lon = existing.longitude ?? null;
+      const storeId = resolveMeshcoreStoreIdentityId();
+      if (storeId) {
+        patchMeshcoreNodeLastHeardAt(storeId, nodeId, nowSec);
+      }
+      setNodes((prev) => {
+        const cur = prev.get(nodeId);
+        if (!cur) return prev;
+        const next = new Map(prev);
+        next.set(nodeId, { ...cur, last_heard: nowSec });
+        return next;
       });
-  }, []);
+      void window.electronAPI.db
+        .updateMeshcoreContactAdvert(nodeId, nowSec, lat, lon)
+        .catch((e: unknown) => {
+          console.warn(
+            '[useMeshcoreRuntime] updateMeshcoreContactAdvert (RPC bump) error ' +
+              errLikeToLogString(e),
+          );
+        });
+    },
+    [resolveMeshcoreStoreIdentityId],
+  );
 
   /**
    * MeshCore: always allow Ping/trace in the UI. Pre-gating on PathUpdated/path history caused false

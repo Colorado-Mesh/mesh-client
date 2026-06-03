@@ -123,7 +123,7 @@ export function attachMeshcoreLegacyConnEvents(
   conn: MeshCoreConnection,
   ctx: MeshcoreLegacyConnEventsCtx,
 ): () => void {
-  const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 138, 'rx']);
+  const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 129, 138, 'rx']);
   const {
     meshcoreIdentityIdRef,
     connRef,

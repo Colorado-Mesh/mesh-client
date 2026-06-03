@@ -33,6 +33,12 @@ export interface NodeInfoEvent {
   publicKey?: Uint8Array;
 }
 
+/** MeshCore path-updated push (event 129). */
+export interface MeshcorePathUpdatedEvent {
+  nodeId: number;
+  publicKey: Uint8Array;
+}
+
 // --- Contact / self-info events (populated by protocol implementations) ---
 
 export interface DeviceSelfInfoEvent {
@@ -275,7 +281,8 @@ export type DomainEvent =
   | { type: 'device_self_info'; payload: DeviceSelfInfoEvent }
   | { type: 'device_contacts'; payload: { contacts: ContactRecord[] } }
   | { type: 'device_autoadd'; payload: AutoaddConfigEvent }
-  | { type: 'meshcore_channel'; payload: MeshcoreChannelEvent };
+  | { type: 'meshcore_channel'; payload: MeshcoreChannelEvent }
+  | { type: 'meshcore_path_updated'; payload: MeshcorePathUpdatedEvent };
 
 // --- Raw packet log ---
 

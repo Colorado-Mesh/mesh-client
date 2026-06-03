@@ -39,6 +39,7 @@ const EVENT_ADVERT = 128;
 const EVENT_DIRECT_MESSAGE = 7;
 const EVENT_CHANNEL_MESSAGE = 8;
 const EVENT_NEW_CONTACT = 138;
+const EVENT_PATH_UPDATED = 129;
 const EVENT_RX = 'rx';
 const EVENT_DISCONNECTED = 'disconnected';
 
@@ -188,6 +189,9 @@ export class MeshCoreProtocol implements Protocol {
     const onContact = (data: unknown) => {
       this.decodeContact(data, pubKeyByNodeId, nodeIdByPrefix, roomNodeIds).forEach(emit);
     };
+    const onPathUpdated = (data: unknown) => {
+      this.decodePathUpdated(data).forEach(emit);
+    };
     const onRx = (data: unknown) => {
       this.decodeRx(data).forEach(emit);
     };
@@ -199,6 +203,7 @@ export class MeshCoreProtocol implements Protocol {
     bus.on(EVENT_DIRECT_MESSAGE, onDm);
     bus.on(EVENT_CHANNEL_MESSAGE, onChannel);
     bus.on(EVENT_NEW_CONTACT, onContact);
+    bus.on(EVENT_PATH_UPDATED, onPathUpdated);
     bus.on(EVENT_RX, onRx);
     bus.on(EVENT_DISCONNECTED, onDisconnected);
 
@@ -207,6 +212,7 @@ export class MeshCoreProtocol implements Protocol {
       bus.off(EVENT_DIRECT_MESSAGE, onDm);
       bus.off(EVENT_CHANNEL_MESSAGE, onChannel);
       bus.off(EVENT_NEW_CONTACT, onContact);
+      bus.off(EVENT_PATH_UPDATED, onPathUpdated);
       bus.off(EVENT_RX, onRx);
       bus.off(EVENT_DISCONNECTED, onDisconnected);
     };
@@ -446,6 +452,14 @@ export class MeshCoreProtocol implements Protocol {
   }
 
   // --- Decoders (pure; closure state passed in) ---
+
+  private decodePathUpdated(raw: unknown): DomainEvent[] {
+    const d = raw as { publicKey?: Uint8Array };
+    if (!(d.publicKey instanceof Uint8Array) || d.publicKey.length !== 32) return [];
+    const nodeId = pubkeyToNodeId(d.publicKey);
+    if (nodeId === 0) return [];
+    return [{ type: 'meshcore_path_updated', payload: { nodeId, publicKey: d.publicKey } }];
+  }
 
   private decodeAdvert(
     raw: unknown,

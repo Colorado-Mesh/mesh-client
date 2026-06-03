@@ -10,11 +10,17 @@ import {
   messageToDbRow,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { getConnection } from '../../stores/connectionStore';
+import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { useMessageStore } from '../../stores/messageStore';
-import { useNodeStore } from '../../stores/nodeStore';
+import { patchMeshcoreNodeLastHeardAt, upsertNode, useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { ensureMeshcoreChatSenderInNodeStore } from '../meshcore/meshcoreChatSenderNode';
+import {
+  persistMeshcoreNodeInfoAfterAdvert,
+  persistMeshcorePathUpdatedNewContact,
+} from '../meshcore/meshcoreLiveContactPersist';
+import { registerMeshcorePubKey } from '../meshcore/meshcorePubKeyRegistry';
 import {
   buildMeshcoreRoomIncomingMessage,
   parseMeshcoreChannelIncomingFromThread,
@@ -27,14 +33,56 @@ import {
   meshcoreRoomWireLooksLikeRoom,
 } from '../meshcoreRoomMessageRouting';
 import { meshcoreSortedStorePrior, upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
-import { meshcoreChatStubNodeIdFromDisplayName } from '../meshcoreUtils';
+import {
+  meshcoreChatStubNodeIdFromDisplayName,
+  meshcoreMinimalNodeFromAdvertEvent,
+} from '../meshcoreUtils';
 import type { DomainEvent } from '../protocols/Protocol';
 import type { ChatMessage, IdentityId } from '../types';
 
-/** MeshCore contacts belong in meshcore_contacts SQLite, not the Meshtastic nodes table. */
-function persistContactNodes(identityId: IdentityId): void {
-  // Legacy conn events and refreshContacts persist via saveMeshcoreContact.
-  void identityId;
+export interface MeshcoreIngestOptions {
+  /** Runtime hook for path-updated side effects (outPath refresh, ping-route epoch). */
+  onPathUpdated?: (nodeId: number, publicKey: Uint8Array, isNewContact: boolean) => void;
+}
+
+function handleNodeInfo(
+  identityId: IdentityId,
+  event: Extract<DomainEvent, { type: 'node_info' }>,
+): void {
+  persistMeshcoreNodeInfoAfterAdvert(identityId, event.payload);
+}
+
+function handlePathUpdated(
+  identityId: IdentityId,
+  event: Extract<DomainEvent, { type: 'meshcore_path_updated' }>,
+  options: MeshcoreIngestOptions,
+): void {
+  const { nodeId, publicKey } = event.payload;
+  if (nodeId === 0 || publicKey.length !== 32) return;
+
+  registerMeshcorePubKey(nodeId, publicKey);
+  useDiagnosticsStore.getState().recordPathUpdated(nodeId);
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+  const isNew = existing == null;
+  if (isNew) {
+    persistMeshcorePathUpdatedNewContact(nodeId, publicKey, nowSec);
+    const built = meshcoreMinimalNodeFromAdvertEvent(publicKey, { nowSec });
+    if (built) {
+      upsertNode(identityId, {
+        nodeId,
+        longName: built.node.long_name,
+        hwModel: built.node.hw_model,
+        lastHeardAt: built.lastHeardSec,
+        publicKey,
+      });
+    }
+  } else {
+    patchMeshcoreNodeLastHeardAt(identityId, nodeId, nowSec);
+  }
+
+  options.onPathUpdated?.(nodeId, publicKey, isNew);
 }
 
 function listChatMessages(identityId: IdentityId): ChatMessage[] {
@@ -251,7 +299,10 @@ function handleTextMessage(
   }
 }
 
-function createListener(identityId: IdentityId): PacketRouterListener {
+function createListener(
+  identityId: IdentityId,
+  options: MeshcoreIngestOptions,
+): PacketRouterListener {
   return (event, routedIdentityId) => {
     if (routedIdentityId !== identityId) return;
     switch (event.type) {
@@ -259,10 +310,30 @@ function createListener(identityId: IdentityId): PacketRouterListener {
         handleTextMessage(identityId, event);
         break;
       case 'node_info':
-        persistContactNodes(identityId);
+        handleNodeInfo(identityId, event);
         break;
+      case 'meshcore_path_updated':
+        handlePathUpdated(identityId, event, options);
+        break;
+      case 'position': {
+        const record = useNodeStore.getState().nodes[identityId]?.[event.payload.nodeId];
+        if (record?.publicKey instanceof Uint8Array) {
+          persistMeshcoreNodeInfoAfterAdvert(
+            identityId,
+            {
+              nodeId: event.payload.nodeId,
+              publicKey: record.publicKey,
+              lastHeardAt: Math.floor(event.payload.timestamp / 1000),
+            },
+            {
+              latitudeDeg: event.payload.latitude,
+              longitudeDeg: event.payload.longitude,
+            },
+          );
+        }
+        break;
+      }
       case 'device_contacts':
-        persistContactNodes(identityId);
         break;
       default:
         break;
@@ -270,8 +341,11 @@ function createListener(identityId: IdentityId): PacketRouterListener {
   };
 }
 
-export function attachMeshcoreIngest(identityId: IdentityId): () => void {
-  return packetRouter.addListener(createListener(identityId));
+export function attachMeshcoreIngest(
+  identityId: IdentityId,
+  options: MeshcoreIngestOptions = {},
+): () => void {
+  return packetRouter.addListener(createListener(identityId, options));
 }
 
 /** @internal Exported for tests. */

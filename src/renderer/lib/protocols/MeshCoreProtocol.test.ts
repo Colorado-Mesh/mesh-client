@@ -7,6 +7,7 @@ import type { DomainEvent } from './Protocol';
 const EVENT_ADVERT = 128;
 const EVENT_CHANNEL_MESSAGE = 8;
 const EVENT_DIRECT_MESSAGE = 7;
+const EVENT_PATH_UPDATED = 129;
 
 function mockMeshCoreConnection() {
   const handlers = new Map<string | number, Set<(...args: unknown[]) => void>>();
@@ -47,6 +48,21 @@ describe('MeshCoreProtocol.subscribe', () => {
     });
     expect(events.some((e) => e.type === 'node_info')).toBe(true);
     expect(events.some((e) => e.type === 'position')).toBe(true);
+    teardown();
+  });
+
+  it('emits meshcore_path_updated on path-updated (129)', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 3) % 256);
+    conn.emit(EVENT_PATH_UPDATED, { publicKey });
+    const pathEv = events.find((e) => e.type === 'meshcore_path_updated');
+    expect(pathEv).toMatchObject({
+      type: 'meshcore_path_updated',
+      payload: expect.objectContaining({ publicKey }),
+    });
+    expect(pathEv?.type === 'meshcore_path_updated' && pathEv.payload.nodeId).not.toBe(0);
     teardown();
   });
 

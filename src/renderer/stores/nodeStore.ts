@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import {
+  computeNodeInfoLastHeardMs,
+  mergeMeshtasticLivePacketLastHeard,
+} from '../lib/meshtasticLastHeard';
 import { mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
 import type {
   CliEntry,
@@ -15,6 +19,7 @@ import type {
   WaypointEvent,
 } from '../lib/protocols/Protocol';
 import type { IdentityId, MeshCoreLocalStats, MeshNeighbor } from '../lib/types';
+import { getConnection } from './connectionStore';
 import { getIdentity } from './identityStore';
 import { omitRecordKey } from './storeUtils';
 
@@ -142,8 +147,9 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
       publicKey,
     } = event;
     let lastHeardAt = eventLastHeardAt;
+    const protocolType = getIdentity(identityId)?.protocol.type;
     if (
-      getIdentity(identityId)?.protocol.type === 'meshcore' &&
+      protocolType === 'meshcore' &&
       eventLastHeardAt != null &&
       Number.isFinite(eventLastHeardAt)
     ) {
@@ -153,6 +159,14 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
         Math.floor(Date.now() / 1000),
       );
       if (merged > 0) lastHeardAt = merged;
+    } else if (protocolType === 'meshtastic') {
+      const selfNum = getConnection(identityId)?.myNodeNum ?? 0;
+      const isSelf = selfNum > 0 && nodeId === selfNum;
+      lastHeardAt = computeNodeInfoLastHeardMs(
+        eventLastHeardAt,
+        existing?.lastHeardAt ?? 0,
+        isSelf,
+      );
     }
     return {
       nodes: {
@@ -210,22 +224,104 @@ export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: No
   });
 }
 
-export function updatePosition(identityId: IdentityId, event: PositionEvent): void {
+function meshtasticLastHeardPatch(
+  identityId: IdentityId,
+  nodeId: number,
+  packetTimestampMs: number,
+  existingLastHeardAt: number | undefined,
+): number | undefined {
+  if (getIdentity(identityId)?.protocol.type !== 'meshtastic') return undefined;
+  const merged = mergeMeshtasticLivePacketLastHeard(
+    existingLastHeardAt ?? 0,
+    packetTimestampMs,
+    false,
+  );
+  return merged > 0 ? merged : undefined;
+}
+
+/** Bump MeshCore `lastHeardAt` in the identity store (path-updated / RPC reachability). */
+export function patchMeshcoreNodeLastHeardAt(
+  identityId: IdentityId,
+  nodeId: number,
+  lastHeardSec: number,
+  extra?: Partial<NodeRecord>,
+): void {
+  if (nodeId <= 0 || !Number.isFinite(lastHeardSec) || lastHeardSec <= 0) return;
   useNodeStore.setState((s) => {
     const byId = s.nodes[identityId] ?? {};
-    const { nodeId, latitude, longitude, altitude, timestamp, groundSpeed, groundTrack } = event;
+    const existing = byId[nodeId];
+    if (!existing) return s;
+    const merged = mergeMeshcoreLastHeardFromAdvert(
+      lastHeardSec,
+      existing.lastHeardAt,
+      Math.floor(Date.now() / 1000),
+    );
     return {
       nodes: {
         ...s.nodes,
         [identityId]: {
           ...byId,
-          [nodeId]: mergeNode(byId[nodeId], nodeId, {
+          [nodeId]: mergeNode(existing, nodeId, {
+            lastHeardAt: merged > 0 ? merged : lastHeardSec,
+            ...extra,
+          }),
+        },
+      },
+    };
+  });
+}
+
+export function bumpMeshtasticNodesLastHeardAt(
+  identityId: IdentityId,
+  nodeIds: number[],
+  packetTimestampMs: number,
+): void {
+  if (getIdentity(identityId)?.protocol.type !== 'meshtastic' || nodeIds.length === 0) return;
+  useNodeStore.setState((s) => {
+    const byId = { ...(s.nodes[identityId] ?? {}) };
+    let changed = false;
+    for (const nodeId of nodeIds) {
+      if (nodeId <= 0) continue;
+      const existing = byId[nodeId];
+      const lastHeardAt = meshtasticLastHeardPatch(
+        identityId,
+        nodeId,
+        packetTimestampMs,
+        existing?.lastHeardAt,
+      );
+      if (lastHeardAt == null) continue;
+      byId[nodeId] = mergeNode(existing, nodeId, { lastHeardAt });
+      changed = true;
+    }
+    if (!changed) return s;
+    return { nodes: { ...s.nodes, [identityId]: byId } };
+  });
+}
+
+export function updatePosition(identityId: IdentityId, event: PositionEvent): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    const { nodeId, latitude, longitude, altitude, timestamp, groundSpeed, groundTrack } = event;
+    const existing = byId[nodeId];
+    const lastHeardAt = meshtasticLastHeardPatch(
+      identityId,
+      nodeId,
+      timestamp,
+      existing?.lastHeardAt,
+    );
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: {
+          ...byId,
+          [nodeId]: mergeNode(existing, nodeId, {
             latitude,
             longitude,
             altitude,
             positionTimestamp: timestamp,
             groundSpeed,
             groundTrack,
+            ...(lastHeardAt != null ? { lastHeardAt } : {}),
           }),
         },
       },
@@ -249,12 +345,19 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
       barometricPressure,
       iaq,
     } = event;
+    const existing = byId[nodeId];
+    const lastHeardAt = meshtasticLastHeardPatch(
+      identityId,
+      nodeId,
+      timestamp,
+      existing?.lastHeardAt,
+    );
     return {
       nodes: {
         ...s.nodes,
         [identityId]: {
           ...byId,
-          [nodeId]: mergeNode(byId[nodeId], nodeId, {
+          [nodeId]: mergeNode(existing, nodeId, {
             batteryLevel,
             voltage,
             channelUtilization,
@@ -265,6 +368,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
             barometricPressure,
             iaq,
             telemetryTimestamp: timestamp,
+            ...(lastHeardAt != null ? { lastHeardAt } : {}),
           }),
         },
       },
