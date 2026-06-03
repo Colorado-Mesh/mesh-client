@@ -50,7 +50,10 @@ import {
   serializeErrorLike,
   waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
-import { attachMeshcoreLegacyConnEvents } from '../hooks/meshcore/meshcoreLegacyConnEvents';
+import {
+  attachMeshcoreLegacyConnEvents,
+  syncMeshcoreDmAckToMessageStore,
+} from '../hooks/meshcore/meshcoreLegacyConnEvents';
 import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import { mergeAppSettingsPartial } from '../lib/appSettingsStorage';
@@ -108,6 +111,7 @@ import {
   meshcoreRoomServerIdsFromNodes,
   repairMeshcoreHydratedMessages,
 } from '../lib/meshcoreDbCacheHydration';
+import { setMeshcoreDmAckPendingImpl } from '../lib/meshcoreDmAckDelivery';
 import { awaitDualNobleBleMeshtasticSettle } from '../lib/meshcoreDualNobleBleInit';
 import {
   buildMeshcoreGetNeighboursRequest,
@@ -232,6 +236,7 @@ import type {
   ChatMessage,
   DeviceState,
   EnvironmentTelemetryPoint,
+  IdentityId,
   MeshCoreLocalStats,
   MeshNode,
   MQTTStatus,
@@ -5140,6 +5145,64 @@ export function useMeshcoreRuntime() {
     });
   }, [meshcoreIdentityId, state, mqttStatus]);
 
+  const scheduleMeshcoreDmAckPendingImpl = useCallback(
+    ({
+      identityId,
+      ackKeyU32,
+      estTimeoutMs,
+      destNodeId,
+    }: {
+      identityId: IdentityId;
+      ackKeyU32: number;
+      estTimeoutMs: number;
+      destNodeId?: number;
+    }) => {
+      const pendingMapKeys = meshcorePendingDmAckMapKeys(ackKeyU32);
+      const outPathRaw = destNodeId != null ? outPathMapRef.current.get(destNodeId) : undefined;
+      const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
+      const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
+      const hopsAway = destNodeId != null ? (nodesRef.current.get(destNodeId)?.hops_away ?? 0) : 0;
+      if (sendPathBytes.length > 0 && destNodeId != null) {
+        usePathHistoryStore
+          .getState()
+          .recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
+      }
+      const timeoutId = setTimeout(() => {
+        for (const k of pendingMapKeys) {
+          pendingAcksRef.current.delete(k);
+        }
+        if (destNodeId != null && sendPathHash) {
+          usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
+        }
+        syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, myNodeNumRef.current, 'failed');
+        void window.electronAPI.db
+          .updateMeshcoreMessageStatus(ackKeyU32, 'failed')
+          .catch((e: unknown) => {
+            console.warn(
+              '[useMeshcoreRuntime] updateMeshcoreMessageStatus (DM ack timeout) error ' +
+                errLikeToLogString(e),
+            );
+          });
+      }, estTimeoutMs);
+      const pendingEntry: PendingDmAckEntry = {
+        timeoutId,
+        mapKeys: pendingMapKeys,
+        canonicalPacketIdU32: ackKeyU32,
+        destNodeId,
+        pathHash: sendPathHash,
+      };
+      for (const k of pendingMapKeys) {
+        pendingAcksRef.current.set(k, pendingEntry);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    setMeshcoreDmAckPendingImpl(scheduleMeshcoreDmAckPendingImpl);
+    return () => setMeshcoreDmAckPendingImpl(null);
+  }, [scheduleMeshcoreDmAckPendingImpl]);
+
   useEffect(() => {
     registerMeshcoreSession({
       prepareRfConnect,
@@ -5147,6 +5210,7 @@ export function useMeshcoreRuntime() {
       handleRfConnectFailure,
       finalizeDriverDisconnect,
       connectAutomatic,
+      getDestinationPubKey: (nodeId) => pubKeyMapRef.current.get(nodeId),
     });
     return () => registerMeshcoreSession(null);
   }, [

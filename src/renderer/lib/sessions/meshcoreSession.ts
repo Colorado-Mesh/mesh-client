@@ -15,6 +15,8 @@ export interface MeshcoreSessionApi {
     httpAddress?: string,
     lastSerialPortId?: string | null,
   ) => Promise<void>;
+  /** RF contact pubkey for DM send when nodeStore has not been hydrated yet. */
+  getDestinationPubKey?: (nodeId: number) => Uint8Array | undefined;
 }
 
 let activeSession: MeshcoreSessionApi | null = null;

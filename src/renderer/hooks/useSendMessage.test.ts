@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
+import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import {
   type MeshtasticSessionApi,
   registerMeshtasticSession,
@@ -11,8 +12,10 @@ import {
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import { useMessageStore } from '../stores/messageStore';
+import { upsertNode } from '../stores/nodeStore';
 
 const ID_MC_FAIL = 'id-send-mc-fail';
+const ID_MC_DM = 'id-send-mc-dm';
 import { useSendMessage } from './useSendMessage';
 
 const ID_MT = 'id-send-mt';
@@ -39,6 +42,7 @@ describe('useSendMessage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     registerMeshtasticSession(null);
+    registerMeshcoreSession(null);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useMessageStore.setState({ messages: {} });
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
@@ -151,6 +155,41 @@ describe('useSendMessage', () => {
         handle,
         expect.objectContaining({ text: 'hi meshcore', channelIndex: 1 }),
       );
+    });
+    sendSpy.mockRestore();
+  });
+
+  it('marks MeshCore DM acked when send resolves with packetId', async () => {
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({
+      packetId: 0xabcd,
+    });
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    const peerId = 0x22;
+    const pubKey = new Uint8Array(32).fill(0xab);
+    addIdentity({
+      id: ID_MC_DM,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc-dm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC_DM, { status: 'configured', myNodeNum: 7 });
+    upsertNode(ID_MC_DM, {
+      nodeId: peerId,
+      longName: 'Peer',
+      publicKey: pubKey,
+    });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC_DM));
+    result.current('dm hello', -1, peerId);
+
+    await vi.waitFor(() => {
+      const rows = Object.values(useMessageStore.getState().messages[ID_MC_DM] ?? {});
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('acked');
+      expect(rows[0]?.id).toBe(String(0xabcd));
     });
     sendSpy.mockRestore();
   });

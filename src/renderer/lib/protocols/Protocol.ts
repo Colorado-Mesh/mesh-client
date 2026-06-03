@@ -363,6 +363,8 @@ export interface DiscoveryInfo {
 export interface SendResult {
   /** SDK-assigned packet id, when available. PacketRouter dedupes on echo by this id. */
   packetId?: number;
+  /** MeshCore DM: firmware `estTimeout` hint (ms) for hop ACK (event 130). */
+  estTimeoutMs?: number;
 }
 
 // --- Protocol interface ---

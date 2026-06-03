@@ -254,7 +254,15 @@ export class MeshCoreProtocol implements Protocol {
       }
       const result = await conn.sendTextMessage(opts.destinationPubKey, opts.text);
       const ackCrc = result?.expectedAckCrc;
-      return ackCrc != null ? { packetId: meshcoreDmAckKeyU32(ackCrc) } : {};
+      if (ackCrc == null) return {};
+      const estTimeout =
+        typeof result?.estTimeout === 'number' && Number.isFinite(result.estTimeout)
+          ? result.estTimeout
+          : undefined;
+      return {
+        packetId: meshcoreDmAckKeyU32(ackCrc),
+        ...(estTimeout != null ? { estTimeoutMs: estTimeout } : {}),
+      };
     }
     await conn.sendChannelTextMessage(opts.channelIndex ?? 0, opts.text);
     return {};
