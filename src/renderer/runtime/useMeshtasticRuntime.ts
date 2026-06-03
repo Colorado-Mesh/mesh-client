@@ -80,6 +80,7 @@ import {
   hydrateMeshtasticMessagesFromDb,
   syncMeshtasticNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
@@ -180,7 +181,7 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
-import { useNodeStore } from '../stores/nodeStore';
+import { patchNodeFavorited, useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 type ChannelType = Parameters<MeshDevice['setChannel']>[0];
@@ -3247,6 +3248,10 @@ export function useMeshtasticRuntime() {
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
       await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
+      const storeId = getIdentityIdForProtocol('meshtastic');
+      if (storeId) {
+        patchNodeFavorited(storeId, nodeId, favorited);
+      }
       updateNodes((prev) => {
         const updated = new Map(prev);
         const existing = updated.get(nodeId);

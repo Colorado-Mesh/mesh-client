@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   appendMeshcoreCliEntry,
   clearMeshcoreCliHistory,
+  patchNodeFavorited,
   updateMeshcoreOp,
   updatePosition,
   upsertNode,
@@ -74,5 +75,26 @@ describe('nodeStore MeshCore op setters', () => {
   it('clearMeshcoreCliHistory is a no-op when node does not exist', () => {
     clearMeshcoreCliHistory(ID, 999);
     expect(useNodeStore.getState().nodes[ID]?.[999]).toBeUndefined();
+  });
+});
+
+describe('patchNodeFavorited', () => {
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+  });
+
+  it('sets favorited on an existing node without clobbering other fields', () => {
+    upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
+    patchNodeFavorited(ID, NODE, true);
+    const rec = useNodeStore.getState().nodes[ID][NODE];
+    expect(rec.favorited).toBe(true);
+    expect(rec.longName).toBe('Alpha');
+  });
+
+  it('creates a minimal node record when none exists', () => {
+    patchNodeFavorited(ID, NODE, true);
+    const rec = useNodeStore.getState().nodes[ID][NODE];
+    expect(rec.nodeId).toBe(NODE);
+    expect(rec.favorited).toBe(true);
   });
 });

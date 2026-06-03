@@ -239,6 +239,27 @@ function meshtasticLastHeardPatch(
   return merged > 0 ? merged : undefined;
 }
 
+/** Toggle favorite flag on a node in the identity-scoped store (UI reads this bucket). */
+export function patchNodeFavorited(
+  identityId: IdentityId,
+  nodeId: number,
+  favorited: boolean,
+): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    const existing = byId[nodeId];
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: {
+          ...byId,
+          [nodeId]: mergeNode(existing, nodeId, { favorited }),
+        },
+      },
+    };
+  });
+}
+
 /** Bump MeshCore `lastHeardAt` in the identity store (path-updated / RPC reachability). */
 export function patchMeshcoreNodeLastHeardAt(
   identityId: IdentityId,
