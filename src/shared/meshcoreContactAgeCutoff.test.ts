@@ -10,14 +10,16 @@ describe('meshcoreContactsAgeCutoffSec', () => {
     expect(meshcoreContactsAgeCutoffSec(30, nowMs)).toBe(Math.floor(nowMs / 1000) - 30 * 86400);
   });
 
-  it('returns 0 for invalid day counts', () => {
-    expect(meshcoreContactsAgeCutoffSec(0, nowMs)).toBe(0);
-    expect(meshcoreContactsAgeCutoffSec(-1, nowMs)).toBe(0);
-    expect(meshcoreContactsAgeCutoffSec(Number.NaN, nowMs)).toBe(0);
+  it('returns null for invalid day counts', () => {
+    expect(meshcoreContactsAgeCutoffSec(0, nowMs)).toBeNull();
+    expect(meshcoreContactsAgeCutoffSec(-1, nowMs)).toBeNull();
+    expect(meshcoreContactsAgeCutoffSec(Number.NaN, nowMs)).toBeNull();
   });
 
   it('keeps recent last_advert rows when used as SQL cutoff', () => {
     const cutoff = meshcoreContactsAgeCutoffSec(30, nowMs);
+    expect(cutoff).not.toBeNull();
+    if (cutoff === null) return;
     const recentSec = Math.floor(nowMs / 1000) - 86400;
     const staleSec = cutoff - 1;
     expect(recentSec).toBeGreaterThanOrEqual(cutoff);

@@ -24,6 +24,8 @@ describe('meshcore_contacts age prune SQL cutoff', () => {
   it('deletes only non-favorited contacts older than the cutoff (Unix seconds)', () => {
     const nowMs = 1_750_000_000_000;
     const cutoffSec = meshcoreContactsAgeCutoffSec(30, nowMs);
+    expect(cutoffSec).not.toBeNull();
+    if (cutoffSec === null) return;
     const recentSec = Math.floor(nowMs / 1000) - 86400;
     const staleSec = cutoffSec - 86_400;
 
