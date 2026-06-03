@@ -67,6 +67,7 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
@@ -255,7 +256,11 @@ import type {
 import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { updateMessageStatus, useMessageStore } from '../stores/messageStore';
-import { patchMeshcoreNodeLastHeardAt, useNodeStore } from '../stores/nodeStore';
+import {
+  patchMeshcoreNodeLastHeardAt,
+  patchNodeFavorited,
+  useNodeStore,
+} from '../stores/nodeStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 
@@ -4676,16 +4681,15 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
-    const node = nodesRef.current.get(nodeId);
-    if (!node) return;
-    const prevFav = node.favorited;
-    const pk = pubKeyMapRef.current.get(nodeId);
-    const hex =
-      pk != null
-        ? Array.from(pk)
-            .map((b) => b.toString(16).padStart(2, '0'))
-            .join('')
-        : meshcoreSyntheticPlaceholderPubKeyHex(nodeId);
+    const storeId = getIdentityIdForProtocol('meshcore');
+    const storeRecord = storeId ? useNodeStore.getState().nodes[storeId]?.[nodeId] : undefined;
+    const runtimeNode = nodesRef.current.get(nodeId);
+    if (!runtimeNode && !storeRecord) return;
+
+    const prevFav = runtimeNode?.favorited ?? storeRecord?.favorited ?? false;
+    if (storeId) {
+      patchNodeFavorited(storeId, nodeId, favorited);
+    }
     setNodes((prev) => {
       const n = prev.get(nodeId);
       if (!n) return prev;
@@ -4693,12 +4697,22 @@ export function useMeshcoreRuntime() {
       next.set(nodeId, { ...n, favorited });
       return next;
     });
+    const pk = pubKeyMapRef.current.get(nodeId) ?? storeRecord?.publicKey;
+    const hex =
+      pk != null
+        ? Array.from(pk)
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('')
+        : meshcoreSyntheticPlaceholderPubKeyHex(nodeId);
     try {
       await window.electronAPI.db.updateMeshcoreContactFavorited(nodeId, favorited, hex);
     } catch (e) {
       console.warn(
         '[useMeshcoreRuntime] updateMeshcoreContactFavorited error ' + errLikeToLogString(e),
       );
+      if (storeId) {
+        patchNodeFavorited(storeId, nodeId, prevFav);
+      }
       setNodes((prev) => {
         const n = prev.get(nodeId);
         if (!n) return prev;

@@ -6,7 +6,12 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshcoreSyntheticPlaceholderPubKeyHex } from '../lib/meshcoreUtils';
+import {
+  ensureOfflineProtocolIdentities,
+  OFFLINE_MESHCORE_IDENTITY_ID,
+} from '../lib/offlineProtocolIdentities';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { upsertNode, useNodeStore } from '../stores/nodeStore';
 
 const STUB_SENDER_ID = 0x12345678;
 
@@ -102,5 +107,24 @@ describe('useMeshcoreRuntime contact management (no radio connection)', () => {
       true,
       meshcoreSyntheticPlaceholderPubKeyHex(STUB_SENDER_ID),
     );
+  });
+
+  it('setNodeFavorited updates nodeStore when contact exists only in the UI store bucket', async () => {
+    ensureOfflineProtocolIdentities();
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, {
+      nodeId: STUB_SENDER_ID,
+      longName: 'Alice',
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.setNodeFavorited(STUB_SENDER_ID, true);
+    });
+
+    expect(
+      useNodeStore.getState().nodes[OFFLINE_MESHCORE_IDENTITY_ID][STUB_SENDER_ID].favorited,
+    ).toBe(true);
   });
 });
