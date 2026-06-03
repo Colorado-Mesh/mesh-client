@@ -2518,7 +2518,7 @@ export function useMeshcoreRuntime() {
         deferPathHistory: true,
       });
       applyMeshcoreNodesToUi(newNodes);
-      void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
+      await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       // Warn if approaching contact limit
       if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
@@ -2689,6 +2689,30 @@ export function useMeshcoreRuntime() {
     }
     const myId = myNodeNumRef.current;
     const raw = await conn.getContacts();
+    const contacts = raw.map(meshcoreContactRawFromDevice);
+    const now = new Date().toISOString();
+    const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
+    for (const contact of contacts) {
+      const id = pubkeyToNodeId(contact.publicKey);
+      if (id === myId) continue;
+      const prevHops = nodesRef.current.get(id)?.hops_away;
+      const base = meshcoreContactToMeshNode(contact);
+      const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, prevHops, 0);
+      pendingDbRows.push(
+        contactToDbRow(contact, nicknameMapRef.current.get(id) ?? null, 1, now, mergedHops),
+      );
+    }
+    if (pendingDbRows.length > 0) {
+      try {
+        await window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
+      } catch (e: unknown) {
+        console.warn(
+          '[useMeshcoreRuntime] offloadContactsFromRadio saveMeshcoreContactsBatch error ' +
+            errLikeToLogString(e),
+        );
+        throw e;
+      }
+    }
     let removed = 0;
     for (const c of raw) {
       const id = pubkeyToNodeId(c.publicKey);

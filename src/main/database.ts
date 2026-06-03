@@ -2,6 +2,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
 import {
   MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT,
   MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT,
@@ -102,14 +103,16 @@ export function deleteMeshcoreContactsNeverAdvertised(): number {
   return Number(result.changes);
 }
 
+export { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
+
 export function deleteMeshcoreContactsByAge(days: number): number {
   const d = getDatabase();
-  const cutoff = Date.now() - days * MS_PER_DAY;
+  const cutoffSec = meshcoreContactsAgeCutoffSec(days);
   const result = d
     .prepareOnce(
       'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
     )
-    .run(cutoff);
+    .run(cutoffSec);
   return Number(result.changes);
 }
 

@@ -239,6 +239,43 @@ describe('useMeshcoreRuntime DB pubkey backfill for DM send', () => {
       }),
     );
   });
+
+  it('refreshContacts backfills pubkeys from SQLite when radio returns no contacts', async () => {
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    sendTextMessageMock.mockClear();
+    vi.mocked(window.electronAPI.db.markAllMeshcoreContactsOffRadio).mockClear();
+
+    await act(async () => {
+      await result.current.refreshContacts();
+    });
+
+    expect(window.electronAPI.db.markAllMeshcoreContactsOffRadio).toHaveBeenCalled();
+    expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.sendMessage('after-refresh-dm', 0, PEER_NODE_ID);
+    });
+
+    expect(sendTextMessageMock).toHaveBeenCalledTimes(1);
+    expect(sendTextMessageMock.mock.calls[0]?.[0]).toEqual(pubKeyBytesFromHex(PEER_PUBKEY_HEX));
+  });
 });
 
 describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
