@@ -108,6 +108,7 @@ export { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff
 export function deleteMeshcoreContactsByAge(days: number): number {
   const d = getDatabase();
   const cutoffSec = meshcoreContactsAgeCutoffSec(days);
+  if (cutoffSec === null) return 0;
   const result = d
     .prepareOnce(
       'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
