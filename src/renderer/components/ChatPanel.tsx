@@ -41,7 +41,11 @@ import {
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
 import { getDistFromChatBottom } from '../lib/chatScrollUtils';
-import { computeChannelUnreadCounts, computeDmUnreadCounts } from '../lib/chatUnreadCounts';
+import {
+  type ChatUnreadDmOptions,
+  computeChannelUnreadCounts,
+  computeDmUnreadCounts,
+} from '../lib/chatUnreadCounts';
 import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
@@ -383,6 +387,17 @@ function ChatPanel({
 
   const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
 
+  const meshcoreExcludeDmPeer = useMemo((): ChatUnreadDmOptions['excludeDmPeer'] | undefined => {
+    if (protocol !== 'meshcore') return undefined;
+    return (peer: number) => nodes.get(peer)?.hw_model === 'Room';
+  }, [nodes, protocol]);
+
+  const chatUnreadDmOptions = useMemo(
+    (): ChatUnreadDmOptions | undefined =>
+      meshcoreExcludeDmPeer ? { excludeDmPeer: meshcoreExcludeDmPeer } : undefined,
+    [meshcoreExcludeDmPeer],
+  );
+
   const composerSelfDisplayName = useMemo(() => {
     if (protocol !== 'meshcore') return undefined;
     return nodeDisplayName(nodes.get(myNodeNum), protocol) || undefined;
@@ -596,26 +611,37 @@ function ChatPanel({
     return peers;
   }, [regularMessages, resolveDmPeer]);
 
+  /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
+  const dmUnreadCounts = useMemo(
+    () =>
+      computeDmUnreadCounts(
+        unreadSourceMessages,
+        persistedLastRead,
+        ownNodeIdSet,
+        protocol,
+        chatUnreadDmOptions,
+      ),
+    [chatUnreadDmOptions, ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
+  );
+
   const visibleDmTabs = useMemo(() => {
     const all = new Set(openDmTabs);
+    if (activeDmNode != null) all.add(activeDmNode);
     for (const [nodeNum, dmCount] of inferredDmTabs) {
       const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
       if (dmCount > dismissedCount) {
         all.add(nodeNum);
       }
     }
+    for (const [nodeNum, unread] of dmUnreadCounts) {
+      if (unread > 0) all.add(nodeNum);
+    }
     return Array.from(all).filter(
       (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
     );
-  }, [openDmTabs, inferredDmTabs, dismissedDmTabs, protocol]);
+  }, [activeDmNode, openDmTabs, inferredDmTabs, dismissedDmTabs, dmUnreadCounts, protocol]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
-
-  /** Incoming DM messages per peer newer than persisted last-read for `dm:${peer}` (channel unread map skips DMs). */
-  const dmUnreadCounts = useMemo(
-    () => computeDmUnreadCounts(unreadSourceMessages, persistedLastRead, ownNodeIdSet, protocol),
-    [ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
-  );
 
   // Meshtastic / MeshCore quoted replies use protocol-specific parent lookup (see quote render below).
 
@@ -1408,8 +1434,7 @@ function ChatPanel({
                       : 'text-muted hover:text-gray-200'
                   }`}
                   onClick={() => {
-                    setActiveDmNode(nodeNum);
-                    setViewMode('dm');
+                    openDmTo(nodeNum);
                   }}
                 >
                   {getDmLabel(nodeNum)}

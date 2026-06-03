@@ -1,12 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreChatStubNodeIdFromDisplayName,
+  pubkeyToNodeId,
 } from '../meshcoreUtils';
+import { getNodeStatus } from '../nodeStatus';
+import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
@@ -22,6 +26,14 @@ describe('attachMeshcoreIngest', () => {
     saveMeshcoreMessage.mockClear();
     useMessageStore.setState({ messages: {} });
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    addIdentity({
+      id: ID,
+      protocol: meshcoreProtocol,
+      signature: 'meshcore:ingest-test',
+      transports: [],
+      createdAt: Date.now(),
+      lastSeenAt: Date.now(),
+    });
   });
 
   afterEach(() => {
@@ -40,6 +52,64 @@ describe('attachMeshcoreIngest', () => {
       ID,
     );
     expect(saveNode).not.toHaveBeenCalled();
+    detach();
+  });
+
+  it('persists live advert node_info to meshcore_contacts with publicKey', () => {
+    const saveMeshcoreContact = vi.fn().mockResolvedValue(undefined);
+    const updateAdvert = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.db, 'saveMeshcoreContact').mockImplementation(saveMeshcoreContact);
+    vi.spyOn(window.electronAPI.db, 'updateMeshcoreContactAdvert').mockImplementation(updateAdvert);
+    const pk = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) pk[i] = i + 1;
+    const nid = pubkeyToNodeId(pk);
+    expect(nid).not.toBe(0);
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [nid]: { nodeId: nid, longName: '', lastHeardAt: 1_700_000_000, publicKey: pk },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const detach = attachMeshcoreIngest(ID);
+    packetRouter.dispatch(
+      {
+        type: 'node_info',
+        payload: { nodeId: nid, longName: 'LiveAdvert', lastHeardAt: 1_700_000_100, publicKey: pk },
+      },
+      ID,
+    );
+    expect(saveMeshcoreContact).not.toHaveBeenCalled();
+    expect(updateAdvert).toHaveBeenCalledWith(nid, 1_700_000_100, null, null, undefined);
+    detach();
+  });
+
+  it('meshcore_path_updated bumps nodeStore lastHeardAt', () => {
+    const pk = new Uint8Array(32);
+    pk[0] = 9;
+    pk[31] = 2;
+    const nodeId = pubkeyToNodeId(pk);
+    const oldSec = Math.floor(Date.now() / 1000) - 86_400;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [nodeId]: { nodeId, longName: 'Peer', lastHeardAt: oldSec, publicKey: pk },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const detach = attachMeshcoreIngest(ID);
+    packetRouter.dispatch(
+      { type: 'meshcore_path_updated', payload: { nodeId, publicKey: pk } },
+      ID,
+    );
+    const node = useNodeStore.getState().nodes[ID][nodeId];
+    expect(node.lastHeardAt).toBeGreaterThan(oldSec);
     detach();
   });
 
@@ -70,6 +140,51 @@ describe('attachMeshcoreIngest', () => {
     expect(saveMeshcoreMessage).toHaveBeenCalledWith(
       expect.objectContaining({ sender_id: null, sender_name: 'Unknown' }),
     );
+  });
+
+  it('bumps nodeStore lastHeardAt when a channel message arrives from a known sender', () => {
+    const senderId = meshcoreChatStubNodeIdFromDisplayName('WORMT');
+    const oldLastHeardSec = Math.floor(Date.now() / 1000) - 172_800;
+    const msgTs = Date.now();
+    const msgId = `ch:0:${Math.floor(msgTs / 1000)}`;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [senderId]: {
+            nodeId: senderId,
+            longName: 'WORMT',
+            hwModel: 'Chat',
+            lastHeardAt: oldLastHeardSec,
+          },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    upsertMessage(ID, {
+      id: msgId,
+      from: 0,
+      to: 0,
+      payload: 'WORMT: Morning mesh',
+      channelIndex: 0,
+      timestamp: msgTs,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: 0,
+        to: 0,
+        payload: 'WORMT: Morning mesh',
+        channelIndex: 0,
+        timestamp: msgTs,
+        hopCount: 3,
+      },
+    });
+    const node = useNodeStore.getState().nodes[ID][senderId];
+    expect(node.lastHeardAt).toBeGreaterThan(oldLastHeardSec);
+    expect(getNodeStatus(node.lastHeardAt ?? 0)).toBe('online');
   });
 
   it('relinks channel ingest to named sender when history has same channel+payload', () => {

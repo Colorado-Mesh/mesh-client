@@ -282,6 +282,15 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
       /public_key = CASE WHEN excluded\.public_key IS NOT NULL AND excluded\.public_key != '' AND LENGTH\(excluded\.public_key\) = 64 THEN excluded\.public_key ELSE meshcore_contacts\.public_key END/,
     );
   });
+
+  it('uses meshcoreContactsAgeCutoffSec for deleteMeshcoreContactsByAge (Unix seconds)', () => {
+    expect(DATABASE_SOURCE).toMatch(
+      /deleteMeshcoreContactsByAge[\s\S]*meshcoreContactsAgeCutoffSec\(days\)/,
+    );
+    expect(DATABASE_SOURCE).not.toMatch(
+      /deleteMeshcoreContactsByAge[\s\S]*Date\.now\(\) - days \* MS_PER_DAY/,
+    );
+  });
 });
 
 describe('escapeSqlLikePattern', () => {

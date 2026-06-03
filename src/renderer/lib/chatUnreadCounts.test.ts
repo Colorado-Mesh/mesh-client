@@ -56,6 +56,17 @@ describe('chatUnreadCounts', () => {
     expect(dmCounts.get(2)).toBe(1);
   });
 
+  it('excludes MeshCore room-server peers from DM unread when requested', () => {
+    const dmCounts = computeDmUnreadCounts(
+      [msg({ channel: 0, to: 1, timestamp: 2000 })],
+      {},
+      ownNodes,
+      'meshcore',
+      { excludeDmPeer: (peer) => peer === 2 },
+    );
+    expect(dmCounts.size).toBe(0);
+  });
+
   it('totalUnreadCount sums channel and DM unreads', () => {
     const total = totalUnreadCount(
       [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 1, to: 1, timestamp: 2000 })],

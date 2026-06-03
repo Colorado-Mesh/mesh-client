@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
@@ -78,14 +79,19 @@ export function useSendMessage(
       }
 
       const isMeshtastic = identity.protocol.type === 'meshtastic';
-      // Meshtastic: numeric temp packet id (matches RF echo + SQLite packet_id / tapback reply_id).
+      const isMeshcoreDm = identity.protocol.type === 'meshcore' && destination != null;
       const meshtasticTempPacketId = isMeshtastic
+        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0
+        : undefined;
+      const meshcoreDmTempPacketId = isMeshcoreDm
         ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0
         : undefined;
       const provisionalId =
         meshtasticTempPacketId != null
           ? String(meshtasticTempPacketId)
-          : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+          : meshcoreDmTempPacketId != null
+            ? String(meshcoreDmTempPacketId)
+            : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`;
       const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
       const meshcoreSenderName =
         identity.protocol.type === 'meshcore'
@@ -111,10 +117,10 @@ export function useSendMessage(
           });
       }
 
-      // MeshCore DMs need the destination pubkey; look up on nodeStore.
       let destinationPubKey: Uint8Array | undefined;
-      if (identity.protocol.type === 'meshcore' && destination != null) {
+      if (isMeshcoreDm) {
         destinationPubKey = useNodeStore.getState().nodes[identityId]?.[destination]?.publicKey;
+        destinationPubKey ??= tryGetMeshcoreSession()?.getDestinationPubKey?.(destination);
       }
 
       void identity.protocol
@@ -133,6 +139,7 @@ export function useSendMessage(
                 });
             }
           }
+
           updateMessageStatus(identityId, resolvedId, 'acked');
           if (identity.protocol.type === 'meshcore') {
             const rowForDb: MessageRecord = {

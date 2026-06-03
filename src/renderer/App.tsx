@@ -890,14 +890,22 @@ function AppContent({
     return ensureMeshcoreChatLastReadSanitized(meshcoreUiMessages);
   }, [lastReadRevision.meshcore, meshcoreUiMessages]);
 
+  const meshcoreChatUnreadDmOptions = useMemo(
+    () => ({
+      excludeDmPeer: (peer: number) => meshcoreUiNodes.get(peer)?.hw_model === 'Room',
+    }),
+    [meshcoreUiNodes],
+  );
+
   const meshcoreChatUnread = useMemo(() => {
     return totalUnreadCount(
       meshcoreUiMessages,
       meshcoreChatLastRead,
       meshcoreOwnNodeIdSet,
       'meshcore',
+      meshcoreChatUnreadDmOptions,
     );
-  }, [meshcoreChatLastRead, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
+  }, [meshcoreChatLastRead, meshcoreChatUnreadDmOptions, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;

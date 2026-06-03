@@ -127,9 +127,9 @@ See **Renderer: hooks vs runtime vs lib** (layout map above). Legacy `useDevice`
 
 Do **not** remount protocol runtimes in child components. Do **not** compare `protocol === 'meshcore'` for feature gates; use `ProtocolCapabilities` / `useRadioProvider(protocol)`.
 
-Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores.
+Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores. **MeshCore post-router side effects:** `lib/ingest/meshcoreIngest.ts` (chat persist, `last_heard`, path-updated), `lib/meshcore/meshcoreLiveContactPersist.ts` (SQLite contact rows), `lib/meshcore/meshcorePubKeyRegistry.ts` (DM/trace pubkeys mirrored into runtime refs). Live UI nodes/messages read `nodeStore` / `messageStore`; `useMeshcoreRuntime` still keeps hook-local `nodesRef` for send/RPC until contact rebuild syncs it.
 
-**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`; message cap: `meshtasticMessageLoadLimit.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes may still merge DB rows into hook-local refs on connect; identity-scoped Zustand hydration is the canonical UI path ([#375]).
+**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`; message cap: `meshtasticMessageLoadLimit.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes may still merge DB rows into hook-local refs on connect; identity-scoped Zustand hydration is the canonical UI path ([#375]). **MeshCore contacts DB:** `meshcore_contacts.last_advert` is Unix **seconds**; age prune uses `src/shared/meshcoreContactAgeCutoff.ts` (do not compare in ms).
 
 ### First places to look
 

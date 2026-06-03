@@ -23,6 +23,7 @@ import { getIdentity } from '../../stores/identityStore';
 import { renameMessageId, upsertMessage, useMessageStore } from '../../stores/messageStore';
 import {
   addTraceRoute,
+  bumpMeshtasticNodesLastHeardAt,
   updatePosition,
   updateTelemetry,
   upsertNeighborInfo,
@@ -32,6 +33,7 @@ import {
 } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
+import { meshtasticTracerouteLastHeardNodeIds } from '../meshtasticLastHeard';
 import type { DomainEvent } from '../protocols/Protocol';
 import { retargetMeshtasticOutboundTempId } from '../sessions/meshtasticSession';
 import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../timeConstants';
@@ -171,9 +173,17 @@ class PacketRouter {
       case 'telemetry':
         updateTelemetry(identityId, event.payload);
         break;
-      case 'trace_route':
+      case 'trace_route': {
         addTraceRoute(identityId, event.payload);
+        if (getIdentity(identityId)?.protocol.type === 'meshtastic') {
+          const bumpIds = meshtasticTracerouteLastHeardNodeIds(
+            event.payload.from,
+            event.payload.to,
+          );
+          bumpMeshtasticNodesLastHeardAt(identityId, bumpIds, event.payload.timestamp);
+        }
         break;
+      }
       case 'waypoint':
         upsertWaypoint(identityId, event.payload);
         break;

@@ -16,11 +16,17 @@ export function filterRegularChatMessages(
   return regular;
 }
 
+export interface ChatUnreadDmOptions {
+  /** MeshCore: omit room-server node ids (BBS belongs in Rooms, not Chat DM unread). */
+  excludeDmPeer?: (peer: number) => boolean;
+}
+
 /** DM peer for unread counting; excludes broadcast and non-DM traffic. */
 export function resolveChatDmPeer(
   msg: ChatMessage,
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
+  options?: ChatUnreadDmOptions,
 ): number | undefined {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
   if (msg.to == null) return undefined;
@@ -30,7 +36,9 @@ export function resolveChatDmPeer(
   else if (isOwn(msg.to) && !isOwn(msg.sender_id)) peer = msg.sender_id;
   if (peer == null) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
-  return peer >>> 0;
+  const peerU32 = peer >>> 0;
+  if (options?.excludeDmPeer?.(peerU32)) return undefined;
+  return peerU32;
 }
 
 export function computeChannelUnreadCounts(
@@ -58,12 +66,13 @@ export function computeDmUnreadCounts(
   persistedLastRead: Readonly<Record<string, number>>,
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
+  options?: ChatUnreadDmOptions,
 ): Map<number, number> {
   const counts = new Map<number, number>();
   const regular = filterRegularChatMessages(messages, protocol);
   for (const msg of regular) {
     if (msg.isHistory) continue;
-    const peer = resolveChatDmPeer(msg, ownNodeIds, protocol);
+    const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, options);
     if (peer == null) continue;
     if (ownNodeIds.has(msg.sender_id)) continue;
     const lr = persistedLastRead[`dm:${peer}`] ?? 0;
@@ -79,9 +88,10 @@ export function totalUnreadCount(
   persistedLastRead: Readonly<Record<string, number>>,
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
+  dmOptions?: ChatUnreadDmOptions,
 ): number {
   const channel = computeChannelUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol);
-  const dm = computeDmUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol);
+  const dm = computeDmUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol, dmOptions);
   let total = 0;
   for (const n of channel.values()) total += n;
   for (const n of dm.values()) total += n;

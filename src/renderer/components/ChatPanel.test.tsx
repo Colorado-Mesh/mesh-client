@@ -391,7 +391,7 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
     await user.click(screen.getByTitle('Close DM'));
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Alice' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
     });
 
     rerender(
@@ -494,6 +494,7 @@ describe('ChatPanel accessibility', () => {
   it('allows closing inferred DM tab in MeshCore and does not resurface without new messages', async () => {
     const user = userEvent.setup();
     const ts = Date.now();
+    localStorage.setItem('mesh-client:lastRead:meshcore', JSON.stringify({ 'dm:2': ts }));
     const messages = [
       {
         sender_id: 2,
@@ -1079,6 +1080,128 @@ describe('ChatPanel unread watermarks', () => {
     nodes: new Map(),
     isActive: true,
   };
+
+  it('keeps DM tab open after unread clears when conversation was opened via DM tab', async () => {
+    const user = userEvent.setup();
+    const ts = Date.now();
+    const nodes = new Map([
+      [
+        2,
+        {
+          node_id: 2,
+          long_name: 'Alice',
+          short_name: 'Alice',
+          hw_model: '',
+          snr: 0,
+          battery: 0,
+          last_heard: ts,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={0x12345678}
+          ownNodeIds={[0x12345678]}
+          nodes={nodes}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'DM ping',
+              channel: 0,
+              timestamp: ts,
+              status: 'acked',
+              to: 0x12345678,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Alice' }));
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={0x12345678}
+          ownNodeIds={[0x12345678]}
+          nodes={nodes}
+          messages={[
+            {
+              sender_id: 0x12345678,
+              sender_name: 'Me',
+              payload: 'My reply',
+              channel: 0,
+              timestamp: ts + 1,
+              status: 'acked',
+              to: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    });
+  });
+
+  it('keeps dismissed DM tab visible while unread remains', async () => {
+    const user = userEvent.setup();
+    const ts = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={0x12345678}
+          ownNodeIds={[0x12345678]}
+          nodes={
+            new Map([
+              [
+                2,
+                {
+                  node_id: 2,
+                  long_name: 'Alice',
+                  short_name: 'Alice',
+                  hw_model: '',
+                  snr: 0,
+                  battery: 0,
+                  last_heard: ts,
+                  latitude: null,
+                  longitude: null,
+                },
+              ],
+            ])
+          }
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'DM ping',
+              channel: 0,
+              timestamp: ts,
+              status: 'acked',
+              to: 0x12345678,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    await user.click(screen.getByTitle('Close DM'));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    });
+  });
 
   it('clears a non-primary channel badge after that channel is viewed', async () => {
     const user = userEvent.setup();
