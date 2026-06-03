@@ -215,6 +215,7 @@ export default function RoomsPanel({
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
   const [unreadDividerTimestamp, setUnreadDividerTimestamp] = useState(0);
+  const [triggerScrollToUnread, setTriggerScrollToUnread] = useState(0);
   const [, setAutoLoginFailureEpoch] = useState(0);
   const [storedRoomIds, setStoredRoomIds] = useState<Set<number>>(
     () => new Set(listMeshcoreRoomCredentialNodeIds()),
@@ -224,9 +225,12 @@ export default function RoomsPanel({
   const loginQueueRevision = useMeshcoreRoomLoginQueueRevision();
   const streamRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const unreadDividerRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
   );
+  const persistedRoomsLastReadRef = useRef(persistedRoomsLastRead);
+  persistedRoomsLastReadRef.current = persistedRoomsLastRead;
   const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
   const [membersOpen, setMembersOpen] = useState(true);
@@ -309,14 +313,17 @@ export default function RoomsPanel({
   const markSelectedRoomRead = useCallback(() => {
     if (selectedRoomId == null || roomPosts.length === 0) return;
     const latest = Math.max(...roomPosts.map((m) => m.timestamp));
-    setPersistedRoomsLastRead((prev) => {
-      const next = mergeRoomLastReadWatermark(prev, selectedRoomId, latest);
-      if (next === prev) return prev;
-      savePersistedRoomsLastRead(next);
-      notifyPersistedRoomsLastReadChanged();
-      return next;
-    });
+    setPersistedRoomsLastRead((prev) => mergeRoomLastReadWatermark(prev, selectedRoomId, latest));
   }, [roomPosts, selectedRoomId]);
+
+  useEffect(() => {
+    try {
+      savePersistedRoomsLastRead(persistedRoomsLastRead);
+      notifyPersistedRoomsLastReadChanged();
+    } catch (e) {
+      console.warn('[RoomsPanel] persist rooms lastRead failed ' + errLikeToLogString(e));
+    }
+  }, [persistedRoomsLastRead]);
 
   const updateScrollButtonVisibility = useCallback(() => {
     const distFromBottom = getDistFromChatBottom(
@@ -352,6 +359,27 @@ export default function RoomsPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  const scrollToUnreadOrBottom = useCallback(() => {
+    const el = streamRef.current;
+    if (unreadDividerRef.current) {
+      if (el) {
+        const onEnd = () => {
+          el.removeEventListener('scrollend', onEnd);
+          const dist = getDistFromChatBottom(
+            el,
+            messagesEndRef.current,
+            outerScrollMetricsRootRef?.current ?? null,
+          );
+          if (dist !== null) applyNearBottomReadState(dist);
+        };
+        el.addEventListener('scrollend', onEnd, { once: true });
+      }
+      unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [applyNearBottomReadState, outerScrollMetricsRootRef]);
+
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
       updateScrollButtonVisibility();
@@ -383,16 +411,61 @@ export default function RoomsPanel({
   ]);
 
   useEffect(() => {
-    const outer = outerScrollMetricsRootRef?.current;
-    if (!outer) return;
+    if (!isActive) return;
+    const root = outerScrollMetricsRootRef?.current;
+    if (!root) return;
     const onOuterScroll = () => {
-      handleStreamScroll();
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
     };
-    outer.addEventListener('scroll', onOuterScroll);
+    root.addEventListener('scroll', onOuterScroll, { passive: true });
     return () => {
-      outer.removeEventListener('scroll', onOuterScroll);
+      root.removeEventListener('scroll', onOuterScroll);
     };
-  }, [handleStreamScroll, outerScrollMetricsRootRef]);
+  }, [applyNearBottomReadState, isActive, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const root = outerScrollMetricsRootRef?.current;
+    if (!root || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        updateScrollButtonVisibility();
+      });
+    });
+    ro.observe(root);
+    return () => {
+      ro.disconnect();
+    };
+  }, [isActive, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
+
+  useLayoutEffect(() => {
+    if (triggerScrollToUnread === 0) return;
+    if (!isActive) return;
+    if (unreadDividerRef.current) {
+      unreadDividerRef.current.scrollIntoView({ block: 'center' });
+    } else {
+      messagesEndRef.current?.scrollIntoView();
+    }
+    requestAnimationFrame(() => {
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined && dist < 50) setUnreadDividerTimestamp(0);
+    });
+  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    requestAnimationFrame(() => {
+      updateScrollButtonVisibility();
+    });
+  }, [isActive, selectedRoomId, updateScrollButtonVisibility]);
+
+  useEffect(() => {
+    if (selectedRoomId == null) return;
+    const snapshot = persistedRoomsLastReadRef.current[selectedRoomId] ?? 0;
+    setUnreadDividerTimestamp(snapshot);
+    setTriggerScrollToUnread((n) => n + 1);
+  }, [selectedRoomId]);
 
   useEffect(() => {
     if (initialRoomTarget != null) {
@@ -411,8 +484,6 @@ export default function RoomsPanel({
 
   const handleSelectRoom = useCallback(
     (nodeId: number) => {
-      const lastRead = persistedRoomsLastRead[nodeId] ?? 0;
-      setUnreadDividerTimestamp(lastRead);
       setSelectedRoomId(nodeId);
       setLoginErrorsByRoom((prev) => {
         if (!prev.has(nodeId)) return prev;
@@ -431,7 +502,7 @@ export default function RoomsPanel({
       setManageOpen(false);
       loadSyncConfig(nodeId);
     },
-    [loadSyncConfig, persistedRoomsLastRead],
+    [loadSyncConfig],
   );
 
   const loginQueueSnapshot = useMemo(() => {
@@ -874,7 +945,7 @@ export default function RoomsPanel({
     <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
       {RemoteAuthModal}
       <div className="flex min-h-0 flex-1 gap-3">
-        <div className="bg-secondary-dark flex w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700">
+        <div className="bg-secondary-dark flex min-h-0 w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700">
           <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
             <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
               {t('roomsPanel.title')} <span className="text-gray-500">({roomServers.length})</span>
@@ -1007,7 +1078,7 @@ export default function RoomsPanel({
           </div>
         </div>
 
-        <div className="bg-secondary-dark relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
+        <div className="bg-secondary-dark relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
           {!selectedRoomId && (
             <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-500">
               {t('roomsPanel.selectRoom')}
@@ -1123,7 +1194,7 @@ export default function RoomsPanel({
           )}
 
           {selectedRoomId && loggedIn && (
-            <>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
                 <span className="text-sm font-medium text-gray-200">{activeRoom?.long_name}</span>
                 <span className="text-xs text-gray-500">
@@ -1389,6 +1460,7 @@ export default function RoomsPanel({
               <div className="relative min-h-0 flex-1">
                 <div
                   ref={streamRef}
+                  data-testid="rooms-post-stream"
                   onScroll={handleStreamScroll}
                   className="h-full min-h-0 space-y-2 overflow-y-auto px-3 py-2"
                 >
@@ -1453,7 +1525,9 @@ export default function RoomsPanel({
                       return (
                         <div key={rowKey}>
                           {showUnreadDivider && (
-                            <RoomUnreadDivider label={t('roomsPanel.newMessagesDivider')} />
+                            <div ref={unreadDividerRef}>
+                              <RoomUnreadDivider label={t('roomsPanel.newMessagesDivider')} />
+                            </div>
                           )}
                           <div
                             ref={(el) => {
@@ -1607,8 +1681,11 @@ export default function RoomsPanel({
                   <button
                     type="button"
                     onClick={() => {
-                      scrollToBottom();
-                      setUnreadDividerTimestamp(0);
+                      if (unreadDividerRef.current) {
+                        scrollToUnreadOrBottom();
+                      } else {
+                        scrollToBottom();
+                      }
                     }}
                     className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
                     aria-label={
@@ -1640,6 +1717,7 @@ export default function RoomsPanel({
 
               <div
                 className={`shrink-0 border-t border-gray-700 p-3 ${streamView === 'starred' ? 'hidden' : ''}`}
+                data-testid="rooms-composer-footer"
               >
                 {!canPost ? (
                   <div className="space-y-2">
@@ -1820,7 +1898,7 @@ export default function RoomsPanel({
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -4,6 +4,10 @@ import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
+import {
+  mergeRoomLastReadWatermark,
+  savePersistedRoomsLastRead,
+} from '@/renderer/lib/chatPanelProtocolStorage';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
   clearAllMeshcoreRoomAutoLoginFailures,
@@ -18,6 +22,7 @@ import {
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 
+import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
 
 vi.mock('react-i18next', () => ({
@@ -647,5 +652,125 @@ describe('RoomsPanel', () => {
       expect(onLoginRoom).toHaveBeenCalled();
     });
     expect(screen.queryByLabelText('roomsPanel.autoLoginFailedAria')).not.toBeInTheDocument();
+  });
+
+  it('locks post stream scroll inside a fixed-height flex column', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1011, 'Scroll Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    render(
+      <div className="flex flex-col" style={{ height: '600px' }}>
+        <RoomsPanel
+          nodes={nodes}
+          messages={[]}
+          myNodeNum={1}
+          isConnected
+          isActive
+          initialRoomTarget={room.node_id}
+          onLoginRoom={vi.fn().mockResolvedValue(undefined)}
+          onCancelRoomLogin={vi.fn()}
+          onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
+          onSendRoomPost={vi.fn()}
+          onSendRoomAdminCli={vi.fn()}
+        />
+      </div>,
+    );
+
+    const stream = screen.getByTestId('rooms-post-stream');
+    expect(stream).toHaveClass('overflow-y-auto');
+    expect(stream.parentElement).toHaveClass('min-h-0', 'flex-1');
+    expect(screen.getByTestId('rooms-composer-footer')).toHaveClass('shrink-0');
+  });
+
+  it('shows new messages divider when selecting a room with unread posts', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomA = makeRoom(0x1012, 'Unread Room');
+    const roomB = makeRoom(0x1013, 'Current Room');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    meshcoreApplyRoomSession(roomA.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    meshcoreApplyRoomSession(roomB.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, roomA.node_id, 1000));
+    const messages: ChatMessage[] = [
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Unread post',
+        roomServerId: roomA.node_id,
+        authorId: 0x200,
+        authorName: 'Alice',
+        timestamp: 5000,
+        receivedVia: 'rf',
+      }),
+    ];
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomB.node_id,
+      messages,
+      isActive: true,
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /Unread Room/i }));
+    expect(screen.getByText('roomsPanel.newMessagesDivider')).toBeInTheDocument();
+  });
+
+  it('jump-to-unread button scrolls toward the unread divider', async () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1014, 'Jump Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, 1000));
+    const messages: ChatMessage[] = [
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Older post',
+        roomServerId: room.node_id,
+        authorId: 0x200,
+        authorName: 'Alice',
+        timestamp: 2000,
+        receivedVia: 'rf',
+      }),
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Unread post',
+        roomServerId: room.node_id,
+        authorId: 0x201,
+        authorName: 'Bob',
+        timestamp: 5000,
+        receivedVia: 'rf',
+      }),
+    ];
+    const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(300);
+    const scrollIntoView = vi.fn();
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      messages,
+      isActive: true,
+    });
+
+    const jumpButton = await screen.findByRole('button', { name: 'roomsPanel.jumpToUnread' });
+    await userEvent.click(jumpButton);
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    distSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 });
