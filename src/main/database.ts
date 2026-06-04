@@ -21,6 +21,20 @@ export { CURRENT_SCHEMA_VERSION };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/** Thrown when mergeDatabase rejects the source path before opening SQLite. */
+export class MergeSourceInvalidError extends Error {
+  readonly code = 'MERGE_SOURCE_INVALID' as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'MergeSourceInvalidError';
+  }
+}
+
+function isMergeSourceInvalidError(err: unknown): err is MergeSourceInvalidError {
+  return err instanceof MergeSourceInvalidError;
+}
+
 let db: NodeSqliteDB | null = null;
 
 export function getDatabasePath(): string {
@@ -123,6 +137,15 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
     d.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_contacts').get() as { cnt: number }
   ).cnt;
   if (total <= maxCount) return 0;
+  const deletable = (
+    d
+      .prepareOnce(
+        'SELECT COUNT(*) as cnt FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0)',
+      )
+      .get() as { cnt: number }
+  ).cnt;
+  const toDelete = Math.min(total - maxCount, deletable);
+  if (toDelete <= 0) return 0;
   const result = d
     .prepareOnce(
       'DELETE FROM meshcore_contacts WHERE node_id IN (' +
@@ -130,7 +153,7 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
         'ORDER BY COALESCE(last_advert, 0) ASC LIMIT ?' +
         ')',
     )
-    .run(total - maxCount);
+    .run(toDelete);
   return Number(result.changes);
 }
 
@@ -216,15 +239,14 @@ export function mergeDatabase(sourcePath: string) {
   try {
     const stat = fs.statSync(sourcePath);
     if (!stat.isFile() || stat.size > MAX_MERGE_FILE_BYTES) {
-      throw new Error('Merge source must be a file under 500 MB');
+      throw new MergeSourceInvalidError('Merge source must be a file under 500 MB');
     }
   } catch (err) {
     console.error(
       '[db] mergeDatabase failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
-    if (err instanceof Error && err.message === 'Merge source must be a file under 500 MB')
-      throw err;
+    if (isMergeSourceInvalidError(err)) throw err;
     throw new Error(
       `Cannot read merge source: ${err instanceof Error ? err.message : String(err)}`,
     );
@@ -514,7 +536,7 @@ export function saveMeshcoreHopHistory(
 
 export function getMeshcoreHopHistory(nodeId: number): MeshCoreHopHistoryRow | null {
   const d = getDatabase();
-  const row = d.prepare('SELECT * FROM meshcore_hop_history WHERE node_id = ?').get(nodeId) as
+  const row = d.prepareOnce('SELECT * FROM meshcore_hop_history WHERE node_id = ?').get(nodeId) as
     | MeshCoreHopHistoryRow
     | undefined;
   return row ?? null;
@@ -549,8 +571,8 @@ export function saveMeshcoreTraceHistory(
 
 export function pruneMeshcorePathHistory(nodeId: number): void {
   const d = getDatabase();
-  d.prepare('DELETE FROM meshcore_hop_history WHERE node_id = ?').run(nodeId);
-  d.prepare('DELETE FROM meshcore_trace_history WHERE node_id = ?').run(nodeId);
+  d.prepareOnce('DELETE FROM meshcore_hop_history WHERE node_id = ?').run(nodeId);
+  d.prepareOnce('DELETE FROM meshcore_trace_history WHERE node_id = ?').run(nodeId);
 }
 
 export interface MeshcorePathHistoryRow {
