@@ -218,9 +218,14 @@ function sleepMs(ms: number): Promise<void> {
   });
 }
 
+export function meshcoreRoomLoginErrorIsAuthFailure(err: unknown): boolean {
+  const msg = errLikeToLogString(err).toLowerCase();
+  return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied');
+}
+
 export function meshcoreRoomLoginFailureMessage(err: unknown, password: string): string {
   const msg = errLikeToLogString(err).toLowerCase();
-  if (msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied')) {
+  if (meshcoreRoomLoginErrorIsAuthFailure(err)) {
     if (password.length === 0) {
       return 'Room login rejected. Use Continue read-only for blank guest password, or try guest password "hello".';
     }

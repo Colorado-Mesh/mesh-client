@@ -131,6 +131,7 @@ import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomAutoLoginFailure,
+  getMeshcoreRoomAutoLoginFailure,
   setMeshcoreRoomAutoLoginFailure,
 } from '../lib/meshcoreRoomAutoLoginFailure';
 import {
@@ -140,6 +141,7 @@ import {
 } from '../lib/meshcoreRoomCredentialStorage';
 import { syncMeshcoreRoomContactPathBeforeLogin } from '../lib/meshcoreRoomLoginPathSync';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
+import { disableMeshcoreRoomAutoLogin } from '../lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreRoomPostSendErrorMessage,
   sendMeshcoreRoomPostWithSentWait,
@@ -157,6 +159,7 @@ import {
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
   meshcoreRoomLogin,
+  meshcoreRoomLoginErrorIsAuthFailure,
   meshcoreRoomLogout,
   meshcoreRoomLogoutFailureMessage,
   meshcoreRoomTryRelogin,
@@ -4039,6 +4042,21 @@ export function useMeshcoreRuntime() {
       if (msg === MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE) {
         await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
       }
+      if (meshcoreRoomLoginErrorIsAuthFailure(e)) {
+        const prev = getMeshcoreRoomSyncConfig(target.nodeId);
+        try {
+          await setMeshcoreRoomSyncConfig(target.nodeId, {
+            enabled: false,
+            intervalMinutes: prev.intervalMinutes,
+            autoLoginOnConnect: false,
+          });
+        } catch (persistErr: unknown) {
+          console.warn(
+            '[useMeshcoreRuntime] disable room sync after auth failure failed ' +
+              errLikeToLogString(persistErr),
+          );
+        }
+      }
       const logLine =
         '[useMeshcoreRuntime] room sync scheduler login failed ' + errLikeToLogString(e);
       if (roomSyncSchedulerWarnedNodesRef.current.has(target.nodeId)) {
@@ -4072,6 +4090,7 @@ export function useMeshcoreRuntime() {
     const targets = nodeIds.filter((nodeId) => {
       if (meshcoreIsRoomLoggedIn(nodeId)) return false;
       if (!getMeshcoreRoomCredential(nodeId)) return false;
+      if (getMeshcoreRoomAutoLoginFailure(nodeId)) return false;
       if (!pubKeyMapRef.current.get(nodeId)) {
         return false;
       }
@@ -4086,6 +4105,16 @@ export function useMeshcoreRuntime() {
           const msg = e instanceof Error ? e.message : String(e);
           if (!meshcoreIsRoomLoginAbortError(e)) {
             setMeshcoreRoomAutoLoginFailure(nodeId, msg || 'timeout');
+            if (meshcoreRoomLoginErrorIsAuthFailure(e)) {
+              try {
+                await disableMeshcoreRoomAutoLogin(nodeId);
+              } catch (persistErr: unknown) {
+                console.warn(
+                  '[useMeshcoreRuntime] disable auto-login after auth failure failed ' +
+                    errLikeToLogString(persistErr),
+                );
+              }
+            }
           }
           console.warn(
             '[useMeshcoreRuntime] room auto-login on connect failed ' + errLikeToLogString(e),

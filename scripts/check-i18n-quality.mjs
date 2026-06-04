@@ -255,6 +255,25 @@ export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'queueButton',
 ]);
 
+/** MeshCore Rooms saved-password sidebar (recent work). */
+export const ROOMS_SAVED_PASSWORDS_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'savedPasswordsHeading',
+  'sidebarLegendTitle',
+  'legendNotSaved',
+  'legendSaved',
+  'legendLoggedIn',
+  'stopAutoLogin',
+]);
+
+/** Polish MT often turns "Saved passwords" into browser autofill copy. */
+export const PL_SAVED_PASSWORDS_HEADING_AUTOFILL_RE = /wypełnianie.*hasłem/i;
+
+/** Simplified Chinese should use 登录 for sign-in, not ship-boarding 登陆. */
+export const ZH_LOGIN_WRONG_CHAR_RE = /登陆/;
+
+/** Czech MT uses noun "login" instead of logged-in state on legendLoggedIn. */
+export const CS_LEGEND_LOGGED_IN_NOUN_RE = /^Přihlášení$/;
+
 /** roomsPanel members / leave UX from recent MeshCore Rooms work. */
 export const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'membersHeading',
@@ -756,6 +775,43 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
 
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_SAVED_PASSWORDS_MUST_TRANSLATE_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (
+    locale === 'pl' &&
+    leafKey === 'savedPasswordsHeading' &&
+    PL_SAVED_PASSWORDS_HEADING_AUTOFILL_RE.test(val)
+  ) {
+    issues.push(
+      'savedPasswordsHeading confuses saved passwords with browser autofill — use "Zapisane hasła"',
+    );
+  }
+
+  if (
+    locale === 'zh' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    (leafKey === 'badgeAutoLogin' || leafKey === 'stopAutoLogin' || leafKey === 'legendLoggedIn') &&
+    ZH_LOGIN_WRONG_CHAR_RE.test(val)
+  ) {
+    issues.push('use 登录 for sign-in, not 登陆 (boarding a ship)');
+  }
+
+  if (
+    locale === 'cs' &&
+    leafKey === 'legendLoggedIn' &&
+    enVal === 'Logged in' &&
+    CS_LEGEND_LOGGED_IN_NOUN_RE.test(val)
+  ) {
+    issues.push('legendLoggedIn must be "Přihlášen" (logged in), not noun "Přihlášení" (login)');
+  }
+
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersHeading`) {
     for (const re of MEMBERS_HEADING_GARBAGE_RES) {
       if (re.test(val)) {
@@ -836,5 +892,53 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     }
   }
 
+  return issues;
+}
+
+/**
+ * Cross-key checks for roomsPanel saved-password legend and auto-login labels.
+ *
+ * @param {Record<string, string>} localeFlat
+ * @param {Record<string, string>} enFlat
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function roomsSavedPasswordsCrossKeyIssues(localeFlat, enFlat) {
+  const issues = [];
+  const notSavedKey = `${ROOMS_PANEL_PREFIX}legendNotSaved`;
+  const savedKey = `${ROOMS_PANEL_PREFIX}legendSaved`;
+  const stopKey = `${ROOMS_PANEL_PREFIX}stopAutoLogin`;
+  const badgeKey = `${ROOMS_PANEL_PREFIX}badgeAutoLogin`;
+
+  const notSaved = localeFlat[notSavedKey];
+  const saved = localeFlat[savedKey];
+  const stop = localeFlat[stopKey];
+  const badge = localeFlat[badgeKey];
+  const enNotSaved = enFlat[notSavedKey];
+  const enSaved = enFlat[savedKey];
+  const enStop = enFlat[stopKey];
+  const enBadge = enFlat[badgeKey];
+
+  if (typeof notSaved === 'string' && typeof saved === 'string' && notSaved === saved) {
+    issues.push('legendNotSaved must differ from legendSaved');
+  }
+  if (
+    typeof notSaved === 'string' &&
+    typeof enSaved === 'string' &&
+    typeof enNotSaved === 'string' &&
+    enNotSaved !== enSaved &&
+    notSaved === enSaved
+  ) {
+    issues.push('legendNotSaved must not reuse legendSaved (password saved) wording');
+  }
+  if (
+    typeof stop === 'string' &&
+    typeof badge === 'string' &&
+    typeof enStop === 'string' &&
+    typeof enBadge === 'string' &&
+    enStop !== enBadge &&
+    stop === badge
+  ) {
+    issues.push('stopAutoLogin must not duplicate badgeAutoLogin');
+  }
   return issues;
 }

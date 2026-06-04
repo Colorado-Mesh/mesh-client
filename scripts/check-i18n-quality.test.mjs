@@ -5,6 +5,7 @@ import {
   interpolationPlaceholderIssues,
   localeStringQualityIssues,
   protectedBrandIssues,
+  roomsSavedPasswordsCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
 function expectIssue(issues, substring) {
@@ -749,6 +750,77 @@ describe('roomsPanel login-all false friends (recent MeshCore Rooms)', () => {
         enVal: 'Logging in to {{count}} rooms (one at a time)…',
       }),
     ).toEqual([]);
+  });
+});
+
+describe('roomsSavedPasswordsCrossKeyIssues', () => {
+  const enFlat = {
+    'roomsPanel.legendNotSaved': 'No saved password',
+    'roomsPanel.legendSaved': 'Password saved',
+    'roomsPanel.stopAutoLogin': 'Stop auto-login',
+    'roomsPanel.badgeAutoLogin': 'Auto-login',
+  };
+
+  it('flags legendNotSaved identical to legendSaved', () => {
+    const issues = roomsSavedPasswordsCrossKeyIssues(
+      {
+        'roomsPanel.legendNotSaved': 'Wachtwoord opgeslagen',
+        'roomsPanel.legendSaved': 'Wachtwoord opgeslagen',
+      },
+      enFlat,
+    );
+    expectIssue(issues, 'legendNotSaved must differ');
+  });
+
+  it('flags legendNotSaved reusing English legendSaved wording', () => {
+    const issues = roomsSavedPasswordsCrossKeyIssues(
+      { 'roomsPanel.legendNotSaved': 'Password saved' },
+      enFlat,
+    );
+    expectIssue(issues, 'must not reuse legendSaved');
+  });
+
+  it('flags stopAutoLogin duplicating badgeAutoLogin', () => {
+    const issues = roomsSavedPasswordsCrossKeyIssues(
+      {
+        'roomsPanel.stopAutoLogin': 'Acceso automático',
+        'roomsPanel.badgeAutoLogin': 'Acceso automático',
+      },
+      enFlat,
+    );
+    expectIssue(issues, 'must not duplicate badgeAutoLogin');
+  });
+});
+
+describe('roomsPanel saved passwords per-key quality', () => {
+  it('flags Polish autofill false friend on savedPasswordsHeading', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'roomsPanel.savedPasswordsHeading',
+      val: 'Automatyczne wypełnianie pola z hasłem',
+      enVal: 'Saved passwords',
+    });
+    expectIssue(issues, 'browser autofill');
+  });
+
+  it('flags Czech noun Přihlášení on legendLoggedIn', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'roomsPanel.legendLoggedIn',
+      val: 'Přihlášení',
+      enVal: 'Logged in',
+    });
+    expectIssue(issues, 'Přihlášen');
+  });
+
+  it('flags simplified Chinese 登陆 on badgeAutoLogin', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'roomsPanel.badgeAutoLogin',
+      val: '自动登陆',
+      enVal: 'Auto-login',
+    });
+    expectIssue(issues, '登录');
   });
 });
 

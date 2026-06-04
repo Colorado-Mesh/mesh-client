@@ -23,6 +23,7 @@ import {
   interpolationPlaceholderIssues,
   localeStringQualityIssues,
   protectedBrandIssues,
+  roomsSavedPasswordsCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -289,6 +290,11 @@ for (const dir of localeDirs) {
       );
       errors++;
     }
+  }
+
+  for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {
+    console.error(`Locale quality in "${dir}" (roomsPanel saved passwords): ${issue}.`);
+    errors++;
   }
 }
 
