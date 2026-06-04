@@ -80,4 +80,28 @@ describe('reconnectBleWithScan', () => {
     await expect(reconnectBleWithScan('meshcore', 'ble-2', connect)).rejects.toThrow('adapter off');
     expect(window.electronAPI.stopNobleBleScanning).toHaveBeenCalledWith('meshcore');
   });
+
+  it('evaluates Linux vs Noble at call time (not module import)', async () => {
+    vi.resetModules();
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (X11; Linux x86_64)',
+      configurable: true,
+    });
+    const { reconnectBleWithScan: reconnectAtCallTime } = await import('./bleReconnectHelper');
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Macintosh',
+      configurable: true,
+    });
+    const connect = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('peripheral not in cache'))
+      .mockResolvedValueOnce(undefined);
+    const promise = reconnectAtCallTime('meshtastic', 'ble-1', connect);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalledWith('meshtastic');
+    });
+    discoveredCb?.({ deviceId: 'ble-1', name: 'Radio' });
+    await promise;
+    expect(connect).toHaveBeenCalledTimes(2);
+  });
 });

@@ -5,7 +5,7 @@ import type { MeshProtocol } from './types';
 
 export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 30_000;
 
-const isLinux =
+const isLinuxPlatform = (): boolean =>
   typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
 
 /**
@@ -19,7 +19,7 @@ export async function reconnectBleWithScan(
   connect: () => Promise<void>,
   opts?: { scanTimeoutMs?: number },
 ): Promise<void> {
-  if (isLinux) {
+  if (isLinuxPlatform()) {
     await connect();
     return;
   }
