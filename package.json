@@ -150,7 +150,7 @@
     "react-dom": "^19.2.7",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
-    "sort-package-json": "^3.7.0",
+    "sort-package-json": "^3.7.1",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.1",
