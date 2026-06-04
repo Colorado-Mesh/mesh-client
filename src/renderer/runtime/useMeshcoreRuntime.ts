@@ -390,6 +390,8 @@ export function useMeshcoreRuntime() {
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
   // Stable ref to current nodes so event listeners don't form stale closures
   const nodesRef = useRef<Map<number, MeshNode>>(new Map());
+  /** Skip mount DB hydration commit when live ingest/import ran before async reload finishes. */
+  const skipMountDbHydrationCommitRef = useRef(false);
   /** SQLite hydration snapshot set synchronously before `setNodes` so initConn can merge hops when `nodesRef` has not flushed yet. */
   const meshcoreLastPersistedNodesRef = useRef<Map<number, MeshNode>>(new Map());
   /** Mount DB load — initConn awaits this so an immediate connect does not skip persisted hop counts. */
@@ -816,8 +818,13 @@ export function useMeshcoreRuntime() {
   );
 
   useEffect(() => {
-    void reloadMeshcoreNodesFromDb({ hydrateMessages: true }).catch((e: unknown) => {
-      console.warn('[useMeshcoreRuntime] initial db reload failed ' + errLikeToLogString(e));
+    queueMicrotask(() => {
+      void reloadMeshcoreNodesFromDb({
+        hydrateMessages: true,
+        beforeCommit: () => !skipMountDbHydrationCommitRef.current && nodesRef.current.size === 0,
+      }).catch((e: unknown) => {
+        console.warn('[useMeshcoreRuntime] initial db reload failed ' + errLikeToLogString(e));
+      });
     });
   }, [reloadMeshcoreNodesFromDb]);
 
@@ -4582,6 +4589,7 @@ export function useMeshcoreRuntime() {
     }
 
     if (validEntries.length > 0) {
+      skipMountDbHydrationCommitRef.current = true;
       const importSec = Math.floor(Date.now() / 1000);
       let dbRows: { node_id: number; last_advert: number | null; hops_away: number | null }[] = [];
       try {

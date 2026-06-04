@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
@@ -486,12 +486,8 @@ export default function ModulePanel({
   const [mqttProxyToClient, setMqttProxyToClient] = useState<boolean>(
     cfgBool(mqttCfg.proxyToClientEnabled, false),
   );
-
-  useEffect(() => {
-    if (mqttEnabled && meshtasticDeviceRequiresMqttProxyToClient(deviceNetwork)) {
-      setMqttProxyToClient(true);
-    }
-  }, [mqttEnabled, deviceNetwork?.hasWifi, deviceNetwork?.hasEthernet, deviceNetwork]);
+  const mqttProxyForced = mqttEnabled && meshtasticDeviceRequiresMqttProxyToClient(deviceNetwork);
+  const mqttProxyToClientChecked = mqttProxyForced || mqttProxyToClient;
 
   const buildMqttUiValues = () => ({
     enabled: mqttEnabled,
@@ -503,7 +499,7 @@ export default function ModulePanel({
     tlsEnabled: mqttTls,
     root: mqttRoot,
     mapReportingEnabled: mqttMapReporting,
-    proxyToClientEnabled: mqttProxyToClient,
+    proxyToClientEnabled: mqttProxyToClientChecked,
   });
 
   // ─── Canned messages ──────────────────────────────────────────
@@ -933,9 +929,9 @@ export default function ModulePanel({
         />
         <ConfigToggle
           label={t('modulePanel.fields.mqttProxyToClientEnabled')}
-          checked={mqttProxyToClient}
+          checked={mqttProxyToClientChecked}
           onChange={setMqttProxyToClient}
-          disabled={disabled || !mqttEnabled}
+          disabled={disabled || !mqttEnabled || mqttProxyForced}
           description={t('modulePanel.fields.mqttProxyToClientEnabledDesc')}
         />
         <ConfigText
