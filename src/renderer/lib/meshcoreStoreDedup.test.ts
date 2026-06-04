@@ -10,8 +10,10 @@ import {
   meshcoreChannelMessageStoreId,
   meshcoreMessageStoreId,
   meshcoreRoomMessageStoreId,
+  syncMeshcoreDisplayReplyRepairs,
   upsertMeshcoreMessageWithDedup,
 } from './meshcoreStoreDedup';
+import { chatMessageToMessageRecord } from './storeRecordAdapters';
 import type { ChatMessage } from './types';
 
 const ID = 'meshcore-dedup-test';
@@ -313,5 +315,32 @@ describe('meshcoreStoreDedup', () => {
 
     expect(result.message.replyId).toBe(1780240608140);
     expect(result.message.replyPreviewText).toContain('Message B');
+  });
+
+  it('syncMeshcoreDisplayReplyRepairs upserts store and persists DB when reply metadata changes', () => {
+    const tsMs = 1_700_000_030_000;
+    const base: ChatMessage = {
+      sender_id: 0xabcd1234,
+      sender_name: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      payload: 'hello',
+      receivedVia: 'rf',
+    };
+    upsertMessage(ID, chatMessageToMessageRecord(base));
+    const storeRecords = [chatMessageToMessageRecord(base)];
+    const repaired: ChatMessage[] = [
+      {
+        ...base,
+        replyId: 99,
+        replyPreviewSender: 'Bob',
+        replyPreviewText: 'prior msg',
+      },
+    ];
+    vi.mocked(window.electronAPI.db.saveMeshcoreMessage).mockClear();
+    syncMeshcoreDisplayReplyRepairs(ID, storeRecords, repaired);
+    const row = Object.values(useMessageStore.getState().messages[ID] ?? {})[0];
+    expect(row?.replyTo).toBe('99');
+    expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalled();
   });
 });

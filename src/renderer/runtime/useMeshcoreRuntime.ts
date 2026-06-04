@@ -2054,6 +2054,11 @@ export function useMeshcoreRuntime() {
     if (delayResult === 'aborted') return;
     if (delayResult === 'suspended') {
       meshcoreIsReconnectingRef.current = false;
+      setState((s) => ({
+        ...s,
+        status: 'disconnected',
+        connectionLoss: true,
+      }));
       return;
     }
     if (
@@ -4681,7 +4686,7 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
-    const storeId = getIdentityIdForProtocol('meshcore');
+    const storeId = meshcoreIdentityIdRef.current ?? getIdentityIdForProtocol('meshcore') ?? null;
     const storeRecord = storeId ? useNodeStore.getState().nodes[storeId]?.[nodeId] : undefined;
     const runtimeNode = nodesRef.current.get(nodeId);
     if (!runtimeNode && !storeRecord) return;

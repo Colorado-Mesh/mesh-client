@@ -595,4 +595,77 @@ describe('ModulePanel', () => {
     await user.click(ringtoneDetails!.querySelector('summary')!);
     expect(screen.getByRole('button', { name: 'Apply RTTTL Ringtone' })).toBeDisabled();
   });
+
+  it('blocks invalid RTTTL apply and shows error toast', async () => {
+    const user = userEvent.setup();
+    const onSetRingtone = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel {...baseProps} onSetRingtone={onSetRingtone} onCommit={onCommit} />,
+    );
+
+    const ringtoneDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'RTTTL Ringtone';
+    });
+    expect(ringtoneDetails).toBeDefined();
+    await user.click(ringtoneDetails!.querySelector('summary')!);
+    const textarea = screen.getByLabelText(/Ringtone string/i);
+    await user.clear(textarea);
+    await user.type(textarea, 'not-valid-rtttl');
+    await user.click(screen.getByRole('button', { name: 'Apply RTTTL Ringtone' }));
+    expect(onSetRingtone).not.toHaveBeenCalled();
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(screen.getAllByText(/Invalid RTTTL/i).length).toBeGreaterThan(0);
+  });
+
+  it('locks all module Apply buttons while any section is applying', async () => {
+    const user = userEvent.setup();
+    let resolveModule!: () => void;
+    const onSetModuleConfig = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveModule = resolve;
+        }),
+    );
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+          },
+          mqtt: { enabled: false },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+
+    const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Telemetry Module';
+    });
+    const mqttDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'MQTT Relay (Device-Side)';
+    });
+    expect(telemetryDetails).toBeDefined();
+    expect(mqttDetails).toBeDefined();
+    await user.click(telemetryDetails!.querySelector('summary')!);
+    await user.click(screen.getByRole('button', { name: 'Apply Telemetry Module' }));
+
+    await user.click(mqttDetails!.querySelector('summary')!);
+    expect(screen.getByRole('button', { name: 'Apply MQTT Relay (Device-Side)' })).toBeDisabled();
+
+    expect(resolveModule).toBeDefined();
+    resolveModule();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Apply MQTT Relay (Device-Side)' }),
+      ).not.toBeDisabled();
+    });
+  });
 });
