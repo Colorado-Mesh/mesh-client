@@ -36,12 +36,30 @@ export async function forgetMeshcoreRoomSavedSecrets(nodeId: number): Promise<vo
 }
 
 /** Keeps saved password but stops connect-time auto-login. */
-export async function disableMeshcoreRoomAutoLogin(nodeId: number): Promise<void> {
+export async function disableMeshcoreRoomAutoLogin(
+  nodeId: number,
+  opts?: { clearFailure?: boolean },
+): Promise<void> {
   const prev = getMeshcoreRoomSyncConfig(nodeId);
   await setMeshcoreRoomSyncConfig(nodeId, {
     enabled: prev.enabled,
     intervalMinutes: prev.intervalMinutes,
     autoLoginOnConnect: false,
   });
-  clearMeshcoreRoomAutoLoginFailure(nodeId);
+  if (opts?.clearFailure !== false) {
+    clearMeshcoreRoomAutoLoginFailure(nodeId);
+  }
+}
+
+/**
+ * Wrong-password / ACL failure: turn off auto-login and periodic sync but keep stored password.
+ * Does not clear in-memory auto-login failure (caller sets that for UI).
+ */
+export async function disableMeshcoreRoomLoginAfterAuthFailure(nodeId: number): Promise<void> {
+  const prev = getMeshcoreRoomSyncConfig(nodeId);
+  await setMeshcoreRoomSyncConfig(nodeId, {
+    enabled: false,
+    intervalMinutes: prev.intervalMinutes,
+    autoLoginOnConnect: false,
+  });
 }

@@ -154,6 +154,8 @@ Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-m
 
 **ATT MTU / writes:** Noble `toRadio` writes in `noble-ble-manager.ts` are chunked using negotiated `peripheral.mtu` (sanitized via `src/shared/bleAttWriteLimit.ts`; values below spec min 23 are coerced—NobleMac may log `MTU updated: 20` before a full exchange). Linux Web Bluetooth uses `webbluetooth-ble-manager.ts`; when Chromium exposes `maximumWriteValueLength`, writes are chunked—there is no standard Web API for negotiated MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)).
 
+**Meshtastic transport writes:** `meshtasticTransportLossDetection.ts` wraps `transport.toDevice` with `createSerializedWritableStream` so concurrent SDK `getWriter()` calls (ping, Store & Forward, queue) do not throw `WritableStream is locked`. After configure, `getMetadata` retries once after `MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS` when NodeDB traffic starves BLE.
+
 **Linux Web Bluetooth (Meshtastic):** `webbluetooth-ble-manager.ts` subscribes to **fromNum** GATT notify for unsolicited mesh traffic, runs a **3 s background fromRadio poll** between write cycles, and uses **multi-shot read probes** instead of a single post-write safety read (LoRa latency). MeshCore BLE echo filtering: `meshcoreCompanionTxEchoFilter.ts` (Noble + Web Bluetooth).
 
 ### Meshtastic channel URLs & Store & Forward
@@ -202,7 +204,8 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 
 - **UI:** `RoomsPanel.tsx` — login overlay, post composer (`ChatComposer`), admin CLI, auto-sync toggles; sidebar badge via `meshcoreRoomsUnread.ts` (`mesh-client:meshcoreRoomsUnread`).
 - **Session / RPC:** `meshcoreRoomSession.ts`, `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, `meshcoreRoomLogoutRpc.ts`, `meshcoreRoomLoginQueue.ts`, `meshcoreRoomLoginPathSync.ts`, `meshcoreRoomSentWait.ts`; credentials in `meshcoreRoomCredentialStorage.ts` / `meshcoreRoomSyncStorage.ts`.
-- **Scheduler:** `meshcoreRoomSyncScheduler.ts` + `useMeshcoreRuntime.ts` — periodic re-login (Auto-sync, RF-only). Timeouts in `timeConstants.ts` (shorter for TCP / 0-hop).
+- **Saved passwords:** `meshcoreRoomSavedSecrets.ts` — sidebar/overlay **Forget** / **Stop auto-login**; `forgetMeshcoreRoomSavedSecrets` clears credential + disables auto-login and auto-sync; `disableMeshcoreRoomLoginAfterAuthFailure` disables both without clearing password or in-memory failure UI.
+- **Scheduler:** `meshcoreRoomSyncScheduler.ts` + `useMeshcoreRuntime.ts` — periodic re-login (Auto-sync, RF-only); single-flight ticks; background route resolve uses `skipTrace` / `MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS`. Auth failure disables auto-sync and auto-login via `disableMeshcoreRoomLoginAfterAuthFailure`. Connect auto-login skips rooms with `getMeshcoreRoomAutoLoginFailure`. Timeouts in `timeConstants.ts` (shorter for TCP / 0-hop).
 - **Wire text:** `meshcoreChannelText.ts` — channel/DM/room payloads, SignedPlain inbound strip, tapback lines.
 
 ### Common issues

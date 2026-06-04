@@ -12,6 +12,7 @@ import {
 } from './meshcoreRoomCredentialStorage';
 import {
   disableMeshcoreRoomAutoLogin,
+  disableMeshcoreRoomLoginAfterAuthFailure,
   forgetMeshcoreRoomSavedSecrets,
   getMeshcoreRoomSavedSecretsSummary,
 } from './meshcoreRoomSavedSecrets';
@@ -73,5 +74,22 @@ describe('meshcoreRoomSavedSecrets', () => {
     expect(getMeshcoreRoomCredential(0x12)?.guestPassword).toBe('secret');
     expect(getMeshcoreRoomSyncConfig(0x12).autoLoginOnConnect).toBe(false);
     expect(getMeshcoreRoomSyncConfig(0x12).enabled).toBe(true);
+  });
+
+  it('disableMeshcoreRoomLoginAfterAuthFailure disables sync but keeps credential and failure', async () => {
+    await setMeshcoreRoomCredential(0x13, { guestPassword: 'hello' });
+    await setMeshcoreRoomSyncConfig(0x13, {
+      enabled: true,
+      intervalMinutes: 90,
+      autoLoginOnConnect: true,
+    });
+    setMeshcoreRoomAutoLoginFailure(0x13, 'room login rejected (wrong password or ACL denied)');
+    await disableMeshcoreRoomLoginAfterAuthFailure(0x13);
+    expect(getMeshcoreRoomCredential(0x13)?.guestPassword).toBe('hello');
+    const cfg = getMeshcoreRoomSyncConfig(0x13);
+    expect(cfg.enabled).toBe(false);
+    expect(cfg.autoLoginOnConnect).toBe(false);
+    expect(cfg.intervalMinutes).toBe(90);
+    expect(getMeshcoreRoomAutoLoginFailure(0x13)).toContain('rejected');
   });
 });

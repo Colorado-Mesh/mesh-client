@@ -1068,6 +1068,9 @@ export default function RoomsPanel({
           </div>
           {savedCredentialNodeIds.length > 0 && (
             <div className="shrink-0 border-b border-gray-800">
+              <h3 id="rooms-saved-passwords-heading" className="sr-only">
+                {t('roomsPanel.savedPasswordsHeading')}
+              </h3>
               <button
                 type="button"
                 onClick={() => {
@@ -1075,8 +1078,11 @@ export default function RoomsPanel({
                 }}
                 className="flex w-full items-center gap-1 px-3 py-1.5 text-left text-xs font-medium text-gray-300 hover:bg-gray-800/50"
                 aria-expanded={savedPasswordsOpen}
+                aria-labelledby="rooms-saved-passwords-heading"
               >
-                <span className="text-gray-500">{savedPasswordsOpen ? '▾' : '▸'}</span>
+                <span className="text-gray-500" aria-hidden>
+                  {savedPasswordsOpen ? '▾' : '▸'}
+                </span>
                 {t('roomsPanel.savedPasswordsCount', { count: savedCredentialNodeIds.length })}
               </button>
               {savedPasswordsOpen && (
@@ -1140,7 +1146,10 @@ export default function RoomsPanel({
               )}
             </div>
           )}
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div
+            className="min-h-0 flex-1 overflow-y-auto"
+            title={roomServers.length > 0 ? t('roomsPanel.sidebarLegendTitle') : undefined}
+          >
             {roomServers.length === 0 ? (
               <p className="px-3 py-4 text-sm text-gray-500">{t('roomsPanel.noRoomsYet')}</p>
             ) : (
