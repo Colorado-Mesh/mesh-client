@@ -23,36 +23,92 @@ export function isMeshtasticTransportLostError(err: unknown): boolean {
   return false;
 }
 
-function createLossAwareWritableStream(
+/**
+ * Serialize all writes (SDK getWriter, queue traffic, writeToRadioWithoutQueue) onto one inner
+ * writer chain so concurrent getWriter() calls do not throw WritableStream is locked.
+ */
+export function createSerializedWritableStream(
   inner: WritableStream<Uint8Array>,
-  onWriteError: (err: unknown) => void,
+  onWriteError?: (err: unknown) => void,
 ): WritableStream<Uint8Array> {
-  return new WritableStream<Uint8Array>({
-    async write(chunk) {
+  let chain: Promise<void> = Promise.resolve();
+
+  const runExclusive = <T>(fn: () => Promise<T>): Promise<T> => {
+    const run = chain.then(fn, fn);
+    chain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  };
+
+  const writeInner = async (chunk: Uint8Array): Promise<void> => {
+    await runExclusive(async () => {
       const writer = inner.getWriter();
       try {
         await writer.write(chunk);
       } catch (err) {
-        if (isMeshtasticTransportLostError(err)) {
+        if (onWriteError && isMeshtasticTransportLostError(err)) {
           onWriteError(err);
         }
         throw err;
       } finally {
         writer.releaseLock();
       }
-    },
-    async close() {
+    });
+  };
+
+  const closeInner = async (): Promise<void> => {
+    await runExclusive(async () => {
       const writer = inner.getWriter();
       try {
         await writer.close();
       } finally {
         writer.releaseLock();
       }
-    },
-    abort(reason) {
-      return inner.abort(reason);
+    });
+  };
+
+  const body = new WritableStream<Uint8Array>({
+    write: writeInner,
+    close: closeInner,
+    abort: (reason) => inner.abort(reason),
+  });
+
+  return new Proxy(body, {
+    get(target, prop, receiver) {
+      if (prop === 'getWriter') {
+        return () => ({
+          get closed(): Promise<void> {
+            return Promise.resolve();
+          },
+          get desiredSize(): null {
+            return null;
+          },
+          releaseLock(): void {
+            // Virtual writer: no outer-stream lock; each write is already serialized on inner.
+          },
+          write(chunk: Uint8Array): Promise<void> {
+            return writeInner(chunk);
+          },
+          close(): Promise<void> {
+            return closeInner();
+          },
+          abort(reason?: unknown): Promise<void> {
+            return inner.abort(reason);
+          },
+        });
+      }
+      return Reflect.get(target, prop, receiver);
     },
   });
+}
+
+function createLossAwareWritableStream(
+  inner: WritableStream<Uint8Array>,
+  onWriteError: (err: unknown) => void,
+): WritableStream<Uint8Array> {
+  return createSerializedWritableStream(inner, onWriteError);
 }
 
 /**

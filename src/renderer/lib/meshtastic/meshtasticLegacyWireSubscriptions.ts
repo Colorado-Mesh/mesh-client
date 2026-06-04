@@ -72,7 +72,10 @@ import { normalizeReactionEmoji } from '../reactions';
 import { enrichMeshtasticReplyPreviews } from '../replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
-import { MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS } from '../timeConstants';
+import {
+  MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
+  MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS,
+} from '../timeConstants';
 import type {
   ChatMessage,
   ConnectionType,
@@ -524,11 +527,21 @@ export function attachMeshtasticLegacyWireSubscriptions(
       deviceConfiguredRef.current = true;
       const myNode = myNodeNumRef.current;
       if (myNode > 0) {
-        void device.getMetadata(myNode).catch((e: unknown) => {
-          console.debug(
-            '[useMeshtasticRuntime] getMetadata after configure failed ' + errLikeToLogString(e),
-          );
-        });
+        const requestMetadataAfterConfigure = (attempt: 1 | 2): void => {
+          void device.getMetadata(myNode).catch((e: unknown) => {
+            console.debug(
+              '[useMeshtasticRuntime] getMetadata after configure failed ' +
+                errLikeToLogString(e) +
+                (attempt === 2 ? ' (retry)' : ''),
+            );
+            if (attempt === 1) {
+              setTimeout(() => {
+                requestMetadataAfterConfigure(2);
+              }, MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS);
+            }
+          });
+        };
+        requestMetadataAfterConfigure(1);
       }
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);

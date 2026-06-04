@@ -114,6 +114,12 @@ export const MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS = 60_000;
 /** Minimum auto-sync interval per room (minutes). */
 export const MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES = 60;
 
+/** Max wait for scheduler background route resolve (contacts only, no trace). */
+export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
+
+/** Delay before one retry of getMetadata after configure (NodeDB flood can starve BLE). */
+export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 8_000;
+
 /**
  * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's
  * FLOOD ADVERT within seconds; coalesce so the sniffer shows one row (newest wins).

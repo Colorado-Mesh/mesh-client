@@ -240,6 +240,7 @@ import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
   MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
   MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
+  MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS,
   MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
 } from '../lib/timeConstants';
@@ -423,6 +424,9 @@ export function useMeshcoreRuntime() {
   const repeaterRemoteRpcRef = useRef(createRepeaterRemoteRpcQueue());
   const lastMeshcoreRoomSyncTxAtRef = useRef(0);
   const roomSyncSchedulerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const roomSyncSchedulerInFlightRef = useRef(false);
+  /** NodeIds that already logged a scheduler no-route warn this session (subsequent → debug). */
+  const roomSyncSchedulerWarnedNodesRef = useRef(new Set<number>());
   const meshcoreRoomReconnectSyncRef = useRef<() => void>(() => {});
   const triggerRoomAutoLoginRef = useRef<() => void>(() => {});
   /** Debounced contacts refresh after path updates (event 129). */
@@ -3698,6 +3702,7 @@ export function useMeshcoreRuntime() {
       nodeId: number,
       loginHopsAway: number,
       pubKey: Uint8Array,
+      opts?: { schedulerFastPath?: boolean },
     ): Promise<Uint8Array | undefined> => {
       const fromMap = outPathMapRef.current.get(nodeId);
       if (fromMap && fromMap.length > 1) return fromMap;
@@ -3712,17 +3717,21 @@ export function useMeshcoreRuntime() {
       if (!conn || loginHopsAway <= 0) {
         return fromMap && fromMap.length > 0 ? fromMap : pathFromHistory;
       }
+      const schedulerFastPath = opts?.schedulerFastPath === true;
       const resolved = await withTimeout(
         resolveMeshcoreRoomLoginRouteBytes(conn, nodeId, {
           pubKey,
           outPathFromMap: fromMap,
           pathFromHistory,
           loginHopsAway,
-          allowPrime: fromMap == null || fromMap.length <= 1,
-          traceTimeoutMs: MESHCORE_TRACE_TIMEOUT_MS,
+          allowPrime: schedulerFastPath ? false : fromMap == null || fromMap.length <= 1,
+          skipTrace: schedulerFastPath,
+          traceTimeoutMs: schedulerFastPath ? 0 : MESHCORE_TRACE_TIMEOUT_MS,
           runSerialized: (fn) => repeaterRemoteRpcRef.current(fn),
         }),
-        MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
+        schedulerFastPath
+          ? MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS
+          : MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
         'meshcoreRoomLoginRouteResolve',
       ).catch(() => undefined);
       if (resolved && resolved.length > 0) {
@@ -3963,10 +3972,7 @@ export function useMeshcoreRuntime() {
     [loginRoom],
   );
 
-  const runRoomSyncSchedulerTick = useCallback(async (): Promise<void> => {
-    if (!connRef.current || (state.status !== 'configured' && state.status !== 'connected')) {
-      return;
-    }
+  const runRoomSyncSchedulerTickBody = useCallback(async (): Promise<void> => {
     const now = Date.now();
     if (now - lastMeshcoreRoomSyncTxAtRef.current < MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS) {
       return;
@@ -3998,7 +4004,9 @@ export function useMeshcoreRuntime() {
       const activeConn = connRef.current;
       if (!activeConn) return;
       const syncHops = resolveRoomLoginHopsForNode(target.nodeId);
-      const storedPath = await resolveRoomLoginStoredPath(target.nodeId, syncHops, pubKey);
+      const storedPath = await resolveRoomLoginStoredPath(target.nodeId, syncHops, pubKey, {
+        schedulerFastPath: true,
+      });
       if (syncHops > 0 && (!storedPath || storedPath.length <= 1)) {
         throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
       }
@@ -4025,12 +4033,37 @@ export function useMeshcoreRuntime() {
       });
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();
       await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+      roomSyncSchedulerWarnedNodesRef.current.delete(target.nodeId);
     } catch (e: unknown) {
-      console.warn(
-        '[useMeshcoreRuntime] room sync scheduler login failed ' + errLikeToLogString(e),
-      );
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE) {
+        await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+      }
+      const logLine =
+        '[useMeshcoreRuntime] room sync scheduler login failed ' + errLikeToLogString(e);
+      if (roomSyncSchedulerWarnedNodesRef.current.has(target.nodeId)) {
+        console.debug(logLine);
+      } else {
+        roomSyncSchedulerWarnedNodesRef.current.add(target.nodeId);
+        console.warn(logLine);
+      }
     }
-  }, [state.status, resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath]);
+  }, [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath]);
+
+  const runRoomSyncSchedulerTick = useCallback(async (): Promise<void> => {
+    if (!connRef.current || (state.status !== 'configured' && state.status !== 'connected')) {
+      return;
+    }
+    if (roomSyncSchedulerInFlightRef.current) {
+      return;
+    }
+    roomSyncSchedulerInFlightRef.current = true;
+    try {
+      await runRoomSyncSchedulerTickBody();
+    } finally {
+      roomSyncSchedulerInFlightRef.current = false;
+    }
+  }, [state.status, runRoomSyncSchedulerTickBody]);
 
   const runRoomAutoLoginOnConnect = useCallback(async (): Promise<void> => {
     if (!connRef.current) return;
@@ -4140,6 +4173,7 @@ export function useMeshcoreRuntime() {
         clearInterval(roomSyncSchedulerRef.current);
         roomSyncSchedulerRef.current = null;
       }
+      roomSyncSchedulerWarnedNodesRef.current.clear();
       return;
     }
     if (roomSyncSchedulerRef.current) return;
