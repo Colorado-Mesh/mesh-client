@@ -8,6 +8,7 @@ import {
   MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT,
 } from '../shared/meshcorePathHistoryLimits';
 import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
+import { MS_PER_DAY } from '../shared/timeConstants';
 import { NodeSqliteDB } from './db-compat';
 import {
   CANONICAL_CREATE_ALL_DDL,
@@ -18,8 +19,6 @@ import { sanitizeLogMessage } from './log-service';
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
 export { CURRENT_SCHEMA_VERSION };
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** Thrown when mergeDatabase rejects the source path before opening SQLite. */
 export class MergeSourceInvalidError extends Error {
