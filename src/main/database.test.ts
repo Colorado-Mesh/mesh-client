@@ -291,6 +291,24 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
       /deleteMeshcoreContactsByAge[\s\S]*Date\.now\(\) - days \* MS_PER_DAY/,
     );
   });
+
+  it('pruneMeshcoreContactsByCount caps DELETE limit by non-favorited deletable count', () => {
+    expect(DATABASE_SOURCE).toMatch(
+      /pruneMeshcoreContactsByCount[\s\S]*SELECT COUNT\(\*\) as cnt FROM meshcore_contacts WHERE \(favorited IS NULL OR favorited = 0\)/,
+    );
+    expect(DATABASE_SOURCE).toMatch(
+      /pruneMeshcoreContactsByCount[\s\S]*const toDelete = Math\.min\(total - maxCount, deletable\)/,
+    );
+    expect(DATABASE_SOURCE).not.toMatch(/\.run\(total - maxCount\)/);
+  });
+});
+
+describe('mergeDatabase source validation', () => {
+  it('throws MergeSourceInvalidError for invalid merge sources', () => {
+    expect(DB_SOURCE).toContain('throw new MergeSourceInvalidError');
+    expect(DB_SOURCE).toMatch(/isMergeSourceInvalidError\(err\)\) throw err/);
+    expect(DB_SOURCE).toContain("readonly code = 'MERGE_SOURCE_INVALID'");
+  });
 });
 
 describe('escapeSqlLikePattern', () => {

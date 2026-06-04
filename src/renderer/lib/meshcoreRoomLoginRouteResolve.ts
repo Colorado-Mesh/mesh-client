@@ -94,6 +94,8 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
     pathFromHistory?: Uint8Array;
     loginHopsAway: number;
     allowPrime?: boolean;
+    /** When true, skip flood prime and active trace (background scheduler fast-fail). */
+    skipTrace?: boolean;
     traceTimeoutMs?: number;
     runSerialized?: <T>(fn: () => Promise<T>) => Promise<T>;
   },
@@ -119,6 +121,10 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
   }
 
   if (path && path.length > 1) return path;
+
+  if (opts.skipTrace) {
+    return path && path.length > 0 ? path : undefined;
+  }
 
   if (opts.allowPrime !== false) {
     try {

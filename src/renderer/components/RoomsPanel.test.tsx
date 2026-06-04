@@ -13,13 +13,17 @@ import {
   clearAllMeshcoreRoomAutoLoginFailures,
   setMeshcoreRoomAutoLoginFailure,
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
-import { meshcoreRoomCredentialSettingForNode } from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import {
+  getMeshcoreRoomCredential,
+  meshcoreRoomCredentialSettingForNode,
+} from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   meshcoreApplyRoomSession,
   meshcoreClearAllRoomSessions,
   meshcoreClearRoomSession,
 } from '@/renderer/lib/meshcoreRoomSession';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
+import { getMeshcoreRoomSyncConfig } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
@@ -602,6 +606,76 @@ describe('RoomsPanel', () => {
     const raw = localStorage.getItem('mesh-client:starred:meshcore');
     expect(raw).toBeTruthy();
     expect(raw).toContain('Bookmark me');
+  });
+
+  it('shows saved passwords section collapsed by default when credentials exist', async () => {
+    const room = makeRoom(0x1020, 'Saved List Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test saved list',
+    );
+
+    renderRoomsPanel(nodes);
+
+    expect(screen.getByText('roomsPanel.savedPasswordsCount')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'roomsPanel.forgetSavedPasswordAria' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText('roomsPanel.savedPasswordsCount'));
+    expect(
+      screen.getAllByRole('button', { name: 'roomsPanel.forgetSavedPasswordAria' }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('forget saved password clears credential from storage', async () => {
+    const room = makeRoom(0x1021, 'Forget Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test forget',
+    );
+    mergeAppSetting(
+      `meshcoreRoomSync:${String(room.node_id >>> 0)}`,
+      JSON.stringify({ enabled: true, intervalMinutes: 60, autoLoginOnConnect: true }),
+      'RoomsPanel.test forget sync',
+    );
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    await userEvent.click(
+      screen.getAllByRole('button', { name: 'roomsPanel.forgetSavedPasswordAria' })[0],
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.forgetSavedPassword' }));
+
+    await waitFor(() => {
+      expect(getMeshcoreRoomCredential(room.node_id)).toBeUndefined();
+    });
+    expect(getMeshcoreRoomSyncConfig(room.node_id).enabled).toBe(false);
+    expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(false);
+    expect(screen.queryByText('roomsPanel.savedPasswordsCount')).not.toBeInTheDocument();
+  });
+
+  it('login overlay shows stop auto-login when saved credential has auto-login enabled', async () => {
+    const room = makeRoom(0x1022, 'Stop Auto Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test stop auto',
+    );
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    });
+    expect(screen.getByText('roomsPanel.statusPasswordSaved')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: 'roomsPanel.stopAutoLoginAria' }).length,
+    ).toBeGreaterThan(0);
   });
 
   it('does not auto-login on room select when saved credentials exist', async () => {

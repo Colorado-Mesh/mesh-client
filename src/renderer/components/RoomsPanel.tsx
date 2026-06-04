@@ -46,6 +46,11 @@ import {
   meshcoreRoomLoginQueueSize,
 } from '@/renderer/lib/meshcoreRoomLoginQueue';
 import {
+  disableMeshcoreRoomAutoLogin,
+  forgetMeshcoreRoomSavedSecrets,
+  getMeshcoreRoomSavedSecretsSummary,
+} from '@/renderer/lib/meshcoreRoomSavedSecrets';
+import {
   MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   meshcoreCancelAllRoomLogins,
   meshcoreGetRoomSession,
@@ -67,6 +72,7 @@ import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { getDistFromChatBottom } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
+import { ConfirmModal } from './ConfirmModal';
 import { MessageStatusBadge } from './MessageStatusBadge';
 
 function RoomUnreadDivider({ label }: { label: string }) {
@@ -222,6 +228,8 @@ export default function RoomsPanel({
   const [storedRoomIds, setStoredRoomIds] = useState<Set<number>>(
     () => new Set(listMeshcoreRoomCredentialNodeIds()),
   );
+  const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
+  const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
   const consumedInitialRoomRef = useRef<number | null>(null);
@@ -250,6 +258,22 @@ export default function RoomsPanel({
   const refreshStoredRooms = useCallback(() => {
     setStoredRoomIds(new Set(listMeshcoreRoomCredentialNodeIds()));
   }, []);
+
+  const savedCredentialNodeIds = useMemo(
+    () => [...storedRoomIds].sort((a, b) => a - b),
+    [storedRoomIds],
+  );
+
+  const resolveRoomDisplayName = useCallback(
+    (nodeId: number): string => {
+      const node = nodes.get(nodeId);
+      if (node?.long_name) return node.long_name;
+      return t('roomsPanel.savedPasswordOrphanLabel', {
+        nodeId: nodeId.toString(16).padStart(8, '0'),
+      });
+    },
+    [nodes, t],
+  );
 
   useEffect(() => {
     return subscribeMeshcoreRoomAutoLoginFailureChanges(() => {
@@ -476,6 +500,49 @@ export default function RoomsPanel({
     setAutoLoginOnConnect(config.autoLoginOnConnect ?? false);
     setSyncConfigDirty(false);
   }, []);
+
+  const handleStopAutoLogin = useCallback(
+    async (nodeId: number) => {
+      await disableMeshcoreRoomAutoLogin(nodeId);
+      if (selectedRoomId === nodeId) {
+        setAutoLoginOnConnect(false);
+        setSyncConfigDirty(false);
+      }
+      refreshStoredRooms();
+    },
+    [refreshStoredRooms, selectedRoomId],
+  );
+
+  const handleConfirmForgetSavedPassword = useCallback(async () => {
+    if (forgetConfirmNodeId == null) return;
+    const nodeId = forgetConfirmNodeId;
+    setForgetConfirmNodeId(null);
+    await forgetMeshcoreRoomSavedSecrets(nodeId);
+    refreshStoredRooms();
+    if (selectedRoomId === nodeId) {
+      loadSyncConfig(nodeId);
+      setRememberPassword(false);
+    }
+  }, [forgetConfirmNodeId, loadSyncConfig, refreshStoredRooms, selectedRoomId]);
+
+  const handleAutoLoginOnConnectChange = useCallback(
+    async (nodeId: number, enabled: boolean) => {
+      setAutoLoginOnConnect(enabled);
+      const prev = getMeshcoreRoomSyncConfig(nodeId);
+      if (!enabled) {
+        await disableMeshcoreRoomAutoLogin(nodeId);
+      } else {
+        await setMeshcoreRoomSyncConfig(nodeId, {
+          enabled: prev.enabled,
+          intervalMinutes: prev.intervalMinutes,
+          autoLoginOnConnect: true,
+        });
+      }
+      setSyncConfigDirty(false);
+      refreshStoredRooms();
+    },
+    [refreshStoredRooms],
+  );
 
   const handleSelectRoom = useCallback(
     (nodeId: number) => {
@@ -945,10 +1012,33 @@ export default function RoomsPanel({
   const cliHistory =
     selectedRoomId != null ? (meshcoreCliHistories?.get(selectedRoomId) ?? []) : [];
   const cliError = selectedRoomId != null ? meshcoreCliErrors?.get(selectedRoomId) : undefined;
+  const selectedRoomSecretsSummary =
+    selectedRoomId != null ? getMeshcoreRoomSavedSecretsSummary(selectedRoomId) : null;
+  const showLoginSavedSecretsControls =
+    selectedRoomId != null &&
+    !loggedIn &&
+    !selectedRoomLoginLoading &&
+    (storedRoomIds.has(selectedRoomId) ||
+      Boolean(getMeshcoreRoomAutoLoginFailure(selectedRoomId)) ||
+      selectedRoomSecretsSummary?.autoLoginOnConnect);
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
       {RemoteAuthModal}
+      {forgetConfirmNodeId != null && (
+        <ConfirmModal
+          title={t('roomsPanel.forgetSavedPasswordConfirmTitle')}
+          message={t('roomsPanel.forgetSavedPasswordConfirmBody')}
+          confirmLabel={t('roomsPanel.forgetSavedPassword')}
+          danger
+          onConfirm={() => {
+            void handleConfirmForgetSavedPassword();
+          }}
+          onCancel={() => {
+            setForgetConfirmNodeId(null);
+          }}
+        />
+      )}
       <div className="flex min-h-0 flex-1 gap-3">
         <div className="bg-secondary-dark flex min-h-0 w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700">
           <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
@@ -976,7 +1066,90 @@ export default function RoomsPanel({
               </button>
             ) : null}
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          {savedCredentialNodeIds.length > 0 && (
+            <div className="shrink-0 border-b border-gray-800">
+              <h3 id="rooms-saved-passwords-heading" className="sr-only">
+                {t('roomsPanel.savedPasswordsHeading')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setSavedPasswordsOpen((open) => !open);
+                }}
+                className="flex w-full items-center gap-1 px-3 py-1.5 text-left text-xs font-medium text-gray-300 hover:bg-gray-800/50"
+                aria-expanded={savedPasswordsOpen}
+                aria-labelledby="rooms-saved-passwords-heading"
+              >
+                <span className="text-gray-500" aria-hidden>
+                  {savedPasswordsOpen ? '▾' : '▸'}
+                </span>
+                {t('roomsPanel.savedPasswordsCount', { count: savedCredentialNodeIds.length })}
+              </button>
+              {savedPasswordsOpen && (
+                <ul className="max-h-40 overflow-y-auto border-t border-gray-800/80 pb-1">
+                  {savedCredentialNodeIds.map((nodeId) => {
+                    const summary = getMeshcoreRoomSavedSecretsSummary(nodeId);
+                    return (
+                      <li
+                        key={nodeId}
+                        className="border-b border-gray-800/60 px-3 py-1.5 last:border-b-0"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSelectRoom(nodeId);
+                          }}
+                          className="w-full truncate text-left text-xs text-gray-200 hover:text-white"
+                        >
+                          {resolveRoomDisplayName(nodeId)}
+                        </button>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                          {summary.autoLoginOnConnect && (
+                            <span className="rounded bg-gray-800 px-1 py-0.5 text-[10px] text-gray-400">
+                              {t('roomsPanel.badgeAutoLogin')}
+                            </span>
+                          )}
+                          {summary.syncEnabled && (
+                            <span className="rounded bg-gray-800 px-1 py-0.5 text-[10px] text-gray-400">
+                              {t('roomsPanel.badgeAutoSync')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {summary.autoLoginOnConnect && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void handleStopAutoLogin(nodeId);
+                              }}
+                              className="rounded border border-gray-600 bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300 hover:bg-gray-700"
+                              aria-label={t('roomsPanel.stopAutoLoginAria')}
+                            >
+                              {t('roomsPanel.stopAutoLogin')}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForgetConfirmNodeId(nodeId);
+                            }}
+                            className="rounded border border-red-900/50 bg-red-950/40 px-1.5 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30"
+                            aria-label={t('roomsPanel.forgetSavedPasswordAria')}
+                          >
+                            {t('roomsPanel.forgetSavedPassword')}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+          <div
+            className="min-h-0 flex-1 overflow-y-auto"
+            title={roomServers.length > 0 ? t('roomsPanel.sidebarLegendTitle') : undefined}
+          >
             {roomServers.length === 0 ? (
               <p className="px-3 py-4 text-sm text-gray-500">{t('roomsPanel.noRoomsYet')}</p>
             ) : (
@@ -999,12 +1172,14 @@ export default function RoomsPanel({
                       : 'text-gray-500';
                 const markerGlyph = isLogged ? '●' : isLeaving ? '◌' : hasSaved ? '◐' : '○';
                 const markerTitle = isLogged
-                  ? undefined
-                  : showAutoLoginFailed
-                    ? autoLoginFailed
-                    : hasSaved
-                      ? t('roomsPanel.savedPasswordNotLoggedIn')
-                      : undefined;
+                  ? t('roomsPanel.legendLoggedIn')
+                  : isLeaving
+                    ? t('roomsPanel.leaveRoomInProgress')
+                    : showAutoLoginFailed
+                      ? t('roomsPanel.autoLoginFailed', { error: autoLoginFailed ?? '' })
+                      : hasSaved
+                        ? t('roomsPanel.savedPasswordNotLoggedIn')
+                        : t('roomsPanel.legendNotSaved');
                 return (
                   <div
                     key={room.node_id}
@@ -1124,6 +1299,42 @@ export default function RoomsPanel({
                 {guestFieldEmpty && (
                   <p className="text-xs text-amber-200/90">{t('roomsPanel.emptyGuestLoginHint')}</p>
                 )}
+                {showLoginSavedSecretsControls && selectedRoomSecretsSummary && (
+                  <div className="space-y-2 rounded border border-gray-700 bg-gray-950/60 p-2 text-xs text-gray-400">
+                    {selectedRoomSecretsSummary.hasCredential && (
+                      <p>{t('roomsPanel.statusPasswordSaved')}</p>
+                    )}
+                    {selectedRoomSecretsSummary.autoLoginOnConnect && (
+                      <p>{t('roomsPanel.statusAutoLoginEnabled')}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {selectedRoomSecretsSummary.autoLoginOnConnect && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleStopAutoLogin(selectedRoomId);
+                          }}
+                          className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
+                          aria-label={t('roomsPanel.stopAutoLoginAria')}
+                        >
+                          {t('roomsPanel.stopAutoLogin')}
+                        </button>
+                      )}
+                      {selectedRoomSecretsSummary.hasCredential && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForgetConfirmNodeId(selectedRoomId);
+                          }}
+                          className="rounded border border-red-900/50 bg-red-950/40 px-2 py-1 text-xs text-red-300 hover:bg-red-900/30"
+                          aria-label={t('roomsPanel.forgetSavedPasswordAria')}
+                        >
+                          {t('roomsPanel.forgetSavedPassword')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleLogin}
@@ -1225,8 +1436,7 @@ export default function RoomsPanel({
                     type="checkbox"
                     checked={autoLoginOnConnect}
                     onChange={(e) => {
-                      setAutoLoginOnConnect(e.target.checked);
-                      setSyncConfigDirty(true);
+                      void handleAutoLoginOnConnectChange(selectedRoomId, e.target.checked);
                     }}
                     disabled={
                       !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
@@ -1293,6 +1503,18 @@ export default function RoomsPanel({
                   </span>
                 )}
                 <div className="ml-auto flex gap-2">
+                  {storedRoomIds.has(selectedRoomId) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgetConfirmNodeId(selectedRoomId);
+                      }}
+                      className="rounded border border-red-900/50 bg-red-950/40 px-2 py-1 text-xs text-red-300 hover:bg-red-900/30"
+                      aria-label={t('roomsPanel.forgetSavedPasswordAria')}
+                    >
+                      {t('roomsPanel.forgetSavedPassword')}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleLeaveRoom}

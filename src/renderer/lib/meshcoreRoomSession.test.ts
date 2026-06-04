@@ -10,6 +10,7 @@ import {
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomCanPost,
   meshcoreRoomLogin,
+  meshcoreRoomLoginErrorIsAuthFailure,
   meshcoreRoomLogout,
   meshcoreRoomTryRelogin,
 } from './meshcoreRoomSession';
@@ -287,5 +288,14 @@ describe('meshcoreRoomSession', () => {
     await meshcoreRoomLogout(conn, 42, pubKey);
     expect(mockRunMeshcoreRoomLogout).toHaveBeenCalledWith(conn, pubKey, undefined);
     expect(meshcoreIsRoomLoggedIn(42)).toBe(false);
+  });
+
+  it('meshcoreRoomLoginErrorIsAuthFailure detects rejected login errors', () => {
+    expect(
+      meshcoreRoomLoginErrorIsAuthFailure(
+        new Error('room login rejected (wrong password or ACL denied)'),
+      ),
+    ).toBe(true);
+    expect(meshcoreRoomLoginErrorIsAuthFailure(new Error('login timed out'))).toBe(false);
   });
 });

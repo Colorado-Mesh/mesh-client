@@ -543,6 +543,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 - When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
+- If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
 
 **Room post fails with "unsupported on this firmware"**:
 
