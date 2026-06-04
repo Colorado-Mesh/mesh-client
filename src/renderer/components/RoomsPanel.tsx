@@ -194,7 +194,9 @@ export default function RoomsPanel({
 }: Props) {
   const { t } = useTranslation();
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
+    () => initialRoomTarget ?? null,
+  );
   const [loginPassword, setLoginPassword] = useState(MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD);
   /** Tracks in-flight login promises before the shared queue snapshot updates (tests / fast paths). */
   const [localLoginRoomIds, setLocalLoginRoomIds] = useState<Set<number>>(() => new Set());
@@ -222,6 +224,7 @@ export default function RoomsPanel({
   );
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
+  const consumedInitialRoomRef = useRef<number | null>(null);
   const loginQueueRevision = useMeshcoreRoomLoginQueueRevision();
   const streamRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -229,8 +232,6 @@ export default function RoomsPanel({
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
   );
-  const persistedRoomsLastReadRef = useRef(persistedRoomsLastRead);
-  persistedRoomsLastReadRef.current = persistedRoomsLastRead;
   const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
   const [membersOpen, setMembersOpen] = useState(true);
@@ -462,17 +463,11 @@ export default function RoomsPanel({
 
   useEffect(() => {
     if (selectedRoomId == null) return;
-    const snapshot = persistedRoomsLastReadRef.current[selectedRoomId] ?? 0;
+    const snapshot = persistedRoomsLastRead[selectedRoomId] ?? 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- placed after scroll/read effects so their rAF does not clear the watermark before it is applied
     setUnreadDividerTimestamp(snapshot);
     setTriggerScrollToUnread((n) => n + 1);
-  }, [selectedRoomId]);
-
-  useEffect(() => {
-    if (initialRoomTarget != null) {
-      setSelectedRoomId(initialRoomTarget);
-      onInitialRoomConsumed?.();
-    }
-  }, [initialRoomTarget, onInitialRoomConsumed]);
+  }, [selectedRoomId, persistedRoomsLastRead]);
 
   const loadSyncConfig = useCallback((nodeId: number) => {
     const config = getMeshcoreRoomSyncConfig(nodeId);
@@ -485,6 +480,9 @@ export default function RoomsPanel({
   const handleSelectRoom = useCallback(
     (nodeId: number) => {
       setSelectedRoomId(nodeId);
+      setAclEntries([]);
+      setAclError(null);
+      setAclFetchedAt(null);
       setLoginErrorsByRoom((prev) => {
         if (!prev.has(nodeId)) return prev;
         const next = new Map(prev);
@@ -504,6 +502,19 @@ export default function RoomsPanel({
     },
     [loadSyncConfig],
   );
+
+  useEffect(() => {
+    if (initialRoomTarget == null) {
+      consumedInitialRoomRef.current = null;
+      return;
+    }
+    if (consumedInitialRoomRef.current === initialRoomTarget) return;
+    consumedInitialRoomRef.current = initialRoomTarget;
+    queueMicrotask(() => {
+      handleSelectRoom(initialRoomTarget);
+      onInitialRoomConsumed?.();
+    });
+  }, [initialRoomTarget, onInitialRoomConsumed, handleSelectRoom]);
 
   const loginQueueSnapshot = useMemo(() => {
     void loginQueueRevision;
@@ -738,12 +749,6 @@ export default function RoomsPanel({
       setAclLoading(false);
     }
   }, [canAdminRoom, onSendRoomAdminCli, selectedRoomId, t]);
-
-  useEffect(() => {
-    setAclEntries([]);
-    setAclError(null);
-    setAclFetchedAt(null);
-  }, [selectedRoomId]);
 
   const mentionNodes = useMemo(() => {
     const map = new Map<number, MeshNode>();
@@ -1494,7 +1499,7 @@ export default function RoomsPanel({
                                 const [, roomRaw] = s.viewKey.split(':');
                                 const roomId = Number.parseInt(roomRaw ?? '', 10);
                                 if (Number.isFinite(roomId)) {
-                                  setSelectedRoomId(roomId);
+                                  handleSelectRoom(roomId);
                                 }
                                 setStreamView('posts');
                                 setScrollToRowKey(s.starId);

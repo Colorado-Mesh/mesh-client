@@ -160,9 +160,9 @@ export default tseslint.config(
       // Strictness from eslint-plugin-react-hooks v7 flat preset: keep as warn until each
       // callsite matches App.tsx-style fixes (effects for ref mirrors, queueMicrotask for
       // setState-in-effect, purity for impure render helpers).
-      'react-hooks/refs': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/purity': 'warn',
+      'react-hooks/refs': 'error',
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/purity': 'error',
     },
   },
   // Security plugin: Node.js security patterns
