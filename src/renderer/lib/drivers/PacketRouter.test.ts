@@ -170,6 +170,50 @@ describe('PacketRouter', () => {
     expect(useMessageStore.getState().messages[ID].msg1.receivedVia).toBe('both');
   });
 
+  it('re-keys optimistic tapback row when RF echo arrives (no duplicate)', () => {
+    const tempId = '289800531';
+    const realId = '672866887';
+    const ts = Date.now();
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          [tempId]: {
+            id: tempId,
+            from: 649425065,
+            to: 0xffffffff,
+            payload: '✈️',
+            channelIndex: 0,
+            timestamp: ts,
+            status: 'sending',
+            tapback: true,
+            replyTo: '3608225609',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: realId,
+          from: 649425065,
+          to: 0xffffffff,
+          payload: '✈️',
+          channelIndex: 0,
+          timestamp: ts,
+          tapback: true,
+          replyTo: '3608225609',
+        },
+      },
+      ID,
+    );
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(Object.keys(byId)).toHaveLength(1);
+    expect(byId[realId]).toBeDefined();
+    expect(byId[tempId]).toBeUndefined();
+    expect(byId[realId].tapback).toBe(true);
+  });
+
   it('ignores unknown event types without throwing', () => {
     expect(() => {
       packetRouter.dispatch({ type: 'nonexistent' } as unknown as DomainEvent, ID);

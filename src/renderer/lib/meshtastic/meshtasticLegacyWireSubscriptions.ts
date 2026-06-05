@@ -703,7 +703,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
   });
   unsubscribesRef.current.push(unsub_meta);
 
-  const maybeRequestNodeInfoAfterText = (from: number): void => {
+  const maybeRequestNodeInfoForNode = (from: number): void => {
     if (from === 0 || from === myNodeNumRef.current) return;
     if (isConfiguringRef.current) return;
     const existing = nodesRef.current.get(from);
@@ -734,7 +734,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     if (dataPacket.portnum !== Portnums.PortNum.TEXT_MESSAGE_APP) return;
 
     ensureNodeExists(meshPacket.from, 'rf');
-    maybeRequestNodeInfoAfterText(meshPacket.from);
+    maybeRequestNodeInfoForNode(meshPacket.from);
 
     // Bump last_heard for the sender on live (non-replay) packets.
     if (!isConfiguringRef.current && meshPacket.from) {
@@ -1248,6 +1248,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
         .processNodeUpdate(node, homeNode, myNodeNumRef.current, MESHTASTIC_CAPABILITIES);
     }
     usePositionHistoryStore.getState().recordPosition(packet.from, lat, lon);
+    maybeRequestNodeInfoForNode(packet.from);
   });
   unsubscribesRef.current.push(unsub6);
 
@@ -1406,6 +1407,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
               MESHTASTIC_CAPABILITIES,
             );
         }
+        maybeRequestNodeInfoForNode(packet.from);
       }
       if (packet.from === myNodeNumRef.current) {
         applyOwnNodeBatteryFromDeviceMetrics(metrics.batteryLevel);

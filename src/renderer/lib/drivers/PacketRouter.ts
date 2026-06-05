@@ -125,6 +125,14 @@ class PacketRouter {
               const tempNum = Number.parseInt(roomOptimistic.id, 10);
               if (Number.isFinite(tempNum) && tempNum > 0) {
                 retargetMeshtasticOutboundTempId(tempNum, event.payload.id);
+                if (event.payload.tapback) {
+                  const realNum = Number.parseInt(event.payload.id, 10);
+                  if (Number.isFinite(realNum) && realNum > 0 && realNum !== tempNum) {
+                    void window.electronAPI.db
+                      .updateMessagePacketId(tempNum, realNum, event.payload.from)
+                      .catch(() => {});
+                  }
+                }
               }
             }
           }
