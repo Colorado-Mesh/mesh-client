@@ -52,11 +52,12 @@ function main() {
     }
     console.log('Installing Xcode Command Line Tools. Follow prompts if any...');
     const inst = spawnSync('xcode-select', ['--install'], { stdio: 'inherit' });
+    if ((inst.status ?? 1) !== 0) {
+      console.error(
+        'Could not run xcode-select --install automatically. Install Xcode Command Line Tools manually.',
+      );
+    }
     process.exit(inst.status ?? 0);
-    console.error(
-      'Could not run xcode-select --install automatically. Install Xcode Command Line Tools manually.',
-    );
-    process.exit(1);
   }
 
   if (platform === 'win32') {

@@ -2345,6 +2345,7 @@ export function useMeshtasticRuntime() {
           channel,
           timestamp: Date.now(),
           packetId: tempId,
+          receivedVia: deviceRef.current ? ('rf' as const) : ('mqtt' as const),
           status: deviceRef.current ? ('sending' as const) : undefined,
           mqttStatus: shouldUplink ? ('sending' as const) : undefined,
           to: destination != null && destination >>> 0 !== BROADCAST_ADDR ? destination : undefined,

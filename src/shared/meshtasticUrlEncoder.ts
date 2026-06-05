@@ -113,7 +113,7 @@ function channelSettingsFromProtobuf(settings: {
       ? pskRaw
       : typeof pskRaw === 'string'
         ? base64ToBytes(pskRaw)
-        : new Uint8Array([0x01]);
+        : new Uint8Array(16);
   return {
     name: settings.name ?? '',
     psk,
@@ -161,7 +161,7 @@ function buildChannelSet(
 
 /** Matches Meshtastic Python client add-only links (`/?add=true#` before payload). */
 function isAddOnlyConfigUrl(url: string): boolean {
-  return /\/\?add=true#/i.test(url) || /\?add=true#/i.test(url);
+  return /\?add=true#/i.test(url);
 }
 
 function extractPayloadFromUrl(url: string): { payload: string; mode: 'replace' | 'add' } {

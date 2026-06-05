@@ -10,6 +10,12 @@ describe('meshcoreContactsAgeCutoffSec', () => {
     expect(meshcoreContactsAgeCutoffSec(30, nowMs)).toBe(Math.floor(nowMs / 1000) - 30 * 86400);
   });
 
+  it('honors fractional day counts', () => {
+    expect(meshcoreContactsAgeCutoffSec(1.5, nowMs)).toBe(
+      Math.floor(nowMs / 1000) - Math.floor(1.5 * 86400),
+    );
+  });
+
   it('returns null for invalid day counts', () => {
     expect(meshcoreContactsAgeCutoffSec(0, nowMs)).toBeNull();
     expect(meshcoreContactsAgeCutoffSec(-1, nowMs)).toBeNull();

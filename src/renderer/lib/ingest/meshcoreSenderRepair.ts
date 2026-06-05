@@ -11,6 +11,7 @@ export function repairMeshcoreChannelSenderIdsInStore(identityId: IdentityId): v
   const byId = useMessageStore.getState().messages[identityId];
   if (!byId) return;
 
+  const patches: Parameters<typeof upsertMessage>[1][] = [];
   for (const record of Object.values(byId)) {
     if (record.from !== 0 || record.channelIndex < 0) continue;
     const chat = messageRecordToChatMessage(record);
@@ -18,10 +19,13 @@ export function repairMeshcoreChannelSenderIdsInStore(identityId: IdentityId): v
       rawText: meshcoreChannelRepairRawText(chat),
     });
     if (resolved.senderId <= 0 || resolved.senderId === record.from) continue;
-    upsertMessage(identityId, {
+    patches.push({
       ...record,
       from: resolved.senderId,
       ...(resolved.displayName ? { senderName: resolved.displayName } : {}),
     });
+  }
+  for (const patch of patches) {
+    upsertMessage(identityId, patch);
   }
 }

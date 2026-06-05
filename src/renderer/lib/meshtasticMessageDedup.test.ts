@@ -152,6 +152,20 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
     const { messages } = mapMeshtasticCrossTransportUpgrade([optimistic], mqtt);
     expect(messages[0].packetId).toBe(0x99999999);
   });
+
+  it('matches outbound RF optimistic row with MQTT echo when receivedVia is set', () => {
+    const outbound = baseMsg({
+      packetId: 0x99999999,
+      receivedVia: 'rf',
+      status: 'sending',
+    });
+    const mqtt = baseMsg({
+      packetId: 0xbbbbbbbb,
+      receivedVia: 'mqtt',
+      timestamp: outbound.timestamp + 5_000,
+    });
+    expect(findMeshtasticCrossTransportDuplicate([outbound], mqtt)).toBe(outbound);
+  });
 });
 
 describe('Meshtastic runtime cross-transport integration — logic layer', () => {

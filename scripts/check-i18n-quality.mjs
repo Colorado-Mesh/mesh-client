@@ -396,6 +396,7 @@ const BRAND_WORD_RES = new Map([
   ['Meshtastic', /\bMeshtastic\b/g],
   ['MeshCore', /\bMeshCore\b/g],
   ['MQTT', /\bMQTT\b/g],
+  ['GPIO', /\bGPIO\b/g],
 ]);
 
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.

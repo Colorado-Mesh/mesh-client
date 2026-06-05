@@ -24,6 +24,10 @@ const PRELOAD_FILE = path.join(ROOT, 'src', 'preload', 'index.ts');
 const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'index.ts'),
   path.join(ROOT, 'src', 'main', 'updater.ts'),
+  path.join(ROOT, 'src', 'main', 'database.ts'),
+  path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
+  path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
+  path.join(ROOT, 'src', 'main', 'log-service.ts'),
 ];
 
 const SUPPRESS = /\/\/\s*ipc-contract-ok\b/;

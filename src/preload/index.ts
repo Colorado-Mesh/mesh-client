@@ -6,6 +6,9 @@ import type {
   NobleBleConnectResult,
   NobleBleDevice,
   NobleBleSessionId,
+  OutboxEntry,
+  OutboxEntryInput,
+  OutboxStatus,
   SerialPort,
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
@@ -870,11 +873,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
         } | null>,
     },
     outbox: {
-      list: (protocol: unknown) => ipcRenderer.invoke('chat:outbox:list', protocol),
-      add: (entry: unknown) => ipcRenderer.invoke('chat:outbox:add', entry),
-      updateStatus: (id: unknown, status: unknown, error?: unknown, nextRetryAt?: unknown) =>
+      list: (protocol: string) =>
+        ipcRenderer.invoke('chat:outbox:list', protocol) as Promise<OutboxEntry[]>,
+      add: (entry: OutboxEntryInput) =>
+        ipcRenderer.invoke('chat:outbox:add', entry) as Promise<OutboxEntry>,
+      updateStatus: (id: number, status: OutboxStatus, error?: string, nextRetryAt?: number) =>
         ipcRenderer.invoke('chat:outbox:updateStatus', id, status, error, nextRetryAt),
-      remove: (id: unknown) => ipcRenderer.invoke('chat:outbox:remove', id),
+      remove: (id: number) => ipcRenderer.invoke('chat:outbox:remove', id),
     },
   },
 

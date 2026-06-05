@@ -21,6 +21,15 @@ import { escapeSqlLikePattern } from '../shared/sqlLikeEscape';
 const DB_SOURCE = readFileSync(join(__dirname, 'database.ts'), 'utf-8');
 const SCHEMA_SYNC_SOURCE = readFileSync(join(__dirname, 'db-schema-sync.ts'), 'utf-8');
 
+describe('database shutdown guard', () => {
+  it('getDatabase throws after closeDatabase sets dbClosed', () => {
+    expect(DB_SOURCE).toContain('let dbClosed = false');
+    expect(DB_SOURCE).toContain('export function isDatabaseClosed()');
+    expect(DB_SOURCE).toMatch(/if \(dbClosed\)[\s\S]*Database is closed/);
+    expect(DB_SOURCE).toMatch(/closeDatabase[\s\S]*dbClosed = true/);
+  });
+});
+
 describe('deleteNodesWithoutLongname SQL', () => {
   it('deletes NULL long_name', () => {
     expect(DB_SOURCE).toMatch(/DELETE FROM nodes.*long_name IS NULL/s);

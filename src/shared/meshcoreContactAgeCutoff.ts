@@ -6,5 +6,5 @@ export function meshcoreContactsAgeCutoffSec(
   nowMs: number = Date.now(),
 ): number | null {
   if (typeof days !== 'number' || days < 1 || !Number.isFinite(days)) return null;
-  return Math.floor(nowMs / 1000) - Math.floor(days) * SECONDS_PER_DAY;
+  return Math.floor(nowMs / 1000) - Math.floor(days * SECONDS_PER_DAY);
 }

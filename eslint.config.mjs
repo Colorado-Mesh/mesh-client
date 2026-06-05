@@ -110,7 +110,7 @@ export default tseslint.config(
   },
   // Node scripts: no TS program — disable type-checked rules; keep security + Node globals
   {
-    files: ['scripts/**/*.{js,cjs,mjs}'],
+    files: ['scripts/**/*.{js,cjs}'],
     languageOptions: {
       ...tseslint.configs.disableTypeChecked.languageOptions,
       ecmaVersion: 'latest',
@@ -118,6 +118,27 @@ export default tseslint.config(
       globals: {
         require: 'readonly',
         module: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+      },
+    },
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-undef': 'off',
+      'prettier/prettier': 'off',
+      'simple-import-sort/imports': 'off',
+      'no-redeclare': 'off',
+    },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
         process: 'readonly',
         console: 'readonly',
         setTimeout: 'readonly',

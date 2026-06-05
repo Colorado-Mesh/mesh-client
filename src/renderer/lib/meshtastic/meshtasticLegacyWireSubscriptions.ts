@@ -31,6 +31,7 @@ import { setConnection } from '../../stores/connectionStore';
 import { setMeshtasticConfigSlice } from '../../stores/deviceStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateIdentity } from '../../stores/identityStore';
+import { useMessageStore } from '../../stores/messageStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../chatInMemoryBuffer';
 import { safeDisconnect } from '../connection';
@@ -72,6 +73,7 @@ import { normalizeReactionEmoji } from '../reactions';
 import { enrichMeshtasticReplyPreviews } from '../replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
+import { messageRecordsToChatMessages } from '../storeRecordAdapters';
 import {
   MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
   MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS,
@@ -841,7 +843,14 @@ export function attachMeshtasticLegacyWireSubscriptions(
         };
 
     if (!chatInStore && !isEcho && !rfMsg.emoji) {
-      const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, rfMsg);
+      const storeId = meshtasticIdentityIdRef.current;
+      const storeMsgs = storeId
+        ? messageRecordsToChatMessages(
+            Object.values(useMessageStore.getState().messages[storeId] ?? {}),
+          )
+        : [];
+      const dedupSource = storeMsgs.length > 0 ? storeMsgs : messagesRef.current;
+      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, rfMsg);
       if (crossDup) {
         const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
         setMessages((prev) => {

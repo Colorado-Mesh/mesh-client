@@ -73,6 +73,7 @@ import { isValidHttpHostname } from './httpHostValidation';
 import {
   clearLogFile,
   exportLogTo,
+  flushLogBeforeQuit,
   formatRuntimeLogTag,
   forwardRendererConsoleMessage,
   getLogPath,
@@ -249,8 +250,33 @@ let trayContextMenu: Menu | null = null;
 let appMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
-/** Second pass of `before-quit` after async Noble BLE teardown (see `before-quit` handler). */
-let nobleQuitRetry = false;
+let shutdownDone = false;
+
+/** Stop network services, flush logs, and close SQLite before process exit. */
+async function shutdownAppResources(): Promise<void> {
+  if (shutdownDone) return;
+  isQuitting = true;
+  try {
+    takServerManager?.stop();
+  } catch (err) {
+    console.debug(
+      '[main] TAK server stop during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
+  try {
+    mqttManager.disconnect();
+    meshcoreMqttAdapter.disconnect();
+  } catch (err) {
+    console.debug(
+      '[main] MQTT disconnect during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal library error during cleanup
+  }
+  await flushLogBeforeQuit();
+  closeDatabase();
+  shutdownDone = true;
+}
 /** powerSaveBlocker ID while a device is connected; null when not active. */
 let powerSaveBlockerId: number | null = null;
 
@@ -3131,13 +3157,8 @@ ipcMain.handle('app:quit', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  isQuitting = true;
   isConnected = false;
   try {
-    mqttManager.disconnect();
-
-    meshcoreMqttAdapter.disconnect();
-
     await nobleBleManager.stopAllScanning();
     try {
       await nobleBleManager.disconnectAll();
@@ -3148,7 +3169,7 @@ ipcMain.handle('app:quit', async (event) => {
       );
     }
 
-    closeDatabase();
+    await shutdownAppResources();
 
     if (meshcoreTcpSocket) {
       try {
@@ -5595,9 +5616,7 @@ app.on('before-quit', (event) => {
     lastBluetoothDeviceIds.clear();
   }
 
-  if (nobleQuitRetry) {
-    isQuitting = true;
-    closeDatabase();
+  if (shutdownDone) {
     return;
   }
 
@@ -5613,15 +5632,17 @@ app.on('before-quit', (event) => {
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
       } finally {
-        nobleQuitRetry = true;
+        await shutdownAppResources();
         app.quit();
       }
     })();
     return;
   }
 
-  isQuitting = true;
-  closeDatabase();
+  event.preventDefault();
+  void shutdownAppResources().then(() => {
+    app.quit();
+  });
 });
 
 app.on('will-quit', () => {

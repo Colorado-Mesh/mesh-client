@@ -46,8 +46,12 @@ export function normalizeReactionEmoji(
       if (wireEmoji === 1) {
         return cp;
       }
-      // Non-boolean wire values: prefer payload glyph when clearly Unicode (not legacy index noise).
-      if (cp > 0x1000) return cp;
+      // Non-boolean wire values: prefer payload when wire is not a legacy index, or payload disagrees with it.
+      const isLegacyIndex =
+        wireEmoji != null && wireEmoji >= 1 && wireEmoji <= REACTION_EMOJI_CODES.length;
+      if (!isLegacyIndex || cp !== REACTION_EMOJI_CODES[wireEmoji - 1]) {
+        return cp;
+      }
     }
   }
   if (wireEmoji == null) return undefined;

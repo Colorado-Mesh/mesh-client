@@ -7,7 +7,7 @@ export const MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG = 1;
 /** Coerce protobuf fixed32 / JSON wire values to uint32; returns undefined for 0 / null / non-finite. */
 export function meshtasticWireUint32NonZero(v: unknown): number | undefined {
   if (v == null) return undefined;
-  const n = typeof v === 'bigint' ? Number(v) : Number(v);
+  const n = Number(v);
   if (!Number.isFinite(n)) return undefined;
   const u = n >>> 0;
   return u === 0 ? undefined : u;
@@ -16,7 +16,7 @@ export function meshtasticWireUint32NonZero(v: unknown): number | undefined {
 /** Coerce mesh packet id (uint32); preserves 0 as a valid value (protobuf may use 0 for unset / no-ack). */
 export function meshtasticWireUint32AllowZero(v: unknown): number | undefined {
   if (v == null) return undefined;
-  const n = typeof v === 'bigint' ? Number(v) : Number(v);
+  const n = Number(v);
   if (!Number.isFinite(n)) return undefined;
   return n >>> 0;
 }

@@ -24,7 +24,7 @@ export function splitChannelPskLine(line: string): SplitChannelPskLine | null {
       const indexPart = match[2];
       const index = indexPart !== undefined ? parseInt(indexPart.slice(1), 10) : undefined;
       const b64 = trimmed.slice(eq + 1);
-      if (b64.length > 0) {
+      if (indexPart !== undefined || b64.length > 0) {
         return { kind: 'named', name, index, b64 };
       }
     }

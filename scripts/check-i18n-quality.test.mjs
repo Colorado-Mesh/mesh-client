@@ -877,4 +877,9 @@ describe('protectedBrandIssues', () => {
       ),
     ).toEqual([]);
   });
+
+  it('flags missing GPIO brand when English has one', () => {
+    const issues = protectedBrandIssues('GPIO pin — encoder A', 'Pin de codificador A');
+    expectIssue(issues, 'Brand "GPIO" missing');
+  });
 });

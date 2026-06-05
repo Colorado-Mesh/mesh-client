@@ -55,13 +55,15 @@ export function decodeStoreForwardTextPayload(data: Uint8Array): string | null {
 export function resolveMeshtasticTextMessagePayload(
   data: Uint8Array,
 ): ResolvedMeshtasticTextPayload | null {
-  const sfText = decodeStoreForwardTextPayload(data);
-  if (sfText != null) {
-    return { text: sfText, viaStoreForward: true };
-  }
-
   const parsed = parseStoreForwardPacket(data);
-  if (parsed && parsed.variant.case !== 'text') {
+  if (parsed) {
+    if (parsed.variant.case === 'text') {
+      const sfText = decodeStoreForwardTextPayload(data);
+      if (sfText != null) {
+        return { text: sfText, viaStoreForward: true };
+      }
+      return null;
+    }
     return null;
   }
 
