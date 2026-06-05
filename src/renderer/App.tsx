@@ -110,7 +110,10 @@ import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
-import { shouldAutoLaunchMeshtasticMqtt } from './lib/meshtasticMqttLiveIngest';
+import {
+  shouldAutoLaunchMeshtasticMqtt,
+  shouldMaintainMeshtasticMqttConnection,
+} from './lib/meshtasticMqttLiveIngest';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
@@ -1486,7 +1489,19 @@ function AppContent({
   }, []);
 
   // Dual-mode: each protocol manages its own MQTT connection independently.
-  // No automatic MQTT disconnect on context switch.
+  // Meshtastic MQTT disconnects when switching to MeshCore without an RF radio.
+
+  const hasMeshtasticRfDevice =
+    meshtasticConnectionView.state.connectionType != null &&
+    meshtasticConnectionView.state.status !== 'disconnected';
+
+  useEffect(() => {
+    if (shouldMaintainMeshtasticMqttConnection(protocol, hasMeshtasticRfDevice)) return;
+    if (meshtasticConnectionView.mqttStatus === 'disconnected') return;
+    void window.electronAPI.mqtt.disconnect('meshtastic').catch((e: unknown) => {
+      console.debug('[App] Meshtastic MQTT disconnect on MeshCore tab ' + errLikeToLogString(e));
+    });
+  }, [protocol, hasMeshtasticRfDevice, meshtasticConnectionView.mqttStatus]);
 
   // ─── MQTT auto-launch on startup ─────────────────────────────────
   // Launch MQTT for each protocol when autoLaunch is enabled. Meshtastic MQTT only

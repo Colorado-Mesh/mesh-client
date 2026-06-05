@@ -123,6 +123,20 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
     expect(useNodeStore.getState().nodes[ID_MT][474578492].shortName).toBe('CWW');
   });
 
+  it('upsertNode preserves longName when Meshtastic node_info sends empty string', () => {
+    upsertNode(ID_MT, { nodeId: 474578492, longName: 'CWW Home', shortName: 'CWW' });
+    upsertNode(ID_MT, { nodeId: 474578492, longName: '', shortName: '   ' });
+    expect(useNodeStore.getState().nodes[ID_MT][474578492].longName).toBe('CWW Home');
+    expect(useNodeStore.getState().nodes[ID_MT][474578492].shortName).toBe('CWW');
+  });
+
+  it('upsertNode ignores Meshtastic placeholder long name', () => {
+    const nodeId = 0x1a2b3c4d;
+    upsertNode(ID_MT, { nodeId, longName: 'Real Name', shortName: 'RN' });
+    upsertNode(ID_MT, { nodeId, longName: '!1a2b3c4d', shortName: 'RN' });
+    expect(useNodeStore.getState().nodes[ID_MT][nodeId].longName).toBe('Real Name');
+  });
+
   it('syncMeshtasticNodesMapToIdentityStore does not wipe store longName from stub runtime rows', () => {
     upsertNode(ID_MT, {
       nodeId: 649425065,

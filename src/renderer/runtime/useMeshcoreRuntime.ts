@@ -132,7 +132,6 @@ import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomAutoLoginFailure,
   getMeshcoreRoomAutoLoginFailure,
-  setMeshcoreRoomAutoLoginFailure,
 } from '../lib/meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
@@ -141,7 +140,7 @@ import {
 } from '../lib/meshcoreRoomCredentialStorage';
 import { syncMeshcoreRoomContactPathBeforeLogin } from '../lib/meshcoreRoomLoginPathSync';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
-import { disableMeshcoreRoomLoginAfterAuthFailure } from '../lib/meshcoreRoomSavedSecrets';
+import { applyMeshcoreRoomLoginFailure } from '../lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreRoomPostSendErrorMessage,
   sendMeshcoreRoomPostWithSentWait,
@@ -3961,9 +3960,8 @@ export function useMeshcoreRuntime() {
           });
           clearMeshcoreRoomAutoLoginFailure(nodeId);
         } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e);
           if (!meshcoreIsRoomLoginAbortError(e)) {
-            setMeshcoreRoomAutoLoginFailure(nodeId, msg || 'timeout');
+            await applyMeshcoreRoomLoginFailure(nodeId, e, 'useMeshcoreRuntime loginAllSavedRooms');
           }
           console.warn(
             '[useMeshcoreRuntime] loginAllSavedRooms failed ' +
@@ -4056,14 +4054,11 @@ export function useMeshcoreRuntime() {
         return;
       }
       if (meshcoreRoomLoginErrorIsAuthFailure(e)) {
-        try {
-          await disableMeshcoreRoomLoginAfterAuthFailure(target.nodeId);
-        } catch (persistErr: unknown) {
-          console.warn(
-            '[useMeshcoreRuntime] disable room sync after auth failure failed ' +
-              errLikeToLogString(persistErr),
-          );
-        }
+        await applyMeshcoreRoomLoginFailure(
+          target.nodeId,
+          e,
+          'useMeshcoreRuntime room sync scheduler',
+        );
       }
       const logLine =
         '[useMeshcoreRuntime] room sync scheduler login failed ' + errLikeToLogString(e);
@@ -4110,19 +4105,12 @@ export function useMeshcoreRuntime() {
           await loginRoomWithSaved(nodeId);
           lastMeshcoreRoomSyncTxAtRef.current = Date.now();
         } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e);
           if (!meshcoreIsRoomLoginAbortError(e)) {
-            if (meshcoreRoomLoginErrorIsAuthFailure(e)) {
-              try {
-                await disableMeshcoreRoomLoginAfterAuthFailure(nodeId);
-              } catch (persistErr: unknown) {
-                console.warn(
-                  '[useMeshcoreRuntime] disable auto-login after auth failure failed ' +
-                    errLikeToLogString(persistErr),
-                );
-              }
-            }
-            setMeshcoreRoomAutoLoginFailure(nodeId, msg || 'timeout');
+            await applyMeshcoreRoomLoginFailure(
+              nodeId,
+              e,
+              'useMeshcoreRuntime room auto-login on connect',
+            );
           }
           console.warn(
             '[useMeshcoreRuntime] room auto-login on connect failed ' + errLikeToLogString(e),

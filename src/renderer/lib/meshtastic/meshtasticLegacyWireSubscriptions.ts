@@ -1378,6 +1378,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
     // Update node battery if from a known node
     if (metrics.batteryLevel != null && packet.from) {
+      ensureNodeExists(packet.from, 'rf');
       const existing = nodesRef.current.get(packet.from);
       if (existing) {
         const node: MeshNode = {
@@ -1407,8 +1408,8 @@ export function attachMeshtasticLegacyWireSubscriptions(
               MESHTASTIC_CAPABILITIES,
             );
         }
-        maybeRequestNodeInfoForNode(packet.from);
       }
+      maybeRequestNodeInfoForNode(packet.from);
       if (packet.from === myNodeNumRef.current) {
         applyOwnNodeBatteryFromDeviceMetrics(metrics.batteryLevel);
       }

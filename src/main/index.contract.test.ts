@@ -105,7 +105,9 @@ describe('MeshCore DB IPC (source contract)', () => {
       /for \(let i = 0; i < contacts\.length; i \+= MESHCORE_CONTACTS_BATCH_MAX\)/,
     );
     expect(INDEX_SOURCE).toContain('contacts.slice(i, i + MESHCORE_CONTACTS_BATCH_MAX)');
+    expect(INDEX_SOURCE).toContain('return saveMeshcoreContactsBatch(rows)');
     expect(INDEX_SOURCE).not.toContain('max 500 contacts per batch');
+    expect(INDEX_SOURCE).not.toMatch(/saved \+= saveMeshcoreContactsBatch/);
   });
 });
 

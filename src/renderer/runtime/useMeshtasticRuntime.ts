@@ -1349,7 +1349,9 @@ export function useMeshtasticRuntime() {
 
     const unsubTraceRouteMqtt = window.electronAPI.mqtt.onTraceRouteReply((payload) => {
       if (payload.protocol !== 'meshtastic') return;
-      if (getStoredMeshProtocol() !== 'meshtastic') return;
+      if (!shouldIngestMeshtasticMqttLive(getStoredMeshProtocol(), !!deviceRef.current)) {
+        return;
+      }
       const rd = {
         route: payload.route as readonly number[],
         routeBack: payload.routeBack as readonly number[],

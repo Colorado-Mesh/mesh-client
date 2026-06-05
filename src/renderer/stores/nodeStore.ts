@@ -137,13 +137,16 @@ function mergeNode(
   return { ...(existing ?? { nodeId }), ...definedPatch };
 }
 
-/** MeshCore advert/node_info may omit or send empty advName; never wipe stored identity. */
-function meshcoreNodeIdentityPatch(
+/** Advert/node_info may omit or send empty names; never wipe stored identity. */
+function nodeIdentityPatch(
   existing: NodeRecord | undefined,
   event: Pick<NodeInfoEvent, 'longName' | 'shortName' | 'hwModel'>,
+  nodeId: number,
+  protocolType: 'meshcore' | 'meshtastic' | undefined,
 ): Pick<NodeRecord, 'longName' | 'shortName' | 'hwModel'> {
   const patch: Pick<NodeRecord, 'longName' | 'shortName' | 'hwModel'> = {};
-  const longName = preferNonEmptyTrimmedString(event.longName, existing?.longName ?? '');
+  const nameOpts = protocolType === 'meshtastic' ? { nodeId } : undefined;
+  const longName = preferNonEmptyTrimmedString(event.longName, existing?.longName ?? '', nameOpts);
   if (longName) patch.longName = longName;
   const shortName = preferNonEmptyTrimmedString(event.shortName, existing?.shortName ?? '');
   if (shortName) patch.shortName = shortName;
@@ -189,10 +192,12 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
         isSelf,
       );
     }
-    const identityFields =
-      protocolType === 'meshcore'
-        ? meshcoreNodeIdentityPatch(existing, { longName, shortName, hwModel })
-        : { longName, shortName, hwModel };
+    const identityFields = nodeIdentityPatch(
+      existing,
+      { longName, shortName, hwModel },
+      nodeId,
+      protocolType === 'meshcore' || protocolType === 'meshtastic' ? protocolType : undefined,
+    );
 
     return {
       nodes: {

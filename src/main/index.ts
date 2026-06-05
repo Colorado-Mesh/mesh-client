@@ -4378,17 +4378,15 @@ ipcMain.handle('db:saveMeshcoreContactsBatch', (_event, contacts: unknown) => {
     if (!Array.isArray(contacts)) {
       throw new Error('db:saveMeshcoreContactsBatch: contacts must be an array');
     }
-    let saved = 0;
+    const rows: MeshcoreContactUpsertParams[] = [];
     for (let i = 0; i < contacts.length; i += MESHCORE_CONTACTS_BATCH_MAX) {
       const slice = contacts.slice(i, i + MESHCORE_CONTACTS_BATCH_MAX);
-      const rows: MeshcoreContactUpsertParams[] = [];
       for (const contact of slice) {
         validateSaveMeshcoreContact(contact);
         rows.push(meshcoreContactInputToUpsertParams(contact));
       }
-      saved += saveMeshcoreContactsBatch(rows);
     }
-    return saved;
+    return saveMeshcoreContactsBatch(rows);
   } catch (err) {
     console.error(
       '[IPC] db:saveMeshcoreContactsBatch failed:',

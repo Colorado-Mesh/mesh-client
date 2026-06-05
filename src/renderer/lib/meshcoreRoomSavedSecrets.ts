@@ -1,8 +1,16 @@
-import { clearMeshcoreRoomAutoLoginFailure } from './meshcoreRoomAutoLoginFailure';
+import { errLikeToLogString } from './errLikeToLogString';
+import {
+  clearMeshcoreRoomAutoLoginFailure,
+  setMeshcoreRoomAutoLoginFailure,
+} from './meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
+import {
+  meshcoreIsRoomLoginAbortError,
+  meshcoreRoomLoginErrorIsAuthFailure,
+} from './meshcoreRoomSession';
 import { getMeshcoreRoomSyncConfig, setMeshcoreRoomSyncConfig } from './meshcoreRoomSyncStorage';
 
 export interface MeshcoreRoomSavedSecretsSummary {
@@ -62,4 +70,28 @@ export async function disableMeshcoreRoomLoginAfterAuthFailure(nodeId: number): 
     intervalMinutes: prev.intervalMinutes,
     autoLoginOnConnect: false,
   });
+}
+
+/**
+ * Shared login failure handler: on auth failure disable sync/auto-login (keep password);
+ * always record in-memory failure for UI unless the login was aborted.
+ */
+export async function applyMeshcoreRoomLoginFailure(
+  nodeId: number,
+  error: unknown,
+  logContext: string,
+): Promise<void> {
+  if (meshcoreIsRoomLoginAbortError(error)) return;
+  const msg = error instanceof Error ? error.message : String(error);
+  if (meshcoreRoomLoginErrorIsAuthFailure(error)) {
+    try {
+      await disableMeshcoreRoomLoginAfterAuthFailure(nodeId);
+    } catch (persistErr: unknown) {
+      console.warn(
+        `[${logContext}] disable room sync after auth failure failed ` +
+          errLikeToLogString(persistErr),
+      );
+    }
+  }
+  setMeshcoreRoomAutoLoginFailure(nodeId, msg || 'timeout');
 }

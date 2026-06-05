@@ -18,3 +18,11 @@ export function shouldIngestMeshtasticMqttLive(
 export function shouldAutoLaunchMeshtasticMqtt(storedProtocol: MeshProtocol): boolean {
   return storedProtocol === 'meshtastic';
 }
+
+/** When false, Meshtastic MQTT should not stay connected (MeshCore tab, no RF radio). */
+export function shouldMaintainMeshtasticMqttConnection(
+  storedProtocol: MeshProtocol,
+  hasRfDevice: boolean,
+): boolean {
+  return shouldIngestMeshtasticMqttLive(storedProtocol, hasRfDevice);
+}

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   shouldAutoLaunchMeshtasticMqtt,
   shouldIngestMeshtasticMqttLive,
+  shouldMaintainMeshtasticMqttConnection,
 } from './meshtasticMqttLiveIngest';
 
 describe('shouldIngestMeshtasticMqttLive', () => {
@@ -23,5 +24,13 @@ describe('shouldAutoLaunchMeshtasticMqtt', () => {
   it('auto-launches only when Meshtastic is the stored protocol', () => {
     expect(shouldAutoLaunchMeshtasticMqtt('meshtastic')).toBe(true);
     expect(shouldAutoLaunchMeshtasticMqtt('meshcore')).toBe(false);
+  });
+});
+
+describe('shouldMaintainMeshtasticMqttConnection', () => {
+  it('matches shouldIngestMeshtasticMqttLive', () => {
+    expect(shouldMaintainMeshtasticMqttConnection('meshcore', false)).toBe(false);
+    expect(shouldMaintainMeshtasticMqttConnection('meshtastic', false)).toBe(true);
+    expect(shouldMaintainMeshtasticMqttConnection('meshcore', true)).toBe(true);
   });
 });
