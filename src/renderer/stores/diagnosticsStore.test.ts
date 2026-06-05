@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { MeshNode } from '../lib/types';
 import { computeCuStats24h, useDiagnosticsStore } from './diagnosticsStore';
 
 const SNAPSHOT_KEY = 'mesh-client:diagnosticRowsSnapshot';
@@ -72,6 +73,61 @@ describe('diagnosticsStore clearing behavior', () => {
     vi.advanceTimersByTime(3_000);
 
     expect(localStorage.getItem(SNAPSHOT_KEY)).toBeNull();
+  });
+});
+
+describe('diagnosticsStore analysis timers', () => {
+  function sampleNode(nodeId: number): MeshNode {
+    return {
+      node_id: nodeId,
+      long_name: `Node ${nodeId}`,
+      short_name: `N${nodeId}`,
+      hw_model: 'TBEAM',
+      snr: 5,
+      battery: 100,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+      hops_away: 2,
+    };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.removeItem(SNAPSHOT_KEY);
+    useDiagnosticsStore.getState().clearDiagnostics();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.removeItem(SNAPSHOT_KEY);
+    useDiagnosticsStore.getState().clearDiagnostics();
+  });
+
+  it('runReanalysis does not cancel incremental analysis timer', () => {
+    const store = useDiagnosticsStore.getState();
+    const node = sampleNode(42);
+    store.processNodeUpdate(node, null);
+    expect(vi.getTimerCount()).toBe(1);
+    store.runReanalysis(() => new Map([[42, node]]), 1);
+    expect(vi.getTimerCount()).toBe(2);
+  });
+
+  it('runReanalysis clears pending incremental buffer at schedule time', () => {
+    const store = useDiagnosticsStore.getState();
+    store.processNodeUpdate(sampleNode(99), null);
+    store.runReanalysis(() => new Map(), 1);
+    vi.advanceTimersByTime(2000);
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('clearDiagnostics cancels both pending analysis timers', () => {
+    const store = useDiagnosticsStore.getState();
+    store.processNodeUpdate(sampleNode(1), null);
+    store.runReanalysis(() => new Map(), 1);
+    expect(vi.getTimerCount()).toBe(2);
+    store.clearDiagnostics();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

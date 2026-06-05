@@ -3582,7 +3582,7 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
         `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
       );
     }
-    return result;
+    return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
       '[IPC] db:pruneNodesByCount failed:',
@@ -3607,7 +3607,7 @@ ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
         `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
       );
     }
-    return result;
+    return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
       '[IPC] db:pruneMessagesByCount failed:',
@@ -3632,7 +3632,7 @@ ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => 
         `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
       );
     }
-    return result;
+    return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
       '[IPC] db:pruneMeshcoreMessagesByCount failed:',
@@ -3819,7 +3819,7 @@ ipcMain.handle('db:pruneMeshcoreContactsByCount', (_event, maxCount: number) => 
     if (changes > 0) {
       console.debug(`[IPC] db:pruneMeshcoreContactsByCount: removed ${changes} excess contacts`);
     }
-    return changes;
+    return { changes };
   } catch (err) {
     console.error(
       '[IPC] db:pruneMeshcoreContactsByCount failed:',

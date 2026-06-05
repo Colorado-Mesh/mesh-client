@@ -1,5 +1,6 @@
 import type {
   ChatExportMessage,
+  DbPruneResult,
   OutboxEntry,
   OutboxEntryInput,
   OutboxStatus,
@@ -520,9 +521,9 @@ declare global {
         importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
         deleteNodesByAge: (days: number) => Promise<unknown>;
         deleteNodesNeverHeard: () => Promise<number>;
-        pruneNodesByCount: (maxCount: number) => Promise<unknown>;
-        pruneMessagesByCount: (maxCount: number) => Promise<unknown>;
-        pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<unknown>;
+        pruneNodesByCount: (maxCount: number) => Promise<DbPruneResult>;
+        pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+        pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
         deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
         clearMessagesByChannel: (channel: number) => Promise<unknown>;
         getMessageChannels: () => Promise<{ channel: number }[]>;
@@ -629,7 +630,7 @@ declare global {
         clearMeshcoreContacts: () => Promise<unknown>;
         deleteMeshcoreContactsNeverAdvertised: () => Promise<number>;
         deleteMeshcoreContactsByAge: (days: number) => Promise<number>;
-        pruneMeshcoreContactsByCount: (maxCount: number) => Promise<number>;
+        pruneMeshcoreContactsByCount: (maxCount: number) => Promise<DbPruneResult>;
         clearMeshcoreRepeaters: () => Promise<unknown>;
         markAllMeshcoreContactsOffRadio: () => Promise<unknown>;
         getMeshcoreContactCount: () => Promise<number>;

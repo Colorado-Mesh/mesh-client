@@ -14,6 +14,10 @@ export type { MeshNode };
 
 // ─── Database types ───────────────────────────────────────────────────────────
 
+export interface DbPruneResult {
+  changes: number;
+}
+
 export interface SavedMessage {
   id: number;
   sender_id: number;
@@ -185,9 +189,9 @@ export interface ElectronAPI {
     exportDb: () => Promise<string | null>;
     importDb: () => Promise<{ nodesAdded: number; messagesAdded: number } | null>;
     deleteNodesByAge: (days: number) => Promise<void>;
-    pruneNodesByCount: (maxCount: number) => Promise<void>;
-    pruneMessagesByCount: (maxCount: number) => Promise<void>;
-    pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<void>;
+    pruneNodesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     clearMessagesByChannel: (channel: number) => Promise<void>;
@@ -297,7 +301,7 @@ export interface ElectronAPI {
     clearMeshcoreContacts: () => Promise<void>;
     deleteMeshcoreContactsNeverAdvertised: () => Promise<void>;
     deleteMeshcoreContactsByAge: (days: number) => Promise<void>;
-    pruneMeshcoreContactsByCount: (maxCount: number) => Promise<void>;
+    pruneMeshcoreContactsByCount: (maxCount: number) => Promise<DbPruneResult>;
     clearMeshcoreRepeaters: () => Promise<void>;
     markAllMeshcoreContactsOffRadio: () => Promise<void>;
     getMeshcoreContactCount: () => Promise<number>;

@@ -3,6 +3,7 @@ import { create } from '@bufbuild/protobuf';
 import { Config } from '@meshtastic/protobufs';
 import { describe, expect, it } from 'vitest';
 
+import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from './meshtasticDefaultPublicPsk';
 import {
   base64UrlDecode,
   base64UrlEncode,
@@ -168,5 +169,26 @@ describe('meshtasticUrlEncoder', () => {
     );
     const parsed = parseConfigUrl(httpsUrl);
     expect(parsed.settings[0]?.name).toBe('Ref');
+    expect(parsed.settings[0]?.psk).toEqual(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
+  });
+
+  it('normalizes missing PSK to default public channel key bytes', () => {
+    const { httpsUrl } = generateConfigUrl(
+      [
+        {
+          index: 0,
+          role: MESHTASTIC_CHANNEL_ROLE.PRIMARY,
+          name: 'NoPsk',
+          psk: new Uint8Array(0),
+          uplinkEnabled: false,
+          downlinkEnabled: false,
+          positionPrecision: 0,
+        },
+      ],
+      sampleLora,
+      { includeAll: false },
+    );
+    const parsed = parseConfigUrl(httpsUrl);
+    expect(parsed.settings[0]?.psk).toEqual(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
   });
 });

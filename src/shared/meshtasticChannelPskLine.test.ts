@@ -49,4 +49,12 @@ describe('splitChannelPskLine', () => {
       b64: '',
     });
   });
+
+  it('returns named line with empty base64 for Name= without index', () => {
+    expect(splitChannelPskLine('HamNet=')).toEqual({
+      kind: 'named',
+      name: 'HamNet',
+      b64: '',
+    });
+  });
 });

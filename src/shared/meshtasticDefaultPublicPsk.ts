@@ -6,7 +6,8 @@ export const MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES = new Uint8Array([
   0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ]);
 
-function normalizePskTo16Bytes(psk: Uint8Array | Buffer): Uint8Array {
+/** Zero-pad short Meshtastic channel keys to 16 bytes (matches mqtt-manager parsePsk). */
+export function normalizeMeshtasticPskTo16Bytes(psk: Uint8Array | Buffer): Uint8Array {
   const out = new Uint8Array(16);
   const src = psk instanceof Uint8Array ? psk : new Uint8Array(psk);
   const len = Math.min(src.length, 16);
@@ -17,7 +18,7 @@ function normalizePskTo16Bytes(psk: Uint8Array | Buffer): Uint8Array {
 /** True when `psk` matches the well-known default Meshtastic public channel key (`AQ==`). */
 export function isMeshtasticDefaultPublicPsk(psk: Uint8Array | Buffer): boolean {
   if (!psk || psk.length === 0) return false;
-  const n = normalizePskTo16Bytes(psk);
+  const n = normalizeMeshtasticPskTo16Bytes(psk);
   for (let i = 0; i < 16; i++) {
     if (n[i] !== MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES[i]) return false;
   }

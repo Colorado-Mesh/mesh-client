@@ -1,6 +1,12 @@
 /** Left side of `ChannelName=base64` or `ChannelName@0..7=base64` (names lack +/=/@ in the name body). */
 const NAMED_CHANNEL_PSK_LEFT = /^([A-Za-z0-9_-]+)(@[0-7])?$/;
 
+/**
+ * Meshtastic channel labels are short; longer left sides before `=` are bare base64 with padding.
+ * (e.g. `ZUdhbG...=` must stay bare, while `HamNet=` is a named empty value.)
+ */
+const NAMED_CHANNEL_LABEL_MAX_LEN = 20;
+
 export type SplitChannelPskLine =
   | { kind: 'named'; name: string; index?: number; b64: string }
   | { kind: 'bare'; b64: string };
@@ -24,7 +30,7 @@ export function splitChannelPskLine(line: string): SplitChannelPskLine | null {
       const indexPart = match[2];
       const index = indexPart !== undefined ? parseInt(indexPart.slice(1), 10) : undefined;
       const b64 = trimmed.slice(eq + 1);
-      if (indexPart !== undefined || b64.length > 0) {
+      if (indexPart !== undefined || b64.length > 0 || left.length <= NAMED_CHANNEL_LABEL_MAX_LEN) {
         return { kind: 'named', name, index, b64 };
       }
     }

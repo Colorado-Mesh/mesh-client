@@ -1,6 +1,11 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { AppOnly, Channel } from '@meshtastic/protobufs';
 
+import {
+  MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES,
+  normalizeMeshtasticPskTo16Bytes,
+} from './meshtasticDefaultPublicPsk';
+
 /** LoRa section of ChannelSet URLs (subset of meshtastic.Config.LoRaConfig). */
 export interface MeshtasticLoraConfig {
   region?: number;
@@ -108,12 +113,17 @@ function channelSettingsFromProtobuf(settings: {
   moduleSettings?: { positionPrecision?: number };
 }): MeshtasticChannelSettingsInput {
   const pskRaw = settings.psk;
-  const psk =
-    pskRaw instanceof Uint8Array
-      ? pskRaw
-      : typeof pskRaw === 'string'
-        ? base64ToBytes(pskRaw)
-        : new Uint8Array(16);
+  const pskBytes =
+    pskRaw == null
+      ? MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES
+      : pskRaw instanceof Uint8Array
+        ? pskRaw.length === 0
+          ? MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES
+          : pskRaw
+        : typeof pskRaw === 'string'
+          ? base64ToBytes(pskRaw)
+          : MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES;
+  const psk = normalizeMeshtasticPskTo16Bytes(pskBytes);
   return {
     name: settings.name ?? '',
     psk,

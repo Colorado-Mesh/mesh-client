@@ -532,8 +532,9 @@ interface DiagnosticsState {
   migrateForeignLoraFromZero(toNodeId: number): void;
 }
 
-// Module-level debounce timer and pending analysis buffer
-let analysisTimer: ReturnType<typeof setTimeout> | null = null;
+// Module-level debounce timers and pending analysis buffer (separate timers avoid cross-cancellation)
+let incrementalAnalysisTimer: ReturnType<typeof setTimeout> | null = null;
+let fullReanalysisTimer: ReturnType<typeof setTimeout> | null = null;
 const pendingAnalyses = new Map<number, { node: MeshNode; homeNode: MeshNode | null }>();
 
 const NOISE_WINDOW_MS = 60 * 60 * 1000; // 1 hour rolling window
@@ -842,8 +843,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     // Buffer this node for debounced analysis
     pendingAnalyses.set(node.node_id, { node, homeNode });
 
-    if (analysisTimer) clearTimeout(analysisTimer);
-    analysisTimer = setTimeout(() => {
+    if (incrementalAnalysisTimer) clearTimeout(incrementalAnalysisTimer);
+    incrementalAnalysisTimer = setTimeout(() => {
+      incrementalAnalysisTimer = null;
       const now = Date.now();
       set((s) => {
         const newAnomalies = new Map<number, NodeAnomaly>();
@@ -1205,8 +1207,10 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     myNodeNum: number,
     capabilities?: ProtocolCapabilities,
   ) {
-    if (analysisTimer) clearTimeout(analysisTimer);
-    analysisTimer = setTimeout(() => {
+    pendingAnalyses.clear();
+    if (fullReanalysisTimer) clearTimeout(fullReanalysisTimer);
+    fullReanalysisTimer = setTimeout(() => {
+      fullReanalysisTimer = null;
       const state = get();
       const nodes = getNodes();
       const homeNode = nodes.get(myNodeNum) ?? null;
@@ -1409,8 +1413,10 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   clearDiagnostics(options) {
     const preserveForeignLora = options?.preserveForeignLora === true;
     console.debug(`[diagnosticsStore] clearDiagnostics preserveForeignLora=${preserveForeignLora}`);
-    if (analysisTimer) clearTimeout(analysisTimer);
-    analysisTimer = null;
+    if (incrementalAnalysisTimer) clearTimeout(incrementalAnalysisTimer);
+    incrementalAnalysisTimer = null;
+    if (fullReanalysisTimer) clearTimeout(fullReanalysisTimer);
+    fullReanalysisTimer = null;
     pendingAnalyses.clear();
     meshcoreRateCounter.reset();
     resetCuSpikeCooldown();
