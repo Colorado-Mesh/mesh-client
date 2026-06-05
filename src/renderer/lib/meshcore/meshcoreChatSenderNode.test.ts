@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { useNodeStore } from '../../stores/nodeStore';
+import { MESHCORE_UNKNOWN_SENDER_STUB_ID } from '../meshcoreUtils';
 import { getNodeStatus } from '../nodeStatus';
 import { ensureMeshcoreChatSenderInNodeStore } from './meshcoreChatSenderNode';
 
@@ -66,6 +67,15 @@ describe('ensureMeshcoreChatSenderInNodeStore', () => {
   it('skips node id zero', () => {
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
     ensureMeshcoreChatSenderInNodeStore(ID, 0, { lastHeardAtMs: Date.now() });
+    expect(useNodeStore.getState().nodes[ID]).toBeUndefined();
+  });
+
+  it('skips the shared Unknown stub id', () => {
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    ensureMeshcoreChatSenderInNodeStore(ID, MESHCORE_UNKNOWN_SENDER_STUB_ID, {
+      lastHeardAtMs: Date.now(),
+      displayName: 'Unknown',
+    });
     expect(useNodeStore.getState().nodes[ID]).toBeUndefined();
   });
 });

@@ -1,6 +1,11 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  clearMeshcorePubKeyRegistry,
+  registerMeshcorePubKey,
+} from '../meshcore/meshcorePubKeyRegistry';
+import { pubkeyToNodeId } from '../meshcoreUtils';
 import { meshcoreProtocol } from './MeshCoreProtocol';
 import type { DomainEvent } from './Protocol';
 
@@ -29,6 +34,7 @@ function mockMeshCoreConnection() {
 
 describe('MeshCoreProtocol.subscribe', () => {
   beforeEach(() => {
+    clearMeshcorePubKeyRegistry();
     vi.spyOn(meshcoreProtocol, 'createDevice').mockResolvedValue(
       mockMeshCoreConnection() as unknown as Connection,
     );
@@ -99,6 +105,31 @@ describe('MeshCoreProtocol.subscribe', () => {
       payload: expect.objectContaining({
         source: 'meshcore',
         message: expect.stringContaining('SNR -1.75'),
+      }),
+    });
+    teardown();
+  });
+
+  it('resolves DM sender from global pubkey registry without a live advert in this subscription', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    const nodeId = pubkeyToNodeId(publicKey);
+    registerMeshcorePubKey(nodeId, publicKey);
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_DIRECT_MESSAGE, {
+      pubKeyPrefix: publicKey.slice(0, 6),
+      text: 'weather report',
+      senderTimestamp: 1_700_000_300,
+      txtType: 0,
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text).toMatchObject({
+      type: 'text_message',
+      payload: expect.objectContaining({
+        from: nodeId,
+        channelIndex: -1,
+        payload: 'weather report',
       }),
     });
     teardown();

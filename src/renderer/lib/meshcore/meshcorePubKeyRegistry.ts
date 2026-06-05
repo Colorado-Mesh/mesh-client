@@ -42,6 +42,18 @@ export function resolveMeshcoreNodeIdFromPubKeyPrefix(prefixHex: string): number
   return pubKeyPrefixByHex.get(prefixHex);
 }
 
+/** Seed per-subscription MeshCoreProtocol prefix maps from the global registry (post-connect contacts). */
+export function seedMeshcorePrefixLookupMaps(
+  nodeIdByPrefix: Map<string, number>,
+  pubKeyByNodeIdOut: Map<number, Uint8Array>,
+): void {
+  for (const [nodeId, publicKey] of pubKeyByNodeId) {
+    if (publicKey.length !== 32 || nodeId === 0) continue;
+    pubKeyByNodeIdOut.set(nodeId, publicKey);
+    nodeIdByPrefix.set(prefixHexFromPubKey(publicKey), nodeId);
+  }
+}
+
 export function clearMeshcorePubKeyRegistry(): void {
   pubKeyByNodeId.clear();
   pubKeyPrefixByHex.clear();

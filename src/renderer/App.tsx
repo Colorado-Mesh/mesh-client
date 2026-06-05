@@ -107,6 +107,10 @@ import {
   readMeshcoreIdentityAsync,
 } from './lib/letsMeshJwt';
 import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
+import {
+  meshcoreRoomServerIdsFromNodes,
+  repairMeshcoreHydratedMessages,
+} from './lib/meshcoreDbCacheHydration';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
@@ -124,7 +128,11 @@ import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { runStartupDbPrune } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
-import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from './lib/storeRecordAdapters';
+import {
+  messageRecordsToChatMessages,
+  nodeRecordsToMeshNodeMap,
+  nodeRecordToMeshNode,
+} from './lib/storeRecordAdapters';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
 import type {
   ChatMessage,
@@ -713,10 +721,16 @@ function AppContent({
     () => repairMeshtasticReplyPreviews(messageRecordsToChatMessages(meshtasticStoreMessages)),
     [meshtasticStoreMessages],
   );
-  const meshcoreUiMessages = useMemo(
-    () => meshcoreChatMessagesForDisplay(messageRecordsToChatMessages(meshcoreStoreMessages)),
-    [meshcoreStoreMessages],
-  );
+  const meshcoreUiMessages = useMemo(() => {
+    const mapped = meshcoreChatMessagesForDisplay(
+      messageRecordsToChatMessages(meshcoreStoreMessages),
+    );
+    if (!meshcoreNodesById) return mapped;
+    const roomIds = meshcoreRoomServerIdsFromNodes(
+      Object.values(meshcoreNodesById).map(nodeRecordToMeshNode),
+    );
+    return repairMeshcoreHydratedMessages(mapped, roomIds);
+  }, [meshcoreStoreMessages, meshcoreNodesById]);
 
   useEffect(() => {
     if (!meshcoreIdentityId) return;
