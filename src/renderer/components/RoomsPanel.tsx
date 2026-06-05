@@ -60,6 +60,7 @@ import {
   meshcoreRoomCanPost,
   meshcoreRoomEffectiveGuestPassword,
 } from '@/renderer/lib/meshcoreRoomSession';
+import { resolveMeshcoreRoomSidebarMarker } from '@/renderer/lib/meshcoreRoomSidebarMarker';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
 import {
   getMeshcoreRoomLastPostAt,
@@ -1067,6 +1068,39 @@ export default function RoomsPanel({
               </button>
             ) : null}
           </div>
+          {roomServers.length > 0 && (
+            <div
+              className="shrink-0 border-b border-gray-800 px-3 py-1.5 text-[10px] text-gray-500"
+              aria-label={t('roomsPanel.sidebarLegendTitle')}
+            >
+              <ul className="flex flex-wrap gap-x-3 gap-y-0.5">
+                <li
+                  className="flex items-center gap-1"
+                  title={t('roomsPanel.legendLoggedInTooltip')}
+                >
+                  <span className="text-brand-green" aria-hidden>
+                    ●
+                  </span>
+                  {t('roomsPanel.legendLoggedIn')}
+                </li>
+                <li className="flex items-center gap-1" title={t('roomsPanel.legendSavedTooltip')}>
+                  <span className="text-sky-400" aria-hidden>
+                    ◐
+                  </span>
+                  {t('roomsPanel.legendSaved')}
+                </li>
+                <li
+                  className="flex items-center gap-1"
+                  title={t('roomsPanel.legendNotSavedTooltip')}
+                >
+                  <span className="text-gray-500" aria-hidden>
+                    ○
+                  </span>
+                  {t('roomsPanel.legendNotSaved')}
+                </li>
+              </ul>
+            </div>
+          )}
           {savedCredentialNodeIds.length > 0 && (
             <div className="shrink-0 border-b border-gray-800">
               <h3 id="rooms-saved-passwords-heading" className="sr-only">
@@ -1147,10 +1181,7 @@ export default function RoomsPanel({
               )}
             </div>
           )}
-          <div
-            className="min-h-0 flex-1 overflow-y-auto"
-            title={roomServers.length > 0 ? t('roomsPanel.sidebarLegendTitle') : undefined}
-          >
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {roomServers.length === 0 ? (
               <p className="px-3 py-4 text-sm text-gray-500">{t('roomsPanel.noRoomsYet')}</p>
             ) : (
@@ -1164,23 +1195,20 @@ export default function RoomsPanel({
                 const autoLoginFailed = getMeshcoreRoomAutoLoginFailure(room.node_id);
                 const showAutoLoginFailed =
                   Boolean(autoLoginFailed) && !isLogged && !isLoggingIn && !isLeaving;
-                const markerColorClass = isLogged
-                  ? 'text-brand-green'
-                  : isLeaving
-                    ? 'text-amber-300'
-                    : hasSaved
-                      ? 'text-amber-400/90'
-                      : 'text-gray-500';
-                const markerGlyph = isLogged ? '●' : isLeaving ? '◌' : hasSaved ? '◐' : '○';
+                const marker = resolveMeshcoreRoomSidebarMarker({
+                  isLoggedIn: isLogged,
+                  hasSavedPassword: hasSaved,
+                  isLeaving,
+                });
                 const markerTitle = isLogged
-                  ? t('roomsPanel.legendLoggedIn')
+                  ? t('roomsPanel.legendLoggedInTooltip')
                   : isLeaving
                     ? t('roomsPanel.leaveRoomInProgress')
                     : showAutoLoginFailed
                       ? t('roomsPanel.autoLoginFailed', { error: autoLoginFailed ?? '' })
                       : hasSaved
-                        ? t('roomsPanel.savedPasswordNotLoggedIn')
-                        : t('roomsPanel.legendNotSaved');
+                        ? t('roomsPanel.legendSavedTooltip')
+                        : t('roomsPanel.legendNotSavedTooltip');
                 return (
                   <div
                     key={room.node_id}
@@ -1224,7 +1252,7 @@ export default function RoomsPanel({
                         />
                       ) : (
                         <span
-                          className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${showAutoLoginFailed ? 'ring-1 ring-red-500' : ''} ${markerColorClass}`}
+                          className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${showAutoLoginFailed ? 'ring-1 ring-red-500' : ''} ${marker.colorClass}`}
                           aria-hidden={!showAutoLoginFailed}
                           aria-label={
                             showAutoLoginFailed
@@ -1233,7 +1261,7 @@ export default function RoomsPanel({
                           }
                           title={markerTitle}
                         >
-                          {markerGlyph}
+                          {marker.glyph}
                         </span>
                       )}
                       <span className="truncate">{room.long_name}</span>
@@ -1303,7 +1331,12 @@ export default function RoomsPanel({
                 {showLoginSavedSecretsControls && selectedRoomSecretsSummary && (
                   <div className="space-y-2 rounded border border-gray-700 bg-gray-950/60 p-2 text-xs text-gray-400">
                     {selectedRoomSecretsSummary.hasCredential && (
-                      <p>{t('roomsPanel.statusPasswordSaved')}</p>
+                      <p className="flex items-center gap-1.5">
+                        <span className="text-sky-400" aria-hidden>
+                          ◐
+                        </span>
+                        {t('roomsPanel.statusPasswordSaved')}
+                      </p>
                     )}
                     {selectedRoomSecretsSummary.autoLoginOnConnect && (
                       <p>{t('roomsPanel.statusAutoLoginEnabled')}</p>
@@ -1414,6 +1447,13 @@ export default function RoomsPanel({
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
                 <span className="text-sm font-medium text-gray-200">{activeRoom?.long_name}</span>
+                <span
+                  className="border-brand-green/40 bg-brand-green/10 text-brand-green inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]"
+                  title={t('roomsPanel.statusLoggedInSessionTooltip')}
+                >
+                  <span aria-hidden>●</span>
+                  {t('roomsPanel.statusLoggedInSession')}
+                </span>
                 <span className="text-xs text-gray-500">
                   {t('roomsPanel.postCount', { count: roomPosts.length })}
                   {newestPostTs != null && (

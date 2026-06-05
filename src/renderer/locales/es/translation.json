@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Estado de la sala",
     "legendNotSaved": "Sin contraseña guardada",
     "legendSaved": "Contraseña guardada",
-    "legendLoggedIn": "Conectado"
+    "legendLoggedIn": "Conectado",
+    "statusLoggedInSession": "Conectado",
+    "statusLoggedInSessionTooltip": "Sesión de cliente activa. Persiste hasta que abandonas la sala o te desconectas. Si no se puede acceder al servidor de la sala, salga y vuelva a iniciar sesión cuando vuelva.",
+    "legendNotSavedTooltip": "Círculo vacío: no hay contraseña almacenada para esta sala",
+    "legendSavedTooltip": "Sky half-circle — contraseña almacenada; iniciar sesión para abrir una sesión",
+    "legendLoggedInTooltip": "Punto verde — sesión de cliente activa (dejar espacio si el servidor está fuera de línea)"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

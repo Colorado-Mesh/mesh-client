@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Status da sala",
     "legendNotSaved": "Sem senha salva",
     "legendSaved": "Senha Salva",
-    "legendLoggedIn": "Conectado"
+    "legendLoggedIn": "Conectado",
+    "statusLoggedInSession": "Conectado",
+    "statusLoggedInSessionTooltip": "Sessão ativa do cliente. Ela persiste até que você saia da sala ou se desconecte. Se o servidor da sala estiver inacessível, saia e faça login novamente quando ele estiver de volta.",
+    "legendNotSavedTooltip": "Círculo vazio — nenhuma senha armazenada para esta sala",
+    "legendSavedTooltip": "Sky half-circle — senha armazenada; faça login para abrir uma sessão",
+    "legendLoggedInTooltip": "Ponto verde — sessão ativa do cliente (deixe espaço se o servidor estiver offline)"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

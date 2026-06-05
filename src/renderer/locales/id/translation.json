@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Status ruangan",
     "legendNotSaved": "Tidak ada kata sandi yang disimpan",
     "legendSaved": "Kata sandi disimpan",
-    "legendLoggedIn": "Masuk"
+    "legendLoggedIn": "Masuk",
+    "statusLoggedInSession": "Masuk",
+    "statusLoggedInSessionTooltip": "Sesi klien aktif. Ini berlanjut sampai Anda meninggalkan ruangan atau memutuskan sambungan. Jika server ruangan tidak dapat dijangkau, tinggalkan dan masuk lagi saat kembali.",
+    "legendNotSavedTooltip": "Lingkaran kosong — tidak ada kata sandi yang disimpan untuk ruangan ini",
+    "legendSavedTooltip": "Sky half — circle — kata sandi disimpan; masuk untuk membuka sesi",
+    "legendLoggedInTooltip": "Titik hijau — sesi klien aktif (tinggalkan ruangan jika server offline)"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

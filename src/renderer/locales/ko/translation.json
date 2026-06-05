@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "룸 상태",
     "legendNotSaved": "저장된 비밀번호 없음",
     "legendSaved": "비번 저장됨",
-    "legendLoggedIn": "로그인했습니다"
+    "legendLoggedIn": "로그인했습니다",
+    "statusLoggedInSession": "로그인했습니다",
+    "statusLoggedInSessionTooltip": "활성 클라이언트 세션. 룸을 나가거나 연결을 끊을 때까지 지속됩니다. 룸 서버에 연결할 수 없는 경우 나가서 다시 로그인하십시오.",
+    "legendNotSavedTooltip": "빈 원 — 이 방에 대한 비밀번호가 저장되지 않음",
+    "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
+    "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인인 경우 자리를 비움)"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

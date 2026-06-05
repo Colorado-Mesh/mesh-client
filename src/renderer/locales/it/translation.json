@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Stato della stanza",
     "legendNotSaved": "Nessuna password salvata",
     "legendSaved": "Password salvata.",
-    "legendLoggedIn": "Avvenuto accesso"
+    "legendLoggedIn": "Avvenuto accesso",
+    "statusLoggedInSession": "Avvenuto accesso",
+    "statusLoggedInSessionTooltip": "Sessione client attiva. Persiste fino a quando non lasci la stanza o ti disconnetti. Se il server della stanza non è raggiungibile, esci e accedi di nuovo al suo ritorno.",
+    "legendNotSavedTooltip": "Cerchio vuoto — nessuna password memorizzata per questa stanza",
+    "legendSavedTooltip": "Sky semicerchio — password memorizzata; accedi per aprire una sessione",
+    "legendLoggedInTooltip": "Punto verde — sessione client attiva (lasciare spazio se il server è offline)"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

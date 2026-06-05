@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "ルームの状態",
     "legendNotSaved": "保存済みパスワードなし",
     "legendSaved": "パスワードが保存されました。",
-    "legendLoggedIn": "ログイン済み"
+    "legendLoggedIn": "ログイン済み",
+    "statusLoggedInSession": "ログイン済み",
+    "statusLoggedInSessionTooltip": "アクティブなクライアントセッション。ルームを出るか切断するまで続きます。ルームサーバーに到達できない場合は、退出してから再度ログインしてください。",
+    "legendNotSavedTooltip": "空の円—このルームにはパスワードが保存されていません",
+    "legendSavedTooltip": "スカイハーフサークル—パスワードが保存されています。セッションを開くにはログインしてください",
+    "legendLoggedInTooltip": "緑色の点—アクティブなクライアントセッション（サーバーがオフラインの場合はスペースを空けます）"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "État de la salle",
     "legendNotSaved": "Aucun mot de passe enregistré",
     "legendSaved": "Mot de passe enregistré",
-    "legendLoggedIn": "Connecté"
+    "legendLoggedIn": "Connecté",
+    "statusLoggedInSession": "Connecté",
+    "statusLoggedInSessionTooltip": "Session client active. Elle persiste jusqu'à ce que vous quittiez la pièce ou que vous vous déconnectiez. Si le serveur de la salle est inaccessible, partez et reconnectez-vous à son retour.",
+    "legendNotSavedTooltip": "Cercle vide — aucun mot de passe stocké pour cette pièce",
+    "legendSavedTooltip": "Sky half-circle — mot de passe stocké ; connectez-vous pour ouvrir une session",
+    "legendLoggedInTooltip": "Point vert — session client active (laisser de la place si le serveur est hors ligne)"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

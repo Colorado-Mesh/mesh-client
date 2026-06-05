@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Status pokoju",
     "legendNotSaved": "Brak zapisanego hasła",
     "legendSaved": "Hasło zapisane",
-    "legendLoggedIn": "Zalogowano"
+    "legendLoggedIn": "Zalogowano",
+    "statusLoggedInSession": "Zalogowano",
+    "statusLoggedInSessionTooltip": "Aktywna sesja klienta. Trwa do momentu opuszczenia pokoju lub rozłączenia. Jeśli serwer pokojowy jest nieosiągalny, wyjdź i zaloguj się ponownie, gdy wróci.",
+    "legendNotSavedTooltip": "Pusty okrąg — nie zapisano hasła do tego pokoju",
+    "legendSavedTooltip": "Sky half-circle — hasło zapisane; zaloguj się, aby otworzyć sesję",
+    "legendLoggedInTooltip": "Zielona kropka — aktywna sesja klienta (pozostaw miejsce, jeśli serwer jest w trybie offline)"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "房间状态",
     "legendNotSaved": "未保存密码",
     "legendSaved": "密码已保存",
-    "legendLoggedIn": "已登录"
+    "legendLoggedIn": "已登录",
+    "statusLoggedInSession": "已登录",
+    "statusLoggedInSessionTooltip": "活动客户端会话。它会持续存在，直到您离开房间或断开连接。如果无法访问房间服务器，请离开，并在返回时再次登录。",
+    "legendNotSavedTooltip": "空圆—此房间未存储密码",
+    "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
+    "legendLoggedInTooltip": "绿点—活动客户端会话（如果服务器离线，请留出空间）"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

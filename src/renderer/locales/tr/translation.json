@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Oda Durumu",
     "legendNotSaved": "Kayıtlı parola yok",
     "legendSaved": "Parola kaydedildi",
-    "legendLoggedIn": "Oturum açtı"
+    "legendLoggedIn": "Oturum açtı",
+    "statusLoggedInSession": "Oturum açtı",
+    "statusLoggedInSessionTooltip": "Aktif danışan oturumu. Siz odadan çıkana veya bağlantıyı kesene kadar devam eder. Oda sunucusuna ulaşılamıyorsa, çıkın ve geri döndüğünde tekrar oturum açın.",
+    "legendNotSavedTooltip": "Boş daire — bu oda için saklanan parola yok",
+    "legendSavedTooltip": "Gökyüzü yarım daire — parola saklanır; bir oturumu açmak için oturum açın",
+    "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

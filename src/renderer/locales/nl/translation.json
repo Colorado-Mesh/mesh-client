@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Ruimtestatus",
     "legendNotSaved": "Geen opgeslagen wachtwoord",
     "legendSaved": "Wachtwoord opgeslagen",
-    "legendLoggedIn": "Ingelogd"
+    "legendLoggedIn": "Ingelogd",
+    "statusLoggedInSession": "Ingelogd",
+    "statusLoggedInSessionTooltip": "Actieve clientsessie. Het blijft bestaan totdat u de ruimte verlaat of de verbinding verbreekt. Als de roomserver onbereikbaar is, verlaat deze dan en log opnieuw in wanneer deze terug is.",
+    "legendNotSavedTooltip": "Lege cirkel — geen wachtwoord opgeslagen voor deze ruimte",
+    "legendSavedTooltip": "Sky half-circle — wachtwoord opgeslagen; log in om een sessie te openen",
+    "legendLoggedInTooltip": "Groene stip — actieve clientsessie (laat ruimte als de server offline is)"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

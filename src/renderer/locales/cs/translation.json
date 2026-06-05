@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Stav místnosti",
     "legendNotSaved": "Žádné uložené heslo",
     "legendSaved": "Heslo bylo uloženo",
-    "legendLoggedIn": "Přihlášen"
+    "legendLoggedIn": "Přihlášen",
+    "statusLoggedInSession": "Přihlášení",
+    "statusLoggedInSessionTooltip": "Aktivní relace klienta. Trvá, dokud neopustíte místnost nebo se neodpojíte. Pokud je pokojový server nedostupný, opusťte jej a po návratu se znovu přihlaste.",
+    "legendNotSavedTooltip": "Prázdný kruh — pro tuto místnost není uloženo žádné heslo",
+    "legendSavedTooltip": "Sky half-circle — heslo uloženo; přihlaste se pro otevření relace",
+    "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (ponechte prostor, pokud je server offline)"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

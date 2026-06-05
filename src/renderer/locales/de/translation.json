@@ -2289,7 +2289,12 @@
     "sidebarLegendTitle": "Raumstatus",
     "legendNotSaved": "Kein gespeichertes Passwort",
     "legendSaved": "Passwort gespeichert",
-    "legendLoggedIn": "Angemeldet"
+    "legendLoggedIn": "Angemeldet",
+    "statusLoggedInSession": "Angemeldet",
+    "statusLoggedInSessionTooltip": "Aktive Clientsitzung. Sie bleibt bestehen, bis Sie den Raum verlassen oder die Verbindung trennen. Wenn der Raumserver nicht erreichbar ist, verlassen Sie ihn und melden Sie sich wieder an, wenn er zurück ist.",
+    "legendNotSavedTooltip": "Leerer Kreis — kein Passwort für diesen Raum gespeichert",
+    "legendSavedTooltip": "Sky-Halbkreis — Passwort gespeichert; melden Sie sich an, um eine Sitzung zu öffnen",
+    "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum lassen, wenn der Server offline ist)"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",
