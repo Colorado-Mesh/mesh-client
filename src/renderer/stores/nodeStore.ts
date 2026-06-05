@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { preferNonEmptyTrimmedString } from '@/shared/nodeNameUtils';
+
 import {
   computeNodeInfoLastHeardMs,
   mergeMeshtasticLivePacketLastHeard,
@@ -128,7 +130,26 @@ function mergeNode(
   nodeId: number,
   patch: Partial<NodeRecord>,
 ): NodeRecord {
-  return { ...(existing ?? { nodeId }), ...patch };
+  // Omit undefined patch keys so stub runtime sync / partial node_info cannot wipe identity.
+  const definedPatch = Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== undefined),
+  ) as Partial<NodeRecord>;
+  return { ...(existing ?? { nodeId }), ...definedPatch };
+}
+
+/** MeshCore advert/node_info may omit or send empty advName; never wipe stored identity. */
+function meshcoreNodeIdentityPatch(
+  existing: NodeRecord | undefined,
+  event: Pick<NodeInfoEvent, 'longName' | 'shortName' | 'hwModel'>,
+): Pick<NodeRecord, 'longName' | 'shortName' | 'hwModel'> {
+  const patch: Pick<NodeRecord, 'longName' | 'shortName' | 'hwModel'> = {};
+  const longName = preferNonEmptyTrimmedString(event.longName, existing?.longName ?? '');
+  if (longName) patch.longName = longName;
+  const shortName = preferNonEmptyTrimmedString(event.shortName, existing?.shortName ?? '');
+  if (shortName) patch.shortName = shortName;
+  const hwModel = preferNonEmptyTrimmedString(event.hwModel, existing?.hwModel ?? '');
+  if (hwModel) patch.hwModel = hwModel;
+  return patch;
 }
 
 export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
@@ -168,16 +189,19 @@ export function upsertNode(identityId: IdentityId, event: NodeInfoEvent): void {
         isSelf,
       );
     }
+    const identityFields =
+      protocolType === 'meshcore'
+        ? meshcoreNodeIdentityPatch(existing, { longName, shortName, hwModel })
+        : { longName, shortName, hwModel };
+
     return {
       nodes: {
         ...s.nodes,
         [identityId]: {
           ...byId,
           [nodeId]: mergeNode(existing, nodeId, {
-            longName,
-            shortName,
+            ...identityFields,
             macAddr,
-            hwModel,
             isLicensed,
             role,
             lastHeardAt,
