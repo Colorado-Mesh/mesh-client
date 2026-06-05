@@ -16,7 +16,14 @@ export function firstGraphemeCluster(text: string): string | undefined {
     if (segments.length !== 1) return undefined;
     return segments[0].segment;
   }
-  if (trimmed.length > 8) return undefined;
+  let scalarCount = 0;
+  for (let i = 0; i < trimmed.length; i++) {
+    const cp = trimmed.codePointAt(i);
+    if (cp === undefined) break;
+    scalarCount++;
+    if (cp > 0xffff) i++;
+  }
+  if (scalarCount !== 1) return undefined;
   return trimmed;
 }
 

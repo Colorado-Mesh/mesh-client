@@ -44,7 +44,12 @@ export function persistMeshcoreNodeInfoAfterAdvert(
   opts?: PersistMeshcoreNodeInfoOpts,
 ): void {
   const publicKey = event.publicKey;
-  if (!(publicKey instanceof Uint8Array) || publicKey.length !== 32) return;
+  if (!(publicKey instanceof Uint8Array) || publicKey.length !== 32) {
+    console.debug(
+      `[meshcoreLiveContactPersist] skip advert nodeId=${event.nodeId}: invalid publicKey`,
+    );
+    return;
+  }
 
   const nodeId = event.nodeId > 0 ? event.nodeId : pubkeyToNodeId(publicKey);
   if (nodeId === 0) return;

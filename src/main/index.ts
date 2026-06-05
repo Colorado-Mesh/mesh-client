@@ -29,6 +29,7 @@ import type { MQTTSettings } from '../renderer/lib/types';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import { formatChatExportLines } from './chatExportFormat';
 import {
   addContactToGroup,
   closeDatabase,
@@ -4063,19 +4064,7 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
       filters: [{ name: 'Text file', extensions: ['txt'] }],
     });
     if (result.canceled || !result.filePath) return { success: false };
-    const lines = (messages as unknown[]).flatMap((m) => {
-      if (typeof m !== 'object' || m === null) return [];
-      const item = m as Record<string, unknown>;
-      const time = new Date(Number(item.timestamp ?? 0))
-        .toISOString()
-        .replace('T', ' ')
-        .slice(0, 19);
-      const sender = typeof item.sender_name === 'string' ? item.sender_name : '';
-      const ch = typeof item.channel === 'number' ? item.channel : 0;
-      const dest = item.to != null ? ' (DM)' : ` (ch${ch})`;
-      const body = typeof item.payload === 'string' ? item.payload : '';
-      return [`[${time}] ${sender}${dest}: ${body}`];
-    });
+    const lines = formatChatExportLines(messages as unknown[]);
     await fs.promises.writeFile(result.filePath, lines.join('\n') + '\n', 'utf8');
     return { success: true, path: result.filePath };
   } catch (err) {

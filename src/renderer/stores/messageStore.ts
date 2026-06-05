@@ -41,13 +41,34 @@ const defaultState: MessageStoreState = {
 
 export const useMessageStore = create<MessageStoreState>()(() => defaultState);
 
+function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof MessageRecord>;
+  for (const key of keys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+}
+
+function mergeIdentityMessages(
+  state: MessageStoreState,
+  identityId: IdentityId,
+  nextBucket: Record<string, MessageRecord>,
+): MessageStoreState {
+  if (state.messages[identityId] === nextBucket) return state;
+  return {
+    messages: Object.assign({}, state.messages, { [identityId]: nextBucket }),
+  };
+}
+
 export function addMessage(identityId: IdentityId, message: MessageRecord): void {
-  useMessageStore.setState((s) => ({
-    messages: {
-      ...s.messages,
-      [identityId]: { ...(s.messages[identityId] ?? {}), [message.id]: message },
-    },
-  }));
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId] ?? {};
+    const existing = byIdentity[message.id];
+    if (existing === message || (existing && messageRecordFieldsEqual(existing, message))) {
+      return s;
+    }
+    return mergeIdentityMessages(s, identityId, { ...byIdentity, [message.id]: message });
+  });
 }
 
 /**
@@ -60,9 +81,10 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
     const merged = existing ? { ...existing, ...message } : message;
-    return {
-      messages: { ...s.messages, [identityId]: { ...byIdentity, [message.id]: merged } },
-    };
+    if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
+      return s;
+    }
+    return mergeIdentityMessages(s, identityId, { ...byIdentity, [message.id]: merged });
   });
 }
 
@@ -73,14 +95,20 @@ export function upsertMessageRecordsForIdentity(
 ): void {
   if (records.length === 0) return;
   useMessageStore.setState((s) => {
-    const byIdentity = { ...(s.messages[identityId] ?? {}) };
+    const prior = s.messages[identityId] ?? {};
+    const byIdentity = { ...prior };
+    let changed = false;
     for (const message of records) {
       const existing = byIdentity[message.id];
-      byIdentity[message.id] = existing ? { ...existing, ...message } : message;
+      const merged = existing ? { ...existing, ...message } : message;
+      if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
+        continue;
+      }
+      byIdentity[message.id] = merged;
+      changed = true;
     }
-    return {
-      messages: { ...s.messages, [identityId]: byIdentity },
-    };
+    if (!changed) return s;
+    return mergeIdentityMessages(s, identityId, byIdentity);
   });
 }
 
@@ -94,12 +122,7 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
     const existing = byIdentity?.[fromId];
     if (!existing) return s;
     const rest = omitRecordKey(byIdentity, fromId);
-    return {
-      messages: {
-        ...s.messages,
-        [identityId]: { ...rest, [toId]: { ...existing, id: toId } },
-      },
-    };
+    return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });
 }
 
@@ -119,12 +142,8 @@ export function updateMessageStatus(
     } else if (status === 'acked') {
       updated.error = undefined;
     }
-    return {
-      messages: {
-        ...s.messages,
-        [identityId]: { ...byIdentity, [messageId]: updated },
-      },
-    };
+    if (messageRecordFieldsEqual(existing, updated)) return s;
+    return mergeIdentityMessages(s, identityId, { ...byIdentity, [messageId]: updated });
   });
 }
 
@@ -137,12 +156,9 @@ export function updateMessageMqttStatus(
     const byIdentity = s.messages[identityId];
     const existing = byIdentity?.[messageId];
     if (!existing) return s;
-    return {
-      messages: {
-        ...s.messages,
-        [identityId]: { ...byIdentity, [messageId]: { ...existing, mqttStatus } },
-      },
-    };
+    const updated = { ...existing, mqttStatus };
+    if (messageRecordFieldsEqual(existing, updated)) return s;
+    return mergeIdentityMessages(s, identityId, { ...byIdentity, [messageId]: updated });
   });
 }
 
@@ -150,12 +166,7 @@ export function deleteMessage(identityId: IdentityId, messageId: string): void {
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId];
     if (!byIdentity?.[messageId]) return s;
-    return {
-      messages: {
-        ...s.messages,
-        [identityId]: omitRecordKey(byIdentity, messageId),
-      },
-    };
+    return mergeIdentityMessages(s, identityId, omitRecordKey(byIdentity, messageId));
   });
 }
 

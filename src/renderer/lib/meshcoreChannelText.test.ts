@@ -356,6 +356,7 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
   });
 
   it('prefers explicit wire reply key over latest-from-sender heuristic', () => {
+    const wireReplyKey = 1_780_235_760_847;
     const msg1: ChatMessage = {
       sender_id: 10,
       sender_name: 'Target',
@@ -363,7 +364,7 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
       channel: 0,
       timestamp: baseTime,
       status: 'acked',
-      packetId: 1001,
+      packetId: wireReplyKey,
     };
     const msg2: ChatMessage = {
       sender_id: 10,
@@ -372,17 +373,17 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
       channel: 0,
       timestamp: baseTime + 100,
       status: 'acked',
-      packetId: 1002,
+      packetId: wireReplyKey + 1,
     };
     const msg = buildMeshcoreChannelIncomingMessage([msg1, msg2], {
-      rawText: 'Someone: @[Target#1001] replying to first',
+      rawText: `Someone: @[Target#${wireReplyKey}] replying to first`,
       senderId: 20,
       displayName: 'Someone',
       channel: 0,
       timestamp: baseTime + 500,
       receivedVia: 'rf',
     });
-    expect(msg.replyId).toBe(1001);
+    expect(msg.replyId).toBe(wireReplyKey);
     expect(msg.replyPreviewText).toBe('message 1');
   });
 
@@ -468,6 +469,14 @@ describe('parseMeshcoreBracketPrefix', () => {
       targetName: 'NV0N 01',
       wireReplyKey: 1780235760847,
       body: 'thanks',
+    });
+  });
+
+  it('does not treat display name User#1234 as a wire reply key', () => {
+    expect(parseMeshcoreBracketPrefix('@[User#1234] hello')).toEqual({
+      hadBracketPrefix: true,
+      targetName: 'User#1234',
+      body: 'hello',
     });
   });
 });

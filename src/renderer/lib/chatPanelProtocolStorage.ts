@@ -18,7 +18,11 @@ export function dismissedDmTabsStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:dismissedDmTabs:${protocol}`;
 }
 
-/** Load persisted open DM tab node ids for this protocol; migrates legacy key into Meshtastic only. */
+/**
+ * Load persisted open DM tab node ids for this protocol.
+ * Legacy unsuffixed keys predate dual-protocol storage — migrate into Meshtastic only
+ * (MeshCore never wrote the legacy keys).
+ */
 export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
   const key = openDmTabsStorageKey(protocol);
   const specific = localStorage.getItem(key);
@@ -155,7 +159,10 @@ export function saveStarred(protocol: MeshProtocol, items: StarredMessage[]): vo
   }
 }
 
-/** Load persisted last-read map for this protocol; migrates legacy key into Meshtastic only. */
+/**
+ * Load persisted last-read map for this protocol.
+ * Legacy unsuffixed keys predate dual-protocol storage — migrate into Meshtastic only.
+ */
 export function loadPersistedLastReadInitial(protocol: MeshProtocol): Record<string, number> {
   const key = lastReadStorageKey(protocol);
   const specific = localStorage.getItem(key);

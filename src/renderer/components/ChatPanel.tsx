@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
+/* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
 import type { TFunction } from 'i18next';
@@ -427,6 +427,7 @@ function ChatPanel({
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
   useEffect(() => {
     if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clamp channel when list changes after connect
       setChannel(channels[0].index);
     }
   }, [channels, channel]);
@@ -546,6 +547,7 @@ function ChatPanel({
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reload protocol-scoped chat UI prefs from storage
     setReplyTo(null);
     setMutedViews(loadMutedViews(protocol));
     setStarred(loadStarred(protocol));
@@ -557,6 +559,7 @@ function ChatPanel({
       if (!openDmTabsRef.current.includes(initialDmTarget)) {
         setOpenDmTabs((prev) => [...prev, initialDmTarget]);
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- open DM tab from Nodes panel navigation prop
       setDismissedDmTabs((prev) => {
         if (!(initialDmTarget in prev)) return prev;
         return withoutDmNode(prev, initialDmTarget);
@@ -734,6 +737,7 @@ function ChatPanel({
   }, [viewKey, isActive, markCurrentViewRead]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset per-thread sender filter on view change
     setFilterSender(null);
   }, [viewKey]);
 

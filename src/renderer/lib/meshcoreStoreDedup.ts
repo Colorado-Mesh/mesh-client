@@ -33,6 +33,7 @@ export function meshcoreRoomMessageStoreId(roomServerId: number, timestampSec: n
   return `room:${roomServerId}:${timestampSec}`;
 }
 
+/** MeshCore wire timestamps are Unix seconds; mesh-client UI/DB rows use ms when above 1e12. */
 function meshcoreTimestampSec(timestamp: number): number {
   return timestamp >= 1_000_000_000_000 ? Math.floor(timestamp / 1000) : timestamp;
 }

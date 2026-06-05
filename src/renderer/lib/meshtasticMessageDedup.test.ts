@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   findMeshtasticCrossTransportDuplicate,
+  findMeshtasticStoreForwardDuplicate,
   mapMeshtasticCrossTransportUpgrade,
   MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
   meshtasticCrossTransportMatch,
+  meshtasticStoreForwardContentMatch,
   normalizeMeshtasticDedupPayload,
 } from './meshtasticMessageDedup';
 import type { ChatMessage } from './types';
@@ -213,5 +215,18 @@ describe('Meshtastic runtime cross-transport integration — logic layer', () =>
       timestamp: mqttMsg.timestamp + 1_000,
     });
     expect(findMeshtasticCrossTransportDuplicate([mqttMsg], rfMsg)).toBeUndefined();
+  });
+});
+
+describe('findMeshtasticStoreForwardDuplicate', () => {
+  it('matches live RF row for S&F replay without time window', () => {
+    const live = baseMsg({ receivedVia: 'rf', timestamp: 1_600_000_000_000 });
+    const sfReplay = baseMsg({
+      viaStoreForward: true,
+      receivedVia: 'mqtt',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(meshtasticStoreForwardContentMatch(live, sfReplay)).toBe(true);
+    expect(findMeshtasticStoreForwardDuplicate([live], sfReplay)).toBe(live);
   });
 });

@@ -57,7 +57,6 @@ import {
 import {
   MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
   meshtasticWireUint32AllowZero,
-  meshtasticWireUint32NonZero,
   sanitizeUnicodeReactionScalar,
 } from '../../shared/reactionEmoji';
 import {
@@ -88,6 +87,7 @@ import {
   attachMeshtasticLegacyWireSubscriptions,
   type MeshtasticLegacyWireSubscriptionDeps,
 } from '../lib/meshtastic/meshtasticLegacyWireSubscriptions';
+import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -97,8 +97,11 @@ import {
 } from '../lib/meshtasticDbCacheHydration';
 import {
   findMeshtasticCrossTransportDuplicate,
+  findMeshtasticStoreForwardDuplicate,
   mapMeshtasticCrossTransportUpgrade,
+  meshtasticPacketDedupKey,
   meshtasticPacketIdsEqual,
+  meshtasticStoreForwardContentMatch,
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
 import { shouldIngestMeshtasticMqttLive } from '../lib/meshtasticMqttLiveIngest';
@@ -130,7 +133,7 @@ import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
-import { normalizeReactionEmoji, reactionGlyphFromPicker } from '../lib/reactions';
+import { reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import {
@@ -143,6 +146,7 @@ import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
   chatMessageToMessageRecord,
   messageRecordsToChatMessages,
+  messageRecordToChatMessage,
   neighborInfoEventsToRecordMap,
   nodeRecordsToMeshNodeMap,
   traceRouteEventsToResultsMap,
@@ -348,7 +352,7 @@ export function useMeshtasticRuntime() {
   const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
   // Dedup map shared between RF and MQTT handlers
-  const seenPacketIds = useRef<Map<number, number>>(new Map());
+  const seenPacketIds = useRef<Map<string, number>>(new Map());
   /** Last time we sent a proactive NODEINFO_APP request for each node (debounce). */
   const lastNodeInfoRequestAtRef = useRef<Map<number, number>>(new Map());
 
@@ -577,11 +581,12 @@ export function useMeshtasticRuntime() {
   }, [channelConfigs, mqttStatus, pushMqttChannelKeys]);
 
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
-  const isDuplicate = useCallback((packetId: number): boolean => {
+  const isDuplicate = useCallback((senderId: number, packetId: number): boolean => {
     const now = Date.now();
-    const expiry = seenPacketIds.current.get(packetId);
+    const key = meshtasticPacketDedupKey(senderId, packetId);
+    const expiry = seenPacketIds.current.get(key);
     if (expiry !== undefined && expiry > now) return true;
-    seenPacketIds.current.set(packetId, now + 10 * 60 * 1000);
+    seenPacketIds.current.set(key, now + 10 * 60 * 1000);
     // Periodic cleanup to prevent unbounded growth
     if (seenPacketIds.current.size > 5_000) {
       for (const [id, exp] of seenPacketIds.current) {
@@ -1185,41 +1190,8 @@ export function useMeshtasticRuntime() {
       if (!shouldIngestMeshtasticMqttLive(getStoredMeshProtocol(), !!deviceRef.current)) {
         return;
       }
-      const raw = rawMsg as Omit<ChatMessage, 'id'> & { from_mqtt?: boolean };
-
-      // Normalize placeholder replyId/emoji (some senders emit 0 instead of omitting the field)
-      const cleanedReplyId = meshtasticWireUint32NonZero(raw.replyId);
-      const wireEmojiRaw = meshtasticWireUint32NonZero(raw.emoji);
-      const cleanedEmoji =
-        wireEmojiRaw != null && wireEmojiRaw >= 1 && wireEmojiRaw <= 0x10ffff
-          ? wireEmojiRaw
-          : undefined;
-
-      let cleanedPayload = raw.payload;
-      if (typeof cleanedPayload === 'string') {
-        const trimmed = cleanedPayload.trim();
-        if (trimmed === '0') {
-          // Strip leading "0" payloads that are just a placeholder from buggy senders
-          cleanedPayload = '';
-        }
-      }
-
-      const baseMsg: Omit<ChatMessage, 'id'> & { from_mqtt?: boolean } = {
-        ...raw,
-        payload: cleanedPayload,
-        replyId: cleanedReplyId,
-        emoji: cleanedEmoji,
-      };
-
-      const msg: Omit<ChatMessage, 'id'> & { from_mqtt?: boolean } =
-        baseMsg.emoji != null && baseMsg.replyId != null
-          ? {
-              ...baseMsg,
-              emoji:
-                normalizeReactionEmoji(baseMsg.emoji, baseMsg.payload) ??
-                sanitizeUnicodeReactionScalar(baseMsg.emoji),
-            }
-          : baseMsg;
+      const msg = normalizeMeshtasticMqttChatMessage(rawMsg);
+      if (!msg) return;
 
       if (msg.sender_id) {
         ensureNodeExists(msg.sender_id, 'mqtt');
@@ -1240,7 +1212,7 @@ export function useMeshtasticRuntime() {
       }
 
       // Packet ID dedup (catches our own uplink echoes)
-      if (packetId !== 0 && isDuplicate(packetId)) {
+      if (packetId !== 0 && isDuplicate(msg.sender_id, packetId)) {
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
         }
@@ -1324,9 +1296,35 @@ export function useMeshtasticRuntime() {
             ? normalizedPacketId
             : normalizeMeshtasticPacketId(crossDup.packetId);
         if (pid !== undefined && pid !== 0) {
-          isDuplicate(pid); // registers as seen to suppress future duplicates
+          isDuplicate(mqttWithPreviews.sender_id, pid); // registers as seen to suppress future duplicates
           meshtasticIngestSessionRef.current?.markPacketSeen(pid);
           void window.electronAPI.db.updateMessageReceivedVia(pid);
+        }
+        return;
+      }
+
+      const sfDup = mqttWithPreviews.viaStoreForward
+        ? findMeshtasticStoreForwardDuplicate(dedupSource, mqttWithPreviews)
+        : undefined;
+      if (sfDup) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            meshtasticStoreForwardContentMatch(m, mqttWithPreviews)
+              ? { ...m, viaStoreForward: true }
+              : m,
+          ),
+        );
+        if (storeId) {
+          for (const row of Object.values(useMessageStore.getState().messages[storeId] ?? {})) {
+            const chat = messageRecordToChatMessage(row);
+            if (meshtasticStoreForwardContentMatch(chat, mqttWithPreviews)) {
+              upsertMessage(
+                storeId,
+                chatMessageToMessageRecord({ ...chat, viaStoreForward: true }),
+              );
+              break;
+            }
+          }
         }
         return;
       }
@@ -1336,7 +1334,9 @@ export function useMeshtasticRuntime() {
           (m) =>
             m.sender_id === mqttWithPreviews.sender_id &&
             m.timestamp === mqttWithPreviews.timestamp &&
-            m.payload === mqttWithPreviews.payload,
+            m.payload === mqttWithPreviews.payload &&
+            m.channel === mqttWithPreviews.channel &&
+            (m.to ?? undefined) === (mqttWithPreviews.to ?? undefined),
         );
         if (isDup) return prev;
         return trimChatMessagesToMax([...prev, mqttWithPreviews], MAX_IN_MEMORY_CHAT_MESSAGES);
@@ -2014,8 +2014,11 @@ export function useMeshtasticRuntime() {
         try {
           const fromDb = await loadMeshtasticMessagesFromDb();
           for (const m of fromDb) {
-            if (m.packetId) {
-              seenPacketIds.current.set(m.packetId, Date.now() + 10 * 60 * 1000);
+            if (m.packetId && m.sender_id) {
+              seenPacketIds.current.set(
+                meshtasticPacketDedupKey(m.sender_id, m.packetId),
+                Date.now() + 10 * 60 * 1000,
+              );
             }
           }
           setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
@@ -2204,8 +2207,8 @@ export function useMeshtasticRuntime() {
             finalPacketId !== undefined
               ? (meshtasticWireUint32AllowZero(finalPacketId) ?? tempId)
               : tempId;
-          if (finalPacketId !== undefined) {
-            isDuplicate(resolvedPid);
+          if (finalPacketId !== undefined && myNodeNumRef.current > 0) {
+            isDuplicate(myNodeNumRef.current, resolvedPid);
           }
           if (resolvedPid !== tempId) {
             ackMeshPacketIdByTempIdRef.current.set(tempId, resolvedPid);
@@ -3251,8 +3254,11 @@ export function useMeshtasticRuntime() {
           `[useMeshtasticRuntime] refreshMessagesFromDb: loaded ${fromDb.length} messages`,
         );
         for (const m of fromDb) {
-          if (m.packetId) {
-            seenPacketIds.current.set(m.packetId, Date.now() + 10 * 60 * 1000);
+          if (m.packetId && m.sender_id) {
+            seenPacketIds.current.set(
+              meshtasticPacketDedupKey(m.sender_id, m.packetId),
+              Date.now() + 10 * 60 * 1000,
+            );
           }
         }
         setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
@@ -3544,7 +3550,7 @@ export function useMeshtasticRuntime() {
             publishJsonMirror: reactionMqtt.publishJsonMirror,
           })
           .then((packetId) => {
-            isDuplicate(packetId);
+            isDuplicate(from, packetId);
           });
       }
 

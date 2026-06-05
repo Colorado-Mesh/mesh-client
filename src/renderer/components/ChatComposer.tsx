@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
+/* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
 import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -176,6 +176,7 @@ export function ChatComposer({
     }
     prevViewKeyRef.current = viewKey;
     const drafts = loadDraftsInitial(protocol);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft from localStorage on tab switch
     setInput(drafts[viewKey] ?? '');
     setMentionQuery(null);
     setChatActionError(null);

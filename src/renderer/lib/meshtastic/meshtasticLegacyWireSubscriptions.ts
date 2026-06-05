@@ -217,7 +217,7 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
   cleanupSubscriptions: () => void;
   startGpsInterval: () => void;
   stopGpsInterval: () => void;
-  isDuplicate: (packetId: number) => boolean;
+  isDuplicate: (senderId: number, packetId: number) => boolean;
   ensureNodeExists: (nodeNum: number, source: 'rf' | 'mqtt') => void;
   clearConfigureTimeout: () => void;
   applyMeshtasticForeignLoraFromLog: (message: string) => void;
@@ -806,7 +806,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     const chatInStore = Boolean(meshtasticIdentityIdRef.current);
 
     // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
-    if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
+    if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(meshPacket.from, msg.packetId)) {
       if (!chatInStore) {
         const rfDedupPacketId = msg.packetId;
         const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
@@ -857,7 +857,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
             ? rfMsg.packetId
             : normalizeMeshtasticPacketId(crossDup.packetId);
         if (pid !== undefined && pid !== 0) {
-          isDuplicate(pid); // registers as seen to suppress future duplicates
+          isDuplicate(rfMsg.sender_id, pid); // registers as seen to suppress future duplicates
         }
         return;
       }
@@ -905,7 +905,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
               pskBase64: uplinkMqtt.pskBase64,
               publishJsonMirror: uplinkMqtt.publishJsonMirror,
             })
-            .then(isDuplicate)
+            .then((packetId) => {
+              isDuplicate(msg.sender_id, packetId);
+            })
             .catch((e: unknown) => {
               console.debug(
                 '[useMeshtasticRuntime] MQTT publish echo register non-fatal ' +
