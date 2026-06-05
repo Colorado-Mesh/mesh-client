@@ -26,6 +26,7 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import {
@@ -4377,15 +4378,17 @@ ipcMain.handle('db:saveMeshcoreContactsBatch', (_event, contacts: unknown) => {
     if (!Array.isArray(contacts)) {
       throw new Error('db:saveMeshcoreContactsBatch: contacts must be an array');
     }
-    if (contacts.length > 500) {
-      throw new Error('db:saveMeshcoreContactsBatch: max 500 contacts per batch');
+    let saved = 0;
+    for (let i = 0; i < contacts.length; i += MESHCORE_CONTACTS_BATCH_MAX) {
+      const slice = contacts.slice(i, i + MESHCORE_CONTACTS_BATCH_MAX);
+      const rows: MeshcoreContactUpsertParams[] = [];
+      for (const contact of slice) {
+        validateSaveMeshcoreContact(contact);
+        rows.push(meshcoreContactInputToUpsertParams(contact));
+      }
+      saved += saveMeshcoreContactsBatch(rows);
     }
-    const rows: MeshcoreContactUpsertParams[] = [];
-    for (const contact of contacts) {
-      validateSaveMeshcoreContact(contact);
-      rows.push(meshcoreContactInputToUpsertParams(contact));
-    }
-    return saveMeshcoreContactsBatch(rows);
+    return saved;
   } catch (err) {
     console.error(
       '[IPC] db:saveMeshcoreContactsBatch failed:',

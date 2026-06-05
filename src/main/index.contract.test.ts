@@ -98,6 +98,15 @@ describe('MeshCore DB IPC (source contract)', () => {
     );
     expect(DATABASE_SOURCE).not.toContain('INSERT OR REPLACE INTO meshcore_contacts');
   });
+
+  it('saveMeshcoreContactsBatch IPC slices large radio syncs at MESHCORE_CONTACTS_BATCH_MAX', () => {
+    expect(INDEX_SOURCE).toContain('MESHCORE_CONTACTS_BATCH_MAX');
+    expect(INDEX_SOURCE).toMatch(
+      /for \(let i = 0; i < contacts\.length; i \+= MESHCORE_CONTACTS_BATCH_MAX\)/,
+    );
+    expect(INDEX_SOURCE).toContain('contacts.slice(i, i + MESHCORE_CONTACTS_BATCH_MAX)');
+    expect(INDEX_SOURCE).not.toContain('max 500 contacts per batch');
+  });
 });
 
 describe('Persistent app settings IPC (source contract)', () => {
