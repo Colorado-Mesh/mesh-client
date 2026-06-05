@@ -92,6 +92,9 @@ export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 export const MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 
 /** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
+/** Wider window for tapback optimistic rows (client Date.now vs radio rxTime skew). */
+export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
+
 export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = MS_PER_MINUTE;
 
 /** Outbound tapback vs RF/MQTT echo of `@[Name] emoji`. */

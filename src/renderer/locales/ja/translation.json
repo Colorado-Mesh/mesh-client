@@ -1546,7 +1546,11 @@
     "healthTooltip": "健康スコア: {{total}}/100 (信号 {{signal}}, 最近 {{recency}}, 負荷 {{load}}, バッテリー {{battery}})",
     "healthAriaLabel": "ノードヘルススコア{{total}} / 100",
     "buttonExportJson": "JSON のエクスポート",
-    "showOnMap": "周辺地図を見る"
+    "showOnMap": "周辺地図を見る",
+    "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
+    "hybridMqttPathAria": "RFおよびMQTTパス",
+    "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

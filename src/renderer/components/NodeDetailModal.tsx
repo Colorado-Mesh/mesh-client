@@ -61,6 +61,8 @@ interface NodeDetailModalProps {
   ) => Promise<void>;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   isConnected: boolean;
+  mqttConnected?: boolean;
+  radioConnected?: boolean;
   homeNode?: MeshNode | null;
   neighborInfo?: Map<number, NeighborInfoRecord>;
   useFahrenheit?: boolean;
@@ -132,6 +134,8 @@ export default function NodeDetailModal({
   onLoginRoom,
   onToggleFavorite,
   isConnected,
+  mqttConnected = false,
+  radioConnected = false,
   homeNode = null,
   neighborInfo,
   useFahrenheit,
@@ -636,6 +640,8 @@ export default function NodeDetailModal({
                 positionHistory={positionHistory}
                 onShowOnMap={onShowOnMap}
                 awaitingNodeInfo={awaitingNodeInfo}
+                mqttConnected={mqttConnected}
+                radioConnected={radioConnected}
               />
 
               {protocol === 'meshcore' &&

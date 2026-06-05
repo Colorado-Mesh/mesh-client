@@ -101,6 +101,7 @@ import {
   meshtasticPacketIdsEqual,
   normalizeMeshtasticPacketId,
 } from '../lib/meshtasticMessageDedup';
+import { shouldIngestMeshtasticMqttLive } from '../lib/meshtasticMqttLiveIngest';
 import {
   createSerialTaskQueue,
   MeshtasticRemoteAdminClient,
@@ -898,6 +899,12 @@ export function useMeshtasticRuntime() {
       return;
     }
 
+    const offlineMeshtasticId = getIdentityIdForProtocol('meshtastic');
+    if (offlineMeshtasticId && !meshtasticIdentityIdRef.current) {
+      meshtasticIdentityIdRef.current = offlineMeshtasticId;
+      setMeshtasticIdentityId(offlineMeshtasticId);
+    }
+
     const unsubStatus = api.mqtt.onStatus(({ status: s, protocol }) => {
       if (protocol !== 'meshtastic') return;
       const prev = mqttStatusRef.current;
@@ -1053,6 +1060,9 @@ export function useMeshtasticRuntime() {
     });
 
     const unsubNode = window.electronAPI.mqtt.onNodeUpdate((rawNode) => {
+      if (!shouldIngestMeshtasticMqttLive(getStoredMeshProtocol(), !!deviceRef.current)) {
+        return;
+      }
       const nodeUpdate = rawNode as Partial<MeshNode> & {
         node_id: number;
         from_mqtt?: boolean;
@@ -1172,6 +1182,9 @@ export function useMeshtasticRuntime() {
     });
 
     const unsubMsg = window.electronAPI.mqtt.onMessage((rawMsg) => {
+      if (!shouldIngestMeshtasticMqttLive(getStoredMeshProtocol(), !!deviceRef.current)) {
+        return;
+      }
       const raw = rawMsg as Omit<ChatMessage, 'id'> & { from_mqtt?: boolean };
 
       // Normalize placeholder replyId/emoji (some senders emit 0 instead of omitting the field)
@@ -1336,7 +1349,9 @@ export function useMeshtasticRuntime() {
 
     const unsubTraceRouteMqtt = window.electronAPI.mqtt.onTraceRouteReply((payload) => {
       if (payload.protocol !== 'meshtastic') return;
-      if (getStoredMeshProtocol() !== 'meshtastic') return;
+      if (!shouldIngestMeshtasticMqttLive(getStoredMeshProtocol(), !!deviceRef.current)) {
+        return;
+      }
       const rd = {
         route: payload.route as readonly number[],
         routeBack: payload.routeBack as readonly number[],
@@ -3461,9 +3476,11 @@ export function useMeshtasticRuntime() {
           payload: tapPayload,
           channelIndex: channel,
           timestamp: msg.timestamp,
+          status: 'sending',
           tapback: true,
           replyTo: String(wireReplyId),
         });
+        trackMeshtasticOutboundTempId(reactionTempId, String(reactionTempId));
         void window.electronAPI.db
           .saveMessage({ ...msg, packetId: reactionTempId })
           .catch((e: unknown) => {

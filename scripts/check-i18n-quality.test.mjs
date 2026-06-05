@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   interpolationPlaceholderIssues,
   localeStringQualityIssues,
+  nodeListPanelConnectionCrossKeyIssues,
   protectedBrandIssues,
   roomsSavedPasswordsCrossKeyIssues,
 } from './check-i18n-quality.mjs';
@@ -748,6 +749,41 @@ describe('roomsPanel login-all false friends (recent MeshCore Rooms)', () => {
         flatKey: 'roomsPanel.loginAllInProgress',
         val: '{{count}} 件のルームにログイン中（1件ずつ）…',
         enVal: 'Logging in to {{count}} rooms (one at a time)…',
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe('nodeListPanelConnectionCrossKeyIssues', () => {
+  it('flags Turkish present bağlanır on connectedViaRfAndMqttTooltip', () => {
+    const issues = nodeListPanelConnectionCrossKeyIssues('tr', {
+      'nodeListPanel.mqttConnectedTooltip': 'MQTT aracılığıyla bağlanıldı',
+      'nodeListPanel.connectedViaRfAndMqttTooltip': 'RF ve MQTT ile bağlanır',
+    });
+    expectIssue(issues, 'bağlanır');
+  });
+
+  it('flags German Anbindung on connectedViaRfAndMqttTooltip', () => {
+    const issues = nodeListPanelConnectionCrossKeyIssues('de', {
+      'nodeListPanel.mqttConnectedTooltip': 'Verbunden über MQTT',
+      'nodeListPanel.connectedViaRfAndMqttTooltip': 'Anbindung über RF und MQTT',
+    });
+    expectIssue(issues, 'Anbindung');
+  });
+
+  it('flags Polish Połączony on connectedViaRfAndMqttTooltip', () => {
+    const issues = nodeListPanelConnectionCrossKeyIssues('pl', {
+      'nodeListPanel.mqttConnectedTooltip': 'Połączono poprzez MQTT',
+      'nodeListPanel.connectedViaRfAndMqttTooltip': 'Połączony przez RF i MQTT',
+    });
+    expectIssue(issues, 'Połączony');
+  });
+
+  it('passes when connection tooltips are consistent', () => {
+    expect(
+      nodeListPanelConnectionCrossKeyIssues('de', {
+        'nodeListPanel.mqttConnectedTooltip': 'Verbunden über MQTT',
+        'nodeListPanel.connectedViaRfAndMqttTooltip': 'Verbunden über RF und MQTT',
       }),
     ).toEqual([]);
   });

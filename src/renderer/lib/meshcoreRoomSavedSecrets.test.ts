@@ -11,6 +11,7 @@ import {
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 import {
+  applyMeshcoreRoomLoginFailure,
   disableMeshcoreRoomAutoLogin,
   disableMeshcoreRoomLoginAfterAuthFailure,
   forgetMeshcoreRoomSavedSecrets,
@@ -74,6 +75,50 @@ describe('meshcoreRoomSavedSecrets', () => {
     expect(getMeshcoreRoomCredential(0x12)?.guestPassword).toBe('secret');
     expect(getMeshcoreRoomSyncConfig(0x12).autoLoginOnConnect).toBe(false);
     expect(getMeshcoreRoomSyncConfig(0x12).enabled).toBe(true);
+  });
+
+  it('disable auto-login with clearFailure false keeps failure banner', async () => {
+    await setMeshcoreRoomSyncConfig(0x14, {
+      enabled: true,
+      intervalMinutes: 60,
+      autoLoginOnConnect: true,
+    });
+    setMeshcoreRoomAutoLoginFailure(0x14, 'wrong password');
+    await disableMeshcoreRoomAutoLogin(0x14, { clearFailure: false });
+    expect(getMeshcoreRoomSyncConfig(0x14).autoLoginOnConnect).toBe(false);
+    expect(getMeshcoreRoomAutoLoginFailure(0x14)).toBe('wrong password');
+  });
+
+  it('applyMeshcoreRoomLoginFailure disables sync on auth error and sets failure UI', async () => {
+    await setMeshcoreRoomCredential(0x15, { guestPassword: 'hello' });
+    await setMeshcoreRoomSyncConfig(0x15, {
+      enabled: true,
+      intervalMinutes: 60,
+      autoLoginOnConnect: true,
+    });
+    await applyMeshcoreRoomLoginFailure(
+      0x15,
+      new Error('room login rejected (wrong password or ACL denied)'),
+      'test',
+    );
+    expect(getMeshcoreRoomCredential(0x15)?.guestPassword).toBe('hello');
+    const cfg = getMeshcoreRoomSyncConfig(0x15);
+    expect(cfg.enabled).toBe(false);
+    expect(cfg.autoLoginOnConnect).toBe(false);
+    expect(getMeshcoreRoomAutoLoginFailure(0x15)).toContain('rejected');
+  });
+
+  it('applyMeshcoreRoomLoginFailure sets failure but keeps sync on non-auth errors', async () => {
+    await setMeshcoreRoomSyncConfig(0x16, {
+      enabled: true,
+      intervalMinutes: 60,
+      autoLoginOnConnect: true,
+    });
+    await applyMeshcoreRoomLoginFailure(0x16, new Error('timeout'), 'test');
+    const cfg = getMeshcoreRoomSyncConfig(0x16);
+    expect(cfg.enabled).toBe(true);
+    expect(cfg.autoLoginOnConnect).toBe(true);
+    expect(getMeshcoreRoomAutoLoginFailure(0x16)).toBe('timeout');
   });
 
   it('disableMeshcoreRoomLoginAfterAuthFailure disables sync but keeps credential and failure', async () => {

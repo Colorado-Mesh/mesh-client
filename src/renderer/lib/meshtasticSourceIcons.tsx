@@ -8,6 +8,30 @@ export function meshtasticNodeShowsHybridMqttPath(
   return Boolean(node.heard_via_mqtt) || Boolean(node.via_mqtt);
 }
 
+export type MeshtasticPathBadgeKind = 'none' | 'mqttOnly' | 'hybrid' | 'rfOnly';
+
+export interface ResolveMeshtasticPathBadgeInput {
+  node: Pick<MeshNode, 'heard_via_mqtt' | 'heard_via_mqtt_only' | 'via_mqtt'>;
+  isSelf?: boolean;
+  mqttConnected?: boolean;
+  radioConnected?: boolean;
+}
+
+/** Resolves RF/MQTT path badge for list column and node detail (Meshtastic only). */
+export function resolveMeshtasticPathBadge({
+  node,
+  isSelf = false,
+  mqttConnected = false,
+  radioConnected = false,
+}: ResolveMeshtasticPathBadgeInput): MeshtasticPathBadgeKind {
+  if (node.heard_via_mqtt_only) return 'mqttOnly';
+  if (isSelf && mqttConnected && radioConnected) return 'hybrid';
+  if (isSelf && mqttConnected) return 'mqttOnly';
+  if (meshtasticNodeShowsHybridMqttPath(node)) return 'hybrid';
+  if (isSelf && radioConnected) return 'rfOnly';
+  return 'none';
+}
+
 /** Tooltip for hybrid RF + MQTT path (list column + node detail). */
 export const MESHTASTIC_HYBRID_MQTT_PATH_TITLE =
   'Received via RF; some packets use an MQTT relay path';

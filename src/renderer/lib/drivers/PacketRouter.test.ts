@@ -1,18 +1,26 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useConnectionStore } from '../../stores/connectionStore';
+import { addIdentity, useIdentityStore } from '../../stores/identityStore';
 import { useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DomainEvent } from '../protocols/Protocol';
 import { packetRouter } from './PacketRouter';
 
 const ID = 'packet-router-test';
+const ID_MT = 'packet-router-meshtastic';
 
 describe('PacketRouter', () => {
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.db.updateMessagePacketId).mockClear();
+  });
+
   afterEach(() => {
     useMessageStore.setState({ messages: {} });
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
     useConnectionStore.setState({ connections: {} });
+    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
   });
 
   const cases: { event: DomainEvent; assert: () => void }[] = [
@@ -168,6 +176,146 @@ describe('PacketRouter', () => {
       ID,
     );
     expect(useMessageStore.getState().messages[ID].msg1.receivedVia).toBe('both');
+  });
+
+  it('re-keys optimistic tapback row when RF echo arrives (no duplicate)', () => {
+    const tempId = '289800531';
+    const realId = '672866887';
+    const ts = Date.now();
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          [tempId]: {
+            id: tempId,
+            from: 649425065,
+            to: 0xffffffff,
+            payload: '✈️',
+            channelIndex: 0,
+            timestamp: ts,
+            status: 'sending',
+            tapback: true,
+            replyTo: '3608225609',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: realId,
+          from: 649425065,
+          to: 0xffffffff,
+          payload: '✈️',
+          channelIndex: 0,
+          timestamp: ts,
+          tapback: true,
+          replyTo: '3608225609',
+        },
+      },
+      ID,
+    );
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(Object.keys(byId)).toHaveLength(1);
+    expect(byId[realId]).toBeDefined();
+    expect(byId[tempId]).toBeUndefined();
+    expect(byId[realId].tapback).toBe(true);
+    expect(byId[realId].status).toBe('acked');
+  });
+
+  it('calls updateMessagePacketId for Meshtastic tapback re-key', () => {
+    addIdentity({
+      id: ID_MT,
+      protocol: meshtasticProtocol,
+      signature: 'sig-mt',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    const tempId = '289800531';
+    const realId = '672866887';
+    const ts = Date.now();
+    useMessageStore.setState({
+      messages: {
+        [ID_MT]: {
+          [tempId]: {
+            id: tempId,
+            from: 649425065,
+            to: 0xffffffff,
+            payload: '✈️',
+            channelIndex: 0,
+            timestamp: ts,
+            status: 'sending',
+            tapback: true,
+            replyTo: '3608225609',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: realId,
+          from: 649425065,
+          to: 0xffffffff,
+          payload: '✈️',
+          channelIndex: 0,
+          timestamp: ts,
+          tapback: true,
+          replyTo: '3608225609',
+        },
+      },
+      ID_MT,
+    );
+    expect(window.electronAPI.db.updateMessagePacketId).toHaveBeenCalledWith(
+      289800531,
+      672866887,
+      649425065,
+    );
+  });
+
+  it('re-keys optimistic tapback with timestamp skew within extended window', () => {
+    const tempId = '289800531';
+    const realId = '672866887';
+    const clientTs = Date.now();
+    const radioTs = clientTs - 120_000;
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          [tempId]: {
+            id: tempId,
+            from: 649425065,
+            to: 0xffffffff,
+            payload: '✈️',
+            channelIndex: 0,
+            timestamp: clientTs,
+            status: 'sending',
+            tapback: true,
+            replyTo: '3608225609',
+          },
+        },
+      },
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: realId,
+          from: 649425065,
+          to: 0xffffffff,
+          payload: '✈️',
+          channelIndex: 0,
+          timestamp: radioTs,
+          tapback: true,
+          replyTo: '3608225609',
+        },
+      },
+      ID,
+    );
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(Object.keys(byId)).toHaveLength(1);
+    expect(byId[realId]).toBeDefined();
   });
 
   it('ignores unknown event types without throwing', () => {

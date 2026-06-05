@@ -1546,7 +1546,11 @@
     "healthTooltip": "Score de santé : {{total}}/100 (signal {{signal}}, récence {{recency}}, charge {{load}}, batterie {{battery}})",
     "healthAriaLabel": "Score de santé des nœuds {{total}} sur 100",
     "buttonExportJson": "Exporter JSON",
-    "showOnMap": "Voir sur la carte"
+    "showOnMap": "Voir sur la carte",
+    "hybridMqttPathTooltip": "Reçu via RF ; certains paquets utilisent un chemin de relais MQTT",
+    "hybridMqttPathAria": "Chemin RF et MQTT",
+    "connectedViaRfAndMqttTooltip": "Connecté via RF et MQTT",
+    "connectedViaRfAndMqttAria": "Connecté via RF et MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

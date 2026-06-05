@@ -1546,7 +1546,11 @@
     "healthTooltip": "Skor kesehatan: {{total}}/100 (signal {{signal}}, recency {{recency}}, load {{load}}, battery {{battery}})",
     "healthAriaLabel": "Skor kesehatan node {{total}} dari 100",
     "buttonExportJson": "Ekspor ke JSON",
-    "showOnMap": "Tampilkan di peta"
+    "showOnMap": "Tampilkan di peta",
+    "hybridMqttPathTooltip": "Diterima melalui RF; beberapa paket menggunakan jalur relai MQTT",
+    "hybridMqttPathAria": "Jalur RF dan MQTT",
+    "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
+    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

@@ -4,6 +4,20 @@ import { describe, expect, it, vi } from 'vitest';
 import type { MeshNode } from '../lib/types';
 import NodeInfoBody from './NodeInfoBody';
 
+function makeNode(partial: Partial<MeshNode> & Pick<MeshNode, 'node_id'>): MeshNode {
+  return {
+    long_name: 'N',
+    short_name: '',
+    hw_model: '',
+    snr: 0,
+    battery: 0,
+    last_heard: Date.now(),
+    latitude: null,
+    longitude: null,
+    ...partial,
+  };
+}
+
 const diagnosticsStoreState = {
   diagnosticRows: [],
   packetStats: new Map(),
@@ -83,5 +97,20 @@ describe('NodeInfoBody', () => {
     render(<NodeInfoBody node={node} protocol="meshtastic" onShowOnMap={onShowOnMap} />);
     screen.getByRole('button', { name: 'Show on map' }).click();
     expect(onShowOnMap).toHaveBeenCalledWith(42, 40.1, -105.1);
+  });
+
+  it('shows hybrid source badge for self node when RF and MQTT are connected', () => {
+    const selfNode = makeNode({ node_id: 1, long_name: 'Me' });
+    render(
+      <NodeInfoBody
+        node={selfNode}
+        homeNode={selfNode}
+        protocol="meshtastic"
+        mqttConnected
+        radioConnected
+      />,
+    );
+    expect(screen.getByText('Source')).toBeInTheDocument();
+    expect(screen.getByLabelText('Connected via RF and MQTT')).toBeInTheDocument();
   });
 });

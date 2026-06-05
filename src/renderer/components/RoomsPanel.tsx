@@ -532,6 +532,7 @@ export default function RoomsPanel({
       if (!enabled) {
         await disableMeshcoreRoomAutoLogin(nodeId);
       } else {
+        clearMeshcoreRoomAutoLoginFailure(nodeId);
         await setMeshcoreRoomSyncConfig(nodeId, {
           enabled: prev.enabled,
           intervalMinutes: prev.intervalMinutes,

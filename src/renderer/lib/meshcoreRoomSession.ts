@@ -223,6 +223,10 @@ export function meshcoreRoomLoginErrorIsAuthFailure(err: unknown): boolean {
   return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied');
 }
 
+export function meshcoreRoomLoginErrorIsNoRoute(err: unknown): boolean {
+  return errLikeToLogString(err) === MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE;
+}
+
 export function meshcoreRoomLoginFailureMessage(err: unknown, password: string): string {
   const msg = errLikeToLogString(err).toLowerCase();
   if (meshcoreRoomLoginErrorIsAuthFailure(err)) {

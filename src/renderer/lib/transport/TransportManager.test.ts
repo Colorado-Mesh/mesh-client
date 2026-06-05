@@ -167,4 +167,44 @@ describe('TransportManager', () => {
       }),
     );
   });
+
+  it('logs SDK sendText rejections without [object Object]', async () => {
+    window.electronAPI = {
+      mqtt: { publish: vi.fn() },
+    } as unknown as typeof window.electronAPI;
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const status = vi.fn();
+    const sdkErr = { packetId: 644211103, error: 3 };
+    const manager = new TransportManager({
+      deviceRef: {
+        current: {
+          sendText: vi.fn().mockRejectedValue(sdkErr),
+        },
+      } as never,
+      myNodeNumRef: { current: 0x11111111 },
+      mqttStatusRef: { current: 'disconnected' },
+      channelConfigsRef: { current: [] },
+      isDuplicate: vi.fn(),
+      onStatusUpdateRef: { current: status },
+    });
+
+    manager.sendMessage('hello', 0, undefined, undefined, 1, 0x11111111);
+    await vi.waitFor(() => {
+      expect(warnSpy).toHaveBeenCalled();
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[useMeshtasticRuntime] sendText failed'),
+    );
+    expect(warnSpy.mock.calls[0]?.[0]).not.toContain('[object Object]');
+    expect(status).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        finalPacketId: 644211103,
+        error: '3',
+      }),
+    );
+    warnSpy.mockRestore();
+  });
 });

@@ -110,6 +110,10 @@ import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
+import {
+  shouldAutoLaunchMeshtasticMqtt,
+  shouldMaintainMeshtasticMqttConnection,
+} from './lib/meshtasticMqttLiveIngest';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './lib/meshtasticMqttTlsMigration';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
@@ -1485,12 +1489,29 @@ function AppContent({
   }, []);
 
   // Dual-mode: each protocol manages its own MQTT connection independently.
-  // No automatic MQTT disconnect on context switch.
+  // Meshtastic MQTT disconnects when switching to MeshCore without an RF radio.
+
+  const hasMeshtasticRfDevice =
+    meshtasticConnectionView.state.connectionType != null &&
+    meshtasticConnectionView.state.status !== 'disconnected';
+
+  useEffect(() => {
+    if (shouldMaintainMeshtasticMqttConnection(protocol, hasMeshtasticRfDevice)) return;
+    if (meshtasticConnectionView.mqttStatus === 'disconnected') return;
+    void window.electronAPI.mqtt.disconnect('meshtastic').catch((e: unknown) => {
+      console.debug('[App] Meshtastic MQTT disconnect on MeshCore tab ' + errLikeToLogString(e));
+    });
+  }, [protocol, hasMeshtasticRfDevice, meshtasticConnectionView.mqttStatus]);
 
   // ─── MQTT auto-launch on startup ─────────────────────────────────
-  // Run for both protocols so dual-mode auto-launches MQTT on each side independently.
+  // Launch MQTT for each protocol when autoLaunch is enabled. Meshtastic MQTT only
+  // auto-connects when Meshtastic is the stored tab so MeshCore-only users are not
+  // subscribed to the public Meshtastic broker in the background.
   useEffect(() => {
     for (const prot of ['meshtastic', 'meshcore'] as MeshProtocol[]) {
+      if (prot === 'meshtastic' && !shouldAutoLaunchMeshtasticMqtt(getStoredMeshProtocol())) {
+        continue;
+      }
       try {
         const key =
           prot === 'meshcore' ? 'mesh-client:mqttSettings:meshcore' : 'mesh-client:mqttSettings';
@@ -2309,6 +2330,7 @@ function AppContent({
                               setSelectedNodeId(node.node_id);
                             }}
                             mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+                            radioConnected={isConnectedOrOperational}
                             locationFilter={locationFilter}
                             onToggleFavorite={panelActions.setNodeFavorited}
                             mode={protocol}
@@ -3157,6 +3179,8 @@ function AppContent({
                 : undefined
             }
             isConnected={isOperational}
+            mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+            radioConnected={isConnectedOrOperational}
             homeNode={detailHomeNode}
             neighborInfo={activeRuntime.neighborInfo}
             useFahrenheit={useFahrenheit}

@@ -33,12 +33,10 @@ import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfu
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
-  MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL,
-  MESHTASTIC_HYBRID_MQTT_PATH_TITLE,
   MeshtasticHybridPathIcons,
   MeshtasticMqttPathIcon,
-  meshtasticNodeShowsHybridMqttPath,
   MeshtasticRfPathIcon,
+  resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
@@ -94,33 +92,68 @@ export function InfoRow({
   );
 }
 
-function NodeSourceBadge({ node, protocol }: { node: MeshNode; protocol?: MeshProtocol }) {
+function NodeSourceBadge({
+  node,
+  protocol,
+  isSelf = false,
+  mqttConnected = false,
+  radioConnected = false,
+}: {
+  node: MeshNode;
+  protocol?: MeshProtocol;
+  isSelf?: boolean;
+  mqttConnected?: boolean;
+  radioConnected?: boolean;
+}) {
   const { t } = useTranslation();
-  // MeshCore nodes are always RF
-  const via: 'rf' | 'mqtt' | 'both' =
-    protocol === 'meshcore'
-      ? 'rf'
-      : node.heard_via_mqtt_only
-        ? 'mqtt'
-        : meshtasticNodeShowsHybridMqttPath(node)
-          ? 'both'
-          : 'rf';
+  if (protocol === 'meshcore') {
+    return (
+      <span title={t('nodeInfoBody.receivedViaRf')}>
+        <MeshtasticRfPathIcon />
+      </span>
+    );
+  }
 
-  if (via === 'both') {
+  const pathBadge = resolveMeshtasticPathBadge({
+    node,
+    isSelf,
+    mqttConnected,
+    radioConnected,
+  });
+  const displayBadge = pathBadge === 'none' ? 'rfOnly' : pathBadge;
+
+  if (displayBadge === 'hybrid') {
+    const isSelfHybrid = isSelf && mqttConnected && radioConnected;
     return (
       <MeshtasticHybridPathIcons
-        title={MESHTASTIC_HYBRID_MQTT_PATH_TITLE}
-        ariaLabel={MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL}
+        title={
+          isSelfHybrid
+            ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
+            : t('nodeListPanel.hybridMqttPathTooltip')
+        }
+        ariaLabel={
+          isSelfHybrid
+            ? t('nodeListPanel.connectedViaRfAndMqttAria')
+            : t('nodeListPanel.hybridMqttPathAria')
+        }
       />
     );
   }
-  return via === 'rf' ? (
+  if (displayBadge === 'mqttOnly') {
+    const title = node.heard_via_mqtt_only
+      ? t('nodeInfoBody.receivedViaMqtt')
+      : isSelf
+        ? t('nodeListPanel.mqttConnectedTooltip')
+        : t('nodeInfoBody.receivedViaMqtt');
+    return (
+      <span title={title}>
+        <MeshtasticMqttPathIcon />
+      </span>
+    );
+  }
+  return (
     <span title={t('nodeInfoBody.receivedViaRf')}>
       <MeshtasticRfPathIcon />
-    </span>
-  ) : (
-    <span title={t('nodeInfoBody.receivedViaMqtt')}>
-      <MeshtasticMqttPathIcon />
     </span>
   );
 }
@@ -150,6 +183,10 @@ export interface NodeInfoBodyProps {
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
   /** Meshtastic: show role "(pending)" only while NodeInfo may still arrive. */
   awaitingNodeInfo?: boolean;
+  /** Meshtastic self-node: session MQTT connected (for path badge). */
+  mqttConnected?: boolean;
+  /** Meshtastic self-node: local radio connected/operational (for path badge). */
+  radioConnected?: boolean;
 }
 
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
@@ -173,6 +210,8 @@ export default function NodeInfoBody({
   positionHistory,
   onShowOnMap,
   awaitingNodeInfo = false,
+  mqttConnected = false,
+  radioConnected = false,
 }: NodeInfoBodyProps) {
   const { t } = useTranslation();
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
@@ -452,10 +491,16 @@ export default function NodeInfoBody({
         )}
 
       {/* Source (RF / MQTT) — Meshtastic only; MeshCore is always RF */}
-      {!isOurNode && (
+      {protocol !== 'meshcore' && (
         <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
           <span className="text-muted text-sm">{t('nodeInfoBody.source')}</span>
-          <NodeSourceBadge node={node} protocol={protocol} />
+          <NodeSourceBadge
+            node={node}
+            protocol={protocol}
+            isSelf={isOurNode}
+            mqttConnected={mqttConnected}
+            radioConnected={radioConnected}
+          />
         </div>
       )}
 

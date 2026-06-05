@@ -1546,7 +1546,11 @@
     "healthTooltip": "건강 점수: {{total}}/100 (신호 {{signal}}, 최신성 {{recency}}, 부하 {{load}}, 배터리 {{battery}})",
     "healthAriaLabel": "100점 만점에 노드 체력 점수 {{total}}",
     "buttonExportJson": "JSON 내보내기",
-    "showOnMap": "(지도에서 표시)"
+    "showOnMap": "(지도에서 표시)",
+    "hybridMqttPathTooltip": "RF를 통해 수신; 일부 패킷은 MQTT 릴레이 경로를 사용합니다",
+    "hybridMqttPathAria": "RF 및 MQTT 경로",
+    "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
+    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

@@ -1546,7 +1546,11 @@
     "healthTooltip": "Gezondheidsscore: {{total}}/100 (signaal {{signal}}, recent {{recency}}, belasting {{load}}, batterij {{battery}})",
     "healthAriaLabel": "Knooppuntgezondheidsscore {{total}} van de 100",
     "buttonExportJson": "Exporteer als JSON",
-    "showOnMap": "Weergeven op kaart"
+    "showOnMap": "Weergeven op kaart",
+    "hybridMqttPathTooltip": "Ontvangen via RF; sommige pakketten gebruiken een MQTT-relaispad",
+    "hybridMqttPathAria": "RF- en MQTT-pad",
+    "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
+    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

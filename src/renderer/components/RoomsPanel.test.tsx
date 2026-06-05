@@ -11,6 +11,7 @@ import {
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
   clearAllMeshcoreRoomAutoLoginFailures,
+  getMeshcoreRoomAutoLoginFailure,
   setMeshcoreRoomAutoLoginFailure,
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
 import {
@@ -705,6 +706,39 @@ describe('RoomsPanel', () => {
 
     const marker = screen.getByLabelText('roomsPanel.autoLoginFailedAria');
     expect(marker.className).toContain('ring-red-500');
+  });
+
+  it('clears auto-login failure when re-enabling auto-login on connect', async () => {
+    const room = makeRoom(0x1023, 'Re-enable Auto Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test re-enable auto',
+    );
+    mergeAppSetting(
+      `meshcoreRoomSync:${String(room.node_id >>> 0)}`,
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test re-enable sync',
+    );
+    setMeshcoreRoomAutoLoginFailure(room.node_id, 'wrong password');
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    const checkbox = screen.getByRole('checkbox', { name: 'roomsPanel.autoLoginOnConnect' });
+    expect(checkbox).not.toBeChecked();
+    await userEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(true);
+    });
+    expect(getMeshcoreRoomAutoLoginFailure(room.node_id)).toBeUndefined();
+    expect(screen.queryByLabelText('roomsPanel.autoLoginFailedAria')).not.toBeInTheDocument();
   });
 
   it('clears auto-login failure marker after successful manual login', async () => {

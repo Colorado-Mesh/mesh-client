@@ -36,7 +36,10 @@ import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticC
 import { meshtasticTracerouteLastHeardNodeIds } from '../meshtasticLastHeard';
 import type { DomainEvent } from '../protocols/Protocol';
 import { retargetMeshtasticOutboundTempId } from '../sessions/meshtasticSession';
-import { MESHCORE_ROOM_POST_DEDUP_WINDOW_MS } from '../timeConstants';
+import {
+  MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+  MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS,
+} from '../timeConstants';
 import type { IdentityId } from '../types';
 
 function resolveMeshtasticSenderName(identityId: IdentityId, from: number): string | undefined {
@@ -107,6 +110,9 @@ class PacketRouter {
         const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
         if (event.payload.id) {
           const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
+          const dedupWindowMs = event.payload.tapback
+            ? MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS
+            : MESHCORE_ROOM_POST_DEDUP_WINDOW_MS;
           const optimistic = Object.values(byIdentity).find(
             (m) =>
               m.status === 'sending' &&
@@ -115,16 +121,34 @@ class PacketRouter {
               m.to === event.payload.to &&
               m.channelIndex === event.payload.channelIndex &&
               m.payload === event.payload.payload &&
-              Math.abs(m.timestamp - event.payload.timestamp) <= MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
+              Math.abs(m.timestamp - event.payload.timestamp) <= dedupWindowMs,
           );
           const roomOptimistic =
             optimistic ?? findRoomPostOptimistic(Object.values(byIdentity), event.payload);
           if (roomOptimistic) {
             renameMessageId(identityId, roomOptimistic.id, event.payload.id);
+            if (roomOptimistic.status === 'sending' && event.payload.tapback) {
+              const renamed = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+              if (renamed) {
+                upsertMessage(identityId, { ...renamed, status: 'acked' });
+              }
+            }
             if (isMeshtastic) {
               const tempNum = Number.parseInt(roomOptimistic.id, 10);
               if (Number.isFinite(tempNum) && tempNum > 0) {
                 retargetMeshtasticOutboundTempId(tempNum, event.payload.id);
+                if (event.payload.tapback) {
+                  const realNum = Number.parseInt(event.payload.id, 10);
+                  if (Number.isFinite(realNum) && realNum > 0 && realNum !== tempNum) {
+                    void window.electronAPI.db
+                      .updateMessagePacketId(tempNum, realNum, event.payload.from)
+                      .catch((e: unknown) => {
+                        console.warn(
+                          '[PacketRouter] updateMessagePacketId failed ' + errLikeToLogString(e),
+                        );
+                      });
+                  }
+                }
               }
             }
           }

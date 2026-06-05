@@ -11,6 +11,8 @@
 [![Publish Docs](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/docs.yml/badge.svg)](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/docs.yml)
 ![Discord](https://img.shields.io/discord/1436156966648152271?label=chat&logo=discord)
 
+**For everyone, everywhere.** We welcome community participation and collaboration in the development of this project!
+
 ---
 
 ## Why
