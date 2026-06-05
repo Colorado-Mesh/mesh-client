@@ -6,6 +6,7 @@ import type {
   MeshcoreContactDbRow,
   MeshCoreContactRaw,
 } from '../../lib/meshcore/meshcoreHookTypes';
+import { registerMeshcorePubKey } from '../../lib/meshcore/meshcorePubKeyRegistry';
 import {
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
@@ -649,6 +650,17 @@ export function meshcoreFullPubKeyBytesFromContactDbHex(raw: string): Uint8Array
   const pairs = hex.match(/.{2}/g);
   if (pairs?.length !== 32) return null;
   return new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+}
+
+/** Pre-seed global pubkey registry from SQLite before PacketRouter subscribe (DM prefix decode). */
+export function registerMeshcorePubKeysFromContactDbRows(
+  rows: readonly Pick<MeshcoreContactDbRow, 'node_id' | 'public_key'>[],
+): void {
+  for (const row of rows) {
+    const bytes = meshcoreFullPubKeyBytesFromContactDbHex(row.public_key);
+    if (!bytes) continue;
+    registerMeshcorePubKey(row.node_id, bytes);
+  }
 }
 
 export interface MergeMeshcoreDbContactsRefs {

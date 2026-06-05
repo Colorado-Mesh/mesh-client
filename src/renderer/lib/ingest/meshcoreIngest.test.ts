@@ -406,4 +406,31 @@ describe('attachMeshcoreIngest', () => {
       expect.objectContaining({ payload: '👍', emoji: expect.any(Number), reply_id: parentTs }),
     );
   });
+
+  it('does not create a contacts-list stub for unresolved RF DMs (from=0)', () => {
+    const botId = 0xac200e59;
+    const msgId = `${botId}:1700000300`;
+    upsertMessage(ID, {
+      id: msgId,
+      from: 0,
+      senderName: 'Unknown',
+      to: 0,
+      payload: 'weather report',
+      channelIndex: -1,
+      timestamp: 1_700_000_000_300,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: 0,
+        to: 0,
+        payload: 'weather report',
+        channelIndex: -1,
+        timestamp: 1_700_000_000_300,
+      },
+    });
+    expect(useNodeStore.getState().nodes[ID]?.[botId]).toBeUndefined();
+    expect(useNodeStore.getState().nodes[ID]?.[MESHCORE_UNKNOWN_SENDER_STUB_ID]).toBeUndefined();
+  });
 });

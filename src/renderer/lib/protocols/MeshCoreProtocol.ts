@@ -5,6 +5,10 @@ import {
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreDmAckKeyU32,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import {
+  resolveMeshcoreNodeIdFromPubKeyPrefix,
+  seedMeshcorePrefixLookupMaps,
+} from '../meshcore/meshcorePubKeyRegistry';
 import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from '../meshcoreChannelText';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
 import {
@@ -176,6 +180,7 @@ export class MeshCoreProtocol implements Protocol {
     const pubKeyByNodeId = new Map<number, Uint8Array>();
     const nodeIdByPrefix = new Map<string, number>();
     const roomNodeIds = new Set<number>();
+    seedMeshcorePrefixLookupMaps(nodeIdByPrefix, pubKeyByNodeId);
 
     const onAdvert = (data: unknown) => {
       this.decodeAdvert(data, pubKeyByNodeId, nodeIdByPrefix).forEach(emit);
@@ -540,7 +545,13 @@ export class MeshCoreProtocol implements Protocol {
     const prefix = Array.from(d.pubKeyPrefix)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
-    const senderId = nodeIdByPrefix.get(prefix) ?? 0;
+    let senderId = nodeIdByPrefix.get(prefix) ?? 0;
+    if (senderId === 0) {
+      senderId = resolveMeshcoreNodeIdFromPubKeyPrefix(prefix) ?? 0;
+      if (senderId !== 0) {
+        nodeIdByPrefix.set(prefix, senderId);
+      }
+    }
     const isSignedPlain = d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN;
     if (isSignedPlain && senderId !== 0) {
       roomNodeIds.add(senderId);

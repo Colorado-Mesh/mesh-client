@@ -1,5 +1,9 @@
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
-import { meshcoreMergeChannelDisplayNameOntoNode, minimalMeshcoreChatNode } from '../meshcoreUtils';
+import {
+  MESHCORE_UNKNOWN_SENDER_STUB_ID,
+  meshcoreMergeChannelDisplayNameOntoNode,
+  minimalMeshcoreChatNode,
+} from '../meshcoreUtils';
 import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../nodeStatus';
 import { meshNodeToNodeRecord, nodeRecordToMeshNode } from '../storeRecordAdapters';
 import type { IdentityId } from '../types';
@@ -18,7 +22,7 @@ export function ensureMeshcoreChatSenderInNodeStore(
   nodeId: number,
   opts?: EnsureMeshcoreChatSenderOpts,
 ): void {
-  if (nodeId <= 0) return;
+  if (nodeId <= 0 || nodeId === MESHCORE_UNKNOWN_SENDER_STUB_ID) return;
   const nowSec = Math.floor(Date.now() / 1000);
   const incomingSec = lastHeardToUnixSeconds(opts?.lastHeardAtMs ?? Date.now());
   const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];

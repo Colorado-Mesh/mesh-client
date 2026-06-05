@@ -47,6 +47,7 @@ import {
   normalizeMeshCoreError,
   type PendingDmAckEntry,
   persistMeshcoreMessageSenderRepairs,
+  registerMeshcorePubKeysFromContactDbRows,
   serializeErrorLike,
   waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -1603,6 +1604,8 @@ export function useMeshcoreRuntime() {
             window.electronAPI.db.getNodes(),
           ]);
           const contactRows = rows as MeshcoreContactDbRow[];
+          registerMeshcorePubKeysFromContactDbRows(contactRows);
+          copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
           const mapped = repairMeshcoreHydratedMessages(
             mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]),
             meshcoreRoomServerIdsFromContacts(contactRows),

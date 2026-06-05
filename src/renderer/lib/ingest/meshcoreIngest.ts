@@ -34,7 +34,9 @@ import {
 } from '../meshcoreRoomMessageRouting';
 import { meshcoreSortedStorePrior, upsertMeshcoreMessageWithDedup } from '../meshcoreStoreDedup';
 import {
+  MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreChatStubNodeIdFromDisplayName,
+  meshcoreIsChatStubNodeId,
   meshcoreMinimalNodeFromAdvertEvent,
 } from '../meshcoreUtils';
 import type { DomainEvent } from '../protocols/Protocol';
@@ -233,7 +235,9 @@ function handleTextMessage(
     ? channelSender!.senderId
     : event.payload.from !== 0
       ? event.payload.from
-      : meshcoreChatStubNodeIdFromDisplayName(displayName);
+      : displayName !== 'Unknown'
+        ? meshcoreChatStubNodeIdFromDisplayName(displayName)
+        : 0;
 
   const sortedPrior = messages;
 
@@ -280,7 +284,14 @@ function handleTextMessage(
   } = upsertMeshcoreMessageWithDedup(identityId, reconciled, event.payload.id);
 
   const isEcho = myNodeNum > 0 && senderId === myNodeNum;
-  if (!isEcho) {
+  const isDm = !isChannel && event.payload.channelIndex === -1;
+  const mayBumpDmSender =
+    !isDm ||
+    (event.payload.from > 0 &&
+      senderId === event.payload.from &&
+      senderId !== MESHCORE_UNKNOWN_SENDER_STUB_ID &&
+      !meshcoreIsChatStubNodeId(senderId));
+  if (!isEcho && mayBumpDmSender && senderId > 0) {
     bumpMeshcoreChatSenderLastHeard(identityId, senderId, {
       timestampMs: event.payload.timestamp,
       displayName: displayName !== 'Unknown' ? displayName : undefined,
