@@ -1546,7 +1546,11 @@
     "healthTooltip": "Zdravotní skóre: {{total}}/100 (signál {{signal}}, aktuálnost {{recency}}, zatížení {{load}}, baterie {{battery}})",
     "healthAriaLabel": "Zdravotní skóre uzlu {{total}} ze 100",
     "buttonExportJson": "Exportovat JSON",
-    "showOnMap": "Zobrazit na mapě"
+    "showOnMap": "Zobrazit na mapě",
+    "hybridMqttPathTooltip": "Přijato prostřednictvím RF; některé pakety používají reléovou cestu MQTT",
+    "hybridMqttPathAria": "Cesta RF a MQTT",
+    "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
+    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

@@ -290,6 +290,65 @@ describe('NodeListPanel import contacts', () => {
     expect(screen.getByLabelText(MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL)).toBeInTheDocument();
   });
 
+  it('shows hybrid path icons for self node when RF and MQTT are connected', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', heard_via_mqtt_only: false })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        mqttConnected
+        radioConnected
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.getByLabelText('Connected via RF and MQTT')).toBeInTheDocument();
+    expect(screen.queryByText('🌐')).not.toBeInTheDocument();
+  });
+
+  it('shows MQTT-only icon for self when MQTT connected without radio', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', heard_via_mqtt_only: false })],
+    ]);
+    const { container } = render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        mqttConnected
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.queryByLabelText('Connected via RF and MQTT')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL)).not.toBeInTheDocument();
+    expect(container.querySelector('[title="Connected via MQTT"]')).toBeInTheDocument();
+  });
+
+  it('shows dash in MQTT column for self node with RF only', () => {
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Me', heard_via_mqtt_only: false })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={1}
+        onNodeClick={vi.fn()}
+        radioConnected
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    expect(screen.queryByLabelText('Connected via RF and MQTT')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL)).not.toBeInTheDocument();
+  });
+
   it('does not show Import Contacts button when onImportContacts not provided in meshcore mode', () => {
     render(
       <NodeListPanel

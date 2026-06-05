@@ -29,7 +29,8 @@ import {
 } from '../lib/meshtasticContactGroupUtils';
 import {
   MeshtasticHybridPathIcons,
-  meshtasticNodeShowsHybridMqttPath,
+  MeshtasticMqttPathIcon,
+  resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
 import { nodeHealthScore, nodeHealthTier } from '../lib/nodeHealthScore';
 import { getNodeTypeIcon } from '../lib/nodeIcons';
@@ -149,6 +150,7 @@ interface Props {
   myNodeNum: number;
   onNodeClick: (node: MeshNode) => void;
   mqttConnected?: boolean;
+  radioConnected?: boolean;
   locationFilter: LocationFilter;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
   mode?: 'meshtastic' | 'meshcore';
@@ -178,6 +180,7 @@ export default function NodeListPanel({
   myNodeNum,
   onNodeClick,
   mqttConnected = false,
+  radioConnected = false,
   locationFilter,
   onToggleFavorite,
   mode = 'meshtastic',
@@ -1327,25 +1330,44 @@ export default function NodeListPanel({
                     </td>
                     {mode !== 'meshcore' && (
                       <td className="px-3 py-2 text-center text-xs text-gray-300">
-                        {node.heard_via_mqtt_only ? (
-                          <span
-                            title={t('nodeListPanel.mqttHeardOnlyTooltip')}
-                            className="text-blue-400"
-                          >
-                            🌐
-                          </span>
-                        ) : isSelf && mqttConnected ? (
-                          <span
-                            title={t('nodeListPanel.mqttConnectedTooltip')}
-                            className="text-blue-400"
-                          >
-                            🌐
-                          </span>
-                        ) : meshtasticNodeShowsHybridMqttPath(node) ? (
-                          <MeshtasticHybridPathIcons />
-                        ) : (
-                          '-'
-                        )}
+                        {(() => {
+                          const pathBadge = resolveMeshtasticPathBadge({
+                            node,
+                            isSelf,
+                            mqttConnected,
+                            radioConnected,
+                          });
+                          if (pathBadge === 'mqttOnly') {
+                            const title = node.heard_via_mqtt_only
+                              ? t('nodeListPanel.mqttHeardOnlyTooltip')
+                              : isSelf
+                                ? t('nodeListPanel.mqttConnectedTooltip')
+                                : t('nodeListPanel.mqttHeardOnlyTooltip');
+                            return (
+                              <span title={title}>
+                                <MeshtasticMqttPathIcon />
+                              </span>
+                            );
+                          }
+                          if (pathBadge === 'hybrid') {
+                            const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+                            return (
+                              <MeshtasticHybridPathIcons
+                                title={
+                                  isSelfHybrid
+                                    ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
+                                    : t('nodeListPanel.hybridMqttPathTooltip')
+                                }
+                                ariaLabel={
+                                  isSelfHybrid
+                                    ? t('nodeListPanel.connectedViaRfAndMqttAria')
+                                    : t('nodeListPanel.hybridMqttPathAria')
+                                }
+                              />
+                            );
+                          }
+                          return '-';
+                        })()}
                       </td>
                     )}
                     {(() => {

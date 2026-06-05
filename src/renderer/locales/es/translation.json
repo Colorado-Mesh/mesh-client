@@ -1546,7 +1546,11 @@
     "healthTooltip": "Puntuación de salud: {{total}}/100 (señal {{signal}}, reciente {{recency}}, carga {{load}}, batería {{battery}})",
     "healthAriaLabel": "Puntuación de salud del nodo {{total}} de 100",
     "buttonExportJson": "Exportar a Json",
-    "showOnMap": "Mostrar en el mapa"
+    "showOnMap": "Mostrar en el mapa",
+    "hybridMqttPathTooltip": "Recibido a través de RF; algunos paquetes utilizan una ruta de retransmisión MQTT",
+    "hybridMqttPathAria": "Ruta RF y MQTT",
+    "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
+    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

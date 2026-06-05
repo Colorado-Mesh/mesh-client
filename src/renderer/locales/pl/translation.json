@@ -1546,7 +1546,11 @@
     "healthTooltip": "Wynik zdrowotny: {{total}}/100 (sygnał {{signal}}, aktualny {{recency}}, obciążenie {{load}}, bateria {{battery}})",
     "healthAriaLabel": "Wynik zdrowotny węzła {{total}} ze 100",
     "buttonExportJson": "Eksportowanie jako JSON",
-    "showOnMap": "Pokaż na mapie"
+    "showOnMap": "Pokaż na mapie",
+    "hybridMqttPathTooltip": "Odebrane przez RF; niektóre pakiety używają ścieżki przekaźnika MQTT",
+    "hybridMqttPathAria": "Ścieżka RF i MQTT",
+    "connectedViaRfAndMqttTooltip": "Połączony przez RF i MQTT",
+    "connectedViaRfAndMqttAria": "Połączony przez RF i MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

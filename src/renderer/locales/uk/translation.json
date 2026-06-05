@@ -1546,7 +1546,11 @@
     "healthTooltip": "Оцінка здоров 'я: {{total}}/100 (сигнал {{signal}}, давність {{recency}}, навантаження {{load}}, батарея {{battery}})",
     "healthAriaLabel": "Шкала здоров 'я вузла {{total}} зі 100",
     "buttonExportJson": "Експортувати JSON",
-    "showOnMap": "показати на карті"
+    "showOnMap": "показати на карті",
+    "hybridMqttPathTooltip": "Отримано через RF; деякі пакети використовують шлях ретрансляції MQTT",
+    "hybridMqttPathAria": "Шлях RF та MQTT",
+    "connectedViaRfAndMqttTooltip": "Підключено через RF та MQTT",
+    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

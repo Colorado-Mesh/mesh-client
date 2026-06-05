@@ -1546,7 +1546,11 @@
     "healthTooltip": "Sağlık skoru: {{total}}/100 (sinyal {{signal}}, son kullanım {{recency}}, yük {{load}}, pil {{battery}})",
     "healthAriaLabel": "Düğüm sağlık puanı {{total}} 100 üzerinden",
     "buttonExportJson": "JSON olarak dışa aktar",
-    "showOnMap": "Haritada göster"
+    "showOnMap": "Haritada göster",
+    "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
+    "hybridMqttPathAria": "RF ve MQTT yolu",
+    "connectedViaRfAndMqttTooltip": "RF ve MQTT ile bağlanır",
+    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

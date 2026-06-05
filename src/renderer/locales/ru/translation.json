@@ -1546,7 +1546,11 @@
     "healthTooltip": "Показатель здоровья: {{total}}/100 (сигнал {{signal}}, актуальность {{recency}}, нагрузка {{load}}, батарея {{battery}})",
     "healthAriaLabel": "Оценка здоровья узла {{total}} из 100",
     "buttonExportJson": "Экспортировать в JSON",
-    "showOnMap": "Показать на карте"
+    "showOnMap": "Показать на карте",
+    "hybridMqttPathTooltip": "Получено через RF; некоторые пакеты используют путь ретрансляции MQTT",
+    "hybridMqttPathAria": "Путь RF и MQTT",
+    "connectedViaRfAndMqttTooltip": "Подключено через RF и MQTT",
+    "connectedViaRfAndMqttAria": "Подключено через RF и MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

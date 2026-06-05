@@ -1546,7 +1546,11 @@
     "healthTooltip": "健康评分: {{total}}/100 (信号 {{signal}}, 最新 {{recency}}, 负载 {{load}}, 电池 {{battery}})",
     "healthAriaLabel": "节点健康评分{{total}}/100",
     "buttonExportJson": "导出JSON",
-    "showOnMap": "显示在地图上"
+    "showOnMap": "显示在地图上",
+    "hybridMqttPathTooltip": "通过射频接收；某些数据包使用MQTT中继路径",
+    "hybridMqttPathAria": "射频和MQTT路径",
+    "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
+    "connectedViaRfAndMqttAria": "通过射频和MQTT连接"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

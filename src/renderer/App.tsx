@@ -2315,6 +2315,7 @@ function AppContent({
                               setSelectedNodeId(node.node_id);
                             }}
                             mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+                            radioConnected={isConnectedOrOperational}
                             locationFilter={locationFilter}
                             onToggleFavorite={panelActions.setNodeFavorited}
                             mode={protocol}
@@ -3163,6 +3164,8 @@ function AppContent({
                 : undefined
             }
             isConnected={isOperational}
+            mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+            radioConnected={isConnectedOrOperational}
             homeNode={detailHomeNode}
             neighborInfo={activeRuntime.neighborInfo}
             useFahrenheit={useFahrenheit}
