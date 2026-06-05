@@ -23,6 +23,7 @@ import {
   interpolationPlaceholderIssues,
   localeStringQualityIssues,
   protectedBrandIssues,
+  nodeListPanelConnectionCrossKeyIssues,
   roomsSavedPasswordsCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
@@ -294,6 +295,11 @@ for (const dir of localeDirs) {
 
   for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {
     console.error(`Locale quality in "${dir}" (roomsPanel saved passwords): ${issue}.`);
+    errors++;
+  }
+
+  for (const issue of nodeListPanelConnectionCrossKeyIssues(dir, localeFlat)) {
+    console.error(`Locale quality in "${dir}" (nodeListPanel connection tooltips): ${issue}.`);
     errors++;
   }
 }

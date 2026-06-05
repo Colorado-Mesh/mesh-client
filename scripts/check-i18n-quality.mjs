@@ -895,6 +895,41 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   return issues;
 }
 
+/** nodeListPanel MQTT connection tooltips added with hybrid RF+MQTT path icons. */
+export const NODE_LIST_PANEL_MQTT_CONNECTED_KEY = 'nodeListPanel.mqttConnectedTooltip';
+export const NODE_LIST_PANEL_RF_MQTT_CONNECTED_KEY = 'nodeListPanel.connectedViaRfAndMqttTooltip';
+
+/**
+ * Cross-key checks for nodeListPanel connection tooltips (mqtt-only vs RF+MQTT).
+ *
+ * @param {string} locale
+ * @param {Record<string, string>} localeFlat
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function nodeListPanelConnectionCrossKeyIssues(locale, localeFlat) {
+  const issues = [];
+  const mqtt = localeFlat[NODE_LIST_PANEL_MQTT_CONNECTED_KEY];
+  const hybrid = localeFlat[NODE_LIST_PANEL_RF_MQTT_CONNECTED_KEY];
+  if (typeof mqtt !== 'string' || typeof hybrid !== 'string') return issues;
+
+  if (locale === 'tr' && /bağlanıldı/i.test(mqtt) && /\bbağlanır\b/i.test(hybrid)) {
+    issues.push(
+      'connectedViaRfAndMqtt* uses present "bağlanır" — match mqttConnectedTooltip past "bağlanıldı" for connected state',
+    );
+  }
+  if (locale === 'de' && /^Verbunden\b/i.test(mqtt) && /^Anbindung\b/i.test(hybrid)) {
+    issues.push(
+      'connectedViaRfAndMqtt* uses noun "Anbindung" — match mqttConnectedTooltip adjective "Verbunden"',
+    );
+  }
+  if (locale === 'pl' && /^Połączono\b/i.test(mqtt) && /^Połączony\b/i.test(hybrid)) {
+    issues.push(
+      'connectedViaRfAndMqtt* uses "Połączony" — match mqttConnectedTooltip impersonal "Połączono"',
+    );
+  }
+  return issues;
+}
+
 /**
  * Cross-key checks for roomsPanel saved-password legend and auto-login labels.
  *

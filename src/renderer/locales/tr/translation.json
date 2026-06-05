@@ -1549,8 +1549,8 @@
     "showOnMap": "Haritada göster",
     "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
     "hybridMqttPathAria": "RF ve MQTT yolu",
-    "connectedViaRfAndMqttTooltip": "RF ve MQTT ile bağlanır",
-    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır"
+    "connectedViaRfAndMqttTooltip": "RF ve MQTT aracılığıyla bağlanıldı",
+    "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

@@ -1547,7 +1547,7 @@
     "healthAriaLabel": "Score de santé des nœuds {{total}} sur 100",
     "buttonExportJson": "Exporter JSON",
     "showOnMap": "Voir sur la carte",
-    "hybridMqttPathTooltip": "Reçu via RF ; certains paquets utilisent un chemin de relais MQTT",
+    "hybridMqttPathTooltip": "Reçu via RF ; certains paquets utilisent un chemin de relais MQTT",
     "hybridMqttPathAria": "Chemin RF et MQTT",
     "connectedViaRfAndMqttTooltip": "Connecté via RF et MQTT",
     "connectedViaRfAndMqttAria": "Connecté via RF et MQTT"

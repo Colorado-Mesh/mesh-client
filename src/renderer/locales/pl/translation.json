@@ -1549,8 +1549,8 @@
     "showOnMap": "Pokaż na mapie",
     "hybridMqttPathTooltip": "Odebrane przez RF; niektóre pakiety używają ścieżki przekaźnika MQTT",
     "hybridMqttPathAria": "Ścieżka RF i MQTT",
-    "connectedViaRfAndMqttTooltip": "Połączony przez RF i MQTT",
-    "connectedViaRfAndMqttAria": "Połączony przez RF i MQTT"
+    "connectedViaRfAndMqttTooltip": "Połączono przez RF i MQTT",
+    "connectedViaRfAndMqttAria": "Połączono przez RF i MQTT"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",
