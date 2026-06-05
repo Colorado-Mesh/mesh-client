@@ -1304,7 +1304,7 @@ export class MQTTManager extends EventEmitter {
       this.handleDecoded(nodeId, packetId, decoded, hopsAway);
     } else if (payloadCase === 'encrypted') {
       const encrypted = packet.payloadVariant.value;
-      const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId, topic);
+      const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
       if (decodedData) {
         this.handleDecoded(nodeId, packetId, decodedData, hopsAway, topic);
       }
@@ -1945,7 +1945,6 @@ export class MQTTManager extends EventEmitter {
     encrypted: Uint8Array,
     packetId: number,
     from: number,
-    topic?: string,
   ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
     const allKeys = this.allDecryptKeys;
     for (const key of allKeys) {
@@ -1957,16 +1956,7 @@ export class MQTTManager extends EventEmitter {
         // catch-no-log-ok wrong PSK produces garbage bytes that fail protobuf decode — try next key
       }
     }
-    if (topic) {
-      const channelName = parseMeshtasticMqttEncryptedTopicChannelName(topic) ?? 'unknown';
-      const gatewayId = parseMeshtasticMqttEncryptedTopicGatewayId(topic);
-      const fromHex = `0x${(from >>> 0).toString(16)}`;
-      const gatewaySuffix = gatewayId ? ` gateway=${sanitizeLogMessage(gatewayId)}` : '';
-      this.logSampledDebug(
-        `mqtt-decrypt-failed:${channelName}`,
-        `[Meshtastic MQTT] Decrypt failed for topic channel "${sanitizeLogMessage(channelName)}" (${allKeys.length} keys tried) from=${sanitizeLogMessage(fromHex)} packetId=${packetId >>> 0}${gatewaySuffix}`,
-      );
-    }
+    // catch-no-log-ok expected on public MQTT when we lack the channel PSK — drop silently
     return null;
   }
 

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
+  MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
   meshcoreApplyRoomSession,
   meshcoreCancelRoomLogin,
   meshcoreClearAllRoomSessions,
@@ -11,6 +12,7 @@ import {
   meshcoreRoomCanPost,
   meshcoreRoomLogin,
   meshcoreRoomLoginErrorIsAuthFailure,
+  meshcoreRoomLoginErrorIsNoRoute,
   meshcoreRoomLogout,
   meshcoreRoomTryRelogin,
 } from './meshcoreRoomSession';
@@ -297,5 +299,12 @@ describe('meshcoreRoomSession', () => {
       ),
     ).toBe(true);
     expect(meshcoreRoomLoginErrorIsAuthFailure(new Error('login timed out'))).toBe(false);
+  });
+
+  it('meshcoreRoomLoginErrorIsNoRoute detects missing route errors', () => {
+    expect(meshcoreRoomLoginErrorIsNoRoute(new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE))).toBe(
+      true,
+    );
+    expect(meshcoreRoomLoginErrorIsNoRoute(new Error('login timed out'))).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 import type { RefObject } from 'react';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   loadMeshtasticMqttManualChannelPsks,
   resolveMeshtasticMqttPublishFieldsForChannel,
@@ -111,12 +112,15 @@ export class TransportManager {
           });
         })
         .catch((err: unknown) => {
-          const pe = err as { packetId?: number; error?: string };
+          const pe = err as { packetId?: number; error?: unknown };
           const packetId = typeof pe.packetId === 'number' ? pe.packetId : undefined;
-          const error = pe.error ?? String(err);
-          console.warn(
-            `[useMeshtasticRuntime] sendText failed ${err instanceof Error ? err.message : String(err)}`,
-          );
+          const error =
+            typeof pe.error === 'string'
+              ? pe.error
+              : pe.error != null
+                ? errLikeToLogString(pe.error)
+                : errLikeToLogString(err);
+          console.warn('[useMeshtasticRuntime] sendText failed ' + errLikeToLogString(err));
           onStatusUpdateRef.current({
             tempId,
             transport: 'device',

@@ -559,7 +559,7 @@ describe('tryDecryptAllKeys', () => {
     expect(result!.portnum).toBe(PortNum.POSITION_APP);
   });
 
-  it('logs sampled debug when all keys fail and topic is provided', () => {
+  it('does not log when all keys fail and topic is provided', () => {
     const dataBytes = toBinary(
       DataSchema,
       create(DataSchema, {
@@ -569,28 +569,13 @@ describe('tryDecryptAllKeys', () => {
     );
     const encrypted = encrypt(dataBytes, 5, 0x44444444, CUSTOM_PSK);
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-    const result = (manager as any).tryDecryptAllKeys(
-      encrypted,
-      5,
-      0x44444444,
-      'msh/US/2/e/CustomChan/!44444444',
-    );
+    const result = (manager as any).tryDecryptAllKeys(encrypted, 5, 0x44444444);
     expect(result).toBeNull();
     expect(
       debugSpy.mock.calls.some((args: unknown[]) =>
-        String(args[0]).includes('Decrypt failed for topic channel "CustomChan"'),
+        String(args[0]).includes('Decrypt failed for topic channel'),
       ),
-    ).toBe(true);
-    expect(
-      debugSpy.mock.calls.some((args: unknown[]) => {
-        const line = String(args[0]);
-        return (
-          line.includes('from=0x44444444') &&
-          line.includes('packetId=5') &&
-          line.includes('gateway=!44444444')
-        );
-      }),
-    ).toBe(true);
+    ).toBe(false);
     debugSpy.mockRestore();
   });
 });

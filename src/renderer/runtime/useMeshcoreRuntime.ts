@@ -160,6 +160,7 @@ import {
   meshcoreRoomEffectiveGuestPassword,
   meshcoreRoomLogin,
   meshcoreRoomLoginErrorIsAuthFailure,
+  meshcoreRoomLoginErrorIsNoRoute,
   meshcoreRoomLogout,
   meshcoreRoomLogoutFailureMessage,
   meshcoreRoomTryRelogin,
@@ -4002,6 +4003,13 @@ export function useMeshcoreRuntime() {
     const pubKey = pubKeyMapRef.current.get(target.nodeId);
     if (!pubKey) return;
 
+    if (meshcoreIsRoomLoggedIn(target.nodeId)) {
+      lastMeshcoreRoomSyncTxAtRef.current = Date.now();
+      await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+      roomSyncSchedulerWarnedNodesRef.current.delete(target.nodeId);
+      return;
+    }
+
     try {
       const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
       const activeConn = connRef.current;
@@ -4011,7 +4019,8 @@ export function useMeshcoreRuntime() {
         schedulerFastPath: true,
       });
       if (syncHops > 0 && (!storedPath || storedPath.length <= 1)) {
-        throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
+        await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+        return;
       }
       const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
         activeConn,
@@ -4023,6 +4032,10 @@ export function useMeshcoreRuntime() {
         (fn) => repeaterRemoteRpcRef.current(fn),
       );
       if (syncHops > 0 && !pathSync.synced) {
+        if (pathSync.reason === 'no_path') {
+          await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+          return;
+        }
         throw new Error(MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE);
       }
       await repeaterRemoteRpcRef.current(async () => {
@@ -4038,9 +4051,9 @@ export function useMeshcoreRuntime() {
       await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
       roomSyncSchedulerWarnedNodesRef.current.delete(target.nodeId);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (msg === MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE) {
+      if (meshcoreRoomLoginErrorIsNoRoute(e)) {
         await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
+        return;
       }
       if (meshcoreRoomLoginErrorIsAuthFailure(e)) {
         try {
