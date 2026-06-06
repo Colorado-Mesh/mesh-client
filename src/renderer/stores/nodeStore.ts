@@ -134,7 +134,7 @@ function mergeNode(
   const definedPatch = Object.fromEntries(
     Object.entries(patch).filter(([, value]) => value !== undefined),
   ) as Partial<NodeRecord>;
-  return { ...(existing ?? { nodeId }), ...definedPatch };
+  return { ...(existing ?? { nodeId }), ...definedPatch, nodeId };
 }
 
 /** Advert/node_info may omit or send empty names; never wipe stored identity. */
@@ -255,7 +255,6 @@ export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: No
 
 function meshtasticLastHeardPatch(
   identityId: IdentityId,
-  nodeId: number,
   packetTimestampMs: number,
   existingLastHeardAt: number | undefined,
 ): number | undefined {
@@ -335,7 +334,6 @@ export function bumpMeshtasticNodesLastHeardAt(
       const existing = byId[nodeId];
       const lastHeardAt = meshtasticLastHeardPatch(
         identityId,
-        nodeId,
         packetTimestampMs,
         existing?.lastHeardAt,
       );
@@ -353,12 +351,7 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
     const byId = s.nodes[identityId] ?? {};
     const { nodeId, latitude, longitude, altitude, timestamp, groundSpeed, groundTrack } = event;
     const existing = byId[nodeId];
-    const lastHeardAt = meshtasticLastHeardPatch(
-      identityId,
-      nodeId,
-      timestamp,
-      existing?.lastHeardAt,
-    );
+    const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
     return {
       nodes: {
         ...s.nodes,
@@ -396,12 +389,7 @@ export function updateTelemetry(identityId: IdentityId, event: TelemetryEvent): 
       iaq,
     } = event;
     const existing = byId[nodeId];
-    const lastHeardAt = meshtasticLastHeardPatch(
-      identityId,
-      nodeId,
-      timestamp,
-      existing?.lastHeardAt,
-    );
+    const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
     return {
       nodes: {
         ...s.nodes,

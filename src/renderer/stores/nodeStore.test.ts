@@ -98,3 +98,16 @@ describe('patchNodeFavorited', () => {
     expect(rec.favorited).toBe(true);
   });
 });
+
+describe('mergeNode nodeId guard', () => {
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+  });
+
+  it('keeps bucket nodeId when patch includes a conflicting nodeId', () => {
+    updateMeshcoreOp(ID, NODE, { nodeId: 999 } as Parameters<typeof updateMeshcoreOp>[2]);
+    const rec = useNodeStore.getState().nodes[ID][NODE];
+    expect(rec.nodeId).toBe(NODE);
+    expect(useNodeStore.getState().nodes[ID][999]).toBeUndefined();
+  });
+});

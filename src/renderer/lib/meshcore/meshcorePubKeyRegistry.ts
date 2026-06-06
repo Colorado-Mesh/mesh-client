@@ -1,4 +1,4 @@
-import { pubkeyToNodeId } from '../meshcoreUtils';
+import { pubKeyPrefixHex, pubkeyToNodeId } from '../meshcoreUtils';
 
 const pubKeyByNodeId = new Map<number, Uint8Array>();
 const pubKeyPrefixByHex = new Map<string, number>();
@@ -12,15 +12,9 @@ export function setMeshcorePubKeyRegistryRefSync(fn: MeshcorePubKeyRegistryRefSy
   refSyncImpl = fn;
 }
 
-function prefixHexFromPubKey(publicKey: Uint8Array): string {
-  return Array.from(publicKey.slice(0, 6))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 function storePubKey(nodeId: number, publicKey: Uint8Array): void {
   pubKeyByNodeId.set(nodeId, publicKey);
-  const prefixHex = prefixHexFromPubKey(publicKey);
+  const prefixHex = pubKeyPrefixHex(publicKey);
   const existingNodeId = pubKeyPrefixByHex.get(prefixHex);
   if (existingNodeId != null && existingNodeId !== nodeId) {
     console.warn(
@@ -59,7 +53,7 @@ export function seedMeshcorePrefixLookupMaps(
   for (const [nodeId, publicKey] of pubKeyByNodeId) {
     if (publicKey.length !== 32 || nodeId === 0) continue;
     pubKeyByNodeIdOut.set(nodeId, publicKey);
-    nodeIdByPrefix.set(prefixHexFromPubKey(publicKey), nodeId);
+    nodeIdByPrefix.set(pubKeyPrefixHex(publicKey), nodeId);
   }
 }
 
@@ -89,7 +83,7 @@ export function copyMeshcorePubKeyRegistryToRefs(
   pubKeyPrefixMapRef.clear();
   for (const [nodeId, key] of pubKeyByNodeId) {
     pubKeyMapRef.set(nodeId, key);
-    pubKeyPrefixMapRef.set(prefixHexFromPubKey(key), nodeId);
+    pubKeyPrefixMapRef.set(pubKeyPrefixHex(key), nodeId);
   }
 }
 
