@@ -333,6 +333,10 @@
     "days": "天",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
+    "restartNote": "应用设置时，设备可能会短暂重新启动。"
+  },
   "configureNode": {
     "label": "配置节点",
     "localDevice": "此设备（本地）",
@@ -345,6 +349,12 @@
     "sessionStale": "管理会话已过期—在更改设置之前刷新",
     "sessionNone": "未建立管理会话—正在加载或连接本地无线电",
     "establishingSession": "正在建立管理会话…"
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "连接断开—无线电断开",
+    "staleLoss": "连接可能丢失—最近未收到任何数据",
+    "reconnect": "重新连接",
+    "reconnectingAttempt": "正在重新连接… 尝试 {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "保存密码",
     "savedPasswordsCount": "已保存密码（{{count}}）",
     "savedPasswordOrphanLabel": "房间 0x{{nodeId}}",
-    "statusPasswordSaved": "已为此房间保存密码。",
+    "statusPasswordSaved": "已为此房间保存密码（未登录时显示天蓝色标记）。",
     "statusAutoLoginEnabled": "连接时自动登录已启用。",
     "badgeAutoLogin": "自动登录",
     "badgeAutoSync": "自动同步",
@@ -2286,7 +2296,7 @@
     "forgetSavedPasswordConfirmBody": "删除此房间存储的房客/管理员密码，并关闭自动登录和自动同步。您需要再次输入密码才能登录。",
     "stopAutoLogin": "停止自动登录",
     "stopAutoLoginAria": "当收音机连接时，停止自动登录此房间",
-    "sidebarLegendTitle": "房间状态",
+    "sidebarLegendTitle": "房间状态标记",
     "legendNotSaved": "未保存密码",
     "legendSaved": "密码已保存",
     "legendLoggedIn": "已登录",
@@ -2294,7 +2304,7 @@
     "statusLoggedInSessionTooltip": "活动客户端会话。它会持续存在，直到您离开房间或断开连接。如果无法访问房间服务器，请离开，并在返回时再次登录。",
     "legendNotSavedTooltip": "空圆—此房间未存储密码",
     "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
-    "legendLoggedInTooltip": "绿点—活动客户端会话（如果服务器离线，请留出空间）"
+    "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
@@ -2498,15 +2508,5 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
-  },
-  "configApplyNotice": {
-    "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
-    "restartNote": "应用设置时，设备可能会短暂重新启动。"
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "连接断开—无线电断开",
-    "staleLoss": "连接可能丢失—最近未收到任何数据",
-    "reconnect": "重新连接",
-    "reconnectingAttempt": "正在重新连接… 尝试 {{attempt}}/{{max}}"
   }
 }

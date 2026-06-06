@@ -333,6 +333,10 @@
     "days": "jours",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
+    "restartNote": "L'appareil peut redémarrer brièvement lorsque vous appliquez les paramètres."
+  },
   "configureNode": {
     "label": "Configurer le nœud",
     "localDevice": "Cet appareil (local)",
@@ -345,6 +349,12 @@
     "sessionStale": "Session d'administration obsolète — actualiser avant de modifier les paramètres",
     "sessionNone": "Session d'administration non établie — chargement ou connexion de la radio locale",
     "establishingSession": "Établissement de la session d'administration…"
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Connexion perdue — radio déconnectée",
+    "staleLoss": "La connexion peut être perdue — aucune donnée reçue récemment",
+    "reconnect": "Reconnecter",
+    "reconnectingAttempt": "Reconnexion... tentative {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Nombre maximal de tentatives de reconnexion MQTT",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Mots de passe enregistrés",
     "savedPasswordsCount": "Mots de passe enregistrés ({{count}})",
     "savedPasswordOrphanLabel": "Salle 0x{{nodeId}}",
-    "statusPasswordSaved": "Mot de passe enregistré pour cette pièce.",
+    "statusPasswordSaved": "Mot de passe enregistré pour cette salle (marqueur bleu ciel si non connecté).",
     "statusAutoLoginEnabled": "La connexion automatique lors de la connexion est activée.",
     "badgeAutoLogin": "Connexion automatique",
     "badgeAutoSync": "Synchronisation automatique",
@@ -2286,15 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Supprime le mot de passe invité/administrateur enregistré pour cette pièce et désactive la connexion automatique et la synchronisation automatique. Vous devrez saisir à nouveau le mot de passe pour vous connecter.",
     "stopAutoLogin": "Arrêter la connexion automatique",
     "stopAutoLoginAria": "Arrêter la connexion automatique pour cette pièce lorsque la radio se connecte",
-    "sidebarLegendTitle": "État de la salle",
+    "sidebarLegendTitle": "Marqueurs d'état de la salle",
     "legendNotSaved": "Aucun mot de passe enregistré",
     "legendSaved": "Mot de passe enregistré",
     "legendLoggedIn": "Connecté",
     "statusLoggedInSession": "Connecté",
-    "statusLoggedInSessionTooltip": "Session client active. Elle persiste jusqu'à ce que vous quittiez la pièce ou que vous vous déconnectiez. Si le serveur de la salle est inaccessible, partez et reconnectez-vous à son retour.",
-    "legendNotSavedTooltip": "Cercle vide — aucun mot de passe stocké pour cette pièce",
-    "legendSavedTooltip": "Sky half-circle — mot de passe stocké ; connectez-vous pour ouvrir une session",
-    "legendLoggedInTooltip": "Point vert — session client active (laisser de la place si le serveur est hors ligne)"
+    "statusLoggedInSessionTooltip": "Session client active. Elle persiste jusqu'à ce que vous quittiez la salle ou que vous vous déconnectiez. Si le serveur de la salle est inaccessible, quittez-la et reconnectez-vous à son retour.",
+    "legendNotSavedTooltip": "Cercle vide — aucun mot de passe stocké pour cette salle",
+    "legendSavedTooltip": "Demi-cercle bleu ciel — mot de passe enregistré ; connectez-vous pour ouvrir une session",
+    "legendLoggedInTooltip": "Point vert — session client active (quittez la salle si le serveur est hors ligne)"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",
@@ -2498,15 +2508,5 @@
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",
     "menuToastErrorTitle": "Échec de la vérification de"
-  },
-  "configApplyNotice": {
-    "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
-    "restartNote": "L'appareil peut redémarrer brièvement lorsque vous appliquez les paramètres."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Connexion perdue — radio déconnectée",
-    "staleLoss": "La connexion peut être perdue — aucune donnée reçue récemment",
-    "reconnect": "Reconnecter",
-    "reconnectingAttempt": "Reconnexion... tentative {{attempt}}/{{max}}"
   }
 }

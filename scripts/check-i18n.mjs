@@ -25,6 +25,7 @@ import {
   protectedBrandIssues,
   nodeListPanelConnectionCrossKeyIssues,
   roomsSavedPasswordsCrossKeyIssues,
+  roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -295,6 +296,11 @@ for (const dir of localeDirs) {
 
   for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {
     console.error(`Locale quality in "${dir}" (roomsPanel saved passwords): ${issue}.`);
+    errors++;
+  }
+
+  for (const issue of roomsSidebarMarkerCrossKeyIssues(localeFlat, en)) {
+    console.error(`Locale quality in "${dir}" (roomsPanel sidebar markers): ${issue}.`);
     errors++;
   }
 

@@ -333,6 +333,10 @@
     "days": "dní",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
+    "restartNote": "Zařízení se může krátce restartovat, když použijete nastavení."
+  },
   "configureNode": {
     "label": "Konfigurovat uzel",
     "localDevice": "Toto zařízení (místní)",
@@ -345,6 +349,12 @@
     "sessionStale": "Zastaralá relace správce — obnovte před změnou nastavení",
     "sessionNone": "Administrativní relace nebyla vytvořena — načítání nebo připojení místního rádia",
     "establishingSession": "Vytváření relace administrátora..."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Připojení ztraceno — rádio odpojeno",
+    "staleLoss": "Připojení může být ztraceno — v poslední době nebyla přijata žádná data",
+    "reconnect": "Znovu připojit",
+    "reconnectingAttempt": "Opětovné připojení... Pokus {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Uložená hesla",
     "savedPasswordsCount": "Uložená hesla ({{count}})",
     "savedPasswordOrphanLabel": "Pokoj 0x{{nodeId}}",
-    "statusPasswordSaved": "Heslo uložené pro tuto místnost.",
+    "statusPasswordSaved": "Heslo uložené pro tuto místnost (modrý marker, pokud nejste přihlášeni).",
     "statusAutoLoginEnabled": "Automatické přihlášení při připojení je povoleno.",
     "badgeAutoLogin": "Automatické přihlášení",
     "badgeAutoSync": "Automatická synchronizace",
@@ -2286,15 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Odebere uložené heslo hosta/správce pro tuto místnost a vypne automatické přihlášení a automatickou synchronizaci. Pro přihlášení budete muset znovu zadat heslo.",
     "stopAutoLogin": "Zastavit automatické přihlášení",
     "stopAutoLoginAria": "Zastavit automatické přihlašování pro tuto místnost, když se rádio připojí",
-    "sidebarLegendTitle": "Stav místnosti",
+    "sidebarLegendTitle": "Značky stavu místnosti",
     "legendNotSaved": "Žádné uložené heslo",
     "legendSaved": "Heslo bylo uloženo",
     "legendLoggedIn": "Přihlášen",
-    "statusLoggedInSession": "Přihlášení",
+    "statusLoggedInSession": "Přihlášen",
     "statusLoggedInSessionTooltip": "Aktivní relace klienta. Trvá, dokud neopustíte místnost nebo se neodpojíte. Pokud je pokojový server nedostupný, opusťte jej a po návratu se znovu přihlaste.",
     "legendNotSavedTooltip": "Prázdný kruh — pro tuto místnost není uloženo žádné heslo",
-    "legendSavedTooltip": "Sky half-circle — heslo uloženo; přihlaste se pro otevření relace",
-    "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (ponechte prostor, pokud je server offline)"
+    "legendSavedTooltip": "Modrý polokruh — heslo uloženo; přihlaste se pro otevření relace",
+    "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",
@@ -2498,15 +2508,5 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
-  },
-  "configApplyNotice": {
-    "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
-    "restartNote": "Zařízení se může krátce restartovat, když použijete nastavení."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Připojení ztraceno — rádio odpojeno",
-    "staleLoss": "Připojení může být ztraceno — v poslední době nebyla přijata žádná data",
-    "reconnect": "Znovu připojit",
-    "reconnectingAttempt": "Opětovné připojení... Pokus {{attempt}}/{{max}}"
   }
 }

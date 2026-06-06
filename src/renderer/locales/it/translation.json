@@ -333,6 +333,10 @@
     "days": "giorni",
     "emDash": "—^"
   },
+  "configApplyNotice": {
+    "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
+    "restartNote": "Il dispositivo potrebbe riavviarsi brevemente quando si applicano le impostazioni."
+  },
   "configureNode": {
     "label": "Configura nodo",
     "localDevice": "Questo dispositivo (locale)",
@@ -345,6 +349,12 @@
     "sessionStale": "Sessione di amministrazione obsoleta — aggiorna prima di modificare le impostazioni",
     "sessionNone": "Sessione di amministrazione non stabilita — caricamento o connessione della radio locale",
     "establishingSession": "Creazione della sessione di amministrazione in corso..."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Connessione persa — radio scollegata",
+    "staleLoss": "La connessione potrebbe essere persa — nessun dato ricevuto di recente",
+    "reconnect": "Connessione",
+    "reconnectingAttempt": "Riconnessione in corso... tentativo {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Numero massimo di tentativi di riconnessione MQTT",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Password salvate",
     "savedPasswordsCount": "Password salvate ({{count}})",
     "savedPasswordOrphanLabel": "Sala 0x{{nodeId}}",
-    "statusPasswordSaved": "Password salvata per questa stanza.",
+    "statusPasswordSaved": "Password salvata per questa stanza (indicatore azzurro se non connesso).",
     "statusAutoLoginEnabled": "L'accesso automatico alla connessione è abilitato.",
     "badgeAutoLogin": "Accesso automatico",
     "badgeAutoSync": "Sincronizzazione automatica",
@@ -2286,15 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Rimuove la password dell'ospite/amministratore memorizzata per questa stanza e disattiva l'accesso automatico e la sincronizzazione automatica. Dovrai inserire nuovamente la password per accedere.",
     "stopAutoLogin": "Interrompi accesso automatico",
     "stopAutoLoginAria": "Interrompi il login automatico per questa stanza quando la radio si connette",
-    "sidebarLegendTitle": "Stato della stanza",
+    "sidebarLegendTitle": "Indicatori di stato della stanza",
     "legendNotSaved": "Nessuna password salvata",
     "legendSaved": "Password salvata.",
-    "legendLoggedIn": "Avvenuto accesso",
-    "statusLoggedInSession": "Avvenuto accesso",
+    "legendLoggedIn": "Connesso",
+    "statusLoggedInSession": "Connesso",
     "statusLoggedInSessionTooltip": "Sessione client attiva. Persiste fino a quando non lasci la stanza o ti disconnetti. Se il server della stanza non è raggiungibile, esci e accedi di nuovo al suo ritorno.",
     "legendNotSavedTooltip": "Cerchio vuoto — nessuna password memorizzata per questa stanza",
-    "legendSavedTooltip": "Sky semicerchio — password memorizzata; accedi per aprire una sessione",
-    "legendLoggedInTooltip": "Punto verde — sessione client attiva (lasciare spazio se il server è offline)"
+    "legendSavedTooltip": "Semicerchio azzurro — password memorizzata; accedi per aprire una sessione",
+    "legendLoggedInTooltip": "Punto verde — sessione client attiva (esci dalla stanza se il server è offline)"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",
@@ -2498,15 +2508,5 @@
     "menuToastAvailableTitle": "Aggiornamento disponibile",
     "menuToastAvailableBody": "È disponibile la versione {{version}}.",
     "menuToastErrorTitle": "Controllo aggiornamento non riuscito"
-  },
-  "configApplyNotice": {
-    "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
-    "restartNote": "Il dispositivo potrebbe riavviarsi brevemente quando si applicano le impostazioni."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Connessione persa — radio scollegata",
-    "staleLoss": "La connessione potrebbe essere persa — nessun dato ricevuto di recente",
-    "reconnect": "Connessione",
-    "reconnectingAttempt": "Riconnessione in corso... tentativo {{attempt}}/{{max}}"
   }
 }
