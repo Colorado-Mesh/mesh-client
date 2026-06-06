@@ -60,10 +60,13 @@ export function MeshtasticRfPathIcon({ className }: { className?: string }) {
   );
 }
 
+/** Sky (not purple) so the globe does not read as stale in the node list legend. */
+export const MESHTASTIC_MQTT_PATH_ICON_CLASS = 'h-3 w-3 text-sky-400';
+
 export function MeshtasticMqttPathIcon({ className }: { className?: string }) {
   return (
     <svg
-      className={className ?? 'h-3 w-3 text-purple-400'}
+      className={className ?? MESHTASTIC_MQTT_PATH_ICON_CLASS}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -93,11 +96,33 @@ export function MeshtasticHybridPathIcons({
   return (
     <span
       role="img"
-      className={`flex items-center justify-center gap-1 ${className ?? ''}`}
+      className={`inline-flex items-center justify-center gap-1 ${className ?? ''}`}
       title={title}
       aria-label={ariaLabel}
     >
       <MeshtasticRfPathIcon />
+      <MeshtasticMqttPathIcon />
+    </span>
+  );
+}
+
+/** MQTT-only path badge (single globe, centered in the list column). */
+export function MeshtasticMqttOnlyPathIcons({
+  title,
+  ariaLabel,
+  className,
+}: {
+  title?: string;
+  ariaLabel?: string;
+  className?: string;
+}) {
+  return (
+    <span
+      role="img"
+      className={`inline-flex items-center justify-center ${className ?? ''}`}
+      title={title}
+      aria-label={ariaLabel}
+    >
       <MeshtasticMqttPathIcon />
     </span>
   );

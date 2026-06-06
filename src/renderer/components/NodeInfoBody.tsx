@@ -34,7 +34,7 @@ import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
   MeshtasticHybridPathIcons,
-  MeshtasticMqttPathIcon,
+  MeshtasticMqttOnlyPathIcons,
   MeshtasticRfPathIcon,
   resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
@@ -145,11 +145,7 @@ function NodeSourceBadge({
       : isSelf
         ? t('nodeListPanel.mqttConnectedTooltip')
         : t('nodeInfoBody.receivedViaMqtt');
-    return (
-      <span title={title}>
-        <MeshtasticMqttPathIcon />
-      </span>
-    );
+    return <MeshtasticMqttOnlyPathIcons title={title} ariaLabel={title} />;
   }
   return (
     <span title={t('nodeInfoBody.receivedViaRf')}>
