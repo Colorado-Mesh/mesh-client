@@ -1,5 +1,5 @@
 import { fromBinary, toBinary } from '@bufbuild/protobuf';
-import type { MeshDevice } from '@meshtastic/core';
+import { type MeshDevice, Types } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
@@ -98,6 +98,8 @@ import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraC
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
 const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
+const { PortNum } = Portnums;
+const { DeviceStatusEnum } = Types;
 
 function isMeshtasticTraceroutePortnum(portnum: unknown): boolean {
   return Number(portnum) === Portnums.PortNum.TRACEROUTE_APP;
@@ -458,17 +460,17 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // ─── Device status ─────────────────────────────────────────
   const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
-    if (status !== 1) {
+    if (status !== DeviceStatusEnum.DeviceRestarting) {
       touchLastData();
     }
     const statusMap: Record<number, DeviceState['status']> = {
-      1: 'connecting', // DeviceRestarting
-      2: 'disconnected', // DeviceDisconnected
-      3: 'connecting', // DeviceConnecting
-      4: 'connecting', // DeviceReconnecting
-      5: 'connected', // DeviceConnected
-      6: 'connecting', // DeviceConfiguring
-      7: 'configured', // DeviceConfigured
+      [DeviceStatusEnum.DeviceRestarting]: 'connecting',
+      [DeviceStatusEnum.DeviceDisconnected]: 'disconnected',
+      [DeviceStatusEnum.DeviceConnecting]: 'connecting',
+      [DeviceStatusEnum.DeviceReconnecting]: 'connecting',
+      [DeviceStatusEnum.DeviceConnected]: 'connected',
+      [DeviceStatusEnum.DeviceConfiguring]: 'connecting',
+      [DeviceStatusEnum.DeviceConfigured]: 'configured',
     };
     const mapped = statusMap[status] ?? 'connected';
     setState((s) => ({
@@ -477,7 +479,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       ...(mapped === 'configured' || mapped === 'connected' ? { connectionLoss: false } : {}),
     }));
 
-    if (status === 1) {
+    if (status === DeviceStatusEnum.DeviceRestarting) {
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = true;
       meshtasticIngestSessionRef.current?.setConfiguring(true);
@@ -485,10 +487,18 @@ export function attachMeshtasticLegacyWireSubscriptions(
     }
 
     // Track configuring phase so packet replays are marked as historical
-    if (status === 3 || status === 5 || status === 6) {
+    if (
+      status === DeviceStatusEnum.DeviceConnecting ||
+      status === DeviceStatusEnum.DeviceConnected ||
+      status === DeviceStatusEnum.DeviceConfiguring
+    ) {
       isConfiguringRef.current = true;
       meshtasticIngestSessionRef.current?.setConfiguring(true);
-      if (status === 6 && type === 'ble' && !configureTimeoutRef.current) {
+      if (
+        status === DeviceStatusEnum.DeviceConfiguring &&
+        type === 'ble' &&
+        !configureTimeoutRef.current
+      ) {
         configureTimeoutRef.current = setTimeout(() => {
           console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');
           const activeDevice = deviceRef.current;
@@ -516,7 +526,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     }
 
     // Start watchdog when configured
-    if (status === 7) {
+    if (status === DeviceStatusEnum.DeviceConfigured) {
       clearPostCommitRebootRecoveryRef.current();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
@@ -571,7 +581,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     }
 
     // Always clean up on disconnect, even if we never reached configured
-    if (status === 2) {
+    if (status === DeviceStatusEnum.DeviceDisconnected) {
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
         localLoraConfigTimerRef.current = undefined;
@@ -733,7 +743,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       return;
     }
     const dataPacket = meshPacket.payloadVariant.value;
-    if (dataPacket.portnum !== Portnums.PortNum.TEXT_MESSAGE_APP) return;
+    if (dataPacket.portnum !== PortNum.TEXT_MESSAGE_APP) return;
 
     ensureNodeExists(meshPacket.from, 'rf');
     maybeRequestNodeInfoForNode(meshPacket.from);

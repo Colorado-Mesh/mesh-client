@@ -1,10 +1,14 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { AppOnly, Channel } from '@meshtastic/protobufs';
 
 import {
   MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES,
   normalizeMeshtasticPskTo16Bytes,
 } from './meshtasticDefaultPublicPsk';
+import {
+  meshtasticChannelSetSchema,
+  meshtasticChannelSettingsSchema,
+  meshtasticModuleSettingsSchema,
+} from './meshtasticProtobufSchemas';
 
 /** LoRa section of ChannelSet URLs (subset of meshtastic.Config.LoRaConfig). */
 export interface MeshtasticLoraConfig {
@@ -94,12 +98,12 @@ export function base64UrlDecode(encoded: string): Uint8Array {
 }
 
 function channelSettingsToProtobuf(input: MeshtasticChannelSettingsInput) {
-  return create(Channel.ChannelSettingsSchema, {
+  return create(meshtasticChannelSettingsSchema, {
     name: input.name,
     psk: input.psk,
     uplinkEnabled: input.uplinkEnabled,
     downlinkEnabled: input.downlinkEnabled,
-    moduleSettings: create(Channel.ModuleSettingsSchema, {
+    moduleSettings: create(meshtasticModuleSettingsSchema, {
       positionPrecision: input.positionPrecision,
     }),
   });
@@ -163,7 +167,7 @@ function buildChannelSet(
   settings: MeshtasticChannelSettingsInput[],
   loraConfig?: MeshtasticLoraConfig,
 ) {
-  return create(AppOnly.ChannelSetSchema, {
+  return create(meshtasticChannelSetSchema, {
     settings: settings.map(channelSettingsToProtobuf),
     ...(loraConfig ? { loraConfig } : {}),
   });
@@ -213,7 +217,7 @@ export function generateConfigUrl(
   }
 
   const channelSet = buildChannelSet(settings, loraConfig);
-  const encoded = base64UrlEncode(toBinary(AppOnly.ChannelSetSchema, channelSet));
+  const encoded = base64UrlEncode(toBinary(meshtasticChannelSetSchema, channelSet));
   const query = options?.addOnly ? '?add=true' : '';
   const httpsUrl = `https://meshtastic.org/e/${query}#${encoded}`;
   const meshtasticUrl = `meshtastic://meshtastic/e/${query}#${encoded}`;
@@ -227,7 +231,7 @@ interface WireChannelSet {
 }
 
 function decodeWireChannelSet(bytes: Uint8Array): WireChannelSet {
-  return fromBinary(AppOnly.ChannelSetSchema, bytes) as WireChannelSet;
+  return fromBinary(meshtasticChannelSetSchema, bytes) as WireChannelSet;
 }
 
 export function parseConfigUrl(url: string): ParsedChannelSet {

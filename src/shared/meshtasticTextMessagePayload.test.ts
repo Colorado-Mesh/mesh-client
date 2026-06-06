@@ -1,18 +1,21 @@
 import { create, toBinary } from '@bufbuild/protobuf';
-import { StoreForward } from '@meshtastic/protobufs';
 import { describe, expect, it } from 'vitest';
 
+import {
+  meshtasticStoreAndForwardSchema,
+  meshtasticStoreForwardRequestResponse,
+} from './meshtasticProtobufSchemas';
 import {
   isLikelyReadableChatText,
   resolveMeshtasticTextMessagePayload,
 } from './meshtasticTextMessagePayload';
 
 function sfTextPacket(text: string): Uint8Array {
-  const msg = create(StoreForward.StoreAndForwardSchema, {
-    rr: StoreForward.StoreAndForward_RequestResponse.ROUTER_TEXT_BROADCAST,
+  const msg = create(meshtasticStoreAndForwardSchema, {
+    rr: meshtasticStoreForwardRequestResponse.ROUTER_TEXT_BROADCAST,
     variant: { case: 'text', value: new TextEncoder().encode(text) },
   });
-  return toBinary(StoreForward.StoreAndForwardSchema, msg);
+  return toBinary(meshtasticStoreAndForwardSchema, msg);
 }
 
 describe('meshtasticTextMessagePayload', () => {

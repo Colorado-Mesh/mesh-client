@@ -83,7 +83,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
+      '@typescript-eslint/no-unsafe-enum-comparison': 'error',
       '@typescript-eslint/restrict-template-expressions': 'off',
       '@typescript-eslint/unbound-method': 'off',
       // React event handlers often return Promise<void>; void-return check is too strict for JSX attrs.
@@ -106,6 +106,17 @@ export default tseslint.config(
       ],
       'no-empty': ['error', { allowEmptyCatch: true }],
       '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions'] }],
+    },
+  },
+  // Stricter typing for shared helpers (protocol parsers, IPC types, pure lib).
+  {
+    files: ['src/shared/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
     },
   },
   // Node scripts: no TS program — disable type-checked rules; keep security + Node globals

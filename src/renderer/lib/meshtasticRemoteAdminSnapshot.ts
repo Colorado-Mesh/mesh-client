@@ -36,7 +36,6 @@ const DEFERRED_CONFIG_TYPES = [
   Admin.AdminMessage_ConfigType.NETWORK_CONFIG,
   Admin.AdminMessage_ConfigType.DISPLAY_CONFIG,
   Admin.AdminMessage_ConfigType.BLUETOOTH_CONFIG,
-  Admin.AdminMessage_ConfigType.TELEMETRY_CONFIG,
 ] as const;
 
 function configPayloadCase(value: unknown): string | undefined {
@@ -188,9 +187,8 @@ async function fetchConfigTypes(
   let loraConfigFetchFailed = false;
   let loraConfigFetchError: string | undefined;
 
-  for (let i = 0; i < configTypes.length; i++) {
-    const type = configTypes[i]!;
-    if (i > 0 && interFetchDelayMs > 0) {
+  for (const [index, type] of configTypes.entries()) {
+    if (index > 0 && interFetchDelayMs > 0) {
       await delayMs(interFetchDelayMs);
     }
 

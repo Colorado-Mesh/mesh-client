@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { create } from '@bufbuild/protobuf';
-import { Config } from '@meshtastic/protobufs';
 import { describe, expect, it } from 'vitest';
 
 import { MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES } from './meshtasticDefaultPublicPsk';
+import { meshtasticLoRaConfigSchema } from './meshtasticProtobufSchemas';
 import {
   base64UrlDecode,
   base64UrlEncode,
@@ -21,7 +21,7 @@ const samplePsk = new Uint8Array(16);
 samplePsk[0] = 0xab;
 samplePsk[1] = 0xcd;
 
-const sampleLora = create(Config.Config_LoRaConfigSchema, {
+const sampleLora = create(meshtasticLoRaConfigSchema, {
   region: 1,
   modemPreset: 0,
   usePreset: true,

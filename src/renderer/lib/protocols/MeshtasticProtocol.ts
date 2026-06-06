@@ -1,5 +1,5 @@
 import { create, toBinary } from '@bufbuild/protobuf';
-import type { MeshDevice } from '@meshtastic/core';
+import { type MeshDevice, Types } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 
 import {
@@ -52,14 +52,17 @@ export interface MeshtasticRawPacketEntry {
   isLocal?: boolean;
 }
 
+const { DeviceStatusEnum } = Types;
+const { PortNum } = Portnums;
+
 const STATUS_CODE_MAP: Record<number, string> = {
-  1: 'connecting',
-  2: 'disconnected',
-  3: 'connecting',
-  4: 'connecting',
-  5: 'connected',
-  6: 'connecting',
-  7: 'configured',
+  [DeviceStatusEnum.DeviceRestarting]: 'connecting',
+  [DeviceStatusEnum.DeviceDisconnected]: 'disconnected',
+  [DeviceStatusEnum.DeviceConnecting]: 'connecting',
+  [DeviceStatusEnum.DeviceReconnecting]: 'connecting',
+  [DeviceStatusEnum.DeviceConnected]: 'connected',
+  [DeviceStatusEnum.DeviceConfiguring]: 'connecting',
+  [DeviceStatusEnum.DeviceConfigured]: 'configured',
   8: 'stale',
 };
 
@@ -108,10 +111,10 @@ export class MeshtasticProtocol implements Protocol {
     push(
       device.events.onMeshPacket.subscribe((packet) => {
         if (packet.payloadVariant.case === 'decoded') {
-          const portnum = Number((packet.payloadVariant.value as { portnum?: unknown }).portnum);
-          if (portnum === Number(Portnums.PortNum.TEXT_MESSAGE_APP)) {
+          const portnum = packet.payloadVariant.value.portnum;
+          if (portnum === PortNum.TEXT_MESSAGE_APP) {
             fire(this.decodeTextMessage(packet));
-          } else if (portnum === Number(Portnums.PortNum.TRACEROUTE_APP)) {
+          } else if (portnum === PortNum.TRACEROUTE_APP) {
             fire(this.decodeTraceRoute(packet));
           }
         }
