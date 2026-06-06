@@ -11,6 +11,11 @@ export function normalizeMeshtasticPacketId(v: unknown): number | undefined {
   return meshtasticWireUint32AllowZero(v);
 }
 
+/** Composite dedup key — packet ids may collide across different senders. */
+export function meshtasticPacketDedupKey(senderId: number, packetId: number): string {
+  return `${senderId >>> 0}:${packetId >>> 0}`;
+}
+
 /** Normalize payload for dedup (matches ingest placeholder stripping). */
 export function normalizeMeshtasticDedupPayload(payload: unknown): string {
   if (typeof payload !== 'string') return '';
@@ -114,6 +119,36 @@ export function resolveMeshtasticCrossTransportPacketId(
 
   if (incomingPid) return incomingPid;
   return existingPid;
+}
+
+/** Same text row already ingested live; S&F replay should merge flags, not duplicate. */
+export function meshtasticStoreForwardContentMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+): boolean {
+  if (!incoming.viaStoreForward) return false;
+  if (existing.sender_id !== incoming.sender_id) return false;
+  if (existing.channel !== incoming.channel) return false;
+  if (dmTarget(existing) !== dmTarget(incoming)) return false;
+  return (
+    normalizeMeshtasticDedupPayload(existing.payload) ===
+    normalizeMeshtasticDedupPayload(incoming.payload)
+  );
+}
+
+/** Find an existing live row for an S&F replay (no time window). */
+export function findMeshtasticStoreForwardDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+): ChatMessage | undefined {
+  if (!incoming.viaStoreForward) return undefined;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const existing = messages[i];
+    if (meshtasticStoreForwardContentMatch(existing, incoming)) {
+      return existing;
+    }
+  }
+  return undefined;
 }
 
 /** Upgrade the matching row to `receivedVia: 'both'` when the other transport already has this message. */

@@ -138,23 +138,18 @@ export async function loadOrGenerateCerts(serverName: string): Promise<CertBundl
     Object.entries(paths).map(([k, v]) => [k, v + '.tmp']),
   ) as typeof paths;
   try {
-    fs.writeFileSync(tmpPaths.caCert, bundle.caCert);
-    fs.writeFileSync(tmpPaths.caKey, bundle.caKey);
-    fs.writeFileSync(tmpPaths.serverCert, bundle.serverCert);
-    fs.writeFileSync(tmpPaths.serverKey, bundle.serverKey);
-    fs.writeFileSync(tmpPaths.clientCert, bundle.clientCert);
-    fs.writeFileSync(tmpPaths.clientKey, bundle.clientKey);
+    await Promise.all(
+      Object.entries(tmpPaths).map(([key, tmpPath]) =>
+        fs.promises.writeFile(tmpPath, bundle[key as keyof CertBundle], 'utf-8'),
+      ),
+    );
     for (const [key, tmpPath] of Object.entries(tmpPaths)) {
-      fs.renameSync(tmpPath, paths[key as keyof typeof paths]);
+      await fs.promises.rename(tmpPath, paths[key as keyof typeof paths]);
     }
   } catch (e) {
-    for (const tmpPath of Object.values(tmpPaths)) {
-      try {
-        fs.rmSync(tmpPath, { force: true });
-      } catch {
-        // catch-no-log-ok best-effort cleanup
-      }
-    }
+    await Promise.all(
+      Object.values(tmpPaths).map((tmpPath) => fs.promises.rm(tmpPath, { force: true })),
+    );
     throw e;
   }
 

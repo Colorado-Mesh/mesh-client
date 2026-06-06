@@ -333,6 +333,10 @@
     "days": "dagen",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
+    "restartNote": "Het apparaat kan kort opnieuw opstarten wanneer u instellingen toepast."
+  },
   "configureNode": {
     "label": "Node configureren",
     "localDevice": "Dit apparaat (lokaal)",
@@ -345,6 +349,12 @@
     "sessionStale": "Beheerderssessie verouderd — vernieuwen voordat u instellingen wijzigt",
     "sessionNone": "Beheersessie niet ingesteld — lokale radio laden of verbinden",
     "establishingSession": "Beheerderssessie wordt opgezet..."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Verbinding verbroken — radio losgekoppeld",
+    "staleLoss": "De verbinding kan verloren gaan — er zijn onlangs geen gegevens ontvangen",
+    "reconnect": "Opnieuw verbinden",
+    "reconnectingAttempt": "Opnieuw verbinden… poging {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Opgeslagen wachtwoorden",
     "savedPasswordsCount": "Opgeslagen wachtwoorden ({{count}})",
     "savedPasswordOrphanLabel": "Ruimte 0x{{nodeId}}",
-    "statusPasswordSaved": "Wachtwoord opgeslagen voor deze ruimte.",
+    "statusPasswordSaved": "Wachtwoord opgeslagen voor deze ruimte (luchtblauwe markering wanneer niet ingelogd).",
     "statusAutoLoginEnabled": "Automatisch inloggen bij verbinden is ingeschakeld.",
     "badgeAutoLogin": "Automatisch inloggen",
     "badgeAutoSync": "Auto-sync",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Verwijdert het opgeslagen gast-/beheerderswachtwoord voor deze ruimte en schakelt automatisch inloggen en automatisch synchroniseren uit. U moet het wachtwoord opnieuw invoeren om in te loggen.",
     "stopAutoLogin": "Automatische inlog",
     "stopAutoLoginAria": "Stop automatisch inloggen voor deze ruimte wanneer de radio verbinding maakt",
-    "sidebarLegendTitle": "Ruimtestatus",
+    "sidebarLegendTitle": "Ruimtestatusmarkeringen",
     "legendNotSaved": "Geen opgeslagen wachtwoord",
     "legendSaved": "Wachtwoord opgeslagen",
-    "legendLoggedIn": "Ingelogd"
+    "legendLoggedIn": "Ingelogd",
+    "statusLoggedInSession": "Ingelogd",
+    "statusLoggedInSessionTooltip": "Actieve clientsessie. Het blijft bestaan totdat u de ruimte verlaat of de verbinding verbreekt. Als de roomserver onbereikbaar is, verlaat deze dan en log opnieuw in wanneer deze terug is.",
+    "legendNotSavedTooltip": "Lege cirkel — geen wachtwoord opgeslagen voor deze ruimte",
+    "legendSavedTooltip": "Lichtblauwe halve cirkel — wachtwoord opgeslagen; log in om een sessie te openen",
+    "legendLoggedInTooltip": "Groene stip — actieve clientsessie (verlaat de ruimte als de server offline is)"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
-  },
-  "configApplyNotice": {
-    "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
-    "restartNote": "Het apparaat kan kort opnieuw opstarten wanneer u instellingen toepast."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Verbinding verbroken — radio losgekoppeld",
-    "staleLoss": "De verbinding kan verloren gaan — er zijn onlangs geen gegevens ontvangen",
-    "reconnect": "Opnieuw verbinden",
-    "reconnectingAttempt": "Opnieuw verbinden… poging {{attempt}}/{{max}}"
   }
 }

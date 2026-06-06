@@ -1298,7 +1298,7 @@ export class MQTTManager extends EventEmitter {
 
     if (payloadCase === 'decoded') {
       const decoded = packet.payloadVariant.value as {
-        portnum?: number;
+        portnum?: (typeof PortNum)[keyof typeof PortNum];
         payload?: Uint8Array;
       };
       this.handleDecoded(nodeId, packetId, decoded, hopsAway);
@@ -1626,11 +1626,16 @@ export class MQTTManager extends EventEmitter {
   private handleDecoded(
     nodeId: number,
     packetId: number,
-    data: { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number },
+    data: {
+      portnum?: (typeof PortNum)[keyof typeof PortNum];
+      payload?: Uint8Array;
+      emoji?: number;
+      replyId?: number;
+    },
     hopsAway?: number,
     topic?: string,
   ): void {
-    const portnum = data.portnum ?? 0;
+    const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
     const payload = data.payload;
 
     if (portnum === PortNum.NODEINFO_APP && payload) {
@@ -1945,7 +1950,12 @@ export class MQTTManager extends EventEmitter {
     encrypted: Uint8Array,
     packetId: number,
     from: number,
-  ): { portnum?: number; payload?: Uint8Array; emoji?: number; replyId?: number } | null {
+  ): {
+    portnum?: (typeof PortNum)[keyof typeof PortNum];
+    payload?: Uint8Array;
+    emoji?: number;
+    replyId?: number;
+  } | null {
     const allKeys = this.allDecryptKeys;
     for (const key of allKeys) {
       const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);

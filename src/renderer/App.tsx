@@ -1,4 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+/**
+ * App mount effect graph (order-sensitive):
+ * 1. Identity / connection hydration and startup DB prune (`useAppStartupDbPrune`)
+ * 2. Protocol MQTT auto-launch and tab-scoped disconnect
+ * 3. Unread + tray badge sync (`useAppTrayUnreadSync`)
+ * 4. Power recovery (`usePowerRecovery` in AppShell)
+ */
 import {
   Suspense,
   useCallback,
@@ -39,6 +46,8 @@ import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
+import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
+import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
@@ -126,7 +135,6 @@ import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
-import { runStartupDbPrune } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
   messageRecordsToChatMessages,
@@ -275,9 +283,6 @@ export interface UpdateState {
   percent?: number;
 }
 
-const MESHTASTIC_UNREAD_KEY = 'mesh-client:meshtasticChatUnread';
-const MESHCORE_UNREAD_KEY = 'mesh-client:meshcoreChatUnread';
-const MESHCORE_ROOMS_UNREAD_KEY = 'mesh-client:meshcoreRoomsUnread';
 const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
 /** Legacy key (pre–footer indicator): `checkOnStartup` / `dismissedVersion` — removed on launch so updates always check on startup. */
 const LEGACY_UPDATE_SETTINGS_KEY = 'mesh-client:updateSettings';
@@ -288,25 +293,6 @@ function readLogPanelVisible(): boolean {
   } catch (e) {
     console.debug('[App] readLogPanelVisible ' + errLikeToLogString(e));
     return false;
-  }
-}
-
-function persistUnread(protocol: 'meshtastic' | 'meshcore', count: number): void {
-  try {
-    const key = protocol === 'meshcore' ? MESHCORE_UNREAD_KEY : MESHTASTIC_UNREAD_KEY;
-    const n = Math.max(0, Math.min(Math.floor(count) || 0, 99999));
-    localStorage.setItem(key, String(n));
-  } catch (e) {
-    console.debug('[App] persistUnread quota/private mode ' + errLikeToLogString(e));
-  }
-}
-
-function persistMeshcoreRoomsUnread(count: number): void {
-  try {
-    const n = Math.max(0, Math.min(Math.floor(count) || 0, 99999));
-    localStorage.setItem(MESHCORE_ROOMS_UNREAD_KEY, String(n));
-  } catch (e) {
-    console.debug('[App] persistMeshcoreRoomsUnread quota/private mode ' + errLikeToLogString(e));
   }
 }
 
@@ -1495,12 +1481,11 @@ function AppContent({
     refreshMeshcoreAllFromDb,
   ]);
 
-  // ─── Startup pruning (once per session; see startupDbPrune.ts) ─────────────
-  useEffect(() => {
-    void runStartupDbPrune().then(() => {
+  useAppStartupDbPrune(
+    useCallback(() => {
       postStartupPruneHydrateRef.current();
-    });
-  }, []);
+    }, []),
+  );
 
   // Dual-mode: each protocol manages its own MQTT connection independently.
   // Meshtastic MQTT disconnects when switching to MeshCore without an RF radio.
@@ -1735,24 +1720,7 @@ function AppContent({
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length]);
 
-  // ─── Persist derived unread + sync combined total to tray ────────────────
-  useEffect(() => {
-    persistUnread('meshtastic', meshtasticChatUnread);
-  }, [meshtasticChatUnread]);
-
-  useEffect(() => {
-    persistUnread('meshcore', meshcoreChatUnread);
-  }, [meshcoreChatUnread]);
-
-  useEffect(() => {
-    persistMeshcoreRoomsUnread(meshcoreRoomsUnread);
-  }, [meshcoreRoomsUnread]);
-
-  useEffect(() => {
-    window.electronAPI.setTrayUnread(
-      meshtasticChatUnread + meshcoreChatUnread + meshcoreRoomsUnread,
-    );
-  }, [meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread]);
+  useAppTrayUnreadSync(meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread);
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
   const advertSentRef = useRef(false);

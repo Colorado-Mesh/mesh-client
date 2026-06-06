@@ -19,6 +19,11 @@ import {
   parseMeshcoreDmIncomingFromThread,
 } from './meshcoreChannelText';
 import {
+  indexMeshcoreMessageForDedupe,
+  lookupMeshcoreMessageIdByDedupeKey,
+  removeMeshcoreDedupeIndexForMessage,
+} from './meshcoreMessageDedupeIndex';
+import {
   chatMessageToMessageRecord,
   messageRecordsToChatMessages,
   messageRecordToChatMessage,
@@ -33,6 +38,7 @@ export function meshcoreRoomMessageStoreId(roomServerId: number, timestampSec: n
   return `room:${roomServerId}:${timestampSec}`;
 }
 
+/** MeshCore wire timestamps are Unix seconds; mesh-client UI/DB rows use ms when above 1e12. */
 function meshcoreTimestampSec(timestamp: number): number {
   return timestamp >= 1_000_000_000_000 ? Math.floor(timestamp / 1000) : timestamp;
 }
@@ -114,14 +120,45 @@ function mergeMeshcoreReceivedVia(
 }
 
 function findStoreRecordIdForMessage(identityId: IdentityId, msg: ChatMessage): string | undefined {
-  const byId = useMessageStore.getState().messages[identityId] ?? {};
   const key = meshcoreMessageDedupeKey(msg);
+  const indexed = lookupMeshcoreMessageIdByDedupeKey(identityId, key);
+  const byId = useMessageStore.getState().messages[identityId] ?? {};
+  if (indexed && byId[indexed]) {
+    return indexed;
+  }
   for (const [id, record] of Object.entries(byId)) {
     if (meshcoreMessageDedupeKey(messageRecordToChatMessage(record)) === key) {
+      indexMeshcoreMessageForDedupe(identityId, msg, id);
       return id;
     }
   }
   return undefined;
+}
+
+function resolveExactKeyDuplicate(
+  identityId: IdentityId,
+  incomingKey: string,
+  storeMessages: ChatMessage[],
+): ChatMessage | undefined {
+  const indexedId = lookupMeshcoreMessageIdByDedupeKey(identityId, incomingKey);
+  if (indexedId) {
+    const record = useMessageStore.getState().messages[identityId]?.[indexedId];
+    if (record) {
+      const chat = messageRecordToChatMessage(record);
+      if (meshcoreMessageDedupeKey(chat) === incomingKey) {
+        return chat;
+      }
+    }
+  }
+  return storeMessages.find((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+}
+
+function persistMeshcoreDedupeIndex(
+  identityId: IdentityId,
+  message: ChatMessage,
+  messageId: string,
+): void {
+  indexMeshcoreMessageForDedupe(identityId, message, messageId);
 }
 
 function meshcoreIsRoomPostMessage(msg: ChatMessage): boolean {
@@ -196,6 +233,7 @@ function applyRoomPostDuplicateMerge(
   const record = chatMessageToMessageRecord(merged);
   record.id = canonicalId;
   upsertMessage(identityId, record);
+  persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
   const altIds = new Set<string>();
   if (existingRecordId && existingRecordId !== canonicalId) {
     altIds.add(existingRecordId);
@@ -206,6 +244,11 @@ function applyRoomPostDuplicateMerge(
   }
   for (const altId of altIds) {
     deleteMessage(identityId, altId);
+    if (altId === incomingId) {
+      removeMeshcoreDedupeIndexForMessage(identityId, msg);
+    } else if (altId === existingRecordId) {
+      removeMeshcoreDedupeIndexForMessage(identityId, roomDup);
+    }
   }
   return { inserted: false, storeUpdated: true, message: merged, canonicalId };
 }
@@ -230,7 +273,7 @@ export function upsertMeshcoreMessageWithDedup(
   const storeMessages = listChatMessagesFromStore(identityId);
   const incomingKey = meshcoreMessageDedupeKey(msg);
 
-  const exactMatch = storeMessages.find((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+  const exactMatch = resolveExactKeyDuplicate(identityId, incomingKey, storeMessages);
   if (exactMatch) {
     const canonicalId =
       findStoreRecordIdForMessage(identityId, exactMatch) ??
@@ -241,6 +284,7 @@ export function upsertMeshcoreMessageWithDedup(
       const record = chatMessageToMessageRecord(merged);
       record.id = canonicalId;
       upsertMessage(identityId, record);
+      persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
       return { inserted: false, storeUpdated: true, message: merged, canonicalId };
     }
     const replyFields = meshcorePreferIncomingReplyFields(exactMatch, msg);
@@ -253,6 +297,7 @@ export function upsertMeshcoreMessageWithDedup(
       const record = chatMessageToMessageRecord(upgraded);
       record.id = canonicalId;
       upsertMessage(identityId, record);
+      persistMeshcoreDedupeIndex(identityId, upgraded, canonicalId);
       return { inserted: false, storeUpdated: true, message: upgraded, canonicalId };
     }
     return {
@@ -278,9 +323,11 @@ export function upsertMeshcoreMessageWithDedup(
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
+    persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     const altId = meshcoreMessageStoreId(msg);
     if (altId !== canonicalId) {
       deleteMessage(identityId, altId);
+      removeMeshcoreDedupeIndexForMessage(identityId, msg);
     }
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
@@ -300,9 +347,11 @@ export function upsertMeshcoreMessageWithDedup(
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
+    persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     const altId = meshcoreMessageStoreId(msg);
     if (altId !== canonicalId) {
       deleteMessage(identityId, altId);
+      removeMeshcoreDedupeIndexForMessage(identityId, msg);
     }
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
@@ -322,9 +371,11 @@ export function upsertMeshcoreMessageWithDedup(
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
+    persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
     const altId = meshcoreMessageStoreId(msg);
     if (altId !== canonicalId) {
       deleteMessage(identityId, altId);
+      removeMeshcoreDedupeIndexForMessage(identityId, msg);
     }
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
@@ -338,6 +389,7 @@ export function upsertMeshcoreMessageWithDedup(
   const record = chatMessageToMessageRecord(msg);
   record.id = canonicalId;
   upsertMessage(identityId, record);
+  persistMeshcoreDedupeIndex(identityId, msg, canonicalId);
   return { inserted: true, storeUpdated: true, message: msg, canonicalId };
 }
 

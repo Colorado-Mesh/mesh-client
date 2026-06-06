@@ -333,6 +333,10 @@
     "days": "日",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
+    "restartNote": "設定を適用すると、デバイスが一時的に再起動することがあります。"
+  },
   "configureNode": {
     "label": "ノードを構成する",
     "localDevice": "このデバイス（ローカル）",
@@ -345,6 +349,12 @@
     "sessionStale": "管理セッションが古くなっています—設定を変更する前に更新してください",
     "sessionNone": "管理セッションが確立されていません—ローカル無線を読み込んでいるか、接続しています",
     "establishingSession": "管理セッションを確立しています…"
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "接続が切断されました—無線が切断されました",
+    "staleLoss": "接続が失われる可能性があります—最近受信したデータはありません",
+    "reconnect": "再接続",
+    "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "保存されているパスワード",
     "savedPasswordsCount": "保存されたパスワード（{{count}}）",
     "savedPasswordOrphanLabel": "ルーム 0x{{nodeId}}",
-    "statusPasswordSaved": "このルームにパスワードを保存しました。",
+    "statusPasswordSaved": "このルームにパスワードを保存しました（未ログイン時は空色マーカー）。",
     "statusAutoLoginEnabled": "接続時の自動ログインが有効になっています。",
     "badgeAutoLogin": "自動ログイン",
     "badgeAutoSync": "自動同期",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "このルームに保存されているゲスト/管理者パスワードを削除し、自動ログインと自動同期をオフにします。ログインするには、もう一度パスワードを入力する必要があります。",
     "stopAutoLogin": "自動ログインを停止する",
     "stopAutoLoginAria": "ラジオ接続時にこのルームの自動ログインを停止",
-    "sidebarLegendTitle": "ルームの状態",
+    "sidebarLegendTitle": "ルーム状態マーカー",
     "legendNotSaved": "保存済みパスワードなし",
     "legendSaved": "パスワードが保存されました。",
-    "legendLoggedIn": "ログイン済み"
+    "legendLoggedIn": "ログイン済み",
+    "statusLoggedInSession": "ログイン済み",
+    "statusLoggedInSessionTooltip": "アクティブなクライアントセッション。ルームを出るか切断するまで続きます。ルームサーバーに到達できない場合は、退出してから再度ログインしてください。",
+    "legendNotSavedTooltip": "空の円—このルームにはパスワードが保存されていません",
+    "legendSavedTooltip": "空色の半円 — パスワード保存済み。ログインしてセッションを開く",
+    "legendLoggedInTooltip": "緑の点 — アクティブなクライアントセッション（サーバーがオフラインの場合はルームを退出）"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
-  },
-  "configApplyNotice": {
-    "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
-    "restartNote": "設定を適用すると、デバイスが一時的に再起動することがあります。"
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "接続が切断されました—無線が切断されました",
-    "staleLoss": "接続が失われる可能性があります—最近受信したデータはありません",
-    "reconnect": "再接続",
-    "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目"
   }
 }

@@ -99,16 +99,10 @@ export function buildStoreForwardHistoryRequestBytes(
   return toBinary(StoreForward.StoreAndForwardSchema, msg);
 }
 
-function parseStoreForwardPacket(data: Uint8Array): {
-  rr: number;
-  variant: { case?: string; value?: unknown };
-} | null {
+function parseStoreForwardPacket(data: Uint8Array) {
   if (!data.length) return null;
   try {
-    return fromBinary(StoreForward.StoreAndForwardSchema, data) as unknown as {
-      rr: number;
-      variant: { case?: string; value?: unknown };
-    };
+    return fromBinary(StoreForward.StoreAndForwardSchema, data);
   } catch {
     // catch-no-log-ok malformed StoreAndForward protobuf
     return null;
@@ -118,7 +112,7 @@ function parseStoreForwardPacket(data: Uint8Array): {
 /** Parse ROUTER_HEARTBEAT payload; null if not a heartbeat variant. */
 export function parseStoreForwardHeartbeat(data: Uint8Array): StoreForwardHeartbeatInfo | null {
   const parsed = parseStoreForwardPacket(data);
-  if (!parsed || parsed.rr !== StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT) {
+  if (parsed?.rr !== StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT) {
     return null;
   }
   if (parsed.variant.case !== 'heartbeat' || !parsed.variant.value) return null;
@@ -132,7 +126,7 @@ export function parseStoreForwardHeartbeat(data: Uint8Array): StoreForwardHeartb
 /** Parse ROUTER_HISTORY payload; null if not a history variant. */
 export function parseStoreForwardHistory(data: Uint8Array): StoreForwardHistoryInfo | null {
   const parsed = parseStoreForwardPacket(data);
-  if (!parsed || parsed.rr !== StoreForward.StoreAndForward_RequestResponse.ROUTER_HISTORY) {
+  if (parsed?.rr !== StoreForward.StoreAndForward_RequestResponse.ROUTER_HISTORY) {
     return null;
   }
   if (parsed.variant.case !== 'history' || !parsed.variant.value) return null;

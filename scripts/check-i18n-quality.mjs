@@ -272,7 +272,60 @@ export const PL_SAVED_PASSWORDS_HEADING_AUTOFILL_RE = /wypełnianie.*hasłem/i;
 export const ZH_LOGIN_WRONG_CHAR_RE = /登陆/;
 
 /** Czech MT uses noun "login" instead of logged-in state on legendLoggedIn. */
-export const CS_LEGEND_LOGGED_IN_NOUN_RE = /^Přihlášení$/;
+export const CS_LOGGED_IN_NOUN_RE = /^Přihlášení$/;
+
+/** MeshCore Rooms sidebar marker legend tooltips (sky ◐ / green ● / empty ○). */
+export const ROOMS_SIDEBAR_MARKER_TOOLTIP_KEYS = new Set([
+  'legendNotSavedTooltip',
+  'legendSavedTooltip',
+  'legendLoggedInTooltip',
+]);
+
+/** Auto-translate often leaves "Sky half-circle" in legendSavedTooltip. */
+export const SKY_HALF_CIRCLE_ENGLISH_RES = [
+  /\bSky[\s-]*half/i,
+  /\bSky[\s-]*Halb/i,
+  /\bSky\s+semicerchio/i,
+];
+
+/** MT mistranslates "leave the room" as "leave space" on legendLoggedInTooltip. */
+export const LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES = [
+  /\bleave space\b/i,
+  /\bdeixe espaço\b/i,
+  /\blaisser de la place\b/i,
+  /\blasciare spazio\b/i,
+  /\bdejar espacio\b/i,
+  /\bponechte prostor\b/i,
+  /\bpozostaw miejsce\b/i,
+  /\blaat ruimte\b/i,
+  /留出空间/,
+  /スペースを空/,
+  /자리를 비움/,
+  /\bоставьте место\b/i,
+  /залишити місце/i,
+];
+
+/** Turkish MT uses consulting-client "danışan" instead of software client. */
+export const TR_CLIENT_DANISAN_RE = /\bdanışan\b/i;
+
+/** French MT uses hotel "pièce" for MeshCore Room in new sidebar copy. */
+export const FR_ROOM_PIECE_RE = /\bpièce\b/i;
+
+/** sidebarLegendTitle must mention markers when English does. */
+export const SIDEBAR_MARKER_WORD_RE =
+  /(?:\bmark(?:er|ierung|ierungen|ering|eringen|ör|e)?\b|markering(?:en)?|marqueur|marcador(?:es)?|indicat(?:or|ore|eur|e)?|znacznik|znak|značk|penanda|işaret|маркер|标记|マーカ|마커)/i;
+
+/** roomsPanel keys where French "pièce" is a known MT hotel-room false friend. */
+export const FR_ROOM_PIECE_SIDEBAR_KEYS = new Set([
+  'statusPasswordSaved',
+  'statusLoggedInSessionTooltip',
+  'legendNotSavedTooltip',
+]);
+
+export const ROOMS_STATUS_LOGGED_IN_SESSION_KEY = `${ROOMS_PANEL_PREFIX}statusLoggedInSession`;
+export const ROOMS_LEGEND_LOGGED_IN_KEY = `${ROOMS_PANEL_PREFIX}legendLoggedIn`;
+export const ROOMS_STATUS_PASSWORD_SAVED_KEY = `${ROOMS_PANEL_PREFIX}statusPasswordSaved`;
+export const ROOMS_SIDEBAR_LEGEND_TITLE_KEY = `${ROOMS_PANEL_PREFIX}sidebarLegendTitle`;
 
 /** roomsPanel members / leave UX from recent MeshCore Rooms work. */
 export const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
@@ -396,6 +449,7 @@ const BRAND_WORD_RES = new Map([
   ['Meshtastic', /\bMeshtastic\b/g],
   ['MeshCore', /\bMeshCore\b/g],
   ['MQTT', /\bMQTT\b/g],
+  ['GPIO', /\bGPIO\b/g],
 ]);
 
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.
@@ -805,11 +859,82 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (
     locale === 'cs' &&
-    leafKey === 'legendLoggedIn' &&
+    (leafKey === 'legendLoggedIn' || leafKey === 'statusLoggedInSession') &&
     enVal === 'Logged in' &&
-    CS_LEGEND_LOGGED_IN_NOUN_RE.test(val)
+    CS_LOGGED_IN_NOUN_RE.test(val)
   ) {
-    issues.push('legendLoggedIn must be "Přihlášen" (logged in), not noun "Přihlášení" (login)');
+    issues.push(`${leafKey} must be "Přihlášen" (logged in), not noun "Přihlášení" (login)`);
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_SIDEBAR_MARKER_TOOLTIP_KEYS.has(leafKey) &&
+    leafKey === 'legendSavedTooltip' &&
+    enVal.includes('Sky half-circle')
+  ) {
+    for (const re of SKY_HALF_CIRCLE_ENGLISH_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'legendSavedTooltip still quotes English "Sky half-circle" — describe the sky-blue ◐ marker',
+        );
+        break;
+      }
+    }
+  }
+
+  if (flatKey === `${ROOMS_PANEL_PREFIX}legendLoggedInTooltip` && enVal.includes('leave room')) {
+    for (const re of LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'legendLoggedInTooltip uses "leave space" false friend — say leave the MeshCore room when the server is offline',
+        );
+        break;
+      }
+    }
+  }
+
+  if (
+    locale === 'fr' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    FR_ROOM_PIECE_SIDEBAR_KEYS.has(leafKey) &&
+    FR_ROOM_PIECE_RE.test(val) &&
+    (enVal.includes('room') || enVal.includes('Room'))
+  ) {
+    issues.push('roomsPanel false friend: use "salle" for MeshCore Room, not hotel "pièce"');
+  }
+
+  if (
+    locale === 'tr' &&
+    flatKey === `${ROOMS_PANEL_PREFIX}statusLoggedInSessionTooltip` &&
+    TR_CLIENT_DANISAN_RE.test(val)
+  ) {
+    issues.push('statusLoggedInSessionTooltip uses "danışan" — use "istemci" for software client');
+  }
+
+  if (
+    flatKey === ROOMS_STATUS_PASSWORD_SAVED_KEY &&
+    enVal.includes('(sky marker') &&
+    locale !== 'en'
+  ) {
+    if (/sky marker/i.test(val)) {
+      issues.push(
+        'statusPasswordSaved still quotes English "sky marker" — describe the sky-blue sidebar marker',
+      );
+    } else if (!/[(（]/.test(val)) {
+      issues.push(
+        'statusPasswordSaved must mention the sky-blue sidebar marker when not logged in',
+      );
+    }
+  }
+
+  if (
+    flatKey === ROOMS_SIDEBAR_LEGEND_TITLE_KEY &&
+    enVal.includes('marker') &&
+    locale !== 'en' &&
+    !SIDEBAR_MARKER_WORD_RE.test(val)
+  ) {
+    issues.push('sidebarLegendTitle must mention sidebar markers, not only room status');
   }
 
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersHeading`) {
@@ -974,6 +1099,33 @@ export function roomsSavedPasswordsCrossKeyIssues(localeFlat, enFlat) {
     stop === badge
   ) {
     issues.push('stopAutoLogin must not duplicate badgeAutoLogin');
+  }
+  return issues;
+}
+
+/**
+ * Cross-key checks for MeshCore Rooms sidebar marker legend strings.
+ *
+ * @param {Record<string, string>} localeFlat
+ * @param {Record<string, string>} enFlat
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function roomsSidebarMarkerCrossKeyIssues(localeFlat, enFlat) {
+  const issues = [];
+  const session = localeFlat[ROOMS_STATUS_LOGGED_IN_SESSION_KEY];
+  const legend = localeFlat[ROOMS_LEGEND_LOGGED_IN_KEY];
+  const enSession = enFlat[ROOMS_STATUS_LOGGED_IN_SESSION_KEY];
+  const enLegend = enFlat[ROOMS_LEGEND_LOGGED_IN_KEY];
+
+  if (
+    typeof session === 'string' &&
+    typeof legend === 'string' &&
+    typeof enSession === 'string' &&
+    typeof enLegend === 'string' &&
+    enSession === enLegend &&
+    session !== legend
+  ) {
+    issues.push('statusLoggedInSession must match legendLoggedIn');
   }
   return issues;
 }

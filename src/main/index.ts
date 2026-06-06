@@ -29,6 +29,7 @@ import type { MQTTSettings } from '../renderer/lib/types';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import { formatChatExportLines } from './chatExportFormat';
 import {
   addContactToGroup,
   closeDatabase,
@@ -67,11 +68,13 @@ import {
   upsertNodePath,
 } from './database';
 import { fetchLinkPreview } from './fetchLinkPreview';
-import { getGpsFix } from './gps';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
   clearLogFile,
   exportLogTo,
+  flushLogBeforeQuit,
   formatRuntimeLogTag,
   forwardRendererConsoleMessage,
   getLogPath,
@@ -248,8 +251,33 @@ let trayContextMenu: Menu | null = null;
 let appMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
-/** Second pass of `before-quit` after async Noble BLE teardown (see `before-quit` handler). */
-let nobleQuitRetry = false;
+let shutdownDone = false;
+
+/** Stop network services, flush logs, and close SQLite before process exit. */
+async function shutdownAppResources(): Promise<void> {
+  if (shutdownDone) return;
+  isQuitting = true;
+  try {
+    takServerManager?.stop();
+  } catch (err) {
+    console.debug(
+      '[main] TAK server stop during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
+  try {
+    mqttManager.disconnect();
+    meshcoreMqttAdapter.disconnect();
+  } catch (err) {
+    console.debug(
+      '[main] MQTT disconnect during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal library error during cleanup
+  }
+  await flushLogBeforeQuit();
+  closeDatabase();
+  shutdownDone = true;
+}
 /** powerSaveBlocker ID while a device is connected; null when not active. */
 let powerSaveBlockerId: number | null = null;
 
@@ -2899,22 +2927,7 @@ ipcMain.handle('mqtt:publishWaypoint', (_event, args) => {
   }
 });
 
-// ─── IPC: GPS fix via main process ──────────────────────────────────
-ipcMain.handle('gps:getFix', async () => {
-  try {
-    return await getGpsFix();
-  } catch (err) {
-    console.error(
-      '[gps] getGpsFix threw:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    return {
-      status: 'error',
-      message: 'Location unavailable (network or service error).',
-      code: 'UNKNOWN',
-    };
-  }
-});
+registerGpsIpcHandlers();
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
@@ -3130,13 +3143,8 @@ ipcMain.handle('app:quit', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  isQuitting = true;
   isConnected = false;
   try {
-    mqttManager.disconnect();
-
-    meshcoreMqttAdapter.disconnect();
-
     await nobleBleManager.stopAllScanning();
     try {
       await nobleBleManager.disconnectAll();
@@ -3147,7 +3155,7 @@ ipcMain.handle('app:quit', async (event) => {
       );
     }
 
-    closeDatabase();
+    await shutdownAppResources();
 
     if (meshcoreTcpSocket) {
       try {
@@ -3560,7 +3568,7 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
         `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
       );
     }
-    return result;
+    return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
       '[IPC] db:pruneNodesByCount failed:',
@@ -3585,7 +3593,7 @@ ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
         `[IPC] db:pruneMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
       );
     }
-    return result;
+    return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
       '[IPC] db:pruneMessagesByCount failed:',
@@ -3610,7 +3618,7 @@ ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => 
         `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
       );
     }
-    return result;
+    return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
       '[IPC] db:pruneMeshcoreMessagesByCount failed:',
@@ -3797,7 +3805,7 @@ ipcMain.handle('db:pruneMeshcoreContactsByCount', (_event, maxCount: number) => 
     if (changes > 0) {
       console.debug(`[IPC] db:pruneMeshcoreContactsByCount: removed ${changes} excess contacts`);
     }
-    return changes;
+    return { changes };
   } catch (err) {
     console.error(
       '[IPC] db:pruneMeshcoreContactsByCount failed:',
@@ -4063,19 +4071,7 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
       filters: [{ name: 'Text file', extensions: ['txt'] }],
     });
     if (result.canceled || !result.filePath) return { success: false };
-    const lines = (messages as unknown[]).flatMap((m) => {
-      if (typeof m !== 'object' || m === null) return [];
-      const item = m as Record<string, unknown>;
-      const time = new Date(Number(item.timestamp ?? 0))
-        .toISOString()
-        .replace('T', ' ')
-        .slice(0, 19);
-      const sender = typeof item.sender_name === 'string' ? item.sender_name : '';
-      const ch = typeof item.channel === 'number' ? item.channel : 0;
-      const dest = item.to != null ? ' (DM)' : ` (ch${ch})`;
-      const body = typeof item.payload === 'string' ? item.payload : '';
-      return [`[${time}] ${sender}${dest}: ${body}`];
-    });
+    const lines = formatChatExportLines(messages as unknown[]);
     await fs.promises.writeFile(result.filePath, lines.join('\n') + '\n', 'utf8');
     return { success: true, path: result.filePath };
   } catch (err) {
@@ -5399,75 +5395,11 @@ ipcMain.handle('http:disconnect', () => {
   }
 });
 
-// ─── IPC: TAK server ───────────────────────────────────────────────
-ipcMain.handle('tak:start', async (_event, settings) => {
-  try {
-    console.debug('[IPC] tak:start');
-    validateTakSettings(settings);
-    const m = await ensureTakServerManager();
-    await m.start(settings);
-  } catch (err) {
-    console.error(
-      '[IPC] tak:start failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('tak:stop', () => {
-  console.debug('[IPC] tak:stop');
-  takServerManager?.stop();
-});
-
-ipcMain.handle('tak:getStatus', () => {
-  return takServerManager?.getStatus() ?? IDLE_TAK_STATUS;
-});
-
-ipcMain.handle('tak:getConnectedClients', () => {
-  return takServerManager?.getConnectedClients() ?? [];
-});
-
-ipcMain.handle('tak:generateDataPackage', async () => {
-  try {
-    console.debug('[IPC] tak:generateDataPackage');
-    const m = await ensureTakServerManager();
-    await m.generateDataPackage();
-  } catch (err) {
-    console.error(
-      '[IPC] tak:generateDataPackage failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('tak:regenerateCertificates', async () => {
-  try {
-    console.debug('[IPC] tak:regenerateCertificates');
-    const m = await ensureTakServerManager();
-    await m.regenerateCertificates();
-  } catch (err) {
-    console.error(
-      '[IPC] tak:regenerateCertificates failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('tak:pushNodeUpdate', async (_event, node: unknown) => {
-  if (!node || typeof node !== 'object') throw new Error('tak:pushNodeUpdate: node must be object');
-  const n = node as Record<string, unknown>;
-  const nodeId = Number(n.node_id);
-  if (!Number.isFinite(nodeId) || nodeId <= 0)
-    throw new Error('tak:pushNodeUpdate: invalid node_id');
-  const m = await ensureTakServerManager();
-  if (!m.getStatus().running) {
-    console.debug('[IPC] tak:pushNodeUpdate: TAK server not running, skipping');
-    return;
-  }
-  m.onNodeUpdate(n as Parameters<TakServerManager['onNodeUpdate']>[0]);
+registerTakIpcHandlers({
+  idleTakStatus: IDLE_TAK_STATUS,
+  ensureTakServerManager,
+  getTakServerManager: () => takServerManager,
+  validateTakSettings,
 });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
@@ -5606,9 +5538,7 @@ app.on('before-quit', (event) => {
     lastBluetoothDeviceIds.clear();
   }
 
-  if (nobleQuitRetry) {
-    isQuitting = true;
-    closeDatabase();
+  if (shutdownDone) {
     return;
   }
 
@@ -5624,15 +5554,17 @@ app.on('before-quit', (event) => {
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
       } finally {
-        nobleQuitRetry = true;
+        await shutdownAppResources();
         app.quit();
       }
     })();
     return;
   }
 
-  isQuitting = true;
-  closeDatabase();
+  event.preventDefault();
+  void shutdownAppResources().then(() => {
+    app.quit();
+  });
 });
 
 app.on('will-quit', () => {

@@ -333,6 +333,10 @@
     "days": "günler",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
+    "restartNote": "Ayarları uyguladığınızda cihaz kısa bir süre yeniden başlatılabilir."
+  },
   "configureNode": {
     "label": "Düğümü yapılandır",
     "localDevice": "Bu cihaz (yerel)",
@@ -345,6 +349,12 @@
     "sessionStale": "Yönetici oturumu eski — ayarları değiştirmeden önce yenileyin",
     "sessionNone": "Yönetici oturumu kurulmadı — yerel radyo yükleniyor veya bağlanıyor",
     "establishingSession": "Yönetici oturumu oluşturuluyor…"
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Bağlantı kesildi — radyo bağlantısı kesildi",
+    "staleLoss": "Bağlantı kaybolabilir — yakın zamanda veri alınmadı",
+    "reconnect": "Yeniden bağlanınız",
+    "reconnectingAttempt": "Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Kaydedilen şifreler",
     "savedPasswordsCount": "Kaydedilen şifreler ({{count}})",
     "savedPasswordOrphanLabel": "Oda 0x{{nodeId}}",
-    "statusPasswordSaved": "Bu oda için şifre kaydedildi.",
+    "statusPasswordSaved": "Bu oda için şifre kaydedildi (oturum açık değilken gök mavisi işaret).",
     "statusAutoLoginEnabled": "Bağlantıda otomatik giriş etkinleştirildi.",
     "badgeAutoLogin": "Otomatik giriş",
     "badgeAutoSync": "Otomatik senkronizasyon",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Bu odanın kayıtlı misafir/yönetici şifresini kaldırır ve otomatik giriş ve otomatik senkronizasyonu kapatır. Giriş yapmak için şifreyi tekrar girmeniz gerekecektir.",
     "stopAutoLogin": "Otomatik girişi durdur",
     "stopAutoLoginAria": "Radyo bağlandığında bu oda için otomatik oturum açmayı durdur",
-    "sidebarLegendTitle": "Oda Durumu",
+    "sidebarLegendTitle": "Oda durumu işaretleri",
     "legendNotSaved": "Kayıtlı parola yok",
     "legendSaved": "Parola kaydedildi",
-    "legendLoggedIn": "Oturum açtı"
+    "legendLoggedIn": "Oturum açık",
+    "statusLoggedInSession": "Oturum açık",
+    "statusLoggedInSessionTooltip": "Aktif istemci oturumu. Siz odadan çıkana veya bağlantıyı kesene kadar devam eder. Oda sunucusuna ulaşılamıyorsa, çıkın ve geri döndüğünde tekrar oturum açın.",
+    "legendNotSavedTooltip": "Boş daire — bu oda için saklanan parola yok",
+    "legendSavedTooltip": "Gökyüzü yarım daire — parola saklanır; bir oturumu açmak için oturum açın",
+    "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
-  },
-  "configApplyNotice": {
-    "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
-    "restartNote": "Ayarları uyguladığınızda cihaz kısa bir süre yeniden başlatılabilir."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Bağlantı kesildi — radyo bağlantısı kesildi",
-    "staleLoss": "Bağlantı kaybolabilir — yakın zamanda veri alınmadı",
-    "reconnect": "Yeniden bağlanınız",
-    "reconnectingAttempt": "Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi"
   }
 }

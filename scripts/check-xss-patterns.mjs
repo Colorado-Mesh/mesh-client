@@ -44,6 +44,11 @@ const PATTERNS = [
     name: 'eval()',
     hint: 'Use JSON.parse() for data parsing or restructure to avoid dynamic execution.',
   },
+  {
+    re: /document\.write\s*\(/,
+    name: 'document.write()',
+    hint: 'Use DOM APIs that do not parse HTML strings (e.g. textContent).',
+  },
 ];
 
 function collectSourceFiles(dir) {

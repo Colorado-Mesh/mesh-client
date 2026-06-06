@@ -1,5 +1,6 @@
 import { fromBinary } from '@bufbuild/protobuf';
-import { StoreForward } from '@meshtastic/protobufs';
+
+import { meshtasticStoreAndForwardSchema } from './meshtasticProtobufSchemas';
 
 /** Max share of control bytes (excluding tab/LF/CR) before payload is treated as non-chat. */
 export const MESHTASTIC_CHAT_CONTROL_BYTE_RATIO_MAX = 0.25;
@@ -15,7 +16,7 @@ function parseStoreForwardPacket(data: Uint8Array): {
 } | null {
   if (!data.length) return null;
   try {
-    return fromBinary(StoreForward.StoreAndForwardSchema, data) as unknown as {
+    return fromBinary(meshtasticStoreAndForwardSchema, data) as unknown as {
       rr: number;
       variant: { case?: string; value?: unknown };
     };
@@ -55,13 +56,15 @@ export function decodeStoreForwardTextPayload(data: Uint8Array): string | null {
 export function resolveMeshtasticTextMessagePayload(
   data: Uint8Array,
 ): ResolvedMeshtasticTextPayload | null {
-  const sfText = decodeStoreForwardTextPayload(data);
-  if (sfText != null) {
-    return { text: sfText, viaStoreForward: true };
-  }
-
   const parsed = parseStoreForwardPacket(data);
-  if (parsed && parsed.variant.case !== 'text') {
+  if (parsed) {
+    if (parsed.variant.case === 'text') {
+      const sfText = decodeStoreForwardTextPayload(data);
+      if (sfText != null) {
+        return { text: sfText, viaStoreForward: true };
+      }
+      return null;
+    }
     return null;
   }
 

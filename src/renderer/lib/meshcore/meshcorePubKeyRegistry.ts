@@ -20,7 +20,16 @@ function prefixHexFromPubKey(publicKey: Uint8Array): string {
 
 function storePubKey(nodeId: number, publicKey: Uint8Array): void {
   pubKeyByNodeId.set(nodeId, publicKey);
-  pubKeyPrefixByHex.set(prefixHexFromPubKey(publicKey), nodeId);
+  const prefixHex = prefixHexFromPubKey(publicKey);
+  const existingNodeId = pubKeyPrefixByHex.get(prefixHex);
+  if (existingNodeId != null && existingNodeId !== nodeId) {
+    console.warn(
+      `[meshcorePubKeyRegistry] 6-byte pubkey prefix collision prefix=${prefixHex} ` +
+        `existing=0x${existingNodeId.toString(16)} new=0x${nodeId.toString(16)} — keeping first`,
+    );
+    return;
+  }
+  pubKeyPrefixByHex.set(prefixHex, nodeId);
 }
 
 function notifyRefSync(): void {

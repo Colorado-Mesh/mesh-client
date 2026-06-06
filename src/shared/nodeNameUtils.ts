@@ -26,7 +26,9 @@ export function meshtasticNodeIdMatchesHexQuery(nodeId: number, query: string): 
   const q = query.trim().toLowerCase().replace(/^!/, '');
   if (!q) return false;
   const padded = formatMeshtasticNodeIdHex(nodeId);
-  return padded.includes(q) || padded.replace(/^0+/, '').includes(q.replace(/^0+/, ''));
+  if (/^0+$/.test(q)) return padded.includes('0');
+  const qNorm = q.replace(/^0+/, '') || '0';
+  return padded.includes(q) || padded.replace(/^0+/, '').includes(qNorm);
 }
 
 /**

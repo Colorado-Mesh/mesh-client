@@ -1,12 +1,12 @@
 import type { BrowserWindow } from 'electron';
 import { app, ipcMain, shell } from 'electron';
+import type { AppUpdater } from 'electron-updater';
 
 import { sanitizeLogMessage } from './log-service';
 
 // electron-updater is a runtime dependency only in the packaged app path
 // We do a dynamic require so the dev path still works without it installed
 
-let autoUpdater: any = null;
 /** Silent periodic check (no renderer “checking” event). */
 let checkNow: (() => void) | null = null;
 /** App menu: emits `update:checking` with notify flag, then runs the same check as IPC. */
@@ -115,9 +115,10 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
 }
 
 function registerElectronUpdaterHandlers(send: SendFn): boolean {
+  let updater: AppUpdater;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    autoUpdater = require('electron-updater').autoUpdater;
+    updater = require('electron-updater').autoUpdater as AppUpdater;
   } catch (e) {
     console.error(
       '[updater] electron-updater not available:',
@@ -126,10 +127,10 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     return false;
   }
 
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = false;
+  updater.autoDownload = false;
+  updater.autoInstallOnAppQuit = false;
 
-  autoUpdater.on('update-available', (info: { version: string }) => {
+  updater.on('update-available', (info: { version: string }) => {
     const releaseUrl = `${RELEASES_URL}/tag/v${info.version}`;
     lastAppReleaseUrl = releaseUrl;
     send('update:available', {
@@ -140,26 +141,26 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     });
   });
 
-  autoUpdater.on('update-not-available', () => {
+  updater.on('update-not-available', () => {
     send('update:not-available');
   });
 
-  autoUpdater.on('download-progress', (progress: { percent: number }) => {
+  updater.on('download-progress', (progress: { percent: number }) => {
     send('update:progress', { percent: Math.round(progress.percent) });
   });
 
-  autoUpdater.on('update-downloaded', () => {
+  updater.on('update-downloaded', () => {
     send('update:downloaded');
   });
 
-  autoUpdater.on('error', (err: Error) => {
+  updater.on('error', (err: Error) => {
     console.error('[updater] error:', sanitizeLogMessage(err.message));
     send('update:error', { message: err.message });
   });
 
   const doCheck = async () => {
     try {
-      await autoUpdater.checkForUpdates();
+      await updater.checkForUpdates();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       console.warn('[updater] checkForUpdates failed:', sanitizeLogMessage(msg));
@@ -186,7 +187,7 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
       return;
     }
     try {
-      await autoUpdater.downloadUpdate();
+      await updater.downloadUpdate();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       console.warn('[updater] update:download failed:', sanitizeLogMessage(msg));
@@ -196,7 +197,7 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
 
   ipcMain.handle('update:install', () => {
     if (process.platform === 'darwin') return;
-    autoUpdater.quitAndInstall(false, true);
+    updater.quitAndInstall(false, true);
   });
 
   return true;

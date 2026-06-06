@@ -25,6 +25,7 @@ import {
   protectedBrandIssues,
   nodeListPanelConnectionCrossKeyIssues,
   roomsSavedPasswordsCrossKeyIssues,
+  roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -101,10 +102,81 @@ function collectFiles(dir) {
 // Match t('some.key') or t("some.key") — only static string literals.
 const T_STATIC_RE = /\bt\(\s*['"]([^'"]+)['"]\s*[),]/g;
 
+// Match t(`prefix.${expr}`) or t(`prefix.${expr}.suffix`) — dynamic keys with registered prefixes.
+const T_TEMPLATE_RE = /\bt\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
+
+/**
+ * Known dynamic t() template prefixes. Each entry verifies English keys exist for every
+ * variant the template can resolve to. Add a row when introducing a new t(`…${var}…`) site.
+ */
+const DYNAMIC_T_PREFIXES = [
+  { prefix: 'chatPanel.fetchStoreForwardHistoryError.', leafKeys: true },
+  { prefix: 'radioPanel.deviceRoles.', suffixes: ['label', 'description'] },
+  { prefix: 'radioPanel.rebroadcastModes.', suffixes: ['label', 'description'] },
+  { prefix: 'radioPanel.displayUnits.', suffixes: ['label'] },
+  { prefix: 'radioPanel.oledTypes.', suffixes: ['label'] },
+  { prefix: 'radioPanel.displayModes.', suffixes: ['label'] },
+  { prefix: 'radioPanel.btPairingModes.', suffixes: ['label'] },
+  { prefix: 'meshcoreTelemetryPrivacy.', leafKeys: true },
+  { prefix: 'diagnosticsPanel.foreignLoraProximitySnippet.', leafKeys: true },
+];
+
 const en = flatten(readJson(EN_FILE));
 const enKeys = new Set(Object.keys(en));
 
 let errors = 0;
+
+function keysWithPrefix(prefix) {
+  return [...enKeys].filter((k) => k.startsWith(prefix));
+}
+
+function verifyDynamicPrefix(prefixEntry) {
+  const { prefix, leafKeys, suffixes } = prefixEntry;
+  const matching = keysWithPrefix(prefix);
+  if (matching.length === 0) {
+    console.error(`Dynamic i18n prefix "${prefix}" has no keys in en/translation.json`);
+    return 1;
+  }
+  if (leafKeys) {
+    return 0;
+  }
+  let errCount = 0;
+  const prefixLen = prefix.length;
+  const ids = new Set();
+  for (const key of matching) {
+    if (!key.startsWith(prefix)) continue;
+    const rest = key.slice(prefixLen);
+    const dot = rest.indexOf('.');
+    if (dot <= 0) continue;
+    const id = rest.slice(0, dot);
+    const suffix = rest.slice(dot + 1);
+    if (suffixes.includes(suffix)) ids.add(id);
+  }
+  for (const id of ids) {
+    for (const suffix of suffixes) {
+      const full = `${prefix}${id}.${suffix}`;
+      if (!enKeys.has(full)) {
+        console.error(`Missing dynamic i18n key: "${full}" (required by prefix registry)`);
+        errCount++;
+      }
+    }
+  }
+  return errCount;
+}
+
+for (const entry of DYNAMIC_T_PREFIXES) {
+  errors += verifyDynamicPrefix(entry);
+}
+
+const registeredPrefixes = new Set(DYNAMIC_T_PREFIXES.map((e) => e.prefix));
+
+function extractTemplatePrefix(beforeExpr, afterExpr) {
+  const combined = `${beforeExpr}${afterExpr}`;
+  for (const prefix of registeredPrefixes) {
+    if (combined.startsWith(prefix)) return prefix;
+  }
+  return null;
+}
 
 // Resolve a t() key: the key itself OR a plural form (key_one, key_other, etc.)
 function keyExists(key) {
@@ -132,6 +204,15 @@ for (const file of files) {
       if (!keyExists(key)) {
         console.error(
           `Missing key: "${key}" used at ${relative(join(__dirname, '..'), file)}:${idx + 1}`,
+        );
+        errors++;
+      }
+    }
+    for (const m of line.matchAll(T_TEMPLATE_RE)) {
+      const prefix = extractTemplatePrefix(m[1], m[2]);
+      if (!prefix) {
+        console.error(
+          `Unregistered dynamic t() template at ${relative(join(__dirname, '..'), file)}:${idx + 1} — add prefix to DYNAMIC_T_PREFIXES in check-i18n.mjs`,
         );
         errors++;
       }
@@ -295,6 +376,11 @@ for (const dir of localeDirs) {
 
   for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {
     console.error(`Locale quality in "${dir}" (roomsPanel saved passwords): ${issue}.`);
+    errors++;
+  }
+
+  for (const issue of roomsSidebarMarkerCrossKeyIssues(localeFlat, en)) {
+    console.error(`Locale quality in "${dir}" (roomsPanel sidebar markers): ${issue}.`);
     errors++;
   }
 

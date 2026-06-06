@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { isValidHttpHostname } from './httpHostValidation';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
+const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 
 // ─── http:preflight / http:connect hostname validation ──────────────
 
@@ -159,16 +160,16 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
 describe('tak:start settings validation (source contract)', () => {
   it('defines validateTakSettings before the tak:start handler', () => {
     const validatorIdx = INDEX_SOURCE.indexOf('function validateTakSettings(');
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('tak:start'");
+    const handlerIdx = TAK_IPC_SOURCE.indexOf("ipcMain.handle('tak:start'");
     expect(validatorIdx).toBeGreaterThan(-1);
     expect(handlerIdx).toBeGreaterThan(-1);
-    expect(validatorIdx).toBeLessThan(handlerIdx);
+    expect(INDEX_SOURCE).toContain('registerTakIpcHandlers');
   });
 
   it('calls validateTakSettings in the tak:start handler', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('tak:start'");
+    const handlerIdx = TAK_IPC_SOURCE.indexOf("ipcMain.handle('tak:start'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    const handlerBody = TAK_IPC_SOURCE.slice(handlerIdx, handlerIdx + 400);
     expect(handlerBody).toContain('validateTakSettings(');
   });
 

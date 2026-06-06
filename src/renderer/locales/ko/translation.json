@@ -333,6 +333,10 @@
     "days": "날",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
+    "restartNote": "설정을 적용할 때 장치가 잠시 다시 시작될 수 있습니다."
+  },
   "configureNode": {
     "label": "노드 구성",
     "localDevice": "이 장치 (로컬)",
@@ -345,6 +349,12 @@
     "sessionStale": "관리자 세션이 오래됨 — 설정을 변경하기 전에 새로 고침",
     "sessionNone": "관리자 세션이 설정되지 않음 — 로컬 라디오 로드 또는 연결",
     "establishingSession": "관리자 세션 설정 중..."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "연결 끊김 — 라디오 연결이 끊어짐",
+    "staleLoss": "연결이 끊어질 수 있습니다 — 최근 수신된 데이터가 없습니다",
+    "reconnect": "재접속",
+    "reconnectingAttempt": "다시 연결 중… 시도 {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "최대 MQTT 재연결 시도",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "저장된 비밀번호",
     "savedPasswordsCount": "저장된 비밀번호 ({{count}})",
     "savedPasswordOrphanLabel": "룸 0x{{nodeId}}",
-    "statusPasswordSaved": "이 룸에 비밀번호가 저장되었습니다.",
+    "statusPasswordSaved": "이 룸에 비밀번호가 저장되었습니다(로그인하지 않은 경우 하늘색 마커).",
     "statusAutoLoginEnabled": "연결 시 자동 로그인이 활성화되어 있습니다.",
     "badgeAutoLogin": "자동 로그인",
     "badgeAutoSync": "자동 동기화",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "이 룸에 저장된 게스트/관리자 비밀번호를 삭제하고 자동 로그인 및 자동 동기화를 끕니다. 로그인하려면 비밀번호를 다시 입력해야 합니다.",
     "stopAutoLogin": "자동 로그인 중지",
     "stopAutoLoginAria": "라디오가 연결되면 이 룸의 자동 로그인을 중지",
-    "sidebarLegendTitle": "룸 상태",
+    "sidebarLegendTitle": "룸 상태 마커",
     "legendNotSaved": "저장된 비밀번호 없음",
     "legendSaved": "비번 저장됨",
-    "legendLoggedIn": "로그인했습니다"
+    "legendLoggedIn": "로그인했습니다",
+    "statusLoggedInSession": "로그인했습니다",
+    "statusLoggedInSessionTooltip": "활성 클라이언트 세션. 룸을 나가거나 연결을 끊을 때까지 지속됩니다. 룸 서버에 연결할 수 없는 경우 나가서 다시 로그인하십시오.",
+    "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
+    "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
+    "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
-  },
-  "configApplyNotice": {
-    "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
-    "restartNote": "설정을 적용할 때 장치가 잠시 다시 시작될 수 있습니다."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "연결 끊김 — 라디오 연결이 끊어짐",
-    "staleLoss": "연결이 끊어질 수 있습니다 — 최근 수신된 데이터가 없습니다",
-    "reconnect": "재접속",
-    "reconnectingAttempt": "다시 연결 중… 시도 {{attempt}}/{{max}}"
   }
 }

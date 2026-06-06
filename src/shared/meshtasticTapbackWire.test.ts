@@ -1,22 +1,19 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { Mesh, Portnums } from '@meshtastic/protobufs';
 import { describe, expect, it } from 'vitest';
 
+import { meshtasticDataSchema } from './meshtasticProtobufSchemas';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from './reactionEmoji';
-
-const { DataSchema } = Mesh;
-const { PortNum } = Portnums;
 
 describe('Meshtastic tapback wire shape (mesh.proto Data)', () => {
   it('stores the glyph in payload and uses emoji as boolean flag 1', () => {
     const glyph = '👍';
-    const data = create(DataSchema, {
-      portnum: PortNum.TEXT_MESSAGE_APP,
+    const data = create(meshtasticDataSchema, {
+      portnum: 1, // Portnums.PortNum.TEXT_MESSAGE_APP
       payload: new TextEncoder().encode(glyph),
       emoji: MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
       replyId: 0x12345678,
     });
-    const round = fromBinary(DataSchema, toBinary(DataSchema, data)) as {
+    const round = fromBinary(meshtasticDataSchema, toBinary(meshtasticDataSchema, data)) as {
       emoji?: number;
       payload?: Uint8Array;
       replyId?: number;

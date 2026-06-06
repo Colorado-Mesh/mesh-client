@@ -35,12 +35,20 @@ function isMergeSourceInvalidError(err: unknown): err is MergeSourceInvalidError
 }
 
 let db: NodeSqliteDB | null = null;
+let dbClosed = false;
 
 export function getDatabasePath(): string {
   return path.join(app.getPath('userData'), 'mesh-client.db');
 }
 
+export function isDatabaseClosed(): boolean {
+  return dbClosed;
+}
+
 export function initDatabase(): void {
+  if (dbClosed) {
+    throw new Error('[db] Database is closed');
+  }
   if (db) return;
   const dbPath = getDatabasePath();
 
@@ -94,6 +102,9 @@ export function initDatabase(): void {
 }
 
 export function getDatabase(): NodeSqliteDB {
+  if (dbClosed) {
+    throw new Error('[db] Database is closed');
+  }
   if (!db) initDatabase();
   if (!db) throw new Error('[db] Database failed to initialize');
   return db;
@@ -444,6 +455,7 @@ export function getContactGroupMembers(groupId: number): number[] {
 }
 
 export function closeDatabase(): void {
+  dbClosed = true;
   if (db) {
     try {
       db.close();

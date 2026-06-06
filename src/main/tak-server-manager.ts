@@ -16,9 +16,14 @@ interface ConnectedClient {
   socket: tls.TLSSocket;
   info: TAKClientInfo;
   buffer: string;
+  idleTimer: ReturnType<typeof setTimeout> | null;
 }
 
 const NODE_CACHE_MAX_SIZE = 2000;
+/** Local ATAK/iTAK connections; cap prevents unbounded TLS client growth. */
+const MAX_TAK_CLIENTS = 16;
+/** Disconnect idle clients after 24h without inbound data. */
+const TAK_CLIENT_IDLE_MS = 24 * 60 * 60 * 1000;
 
 export class TakServerManager extends EventEmitter {
   private server: tls.Server | null = null;
@@ -92,6 +97,7 @@ export class TakServerManager extends EventEmitter {
     if (!this.server) return;
 
     for (const [id, client] of this.clients) {
+      this.clearClientIdleTimer(client);
       try {
         client.socket.destroy();
       } catch {
@@ -157,11 +163,38 @@ export class TakServerManager extends EventEmitter {
     }
   }
 
+  private clearClientIdleTimer(client: ConnectedClient): void {
+    if (client.idleTimer) {
+      clearTimeout(client.idleTimer);
+      client.idleTimer = null;
+    }
+  }
+
+  private resetClientIdleTimer(id: string, client: ConnectedClient): void {
+    this.clearClientIdleTimer(client);
+    client.idleTimer = setTimeout(() => {
+      console.debug(`[TakServer] Idle timeout disconnect: ${sanitizeLogMessage(id)}`);
+      try {
+        client.socket.destroy();
+      } catch {
+        // catch-no-log-ok: socket may already be closed
+      }
+    }, TAK_CLIENT_IDLE_MS);
+  }
+
   private _handleClient(socket: tls.TLSSocket): void {
-    const id = randomUUID();
     const address = socket.remoteAddress ?? 'unknown';
+    if (this.clients.size >= MAX_TAK_CLIENTS) {
+      console.warn(
+        `[TakServer] Client cap (${MAX_TAK_CLIENTS}) reached; rejecting ${sanitizeLogMessage(address)}`,
+      );
+      socket.destroy();
+      return;
+    }
+
+    const id = randomUUID();
     const info: TAKClientInfo = { id, address, connectedAt: Date.now() };
-    const client: ConnectedClient = { socket, info, buffer: '' };
+    const client: ConnectedClient = { socket, info, buffer: '', idleTimer: null };
     this.clients.set(id, client);
 
     this._status = { ...this._status, clientCount: this.clients.size };
@@ -181,7 +214,10 @@ export class TakServerManager extends EventEmitter {
       }
     }
 
+    this.resetClientIdleTimer(id, client);
+
     socket.on('data', (chunk: Buffer) => {
+      this.resetClientIdleTimer(id, client);
       client.buffer += chunk.toString('utf-8');
       // Discard fully-received CoT events (Phase 5: bidirectional processing)
       const endIdx = client.buffer.lastIndexOf('</event>');
@@ -195,6 +231,7 @@ export class TakServerManager extends EventEmitter {
     });
 
     socket.on('close', () => {
+      this.clearClientIdleTimer(client);
       this.clients.delete(id);
       this._status = { ...this._status, clientCount: this.clients.size };
       this.emit('client-disconnected', id);

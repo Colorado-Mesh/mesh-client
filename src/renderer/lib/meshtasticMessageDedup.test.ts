@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   findMeshtasticCrossTransportDuplicate,
+  findMeshtasticStoreForwardDuplicate,
   mapMeshtasticCrossTransportUpgrade,
   MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
   meshtasticCrossTransportMatch,
+  meshtasticStoreForwardContentMatch,
   normalizeMeshtasticDedupPayload,
 } from './meshtasticMessageDedup';
 import type { ChatMessage } from './types';
@@ -150,6 +152,20 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
     const { messages } = mapMeshtasticCrossTransportUpgrade([optimistic], mqtt);
     expect(messages[0].packetId).toBe(0x99999999);
   });
+
+  it('matches outbound RF optimistic row with MQTT echo when receivedVia is set', () => {
+    const outbound = baseMsg({
+      packetId: 0x99999999,
+      receivedVia: 'rf',
+      status: 'sending',
+    });
+    const mqtt = baseMsg({
+      packetId: 0xbbbbbbbb,
+      receivedVia: 'mqtt',
+      timestamp: outbound.timestamp + 5_000,
+    });
+    expect(findMeshtasticCrossTransportDuplicate([outbound], mqtt)).toBe(outbound);
+  });
 });
 
 describe('Meshtastic runtime cross-transport integration — logic layer', () => {
@@ -213,5 +229,18 @@ describe('Meshtastic runtime cross-transport integration — logic layer', () =>
       timestamp: mqttMsg.timestamp + 1_000,
     });
     expect(findMeshtasticCrossTransportDuplicate([mqttMsg], rfMsg)).toBeUndefined();
+  });
+});
+
+describe('findMeshtasticStoreForwardDuplicate', () => {
+  it('matches live RF row for S&F replay without time window', () => {
+    const live = baseMsg({ receivedVia: 'rf', timestamp: 1_600_000_000_000 });
+    const sfReplay = baseMsg({
+      viaStoreForward: true,
+      receivedVia: 'mqtt',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(meshtasticStoreForwardContentMatch(live, sfReplay)).toBe(true);
+    expect(findMeshtasticStoreForwardDuplicate([live], sfReplay)).toBe(live);
   });
 });

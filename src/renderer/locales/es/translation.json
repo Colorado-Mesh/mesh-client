@@ -333,6 +333,10 @@
     "days": "días",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
+    "restartNote": "El dispositivo puede reiniciarse brevemente cuando se aplica la configuración."
+  },
   "configureNode": {
     "label": "Configurar nodo",
     "localDevice": "Este dispositivo (local)",
@@ -345,6 +349,12 @@
     "sessionStale": "Sesión de administrador obsoleta: actualice antes de cambiar la configuración",
     "sessionNone": "Sesión de administrador no establecida — cargando o conectando la radio local",
     "establishingSession": "Estableciendo sesión de administrador..."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Conexión perdida — radio desconectada",
+    "staleLoss": "La conexión puede perderse: no se han recibido datos recientemente",
+    "reconnect": "Reconectar",
+    "reconnectingAttempt": "Volviendo a conectar… intento {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Contraseñas guardadas",
     "savedPasswordsCount": "Contraseñas guardadas ({{count}})",
     "savedPasswordOrphanLabel": "Sala 0x{{nodeId}}",
-    "statusPasswordSaved": "Contraseña guardada para esta sala.",
+    "statusPasswordSaved": "Contraseña guardada para esta sala (marcador celeste si no has iniciado sesión).",
     "statusAutoLoginEnabled": "El inicio de sesión automático al conectarse está habilitado.",
     "badgeAutoLogin": "Acceso automático",
     "badgeAutoSync": "Sincronización automática",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Elimina la contraseña de invitado/administrador almacenada para esta sala y desactiva el inicio de sesión automático y la sincronización automática. Tendrá que introducir la contraseña de nuevo para iniciar sesión.",
     "stopAutoLogin": "Detener acceso automático",
     "stopAutoLoginAria": "Detener el inicio de sesión automático para esta sala cuando se conecte la radio",
-    "sidebarLegendTitle": "Estado de la sala",
+    "sidebarLegendTitle": "Marcadores de estado de la sala",
     "legendNotSaved": "Sin contraseña guardada",
     "legendSaved": "Contraseña guardada",
-    "legendLoggedIn": "Conectado"
+    "legendLoggedIn": "Conectado",
+    "statusLoggedInSession": "Conectado",
+    "statusLoggedInSessionTooltip": "Sesión de cliente activa. Persiste hasta que abandonas la sala o te desconectas. Si no se puede acceder al servidor de la sala, sal y vuelve a iniciar sesión cuando vuelva.",
+    "legendNotSavedTooltip": "Círculo vacío — no hay contraseña almacenada para esta sala",
+    "legendSavedTooltip": "Semicírculo celeste — contraseña guardada; inicia sesión para abrir una sesión",
+    "legendLoggedInTooltip": "Punto verde — sesión de cliente activa (abandona la sala si el servidor está fuera de línea)"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
-  },
-  "configApplyNotice": {
-    "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
-    "restartNote": "El dispositivo puede reiniciarse brevemente cuando se aplica la configuración."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Conexión perdida — radio desconectada",
-    "staleLoss": "La conexión puede perderse: no se han recibido datos recientemente",
-    "reconnect": "Reconectar",
-    "reconnectingAttempt": "Volviendo a conectar… intento {{attempt}}/{{max}}"
   }
 }

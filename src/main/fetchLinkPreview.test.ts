@@ -215,6 +215,28 @@ describe('fetchLinkPreview', () => {
     });
   });
 
+  it('blocks proxied image fetch when redirect targets a private host', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="Redirect trap">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/trap.png">`,
+    ].join('\n');
+    mockFetch.mockImplementation((input: string | URL | Request) => {
+      const host = fetchRequestHostname(input);
+      if (host === 'opengraph.githubassets.com') {
+        return Promise.resolve({
+          ok: false,
+          status: 302,
+          headers: new Headers({ location: 'http://127.0.0.1/secret.png' }),
+        } as Response);
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    });
+
+    const result = await fetchLinkPreview('https://example.com/page');
+    expect(result?.title).toBe('Redirect trap');
+    expect(result?.image).toBeUndefined();
+  });
+
   it('proxies GitHub opengraph images as data URLs in main', async () => {
     const pageHtml = [
       `<meta property="og:title" content="mesh-client">`,

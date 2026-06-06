@@ -333,6 +333,10 @@
     "days": "-Tage",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",
+    "restartNote": "Das Gerät kann kurzzeitig neu gestartet werden, wenn Sie die Einstellungen anwenden."
+  },
   "configureNode": {
     "label": "Knoten konfigurieren",
     "localDevice": "Dieses Gerät (lokal)",
@@ -345,6 +349,12 @@
     "sessionStale": "Admin-Sitzung veraltet — vor dem Ändern der Einstellungen aktualisieren",
     "sessionNone": "Admin-Sitzung nicht eingerichtet — Lokales Radio laden oder verbinden",
     "establishingSession": "Admin-Sitzung wird eingerichtet..."
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Verbindung unterbrochen — Funkverbindung getrennt",
+    "staleLoss": "Verbindung kann verloren gehen — in letzter Zeit wurden keine Daten empfangen",
+    "reconnect": "Erneut verbinden",
+    "reconnectingAttempt": "Wiederverbinden… Versuch {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-Wiederverbindungsversuche",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Gespeicherte Passwörter",
     "savedPasswordsCount": "Gespeicherte Passwörter ({{count}})",
     "savedPasswordOrphanLabel": "Raum 0x{{nodeId}}",
-    "statusPasswordSaved": "Passwort für diesen Raum gespeichert.",
+    "statusPasswordSaved": "Passwort für diesen Raum gespeichert (himmelblauer Marker, wenn nicht angemeldet).",
     "statusAutoLoginEnabled": "Die automatische Anmeldung bei der Verbindung ist aktiviert.",
     "badgeAutoLogin": "Auto-Login",
     "badgeAutoSync": "Auto-Sync",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Entfernt das gespeicherte Gast-/Admin-Passwort für diesen Raum und schaltet die automatische Anmeldung und die automatische Synchronisierung aus. Sie müssen das Passwort erneut eingeben, um sich anzumelden.",
     "stopAutoLogin": "Auto-Login stoppen",
     "stopAutoLoginAria": "Automatische Anmeldung für diesen Raum stoppen, wenn das Radio verbunden ist",
-    "sidebarLegendTitle": "Raumstatus",
+    "sidebarLegendTitle": "Raumstatus-Markierungen",
     "legendNotSaved": "Kein gespeichertes Passwort",
     "legendSaved": "Passwort gespeichert",
-    "legendLoggedIn": "Angemeldet"
+    "legendLoggedIn": "Angemeldet",
+    "statusLoggedInSession": "Angemeldet",
+    "statusLoggedInSessionTooltip": "Aktive Clientsitzung. Sie bleibt bestehen, bis Sie den Raum verlassen oder die Verbindung trennen. Wenn der Raumserver nicht erreichbar ist, verlassen Sie ihn und melden Sie sich wieder an, wenn er zurück ist.",
+    "legendNotSavedTooltip": "Leerer Kreis — kein Passwort für diesen Raum gespeichert",
+    "legendSavedTooltip": "Himmelblauer Halbkreis — Passwort gespeichert; melden Sie sich an, um eine Sitzung zu öffnen",
+    "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum verlassen, wenn der Server offline ist)"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
-  },
-  "configApplyNotice": {
-    "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",
-    "restartNote": "Das Gerät kann kurzzeitig neu gestartet werden, wenn Sie die Einstellungen anwenden."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Verbindung unterbrochen — Funkverbindung getrennt",
-    "staleLoss": "Verbindung kann verloren gehen — in letzter Zeit wurden keine Daten empfangen",
-    "reconnect": "Erneut verbinden",
-    "reconnectingAttempt": "Wiederverbinden… Versuch {{attempt}}/{{max}}"
   }
 }

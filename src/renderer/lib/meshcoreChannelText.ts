@@ -17,7 +17,8 @@ export interface MeshcoreNormalizedText {
 /** Leading reply/tapback marker; name inside brackets may be empty on the wire (`@[] body`). */
 const BRACKET_PREFIX = /^@\[([^\]]*)\]\s*(.*)$/su;
 /** Optional mesh-client parent key suffix inside brackets: `@[Display Name#1780235760847]`. */
-const BRACKET_REPLY_KEY_SUFFIX = /#(\d{4,})$/;
+/** Wire reply keys use ms-scale timestamps (10+ digits) from {@link formatMeshcoreWireReplyPrefix}. */
+const BRACKET_REPLY_KEY_SUFFIX = /#(\d{10,})$/;
 
 /** Build `@[Name#replyKey]` prefix for outbound MeshCore replies (explicit parent on wire). */
 export function formatMeshcoreWireReplyPrefix(displayName: string, replyKey: number): string {
@@ -220,7 +221,12 @@ export function meshcoreChannelRepairRawText(msg: ChatMessage): string {
 
 /** Sort + repair MeshCore chat rows for UI hydration / historical backfill (not live ingest). */
 export function meshcoreChatMessagesForDisplay(messages: readonly ChatMessage[]): ChatMessage[] {
-  const sorted = [...messages].sort((a, b) => a.timestamp - b.timestamp);
+  const sorted = [...messages].sort(
+    (a, b) =>
+      a.timestamp - b.timestamp ||
+      (a.packetId ?? 0) - (b.packetId ?? 0) ||
+      a.sender_id - b.sender_id,
+  );
   return repairMeshcoreDisplayMessages(sorted);
 }
 

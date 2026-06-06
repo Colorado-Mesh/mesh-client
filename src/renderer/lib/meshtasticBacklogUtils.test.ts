@@ -34,7 +34,9 @@ import {
 } from './meshtasticBacklogUtils';
 
 function sfPacket(rr: number, variant: { case: string; value: unknown }): Uint8Array {
-  const msg = create(StoreForward.StoreAndForwardSchema, { rr, variant });
+  const msg = create(StoreForward.StoreAndForwardSchema, { rr, variant } as Parameters<
+    typeof create<typeof StoreForward.StoreAndForwardSchema>
+  >[1]);
   return toBinary(StoreForward.StoreAndForwardSchema, msg);
 }
 

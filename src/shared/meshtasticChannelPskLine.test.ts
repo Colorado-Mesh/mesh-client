@@ -40,4 +40,21 @@ describe('splitChannelPskLine', () => {
     expect(splitChannelPskLine('')).toBeNull();
     expect(splitChannelPskLine('   ')).toBeNull();
   });
+
+  it('returns named line with empty base64 instead of bare fallthrough', () => {
+    expect(splitChannelPskLine('LongFast@0=')).toEqual({
+      kind: 'named',
+      name: 'LongFast',
+      index: 0,
+      b64: '',
+    });
+  });
+
+  it('returns named line with empty base64 for Name= without index', () => {
+    expect(splitChannelPskLine('HamNet=')).toEqual({
+      kind: 'named',
+      name: 'HamNet',
+      b64: '',
+    });
+  });
 });

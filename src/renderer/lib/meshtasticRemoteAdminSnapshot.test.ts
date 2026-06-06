@@ -24,6 +24,9 @@ import {
 } from './meshtasticRemoteAdminSnapshot';
 import type { MeshtasticRemoteConfigSnapshot } from './types';
 
+type MeshtasticAdminConfigType =
+  (typeof Admin.AdminMessage_ConfigType)[keyof typeof Admin.AdminMessage_ConfigType];
+
 function clientWithChannelRetry<
   T extends { getRemoteChannel: MeshtasticRemoteAdminClient['getRemoteChannel'] },
 >(client: T): T & Pick<MeshtasticRemoteAdminClient, 'getRemoteChannelWithRetry'> {
@@ -57,13 +60,13 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
     const client = {
       getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
       ensureSessionKey: vi.fn().mockResolvedValue(undefined),
-      getRemoteConfigWithRetry: vi.fn((_dest: number, type: number) => {
+      getRemoteConfigWithRetry: vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
         if (type === Admin.AdminMessage_ConfigType.LORA_CONFIG) {
           return Promise.resolve({ payloadVariant: { case: 'lora', value: { region: 1 } } });
         }
         return Promise.reject(new Error('unexpected retry'));
       }),
-      getRemoteConfig: vi.fn((_dest: number, type: number) => {
+      getRemoteConfig: vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
         if (type === Admin.AdminMessage_ConfigType.SECURITY_CONFIG) {
           return Promise.resolve({
             payloadVariant: {
@@ -122,13 +125,13 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
         await Promise.resolve();
         done();
       }),
-      getRemoteConfigWithRetry: vi.fn(async (_dest: number, type: number) => {
+      getRemoteConfigWithRetry: vi.fn(async (_dest: number, type: MeshtasticAdminConfigType) => {
         const done = track(`configRetry:${type}`);
         await Promise.resolve();
         done();
         return { payloadVariant: { case: 'lora', value: { region: 1 } } };
       }),
-      getRemoteConfig: vi.fn(async (_dest: number, type: number) => {
+      getRemoteConfig: vi.fn(async (_dest: number, type: MeshtasticAdminConfigType) => {
         const done = track(`config:${type}`);
         await Promise.resolve();
         done();
@@ -195,7 +198,7 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
       getRemoteMetadata: vi.fn().mockResolvedValue({ firmwareVersion: '2.5.0' }),
       ensureSessionKey: vi.fn().mockResolvedValue(undefined),
       getRemoteConfigWithRetry: vi.fn().mockRejectedValue(new Error('remoteAdmin.errors.timeout')),
-      getRemoteConfig: vi.fn((_dest: number, type: number) => {
+      getRemoteConfig: vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
         if (type === Admin.AdminMessage_ConfigType.SECURITY_CONFIG) {
           return Promise.resolve({
             payloadVariant: {
@@ -313,7 +316,7 @@ describe('fetchMeshtasticRemoteConfigSnapshot', () => {
 describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
   it('fetches only channel 0 and LoRa for the initial Channels route', async () => {
     const getRemoteModuleConfig = vi.fn();
-    const getRemoteConfig = vi.fn((_dest: number, type: number) => {
+    const getRemoteConfig = vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
       if (type === Admin.AdminMessage_ConfigType.SECURITY_CONFIG) {
         return Promise.resolve({
           payloadVariant: {
@@ -388,7 +391,7 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
     const getRemoteConfigWithRetry = vi.fn(
       (
         _dest: number,
-        type: number,
+        type: MeshtasticAdminConfigType,
         options?: {
           maxAttempts?: number;
           backoffMs?: number;
@@ -464,11 +467,11 @@ describe('fetchMeshtasticRemoteConfigSnapshotEssential', () => {
         order.push('ensureSessionKey');
         return Promise.resolve(undefined);
       }),
-      getRemoteConfigWithRetry: vi.fn((_dest: number, type: number) => {
+      getRemoteConfigWithRetry: vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
         order.push(`configRetry:${type}`);
         return Promise.resolve({ payloadVariant: { case: 'lora', value: { region: 1 } } });
       }),
-      getRemoteConfig: vi.fn((_dest: number, type: number) => {
+      getRemoteConfig: vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
         order.push(`config:${type}`);
         return Promise.resolve({ payloadVariant: { case: 'device', value: {} } });
       }),
@@ -636,7 +639,7 @@ describe('mergeMeshtasticRemoteConfigSnapshots', () => {
 
 describe('fetchMeshtasticRemoteConfigSnapshotDeferred', () => {
   it('continues deferred core snapshot when a core config fetch fails', async () => {
-    const getRemoteConfig = vi.fn((_dest: number, type: number) => {
+    const getRemoteConfig = vi.fn((_dest: number, type: MeshtasticAdminConfigType) => {
       if (type === Admin.AdminMessage_ConfigType.POSITION_CONFIG) {
         return Promise.reject(new Error('remoteAdmin.errors.timeout'));
       }

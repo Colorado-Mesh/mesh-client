@@ -43,4 +43,12 @@ describe('tryParseMeshcoreMqttChatEnvelope', () => {
   it('rejects non-json', () => {
     expect(tryParseMeshcoreMqttChatEnvelope('not json')).toBeNull();
   });
+
+  it('rejects negative senderNodeId', () => {
+    expect(
+      tryParseMeshcoreMqttChatEnvelope(
+        JSON.stringify({ v: 1, text: 'x', channelIdx: 0, senderNodeId: -1 }),
+      ),
+    ).toEqual({ v: 1, text: 'x', channelIdx: 0, senderNodeId: undefined });
+  });
 });

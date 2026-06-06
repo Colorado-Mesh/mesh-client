@@ -24,6 +24,12 @@ describe('formatMeshtasticNodeId', () => {
     expect(meshtasticNodeIdMatchesHexQuery(id, 'deadbeef')).toBe(false);
   });
 
+  it('does not match every node when query is only zeros', () => {
+    expect(meshtasticNodeIdMatchesHexQuery(0x0bcd5737, '0')).toBe(true);
+    expect(meshtasticNodeIdMatchesHexQuery(0xdeadbeef, '0')).toBe(false);
+    expect(meshtasticNodeIdMatchesHexQuery(0x10000000, '0')).toBe(true);
+  });
+
   it('identifies Meshtastic broadcast node num', () => {
     expect(isMeshtasticBroadcastNodeNum(0xffffffff)).toBe(true);
     expect(formatMeshtasticNodeId(0xffffffff)).toBe('!ffffffff');

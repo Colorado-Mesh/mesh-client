@@ -12,6 +12,19 @@ import { ToastProvider } from './Toast';
 
 vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
 
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * 96,
+      })),
+    getTotalSize: () => count * 96,
+    measureElement: () => {},
+  }),
+}));
+
 beforeEach(() => {
   localStorage.clear();
 });

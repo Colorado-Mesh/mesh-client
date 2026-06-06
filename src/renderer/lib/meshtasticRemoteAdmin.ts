@@ -18,7 +18,7 @@ interface AdminMessage {
 }
 
 function adminMessage(init: Record<string, unknown>): AdminMessage {
-  return create(Admin.AdminMessageSchema, init) as unknown as AdminMessage;
+  return create(Admin.AdminMessageSchema, init) as AdminMessage;
 }
 
 interface MeshPacketDecoded {

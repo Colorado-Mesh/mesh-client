@@ -19,7 +19,7 @@ export interface TransportManagerDeps {
   channelConfigsRef: RefObject<
     { index: number; name: string; role: number; uplinkEnabled?: boolean; psk: Uint8Array }[]
   >;
-  isDuplicate: (packetId: number) => boolean;
+  isDuplicate: (senderId: number, packetId: number) => boolean;
   /** Stored as a ref so TransportManager always calls the latest handler across re-renders */
   onStatusUpdateRef: RefObject<(event: StatusUpdateEvent) => void>;
 }
@@ -74,7 +74,7 @@ export class TransportManager {
           ...(replyId != null ? { replyId } : {}),
         })
         .then((mqttPacketId: number) => {
-          isDuplicate(mqttPacketId); // register so echo is deduped
+          isDuplicate(from, mqttPacketId); // register so echo is deduped
           onStatusUpdateRef.current({ tempId, transport: 'mqtt', status: 'acked' });
         })
         .catch((err: unknown) => {

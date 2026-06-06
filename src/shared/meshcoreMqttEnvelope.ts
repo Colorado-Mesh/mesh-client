@@ -22,7 +22,9 @@ export function tryParseMeshcoreMqttChatEnvelope(raw: string): MeshcoreMqttChatE
       channelIdx: ch,
       senderName: typeof o.senderName === 'string' ? o.senderName.slice(0, 200) : undefined,
       senderNodeId:
-        o.senderNodeId != null && Number.isFinite(Number(o.senderNodeId))
+        o.senderNodeId != null &&
+        Number.isFinite(Number(o.senderNodeId)) &&
+        Number(o.senderNodeId) >= 0
           ? Number(o.senderNodeId) >>> 0
           : undefined,
       timestamp:

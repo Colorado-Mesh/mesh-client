@@ -7,6 +7,7 @@ import {
   nodeListPanelConnectionCrossKeyIssues,
   protectedBrandIssues,
   roomsSavedPasswordsCrossKeyIssues,
+  roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 
 function expectIssue(issues, substring) {
@@ -828,6 +829,24 @@ describe('roomsSavedPasswordsCrossKeyIssues', () => {
   });
 });
 
+describe('roomsSidebarMarkerCrossKeyIssues', () => {
+  const enFlat = {
+    'roomsPanel.statusLoggedInSession': 'Logged in',
+    'roomsPanel.legendLoggedIn': 'Logged in',
+  };
+
+  it('flags statusLoggedInSession that differs from legendLoggedIn', () => {
+    const issues = roomsSidebarMarkerCrossKeyIssues(
+      {
+        'roomsPanel.statusLoggedInSession': 'Přihlášení',
+        'roomsPanel.legendLoggedIn': 'Přihlášen',
+      },
+      enFlat,
+    );
+    expectIssue(issues, 'must match legendLoggedIn');
+  });
+});
+
 describe('roomsPanel saved passwords per-key quality', () => {
   it('flags Polish autofill false friend on savedPasswordsHeading', () => {
     const issues = localeStringQualityIssues({
@@ -847,6 +866,77 @@ describe('roomsPanel saved passwords per-key quality', () => {
       enVal: 'Logged in',
     });
     expectIssue(issues, 'Přihlášen');
+  });
+
+  it('flags Czech noun Přihlášení on statusLoggedInSession', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'roomsPanel.statusLoggedInSession',
+      val: 'Přihlášení',
+      enVal: 'Logged in',
+    });
+    expectIssue(issues, 'Přihlášen');
+  });
+
+  it('flags untranslated Sky half-circle on legendSavedTooltip', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'roomsPanel.legendSavedTooltip',
+      val: 'Sky half-circle — wachtwoord opgeslagen',
+      enVal: 'Sky half-circle — password stored; log in to open a session',
+    });
+    expectIssue(issues, 'Sky half-circle');
+  });
+
+  it('flags leave-space false friend on legendLoggedInTooltip', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'roomsPanel.legendLoggedInTooltip',
+      val: 'Punto verde (dejar espacio si el servidor está offline)',
+      enVal: 'Green dot — active client session (leave room if the server is offline)',
+    });
+    expectIssue(issues, 'leave space');
+  });
+
+  it('flags French pièce on roomsPanel sidebar tooltip', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'roomsPanel.legendNotSavedTooltip',
+      val: 'Cercle vide — aucun mot de passe pour cette pièce',
+      enVal: 'Empty circle — no password stored for this room',
+    });
+    expectIssue(issues, 'pièce');
+  });
+
+  it('flags Turkish danışan on statusLoggedInSessionTooltip', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'roomsPanel.statusLoggedInSessionTooltip',
+      val: 'Aktif danışan oturumu.',
+      enVal:
+        'Active client session. It persists until you leave the room or disconnect. If the room server is unreachable, leave and log in again when it is back.',
+    });
+    expectIssue(issues, 'danışan');
+  });
+
+  it('flags statusPasswordSaved missing sky marker parenthetical', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.statusPasswordSaved',
+      val: 'Passwort für diesen Raum gespeichert.',
+      enVal: 'Password saved for this room (sky marker when not logged in).',
+    });
+    expectIssue(issues, 'sky-blue sidebar marker');
+  });
+
+  it('flags sidebarLegendTitle without marker wording', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.sidebarLegendTitle',
+      val: 'Raumstatus',
+      enVal: 'Room status markers',
+    });
+    expectIssue(issues, 'sidebar markers');
   });
 
   it('flags simplified Chinese 登陆 on badgeAutoLogin', () => {
@@ -876,5 +966,10 @@ describe('protectedBrandIssues', () => {
         'Подключите локальное Meshtastic-радио для удалённого администрирования.',
       ),
     ).toEqual([]);
+  });
+
+  it('flags missing GPIO brand when English has one', () => {
+    const issues = protectedBrandIssues('GPIO pin — encoder A', 'Pin de codificador A');
+    expectIssue(issues, 'Brand "GPIO" missing');
   });
 });

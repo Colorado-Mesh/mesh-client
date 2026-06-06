@@ -7,6 +7,7 @@ export const LINK_PREVIEW_IMAGE_MAX_BYTES = 262_144;
 export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
+const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
 
 function isIpv4Literal(hostname: string): boolean {
   const parts = hostname.split('.');
@@ -89,6 +90,36 @@ async function readResponseBodyUpTo(
   return merged;
 }
 
+async function fetchImageResponseWithRedirectGuard(
+  imageUrl: string,
+  redirectCount = 0,
+): Promise<Response | null> {
+  if (!isAllowedHttpsImageUrl(imageUrl)) return null;
+  if (redirectCount > LINK_PREVIEW_IMAGE_MAX_REDIRECTS) return null;
+
+  const response = await fetch(imageUrl, {
+    method: 'GET',
+    headers: { Accept: 'image/*' },
+    redirect: 'manual',
+    signal: AbortSignal.timeout(LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS),
+  });
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get('location');
+    if (!location) return null;
+    let nextUrl: string;
+    try {
+      nextUrl = new URL(location, imageUrl).href;
+    } catch {
+      // catch-no-log-ok malformed redirect Location header
+      return null;
+    }
+    return fetchImageResponseWithRedirectGuard(nextUrl, redirectCount + 1);
+  }
+
+  return response;
+}
+
 async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | undefined> {
   if (!isAllowedHttpsImageUrl(imageUrl)) return undefined;
 
@@ -99,12 +130,8 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
   }
 
   try {
-    const response = await fetch(imageUrl, {
-      method: 'GET',
-      headers: { Accept: 'image/*' },
-      signal: AbortSignal.timeout(LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS),
-    });
-    if (!response.ok) {
+    const response = await fetchImageResponseWithRedirectGuard(imageUrl);
+    if (!response?.ok) {
       imageCache.set(imageUrl, {
         value: null,
         expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,

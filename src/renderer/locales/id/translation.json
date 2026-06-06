@@ -333,6 +333,10 @@
     "days": "hari",
     "emDash": "—"
   },
+  "configApplyNotice": {
+    "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
+    "restartNote": "Perangkat dapat memulai ulang secara singkat saat Anda menerapkan pengaturan."
+  },
   "configureNode": {
     "label": "Konfigurasikan simpul",
     "localDevice": "Perangkat ini (lokal)",
@@ -345,6 +349,12 @@
     "sessionStale": "Sesi admin basi — segarkan sebelum mengubah pengaturan",
     "sessionNone": "Sesi admin belum ditetapkan — memuat atau menghubungkan radio lokal",
     "establishingSession": "Menetapkan sesi admin…"
+  },
+  "connectionBanner": {
+    "disconnectedLoss": "Koneksi terputus — radio terputus",
+    "staleLoss": "Koneksi mungkin terputus — tidak ada data yang diterima baru - baru ini",
+    "reconnect": "Sambung ulang",
+    "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",
@@ -2276,7 +2286,7 @@
     "savedPasswordsHeading": "Kata sandi yang disimpan",
     "savedPasswordsCount": "Kata sandi tersimpan ({{count}})",
     "savedPasswordOrphanLabel": "Ruangan 0x{{nodeId}}",
-    "statusPasswordSaved": "Kata sandi disimpan untuk ruangan ini.",
+    "statusPasswordSaved": "Kata sandi disimpan untuk ruangan ini (penanda biru langit jika belum masuk).",
     "statusAutoLoginEnabled": "Masuk otomatis saat tersambung diaktifkan.",
     "badgeAutoLogin": "Masuk otomatis",
     "badgeAutoSync": "Sinkronisasi otomatis",
@@ -2286,10 +2296,15 @@
     "forgetSavedPasswordConfirmBody": "Menghapus kata sandi tamu/admin yang tersimpan untuk ruangan ini dan menonaktifkan login otomatis dan sinkronisasi otomatis. Anda harus memasukkan kata sandi lagi untuk masuk.",
     "stopAutoLogin": "Berhenti masuk otomatis",
     "stopAutoLoginAria": "Hentikan login otomatis untuk ruangan ini saat radio terhubung",
-    "sidebarLegendTitle": "Status ruangan",
+    "sidebarLegendTitle": "Penanda status ruangan",
     "legendNotSaved": "Tidak ada kata sandi yang disimpan",
     "legendSaved": "Kata sandi disimpan",
-    "legendLoggedIn": "Masuk"
+    "legendLoggedIn": "Masuk",
+    "statusLoggedInSession": "Masuk",
+    "statusLoggedInSessionTooltip": "Sesi klien aktif. Ini berlanjut sampai Anda meninggalkan ruangan atau memutuskan sambungan. Jika server ruangan tidak dapat dijangkau, tinggalkan dan masuk lagi saat kembali.",
+    "legendNotSavedTooltip": "Lingkaran kosong — tidak ada kata sandi yang disimpan untuk ruangan ini",
+    "legendSavedTooltip": "Setengah lingkaran biru langit — kata sandi disimpan; masuk untuk membuka sesi",
+    "legendLoggedInTooltip": "Titik hijau — sesi klien aktif (tinggalkan ruangan jika server offline)"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",
@@ -2493,15 +2508,5 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
-  },
-  "configApplyNotice": {
-    "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
-    "restartNote": "Perangkat dapat memulai ulang secara singkat saat Anda menerapkan pengaturan."
-  },
-  "connectionBanner": {
-    "disconnectedLoss": "Koneksi terputus — radio terputus",
-    "staleLoss": "Koneksi mungkin terputus — tidak ada data yang diterima baru - baru ini",
-    "reconnect": "Sambung ulang",
-    "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}"
   }
 }

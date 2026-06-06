@@ -70,6 +70,7 @@ import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../
 import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
+import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSenderRepair';
 import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
@@ -1724,6 +1725,9 @@ export function useMeshcoreRuntime() {
         }),
       );
       applyMeshcoreNodesToUi(newNodes);
+      if (identityId) {
+        repairMeshcoreChannelSenderIdsInStore(identityId);
+      }
       const contactsToUiMs = Math.round(performance.now() - initConnPerfStart);
       console.debug(
         `[useMeshcoreRuntime] initConn contacts→UI ${contactsToUiMs}ms (${newNodes.size} nodes)`,
@@ -2356,11 +2360,10 @@ export function useMeshcoreRuntime() {
 
   const sendMessage = useCallback(
     async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
-      if (!connRef.current) {
-        console.warn('[useMeshcoreRuntime] sendMessage: no active connection, dropping send');
-        return;
-      }
       if (destNodeId !== undefined) {
+        if (!connRef.current) {
+          throw new Error('Not connected to device');
+        }
         const pubKey = pubKeyMapRef.current.get(destNodeId);
         if (!pubKey) {
           throw new Error(
@@ -2403,7 +2406,12 @@ export function useMeshcoreRuntime() {
 
         try {
           const result = await connRef.current.sendTextMessage(pubKey, textToSend);
-          void fetchAndUpdateLocalStats();
+          void fetchAndUpdateLocalStats().catch((e: unknown) => {
+            console.warn(
+              '[useMeshcoreRuntime] fetchAndUpdateLocalStats (DM send) error ' +
+                errLikeToLogString(e),
+            );
+          });
           const ackCrc = result?.expectedAckCrc;
           // Use max of: firmware estimate, hop-based calculation, minimum floor
           const estTimeout = Math.max(
@@ -2548,7 +2556,12 @@ export function useMeshcoreRuntime() {
           const channelConn = connRef.current;
           if (channelConn) {
             await channelConn.sendChannelTextMessage(channelIdx, textToSend);
-            void fetchAndUpdateLocalStats();
+            void fetchAndUpdateLocalStats().catch((e: unknown) => {
+              console.warn(
+                '[useMeshcoreRuntime] fetchAndUpdateLocalStats (channel send) error ' +
+                  errLikeToLogString(e),
+              );
+            });
             addMessage({
               sender_id: myNodeNumRef.current,
               sender_name: selfInfo?.name ?? 'Me',
@@ -2591,12 +2604,15 @@ export function useMeshcoreRuntime() {
               receivedVia: 'mqtt',
               replyId: replyField,
             });
+          } else {
+            throw new Error('Not connected — connect radio or MQTT to send channel messages');
           }
         } catch (e) {
           console.warn(
             '[useMeshcoreRuntime] sendChannelTextMessage / publishMeshcore error ' +
               errLikeToLogString(e),
           );
+          throw e;
         }
       }
     },
@@ -2622,6 +2638,10 @@ export function useMeshcoreRuntime() {
         deferPathHistory: true,
       });
       applyMeshcoreNodesToUi(newNodes);
+      const identityId = meshcoreIdentityIdRef.current;
+      if (identityId) {
+        repairMeshcoreChannelSenderIdsInStore(identityId);
+      }
       await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
       // Warn if approaching contact limit
@@ -4296,7 +4316,12 @@ export function useMeshcoreRuntime() {
             throw first;
           }
         }
-        void fetchAndUpdateLocalStats();
+        void fetchAndUpdateLocalStats().catch((e: unknown) => {
+          console.warn(
+            '[useMeshcoreRuntime] fetchAndUpdateLocalStats (room post) error ' +
+              errLikeToLogString(e),
+          );
+        });
         const acked: ChatMessage = {
           ...tempMsg,
           status: 'acked',

@@ -1,5 +1,14 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { AppOnly, Channel } from '@meshtastic/protobufs';
+
+import {
+  MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES,
+  normalizeMeshtasticPskTo16Bytes,
+} from './meshtasticDefaultPublicPsk';
+import {
+  meshtasticChannelSetSchema,
+  meshtasticChannelSettingsSchema,
+  meshtasticModuleSettingsSchema,
+} from './meshtasticProtobufSchemas';
 
 /** LoRa section of ChannelSet URLs (subset of meshtastic.Config.LoRaConfig). */
 export interface MeshtasticLoraConfig {
@@ -89,12 +98,12 @@ export function base64UrlDecode(encoded: string): Uint8Array {
 }
 
 function channelSettingsToProtobuf(input: MeshtasticChannelSettingsInput) {
-  return create(Channel.ChannelSettingsSchema, {
+  return create(meshtasticChannelSettingsSchema, {
     name: input.name,
     psk: input.psk,
     uplinkEnabled: input.uplinkEnabled,
     downlinkEnabled: input.downlinkEnabled,
-    moduleSettings: create(Channel.ModuleSettingsSchema, {
+    moduleSettings: create(meshtasticModuleSettingsSchema, {
       positionPrecision: input.positionPrecision,
     }),
   });
@@ -108,12 +117,17 @@ function channelSettingsFromProtobuf(settings: {
   moduleSettings?: { positionPrecision?: number };
 }): MeshtasticChannelSettingsInput {
   const pskRaw = settings.psk;
-  const psk =
-    pskRaw instanceof Uint8Array
-      ? pskRaw
-      : typeof pskRaw === 'string'
-        ? base64ToBytes(pskRaw)
-        : new Uint8Array([0x01]);
+  const pskBytes =
+    pskRaw == null
+      ? MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES
+      : pskRaw instanceof Uint8Array
+        ? pskRaw.length === 0
+          ? MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES
+          : pskRaw
+        : typeof pskRaw === 'string'
+          ? base64ToBytes(pskRaw)
+          : MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES;
+  const psk = normalizeMeshtasticPskTo16Bytes(pskBytes);
   return {
     name: settings.name ?? '',
     psk,
@@ -153,7 +167,7 @@ function buildChannelSet(
   settings: MeshtasticChannelSettingsInput[],
   loraConfig?: MeshtasticLoraConfig,
 ) {
-  return create(AppOnly.ChannelSetSchema, {
+  return create(meshtasticChannelSetSchema, {
     settings: settings.map(channelSettingsToProtobuf),
     ...(loraConfig ? { loraConfig } : {}),
   });
@@ -161,7 +175,7 @@ function buildChannelSet(
 
 /** Matches Meshtastic Python client add-only links (`/?add=true#` before payload). */
 function isAddOnlyConfigUrl(url: string): boolean {
-  return /\/\?add=true#/i.test(url) || /\?add=true#/i.test(url);
+  return /\?add=true#/i.test(url);
 }
 
 function extractPayloadFromUrl(url: string): { payload: string; mode: 'replace' | 'add' } {
@@ -203,21 +217,28 @@ export function generateConfigUrl(
   }
 
   const channelSet = buildChannelSet(settings, loraConfig);
-  const encoded = base64UrlEncode(toBinary(AppOnly.ChannelSetSchema, channelSet));
+  const encoded = base64UrlEncode(toBinary(meshtasticChannelSetSchema, channelSet));
   const query = options?.addOnly ? '?add=true' : '';
   const httpsUrl = `https://meshtastic.org/e/${query}#${encoded}`;
   const meshtasticUrl = `meshtastic://meshtastic/e/${query}#${encoded}`;
   return { httpsUrl, meshtasticUrl };
 }
 
+/** Wire shape from AppOnly.ChannelSet — localized cast (bufbuild Message omits schema fields in TS). */
+interface WireChannelSet {
+  settings?: Parameters<typeof channelSettingsFromProtobuf>[0][];
+  loraConfig?: MeshtasticLoraConfig;
+}
+
+function decodeWireChannelSet(bytes: Uint8Array): WireChannelSet {
+  return fromBinary(meshtasticChannelSetSchema, bytes) as WireChannelSet;
+}
+
 export function parseConfigUrl(url: string): ParsedChannelSet {
   try {
     const { payload, mode } = extractPayloadFromUrl(url);
     const bytes = base64UrlDecode(payload);
-    const channelSet = fromBinary(AppOnly.ChannelSetSchema, bytes) as {
-      settings?: Parameters<typeof channelSettingsFromProtobuf>[0][];
-      loraConfig?: MeshtasticLoraConfig;
-    };
+    const channelSet = decodeWireChannelSet(bytes);
     if (!channelSet.settings?.length) {
       throw new MeshtasticUrlError();
     }

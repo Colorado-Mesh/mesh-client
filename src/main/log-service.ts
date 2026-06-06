@@ -114,6 +114,12 @@ function flushPendingBuffer(): void {
   );
 }
 
+/** Await pending log writes before process exit. Failure point: disk I/O; fallback: best-effort drain. */
+export async function flushLogBeforeQuit(): Promise<void> {
+  flushPendingBuffer();
+  await appendChain;
+}
+
 function formatLine(ts: number, level: LogLevel, source: string, message: string): string {
   const safe = message.length > MAX_LINE_LENGTH ? message.slice(0, MAX_LINE_LENGTH) + '…' : message;
   return `${formatLogFileTimestamp(ts)} [${level}] [${source}] ${safe}\n`;

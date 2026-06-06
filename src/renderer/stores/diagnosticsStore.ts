@@ -532,9 +532,25 @@ interface DiagnosticsState {
   migrateForeignLoraFromZero(toNodeId: number): void;
 }
 
-// Module-level debounce timer and pending analysis buffer
-let analysisTimer: ReturnType<typeof setTimeout> | null = null;
-const pendingAnalyses = new Map<number, { node: MeshNode; homeNode: MeshNode | null }>();
+/** Debounce timers live outside the store factory to avoid cross-cancellation between incremental and full reanalysis. */
+const diagnosticsDebounce = {
+  incrementalAnalysisTimer: null as ReturnType<typeof setTimeout> | null,
+  fullReanalysisTimer: null as ReturnType<typeof setTimeout> | null,
+  pendingAnalyses: new Map<number, { node: MeshNode; homeNode: MeshNode | null }>(),
+};
+
+/** Test-only: clear debounce state to prevent timer leakage across vitest cases. */
+export function resetDiagnosticsDebounceStateForTests(): void {
+  if (diagnosticsDebounce.incrementalAnalysisTimer) {
+    clearTimeout(diagnosticsDebounce.incrementalAnalysisTimer);
+  }
+  if (diagnosticsDebounce.fullReanalysisTimer) {
+    clearTimeout(diagnosticsDebounce.fullReanalysisTimer);
+  }
+  diagnosticsDebounce.incrementalAnalysisTimer = null;
+  diagnosticsDebounce.fullReanalysisTimer = null;
+  diagnosticsDebounce.pendingAnalyses.clear();
+}
 
 const NOISE_WINDOW_MS = 60 * 60 * 1000; // 1 hour rolling window
 
@@ -840,10 +856,12 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     });
 
     // Buffer this node for debounced analysis
-    pendingAnalyses.set(node.node_id, { node, homeNode });
+    diagnosticsDebounce.pendingAnalyses.set(node.node_id, { node, homeNode });
 
-    if (analysisTimer) clearTimeout(analysisTimer);
-    analysisTimer = setTimeout(() => {
+    if (diagnosticsDebounce.incrementalAnalysisTimer)
+      clearTimeout(diagnosticsDebounce.incrementalAnalysisTimer);
+    diagnosticsDebounce.incrementalAnalysisTimer = setTimeout(() => {
+      diagnosticsDebounce.incrementalAnalysisTimer = null;
       const now = Date.now();
       set((s) => {
         const newAnomalies = new Map<number, NodeAnomaly>();
@@ -852,7 +870,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         }
         const isLowAccuracy = !!(s.ourPositionSource && isLowAccuracyPosition(s.ourPositionSource));
         const { distanceMultiplier, hopsThreshold } = getEnvParams(s.envMode, isLowAccuracy);
-        for (const [nodeId, { node: n, homeNode: hn }] of pendingAnalyses) {
+        for (const [nodeId, { node: n, homeNode: hn }] of diagnosticsDebounce.pendingAnalyses) {
           const history = s.hopHistory.get(nodeId) ?? [];
           const stats = s.packetStats.get(nodeId);
           const ignoreMqtt = s.ignoreMqttEnabled || s.mqttIgnoredNodes.has(nodeId);
@@ -880,7 +898,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         let diagnosticRows = replaceRoutingRowsFromMap(s.diagnosticRows, newAnomalies);
         let localStatsBaselines = s.localStatsBaselines;
         if (myNodeNum != null) {
-          const homeFromPending = pendingAnalyses.get(myNodeNum)?.node;
+          const homeFromPending = diagnosticsDebounce.pendingAnalyses.get(myNodeNum)?.node;
           if (
             homeFromPending &&
             (hasLocalStatsData(homeFromPending) || homeFromPending.channel_utilization != null)
@@ -948,7 +966,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           loadRoutingDiagnosticMaxAgeMs(),
           DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
         );
-        pendingAnalyses.clear();
+        diagnosticsDebounce.pendingAnalyses.clear();
         schedulePersistDiagnosticRows(() => get().diagnosticRows);
         return { diagnosticRows, diagnosticRowsRestoredAt: null, localStatsBaselines };
       });
@@ -1205,8 +1223,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     myNodeNum: number,
     capabilities?: ProtocolCapabilities,
   ) {
-    if (analysisTimer) clearTimeout(analysisTimer);
-    analysisTimer = setTimeout(() => {
+    diagnosticsDebounce.pendingAnalyses.clear();
+    if (diagnosticsDebounce.fullReanalysisTimer)
+      clearTimeout(diagnosticsDebounce.fullReanalysisTimer);
+    diagnosticsDebounce.fullReanalysisTimer = setTimeout(() => {
+      diagnosticsDebounce.fullReanalysisTimer = null;
       const state = get();
       const nodes = getNodes();
       const homeNode = nodes.get(myNodeNum) ?? null;
@@ -1409,9 +1430,13 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   clearDiagnostics(options) {
     const preserveForeignLora = options?.preserveForeignLora === true;
     console.debug(`[diagnosticsStore] clearDiagnostics preserveForeignLora=${preserveForeignLora}`);
-    if (analysisTimer) clearTimeout(analysisTimer);
-    analysisTimer = null;
-    pendingAnalyses.clear();
+    if (diagnosticsDebounce.incrementalAnalysisTimer)
+      clearTimeout(diagnosticsDebounce.incrementalAnalysisTimer);
+    diagnosticsDebounce.incrementalAnalysisTimer = null;
+    if (diagnosticsDebounce.fullReanalysisTimer)
+      clearTimeout(diagnosticsDebounce.fullReanalysisTimer);
+    diagnosticsDebounce.fullReanalysisTimer = null;
+    diagnosticsDebounce.pendingAnalyses.clear();
     meshcoreRateCounter.reset();
     resetCuSpikeCooldown();
     clearPersistedDiagnosticRowsSnapshot();

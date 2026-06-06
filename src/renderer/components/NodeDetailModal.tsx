@@ -220,6 +220,7 @@ export default function NodeDetailModal({
   const [nodeNote, setNodeNote] = useState('');
   const noteSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingNoteRef = useRef<string | null>(null);
+  const noteSaveAllowedRef = useRef(true);
   const mqttIgnoredNodes = useDiagnosticsStore((s) => s.mqttIgnoredNodes);
   const setNodeMqttIgnored = useDiagnosticsStore((s) => s.setNodeMqttIgnored);
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
@@ -248,19 +249,22 @@ export default function NodeDetailModal({
   useEffect(() => {
     if (!node) return;
     const nodeId = node.node_id;
+    noteSaveAllowedRef.current = true;
     let cancelled = false;
     void window.electronAPI.db.getNodeNote(nodeId).then((note: string | null) => {
       if (!cancelled) setNodeNote(note ?? '');
     });
     return () => {
       cancelled = true;
+      noteSaveAllowedRef.current = false;
       if (noteSaveTimerRef.current) {
         clearTimeout(noteSaveTimerRef.current);
         noteSaveTimerRef.current = null;
-        if (pendingNoteRef.current !== null) {
-          void window.electronAPI.db.setNodeNote(nodeId, pendingNoteRef.current);
-          pendingNoteRef.current = null;
-        }
+      }
+      const pending = pendingNoteRef.current;
+      pendingNoteRef.current = null;
+      if (pending !== null) {
+        void window.electronAPI.db.setNodeNote(nodeId, pending);
       }
     };
   }, [node?.node_id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1758,11 +1762,13 @@ export default function NodeDetailModal({
                 rows={3}
                 value={nodeNote}
                 onChange={(e) => {
+                  if (!noteSaveAllowedRef.current) return;
                   const val = e.target.value;
                   setNodeNote(val);
                   pendingNoteRef.current = val;
                   if (noteSaveTimerRef.current) clearTimeout(noteSaveTimerRef.current);
                   noteSaveTimerRef.current = setTimeout(() => {
+                    if (!noteSaveAllowedRef.current) return;
                     pendingNoteRef.current = null;
                     void window.electronAPI.db.setNodeNote(node.node_id, val);
                   }, 600);

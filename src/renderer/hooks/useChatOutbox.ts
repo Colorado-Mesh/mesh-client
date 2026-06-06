@@ -39,7 +39,7 @@ export function useChatOutbox({
   useEffect(() => {
     isSendAvailableRef.current = isSendAvailable;
     sendFnRef.current = sendFn;
-  });
+  }, [isSendAvailable, sendFn]);
 
   // Load outbox rows on mount; reset any 'sending' rows left from a prior crash to 'queued'
   useEffect(() => {

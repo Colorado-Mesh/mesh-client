@@ -1,5 +1,5 @@
 import { fromBinary, toBinary } from '@bufbuild/protobuf';
-import type { MeshDevice } from '@meshtastic/core';
+import { type MeshDevice, Types } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
@@ -31,6 +31,7 @@ import { setConnection } from '../../stores/connectionStore';
 import { setMeshtasticConfigSlice } from '../../stores/deviceStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateIdentity } from '../../stores/identityStore';
+import { useMessageStore } from '../../stores/messageStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../chatInMemoryBuffer';
 import { safeDisconnect } from '../connection';
@@ -72,6 +73,7 @@ import { normalizeReactionEmoji } from '../reactions';
 import { enrichMeshtasticReplyPreviews } from '../replyPreview';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
+import { messageRecordsToChatMessages } from '../storeRecordAdapters';
 import {
   MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
   MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS,
@@ -96,6 +98,8 @@ import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraC
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
 const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
+const { PortNum } = Portnums;
+const { DeviceStatusEnum } = Types;
 
 function isMeshtasticTraceroutePortnum(portnum: unknown): boolean {
   return Number(portnum) === Portnums.PortNum.TRACEROUTE_APP;
@@ -217,7 +221,7 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
   cleanupSubscriptions: () => void;
   startGpsInterval: () => void;
   stopGpsInterval: () => void;
-  isDuplicate: (packetId: number) => boolean;
+  isDuplicate: (senderId: number, packetId: number) => boolean;
   ensureNodeExists: (nodeNum: number, source: 'rf' | 'mqtt') => void;
   clearConfigureTimeout: () => void;
   applyMeshtasticForeignLoraFromLog: (message: string) => void;
@@ -456,17 +460,17 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // ─── Device status ─────────────────────────────────────────
   const unsub1 = device.events.onDeviceStatus.subscribe((status) => {
-    if (status !== 1) {
+    if (status !== DeviceStatusEnum.DeviceRestarting) {
       touchLastData();
     }
     const statusMap: Record<number, DeviceState['status']> = {
-      1: 'connecting', // DeviceRestarting
-      2: 'disconnected', // DeviceDisconnected
-      3: 'connecting', // DeviceConnecting
-      4: 'connecting', // DeviceReconnecting
-      5: 'connected', // DeviceConnected
-      6: 'connecting', // DeviceConfiguring
-      7: 'configured', // DeviceConfigured
+      [DeviceStatusEnum.DeviceRestarting]: 'connecting',
+      [DeviceStatusEnum.DeviceDisconnected]: 'disconnected',
+      [DeviceStatusEnum.DeviceConnecting]: 'connecting',
+      [DeviceStatusEnum.DeviceReconnecting]: 'connecting',
+      [DeviceStatusEnum.DeviceConnected]: 'connected',
+      [DeviceStatusEnum.DeviceConfiguring]: 'connecting',
+      [DeviceStatusEnum.DeviceConfigured]: 'configured',
     };
     const mapped = statusMap[status] ?? 'connected';
     setState((s) => ({
@@ -475,7 +479,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       ...(mapped === 'configured' || mapped === 'connected' ? { connectionLoss: false } : {}),
     }));
 
-    if (status === 1) {
+    if (status === DeviceStatusEnum.DeviceRestarting) {
       deviceConfiguredRef.current = false;
       isConfiguringRef.current = true;
       meshtasticIngestSessionRef.current?.setConfiguring(true);
@@ -483,10 +487,18 @@ export function attachMeshtasticLegacyWireSubscriptions(
     }
 
     // Track configuring phase so packet replays are marked as historical
-    if (status === 3 || status === 5 || status === 6) {
+    if (
+      status === DeviceStatusEnum.DeviceConnecting ||
+      status === DeviceStatusEnum.DeviceConnected ||
+      status === DeviceStatusEnum.DeviceConfiguring
+    ) {
       isConfiguringRef.current = true;
       meshtasticIngestSessionRef.current?.setConfiguring(true);
-      if (status === 6 && type === 'ble' && !configureTimeoutRef.current) {
+      if (
+        status === DeviceStatusEnum.DeviceConfiguring &&
+        type === 'ble' &&
+        !configureTimeoutRef.current
+      ) {
         configureTimeoutRef.current = setTimeout(() => {
           console.warn('[useMeshtasticRuntime] configure timeout (BLE 30s) — forcing disconnect');
           const activeDevice = deviceRef.current;
@@ -514,7 +526,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     }
 
     // Start watchdog when configured
-    if (status === 7) {
+    if (status === DeviceStatusEnum.DeviceConfigured) {
       clearPostCommitRebootRecoveryRef.current();
       clearConfigureTimeout();
       isConfiguringRef.current = false;
@@ -569,7 +581,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     }
 
     // Always clean up on disconnect, even if we never reached configured
-    if (status === 2) {
+    if (status === DeviceStatusEnum.DeviceDisconnected) {
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
         localLoraConfigTimerRef.current = undefined;
@@ -731,7 +743,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       return;
     }
     const dataPacket = meshPacket.payloadVariant.value;
-    if (dataPacket.portnum !== Portnums.PortNum.TEXT_MESSAGE_APP) return;
+    if (dataPacket.portnum !== PortNum.TEXT_MESSAGE_APP) return;
 
     ensureNodeExists(meshPacket.from, 'rf');
     maybeRequestNodeInfoForNode(meshPacket.from);
@@ -806,7 +818,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     const chatInStore = Boolean(meshtasticIdentityIdRef.current);
 
     // Packet ID dedup: skip if already seen (e.g. via MQTT) so same message is not shown twice
-    if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(msg.packetId)) {
+    if (!isEcho && !msg.emoji && msg.packetId && isDuplicate(meshPacket.from, msg.packetId)) {
       if (!chatInStore) {
         const rfDedupPacketId = msg.packetId;
         const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
@@ -841,7 +853,14 @@ export function attachMeshtasticLegacyWireSubscriptions(
         };
 
     if (!chatInStore && !isEcho && !rfMsg.emoji) {
-      const crossDup = findMeshtasticCrossTransportDuplicate(messagesRef.current, rfMsg);
+      const storeId = meshtasticIdentityIdRef.current;
+      const storeMsgs = storeId
+        ? messageRecordsToChatMessages(
+            Object.values(useMessageStore.getState().messages[storeId] ?? {}),
+          )
+        : [];
+      const dedupSource = storeMsgs.length > 0 ? storeMsgs : messagesRef.current;
+      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, rfMsg);
       if (crossDup) {
         const rfDedupHops = meshtasticComputedRfHopsAway(meshPacket);
         setMessages((prev) => {
@@ -857,7 +876,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
             ? rfMsg.packetId
             : normalizeMeshtasticPacketId(crossDup.packetId);
         if (pid !== undefined && pid !== 0) {
-          isDuplicate(pid); // registers as seen to suppress future duplicates
+          isDuplicate(rfMsg.sender_id, pid); // registers as seen to suppress future duplicates
         }
         return;
       }
@@ -905,7 +924,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
               pskBase64: uplinkMqtt.pskBase64,
               publishJsonMirror: uplinkMqtt.publishJsonMirror,
             })
-            .then(isDuplicate)
+            .then((packetId) => {
+              isDuplicate(msg.sender_id, packetId);
+            })
             .catch((e: unknown) => {
               console.debug(
                 '[useMeshtasticRuntime] MQTT publish echo register non-fatal ' +

@@ -284,8 +284,7 @@ export async function meshCoreTransportCodeForRegion(
   payloadBytes: Uint8Array,
 ): Promise<number> {
   const keyRaw = await meshCoreRegionKeyFromName(regionName);
-  const keyBuf = new Uint8Array(16);
-  keyBuf.set(keyRaw);
+  const keyBuf = new Uint8Array(keyRaw);
   const payloadTypeByte = (payloadTypeNibble << MESHCORE_TYPE_SHIFT) & MESHCORE_TYPE_MASK;
   const msgBuf = new Uint8Array(1 + payloadBytes.length);
   msgBuf[0] = payloadTypeByte;

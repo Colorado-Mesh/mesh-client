@@ -49,6 +49,7 @@ const defaultState: ConnectionStoreState = {
   connections: {},
 };
 
+/** Imperative store: use module-level setters and always subscribe with selectors (never bare useConnectionStore()). */
 export const useConnectionStore = create<ConnectionStoreState>()(() => defaultState);
 
 export function setConnection(
