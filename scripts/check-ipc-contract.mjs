@@ -28,7 +28,22 @@ const MAIN_FILES = [
   path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
   path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
   path.join(ROOT, 'src', 'main', 'log-service.ts'),
+  ...collectIpcHandlerFiles(path.join(ROOT, 'src', 'main', 'ipc')),
 ];
+
+function collectIpcHandlerFiles(dir) {
+  const results = [];
+  if (!fs.existsSync(dir)) return results;
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      results.push(...collectIpcHandlerFiles(full));
+    } else if (ent.isFile() && ent.name.endsWith('.ts') && !ent.name.endsWith('.test.ts')) {
+      results.push(full);
+    }
+  }
+  return results;
+}
 
 const SUPPRESS = /\/\/\s*ipc-contract-ok\b/;
 

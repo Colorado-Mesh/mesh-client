@@ -20,13 +20,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const SCAN_DIRS = [
-  path.join(ROOT, 'src', 'main'),
-  path.join(ROOT, 'src', 'renderer'),
-];
+const SCAN_DIRS = [path.join(ROOT, 'src', 'main'), path.join(ROOT, 'src', 'renderer')];
 
 const CONSOLE_LOG = /\bconsole\.log\s*\(/;
 const SUPPRESSED = /\/\/\s*log-level-ok\b/;
+
+const includeTests = process.argv.includes('--include-tests');
 
 function collectSourceFiles(dir) {
   const results = [];
@@ -35,7 +34,9 @@ function collectSourceFiles(dir) {
     if (ent.isDirectory()) {
       results.push(...collectSourceFiles(path.join(dir, ent.name)));
     } else if (ent.isFile() && /\.(ts|tsx)$/.test(ent.name)) {
-      if (ent.name.endsWith('.test.ts') || ent.name.endsWith('.test.tsx')) continue;
+      if (!includeTests && (ent.name.endsWith('.test.ts') || ent.name.endsWith('.test.tsx'))) {
+        continue;
+      }
       results.push(path.join(dir, ent.name));
     }
   }
@@ -71,7 +72,9 @@ function main() {
     return;
   }
 
-  console.error('check-console-log: bare console.log() calls found (use console.debug/warn/error):\n');
+  console.error(
+    'check-console-log: bare console.log() calls found (use console.debug/warn/error):\n',
+  );
   for (const v of allViolations) {
     console.error(`  ${v.relPath}:${v.lineNum}`);
     console.error(`    ${v.line}`);
@@ -79,7 +82,7 @@ function main() {
   }
   console.error(
     'Replace with console.debug() for trace output, console.warn() for non-fatal errors,\n' +
-    'or console.error() for fatal failures. Add // log-level-ok <reason> to suppress.',
+      'or console.error() for fatal failures. Add // log-level-ok <reason> to suppress.',
   );
   process.exit(1);
 }

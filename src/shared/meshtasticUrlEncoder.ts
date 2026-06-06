@@ -220,14 +220,21 @@ export function generateConfigUrl(
   return { httpsUrl, meshtasticUrl };
 }
 
+/** Wire shape from AppOnly.ChannelSet — localized cast (bufbuild Message omits schema fields in TS). */
+interface WireChannelSet {
+  settings?: Parameters<typeof channelSettingsFromProtobuf>[0][];
+  loraConfig?: MeshtasticLoraConfig;
+}
+
+function decodeWireChannelSet(bytes: Uint8Array): WireChannelSet {
+  return fromBinary(AppOnly.ChannelSetSchema, bytes) as WireChannelSet;
+}
+
 export function parseConfigUrl(url: string): ParsedChannelSet {
   try {
     const { payload, mode } = extractPayloadFromUrl(url);
     const bytes = base64UrlDecode(payload);
-    const channelSet = fromBinary(AppOnly.ChannelSetSchema, bytes) as {
-      settings?: Parameters<typeof channelSettingsFromProtobuf>[0][];
-      loraConfig?: MeshtasticLoraConfig;
-    };
+    const channelSet = decodeWireChannelSet(bytes);
     if (!channelSet.settings?.length) {
       throw new MeshtasticUrlError();
     }

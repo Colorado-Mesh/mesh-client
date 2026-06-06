@@ -74,6 +74,8 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
     sourcemap: false,
+    // Production: omit source maps (smaller bundle). For crash symbolication use
+    // sourcemap: 'hidden' and exclude *.map from electron-builder artifacts.
     // Advisory only — Electron renderer; not a public web cold-load budget.
     chunkSizeWarningLimit: 1000,
     rollupOptions: {

@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MeshNode } from '../lib/types';
-import { computeCuStats24h, useDiagnosticsStore } from './diagnosticsStore';
+import {
+  computeCuStats24h,
+  resetDiagnosticsDebounceStateForTests,
+  useDiagnosticsStore,
+} from './diagnosticsStore';
 
 const SNAPSHOT_KEY = 'mesh-client:diagnosticRowsSnapshot';
 
@@ -12,7 +16,7 @@ describe('diagnosticsStore clearing behavior', () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    resetDiagnosticsDebounceStateForTests();
     localStorage.removeItem(SNAPSHOT_KEY);
     useDiagnosticsStore.getState().clearDiagnostics();
   });
@@ -99,7 +103,7 @@ describe('diagnosticsStore analysis timers', () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    resetDiagnosticsDebounceStateForTests();
     localStorage.removeItem(SNAPSHOT_KEY);
     useDiagnosticsStore.getState().clearDiagnostics();
   });

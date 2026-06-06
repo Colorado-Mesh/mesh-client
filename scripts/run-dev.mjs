@@ -8,6 +8,8 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { mainEsbuildExternalArgs } from './esbuild-main-externals.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 
@@ -19,8 +21,7 @@ export function resolveDevExitCode(code, signal) {
 }
 
 export function buildDevConcurrentlyArgs() {
-  const mainBuild =
-    'esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js --external:electron --external:electron-updater --external:systeminformation --external:@stoprocent/noble --external:node-forge --external:jszip --external:mqtt --external:@bufbuild/protobuf --external:@meshtastic/protobufs --format=cjs --watch';
+  const mainBuild = `esbuild src/main/index.ts --bundle --platform=node --outfile=dist-electron/main/index.js ${mainEsbuildExternalArgs().join(' ')} --format=cjs --watch`;
   const preloadBuild =
     'esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs --watch';
   const electronLaunch =

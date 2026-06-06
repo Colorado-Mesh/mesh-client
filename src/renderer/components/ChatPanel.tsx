@@ -1,6 +1,7 @@
-/* eslint-disable react-hooks/refs */
+/* eslint-disable react-hooks/incompatible-library */
 import 'emoji-picker-element';
 
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import {
   type ComponentProps,
@@ -427,7 +428,6 @@ function ChatPanel({
   const [channel, setChannel] = useState(() => (channels.length > 0 ? channels[0].index : 0));
   useEffect(() => {
     if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clamp channel when list changes after connect
       setChannel(channels[0].index);
     }
   }, [channels, channel]);
@@ -547,7 +547,6 @@ function ChatPanel({
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reload protocol-scoped chat UI prefs from storage
     setReplyTo(null);
     setMutedViews(loadMutedViews(protocol));
     setStarred(loadStarred(protocol));
@@ -559,7 +558,6 @@ function ChatPanel({
       if (!openDmTabsRef.current.includes(initialDmTarget)) {
         setOpenDmTabs((prev) => [...prev, initialDmTarget]);
       }
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- open DM tab from Nodes panel navigation prop
       setDismissedDmTabs((prev) => {
         if (!(initialDmTarget in prev)) return prev;
         return withoutDmNode(prev, initialDmTarget);
@@ -737,7 +735,6 @@ function ChatPanel({
   }, [viewKey, isActive, markCurrentViewRead]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset per-thread sender filter on view change
     setFilterSender(null);
   }, [viewKey]);
 
@@ -1085,6 +1082,18 @@ function ChatPanel({
     }
     return -1;
   }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
+
+  const messageVirtualizer = useVirtualizer({
+    count: filteredMessages.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => (compactMode ? 56 : 96),
+    overscan: 10,
+    getItemKey: (index) => {
+      const msg = filteredMessages[index];
+      if (!msg) return index;
+      return msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
+    },
+  });
 
   // Linux reaction picker — attach emoji-click on the <emoji-picker> web component
   useEffect(() => {
@@ -1697,7 +1706,7 @@ function ChatPanel({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className={`bg-deep-black/50 h-full overflow-y-auto rounded-xl p-3 ${compactMode ? 'space-y-0.5' : 'space-y-1.5'}`}
+          className={`bg-deep-black/50 h-full overflow-y-auto rounded-xl p-3`}
         >
           {filteredMessages.length === 0 ? (
             <div className="text-muted py-12 text-center">
@@ -1710,479 +1719,404 @@ function ChatPanel({
                     : 'Connect to a device to start chatting.'}
             </div>
           ) : (
-            filteredMessages.map((msg, i) => {
-              const isOwn = isOwnNode(msg.sender_id);
-              const isDm = !!msg.to;
-              const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
-              const messageRowKey = msg.packetId ?? msg.timestamp;
-              const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
-              const pickerOpensAbove = i >= filteredMessages.length - 3;
+            <div
+              className="relative w-full"
+              style={{ height: `${messageVirtualizer.getTotalSize()}px` }}
+            >
+              {messageVirtualizer.getVirtualItems().map((vi) => {
+                const i = vi.index;
+                const msg = filteredMessages[i];
+                if (!msg) return null;
+                const isOwn = isOwnNode(msg.sender_id);
+                const isDm = !!msg.to;
+                const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
+                const messageRowKey = msg.packetId ?? msg.timestamp;
+                const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
+                const pickerOpensAbove = i >= filteredMessages.length - 3;
 
-              const senderNode = nodes.get(msg.sender_id);
-              const displaySenderName =
-                nodeDisplayName(senderNode, protocol) ||
-                msg.sender_name.trim() ||
-                (msg.sender_id > 0 ? getDmLabel(msg.sender_id) : '');
+                const senderNode = nodes.get(msg.sender_id);
+                const displaySenderName =
+                  nodeDisplayName(senderNode, protocol) ||
+                  msg.sender_name.trim() ||
+                  (msg.sender_id > 0 ? getDmLabel(msg.sender_id) : '');
 
-              // Day separator
-              const daySeparator = daySeparatorIndices.has(i) ? (
-                <div className="flex items-center gap-3 py-2">
-                  <div className="flex-1 border-t border-gray-700" />
-                  <span className="text-muted shrink-0 text-xs font-medium">
-                    {formatDayLabel(msg.timestamp)}
-                  </span>
-                  <div className="flex-1 border-t border-gray-700" />
-                </div>
-              ) : null;
+                // Day separator
+                const daySeparator = daySeparatorIndices.has(i) ? (
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 border-t border-gray-700" />
+                    <span className="text-muted shrink-0 text-xs font-medium">
+                      {formatDayLabel(msg.timestamp)}
+                    </span>
+                    <div className="flex-1 border-t border-gray-700" />
+                  </div>
+                ) : null;
 
-              const isUnreadStart = i === unreadStartIndex;
+                const isUnreadStart = i === unreadStartIndex;
 
-              const prevMsg = i > 0 ? filteredMessages[i - 1] : null;
-              const nextMsg = i < filteredMessages.length - 1 ? filteredMessages[i + 1] : null;
-              const isContinuation =
-                compactMode &&
-                daySeparator === null &&
-                prevMsg !== null &&
-                prevMsg.sender_id === msg.sender_id;
-              const isFollowedByContinuation =
-                compactMode &&
-                nextMsg !== null &&
-                nextMsg.sender_id === msg.sender_id &&
-                !daySeparatorIndices.has(i + 1);
-              const showContinuationTime =
-                isContinuation &&
-                prevMsg !== null &&
-                msg.timestamp - prevMsg.timestamp >= CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
+                const prevMsg = i > 0 ? filteredMessages[i - 1] : null;
+                const nextMsg = i < filteredMessages.length - 1 ? filteredMessages[i + 1] : null;
+                const isContinuation =
+                  compactMode &&
+                  daySeparator === null &&
+                  prevMsg !== null &&
+                  prevMsg.sender_id === msg.sender_id;
+                const isFollowedByContinuation =
+                  compactMode &&
+                  nextMsg !== null &&
+                  nextMsg.sender_id === msg.sender_id &&
+                  !daySeparatorIndices.has(i + 1);
+                const showContinuationTime =
+                  isContinuation &&
+                  prevMsg !== null &&
+                  msg.timestamp - prevMsg.timestamp >= CHAT_COMPACT_CONTINUATION_TIME_GAP_MS;
 
-              /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
-              const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);
-              const compactStackTop = compactMode && isContinuation;
-              const compactStackBottom = compactMode && isFollowedByContinuation;
+                /** Visually merge compact consecutive same-sender bubbles (flat seam + no double border). */
+                const compactMerged = compactMode && (isContinuation || isFollowedByContinuation);
+                const compactStackTop = compactMode && isContinuation;
+                const compactStackBottom = compactMode && isFollowedByContinuation;
 
-              return (
-                <div
-                  key={
-                    msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${i}`
-                  }
-                  className={isContinuation ? '!mt-0' : undefined}
-                >
-                  {daySeparator}
-                  {isUnreadStart && (
-                    <div ref={unreadDividerRef}>
-                      <UnreadDivider />
-                    </div>
-                  )}
+                return (
                   <div
-                    className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-                    data-chat-message-key={messageRowKey}
-                    data-chat-day-key={getDayKey(msg.timestamp)}
+                    key={vi.key}
+                    data-index={vi.index}
+                    ref={messageVirtualizer.measureElement}
+                    className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-1.5'}`}
+                    style={{ transform: `translateY(${vi.start}px)` }}
                   >
-                    {/* Bubble row */}
-                    <div
-                      className={`group/msg flex max-w-[80%] items-end gap-1 ${
-                        isOwn ? 'flex-row-reverse' : 'flex-row'
-                      }`}
-                    >
-                      {/* Message bubble */}
-                      <div
-                        className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
-                          compactMerged
-                            ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
-                                isDm
-                                  ? isOwn
-                                    ? 'border border-purple-500/30 bg-purple-600/20'
-                                    : 'border border-purple-600/30 bg-purple-700/20'
-                                  : isOwn
-                                    ? 'border border-blue-500/30 bg-blue-600/20'
-                                    : 'border-chat-incoming-border bg-chat-incoming-bg border'
-                              }`
-                            : isDm
-                              ? isOwn
-                                ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
-                              : isOwn
-                                ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
-                        }`}
-                      >
-                        {/* Header: sender name (clickable) + DM indicator + time */}
-                        {!isContinuation && (
-                          <div className="mb-0.5 flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                onNodeClick(msg.sender_id);
-                              }}
-                              className={`cursor-pointer text-xs font-semibold hover:underline ${
-                                isDm
-                                  ? 'text-purple-400'
-                                  : isOwn
-                                    ? 'text-blue-400'
-                                    : filterSender === msg.sender_id
-                                      ? 'text-blue-300 underline'
-                                      : 'text-bright-green'
-                              }`}
-                              title={t('chatPanel.filterBySender')}
-                            >
-                              {displaySenderName}
-                            </button>
-                            {!isOwn && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFilterSender((prev) =>
-                                    prev === msg.sender_id ? null : msg.sender_id,
-                                  );
-                                }}
-                                aria-label={t('chatPanel.filterBySender')}
-                                aria-pressed={filterSender === msg.sender_id}
-                                className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
-                                  filterSender === msg.sender_id
-                                    ? 'bg-blue-700/40 text-blue-300'
-                                    : 'text-gray-600 hover:text-blue-400'
-                                }`}
-                                title={t('chatPanel.filterBySender')}
-                              >
-                                <svg
-                                  className="h-2.5 w-2.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-                                  />
-                                </svg>
-                              </button>
-                            )}
-                            {isDm && (
-                              <span className="text-[10px] font-medium text-purple-400/70">DM</span>
-                            )}
-                            <span
-                              className="text-muted/70 text-[10px]"
-                              title={formatFullTimestamp(msg.timestamp)}
-                            >
-                              {formatTime(msg.timestamp)}
-                            </span>
-                            {channels.length > 1 && !isDm && (
-                              <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
-                            )}
-                          </div>
-                        )}
-
-                        {showContinuationTime && (
-                          <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>
-                            <span
-                              className="text-muted/70 text-[10px]"
-                              title={formatFullTimestamp(msg.timestamp)}
-                            >
-                              {formatTime(msg.timestamp)}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Quoted reply preview */}
-                        {(msg.replyId != null ||
-                          msg.replyPreviewSender != null ||
-                          msg.replyPreviewText != null) &&
-                          !msg.emoji &&
-                          (() => {
-                            const orig =
-                              msg.replyId != null
-                                ? protocol === 'meshtastic'
-                                  ? findMeshtasticParentMessageForReply(viewMessages, msg.replyId, {
-                                      replyPreviewSender: msg.replyPreviewSender,
-                                      beforeTimestamp: msg.timestamp,
-                                      channel: msg.channel,
-                                      to: msg.to,
-                                      excludeSenderId: msg.sender_id,
-                                    })
-                                  : findMeshcoreParentMessageForReply(viewMessages, msg.replyId, {
-                                      replyPreviewSender: msg.replyPreviewSender,
-                                      beforeTimestamp: msg.timestamp,
-                                      channel: msg.channel,
-                                      to: msg.to,
-                                      excludeSenderId: msg.sender_id,
-                                    })
-                                : undefined;
-                            const quoteSnippet =
-                              orig != null
-                                ? truncateReplyPreviewText(orig.payload)
-                                : msg.replyPreviewText?.trim() || undefined;
-                            const quotedLabel =
-                              orig != null
-                                ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
-                                  orig.sender_name
-                                : msg.replyPreviewSender?.trim() || undefined;
-                            const canJumpToParent = msg.replyId != null && !!orig;
-                            if (!quoteSnippet && !quotedLabel) return null;
-                            const quoteClassName =
-                              'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
-                            const quoteBody = (
-                              <>
-                                <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
-                                <div className="min-w-0 flex-1">
-                                  <span className="block text-[10px] font-semibold text-gray-400">
-                                    {quotedLabel}
-                                  </span>
-                                  {quoteSnippet ? (
-                                    <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
-                                      {quoteSnippet}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </>
-                            );
-                            if (canJumpToParent) {
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    scrollToQuotedParent(msg.replyId!);
-                                  }}
-                                  className={`${quoteClassName} hover:bg-secondary-dark/80 transition-colors`}
-                                  aria-label={t('chatPanel.jumpToQuotedMessage', {
-                                    sender: quotedLabel ?? '',
-                                  })}
-                                >
-                                  {quoteBody}
-                                </button>
-                              );
-                            }
-                            return (
-                              <div
-                                className={quoteClassName}
-                                aria-label={
-                                  quotedLabel
-                                    ? t('chatPanel.jumpToQuotedMessage', { sender: quotedLabel })
-                                    : undefined
-                                }
-                              >
-                                {quoteBody}
-                              </div>
-                            );
-                          })()}
-
-                        {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
-                        <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                          <ChatPayloadText text={msg.payload} query={searchQuery} />
+                    <div className={isContinuation ? '!mt-0' : undefined}>
+                      {daySeparator}
+                      {isUnreadStart && (
+                        <div ref={unreadDividerRef}>
+                          <UnreadDivider />
                         </div>
-
-                        {/* Transport + RF hop count (incoming) */}
-                        {!isOwn &&
-                          (msg.receivedVia ||
-                            msg.viaStoreForward ||
-                            (msg.rxHops != null &&
-                              (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
-                            <div className="mt-0.5 flex items-center justify-end gap-2">
-                              {msg.rxHops != null &&
-                                (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
-                                  <span
-                                    className="text-[10px] text-gray-500"
-                                    title={t('nodeDetailModal.hopsFromRoutingTitle')}
+                      )}
+                      <div
+                        className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
+                        data-chat-message-key={messageRowKey}
+                        data-chat-day-key={getDayKey(msg.timestamp)}
+                      >
+                        {/* Bubble row */}
+                        <div
+                          className={`group/msg flex max-w-[80%] items-end gap-1 ${
+                            isOwn ? 'flex-row-reverse' : 'flex-row'
+                          }`}
+                        >
+                          {/* Message bubble */}
+                          <div
+                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
+                              compactMerged
+                                ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
+                                    isDm
+                                      ? isOwn
+                                        ? 'border border-purple-500/30 bg-purple-600/20'
+                                        : 'border border-purple-600/30 bg-purple-700/20'
+                                      : isOwn
+                                        ? 'border border-blue-500/30 bg-blue-600/20'
+                                        : 'border-chat-incoming-border bg-chat-incoming-bg border'
+                                  }`
+                                : isDm
+                                  ? isOwn
+                                    ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
+                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
+                                  : isOwn
+                                    ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
+                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
+                            }`}
+                          >
+                            {/* Header: sender name (clickable) + DM indicator + time */}
+                            {!isContinuation && (
+                              <div className="mb-0.5 flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    onNodeClick(msg.sender_id);
+                                  }}
+                                  className={`cursor-pointer text-xs font-semibold hover:underline ${
+                                    isDm
+                                      ? 'text-purple-400'
+                                      : isOwn
+                                        ? 'text-blue-400'
+                                        : filterSender === msg.sender_id
+                                          ? 'text-blue-300 underline'
+                                          : 'text-bright-green'
+                                  }`}
+                                  title={t('chatPanel.filterBySender')}
+                                >
+                                  {displaySenderName}
+                                </button>
+                                {!isOwn && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFilterSender((prev) =>
+                                        prev === msg.sender_id ? null : msg.sender_id,
+                                      );
+                                    }}
+                                    aria-label={t('chatPanel.filterBySender')}
+                                    aria-pressed={filterSender === msg.sender_id}
+                                    className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
+                                      filterSender === msg.sender_id
+                                        ? 'bg-blue-700/40 text-blue-300'
+                                        : 'text-gray-600 hover:text-blue-400'
+                                    }`}
+                                    title={t('chatPanel.filterBySender')}
                                   >
-                                    {t('nodeDetailModal.hopLabel', { count: msg.rxHops })}
+                                    <svg
+                                      className="h-2.5 w-2.5"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={2}
+                                      aria-hidden="true"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                                {isDm && (
+                                  <span className="text-[10px] font-medium text-purple-400/70">
+                                    DM
                                   </span>
                                 )}
-                              {msg.viaStoreForward && <StoreForwardBadge />}
-                              {msg.receivedVia && <TransportBadge via={msg.receivedVia} />}
-                            </div>
-                          )}
-
-                        {/* Delivery status for own messages */}
-                        {isOwn && (msg.status || msg.mqttStatus) && (
-                          <div className="mt-0.5 flex items-center justify-end gap-1">
-                            {isOwn && msg.status === 'failed' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onResend(msg);
-                                }}
-                                className="text-gray-500 transition-colors hover:text-gray-300"
-                                title={t('chatPanel.resendMessage')}
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
+                                <span
+                                  className="text-muted/70 text-[10px]"
+                                  title={formatFullTimestamp(msg.timestamp)}
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                  />
-                                </svg>
-                              </button>
+                                  {formatTime(msg.timestamp)}
+                                </span>
+                                {channels.length > 1 && !isDm && (
+                                  <span className="text-[10px] text-gray-600">ch{msg.channel}</span>
+                                )}
+                              </div>
                             )}
-                            {msg.mqttStatus ? (
-                              <>
-                                <MessageStatusBadge status={msg.mqttStatus} transport="mqtt" />
-                                {msg.status && (
+
+                            {showContinuationTime && (
+                              <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>
+                                <span
+                                  className="text-muted/70 text-[10px]"
+                                  title={formatFullTimestamp(msg.timestamp)}
+                                >
+                                  {formatTime(msg.timestamp)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Quoted reply preview */}
+                            {(msg.replyId != null ||
+                              msg.replyPreviewSender != null ||
+                              msg.replyPreviewText != null) &&
+                              !msg.emoji &&
+                              (() => {
+                                const orig =
+                                  msg.replyId != null
+                                    ? protocol === 'meshtastic'
+                                      ? findMeshtasticParentMessageForReply(
+                                          viewMessages,
+                                          msg.replyId,
+                                          {
+                                            replyPreviewSender: msg.replyPreviewSender,
+                                            beforeTimestamp: msg.timestamp,
+                                            channel: msg.channel,
+                                            to: msg.to,
+                                            excludeSenderId: msg.sender_id,
+                                          },
+                                        )
+                                      : findMeshcoreParentMessageForReply(
+                                          viewMessages,
+                                          msg.replyId,
+                                          {
+                                            replyPreviewSender: msg.replyPreviewSender,
+                                            beforeTimestamp: msg.timestamp,
+                                            channel: msg.channel,
+                                            to: msg.to,
+                                            excludeSenderId: msg.sender_id,
+                                          },
+                                        )
+                                    : undefined;
+                                const quoteSnippet =
+                                  orig != null
+                                    ? truncateReplyPreviewText(orig.payload)
+                                    : msg.replyPreviewText?.trim() || undefined;
+                                const quotedLabel =
+                                  orig != null
+                                    ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
+                                      orig.sender_name
+                                    : msg.replyPreviewSender?.trim() || undefined;
+                                const canJumpToParent = msg.replyId != null && !!orig;
+                                if (!quoteSnippet && !quotedLabel) return null;
+                                const quoteClassName =
+                                  'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
+                                const quoteBody = (
+                                  <>
+                                    <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
+                                    <div className="min-w-0 flex-1">
+                                      <span className="block text-[10px] font-semibold text-gray-400">
+                                        {quotedLabel}
+                                      </span>
+                                      {quoteSnippet ? (
+                                        <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
+                                          {quoteSnippet}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </>
+                                );
+                                if (canJumpToParent) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        scrollToQuotedParent(msg.replyId!);
+                                      }}
+                                      className={`${quoteClassName} hover:bg-secondary-dark/80 transition-colors`}
+                                      aria-label={t('chatPanel.jumpToQuotedMessage', {
+                                        sender: quotedLabel ?? '',
+                                      })}
+                                    >
+                                      {quoteBody}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <div
+                                    className={quoteClassName}
+                                    aria-label={
+                                      quotedLabel
+                                        ? t('chatPanel.jumpToQuotedMessage', {
+                                            sender: quotedLabel,
+                                          })
+                                        : undefined
+                                    }
+                                  >
+                                    {quoteBody}
+                                  </div>
+                                );
+                              })()}
+
+                            {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
+                            <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
+                              <ChatPayloadText text={msg.payload} query={searchQuery} />
+                            </div>
+
+                            {/* Transport + RF hop count (incoming) */}
+                            {!isOwn &&
+                              (msg.receivedVia ||
+                                msg.viaStoreForward ||
+                                (msg.rxHops != null &&
+                                  (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
+                                <div className="mt-0.5 flex items-center justify-end gap-2">
+                                  {msg.rxHops != null &&
+                                    (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
+                                      <span
+                                        className="text-[10px] text-gray-500"
+                                        title={t('nodeDetailModal.hopsFromRoutingTitle')}
+                                      >
+                                        {t('nodeDetailModal.hopLabel', { count: msg.rxHops })}
+                                      </span>
+                                    )}
+                                  {msg.viaStoreForward && <StoreForwardBadge />}
+                                  {msg.receivedVia && <TransportBadge via={msg.receivedVia} />}
+                                </div>
+                              )}
+
+                            {/* Delivery status for own messages */}
+                            {isOwn && (msg.status || msg.mqttStatus) && (
+                              <div className="mt-0.5 flex items-center justify-end gap-1">
+                                {isOwn && msg.status === 'failed' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onResend(msg);
+                                    }}
+                                    className="text-gray-500 transition-colors hover:text-gray-300"
+                                    title={t('chatPanel.resendMessage')}
+                                  >
+                                    <svg
+                                      className="h-3.5 w-3.5"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth={2}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                                {msg.mqttStatus ? (
+                                  <>
+                                    <MessageStatusBadge status={msg.mqttStatus} transport="mqtt" />
+                                    {msg.status && (
+                                      <MessageStatusBadge
+                                        status={msg.status}
+                                        transport="device"
+                                        connectionType={connectionType}
+                                        error={msg.error}
+                                      />
+                                    )}
+                                  </>
+                                ) : msg.status ? (
                                   <MessageStatusBadge
                                     status={msg.status}
-                                    transport="device"
+                                    transport={isMqttOnly ? 'mqtt' : 'device'}
                                     connectionType={connectionType}
                                     error={msg.error}
                                   />
-                                )}
-                              </>
-                            ) : msg.status ? (
-                              <MessageStatusBadge
-                                status={msg.status}
-                                transport={isMqttOnly ? 'mqtt' : 'device'}
-                                connectionType={connectionType}
-                                error={msg.error}
-                              />
-                            ) : null}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Inline reaction trigger — visible on hover or focus-within */}
-                      <div className="flex shrink-0 gap-0.5 opacity-0 transition-all group-focus-within/msg:opacity-100 group-hover/msg:opacity-100">
-                        {/* Copy — always available */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void writeClipboardText(msg.payload).catch((err: unknown) => {
-                              console.warn('Failed to copy message:', errLikeToLogString(err));
-                            });
-                          }}
-                          className="rounded p-1 text-xs text-gray-600 hover:text-green-400"
-                          aria-label={t('chatPanel.copyMessage')}
-                          title={t('chatPanel.copyMessage')}
-                        >
-                          <svg
-                            className="h-3.5 w-3.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </button>
-                        {isConnected && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setReplyTo(msg);
-                                composerInputRef.current?.focus();
-                              }}
-                              className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
-                              aria-label={t('chatPanel.replyToMessage')}
-                              title={t('chatPanel.replyButton')}
-                            >
-                              <svg
-                                className="h-3.5 w-3.5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
-                                />
-                              </svg>
-                            </button>
-                            {/* React */}
-                            <button
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                if (!isLinux) reactionHiddenInputRef.current?.focus();
-                              }}
-                              onClick={() => {
-                                const id = msg.packetId ?? msg.timestamp;
-                                reactionPickerTarget.current = { id, channel: msg.channel };
-                                if (isLinux) {
-                                  setPickerOpenFor(showPicker ? null : id);
-                                } else {
-                                  void window.electronAPI.showEmojiPanel();
-                                }
-                              }}
-                              className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
-                              aria-label={t('chatPanel.addReaction')}
-                              title={t('chatPanel.reactButton')}
-                            >
-                              <svg
-                                className="h-3.5 w-3.5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                            </button>
-                            {/* Quick DM */}
-                            {!isOwn && (
-                              <button
-                                onClick={() => {
-                                  openDmTo(msg.sender_id);
-                                }}
-                                className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
-                                title={t('chatPanel.directMessage', { name: msg.sender_name })}
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                  />
-                                </svg>
-                              </button>
+                                ) : null}
+                              </div>
                             )}
-                            {/* Star message */}
-                            {(() => {
-                              const starId = msgStarId(msg);
-                              const isStarred = starredIdSet.has(starId);
-                              return (
+                          </div>
+
+                          {/* Inline reaction trigger — visible on hover or focus-within */}
+                          <div className="flex shrink-0 gap-0.5 opacity-0 transition-all group-focus-within/msg:opacity-100 group-hover/msg:opacity-100">
+                            {/* Copy — always available */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void writeClipboardText(msg.payload).catch((err: unknown) => {
+                                  console.warn('Failed to copy message:', errLikeToLogString(err));
+                                });
+                              }}
+                              className="rounded p-1 text-xs text-gray-600 hover:text-green-400"
+                              aria-label={t('chatPanel.copyMessage')}
+                              title={t('chatPanel.copyMessage')}
+                            >
+                              <svg
+                                className="h-3.5 w-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                aria-hidden="true"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                              </svg>
+                            </button>
+                            {isConnected && (
+                              <>
                                 <button
                                   onClick={() => {
-                                    toggleStar(msg);
+                                    setReplyTo(msg);
+                                    composerInputRef.current?.focus();
                                   }}
-                                  className={`rounded p-1 text-xs transition-colors ${
-                                    isStarred
-                                      ? 'text-amber-400 hover:text-amber-200'
-                                      : 'text-gray-600 hover:text-amber-400'
-                                  }`}
-                                  aria-label={
-                                    isStarred
-                                      ? t('chatPanel.unstarMessage')
-                                      : t('chatPanel.starMessage')
-                                  }
-                                  title={
-                                    isStarred
-                                      ? t('chatPanel.unstarMessage')
-                                      : t('chatPanel.starMessage')
-                                  }
+                                  className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
+                                  aria-label={t('chatPanel.replyToMessage')}
+                                  title={t('chatPanel.replyButton')}
                                 >
                                   <svg
                                     className="h-3.5 w-3.5"
-                                    fill={isStarred ? 'currentColor' : 'none'}
+                                    fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
                                     strokeWidth={2}
@@ -2190,69 +2124,169 @@ function ChatPanel({
                                     <path
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
-                                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                      d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
                                     />
                                   </svg>
                                 </button>
+                                {/* React */}
+                                <button
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    if (!isLinux) reactionHiddenInputRef.current?.focus();
+                                  }}
+                                  onClick={() => {
+                                    const id = msg.packetId ?? msg.timestamp;
+                                    reactionPickerTarget.current = { id, channel: msg.channel };
+                                    if (isLinux) {
+                                      setPickerOpenFor(showPicker ? null : id);
+                                    } else {
+                                      void window.electronAPI.showEmojiPanel();
+                                    }
+                                  }}
+                                  className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
+                                  aria-label={t('chatPanel.addReaction')}
+                                  title={t('chatPanel.reactButton')}
+                                >
+                                  <svg
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                </button>
+                                {/* Quick DM */}
+                                {!isOwn && (
+                                  <button
+                                    onClick={() => {
+                                      openDmTo(msg.sender_id);
+                                    }}
+                                    className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
+                                    title={t('chatPanel.directMessage', { name: msg.sender_name })}
+                                  >
+                                    <svg
+                                      className="h-3.5 w-3.5"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={2}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                                {/* Star message */}
+                                {(() => {
+                                  const starId = msgStarId(msg);
+                                  const isStarred = starredIdSet.has(starId);
+                                  return (
+                                    <button
+                                      onClick={() => {
+                                        toggleStar(msg);
+                                      }}
+                                      className={`rounded p-1 text-xs transition-colors ${
+                                        isStarred
+                                          ? 'text-amber-400 hover:text-amber-200'
+                                          : 'text-gray-600 hover:text-amber-400'
+                                      }`}
+                                      aria-label={
+                                        isStarred
+                                          ? t('chatPanel.unstarMessage')
+                                          : t('chatPanel.starMessage')
+                                      }
+                                      title={
+                                        isStarred
+                                          ? t('chatPanel.unstarMessage')
+                                          : t('chatPanel.starMessage')
+                                      }
+                                    >
+                                      <svg
+                                        className="h-3.5 w-3.5"
+                                        fill={isStarred ? 'currentColor' : 'none'}
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                        />
+                                      </svg>
+                                    </button>
+                                  );
+                                })()}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Reaction picker — Linux: emoji-picker-element; macOS/Windows: showEmojiPanel() */}
+                        {showPicker && isLinux && (
+                          <div
+                            className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
+                          >
+                            <emoji-picker ref={reactionPickerRef} style={{ width: '320px' }} />
+                          </div>
+                        )}
+
+                        {/* Reaction badges */}
+                        {reactionRows.length > 0 && (
+                          <div
+                            className={`mt-0.5 flex max-w-full flex-row flex-wrap gap-1 ${
+                              isOwn ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            {reactionRows.map((r, rIdx) => {
+                              const hideReactorLabel = !isOwn && isOwnNode(r.sender_id);
+                              const reactorLabel =
+                                nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
+                              const emojiChar = reactionDisplayGlyph(r.emoji, r.payload);
+                              const reactionName = emojiDisplayLabel(r.emoji, r.payload);
+                              const titleText = hideReactorLabel
+                                ? `${reactionName} (you)`
+                                : `${reactorLabel}: ${reactionName}`;
+                              const ariaLabel = hideReactorLabel
+                                ? `Your reaction: ${reactionName}`
+                                : `${reactorLabel} reacted with ${reactionName}`;
+                              return (
+                                <span
+                                  key={
+                                    r.id != null
+                                      ? `r-${r.id}`
+                                      : `r-${r.sender_id}-${r.emoji}-${rIdx}`
+                                  }
+                                  className="bg-secondary-dark/80 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-gray-600/50 px-1.5 py-0.5 text-xs"
+                                  title={titleText}
+                                  aria-label={ariaLabel}
+                                >
+                                  {!hideReactorLabel && (
+                                    <span className="max-w-[5.5rem] truncate text-[10px] text-gray-400">
+                                      {reactorLabel}
+                                    </span>
+                                  )}
+                                  <span className="shrink-0">{emojiChar}</span>
+                                </span>
                               );
-                            })()}
-                          </>
+                            })}
+                          </div>
                         )}
                       </div>
                     </div>
-
-                    {/* Reaction picker — Linux: emoji-picker-element; macOS/Windows: showEmojiPanel() */}
-                    {showPicker && isLinux && (
-                      <div
-                        className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
-                      >
-                        <emoji-picker ref={reactionPickerRef} style={{ width: '320px' }} />
-                      </div>
-                    )}
-
-                    {/* Reaction badges */}
-                    {reactionRows.length > 0 && (
-                      <div
-                        className={`mt-0.5 flex max-w-full flex-row flex-wrap gap-1 ${
-                          isOwn ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        {reactionRows.map((r, rIdx) => {
-                          const hideReactorLabel = !isOwn && isOwnNode(r.sender_id);
-                          const reactorLabel =
-                            nodeDisplayName(nodes.get(r.sender_id), protocol) || r.sender_name;
-                          const emojiChar = reactionDisplayGlyph(r.emoji, r.payload);
-                          const reactionName = emojiDisplayLabel(r.emoji, r.payload);
-                          const titleText = hideReactorLabel
-                            ? `${reactionName} (you)`
-                            : `${reactorLabel}: ${reactionName}`;
-                          const ariaLabel = hideReactorLabel
-                            ? `Your reaction: ${reactionName}`
-                            : `${reactorLabel} reacted with ${reactionName}`;
-                          return (
-                            <span
-                              key={
-                                r.id != null ? `r-${r.id}` : `r-${r.sender_id}-${r.emoji}-${rIdx}`
-                              }
-                              className="bg-secondary-dark/80 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-gray-600/50 px-1.5 py-0.5 text-xs"
-                              title={titleText}
-                              aria-label={ariaLabel}
-                            >
-                              {!hideReactorLabel && (
-                                <span className="max-w-[5.5rem] truncate text-[10px] text-gray-400">
-                                  {reactorLabel}
-                                </span>
-                              )}
-                              <span className="shrink-0">{emojiChar}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
           {viewOutboxRows.map((row) => (
             <OutboxBubble key={row.id} row={row} onRetry={retryOutbox} onCancel={cancelOutbox} />
