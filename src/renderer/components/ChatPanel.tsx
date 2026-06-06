@@ -210,7 +210,7 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   );
   const mqttIcon = (
     <svg
-      className="h-3 w-3 text-purple-400"
+      className="h-3 w-3 text-sky-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

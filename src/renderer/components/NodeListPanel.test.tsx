@@ -314,7 +314,7 @@ describe('NodeListPanel import contacts', () => {
     const nodes = new Map<number, MeshNode>([
       [1, makeNode({ node_id: 1, long_name: 'Me', heard_via_mqtt_only: false })],
     ]);
-    const { container } = render(
+    render(
       <NodeListPanel
         nodes={nodes}
         myNodeNum={1}
@@ -327,7 +327,36 @@ describe('NodeListPanel import contacts', () => {
     );
     expect(screen.queryByLabelText('Connected via RF and MQTT')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL)).not.toBeInTheDocument();
-    expect(container.querySelector('[title="Connected via MQTT"]')).toBeInTheDocument();
+    expect(screen.getByLabelText('Connected via MQTT')).toBeInTheDocument();
+  });
+
+  it('shows sky MQTT-only path icon centered for heard_via_mqtt_only nodes', () => {
+    const nodes = new Map<number, MeshNode>([
+      [
+        4,
+        makeNode({
+          node_id: 4,
+          long_name: 'MqttOnlyPeer',
+          heard_via_mqtt_only: true,
+          heard_via_mqtt: true,
+        }),
+      ],
+    ]);
+    const { container } = render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={99}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    const badge = screen.getByLabelText('Heard only via MQTT');
+    expect(badge).toBeInTheDocument();
+    expect(badge.querySelector('svg.text-sky-400')).toBeInTheDocument();
+    expect(badge.querySelector(':scope > span[aria-hidden="true"]')).not.toBeInTheDocument();
+    expect(container.querySelector('svg.text-purple-400')).not.toBeInTheDocument();
   });
 
   it('shows dash in MQTT column for self node with RF only', () => {

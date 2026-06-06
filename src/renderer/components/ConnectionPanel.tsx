@@ -31,6 +31,7 @@ import {
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
+import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
   formatChannelPskInput,
@@ -38,11 +39,14 @@ import {
   validateChannelPskEntries,
 } from '../lib/meshtasticChannelPskInput';
 import {
+  MESHTASTIC_MQTT_SETTINGS_KEY,
+  readMeshtasticMqttSettingsFromStorage,
+} from '../lib/meshtasticMqttSettingsStorage';
+import {
   isLiamBrokerSettings,
   isMeshtasticOfficialBrokerSettings,
   MESHTASTIC_LIAM_1883,
   MESHTASTIC_OFFICIAL_1883,
-  MESHTASTIC_OFFICIAL_PRESET_DEFAULTS,
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -462,20 +466,6 @@ function Spinner({ className = '' }: { className?: string }) {
   );
 }
 
-const MQTT_DEFAULTS: MQTTSettings = { ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS };
-
-const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
-  server: '',
-  port: 1883,
-  username: '',
-  password: '',
-  topicPrefix: 'meshcore',
-  autoLaunch: false,
-  maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
-  meshcorePacketLoggerEnabled: false,
-  tokenExpiresAt: undefined,
-};
-
 function migrateMqttSettingsOnce(): void {
   if (localStorage.getItem('mesh-client:mqttSettings:meshcore') !== null) return;
   const raw = localStorage.getItem('mesh-client:mqttSettings');
@@ -507,29 +497,32 @@ function migrateMeshcoreTopicIataOnce(): void {
 }
 migrateMeshcoreTopicIataOnce();
 
+const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
+
+function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings): void {
+  const serialized = JSON.stringify(settings);
+  if (localStorage.getItem(key) === serialized) return;
+  localStorage.setItem(key, serialized);
+}
+
+function flushPendingMqttSave(
+  timerRef: { current: ReturnType<typeof setTimeout> | null },
+  key: string,
+  settings: MQTTSettings,
+): void {
+  if (timerRef.current) {
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }
+  persistMqttSettingsIfChanged(key, settings);
+}
+
 function loadMqttSettings(): MQTTSettings {
-  const raw = localStorage.getItem('mesh-client:mqttSettings');
-  const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'ConnectionPanel loadMqttSettings');
-  const merged = parsed ? { ...MQTT_DEFAULTS, ...parsed } : MQTT_DEFAULTS;
-  const r = merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS;
-  return {
-    ...merged,
-    maxRetries: Math.min(MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
-  };
+  return readMeshtasticMqttSettingsFromStorage();
 }
 
 function loadMeshcoreMqttSettings(): MQTTSettings {
-  const raw = localStorage.getItem('mesh-client:mqttSettings:meshcore');
-  const parsed = parseStoredJson<Partial<MQTTSettings>>(
-    raw,
-    'ConnectionPanel loadMeshcoreMqttSettings',
-  );
-  const merged = parsed ? { ...MESHCORE_MQTT_DEFAULTS, ...parsed } : MESHCORE_MQTT_DEFAULTS;
-  const r = merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS;
-  return {
-    ...merged,
-    maxRetries: Math.min(MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
-  };
+  return readMeshcoreMqttSettingsFromStorage();
 }
 
 function MqttGlobeIcon({ status }: { status: MQTTStatus }) {
@@ -645,6 +638,10 @@ export default function ConnectionPanel({
   );
   const mqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const meshcoreMqttSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mqttSettingsRef = useRef(mqttSettings);
+  mqttSettingsRef.current = mqttSettings;
+  const meshcoreMqttSettingsRef = useRef(meshcoreMqttSettings);
+  meshcoreMqttSettingsRef.current = meshcoreMqttSettings;
   const [meshcorePreset, setMeshcorePreset] = useState<
     'letsmesh' | 'coloradomesh' | 'meshmapper' | 'ripple' | 'custom'
   >(() => {
@@ -672,12 +669,27 @@ export default function ConnectionPanel({
   useEffect(() => {
     if (mqttSaveTimerRef.current) clearTimeout(mqttSaveTimerRef.current);
     mqttSaveTimerRef.current = setTimeout(() => {
-      localStorage.setItem('mesh-client:mqttSettings', JSON.stringify(mqttSettings));
+      persistMqttSettingsIfChanged(MESHTASTIC_MQTT_SETTINGS_KEY, mqttSettingsRef.current);
+      mqttSaveTimerRef.current = null;
     }, 300);
     return () => {
-      if (mqttSaveTimerRef.current) clearTimeout(mqttSaveTimerRef.current);
+      if (mqttSaveTimerRef.current) {
+        clearTimeout(mqttSaveTimerRef.current);
+        mqttSaveTimerRef.current = null;
+      }
     };
   }, [mqttSettings]);
+
+  useEffect(() => {
+    const flushMeshtasticMqtt = () => {
+      flushPendingMqttSave(mqttSaveTimerRef, MESHTASTIC_MQTT_SETTINGS_KEY, mqttSettingsRef.current);
+    };
+    window.addEventListener('beforeunload', flushMeshtasticMqtt);
+    return () => {
+      window.removeEventListener('beforeunload', flushMeshtasticMqtt);
+      flushPendingMqttSave(mqttSaveTimerRef, MESHTASTIC_MQTT_SETTINGS_KEY, mqttSettingsRef.current);
+    };
+  }, []);
 
   // Persist MeshCore preset selection
   useEffect(() => {
@@ -688,15 +700,35 @@ export default function ConnectionPanel({
   useEffect(() => {
     if (meshcoreMqttSaveTimerRef.current) clearTimeout(meshcoreMqttSaveTimerRef.current);
     meshcoreMqttSaveTimerRef.current = setTimeout(() => {
-      localStorage.setItem(
-        'mesh-client:mqttSettings:meshcore',
-        JSON.stringify(meshcoreMqttSettings),
-      );
+      persistMqttSettingsIfChanged(MESHCORE_MQTT_SETTINGS_KEY, meshcoreMqttSettingsRef.current);
+      meshcoreMqttSaveTimerRef.current = null;
     }, 300);
     return () => {
-      if (meshcoreMqttSaveTimerRef.current) clearTimeout(meshcoreMqttSaveTimerRef.current);
+      if (meshcoreMqttSaveTimerRef.current) {
+        clearTimeout(meshcoreMqttSaveTimerRef.current);
+        meshcoreMqttSaveTimerRef.current = null;
+      }
     };
   }, [meshcoreMqttSettings]);
+
+  useEffect(() => {
+    const flushMeshcoreMqtt = () => {
+      flushPendingMqttSave(
+        meshcoreMqttSaveTimerRef,
+        MESHCORE_MQTT_SETTINGS_KEY,
+        meshcoreMqttSettingsRef.current,
+      );
+    };
+    window.addEventListener('beforeunload', flushMeshcoreMqtt);
+    return () => {
+      window.removeEventListener('beforeunload', flushMeshcoreMqtt);
+      flushPendingMqttSave(
+        meshcoreMqttSaveTimerRef,
+        MESHCORE_MQTT_SETTINGS_KEY,
+        meshcoreMqttSettingsRef.current,
+      );
+    };
+  }, []);
 
   // Listen for MQTT events from main process (dual-mode: only errors for the active protocol)
   useEffect(() => {
@@ -773,7 +805,16 @@ export default function ConnectionPanel({
         setMeshtasticPreset('custom');
       }
     }
-    setActiveMqttSettings((prev) => ({ ...prev, [key]: value }));
+    setActiveMqttSettings((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'autoLaunch') {
+        persistMqttSettingsIfChanged(
+          protocol === 'meshcore' ? MESHCORE_MQTT_SETTINGS_KEY : MESHTASTIC_MQTT_SETTINGS_KEY,
+          next,
+        );
+      }
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -2085,11 +2126,13 @@ export default function ConnectionPanel({
                         setMqttSettings({
                           ...MESHTASTIC_OFFICIAL_1883,
                           topicPrefix: mqttSettings.topicPrefix,
+                          autoLaunch: mqttSettings.autoLaunch,
                         });
                       } else if (id === 'liam') {
                         setMqttSettings({
                           ...MESHTASTIC_LIAM_1883,
                           topicPrefix: mqttSettings.topicPrefix,
+                          autoLaunch: mqttSettings.autoLaunch,
                         });
                       }
                     }}

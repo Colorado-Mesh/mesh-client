@@ -29,7 +29,7 @@ import {
 } from '../lib/meshtasticContactGroupUtils';
 import {
   MeshtasticHybridPathIcons,
-  MeshtasticMqttPathIcon,
+  MeshtasticMqttOnlyPathIcons,
   resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
 import { nodeHealthScore, nodeHealthTier } from '../lib/nodeHealthScore';
@@ -1329,45 +1329,45 @@ export default function NodeListPanel({
                       )}
                     </td>
                     {mode !== 'meshcore' && (
-                      <td className="px-3 py-2 text-center text-xs text-gray-300">
-                        {(() => {
-                          const pathBadge = resolveMeshtasticPathBadge({
-                            node,
-                            isSelf,
-                            mqttConnected,
-                            radioConnected,
-                          });
-                          if (pathBadge === 'mqttOnly') {
-                            const title = node.heard_via_mqtt_only
-                              ? t('nodeListPanel.mqttHeardOnlyTooltip')
-                              : isSelf
-                                ? t('nodeListPanel.mqttConnectedTooltip')
-                                : t('nodeListPanel.mqttHeardOnlyTooltip');
-                            return (
-                              <span title={title}>
-                                <MeshtasticMqttPathIcon />
-                              </span>
-                            );
-                          }
-                          if (pathBadge === 'hybrid') {
-                            const isSelfHybrid = isSelf && mqttConnected && radioConnected;
-                            return (
-                              <MeshtasticHybridPathIcons
-                                title={
-                                  isSelfHybrid
-                                    ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-                                    : t('nodeListPanel.hybridMqttPathTooltip')
-                                }
-                                ariaLabel={
-                                  isSelfHybrid
-                                    ? t('nodeListPanel.connectedViaRfAndMqttAria')
-                                    : t('nodeListPanel.hybridMqttPathAria')
-                                }
-                              />
-                            );
-                          }
-                          return '-';
-                        })()}
+                      <td className="px-3 py-2 text-xs text-gray-300">
+                        <div className="flex justify-center">
+                          {(() => {
+                            const pathBadge = resolveMeshtasticPathBadge({
+                              node,
+                              isSelf,
+                              mqttConnected,
+                              radioConnected,
+                            });
+                            if (pathBadge === 'mqttOnly') {
+                              const title = node.heard_via_mqtt_only
+                                ? t('nodeListPanel.mqttHeardOnlyTooltip')
+                                : isSelf
+                                  ? t('nodeListPanel.mqttConnectedTooltip')
+                                  : t('nodeListPanel.mqttHeardOnlyTooltip');
+                              return (
+                                <MeshtasticMqttOnlyPathIcons title={title} ariaLabel={title} />
+                              );
+                            }
+                            if (pathBadge === 'hybrid') {
+                              const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+                              return (
+                                <MeshtasticHybridPathIcons
+                                  title={
+                                    isSelfHybrid
+                                      ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
+                                      : t('nodeListPanel.hybridMqttPathTooltip')
+                                  }
+                                  ariaLabel={
+                                    isSelfHybrid
+                                      ? t('nodeListPanel.connectedViaRfAndMqttAria')
+                                      : t('nodeListPanel.hybridMqttPathAria')
+                                  }
+                                />
+                              );
+                            }
+                            return '-';
+                          })()}
+                        </div>
                       </td>
                     )}
                     {(() => {

@@ -1,3 +1,4 @@
+import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
 import type { MeshProtocol } from './types';
 
 /**
@@ -14,9 +15,10 @@ export function shouldIngestMeshtasticMqttLive(
   return storedProtocol === 'meshtastic' || hasRfDevice;
 }
 
-/** Auto-launch Meshtastic MQTT on startup only when Meshtastic is the last active tab. */
+/** Auto-launch Meshtastic MQTT when Meshtastic is the stored tab or auto-connect is enabled. */
 export function shouldAutoLaunchMeshtasticMqtt(storedProtocol: MeshProtocol): boolean {
-  return storedProtocol === 'meshtastic';
+  if (storedProtocol === 'meshtastic') return true;
+  return readMeshtasticMqttSettingsFromStorage().autoLaunch;
 }
 
 /** When false, Meshtastic MQTT should not stay connected (MeshCore tab, no RF radio). */
@@ -24,5 +26,6 @@ export function shouldMaintainMeshtasticMqttConnection(
   storedProtocol: MeshProtocol,
   hasRfDevice: boolean,
 ): boolean {
+  if (readMeshtasticMqttSettingsFromStorage().autoLaunch) return true;
   return shouldIngestMeshtasticMqttLive(storedProtocol, hasRfDevice);
 }
