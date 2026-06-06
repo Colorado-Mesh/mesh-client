@@ -6,7 +6,8 @@ import { attachMeshtasticTransportLossWatch } from './meshtasticTransportLossDet
 
 /**
  * Transport-level side effects not yet modeled as `DomainEvent`s (Noble disconnect,
- * serial/BLE heartbeat). Pushed onto the hook unsubscribe list by `useMeshtasticRuntime` wire subscriptions.
+ * serialized toDevice for serial/BLE, heartbeat). Pushed onto the hook unsubscribe
+ * list by `useMeshtasticRuntime` wire subscriptions.
  */
 export function pushMeshtasticTransportSideEffectUnsubs(
   device: MeshDevice,
@@ -24,11 +25,8 @@ export function pushMeshtasticTransportSideEffectUnsubs(
     );
   }
 
-  if (type === 'serial') {
-    push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
-  }
-
   if (type === 'serial' || type === 'ble') {
+    push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
     try {
       device.setHeartbeatInterval(60_000);
     } catch (e) {
