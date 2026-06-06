@@ -20,4 +20,11 @@ describe('meshcoreContactsBatchLimit', () => {
     expect(meshcoreContactsBatchSliceCount(1000)).toBe(2);
     expect(meshcoreContactsBatchSliceCount(1001)).toBe(3);
   });
+
+  it('meshcoreContactsBatchSliceCount returns 0 for invalid totals', () => {
+    expect(meshcoreContactsBatchSliceCount(-1)).toBe(0);
+    expect(meshcoreContactsBatchSliceCount(NaN)).toBe(0);
+    expect(meshcoreContactsBatchSliceCount(Infinity)).toBe(0);
+    expect(meshcoreContactsBatchSliceCount(1.5)).toBe(0);
+  });
 });

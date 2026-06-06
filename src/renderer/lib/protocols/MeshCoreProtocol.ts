@@ -16,7 +16,11 @@ import {
   meshcoreRoomMessageId,
   meshcoreRoomWireLooksLikeRoom,
 } from '../meshcoreRoomMessageRouting';
-import { isMeshcoreTransportStatusChatLine, pubkeyToNodeId } from '../meshcoreUtils';
+import {
+  isMeshcoreTransportStatusChatLine,
+  pubKeyPrefixHex,
+  pubkeyToNodeId,
+} from '../meshcoreUtils';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
@@ -220,6 +224,9 @@ export class MeshCoreProtocol implements Protocol {
       bus.off(EVENT_PATH_UPDATED, onPathUpdated);
       bus.off(EVENT_RX, onRx);
       bus.off(EVENT_DISCONNECTED, onDisconnected);
+      pubKeyByNodeId.clear();
+      nodeIdByPrefix.clear();
+      roomNodeIds.clear();
     };
   }
 
@@ -261,7 +268,9 @@ export class MeshCoreProtocol implements Protocol {
     const conn = handle as Connection;
     if (opts.destination != null) {
       if (!opts.destinationPubKey) {
-        throw new Error('MeshCore sendMessage requires destinationPubKey for DM');
+        throw new Error(
+          'MeshCore direct messages require destinationPubKey to be provided in SendMessageOptions.',
+        );
       }
       const result = await conn.sendTextMessage(opts.destinationPubKey, opts.text);
       const ackCrc = result?.expectedAckCrc;
@@ -483,9 +492,7 @@ export class MeshCoreProtocol implements Protocol {
     if (nodeId === 0) return [];
 
     pubKeyByNodeId.set(nodeId, d.publicKey);
-    const prefix = Array.from(d.publicKey.slice(0, 6))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
+    const prefix = pubKeyPrefixHex(d.publicKey);
     nodeIdByPrefix.set(prefix, nodeId);
 
     const events: DomainEvent[] = [
@@ -542,9 +549,7 @@ export class MeshCoreProtocol implements Protocol {
     if (isMeshcoreTransportStatusChatLine(d.text)) {
       return this.decodeTransportStatusChatLine(d.text);
     }
-    const prefix = Array.from(d.pubKeyPrefix)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
+    const prefix = pubKeyPrefixHex(d.pubKeyPrefix);
     let senderId = nodeIdByPrefix.get(prefix) ?? 0;
     if (senderId === 0) {
       senderId = resolveMeshcoreNodeIdFromPubKeyPrefix(prefix) ?? 0;

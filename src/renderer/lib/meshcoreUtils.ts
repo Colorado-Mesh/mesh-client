@@ -174,6 +174,13 @@ export function minimalMeshcoreChatNode(
   };
 }
 
+/** First 6 bytes of a MeshCore pubkey (or prefix field) as lowercase hex. */
+export function pubKeyPrefixHex(publicKey: Uint8Array): string {
+  return Array.from(publicKey.slice(0, 6))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 /**
  * XOR-fold pubkey bytes into a stable unsigned 32-bit node ID.
  * Expects a 32-byte MeshCore public key; returns 0 for any other length.
