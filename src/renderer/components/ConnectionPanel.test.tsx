@@ -806,6 +806,33 @@ describe('ConnectionPanel MeshCore TCP port field', () => {
   });
 });
 
+describe('ConnectionPanel Meshtastic MQTT autoLaunch persistence', () => {
+  function renderMeshtasticMqttPanel() {
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+  }
+
+  it('persists autoLaunch immediately when toggled', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:mqttSettings', JSON.stringify({ autoLaunch: false }));
+    renderMeshtasticMqttPanel();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auto-connect on application start' }));
+
+    expect(JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}').autoLaunch).toBe(
+      true,
+    );
+  });
+});
+
 describe('ConnectionPanel MQTT channel PSKs', () => {
   const KEY_A = '1PG7OiApB1nwvP+rz05pAQ==';
   const KEY_B = 'AAAAAAAAAAAAAAAAAAAAAA==';

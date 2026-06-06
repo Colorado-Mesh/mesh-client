@@ -3,11 +3,28 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   loadMeshtasticMqttManualChannelPsksFromStorage,
   MESHTASTIC_MQTT_SETTINGS_KEY,
+  readMeshtasticMqttSettingsFromStorage,
 } from './meshtasticMqttSettingsStorage';
 
 const MESHCORE_KEY = 'mesh-client:mqttSettings:meshcore';
 const RECOVERY_FLAG = 'mesh-client:migrated:meshtastic-psk-recovery-v1';
 const KEY_B = 'AAAAAAAAAAAAAAAAAAAAAA==';
+
+describe('readMeshtasticMqttSettingsFromStorage', () => {
+  afterEach(() => {
+    localStorage.removeItem(MESHTASTIC_MQTT_SETTINGS_KEY);
+  });
+
+  it('returns defaults when storage is empty', () => {
+    expect(readMeshtasticMqttSettingsFromStorage().autoLaunch).toBe(false);
+    expect(readMeshtasticMqttSettingsFromStorage().server).toBe('mqtt.meshtastic.org');
+  });
+
+  it('reads autoLaunch from storage', () => {
+    localStorage.setItem(MESHTASTIC_MQTT_SETTINGS_KEY, JSON.stringify({ autoLaunch: true }));
+    expect(readMeshtasticMqttSettingsFromStorage().autoLaunch).toBe(true);
+  });
+});
 
 describe('loadMeshtasticMqttManualChannelPsksFromStorage', () => {
   afterEach(() => {
@@ -45,8 +62,10 @@ describe('loadMeshtasticMqttManualChannelPsksFromStorage', () => {
 
     const recovered = JSON.parse(localStorage.getItem(MESHTASTIC_MQTT_SETTINGS_KEY) ?? '{}') as {
       channelPsks?: string[];
+      autoLaunch?: boolean;
     };
     expect(recovered.channelPsks).toEqual([`LongFast@0=${KEY_B}`, `TGIFMESH@1=${KEY_B}`]);
+    expect(recovered.autoLaunch).toBe(false);
     expect(localStorage.getItem(RECOVERY_FLAG)).toBe('1');
   });
 
