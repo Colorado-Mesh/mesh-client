@@ -559,6 +559,44 @@ describe('tryDecryptAllKeys', () => {
     expect(result!.portnum).toBe(PortNum.POSITION_APP);
   });
 
+  it('skips DEFAULT_PSK protobuf false positives and uses the next matching key', () => {
+    const fromId = 0x88d3b8b0;
+    const publishKey = Buffer.alloc(32, 0xab);
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('echo test'),
+      }),
+    );
+
+    let falsePositivePacketId: number | undefined;
+    for (let attempt = 0; attempt < 20_000; attempt++) {
+      const packetId = attempt + 1;
+      const encrypted = encrypt(dataBytes, packetId, fromId, publishKey);
+      const wrongNonce = makeNonce(packetId, fromId);
+      const wrongCipher = createCipheriv(cipherForKey(DEFAULT_PSK), DEFAULT_PSK, wrongNonce);
+      const wrongRaw = Buffer.concat([wrongCipher.update(encrypted), wrongCipher.final()]);
+      try {
+        const candidate = fromBinary(DataSchema, wrongRaw);
+        if (candidate.portnum === PortNum.UNKNOWN_APP) {
+          falsePositivePacketId = packetId;
+          break;
+        }
+      } catch {
+        // keep searching
+      }
+    }
+    expect(falsePositivePacketId).toBeDefined();
+
+    (manager as any).allDecryptKeys = [DEFAULT_PSK, publishKey];
+    const encrypted = encrypt(dataBytes, falsePositivePacketId!, fromId, publishKey);
+    const result = (manager as any).tryDecryptAllKeys(encrypted, falsePositivePacketId, fromId);
+    expect(result).not.toBeNull();
+    expect(result!.portnum).toBe(PortNum.TEXT_MESSAGE_APP);
+    expect(new TextDecoder().decode(result!.payload)).toBe('echo test');
+  });
+
   it('does not log when all keys fail and topic is provided', () => {
     const dataBytes = toBinary(
       DataSchema,
@@ -1400,9 +1438,8 @@ describe('publish — decrypt round-trip (explicit PSK)', () => {
 
     expect(publish).toHaveBeenCalledTimes(1);
     const protoPayload = publish.mock.calls[0][1] as Buffer;
-    const envelope = fromBinary(ServiceEnvelopeSchema, protoPayload);
-    const packetId = envelope.packet?.id ?? 0;
-    (manager as any).seenPacketIds.delete(packetId);
+    // Publish registers the packet id for dedup; clear so broker echo is processed.
+    (manager as any).seenPacketIds.clear();
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));

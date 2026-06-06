@@ -1942,6 +1942,111 @@ export class MQTTManager extends EventEmitter {
   }
 
   /**
+   * Wrong AES-CTR keys often yield bytes that still parse as DataSchema (especially UNKNOWN_APP).
+   * Reject those candidates so tryDecryptAllKeys keeps searching for a key whose nested payload
+   * matches the port (same bar as handleDecoded before emitting chat/node updates).
+   */
+  private acceptsDecryptedDataCandidate(data: {
+    portnum?: (typeof PortNum)[keyof typeof PortNum];
+    payload?: Uint8Array;
+    emoji?: number;
+  }): boolean {
+    const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
+    const payload = data.payload;
+
+    if (portnum === PortNum.UNKNOWN_APP) {
+      return false;
+    }
+
+    if (portnum === PortNum.TEXT_MESSAGE_APP) {
+      if (data.emoji === MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG) return true;
+      if (!payload?.length && !data.emoji) return false;
+      return resolveMeshtasticTextMessagePayload(payload ?? new Uint8Array()) !== null;
+    }
+
+    if (portnum === PortNum.NODEINFO_APP) {
+      try {
+        fromBinary(UserSchema, payload ?? new Uint8Array());
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields DataSchema shell with invalid User payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.POSITION_APP) {
+      try {
+        fromBinary(PositionSchema, payload ?? new Uint8Array());
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields DataSchema shell with invalid Position payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.TELEMETRY_APP) {
+      if (!payload?.length) return false;
+      try {
+        fromBinary(TelemetrySchema as Parameters<typeof fromBinary>[0], payload);
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields invalid Telemetry nested payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.PAXCOUNTER_APP) {
+      if (!payload?.length) return false;
+      try {
+        fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload);
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields invalid PaxCount nested payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.TRACEROUTE_APP) {
+      if (!payload?.length) return false;
+      try {
+        fromBinary(RouteDiscoverySchema, payload);
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields invalid RouteDiscovery nested payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.MAP_REPORT_APP) {
+      if (!payload?.length) return false;
+      try {
+        fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload);
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields invalid MapReport nested payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.ROUTING_APP) {
+      if (!payload?.length) return false;
+      try {
+        fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload);
+        return true;
+      } catch {
+        // catch-no-log-ok wrong PSK yields invalid Routing nested payload — try next key
+        return false;
+      }
+    }
+
+    if (portnum === PortNum.DETECTION_SENSOR_APP) {
+      return Boolean(payload?.length && isLikelyReadableChatText(payload));
+    }
+
+    return Boolean(payload?.length);
+  }
+
+  /**
    * Try decrypting with all known PSKs (default, named channels, manual extras).
    * Validates each decryption attempt by parsing the result as a DataSchema protobuf.
    * Returns the decoded Data message if any key succeeds, null if all fail.
@@ -1961,7 +2066,10 @@ export class MQTTManager extends EventEmitter {
       const raw = this.tryDecryptWithKey(encrypted, packetId, from, key);
       if (!raw) continue;
       try {
-        return fromBinary(DataSchema, raw);
+        const data = fromBinary(DataSchema, raw);
+        if (this.acceptsDecryptedDataCandidate(data)) {
+          return data;
+        }
       } catch {
         // catch-no-log-ok wrong PSK produces garbage bytes that fail protobuf decode — try next key
       }
