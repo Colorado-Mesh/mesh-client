@@ -1,3 +1,18 @@
+# Delay updates by 6 hours (malware is usually caught within 6 hours and dependabot is on a 6 hour delay)
+minimumReleaseAge: 540
+minimumReleaseAgeExclude:
+  - lodash
+  - lodash-es
+
+# Electron breaks without this
+nodeLinker: hoisted
+
+# Verify that the package downloaded matches the registry's hash exactly
+verifyStoreIntegrity: true
+
+# Enforce pnpm
+engineStrict: true
+
 allowBuilds:
   '@meshtastic/core': true
   '@meshtastic/transport-http': true
