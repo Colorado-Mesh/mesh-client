@@ -4,6 +4,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
+import { Crosshair, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import {
   Fragment,
   memo,
@@ -28,6 +29,7 @@ import {
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import type { ElectronAPI } from '@/shared/electron-api.types';
 
 import type { LocationFilter } from '../App';
@@ -81,6 +83,11 @@ function ensureMapStyles() {
     .anomaly-halo-error {
       animation: anomaly-pulse 1.4s ease-in-out infinite;
       pointer-events: none !important;
+    }
+    html[data-reduce-motion='true'] .anomaly-halo-warning,
+    html[data-reduce-motion='true'] .anomaly-halo-error {
+      animation: none !important;
+      opacity: 0.75 !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
       background: #0f172a;
@@ -502,6 +509,7 @@ function LocateMeControl({
   const [locatedPos, setLocatedPos] = useState<[number, number] | null>(null);
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const locateTrigger = useParentIconTrigger();
 
   const handleLocate = async () => {
     setLoading(true);
@@ -549,26 +557,16 @@ function LocateMeControl({
             title={t('mapPanel.showMyLocation')}
             aria-label={t('mapPanel.showMyLocation')}
             aria-busy={loading}
+            {...{ [PARENT_HOVER_ATTR]: '' }}
             className={`leaflet-bar-part cursor-pointer border-0 bg-white p-0 ${loading ? 'locating' : ''}`}
             onClick={handleLocate}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#374151"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="8" />
-              <line x1="12" y1="2" x2="12" y2="6" />
-              <line x1="12" y1="18" x2="12" y2="22" />
-              <line x1="2" y1="12" x2="6" y2="12" />
-              <line x1="18" y1="12" x2="22" y2="12" />
-            </svg>
+            <Crosshair
+              aria-hidden
+              className="h-4 w-4 text-gray-700"
+              trigger={locateTrigger}
+              size={16}
+            />
           </button>
         </div>
       </div>

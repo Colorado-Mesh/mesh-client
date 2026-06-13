@@ -1,5 +1,9 @@
+import { Globe, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { ICON_MD } from '@/renderer/lib/icons/iconClass';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { mergeAppSetting } from '../lib/appSettingsStorage';
 import i18n from '../lib/i18n';
@@ -10,6 +14,7 @@ export default function LanguageSelector() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const parentTrigger = useParentIconTrigger();
 
   // Reconcile DB locale with current i18n locale on mount
   useEffect(() => {
@@ -61,6 +66,7 @@ export default function LanguageSelector() {
         aria-label={t('aria.languageSelector')}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        {...{ [PARENT_HOVER_ATTR]: '' }}
         onClick={() => {
           setIsOpen((o) => !o);
         }}
@@ -71,17 +77,12 @@ export default function LanguageSelector() {
         }`}
         title={currentLabel}
       >
-        <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9.5" className="fill-cyan-500/15" />
-          <circle cx="12" cy="12" r="10" className="stroke-cyan-300" strokeWidth={1.5} />
-          <path
-            className="stroke-emerald-300"
-            strokeWidth={1.5}
-            d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20M2 12h20"
-          />
-          <path className="stroke-violet-300" strokeWidth={1.5} d="M2 7h20M2 17h20" />
-          <circle cx="18" cy="6" r="1.5" className="fill-amber-300/90" />
-        </svg>
+        <Globe
+          aria-hidden
+          className={`${ICON_MD} text-cyan-300`}
+          trigger={parentTrigger}
+          size={16}
+        />
       </button>
 
       {isOpen && (

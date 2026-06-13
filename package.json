@@ -94,7 +94,9 @@
     "i18next": "^26.3.1",
     "jszip": "^3.10.1",
     "leaflet.markercluster": "^1.5.3",
+    "lucide-react-motion": "^0.4.0",
     "mgrs": "^2.1.0",
+    "motion": "^12.40.0",
     "mqtt": "^5.15.1",
     "node-forge": "^1.4.0",
     "react-i18next": "^17.0.8",
@@ -194,10 +196,10 @@
       "@jsr/meshtastic__core@2.6.6": "patches/@jsr__meshtastic__core@2.6.6.patch",
       "@jsr/meshtastic__transport-web-serial@0.2.5": "patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch",
       "@liamcottle/meshcore.js@1.13.0": "patches/@liamcottle__meshcore.js@1.13.0.patch",
+      "@stoprocent/noble@2.5.3": "patches/@stoprocent__noble@2.5.3.patch",
       "debug@4.4.3": "patches/debug@4.4.3.patch",
       "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch",
-      "usb@2.18.0": "patches/usb@2.18.0.patch",
-      "@stoprocent/noble@2.5.3": "patches/@stoprocent__noble@2.5.3.patch"
+      "usb@2.18.0": "patches/usb@2.18.0.patch"
     },
     "minimumReleaseAgeExclude": [
       "lodash",

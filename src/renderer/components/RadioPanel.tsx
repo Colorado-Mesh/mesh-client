@@ -1,8 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { Lock, LockOpen, TriangleAlert } from 'lucide-react-motion';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
@@ -433,14 +436,7 @@ function ConfigSection({
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{title}</span>
-        <svg
-          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <DetailsChevron />
       </summary>
       <div className="space-y-4 px-4 pb-4">
         {children}
@@ -2361,20 +2357,21 @@ function getSecurityLevel(cfg: ChannelConfig): SecurityLevel {
 
 function SecurityIcon({ level }: { level: SecurityLevel }) {
   const { t } = useTranslation();
+  const trigger = useIconTrigger();
+  const iconProps = {
+    'aria-hidden': true as const,
+    className: 'h-3.5 w-3.5',
+    trigger,
+    size: 14,
+  };
+
   if (level === 'encrypted') {
     return (
       <span
         title={t('radioPanel.aesEncryptedTooltip')}
         className="flex items-center text-green-400"
       >
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          />
-        </svg>
+        <Lock {...iconProps} />
       </span>
     );
   }
@@ -2386,33 +2383,12 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
         : t('radioPanel.securityNoEncryptionTooltip');
   return (
     <span title={tooltip} className="flex items-center gap-0.5 text-yellow-500">
-      <svg
+      <LockOpen
+        {...iconProps}
         className={`h-3.5 w-3.5 ${level !== 'open' ? 'text-red-400' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-        />
-      </svg>
+      />
       {level === 'open-location-uplink' && (
-        <svg
-          className="h-3.5 w-3.5 text-red-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
+        <TriangleAlert {...iconProps} className="h-3.5 w-3.5 text-red-400" />
       )}
     </span>
   );
@@ -2898,14 +2874,7 @@ function ChannelSection({
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{t('radioPanel.channels')}</span>
-        <svg
-          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <DetailsChevron />
       </summary>
       <div className="space-y-3 px-4 pb-4">
         {/* ── Channel List ── */}
@@ -3343,14 +3312,7 @@ function MeshcoreChannelSection({
     <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{t('radioPanel.channelsMeshcore')}</span>
-        <svg
-          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <DetailsChevron />
       </summary>
       <div className="space-y-4 px-4 pb-4">
         {/* ── Channel List ── */}

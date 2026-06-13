@@ -1,8 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
+import { PARENT_HOVER_ATTR, X } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
@@ -164,6 +166,7 @@ export default function NodeDetailModal({
   hasRemoteAdminKey,
 }: NodeDetailModalProps) {
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
 
@@ -607,17 +610,10 @@ export default function NodeDetailModal({
                   ref={closeButtonRef}
                   onClick={onClose}
                   aria-label={t('aria.closeDialog')}
+                  {...{ [PARENT_HOVER_ATTR]: '' }}
                   className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
                 >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
                 </button>
               </div>
               <span

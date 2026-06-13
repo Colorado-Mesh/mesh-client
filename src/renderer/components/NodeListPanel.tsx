@@ -1,6 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity */
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronUp,
+  PARENT_HOVER_ATTR,
+  Settings,
+  TriangleAlert,
+  User,
+} from 'lucide-react-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 import {
@@ -111,37 +122,16 @@ function SortIcon({
   sortField: SortField;
   sortAsc: boolean;
 }) {
+  const trigger = useIconTrigger();
+  const p = { 'aria-hidden': true as const, trigger, size: 12 };
+
   if (sortField !== field) {
-    return (
-      <svg
-        className="ml-1 inline h-3 w-3 text-gray-600"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-        />
-      </svg>
-    );
+    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-gray-600" />;
   }
-  return (
-    <svg
-      className="text-bright-green ml-1 inline h-3 w-3"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d={sortAsc ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
-      />
-    </svg>
+  return sortAsc ? (
+    <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
+  ) : (
+    <ChevronDown {...p} className="text-bright-green ml-1 inline h-3 w-3" />
   );
 }
 
@@ -202,6 +192,8 @@ export default function NodeListPanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
+  const iconTrigger = useIconTrigger();
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(mode);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const basemapId = useMapLayerStore((s) => s.basemapId);
@@ -723,26 +715,10 @@ export default function NodeListPanel({
             onClick={onManageGroups}
             aria-label={t('nodeListPanel.manageContactGroups')}
             title={t('nodeListPanel.manageGroups')}
+            {...{ [PARENT_HOVER_ATTR]: '' }}
             className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
+            <Settings aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
           </button>
         </div>
       )}
@@ -1233,26 +1209,20 @@ export default function NodeListPanel({
                               const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
                               if (!routingRow) return null;
                               return (
-                                <svg
-                                  className={`h-4 w-4 shrink-0 ${
-                                    routingRow.severity === 'error'
-                                      ? 'text-red-400'
-                                      : routingRow.severity === 'info'
-                                        ? 'text-blue-400'
-                                        : 'text-orange-400'
-                                  }`}
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <title>{routingRow.description}</title>
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                <span title={routingRow.description}>
+                                  <TriangleAlert
+                                    aria-hidden
+                                    className={`h-4 w-4 shrink-0 ${
+                                      routingRow.severity === 'error'
+                                        ? 'text-red-400'
+                                        : routingRow.severity === 'info'
+                                          ? 'text-blue-400'
+                                          : 'text-orange-400'
+                                    }`}
+                                    trigger={iconTrigger}
+                                    size={16}
                                   />
-                                </svg>
+                                </span>
                               );
                             })()}
                         </span>
@@ -1284,16 +1254,12 @@ export default function NodeListPanel({
                           </span>
                         ) : node.hw_model === 'Chat' ? (
                           <span className="inline-flex items-center gap-1 text-gray-300">
-                            <svg
+                            <User
+                              aria-hidden
                               className="h-3.5 w-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <circle cx="12" cy="8" r="4" />
-                              <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
-                            </svg>
+                              trigger={iconTrigger}
+                              size={14}
+                            />
                             {meshcoreContactTypeLabel(t, node.hw_model)}
                           </span>
                         ) : (
@@ -1303,16 +1269,12 @@ export default function NodeListPanel({
                         )
                       ) : node.hw_model === 'Chat' ? (
                         <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                          <svg
+                          <User
+                            aria-hidden
                             className="h-3.5 w-3.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <circle cx="12" cy="8" r="4" />
-                            <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
-                          </svg>
+                            trigger={iconTrigger}
+                            size={14}
+                          />
                           {meshcoreContactTypeLabel(t, node.hw_model)}
                         </span>
                       ) : (

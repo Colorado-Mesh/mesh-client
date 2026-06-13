@@ -6,6 +6,7 @@
  * 3. Unread + tray badge sync (`useAppTrayUnreadSync`)
  * 4. Power recovery (`usePowerRecovery` in AppShell)
  */
+import { Crosshair } from 'lucide-react-motion';
 import {
   Suspense,
   useCallback,
@@ -31,6 +32,9 @@ import {
 import { filterRegularChatMessages, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
+import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
+import { ICON_MD } from '@/renderer/lib/icons/iconClass';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
@@ -320,33 +324,19 @@ function DialogLazyFallback() {
 }
 
 function TakStatusIcon({ variant }: { variant: ReturnType<typeof takHeaderVariant> }) {
+  const trigger = useIconTrigger();
   return (
-    <svg
-      aria-hidden="true"
-      className={`h-4 w-4 ${headerIconClass(variant)}`}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-    >
-      <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z" />
-    </svg>
+    <Crosshair
+      aria-hidden
+      className={`${ICON_MD} ${headerIconClass(variant)}`}
+      trigger={trigger}
+      size={16}
+    />
   );
 }
 
-function MqttGlobeIcon({ variant }: { variant: ReturnType<typeof mqttHeaderVariant> }) {
-  return (
-    <svg
-      className={`h-4 w-4 ${headerIconClass(variant)}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20M2 12h20" />
-      <path d="M2 7h20M2 17h20" />
-    </svg>
-  );
+function HeaderMqttGlobeIcon({ variant }: { variant: ReturnType<typeof mqttHeaderVariant> }) {
+  return <MqttGlobeIcon className={`${ICON_MD} ${headerIconClass(variant)}`} />;
 }
 
 /** Header watermark graphic (collapsed sidebar shows mark; expanded hides via CSS). */
@@ -1983,7 +1973,7 @@ function AppContent({
               </div>
             )}
             <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-              <MqttGlobeIcon variant={mqttVariant} />
+              <HeaderMqttGlobeIcon variant={mqttVariant} />
               <span
                 aria-label={
                   activeConnectionView.mqttStatus === 'connected'

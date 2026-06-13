@@ -295,6 +295,14 @@ button.cm-watermark-mesh-tube {
   animation: cm-watermark-mesh-tube-text-flicker-off 1.5s ease-in forwards;
 }
 
+/* App → Appearance → Reduce motion: suppress decorative animation */
+html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-on,
+html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off,
+html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-on .cm-watermark-text,
+html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-watermark-text {
+  animation: none !important;
+}
+
 @keyframes cm-watermark-mesh-tube-text-flicker-on {
   0% {
     color: rgb(95 130 125 / 0.85);

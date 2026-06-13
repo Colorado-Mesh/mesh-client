@@ -1,3 +1,7 @@
+import { Globe, Wifi } from 'lucide-react-motion';
+
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+
 import type { MeshNode } from './types';
 
 /** True when the node is not MQTT-only and either session MQTT or packet via_mqtt applies. */
@@ -40,23 +44,14 @@ export const MESHTASTIC_HYBRID_MQTT_PATH_TITLE =
 export const MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL = 'RF and MQTT path';
 
 export function MeshtasticRfPathIcon({ className }: { className?: string }) {
+  const trigger = useIconTrigger();
   return (
-    <svg
+    <Wifi
+      aria-hidden
       className={className ?? 'h-3 w-3 text-blue-400'}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={true}
-    >
-      <title>RF</title>
-      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-      <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
-    </svg>
+      trigger={trigger}
+      size={12}
+    />
   );
 }
 
@@ -64,22 +59,14 @@ export function MeshtasticRfPathIcon({ className }: { className?: string }) {
 export const MESHTASTIC_MQTT_PATH_ICON_CLASS = 'h-3 w-3 text-sky-400';
 
 export function MeshtasticMqttPathIcon({ className }: { className?: string }) {
+  const trigger = useIconTrigger();
   return (
-    <svg
+    <Globe
+      aria-hidden
       className={className ?? MESHTASTIC_MQTT_PATH_ICON_CLASS}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={true}
-    >
-      <title>MQTT</title>
-      <circle cx="12" cy="12" r="10" />
-      <path d="M2 12h20" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
+      trigger={trigger}
+      size={12}
+    />
   );
 }
 

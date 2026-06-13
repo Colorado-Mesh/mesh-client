@@ -24,14 +24,11 @@ describe('LanguageSelector', () => {
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
   });
 
-  it('renders colorful globe icon accents', () => {
+  it('renders animated globe language icon', () => {
     const { container } = render(<LanguageSelector />);
     const button = screen.getByLabelText(/language/i);
     expect(button).toBeInTheDocument();
-    expect(container.querySelector('.stroke-cyan-300')).toBeInTheDocument();
-    expect(container.querySelector('.stroke-emerald-300')).toBeInTheDocument();
-    expect(container.querySelector('.stroke-violet-300')).toBeInTheDocument();
-    expect(container.querySelector('.fill-amber-300\\/90')).toBeInTheDocument();
+    expect(container.querySelector('svg.text-cyan-300')).toBeInTheDocument();
   });
 
   it('persists locale when selecting a language', async () => {

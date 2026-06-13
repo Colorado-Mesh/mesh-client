@@ -7,6 +7,7 @@ import { I18nextProvider } from 'react-i18next';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import i18n from './lib/i18n';
+import { IconMotionProvider } from './lib/icons/iconMotionContext';
 import { ensureLocaleLoaded } from './lib/localeResources';
 
 if (import.meta.env.DEV) {
@@ -23,7 +24,9 @@ void (async () => {
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>
       <ErrorBoundary>
-        <App />
+        <IconMotionProvider>
+          <App />
+        </IconMotionProvider>
       </ErrorBoundary>
     </I18nextProvider>,
   );

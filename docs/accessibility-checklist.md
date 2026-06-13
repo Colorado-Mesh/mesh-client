@@ -53,7 +53,12 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 - [ ] **Window focus**: When the app regains focus (e.g., after a system dialog), verify focus returns to the last focused element.
 - [ ] **Font scaling**: Electron respects OS-level font scaling via `webPreferences.zoomFactor`. Test by setting macOS accessibility display font size to Large and relaunching.
 - [ ] **High contrast mode**: On Windows, test with High Contrast Black/White themes. Tailwind CSS `@media (forced-colors: active)` should not override system colors.
-- [ ] **Reduced motion**: Verify `@media (prefers-reduced-motion: reduce)` CSS suppresses animations (connection status pulse, halo rings, emoji picker fade).
+- [ ] **Reduce motion (in-app setting)**: **App → Appearance → Reduce motion** (`reduceMotion` in SQLite `app_settings` and `mesh-client:appSettings` localStorage; default **off**). The app does **not** auto-follow the OS `prefers-reduced-motion` media query for UI motion; users opt in via this toggle (WCAG [2.3.3](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions) / [G223](https://www.w3.org/WAI/WCAG22/Techniques/general/G223)).
+  - [ ] **Setting off (default)**: Animated icons respond on hover; loading spinners animate on mount.
+  - [ ] **Setting on**: Non-essential motion disabled — animated Lucide icons render static (no hover draw); decorative motion suppressed via `html[data-reduce-motion="true"]` (logo watermark keyframes, map anomaly pulse).
+  - [ ] **Setting on — still allowed (essential feedback)**: Loading spinners (`animate-spin`, `Loader`), connection header status pulses (`animate-pulse` on MQTT/device labels and status dots).
+  - [ ] Toggle persists across restart (SQLite + localStorage reconcile on mount, same pattern as `locale` / `chatCompactMode`).
+  - [ ] Optional first-run: if `reduceMotion` key is absent, initializer may default from `matchMedia('(prefers-reduced-motion: reduce)')` once; thereafter only the App toggle applies (not live-synced to OS changes).
 
 ---
 

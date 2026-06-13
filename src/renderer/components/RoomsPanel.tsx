@@ -1,3 +1,4 @@
+import { ArrowDown, Copy, Mail, PARENT_HOVER_ATTR, Star } from 'lucide-react-motion';
 import {
   useCallback,
   useEffect,
@@ -23,6 +24,7 @@ import {
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import type { CliHistoryEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import { repairMeshcoreHydrationStaleRoomSends } from '@/renderer/lib/meshcoreDbCacheHydration';
 import {
@@ -201,6 +203,7 @@ export default function RoomsPanel({
   outerScrollMetricsRootRef,
 }: Props) {
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
   const { ensureRoomAuth, RemoteAuthModal } = useMeshcoreRoomAuth();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
     () => initialRoomTarget ?? null,
@@ -1823,23 +1826,17 @@ export default function RoomsPanel({
                                     onClick={() => {
                                       onMessageNode?.(m.sender_id);
                                     }}
+                                    {...{ [PARENT_HOVER_ATTR]: '' }}
                                     className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
                                     aria-label={t('nodeDetailModal.messageButton')}
                                     title={t('nodeDetailModal.messageButton')}
                                   >
-                                    <svg
+                                    <Mail
+                                      aria-hidden
                                       className="h-3.5 w-3.5"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      strokeWidth={2}
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                      />
-                                    </svg>
+                                      trigger={parentIconTrigger}
+                                      size={14}
+                                    />
                                   </button>
                                 )}
                                 <button
@@ -1847,6 +1844,7 @@ export default function RoomsPanel({
                                   onClick={() => {
                                     toggleStar(m);
                                   }}
+                                  {...{ [PARENT_HOVER_ATTR]: '' }}
                                   className={`rounded p-0.5 transition-colors ${
                                     isStarred
                                       ? 'text-amber-400 hover:text-amber-200'
@@ -1863,19 +1861,12 @@ export default function RoomsPanel({
                                       : t('chatPanel.starMessage')
                                   }
                                 >
-                                  <svg
-                                    className="h-3.5 w-3.5"
-                                    fill={isStarred ? 'currentColor' : 'none'}
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                                    />
-                                  </svg>
+                                  <Star
+                                    aria-hidden
+                                    className={`h-3.5 w-3.5 ${isStarred ? 'fill-current' : ''}`}
+                                    trigger={parentIconTrigger}
+                                    size={14}
+                                  />
                                 </button>
                                 <button
                                   type="button"
@@ -1886,23 +1877,17 @@ export default function RoomsPanel({
                                       );
                                     });
                                   }}
+                                  {...{ [PARENT_HOVER_ATTR]: '' }}
                                   className="rounded p-0.5 text-gray-500 hover:text-gray-300"
                                   aria-label={t('chatPanel.copyMessage')}
                                   title={t('chatPanel.copyMessage')}
                                 >
-                                  <svg
+                                  <Copy
+                                    aria-hidden
                                     className="h-3.5 w-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                    />
-                                  </svg>
+                                    trigger={parentIconTrigger}
+                                    size={14}
+                                  />
                                 </button>
                               </div>
                             </div>
@@ -1960,6 +1945,7 @@ export default function RoomsPanel({
                         scrollToBottom();
                       }
                     }}
+                    {...{ [PARENT_HOVER_ATTR]: '' }}
                     className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
                     aria-label={
                       unreadDividerTimestamp > 0
@@ -1967,20 +1953,12 @@ export default function RoomsPanel({
                         : t('roomsPanel.jumpToLatest')
                     }
                   >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
+                    <ArrowDown
                       aria-hidden
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                      />
-                    </svg>
+                      className="h-3.5 w-3.5"
+                      trigger={parentIconTrigger}
+                      size={14}
+                    />
                     {unreadDividerTimestamp > 0
                       ? t('roomsPanel.jumpToUnread')
                       : t('roomsPanel.jumpToLatest')}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
 import type { LocationFilter } from '../App';
 import {
@@ -25,6 +26,7 @@ import {
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import { writeReduceMotion } from '../lib/reduceMotionPreference';
 import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
@@ -129,6 +131,7 @@ interface AppSettings {
   autoFloodAdvertIntervalHours: number;
   chatCompactMode: boolean;
   storeForwardAutoFetchHistory: boolean;
+  reduceMotion: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -276,6 +279,14 @@ export default function AppPanel({
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     mergeAppSetting(key, value, 'AppPanel updateSetting');
+    if (key === 'reduceMotion') {
+      writeReduceMotion(Boolean(value));
+      void window.electronAPI.appSettings
+        .set('reduceMotion', value ? 'true' : 'false')
+        .catch((err: unknown) => {
+          console.warn('[AppPanel] reduceMotion persist failed ' + errLikeToLogString(err));
+        });
+    }
   };
 
   // ─── DB-backed message retention (issue #387) ─────────────────
@@ -1350,23 +1361,26 @@ export default function AppPanel({
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.appearanceSection')}</h3>
+        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+          <input
+            type="checkbox"
+            id="reduceMotion"
+            checked={settings.reduceMotion}
+            onChange={(e) => {
+              updateSetting('reduceMotion', e.target.checked);
+            }}
+            aria-label={t('appPanel.reduceMotion')}
+            className="accent-brand-green"
+          />
+          <label htmlFor="reduceMotion" className="cursor-pointer text-sm text-gray-300">
+            {t('appPanel.reduceMotion')}
+          </label>
+          <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
+        </div>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.colorScheme')}</span>
-            <svg
-              className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
           </summary>
           <div className="space-y-3 border-t border-gray-700 px-4 pt-1 pb-4">
             <p className="text-muted text-xs">{t('appPanel.themeColorsApplyHint')}</p>
@@ -1464,20 +1478,7 @@ export default function AppPanel({
         <details className="group rounded-lg border border-red-900 bg-red-950/20">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-950/40 [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.destructiveActions')}</span>
-            <svg
-              className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
           </summary>
           <div className="space-y-4 border-t border-red-900/50 px-4 pt-1 pb-4">
             <p className="text-xs text-red-400/80">{t('appPanel.dangerZoneIntro')}</p>
