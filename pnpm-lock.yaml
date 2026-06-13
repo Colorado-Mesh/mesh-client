@@ -28,6 +28,9 @@ patchedDependencies:
   readable-stream@4.7.0:
     hash: 96023d9278085d7490d08bce1a5079dd202f7782a0daa66fa81c6b1424ef8ab1
     path: patches/readable-stream@4.7.0.patch
+  usb@2.18.0:
+    hash: 87e831a30a3cea544510bd9d1784fba1cdd89ede0ece6a8753fdb4b438500d57
+    path: patches/usb@2.18.0.patch
 
 importers:
 
@@ -5242,7 +5245,7 @@ snapshots:
       patch-package: 8.0.1
       serialport: 12.0.0
     optionalDependencies:
-      usb: 2.18.0
+      usb: 2.18.0(patch_hash=87e831a30a3cea544510bd9d1784fba1cdd89ede0ece6a8753fdb4b438500d57)
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -8856,7 +8859,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  usb@2.18.0:
+  usb@2.18.0(patch_hash=87e831a30a3cea544510bd9d1784fba1cdd89ede0ece6a8753fdb4b438500d57):
     dependencies:
       '@types/w3c-web-usb': 1.0.14
       node-addon-api: 8.8.0
