@@ -102,6 +102,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 **Security (PKI)** (Meshtastic only)
 
 - **Security** tab (between Telemetry and App): admin / PKI key management; backup, restore, regenerate, and apply keys and related toggles from the device. Not available in MeshCore mode (no matching firmware surface; the tab is hidden).
+- **DM key backup / restore:** **Backup Keys** encrypts the connected **local** radio’s DM public/private pair into a **single app-wide** slot (`localStorage`, OS keychain via `safeStorage`). It is **not per node** — backing up a second radio overwrites the slot; use **Copy** / your own secure store when saving keys for multiple devices. Restore applies to whichever radio is connected. Hidden for remote configure targets. See [Key backup and cryptography](docs/key-backup-and-crypto.md) (includes **backing up before moving Meshtastic nodes to MeshCore**).
 - **PKC remote node administration** (firmware 2.5+): **Configure node** selector on Radio, Modules, Security, and Administration tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail when a per-node admin key is saved; **Copy** public key in Security for one-time trust setup. Paste a remote node’s admin public key in node detail (base64, `base64:…`, or 64-char hex). PKI uses the mesh NodeDB key when present, with stored admin-key fallback. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
 
 **Network Diagnostics**
