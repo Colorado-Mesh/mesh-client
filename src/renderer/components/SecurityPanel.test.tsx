@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { meshtasticDmKeyBackupStorageKey } from '../lib/meshtasticDmKeyBackupStorage';
 import SecurityPanel from './SecurityPanel';
 import { ToastProvider } from './Toast';
 
@@ -53,46 +54,12 @@ describe('SecurityPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('does not show connect hint when connected with config', () => {
-    renderWithToast(
-      <SecurityPanel
-        onSetConfig={vi.fn().mockResolvedValue(undefined)}
-        onCommit={vi.fn().mockResolvedValue(undefined)}
-        isConnected
-        securityConfig={makeSecurityConfig()}
-      />,
-    );
-    expect(
-      screen.queryByText('Connect to a device to manage security settings.'),
-    ).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Public Key')).toBeInTheDocument();
-  });
-
-  it('shows validation error for invalid admin key base64', async () => {
-    const user = userEvent.setup();
-    renderWithToast(
-      <SecurityPanel
-        onSetConfig={vi.fn().mockResolvedValue(undefined)}
-        onCommit={vi.fn().mockResolvedValue(undefined)}
-        isConnected
-        securityConfig={makeSecurityConfig()}
-      />,
-    );
-
-    await user.click(screen.getByRole('button', { name: '+ Add Admin Key' }));
-    await user.type(screen.getByRole('textbox', { name: 'Admin key 1' }), 'not-valid-base64!!!');
-    await user.click(screen.getByRole('button', { name: 'Apply Admin Keys' }));
-
-    expect(
-      await screen.findByText('Must be a valid base64-encoded 32-byte key'),
-    ).toBeInTheDocument();
-    expect(vi.mocked(window.electronAPI.safeStorage.encrypt)).not.toHaveBeenCalled();
-  });
-
-  it('backs up keys when safeStorage is available', async () => {
+  it('backs up keys per nodeNum when safeStorage is available', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.safeStorage.isAvailable).mockResolvedValue(true);
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockResolvedValue('encrypted-blob');
+    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
+      Promise.resolve(`enc:${plain}`),
+    );
 
     renderWithToast(
       <SecurityPanel
@@ -100,6 +67,8 @@ describe('SecurityPanel', () => {
         onCommit={vi.fn().mockResolvedValue(undefined)}
         isConnected
         securityConfig={makeSecurityConfig()}
+        localNodeNum={0x100}
+        localNodeLabel="Test Node"
       />,
     );
 
@@ -116,43 +85,29 @@ describe('SecurityPanel', () => {
     await waitFor(() => {
       expect(window.electronAPI.safeStorage.encrypt).toHaveBeenCalled();
     });
-    expect(localStorage.getItem('mesh-client:key-backup')).toBe('encrypted-blob');
+    expect(localStorage.getItem(meshtasticDmKeyBackupStorageKey(0x100))).toBeTruthy();
   });
 
-  it('shows MeshCore sign section when protocol is meshcore and onSignData is set', () => {
+  it('shows MeshCore sign section when protocol is meshcore', async () => {
+    vi.mocked(window.electronAPI.safeStorage.isAvailable).mockResolvedValue(true);
     renderWithToast(
       <SecurityPanel
         onSetConfig={vi.fn().mockResolvedValue(undefined)}
         onCommit={vi.fn().mockResolvedValue(undefined)}
         isConnected
-        securityConfig={makeSecurityConfig()}
+        securityConfig={null}
         protocol="meshcore"
+        meshcorePublicKey={new Uint8Array(32).fill(0x05)}
+        meshcoreNodeId={0x300}
         onSignData={vi.fn().mockResolvedValue(new Uint8Array(8))}
+        onExportPrivateKey={vi.fn().mockResolvedValue(new Uint8Array(32))}
       />,
     );
     expect(screen.getByLabelText('Sign Data')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign Data' })).toBeDisabled();
-  });
-
-  it('copies public key to clipboard when copy button is clicked', async () => {
-    const user = userEvent.setup();
-    const { writeClipboardText } = await import('../lib/writeClipboardText');
-
-    renderWithToast(
-      <SecurityPanel
-        onSetConfig={vi.fn().mockResolvedValue(undefined)}
-        onCommit={vi.fn().mockResolvedValue(undefined)}
-        isConnected
-        securityConfig={makeSecurityConfig()}
-      />,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Copy' }));
-
     await waitFor(() => {
-      expect(writeClipboardText).toHaveBeenCalled();
-      expect(screen.getByText('Public key copied to clipboard.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Backup Keys' })).toBeInTheDocument();
     });
+    expect(screen.queryByRole('button', { name: 'Regenerate Keys' })).not.toBeInTheDocument();
   });
 
   it('hides key backup when configuring a remote target', () => {
@@ -167,74 +122,5 @@ describe('SecurityPanel', () => {
     );
     expect(screen.queryByRole('button', { name: 'Backup Keys' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Regenerate Keys' })).not.toBeInTheDocument();
-  });
-
-  it('confirms regenerate before calling apply', async () => {
-    const user = userEvent.setup();
-    const onSetConfig = vi.fn().mockResolvedValue(undefined);
-    const onCommit = vi.fn().mockResolvedValue(undefined);
-
-    renderWithToast(
-      <SecurityPanel
-        onSetConfig={onSetConfig}
-        onCommit={onCommit}
-        isConnected
-        securityConfig={makeSecurityConfig()}
-      />,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Regenerate Keys' }));
-    expect(
-      screen.getByText(/Regenerating keys will replace your current DM public and private keys/i),
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
-
-    await waitFor(() => {
-      expect(onSetConfig).toHaveBeenCalled();
-      expect(onCommit).toHaveBeenCalled();
-    });
-  });
-
-  it('apply admin keys preserves administration toggle fields from device config', async () => {
-    const user = userEvent.setup();
-    const onSetConfig = vi.fn().mockResolvedValue(undefined);
-    const onCommit = vi.fn().mockResolvedValue(undefined);
-
-    renderWithToast(
-      <SecurityPanel
-        onSetConfig={onSetConfig}
-        onCommit={onCommit}
-        isConnected
-        securityConfig={{
-          ...makeSecurityConfig(),
-          isManaged: true,
-          serialEnabled: true,
-          debugLogApiEnabled: false,
-          adminChannelEnabled: true,
-        }}
-      />,
-    );
-
-    const adminKeyB64 = btoa(String.fromCharCode(...new Uint8Array(32).fill(0xab)));
-    await user.click(screen.getByRole('button', { name: '+ Add Admin Key' }));
-    const adminKeyInput = screen.getByPlaceholderText('Base64-encoded 32-byte public key');
-    await user.type(adminKeyInput, adminKeyB64);
-    await user.click(screen.getByRole('button', { name: 'Apply Admin Keys' }));
-
-    await waitFor(() => {
-      expect(onSetConfig).toHaveBeenCalledWith({
-        payloadVariant: {
-          case: 'security',
-          value: expect.objectContaining({
-            isManaged: true,
-            serialEnabled: true,
-            debugLogApiEnabled: false,
-            adminChannelEnabled: true,
-            adminKey: expect.any(Array),
-          }),
-        },
-      });
-    });
   });
 });

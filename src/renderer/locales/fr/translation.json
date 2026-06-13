@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "La régénération des clés remplacera vos clés publiques et privées DM actuelles. Tous les messages chiffrés existants ne seront plus déchiffrables. Es-tu sûr?",
     "copyPublicKey": "Copier",
     "publicKeyCopied": "Clé publique copiée dans le presse-papiers.",
-    "remoteAdminSetupHint": "Copiez cette clé et ajoutez-la en tant que clé d'administration sur les nœuds distants que vous souhaitez configurer. Voir Docs d'administration à distance Meshtastic."
+    "remoteAdminSetupHint": "Copiez cette clé et ajoutez-la en tant que clé d'administration sur les nœuds distants que vous souhaitez configurer. Voir Docs d'administration à distance Meshtastic.",
+    "keyBackupNotIncluded": "Ne restaure pas les canaux, NodeDB, les messages, les contacts ou les clés d'administration à distance.",
+    "backupAvailableForNode": "Sauvegarde enregistrée pour {{label}}",
+    "noBackupForNode": "Aucune sauvegarde pour {{label}}",
+    "keysBackedUpForDevice": "Clés sauvegardées pour {{label}}.",
+    "otherBackupsCount": "{{count}} autre (s) sauvegarde(s) d'appareil stockée (s)",
+    "restoreFromBackup": "Restaurer à partir d'une sauvegarde",
+    "restoreFromBackupTitle": "Restaurer à partir d'une sauvegarde",
+    "restoreFromBackupConfirm": "Restaurer les clés de {{label}} sur l'appareil connecté ?",
+    "restoreVerifySuccess": "Restauré avec succès.",
+    "restoreVerifyFailed": "Restauration terminée, mais la vérification de la clé a échoué. Reconnectez-vous et vérifiez la sécurité.",
+    "removeBackup": "Supprimer le fichier de sauvegarde",
+    "removeBackupConfirm": "Supprimer la sauvegarde stockée pour ce nœud de cet ordinateur ?",
+    "backupRemoved": "Les jeux de sauvegarde ont été supprimés :",
+    "meshcorePrivateKeyHint": "Utilisez la clé privée d'exportation ci-dessous pour afficher le matériel clé. La sauvegarde stocke la paire de clés complète sur cet ordinateur."
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponible dans ce mode"

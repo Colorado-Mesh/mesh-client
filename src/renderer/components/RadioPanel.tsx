@@ -2,8 +2,9 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
+import { saveMeshcoreKeyBackup } from '@/renderer/lib/meshcoreKeyBackupStorage';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -24,6 +25,7 @@ import {
 
 import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreContactCapacity } from '../hooks/useMeshcoreContactCapacity';
+import { useSyncFormFromConfig } from '../hooks/useSyncFormFromConfig';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
@@ -34,6 +36,7 @@ import {
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
+  pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
@@ -1028,11 +1031,32 @@ export default function RadioPanel({
 
           if (cfg.public_key || cfg.private_key) {
             try {
-              localStorage.setItem(
-                'mesh-client:meshcoreIdentity',
-                JSON.stringify({ public_key: cfg.public_key, private_key: cfg.private_key }),
-              );
-              window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+              const pubArr = Array.isArray(cfg.public_key)
+                ? Uint8Array.from(cfg.public_key as number[])
+                : null;
+              const privArr = Array.isArray(cfg.private_key)
+                ? Uint8Array.from(cfg.private_key as number[])
+                : null;
+              if (pubArr?.length === 32 && privArr && privArr.length >= 32) {
+                void tryPersistMeshcoreIdentityFromRadioExport(pubArr, privArr);
+                const nodeId = pubkeyToNodeId(pubArr);
+                void saveMeshcoreKeyBackup({
+                  nodeId,
+                  publicKey: pubArr,
+                  privateKey: privArr,
+                  nodeLabel: importedName ?? meshcoreSelfInfo?.name,
+                }).catch((e: unknown) => {
+                  console.warn(
+                    '[RadioPanel] meshcore key backup from import failed ' + errLikeToLogString(e),
+                  );
+                });
+              } else {
+                localStorage.setItem(
+                  'mesh-client:meshcoreIdentity',
+                  JSON.stringify({ public_key: cfg.public_key, private_key: cfg.private_key }),
+                );
+                window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+              }
             } catch {
               // catch-no-log-ok localStorage quota or private mode — non-critical identity cache
             }
@@ -1124,7 +1148,17 @@ export default function RadioPanel({
       reader.readAsText(file);
     };
     input.click();
-  }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz, t]);
+  }, [
+    addToast,
+    onSetOwner,
+    onApplyLoraParams,
+    shortName,
+    isLicensed,
+    bandwidth,
+    radioFreqHz,
+    t,
+    meshcoreSelfInfo,
+  ]);
 
   return (
     <div className="w-full space-y-4">

@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "Anahtarların yenilenmesi mevcut DM genel ve özel anahtarlarınızın yerini alacaktır. Mevcut şifrelenmiş mesajların şifresi artık çözülemez. Emin misin?",
     "copyPublicKey": "Kopyala",
     "publicKeyCopied": "Genel anahtar panoya kopyalandı.",
-    "remoteAdminSetupHint": "Bu anahtarı kopyalayın ve yapılandırmak istediğiniz uzak düğümlere Yönetici Anahtarı olarak ekleyin. Meshtastic uzak yönetici belgelerine bakın."
+    "remoteAdminSetupHint": "Bu anahtarı kopyalayın ve yapılandırmak istediğiniz uzak düğümlere Yönetici Anahtarı olarak ekleyin. Meshtastic uzak yönetici belgelerine bakın.",
+    "keyBackupNotIncluded": "Kanalları, NodeDB'yi, mesajları, kişileri veya uzak yönetici anahtarlarını geri yüklemez.",
+    "backupAvailableForNode": "{{label}} için yedek kaydedildi",
+    "noBackupForNode": "{{label}} için yedek yok",
+    "keysBackedUpForDevice": "Anahtarlar {{label}} için yedeklendi.",
+    "otherBackupsCount": "{{count}} depolanan diğer cihaz yedek(ler) i",
+    "restoreFromBackup": "Yedeklemeden geri yükleme",
+    "restoreFromBackupTitle": "Yedeklemeden geri yükleme",
+    "restoreFromBackupConfirm": "{{label}} tuşları bağlı cihaza geri yüklensin mi?",
+    "restoreVerifySuccess": "Başarıyla geri yüklendi",
+    "restoreVerifyFailed": "Geri yükleme tamamlandı ancak anahtar doğrulaması başarısız oldu. Yeniden bağlanın ve Güvenliği kontrol edin.",
+    "removeBackup": "Yedek dosyasını kaldırın",
+    "removeBackupConfirm": "Bu düğümün depolanmış yedeği bu bilgisayardan kaldırılsın mı?",
+    "backupRemoved": "Yedek kaldırıldı.",
+    "meshcorePrivateKeyHint": "Önemli materyali görüntülemek için aşağıdaki Özel Anahtarı Dışa Aktar'ı kullanın. Yedekleme, tam anahtar çiftini bu bilgisayarda saklar."
   },
   "sidebar": {
     "disabledTabTooltip": "Bu modda kullanılamaz"

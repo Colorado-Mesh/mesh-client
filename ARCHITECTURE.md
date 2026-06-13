@@ -31,7 +31,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 ## Dual protocol (Meshtastic + MeshCore)
 
-Both stacks can run at once: independent connections, header switcher for focus, inactive protocol stays connected, per-protocol unread badges (Meshtastic green, MeshCore cyan for Chat; MeshCore **Rooms** has a separate sidebar badge). Capabilities differ (e.g. Meshtastic: Security/Modules/TAK; MeshCore: Repeaters, **Rooms** BBS, contact groups, MeshCore MQTT adapter). Sidebar tab slots are fixed in `App.tsx` (`TAB_SLOT_IDS`); **Rooms** requires `hasRoomServersPanel`, **Security**/`TAK` require Meshtastic capabilities (~16 vs ~15 visible tabs).
+Both stacks can run at once: independent connections, header switcher for focus, inactive protocol stays connected, per-protocol unread badges (Meshtastic green, MeshCore cyan for Chat; MeshCore **Rooms** has a separate sidebar badge). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS, contact groups, MeshCore MQTT adapter). Sidebar tab slots are fixed in `App.tsx` (`TAB_SLOT_IDS`); **Rooms** requires `hasRoomServersPanel`, **Security**/`TAK` require capability flags (~16 visible tabs per protocol; MeshCore hides TAK and Meshtastic-only Security sections).
 
 **Feature gating:** use `ProtocolCapabilities` via `useRadioProvider(protocol)` from `src/renderer/lib/radio/providerFactory.ts`; do not branch on raw `protocol === 'meshcore'` strings.
 

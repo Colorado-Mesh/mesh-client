@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "キーを再生成すると、現在の DM 公開キーと秘密キーが置き換えられます。既存の暗号化されたメッセージは復号化できなくなります。本気ですか？",
     "copyPublicKey": "コピー",
     "publicKeyCopied": "公開鍵をクリップボードにコピーしました。",
-    "remoteAdminSetupHint": "このキーをコピーし、設定するリモートノードに管理者キーとして追加します。Meshtasticリモート管理ドキュメントを参照してください。"
+    "remoteAdminSetupHint": "このキーをコピーし、設定するリモートノードに管理者キーとして追加します。Meshtasticリモート管理ドキュメントを参照してください。",
+    "keyBackupNotIncluded": "チャネル、NodeDB、メッセージ、連絡先、またはリモート管理者キーを復元しません。",
+    "backupAvailableForNode": "{{label}}のバックアップが保存されました",
+    "noBackupForNode": "{{label}}のバックアップはありません",
+    "keysBackedUpForDevice": "{{label}}のために鍵をバックアップしました。",
+    "otherBackupsCount": "他のデバイスのバックアップが{{count}}件保存されています",
+    "restoreFromBackup": "バックアップからの復元",
+    "restoreFromBackupTitle": "バックアップからの復元",
+    "restoreFromBackupConfirm": "接続されているデバイスに{{label}}のキーを復元しますか？",
+    "restoreVerifySuccess": "キーが正常に復元されました。",
+    "restoreVerifyFailed": "復元は完了しましたが、キーの検証に失敗しました。再接続して、セキュリティを確認します。",
+    "removeBackup": "バックアップを削除",
+    "removeBackupConfirm": "このノードの保存されたバックアップをこのコンピューターから削除しますか？",
+    "backupRemoved": "バックアップセットの削除:",
+    "meshcorePrivateKeyHint": "以下のエクスポート秘密鍵を使用して、キー素材を表示します。バックアップは、このコンピューターに完全なキーペアを保存します。"
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"

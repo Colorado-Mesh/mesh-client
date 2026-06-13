@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "Obnovení klíčů nahradí vaše aktuální veřejné a soukromé klíče DM. Jakékoli existující zašifrované zprávy již nebudou dešifrovatelné. jsi si jistý?",
     "copyPublicKey": "Kopírovat",
     "publicKeyCopied": "Veřejný klíč zkopírován do schránky.",
-    "remoteAdminSetupHint": "Zkopírujte tento klíč a přidejte jej jako administrátorský klíč na vzdálené uzly, které chcete konfigurovat. Viz dokumentaci Meshtastic k vzdálené správě."
+    "remoteAdminSetupHint": "Zkopírujte tento klíč a přidejte jej jako administrátorský klíč na vzdálené uzly, které chcete konfigurovat. Viz dokumentaci Meshtastic k vzdálené správě.",
+    "keyBackupNotIncluded": "Neobnovuje kanály, NodeDB, zprávy, kontakty ani klíče vzdálené správy.",
+    "backupAvailableForNode": "Záloha uložena pro {{label}}",
+    "noBackupForNode": "Žádná záloha pro {{label}}",
+    "keysBackedUpForDevice": "Klíče pro {{label}} byly zálohovány.",
+    "otherBackupsCount": "{{count}} další uložené zálohy zařízení",
+    "restoreFromBackup": "Obnovit ze zálohy",
+    "restoreFromBackupTitle": "Obnovit ze zálohy",
+    "restoreFromBackupConfirm": "Obnovit klíče pro {{label}} do připojeného zařízení?",
+    "restoreVerifySuccess": "Úspěšně obnoveno",
+    "restoreVerifyFailed": "Obnovení dokončeno, ale ověření klíče se nezdařilo. Znovu se připojte a zkontrolujte zabezpečení.",
+    "removeBackup": "Odstranit zálohu",
+    "removeBackupConfirm": "Odebrat uloženou zálohu pro tento uzel z tohoto počítače?",
+    "backupRemoved": "Záloha odstraněna.",
+    "meshcorePrivateKeyHint": "Pro zobrazení klíčového materiálu použijte Exportovat soukromý klíč níže. Zálohování ukládá celý pár klíčů do tohoto počítače."
   },
   "sidebar": {
     "disabledTabTooltip": "Není k dispozici v tomto režimu"

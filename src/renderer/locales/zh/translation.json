@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "重新生成密钥将替换您当前的 DM 公钥和私钥。任何现有的加密消息将不再可解密。你确定吗？",
     "copyPublicKey": "复制",
     "publicKeyCopied": "公钥已复制到剪贴板。",
-    "remoteAdminSetupHint": "复制此密钥并将其添加为要配置的远程节点上的管理密钥。请参阅Meshtastic远程管理文档。"
+    "remoteAdminSetupHint": "复制此密钥并将其添加为要配置的远程节点上的管理密钥。请参阅Meshtastic远程管理文档。",
+    "keyBackupNotIncluded": "不还原频道、NodeDB、消息、联系人或远程管理密钥。",
+    "backupAvailableForNode": "已为 {{label}} 保存备份",
+    "noBackupForNode": "{{label}} 没有备份",
+    "keysBackedUpForDevice": "已为 {{label}} 备份密钥。",
+    "otherBackupsCount": "已存储 {{count}} 个其他设备备份",
+    "restoreFromBackup": "从备份还原",
+    "restoreFromBackupTitle": "从备份还原",
+    "restoreFromBackupConfirm": "将 {{label}} 的密钥还原到连接的设备？",
+    "restoreVerifySuccess": "已成功还原",
+    "restoreVerifyFailed": "还原已完成，但密钥验证失败。重新连接并检查安全性。",
+    "removeBackup": "删除该备份",
+    "removeBackupConfirm": "是否从此计算机中删除此节点的存储备份？",
+    "backupRemoved": "备份集已删除：",
+    "meshcorePrivateKeyHint": "使用下面的导出私钥查看密钥材料。Backup将完整密钥对存储在此计算机上。"
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"

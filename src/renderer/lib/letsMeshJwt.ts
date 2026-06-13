@@ -53,6 +53,17 @@ function meshcorePubKeyBytesToHexLower(pub: Uint8Array): string {
 }
 
 /**
+ * Write full key pair to active MQTT identity cache (after restore or explicit sync).
+ * Does not overwrite per-node backup archives.
+ */
+export async function syncMeshcoreActiveIdentityFromBackup(
+  publicKey: Uint8Array,
+  privateKeyBytes: Uint8Array,
+): Promise<boolean> {
+  return tryPersistMeshcoreIdentityFromRadioExport(publicKey, privateKeyBytes);
+}
+
+/**
  * After a MeshCore radio connects, persist identity from firmware export so LetsMesh MQTT can sign
  * JWTs without a separate JSON import (same storage shape as RadioPanel config import).
  *

@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "La rigenerazione delle chiavi sostituirà le attuali chiavi pubbliche e private DM. Tutti i messaggi crittografati esistenti non saranno più decrittografabili. Sei sicuro?",
     "copyPublicKey": "Copia",
     "publicKeyCopied": "Chiave pubblica copiata negli appunti.",
-    "remoteAdminSetupHint": "Copiare questa chiave e aggiungerla come chiave di amministrazione sui nodi remoti che si desidera configurare. Consulta i documenti dell'amministratore remoto di Meshtastic."
+    "remoteAdminSetupHint": "Copiare questa chiave e aggiungerla come chiave di amministrazione sui nodi remoti che si desidera configurare. Consulta i documenti dell'amministratore remoto di Meshtastic.",
+    "keyBackupNotIncluded": "Non ripristina canali, NodeDB, messaggi, contatti o chiavi di amministrazione remota.",
+    "backupAvailableForNode": "Backup salvato per {{label}}",
+    "noBackupForNode": "Nessun backup per {{label}}",
+    "keysBackedUpForDevice": "Backup delle chiavi per {{label}}.",
+    "otherBackupsCount": "{{count}} backupdi altri dispositivi archiviati",
+    "restoreFromBackup": "Riprista da backup",
+    "restoreFromBackupTitle": "Riprista da backup",
+    "restoreFromBackupConfirm": "Ripristinare le chiavi per {{label}} sul dispositivo collegato?",
+    "restoreVerifySuccess": "Ripristina con successo.",
+    "restoreVerifyFailed": "Ripristino completato ma la verifica della chiave non è riuscita. Riconnettiti e controlla la sicurezza.",
+    "removeBackup": "Rimuovere il file di backup",
+    "removeBackupConfirm": "Rimuovere il backup archiviato per questo nodo da questo computer?",
+    "backupRemoved": "Backup rimosso.",
+    "meshcorePrivateKeyHint": "Usa Esporta chiave privata qui sotto per visualizzare il materiale chiave. Il backup memorizza la coppia di chiavi completa su questo computer."
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponibile in questa modalità"

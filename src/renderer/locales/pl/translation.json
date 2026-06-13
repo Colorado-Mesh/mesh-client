@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "Regeneracja kluczy zastąpi Twoje obecne klucze publiczne i prywatne DM. Wszelkie istniejące zaszyfrowane wiadomości nie będą już możliwe do odszyfrowania. Czy jesteś pewien?",
     "copyPublicKey": "Kopiuj",
     "publicKeyCopied": "Klucz publiczny skopiowano do schowka.",
-    "remoteAdminSetupHint": "Skopiuj ten klucz i dodaj go jako klucz administratora na zdalnych węzłach, które chcesz skonfigurować. Zobacz dokumenty zdalnych administratorów Meshtastic."
+    "remoteAdminSetupHint": "Skopiuj ten klucz i dodaj go jako klucz administratora na zdalnych węzłach, które chcesz skonfigurować. Zobacz dokumenty zdalnych administratorów Meshtastic.",
+    "keyBackupNotIncluded": "Nie przywraca kanałów, NodeDB, wiadomości, kontaktów ani kluczy zdalnego administratora.",
+    "backupAvailableForNode": "Zapisano kopię zapasową dla {{label}}",
+    "noBackupForNode": "Brak kopii zapasowej dla {{label}}",
+    "keysBackedUpForDevice": "Kopia zapasowa kluczy dla {{label}}.",
+    "otherBackupsCount": "Zapisano kopię zapasową {{count}} innych urządzeń",
+    "restoreFromBackup": "Przywróć z kopii zapasowej",
+    "restoreFromBackupTitle": "Przywróć z kopii zapasowej",
+    "restoreFromBackupConfirm": "Przywrócić klucze dla {{label}} do podłączonego urządzenia?",
+    "restoreVerifySuccess": "Klucze zostały pomyślnie przywrócone.",
+    "restoreVerifyFailed": "Przywracanie zakończone, ale weryfikacja klucza nie powiodła się. Podłącz ponownie i sprawdź bezpieczeństwo.",
+    "removeBackup": "Usuń kopię zapasową",
+    "removeBackupConfirm": "Usunąć zapisaną kopię zapasową dla tego węzła z tego komputera?",
+    "backupRemoved": "Usunięto zestawy kopii:",
+    "meshcorePrivateKeyHint": "Użyj Eksportuj klucz prywatny poniżej, aby wyświetlić kluczowy materiał. Kopia zapasowa przechowuje pełną parę kluczy na tym komputerze."
   },
   "sidebar": {
     "disabledTabTooltip": "Niedostępne w tym trybie"

@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "Als u sleutels opnieuw genereert, worden uw huidige openbare en privésleutels voor DM vervangen. Alle bestaande gecodeerde berichten kunnen niet langer worden gedecodeerd. Weet je het zeker?",
     "copyPublicKey": "Kopie",
     "publicKeyCopied": "Openbare sleutel gekopieerd naar klembord.",
-    "remoteAdminSetupHint": "Kopieer deze sleutel en voeg deze toe als een beheerderssleutel op externe knooppunten die u wilt configureren. Zie de Meshtastic-documentatie voor beheer op afstand."
+    "remoteAdminSetupHint": "Kopieer deze sleutel en voeg deze toe als een beheerderssleutel op externe knooppunten die u wilt configureren. Zie de Meshtastic-documentatie voor beheer op afstand.",
+    "keyBackupNotIncluded": "Herstelt geen kanalen, NodeDB, berichten, contacten of externe beheerderssleutels.",
+    "backupAvailableForNode": "Back-up opgeslagen voor {{label}}",
+    "noBackupForNode": "Geen back-up voor {{label}}",
+    "keysBackedUpForDevice": "Een back-up van de sleutels voor {{label}}.",
+    "otherBackupsCount": "{{count}} andere opgeslagen apparaatback-up(s)",
+    "restoreFromBackup": "Herstel met een backup",
+    "restoreFromBackupTitle": "Herstel met een backup",
+    "restoreFromBackupConfirm": "Sleutels voor {{label}} herstellen naar het aangesloten apparaat?",
+    "restoreVerifySuccess": "Met succes hersteld.",
+    "restoreVerifyFailed": "Herstel voltooid, maar sleutelverificatie is mislukt. Maak opnieuw verbinding en controleer de beveiliging.",
+    "removeBackup": "Back-up verwijderen",
+    "removeBackupConfirm": "De opgeslagen back-up voor dit knooppunt van deze computer verwijderen?",
+    "backupRemoved": "Back-up sets verwijderd:",
+    "meshcorePrivateKeyHint": "Gebruik Export Private Key hieronder om sleutelmateriaal te bekijken. Back-up slaat het volledige sleutelpaar op deze computer op."
   },
   "sidebar": {
     "disabledTabTooltip": "Niet beschikbaar in deze modus"

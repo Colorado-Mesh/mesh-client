@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "A regeneração de chaves substituirá suas chaves públicas e privadas DM atuais. Quaisquer mensagens criptografadas existentes não serão mais descriptografáveis. Tem certeza?",
     "copyPublicKey": "Copiar",
     "publicKeyCopied": "Chave pública copiada para a área de transferência.",
-    "remoteAdminSetupHint": "Copie esta chave e adicione-a como uma chave de administrador nos nós remotos que você deseja configurar. Consulte os documentos de administração remota do Meshtastic."
+    "remoteAdminSetupHint": "Copie esta chave e adicione-a como uma chave de administrador nos nós remotos que você deseja configurar. Consulte os documentos de administração remota do Meshtastic.",
+    "keyBackupNotIncluded": "Não restaura canais, NodeDB, mensagens, contatos ou chaves de administração remota.",
+    "backupAvailableForNode": "Backup salvo para {{label}}",
+    "noBackupForNode": "Sem backup para {{label}}",
+    "keysBackedUpForDevice": "Cópia de segurança das chaves para {{label}}.",
+    "otherBackupsCount": "{{count}} outro (s) backup(s) de dispositivo armazenado (s)",
+    "restoreFromBackup": "Restaurado do Backup",
+    "restoreFromBackupTitle": "Restaurado do Backup",
+    "restoreFromBackupConfirm": "Restaurar chaves para {{label}} para o dispositivo conectado?",
+    "restoreVerifySuccess": "Restaurado com sucesso.",
+    "restoreVerifyFailed": "Restauração concluída, mas a verificação da chave falhou. Reconecte e verifique a Segurança.",
+    "removeBackup": "Remover backup",
+    "removeBackupConfirm": "Remover o backup armazenado para este nó deste computador?",
+    "backupRemoved": "Conjuntos de backup removidos:",
+    "meshcorePrivateKeyHint": "Use Exportar chave privada abaixo para visualizar o material principal. O backup armazena o par de chaves completo neste computador."
   },
   "sidebar": {
     "disabledTabTooltip": "Não disponível neste modo"

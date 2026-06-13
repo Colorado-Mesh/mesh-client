@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "Durch die Neugenerierung von Schlüsseln werden Ihre aktuellen öffentlichen und privaten DM-Schlüssel ersetzt. Vorhandene verschlüsselte Nachrichten können nicht mehr entschlüsselt werden. Bist du sicher?",
     "copyPublicKey": "Kopie",
     "publicKeyCopied": "Öffentlicher Schlüssel in die Zwischenablage kopiert.",
-    "remoteAdminSetupHint": "Kopieren Sie diesen Schlüssel und fügen Sie ihn als Admin-Schlüssel auf Remote-Knoten hinzu, die Sie konfigurieren möchten. Siehe Meshtastic Remote-Admin-Dokumente."
+    "remoteAdminSetupHint": "Kopieren Sie diesen Schlüssel und fügen Sie ihn als Admin-Schlüssel auf Remote-Knoten hinzu, die Sie konfigurieren möchten. Siehe Meshtastic Remote-Admin-Dokumente.",
+    "keyBackupNotIncluded": "Stellt keine Kanäle, NodeDB, Nachrichten, Kontakte oder Remote-Admin-Schlüssel wieder her.",
+    "backupAvailableForNode": "Backup gespeichert für {{label}}",
+    "noBackupForNode": "Kein Backup für {{label}}",
+    "keysBackedUpForDevice": "Für {{label}} gesicherte Schlüssel.",
+    "otherBackupsCount": "{{count}} Sicherung(en) anderer Geräte gespeichert",
+    "restoreFromBackup": "Einstellungen wiederherstellen",
+    "restoreFromBackupTitle": "Einstellungen wiederherstellen",
+    "restoreFromBackupConfirm": "Schlüssel für {{label}} auf dem angeschlossenen Gerät wiederherstellen?",
+    "restoreVerifySuccess": "Erfolgreich wiederhergestellt",
+    "restoreVerifyFailed": "Wiederherstellung abgeschlossen, aber Schlüsselüberprüfung fehlgeschlagen. Schließen Sie die Verbindung wieder an und überprüfen Sie die Sicherheit.",
+    "removeBackup": "Entfernen der Sicherungsdatei",
+    "removeBackupConfirm": "Die gespeicherte Sicherung für diesen Knoten von diesem Computer entfernen?",
+    "backupRemoved": "Sicherungsätze wurden entfernt:",
+    "meshcorePrivateKeyHint": "Verwenden Sie unten den privaten Schlüssel exportieren, um Schlüsselmaterial anzuzeigen. Backup speichert das vollständige Schlüsselpaar auf diesem Computer."
   },
   "sidebar": {
     "disabledTabTooltip": "Nicht verfügbar in diesem Modus."

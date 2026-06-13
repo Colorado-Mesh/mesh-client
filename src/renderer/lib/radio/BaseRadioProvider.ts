@@ -184,7 +184,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasNodeDbReset: false,
   hasFactoryReset: false,
   hasFullPositionConfig: false,
-  hasSecurityPanel: false,
+  hasSecurityPanel: true,
   hasRemoteAdmin: false,
   hasTakPanel: false,
   hasRemoteHardware: false,
