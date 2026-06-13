@@ -196,7 +196,8 @@
       "@liamcottle/meshcore.js@1.13.0": "patches/@liamcottle__meshcore.js@1.13.0.patch",
       "debug@4.4.3": "patches/debug@4.4.3.patch",
       "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch",
-      "usb@2.18.0": "patches/usb@2.18.0.patch"
+      "usb@2.18.0": "patches/usb@2.18.0.patch",
+      "@stoprocent/noble@2.5.3": "patches/@stoprocent__noble@2.5.3.patch"
     },
     "minimumReleaseAgeExclude": [
       "lodash",
