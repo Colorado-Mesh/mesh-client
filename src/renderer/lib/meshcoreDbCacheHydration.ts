@@ -2,6 +2,7 @@ import {
   isMeshcoreRoomChatMessage,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import {
   isMeshcoreRoomServerContactType,
   meshcoreRoomPostBodyFromWire,
@@ -44,6 +45,26 @@ export function repairMeshcoreHydrationStaleRoomSends(messages: ChatMessage[]): 
 }
 
 /**
+ * Repair inbound DMs hydrated with `to_node: 0` / missing recipient (wire decode sentinel).
+ * Failure point: PacketRouter persists `to: 0` before ingest can set self node id.
+ * Fallback: treat as DM to persisted self node so unread + thread filters work.
+ */
+export function repairMeshcoreHydratedDmToNode(
+  messages: ChatMessage[],
+  selfNodeId?: number,
+): ChatMessage[] {
+  const self =
+    selfNodeId != null && selfNodeId > 0 ? selfNodeId : loadPersistedMeshcoreSelfNodeId();
+  if (self <= 0) return messages;
+  return messages.map((m) => {
+    if (m.channel !== -1) return m;
+    if (m.sender_id <= 0 || m.sender_id === self) return m;
+    if (m.to != null && m.to !== 0) return m;
+    return { ...m, to: self };
+  });
+}
+
+/**
  * Reclassify room-server traffic that was stored as DMs (PLAIN bot stats, etc.).
  * Failure point: older builds only treated SignedPlain as room BBS.
  * Fallback: map peer Room node id → roomServerId + channel -2 for Rooms tab display.
@@ -51,9 +72,10 @@ export function repairMeshcoreHydrationStaleRoomSends(messages: ChatMessage[]): 
 export function repairMeshcoreHydratedMessages(
   messages: ChatMessage[],
   roomServerIds: ReadonlySet<number>,
+  selfNodeId?: number,
 ): ChatMessage[] {
   return repairMeshcoreMisfiledRoomDmMessages(
-    repairMeshcoreHydrationStaleRoomSends(messages),
+    repairMeshcoreHydrationStaleRoomSends(repairMeshcoreHydratedDmToNode(messages, selfNodeId)),
     roomServerIds,
   );
 }

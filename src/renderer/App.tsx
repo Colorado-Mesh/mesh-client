@@ -681,8 +681,8 @@ function AppContent({
     const roomIds = meshcoreRoomServerIdsFromNodes(
       Object.values(meshcoreNodesById).map(nodeRecordToMeshNode),
     );
-    return repairMeshcoreHydratedMessages(mapped, roomIds);
-  }, [meshcoreStoreMessages, meshcoreNodesById]);
+    return repairMeshcoreHydratedMessages(mapped, roomIds, meshcoreRuntime.selfNodeId);
+  }, [meshcoreStoreMessages, meshcoreNodesById, meshcoreRuntime.selfNodeId]);
 
   useEffect(() => {
     if (!meshcoreIdentityId) return;

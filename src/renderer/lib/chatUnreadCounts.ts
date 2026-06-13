@@ -34,6 +34,15 @@ export function resolveChatDmPeer(
   let peer: number | undefined;
   if (isOwn(msg.sender_id) && !isOwn(msg.to)) peer = msg.to;
   else if (isOwn(msg.to) && !isOwn(msg.sender_id)) peer = msg.sender_id;
+  if (
+    peer == null &&
+    protocol === 'meshcore' &&
+    msg.channel === -1 &&
+    msg.sender_id > 0 &&
+    !isOwn(msg.sender_id)
+  ) {
+    peer = msg.sender_id;
+  }
   if (peer == null) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
   const peerU32 = peer >>> 0;
@@ -52,6 +61,7 @@ export function computeChannelUnreadCounts(
   for (const msg of regular) {
     if (ownNodeIds.has(msg.sender_id)) continue;
     if (msg.to) continue;
+    if (msg.channel < 0) continue;
     if (msg.isHistory) continue;
     const lastRead = persistedLastRead[`ch:${msg.channel}`] ?? 0;
     if (msg.timestamp > lastRead) {

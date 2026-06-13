@@ -67,6 +67,7 @@ import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
+  resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import {
   findMeshcoreParentMessageForReply,
@@ -405,18 +406,9 @@ function ChatPanel({
 
   /** DM peer for a message, excluding broadcast and non-DM traffic. */
   const resolveDmPeer = useCallback(
-    (msg: ChatMessage): number | undefined => {
-      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
-      if (msg.to == null) return undefined;
-      let peer: number | undefined;
-      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
-      else if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
-      if (peer == null) return undefined;
-      if (protocol === 'meshcore' && nodes.get(peer)?.hw_model === 'Room') return undefined;
-      if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
-      return peer >>> 0;
-    },
-    [isOwnNode, nodes, protocol],
+    (msg: ChatMessage): number | undefined =>
+      resolveChatDmPeer(msg, ownNodeIdSet, protocol, chatUnreadDmOptions),
+    [chatUnreadDmOptions, ownNodeIdSet, protocol],
   );
 
   const scrollToTop = useCallback(() => {
@@ -656,12 +648,14 @@ function ChatPanel({
       return regularMessages.filter(
         (m) =>
           (m.to === activeDmNode && isOwnNode(m.sender_id)) ||
-          (m.sender_id === activeDmNode && m.to != null && isOwnNode(m.to)),
+          (m.sender_id === activeDmNode &&
+            (isOwnNode(m.to ?? 0) ||
+              (protocol === 'meshcore' && m.channel === -1 && !isOwnNode(m.sender_id)))),
       );
     }
 
     return regularMessages.filter((m) => !m.to && m.channel === channel);
-  }, [activeDmNode, channel, isOwnNode, regularMessages, viewMode]);
+  }, [activeDmNode, channel, isOwnNode, protocol, regularMessages, viewMode]);
 
   const filteredMessages = useMemo(() => {
     let msgs = viewMessages;

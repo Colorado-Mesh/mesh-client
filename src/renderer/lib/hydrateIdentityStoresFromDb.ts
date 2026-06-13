@@ -18,6 +18,7 @@ import {
   meshcoreRoomServerIdsFromContacts,
   repairMeshcoreHydratedMessages,
 } from './meshcoreDbCacheHydration';
+import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { rebuildMeshcoreDedupeIndex } from './meshcoreMessageDedupeIndex';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
@@ -133,6 +134,7 @@ export async function hydrateMeshcoreMessagesFromDb(
   const mapped = repairMeshcoreHydratedMessages(
     mapMeshcoreDbRowsToChatMessages(rows),
     roomServerIds,
+    loadPersistedMeshcoreSelfNodeId(),
   );
   void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);

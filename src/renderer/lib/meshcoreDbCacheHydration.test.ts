@@ -1,8 +1,50 @@
 import { describe, expect, it } from 'vitest';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
-import { repairMeshcoreHydrationStaleRoomSends } from './meshcoreDbCacheHydration';
+import {
+  repairMeshcoreHydratedDmToNode,
+  repairMeshcoreHydrationStaleRoomSends,
+} from './meshcoreDbCacheHydration';
 import type { ChatMessage } from './types';
+
+describe('repairMeshcoreHydratedDmToNode', () => {
+  it('sets to to self for inbound DM rows hydrated with to_node 0', () => {
+    const inbound: ChatMessage = {
+      sender_id: 0xdef,
+      sender_name: 'Alice',
+      payload: 'hello',
+      channel: -1,
+      timestamp: 5000,
+      status: 'acked',
+      to: 0,
+    };
+    const [fixed] = repairMeshcoreHydratedDmToNode([inbound], 0xabc);
+    expect(fixed.to).toBe(0xabc);
+  });
+
+  it('leaves outbound DMs and channel messages unchanged', () => {
+    const outbound: ChatMessage = {
+      sender_id: 0xabc,
+      sender_name: 'Me',
+      payload: 'out',
+      channel: -1,
+      timestamp: 5000,
+      status: 'acked',
+      to: 0xdef,
+    };
+    const channel: ChatMessage = {
+      sender_id: 0xdef,
+      sender_name: 'Alice',
+      payload: 'ch',
+      channel: 0,
+      timestamp: 5000,
+      status: 'acked',
+    };
+    const [out, ch] = repairMeshcoreHydratedDmToNode([outbound, channel], 0xabc);
+    expect(out.to).toBe(0xdef);
+    expect(ch.to).toBeUndefined();
+  });
+});
 
 describe('repairMeshcoreHydrationStaleRoomSends', () => {
   it('promotes stale sending room posts to acked', () => {

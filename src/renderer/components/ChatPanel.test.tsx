@@ -1172,6 +1172,62 @@ describe('ChatPanel unread watermarks', () => {
     });
   });
 
+  it('shows MeshCore inbound DM with to:0 in thread and clears DM unread when opened', async () => {
+    const user = userEvent.setup();
+    const ts = Date.now();
+    const selfId = 0x12345678;
+    const nodes = new Map([
+      [
+        2,
+        {
+          node_id: 2,
+          long_name: 'Alice',
+          short_name: 'Alice',
+          hw_model: '',
+          snr: 0,
+          battery: 0,
+          last_heard: ts,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={selfId}
+          ownNodeIds={[selfId]}
+          nodes={nodes}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'orphan DM',
+              channel: -1,
+              timestamp: ts,
+              status: 'acked',
+              to: 0,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    const aliceTab = screen.getByRole('button', { name: 'Alice' }).closest('.relative');
+    expect(aliceTab?.querySelector('.bg-red-600')?.textContent).toBe('1');
+
+    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    expect(screen.getByText('orphan DM')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'General' }));
+
+    await waitFor(() => {
+      expect(aliceTab?.querySelector('.bg-red-600')).toBeNull();
+    });
+  });
+
   it('keeps dismissed DM tab visible while unread remains', async () => {
     const user = userEvent.setup();
     const ts = Date.now();

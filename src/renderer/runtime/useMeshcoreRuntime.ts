@@ -800,6 +800,7 @@ export function useMeshcoreRuntime() {
       const mapped = repairMeshcoreHydratedMessages(
         mapMeshcoreDbRowsToChatMessages(meshcoreRows),
         meshcoreRoomServerIdsFromNodes(initial.values()),
+        myNodeNumRef.current,
       );
       void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
       const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
@@ -1553,6 +1554,7 @@ export function useMeshcoreRuntime() {
             const mapped = repairMeshcoreHydratedMessages(
               mapMeshcoreDbRowsToChatMessages(dbMsgs),
               meshcoreRoomServerIdsFromContacts(contactRows),
+              myNodeNumRef.current,
             );
             setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
             setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
@@ -1614,6 +1616,7 @@ export function useMeshcoreRuntime() {
           const mapped = repairMeshcoreHydratedMessages(
             mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]),
             meshcoreRoomServerIdsFromContacts(contactRows),
+            myNodeNumRef.current,
           );
           const cachedNodes = buildMeshcoreNodeMapFromDb(
             contactRows,
@@ -5332,6 +5335,7 @@ export function useMeshcoreRuntime() {
       const mapped = repairMeshcoreHydratedMessages(
         mapMeshcoreDbRowsToChatMessages(dbMsgs),
         meshcoreRoomServerIdsFromNodes(nodesRef.current.values()),
+        myNodeNumRef.current,
       );
       void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
       setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
