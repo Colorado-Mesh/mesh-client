@@ -28,9 +28,11 @@ Meshtastic MQTT working on the same machine does not guarantee MeshCore LetsMesh
 
 ## Manual token
 
-After you connect a **MeshCore** radio successfully, mesh-client persists identity from the radio (via `exportPrivateKey`) in the **same** local storage shape as a Radio-tab JSON import, so LetsMesh-style JWT credentials can be built **without** a manual import when you started from RF first.
+After you connect a **MeshCore** radio successfully, mesh-client persists identity from the radio (via `exportPrivateKey`) in the **active MQTT cache** (`mesh-client:meshcoreIdentity`, optional encrypted private key). That is the identity used for LetsMesh JWT until you connect or restore a different device.
 
-If you use MQTT **before** ever connecting a MeshCore radio, or stored identity is missing or corrupt, **import** identity under **Radio**, or set **Custom** and paste username `v1_<public key>` and a token from tooling that matches your broker’s `AUTH_EXPECTED_AUDIENCE`.
+**Per-node archives** (`mesh-client:meshcore-key-backup:<nodeId>`) store the full public + private pair for each MeshCore node you back up from **Security → Backup Keys**. Archives are independent of the active cache; **Security → Restore** or **Restore from backup…** writes the selected pair to the radio and refreshes the active cache for MQTT. See [Key backup and cryptography](key-backup-and-crypto.md).
+
+If you use MQTT **before** ever connecting a MeshCore radio, or stored identity is missing or corrupt, **import** identity under **Radio**, restore from **Security**, or set **Custom** and paste username `v1_<public key>` and a token from tooling that matches your broker’s `AUTH_EXPECTED_AUDIENCE`.
 
 ## Packet logger / Analyzer
 

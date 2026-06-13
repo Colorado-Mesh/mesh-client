@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "Regenerasi kunci akan menggantikan kunci publik dan pribadi DM Anda saat ini. Pesan terenkripsi apa pun yang ada tidak dapat didekripsi lagi. Apa kamu yakin?",
     "copyPublicKey": "Salin",
     "publicKeyCopied": "Kunci publik disalin ke clipboard.",
-    "remoteAdminSetupHint": "Salin kunci ini dan tambahkan sebagai Kunci Admin pada node jarak jauh yang ingin Anda konfigurasikan. Lihat dokumen admin jarak jauh Meshtastic."
+    "remoteAdminSetupHint": "Salin kunci ini dan tambahkan sebagai Kunci Admin pada node jarak jauh yang ingin Anda konfigurasikan. Lihat dokumen admin jarak jauh Meshtastic.",
+    "keyBackupNotIncluded": "Tidak memulihkan saluran, NodeDB, pesan, kontak, atau kunci admin jarak jauh.",
+    "backupAvailableForNode": "Cadangan disimpan untuk {{label}}",
+    "noBackupForNode": "Tidak ada cadangan untuk {{label}}",
+    "keysBackedUpForDevice": "Kunci dicadangkan untuk {{label}}.",
+    "otherBackupsCount": "{{count}} cadangan perangkat lain disimpan",
+    "restoreFromBackup": "Memulihkan dari cadangan",
+    "restoreFromBackupTitle": "Memulihkan dari cadangan",
+    "restoreFromBackupConfirm": "Pulihkan kunci untuk {{label}} ke perangkat yang terhubung?",
+    "restoreVerifySuccess": "Berhasil dipulihkan",
+    "restoreVerifyFailed": "Pemulihan selesai tetapi verifikasi kunci gagal. Sambungkan kembali dan periksa Keamanan.",
+    "removeBackup": "Hapus cadangan",
+    "removeBackupConfirm": "Hapus cadangan yang disimpan untuk node ini dari komputer ini?",
+    "backupRemoved": "Cadangan dihapus.",
+    "meshcorePrivateKeyHint": "Gunakan Kunci Pribadi Ekspor di bawah ini untuk melihat materi utama. Cadangan menyimpan pasangan kunci lengkap di komputer ini."
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"

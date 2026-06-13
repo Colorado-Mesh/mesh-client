@@ -22,6 +22,9 @@ patchedDependencies:
   '@liamcottle/meshcore.js@1.13.0':
     hash: 54aadb84d0488a89a60e625ffeb81eb0f70bcd573478f589195e057dcdcce02c
     path: patches/@liamcottle__meshcore.js@1.13.0.patch
+  '@stoprocent/noble@2.5.3':
+    hash: df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca
+    path: patches/@stoprocent__noble@2.5.3.patch
   debug@4.4.3:
     hash: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
     path: patches/debug@4.4.3.patch
@@ -44,7 +47,7 @@ importers:
         version: '@jsr/meshtastic__protobufs@2.7.23'
       '@stoprocent/noble':
         specifier: ^2.5.3
-        version: 2.5.3
+        version: 2.5.3(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)
       builder-util-runtime:
         specifier: 9.5.1
         version: 9.5.1
@@ -5250,7 +5253,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@stoprocent/noble@2.5.3':
+  '@stoprocent/noble@2.5.3(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)':
     dependencies:
       debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)
       node-addon-api: 8.8.0

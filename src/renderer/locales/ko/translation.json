@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "키를 다시 생성하면 현재 DM 공개 및 개인 키가 대체됩니다. 기존의 암호화된 메시지는 더 이상 해독할 수 없습니다. 확실합니까?",
     "copyPublicKey": "복사",
     "publicKeyCopied": "공개 키가 클립보드에 복사되었습니다.",
-    "remoteAdminSetupHint": "이 키를 복사하여 구성하려는 원격 노드에 관리 키로 추가합니다. Meshtastic 원격 관리자 문서를 참조하세요."
+    "remoteAdminSetupHint": "이 키를 복사하여 구성하려는 원격 노드에 관리 키로 추가합니다. Meshtastic 원격 관리자 문서를 참조하세요.",
+    "keyBackupNotIncluded": "채널, NodeDB, 메시지, 연락처 또는 원격 관리 키를 복원하지 않습니다.",
+    "backupAvailableForNode": "{{label}}에 대한 백업이 저장되었습니다",
+    "noBackupForNode": "{{label}}에 대한 백업 없음",
+    "keysBackedUpForDevice": "{{label}}에 대한 키가 백업되었습니다.",
+    "otherBackupsCount": "다른 장치 백업 {{count}}개 저장됨",
+    "restoreFromBackup": "백업에서 복원...",
+    "restoreFromBackupTitle": "백업에서 복원",
+    "restoreFromBackupConfirm": "연결된 장치에 {{label}}의 키를 복원하시겠습니까?",
+    "restoreVerifySuccess": "키가 성공적으로 복원되었습니다.",
+    "restoreVerifyFailed": "복원이 완료되었지만 키 확인에 실패했습니다. 보안을 다시 연결하고 확인합니다.",
+    "removeBackup": "백업 제거",
+    "removeBackupConfirm": "이 컴퓨터에서 이 노드에 대한 저장된 백업을 제거하시겠습니까?",
+    "backupRemoved": "백업 세트가 제거됨:",
+    "meshcorePrivateKeyHint": "주요 자료를 보려면 아래 개인 키 내보내기를 사용하십시오. 백업은 이 컴퓨터에 전체 키 쌍을 저장합니다."
   },
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."

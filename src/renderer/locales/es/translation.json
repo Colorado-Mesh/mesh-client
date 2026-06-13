@@ -2381,7 +2381,21 @@
     "regenerateKeysConfirm": "La regeneración de claves reemplazará sus claves públicas y privadas de DM actuales. Cualquier mensaje cifrado existente ya no se podrá descifrar. ¿Está seguro?",
     "copyPublicKey": "Copiar",
     "publicKeyCopied": "Clave pública copiada al portapapeles.",
-    "remoteAdminSetupHint": "Copie esta clave y añádala como clave de administrador en los nodos remotos que desee configurar. Consulta los documentos del administrador remoto de Meshtastic."
+    "remoteAdminSetupHint": "Copie esta clave y añádala como clave de administrador en los nodos remotos que desee configurar. Consulta los documentos del administrador remoto de Meshtastic.",
+    "keyBackupNotIncluded": "No restaura canales, NodeDB, mensajes, contactos o claves de administración remota.",
+    "backupAvailableForNode": "Copia de seguridad guardada para {{label}}",
+    "noBackupForNode": "No hay copia de seguridad para {{label}}",
+    "keysBackedUpForDevice": "Copia de seguridad de las claves de {{label}}.",
+    "otherBackupsCount": "{{count}} otra (s) copia(s) de seguridad del dispositivo almacenada (s)",
+    "restoreFromBackup": "Restaurar desde la copia de seguridad",
+    "restoreFromBackupTitle": "Restaurar desde la copia de seguridad",
+    "restoreFromBackupConfirm": "¿Quieres restaurar las claves de {{label}} en el dispositivo conectado?",
+    "restoreVerifySuccess": "Restaurado con éxito",
+    "restoreVerifyFailed": "Restauración completada pero verificación de clave fallida. Vuelva a conectarse y compruebe la seguridad.",
+    "removeBackup": "Eliminar copia de seguridad",
+    "removeBackupConfirm": "¿Eliminar la copia de seguridad almacenada para este nodo de este equipo?",
+    "backupRemoved": "Copia de seguridad eliminada.",
+    "meshcorePrivateKeyHint": "Utilice la clave privada de exportación a continuación para ver el material de la clave. La copia de seguridad almacena el par de claves completo en este ordenador."
   },
   "sidebar": {
     "disabledTabTooltip": "No disponible en este modo"

@@ -2704,6 +2704,23 @@ function AppContent({
                               isConnected={isOperational}
                               securityConfig={effectiveSecurityConfig}
                               protocol={protocol}
+                              localNodeNum={
+                                protocol === 'meshtastic'
+                                  ? meshtasticConnectionView.state.myNodeNum
+                                  : undefined
+                              }
+                              localNodeLabel={
+                                protocol === 'meshtastic'
+                                  ? (nodesForUi.get(meshtasticConnectionView.state.myNodeNum)
+                                      ?.long_name ?? undefined)
+                                  : meshcoreRuntime.selfInfo?.name
+                              }
+                              meshcorePublicKey={meshcoreRuntime.selfInfo?.publicKey ?? null}
+                              meshcoreNodeId={
+                                protocol === 'meshcore'
+                                  ? meshcoreConnectionView.state.myNodeNum
+                                  : undefined
+                              }
                               onSignData={
                                 protocol === 'meshcore' ? meshcorePanelActions.signData : undefined
                               }

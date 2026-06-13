@@ -184,7 +184,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasRepeaterStatus": true,
         "hasRfStats": true,
         "hasRoomServersPanel": true,
-        "hasSecurityPanel": false,
+        "hasSecurityPanel": true,
         "hasSerial": false,
         "hasShutdown": false,
         "hasStoreForward": false,

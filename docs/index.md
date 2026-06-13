@@ -59,7 +59,7 @@ For development setup and local build/test workflow, see:
   - Room login/posts — [Troubleshooting](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 - **Support**
   - [Diagnostics](diagnostics.md)
-  - [Key backup and cryptography](key-backup-and-crypto.md) (Meshtastic DM backup scope; MT → MC migration)
+  - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
   - [Localization & Languages](localization.md)
   - [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md)

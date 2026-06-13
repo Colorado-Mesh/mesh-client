@@ -1,0 +1,21 @@
+diff --git a/lib/win/binding.gyp b/lib/win/binding.gyp
+index a7e56ab2640f35322d1ae5ea790d5b21e8d69070..31198dec658f1242c749ad55ced3e3334e3adc06 100644
+--- a/lib/win/binding.gyp
++++ b/lib/win/binding.gyp
+@@ -19,7 +19,6 @@
+         'VCCLCompilerTool': {
+           'ExceptionHandling': 1,
+           'AdditionalOptions': [
+-            '/await', 
+             '/std:c++20'
+           ],
+         },
+@@ -28,7 +27,7 @@
+       'msvs_target_platform_minversion':'10.0.18362.0',
+       'conditions': [
+         ['OS=="win"', { 
+-          'defines': [ '_HAS_EXCEPTIONS=1', 'NAPI_CPP_EXCEPTIONS' ] 
++          'defines': [ '_HAS_EXCEPTIONS=1', 'NAPI_CPP_EXCEPTIONS', '_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS' ] 
+         }]
+       ],
+     }
