@@ -175,8 +175,8 @@
     "soundNotifications": "Notificações sonoras",
     "storeForwardAutoFetchHistory": "Buscar automaticamente o histórico de bate-papo Armazenar e Encaminhar no Connect",
     "storeForwardAutoFetchHistoryHint": "Na conexão RF, solicite até 50 mensagens (recarga de 15 minutos entre as capturas). Desligue se a ponte MQTT do gateway estiver sobrecarregada.",
-    "reduceMotion": "Reduzam o movimento",
-    "reduceMotionDesc": "Desativa ícones animados e efeitos decorativos. Os giradores de carga e os indicadores de status da conexão ainda estão animados."
+    "reduceMotion": "Reduzir movimento",
+    "reduceMotionDesc": "Desativa ícones animados e efeitos decorativos. Spinners de carregamento e indicadores de status da conexão continuam animados."
   },
   "aria": {
     "closeDialog": "Fechar janela",

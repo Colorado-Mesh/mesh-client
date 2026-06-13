@@ -176,7 +176,7 @@
     "storeForwardAutoFetchHistory": "Automaticky načíst historii chatu v obchodě a přeposlat při připojení",
     "storeForwardAutoFetchHistoryHint": "Při RF připojení si vyžádejte až 50 zpráv (15minutový cooldown mezi načteními). Vypněte, pokud je váš most brány MQTT přetížen.",
     "reduceMotion": "Snížit pohyb",
-    "reduceMotionDesc": "Zakáže animované ikony a dekorativní efekty. Načítání spinnerů a indikátorů stavu připojení stále oživuje."
+    "reduceMotionDesc": "Zakáže animované ikony a dekorativní efekty. Načítací spinnery a indikátory stavu připojení se stále animují."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

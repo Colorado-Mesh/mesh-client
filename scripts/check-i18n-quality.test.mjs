@@ -948,6 +948,61 @@ describe('roomsPanel saved passwords per-key quality', () => {
     });
     expectIssue(issues, '登录');
   });
+
+  const enReduceMotion = 'Reduce motion';
+  const enReduceMotionDesc =
+    'Disables animated icons and decorative effects. Loading spinners and connection status indicators still animate.';
+
+  it('flags Spanish girador de carga on reduceMotionDesc', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'appPanel.reduceMotionDesc',
+      val: 'Los giradores de carga siguen animados.',
+      enVal: enReduceMotionDesc,
+    });
+    expectIssue(issues, 'girador de carga');
+  });
+
+  it('flags Dutch still active on reduceMotionDesc', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'appPanel.reduceMotionDesc',
+      val: 'Spinners blijft actief.',
+      enVal: enReduceMotionDesc,
+    });
+    expectIssue(issues, 'blijft actief');
+  });
+
+  it('flags pt-BR plural imperative on reduceMotion', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pt-BR',
+      flatKey: 'appPanel.reduceMotion',
+      val: 'Reduzam o movimento',
+      enVal: enReduceMotion,
+    });
+    expectIssue(issues, 'Reduzam');
+  });
+
+  it('flags Chinese 运动 on reduceMotion', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'appPanel.reduceMotion',
+      val: '减少运动',
+      enVal: enReduceMotion,
+    });
+    expectIssue(issues, '运动');
+  });
+
+  it('passes fixed reduceMotionDesc in Spanish', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'es',
+        flatKey: 'appPanel.reduceMotionDesc',
+        val: 'Los indicadores de carga siguen animándose.',
+        enVal: enReduceMotionDesc,
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedBrandIssues', () => {

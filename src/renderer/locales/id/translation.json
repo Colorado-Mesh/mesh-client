@@ -175,8 +175,8 @@
     "soundNotifications": "Pemberitahuan suara",
     "storeForwardAutoFetchHistory": "Ambil riwayat obrolan Toko & Teruskan secara otomatis saat terhubung",
     "storeForwardAutoFetchHistoryHint": "Pada koneksi RF, minta hingga 50 pesan (mode tenang 15 menit di antara pengambilan). Matikan jika jembatan gerbang MQTT Anda kelebihan beban.",
-    "reduceMotion": "Mengurangi gerakan",
-    "reduceMotionDesc": "Nonaktifkan ikon animasi dan efek dekoratif. Memuat indikator status pemintal dan koneksi masih bernyawa."
+    "reduceMotion": "Kurangi gerakan",
+    "reduceMotionDesc": "Menonaktifkan ikon animasi dan efek dekoratif. Spinner pemuatan dan indikator status koneksi tetap animasi."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

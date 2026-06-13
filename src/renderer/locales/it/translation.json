@@ -176,7 +176,7 @@
     "storeForwardAutoFetchHistory": "Recupera automaticamente la cronologia della chat Store & Forward su Connect",
     "storeForwardAutoFetchHistoryHint": "Su RF Connect, richiedi fino a 50 messaggi (15 minuti di ricarica tra un recupero e l'altro). Spegnere se il ponte MQTT del gateway è sovraccarico.",
     "reduceMotion": "Ridurre il movimento",
-    "reduceMotionDesc": "Disabilita le icone animate e gli effetti decorativi. Gli spinner di caricamento e gli indicatori di stato della connessione sono ancora attivi."
+    "reduceMotionDesc": "Disabilita le icone animate e gli effetti decorativi. Gli spinner di caricamento e gli indicatori di stato della connessione restano animati."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

@@ -138,6 +138,81 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
 /** Substring match — Dutch compounds like "overstromingsadvertentie" have no \\b before advertentie. */
 export const NL_MESH_ADVERT_FALSE_FRIEND_RE = /advertentie/i;
 
+/** App → Appearance reduce-motion accessibility copy (added with lucide icon motion). */
+export const REDUCE_MOTION_KEY = 'appPanel.reduceMotion';
+export const REDUCE_MOTION_DESC_KEY = 'appPanel.reduceMotionDesc';
+
+/**
+ * MT often mistranslates UI "loading spinner" as textile/industrial equipment.
+ * Checked only on appPanel.reduceMotionDesc where English mentions "Loading spinners".
+ */
+export const REDUCE_MOTION_LOADING_SPINNER_FALSE_FRIENDS = {
+  es: [
+    {
+      re: /girador(es)?\s+de\s+carga/i,
+      hint: 'use "indicadores de carga" or "spinners de carga", not textile "girador de carga"',
+    },
+  ],
+  'pt-BR': [
+    {
+      re: /girador(es)?\s+de\s+carga/i,
+      hint: 'use "spinners de carregamento", not textile "girador de carga"',
+    },
+  ],
+  pl: [
+    {
+      re: /tarcz\s+obrotow/i,
+      hint: 'use "wskaźniki ładowania", not rotating-disk "tarcze obrotowe"',
+    },
+  ],
+  ru: [
+    {
+      re: /вращател/i,
+      hint: 'use "индикаторы загрузки", not mechanical "вращатели"',
+    },
+  ],
+  tr: [
+    {
+      re: /iplikçi/i,
+      hint: 'use "yükleme göstergesi", not textile "iplikçi"',
+    },
+  ],
+  id: [
+    {
+      re: /\bpemintal\b/i,
+      hint: 'use "spinner pemuatan", not textile "pemintal"',
+    },
+  ],
+  zh: [
+    {
+      re: /旋转器/,
+      hint: 'use "加载指示器" or "加载动画", not mechanical "旋转器"',
+    },
+  ],
+};
+
+/** MT sometimes translates "still animate" as "still active/alive". */
+export const REDUCE_MOTION_STILL_ANIMATE_FALSE_FRIENDS = {
+  nl: [
+    {
+      re: /blijft\s+actief/i,
+      hint: 'use "blijven geanimeerd", not "blijft actief" (still active)',
+    },
+  ],
+  it: [
+    {
+      re: /ancora\s+attiv/i,
+      hint: 'use "restano animati", not "ancora attivi" (still active)',
+    },
+  ],
+  id: [
+    {
+      re: /masih\s+bernyawa/i,
+      hint: 'use "tetap animasi", not "masih bernyawa" (still alive)',
+    },
+  ],
+};
+
 /** Keys or English copy that refer to MeshCore/Meshtastic adverts (not TV/commercial ads). */
 export function isMeshAdvertUiKey(flatKey, enVal) {
   return (
@@ -1015,6 +1090,34 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
         'roomsPanel password placeholder looks like an MT sentence — use a short literal (e.g. hello, password)',
       );
     }
+  }
+
+  if (flatKey === REDUCE_MOTION_DESC_KEY && enVal.includes('Loading spinners')) {
+    for (const { re, hint } of REDUCE_MOTION_LOADING_SPINNER_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reduceMotionDesc loading-spinner false friend: ${hint}`);
+      }
+    }
+    for (const { re, hint } of REDUCE_MOTION_STILL_ANIMATE_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reduceMotionDesc still-animate false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (locale === 'pt-BR' && flatKey === REDUCE_MOTION_KEY && /\bReduzam\b/.test(val)) {
+    issues.push(
+      'reduceMotion uses plural imperative "Reduzam" — use infinitive "Reduzir movimento"',
+    );
+  }
+
+  if (
+    locale === 'zh' &&
+    flatKey === REDUCE_MOTION_KEY &&
+    enVal === 'Reduce motion' &&
+    /减少运动/.test(val)
+  ) {
+    issues.push('reduceMotion uses 运动 (exercise) — use 动态效果 or 动画 for UI motion');
   }
 
   return issues;
