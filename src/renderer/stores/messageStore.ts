@@ -112,6 +112,54 @@ export function upsertMessageRecordsForIdentity(
   });
 }
 
+/** Replace the full message bucket for an identity (post-delete DB reload). */
+export function replaceMessageRecordsForIdentity(
+  identityId: IdentityId,
+  records: MessageRecord[],
+): void {
+  useMessageStore.setState((s) => {
+    const byIdentity: Record<string, MessageRecord> = {};
+    for (const message of records) {
+      byIdentity[message.id] = message;
+    }
+    const prior = s.messages[identityId];
+    if (prior && Object.keys(prior).length === records.length) {
+      let identical = true;
+      for (const message of records) {
+        const existing = prior[message.id];
+        if (!existing || !messageRecordFieldsEqual(existing, message)) {
+          identical = false;
+          break;
+        }
+      }
+      if (identical) return s;
+    }
+    return mergeIdentityMessages(s, identityId, byIdentity);
+  });
+}
+
+/** Remove all store messages matching a cleared SQLite channel index. */
+export function pruneMessageRecordsForIdentityByChannel(
+  identityId: IdentityId,
+  channel: number,
+): void {
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId];
+    if (!byIdentity) return s;
+    const next: Record<string, MessageRecord> = {};
+    let removed = false;
+    for (const [id, message] of Object.entries(byIdentity)) {
+      if (message.channelIndex === channel) {
+        removed = true;
+        continue;
+      }
+      next[id] = message;
+    }
+    if (!removed) return s;
+    return mergeIdentityMessages(s, identityId, next);
+  });
+}
+
 /**
  * Re-key a message (used when the optimistic provisional id is replaced by the
  * SDK-assigned packetId on send completion).

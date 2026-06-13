@@ -142,7 +142,16 @@ export function meshtasticLoosePersistenceMatchKey(msg: ChatMessage): string {
 export function mergeMeshtasticDbHydrationWithLive(
   prev: ChatMessage[],
   fromDb: ChatMessage[],
+  opts?: { replaceFromDb?: boolean },
 ): ChatMessage[] {
+  if (opts?.replaceFromDb) {
+    const sorted = [...fromDb];
+    sorted.sort((a, b) => {
+      if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+      return (a.id ?? 0) - (b.id ?? 0);
+    });
+    return trimChatMessagesToMax(sorted, MAX_IN_MEMORY_CHAT_MESSAGES);
+  }
   const dbIds = new Set(fromDb.map((d) => d.id).filter((id): id is number => id != null));
   const dbPacketIds = new Set(
     fromDb.map((d) => d.packetId).filter((pid): pid is number => pid != null && pid !== 0),

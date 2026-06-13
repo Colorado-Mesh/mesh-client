@@ -3248,7 +3248,7 @@ export function useMeshtasticRuntime() {
       });
   }, []);
 
-  const refreshMessagesFromDb = useCallback(() => {
+  const refreshMessagesFromDb = useCallback((opts?: { replaceFromDb?: boolean }) => {
     void loadMeshtasticMessagesFromDb()
       .then((fromDb) => {
         console.debug(
@@ -3262,10 +3262,12 @@ export function useMeshtasticRuntime() {
             );
           }
         }
-        setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
+        setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb, opts));
         const storeId =
           meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-        if (storeId) void hydrateMeshtasticMessagesFromDb(storeId);
+        if (storeId) {
+          void hydrateMeshtasticMessagesFromDb(storeId, opts?.replaceFromDb ? 'replace' : 'upsert');
+        }
       })
       .catch((err: unknown) => {
         console.error(

@@ -4,6 +4,7 @@ import { MESHCORE_UNKNOWN_SENDER_STUB_ID } from '../../lib/meshcoreUtils';
 import type { ChatMessage } from '../../lib/types';
 import {
   mapMeshcoreDbRowsToChatMessages,
+  mergeMeshcoreDbHydrationWithLive,
   type MeshcoreMessageDbRow,
   meshcoreReconcileChannelSenderIds,
   persistMeshcoreMessageSenderRepairs,
@@ -128,5 +129,28 @@ describe('persistMeshcoreMessageSenderRepairs', () => {
     const mapped = mapMeshcoreDbRowsToChatMessages(rows);
     await persistMeshcoreMessageSenderRepairs(rows, mapped);
     expect(updateMeshcoreMessageSender).not.toHaveBeenCalled();
+  });
+});
+
+describe('mergeMeshcoreDbHydrationWithLive', () => {
+  const prev: ChatMessage[] = [
+    {
+      id: 1,
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'stale',
+      channel: 0,
+      timestamp: 1000,
+      status: 'acked',
+    },
+  ];
+  const fromDb: ChatMessage[] = [];
+
+  it('replaceFromDb drops in-flight prev messages after SQLite delete', () => {
+    expect(mergeMeshcoreDbHydrationWithLive(prev, fromDb, { replaceFromDb: true })).toEqual([]);
+  });
+
+  it('default merge keeps in-flight prev messages not yet in DB', () => {
+    expect(mergeMeshcoreDbHydrationWithLive(prev, fromDb)).toEqual(prev);
   });
 });

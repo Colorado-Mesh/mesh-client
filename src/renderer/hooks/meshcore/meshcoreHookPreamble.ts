@@ -25,7 +25,10 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
-import { mergeMeshcoreLastHeardFromAdvert } from '../../lib/nodeStatus';
+import {
+  effectiveMessageTimestampMs,
+  mergeMeshcoreLastHeardFromAdvert,
+} from '../../lib/nodeStatus';
 import {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
@@ -519,7 +522,16 @@ function meshcoreLoosePersistenceMatchKey(msg: ChatMessage): string {
 export function mergeMeshcoreDbHydrationWithLive(
   prev: ChatMessage[],
   fromDb: ChatMessage[],
+  opts?: { replaceFromDb?: boolean },
 ): ChatMessage[] {
+  if (opts?.replaceFromDb) {
+    const sorted = [...fromDb];
+    sorted.sort((a, b) => {
+      if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+      return (a.id ?? 0) - (b.id ?? 0);
+    });
+    return trimChatMessagesToMax(sorted, MAX_IN_MEMORY_CHAT_MESSAGES);
+  }
   const dbLoose = new Set(fromDb.map(meshcoreLoosePersistenceMatchKey));
   const inFlight = prev.filter((m) => {
     if (m.id != null) return !fromDb.some((d) => d.id === m.id);
@@ -818,7 +830,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
       sender_name: displayName,
       payload: displayPayload,
       channel: r.channel_idx,
-      timestamp: r.timestamp,
+      timestamp: effectiveMessageTimestampMs(r.timestamp),
       status: (r.status as ChatMessage['status']) ?? 'acked',
       packetId: r.packet_id ?? undefined,
       emoji: safeEmojiCodepoint(r.emoji),

@@ -13,10 +13,17 @@ export function useProtocolDbRefresh(protocol: MeshProtocol, identityId: Identit
     await hydrateIdentityStoresFromDb(protocol, identityId, { nodes: true, messages: false });
   }, [protocol, identityId]);
 
-  const refreshMessagesFromDb = useCallback(async (): Promise<void> => {
-    if (!identityId) return;
-    await hydrateIdentityStoresFromDb(protocol, identityId, { nodes: false, messages: true });
-  }, [protocol, identityId]);
+  const refreshMessagesFromDb = useCallback(
+    async (opts?: { messagesMode?: 'upsert' | 'replace' }): Promise<void> => {
+      if (!identityId) return;
+      await hydrateIdentityStoresFromDb(protocol, identityId, {
+        nodes: false,
+        messages: true,
+        messagesMode: opts?.messagesMode ?? 'upsert',
+      });
+    },
+    [protocol, identityId],
+  );
 
   const refreshAllFromDb = useCallback(async (): Promise<void> => {
     if (!identityId) return;

@@ -226,7 +226,11 @@ import {
   meshcoreTransportParams,
 } from '../lib/meshIdentityBridge';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
-import { lastHeardToUnixSeconds, mergeMeshcoreLastHeardFromAdvert } from '../lib/nodeStatus';
+import {
+  effectiveMessageTimestampMs,
+  lastHeardToUnixSeconds,
+  mergeMeshcoreLastHeardFromAdvert,
+} from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { reactionGlyphFromPicker } from '../lib/reactions';
@@ -970,7 +974,7 @@ export function useMeshcoreRuntime() {
       if (isMeshcoreTransportStatusChatLine(m.text)) {
         return;
       }
-      const ts = m.timestamp ?? Date.now();
+      const ts = effectiveMessageTimestampMs(m.timestamp ?? Date.now());
       const tsSec = Math.floor(ts / 1000);
       const fromNodeId =
         m.senderNodeId != null && Number.isFinite(m.senderNodeId) ? m.senderNodeId >>> 0 : 0;
@@ -5319,7 +5323,7 @@ export function useMeshcoreRuntime() {
       console.warn('[useMeshcoreRuntime] refreshNodesFromDb error ' + errLikeToLogString(e));
     }
   }, [resolveMeshcoreStoreIdentityId]);
-  const refreshMessagesFromDb = useCallback(async () => {
+  const refreshMessagesFromDb = useCallback(async (opts?: { replaceFromDb?: boolean }) => {
     try {
       const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
         undefined,
@@ -5331,7 +5335,7 @@ export function useMeshcoreRuntime() {
       );
       void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
       setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
-      setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+      setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped, opts));
     } catch (e) {
       console.warn('[useMeshcoreRuntime] refreshMessagesFromDb error ' + errLikeToLogString(e));
     }

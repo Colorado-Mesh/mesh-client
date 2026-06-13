@@ -1,5 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { clampReadWatermarkMs, effectiveMessageTimestampMs } from './nodeStatus';
 import { parseStoredJson } from './parseStoredJson';
 import type { MeshProtocol } from './types';
 
@@ -282,8 +283,9 @@ export function maxMessageTimestampByViewKey(
   const maxByKey: Record<string, number> = {};
   for (const msg of messages) {
     const key = msg.to != null ? `dm:${msg.to >>> 0}` : `ch:${msg.channel}`;
+    const ts = effectiveMessageTimestampMs(msg.timestamp);
     const prev = maxByKey[key] ?? 0;
-    if (msg.timestamp > prev) maxByKey[key] = msg.timestamp;
+    if (ts > prev) maxByKey[key] = ts;
   }
   return maxByKey;
 }
@@ -303,9 +305,9 @@ export function sanitizeMeshcoreChatLastRead(
   for (const [key, watermark] of Object.entries(persisted)) {
     if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
     const maxMsg = maxByKey[key] ?? 0;
-    let clamped = watermark;
+    let clamped = clampReadWatermarkMs(watermark, now);
     if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && watermark > maxMsg) clamped = maxMsg;
+    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
     if (clamped !== watermark) {
       next[key] = clamped;
       changed = true;
@@ -314,14 +316,18 @@ export function sanitizeMeshcoreChatLastRead(
   return changed ? next : persisted;
 }
 
-/** One-time sanitize MeshCore chat lastRead after upgrade; persists when adjusted. */
+/** Ongoing sanitize for MeshCore chat lastRead (sidebar/tray badges). */
+export function getSanitizedMeshcoreChatLastRead(
+  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+): Record<string, number> {
+  return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('meshcore'), messages);
+}
+
+/** Persist MeshCore chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
 export function ensureMeshcoreChatLastReadSanitized(
   messages: readonly { channel: number; to?: number | null; timestamp: number }[],
 ): Record<string, number> {
   const loaded = loadPersistedLastReadInitial('meshcore');
-  if (localStorage.getItem(MESHCORE_LAST_READ_SANITIZED_KEY) === '1') {
-    return loaded;
-  }
   const sanitized = sanitizeMeshcoreChatLastRead(loaded, messages);
   if (sanitized !== loaded) {
     try {
@@ -342,4 +348,82 @@ export function ensureMeshcoreChatLastReadSanitized(
     );
   }
   return sanitized;
+}
+
+/** Max clamped post timestamp per room server node id. */
+export function maxRoomPostTimestampByServerId(
+  messages: readonly { roomServerId?: number; timestamp: number }[],
+): Record<number, number> {
+  const maxById: Record<number, number> = {};
+  for (const msg of messages) {
+    if (msg.roomServerId == null) continue;
+    const ts = effectiveMessageTimestampMs(msg.timestamp);
+    const id = msg.roomServerId >>> 0;
+    if (ts > (maxById[id] ?? 0)) maxById[id] = ts;
+  }
+  return maxById;
+}
+
+/** Clamp MeshCore room last-read watermarks that exceed post times or client clock. */
+export function sanitizeMeshcoreRoomsLastRead(
+  persisted: Readonly<Record<number, number>>,
+  messages: readonly { roomServerId?: number; timestamp: number }[],
+): Record<number, number> {
+  const maxById = maxRoomPostTimestampByServerId(messages);
+  const now = Date.now();
+  let changed = false;
+  const next: Record<number, number> = { ...persisted };
+  for (const [k, watermark] of Object.entries(persisted)) {
+    const nodeId = Number(k) >>> 0;
+    if (!Number.isFinite(nodeId)) continue;
+    const maxMsg = maxById[nodeId] ?? 0;
+    let clamped = clampReadWatermarkMs(watermark, now);
+    if (watermark > now) clamped = maxMsg;
+    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
+    if (clamped !== watermark) {
+      next[nodeId] = clamped;
+      changed = true;
+    }
+  }
+  return changed ? next : persisted;
+}
+
+export function getSanitizedMeshcoreRoomsLastRead(
+  messages: readonly { roomServerId?: number; timestamp: number }[],
+): Record<number, number> {
+  return sanitizeMeshcoreRoomsLastRead(loadPersistedRoomsLastRead(), messages);
+}
+
+export function clearPersistedLastReadForProtocol(protocol: MeshProtocol): void {
+  try {
+    localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({}));
+    notifyPersistedLastReadChanged(protocol);
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] clearPersistedLastReadForProtocol failed ' +
+        errLikeToLogString(e),
+    );
+  }
+}
+
+/** Remove last-read watermarks for a cleared channel (DM channel `-1` clears all `dm:` keys). */
+export function removePersistedLastReadForChannel(protocol: MeshProtocol, channel: number): void {
+  const loaded = loadPersistedLastReadInitial(protocol);
+  const next =
+    channel === -1
+      ? Object.fromEntries(Object.entries(loaded).filter(([key]) => !key.startsWith('dm:')))
+      : Object.fromEntries(Object.entries(loaded).filter(([key]) => key !== `ch:${channel}`));
+  try {
+    localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify(next));
+    notifyPersistedLastReadChanged(protocol);
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] removePersistedLastReadForChannel failed ' +
+        errLikeToLogString(e),
+    );
+  }
+}
+
+export function clearPersistedRoomsLastRead(): void {
+  savePersistedRoomsLastRead({});
 }
