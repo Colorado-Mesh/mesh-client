@@ -1,3 +1,4 @@
+import { Download, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,6 +11,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
@@ -48,6 +51,7 @@ export default function TelemetryPanel({
   meshcorePacketStats,
 }: Props) {
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
   const showEnvironment = capabilities?.hasEnvironmentTelemetry !== false;
   const showPacketStats = capabilities?.hasRfStats === true && meshcorePacketStats != null;
   const chartData = useMemo(
@@ -201,22 +205,11 @@ export default function TelemetryPanel({
             environmentTelemetry.length > 0) && (
             <button
               onClick={handleExportCsv}
+              {...{ [PARENT_HOVER_ATTR]: '' }}
               className="flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
               title={t('telemetryPanel.exportCsv')}
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
+              <Download aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
               Export CSV
             </button>
           )}

@@ -174,7 +174,9 @@
     "notificationsSection": "Meldingen",
     "soundNotifications": "Geluidsmeldingen",
     "storeForwardAutoFetchHistory": "Automatisch Store ophalen en chatgeschiedenis doorsturen bij verbinden",
-    "storeForwardAutoFetchHistoryHint": "Vraag op RF Connect maximaal 50 berichten aan (15 minuten afkoelen tussen ophalingen). Schakel uit als uw gateway MQTT-brug overbelast is."
+    "storeForwardAutoFetchHistoryHint": "Vraag op RF Connect maximaal 50 berichten aan (15 minuten afkoelen tussen ophalingen). Schakel uit als uw gateway MQTT-brug overbelast is.",
+    "reduceMotion": "Beweging verminderen",
+    "reduceMotionDesc": "Schakelt geanimeerde pictogrammen en decoratieve effecten uit. Laadspinners en verbindingsstatusindicatoren blijven geanimeerd."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

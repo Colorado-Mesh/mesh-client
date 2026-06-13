@@ -1,6 +1,9 @@
 import type { TFunction } from 'i18next';
+import { PARENT_HOVER_ATTR, X } from 'lucide-react-motion';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import {
   analyzeLogs,
@@ -41,6 +44,7 @@ export default function LogAnalyzeModal({
   protocol,
 }: LogAnalyzeModalProps) {
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const result = analyzeLogs(entries, protocol);
@@ -130,17 +134,10 @@ export default function LogAnalyzeModal({
           <button
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
+            {...{ [PARENT_HOVER_ATTR]: '' }}
             className="hover:bg-secondary-dark text-muted rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
           </button>
         </div>
 

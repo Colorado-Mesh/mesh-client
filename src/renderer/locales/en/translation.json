@@ -171,6 +171,8 @@
     "messagesLoadLimitIntro": "Limit how many messages load into memory for the UI, and cap how many rows stay in SQLite. Loading fewer keeps RAM down on busy networks; the database cap prunes older messages on app startup (stored per protocol).",
     "logPanelHelp": "When enabled, a live log stream appears on the right. Debug lines require the checkbox inside the log panel.",
     "compactMessages": "Compact message view",
+    "reduceMotion": "Reduce motion",
+    "reduceMotionDesc": "Disables animated icons and decorative effects. Loading spinners and connection status indicators still animate.",
     "storeForwardAutoFetchHistory": "Automatically fetch Store & Forward chat history on connect",
     "storeForwardAutoFetchHistoryHint": "On RF connect, request up to 50 messages (15 min cooldown between fetches). Turn off if your gateway MQTT bridge is overloaded.",
     "notificationsSection": "Notifications",

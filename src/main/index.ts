@@ -34,6 +34,7 @@ import {
   addContactToGroup,
   closeDatabase,
   createContactGroup,
+  DATABASE_CLOSED_MESSAGE,
   deleteAllMeshcorePathHistory,
   deleteContactGroup,
   deleteMeshcoreContactsByAge,
@@ -46,10 +47,12 @@ import {
   getContactGroupMembers,
   getContactGroups,
   getDatabase,
+  getDatabaseIfOpen,
   getMeshcoreHopHistory,
   getMeshcorePathHistory,
   getMeshcoreTraceHistory,
   initDatabase,
+  isDatabaseClosed,
   mergeDatabase,
   type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
@@ -278,6 +281,28 @@ async function shutdownAppResources(): Promise<void> {
   closeDatabase();
   shutdownDone = true;
 }
+
+/** Swallow DB writes during app quit; rethrow real failures for Electron IPC error reporting. */
+function finishDbIpcHandler(channel: string, err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  if (isDatabaseClosed() || message === DATABASE_CLOSED_MESSAGE) {
+    console.debug(`[IPC] ${channel}: skipped (database closed)`);
+    return;
+  }
+  console.error(`[IPC] ${channel} failed:`, sanitizeLogMessage(message));
+  throw err;
+}
+
+function finishDbIpcReadHandler<T>(channel: string, err: unknown, fallback: T): T {
+  const message = err instanceof Error ? err.message : String(err);
+  if (isDatabaseClosed() || message === DATABASE_CLOSED_MESSAGE) {
+    console.debug(`[IPC] ${channel}: skipped (database closed)`);
+    return fallback;
+  }
+  finishDbIpcHandler(channel, err);
+  return fallback;
+}
+
 /** powerSaveBlocker ID while a device is connected; null when not active. */
 let powerSaveBlockerId: number | null = null;
 
@@ -3032,6 +3057,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticLastRfSelfNodeId',
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
+  'reduceMotion',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);
@@ -3224,11 +3250,7 @@ ipcMain.handle('db:saveMessage', (event, message) => {
       via_store_forward: message.viaStoreForward ? 1 : 0,
     });
   } catch (err) {
-    console.error(
-      '[IPC] db:saveMessage failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:saveMessage', err);
   }
 });
 
@@ -3270,11 +3292,7 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
       };
     });
   } catch (err) {
-    console.error(
-      '[IPC] db:getMessages failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMessages', err);
   }
 });
 
@@ -3340,11 +3358,7 @@ ipcMain.handle('db:saveNode', (_event, node) => {
       path: node.path != null ? JSON.stringify(node.path) : null,
     });
   } catch (err) {
-    console.error(
-      '[IPC] db:saveNode failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:saveNode', err);
   }
 });
 
@@ -3357,11 +3371,7 @@ ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, bu
     upsertNodePath(nodeId, lastHeard, hops, path);
     return { success: true, hops, path };
   } catch (err) {
-    console.error(
-      '[IPC] db:saveNodePath failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:saveNodePath', err);
   }
 });
 
@@ -3375,11 +3385,7 @@ ipcMain.handle('db:setNodeFavorited', (_event, nodeId: number, favorited: boolea
       .prepareOnce('UPDATE nodes SET favorited = ? WHERE node_id = ?')
       .run(favorited ? 1 : 0, id);
   } catch (err) {
-    console.error(
-      '[IPC] db:setNodeFavorited failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:setNodeFavorited', err);
   }
 });
 
@@ -3392,11 +3398,7 @@ ipcMain.handle('db:getNodeNote', (_event, nodeId: number) => {
       | undefined;
     return row?.notes ?? null;
   } catch (err) {
-    console.error(
-      '[IPC] db:getNodeNote failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getNodeNote', err);
   }
 });
 
@@ -3410,11 +3412,7 @@ ipcMain.handle('db:setNodeNote', (_event, nodeId: number, note: string) => {
       'INSERT INTO node_notes (node_id, notes, updated_at) VALUES (?, ?, ?) ON CONFLICT(node_id) DO UPDATE SET notes = excluded.notes, updated_at = excluded.updated_at',
     ).run(id, note, Date.now());
   } catch (err) {
-    console.error(
-      '[IPC] db:setNodeNote failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:setNodeNote', err);
   }
 });
 
@@ -3423,11 +3421,7 @@ ipcMain.handle('db:getNodes', () => {
     const db = getDatabase();
     return db.prepareOnce('SELECT * FROM nodes ORDER BY last_heard DESC').all();
   } catch (err) {
-    console.error(
-      '[IPC] db:getNodes failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getNodes', err);
   }
 });
 
@@ -3441,11 +3435,7 @@ ipcMain.handle('db:clearMessages', (event) => {
     console.debug(`[IPC] db:clearMessages: deleted ${result.changes} messages`);
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:clearMessages failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearMessages', err);
   }
 });
 
@@ -3459,11 +3449,7 @@ ipcMain.handle('db:clearNodes', (event) => {
     console.debug(`[IPC] db:clearNodes: deleted ${result.changes} nodes`);
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:clearNodes failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearNodes', err);
   }
 });
 
@@ -3476,11 +3462,7 @@ ipcMain.handle('db:clearNodePositions', () => {
     console.debug(`[IPC] db:clearNodePositions: cleared positions for ${result.changes} nodes`);
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:clearNodePositions failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearNodePositions', err);
   }
 });
 
@@ -3497,11 +3479,7 @@ ipcMain.handle('db:deleteNode', (event, nodeId: number) => {
     );
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteNode failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteNode', err);
   }
 });
 
@@ -3520,11 +3498,7 @@ ipcMain.handle('db:deleteNodesNeverHeard', (event) => {
     }
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteNodesNeverHeard failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteNodesNeverHeard', err);
   }
 });
 
@@ -3547,11 +3521,7 @@ ipcMain.handle('db:deleteNodesByAge', (event, days: number) => {
     }
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteNodesByAge failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteNodesByAge', err);
   }
 });
 
@@ -3570,11 +3540,7 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
     }
     return { changes: Number(result.changes) };
   } catch (err) {
-    console.error(
-      '[IPC] db:pruneNodesByCount failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:pruneNodesByCount', err);
   }
 });
 
@@ -3595,11 +3561,7 @@ ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
     }
     return { changes: Number(result.changes) };
   } catch (err) {
-    console.error(
-      '[IPC] db:pruneMessagesByCount failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:pruneMessagesByCount', err);
   }
 });
 
@@ -3620,11 +3582,7 @@ ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => 
     }
     return { changes: Number(result.changes) };
   } catch (err) {
-    console.error(
-      '[IPC] db:pruneMeshcoreMessagesByCount failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:pruneMeshcoreMessagesByCount', err);
   }
 });
 
@@ -3645,11 +3603,7 @@ ipcMain.handle('db:deleteNodesBatch', (event, nodeIds: number[]) => {
     console.debug(`[IPC] db:deleteNodesBatch: deleted ${result.changes} nodes`);
     return result.changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteNodesBatch failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteNodesBatch', err);
   }
 });
 
@@ -3665,11 +3619,7 @@ ipcMain.handle('db:clearMessagesByChannel', (event, channel: number) => {
     );
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:clearMessagesByChannel failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearMessagesByChannel', err);
   }
 });
 
@@ -3679,11 +3629,7 @@ ipcMain.handle('db:getMessageChannels', () => {
       .prepareOnce('SELECT DISTINCT channel FROM messages ORDER BY channel')
       .all();
   } catch (err) {
-    console.error(
-      '[IPC] db:getMessageChannels failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMessageChannels', err);
   }
 });
 
@@ -3701,11 +3647,7 @@ ipcMain.handle('db:deleteNodesBySource', (event, source: string) => {
     );
     return changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteNodesBySource failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteNodesBySource', err);
   }
 });
 
@@ -3717,11 +3659,7 @@ ipcMain.handle('db:migrateRfStubNodes', () => {
     }
     return changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:migrateRfStubNodes failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:migrateRfStubNodes', err);
   }
 });
 
@@ -3736,11 +3674,7 @@ ipcMain.handle('db:deleteNodesWithoutLongname', (event) => {
     }
     return changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteNodesWithoutLongname failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteNodesWithoutLongname', err);
   }
 });
 
@@ -3755,11 +3689,7 @@ ipcMain.handle('db:prunePositionHistory', (_event, days: number) => {
     }
     return changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:prunePositionHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:prunePositionHistory', err);
   }
 });
 
@@ -3771,11 +3701,7 @@ ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', () => {
     }
     return changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteMeshcoreContactsNeverAdvertised failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteMeshcoreContactsNeverAdvertised', err);
   }
 });
 
@@ -3790,11 +3716,7 @@ ipcMain.handle('db:deleteMeshcoreContactsByAge', (_event, days: number) => {
     }
     return changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteMeshcoreContactsByAge failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteMeshcoreContactsByAge', err);
   }
 });
 
@@ -3807,11 +3729,7 @@ ipcMain.handle('db:pruneMeshcoreContactsByCount', (_event, maxCount: number) => 
     }
     return { changes };
   } catch (err) {
-    console.error(
-      '[IPC] db:pruneMeshcoreContactsByCount failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:pruneMeshcoreContactsByCount', err);
   }
 });
 
@@ -3847,11 +3765,7 @@ ipcMain.handle(
         .prepareOnce('UPDATE messages SET status = ?, error = ? WHERE packet_id = ?')
         .run(statusSafe, errorSafe, pid);
     } catch (err) {
-      console.error(
-        '[IPC] db:updateMessageStatus failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:updateMessageStatus', err);
     }
   },
 );
@@ -3873,11 +3787,7 @@ ipcMain.handle(
         )
         .run(hopBind, pid);
     } catch (err) {
-      console.error(
-        '[IPC] db:updateMessageReceivedVia failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:updateMessageReceivedVia', err);
     }
   },
 );
@@ -3889,7 +3799,11 @@ ipcMain.handle(
     const oldPid = safeNonNegativeInt(oldPacketId);
     const newPid = safeNonNegativeInt(newPacketId);
     if (oldPid === newPid) return;
-    const db = getDatabase();
+    const db = getDatabaseIfOpen();
+    if (!db) {
+      console.debug('[IPC] db:updateMessagePacketId: skipped (database closed)');
+      return;
+    }
     const deleteByPacketId = db.prepareOnce('DELETE FROM messages WHERE packet_id = ?');
     try {
       const scopedSenderId =
@@ -3913,8 +3827,7 @@ ipcMain.handle(
         deleteByPacketId.run(oldPid);
         return;
       }
-      console.error('[IPC] db:updateMessagePacketId failed:', sanitizeLogMessage(msg));
-      throw err;
+      finishDbIpcHandler('db:updateMessagePacketId', err);
     }
   },
 );
@@ -3934,11 +3847,7 @@ ipcMain.handle('db:export', async () => {
     }
     return null;
   } catch (err) {
-    console.error(
-      '[IPC] db:export failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:export', err);
   }
 });
 
@@ -3956,11 +3865,7 @@ ipcMain.handle('db:import', async () => {
     }
     return null;
   } catch (err) {
-    console.error(
-      '[IPC] db:import failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:import', err);
   }
 });
 
@@ -4217,11 +4122,7 @@ ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 2
     rows.reverse();
     return rows;
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreMessages failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreMessages', err);
   }
 });
 
@@ -4230,11 +4131,7 @@ ipcMain.handle('db:searchMessages', (_event, query: string, limit?: number) => {
     if (typeof query !== 'string' || query.length > 500) return [];
     return searchMessages(query, Math.min(limit ?? 50, 200));
   } catch (err) {
-    console.error(
-      '[IPC] db:searchMessages failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    return [];
+    finishDbIpcHandler('db:searchMessages', err);
   }
 });
 
@@ -4243,11 +4140,7 @@ ipcMain.handle('db:searchMeshcoreMessages', (_event, query: string, limit?: numb
     if (typeof query !== 'string' || query.length > 500) return [];
     return searchMeshcoreMessages(query, Math.min(limit ?? 50, 200));
   } catch (err) {
-    console.error(
-      '[IPC] db:searchMeshcoreMessages failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    return [];
+    finishDbIpcHandler('db:searchMeshcoreMessages', err);
   }
 });
 
@@ -4255,11 +4148,7 @@ ipcMain.handle('db:getMeshcoreContacts', () => {
   try {
     return getDatabase().prepareOnce('SELECT * FROM meshcore_contacts').all();
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreContacts failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreContacts', err);
   }
 });
 
@@ -4348,11 +4237,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
       )
       .run(rowParams);
   } catch (err) {
-    console.error(
-      '[IPC] db:saveMeshcoreMessage failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:saveMeshcoreMessage', err);
   }
 });
 
@@ -4361,11 +4246,7 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
     validateSaveMeshcoreContact(contact);
     return saveMeshcoreContactsBatch([meshcoreContactInputToUpsertParams(contact)]);
   } catch (err) {
-    console.error(
-      '[IPC] db:saveMeshcoreContact failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:saveMeshcoreContact', err);
   }
 });
 
@@ -4384,11 +4265,7 @@ ipcMain.handle('db:saveMeshcoreContactsBatch', (_event, contacts: unknown) => {
     }
     return saveMeshcoreContactsBatch(rows);
   } catch (err) {
-    console.error(
-      '[IPC] db:saveMeshcoreContactsBatch failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:saveMeshcoreContactsBatch', err);
   }
 });
 
@@ -4415,11 +4292,7 @@ ipcMain.handle(
         )
         .run(ts, tr, id);
     } catch (err) {
-      console.error(
-        '[IPC] db:updateMeshcoreContactRfTransport failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:updateMeshcoreContactRfTransport', err);
     }
   },
 );
@@ -4435,11 +4308,7 @@ ipcMain.handle(
         .prepareOnce('UPDATE meshcore_contacts SET nickname = ? WHERE node_id = ?')
         .run(nickname ?? null, id);
     } catch (err) {
-      console.error(
-        '[IPC] db:updateMeshcoreContactNickname failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:updateMeshcoreContactNickname', err);
     }
   },
 );
@@ -4476,11 +4345,7 @@ ipcMain.handle(
       ).run(id, hex, favorited ? 1 : 0);
       return { changes: 1 };
     } catch (err) {
-      console.error(
-        '[IPC] db:updateMeshcoreContactFavorited failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:updateMeshcoreContactFavorited', err);
     }
   },
 );
@@ -4527,11 +4392,7 @@ ipcMain.handle(
         )
         .run({ id, sender_id: sid, sender_name: name });
     } catch (err) {
-      console.error(
-        '[IPC] db:updateMeshcoreMessageSender failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:updateMeshcoreMessageSender', err);
     }
   },
 );
@@ -4546,11 +4407,7 @@ ipcMain.handle('db:updateMeshcoreMessageStatus', (_event, packetId: number, stat
       .prepareOnce('UPDATE meshcore_messages SET status = ? WHERE packet_id = ?')
       .run(status, pid);
   } catch (err) {
-    console.error(
-      '[IPC] db:updateMeshcoreMessageStatus failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:updateMeshcoreMessageStatus', err);
   }
 });
 
@@ -4559,11 +4416,7 @@ ipcMain.handle('db:deleteMeshcoreContact', (_event, nodeId: number) => {
     const id = safeNonNegativeInt(nodeId);
     return getDatabase().prepareOnce('DELETE FROM meshcore_contacts WHERE node_id = ?').run(id);
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteMeshcoreContact failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteMeshcoreContact', err);
   }
 });
 
@@ -4574,11 +4427,7 @@ ipcMain.handle('db:clearMeshcoreMessages', (event) => {
   try {
     return getDatabase().prepareOnce('DELETE FROM meshcore_messages').run();
   } catch (err) {
-    console.error(
-      '[IPC] db:clearMeshcoreMessages failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearMeshcoreMessages', err);
   }
 });
 
@@ -4590,11 +4439,7 @@ ipcMain.handle('db:getMeshcoreMessageChannels', () => {
       )
       .all();
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreMessageChannels failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreMessageChannels', err);
   }
 });
 
@@ -4612,11 +4457,7 @@ ipcMain.handle('db:clearMeshcoreMessagesByChannel', (event, channelIdx: number) 
     );
     return result;
   } catch (err) {
-    console.error(
-      '[IPC] db:clearMeshcoreMessagesByChannel failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearMeshcoreMessagesByChannel', err);
   }
 });
 
@@ -4627,11 +4468,7 @@ ipcMain.handle('db:clearMeshcoreContacts', (event) => {
   try {
     return getDatabase().prepareOnce('DELETE FROM meshcore_contacts').run();
   } catch (err) {
-    console.error(
-      '[IPC] db:clearMeshcoreContacts failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearMeshcoreContacts', err);
   }
 });
 
@@ -4643,11 +4480,7 @@ ipcMain.handle('db:clearMeshcoreRepeaters', (event) => {
   try {
     return getDatabase().prepareOnce('DELETE FROM meshcore_contacts WHERE contact_type = 2').run();
   } catch (err) {
-    console.error(
-      '[IPC] db:clearMeshcoreRepeaters failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearMeshcoreRepeaters', err);
   }
 });
 
@@ -4656,11 +4489,7 @@ ipcMain.handle('db:markAllMeshcoreContactsOffRadio', () => {
   try {
     return getDatabase().prepareOnce('UPDATE meshcore_contacts SET on_radio = 0').run();
   } catch (err) {
-    console.error(
-      '[IPC] db:markAllMeshcoreContactsOffRadio failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:markAllMeshcoreContactsOffRadio', err);
   }
 });
 
@@ -4672,11 +4501,7 @@ ipcMain.handle('db:getMeshcoreContactCount', () => {
       .get() as { cnt: number };
     return result.cnt;
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreContactCount failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreContactCount', err);
   }
 });
 
@@ -4703,11 +4528,7 @@ ipcMain.handle('db:deleteMeshcoreContactsWithoutPubkey', () => {
       .run(MESHCORE_CHAT_STUB_ID_MIN, MESHCORE_CHAT_STUB_ID_MAX);
     return { deleted: result.changes, excludedStubCount };
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteMeshcoreContactsWithoutPubkey failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteMeshcoreContactsWithoutPubkey', err);
   }
 });
 
@@ -4722,11 +4543,7 @@ ipcMain.handle('db:offloadAllMeshcoreContacts', () => {
       .run();
     return result.changes;
   } catch (err) {
-    console.error(
-      '[IPC] db:offloadAllMeshcoreContacts failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:offloadAllMeshcoreContacts', err);
   }
 });
 
@@ -4738,11 +4555,7 @@ ipcMain.handle('db:getMeshcoreContactById', (_event, nodeId: number) => {
       .prepareOnce('SELECT node_id, public_key, on_radio FROM meshcore_contacts WHERE node_id = ?')
       .get(id);
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreContactById failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreContactById', err);
   }
 });
 
@@ -4752,11 +4565,7 @@ ipcMain.handle('db:getContactGroups', (_event, selfNodeId: number) => {
   try {
     return getContactGroups(safeNonNegativeInt(selfNodeId));
   } catch (err) {
-    console.error(
-      '[IPC] db:getContactGroups failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getContactGroups', err);
   }
 });
 
@@ -4768,11 +4577,7 @@ ipcMain.handle('db:createContactGroup', (_event, selfNodeId: number, name: strin
     if (name.length > MAX_GROUP_NAME) throw new Error('db:createContactGroup: name too long');
     return createContactGroup(id, name.trim());
   } catch (err) {
-    console.error(
-      '[IPC] db:createContactGroup failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:createContactGroup', err);
   }
 });
 
@@ -4784,11 +4589,7 @@ ipcMain.handle('db:updateContactGroup', (_event, groupId: number, name: string) 
     if (name.length > MAX_GROUP_NAME) throw new Error('db:updateContactGroup: name too long');
     updateContactGroup(id, name.trim());
   } catch (err) {
-    console.error(
-      '[IPC] db:updateContactGroup failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:updateContactGroup', err);
   }
 });
 
@@ -4796,11 +4597,7 @@ ipcMain.handle('db:deleteContactGroup', (_event, groupId: number) => {
   try {
     deleteContactGroup(safeNonNegativeInt(groupId));
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteContactGroup failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteContactGroup', err);
   }
 });
 
@@ -4808,11 +4605,7 @@ ipcMain.handle('db:addContactToGroup', (_event, groupId: number, contactNodeId: 
   try {
     addContactToGroup(safeNonNegativeInt(groupId), safeNonNegativeInt(contactNodeId));
   } catch (err) {
-    console.error(
-      '[IPC] db:addContactToGroup failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:addContactToGroup', err);
   }
 });
 
@@ -4820,11 +4613,7 @@ ipcMain.handle('db:removeContactFromGroup', (_event, groupId: number, contactNod
   try {
     removeContactFromGroup(safeNonNegativeInt(groupId), safeNonNegativeInt(contactNodeId));
   } catch (err) {
-    console.error(
-      '[IPC] db:removeContactFromGroup failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:removeContactFromGroup', err);
   }
 });
 
@@ -4832,11 +4621,7 @@ ipcMain.handle('db:getContactGroupMembers', (_event, groupId: number) => {
   try {
     return getContactGroupMembers(safeNonNegativeInt(groupId));
   } catch (err) {
-    console.error(
-      '[IPC] db:getContactGroupMembers failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getContactGroupMembers', err);
   }
 });
 
@@ -4961,10 +4746,7 @@ ipcMain.handle(
         )
         .run(id, lat, lon, recordedAt, src);
     } catch (err) {
-      console.error(
-        '[IPC] db:savePositionHistory failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
+      finishDbIpcHandler('db:savePositionHistory', err);
     }
   },
 );
@@ -4978,11 +4760,7 @@ ipcMain.handle('db:getPositionHistory', (_event, sinceMs: number) => {
       )
       .all(since);
   } catch (err) {
-    console.error(
-      '[IPC] db:getPositionHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    return [];
+    return finishDbIpcReadHandler('db:getPositionHistory', err, []);
   }
 });
 
@@ -4990,11 +4768,7 @@ ipcMain.handle('db:clearPositionHistory', () => {
   try {
     return getDatabase().prepareOnce('DELETE FROM position_history').run();
   } catch (err) {
-    console.error(
-      '[IPC] db:clearPositionHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:clearPositionHistory', err);
   }
 });
 
@@ -5014,11 +4788,7 @@ ipcMain.handle(
       saveMeshcoreHopHistory(nodeId, timestamp, hops, snr, rssi);
       return true;
     } catch (err) {
-      console.error(
-        '[IPC] db:saveMeshcoreHopHistory failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:saveMeshcoreHopHistory', err);
     }
   },
 );
@@ -5027,11 +4797,7 @@ ipcMain.handle('db:getMeshcoreHopHistory', (_event, nodeId: number) => {
   try {
     return getMeshcoreHopHistory(nodeId);
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreHopHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreHopHistory', err);
   }
 });
 
@@ -5050,11 +4816,7 @@ ipcMain.handle(
       saveMeshcoreTraceHistory(nodeId, timestamp, pathLen, pathSnrs, lastSnr, tag);
       return true;
     } catch (err) {
-      console.error(
-        '[IPC] db:saveMeshcoreTraceHistory failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:saveMeshcoreTraceHistory', err);
     }
   },
 );
@@ -5063,11 +4825,7 @@ ipcMain.handle('db:getMeshcoreTraceHistory', (_event, nodeId: number) => {
   try {
     return getMeshcoreTraceHistory(nodeId);
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcoreTraceHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcoreTraceHistory', err);
   }
 });
 
@@ -5076,11 +4834,7 @@ ipcMain.handle('db:pruneMeshcorePathHistory', (_event, nodeId: number) => {
     pruneMeshcorePathHistory(nodeId);
     return true;
   } catch (err) {
-    console.error(
-      '[IPC] db:pruneMeshcorePathHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:pruneMeshcorePathHistory', err);
   }
 });
 
@@ -5106,11 +4860,7 @@ ipcMain.handle(
       );
       return true;
     } catch (err) {
-      console.error(
-        '[IPC] db:upsertMeshcorePathHistory failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:upsertMeshcorePathHistory', err);
     }
   },
 );
@@ -5122,11 +4872,7 @@ ipcMain.handle(
       recordMeshcorePathOutcome(nodeId, pathHash, success, tripTimeMs);
       return true;
     } catch (err) {
-      console.error(
-        '[IPC] db:recordMeshcorePathOutcome failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
+      finishDbIpcHandler('db:recordMeshcorePathOutcome', err);
     }
   },
 );
@@ -5135,11 +4881,7 @@ ipcMain.handle('db:getAllMeshcorePathHistory', () => {
   try {
     return getAllMeshcorePathHistory();
   } catch (err) {
-    console.error(
-      '[IPC] db:getAllMeshcorePathHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getAllMeshcorePathHistory', err);
   }
 });
 
@@ -5147,11 +4889,7 @@ ipcMain.handle('db:getMeshcorePathHistory', (_event, nodeId: number) => {
   try {
     return getMeshcorePathHistory(nodeId);
   } catch (err) {
-    console.error(
-      '[IPC] db:getMeshcorePathHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:getMeshcorePathHistory', err);
   }
 });
 
@@ -5160,11 +4898,7 @@ ipcMain.handle('db:deleteMeshcorePathHistoryForNode', (_event, nodeId: number) =
     deleteMeshcorePathHistoryForNode(nodeId);
     return true;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteMeshcorePathHistoryForNode failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteMeshcorePathHistoryForNode', err);
   }
 });
 
@@ -5173,11 +4907,7 @@ ipcMain.handle('db:deleteAllMeshcorePathHistory', () => {
     deleteAllMeshcorePathHistory();
     return true;
   } catch (err) {
-    console.error(
-      '[IPC] db:deleteAllMeshcorePathHistory failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
+    finishDbIpcHandler('db:deleteAllMeshcorePathHistory', err);
   }
 });
 

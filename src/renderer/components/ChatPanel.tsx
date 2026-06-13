@@ -4,6 +4,25 @@ import 'emoji-picker-element';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import {
+  Archive,
+  ArrowDown,
+  Bell,
+  BellOff,
+  Calendar,
+  Clock,
+  Copy,
+  CornerUpLeft,
+  Download,
+  ExternalLink,
+  ListFilter,
+  Mail,
+  PARENT_HOVER_ATTR,
+  RotateCcw,
+  Search,
+  Smile,
+  Star,
+} from 'lucide-react-motion';
+import {
   type ComponentProps,
   memo,
   type ReactNode,
@@ -19,6 +38,8 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
+import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { MeshtasticMqttPathIcon, MeshtasticRfPathIcon } from '@/renderer/lib/meshtasticSourceIcons';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
@@ -80,6 +101,7 @@ function ChatToolbarTooltipButton({
     <HelpTooltip text={tooltip} className="shrink-0">
       <button
         type="button"
+        {...{ [PARENT_HOVER_ATTR]: '' }}
         className={
           className ?? 'text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300'
         }
@@ -193,37 +215,14 @@ function OutboxBubble({
 function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   const { t } = useTranslation();
   const rfIcon = (
-    <svg
-      className="h-3 w-3 text-blue-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <title>{t('chatPanel.receivedViaRf')}</title>
-      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-      <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
-    </svg>
+    <span title={t('chatPanel.receivedViaRf')}>
+      <MeshtasticRfPathIcon />
+    </span>
   );
   const mqttIcon = (
-    <svg
-      className="h-3 w-3 text-sky-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <title>{t('chatPanel.receivedViaMqtt')}</title>
-      <circle cx="12" cy="12" r="10" />
-      <path d="M2 12h20" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
+    <span title={t('chatPanel.receivedViaMqtt')}>
+      <MeshtasticMqttPathIcon />
+    </span>
   );
 
   if (via === 'both') {
@@ -242,20 +241,11 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
 
 function StoreForwardBadge() {
   const { t } = useTranslation();
+  const trigger = useIconTrigger();
   return (
-    <svg
-      className="h-3 w-3 text-amber-400"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <title>{t('chatPanel.receivedViaStoreForward')}</title>
-      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-    </svg>
+    <span title={t('chatPanel.receivedViaStoreForward')}>
+      <Archive aria-hidden className="h-3 w-3 text-amber-400" trigger={trigger} size={12} />
+    </span>
   );
 }
 
@@ -382,6 +372,7 @@ function ChatPanel({
   onFetchStoreForwardHistory,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
   const ownNodeIdSet = useMemo(() => {
     const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
@@ -1222,20 +1213,7 @@ function ChatPanel({
               setShowDatePicker((v) => !v);
             }}
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
+            <Calendar aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
           </ChatToolbarTooltipButton>
 
           {protocol === 'meshtastic' &&
@@ -1260,20 +1238,7 @@ function ChatPanel({
                   })();
                 }}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <Clock aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
               </ChatToolbarTooltipButton>
             )}
 
@@ -1296,20 +1261,7 @@ function ChatPanel({
               })();
             }}
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
+            <Download aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
           </ChatToolbarTooltipButton>
 
           <ChatToolbarTooltipButton
@@ -1323,20 +1275,7 @@ function ChatPanel({
               setShowSearch(!showSearch);
             }}
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            <Search aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
           </ChatToolbarTooltipButton>
 
           {viewMode !== 'starred' && (
@@ -1361,28 +1300,11 @@ function ChatPanel({
                 toggleMuteView(viewKey);
               }}
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                {mutedViews.has(viewKey) ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.73 21a2 2 0 01-3.46 0M18.63 13A17.89 17.89 0 0118 8M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h10.5m3.5-9a6 6 0 00-9.33-5M3 3l18 18"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                )}
-              </svg>
+              {mutedViews.has(viewKey) ? (
+                <BellOff aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              ) : (
+                <Bell aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              )}
             </ChatToolbarTooltipButton>
           )}
 
@@ -1399,20 +1321,12 @@ function ChatPanel({
               setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
             }}
           >
-            <svg
-              className="h-4 w-4"
-              fill={viewMode === 'starred' ? 'currentColor' : 'none'}
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-              />
-            </svg>
+            <Star
+              aria-hidden
+              className={`h-4 w-4 ${viewMode === 'starred' ? 'fill-current' : ''}`}
+              trigger={parentIconTrigger}
+              size={16}
+            />
           </ChatToolbarTooltipButton>
         </div>
       </div>
@@ -1475,28 +1389,21 @@ function ChatPanel({
                       : t('chatPanel.muteConversation')
                   }
                 >
-                  <svg
-                    className="h-2.5 w-2.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  >
-                    {mutedViews.has(`dm:${nodeNum}`) ? (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M13.73 21a2 2 0 01-3.46 0M18.63 13A17.89 17.89 0 0118 8M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h10.5m3.5-9a6 6 0 00-9.33-5M3 3l18 18"
-                      />
-                    ) : (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                      />
-                    )}
-                  </svg>
+                  {mutedViews.has(`dm:${nodeNum}`) ? (
+                    <BellOff
+                      aria-hidden
+                      className="h-2.5 w-2.5"
+                      trigger={parentIconTrigger}
+                      size={10}
+                    />
+                  ) : (
+                    <Bell
+                      aria-hidden
+                      className="h-2.5 w-2.5"
+                      trigger={parentIconTrigger}
+                      size={10}
+                    />
+                  )}
                 </button>
                 <button
                   type="button"
@@ -1654,45 +1561,33 @@ function ChatPanel({
                               setViewMode('channels');
                             }
                           }}
+                          {...{ [PARENT_HOVER_ATTR]: '' }}
                           className="rounded p-1 text-[10px] text-gray-500 hover:text-blue-400"
                           title={t('chatPanel.goToMessage')}
                           aria-label={t('chatPanel.goToMessage')}
                         >
-                          <svg
+                          <ExternalLink
+                            aria-hidden
                             className="h-3 w-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
+                            trigger={parentIconTrigger}
+                            size={12}
+                          />
                         </button>
                         <button
                           onClick={() => {
                             setStarred((prev) => prev.filter((x) => x.starId !== s.starId));
                           }}
+                          {...{ [PARENT_HOVER_ATTR]: '' }}
                           className="rounded p-1 text-[10px] text-amber-500 hover:text-amber-300"
                           title={t('chatPanel.unstarMessage')}
                           aria-label={t('chatPanel.unstarMessage')}
                         >
-                          <svg
-                            className="h-3 w-3"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                            />
-                          </svg>
+                          <Star
+                            aria-hidden
+                            className="h-3 w-3 fill-current"
+                            trigger={parentIconTrigger}
+                            size={12}
+                          />
                         </button>
                       </div>
                     </div>
@@ -1855,6 +1750,7 @@ function ChatPanel({
                                     }}
                                     aria-label={t('chatPanel.filterBySender')}
                                     aria-pressed={filterSender === msg.sender_id}
+                                    {...{ [PARENT_HOVER_ATTR]: '' }}
                                     className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
                                       filterSender === msg.sender_id
                                         ? 'bg-blue-700/40 text-blue-300'
@@ -1862,20 +1758,12 @@ function ChatPanel({
                                     }`}
                                     title={t('chatPanel.filterBySender')}
                                   >
-                                    <svg
+                                    <ListFilter
+                                      aria-hidden
                                       className="h-2.5 w-2.5"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      strokeWidth={2}
-                                      aria-hidden="true"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-                                      />
-                                    </svg>
+                                      trigger={parentIconTrigger}
+                                      size={10}
+                                    />
                                   </button>
                                 )}
                                 {isDm && (
@@ -2033,22 +1921,16 @@ function ChatPanel({
                                       e.stopPropagation();
                                       onResend(msg);
                                     }}
+                                    {...{ [PARENT_HOVER_ATTR]: '' }}
                                     className="text-gray-500 transition-colors hover:text-gray-300"
                                     title={t('chatPanel.resendMessage')}
                                   >
-                                    <svg
+                                    <RotateCcw
+                                      aria-hidden
                                       className="h-3.5 w-3.5"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth={2}
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                      />
-                                    </svg>
+                                      trigger={parentIconTrigger}
+                                      size={14}
+                                    />
                                   </button>
                                 )}
                                 {msg.mqttStatus ? (
@@ -2086,24 +1968,17 @@ function ChatPanel({
                                   console.warn('Failed to copy message:', errLikeToLogString(err));
                                 });
                               }}
+                              {...{ [PARENT_HOVER_ATTR]: '' }}
                               className="rounded p-1 text-xs text-gray-600 hover:text-green-400"
                               aria-label={t('chatPanel.copyMessage')}
                               title={t('chatPanel.copyMessage')}
                             >
-                              <svg
+                              <Copy
+                                aria-hidden
                                 className="h-3.5 w-3.5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                />
-                              </svg>
+                                trigger={parentIconTrigger}
+                                size={14}
+                              />
                             </button>
                             {isConnected && (
                               <>
@@ -2112,23 +1987,17 @@ function ChatPanel({
                                     setReplyTo(msg);
                                     composerInputRef.current?.focus();
                                   }}
+                                  {...{ [PARENT_HOVER_ATTR]: '' }}
                                   className="rounded p-1 text-xs text-gray-600 hover:text-blue-400"
                                   aria-label={t('chatPanel.replyToMessage')}
                                   title={t('chatPanel.replyButton')}
                                 >
-                                  <svg
+                                  <CornerUpLeft
+                                    aria-hidden
                                     className="h-3.5 w-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
-                                    />
-                                  </svg>
+                                    trigger={parentIconTrigger}
+                                    size={14}
+                                  />
                                 </button>
                                 {/* React */}
                                 <button
@@ -2145,23 +2014,17 @@ function ChatPanel({
                                       void window.electronAPI.showEmojiPanel();
                                     }
                                   }}
+                                  {...{ [PARENT_HOVER_ATTR]: '' }}
                                   className="rounded p-1 text-xs text-gray-600 hover:text-gray-300"
                                   aria-label={t('chatPanel.addReaction')}
                                   title={t('chatPanel.reactButton')}
                                 >
-                                  <svg
+                                  <Smile
+                                    aria-hidden
                                     className="h-3.5 w-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
+                                    trigger={parentIconTrigger}
+                                    size={14}
+                                  />
                                 </button>
                                 {/* Quick DM */}
                                 {!isOwn && (
@@ -2169,22 +2032,16 @@ function ChatPanel({
                                     onClick={() => {
                                       openDmTo(msg.sender_id);
                                     }}
+                                    {...{ [PARENT_HOVER_ATTR]: '' }}
                                     className="rounded p-1 text-xs text-gray-600 hover:text-purple-400"
                                     title={t('chatPanel.directMessage', { name: msg.sender_name })}
                                   >
-                                    <svg
+                                    <Mail
+                                      aria-hidden
                                       className="h-3.5 w-3.5"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      strokeWidth={2}
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                      />
-                                    </svg>
+                                      trigger={parentIconTrigger}
+                                      size={14}
+                                    />
                                   </button>
                                 )}
                                 {/* Star message */}
@@ -2196,6 +2053,7 @@ function ChatPanel({
                                       onClick={() => {
                                         toggleStar(msg);
                                       }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
                                       className={`rounded p-1 text-xs transition-colors ${
                                         isStarred
                                           ? 'text-amber-400 hover:text-amber-200'
@@ -2212,19 +2070,12 @@ function ChatPanel({
                                           : t('chatPanel.starMessage')
                                       }
                                     >
-                                      <svg
-                                        className="h-3.5 w-3.5"
-                                        fill={isStarred ? 'currentColor' : 'none'}
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                                        />
-                                      </svg>
+                                      <Star
+                                        aria-hidden
+                                        className={`h-3.5 w-3.5 ${isStarred ? 'fill-current' : ''}`}
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
                                     </button>
                                   );
                                 })()}
@@ -2308,15 +2159,7 @@ function ChatPanel({
             }}
             className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
           >
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
+            <ArrowDown aria-hidden className="h-3.5 w-3.5" trigger={parentIconTrigger} size={14} />
             {unreadDividerRef.current ? 'Jump to Unread' : 'Jump to Latest'}
           </button>
         )}

@@ -1,20 +1,20 @@
+import { Link2 } from 'lucide-react-motion';
+
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+
 import { rssiToSignalLevel } from '../lib/signal';
 
 // Exported for reuse wherever a "directly connected" indicator is needed
+
 export function LinkIcon({ className }: { className?: string }) {
+  const trigger = useIconTrigger();
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-      stroke="#4ade80"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-    </svg>
+    <Link2
+      aria-hidden
+      className={className ?? 'h-4 w-4 text-green-400'}
+      trigger={trigger}
+      size={16}
+    />
   );
 }
 

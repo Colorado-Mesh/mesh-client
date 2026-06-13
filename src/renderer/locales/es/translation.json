@@ -174,7 +174,9 @@
     "notificationsSection": "Notificaciones",
     "soundNotifications": "Notificaciones con Sonido",
     "storeForwardAutoFetchHistory": "Obtener automáticamente el historial de chat de almacenamiento y reenvío en Connect",
-    "storeForwardAutoFetchHistoryHint": "En la conexión de RF, solicite hasta 50 mensajes (15 minutos de tiempo de reutilización entre tomas). Apague si el puente MQTT de su puerta de enlace está sobrecargado."
+    "storeForwardAutoFetchHistoryHint": "En la conexión de RF, solicite hasta 50 mensajes (15 minutos de tiempo de reutilización entre tomas). Apague si el puente MQTT de su puerta de enlace está sobrecargado.",
+    "reduceMotion": "Reducir movimiento",
+    "reduceMotionDesc": "Desactiva los iconos animados y los efectos decorativos. Los indicadores de carga y de estado de conexión siguen animándose."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

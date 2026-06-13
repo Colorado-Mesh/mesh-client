@@ -1,8 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { Search } from 'lucide-react-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { MeshNode } from '../lib/types';
 
@@ -58,6 +60,7 @@ export default function SearchModal({
   onNavigateToChannel,
 }: Props) {
   const { t } = useTranslation();
+  const searchTrigger = useIconTrigger();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -170,20 +173,12 @@ export default function SearchModal({
       <div className="relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
         {/* Input */}
         <div className="flex items-center gap-2 border-b border-gray-700 px-4 py-3">
-          <svg
+          <Search
+            aria-hidden
             className="h-4 w-4 shrink-0 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+            trigger={searchTrigger}
+            size={16}
+          />
           <input
             ref={inputRef}
             type="text"

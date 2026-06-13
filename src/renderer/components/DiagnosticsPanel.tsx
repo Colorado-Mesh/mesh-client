@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
+import { Info, TriangleAlert } from 'lucide-react-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,6 +13,8 @@ import {
 } from 'recharts';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
 import {
   FOREIGN_LORA_WINDOW_MS,
   type ForeignLoraDetection,
@@ -144,39 +147,13 @@ interface Props {
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      />
-    </svg>
-  );
+  const trigger = useIconTrigger();
+  return <TriangleAlert aria-hidden className={className} trigger={trigger} size={16} />;
 }
 
 function InfoCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
+  const trigger = useIconTrigger();
+  return <Info aria-hidden className={className} trigger={trigger} size={16} />;
 }
 
 export default function DiagnosticsPanel({
@@ -738,17 +715,7 @@ export default function DiagnosticsPanel({
             <div className="flex flex-col items-end gap-1.5">
               {isPending ? (
                 <span className="flex items-center justify-end gap-1.5 text-xs text-blue-400">
-                  <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
+                  <SpinnerIcon className="h-3.5 w-3.5 text-blue-400" />
                   {t('diagnosticsPanel.tracing')}
                 </span>
               ) : traceHops ? (

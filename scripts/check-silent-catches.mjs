@@ -26,6 +26,8 @@ const SUPPRESSION = /\/\/\s*catch-no-log-ok\b/;
 // and `debugLogService(...)` — sanitized internal logging in log-service.ts
 const HAS_CONSOLE = /(?:console|original)\.(log|warn|error|info|debug)\s*\(|debugLogService\s*\(/;
 const HAS_THROW = /\bthrow\b/;
+/** Main-process db IPC handlers delegate logging/rethrow to these helpers. */
+const DELEGATES_DB_IPC_ERROR = /\bfinishDbIpc(?:Read)?Handler\s*\(/;
 
 function collectSourceFiles(dir) {
   const results = [];
@@ -131,6 +133,8 @@ function checkFile(filePath) {
     if (HAS_CONSOLE.test(body)) continue;
     // Rethrows — the caller handles logging
     if (HAS_THROW.test(body)) continue;
+    // Delegates to finishDbIpcHandler / finishDbIpcReadHandler (logs or rethrows)
+    if (DELEGATES_DB_IPC_ERROR.test(body)) continue;
 
     violations.push({ relPath, lineNum: catchLineNum, line: catchLineText.trim() });
   }

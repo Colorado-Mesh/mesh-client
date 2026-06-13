@@ -1,10 +1,12 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
+import { CornerUpLeft } from 'lucide-react-motion';
 import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
@@ -97,6 +99,7 @@ export function ChatComposer({
   className,
 }: ChatComposerProps) {
   const { t } = useTranslation();
+  const iconTrigger = useIconTrigger();
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const limitHintId = useId();
   const counterLiveId = useId();
@@ -483,19 +486,12 @@ export function ChatComposer({
 
       {replyTo && onReplyClear && (
         <div className="bg-secondary-dark/80 mb-1 flex items-center gap-2 rounded-xl border border-gray-600/50 px-3 py-1.5 text-xs">
-          <svg
+          <CornerUpLeft
+            aria-hidden
             className="h-3 w-3 shrink-0 text-blue-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"
-            />
-          </svg>
+            trigger={iconTrigger}
+            size={12}
+          />
           <span className="text-gray-400">
             {t('chatPanel.replyingTo')}{' '}
             <span className="font-medium text-gray-200">

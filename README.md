@@ -208,7 +208,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 - **Keyboard navigation**: every panel, form, and control is reachable by keyboard; Tab/Shift+Tab cycles interactive elements; all sortable table headers and the hop-limit slider are arrow-key operable; focus indicator is always visible
 - **Modal focus trap**: Tab cycles only within an open modal or dialog; Escape closes and returns focus to the triggering control
 - **Screen reader support**: connection status changes announced via `aria-live`; modals and dialogs carry `role="dialog"` / `role="alertdialog"` with `aria-labelledby`; form errors announced immediately via `role="alert"`; sortable columns expose `aria-sort`; toggle buttons expose `aria-pressed`; icon-only controls have `aria-label`; status indicators pair color with a text alternative so they are not color-only
-- **Reduced motion**: `@media (prefers-reduced-motion: reduce)` suppresses pulse animations, halo rings, and transition effects
+- **Reduce motion**: **App → Appearance → Reduce motion** toggle (`reduceMotion` in SQLite + localStorage; default off). When enabled, disables non-essential UI motion (animated icons, decorative watermark/map pulses) while keeping functional loading spinners and connection status pulses. Icon animation is controlled in-app, not via the OS `prefers-reduced-motion` setting — see [Accessibility Checklist](docs/accessibility-checklist.md) for manual verification steps
 - **Windows High Contrast**: `@media (forced-colors: active)` support prevents Tailwind from overriding system colors
 - **Automated tests**: vitest-axe accessibility assertions run on every major panel as part of the pre-commit test suite
 

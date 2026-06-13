@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import {
   countMeshcoreContactsWithFlagMask,
@@ -146,14 +148,7 @@ export default function MeshcoreTelemetryPrivacySection({
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
         <span>{t('meshcoreTelemetryPrivacy.summary')}</span>
-        <svg
-          className="text-muted h-4 w-4 transition-transform group-open:rotate-180"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <DetailsChevron />
       </summary>
       <div className="space-y-4 px-4 pb-4">
         <p className="text-muted text-xs">{t('meshcoreTelemetryPrivacy.description')}</p>

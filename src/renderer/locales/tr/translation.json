@@ -174,7 +174,9 @@
     "notificationsSection": "Bildirimler",
     "soundNotifications": "Sesli Bildirimler",
     "storeForwardAutoFetchHistory": "Bağlanıldığında Mağaza ve İlet sohbet geçmişini otomatik olarak getir",
-    "storeForwardAutoFetchHistoryHint": "RF bağlantısında, 50 'ye kadar mesaj isteyin (getirmeler arasında 15 dakika bekleme süresi). Ağ geçidi MQTT köprünüz aşırı yüklüyse kapatın."
+    "storeForwardAutoFetchHistoryHint": "RF bağlantısında, 50 'ye kadar mesaj isteyin (getirmeler arasında 15 dakika bekleme süresi). Ağ geçidi MQTT köprünüz aşırı yüklüyse kapatın.",
+    "reduceMotion": "Hareketi azalt",
+    "reduceMotionDesc": "Animasyonlu simgeleri ve dekoratif efektleri devre dışı bırakır. Yükleme göstergeleri ve bağlantı durumu göstergeleri hâlâ animasyonlu kalır."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

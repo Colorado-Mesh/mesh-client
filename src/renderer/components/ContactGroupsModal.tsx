@@ -1,7 +1,17 @@
+import {
+  Check,
+  ChevronLeft,
+  PARENT_HOVER_ATTR,
+  Pencil,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 import { isMeshcoreContactEligibleForUserGroup } from '../lib/meshcoreUtils';
@@ -41,6 +51,7 @@ export default function ContactGroupsModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const parentIconTrigger = useParentIconTrigger();
 
   // Group list state
   const [newGroupName, setNewGroupName] = useState('');
@@ -203,17 +214,15 @@ export default function ContactGroupsModal({
                   setManagingGroup(null);
                 }}
                 aria-label={t('contactGroupsModal.backToGroups')}
+                {...{ [PARENT_HOVER_ATTR]: '' }}
                 className="hover:bg-secondary-dark text-muted shrink-0 rounded p-1 transition-colors hover:text-gray-200"
               >
-                <svg
+                <ChevronLeft
+                  aria-hidden
                   className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
+                  trigger={parentIconTrigger}
+                  size={16}
+                />
               </button>
               <h2 id="groups-modal-title" className="truncate text-lg font-semibold text-gray-100">
                 {managingGroup.name}
@@ -227,17 +236,10 @@ export default function ContactGroupsModal({
           <button
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
+            {...{ [PARENT_HOVER_ATTR]: '' }}
             className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
           </button>
         </div>
 
@@ -340,21 +342,15 @@ export default function ContactGroupsModal({
                             onClick={() => void handleRenameSubmit(group.group_id)}
                             disabled={!editingName.trim() || busy}
                             aria-label={t('contactGroupsModal.saveName')}
+                            {...{ [PARENT_HOVER_ATTR]: '' }}
                             className="hover:bg-secondary-dark text-brand-green rounded p-1 transition-colors disabled:opacity-40"
                           >
-                            <svg
+                            <Check
+                              aria-hidden
                               className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
+                              trigger={parentIconTrigger}
+                              size={16}
+                            />
                           </button>
                           <button
                             type="button"
@@ -362,21 +358,15 @@ export default function ContactGroupsModal({
                               setEditingGroupId(null);
                             }}
                             aria-label={t('contactGroupsModal.cancelRename')}
+                            {...{ [PARENT_HOVER_ATTR]: '' }}
                             className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                           >
-                            <svg
+                            <X
+                              aria-hidden
                               className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
+                              trigger={parentIconTrigger}
+                              size={16}
+                            />
                           </button>
                         </>
                       ) : (
@@ -386,21 +376,15 @@ export default function ContactGroupsModal({
                             onClick={() => void handleOpenMembers(group)}
                             aria-label={`Manage members of ${group.name}`}
                             title={t('contactGroupsModal.manageMembers')}
+                            {...{ [PARENT_HOVER_ATTR]: '' }}
                             className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                           >
-                            <svg
+                            <Users
+                              aria-hidden
                               className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                            </svg>
+                              trigger={parentIconTrigger}
+                              size={16}
+                            />
                           </button>
                           <button
                             type="button"
@@ -410,21 +394,15 @@ export default function ContactGroupsModal({
                             }}
                             aria-label={`Rename ${group.name}`}
                             title={t('contactGroupsModal.rename')}
+                            {...{ [PARENT_HOVER_ATTR]: '' }}
                             className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                           >
-                            <svg
+                            <Pencil
+                              aria-hidden
                               className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                              />
-                            </svg>
+                              trigger={parentIconTrigger}
+                              size={16}
+                            />
                           </button>
                           {deleteConfirmId === group.group_id ? (
                             <>
@@ -443,21 +421,15 @@ export default function ContactGroupsModal({
                                   setDeleteConfirmId(null);
                                 }}
                                 aria-label={t('contactGroupsModal.cancelDelete')}
+                                {...{ [PARENT_HOVER_ATTR]: '' }}
                                 className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
                               >
-                                <svg
+                                <X
+                                  aria-hidden
                                   className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M6 18L18 6M6 6l12 12"
-                                  />
-                                </svg>
+                                  trigger={parentIconTrigger}
+                                  size={16}
+                                />
                               </button>
                             </>
                           ) : (
@@ -468,21 +440,15 @@ export default function ContactGroupsModal({
                               }}
                               aria-label={`Delete ${group.name}`}
                               title={t('contactGroupsModal.deleteGroup')}
+                              {...{ [PARENT_HOVER_ATTR]: '' }}
                               className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-red-400"
                             >
-                              <svg
+                              <Trash2
+                                aria-hidden
                                 className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
+                                trigger={parentIconTrigger}
+                                size={16}
+                              />
                             </button>
                           )}
                         </>

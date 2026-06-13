@@ -1,7 +1,10 @@
+import { PARENT_HOVER_ATTR, RotateCcw } from 'lucide-react-motion';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
 
 interface RefreshButtonProps {
   onRefresh: () => Promise<void>;
@@ -18,6 +21,7 @@ export default function RefreshButton({
 }: RefreshButtonProps) {
   const { t } = useTranslation();
   const [spinning, setSpinning] = useState(false);
+  const parentTrigger = useParentIconTrigger();
 
   const handleClick = async () => {
     if (spinning || disabled) return;
@@ -48,20 +52,18 @@ export default function RefreshButton({
       disabled={disabled || spinning}
       title={t('common.refresh')}
       className="rounded-full p-1.5 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+      {...{ [PARENT_HOVER_ATTR]: '' }}
     >
-      <svg
-        className={`h-5 w-5 text-gray-400 ${spinning ? 'animate-spin' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+      {spinning ? (
+        <SpinnerIcon className="h-5 w-5 text-gray-400" />
+      ) : (
+        <RotateCcw
+          aria-hidden
+          className="h-5 w-5 text-gray-400"
+          trigger={parentTrigger}
+          size={20}
         />
-      </svg>
+      )}
     </button>
   );
 }
