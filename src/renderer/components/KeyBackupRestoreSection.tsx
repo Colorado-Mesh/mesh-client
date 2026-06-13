@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,17 +8,16 @@ import { nodeNumDisplayHex, publicKeyPrefixHex } from '@/renderer/lib/keyBackupB
 import type { MeshcoreKeyBackupIndexEntry } from '@/renderer/lib/meshcoreKeyBackupStorage';
 import {
   deleteMeshcoreKeyBackup,
-  formatMeshcoreBackupLabel,
+  formatMeshcoreBackupDetail,
   hasMeshcoreKeyBackup,
   listMeshcoreKeyBackups,
   loadMeshcoreKeyBackup,
-  migrateLegacyMeshcoreKeyBackupFromActiveIdentity,
   saveMeshcoreKeyBackup,
 } from '@/renderer/lib/meshcoreKeyBackupStorage';
 import type { MeshtasticDmKeyBackupIndexEntry } from '@/renderer/lib/meshtasticDmKeyBackupStorage';
 import {
   deleteMeshtasticDmKeyBackup,
-  formatMeshtasticBackupLabel,
+  formatMeshtasticBackupDetail,
   hasMeshtasticDmKeyBackup,
   listMeshtasticDmKeyBackups,
   loadMeshtasticDmKeyBackup,
@@ -35,10 +35,18 @@ function entryNodeKey(entry: BackupIndexEntry, protocol: 'meshtastic' | 'meshcor
     : (entry as MeshcoreKeyBackupIndexEntry).nodeId;
 }
 
-function formatEntryLabel(entry: BackupIndexEntry, protocol: 'meshtastic' | 'meshcore'): string {
+function formatEntryLabel(
+  entry: BackupIndexEntry,
+  protocol: 'meshtastic' | 'meshcore',
+  t: TFunction,
+): string {
+  const detail =
+    protocol === 'meshtastic'
+      ? formatMeshtasticBackupDetail(entry as MeshtasticDmKeyBackupIndexEntry)
+      : formatMeshcoreBackupDetail(entry as MeshcoreKeyBackupIndexEntry);
   return protocol === 'meshtastic'
-    ? formatMeshtasticBackupLabel(entry as MeshtasticDmKeyBackupIndexEntry)
-    : formatMeshcoreBackupLabel(entry as MeshcoreKeyBackupIndexEntry);
+    ? t('securityPanel.backupLabelMeshtastic', { detail })
+    : t('securityPanel.backupLabelMeshcore', { detail });
 }
 
 export interface KeyBackupRestoreSectionProps {
@@ -52,11 +60,6 @@ export interface KeyBackupRestoreSectionProps {
   onMeshcoreRestore: (publicKey: Uint8Array, privateKey: Uint8Array) => Promise<boolean>;
   onMeshtasticBackup: () => Promise<{ publicKey: Uint8Array; privateKey: Uint8Array } | null>;
   onMeshcoreBackup: () => Promise<{ publicKey: Uint8Array; privateKey: Uint8Array } | null>;
-  onMeshcoreMigrateFromActive?: () => Promise<{
-    nodeId: number;
-    publicKey: Uint8Array;
-    privateKey: Uint8Array;
-  } | null>;
   addToast: (message: string, type: 'success' | 'error' | 'warning') => void;
 }
 
@@ -71,7 +74,6 @@ export function KeyBackupRestoreSection({
   onMeshcoreRestore,
   onMeshtasticBackup,
   onMeshcoreBackup,
-  onMeshcoreMigrateFromActive,
   addToast,
 }: KeyBackupRestoreSectionProps) {
   const { t } = useTranslation();
@@ -114,26 +116,10 @@ export function KeyBackupRestoreSection({
     void (async () => {
       if (protocol === 'meshtastic') {
         await migrateLegacyMeshtasticDmKeyBackup(localNodeKey);
-      } else if (onMeshcoreMigrateFromActive) {
-        const material = await onMeshcoreMigrateFromActive();
-        if (material) {
-          await migrateLegacyMeshcoreKeyBackupFromActiveIdentity(
-            material.nodeId,
-            material.publicKey,
-            material.privateKey,
-          );
-        }
       }
       refreshStatus();
     })();
-  }, [
-    safeStorageAvailable,
-    localNodeKey,
-    protocol,
-    onMeshcoreMigrateFromActive,
-    refreshBackupAvailable,
-    refreshStatus,
-  ]);
+  }, [safeStorageAvailable, localNodeKey, protocol, refreshBackupAvailable, refreshStatus]);
 
   const allBackups = useMemo((): BackupIndexEntry[] => {
     void indexRevision;
@@ -341,7 +327,7 @@ export function KeyBackupRestoreSection({
                     }}
                     className="hover:bg-secondary-dark w-full rounded px-2 py-1.5 text-left text-xs text-gray-300"
                   >
-                    {formatEntryLabel(entry, protocol)} · {prefix}… ·{' '}
+                    {formatEntryLabel(entry, protocol, t)} · {prefix}… ·{' '}
                     {new Date(entry.backedUpAt).toLocaleString()}
                   </button>
                 </li>
@@ -364,7 +350,7 @@ export function KeyBackupRestoreSection({
         <ConfirmModal
           title={t('securityPanel.restoreFromBackupTitle')}
           message={t('securityPanel.restoreFromBackupConfirm', {
-            label: formatEntryLabel(pendingEntry, protocol),
+            label: formatEntryLabel(pendingEntry, protocol, t),
           })}
           confirmLabel={t('securityPanel.restoreKeys')}
           onConfirm={() => {

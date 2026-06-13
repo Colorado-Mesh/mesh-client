@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHCORE_IDENTITY_STORAGE_KEY } from '../lib/letsMeshJwt';
+import { meshcoreKeyBackupStorageKey } from '../lib/meshcoreKeyBackupStorage';
 import { saveMeshtasticDmKeyBackup } from '../lib/meshtasticDmKeyBackupStorage';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
 
@@ -56,7 +58,7 @@ describe('KeyBackupRestoreSection', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Restore from backup…' }));
-    await user.click(screen.getByRole('button', { name: /Node B/i }));
+    await user.click(screen.getByRole('button', { name: /Meshtastic.*Node B/i }));
     const restoreButtons = screen.getAllByRole('button', { name: 'Restore Keys' });
     expect(restoreButtons.length).toBeGreaterThanOrEqual(2);
     await user.click(restoreButtons[restoreButtons.length - 1]);
@@ -92,5 +94,38 @@ describe('KeyBackupRestoreSection', () => {
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('Keys backed up for MC Node.', 'success');
     });
+  });
+
+  it('does not create MeshCore archive on mount when identity cache exists', async () => {
+    const publicKey = new Uint8Array(32).fill(0x11);
+    const privateKey = new Uint8Array(32).fill(0x22);
+    localStorage.setItem(
+      MESHCORE_IDENTITY_STORAGE_KEY,
+      JSON.stringify({
+        public_key: Array.from(publicKey),
+        private_key: Array.from(privateKey),
+      }),
+    );
+
+    render(
+      <KeyBackupRestoreSection
+        protocol="meshcore"
+        disabled={false}
+        safeStorageAvailable
+        localNodeKey={0xabc}
+        localNodeLabel="MC Node"
+        canBackup
+        onMeshtasticRestore={vi.fn()}
+        onMeshcoreRestore={vi.fn()}
+        onMeshtasticBackup={vi.fn()}
+        onMeshcoreBackup={vi.fn().mockResolvedValue({ publicKey, privateKey })}
+        addToast={addToast}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('No backup for MC Node')).toBeInTheDocument();
+    });
+    expect(localStorage.getItem(meshcoreKeyBackupStorageKey(0xabc))).toBeNull();
   });
 });

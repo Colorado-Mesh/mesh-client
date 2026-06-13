@@ -2395,7 +2395,9 @@
     "removeBackup": "Usuń kopię zapasową",
     "removeBackupConfirm": "Usunąć zapisaną kopię zapasową dla tego węzła z tego komputera?",
     "backupRemoved": "Usunięto zestawy kopii:",
-    "meshcorePrivateKeyHint": "Użyj Eksportuj klucz prywatny poniżej, aby wyświetlić kluczowy materiał. Kopia zapasowa przechowuje pełną parę kluczy na tym komputerze."
+    "meshcorePrivateKeyHint": "Użyj Eksportuj klucz prywatny poniżej, aby wyświetlić kluczowy materiał. Kopia zapasowa przechowuje pełną parę kluczy na tym komputerze.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Niedostępne w tym trybie"

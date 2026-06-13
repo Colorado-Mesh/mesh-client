@@ -178,7 +178,7 @@ export async function migrateLegacyMeshtasticDmKeyBackup(nodeNum: number): Promi
   }
 }
 
-export function formatMeshtasticBackupLabel(entry: MeshtasticDmKeyBackupIndexEntry): string {
+export function formatMeshtasticBackupDetail(entry: MeshtasticDmKeyBackupIndexEntry): string {
   const hex = nodeNumDisplayHex(entry.nodeNum);
   const label = entry.nodeLabel?.trim();
   return label ? `${label} (!${hex})` : `!${hex}`;

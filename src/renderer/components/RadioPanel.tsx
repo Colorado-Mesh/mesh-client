@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
-import { saveMeshcoreKeyBackup } from '@/renderer/lib/meshcoreKeyBackupStorage';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -36,7 +35,6 @@ import {
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
-  pubkeyToNodeId,
 } from '../lib/meshcoreUtils';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext, RemoteConfigChannelsTailStatus } from '../lib/types';
@@ -1039,17 +1037,6 @@ export default function RadioPanel({
                 : null;
               if (pubArr?.length === 32 && privArr && privArr.length >= 32) {
                 void tryPersistMeshcoreIdentityFromRadioExport(pubArr, privArr);
-                const nodeId = pubkeyToNodeId(pubArr);
-                void saveMeshcoreKeyBackup({
-                  nodeId,
-                  publicKey: pubArr,
-                  privateKey: privArr,
-                  nodeLabel: importedName ?? meshcoreSelfInfo?.name,
-                }).catch((e: unknown) => {
-                  console.warn(
-                    '[RadioPanel] meshcore key backup from import failed ' + errLikeToLogString(e),
-                  );
-                });
               } else {
                 localStorage.setItem(
                   'mesh-client:meshcoreIdentity',
@@ -1148,17 +1135,7 @@ export default function RadioPanel({
       reader.readAsText(file);
     };
     input.click();
-  }, [
-    addToast,
-    onSetOwner,
-    onApplyLoraParams,
-    shortName,
-    isLicensed,
-    bandwidth,
-    radioFreqHz,
-    t,
-    meshcoreSelfInfo,
-  ]);
+  }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz, t]);
 
   return (
     <div className="w-full space-y-4">

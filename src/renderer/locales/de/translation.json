@@ -2395,7 +2395,9 @@
     "removeBackup": "Entfernen der Sicherungsdatei",
     "removeBackupConfirm": "Die gespeicherte Sicherung für diesen Knoten von diesem Computer entfernen?",
     "backupRemoved": "Sicherungsätze wurden entfernt:",
-    "meshcorePrivateKeyHint": "Verwenden Sie unten den privaten Schlüssel exportieren, um Schlüsselmaterial anzuzeigen. Backup speichert das vollständige Schlüsselpaar auf diesem Computer."
+    "meshcorePrivateKeyHint": "Verwenden Sie unten den privaten Schlüssel exportieren, um Schlüsselmaterial anzuzeigen. Backup speichert das vollständige Schlüsselpaar auf diesem Computer.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Nicht verfügbar in diesem Modus."

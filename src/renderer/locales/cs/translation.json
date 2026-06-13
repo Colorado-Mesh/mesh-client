@@ -2395,7 +2395,9 @@
     "removeBackup": "Odstranit zálohu",
     "removeBackupConfirm": "Odebrat uloženou zálohu pro tento uzel z tohoto počítače?",
     "backupRemoved": "Záloha odstraněna.",
-    "meshcorePrivateKeyHint": "Pro zobrazení klíčového materiálu použijte Exportovat soukromý klíč níže. Zálohování ukládá celý pár klíčů do tohoto počítače."
+    "meshcorePrivateKeyHint": "Pro zobrazení klíčového materiálu použijte Exportovat soukromý klíč níže. Zálohování ukládá celý pár klíčů do tohoto počítače.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Není k dispozici v tomto režimu"

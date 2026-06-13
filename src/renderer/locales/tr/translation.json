@@ -2395,7 +2395,9 @@
     "removeBackup": "Yedek dosyasını kaldırın",
     "removeBackupConfirm": "Bu düğümün depolanmış yedeği bu bilgisayardan kaldırılsın mı?",
     "backupRemoved": "Yedek kaldırıldı.",
-    "meshcorePrivateKeyHint": "Önemli materyali görüntülemek için aşağıdaki Özel Anahtarı Dışa Aktar'ı kullanın. Yedekleme, tam anahtar çiftini bu bilgisayarda saklar."
+    "meshcorePrivateKeyHint": "Önemli materyali görüntülemek için aşağıdaki Özel Anahtarı Dışa Aktar'ı kullanın. Yedekleme, tam anahtar çiftini bu bilgisayarda saklar.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Bu modda kullanılamaz"

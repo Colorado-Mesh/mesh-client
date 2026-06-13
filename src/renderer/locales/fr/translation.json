@@ -2395,7 +2395,9 @@
     "removeBackup": "Supprimer le fichier de sauvegarde",
     "removeBackupConfirm": "Supprimer la sauvegarde stockée pour ce nœud de cet ordinateur ?",
     "backupRemoved": "Les jeux de sauvegarde ont été supprimés :",
-    "meshcorePrivateKeyHint": "Utilisez la clé privée d'exportation ci-dessous pour afficher le matériel clé. La sauvegarde stocke la paire de clés complète sur cet ordinateur."
+    "meshcorePrivateKeyHint": "Utilisez la clé privée d'exportation ci-dessous pour afficher le matériel clé. La sauvegarde stocke la paire de clés complète sur cet ordinateur.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponible dans ce mode"

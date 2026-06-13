@@ -2395,7 +2395,9 @@
     "removeBackup": "Rimuovere il file di backup",
     "removeBackupConfirm": "Rimuovere il backup archiviato per questo nodo da questo computer?",
     "backupRemoved": "Backup rimosso.",
-    "meshcorePrivateKeyHint": "Usa Esporta chiave privata qui sotto per visualizzare il materiale chiave. Il backup memorizza la coppia di chiavi completa su questo computer."
+    "meshcorePrivateKeyHint": "Usa Esporta chiave privata qui sotto per visualizzare il materiale chiave. Il backup memorizza la coppia di chiavi completa su questo computer.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponibile in questa modalità"

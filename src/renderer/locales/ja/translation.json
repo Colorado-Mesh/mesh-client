@@ -2395,7 +2395,9 @@
     "removeBackup": "バックアップを削除",
     "removeBackupConfirm": "このノードの保存されたバックアップをこのコンピューターから削除しますか？",
     "backupRemoved": "バックアップセットの削除:",
-    "meshcorePrivateKeyHint": "以下のエクスポート秘密鍵を使用して、キー素材を表示します。バックアップは、このコンピューターに完全なキーペアを保存します。"
+    "meshcorePrivateKeyHint": "以下のエクスポート秘密鍵を使用して、キー素材を表示します。バックアップは、このコンピューターに完全なキーペアを保存します。",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"

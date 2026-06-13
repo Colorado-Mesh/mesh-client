@@ -2366,6 +2366,8 @@
     "keyBackupDesc": "Back up this node's public and private keys to the system keychain (encrypted). The private key restores your mesh identity after factory reset.",
     "keyBackupNotIncluded": "Does not restore channels, NodeDB, messages, contacts, or remote admin keys.",
     "backupAvailableForNode": "Backup saved for {{label}}",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
     "noBackupForNode": "No backup for {{label}}",
     "keysBackedUpForDevice": "Keys backed up for {{label}}.",
     "otherBackupsCount": "{{count}} other device backup(s) stored",
