@@ -632,6 +632,7 @@ describe('ChatPanel accessibility', () => {
       writable: true,
       configurable: true,
     });
+    fireEvent.scroll(scrollContainer);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
