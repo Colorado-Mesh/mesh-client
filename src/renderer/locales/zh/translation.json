@@ -2395,7 +2395,9 @@
     "removeBackup": "删除该备份",
     "removeBackupConfirm": "是否从此计算机中删除此节点的存储备份？",
     "backupRemoved": "备份集已删除：",
-    "meshcorePrivateKeyHint": "使用下面的导出私钥查看密钥材料。Backup将完整密钥对存储在此计算机上。"
+    "meshcorePrivateKeyHint": "使用下面的导出私钥查看密钥材料。Backup将完整密钥对存储在此计算机上。",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"

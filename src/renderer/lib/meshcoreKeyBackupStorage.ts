@@ -1,4 +1,3 @@
-import { errLikeToLogString } from './errLikeToLogString';
 import {
   keyBackupBase64ToBytes,
   keyBackupBytesToBase64,
@@ -144,26 +143,8 @@ export function deleteMeshcoreKeyBackup(nodeId: number): void {
   writeIndex(readIndex().filter((e) => normalizeNodeId(e.nodeId) !== normalized));
 }
 
-/** Archive active MQTT identity into per-node backup when both keys exist. */
-export async function migrateLegacyMeshcoreKeyBackupFromActiveIdentity(
-  nodeId: number,
-  publicKey: Uint8Array,
-  privateKey: Uint8Array,
-): Promise<boolean> {
-  if (hasMeshcoreKeyBackup(nodeId)) return false;
-  try {
-    validateMeshcoreKeyPair(publicKey, privateKey);
-    await saveMeshcoreKeyBackup({ nodeId, publicKey, privateKey });
-    return true;
-  } catch (err) {
-    console.warn(
-      '[meshcoreKeyBackupStorage] active identity migrate failed ' + errLikeToLogString(err),
-    );
-    return false;
-  }
-}
-
-export function formatMeshcoreBackupLabel(entry: MeshcoreKeyBackupIndexEntry): string {
+/** Node label / !hex detail for restore picker (protocol prefix applied in UI via i18n). */
+export function formatMeshcoreBackupDetail(entry: MeshcoreKeyBackupIndexEntry): string {
   const hex = nodeNumDisplayHex(entry.nodeId);
   const label = entry.nodeLabel?.trim();
   return label ? `${label} (!${hex})` : `!${hex}`;

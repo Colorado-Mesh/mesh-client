@@ -2395,7 +2395,9 @@
     "removeBackup": "Eliminar copia de seguridad",
     "removeBackupConfirm": "¿Eliminar la copia de seguridad almacenada para este nodo de este equipo?",
     "backupRemoved": "Copia de seguridad eliminada.",
-    "meshcorePrivateKeyHint": "Utilice la clave privada de exportación a continuación para ver el material de la clave. La copia de seguridad almacena el par de claves completo en este ordenador."
+    "meshcorePrivateKeyHint": "Utilice la clave privada de exportación a continuación para ver el material de la clave. La copia de seguridad almacena el par de claves completo en este ordenador.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "No disponible en este modo"

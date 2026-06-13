@@ -3,10 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import {
-  readMeshcoreIdentityAsync,
-  syncMeshcoreActiveIdentityFromBackup,
-} from '@/renderer/lib/letsMeshJwt';
+import { syncMeshcoreActiveIdentityFromBackup } from '@/renderer/lib/letsMeshJwt';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -362,18 +359,6 @@ export default function SecurityPanel({
     [onImportPrivateKey],
   );
 
-  const onMeshcoreMigrateFromActive = useCallback(async () => {
-    if (meshcoreNodeId == null) return null;
-    const identity = await readMeshcoreIdentityAsync();
-    if (!identity?.public_key || !identity.private_key) return null;
-    const pubArr = Array.isArray(identity.public_key) ? Uint8Array.from(identity.public_key) : null;
-    const privArr = Array.isArray(identity.private_key)
-      ? Uint8Array.from(identity.private_key)
-      : null;
-    if (!pubArr || !privArr) return null;
-    return { nodeId: meshcoreNodeId, publicKey: pubArr, privateKey: privArr };
-  }, [meshcoreNodeId]);
-
   const canBackup = isMeshcore
     ? meshcorePublicKey?.length === 32 && !!onExportPrivateKey
     : !!securityConfig?.privateKey?.length &&
@@ -698,7 +683,6 @@ export default function SecurityPanel({
             onMeshcoreBackup={onMeshcoreBackup}
             onMeshtasticRestore={onMeshtasticRestore}
             onMeshcoreRestore={onMeshcoreRestore}
-            onMeshcoreMigrateFromActive={isMeshcore ? onMeshcoreMigrateFromActive : undefined}
             addToast={addToast}
           />
         </section>

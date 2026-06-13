@@ -2395,7 +2395,9 @@
     "removeBackup": "Remover backup",
     "removeBackupConfirm": "Remover o backup armazenado para este nó deste computador?",
     "backupRemoved": "Conjuntos de backup removidos:",
-    "meshcorePrivateKeyHint": "Use Exportar chave privada abaixo para visualizar o material principal. O backup armazena o par de chaves completo neste computador."
+    "meshcorePrivateKeyHint": "Use Exportar chave privada abaixo para visualizar o material principal. O backup armazena o par de chaves completo neste computador.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Não disponível neste modo"

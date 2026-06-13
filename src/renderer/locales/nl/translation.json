@@ -2395,7 +2395,9 @@
     "removeBackup": "Back-up verwijderen",
     "removeBackupConfirm": "De opgeslagen back-up voor dit knooppunt van deze computer verwijderen?",
     "backupRemoved": "Back-up sets verwijderd:",
-    "meshcorePrivateKeyHint": "Gebruik Export Private Key hieronder om sleutelmateriaal te bekijken. Back-up slaat het volledige sleutelpaar op deze computer op."
+    "meshcorePrivateKeyHint": "Gebruik Export Private Key hieronder om sleutelmateriaal te bekijken. Back-up slaat het volledige sleutelpaar op deze computer op.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Niet beschikbaar in deze modus"

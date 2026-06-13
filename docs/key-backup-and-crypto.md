@@ -2,6 +2,8 @@
 
 Mesh-Client stores **different kinds of keys in different places**. Meshtastic and MeshCore **Security** tabs each back up a **full key pair** (public + private) **per node**, indexed by **node number** (Meshtastic `nodeNum`, MeshCore `nodeId`). The **private key** restores mesh identity after factory reset; **public key alone is not enough**, but every backup payload includes both keys.
 
+**Per-node archives are created only when you click Backup Keys** on that protocol’s Security tab. Opening Security, connecting a radio, or importing Radio JSON updates the MeshCore **MQTT active cache** only — it does **not** create a per-node backup.
+
 See also [Meshtastic vs MeshCore feature parity](meshcore-meshtastic-parity.md) and the README **Security** section.
 
 ## What a backup contains (both protocols)
@@ -20,6 +22,8 @@ Keys are **not interchangeable** across Meshtastic and MeshCore firmware.
 
 **Not included in backup:** channels, NodeDB, messages, MeshCore contacts DB, Meshtastic remote admin keys (`meshtasticRemoteAdminKey:<nodeNum>` in SQLite), device name/owner (optional `nodeLabel` in the index is display-only).
 
+Restore lists prefix entries with **Meshtastic ·** or **MeshCore ·** so archives are distinguishable when `nodeNum` and `nodeId` share the same numeric display.
+
 ---
 
 ## Meshtastic: DM key backup / restore
@@ -36,12 +40,12 @@ Keys are **not interchangeable** across Meshtastic and MeshCore firmware.
 | Index (labels, dates, pub-key prefix) | `localStorage` → `mesh-client:meshtastic-dm-key-backup-index`       |
 | Legacy (migrated on upgrade)          | `mesh-client:key-backup` → moved into per-`nodeNum` slot when valid |
 
-**Scope: per node**
+**Scope: per node, Meshtastic only**
 
 - Each Meshtastic `nodeNum` has its own backup slot on this computer.
-- Backing up radio A does **not** overwrite radio B’s archive.
+- Backing up radio A does **not** overwrite radio B’s archive or any MeshCore archive.
 - **Restore Keys** applies the archive for the **currently connected** `nodeNum` when one exists.
-- **Restore from backup…** lists **all** archived backups (label, `!nodeNum`, date, public-key prefix) so you can restore after factory reset or when the connected node number changed.
+- **Restore from backup…** lists **Meshtastic** archived backups only.
 
 **Restore pipeline**
 
@@ -58,7 +62,7 @@ Implementation: [`meshtasticDmKeyBackupStorage.ts`](../src/renderer/lib/meshtast
 
 **Where:** **Security** tab (partial — backup/restore, sign, export/import private key; no Meshtastic PKI/admin sections).
 
-**What it backs up:** Device **public key** plus **private key** from `exportPrivateKey()` (normalized orlp bytes).
+**What it backs up:** Device **public key** plus **private key** from `exportPrivateKey()` (normalized orlp bytes) — **only** when you click **Backup Keys**.
 
 **Storage:**
 
@@ -70,11 +74,11 @@ Implementation: [`meshtasticDmKeyBackupStorage.ts`](../src/renderer/lib/meshtast
 
 The **active MQTT cache** is separate from per-node archives: LetsMesh JWT signing uses whichever identity was last connected or restored. Per-node archives retain full pairs without overwriting each other.
 
-**How keys get into the active cache**
+**How keys get into the active cache (not a per-node backup)**
 
 1. **Connect a MeshCore radio** — session export via [`tryPersistMeshcoreIdentityFromRadioExport`](../src/renderer/lib/letsMeshJwt.ts).
 2. **Security → Restore** or **Restore from backup…** — [`syncMeshcoreActiveIdentityFromBackup`](../src/renderer/lib/letsMeshJwt.ts) writes the full pair and dispatches `meshclient:meshcoreIdentityUpdated`.
-3. **Radio → Import config JSON** — also archives to per-`nodeId` backup when both keys are present ([`RadioPanel.tsx`](../src/renderer/components/RadioPanel.tsx)).
+3. **Radio → Import config JSON** — updates MQTT cache only ([`RadioPanel.tsx`](../src/renderer/components/RadioPanel.tsx)); use **Security → Backup Keys** to create a per-node archive.
 
 **Restore pipeline**
 
@@ -91,13 +95,14 @@ Details: [LetsMesh MQTT authentication](letsmesh-mqtt-auth.md).
 
 ## Meshtastic keys vs MeshCore keys
 
-|                                | Meshtastic DM backup                 | MeshCore key backup                               |
-| ------------------------------ | ------------------------------------ | ------------------------------------------------- |
-| **Protocol**                   | Meshtastic PKC / DM                  | MeshCore orlp keys                                |
-| **UI**                         | Security → Backup / Restore          | Security → Backup / Restore (+ Radio JSON import) |
-| **Storage pattern**            | `meshtastic-dm-key-backup:<nodeNum>` | `meshcore-key-backup:<nodeId>`                    |
-| **Per node?**                  | Yes — indexed by `nodeNum`           | Yes — indexed by `nodeId`                         |
-| **Portable across protocols?** | **No**                               | **No**                                            |
+|                                  | Meshtastic DM backup                 | MeshCore key backup            |
+| -------------------------------- | ------------------------------------ | ------------------------------ |
+| **Protocol**                     | Meshtastic PKC / DM                  | MeshCore orlp keys             |
+| **UI**                           | Security → **Backup Keys**           | Security → **Backup Keys**     |
+| **Storage pattern**              | `meshtastic-dm-key-backup:<nodeNum>` | `meshcore-key-backup:<nodeId>` |
+| **Per node?**                    | Yes — indexed by `nodeNum`           | Yes — indexed by `nodeId`      |
+| **Created by opening Security?** | No (legacy MT slot migrates once)    | **No**                         |
+| **Portable across protocols?**   | **No**                               | **No**                         |
 
 Flashing MeshCore firmware on hardware that previously ran Meshtastic **replaces** on-device key material. Meshtastic archives preserve your **old Meshtastic identity** for restore **if you return to Meshtastic**; they do **not** carry that identity onto the MeshCore mesh.
 
@@ -117,8 +122,8 @@ Flashing MeshCore firmware on hardware that previously ran Meshtastic **replaces
 
 1. Flash MeshCore firmware.
 2. Switch to **MeshCore** and connect — new MeshCore identity on the mesh.
-3. **Security → Backup Keys** archives the new pair under that `nodeId`.
-4. Optional: **Radio → Import config JSON** if you have companion export with `public_key` / `private_key`.
+3. **Security → Backup Keys** archives the new pair under that `nodeId` (required; connect/import alone is not enough).
+4. Optional: **Radio → Import config JSON** for MQTT cache before RF connect; then **Security → Backup Keys** for a per-node archive.
 
 ### If you return a radio to Meshtastic later
 
@@ -128,7 +133,7 @@ Flashing MeshCore firmware on hardware that previously ran Meshtastic **replaces
 ### What this does **not** do
 
 - Does **not** migrate Meshtastic identity into MeshCore contacts — peers see a **new** public key after flash.
-- Does **not** replace MeshCore companion full JSON backup tools; use Radio import + Security backup for Mesh-Client persistence.
+- Does **not** replace MeshCore companion full JSON backup tools; use Security **Backup Keys** for Mesh-Client per-node archives.
 
 ---
 
@@ -142,5 +147,5 @@ Flashing MeshCore firmware on hardware that previously ran Meshtastic **replaces
 | Restore after factory reset / different node num | **Security** → **Restore from backup…** → confirm                              |
 | Save MeshCore keys for this node                 | MeshCore → connect → **Security** → **Backup Keys**                            |
 | Restore MeshCore archive to connected radio      | **Restore Keys** or **Restore from backup…**                                   |
-| Cache MeshCore keys for MQTT only                | Connect radio, restore backup, or Radio JSON import                            |
+| Cache MeshCore keys for MQTT only                | Connect radio, restore backup, or Radio JSON import (no per-node archive)      |
 | Administer a remote Meshtastic node              | `meshtasticRemoteAdminKey:<nodeNum>` via node detail (separate from DM backup) |

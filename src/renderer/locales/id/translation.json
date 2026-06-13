@@ -2395,7 +2395,9 @@
     "removeBackup": "Hapus cadangan",
     "removeBackupConfirm": "Hapus cadangan yang disimpan untuk node ini dari komputer ini?",
     "backupRemoved": "Cadangan dihapus.",
-    "meshcorePrivateKeyHint": "Gunakan Kunci Pribadi Ekspor di bawah ini untuk melihat materi utama. Cadangan menyimpan pasangan kunci lengkap di komputer ini."
+    "meshcorePrivateKeyHint": "Gunakan Kunci Pribadi Ekspor di bawah ini untuk melihat materi utama. Cadangan menyimpan pasangan kunci lengkap di komputer ini.",
+    "backupLabelMeshtastic": "Meshtastic · {{detail}}",
+    "backupLabelMeshcore": "MeshCore · {{detail}}"
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"
