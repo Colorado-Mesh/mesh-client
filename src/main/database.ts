@@ -37,6 +37,8 @@ function isMergeSourceInvalidError(err: unknown): err is MergeSourceInvalidError
 let db: NodeSqliteDB | null = null;
 let dbClosed = false;
 
+export const DATABASE_CLOSED_MESSAGE = '[db] Database is closed';
+
 export function getDatabasePath(): string {
   return path.join(app.getPath('userData'), 'mesh-client.db');
 }
@@ -47,7 +49,7 @@ export function isDatabaseClosed(): boolean {
 
 export function initDatabase(): void {
   if (dbClosed) {
-    throw new Error('[db] Database is closed');
+    throw new Error(DATABASE_CLOSED_MESSAGE);
   }
   if (db) return;
   const dbPath = getDatabasePath();
@@ -103,10 +105,17 @@ export function initDatabase(): void {
 
 export function getDatabase(): NodeSqliteDB {
   if (dbClosed) {
-    throw new Error('[db] Database is closed');
+    throw new Error(DATABASE_CLOSED_MESSAGE);
   }
   if (!db) initDatabase();
   if (!db) throw new Error('[db] Database failed to initialize');
+  return db;
+}
+
+/** Returns null after {@link closeDatabase} instead of throwing (shutdown IPC no-op). */
+export function getDatabaseIfOpen(): NodeSqliteDB | null {
+  if (dbClosed) return null;
+  if (!db) initDatabase();
   return db;
 }
 
