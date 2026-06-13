@@ -208,26 +208,7 @@ function deviceConnectionStatusLabel(
   }
 }
 
-/** Stable English tab slot ids (icons, shortcuts, chat badge) — not for display. */
-const TAB_SLOT_IDS = [
-  'Connection',
-  'Chat',
-  'Nodes',
-  'Map',
-  'Radio',
-  'Modules',
-  'Admin',
-  'Rooms',
-  'Telemetry',
-  'Security',
-  'TAK',
-  'App',
-  'Diagnostics',
-  'Stats',
-  'Sniffer',
-  'RF',
-  'Graph',
-] as const;
+import { TAB_SLOT_IDS, type TabIconSlotId } from '@/renderer/lib/tabSlotIds';
 
 const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
@@ -239,7 +220,7 @@ function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `t
   return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
 }
 
-function tabIconSlotId(capabilities: ProtocolCapabilities, panelIndex: number): string {
+function tabIconSlotId(capabilities: ProtocolCapabilities, panelIndex: number): TabIconSlotId {
   if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'Repeaters';
   return TAB_SLOT_IDS[panelIndex];
 }
@@ -249,7 +230,7 @@ function computeTabMappings(
   targetProtocol: MeshProtocol,
   targetCapabilities: ProtocolCapabilities,
 ) {
-  const filtered: { label: string; slotId: string; panelIndex: number }[] = [];
+  const filtered: { label: string; slotId: TabIconSlotId; panelIndex: number }[] = [];
   TAB_SLOT_IDS.forEach((_slot, panelIndex) => {
     const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
     if (requiredCap !== undefined && !targetCapabilities[requiredCap]) return;

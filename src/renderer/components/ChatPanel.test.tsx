@@ -165,6 +165,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
     expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Received via RF' })).toBeInTheDocument();
   });
 
   it('shows Store & Forward badge alongside RF transport badge', () => {
@@ -189,6 +190,8 @@ describe('ChatPanel accessibility', () => {
     );
     expect(screen.getByTitle('Replayed from Store & Forward')).toBeInTheDocument();
     expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Replayed from Store & Forward' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Received via RF' })).toBeInTheDocument();
   });
 
   it('shows RF transport badge in MeshCore mode', () => {
@@ -213,6 +216,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
     expect(screen.queryByTitle('Received via RF')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Received via RF' })).toBeInTheDocument();
   });
 
   it('still shows MQTT transport badge in MeshCore mode when receivedVia is mqtt', () => {
@@ -237,6 +241,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
     expect(screen.getByTitle('Received via MQTT')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Received via MQTT' })).toBeInTheDocument();
   });
 
   it('surfaces incoming DM conversations and renders them in DM view', async () => {

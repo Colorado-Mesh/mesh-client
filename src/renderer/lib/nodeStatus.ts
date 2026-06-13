@@ -63,6 +63,7 @@ export function clampReadWatermarkMs(
   maxFutureSkewSec = LAST_HEARD_MAX_FUTURE_SKEW_SEC,
 ): number {
   if (!watermarkMs || !Number.isFinite(watermarkMs)) return 0;
+  if (watermarkMs < 0) return 0;
   const maxAllowed = nowMs + maxFutureSkewSec * 1000;
   return Math.min(watermarkMs, maxAllowed);
 }

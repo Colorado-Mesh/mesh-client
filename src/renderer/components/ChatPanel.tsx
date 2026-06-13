@@ -214,22 +214,27 @@ function OutboxBubble({
 
 function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   const { t } = useTranslation();
+  const rfLabel = t('chatPanel.receivedViaRf');
+  const mqttLabel = t('chatPanel.receivedViaMqtt');
   const rfIcon = (
-    <span title={t('chatPanel.receivedViaRf')}>
+    <span role="img" title={rfLabel} aria-label={rfLabel}>
       <MeshtasticRfPathIcon />
     </span>
   );
   const mqttIcon = (
-    <span title={t('chatPanel.receivedViaMqtt')}>
+    <span role="img" title={mqttLabel} aria-label={mqttLabel}>
       <MeshtasticMqttPathIcon />
     </span>
   );
 
   if (via === 'both') {
+    const bothLabel = t('chatPanel.receivedViaRfAndMqtt');
     return (
       <span
+        role="img"
         className="flex flex-col items-center gap-px"
-        title={t('chatPanel.receivedViaRfAndMqtt')}
+        title={bothLabel}
+        aria-label={bothLabel}
       >
         {rfIcon}
         {mqttIcon}
@@ -242,8 +247,9 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
 function StoreForwardBadge() {
   const { t } = useTranslation();
   const trigger = useIconTrigger();
+  const label = t('chatPanel.receivedViaStoreForward');
   return (
-    <span title={t('chatPanel.receivedViaStoreForward')}>
+    <span role="img" title={label} aria-label={label}>
       <Archive aria-hidden className="h-3 w-3 text-amber-400" trigger={trigger} size={12} />
     </span>
   );

@@ -46,7 +46,15 @@ describe('Sidebar', () => {
 
   it('renders an icon for Sniffer tab', () => {
     const onChange = vi.fn();
-    render(<Sidebar tabs={['Sniffer']} active={0} onChange={onChange} {...defaultProps} />);
+    render(
+      <Sidebar
+        tabs={['Sniffer']}
+        tabSlotIds={['Sniffer']}
+        active={0}
+        onChange={onChange}
+        {...defaultProps}
+      />,
+    );
     const tab = screen.getByRole('tab', { name: 'Sniffer' });
     expect(tab.querySelector('svg')).toBeInTheDocument();
   });
@@ -64,6 +72,25 @@ describe('Sidebar', () => {
     );
     const tab = screen.getByRole('tab', { name: 'Rooms' });
     expect(tab.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('warns in dev when tabSlotIds length mismatches tabs', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Chat', 'Nodes']}
+        tabSlotIds={['Chat']}
+        active={0}
+        onChange={onChange}
+        {...defaultProps}
+      />,
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('tabSlotIds length (1) does not match tabs length (2)'),
+    );
+    expect(screen.getByRole('tab', { name: 'Chat' })).toBeInTheDocument();
+    warnSpy.mockRestore();
   });
 
   it('shows tab label when expanded', () => {

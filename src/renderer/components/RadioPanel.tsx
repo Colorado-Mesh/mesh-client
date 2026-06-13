@@ -2360,7 +2360,6 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
   const trigger = useIconTrigger();
   const iconProps = {
     'aria-hidden': true as const,
-    className: 'h-3.5 w-3.5',
     trigger,
     size: 14,
   };
@@ -2371,7 +2370,7 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
         title={t('radioPanel.aesEncryptedTooltip')}
         className="flex items-center text-green-400"
       >
-        <Lock {...iconProps} />
+        <Lock {...iconProps} className="h-3.5 w-3.5" />
       </span>
     );
   }

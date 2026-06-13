@@ -172,4 +172,10 @@ describe('clampReadWatermarkMs', () => {
     const poisoned = nowMs + 5 * 24 * 60 * 60 * 1000;
     expect(clampReadWatermarkMs(poisoned, nowMs)).toBe(nowMs + 300_000);
   });
+
+  it('returns 0 for NaN, Infinity, and negative inputs', () => {
+    expect(clampReadWatermarkMs(Number.NaN, nowMs)).toBe(0);
+    expect(clampReadWatermarkMs(Number.POSITIVE_INFINITY, nowMs)).toBe(0);
+    expect(clampReadWatermarkMs(-1, nowMs)).toBe(0);
+  });
 });

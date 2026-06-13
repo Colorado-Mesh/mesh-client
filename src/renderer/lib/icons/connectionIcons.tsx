@@ -25,6 +25,8 @@ export function ConnectionIcon({
       return <Cpu {...p} />;
     case 'http':
       return <Radio {...p} />;
+    default:
+      return null;
   }
 }
 

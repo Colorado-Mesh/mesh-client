@@ -1209,7 +1209,11 @@ export default function NodeListPanel({
                               const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
                               if (!routingRow) return null;
                               return (
-                                <span title={routingRow.description}>
+                                <span
+                                  role="img"
+                                  title={routingRow.description}
+                                  aria-label={routingRow.description}
+                                >
                                   <TriangleAlert
                                     aria-hidden
                                     className={`h-4 w-4 shrink-0 ${
