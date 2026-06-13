@@ -24,6 +24,7 @@ import {
   migrateLegacyMeshtasticDmKeyBackup,
   saveMeshtasticDmKeyBackup,
 } from '@/renderer/lib/meshtasticDmKeyBackupStorage';
+import { formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import { ConfirmModal } from './ConfirmModal';
 
@@ -328,7 +329,7 @@ export function KeyBackupRestoreSection({
                     className="hover:bg-secondary-dark w-full rounded px-2 py-1.5 text-left text-xs text-gray-300"
                   >
                     {formatEntryLabel(entry, protocol, t)} · {prefix}… ·{' '}
-                    {new Date(entry.backedUpAt).toLocaleString()}
+                    {formatIsoDateTime(entry.backedUpAt)}
                   </button>
                 </li>
               );

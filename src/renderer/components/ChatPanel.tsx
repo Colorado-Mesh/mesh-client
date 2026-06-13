@@ -42,6 +42,7 @@ import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconM
 import { MeshtasticMqttPathIcon, MeshtasticRfPathIcon } from '@/renderer/lib/meshtasticSourceIcons';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
@@ -265,11 +266,7 @@ function formatDayLabel(ts: number): string {
   const diff = today.getTime() - msgDay.getTime();
   if (diff === 0) return 'Today';
   if (diff === 86_400_000) return 'Yesterday';
-  return date.toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatIsoDate(date);
 }
 
 /** Get a day key for grouping messages */
@@ -1042,7 +1039,7 @@ function ChatPanel({
   }
 
   function formatFullTimestamp(ts: number): string {
-    return new Date(ts).toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium' });
+    return formatIsoDateTime(ts);
   }
 
   /** Flat reaction rows for a message key (chronological as stored). */

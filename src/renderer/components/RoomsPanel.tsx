@@ -72,6 +72,7 @@ import {
 import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/lib/nodeStatus';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import { getDistFromChatBottom } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
@@ -128,7 +129,7 @@ interface Props {
 }
 
 function formatTimestamp(ts: number): string {
-  return new Date(ts).toLocaleString();
+  return formatIsoDateTime(ts);
 }
 
 function roomPostRowKey(m: ChatMessage): string {

@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity */
+/* eslint-disable react-hooks/set-state-in-effect */
 import {
   ArrowUpDown,
   ChevronDown,
@@ -27,6 +27,7 @@ import {
 } from '../lib/coordUtils';
 import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
+import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import { MESHCORE_CONTACTS_WARNING_THRESHOLD, MESHCORE_MAX_CONTACTS } from '../lib/meshcoreUtils';
 import {
@@ -48,7 +49,6 @@ import { getNodeTypeIcon } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
-import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -508,17 +508,7 @@ export default function NodeListPanel({
       : `${visibleNodeCount} of ${totalNodeCount}`;
 
   function formatTime(ts: number): string {
-    if (!ts) return t('common.never');
-    const normalizedTs = normalizeLastHeardMs(ts);
-    const diff = Date.now() - normalizedTs;
-    if (diff < MS_PER_MINUTE) return t('common.justNow');
-    if (diff < MS_PER_HOUR) {
-      return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
-    }
-    if (diff < MS_PER_DAY) {
-      return t('common.hoursAgo', { count: Math.floor(diff / MS_PER_HOUR) });
-    }
-    return new Date(normalizedTs).toLocaleDateString();
+    return formatRelativeOrIsoDate(ts, t, normalizeLastHeardMs);
   }
 
   return (

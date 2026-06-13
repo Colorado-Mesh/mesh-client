@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import type { MeshNode } from '../lib/types';
 
@@ -148,14 +149,7 @@ export default function SearchModal({
     return r.sender_name ?? 'Unknown';
   };
 
-  const formatTs = (ts: number) => {
-    const d = new Date(ts);
-    return (
-      d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-      ' ' +
-      d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-    );
-  };
+  const formatTs = (ts: number) => formatIsoDateTime(ts);
 
   const handleResultClick = (r: SearchResult) => {
     onNavigateToChannel(r.channel);

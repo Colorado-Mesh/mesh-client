@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { formatIsoDateTime } from '@/shared/formatIsoDate';
+
 import type { MeshNode } from '../lib/types';
 import NodeDetailModal from './NodeDetailModal';
 
@@ -114,7 +116,7 @@ describe('NodeDetailModal accessibility', () => {
     expect(screen.getByText('Recorded Points')).toBeInTheDocument();
     expect(screen.getByText('Time Span')).toBeInTheDocument();
     expect(screen.getByText('Most recent: 40.20000, -105.20000')).toBeInTheDocument();
-    expect(screen.getAllByText(new Date(now).toLocaleString()).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(formatIsoDateTime(now)).length).toBeGreaterThan(0);
     expect(screen.getByText('40.20000, -105.20000')).toBeInTheDocument();
   });
 
@@ -161,9 +163,7 @@ describe('NodeDetailModal accessibility', () => {
     );
 
     expect(screen.getByText('Showing newest 100 of 101 points')).toBeInTheDocument();
-    expect(
-      screen.getAllByText(new Date(base + 100 * 1000).toLocaleString()).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(formatIsoDateTime(base + 100 * 1000)).length).toBeGreaterThan(0);
     expect(screen.queryByText('41.00000, -106.00000')).not.toBeInTheDocument();
   });
 
