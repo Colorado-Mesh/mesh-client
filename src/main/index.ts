@@ -3032,6 +3032,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticLastRfSelfNodeId',
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
+  'reduceMotion',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);
