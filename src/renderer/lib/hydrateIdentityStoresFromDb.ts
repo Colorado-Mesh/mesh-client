@@ -5,7 +5,10 @@ import {
   type MeshcoreSavedNodeHopRow,
   persistMeshcoreMessageSenderRepairs,
 } from '../hooks/meshcore/meshcoreHookPreamble';
-import { upsertMessageRecordsForIdentity } from '../stores/messageStore';
+import {
+  replaceMessageRecordsForIdentity,
+  upsertMessageRecordsForIdentity,
+} from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
@@ -15,6 +18,7 @@ import {
   meshcoreRoomServerIdsFromContacts,
   repairMeshcoreHydratedMessages,
 } from './meshcoreDbCacheHydration';
+import { rebuildMeshcoreDedupeIndex } from './meshcoreMessageDedupeIndex';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
   buildMeshtasticNodeMapFromDbRows,
@@ -31,6 +35,16 @@ export const MESHCORE_DB_MESSAGE_LOAD_LIMIT = 500;
 export interface HydrateIdentityStoresOptions {
   nodes?: boolean;
   messages?: boolean;
+  /** `replace` reloads the store slice from SQLite (post-delete); default upserts only. */
+  messagesMode?: 'upsert' | 'replace';
+}
+
+/** Options for post-delete message refresh (runtime + store). */
+export interface MessageClearRefreshOptions {
+  replaceFromDb?: boolean;
+  messagesMode?: 'upsert' | 'replace';
+  clearedChannel?: number;
+  clearedAll?: boolean;
 }
 
 export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Promise<void> {
@@ -38,7 +52,10 @@ export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Prom
   syncMeshtasticNodesMapToIdentityStore(identityId, nodeMap);
 }
 
-export async function hydrateMeshtasticMessagesFromDb(identityId: IdentityId): Promise<void> {
+export async function hydrateMeshtasticMessagesFromDb(
+  identityId: IdentityId,
+  messagesMode: 'upsert' | 'replace' = 'upsert',
+): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
   const sanitized = dedupeMeshtasticHydrationOrphanSends(
     msgs.map((m) => ({
@@ -48,10 +65,12 @@ export async function hydrateMeshtasticMessagesFromDb(identityId: IdentityId): P
   );
   const reversed = sanitized.reverse();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
-  upsertMessageRecordsForIdentity(
-    identityId,
-    trimmed.map((msg) => chatMessageToMessageRecord(msg)),
-  );
+  const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
+  if (messagesMode === 'replace') {
+    replaceMessageRecordsForIdentity(identityId, records);
+  } else {
+    upsertMessageRecordsForIdentity(identityId, records);
+  }
   for (const msg of trimmed) {
     if (msg.sender_id <= 0) continue;
     ensureMeshtasticChatSenderInNodeStore(identityId, msg.sender_id, {
@@ -101,7 +120,10 @@ export function syncMeshtasticNodesMapToIdentityStore(
   );
 }
 
-export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Promise<void> {
+export async function hydrateMeshcoreMessagesFromDb(
+  identityId: IdentityId,
+  messagesMode: 'upsert' | 'replace' = 'upsert',
+): Promise<void> {
   const [dbMsgs, contactRows] = await Promise.all([
     window.electronAPI.db.getMeshcoreMessages(undefined, MESHCORE_DB_MESSAGE_LOAD_LIMIT),
     window.electronAPI.db.getMeshcoreContacts(),
@@ -114,10 +136,16 @@ export async function hydrateMeshcoreMessagesFromDb(identityId: IdentityId): Pro
   );
   void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
-  upsertMessageRecordsForIdentity(
-    identityId,
-    trimmed.map((msg) => chatMessageToMessageRecord(msg)),
-  );
+  const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
+  if (messagesMode === 'replace') {
+    replaceMessageRecordsForIdentity(identityId, records);
+    rebuildMeshcoreDedupeIndex(
+      identityId,
+      trimmed.map((message) => ({ id: String(message.id), message })),
+    );
+  } else {
+    upsertMessageRecordsForIdentity(identityId, records);
+  }
 }
 
 /**
@@ -131,6 +159,7 @@ export async function hydrateIdentityStoresFromDb(
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
+  const messagesMode = opts.messagesMode ?? 'upsert';
   if (!loadNodes && !loadMessages) return;
 
   const isCurrent = beginIdentityHydration(protocol, identityId);
@@ -139,12 +168,12 @@ export async function hydrateIdentityStoresFromDb(
       if (loadNodes && loadMessages) {
         await Promise.all([
           hydrateMeshtasticNodesFromDb(identityId),
-          hydrateMeshtasticMessagesFromDb(identityId),
+          hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
         ]);
       } else if (loadNodes) {
         await hydrateMeshtasticNodesFromDb(identityId);
       } else if (loadMessages) {
-        await hydrateMeshtasticMessagesFromDb(identityId);
+        await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
       }
       if (!isCurrent()) return;
       return;
@@ -152,12 +181,12 @@ export async function hydrateIdentityStoresFromDb(
     if (loadNodes && loadMessages) {
       await Promise.all([
         hydrateMeshcoreNodesFromDb(identityId),
-        hydrateMeshcoreMessagesFromDb(identityId),
+        hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
       ]);
     } else if (loadNodes) {
       await hydrateMeshcoreNodesFromDb(identityId);
     } else if (loadMessages) {
-      await hydrateMeshcoreMessagesFromDb(identityId);
+      await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
     }
     if (!isCurrent()) return;
   } catch (e) {

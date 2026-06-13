@@ -52,6 +52,7 @@ import {
   meshcoreChatMessagesForDisplay,
 } from '../lib/meshcoreChannelText';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
+import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
@@ -296,12 +297,13 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
   return Object.fromEntries(Object.entries(source).filter(([key]) => Number(key) !== nodeNum));
 }
 
-function latestMessageTimestamp(messages: readonly ChatMessage[]): number {
+function latestMessageTimestamp(messages: readonly ChatMessage[], nowMs = Date.now()): number {
   let latest = 0;
   for (const msg of messages) {
-    if (msg.timestamp > latest) latest = msg.timestamp;
+    const ts = effectiveMessageTimestampMs(msg.timestamp, nowMs);
+    if (ts > latest) latest = ts;
   }
-  return latest;
+  return clampReadWatermarkMs(latest, nowMs);
 }
 
 function mergeReadWatermarks(

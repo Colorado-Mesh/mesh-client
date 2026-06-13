@@ -42,6 +42,32 @@ export function effectiveLastHeardMs(lastHeard: number, nowMs = Date.now()): num
 }
 
 /**
+ * Effective chat message timestamp in ms; caps device RTC skew beyond `maxFutureSkewSec`.
+ * Timestamps unreasonably far in the future clamp to `nowMs` (receive-time estimate).
+ */
+export function effectiveMessageTimestampMs(
+  timestampMs: number,
+  nowMs = Date.now(),
+  maxFutureSkewSec = LAST_HEARD_MAX_FUTURE_SKEW_SEC,
+): number {
+  if (!timestampMs || !Number.isFinite(timestampMs)) return nowMs;
+  const maxFuture = nowMs + maxFutureSkewSec * 1000;
+  if (timestampMs > maxFuture) return nowMs;
+  return timestampMs;
+}
+
+/** Cap a last-read watermark so device-ahead clocks cannot suppress future unread badges. */
+export function clampReadWatermarkMs(
+  watermarkMs: number,
+  nowMs = Date.now(),
+  maxFutureSkewSec = LAST_HEARD_MAX_FUTURE_SKEW_SEC,
+): number {
+  if (!watermarkMs || !Number.isFinite(watermarkMs)) return 0;
+  const maxAllowed = nowMs + maxFutureSkewSec * 1000;
+  return Math.min(watermarkMs, maxAllowed);
+}
+
+/**
  * Return the most-recent last_heard in Unix seconds. Takes the maximum of the device's
  * `lastAdvert` and any previous `last_heard` from live events (DMs, channel messages, paths)
  * so that live-event freshness is never overwritten by a stale advert value from the radio.

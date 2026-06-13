@@ -18,14 +18,19 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import {
+  clearPersistedLastReadForProtocol,
+  clearPersistedRoomsLastRead,
   ensureMeshcoreChatLastReadSanitized,
+  getSanitizedMeshcoreChatLastRead,
+  getSanitizedMeshcoreRoomsLastRead,
   loadPersistedLastReadInitial,
-  loadPersistedRoomsLastRead,
+  removePersistedLastReadForChannel,
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { filterRegularChatMessages, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
@@ -878,10 +883,7 @@ function AppContent({
 
   const meshcoreChatLastRead = useMemo(() => {
     void lastReadRevision.meshcore;
-    if (localStorage.getItem('mesh-client:lastReadSanitized:meshcore') === '1') {
-      return loadPersistedLastReadInitial('meshcore');
-    }
-    return ensureMeshcoreChatLastReadSanitized(meshcoreUiMessages);
+    return getSanitizedMeshcoreChatLastRead(meshcoreUiMessages);
   }, [lastReadRevision.meshcore, meshcoreUiMessages]);
 
   const meshcoreChatUnreadDmOptions = useMemo(
@@ -903,11 +905,8 @@ function AppContent({
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
-    const rawCount = totalRoomsUnreadCount(
-      meshcoreUiMessages,
-      loadPersistedRoomsLastRead(),
-      meshcoreOwnNodeIdSet,
-    );
+    const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
+    const rawCount = totalRoomsUnreadCount(meshcoreUiMessages, roomsLastRead, meshcoreOwnNodeIdSet);
     const count =
       meshcoreRuntime.state.status === 'configured' || meshcoreOwnNodeIdSet.size > 0 ? rawCount : 0;
     return count;
@@ -1441,21 +1440,41 @@ function AppContent({
     refreshMeshcoreNodesInStore,
   ]);
 
-  const refreshMessagesFromDb = useCallback(() => {
-    if (protocol === 'meshtastic') {
-      meshtasticPanelActions.refreshMessagesFromDb();
-      void refreshMeshtasticMessagesInStore();
-    } else {
-      void meshcorePanelActions.refreshMessagesFromDb();
-      void refreshMeshcoreMessagesInStore();
-    }
-  }, [
-    protocol,
-    meshtasticPanelActions,
-    meshcorePanelActions,
-    refreshMeshtasticMessagesInStore,
-    refreshMeshcoreMessagesInStore,
-  ]);
+  const refreshMessagesFromDb = useCallback(
+    (opts?: MessageClearRefreshOptions) => {
+      const replace =
+        opts?.replaceFromDb === true ||
+        opts?.messagesMode === 'replace' ||
+        opts?.clearedAll === true ||
+        opts?.clearedChannel != null;
+      const messagesMode = replace ? 'replace' : 'upsert';
+      const replaceFromDb = replace;
+
+      if (protocol === 'meshtastic') {
+        meshtasticPanelActions.refreshMessagesFromDb({ replaceFromDb });
+        void refreshMeshtasticMessagesInStore({ messagesMode });
+      } else {
+        void meshcorePanelActions.refreshMessagesFromDb({ replaceFromDb });
+        void refreshMeshcoreMessagesInStore({ messagesMode });
+      }
+
+      if (opts?.clearedAll) {
+        clearPersistedLastReadForProtocol(protocol);
+        if (protocol === 'meshcore') {
+          clearPersistedRoomsLastRead();
+        }
+      } else if (opts?.clearedChannel != null) {
+        removePersistedLastReadForChannel(protocol, opts.clearedChannel);
+      }
+    },
+    [
+      protocol,
+      meshtasticPanelActions,
+      meshcorePanelActions,
+      refreshMeshtasticMessagesInStore,
+      refreshMeshcoreMessagesInStore,
+    ],
+  );
 
   const postStartupPruneHydrateRef = useRef<() => void>(() => {});
   useLayoutEffect(() => {

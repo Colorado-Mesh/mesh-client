@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearDraft,
@@ -15,12 +15,16 @@ import {
   openDmTabsStorageKey,
   roomsLastReadStorageKey,
   sanitizeMeshcoreChatLastRead,
+  sanitizeMeshcoreRoomsLastRead,
   saveDraft,
   saveMutedViews,
   savePersistedRoomsLastRead,
   saveStarred,
   type StarredMessage,
 } from './chatPanelProtocolStorage';
+import { computeChannelUnreadCounts } from './chatUnreadCounts';
+import { effectiveMessageTimestampMs } from './nodeStatus';
+import type { ChatMessage } from './types';
 
 describe('chatPanelProtocolStorage', () => {
   beforeEach(() => {
@@ -229,6 +233,40 @@ describe('sanitizeMeshcoreChatLastRead', () => {
     expect(JSON.parse(localStorage.getItem(lastReadStorageKey('meshcore'))!)).toEqual({
       'ch:0': deviceTs,
     });
+  });
+
+  it('counts message unread after sanitize fixes poisoned future lastRead watermark', () => {
+    const nowMs = 1_700_000_000_000;
+    vi.useFakeTimers();
+    vi.setSystemTime(nowMs);
+    const poisonedLastRead = nowMs + 5 * 24 * 60 * 60 * 1000;
+    const sanitized = sanitizeMeshcoreChatLastRead({ 'ch:0': poisonedLastRead }, [
+      { channel: 0, timestamp: poisonedLastRead },
+    ]);
+    expect(sanitized['ch:0']).toBe(effectiveMessageTimestampMs(poisonedLastRead, nowMs));
+    const newMsg: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'after fix',
+      channel: 0,
+      timestamp: nowMs + 5_000,
+      status: 'acked',
+    };
+    const counts = computeChannelUnreadCounts([newMsg], sanitized, new Set([1]), 'meshcore');
+    expect(counts.get(0)).toBe(1);
+    vi.useRealTimers();
+  });
+
+  it('sanitizeMeshcoreRoomsLastRead clamps future room watermarks', () => {
+    const nowMs = 1_700_000_000_000;
+    vi.useFakeTimers();
+    vi.setSystemTime(nowMs);
+    const futureTs = nowMs + 5 * 24 * 60 * 60 * 1000;
+    const sanitized = sanitizeMeshcoreRoomsLastRead({ 0xabc: futureTs }, [
+      { roomServerId: 0xabc, timestamp: futureTs },
+    ]);
+    expect(sanitized[0xabc]).toBe(effectiveMessageTimestampMs(futureTs, nowMs));
+    vi.useRealTimers();
   });
 });
 

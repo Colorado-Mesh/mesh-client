@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clampLastHeardSec,
+  clampReadWatermarkMs,
   effectiveLastHeardMs,
+  effectiveMessageTimestampMs,
   getNodeStatus,
   lastHeardToUnixSeconds,
   mergeMeshcoreLastHeardFromAdvert,
@@ -146,5 +148,28 @@ describe('getNodeStatus', () => {
     const nowMs = 1_700_000_000_000;
     const farFutureSec = 1_700_000_000 + 86_400;
     expect(effectiveLastHeardMs(farFutureSec, nowMs)).toBe(nowMs);
+  });
+});
+
+describe('effectiveMessageTimestampMs', () => {
+  const nowMs = 1_700_000_000_000;
+
+  it('returns nowMs for timestamps unreasonably far in the future', () => {
+    const fiveDaysAhead = nowMs + 5 * 24 * 60 * 60 * 1000;
+    expect(effectiveMessageTimestampMs(fiveDaysAhead, nowMs)).toBe(nowMs);
+  });
+
+  it('preserves timestamps within skew tolerance', () => {
+    const withinSkew = nowMs + 60_000;
+    expect(effectiveMessageTimestampMs(withinSkew, nowMs)).toBe(withinSkew);
+  });
+});
+
+describe('clampReadWatermarkMs', () => {
+  const nowMs = 1_700_000_000_000;
+
+  it('caps watermarks beyond client clock skew', () => {
+    const poisoned = nowMs + 5 * 24 * 60 * 60 * 1000;
+    expect(clampReadWatermarkMs(poisoned, nowMs)).toBe(nowMs + 300_000);
   });
 });

@@ -60,6 +60,7 @@ import {
 } from '../../lib/meshcoreUtils';
 import { getMeshtasticConnectedMyNodeNum } from '../../lib/meshtasticConnectedNodeRef';
 import {
+  effectiveMessageTimestampMs,
   LAST_HEARD_MAX_FUTURE_SKEW_SEC,
   mergeMeshcoreLastHeardFromAdvert,
 } from '../../lib/nodeStatus';
@@ -681,7 +682,10 @@ export function attachMeshcoreLegacyConnEvents(
           logTransportLineAsDevice(d.text);
         } else if (sender?.hw_model === 'Room') {
           if (!legacyOwnsRoomPosts()) {
-            void setMeshcoreRoomLastPostAt(senderId, d.senderTimestamp * 1000);
+            void setMeshcoreRoomLastPostAt(
+              senderId,
+              effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+            );
           } else {
             const { authorId, payload } = meshcoreRoomPostBodyFromWire(
               d.text,
@@ -698,7 +702,7 @@ export function attachMeshcoreLegacyConnEvents(
                 roomServerId: senderId,
                 authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
                 authorName,
-                timestamp: d.senderTimestamp * 1000,
+                timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
                 receivedVia: 'rf',
               }),
             );
@@ -709,7 +713,7 @@ export function attachMeshcoreLegacyConnEvents(
               rawText: d.text,
               senderId,
               displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-              timestamp: d.senderTimestamp * 1000,
+              timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
               receivedVia: 'rf',
               peerNodeId: senderId,
               myNodeId: myNodeNumRef.current || 0,
@@ -759,7 +763,7 @@ export function attachMeshcoreLegacyConnEvents(
             senderId: resolved.senderId,
             displayName: resolved.displayName,
             channel: d.channelIdx,
-            timestamp: d.senderTimestamp * 1000,
+            timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
             receivedVia: 'rf',
           }),
           isHistory: true,
@@ -835,7 +839,7 @@ export function attachMeshcoreLegacyConnEvents(
 
     // Room server BBS post (SignedPlain or PLAIN system lines) — not a personal DM.
     if (sender?.hw_model === 'Room') {
-      const postTs = d.senderTimestamp * 1000;
+      const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
       if (!legacyOwnsRoomPosts()) {
         void setMeshcoreRoomLastPostAt(senderId, postTs);
         return;
@@ -893,7 +897,7 @@ export function attachMeshcoreLegacyConnEvents(
         rawText: d.text,
         senderId,
         displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-        timestamp: d.senderTimestamp * 1000,
+        timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
         receivedVia: 'rf',
         rxHops: dmRfMatch != null ? dmRfMatch.hopCount : undefined,
         peerNodeId: senderId,
@@ -990,7 +994,7 @@ export function attachMeshcoreLegacyConnEvents(
         senderId: resolved.senderId,
         displayName: resolved.displayName,
         channel: d.channelIdx,
-        timestamp: d.senderTimestamp * 1000,
+        timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
         receivedVia: 'rf',
         rxHops: rfMatch != null ? rfMatch.hopCount : undefined,
       }),

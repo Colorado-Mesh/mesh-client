@@ -67,6 +67,7 @@ import {
   getMeshcoreRoomSyncConfig,
   setMeshcoreRoomSyncConfig,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
+import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/lib/nodeStatus';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
@@ -338,7 +339,11 @@ export default function RoomsPanel({
 
   const markSelectedRoomRead = useCallback(() => {
     if (selectedRoomId == null || roomPosts.length === 0) return;
-    const latest = Math.max(...roomPosts.map((m) => m.timestamp));
+    const nowMs = Date.now();
+    const latest = clampReadWatermarkMs(
+      Math.max(...roomPosts.map((m) => effectiveMessageTimestampMs(m.timestamp, nowMs))),
+      nowMs,
+    );
     setPersistedRoomsLastRead((prev) => mergeRoomLastReadWatermark(prev, selectedRoomId, latest));
   }, [roomPosts, selectedRoomId]);
 

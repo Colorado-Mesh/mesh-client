@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 
 import type { LocationFilter } from '../App';
 import {
@@ -160,7 +161,7 @@ interface Props {
   gpsLoading?: boolean;
   onGpsIntervalChange?: (secs: number) => void;
   onNodesPruned?: () => void;
-  onMessagesPruned?: () => void;
+  onMessagesPruned?: (opts?: MessageClearRefreshOptions) => void;
   onClearMeshcoreRepeaters?: () => Promise<void>;
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
   onChatCompactModeChange?: (compact: boolean) => void;
@@ -173,6 +174,7 @@ interface PendingAction {
   confirmLabel: string;
   danger?: boolean;
   action: () => Promise<void>;
+  messageClearMeta?: MessageClearRefreshOptions;
 }
 
 export default function AppPanel({
@@ -475,7 +477,7 @@ export default function AppPanel({
   const [msgChannels, setMsgChannels] = useState<number[]>([]);
   const [clearChannelTarget, setClearChannelTarget] = useState<number>(CLEAR_ALL_CHANNELS_VALUE);
 
-  useEffect(() => {
+  const loadMsgChannels = useCallback(() => {
     if (protocol === 'meshcore') {
       window.electronAPI.db
         .getMeshcoreMessageChannels()
@@ -498,6 +500,10 @@ export default function AppPanel({
   }, [protocol]);
 
   useEffect(() => {
+    loadMsgChannels();
+  }, [loadMsgChannels]);
+
+  useEffect(() => {
     setClearChannelTarget(CLEAR_ALL_CHANNELS_VALUE);
   }, [protocol]);
 
@@ -517,10 +523,10 @@ export default function AppPanel({
 
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
-    const actionName = pendingAction.name;
+    const { name: actionName, action, messageClearMeta } = pendingAction;
     setPendingAction(null);
     try {
-      await pendingAction.action();
+      await action();
       const nodeActions = [
         'Delete Old Nodes',
         'Prune MQTT-only Nodes',
@@ -533,7 +539,10 @@ export default function AppPanel({
       ];
       const messageActions = ['Clear Messages', 'Clear All Data'];
       if (nodeActions.includes(actionName)) onNodesPruned?.();
-      if (messageActions.includes(actionName)) onMessagesPruned?.();
+      if (messageActions.includes(actionName)) {
+        onMessagesPruned?.(messageClearMeta);
+        loadMsgChannels();
+      }
       addToast(t('appPanel.actionCompleted', { name: actionName }), 'success');
     } catch (err) {
       console.warn('[AppPanel] pending action failed ' + errLikeToLogString(err));
@@ -544,7 +553,7 @@ export default function AppPanel({
         'error',
       );
     }
-  }, [pendingAction, addToast, onNodesPruned, onMessagesPruned, t]);
+  }, [pendingAction, addToast, loadMsgChannels, onNodesPruned, onMessagesPruned, t]);
 
   return (
     <div className="w-full space-y-6">
@@ -1858,6 +1867,13 @@ export default function AppPanel({
                       : `This will permanently delete all messages from ${channelName}. This cannot be undone.`,
                     confirmLabel: isAll ? `Clear ${messageCount} Messages` : `Clear ${channelName}`,
                     danger: true,
+                    messageClearMeta: isAll
+                      ? { clearedAll: true, replaceFromDb: true, messagesMode: 'replace' }
+                      : {
+                          clearedChannel: clearChannelTarget,
+                          replaceFromDb: true,
+                          messagesMode: 'replace',
+                        },
                     action: async () => {
                       if (protocol === 'meshcore') {
                         if (isAll) {
@@ -1924,8 +1940,18 @@ export default function AppPanel({
                       'This will permanently delete ALL local messages, nodes, and cached session data. This action CANNOT be undone.',
                     confirmLabel: 'Clear Everything',
                     danger: true,
+                    messageClearMeta: {
+                      clearedAll: true,
+                      replaceFromDb: true,
+                      messagesMode: 'replace',
+                    },
                     action: async () => {
-                      await window.electronAPI.db.clearMessages();
+                      if (protocol === 'meshcore') {
+                        await window.electronAPI.db.clearMeshcoreMessages();
+                        await window.electronAPI.db.clearMeshcoreContacts();
+                      } else {
+                        await window.electronAPI.db.clearMessages();
+                      }
                       await window.electronAPI.db.clearNodes();
                       await window.electronAPI.clearSessionData();
                     },

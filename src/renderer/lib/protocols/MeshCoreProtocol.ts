@@ -21,6 +21,7 @@ import {
   pubKeyPrefixHex,
   pubkeyToNodeId,
 } from '../meshcoreUtils';
+import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
@@ -580,7 +581,7 @@ export class MeshCoreProtocol implements Protocol {
           to: 0,
           payload: d.text,
           channelIndex: isRoomWire ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
-          timestamp: d.senderTimestamp * 1000,
+          timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
           ...(d.txtType != null ? { txtType: d.txtType } : {}),
           ...(roomServerId != null ? { roomServerId } : {}),
         },
@@ -602,7 +603,7 @@ export class MeshCoreProtocol implements Protocol {
           to: 0,
           payload: d.text,
           channelIndex: d.channelIdx,
-          timestamp: d.senderTimestamp * 1000,
+          timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
         },
       },
     ];
