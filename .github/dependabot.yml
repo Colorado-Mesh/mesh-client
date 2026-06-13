@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'saturday'
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     versioning-strategy: lockfile-only
     groups:
       electron-framework:
@@ -19,7 +19,7 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     labels:
       - 'dependencies'
       - 'github-actions'
