@@ -4,12 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { TabIcon } from '@/renderer/lib/icons/tabIcons';
+import type { TabIconSlotId } from '@/renderer/lib/tabSlotIds';
 
 interface SidebarProps {
   /** Translated tab labels shown in the sidebar */
   tabs: string[];
   /** Stable English slot ids (same order as `tabs`) for icons and Chat badge; omit only in tests */
-  tabSlotIds?: string[];
+  tabSlotIds?: TabIconSlotId[];
   active: number;
   onChange: (index: number) => void;
   /** Unread message count for Chat tab badge; 0 hides badge */
@@ -36,7 +37,13 @@ export default function Sidebar({
   const { t } = useTranslation();
   const collapseTrigger = useIconTrigger();
   const safeActive = tabs.length === 0 ? 0 : Math.max(0, Math.min(active, tabs.length - 1));
-  const slotIds = tabSlotIds?.length === tabs.length ? tabSlotIds : tabs;
+  const resolvedSlotIds = tabSlotIds ?? [];
+  if (import.meta.env.DEV && tabSlotIds != null && tabSlotIds.length !== tabs.length) {
+    console.warn(
+      `[Sidebar] tabSlotIds length (${tabSlotIds.length}) does not match tabs length (${tabs.length}); icons may be missing`,
+    );
+  }
+  const slotIds = resolvedSlotIds.length === tabs.length ? resolvedSlotIds : tabs;
 
   return (
     <div className="bg-deep-black relative flex h-full w-full shrink-0 flex-col overflow-hidden">

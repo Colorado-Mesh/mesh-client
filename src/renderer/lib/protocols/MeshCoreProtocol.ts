@@ -1,21 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/require-await -- UnsupportedOperation stubs for Protocol surface not used on MeshCore */
 import type { Connection } from '@liamcottle/meshcore.js';
 
-import {
-  MESHCORE_ROOM_MESSAGE_CHANNEL,
-  meshcoreDmAckKeyU32,
-} from '../../hooks/meshcore/meshcoreHookPreamble';
-import {
-  resolveMeshcoreNodeIdFromPubKeyPrefix,
-  seedMeshcorePrefixLookupMaps,
-} from '../meshcore/meshcorePubKeyRegistry';
-import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from '../meshcoreChannelText';
+import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import { seedMeshcorePrefixLookupMaps } from '../meshcore/meshcorePubKeyRegistry';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
-import {
-  isMeshcoreRoomServerContactType,
-  meshcoreRoomMessageId,
-  meshcoreRoomWireLooksLikeRoom,
-} from '../meshcoreRoomMessageRouting';
+import { decodeMeshcoreDirectMessageEvents } from '../meshcoreDirectMessageDecode';
+import { isMeshcoreRoomServerContactType } from '../meshcoreRoomMessageRouting';
 import {
   isMeshcoreTransportStatusChatLine,
   pubKeyPrefixHex,
@@ -191,7 +181,16 @@ export class MeshCoreProtocol implements Protocol {
       this.decodeAdvert(data, pubKeyByNodeId, nodeIdByPrefix).forEach(emit);
     };
     const onDm = (data: unknown) => {
-      this.decodeDirectMessage(data, nodeIdByPrefix, roomNodeIds).forEach(emit);
+      decodeMeshcoreDirectMessageEvents(
+        data as {
+          pubKeyPrefix: Uint8Array;
+          text: string;
+          senderTimestamp: number;
+          txtType?: number;
+        },
+        nodeIdByPrefix,
+        roomNodeIds,
+      ).forEach(emit);
     };
     const onChannel = (data: unknown) => {
       this.decodeChannelMessage(data).forEach(emit);
@@ -530,60 +529,6 @@ export class MeshCoreProtocol implements Protocol {
           time: Date.now(),
           source: 'meshcore',
           level: 0,
-        },
-      },
-    ];
-  }
-
-  private decodeDirectMessage(
-    raw: unknown,
-    nodeIdByPrefix: Map<string, number>,
-    roomNodeIds: Set<number>,
-  ): DomainEvent[] {
-    const d = raw as {
-      pubKeyPrefix: Uint8Array;
-      text: string;
-      senderTimestamp: number;
-      txtType?: number;
-    };
-    if (d.txtType === 1) return [];
-    if (isMeshcoreTransportStatusChatLine(d.text)) {
-      return this.decodeTransportStatusChatLine(d.text);
-    }
-    const prefix = pubKeyPrefixHex(d.pubKeyPrefix);
-    let senderId = nodeIdByPrefix.get(prefix) ?? 0;
-    if (senderId === 0) {
-      senderId = resolveMeshcoreNodeIdFromPubKeyPrefix(prefix) ?? 0;
-      if (senderId !== 0) {
-        nodeIdByPrefix.set(prefix, senderId);
-      }
-    }
-    const isSignedPlain = d.txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN;
-    if (isSignedPlain && senderId !== 0) {
-      roomNodeIds.add(senderId);
-    }
-    const isKnownRoomNode = senderId !== 0 && roomNodeIds.has(senderId);
-    const isRoomWire = meshcoreRoomWireLooksLikeRoom({
-      txtType: d.txtType,
-      senderNodeId: senderId,
-      isKnownRoomNode,
-    });
-    const roomServerId = isRoomWire && senderId !== 0 ? senderId : undefined;
-    return [
-      {
-        type: 'text_message',
-        payload: {
-          id:
-            roomServerId != null
-              ? meshcoreRoomMessageId(roomServerId, d.senderTimestamp)
-              : `${senderId}:${d.senderTimestamp}`,
-          from: senderId,
-          to: 0,
-          payload: d.text,
-          channelIndex: isRoomWire ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
-          timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-          ...(d.txtType != null ? { txtType: d.txtType } : {}),
-          ...(roomServerId != null ? { roomServerId } : {}),
         },
       },
     ];

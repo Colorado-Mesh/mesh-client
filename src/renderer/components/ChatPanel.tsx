@@ -42,6 +42,7 @@ import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconM
 import { MeshtasticMqttPathIcon, MeshtasticRfPathIcon } from '@/renderer/lib/meshtasticSourceIcons';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
@@ -67,6 +68,7 @@ import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
+  resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import {
   findMeshcoreParentMessageForReply,
@@ -214,22 +216,27 @@ function OutboxBubble({
 
 function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
   const { t } = useTranslation();
+  const rfLabel = t('chatPanel.receivedViaRf');
+  const mqttLabel = t('chatPanel.receivedViaMqtt');
   const rfIcon = (
-    <span title={t('chatPanel.receivedViaRf')}>
+    <span role="img" title={rfLabel} aria-label={rfLabel}>
       <MeshtasticRfPathIcon />
     </span>
   );
   const mqttIcon = (
-    <span title={t('chatPanel.receivedViaMqtt')}>
+    <span role="img" title={mqttLabel} aria-label={mqttLabel}>
       <MeshtasticMqttPathIcon />
     </span>
   );
 
   if (via === 'both') {
+    const bothLabel = t('chatPanel.receivedViaRfAndMqtt');
     return (
       <span
+        role="img"
         className="flex flex-col items-center gap-px"
-        title={t('chatPanel.receivedViaRfAndMqtt')}
+        title={bothLabel}
+        aria-label={bothLabel}
       >
         {rfIcon}
         {mqttIcon}
@@ -242,8 +249,9 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
 function StoreForwardBadge() {
   const { t } = useTranslation();
   const trigger = useIconTrigger();
+  const label = t('chatPanel.receivedViaStoreForward');
   return (
-    <span title={t('chatPanel.receivedViaStoreForward')}>
+    <span role="img" title={label} aria-label={label}>
       <Archive aria-hidden className="h-3 w-3 text-amber-400" trigger={trigger} size={12} />
     </span>
   );
@@ -258,11 +266,7 @@ function formatDayLabel(ts: number): string {
   const diff = today.getTime() - msgDay.getTime();
   if (diff === 0) return 'Today';
   if (diff === 86_400_000) return 'Yesterday';
-  return date.toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatIsoDate(date);
 }
 
 /** Get a day key for grouping messages */
@@ -399,18 +403,9 @@ function ChatPanel({
 
   /** DM peer for a message, excluding broadcast and non-DM traffic. */
   const resolveDmPeer = useCallback(
-    (msg: ChatMessage): number | undefined => {
-      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
-      if (msg.to == null) return undefined;
-      let peer: number | undefined;
-      if (isOwnNode(msg.sender_id) && !isOwnNode(msg.to)) peer = msg.to;
-      else if (isOwnNode(msg.to) && !isOwnNode(msg.sender_id)) peer = msg.sender_id;
-      if (peer == null) return undefined;
-      if (protocol === 'meshcore' && nodes.get(peer)?.hw_model === 'Room') return undefined;
-      if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
-      return peer >>> 0;
-    },
-    [isOwnNode, nodes, protocol],
+    (msg: ChatMessage): number | undefined =>
+      resolveChatDmPeer(msg, ownNodeIdSet, protocol, chatUnreadDmOptions),
+    [chatUnreadDmOptions, ownNodeIdSet, protocol],
   );
 
   const scrollToTop = useCallback(() => {
@@ -650,12 +645,14 @@ function ChatPanel({
       return regularMessages.filter(
         (m) =>
           (m.to === activeDmNode && isOwnNode(m.sender_id)) ||
-          (m.sender_id === activeDmNode && m.to != null && isOwnNode(m.to)),
+          (m.sender_id === activeDmNode &&
+            (isOwnNode(m.to ?? 0) ||
+              (protocol === 'meshcore' && m.channel === -1 && !isOwnNode(m.sender_id)))),
       );
     }
 
     return regularMessages.filter((m) => !m.to && m.channel === channel);
-  }, [activeDmNode, channel, isOwnNode, regularMessages, viewMode]);
+  }, [activeDmNode, channel, isOwnNode, protocol, regularMessages, viewMode]);
 
   const filteredMessages = useMemo(() => {
     let msgs = viewMessages;
@@ -1042,7 +1039,7 @@ function ChatPanel({
   }
 
   function formatFullTimestamp(ts: number): string {
-    return new Date(ts).toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium' });
+    return formatIsoDateTime(ts);
   }
 
   /** Flat reaction rows for a message key (chronological as stored). */

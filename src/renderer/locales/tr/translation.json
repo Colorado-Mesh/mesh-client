@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "Aktif istemci oturumu. Siz odadan çıkana veya bağlantıyı kesene kadar devam eder. Oda sunucusuna ulaşılamıyorsa, çıkın ve geri döndüğünde tekrar oturum açın.",
     "legendNotSavedTooltip": "Boş daire — bu oda için saklanan parola yok",
     "legendSavedTooltip": "Gökyüzü yarım daire — parola saklanır; bir oturumu açmak için oturum açın",
-    "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)"
+    "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)",
+    "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz."
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

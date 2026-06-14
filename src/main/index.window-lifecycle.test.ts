@@ -44,9 +44,9 @@ describe('app lifecycle handlers', () => {
   });
 
   it('skips db IPC handlers quietly when SQLite is already closed', () => {
-    expect(INDEX_SOURCE).toContain('function finishDbIpcHandler');
-    expect(INDEX_SOURCE).toContain('DATABASE_CLOSED_MESSAGE');
-    expect(INDEX_SOURCE).toMatch(/skipped \(database closed\)/);
+    expect(INDEX_SOURCE).toContain("from './db-ipc-lifecycle'");
+    expect(INDEX_SOURCE).toContain('getDbForIpc(');
+    expect(INDEX_SOURCE).toContain('finishDbIpcHandler');
   });
 });
 

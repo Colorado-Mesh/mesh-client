@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "活动客户端会话。它会持续存在，直到您离开房间或断开连接。如果无法访问房间服务器，请离开，并在返回时再次登录。",
     "legendNotSavedTooltip": "空圆—此房间未存储密码",
     "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
-    "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）"
+    "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
+    "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

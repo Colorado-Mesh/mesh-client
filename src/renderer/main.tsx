@@ -9,6 +9,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
 import { ensureLocaleLoaded } from './lib/localeResources';
+import {
+  initReduceMotionDefaultIfAbsent,
+  syncReduceMotionDatasetFromStorage,
+} from './lib/reduceMotionPreference';
 
 if (import.meta.env.DEV) {
   void import('react').then((React) =>
@@ -20,6 +24,9 @@ if (import.meta.env.DEV) {
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
+
+  initReduceMotionDefaultIfAbsent();
+  syncReduceMotionDatasetFromStorage();
 
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>

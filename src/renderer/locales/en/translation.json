@@ -2260,6 +2260,7 @@
     "rememberPassword": "Remember password",
     "autoSync": "Auto-sync",
     "autoSyncTooltip": "Periodically re-login to fetch new posts when the radio is connected",
+    "historyLocalHint": "Posts appear only while you are logged in to this room on this device. Enable Auto-sync to stay subscribed; history is not backfilled from the room server.",
     "syncIntervalLabel": "Sync interval",
     "syncInterval60": "Every 60 minutes",
     "syncInterval120": "Every 2 hours",

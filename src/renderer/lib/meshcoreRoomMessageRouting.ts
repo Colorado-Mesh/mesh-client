@@ -43,6 +43,13 @@ export function meshcoreRoomPostBodyFromWire(
   return { authorId: 0, payload: wireText };
 }
 
-export function meshcoreRoomMessageId(roomServerId: number, senderTimestampSec: number): string {
+export function meshcoreRoomMessageId(
+  roomServerId: number,
+  senderTimestampSec: number,
+  authorId?: number,
+): string {
+  if (authorId != null && authorId !== 0) {
+    return `room:${roomServerId}:${authorId}:${senderTimestampSec}`;
+  }
   return `room:${roomServerId}:${senderTimestampSec}`;
 }

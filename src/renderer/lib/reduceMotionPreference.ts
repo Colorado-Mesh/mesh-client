@@ -1,5 +1,6 @@
 import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from '@/renderer/lib/defaultAppSettings';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 
 const REDUCE_MOTION_INIT_KEY = 'mesh-client:reduceMotionInitialized';
@@ -13,6 +14,21 @@ function applyDocumentDataset(enabled: boolean): void {
   } else {
     delete document.documentElement.dataset.reduceMotion;
   }
+}
+
+function notifyReduceMotionListeners(): void {
+  for (const listener of listeners) {
+    try {
+      listener();
+    } catch (e) {
+      console.warn('[reduceMotion] listener notification failed ' + errLikeToLogString(e));
+    }
+  }
+}
+
+function persistReduceMotion(enabled: boolean): boolean {
+  mergeAppSetting('reduceMotion', enabled, 'writeReduceMotion');
+  return readReduceMotion() === enabled;
 }
 
 /** One-time OS hint when the key has never been stored. */
@@ -48,11 +64,25 @@ export function readReduceMotion(): boolean {
 }
 
 export function writeReduceMotion(enabled: boolean): void {
-  mergeAppSetting('reduceMotion', enabled, 'writeReduceMotion');
-  applyDocumentDataset(enabled);
-  for (const listener of listeners) {
-    listener();
+  const previous = readReduceMotion();
+  try {
+    applyDocumentDataset(enabled);
+  } catch (e) {
+    console.warn('[reduceMotion] dataset apply failed ' + errLikeToLogString(e));
+    return;
   }
+
+  if (!persistReduceMotion(enabled)) {
+    try {
+      applyDocumentDataset(previous);
+    } catch (e) {
+      console.warn('[reduceMotion] dataset rollback failed ' + errLikeToLogString(e));
+    }
+    console.warn('[reduceMotion] persist failed; reverted dataset to match storage');
+    return;
+  }
+
+  notifyReduceMotionListeners();
 }
 
 export function subscribeReduceMotion(listener: ReduceMotionListener): () => void {
@@ -63,5 +93,9 @@ export function subscribeReduceMotion(listener: ReduceMotionListener): () => voi
 }
 
 export function syncReduceMotionDatasetFromStorage(): void {
-  applyDocumentDataset(readReduceMotion());
+  try {
+    applyDocumentDataset(readReduceMotion());
+  } catch (e) {
+    console.warn('[reduceMotion] dataset sync failed ' + errLikeToLogString(e));
+  }
 }

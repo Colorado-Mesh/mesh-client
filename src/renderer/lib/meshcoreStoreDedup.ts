@@ -34,7 +34,14 @@ export function meshcoreChannelMessageStoreId(channel: number, timestampSec: num
   return `ch:${channel}:${timestampSec}`;
 }
 
-export function meshcoreRoomMessageStoreId(roomServerId: number, timestampSec: number): string {
+export function meshcoreRoomMessageStoreId(
+  roomServerId: number,
+  timestampSec: number,
+  authorId?: number,
+): string {
+  if (authorId != null && authorId !== 0) {
+    return `room:${roomServerId}:${authorId}:${timestampSec}`;
+  }
   return `room:${roomServerId}:${timestampSec}`;
 }
 
@@ -46,13 +53,21 @@ function meshcoreTimestampSec(timestamp: number): number {
 /** Canonical Zustand key for MeshCore chat rows (aligns RF PacketRouter ids with hook-local state). */
 export function meshcoreMessageStoreId(msg: ChatMessage): string {
   if (msg.roomServerId != null) {
-    return meshcoreRoomMessageStoreId(msg.roomServerId, meshcoreTimestampSec(msg.timestamp));
+    return meshcoreRoomMessageStoreId(
+      msg.roomServerId,
+      meshcoreTimestampSec(msg.timestamp),
+      msg.sender_id > 0 ? msg.sender_id : undefined,
+    );
   }
   if (msg.channel != null && msg.channel >= 0) {
     return meshcoreChannelMessageStoreId(msg.channel, meshcoreTimestampSec(msg.timestamp));
   }
   if (msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null) {
-    return meshcoreRoomMessageStoreId(msg.to, meshcoreTimestampSec(msg.timestamp));
+    return meshcoreRoomMessageStoreId(
+      msg.to,
+      meshcoreTimestampSec(msg.timestamp),
+      msg.sender_id > 0 ? msg.sender_id : undefined,
+    );
   }
   return `${msg.sender_id}-${msg.timestamp}-${msg.channel ?? -1}`;
 }

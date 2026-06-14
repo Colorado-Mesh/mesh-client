@@ -131,4 +131,34 @@ describe('chatUnreadCounts', () => {
     );
     expect(counts.size).toBe(0);
   });
+
+  it('does not count MeshCore DM with to:0 as channel unread on ch:-1', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: -1, to: 0, timestamp: 2000 })],
+      {},
+      ownNodes,
+      'meshcore',
+    );
+    expect(counts.size).toBe(0);
+  });
+
+  it('counts MeshCore DM with to:0 in DM unread using sender as peer', () => {
+    const dmCounts = computeDmUnreadCounts(
+      [msg({ channel: -1, to: 0, timestamp: 2000 })],
+      {},
+      ownNodes,
+      'meshcore',
+    );
+    expect(dmCounts.get(2)).toBe(1);
+  });
+
+  it('MeshCore DM with to:0 does not inflate totalUnread via phantom ch:-1', () => {
+    const total = totalUnreadCount(
+      [msg({ channel: -1, to: 0, timestamp: 2000 })],
+      {},
+      ownNodes,
+      'meshcore',
+    );
+    expect(total).toBe(1);
+  });
 });

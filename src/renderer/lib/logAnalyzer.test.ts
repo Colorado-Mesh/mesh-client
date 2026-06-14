@@ -553,5 +553,6 @@ describe('formatTimeRange', () => {
     expect(parts.length).toBeGreaterThanOrEqual(2);
     expect(parts[0].trim().length).toBeGreaterThan(0);
     expect(parts[parts.length - 1].trim().length).toBeGreaterThan(0);
+    expect(result).toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 });

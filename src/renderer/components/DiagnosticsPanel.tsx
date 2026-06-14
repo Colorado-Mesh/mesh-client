@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
 import {
@@ -21,6 +22,7 @@ import {
   isRfForeignLoraHeard,
   useDiagnosticsStore,
 } from '@/renderer/stores/diagnosticsStore';
+import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/shared/nodeNameUtils';
 
 import {
@@ -49,7 +51,6 @@ import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
-import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
@@ -174,15 +175,7 @@ export default function DiagnosticsPanel({
   const formatRowTime = useCallback(
     (ts: number) => {
       if (!ts) return t('common.emDash');
-      const diff = Date.now() - ts;
-      if (diff < MS_PER_MINUTE) return t('common.justNow');
-      if (diff < MS_PER_HOUR) {
-        return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
-      }
-      if (diff < MS_PER_DAY) {
-        return t('common.hoursAgo', { count: Math.floor(diff / MS_PER_HOUR) });
-      }
-      return new Date(ts).toLocaleDateString();
+      return formatRelativeOrIsoDate(ts, t);
     },
     [t],
   );
@@ -809,7 +802,7 @@ export default function DiagnosticsPanel({
         <div className="flex items-start justify-between gap-3 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
           <span>
             {t('diagnosticsPanel.restoredSessionBanner', {
-              time: new Date(diagnosticRowsRestoredAt).toLocaleString(),
+              time: formatIsoDateTime(diagnosticRowsRestoredAt),
             })}
           </span>
           <button

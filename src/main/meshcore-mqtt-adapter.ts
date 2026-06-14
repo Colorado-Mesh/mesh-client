@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
 import type { MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import { formatIsoDate } from '../shared/formatIsoDate';
 import type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
 import { tryParseMeshcoreMqttChatEnvelope } from '../shared/meshcoreMqttEnvelope';
 import {
@@ -596,7 +597,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+    const date = formatIsoDate(now);
     const payload: Record<string, string> = {
       ...(pubKey ? { origin_id: pubKey } : {}),
       origin: args.origin.slice(0, 200),

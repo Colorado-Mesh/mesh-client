@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "Actieve clientsessie. Het blijft bestaan totdat u de ruimte verlaat of de verbinding verbreekt. Als de roomserver onbereikbaar is, verlaat deze dan en log opnieuw in wanneer deze terug is.",
     "legendNotSavedTooltip": "Lege cirkel — geen wachtwoord opgeslagen voor deze ruimte",
     "legendSavedTooltip": "Lichtblauwe halve cirkel — wachtwoord opgeslagen; log in om een sessie te openen",
-    "legendLoggedInTooltip": "Groene stip — actieve clientsessie (verlaat de ruimte als de server offline is)"
+    "legendLoggedInTooltip": "Groene stip — actieve clientsessie (verlaat de ruimte als de server offline is)",
+    "historyLocalHint": "Berichten worden alleen weergegeven terwijl u bent ingelogd in deze ruimte op dit apparaat. Schakel automatisch synchroniseren in om geabonneerd te blijven; de geschiedenis wordt niet opnieuw ingevuld vanaf de roomserver."
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

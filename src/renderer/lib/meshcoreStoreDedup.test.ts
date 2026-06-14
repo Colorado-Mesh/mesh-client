@@ -117,7 +117,40 @@ describe('meshcoreStoreDedup', () => {
       receivedVia: 'rf' as const,
       meshcoreDedupeKey: 'Welcome',
     };
-    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:1700000000`);
+    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000`);
+  });
+
+  it('keeps two room posts in the same UTC second from different authors', () => {
+    const roomId = 0xac200e59;
+    const tsMs = 1_700_000_005_000;
+    const tsSec = Math.floor(tsMs / 1000);
+
+    upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'From Alice',
+        roomServerId: roomId,
+        authorId: 0x11,
+        authorName: 'Alice',
+        timestamp: tsMs,
+        receivedVia: 'rf',
+      }),
+      meshcoreRoomMessageStoreId(roomId, tsSec, 0x11),
+    );
+    upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'From Bob',
+        roomServerId: roomId,
+        authorId: 0x22,
+        authorName: 'Bob',
+        timestamp: tsMs,
+        receivedVia: 'rf',
+      }),
+      meshcoreRoomMessageStoreId(roomId, tsSec, 0x22),
+    );
+
+    expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(2);
   });
 
   it('merges optimistic room post with firmware RF echo', () => {
@@ -150,7 +183,7 @@ describe('meshcoreStoreDedup', () => {
     const result = upsertMeshcoreMessageWithDedup(
       ID,
       echo,
-      meshcoreRoomMessageStoreId(roomId, Math.floor(firmwareTsMs / 1000)),
+      meshcoreRoomMessageStoreId(roomId, Math.floor(firmwareTsMs / 1000), authorId),
     );
 
     expect(result.inserted).toBe(false);
@@ -164,7 +197,7 @@ describe('meshcoreStoreDedup', () => {
     const authorId = 0x22;
     const tsMs = 1_700_000_001_000;
     const tsSec = Math.floor(tsMs / 1000);
-    const canonicalId = meshcoreRoomMessageStoreId(roomId, tsSec);
+    const canonicalId = meshcoreRoomMessageStoreId(roomId, tsSec, authorId);
 
     const first = buildMeshcoreRoomIncomingMessage({
       rawText: 'Hello room',
@@ -270,7 +303,7 @@ describe('meshcoreStoreDedup', () => {
         timestamp: tsMs + 500,
         receivedVia: 'rf',
       }),
-      meshcoreRoomMessageStoreId(roomId, Math.floor((tsMs + 500) / 1000)),
+      meshcoreRoomMessageStoreId(roomId, Math.floor((tsMs + 500) / 1000), authorId),
     );
 
     expect(result.inserted).toBe(false);

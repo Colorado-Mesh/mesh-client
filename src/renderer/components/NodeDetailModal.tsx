@@ -9,6 +9,7 @@ import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
+import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
@@ -1220,14 +1221,12 @@ export default function NodeDetailModal({
                             {t('nodeDetailModal.positionHistoryFirstPosition')}
                           </div>
                           <div className="font-mono text-gray-200">
-                            {new Date(first.t).toLocaleString()}
+                            {formatIsoDateTime(first.t)}
                           </div>
                           <div className="text-muted">
                             {t('nodeDetailModal.positionHistoryLastPosition')}
                           </div>
-                          <div className="font-mono text-gray-200">
-                            {new Date(last.t).toLocaleString()}
-                          </div>
+                          <div className="font-mono text-gray-200">{formatIsoDateTime(last.t)}</div>
                         </div>
                         {sorted.length > 1 && (
                           <div className="text-[10px] text-gray-500">
@@ -1251,9 +1250,7 @@ export default function NodeDetailModal({
                               key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
                               className="grid grid-cols-[auto_1fr] gap-x-2 text-[10px]"
                             >
-                              <span className="text-gray-500">
-                                {new Date(point.t).toLocaleString()}
-                              </span>
+                              <span className="text-gray-500">{formatIsoDateTime(point.t)}</span>
                               <span className="font-mono whitespace-nowrap text-gray-200">
                                 {formatCoordPair(point.lat, point.lon, coordinateFormat)}
                               </span>

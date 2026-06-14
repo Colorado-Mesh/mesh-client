@@ -33,6 +33,7 @@ import {
   type RFDiagnosis,
 } from '../lib/diagnostics/RFDiagnosticEngine';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
+import { formatRelativeOrIsoDateTime } from '../lib/formatRelativeOrIsoDate';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
@@ -43,7 +44,6 @@ import {
 } from '../lib/meshtasticSourceIcons';
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import { RoleDisplay } from '../lib/roleInfo';
-import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../lib/timeConstants';
 import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
@@ -61,14 +61,7 @@ export const CATEGORY_STYLES: Record<string, string> = {
 const EMPTY_HOP_HISTORY: HopHistoryPoint[] = [];
 
 export function formatTime(ts: number, t: TFunction): string {
-  if (!ts) return t('common.never');
-  const normalizedTs = normalizeLastHeardMs(ts);
-  const diff = Date.now() - normalizedTs;
-  if (diff < MS_PER_MINUTE) return t('common.justNow');
-  if (diff < MS_PER_HOUR)
-    return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
-  if (diff < MS_PER_DAY) return t('common.hoursAgo', { count: Math.floor(diff / MS_PER_HOUR) });
-  return new Date(normalizedTs).toLocaleString();
+  return formatRelativeOrIsoDateTime(ts, t, normalizeLastHeardMs);
 }
 
 export function formatSecondsAgo(seconds: number, t: TFunction): string {

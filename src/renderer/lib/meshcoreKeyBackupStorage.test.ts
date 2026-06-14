@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  deleteMeshcoreKeyBackup,
   hasMeshcoreKeyBackup,
+  listMeshcoreKeyBackups,
   loadMeshcoreKeyBackup,
   saveMeshcoreKeyBackup,
 } from './meshcoreKeyBackupStorage';
@@ -43,5 +45,18 @@ describe('meshcoreKeyBackupStorage', () => {
         privateKey: new Uint8Array(32),
       }),
     ).rejects.toThrow(/public key/);
+  });
+
+  it('deleteMeshcoreKeyBackup removes storage and index entry', async () => {
+    const publicKey = new Uint8Array(32).fill(0x55);
+    const privateKey = new Uint8Array(32).fill(0x66);
+    await saveMeshcoreKeyBackup({ nodeId: 42, publicKey, privateKey, nodeLabel: 'Test' });
+    expect(hasMeshcoreKeyBackup(42)).toBe(true);
+    expect(listMeshcoreKeyBackups()).toHaveLength(1);
+
+    deleteMeshcoreKeyBackup(42);
+    expect(hasMeshcoreKeyBackup(42)).toBe(false);
+    expect(listMeshcoreKeyBackups()).toHaveLength(0);
+    await expect(loadMeshcoreKeyBackup(42)).resolves.toBeNull();
   });
 });

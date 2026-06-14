@@ -1,3 +1,4 @@
+import { formatIsoDate } from '../../shared/formatIsoDate';
 import type { MeshProtocol } from './types';
 
 export interface LogEntry {
@@ -394,5 +395,5 @@ export function formatTimeRange(oldestTs: number, newestTs: number): string {
   if (oldestDate === newestDate) {
     return `${format(oldestTs)} – ${format(newestTs)}`;
   }
-  return `${new Date(oldestTs).toLocaleDateString()} ${format(oldestTs)} – ${new Date(newestTs).toLocaleDateString()} ${format(newestTs)}`;
+  return `${formatIsoDate(oldestTs)} ${format(oldestTs)} – ${formatIsoDate(newestTs)} ${format(newestTs)}`;
 }
