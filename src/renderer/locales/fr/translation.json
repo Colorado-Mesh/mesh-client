@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "Sur RF Connect, demandez jusqu'à 50 messages (temps de recharge de 15 minutes entre les extractions). Éteignez si votre passerelle MQTT Bridge est surchargée.",
     "reduceMotion": "Réduire le mouvement",
     "reduceMotionDesc": "Désactive les icônes animées et les effets décoratifs. Les indicateurs de chargement et d'état de connexion restent animés.",
-    "roomMessages": "Messages de la chambre"
+    "roomMessages": "Messages de la chambre",
+    "importSchemaTooNew": "Ce fichier de base de données nécessite un Mesh-Client plus récent (schéma {{dbVersion}}). Cette version prend en charge le schéma {{appVersion}} ou plus ancien. Installez la dernière version et réessayez."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

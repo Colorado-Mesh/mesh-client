@@ -39,6 +39,7 @@
     "exportFailed": "Export failed: {{message}}",
     "dbMerged": "Merged: {{nodesAdded}} new nodes, {{messagesAdded}} new messages.",
     "importFailed": "Import failed: {{message}}",
+    "importSchemaTooNew": "This database file requires a newer Mesh-Client (schema {{dbVersion}}). This build supports schema {{appVersion}} or older. Install the latest release and try again.",
     "colorsReset": "Colors reset to app defaults.",
     "noNoFixNodes": "No no-fix or zero-island nodes found.",
     "noGpsPosition": "No GPS position available. Use device node coordinates or enable GPS in the app.",

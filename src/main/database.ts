@@ -15,12 +15,14 @@ import { NodeSqliteDB } from './db-compat';
 import {
   CANONICAL_CREATE_ALL_DDL,
   CURRENT_SCHEMA_VERSION,
+  DatabaseSchemaTooNewError,
+  isDatabaseSchemaTooNewError,
   runSchemaUpgrade,
 } from './db-schema-sync';
 import { sanitizeLogMessage } from './log-service';
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
-export { CURRENT_SCHEMA_VERSION };
+export { CURRENT_SCHEMA_VERSION, DatabaseSchemaTooNewError, isDatabaseSchemaTooNewError };
 
 /** Thrown when mergeDatabase rejects the source path before opening SQLite. */
 export class MergeSourceInvalidError extends Error {
@@ -298,6 +300,11 @@ export function mergeDatabase(sourcePath: string) {
 
   try {
     sourceDb = new NodeSqliteDB(sourcePath, { readonly: true });
+
+    const sourceVersion = sourceDb.pragma('user_version', { simple: true }) as number;
+    if (sourceVersion > CURRENT_SCHEMA_VERSION) {
+      throw new DatabaseSchemaTooNewError(sourceVersion, CURRENT_SCHEMA_VERSION);
+    }
 
     return targetDb.transaction(() => {
       let nodesAdded = 0;

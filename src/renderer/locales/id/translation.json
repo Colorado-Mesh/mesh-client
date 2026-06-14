@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "Pada koneksi RF, minta hingga 50 pesan (mode tenang 15 menit di antara pengambilan). Matikan jika jembatan gerbang MQTT Anda kelebihan beban.",
     "reduceMotion": "Kurangi gerakan",
     "reduceMotionDesc": "Menonaktifkan ikon animasi dan efek dekoratif. Spinner pemuatan dan indikator status koneksi tetap animasi.",
-    "roomMessages": "Pesan kamar"
+    "roomMessages": "Pesan kamar",
+    "importSchemaTooNew": "File database ini memerlukan Mesh - Client yang lebih baru (skema {{dbVersion}}). Build ini mendukung skema {{appVersion}} atau lebih lama. Instal rilis terbaru dan coba lagi."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

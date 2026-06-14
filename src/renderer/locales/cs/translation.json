@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "Při RF připojení si vyžádejte až 50 zpráv (15minutový cooldown mezi načteními). Vypněte, pokud je váš most brány MQTT přetížen.",
     "reduceMotion": "Snížit pohyb",
     "reduceMotionDesc": "Zakáže animované ikony a dekorativní efekty. Načítací spinnery a indikátory stavu připojení se stále animují.",
-    "roomMessages": "Zprávy z pokoje"
+    "roomMessages": "Zprávy z pokoje",
+    "importSchemaTooNew": "Tento databázový soubor vyžaduje novější Mesh-Client (schéma {{dbVersion}}). Tato sestava podporuje schéma {{appVersion}} nebo starší. Nainstalujte nejnovější verzi a zkuste to znovu."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

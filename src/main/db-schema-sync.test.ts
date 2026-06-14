@@ -5,7 +5,11 @@ import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { NodeSqliteDB } from './db-compat';
-import { CURRENT_SCHEMA_VERSION, runSchemaUpgrade } from './db-schema-sync';
+import {
+  CURRENT_SCHEMA_VERSION,
+  DatabaseSchemaTooNewError,
+  runSchemaUpgrade,
+} from './db-schema-sync';
 
 // Schema sync walks every migration; default 5s Vitest timeout flakes on busy CI runners.
 describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
@@ -177,6 +181,24 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
       db.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_hop_history').get() as { cnt: number }
     ).cnt;
     expect(count).toBe(0);
+    db.close();
+  });
+
+  it('rejects database newer than CURRENT_SCHEMA_VERSION without mutating schema', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-too-new-'));
+    const db = new NodeSqliteDB(join(dir, 'too-new.db'));
+    db.execScript('CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT);');
+    db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION + 1}`);
+
+    expect(() => {
+      runSchemaUpgrade(db);
+    }).toThrow(DatabaseSchemaTooNewError);
+    expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION + 1);
+
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'")
+      .all();
+    expect(tables).toHaveLength(0);
     db.close();
   });
 });

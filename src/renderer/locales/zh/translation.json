@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "在射频连接时，最多可请求50条消息（两次提取之间的冷却时间为15分钟）。如果您的网关MQTT网桥超载，请关闭。",
     "reduceMotion": "减少动态效果",
     "reduceMotionDesc": "禁用动画图标和装饰效果。加载指示器和连接状态指示器仍会动画显示。",
-    "roomMessages": "房间消息"
+    "roomMessages": "房间消息",
+    "importSchemaTooNew": "此数据库文件需要较新的 Mesh-Client（架构 {{dbVersion}}）。此版本仅支持架构 {{appVersion}} 或更早版本。请安装最新版本后重试。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

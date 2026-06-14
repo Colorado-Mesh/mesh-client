@@ -56,6 +56,7 @@ import {
   getMeshcorePathHistory,
   getMeshcoreTraceHistory,
   initDatabase,
+  isDatabaseSchemaTooNewError,
   mergeDatabase,
   type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
@@ -75,6 +76,7 @@ import {
   upsertNodePath,
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
+import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -3975,6 +3977,9 @@ ipcMain.handle('db:import', async () => {
     }
     return null;
   } catch (err) {
+    if (isDatabaseSchemaTooNewError(err)) {
+      showFatalStartupError('Mesh-Client — Import Blocked', formatDatabaseSchemaTooNewMessage(err));
+    }
     finishDbIpcHandler('db:import', err);
   }
 });
@@ -5413,14 +5418,12 @@ void app.whenReady().then(() => {
     );
     const isNativeModuleError =
       error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
-    const message = isNativeModuleError
-      ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
-      : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
-    try {
-      dialog.showErrorBox('Mesh-Client — Startup Error', message);
-    } catch {
-      // catch-no-log-ok dialog unavailable during fatal startup handling; error already logged above
-    }
+    const message = isDatabaseSchemaTooNewError(error)
+      ? formatDatabaseSchemaTooNewMessage(error)
+      : isNativeModuleError
+        ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
+        : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
+    showFatalStartupError('Mesh-Client — Startup Error', message);
     app.quit();
     return;
   }

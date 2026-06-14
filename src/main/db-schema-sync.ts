@@ -13,6 +13,24 @@ import { sanitizeLogMessage } from './log-service';
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
 export const CURRENT_SCHEMA_VERSION = 36;
 
+/** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
+export class DatabaseSchemaTooNewError extends Error {
+  readonly code = 'DB_SCHEMA_TOO_NEW' as const;
+  readonly dbVersion: number;
+  readonly appVersion: number;
+
+  constructor(dbVersion: number, appVersion: number) {
+    super(`[db] Database schema v${dbVersion} is newer than this app supports (v${appVersion})`);
+    this.name = 'DatabaseSchemaTooNewError';
+    this.dbVersion = dbVersion;
+    this.appVersion = appVersion;
+  }
+}
+
+export function isDatabaseSchemaTooNewError(err: unknown): err is DatabaseSchemaTooNewError {
+  return err instanceof DatabaseSchemaTooNewError;
+}
+
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
  * data fixes (e.g. duplicate message cleanup for idx_msg_packet_dedup).
@@ -723,6 +741,11 @@ function structuralUpgrades(db: NodeSqliteDB): void {
  * Safe to call on every startup (idempotent).
  */
 export function runSchemaUpgrade(db: NodeSqliteDB): void {
+  const cur = db.pragma('user_version', { simple: true }) as number;
+  if (cur > CURRENT_SCHEMA_VERSION) {
+    throw new DatabaseSchemaTooNewError(cur, CURRENT_SCHEMA_VERSION);
+  }
+
   try {
     ensureTablesOnly(db);
     ensureColumns(db);
@@ -730,11 +753,12 @@ export function runSchemaUpgrade(db: NodeSqliteDB): void {
     ensureIndexes(db);
     seedAppSettings(db);
 
-    const cur = db.pragma('user_version', { simple: true }) as number;
-    if (cur < CURRENT_SCHEMA_VERSION) {
+    const versionAfterSync = db.pragma('user_version', { simple: true }) as number;
+    if (versionAfterSync < CURRENT_SCHEMA_VERSION) {
       db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
     }
   } catch (e) {
+    if (isDatabaseSchemaTooNewError(e)) throw e;
     console.error(
       '[db] runSchemaUpgrade failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),

@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "RF bağlantısında, 50 'ye kadar mesaj isteyin (getirmeler arasında 15 dakika bekleme süresi). Ağ geçidi MQTT köprünüz aşırı yüklüyse kapatın.",
     "reduceMotion": "Hareketi azalt",
     "reduceMotionDesc": "Animasyonlu simgeleri ve dekoratif efektleri devre dışı bırakır. Yükleme göstergeleri ve bağlantı durumu göstergeleri hâlâ animasyonlu kalır.",
-    "roomMessages": "Oda mesajları"
+    "roomMessages": "Oda mesajları",
+    "importSchemaTooNew": "Bu veritabanı dosyası daha yeni bir Mesh - Client gerektiriyor (şema {{dbVersion}}). Bu yapı {{appVersion}} veya daha eski bir şemayı destekler. En son sürümü yükleyin ve tekrar deneyin."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
