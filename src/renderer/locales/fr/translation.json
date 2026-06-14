@@ -176,7 +176,8 @@
     "storeForwardAutoFetchHistory": "Récupérer automatiquement l'historique du chat Store & Forward lors de la connexion",
     "storeForwardAutoFetchHistoryHint": "Sur RF Connect, demandez jusqu'à 50 messages (temps de recharge de 15 minutes entre les extractions). Éteignez si votre passerelle MQTT Bridge est surchargée.",
     "reduceMotion": "Réduire le mouvement",
-    "reduceMotionDesc": "Désactive les icônes animées et les effets décoratifs. Les indicateurs de chargement et d'état de connexion restent animés."
+    "reduceMotionDesc": "Désactive les icônes animées et les effets décoratifs. Les indicateurs de chargement et d'état de connexion restent animés.",
+    "roomMessages": "Messages de la chambre"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

@@ -18,6 +18,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
@@ -1436,6 +1437,9 @@ function AppContent({
         }
       } else if (opts?.clearedChannel != null) {
         removePersistedLastReadForChannel(protocol, opts.clearedChannel);
+        if (protocol === 'meshcore' && opts.clearedChannel === MESHCORE_ROOM_MESSAGE_CHANNEL) {
+          clearPersistedRoomsLastRead();
+        }
       }
     },
     [

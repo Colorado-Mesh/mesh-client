@@ -184,6 +184,24 @@ describe('tak:start settings validation (source contract)', () => {
 
 // ─── Navigation / window-open security ──────────────────────────────
 
+describe('MeshCore clear-by-channel validation (source contract)', () => {
+  it('allows Rooms channel index -2 in safeMeshcoreChannelIndex', () => {
+    const fnIdx = INDEX_SOURCE.indexOf('function safeMeshcoreChannelIndex');
+    expect(fnIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(fnIdx, fnIdx + 350);
+    expect(body).toContain('n < -2');
+    expect(body).not.toContain('n < -1');
+    expect(body).toContain('Invalid MeshCore channel index');
+  });
+
+  it('db:clearMeshcoreMessagesByChannel uses safeMeshcoreChannelIndex', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('db:clearMeshcoreMessagesByChannel'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(body).toContain('safeMeshcoreChannelIndex(channelIdx)');
+  });
+});
+
 describe('navigation security (source contract)', () => {
   it('blocks non-http(s) schemes in parseHttpOrHttpsUrl', () => {
     expect(INDEX_SOURCE).toContain('function parseHttpOrHttpsUrl');

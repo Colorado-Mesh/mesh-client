@@ -176,7 +176,8 @@
     "storeForwardAutoFetchHistory": "接続時にストアと転送のチャット履歴を自動的に取得する",
     "storeForwardAutoFetchHistoryHint": "RF接続では、最大50件のメッセージをリクエストします（フェッチ間のクールダウンは15分）。ゲートウェイMQTTブリッジが過負荷の場合はオフにします。",
     "reduceMotion": "動きを減らす",
-    "reduceMotionDesc": "アニメーションアイコンと装飾効果を無効にします。読み込みスピナーと接続状態インジケーターは引き続きアニメーションします。"
+    "reduceMotionDesc": "アニメーションアイコンと装飾効果を無効にします。読み込みスピナーと接続状態インジケーターは引き続きアニメーションします。",
+    "roomMessages": "部屋のメッセージ"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
