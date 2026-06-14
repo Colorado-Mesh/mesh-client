@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "Vraag op RF Connect maximaal 50 berichten aan (15 minuten afkoelen tussen ophalingen). Schakel uit als uw gateway MQTT-brug overbelast is.",
     "reduceMotion": "Beweging verminderen",
     "reduceMotionDesc": "Schakelt geanimeerde pictogrammen en decoratieve effecten uit. Laadspinners en verbindingsstatusindicatoren blijven geanimeerd.",
-    "roomMessages": "Berichten in de kamer"
+    "roomMessages": "Berichten in de kamer",
+    "importSchemaTooNew": "Dit databasebestand vereist een nieuwere Mesh-Client (schema {{dbVersion}}). Deze build ondersteunt schema {{appVersion}} of ouder. Installeer de nieuwste versie en probeer het opnieuw."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nieuw bericht",
-    "newMessages_other": "{{protocol}}: {{count}} nieuwe berichten"
+    "newMessages_other": "{{protocol}}: {{count}} nieuwe berichten",
+    "meshcoreDistanceFilterHint": "Je hebt {{count}} contacten met GPS op de kaart. Schakel het afstandsfilter in onder App → Verschijning om je te concentreren op knooppunten in de buurt."
   },
   "updateStatus": {
     "checking": "Controleren…",

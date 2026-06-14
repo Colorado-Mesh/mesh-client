@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
+import { meshcoreContactDisplayName } from '../../shared/meshcoreContactSanitize';
 import {
   formatMeshtasticNodeId,
   meshtasticNodeIdMatchesHexQuery,
@@ -1219,7 +1220,9 @@ export default function NodeListPanel({
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="inline-flex min-w-0 items-center gap-1">
                             <span className="truncate">
-                              {node.long_name || '-'}
+                              {mode === 'meshcore'
+                                ? meshcoreContactDisplayName(node.node_id, node.long_name)
+                                : node.long_name || '-'}
                               {isSelf && (
                                 <span className="text-bright-green/60 ml-1.5 text-[10px]">
                                   (you)

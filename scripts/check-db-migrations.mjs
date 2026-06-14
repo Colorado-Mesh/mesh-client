@@ -76,6 +76,29 @@ function checkSchemaSyncExport() {
   return violations;
 }
 
+function checkSchemaDowngradeGuard() {
+  const violations = [];
+  const relPath = path.relative(process.cwd(), SCHEMA_SYNC);
+  if (!fs.existsSync(SCHEMA_SYNC)) {
+    return violations;
+  }
+  const content = fs.readFileSync(SCHEMA_SYNC, 'utf8');
+  if (!/if\s*\(\s*cur\s*>\s*CURRENT_SCHEMA_VERSION\s*\)/.test(content)) {
+    violations.push({
+      file: relPath,
+      message:
+        'runSchemaUpgrade must reject user_version > CURRENT_SCHEMA_VERSION before mutations',
+    });
+  }
+  if (!content.includes('DatabaseSchemaTooNewError')) {
+    violations.push({
+      file: relPath,
+      message: 'must define DatabaseSchemaTooNewError for schema downgrade guard',
+    });
+  }
+  return violations;
+}
+
 function checkDatabaseInit() {
   const violations = [];
   const relPath = path.relative(process.cwd(), DATABASE_TS);
@@ -101,7 +124,11 @@ function checkDatabaseInit() {
 
 function main() {
   const spaceViolations = checkSqlSpaces(DB_FILES);
-  const schemaViolations = [...checkSchemaSyncExport(), ...checkDatabaseInit()];
+  const schemaViolations = [
+    ...checkSchemaSyncExport(),
+    ...checkSchemaDowngradeGuard(),
+    ...checkDatabaseInit(),
+  ];
 
   if (spaceViolations.length === 0 && schemaViolations.length === 0) {
     process.exit(0);

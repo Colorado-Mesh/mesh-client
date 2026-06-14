@@ -535,6 +535,7 @@ declare global {
         migrateRfStubNodes: () => Promise<number>;
         deleteNodesWithoutLongname: () => Promise<number>;
         prunePositionHistory: (days: number) => Promise<number>;
+        prunePositionHistoryPerNode: (maxPerNode: number) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
         updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<unknown>;
         updateMessagePacketId: (
@@ -685,6 +686,15 @@ declare global {
           snr: number | null;
           rssi: number | null;
         } | null>;
+        getAllMeshcoreHopHistory: () => Promise<
+          {
+            node_id: number;
+            timestamp: number;
+            hops: number | null;
+            snr: number | null;
+            rssi: number | null;
+          }[]
+        >;
         saveMeshcoreTraceHistory: (
           nodeId: number,
           timestamp: number,

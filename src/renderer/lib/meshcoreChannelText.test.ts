@@ -43,6 +43,15 @@ describe('resolveMeshcoreChannelMessageSender', () => {
     expect(r.senderId).toBe(meshcoreChatStubNodeIdFromDisplayName('Alice'));
   });
 
+  it('parses emoji-prefixed display name before bracket reply', () => {
+    const r = resolveMeshcoreChannelMessageSender({
+      rawText: '🆎 Alex (KØALB) Base: @[🛜 NV0N 1200] 📶',
+    });
+    expect(r.displayName).toBe('🆎 Alex (KØALB) Base');
+    expect(r.senderId).toBe(meshcoreChatStubNodeIdFromDisplayName('🆎 Alex (KØALB) Base'));
+    expect(r.payload).toBe('📶');
+  });
+
   it('prefers RF fromNodeId and advert name over Unknown fallback', () => {
     const r = resolveMeshcoreChannelMessageSender({
       rawText: 'plain body',

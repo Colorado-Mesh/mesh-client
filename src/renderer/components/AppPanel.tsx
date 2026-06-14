@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
 
 import type { LocationFilter } from '../App';
 import {
@@ -1344,10 +1345,17 @@ export default function AppPanel({
                 }
               } catch (err) {
                 console.warn('[AppPanel] import failed ' + errLikeToLogString(err));
+                const schemaTooNew =
+                  err instanceof Error ? parseDatabaseSchemaTooNewFromMessage(err.message) : null;
                 addToast(
-                  t('appPanel.importFailed', {
-                    message: err instanceof Error ? err.message : 'Unknown error',
-                  }),
+                  schemaTooNew
+                    ? t('appPanel.importSchemaTooNew', {
+                        dbVersion: schemaTooNew.dbVersion,
+                        appVersion: schemaTooNew.appVersion,
+                      })
+                    : t('appPanel.importFailed', {
+                        message: err instanceof Error ? err.message : 'Unknown error',
+                      }),
                   'error',
                 );
               }

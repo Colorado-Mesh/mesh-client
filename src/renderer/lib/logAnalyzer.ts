@@ -161,6 +161,7 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     id: 'database-error',
     patterns: [
       /\[db\] Database init failed/i,
+      /\[db\] Database schema v\d+ is newer than/i,
       /\[db\] Merge failed/i,
       /\[db\] runSchemaUpgrade failed/i,
       /\[db\] migration v\d+ failed/i,

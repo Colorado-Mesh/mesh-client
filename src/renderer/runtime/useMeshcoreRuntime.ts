@@ -69,6 +69,7 @@ import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import {
   loadMeshcoreMessagesForHydration,
+  loadMeshcoreSavedHopRowsForHydration,
   syncMeshcoreNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -757,29 +758,15 @@ export function useMeshcoreRuntime() {
       const [rows, dbMsgs, savedNodes] = await Promise.all([
         window.electronAPI.db.getMeshcoreContacts(),
         loadMeshcoreMessagesForHydration(),
-        window.electronAPI.db.getNodes(),
+        loadMeshcoreSavedHopRowsForHydration(),
       ]);
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
 
       const dbContacts = rows as MeshcoreContactDbRow[];
-      const initial = new Map<number, MeshNode>();
+      const meshcoreRows = dbMsgs;
+      const mappedPreview = mapMeshcoreDbRowsToChatMessages(meshcoreRows);
+      const initial = buildMeshcoreNodeMapFromDb(dbContacts, savedNodes, mappedPreview);
       for (const row of dbContacts) {
-        const node: MeshNode = {
-          node_id: row.node_id,
-          long_name:
-            row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
-          short_name: '',
-          hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
-          battery: 0,
-          snr: row.last_snr ?? 0,
-          rssi: row.last_rssi ?? 0,
-          last_heard: row.last_advert ?? 0,
-          latitude: row.adv_lat ?? null,
-          longitude: row.adv_lon ?? null,
-          favorited: row.favorited === 1,
-          hops_away: row.hops_away ?? undefined,
-        };
-        initial.set(row.node_id, node);
         if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
         const hex = row.public_key.replace(/\s/g, '');
         if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
@@ -791,31 +778,13 @@ export function useMeshcoreRuntime() {
           pubKeyPrefixMapRef.current.set(prefix, row.node_id);
         }
       }
-      for (const n of savedNodes as MeshcoreSavedNodeHopRow[]) {
-        const hopCount = n.hops ?? n.hops_away;
-        if (hopCount != null) {
-          const existing = initial.get(n.node_id);
-          if (existing && existing.hops_away === undefined) {
-            initial.set(n.node_id, { ...existing, hops_away: hopCount });
-          }
-        }
-      }
-      const meshcoreRows = dbMsgs;
       const mapped = repairMeshcoreHydratedMessages(
-        mapMeshcoreDbRowsToChatMessages(meshcoreRows),
+        mappedPreview,
         meshcoreRoomServerIdsFromNodes(initial.values()),
         myNodeNumRef.current,
       );
       void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
       const mergedInitial = mergeStubNodesFromMeshcoreMessages(initial, mapped);
-      for (const n of savedNodes as MeshcoreSavedNodeHopRow[]) {
-        const hopCount = n.hops ?? n.hops_away;
-        if (hopCount == null) continue;
-        const existing = mergedInitial.get(n.node_id);
-        if (existing && existing.hops_away === undefined) {
-          mergedInitial.set(n.node_id, { ...existing, hops_away: hopCount });
-        }
-      }
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
 
       meshcoreLastPersistedNodesRef.current = new Map(mergedInitial);

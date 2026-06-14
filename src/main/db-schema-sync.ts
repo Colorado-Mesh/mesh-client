@@ -5,11 +5,31 @@
  * Failure point: any ALTER/CREATE/DATA step can throw; caller transaction rolls back.
  * Logging: errors use sanitizeLogMessage before console.error.
  */
+import { LAST_HEARD_MS_THRESHOLD } from '../shared/lastHeardUnits';
+import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 34;
+export const CURRENT_SCHEMA_VERSION = 36;
+
+/** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
+export class DatabaseSchemaTooNewError extends Error {
+  readonly code = 'DB_SCHEMA_TOO_NEW' as const;
+  readonly dbVersion: number;
+  readonly appVersion: number;
+
+  constructor(dbVersion: number, appVersion: number) {
+    super(`[db] Database schema v${dbVersion} is newer than this app supports (v${appVersion})`);
+    this.name = 'DatabaseSchemaTooNewError';
+    this.dbVersion = dbVersion;
+    this.appVersion = appVersion;
+  }
+}
+
+export function isDatabaseSchemaTooNewError(err: unknown): err is DatabaseSchemaTooNewError {
+  return err instanceof DatabaseSchemaTooNewError;
+}
 
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
@@ -45,7 +65,7 @@ export const CANONICAL_TABLES_DDL = `
         snr REAL,
         rssi REAL,
         battery INTEGER,
-        last_heard INTEGER,
+        last_heard INTEGER, -- Unix epoch seconds (legacy DBs may have ms until v36 repair)
         latitude REAL,
         longitude REAL,
         role TEXT,
@@ -214,6 +234,9 @@ export const INDEX_DDLS: readonly string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
         ON meshcore_messages(sender_id, timestamp, channel_idx, payload)
         WHERE sender_id IS NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup_null_sender
+        ON meshcore_messages(timestamp, channel_idx, payload)
+        WHERE sender_id IS NULL`,
   'CREATE INDEX IF NOT EXISTS idx_position_history_node_time ON position_history(node_id, recorded_at)',
   'CREATE INDEX IF NOT EXISTS idx_position_history_time ON position_history(recorded_at)',
   'CREATE INDEX IF NOT EXISTS idx_contact_groups_self ON contact_groups(self_node_id)',
@@ -397,6 +420,7 @@ function ensureColumns(db: NodeSqliteDB): void {
 /** Legacy meshcore_messages dedup index lacked payload; drop, dedupe, then recreate (historical v17). */
 function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
   db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup');
+  db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup_null_sender');
   if (tableExists(db, 'meshcore_messages')) {
     db.prepare(
       `DELETE FROM meshcore_messages
@@ -407,11 +431,25 @@ function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
          )
          AND sender_id IS NOT NULL`,
     ).run();
+    db.prepare(
+      `DELETE FROM meshcore_messages
+         WHERE sender_id IS NULL
+         AND id NOT IN (
+           SELECT MIN(id) FROM meshcore_messages
+           WHERE sender_id IS NULL
+           GROUP BY timestamp, channel_idx, payload
+         )`,
+    ).run();
   }
   db.execScript(
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup ' +
       'ON meshcore_messages(sender_id, timestamp, channel_idx, payload) ' +
       'WHERE sender_id IS NOT NULL',
+  );
+  db.execScript(
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup_null_sender ' +
+      'ON meshcore_messages(timestamp, channel_idx, payload) ' +
+      'WHERE sender_id IS NULL',
   );
 }
 
@@ -561,6 +599,118 @@ function rebuildMeshcoreTraceHistoryIfNeeded(db: NodeSqliteDB): void {
           `);
 }
 
+const MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC = 1_000_000_000;
+const MESHTASTIC_ORPHAN_SENDING_WINDOW_MS = 120_000;
+const MESHTASTIC_STALE_SENDING_MS = 24 * 3_600_000;
+
+/**
+ * Convert legacy millisecond `nodes.last_heard` values to Unix seconds (schema v36).
+ * Idempotent — safe on every startup.
+ */
+function repairNodesLastHeardUnits(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'nodes')) return;
+  db.prepare(
+    `UPDATE nodes SET last_heard = CAST(last_heard / 1000 AS INTEGER)
+     WHERE last_heard >= ?`,
+  ).run(LAST_HEARD_MS_THRESHOLD);
+}
+
+/**
+ * Delete orphan optimistic `sending` rows when an acked twin exists; promote aged lone sends to failed.
+ * Idempotent — safe on every startup.
+ */
+function repairMeshtasticOrphanSendingMessages(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'messages')) return;
+
+  db.prepare(
+    `DELETE FROM messages
+     WHERE status = 'sending'
+       AND id IN (
+         SELECT s.id FROM messages s
+         INNER JOIN messages a ON s.id != a.id
+           AND s.sender_id = a.sender_id
+           AND s.channel = a.channel
+           AND s.payload = a.payload
+           AND a.status != 'sending'
+           AND ABS(a.timestamp - s.timestamp) <= ?
+       )`,
+  ).run(MESHTASTIC_ORPHAN_SENDING_WINDOW_MS);
+
+  const staleCutoff = Date.now() - MESHTASTIC_STALE_SENDING_MS;
+  db.prepare(
+    `UPDATE messages SET status = 'failed'
+     WHERE status = 'sending' AND timestamp < ?`,
+  ).run(staleCutoff);
+}
+
+/**
+ * Repair repeater uptime stored as last_advert, invalid GPS, and orphan hop rows (schema v35).
+ * Idempotent — safe on every startup.
+ */
+function repairMeshcoreContactDataQuality(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'meshcore_contacts')) return;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const maxFutureSec = nowSec + MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC;
+  db.prepare(
+    `UPDATE meshcore_contacts SET last_advert = ?
+     WHERE last_advert IS NOT NULL AND last_advert > ?`,
+  ).run(nowSec, maxFutureSec);
+
+  if (tableExists(db, 'meshcore_hop_history')) {
+    db.prepare(
+      `UPDATE meshcore_contacts
+         SET last_advert = (
+           SELECT CAST(h.timestamp / 1000 AS INTEGER)
+           FROM meshcore_hop_history h
+           WHERE h.node_id = meshcore_contacts.node_id
+             AND h.timestamp >= 1000000000000
+         )
+       WHERE last_advert IS NOT NULL
+         AND last_advert < ?
+         AND EXISTS (
+           SELECT 1 FROM meshcore_hop_history h
+           WHERE h.node_id = meshcore_contacts.node_id
+             AND h.timestamp >= 1000000000000
+         )`,
+    ).run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC);
+
+    db.prepare(
+      `DELETE FROM meshcore_hop_history
+       WHERE node_id NOT IN (SELECT node_id FROM meshcore_contacts)`,
+    ).run();
+  }
+
+  db.prepare(
+    `UPDATE meshcore_contacts
+     SET last_advert = NULL
+     WHERE last_advert IS NOT NULL AND last_advert < ?`,
+  ).run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC);
+
+  db.prepare(
+    `UPDATE meshcore_contacts SET adv_lat = NULL WHERE adv_lat IS NOT NULL AND (adv_lat < -90 OR adv_lat > 90)`,
+  ).run();
+  db.prepare(
+    `UPDATE meshcore_contacts SET adv_lon = NULL WHERE adv_lon IS NOT NULL AND (adv_lon < -180 OR adv_lon > 180)`,
+  ).run();
+
+  if (tableExists(db, 'meshcore_messages')) {
+    db.prepare(
+      `DELETE FROM meshcore_messages
+       WHERE id IN (
+         SELECT m2.id FROM meshcore_messages m1
+         INNER JOIN meshcore_messages m2 ON m1.id < m2.id
+           AND m1.channel_idx = -1 AND m2.channel_idx = -1
+           AND m1.received_via = 'rf' AND m2.received_via = 'rf'
+           AND m1.sender_id IS NOT NULL AND m1.sender_id = m2.sender_id
+           AND COALESCE(m1.to_node, -1) = COALESCE(m2.to_node, -1)
+           AND m1.payload = m2.payload
+           AND ABS(m2.timestamp - m1.timestamp) <= 120000
+       )`,
+    ).run();
+  }
+}
+
 function ensureIndexes(db: NodeSqliteDB): void {
   for (const ddl of INDEX_DDLS) {
     db.execScript(ddl);
@@ -581,6 +731,9 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   ensureMeshcoreMessagesDedupIndex(db);
   migrateLegacyContactGroups(db);
   rebuildMeshcoreTraceHistoryIfNeeded(db);
+  repairNodesLastHeardUnits(db);
+  repairMeshcoreContactDataQuality(db);
+  repairMeshtasticOrphanSendingMessages(db);
 }
 
 /**
@@ -588,6 +741,11 @@ function structuralUpgrades(db: NodeSqliteDB): void {
  * Safe to call on every startup (idempotent).
  */
 export function runSchemaUpgrade(db: NodeSqliteDB): void {
+  const cur = db.pragma('user_version', { simple: true }) as number;
+  if (cur > CURRENT_SCHEMA_VERSION) {
+    throw new DatabaseSchemaTooNewError(cur, CURRENT_SCHEMA_VERSION);
+  }
+
   try {
     ensureTablesOnly(db);
     ensureColumns(db);
@@ -595,11 +753,12 @@ export function runSchemaUpgrade(db: NodeSqliteDB): void {
     ensureIndexes(db);
     seedAppSettings(db);
 
-    const cur = db.pragma('user_version', { simple: true }) as number;
-    if (cur < CURRENT_SCHEMA_VERSION) {
+    const versionAfterSync = db.pragma('user_version', { simple: true }) as number;
+    if (versionAfterSync < CURRENT_SCHEMA_VERSION) {
       db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
     }
   } catch (e) {
+    if (isDatabaseSchemaTooNewError(e)) throw e;
     console.error(
       '[db] runSchemaUpgrade failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),

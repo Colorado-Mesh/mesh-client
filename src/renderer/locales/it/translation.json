@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "Su RF Connect, richiedi fino a 50 messaggi (15 minuti di ricarica tra un recupero e l'altro). Spegnere se il ponte MQTT del gateway è sovraccarico.",
     "reduceMotion": "Ridurre il movimento",
     "reduceMotionDesc": "Disabilita le icone animate e gli effetti decorativi. Gli spinner di caricamento e gli indicatori di stato della connessione restano animati.",
-    "roomMessages": "Messaggi della stanza"
+    "roomMessages": "Messaggi della stanza",
+    "importSchemaTooNew": "Questo file di database richiede un Mesh-Client più recente (schema {{dbVersion}}). Questa build supporta lo schema {{appVersion}} o versioni precedenti. Installa l'ultima versione e riprova."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nuovo messaggio",
-    "newMessages_other": "{{protocol}}: {{count}} nuovi messaggi"
+    "newMessages_other": "{{protocol}}: {{count}} nuovi messaggi",
+    "meshcoreDistanceFilterHint": "Hai {{count}} contatti con GPS sulla mappa. Abilita il filtro distanza in App → Aspetto per concentrarti sui nodi vicini."
   },
   "updateStatus": {
     "checking": "Verifica…",

@@ -1044,6 +1044,62 @@ describe('roomsPanel saved passwords per-key quality', () => {
       }),
     ).toEqual([]);
   });
+
+  const enMeshcoreDistanceFilterHint =
+    'You have {{count}} contacts with GPS on the map. Enable the distance filter in App → Appearance to focus on nearby nodes.';
+  const enImportSchemaTooNew =
+    'This database file requires a newer Mesh-Client (schema {{dbVersion}}). This build supports schema {{appVersion}} or older. Install the latest release and try again.';
+
+  it('flags untranslated App → Appearance in meshcoreDistanceFilterHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'toasts.meshcoreDistanceFilterHint',
+      val: 'App → Appearanceで距離フィルターを有効にしてください。',
+      enVal: enMeshcoreDistanceFilterHint,
+    });
+    expectIssue(issues, 'App → Appearance');
+  });
+
+  it('flags App App MT garbage in meshcoreDistanceFilterHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'toasts.meshcoreDistanceFilterHint',
+      val: 'Activez le filtre dans App App App → Appearance.',
+      enVal: enMeshcoreDistanceFilterHint,
+    });
+    expectIssue(issues, 'App App');
+  });
+
+  it('flags orphan arrow navigation in meshcoreDistanceFilterHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'toasts.meshcoreDistanceFilterHint',
+      val: 'Aktivieren Sie den Filter in → Erscheinungsbild.',
+      enVal: enMeshcoreDistanceFilterHint,
+    });
+    expectIssue(issues, 'orphan "→" navigation');
+  });
+
+  it('flags spaced Mesh-Client in importSchemaTooNew', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'appPanel.importSchemaTooNew',
+      val: 'File ini memerlukan Mesh - Client yang lebih baru (skema {{dbVersion}}).',
+      enVal: enImportSchemaTooNew,
+    });
+    expectIssue(issues, 'Mesh-Client');
+  });
+
+  it('passes fixed meshcoreDistanceFilterHint in Japanese', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'ja',
+        flatKey: 'toasts.meshcoreDistanceFilterHint',
+        val: '地図上にGPS付きの連絡先が{{count}}件あります。アプリ → 外観で距離フィルターを有効にしてください。',
+        enVal: enMeshcoreDistanceFilterHint,
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedBrandIssues', () => {

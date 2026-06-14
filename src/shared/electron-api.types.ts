@@ -209,6 +209,7 @@ export interface ElectronAPI {
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;
     prunePositionHistory: (days: number) => Promise<number>;
+    prunePositionHistoryPerNode: (maxPerNode: number) => Promise<number>;
     clearNodePositions: () => Promise<void>;
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<void>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */
@@ -354,6 +355,15 @@ export interface ElectronAPI {
       snr: number | null;
       rssi: number | null;
     } | null>;
+    getAllMeshcoreHopHistory: () => Promise<
+      {
+        node_id: number;
+        timestamp: number;
+        hops: number | null;
+        snr: number | null;
+        rssi: number | null;
+      }[]
+    >;
     saveMeshcoreTraceHistory: (
       nodeId: number,
       timestamp: number,

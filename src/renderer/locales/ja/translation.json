@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "RF接続では、最大50件のメッセージをリクエストします（フェッチ間のクールダウンは15分）。ゲートウェイMQTTブリッジが過負荷の場合はオフにします。",
     "reduceMotion": "動きを減らす",
     "reduceMotionDesc": "アニメーションアイコンと装飾効果を無効にします。読み込みスピナーと接続状態インジケーターは引き続きアニメーションします。",
-    "roomMessages": "部屋のメッセージ"
+    "roomMessages": "部屋のメッセージ",
+    "importSchemaTooNew": "このデータベースファイルには新しい Mesh-Client（スキーマ {{dbVersion}}）が必要です。このビルドはスキーマ {{appVersion}} 以前のみ対応しています。最新版をインストールして再試行してください。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 新しいメッセージ",
-    "newMessages_other": "{{protocol}}: {{count}} 件の新しいメッセージ"
+    "newMessages_other": "{{protocol}}: {{count}} 件の新しいメッセージ",
+    "meshcoreDistanceFilterHint": "地図上にGPS付きの連絡先が{{count}}件あります。アプリ → 外観で距離フィルターを有効にして、近くのノードに集中できます。"
   },
   "updateStatus": {
     "checking": "チェック中…",

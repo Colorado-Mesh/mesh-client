@@ -71,6 +71,9 @@ async function executeStartupDbPrune(): Promise<void> {
         window.electronAPI.db.prunePositionHistory(days).catch((e: unknown) => {
           console.warn('[App] startup prunePositionHistory failed ' + errLikeToLogString(e));
         }),
+        window.electronAPI.db.prunePositionHistoryPerNode(2000).catch((e: unknown) => {
+          console.warn('[App] startup prunePositionHistoryPerNode failed ' + errLikeToLogString(e));
+        }),
       );
     }
   } else if (startupProtocol === 'meshcore') {

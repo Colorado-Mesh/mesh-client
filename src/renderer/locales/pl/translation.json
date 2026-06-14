@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "W przypadku połączenia radiowego zażądaj do 50 wiadomości (15-minutowe schładzanie między pobieraniem). Wyłącz, jeśli mostek bramki MQTT jest przeciążony.",
     "reduceMotion": "Zmniejszyć ruch",
     "reduceMotionDesc": "Wyłącza animowane ikony i efekty dekoracyjne. Wskaźniki ładowania i stanu połączenia nadal są animowane.",
-    "roomMessages": "Wiadomości z pokoju"
+    "roomMessages": "Wiadomości z pokoju",
+    "importSchemaTooNew": "Ten plik bazy danych wymaga nowszego klienta Mesh (schemat {{dbVersion}}). Ta kompilacja obsługuje schemat {{appVersion}} lub starszy. Zainstaluj najnowszą wersję i spróbuj ponownie."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
-    "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości"
+    "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
+    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach."
   },
   "updateStatus": {
     "checking": "Sprawdzanie...",

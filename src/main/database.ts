@@ -2,7 +2,9 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
+import { MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import {
   MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT,
   MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT,
@@ -13,12 +15,14 @@ import { NodeSqliteDB } from './db-compat';
 import {
   CANONICAL_CREATE_ALL_DDL,
   CURRENT_SCHEMA_VERSION,
+  DatabaseSchemaTooNewError,
+  isDatabaseSchemaTooNewError,
   runSchemaUpgrade,
 } from './db-schema-sync';
 import { sanitizeLogMessage } from './log-service';
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
-export { CURRENT_SCHEMA_VERSION };
+export { CURRENT_SCHEMA_VERSION, DatabaseSchemaTooNewError, isDatabaseSchemaTooNewError };
 
 /** Thrown when mergeDatabase rejects the source path before opening SQLite. */
 export class MergeSourceInvalidError extends Error {
@@ -126,6 +130,26 @@ export function prunePositionHistory(days: number): number {
   return Number(result.changes);
 }
 
+/** Keep only the newest `maxPerNode` rows per node_id (matches in-memory cap). */
+export function prunePositionHistoryPerNode(maxPerNode: number): number {
+  if (maxPerNode < 1) return 0;
+  const d = getDatabase();
+  const result = d
+    .prepareOnce(
+      `DELETE FROM position_history
+       WHERE id NOT IN (
+         SELECT id FROM (
+           SELECT id,
+             ROW_NUMBER() OVER (PARTITION BY node_id ORDER BY recorded_at DESC, id DESC) AS rn
+           FROM position_history
+         )
+         WHERE rn <= ?
+       )`,
+    )
+    .run(maxPerNode);
+  return Number(result.changes);
+}
+
 export function deleteMeshcoreContactsNeverAdvertised(): number {
   const d = getDatabase();
   const result = d
@@ -144,9 +168,9 @@ export function deleteMeshcoreContactsByAge(days: number): number {
   if (cutoffSec === null) return 0;
   const result = d
     .prepareOnce(
-      'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+      'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
     )
-    .run(cutoffSec);
+    .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec);
   return Number(result.changes);
 }
 
@@ -169,10 +193,10 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
     .prepareOnce(
       'DELETE FROM meshcore_contacts WHERE node_id IN (' +
         'SELECT node_id FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) ' +
-        'ORDER BY COALESCE(last_advert, 0) ASC LIMIT ?' +
+        'ORDER BY CASE WHEN last_advert IS NULL OR last_advert < ? THEN 1 ELSE 0 END, COALESCE(last_advert, 0) ASC LIMIT ?' +
         ')',
     )
-    .run(toDelete);
+    .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, toDelete);
   return Number(result.changes);
 }
 
@@ -276,6 +300,11 @@ export function mergeDatabase(sourcePath: string) {
 
   try {
     sourceDb = new NodeSqliteDB(sourcePath, { readonly: true });
+
+    const sourceVersion = sourceDb.pragma('user_version', { simple: true }) as number;
+    if (sourceVersion > CURRENT_SCHEMA_VERSION) {
+      throw new DatabaseSchemaTooNewError(sourceVersion, CURRENT_SCHEMA_VERSION);
+    }
 
     return targetDb.transaction(() => {
       let nodesAdded = 0;
@@ -500,7 +529,7 @@ export function upsertNodePath(
        OR excluded.last_heard > (nodes.last_heard + 300)
        OR nodes.hops IS NULL
   `,
-  ).run(nodeId, lastHeard, hops, pathJson);
+  ).run(nodeId, normalizeLastHeardToUnixSec(lastHeard), hops, pathJson);
 }
 
 export interface MeshCoreHopHistoryRow {
@@ -560,6 +589,22 @@ export function getMeshcoreHopHistory(nodeId: number): MeshCoreHopHistoryRow | n
     | MeshCoreHopHistoryRow
     | undefined;
   return row ?? null;
+}
+
+/** All hop rows for hydration backfill (one row per node_id). */
+export function getAllMeshcoreHopHistoryRows(): MeshCoreHopHistoryRow[] {
+  const d = getDatabase();
+  return d.prepareOnce('SELECT * FROM meshcore_hop_history').all() as MeshCoreHopHistoryRow[];
+}
+
+export function deleteOrphanMeshcoreHopHistory(): number {
+  const d = getDatabase();
+  const result = d
+    .prepareOnce(
+      'DELETE FROM meshcore_hop_history WHERE node_id NOT IN (SELECT node_id FROM meshcore_contacts)',
+    )
+    .run();
+  return Number(result.changes);
 }
 
 export function saveMeshcoreTraceHistory(

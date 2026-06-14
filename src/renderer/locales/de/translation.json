@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "Bei RF-Verbindung bis zu 50 Nachrichten anfordern (15 Minuten Abklingzeit zwischen den Abrufen). Schalten Sie aus, wenn Ihre Gateway-MQTT-Brücke überlastet ist.",
     "reduceMotion": "Bewegung reduzieren",
     "reduceMotionDesc": "Deaktiviert animierte Symbole und dekorative Effekte. Lade-Spinner und Verbindungsstatusanzeigen sind immer noch animiert.",
-    "roomMessages": "Zimmernachrichten"
+    "roomMessages": "Zimmernachrichten",
+    "importSchemaTooNew": "Diese Datenbankdatei erfordert einen neueren Mesh-Client (Schema {{dbVersion}}). Dieser Build unterstützt Schema {{appVersion}} oder älter. Installieren Sie die neueste Version und versuchen Sie es erneut."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} neue Nachricht",
-    "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten"
+    "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten",
+    "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktiviere den Entfernungsfilter unter App → Aussehen, um dich auf nahe Knoten zu konzentrieren."
   },
   "updateStatus": {
     "checking": "Überprüfung…",

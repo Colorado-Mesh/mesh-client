@@ -89,6 +89,19 @@ describe('mergeMeshcoreLastHeardFromAdvert', () => {
     const nowSec = 1_700_000_000;
     expect(mergeMeshcoreLastHeardFromAdvert(0, nowSec + 86_400, nowSec)).toBe(nowSec);
   });
+
+  it('ignores repeater uptime masquerading as lastAdvert', () => {
+    const nowSec = 1_781_401_111;
+    expect(mergeMeshcoreLastHeardFromAdvert(6, undefined, nowSec)).toBe(0);
+    expect(mergeMeshcoreLastHeardFromAdvert(6, nowSec - 120, nowSec)).toBe(nowSec - 120);
+    expect(mergeMeshcoreLastHeardFromAdvert(1_700_000_500, 6, nowSec)).toBe(1_700_000_500);
+  });
+
+  it('ignores implausible previous last_heard from DB corruption', () => {
+    const nowSec = 1_781_401_111;
+    expect(mergeMeshcoreLastHeardFromAdvert(undefined, 6, nowSec)).toBe(0);
+    expect(mergeMeshcoreLastHeardFromAdvert(nowSec, 6, nowSec)).toBe(nowSec);
+  });
 });
 
 describe('getNodeStatus', () => {

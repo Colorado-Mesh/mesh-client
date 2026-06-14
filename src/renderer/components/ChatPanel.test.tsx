@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import * as chatNotifications from '../lib/chatNotifications';
-import { draftsStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
+import { draftsStorageKey, lastReadStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
 import { getDistFromChatBottom } from '../lib/chatScrollUtils';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import ChatPanel from './ChatPanel';
@@ -1531,9 +1531,9 @@ describe('ChatPanel unread watermarks', () => {
   });
 
   it('clears the unread divider without scrolling when all unread messages are visible', async () => {
-    const ts = Date.now();
+    const ts = 1_781_469_336_193;
     // Seed a stored watermark so the component treats the last message as unread.
-    localStorage.setItem('mesh-client:lastRead:meshtastic', JSON.stringify({ 'ch:0': ts - 1000 }));
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 1000 }));
 
     render(
       <ToastProvider>
@@ -1567,10 +1567,13 @@ describe('ChatPanel unread watermarks', () => {
       expect(screen.queryByText('New messages')).not.toBeInTheDocument();
     });
 
-    const stored = JSON.parse(
-      localStorage.getItem('mesh-client:lastRead:meshtastic') ?? '{}',
-    ) as Record<string, number>;
-    expect(stored['ch:0']).toBe(ts);
+    // Persist runs in a useEffect after setPersistedLastRead — wait for localStorage on slow CI.
+    await waitFor(() => {
+      const stored = JSON.parse(
+        localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}',
+      ) as Record<string, number>;
+      expect(stored['ch:0']).toBe(ts);
+    });
   });
 
   it('marks MeshCore DM read when opened with all messages visible', async () => {

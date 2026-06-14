@@ -128,18 +128,50 @@ export async function hydrateMeshtasticMessagesFromDb(
   }
 }
 
+/** Merge nodes-table hop stubs with meshcore_hop_history for hydration backfill. */
+export function mergeMeshcoreSavedHopRowsForHydration(
+  nodesTableRows: MeshcoreSavedNodeHopRow[],
+  hopHistoryRows: readonly { node_id: number; hops: number | null }[],
+): MeshcoreSavedNodeHopRow[] {
+  const byId = new Map<number, MeshcoreSavedNodeHopRow>();
+  for (const row of nodesTableRows) {
+    byId.set(row.node_id, row);
+  }
+  for (const row of hopHistoryRows) {
+    const hopCount = row.hops;
+    if (hopCount == null) continue;
+    const existing = byId.get(row.node_id);
+    if (existing?.hops_away != null || existing?.hops != null) continue;
+    byId.set(row.node_id, {
+      node_id: row.node_id,
+      hops_away: hopCount,
+      hops: hopCount,
+    });
+  }
+  return Array.from(byId.values());
+}
+
+export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSavedNodeHopRow[]> {
+  const [nodesTableRows, hopHistoryRows] = await Promise.all([
+    window.electronAPI.db.getNodes(),
+    window.electronAPI.db.getAllMeshcoreHopHistory(),
+  ]);
+  const hopRows: MeshcoreSavedNodeHopRow[] = nodesTableRows.map((row) => ({
+    node_id: row.node_id,
+    hops_away: row.hops_away ?? null,
+    hops: row.hops ?? null,
+  }));
+  return mergeMeshcoreSavedHopRowsForHydration(hopRows, hopHistoryRows);
+}
+
 export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promise<void> {
   const [rows, savedNodes] = await Promise.all([
     window.electronAPI.db.getMeshcoreContacts(),
-    window.electronAPI.db.getNodes(),
+    loadMeshcoreSavedHopRowsForHydration(),
   ]);
   const dbMsgs = await loadMeshcoreMessagesForHydration();
   const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
-  const nodeMap = buildMeshcoreNodeMapFromDb(
-    rows as MeshcoreContactDbRow[],
-    savedNodes as MeshcoreSavedNodeHopRow[],
-    mapped,
-  );
+  const nodeMap = buildMeshcoreNodeMapFromDb(rows as MeshcoreContactDbRow[], savedNodes, mapped);
   syncMeshcoreNodesMapToIdentityStore(identityId, nodeMap);
 }
 

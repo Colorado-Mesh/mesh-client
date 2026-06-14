@@ -50,3 +50,19 @@ export function applySpellcheckReplace(
   const caret = start + suggestion.length;
   el.setSelectionRange(caret, caret);
 }
+
+/** Compute value/caret for native spellcheck insertReplacementText in controlled fields. */
+export function computeInsertReplacementText(
+  current: string,
+  replacement: string,
+  selectionStart: number,
+  selectionEnd: number,
+): { value: string; caret: number } | null {
+  if (!replacement) return null;
+  const start = Math.max(0, selectionStart);
+  const end = Math.max(start, selectionEnd);
+  if (start > current.length || end > current.length) return null;
+  const value = current.slice(0, start) + replacement + current.slice(end);
+  if (value === current) return null;
+  return { value, caret: start + replacement.length };
+}

@@ -46,10 +46,10 @@ describe('meshcore_contacts age prune SQL cutoff', () => {
     const deleted = db
       .prepareOnce(
         `DELETE FROM meshcore_contacts
-         WHERE last_advert IS NOT NULL AND last_advert < ?
+         WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ?
            AND (favorited IS NULL OR favorited = 0)`,
       )
-      .run(cutoffSec).changes;
+      .run(1_000_000_000, cutoffSec).changes;
 
     expect(deleted).toBe(1);
     const remaining = db

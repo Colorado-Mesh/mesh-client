@@ -63,4 +63,29 @@ describe('buildMeshcoreNodeMapFromDb', () => {
     );
     expect(map.get(REMOTE_NODE_ID)?.hops_away).toBe(7);
   });
+
+  it('ignores repeater uptime stored as last_advert and invalid GPS', () => {
+    const contact: MeshcoreContactDbRow = {
+      node_id: REMOTE_NODE_ID,
+      public_key: REMOTE_PUBKEY_HEX,
+      adv_name: 'BadRepeater',
+      contact_type: 2,
+      last_advert: 6,
+      adv_lat: 34.0,
+      adv_lon: 2147.48,
+      last_snr: 0,
+      last_rssi: 0,
+      favorited: 0,
+      nickname: null,
+      hops_away: null,
+      contact_flags: null,
+      on_radio: 1,
+      last_synced_from_radio: null,
+    };
+    const map = buildMeshcoreNodeMapFromDb([contact], [], []);
+    const node = map.get(REMOTE_NODE_ID);
+    expect(node?.last_heard).toBe(0);
+    expect(node?.latitude).toBeNull();
+    expect(node?.longitude).toBeNull();
+  });
 });

@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "RF 연결 시 최대 50개의 메시지를 요청합니다 (가져오기 사이의 재사용 대기 시간 15분). 게이트웨이 MQTT 브리지에 과부하가 걸리면 끄십시오.",
     "reduceMotion": "동작 줄이기",
     "reduceMotionDesc": "애니메이션 아이콘 및 장식 효과를 비활성화합니다. 로딩 스피너와 연결 상태 표시등은 여전히 애니메이션으로 표시됩니다.",
-    "roomMessages": "채팅실 채팅"
+    "roomMessages": "채팅실 채팅",
+    "importSchemaTooNew": "이 데이터베이스 파일에는 최신 Mesh-Client(스키마 {{dbVersion}})가 필요합니다. 이 빌드는 스키마 {{appVersion}} 이하만 지원합니다. 최신 릴리스를 설치한 뒤 다시 시도하세요."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 새 메시지",
-    "newMessages_other": "{{protocol}}: {{count}} 새 메시지"
+    "newMessages_other": "{{protocol}}: {{count}} 새 메시지",
+    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요."
   },
   "updateStatus": {
     "checking": "확인 중…",

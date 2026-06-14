@@ -1,5 +1,7 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
+import { isValidLatLon } from '../../../shared/geoCoords';
+import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
 import type {
   MeshCoreConnection,
@@ -32,6 +34,7 @@ import {
 import {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+  MESHCORE_DM_RF_DEDUP_WINDOW_MS,
   MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
   MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
 } from '../../lib/timeConstants';
@@ -39,6 +42,7 @@ import {
 export {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+  MESHCORE_DM_RF_DEDUP_WINDOW_MS,
   MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
   MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
 } from '../../lib/timeConstants';
@@ -131,8 +135,15 @@ export function messageToDbRow(
     msg.receivedVia === 'rf' || msg.receivedVia === 'mqtt' || msg.receivedVia === 'both'
       ? msg.receivedVia
       : null;
+  let sender_id: number | null = msg.sender_id !== 0 ? msg.sender_id : null;
+  if (sender_id == null) {
+    const name = msg.sender_name?.trim();
+    if (name && name !== 'Unknown') {
+      sender_id = meshcoreChatStubNodeIdFromDisplayName(name);
+    }
+  }
   return {
-    sender_id: msg.sender_id !== 0 ? msg.sender_id : null,
+    sender_id,
     sender_name: msg.sender_name ?? null,
     payload: msg.payload,
     channel_idx: msg.channel,
@@ -396,6 +407,45 @@ export function findMeshcoreChannelRfDuplicate(
   return undefined;
 }
 
+function meshcoreIsDmMessage(msg: ChatMessage): boolean {
+  return msg.channel === -1 && msg.to != null;
+}
+
+/** Same DM text heard again on RF (repeater / multi-path echo), not RF/MQTT cross-path. */
+export function meshcoreDmRfMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_DM_RF_DEDUP_WINDOW_MS,
+): boolean {
+  if (!meshcoreIsDmMessage(existing) || !meshcoreIsDmMessage(incoming)) return false;
+  if (existing.emoji != null || incoming.emoji != null) return false;
+  if (existing.receivedVia !== 'rf' || incoming.receivedVia !== 'rf') return false;
+  if (meshcoreTransportsAreCross(existing, incoming)) return false;
+  if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
+  if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
+  if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
+  const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
+  const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
+  if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
+  if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
+  return true;
+}
+
+export function findMeshcoreDmRfDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_DM_RF_DEDUP_WINDOW_MS,
+): ChatMessage | undefined {
+  const start = Math.max(0, messages.length - MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT);
+  for (let i = messages.length - 1; i >= start; i--) {
+    const existing = messages[i];
+    if (meshcoreDmRfMatch(existing, incoming, windowMs)) {
+      return existing;
+    }
+  }
+  return undefined;
+}
+
 function meshcoreRoomServerIdForDedup(msg: ChatMessage): number | undefined {
   if (msg.roomServerId != null) return msg.roomServerId;
   if (msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null) return msg.to;
@@ -563,17 +613,20 @@ export function buildMeshcoreNodeMapFromDb(
 ): Map<number, MeshNode> {
   const initial = new Map<number, MeshNode>();
   for (const row of dbContacts) {
+    const coords = isValidLatLon(row.adv_lat, row.adv_lon)
+      ? { latitude: row.adv_lat!, longitude: row.adv_lon! }
+      : { latitude: null as number | null, longitude: null as number | null };
     const node: MeshNode = {
       node_id: row.node_id,
-      long_name: row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+      long_name: meshcoreContactDisplayName(row.node_id, row.adv_name, row.nickname),
       short_name: '',
       hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
       battery: 0,
       snr: row.last_snr ?? 0,
       rssi: row.last_rssi ?? 0,
-      last_heard: row.last_advert ?? 0,
-      latitude: row.adv_lat ?? null,
-      longitude: row.adv_lon ?? null,
+      last_heard: mergeMeshcoreLastHeardFromAdvert(row.last_advert, undefined),
+      latitude: coords.latitude,
+      longitude: coords.longitude,
       favorited: row.favorited === 1,
       hops_away: row.hops_away ?? undefined,
     };
@@ -713,7 +766,7 @@ export async function mergeMeshcoreContactsFromDbIntoNodeMap(
           : newHwModel;
       nextNodes.set(row.node_id, {
         node_id: row.node_id,
-        long_name: row.nickname ?? row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+        long_name: meshcoreContactDisplayName(row.node_id, row.adv_name, row.nickname),
         short_name: '',
         hw_model: mergedHwModel,
         battery: 0,

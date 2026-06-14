@@ -1,3 +1,4 @@
+import { normalizeLastHeardMs } from './nodeStatus';
 import { MS_PER_HOUR } from './timeConstants';
 import type { MeshNode } from './types';
 
@@ -15,7 +16,7 @@ export function nodeHealthScore(node: MeshNode, nowMs: number = Date.now()): Nod
   const signal = Math.round(Math.min(40, Math.max(0, ((snr + 20) / 40) * 40)));
 
   // Recency: 30 pts if heard < 1h, 15 if < 6h, 0 otherwise
-  const lastHeardMs = (node.last_heard ?? 0) * 1000;
+  const lastHeardMs = normalizeLastHeardMs(node.last_heard ?? 0);
   const ageMs = nowMs - lastHeardMs;
   const recency =
     lastHeardMs === 0 ? 0 : ageMs < MS_PER_HOUR ? 30 : ageMs < 6 * MS_PER_HOUR ? 15 : 0;

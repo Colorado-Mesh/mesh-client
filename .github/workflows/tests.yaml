@@ -33,11 +33,23 @@ jobs:
       - name: Run tests
         run: pnpm run test:run
 
+      - name: Run coverage
+        run: pnpm run test:coverage
+
       - name: Upload test results
         if: always() && github.actor != 'nektos/act'
         uses: actions/upload-artifact@v7
         with:
           name: vitest-report
           path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload coverage report
+        if: always() && github.actor != 'nektos/act'
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-coverage
+          path: coverage/
           retention-days: 7
           if-no-files-found: warn

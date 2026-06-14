@@ -320,6 +320,24 @@ describe('mergeDatabase source validation', () => {
     expect(DB_SOURCE).toMatch(/isMergeSourceInvalidError\(err\)\) throw err/);
     expect(DB_SOURCE).toContain("readonly code = 'MERGE_SOURCE_INVALID'");
   });
+
+  it('rejects merge source when user_version exceeds CURRENT_SCHEMA_VERSION', () => {
+    expect(DB_SOURCE).toContain('DatabaseSchemaTooNewError');
+    expect(DB_SOURCE).toMatch(/sourceVersion > CURRENT_SCHEMA_VERSION/);
+  });
+});
+
+describe('schema downgrade guard', () => {
+  it('runSchemaUpgrade checks user_version before mutations', () => {
+    expect(SCHEMA_SYNC_SOURCE).toMatch(
+      /if \(cur > CURRENT_SCHEMA_VERSION\)[\s\S]*?throw new DatabaseSchemaTooNewError/,
+    );
+  });
+
+  it('exports DatabaseSchemaTooNewError from database.ts', () => {
+    expect(DB_SOURCE).toContain('DatabaseSchemaTooNewError');
+    expect(DB_SOURCE).toContain('isDatabaseSchemaTooNewError');
+  });
 });
 
 describe('escapeSqlLikePattern', () => {

@@ -53,6 +53,12 @@ describe('nodeHealthScore', () => {
     expect(recency).toBe(0);
   });
 
+  it('handles legacy millisecond last_heard values', () => {
+    const node = makeNode({ last_heard: BASE_NOW - 30 * 60_000 });
+    const { recency } = nodeHealthScore(node, BASE_NOW);
+    expect(recency).toBe(30);
+  });
+
   it('gives max load pts when channel_utilization is 0', () => {
     const { load } = nodeHealthScore(makeNode({ channel_utilization: 0 }), BASE_NOW);
     expect(load).toBe(20);

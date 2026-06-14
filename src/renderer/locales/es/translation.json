@@ -177,7 +177,8 @@
     "storeForwardAutoFetchHistoryHint": "En la conexión de RF, solicite hasta 50 mensajes (15 minutos de tiempo de reutilización entre tomas). Apague si el puente MQTT de su puerta de enlace está sobrecargado.",
     "reduceMotion": "Reducir movimiento",
     "reduceMotionDesc": "Desactiva los iconos animados y los efectos decorativos. Los indicadores de carga y de estado de conexión siguen animándose.",
-    "roomMessages": "Mensajes de la habitación"
+    "roomMessages": "Mensajes de la habitación",
+    "importSchemaTooNew": "Este archivo de base de datos requiere un cliente de malla más nuevo (esquema {{dbVersion}}). Esta compilación es compatible con el esquema {{appVersion}} o anterior. Instale la última versión e inténtelo de nuevo."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -2523,7 +2524,8 @@
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} mensaje nuevo",
-    "newMessages_other": "{{protocol}}: {{count}} mensajes nuevos"
+    "newMessages_other": "{{protocol}}: {{count}} mensajes nuevos",
+    "meshcoreDistanceFilterHint": "Tienes {{count}} contactos con GPS en el mapa. Activa el filtro de distancia en Aplicación → Apariencia para centrarte en los nodos cercanos."
   },
   "updateStatus": {
     "checking": "Verificación…",

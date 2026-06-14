@@ -26,6 +26,11 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
+import {
+  sanitizeMeshcoreAdvLatLonForDb,
+  sanitizeMeshcoreLastAdvertForDb,
+} from '../shared/meshcoreContactSanitize';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
@@ -42,6 +47,7 @@ import {
   deleteNodesBySource,
   deleteNodesWithoutLongname,
   exportDatabase,
+  getAllMeshcoreHopHistoryRows,
   getAllMeshcorePathHistory,
   getContactGroupMembers,
   getContactGroups,
@@ -50,12 +56,14 @@ import {
   getMeshcorePathHistory,
   getMeshcoreTraceHistory,
   initDatabase,
+  isDatabaseSchemaTooNewError,
   mergeDatabase,
   type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
   pruneMeshcoreContactsByCount,
   pruneMeshcorePathHistory,
   prunePositionHistory,
+  prunePositionHistoryPerNode,
   recordMeshcorePathOutcome,
   removeContactFromGroup,
   saveMeshcoreContactsBatch,
@@ -68,6 +76,7 @@ import {
   upsertNodePath,
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
+import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -627,14 +636,20 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
 function meshcoreContactInputToUpsertParams(
   c: Record<string, unknown>,
 ): MeshcoreContactUpsertParams {
+  const coords = sanitizeMeshcoreAdvLatLonForDb(
+    c.adv_lat != null ? Number(c.adv_lat) : null,
+    c.adv_lon != null ? Number(c.adv_lon) : null,
+  );
   return {
     node_id: Number(c.node_id),
     public_key: c.public_key as string,
     adv_name: typeof c.adv_name === 'string' ? c.adv_name : null,
     contact_type: c.contact_type != null ? Number(c.contact_type) : 0,
-    last_advert: c.last_advert != null ? Number(c.last_advert) : null,
-    adv_lat: c.adv_lat != null ? Number(c.adv_lat) : null,
-    adv_lon: c.adv_lon != null ? Number(c.adv_lon) : null,
+    last_advert: sanitizeMeshcoreLastAdvertForDb(
+      c.last_advert != null ? Number(c.last_advert) : null,
+    ),
+    adv_lat: coords.adv_lat,
+    adv_lon: coords.adv_lon,
     last_snr: c.last_snr != null ? Number(c.last_snr) : null,
     last_rssi: c.last_rssi != null ? Number(c.last_rssi) : null,
     nickname: typeof c.nickname === 'string' ? c.nickname : null,
@@ -1331,39 +1346,59 @@ function setupAppMenu() {
 function configureRendererSpellcheck(sess: Session): void {
   try {
     sess.setSpellCheckerEnabled(true);
-    if (process.platform === 'darwin') {
-      return;
-    }
+
     const available = sess.availableSpellCheckerLanguages;
     if (!Array.isArray(available) || available.length === 0) {
       console.warn('[main] spellcheck: no dictionaries listed yet (retry after load)');
       return;
     }
-    const loc = app.getLocale();
+    // Normalize codes for matching (both sides to hyphens) but pass original
+    // codes to setSpellCheckerLanguages.
+    const normAvailable = available.map((c) => c.replace(/_/g, '-'));
+    const loc = app.getLocale().replace(/_/g, '-');
     const picked: string[] = [];
-    if (available.includes(loc)) {
-      picked.push(loc);
+
+    const exactIdx = normAvailable.indexOf(loc);
+    if (exactIdx !== -1) {
+      picked.push(available[exactIdx]);
     }
     const region = loc.split(/[-_]/)[0];
     if (region) {
-      for (const code of available) {
-        if ((code === region || code.startsWith(`${region}-`)) && !picked.includes(code)) {
-          picked.push(code);
+      for (let i = 0; i < available.length; i++) {
+        const normCode = normAvailable[i];
+        if (
+          (normCode === region || normCode.startsWith(`${region}-`)) &&
+          !picked.includes(available[i])
+        ) {
+          picked.push(available[i]);
         }
       }
     }
-    if (picked.length === 0 && available.includes('en-US')) {
-      picked.push('en-US');
+    if (picked.length === 0) {
+      const enIdx = normAvailable.indexOf('en-US');
+      if (enIdx !== -1) {
+        picked.push(available[enIdx]);
+      }
     }
     if (picked.length === 0) {
       picked.push(available[0]);
     }
+
     sess.setSpellCheckerLanguages(picked.slice(0, 3));
   } catch (e) {
     console.warn(
       '[main] configureRendererSpellcheck',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
+  }
+}
+
+function retryRendererSpellcheck(sess: Session): void {
+  configureRendererSpellcheck(sess);
+  for (const delayMs of [250, 1000, 5000]) {
+    setTimeout(() => {
+      configureRendererSpellcheck(sess);
+    }, delayMs);
   }
 }
 
@@ -1480,7 +1515,7 @@ function createWindow() {
 
   configureRendererSpellcheck(win.webContents.session);
   win.webContents.once('did-finish-load', () => {
-    configureRendererSpellcheck(win.webContents.session);
+    retryRendererSpellcheck(win.webContents.session);
   });
 
   // Electron does not show any context menu by default — we must call menu.popup().
@@ -1497,10 +1532,10 @@ function createWindow() {
     event.preventDefault();
     const ef = params.editFlags;
     const suggestions = params.dictionarySuggestions ?? [];
-    const spellOn = params.spellcheckEnabled;
+    const misspelledWord = params.misspelledWord ?? '';
 
     const menu = new Menu();
-    if (spellOn && suggestions.length > 0) {
+    if (suggestions.length > 0) {
       for (const suggestion of suggestions) {
         menu.append(
           new MenuItem({
@@ -1509,7 +1544,7 @@ function createWindow() {
               applySpellcheckSuggestion(
                 win,
                 suggestion,
-                params.misspelledWord,
+                misspelledWord,
                 params.selectionStartOffset,
               );
             },
@@ -1518,12 +1553,12 @@ function createWindow() {
       }
       menu.append(new MenuItem({ type: 'separator' }));
     }
-    if (spellOn && params.misspelledWord) {
+    if (misspelledWord) {
       menu.append(
         new MenuItem({
           label: 'Add to dictionary',
           click: () => {
-            void win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord);
+            void win.webContents.session.addWordToSpellCheckerDictionary(misspelledWord);
           },
         }),
       );
@@ -3362,6 +3397,10 @@ ipcMain.handle('db:saveNode', (_event, node) => {
       num_packets_rx: null,
       num_packets_tx: null,
       ...node,
+      last_heard:
+        node.last_heard != null && Number(node.last_heard) > 0
+          ? normalizeLastHeardToUnixSec(Number(node.last_heard))
+          : node.last_heard,
       via_mqtt: node.via_mqtt != null ? (node.via_mqtt ? 1 : 0) : null,
       hops: node.hops ?? node.hops_away ?? null,
       path: node.path != null ? JSON.stringify(node.path) : null,
@@ -3378,7 +3417,7 @@ ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, bu
       throw new Error('Not a PATH packet');
     }
     const { hops, path } = decodePathPayload(buffer);
-    upsertNodePath(nodeId, lastHeard, hops, path);
+    upsertNodePath(nodeId, normalizeLastHeardToUnixSec(lastHeard), hops, path);
     return { success: true, hops, path };
   } catch (err) {
     finishDbIpcHandler('db:saveNodePath', err);
@@ -3533,7 +3572,7 @@ ipcMain.handle('db:deleteNodesByAge', (event, days: number) => {
     const cutoff = Math.floor(Date.now() / 1000) - days * 86400;
     const result = db
       .prepareOnce(
-        "DELETE FROM nodes WHERE (last_heard < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
+        `DELETE FROM nodes WHERE (${NODES_LAST_HEARD_SEC_SQL} < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'`,
       )
       .run(cutoff);
     if (result.changes > 0) {
@@ -3552,11 +3591,28 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
     const db = getDbForIpc('db:pruneNodesByCount');
     if (!db) return 0;
     if (typeof maxCount !== 'number' || maxCount < 1 || !isFinite(maxCount)) return { changes: 0 };
+    const total = (db.prepareOnce('SELECT COUNT(*) as cnt FROM nodes').get() as { cnt: number })
+      .cnt;
+    if (total <= maxCount) return { changes: 0 };
+    const deletable = (
+      db
+        .prepareOnce('SELECT COUNT(*) as cnt FROM nodes WHERE (favorited IS NULL OR favorited = 0)')
+        .get() as { cnt: number }
+    ).cnt;
+    const toDelete = Math.min(total - maxCount, deletable);
+    if (toDelete <= 0) return { changes: 0 };
     const result = db
       .prepareOnce(
-        'DELETE FROM nodes WHERE node_id NOT IN (SELECT node_id FROM nodes ORDER BY last_heard DESC LIMIT ?)',
+        `DELETE FROM nodes
+         WHERE (favorited IS NULL OR favorited = 0)
+           AND node_id IN (
+             SELECT node_id FROM nodes
+             WHERE (favorited IS NULL OR favorited = 0)
+             ORDER BY ${NODES_LAST_HEARD_SEC_SQL} ASC
+             LIMIT ?
+           )`,
       )
-      .run(maxCount);
+      .run(toDelete);
     if (result.changes > 0) {
       console.debug(
         `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
@@ -3726,6 +3782,22 @@ ipcMain.handle('db:prunePositionHistory', (_event, days: number) => {
     return changes;
   } catch (err) {
     finishDbIpcHandler('db:prunePositionHistory', err);
+  }
+});
+
+ipcMain.handle('db:prunePositionHistoryPerNode', (_event, maxPerNode: number) => {
+  try {
+    if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
+    const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
+    const changes = prunePositionHistoryPerNode(cap);
+    if (changes > 0) {
+      console.debug(
+        `[IPC] db:prunePositionHistoryPerNode: pruned ${changes} rows, keeping ${cap} per node`,
+      );
+    }
+    return changes;
+  } catch (err) {
+    finishDbIpcHandler('db:prunePositionHistoryPerNode', err);
   }
 });
 
@@ -3905,6 +3977,9 @@ ipcMain.handle('db:import', async () => {
     }
     return null;
   } catch (err) {
+    if (isDatabaseSchemaTooNewError(err)) {
+      showFatalStartupError('Mesh-Client — Import Blocked', formatDatabaseSchemaTooNewMessage(err));
+    }
     finishDbIpcHandler('db:import', err);
   }
 });
@@ -4723,14 +4798,16 @@ ipcMain.handle(
       }
       const db = getDbForIpc('db:updateMeshcoreContactAdvert');
       if (!db) return { changes: 0 };
+      const safeLastAdvert = sanitizeMeshcoreLastAdvertForDb(lastAdvert);
+      const coords = sanitizeMeshcoreAdvLatLonForDb(advLat, advLon);
       if (advName !== undefined) {
         db.prepareOnce(
           'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ?, adv_name = ? WHERE node_id = ?',
-        ).run(lastAdvert, advLat, advLon, advName ?? null, safeNodeId);
+        ).run(safeLastAdvert, coords.adv_lat, coords.adv_lon, advName ?? null, safeNodeId);
       } else {
         db.prepareOnce(
           'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ? WHERE node_id = ?',
-        ).run(lastAdvert, advLat, advLon, safeNodeId);
+        ).run(safeLastAdvert, coords.adv_lat, coords.adv_lon, safeNodeId);
       }
     } catch (err) {
       console.error(
@@ -4781,6 +4858,7 @@ ipcMain.handle(
       if (typeof lastRssi !== 'number' || !Number.isFinite(lastRssi)) {
         throw new Error('db:updateMeshcoreContactLastRf: lastRssi must be a finite number');
       }
+      const safeTimestamp = sanitizeMeshcoreLastAdvertForDb(timestamp ?? null);
       db.prepareOnce(
         'UPDATE meshcore_contacts SET ' +
           'last_snr = ?, ' +
@@ -4794,9 +4872,9 @@ ipcMain.handle(
         hops ?? null,
         hops ?? null,
         hops ?? null,
-        timestamp ?? null,
-        timestamp ?? null,
-        timestamp ?? null,
+        safeTimestamp,
+        safeTimestamp,
+        safeTimestamp,
         safeNodeId,
       );
     } catch (err) {
@@ -4889,6 +4967,15 @@ ipcMain.handle('db:getMeshcoreHopHistory', (_event, nodeId: number) => {
     return getMeshcoreHopHistory(nodeId);
   } catch (err) {
     finishDbIpcHandler('db:getMeshcoreHopHistory', err);
+  }
+});
+
+ipcMain.handle('db:getAllMeshcoreHopHistory', () => {
+  try {
+    if (!getDbForIpc('db:getAllMeshcoreHopHistory')) return [];
+    return getAllMeshcoreHopHistoryRows();
+  } catch (err) {
+    finishDbIpcHandler('db:getAllMeshcoreHopHistory', err);
   }
 });
 
@@ -5331,14 +5418,12 @@ void app.whenReady().then(() => {
     );
     const isNativeModuleError =
       error instanceof Error && (error as NodeJS.ErrnoException).code === 'ERR_DLOPEN_FAILED';
-    const message = isNativeModuleError
-      ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
-      : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
-    try {
-      dialog.showErrorBox('Mesh-Client — Startup Error', message);
-    } catch {
-      // catch-no-log-ok dialog unavailable during fatal startup handling; error already logged above
-    }
+    const message = isDatabaseSchemaTooNewError(error)
+      ? formatDatabaseSchemaTooNewMessage(error)
+      : isNativeModuleError
+        ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
+        : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
+    showFatalStartupError('Mesh-Client — Startup Error', message);
     app.quit();
     return;
   }

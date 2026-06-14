@@ -93,6 +93,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     migrateRfStubNodes: () => ipcRenderer.invoke('db:migrateRfStubNodes'),
     deleteNodesWithoutLongname: () => ipcRenderer.invoke('db:deleteNodesWithoutLongname'),
     prunePositionHistory: (days: number) => ipcRenderer.invoke('db:prunePositionHistory', days),
+    prunePositionHistoryPerNode: (maxPerNode: number) =>
+      ipcRenderer.invoke('db:prunePositionHistoryPerNode', maxPerNode),
     clearNodePositions: () => ipcRenderer.invoke('db:clearNodePositions'),
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) =>
       ipcRenderer.invoke('db:updateMessageReceivedVia', packetId, rxHops),
@@ -249,6 +251,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ) => ipcRenderer.invoke('db:saveMeshcoreHopHistory', nodeId, timestamp, hops, snr, rssi),
     getMeshcoreHopHistory: (nodeId: number) =>
       ipcRenderer.invoke('db:getMeshcoreHopHistory', nodeId),
+    getAllMeshcoreHopHistory: () => ipcRenderer.invoke('db:getAllMeshcoreHopHistory'),
     saveMeshcoreTraceHistory: (
       nodeId: number,
       timestamp: number,

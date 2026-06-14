@@ -299,6 +299,19 @@ CI builds avoid both issues by using short paths and clean agents; local Windows
 4. **`pnpm run dist:win`** already runs a **hoisted** `pnpm install` to shorten `node_modules` depth before packaging; if **`pnpm install`** / **`pnpm run rebuild`** fails earlier with this error, try the short path and long-path OS settings first, or temporarily: `pnpm install --config.node-linker=hoisted` from a short root path.
 5. **Packaged app (`dist:win`)**: the build embeds a Windows application manifest with **`longPathAware`** so the installed **Mesh-client.exe** can use long paths when the machine has long paths enabled (registry / policy). That helps **runtime** paths inside the app; it does **not** shorten **`node_modules`** during **`pnpm install`** on the build machine—CI and developers still benefit from short clone paths for native rebuilds.
 
+### Database schema newer than this app (downgrade blocked)
+
+**Symptom**: On launch, a **Startup Error** dialog says the database was upgraded by a newer Mesh-Client, or **Import blocked** when merging a `.db` file.
+
+**Cause**: The local SQLite database `user_version` is higher than this build supports — usually after installing a **newer** release, then opening an **older** build against the same profile.
+
+**Fix**:
+
+1. Install the **latest** Mesh-Client release from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (do not downgrade the app after your database has been migrated).
+2. If you must use an older build, restore a `.db` backup exported **before** the upgrade, or start with a fresh profile (export first if you need data from the newer schema).
+
+**Log**: Details are in `mesh-client.log` under the app `userData` folder (macOS `~/Library/Application Support/mesh-client/`, Windows `%APPDATA%\mesh-client\`, Linux `~/.config/mesh-client/`).
+
 ### Database directory is not writable
 
 **Error**: `"Database directory is not writable: <path>"`

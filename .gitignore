@@ -20,6 +20,7 @@ meta.json
 node_modules/
 release/
 test-results/
+coverage/
 .context-os
 .rtk
 flatpak/generated-sources.json
