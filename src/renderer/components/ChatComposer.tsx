@@ -210,8 +210,22 @@ export function ChatComposer({
     [maxInputLength, mentionTriggerPos, mentionQuery],
   );
 
+  const clearSentDraft = useCallback(
+    (draftSnapshot: string) => {
+      setInput((prev) => {
+        if (prev === draftSnapshot) {
+          clearDraft(protocol, viewKey);
+          return '';
+        }
+        return prev;
+      });
+    },
+    [protocol, viewKey],
+  );
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || sending || disabled) return;
+    const draftSnapshot = input;
     const chunks = splitChatMessage(
       input.trim(),
       protocol,
@@ -257,8 +271,7 @@ export function ChatComposer({
           groupTotal: groupId ? textsToSend.length : null,
         });
       }
-      setInput('');
-      clearDraft(protocol, viewKey);
+      clearSentDraft(draftSnapshot);
       setMentionQuery(null);
       onReplyClear?.();
       onSendSuccess?.();
@@ -282,8 +295,7 @@ export function ChatComposer({
           chunkIndex: i,
         });
       }
-      setInput('');
-      clearDraft(protocol, viewKey);
+      clearSentDraft(draftSnapshot);
       setMentionQuery(null);
       onReplyClear?.();
       onSendSuccess?.();
@@ -299,6 +311,7 @@ export function ChatComposer({
     }
   }, [
     allowOutbox,
+    clearSentDraft,
     disabled,
     input,
     isConnected,
@@ -572,8 +585,9 @@ export function ChatComposer({
             placeholder={composePlaceholder}
             aria-label={composePlaceholder}
             aria-describedby={limitHintId}
-            disabled={disabled || sending || (!isConnected && !allowOutbox)}
-            className={`${textareaClass} ${!isConnected || sending ? 'opacity-60' : ''} ${disabled ? 'opacity-40' : ''}`}
+            aria-busy={sending}
+            disabled={disabled || (!isConnected && !allowOutbox)}
+            className={`${textareaClass} ${!isConnected ? 'opacity-60' : ''} ${disabled ? 'opacity-40' : ''}`}
             maxLength={maxInputLength}
           />
         </div>
@@ -591,7 +605,7 @@ export function ChatComposer({
                 void window.electronAPI.showEmojiPanel();
               }
             }}
-            disabled={disabled || !isConnected || sending}
+            disabled={disabled || !isConnected}
             aria-label={t('chatPanel.emojiButton')}
             className={emojiButtonClass}
           >
@@ -600,6 +614,9 @@ export function ChatComposer({
         </HelpTooltip>
         <button
           type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
           onClick={() => {
             void handleSend();
           }}

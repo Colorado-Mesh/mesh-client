@@ -66,6 +66,112 @@ describe('ChatComposer', () => {
     expect(textarea).toHaveValue('');
   });
 
+  it('keeps compose focus after Enter-to-send', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'hello{Enter}');
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith('hello', { replyId: undefined, chunkIndex: 0 });
+    });
+    expect(textarea).toHaveFocus();
+    expect(textarea).toHaveValue('');
+  });
+
+  it('keeps compose focus after click-to-send', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith('hello', { replyId: undefined, chunkIndex: 0 });
+    });
+    expect(textarea).toHaveFocus();
+    expect(textarea).toHaveValue('');
+  });
+
+  it('preserves text typed during an in-flight send', async () => {
+    let resolveSend: (() => void) | undefined;
+    const onSendChunk = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSend = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'first');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    fireEvent.change(textarea, { target: { value: 'second' } });
+    resolveSend?.();
+    await waitFor(() => {
+      expect(textarea).toHaveValue('second');
+    });
+    expect(textarea).toHaveFocus();
+  });
+
+  it('clears unchanged draft after slow send completes', async () => {
+    let resolveSend: (() => void) | undefined;
+    const onSendChunk = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSend = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'slow send');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledTimes(1);
+    });
+    resolveSend?.();
+    await waitFor(() => {
+      expect(textarea).toHaveValue('');
+    });
+    expect(textarea).toHaveFocus();
+  });
+
   it('preserves input and shows error when send fails', async () => {
     const onSendChunk = vi.fn().mockRejectedValue(new Error('timeout'));
     const user = userEvent.setup();
