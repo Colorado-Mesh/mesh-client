@@ -123,6 +123,7 @@
     "messagesSection": "Messages",
     "channelLabel": "Channel:",
     "allChannelsOption": "All Channels",
+    "roomMessages": "Room messages",
     "clearMessagesCount": "Clear Messages ({{count}})",
     "unitLabel": "Unit:",
     "distanceUnitMiles": "miles",

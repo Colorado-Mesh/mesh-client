@@ -326,6 +326,61 @@ describe('attachMeshcoreIngest', () => {
     expect(row?.channelIndex).toBe(-2);
   });
 
+  it('strips binary author prefix on PLAIN txtType from known room server (official app)', () => {
+    const roomId = 0xac200e59;
+    const authorPubKey = new Uint8Array(32);
+    authorPubKey.set([0x93, 0x6c, 0x73, 0x49], 0);
+    const authorId = 0xbeef0001;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [roomId]: {
+            nodeId: roomId,
+            longName: 'PizzaParty',
+            hwModel: 'Room',
+          },
+          [authorId]: {
+            nodeId: authorId,
+            longName: 'OfficialUser',
+            hwModel: 'Chat',
+            publicKey: authorPubKey,
+          },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const authorPrefix = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+    const wire = `${authorPrefix}Test from og app`;
+    const msgId = `room:${roomId}:1700000400`;
+    upsertMessage(ID, {
+      id: msgId,
+      from: roomId,
+      to: 0,
+      payload: wire,
+      channelIndex: -2,
+      timestamp: 1_700_000_400_000,
+      roomServerId: roomId,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: msgId,
+        from: roomId,
+        to: 0,
+        payload: wire,
+        channelIndex: -2,
+        timestamp: 1_700_000_400_000,
+        txtType: 0,
+        roomServerId: roomId,
+      },
+    });
+    const row = useMessageStore.getState().messages[ID]?.[msgId];
+    expect(row?.payload).toBe('Test from og app');
+    expect(row?.senderName).toBe('OfficialUser');
+  });
+
   it('parses SignedPlain room posts when room node is not yet in nodeStore', () => {
     const roomId = 0xdeadbeee;
     const msgId = `room:${roomId}:1700000200`;

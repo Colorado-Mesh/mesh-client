@@ -22,6 +22,18 @@ export interface ChatUnreadDmOptions {
 }
 
 /** DM peer for unread counting; excludes broadcast and non-DM traffic. */
+/** Persisted last-read / unread view key (`ch:N` or `dm:peer`). */
+export function chatViewKeyForMessage(
+  msg: Pick<ChatMessage, 'channel' | 'to' | 'sender_id'>,
+  protocol: MeshProtocol,
+  ownNodeIds: ReadonlySet<number>,
+  dmOptions?: ChatUnreadDmOptions,
+): string {
+  const peer = resolveChatDmPeer(msg as ChatMessage, ownNodeIds, protocol, dmOptions);
+  if (peer != null) return `dm:${peer}`;
+  return `ch:${msg.channel}`;
+}
+
 export function resolveChatDmPeer(
   msg: ChatMessage,
   ownNodeIds: ReadonlySet<number>,

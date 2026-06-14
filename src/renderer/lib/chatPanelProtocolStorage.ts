@@ -1,8 +1,10 @@
+import { chatViewKeyForMessage } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { clampReadWatermarkMs, effectiveMessageTimestampMs } from './nodeStatus';
 import { parseStoredJson } from './parseStoredJson';
-import type { MeshProtocol } from './types';
+import type { ChatMessage, MeshProtocol } from './types';
 
 const LEGACY_OPEN_DM_TABS_KEY = 'mesh-client:openDmTabs';
 const LEGACY_LAST_READ_KEY = 'mesh-client:lastRead';
@@ -276,13 +278,33 @@ export function subscribePersistedRoomsLastRead(listener: () => void): () => voi
   };
 }
 
+type ChatLastReadSanitizeMessage = Pick<ChatMessage, 'channel' | 'timestamp'> & {
+  to?: number | null;
+  sender_id?: number;
+};
+
 /** Max message timestamp per chat view key (`ch:N`, `dm:peer`). */
 export function maxMessageTimestampByViewKey(
-  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+  messages: readonly ChatLastReadSanitizeMessage[],
+  protocol: 'meshcore' | 'meshtastic' = 'meshtastic',
+  ownNodeIds: ReadonlySet<number> = new Set(),
 ): Record<string, number> {
   const maxByKey: Record<string, number> = {};
   for (const msg of messages) {
-    const key = msg.to != null ? `dm:${msg.to >>> 0}` : `ch:${msg.channel}`;
+    const key =
+      msg.sender_id != null
+        ? chatViewKeyForMessage(
+            {
+              channel: msg.channel,
+              to: msg.to ?? undefined,
+              sender_id: msg.sender_id,
+            },
+            protocol,
+            ownNodeIds,
+          )
+        : msg.to != null
+          ? `dm:${msg.to >>> 0}`
+          : `ch:${msg.channel}`;
     const ts = effectiveMessageTimestampMs(msg.timestamp);
     const prev = maxByKey[key] ?? 0;
     if (ts > prev) maxByKey[key] = ts;
@@ -296,9 +318,11 @@ export function maxMessageTimestampByViewKey(
  */
 export function sanitizeMeshcoreChatLastRead(
   persisted: Readonly<Record<string, number>>,
-  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+  messages: readonly ChatLastReadSanitizeMessage[],
 ): Record<string, number> {
-  const maxByKey = maxMessageTimestampByViewKey(messages);
+  const persistedSelf = loadPersistedMeshcoreSelfNodeId();
+  const ownNodeIds = new Set(persistedSelf > 0 ? [persistedSelf] : []);
+  const maxByKey = maxMessageTimestampByViewKey(messages, 'meshcore', ownNodeIds);
   const now = Date.now();
   let changed = false;
   const next: Record<string, number> = { ...persisted };
@@ -318,14 +342,14 @@ export function sanitizeMeshcoreChatLastRead(
 
 /** Ongoing sanitize for MeshCore chat lastRead (sidebar/tray badges). */
 export function getSanitizedMeshcoreChatLastRead(
-  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+  messages: readonly ChatLastReadSanitizeMessage[],
 ): Record<string, number> {
   return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('meshcore'), messages);
 }
 
 /** Persist MeshCore chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
 export function ensureMeshcoreChatLastReadSanitized(
-  messages: readonly { channel: number; to?: number | null; timestamp: number }[],
+  messages: readonly ChatLastReadSanitizeMessage[],
 ): Record<string, number> {
   const loaded = loadPersistedLastReadInitial('meshcore');
   const sanitized = sanitizeMeshcoreChatLastRead(loaded, messages);

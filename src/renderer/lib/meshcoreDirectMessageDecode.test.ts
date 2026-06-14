@@ -152,4 +152,61 @@ describe('dispatchMeshcoreWaitingContactMessage', () => {
       }),
     );
   });
+
+  it('strips binary prefix on event-131 replay without txtType (official app path)', () => {
+    const roomPubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 30);
+    const authorPubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    authorPubKey.set([0x93, 0x6c, 0x73, 0x49], 0);
+    const roomId = pubkeyToNodeId(roomPubKey);
+    const authorId = pubkeyToNodeId(authorPubKey);
+    registerMeshcorePubKey(roomId, roomPubKey);
+    registerMeshcorePubKey(authorId, authorPubKey);
+
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [roomId]: { nodeId: roomId, longName: 'NV0N ROOM', hwModel: 'Room' },
+          [authorId]: { nodeId: authorId, longName: 'NV0N 01', hwModel: 'Chat' },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+
+    const prefixMap = new Map<string, number>([
+      [
+        Array.from(roomPubKey.slice(0, 4))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        roomId,
+      ],
+      [
+        Array.from(authorPubKey.slice(0, 4))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        authorId,
+      ],
+    ]);
+    const authorPrefix = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+
+    const detach = attachMeshcoreIngest(ID);
+    dispatchMeshcoreWaitingContactMessage(
+      ID,
+      {
+        pubKeyPrefix: roomPubKey.slice(0, 6),
+        text: `${authorPrefix}From og app backlog`,
+        senderTimestamp: 1_700_000_300,
+      },
+      prefixMap,
+      new Set([roomId]),
+      (event, identityId) => {
+        packetRouter.dispatch(event, identityId);
+      },
+    );
+    detach();
+
+    const storeId = meshcoreRoomMessageId(roomId, 1_700_000_300, authorId);
+    expect(useMessageStore.getState().messages[ID]?.[storeId]?.payload).toBe('From og app backlog');
+  });
 });

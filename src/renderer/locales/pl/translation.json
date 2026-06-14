@@ -176,7 +176,8 @@
     "storeForwardAutoFetchHistory": "Automatycznie pobierz historię Sklepu i Przekaż dalej historię czatu podczas połączenia",
     "storeForwardAutoFetchHistoryHint": "W przypadku połączenia radiowego zażądaj do 50 wiadomości (15-minutowe schładzanie między pobieraniem). Wyłącz, jeśli mostek bramki MQTT jest przeciążony.",
     "reduceMotion": "Zmniejszyć ruch",
-    "reduceMotionDesc": "Wyłącza animowane ikony i efekty dekoracyjne. Wskaźniki ładowania i stanu połączenia nadal są animowane."
+    "reduceMotionDesc": "Wyłącza animowane ikony i efekty dekoracyjne. Wskaźniki ładowania i stanu połączenia nadal są animowane.",
+    "roomMessages": "Wiadomości z pokoju"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

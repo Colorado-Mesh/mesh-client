@@ -429,10 +429,10 @@ function safeNonNegativeInt(value: unknown): number {
   return n >>> 0;
 }
 
-/** MeshCore chat channel index (includes -1 for DMs). */
+/** MeshCore chat channel index (-2 Rooms, -1 DMs, 0+ group channels). */
 function safeMeshcoreChannelIndex(value: unknown): number {
   const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n) || n < -1 || n > 1_000_000) {
+  if (!Number.isFinite(n) || n < -2 || n > 1_000_000) {
     throw new Error('Invalid MeshCore channel index');
   }
   return Math.trunc(n);

@@ -521,6 +521,7 @@ export default function AppPanel({
   const getChannelLabel = useCallback(
     (ch: number) => {
       if (ch === -1) return t('radioPanel.directMessages');
+      if (ch === -2) return t('appPanel.roomMessages');
       const named = channels.find((c) => c.index === ch);
       return named ? `Channel ${ch} — ${named.name}` : `Channel ${ch}`;
     },

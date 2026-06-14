@@ -200,6 +200,7 @@ import {
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
+  MESHCORE_CHANNEL_NAME_MAX_LEN,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   MESHCORE_COORD_SCALE,
   MESHCORE_MAX_CONTACTS,
@@ -4551,6 +4552,11 @@ export function useMeshcoreRuntime() {
     if (typeof name !== 'string' || name.length === 0) {
       console.warn('[useMeshcoreRuntime] setMeshcoreChannel: invalid name', name);
       throw new Error('Channel name must be a non-empty string');
+    }
+
+    if (name.length > MESHCORE_CHANNEL_NAME_MAX_LEN) {
+      console.warn('[useMeshcoreRuntime] setMeshcoreChannel: name too long', name.length);
+      throw new Error(`Channel name must be at most ${MESHCORE_CHANNEL_NAME_MAX_LEN} characters`);
     }
 
     if (!(secret instanceof Uint8Array) || secret.length === 0) {

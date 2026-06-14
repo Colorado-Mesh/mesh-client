@@ -176,7 +176,8 @@
     "storeForwardAutoFetchHistory": "연결 시 스토어 및 전달 채팅 내역 자동 가져오기",
     "storeForwardAutoFetchHistoryHint": "RF 연결 시 최대 50개의 메시지를 요청합니다 (가져오기 사이의 재사용 대기 시간 15분). 게이트웨이 MQTT 브리지에 과부하가 걸리면 끄십시오.",
     "reduceMotion": "동작 줄이기",
-    "reduceMotionDesc": "애니메이션 아이콘 및 장식 효과를 비활성화합니다. 로딩 스피너와 연결 상태 표시등은 여전히 애니메이션으로 표시됩니다."
+    "reduceMotionDesc": "애니메이션 아이콘 및 장식 효과를 비활성화합니다. 로딩 스피너와 연결 상태 표시등은 여전히 애니메이션으로 표시됩니다.",
+    "roomMessages": "채팅실 채팅"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

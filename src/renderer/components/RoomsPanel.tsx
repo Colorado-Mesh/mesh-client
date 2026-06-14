@@ -484,9 +484,9 @@ export default function RoomsPanel({
     }
     requestAnimationFrame(() => {
       const dist = updateScrollButtonVisibility();
-      if (dist !== undefined && dist < 50) setUnreadDividerTimestamp(0);
+      if (dist !== undefined && dist < 50) applyNearBottomReadState(dist);
     });
-  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility]);
+  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility, applyNearBottomReadState]);
 
   useEffect(() => {
     if (!isActive) return;

@@ -176,7 +176,8 @@
     "storeForwardAutoFetchHistory": "Store & Forward Chat-Verlauf bei Connect automatisch abrufen",
     "storeForwardAutoFetchHistoryHint": "Bei RF-Verbindung bis zu 50 Nachrichten anfordern (15 Minuten Abklingzeit zwischen den Abrufen). Schalten Sie aus, wenn Ihre Gateway-MQTT-Brücke überlastet ist.",
     "reduceMotion": "Bewegung reduzieren",
-    "reduceMotionDesc": "Deaktiviert animierte Symbole und dekorative Effekte. Lade-Spinner und Verbindungsstatusanzeigen sind immer noch animiert."
+    "reduceMotionDesc": "Deaktiviert animierte Symbole und dekorative Effekte. Lade-Spinner und Verbindungsstatusanzeigen sind immer noch animiert.",
+    "roomMessages": "Zimmernachrichten"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

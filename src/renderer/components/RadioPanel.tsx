@@ -33,6 +33,7 @@ import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshc
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
 import {
   MESHCORE_CHANNEL_INDEX_MAX,
+  MESHCORE_CHANNEL_NAME_MAX_LEN,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
   meshcoreDeriveChannelKeyHexFromName,
@@ -3425,9 +3426,14 @@ function MeshcoreChannelSection({
             )}
 
             <div className="space-y-1">
-              <label htmlFor="radio-mc-ch-name" className="text-muted text-xs">
-                {t('radioPanel.meshcoreChannelNameLabel')}
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="radio-mc-ch-name" className="text-muted text-xs">
+                  {t('radioPanel.meshcoreChannelNameLabel')}
+                </label>
+                <span className="text-muted text-xs">
+                  {editName.length}/{MESHCORE_CHANNEL_NAME_MAX_LEN}
+                </span>
+              </div>
               <input
                 id="radio-mc-ch-name"
                 type="text"
@@ -3435,7 +3441,7 @@ function MeshcoreChannelSection({
                 onChange={(e) => {
                   setEditName(e.target.value);
                 }}
-                maxLength={11}
+                maxLength={MESHCORE_CHANNEL_NAME_MAX_LEN}
                 disabled={disabled}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
               />
@@ -3522,9 +3528,10 @@ function MeshcoreChannelSection({
         )}
 
         <p className="text-muted text-xs">
-          Keys are 128-bit (16 bytes), shown as 32 hex characters. Up to{' '}
-          {MESHCORE_CHANNEL_INDEX_MAX + 1} channels (indices 0–{MESHCORE_CHANNEL_INDEX_MAX}). For
-          #channels, use &quot;Derive from name&quot; (SHA-256 of the name with a leading #).
+          Keys are 128-bit (16 bytes), shown as 32 hex characters. Channel names up to{' '}
+          {MESHCORE_CHANNEL_NAME_MAX_LEN} characters. Up to {MESHCORE_CHANNEL_INDEX_MAX + 1}{' '}
+          channels (indices 0–{MESHCORE_CHANNEL_INDEX_MAX}). For #channels, use &quot;Derive from
+          name&quot; (SHA-256 of the name with a leading #).
         </p>
       </div>
     </details>

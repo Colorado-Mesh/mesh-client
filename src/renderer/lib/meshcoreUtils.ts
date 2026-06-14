@@ -560,6 +560,9 @@ export function meshcoreMinimalNodeFromAdvertEvent(
 /** MeshCore supports channel indices 0..39 (40 channels). */
 export const MESHCORE_CHANNEL_INDEX_MAX = 39;
 
+/** MeshCore channel name max length (firmware stores char[32], null-terminated). */
+export const MESHCORE_CHANNEL_NAME_MAX_LEN = 31;
+
 /**
  * 128-bit AES key as 32 hex chars: first 16 bytes of SHA-256("#name") per MeshCore #channel convention.
  * The name is normalized with a leading `#` (e.g. `general` → hash `#general`).

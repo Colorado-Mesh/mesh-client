@@ -651,7 +651,12 @@ export function attachMeshcoreLegacyConnEvents(
     const msgs = await conn.getWaitingMessages();
     if (!meshcoreHookMountedRef.current) return;
     const arr = msgs as {
-      contactMessage?: { pubKeyPrefix: Uint8Array; senderTimestamp: number; text: string };
+      contactMessage?: {
+        pubKeyPrefix: Uint8Array;
+        senderTimestamp: number;
+        text: string;
+        txtType?: number;
+      };
       channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
     }[];
     for (const m of arr) {
@@ -697,6 +702,7 @@ export function attachMeshcoreLegacyConnEvents(
                   pubKeyPrefix: d.pubKeyPrefix,
                   text: d.text,
                   senderTimestamp: d.senderTimestamp,
+                  ...(d.txtType != null ? { txtType: d.txtType } : {}),
                 },
                 pubKeyPrefixMapRef.current,
                 roomNodeIds,
@@ -710,8 +716,9 @@ export function attachMeshcoreLegacyConnEvents(
           } else {
             const { authorId, payload } = meshcoreRoomPostBodyFromWire(
               d.text,
-              undefined,
+              d.txtType,
               pubKeyPrefixMapRef.current,
+              { isKnownRoomNode: true },
             );
             const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
             const authorName =
@@ -869,6 +876,7 @@ export function attachMeshcoreLegacyConnEvents(
         d.text,
         d.txtType,
         pubKeyPrefixMapRef.current,
+        { isKnownRoomNode: true },
       );
       const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
       const authorName =

@@ -65,6 +65,32 @@ export function repairMeshcoreHydratedDmToNode(
 }
 
 /**
+ * Strip SignedPlain author prefixes from room posts already stored with garbled payloads.
+ * Failure point: older builds only stripped when txtType === 2.
+ * Fallback: re-run prefix heuristic on hydration so reload fixes historical rows.
+ */
+export function repairMeshcoreRoomStoredPostPayloads(
+  messages: ChatMessage[],
+  pubKeyPrefixToNodeId: Map<string, number> = new Map<string, number>(),
+): ChatMessage[] {
+  return messages.map((m) => {
+    if (!isMeshcoreRoomChatMessage(m)) return m;
+    const { authorId, payload } = meshcoreRoomPostBodyFromWire(
+      m.payload,
+      undefined,
+      pubKeyPrefixToNodeId,
+      { isKnownRoomNode: true },
+    );
+    if (payload === m.payload && (authorId === 0 || authorId === m.sender_id)) return m;
+    return {
+      ...m,
+      payload,
+      ...(authorId !== 0 && authorId !== m.sender_id ? { sender_id: authorId } : {}),
+    };
+  });
+}
+
+/**
  * Reclassify room-server traffic that was stored as DMs (PLAIN bot stats, etc.).
  * Failure point: older builds only treated SignedPlain as room BBS.
  * Fallback: map peer Room node id → roomServerId + channel -2 for Rooms tab display.
@@ -73,10 +99,14 @@ export function repairMeshcoreHydratedMessages(
   messages: ChatMessage[],
   roomServerIds: ReadonlySet<number>,
   selfNodeId?: number,
+  pubKeyPrefixToNodeId?: Map<string, number>,
 ): ChatMessage[] {
-  return repairMeshcoreMisfiledRoomDmMessages(
-    repairMeshcoreHydrationStaleRoomSends(repairMeshcoreHydratedDmToNode(messages, selfNodeId)),
-    roomServerIds,
+  return repairMeshcoreRoomStoredPostPayloads(
+    repairMeshcoreMisfiledRoomDmMessages(
+      repairMeshcoreHydrationStaleRoomSends(repairMeshcoreHydratedDmToNode(messages, selfNodeId)),
+      roomServerIds,
+    ),
+    pubKeyPrefixToNodeId,
   );
 }
 
@@ -94,7 +124,9 @@ export function repairMeshcoreMisfiledRoomDmMessages(
           ? m.to
           : null;
     if (peer == null) return m;
-    const { payload } = meshcoreRoomPostBodyFromWire(m.payload, undefined, new Map());
+    const { payload } = meshcoreRoomPostBodyFromWire(m.payload, undefined, new Map(), {
+      isKnownRoomNode: true,
+    });
     return {
       ...m,
       payload,
