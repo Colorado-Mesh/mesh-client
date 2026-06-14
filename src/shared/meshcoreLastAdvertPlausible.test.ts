@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  clampMeshcoreLastAdvertSec,
   isPlausibleMeshcoreLastAdvertSec,
+  MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC,
   MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC,
 } from './meshcoreLastAdvertPlausible';
 
@@ -23,5 +25,25 @@ describe('isPlausibleMeshcoreLastAdvertSec', () => {
     expect(isPlausibleMeshcoreLastAdvertSec(null)).toBe(false);
     expect(isPlausibleMeshcoreLastAdvertSec(undefined)).toBe(false);
     expect(isPlausibleMeshcoreLastAdvertSec(NaN)).toBe(false);
+  });
+});
+
+describe('clampMeshcoreLastAdvertSec', () => {
+  const nowSec = 1_781_400_000;
+
+  it('returns floored seconds within skew window', () => {
+    expect(clampMeshcoreLastAdvertSec(nowSec + 60, nowSec)).toBe(nowSec + 60);
+    expect(
+      clampMeshcoreLastAdvertSec(nowSec + MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC, nowSec),
+    ).toBe(nowSec + MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC);
+  });
+
+  it('clamps timestamps beyond skew to nowSec', () => {
+    expect(clampMeshcoreLastAdvertSec(nowSec + 86_400, nowSec)).toBe(nowSec);
+  });
+
+  it('returns 0 for nullish input', () => {
+    expect(clampMeshcoreLastAdvertSec(0, nowSec)).toBe(0);
+    expect(clampMeshcoreLastAdvertSec(NaN, nowSec)).toBe(0);
   });
 });

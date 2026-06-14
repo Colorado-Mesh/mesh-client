@@ -535,6 +535,7 @@ declare global {
         migrateRfStubNodes: () => Promise<number>;
         deleteNodesWithoutLongname: () => Promise<number>;
         prunePositionHistory: (days: number) => Promise<number>;
+        prunePositionHistoryPerNode: (maxPerNode: number) => Promise<number>;
         clearNodePositions: () => Promise<unknown>;
         updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<unknown>;
         updateMessagePacketId: (

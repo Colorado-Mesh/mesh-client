@@ -1,12 +1,15 @@
 import { isValidLatLon } from './geoCoords';
-import { isPlausibleMeshcoreLastAdvertSec } from './meshcoreLastAdvertPlausible';
+import {
+  clampMeshcoreLastAdvertSec,
+  isPlausibleMeshcoreLastAdvertSec,
+} from './meshcoreLastAdvertPlausible';
 
-/** Normalize `last_advert` for SQLite — reject uptime / corrupt values. */
+/** Normalize `last_advert` for SQLite — reject uptime / corrupt values; clamp RTC skew. */
 export function sanitizeMeshcoreLastAdvertForDb(
   lastAdvert: number | null | undefined,
 ): number | null {
   if (lastAdvert == null || !Number.isFinite(lastAdvert)) return null;
-  const sec = Math.floor(lastAdvert);
+  const sec = clampMeshcoreLastAdvertSec(Math.floor(lastAdvert));
   return isPlausibleMeshcoreLastAdvertSec(sec) ? sec : null;
 }
 

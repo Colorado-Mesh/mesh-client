@@ -26,6 +26,7 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
   sanitizeMeshcoreLastAdvertForDb,
@@ -61,6 +62,7 @@ import {
   pruneMeshcoreContactsByCount,
   pruneMeshcorePathHistory,
   prunePositionHistory,
+  prunePositionHistoryPerNode,
   recordMeshcorePathOutcome,
   removeContactFromGroup,
   saveMeshcoreContactsBatch,
@@ -3393,6 +3395,10 @@ ipcMain.handle('db:saveNode', (_event, node) => {
       num_packets_rx: null,
       num_packets_tx: null,
       ...node,
+      last_heard:
+        node.last_heard != null && Number(node.last_heard) > 0
+          ? normalizeLastHeardToUnixSec(Number(node.last_heard))
+          : node.last_heard,
       via_mqtt: node.via_mqtt != null ? (node.via_mqtt ? 1 : 0) : null,
       hops: node.hops ?? node.hops_away ?? null,
       path: node.path != null ? JSON.stringify(node.path) : null,
@@ -3409,7 +3415,7 @@ ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, bu
       throw new Error('Not a PATH packet');
     }
     const { hops, path } = decodePathPayload(buffer);
-    upsertNodePath(nodeId, lastHeard, hops, path);
+    upsertNodePath(nodeId, normalizeLastHeardToUnixSec(lastHeard), hops, path);
     return { success: true, hops, path };
   } catch (err) {
     finishDbIpcHandler('db:saveNodePath', err);
@@ -3564,7 +3570,7 @@ ipcMain.handle('db:deleteNodesByAge', (event, days: number) => {
     const cutoff = Math.floor(Date.now() / 1000) - days * 86400;
     const result = db
       .prepareOnce(
-        "DELETE FROM nodes WHERE (last_heard < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'",
+        `DELETE FROM nodes WHERE (${NODES_LAST_HEARD_SEC_SQL} < ? OR last_heard IS NULL OR last_heard = 0) AND (favorited IS NULL OR favorited = 0) AND source != 'meshcore'`,
       )
       .run(cutoff);
     if (result.changes > 0) {
@@ -3583,11 +3589,28 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
     const db = getDbForIpc('db:pruneNodesByCount');
     if (!db) return 0;
     if (typeof maxCount !== 'number' || maxCount < 1 || !isFinite(maxCount)) return { changes: 0 };
+    const total = (db.prepareOnce('SELECT COUNT(*) as cnt FROM nodes').get() as { cnt: number })
+      .cnt;
+    if (total <= maxCount) return { changes: 0 };
+    const deletable = (
+      db
+        .prepareOnce('SELECT COUNT(*) as cnt FROM nodes WHERE (favorited IS NULL OR favorited = 0)')
+        .get() as { cnt: number }
+    ).cnt;
+    const toDelete = Math.min(total - maxCount, deletable);
+    if (toDelete <= 0) return { changes: 0 };
     const result = db
       .prepareOnce(
-        'DELETE FROM nodes WHERE node_id NOT IN (SELECT node_id FROM nodes ORDER BY last_heard DESC LIMIT ?)',
+        `DELETE FROM nodes
+         WHERE (favorited IS NULL OR favorited = 0)
+           AND node_id IN (
+             SELECT node_id FROM nodes
+             WHERE (favorited IS NULL OR favorited = 0)
+             ORDER BY ${NODES_LAST_HEARD_SEC_SQL} ASC
+             LIMIT ?
+           )`,
       )
-      .run(maxCount);
+      .run(toDelete);
     if (result.changes > 0) {
       console.debug(
         `[IPC] db:pruneNodesByCount: pruned ${result.changes} nodes, keeping top ${maxCount}`,
@@ -3757,6 +3780,22 @@ ipcMain.handle('db:prunePositionHistory', (_event, days: number) => {
     return changes;
   } catch (err) {
     finishDbIpcHandler('db:prunePositionHistory', err);
+  }
+});
+
+ipcMain.handle('db:prunePositionHistoryPerNode', (_event, maxPerNode: number) => {
+  try {
+    if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
+    const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
+    const changes = prunePositionHistoryPerNode(cap);
+    if (changes > 0) {
+      console.debug(
+        `[IPC] db:prunePositionHistoryPerNode: pruned ${changes} rows, keeping ${cap} per node`,
+      );
+    }
+    return changes;
+  } catch (err) {
+    finishDbIpcHandler('db:prunePositionHistoryPerNode', err);
   }
 });
 

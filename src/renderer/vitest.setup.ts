@@ -83,6 +83,7 @@ const electronAPIMock = {
     migrateRfStubNodes: vi.fn().mockResolvedValue(0),
     deleteNodesWithoutLongname: vi.fn().mockResolvedValue(0),
     prunePositionHistory: vi.fn().mockResolvedValue(0),
+    prunePositionHistoryPerNode: vi.fn().mockResolvedValue(0),
     clearNodePositions: vi.fn().mockResolvedValue(undefined),
     updateMessageReceivedVia: vi.fn().mockResolvedValue(undefined),
     updateMessagePacketId: vi.fn().mockResolvedValue(undefined),

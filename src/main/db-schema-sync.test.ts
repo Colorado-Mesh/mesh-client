@@ -72,4 +72,111 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(row.adv_lon).toBeNull();
     db.close();
   });
+
+  it('converts millisecond nodes.last_heard to Unix seconds (v36)', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-last-heard-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    db.prepareOnce(
+      `INSERT INTO nodes (node_id, last_heard, source) VALUES (1, ?, 'rf'), (2, ?, 'rf')`,
+    ).run(1_781_468_253_215, 1_781_468_200);
+
+    runSchemaUpgrade(db);
+
+    const rows = db.prepareOnce('SELECT node_id, last_heard FROM nodes ORDER BY node_id').all() as {
+      node_id: number;
+      last_heard: number;
+    }[];
+    expect(rows[0].last_heard).toBe(1_781_468_253);
+    expect(rows[1].last_heard).toBe(1_781_468_200);
+    db.close();
+  });
+
+  it('dedupes meshcore_messages with null sender_id', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-mc-null-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+    db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup_null_sender');
+
+    const insert = db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp)
+       VALUES (NULL, ?, 0, ?)`,
+    );
+    insert.run('hello', 1_774_000_000_000);
+    insert.run('hello', 1_774_000_000_000);
+
+    runSchemaUpgrade(db);
+
+    const count = (
+      db.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_messages').get() as { cnt: number }
+    ).cnt;
+    expect(count).toBe(1);
+    db.close();
+  });
+
+  it('removes orphan meshtastic sending rows when acked twin exists', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-orphan-send-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const ts = Date.now() - 60_000;
+    db.prepareOnce(
+      `INSERT INTO messages (sender_id, payload, channel, timestamp, packet_id, status)
+       VALUES (100, 'test', 1, ?, 111, 'sending'), (100, 'test', 1, ?, 222, 'acked')`,
+    ).run(ts, ts + 1000);
+
+    runSchemaUpgrade(db);
+
+    const rows = db.prepareOnce('SELECT status FROM messages ORDER BY packet_id').all() as {
+      status: string;
+    }[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe('acked');
+    db.close();
+  });
+
+  it('clamps future meshcore last_advert beyond RTC skew', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-future-advert-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const futureSec = Math.floor(Date.now() / 1000) + 86_400;
+    db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, last_advert, on_radio)
+       VALUES (?, ?, ?, 1)`,
+    ).run(0xabc, 'bb'.repeat(32), futureSec);
+
+    runSchemaUpgrade(db);
+
+    const row = db
+      .prepareOnce('SELECT last_advert FROM meshcore_contacts WHERE node_id = ?')
+      .get(0xabc) as { last_advert: number };
+    expect(row.last_advert).toBeLessThanOrEqual(Math.floor(Date.now() / 1000));
+    db.close();
+  });
+
+  it('deletes orphan meshcore_hop_history rows without contacts', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-orphan-hop-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    db.prepareOnce(
+      `INSERT INTO meshcore_hop_history (node_id, timestamp, hops, snr, rssi)
+       VALUES (999, ?, 1, 0, -90)`,
+    ).run(Date.now());
+
+    runSchemaUpgrade(db);
+
+    const count = (
+      db.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_hop_history').get() as { cnt: number }
+    ).cnt;
+    expect(count).toBe(0);
+    db.close();
+  });
 });

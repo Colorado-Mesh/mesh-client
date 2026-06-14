@@ -2,6 +2,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
 import { MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import {
@@ -124,6 +125,26 @@ export function prunePositionHistory(days: number): number {
   const d = getDatabase();
   const cutoff = Date.now() - days * MS_PER_DAY;
   const result = d.prepareOnce('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
+  return Number(result.changes);
+}
+
+/** Keep only the newest `maxPerNode` rows per node_id (matches in-memory cap). */
+export function prunePositionHistoryPerNode(maxPerNode: number): number {
+  if (maxPerNode < 1) return 0;
+  const d = getDatabase();
+  const result = d
+    .prepareOnce(
+      `DELETE FROM position_history
+       WHERE id NOT IN (
+         SELECT id FROM (
+           SELECT id,
+             ROW_NUMBER() OVER (PARTITION BY node_id ORDER BY recorded_at DESC, id DESC) AS rn
+           FROM position_history
+         )
+         WHERE rn <= ?
+       )`,
+    )
+    .run(maxPerNode);
   return Number(result.changes);
 }
 
@@ -501,7 +522,7 @@ export function upsertNodePath(
        OR excluded.last_heard > (nodes.last_heard + 300)
        OR nodes.hops IS NULL
   `,
-  ).run(nodeId, lastHeard, hops, pathJson);
+  ).run(nodeId, normalizeLastHeardToUnixSec(lastHeard), hops, pathJson);
 }
 
 export interface MeshCoreHopHistoryRow {

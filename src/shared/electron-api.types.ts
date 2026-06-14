@@ -209,6 +209,7 @@ export interface ElectronAPI {
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;
     prunePositionHistory: (days: number) => Promise<number>;
+    prunePositionHistoryPerNode: (maxPerNode: number) => Promise<number>;
     clearNodePositions: () => Promise<void>;
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<void>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */

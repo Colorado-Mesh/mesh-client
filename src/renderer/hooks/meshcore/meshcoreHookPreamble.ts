@@ -135,8 +135,15 @@ export function messageToDbRow(
     msg.receivedVia === 'rf' || msg.receivedVia === 'mqtt' || msg.receivedVia === 'both'
       ? msg.receivedVia
       : null;
+  let sender_id: number | null = msg.sender_id !== 0 ? msg.sender_id : null;
+  if (sender_id == null) {
+    const name = msg.sender_name?.trim();
+    if (name && name !== 'Unknown') {
+      sender_id = meshcoreChatStubNodeIdFromDisplayName(name);
+    }
+  }
   return {
-    sender_id: msg.sender_id !== 0 ? msg.sender_id : null,
+    sender_id,
     sender_name: msg.sender_name ?? null,
     payload: msg.payload,
     channel_idx: msg.channel,

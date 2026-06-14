@@ -21,6 +21,7 @@ const UNIQUE_INDEX_NAMES_WITH_DEDUPE_PATH = new Set([
   'idx_reaction_dedup',
   'idx_msg_packet_dedup',
   'idx_mc_msg_dedup',
+  'idx_mc_msg_dedup_null_sender',
 ]);
 
 function parseUniqueIndexNamesFromDdls(ddls: readonly string[]): Set<string> {
@@ -146,6 +147,36 @@ describe(
         db
           .prepare(
             `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_mc_msg_dedup' LIMIT 1`,
+          )
+          .get(),
+      ).toBeDefined();
+      db.close();
+    });
+
+    it('idx_mc_msg_dedup_null_sender: dedupes duplicate null sender channel rows', () => {
+      const db = openFreshUpgradedDb('mc-null.db');
+      db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup_null_sender');
+      db.prepare(
+        `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp)
+       VALUES (NULL, 'u', 'same', 0, 5000)`,
+      ).run();
+      db.prepare(
+        `INSERT INTO meshcore_messages (sender_id, sender_name, payload, channel_idx, timestamp)
+       VALUES (NULL, 'u', 'same', 0, 5000)`,
+      ).run();
+      runSchemaUpgrade(db);
+      const n = (
+        db
+          .prepare(
+            'SELECT COUNT(*) as c FROM meshcore_messages WHERE sender_id IS NULL AND channel_idx = 0 AND payload = ?',
+          )
+          .get('same') as { c: number }
+      ).c;
+      expect(n).toBe(1);
+      expect(
+        db
+          .prepare(
+            `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_mc_msg_dedup_null_sender' LIMIT 1`,
           )
           .get(),
       ).toBeDefined();
