@@ -2197,7 +2197,7 @@ function AppContent({
                                     meshtasticRuntime.virtualNodeId,
                                     meshtasticRuntime.lastRfSelfNodeId,
                                   )
-                                : [activeRuntime.selfNodeId].filter((id) => id > 0)
+                                : Array.from(meshcoreOwnNodeIdSet)
                             }
                             onSend={handleSend}
                             onReact={

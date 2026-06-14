@@ -524,6 +524,7 @@ function ChatPanel({
   }, [persistedLastRead, protocol]);
 
   const unreadSourceMessages = messagesForUnread ?? messages;
+  const prevUnreadSourceLengthRef = useRef(unreadSourceMessages.length);
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
@@ -780,6 +781,44 @@ function ChatPanel({
     [markCurrentViewRead],
   );
 
+  // Mark active view read when new inbound traffic arrives for the open conversation.
+  useEffect(() => {
+    const prevLen = prevUnreadSourceLengthRef.current;
+    const newLen = unreadSourceMessages.length;
+    prevUnreadSourceLengthRef.current = newLen;
+    if (!isActive || document.hidden || newLen <= prevLen) return;
+
+    const newMsgs = unreadSourceMessages.slice(prevLen);
+    const hasInboundForView = newMsgs.some((msg) => {
+      if (isOwnNode(msg.sender_id)) return false;
+      if (msg.isHistory) return false;
+      if (msg.emoji && msg.replyId) return false;
+      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return false;
+      const peer = resolveDmPeer(msg);
+      const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
+      return msgViewKey === viewKey;
+    });
+    if (!hasInboundForView) return;
+
+    requestAnimationFrame(() => {
+      const dist = getDistFromChatBottom(
+        scrollContainerRef.current,
+        messagesEndRef.current,
+        outerScrollMetricsRootRef?.current ?? null,
+      );
+      if (dist !== null) applyNearBottomReadState(dist);
+    });
+  }, [
+    unreadSourceMessages,
+    isActive,
+    viewKey,
+    isOwnNode,
+    resolveDmPeer,
+    protocol,
+    applyNearBottomReadState,
+    outerScrollMetricsRootRef,
+  ]);
+
   // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
   const handleScroll = useCallback(() => {
     const distFromBottom = updateScrollButtonVisibility();
@@ -862,10 +901,10 @@ function ChatPanel({
     requestAnimationFrame(() => {
       const dist = updateScrollButtonVisibility();
       // When unread messages fit without scrolling, handleScroll never fires, so
-      // check here and clear the divider if the user is already at the bottom.
-      if (dist !== undefined && dist < 50) setUnreadDividerTimestamp(0);
+      // check here and mark read if the user is already at the bottom.
+      if (dist !== undefined && dist < 50) applyNearBottomReadState(dist);
     });
-  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility]);
+  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility, applyNearBottomReadState]);
 
   useEffect(() => {
     if (!isActive) return;

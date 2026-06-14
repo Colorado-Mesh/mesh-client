@@ -218,16 +218,36 @@ describe('sanitizeMeshcoreChatLastRead', () => {
     const clientNow = 1_700_000_000_000;
     const deviceTs = clientNow - 60_000;
     const sanitized = sanitizeMeshcoreChatLastRead({ 'ch:0': clientNow }, [
-      { channel: 0, timestamp: deviceTs },
+      { sender_id: 2, channel: 0, timestamp: deviceTs },
     ]);
     expect(sanitized['ch:0']).toBe(deviceTs);
+  });
+
+  it('clamps inbound MeshCore DM lastRead using peer key, not recipient self id', () => {
+    const selfId = 0x8412_3456;
+    const peerId = 0xc609_4a15;
+    localStorage.setItem('mesh-client:meshcoreLastSelfNodeId', String(selfId));
+    const clientNow = 1_700_000_000_000;
+    const deviceTs = clientNow - 60_000;
+    const sanitized = sanitizeMeshcoreChatLastRead({ [`dm:${peerId}`]: clientNow }, [
+      {
+        sender_id: peerId,
+        channel: -1,
+        to: selfId,
+        timestamp: deviceTs,
+      },
+    ]);
+    expect(sanitized[`dm:${peerId}`]).toBe(deviceTs);
+    expect(sanitized[`dm:${selfId}`]).toBeUndefined();
   });
 
   it('ensureMeshcoreChatLastReadSanitized persists once and sets flag', () => {
     const clientNow = 1_700_000_000_000;
     const deviceTs = clientNow - 60_000;
     localStorage.setItem(lastReadStorageKey('meshcore'), JSON.stringify({ 'ch:0': clientNow }));
-    const result = ensureMeshcoreChatLastReadSanitized([{ channel: 0, timestamp: deviceTs }]);
+    const result = ensureMeshcoreChatLastReadSanitized([
+      { sender_id: 2, channel: 0, timestamp: deviceTs },
+    ]);
     expect(result['ch:0']).toBe(deviceTs);
     expect(localStorage.getItem('mesh-client:lastReadSanitized:meshcore')).toBe('1');
     expect(JSON.parse(localStorage.getItem(lastReadStorageKey('meshcore'))!)).toEqual({
@@ -241,7 +261,7 @@ describe('sanitizeMeshcoreChatLastRead', () => {
     vi.setSystemTime(nowMs);
     const poisonedLastRead = nowMs + 5 * 24 * 60 * 60 * 1000;
     const sanitized = sanitizeMeshcoreChatLastRead({ 'ch:0': poisonedLastRead }, [
-      { channel: 0, timestamp: poisonedLastRead },
+      { sender_id: 2, channel: 0, timestamp: poisonedLastRead },
     ]);
     expect(sanitized['ch:0']).toBe(effectiveMessageTimestampMs(poisonedLastRead, nowMs));
     const newMsg: ChatMessage = {

@@ -1566,6 +1566,148 @@ describe('ChatPanel unread watermarks', () => {
     await waitFor(() => {
       expect(screen.queryByText('New messages')).not.toBeInTheDocument();
     });
+
+    const stored = JSON.parse(
+      localStorage.getItem('mesh-client:lastRead:meshtastic') ?? '{}',
+    ) as Record<string, number>;
+    expect(stored['ch:0']).toBe(ts);
+  });
+
+  it('marks MeshCore DM read when opened with all messages visible', async () => {
+    const user = userEvent.setup();
+    const ts = Date.now();
+    const selfId = 0x12345678;
+    const peerId = 2;
+    localStorage.removeItem('mesh-client:lastRead:meshcore');
+    const nodes = new Map([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          long_name: 'Alice',
+          short_name: 'Alice',
+          hw_model: '',
+          snr: 0,
+          battery: 0,
+          last_heard: ts,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={selfId}
+          ownNodeIds={[selfId]}
+          nodes={nodes}
+          messages={[
+            {
+              sender_id: peerId,
+              sender_name: 'Alice',
+              payload: 'DM ping',
+              channel: -1,
+              timestamp: ts,
+              status: 'acked',
+              to: selfId,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Alice' }));
+
+    await waitFor(() => {
+      const stored = JSON.parse(
+        localStorage.getItem('mesh-client:lastRead:meshcore') ?? '{}',
+      ) as Record<string, number>;
+      expect(stored[`dm:${peerId}`]).toBe(ts);
+    });
+  });
+
+  it('marks active MeshCore DM read when a new inbound message arrives near the bottom', async () => {
+    const user = userEvent.setup();
+    const ts = Date.now();
+    const selfId = 0x12345678;
+    const peerId = 2;
+    localStorage.removeItem('mesh-client:lastRead:meshcore');
+    const nodes = new Map([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          long_name: 'Alice',
+          short_name: 'Alice',
+          hw_model: '',
+          snr: 0,
+          battery: 0,
+          last_heard: ts,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    const firstMsg = {
+      sender_id: peerId,
+      sender_name: 'Alice',
+      payload: 'first',
+      channel: -1,
+      timestamp: ts,
+      status: 'acked' as const,
+      to: selfId,
+    };
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={selfId}
+          ownNodeIds={[selfId]}
+          nodes={nodes}
+          messages={[firstMsg]}
+        />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    await waitFor(() => {
+      expect(screen.getByText('first')).toBeInTheDocument();
+    });
+
+    const secondTs = ts + 5000;
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={selfId}
+          ownNodeIds={[selfId]}
+          nodes={nodes}
+          messages={[
+            firstMsg,
+            {
+              sender_id: peerId,
+              sender_name: 'Alice',
+              payload: 'second',
+              channel: -1,
+              timestamp: secondTs,
+              status: 'acked' as const,
+              to: selfId,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      const stored = JSON.parse(
+        localStorage.getItem('mesh-client:lastRead:meshcore') ?? '{}',
+      ) as Record<string, number>;
+      expect(stored[`dm:${peerId}`]).toBe(secondTs);
+    });
   });
 });
 
