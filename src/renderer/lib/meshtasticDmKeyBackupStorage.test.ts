@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  ensureMeshtasticDmKeyBackupIndex,
   hasMeshtasticDmKeyBackup,
   LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY,
   listMeshtasticDmKeyBackups,
   loadMeshtasticDmKeyBackup,
+  MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY,
   meshtasticDmKeyBackupStorageKey,
   migrateLegacyMeshtasticDmKeyBackup,
+  rebuildMeshtasticDmKeyBackupIndex,
   saveMeshtasticDmKeyBackup,
 } from './meshtasticDmKeyBackupStorage';
 
@@ -54,6 +57,39 @@ describe('meshtasticDmKeyBackupStorage', () => {
         privateKey: new Uint8Array(16),
       }),
     ).rejects.toThrow(/private key/);
+  });
+
+  it('rebuilds index from encrypted slots when index is missing', async () => {
+    const pub = new Uint8Array(32).fill(5);
+    const priv = new Uint8Array(32).fill(6);
+    const payload = JSON.stringify({
+      protocol: 'meshtastic',
+      nodeNum: 0x300,
+      publicKey: btoa(String.fromCharCode(...pub)),
+      privateKey: btoa(String.fromCharCode(...priv)),
+      nodeLabel: 'Node C',
+      backedUpAt: 1_700_000_000_000,
+    });
+    localStorage.setItem(meshtasticDmKeyBackupStorageKey(0x300), `enc:${payload}`);
+
+    expect(listMeshtasticDmKeyBackups()).toHaveLength(0);
+
+    const rebuilt = await rebuildMeshtasticDmKeyBackupIndex();
+    expect(rebuilt).toHaveLength(1);
+    expect(rebuilt[0]?.nodeNum).toBe(0x300);
+    expect(rebuilt[0]?.nodeLabel).toBe('Node C');
+    expect(listMeshtasticDmKeyBackups()).toHaveLength(1);
+  });
+
+  it('ensureMeshtasticDmKeyBackupIndex rebuilds corrupt index JSON', async () => {
+    const pub = new Uint8Array(32).fill(7);
+    const priv = new Uint8Array(32).fill(8);
+    await saveMeshtasticDmKeyBackup({ nodeNum: 0x400, publicKey: pub, privateKey: priv });
+    localStorage.setItem(MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY, '{not-json');
+
+    await ensureMeshtasticDmKeyBackupIndex();
+    expect(listMeshtasticDmKeyBackups()).toHaveLength(1);
+    expect(listMeshtasticDmKeyBackups()[0]?.nodeNum).toBe(0x400);
   });
 
   it('migrates legacy single-slot backup to per-node storage', async () => {

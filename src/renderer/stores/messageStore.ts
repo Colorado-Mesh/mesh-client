@@ -42,6 +42,7 @@ const defaultState: MessageStoreState = {
 export const useMessageStore = create<MessageStoreState>()(() => defaultState);
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
+  // MessageRecord fields are primitives (string/number/boolean/undefined); strict === is sufficient.
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof MessageRecord>;
   for (const key of keys) {
     if (a[key] !== b[key]) return false;
@@ -60,6 +61,7 @@ function mergeIdentityMessages(
   };
 }
 
+/** Insert or replace the full record when fields differ (no merge). Use upsertMessage for partial updates. */
 export function addMessage(identityId: IdentityId, message: MessageRecord): void {
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
@@ -124,15 +126,23 @@ export function replaceMessageRecordsForIdentity(
     }
     const prior = s.messages[identityId];
     if (prior && Object.keys(prior).length === records.length) {
-      let identical = true;
+      let idsMatch = true;
       for (const message of records) {
-        const existing = prior[message.id];
-        if (!existing || !messageRecordFieldsEqual(existing, message)) {
-          identical = false;
+        if (!prior[message.id]) {
+          idsMatch = false;
           break;
         }
       }
-      if (identical) return s;
+      if (idsMatch) {
+        let identical = true;
+        for (const message of records) {
+          if (!messageRecordFieldsEqual(prior[message.id], message)) {
+            identical = false;
+            break;
+          }
+        }
+        if (identical) return s;
+      }
     }
     return mergeIdentityMessages(s, identityId, byIdentity);
   });

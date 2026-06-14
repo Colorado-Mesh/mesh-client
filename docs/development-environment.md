@@ -306,23 +306,20 @@ Not installed by pnpm (install separately when needed):
 
 Run these quality checks before opening a PR:
 
-# Quality checks
-
+```bash
 pnpm run test:run
 pnpm run lint
 pnpm run lint:md
 pnpm run typecheck
 pnpm run format:check
 pnpm run check:i18n
-
-````
+```
 
 Other useful test commands:
 
 - `pnpm test` (watch mode)
 - `pnpm run test:verbose` (verbose failures)
 - `pnpm run i18n:auto-translate` (fill missing keys)
-
 
 ### 5) Building a distributable
 
@@ -332,7 +329,7 @@ Use the platform-specific packaging command:
 pnpm run dist:mac   # macOS -> .dmg + .zip in release/
 pnpm run dist:linux # Linux -> .AppImage + .deb in release/
 pnpm run dist:win   # Windows -> .exe installer in release/
-````
+```
 
 Output goes to the `release/` directory.
 

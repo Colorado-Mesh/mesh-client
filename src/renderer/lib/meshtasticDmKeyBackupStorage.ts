@@ -61,12 +61,12 @@ function parsePayload(raw: string): MeshtasticDmKeyBackupPayload {
 function readIndex(): MeshtasticDmKeyBackupIndexEntry[] {
   try {
     const raw = localStorage.getItem(MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY);
-    if (!raw) return rebuildIndexFromStorage();
+    if (!raw) return [];
     const parsed = JSON.parse(raw) as MeshtasticDmKeyBackupIndexEntry[];
-    return Array.isArray(parsed) ? parsed : rebuildIndexFromStorage();
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    // catch-no-log-ok corrupt index JSON — rebuild from per-node slots
-    return rebuildIndexFromStorage();
+    // catch-no-log-ok corrupt index JSON — ensureMeshtasticDmKeyBackupIndex rebuilds async
+    return [];
   }
 }
 
@@ -74,20 +74,62 @@ function writeIndex(entries: MeshtasticDmKeyBackupIndexEntry[]): void {
   localStorage.setItem(MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY, JSON.stringify(entries));
 }
 
-function rebuildIndexFromStorage(): MeshtasticDmKeyBackupIndexEntry[] {
-  const entries: MeshtasticDmKeyBackupIndexEntry[] = [];
+function listBackupStorageKeys(): string[] {
+  const keys: string[] = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key?.startsWith(MESHTASTIC_DM_KEY_BACKUP_PREFIX)) continue;
-      const ciphertext = localStorage.getItem(key);
-      if (!ciphertext) continue;
-      // Index metadata only; skip decrypt in rebuild — use stored index on next save
+      if (key?.startsWith(MESHTASTIC_DM_KEY_BACKUP_PREFIX)) keys.push(key);
     }
   } catch {
     // catch-no-log-ok localStorage iteration
   }
+  return keys;
+}
+
+/** Decrypt per-node slots and rewrite the index (missing or corrupt index). */
+export async function rebuildMeshtasticDmKeyBackupIndex(): Promise<
+  MeshtasticDmKeyBackupIndexEntry[]
+> {
+  const entries: MeshtasticDmKeyBackupIndexEntry[] = [];
+  for (const key of listBackupStorageKeys()) {
+    const ciphertext = localStorage.getItem(key);
+    if (!ciphertext) continue;
+    try {
+      const decrypted = await window.electronAPI.safeStorage.decrypt(ciphertext);
+      if (!decrypted) continue;
+      const payload = parsePayload(decrypted);
+      entries.push({
+        nodeNum: normalizeNodeNum(payload.nodeNum),
+        nodeLabel: payload.nodeLabel,
+        publicKeyB64: payload.publicKey,
+        backedUpAt: payload.backedUpAt,
+      });
+    } catch {
+      // catch-no-log-ok skip corrupt slot during rebuild
+    }
+  }
+  entries.sort((a, b) => b.backedUpAt - a.backedUpAt);
+  writeIndex(entries);
   return entries;
+}
+
+function indexNeedsRebuild(index: MeshtasticDmKeyBackupIndexEntry[]): boolean {
+  const slotKeys = listBackupStorageKeys();
+  if (slotKeys.length === 0) return false;
+  if (index.length === 0) return true;
+  const indexedNums = new Set(index.map((e) => normalizeNodeNum(e.nodeNum)));
+  return slotKeys.some((key) => {
+    const suffix = key.slice(MESHTASTIC_DM_KEY_BACKUP_PREFIX.length);
+    const nodeNum = Number(suffix);
+    return Number.isFinite(nodeNum) && !indexedNums.has(normalizeNodeNum(nodeNum));
+  });
+}
+
+/** Rebuild index from encrypted slots when missing, corrupt, or out of sync. */
+export async function ensureMeshtasticDmKeyBackupIndex(): Promise<void> {
+  if (!indexNeedsRebuild(readIndex())) return;
+  await rebuildMeshtasticDmKeyBackupIndex();
 }
 
 function upsertIndexEntry(entry: MeshtasticDmKeyBackupIndexEntry): void {

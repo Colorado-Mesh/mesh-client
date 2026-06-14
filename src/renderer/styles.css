@@ -4,7 +4,7 @@
   --color-app-bg: #020617;
   --color-sidebar-active-bg: #1e293b;
   --color-brand-green: #86efac;
-  --color-bright-green: #86efac;
+  --color-bright-green: var(--color-brand-green);
   --color-readable-green: #16a34a;
   --color-deep-black: #0f172a;
   --color-secondary-dark: #334155;
