@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyControlledEditableValue, applySpellcheckReplace } from './controlledEditableValue';
+import {
+  applyControlledEditableValue,
+  applySpellcheckReplace,
+  computeInsertReplacementText,
+} from './controlledEditableValue';
 
 describe('controlledEditableValue', () => {
   it('applyControlledEditableValue updates value and dispatches input', () => {
@@ -46,5 +50,16 @@ describe('controlledEditableValue', () => {
 
     expect(input.value).toBe('the teh');
     input.remove();
+  });
+
+  it('computeInsertReplacementText replaces the selected range', () => {
+    expect(computeInsertReplacementText('hello wrld', 'world', 6, 10)).toEqual({
+      value: 'hello world',
+      caret: 11,
+    });
+  });
+
+  it('computeInsertReplacementText returns null when replacement is empty', () => {
+    expect(computeInsertReplacementText('hello', '', 0, 5)).toBeNull();
   });
 });

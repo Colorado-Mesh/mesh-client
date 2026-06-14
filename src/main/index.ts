@@ -1331,39 +1331,59 @@ function setupAppMenu() {
 function configureRendererSpellcheck(sess: Session): void {
   try {
     sess.setSpellCheckerEnabled(true);
-    if (process.platform === 'darwin') {
-      return;
-    }
+
     const available = sess.availableSpellCheckerLanguages;
     if (!Array.isArray(available) || available.length === 0) {
       console.warn('[main] spellcheck: no dictionaries listed yet (retry after load)');
       return;
     }
-    const loc = app.getLocale();
+    // Normalize codes for matching (both sides to hyphens) but pass original
+    // codes to setSpellCheckerLanguages.
+    const normAvailable = available.map((c) => c.replace(/_/g, '-'));
+    const loc = app.getLocale().replace(/_/g, '-');
     const picked: string[] = [];
-    if (available.includes(loc)) {
-      picked.push(loc);
+
+    const exactIdx = normAvailable.indexOf(loc);
+    if (exactIdx !== -1) {
+      picked.push(available[exactIdx]);
     }
     const region = loc.split(/[-_]/)[0];
     if (region) {
-      for (const code of available) {
-        if ((code === region || code.startsWith(`${region}-`)) && !picked.includes(code)) {
-          picked.push(code);
+      for (let i = 0; i < available.length; i++) {
+        const normCode = normAvailable[i];
+        if (
+          (normCode === region || normCode.startsWith(`${region}-`)) &&
+          !picked.includes(available[i])
+        ) {
+          picked.push(available[i]);
         }
       }
     }
-    if (picked.length === 0 && available.includes('en-US')) {
-      picked.push('en-US');
+    if (picked.length === 0) {
+      const enIdx = normAvailable.indexOf('en-US');
+      if (enIdx !== -1) {
+        picked.push(available[enIdx]);
+      }
     }
     if (picked.length === 0) {
       picked.push(available[0]);
     }
+
     sess.setSpellCheckerLanguages(picked.slice(0, 3));
   } catch (e) {
     console.warn(
       '[main] configureRendererSpellcheck',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
+  }
+}
+
+function retryRendererSpellcheck(sess: Session): void {
+  configureRendererSpellcheck(sess);
+  for (const delayMs of [250, 1000, 5000]) {
+    setTimeout(() => {
+      configureRendererSpellcheck(sess);
+    }, delayMs);
   }
 }
 
@@ -1480,7 +1500,7 @@ function createWindow() {
 
   configureRendererSpellcheck(win.webContents.session);
   win.webContents.once('did-finish-load', () => {
-    configureRendererSpellcheck(win.webContents.session);
+    retryRendererSpellcheck(win.webContents.session);
   });
 
   // Electron does not show any context menu by default — we must call menu.popup().
@@ -1497,10 +1517,10 @@ function createWindow() {
     event.preventDefault();
     const ef = params.editFlags;
     const suggestions = params.dictionarySuggestions ?? [];
-    const spellOn = params.spellcheckEnabled;
+    const misspelledWord = params.misspelledWord ?? '';
 
     const menu = new Menu();
-    if (spellOn && suggestions.length > 0) {
+    if (suggestions.length > 0) {
       for (const suggestion of suggestions) {
         menu.append(
           new MenuItem({
@@ -1509,7 +1529,7 @@ function createWindow() {
               applySpellcheckSuggestion(
                 win,
                 suggestion,
-                params.misspelledWord,
+                misspelledWord,
                 params.selectionStartOffset,
               );
             },
@@ -1518,12 +1538,12 @@ function createWindow() {
       }
       menu.append(new MenuItem({ type: 'separator' }));
     }
-    if (spellOn && params.misspelledWord) {
+    if (misspelledWord) {
       menu.append(
         new MenuItem({
           label: 'Add to dictionary',
           click: () => {
-            void win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord);
+            void win.webContents.session.addWordToSpellCheckerDictionary(misspelledWord);
           },
         }),
       );
