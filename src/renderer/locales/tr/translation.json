@@ -178,7 +178,7 @@
     "reduceMotion": "Hareketi azalt",
     "reduceMotionDesc": "Animasyonlu simgeleri ve dekoratif efektleri devre dışı bırakır. Yükleme göstergeleri ve bağlantı durumu göstergeleri hâlâ animasyonlu kalır.",
     "roomMessages": "Oda mesajları",
-    "importSchemaTooNew": "Bu veritabanı dosyası daha yeni bir Mesh - Client gerektiriyor (şema {{dbVersion}}). Bu yapı {{appVersion}} veya daha eski bir şemayı destekler. En son sürümü yükleyin ve tekrar deneyin."
+    "importSchemaTooNew": "Bu veritabanı dosyası daha yeni bir Mesh-Client gerektiriyor (şema {{dbVersion}}). Bu yapı {{appVersion}} veya daha eski bir şemayı destekler. En son sürümü yükleyin ve tekrar deneyin."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} yeni mesaj",
     "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar",
-    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişiniz var. Yakındaki düğümlere odaklanmak için → Görünüm'deki mesafe filtresini etkinleştirin."
+    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin."
   },
   "updateStatus": {
     "checking": "Kontrol ediliyor…",
@@ -2540,7 +2540,7 @@
     "restartTitle": "Yeniden başlatın ve yükleyin",
     "retryCheck": "Güncelleme kontrolünü yeniden dene",
     "updateError": "Güncelleme hatası",
-    "menuToastUpToDateTitle": "Mesh - Client",
+    "menuToastUpToDateTitle": "Mesh-Client",
     "menuToastUpToDateBody": "En son versiyona sahipsiniz.",
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",

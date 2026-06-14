@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
     "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
-    "meshcoreDistanceFilterHint": "Masz na mapie kontakty {{count}} z GPS-em. Włącz filtr odległości w → wyglądzie aplikacji, aby skupić się na pobliskich węzłach."
+    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach."
   },
   "updateStatus": {
     "checking": "Sprawdzanie...",

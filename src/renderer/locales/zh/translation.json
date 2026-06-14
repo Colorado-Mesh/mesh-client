@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "固件更新可用： v {{version}}",
     "newMessages_one": "{{protocol}} ： {{count}}条新消息",
     "newMessages_other": "{{protocol}} ： {{count}}条新消息",
-    "meshcoreDistanceFilterHint": "您在地图上有 {{count}} 个带 GPS 的联系人。在 App → Appearance 中启用距离过滤器，以关注附近的节点。"
+    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。"
   },
   "updateStatus": {
     "checking": "正在检查...",

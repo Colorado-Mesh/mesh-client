@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 새 메시지",
     "newMessages_other": "{{protocol}}: {{count}} 새 메시지",
-    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. App → Appearance에서 거리 필터를 활성화하여 근처 노드에 초점을 맞춥니다."
+    "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요."
   },
   "updateStatus": {
     "checking": "확인 중…",

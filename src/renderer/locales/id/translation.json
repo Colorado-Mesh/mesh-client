@@ -178,7 +178,7 @@
     "reduceMotion": "Kurangi gerakan",
     "reduceMotionDesc": "Menonaktifkan ikon animasi dan efek dekoratif. Spinner pemuatan dan indikator status koneksi tetap animasi.",
     "roomMessages": "Pesan kamar",
-    "importSchemaTooNew": "File database ini memerlukan Mesh - Client yang lebih baru (skema {{dbVersion}}). Build ini mendukung skema {{appVersion}} atau lebih lama. Instal rilis terbaru dan coba lagi."
+    "importSchemaTooNew": "File database ini memerlukan Mesh-Client yang lebih baru (skema {{dbVersion}}). Build ini mendukung skema {{appVersion}} atau lebih lama. Instal rilis terbaru dan coba lagi."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} pesan baru",
     "newMessages_other": "{{protocol}}: {{count}} pesan baru",
-    "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di App App → untuk fokus pada node terdekat."
+    "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat."
   },
   "updateStatus": {
     "checking": "Memeriksa…",
@@ -2540,7 +2540,7 @@
     "restartTitle": "Mulai ulang dan instal",
     "retryCheck": "Coba lagi pemeriksaan pembaruan",
     "updateError": "Kesalahan pembaruan",
-    "menuToastUpToDateTitle": "Mesh - Client",
+    "menuToastUpToDateTitle": "Mesh-Client",
     "menuToastUpToDateBody": "Anda menggunakan versi terbaru.",
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",

@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} новое сообщение",
     "newMessages_other": "{{protocol}}: {{count}} новых сообщений",
-    "meshcoreDistanceFilterHint": "У вас {{count}} контактов с GPS на карте. Включите фильтр расстояния во → Внешнем виде, чтобы сосредоточиться на близлежащих узлах."
+    "meshcoreDistanceFilterHint": "У вас {{count}} контактов с GPS на карте. Включите фильтр расстояния в Приложение → Появление, чтобы сосредоточиться на близлежащих узлах."
   },
   "updateStatus": {
     "checking": "Проверка…",

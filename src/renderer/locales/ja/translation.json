@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} 新しいメッセージ",
     "newMessages_other": "{{protocol}}: {{count}} 件の新しいメッセージ",
-    "meshcoreDistanceFilterHint": "地図上にGPSを搭載した{{count}}件の連絡先があります。App → Appearanceで距離フィルターを有効にして、近くのノードに焦点を当てます。"
+    "meshcoreDistanceFilterHint": "地図上にGPS付きの連絡先が{{count}}件あります。アプリ → 外観で距離フィルターを有効にして、近くのノードに集中できます。"
   },
   "updateStatus": {
     "checking": "チェック中…",

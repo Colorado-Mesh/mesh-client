@@ -142,6 +142,21 @@ export const NL_MESH_ADVERT_FALSE_FRIEND_RE = /advertentie/i;
 export const REDUCE_MOTION_KEY = 'appPanel.reduceMotion';
 export const REDUCE_MOTION_DESC_KEY = 'appPanel.reduceMotionDesc';
 
+/** Toast hint for large MeshCore map contact sets (App tab → Appearance section). */
+export const MESHCORE_DISTANCE_FILTER_HINT_KEY = 'toasts.meshcoreDistanceFilterHint';
+
+/** appPanel import guard when backup schema exceeds build version. */
+export const IMPORT_SCHEMA_TOO_NEW_KEY = 'appPanel.importSchemaTooNew';
+
+/** MyMemory often inserts spaces in the Mesh-Client product name. */
+export const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
+
+/** English UI nav left in auto-translated meshcoreDistanceFilterHint. */
+export const UNTRANSLATED_APP_APPEARANCE_NAV_RE = /App\s*→\s*Appearance/i;
+
+/** MT drops the App tab name before → appearanceSection. */
+export const ORPHAN_UI_ARROW_NAV_RE = /\b(?:in|ve|na|w|vo)\s+→/i;
+
 /**
  * MT often mistranslates UI "loading spinner" as textile/industrial equipment.
  * Checked only on appPanel.reduceMotionDesc where English mentions "Loading spinners".
@@ -1213,6 +1228,26 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     /减少运动/.test(val)
   ) {
     issues.push('reduceMotion uses 运动 (exercise) — use 动态效果 or 动画 for UI motion');
+  }
+
+  if (enVal.includes('Mesh-Client') && MESH_CLIENT_SPACED_RE.test(val)) {
+    issues.push('use "Mesh-Client" without spaces around the hyphen (not "Mesh - Client")');
+  }
+
+  if (flatKey === MESHCORE_DISTANCE_FILTER_HINT_KEY && enVal.includes('App → Appearance')) {
+    if (locale !== 'en' && UNTRANSLATED_APP_APPEARANCE_NAV_RE.test(val)) {
+      issues.push(
+        'meshcoreDistanceFilterHint still quotes English "App → Appearance" — use locale tabs.app and appPanel.appearanceSection labels',
+      );
+    }
+    if (/\bApp App\b/.test(val)) {
+      issues.push('meshcoreDistanceFilterHint has duplicated "App App" MT garbage');
+    }
+    if (locale !== 'en' && ORPHAN_UI_ARROW_NAV_RE.test(val)) {
+      issues.push(
+        'meshcoreDistanceFilterHint has orphan "→" navigation — prefix with locale App tab name before → appearanceSection',
+      );
+    }
   }
 
   return issues;

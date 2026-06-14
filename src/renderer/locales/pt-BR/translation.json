@@ -2525,7 +2525,7 @@
     "firmwareAvailable": "Atualização de firmware disponível: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nova mensagem",
     "newMessages_other": "{{protocol}}: {{count}} novas mensagens",
-    "meshcoreDistanceFilterHint": "Você tem {{count}} contatos com GPS no mapa. Ative o filtro de distância na → aparência do aplicativo para se concentrar nos nós próximos."
+    "meshcoreDistanceFilterHint": "Você tem {{count}} contatos com GPS no mapa. Ative o filtro de distância em Aplicativo → Aparência para focar nos nós próximos."
   },
   "updateStatus": {
     "checking": "A verificar…",
