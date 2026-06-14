@@ -3,10 +3,6 @@
  * Uses the runtime's default timezone (Electron main + renderer match on the same machine).
  */
 
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
 function toDate(ts: number | Date): Date {
   return typeof ts === 'number' ? new Date(ts) : ts;
 }
@@ -15,8 +11,8 @@ function toDate(ts: number | Date): Date {
 export function formatIsoDate(ts: number | Date): string {
   const d = toDate(ts);
   const y = d.getFullYear();
-  const mo = pad2(d.getMonth() + 1);
-  const day = pad2(d.getDate());
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${mo}-${day}`;
 }
 
@@ -24,7 +20,7 @@ export function formatIsoDate(ts: number | Date): string {
 export function formatIsoDateTime(ts: number | Date): string {
   const d = toDate(ts);
   const date = formatIsoDate(d);
-  const h = pad2(d.getHours());
-  const mi = pad2(d.getMinutes());
+  const h = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
   return `${date} ${h}:${mi}`;
 }

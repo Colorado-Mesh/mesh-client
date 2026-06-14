@@ -17,6 +17,7 @@ import {
 import type { MeshtasticDmKeyBackupIndexEntry } from '@/renderer/lib/meshtasticDmKeyBackupStorage';
 import {
   deleteMeshtasticDmKeyBackup,
+  ensureMeshtasticDmKeyBackupIndex,
   formatMeshtasticBackupDetail,
   hasMeshtasticDmKeyBackup,
   listMeshtasticDmKeyBackups,
@@ -117,6 +118,7 @@ export function KeyBackupRestoreSection({
     void (async () => {
       if (protocol === 'meshtastic') {
         await migrateLegacyMeshtasticDmKeyBackup(localNodeKey);
+        await ensureMeshtasticDmKeyBackupIndex();
       }
       refreshStatus();
     })();
