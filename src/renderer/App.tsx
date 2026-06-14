@@ -73,6 +73,7 @@ import {
 } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useSendMessage } from './hooks/useSendMessage';
+import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
@@ -648,6 +649,7 @@ function AppContent({
       onPowerResume: meshcoreRuntime.onPowerResume,
     },
   });
+  useSpellcheckReplaceSync();
 
   const { meshtastic: meshtasticPanelActions, meshcore: meshcorePanelActions } =
     useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime);

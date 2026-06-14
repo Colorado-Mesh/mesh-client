@@ -10,6 +10,7 @@ import type {
   OutboxEntryInput,
   OutboxStatus,
   SerialPort,
+  SpellcheckReplacePayload,
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
@@ -782,6 +783,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     };
     ipcRenderer.on('power:resume', handler);
     return () => ipcRenderer.off('power:resume', handler);
+  },
+  onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => {
+    const handler = (_: unknown, payload: SpellcheckReplacePayload) => {
+      cb(payload);
+    };
+    ipcRenderer.on('spellcheck:replace', handler);
+    return () => ipcRenderer.off('spellcheck:replace', handler);
   },
 
   // ─── MeshCore TCP bridge ────────────────────────────────────────

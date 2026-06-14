@@ -4,6 +4,7 @@ import type {
   OutboxEntry,
   OutboxEntryInput,
   OutboxStatus,
+  SpellcheckReplacePayload,
   UpdateCheckingPayload,
 } from '@/shared/electron-api.types';
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
@@ -937,6 +938,7 @@ declare global {
       showEmojiPanel: () => Promise<void>;
       onPowerSuspend: (cb: () => void) => () => void;
       onPowerResume: (cb: () => void) => () => void;
+      onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => () => void;
       clipboard: {
         writeText: (text: string) => Promise<void>;
       };

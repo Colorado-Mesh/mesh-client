@@ -131,6 +131,12 @@ export interface OutboxEntry {
 
 export type OutboxEntryInput = Omit<OutboxEntry, 'id' | 'attemptCount' | 'updatedAt' | 'createdAt'>;
 
+export interface SpellcheckReplacePayload {
+  suggestion: string;
+  misspelledWord: string;
+  selectionStartOffset?: number;
+}
+
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
 export interface ElectronAPI {
@@ -653,6 +659,9 @@ export interface ElectronAPI {
   // ─── Power events ────────────────────────────────────────────────────────────
   onPowerSuspend: (cb: () => void) => () => void;
   onPowerResume: (cb: () => void) => () => void;
+
+  /** Spellchecker context-menu pick — syncs React-controlled inputs after replaceMisspelling. */
+  onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => () => void;
 
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────
   meshcore: {
