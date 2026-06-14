@@ -1,4 +1,5 @@
 import {
+  findMeshcoreDmRfDuplicate,
   isMeshcoreRoomChatMessage,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -90,6 +91,16 @@ export function repairMeshcoreRoomStoredPostPayloads(
   });
 }
 
+/** Collapse RF DM echoes loaded from SQLite (same sender/body/recipient within dedup window). */
+export function repairMeshcoreHydratedDmRfDuplicates(messages: ChatMessage[]): ChatMessage[] {
+  const kept: ChatMessage[] = [];
+  for (const msg of messages) {
+    if (findMeshcoreDmRfDuplicate(kept, msg)) continue;
+    kept.push(msg);
+  }
+  return kept;
+}
+
 /**
  * Reclassify room-server traffic that was stored as DMs (PLAIN bot stats, etc.).
  * Failure point: older builds only treated SignedPlain as room BBS.
@@ -103,7 +114,9 @@ export function repairMeshcoreHydratedMessages(
 ): ChatMessage[] {
   return repairMeshcoreRoomStoredPostPayloads(
     repairMeshcoreMisfiledRoomDmMessages(
-      repairMeshcoreHydrationStaleRoomSends(repairMeshcoreHydratedDmToNode(messages, selfNodeId)),
+      repairMeshcoreHydratedDmRfDuplicates(
+        repairMeshcoreHydrationStaleRoomSends(repairMeshcoreHydratedDmToNode(messages, selfNodeId)),
+      ),
       roomServerIds,
     ),
     pubKeyPrefixToNodeId,

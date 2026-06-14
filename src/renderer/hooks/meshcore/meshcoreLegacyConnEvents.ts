@@ -1003,12 +1003,18 @@ export function attachMeshcoreLegacyConnEvents(
             };
         next.set(resolved.senderId, updated);
         if (hopsAway != null) {
+          const nowSec = Math.floor(Date.now() / 1000);
+          const lastAdvert = mergeMeshcoreLastHeardFromAdvert(
+            d.senderTimestamp,
+            next.get(resolved.senderId)?.last_heard,
+            nowSec,
+          );
           void window.electronAPI.db.saveMeshcoreContact({
             node_id: resolved.senderId,
             public_key: meshcoreSyntheticPlaceholderPubKeyHex(resolved.senderId),
             adv_name: resolved.displayName,
             contact_type: 1,
-            last_advert: d.senderTimestamp,
+            last_advert: lastAdvert > 0 ? lastAdvert : nowSec,
             nickname: null,
             hops_away: hopsAway,
             on_radio: 1,

@@ -47,4 +47,29 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(mcCols.some((c) => c.name === 'public_key')).toBe(true);
     db.close();
   });
+
+  it('repairs corrupt repeater last_advert from hop history and invalid GPS', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-repair-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    db.prepareOnce(
+      `INSERT INTO meshcore_contacts (node_id, public_key, contact_type, last_advert, adv_lat, adv_lon, on_radio)
+       VALUES (?, ?, 2, 6, 34.0, 2147.48, 1)`,
+    ).run(0xabc, 'aa'.repeat(32));
+    db.prepareOnce(
+      `INSERT INTO meshcore_hop_history (node_id, timestamp, hops, snr, rssi)
+       VALUES (?, ?, 3, 1.0, -90)`,
+    ).run(0xabc, 1_781_401_113_001);
+
+    runSchemaUpgrade(db);
+
+    const row = db
+      .prepareOnce('SELECT last_advert, adv_lon FROM meshcore_contacts WHERE node_id = ?')
+      .get(0xabc) as { last_advert: number | null; adv_lon: number | null };
+    expect(row.last_advert).toBe(1_781_401_113);
+    expect(row.adv_lon).toBeNull();
+    db.close();
+  });
 });

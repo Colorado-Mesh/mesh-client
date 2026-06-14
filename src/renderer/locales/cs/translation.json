@@ -2523,7 +2523,8 @@
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nová zpráva",
-    "newMessages_other": "{{protocol}}: {{count}} nových zpráv"
+    "newMessages_other": "{{protocol}}: {{count}} nových zpráv",
+    "meshcoreDistanceFilterHint": "Na mapě máš {{count}} kontakty s GPS. Povolte filtr vzdálenosti ve → Vzhledu aplikace a zaměřte se na blízké uzly."
   },
   "updateStatus": {
     "checking": "Kontrola…",

@@ -2523,7 +2523,8 @@
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} neue Nachricht",
-    "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten"
+    "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten",
+    "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktivieren Sie den Entfernungsfilter in → Erscheinungsbild, um sich auf nahe gelegene Knoten zu konzentrieren."
   },
   "updateStatus": {
     "checking": "Überprüfung…",

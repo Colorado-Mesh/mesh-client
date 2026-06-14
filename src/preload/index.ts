@@ -249,6 +249,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ) => ipcRenderer.invoke('db:saveMeshcoreHopHistory', nodeId, timestamp, hops, snr, rssi),
     getMeshcoreHopHistory: (nodeId: number) =>
       ipcRenderer.invoke('db:getMeshcoreHopHistory', nodeId),
+    getAllMeshcoreHopHistory: () => ipcRenderer.invoke('db:getAllMeshcoreHopHistory'),
     saveMeshcoreTraceHistory: (
       nodeId: number,
       timestamp: number,

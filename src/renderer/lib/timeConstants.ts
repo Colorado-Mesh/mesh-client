@@ -91,6 +91,9 @@ export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 /** Same broadcast channel message heard twice on RF (repeater re-hear) within this window. */
 export const MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 
+/** Same DM body re-heard on RF (multi-path / repeater echo) within this window. */
+export const MESHCORE_DM_RF_DEDUP_WINDOW_MS = 2 * MS_PER_MINUTE;
+
 /** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
 /** Wider window for tapback optimistic rows (client Date.now vs radio rxTime skew). */
 export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;

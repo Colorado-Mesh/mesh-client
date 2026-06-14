@@ -122,6 +122,7 @@ const electronAPIMock = {
     clearPositionHistory: vi.fn().mockResolvedValue(undefined),
     saveMeshcoreHopHistory: vi.fn().mockResolvedValue(true),
     getMeshcoreHopHistory: vi.fn().mockResolvedValue(null),
+    getAllMeshcoreHopHistory: vi.fn().mockResolvedValue([]),
     saveMeshcoreTraceHistory: vi.fn().mockResolvedValue(true),
     getMeshcoreTraceHistory: vi.fn().mockResolvedValue([]),
     pruneMeshcorePathHistory: vi.fn().mockResolvedValue(true),

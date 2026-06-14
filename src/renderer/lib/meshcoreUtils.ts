@@ -1,3 +1,4 @@
+import { isValidLatLon } from '../../shared/geoCoords';
 import { isPlaceholderLongName } from '../../shared/nodeNameUtils';
 import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
@@ -329,15 +330,18 @@ export function meshcoreScaledAdvLatLonToDeg(
   advLat: number,
   advLon: number,
 ): { lat: number | null; lon: number | null } {
-  const lat =
+  const latDeg =
     typeof advLat === 'number' && Number.isFinite(advLat) && advLat !== 0
       ? advLat / MESHCORE_COORD_SCALE
       : null;
-  const lon =
+  const lonDeg =
     typeof advLon === 'number' && Number.isFinite(advLon) && advLon !== 0
       ? advLon / MESHCORE_COORD_SCALE
       : null;
-  return { lat, lon };
+  if (!isValidLatLon(latDeg, lonDeg)) {
+    return { lat: null, lon: null };
+  }
+  return { lat: latDeg, lon: lonDeg };
 }
 
 /**

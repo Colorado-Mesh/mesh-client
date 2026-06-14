@@ -1,3 +1,5 @@
+import { isPlausibleMeshcoreLastAdvertSec } from '../../shared/meshcoreLastAdvertPlausible';
+
 // Time thresholds for node freshness
 const STALE_MS = 2 * 3_600_000; // 2 hours
 const OFFLINE_MS = 7 * 24 * 3_600_000; // 7 days
@@ -79,11 +81,16 @@ export function mergeMeshcoreLastHeardFromAdvert(
   nowSec = Math.floor(Date.now() / 1000),
 ): number {
   const deviceRaw =
-    typeof advertSec === 'number' && Number.isFinite(advertSec) && advertSec > 0
+    typeof advertSec === 'number' &&
+    Number.isFinite(advertSec) &&
+    advertSec > 0 &&
+    isPlausibleMeshcoreLastAdvertSec(advertSec)
       ? Math.floor(advertSec)
       : 0;
   const device = deviceRaw > 0 ? clampLastHeardSec(deviceRaw, nowSec) : 0;
-  const prev = clampLastHeardSec(lastHeardToUnixSeconds(previousLastHeard ?? 0), nowSec);
+  const prevSec = lastHeardToUnixSeconds(previousLastHeard ?? 0);
+  const prevRaw = prevSec > 0 && isPlausibleMeshcoreLastAdvertSec(prevSec) ? prevSec : 0;
+  const prev = clampLastHeardSec(prevRaw, nowSec);
   return clampLastHeardSec(Math.max(device, prev), nowSec);
 }
 

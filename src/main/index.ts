@@ -26,6 +26,10 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import {
+  sanitizeMeshcoreAdvLatLonForDb,
+  sanitizeMeshcoreLastAdvertForDb,
+} from '../shared/meshcoreContactSanitize';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
@@ -42,6 +46,7 @@ import {
   deleteNodesBySource,
   deleteNodesWithoutLongname,
   exportDatabase,
+  getAllMeshcoreHopHistoryRows,
   getAllMeshcorePathHistory,
   getContactGroupMembers,
   getContactGroups,
@@ -627,14 +632,20 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
 function meshcoreContactInputToUpsertParams(
   c: Record<string, unknown>,
 ): MeshcoreContactUpsertParams {
+  const coords = sanitizeMeshcoreAdvLatLonForDb(
+    c.adv_lat != null ? Number(c.adv_lat) : null,
+    c.adv_lon != null ? Number(c.adv_lon) : null,
+  );
   return {
     node_id: Number(c.node_id),
     public_key: c.public_key as string,
     adv_name: typeof c.adv_name === 'string' ? c.adv_name : null,
     contact_type: c.contact_type != null ? Number(c.contact_type) : 0,
-    last_advert: c.last_advert != null ? Number(c.last_advert) : null,
-    adv_lat: c.adv_lat != null ? Number(c.adv_lat) : null,
-    adv_lon: c.adv_lon != null ? Number(c.adv_lon) : null,
+    last_advert: sanitizeMeshcoreLastAdvertForDb(
+      c.last_advert != null ? Number(c.last_advert) : null,
+    ),
+    adv_lat: coords.adv_lat,
+    adv_lon: coords.adv_lon,
     last_snr: c.last_snr != null ? Number(c.last_snr) : null,
     last_rssi: c.last_rssi != null ? Number(c.last_rssi) : null,
     nickname: typeof c.nickname === 'string' ? c.nickname : null,
@@ -4743,14 +4754,16 @@ ipcMain.handle(
       }
       const db = getDbForIpc('db:updateMeshcoreContactAdvert');
       if (!db) return { changes: 0 };
+      const safeLastAdvert = sanitizeMeshcoreLastAdvertForDb(lastAdvert);
+      const coords = sanitizeMeshcoreAdvLatLonForDb(advLat, advLon);
       if (advName !== undefined) {
         db.prepareOnce(
           'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ?, adv_name = ? WHERE node_id = ?',
-        ).run(lastAdvert, advLat, advLon, advName ?? null, safeNodeId);
+        ).run(safeLastAdvert, coords.adv_lat, coords.adv_lon, advName ?? null, safeNodeId);
       } else {
         db.prepareOnce(
           'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ? WHERE node_id = ?',
-        ).run(lastAdvert, advLat, advLon, safeNodeId);
+        ).run(safeLastAdvert, coords.adv_lat, coords.adv_lon, safeNodeId);
       }
     } catch (err) {
       console.error(
@@ -4801,6 +4814,7 @@ ipcMain.handle(
       if (typeof lastRssi !== 'number' || !Number.isFinite(lastRssi)) {
         throw new Error('db:updateMeshcoreContactLastRf: lastRssi must be a finite number');
       }
+      const safeTimestamp = sanitizeMeshcoreLastAdvertForDb(timestamp ?? null);
       db.prepareOnce(
         'UPDATE meshcore_contacts SET ' +
           'last_snr = ?, ' +
@@ -4814,9 +4828,9 @@ ipcMain.handle(
         hops ?? null,
         hops ?? null,
         hops ?? null,
-        timestamp ?? null,
-        timestamp ?? null,
-        timestamp ?? null,
+        safeTimestamp,
+        safeTimestamp,
+        safeTimestamp,
         safeNodeId,
       );
     } catch (err) {
@@ -4909,6 +4923,15 @@ ipcMain.handle('db:getMeshcoreHopHistory', (_event, nodeId: number) => {
     return getMeshcoreHopHistory(nodeId);
   } catch (err) {
     finishDbIpcHandler('db:getMeshcoreHopHistory', err);
+  }
+});
+
+ipcMain.handle('db:getAllMeshcoreHopHistory', () => {
+  try {
+    if (!getDbForIpc('db:getAllMeshcoreHopHistory')) return [];
+    return getAllMeshcoreHopHistoryRows();
+  } catch (err) {
+    finishDbIpcHandler('db:getAllMeshcoreHopHistory', err);
   }
 });
 

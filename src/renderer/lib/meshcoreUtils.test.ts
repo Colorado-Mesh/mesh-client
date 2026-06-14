@@ -54,21 +54,25 @@ describe('meshcoreScaledAdvLatLonToDeg', () => {
     expect(r.lon).toBeCloseTo(-93.654321, 6);
   });
 
-  it('returns null per axis for zero', () => {
+  it('returns null per axis for zero on either axis', () => {
     expect(meshcoreScaledAdvLatLonToDeg(0, 0)).toEqual({ lat: null, lon: null });
-    expect(meshcoreScaledAdvLatLonToDeg(1_000000, 0)).toEqual({ lat: 1, lon: null });
-    expect(meshcoreScaledAdvLatLonToDeg(0, -2_000000)).toEqual({ lat: null, lon: -2 });
+    expect(meshcoreScaledAdvLatLonToDeg(1_000000, 0)).toEqual({ lat: null, lon: null });
+    expect(meshcoreScaledAdvLatLonToDeg(0, -2_000000)).toEqual({ lat: null, lon: null });
   });
 
-  it('returns null for non-finite inputs', () => {
-    expect(meshcoreScaledAdvLatLonToDeg(Number.NaN, 1)).toEqual({ lat: null, lon: 1e-6 });
+  it('returns null for non-finite or out-of-range inputs', () => {
+    expect(meshcoreScaledAdvLatLonToDeg(Number.NaN, 1)).toEqual({ lat: null, lon: null });
     expect(meshcoreScaledAdvLatLonToDeg(1, Number.POSITIVE_INFINITY)).toEqual({
-      lat: 1e-6,
+      lat: null,
       lon: null,
     });
     expect(meshcoreScaledAdvLatLonToDeg(Number.POSITIVE_INFINITY, 1)).toEqual({
       lat: null,
-      lon: 1e-6,
+      lon: null,
+    });
+    expect(meshcoreScaledAdvLatLonToDeg(2147483647, 45_000000)).toEqual({
+      lat: null,
+      lon: null,
     });
   });
 });

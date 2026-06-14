@@ -20,7 +20,12 @@ import {
   meshcoreIsRepeaterRemoteAuthTouched,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
-import { effectiveLastHeardMs, getNodeStatus, normalizeLastHeardMs } from '../lib/nodeStatus';
+import {
+  effectiveLastHeardMs,
+  getNodeStatus,
+  mergeMeshcoreLastHeardFromAdvert,
+  normalizeLastHeardMs,
+} from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { MeshNode } from '../lib/types';
@@ -62,6 +67,14 @@ interface Props {
 }
 
 const SIGNAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function effectiveRepeaterLastAdvert(
+  dbAdvert: number | null | undefined,
+  nodeLastHeard: number | undefined,
+): number | null {
+  const merged = mergeMeshcoreLastHeardFromAdvert(dbAdvert ?? undefined, nodeLastHeard);
+  return merged > 0 ? merged : null;
+}
 
 function isSignalRecent(lastAdvert: number | null | undefined): boolean {
   if (lastAdvert == null) return false;
@@ -126,7 +139,7 @@ function displayRepeaterSnr(
   if (
     contactSignal?.last_snr != null &&
     contactSignal.last_snr !== 0 &&
-    isSignalRecent(contactSignal.last_advert)
+    isSignalRecent(effectiveRepeaterLastAdvert(contactSignal?.last_advert, node.last_heard))
   ) {
     return contactSignal.last_snr.toFixed(1);
   }
@@ -154,7 +167,7 @@ function displayRepeaterRssi(
   if (
     contactSignal?.last_rssi != null &&
     contactSignal.last_rssi !== 0 &&
-    isSignalRecent(contactSignal.last_advert)
+    isSignalRecent(effectiveRepeaterLastAdvert(contactSignal?.last_advert, node.last_heard))
   ) {
     return String(contactSignal.last_rssi);
   }

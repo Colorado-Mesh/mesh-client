@@ -1153,6 +1153,8 @@ export default function MapPanel({
     return counts;
   }, [nodesToRender, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
 
+  const denseMapMarkers = nodesToRender.length > 200;
+
   const iconCreateFunction = useCallback(
     (cluster: { getChildCount(): number }) => {
       const count = cluster.getChildCount();
@@ -1250,8 +1252,8 @@ export default function MapPanel({
           <MarkerClusterGroup
             showCoverageOnHover={false}
             chunkedLoading
-            maxClusterRadius={60}
-            disableClusteringAtZoom={9}
+            maxClusterRadius={denseMapMarkers ? 80 : 60}
+            disableClusteringAtZoom={denseMapMarkers ? 12 : 9}
             iconCreateFunction={iconCreateFunction}
           >
             {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (

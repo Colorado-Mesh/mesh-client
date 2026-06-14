@@ -2522,6 +2522,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Firmware update available: v{{version}}",
+    "meshcoreDistanceFilterHint": "You have {{count}} contacts with GPS on the map. Enable the distance filter in App → Appearance to focus on nearby nodes.",
     "newMessages_one": "{{protocol}}: {{count}} new message",
     "newMessages_other": "{{protocol}}: {{count}} new messages"
   },

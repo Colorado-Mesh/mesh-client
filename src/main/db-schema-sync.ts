@@ -9,7 +9,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 34;
+export const CURRENT_SCHEMA_VERSION = 35;
 
 /**
  * Tables only — used during upgrades so we do not CREATE UNIQUE indexes before
@@ -561,6 +561,69 @@ function rebuildMeshcoreTraceHistoryIfNeeded(db: NodeSqliteDB): void {
           `);
 }
 
+const MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC = 1_000_000_000;
+
+/**
+ * Repair repeater uptime stored as last_advert, invalid GPS, and orphan hop rows (schema v35).
+ * Idempotent — safe on every startup.
+ */
+function repairMeshcoreContactDataQuality(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'meshcore_contacts')) return;
+
+  if (tableExists(db, 'meshcore_hop_history')) {
+    db.prepare(
+      `UPDATE meshcore_contacts
+         SET last_advert = (
+           SELECT CAST(h.timestamp / 1000 AS INTEGER)
+           FROM meshcore_hop_history h
+           WHERE h.node_id = meshcore_contacts.node_id
+             AND h.timestamp >= 1000000000000
+         )
+       WHERE last_advert IS NOT NULL
+         AND last_advert < ?
+         AND EXISTS (
+           SELECT 1 FROM meshcore_hop_history h
+           WHERE h.node_id = meshcore_contacts.node_id
+             AND h.timestamp >= 1000000000000
+         )`,
+    ).run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC);
+
+    db.prepare(
+      `DELETE FROM meshcore_hop_history
+       WHERE node_id NOT IN (SELECT node_id FROM meshcore_contacts)`,
+    ).run();
+  }
+
+  db.prepare(
+    `UPDATE meshcore_contacts
+     SET last_advert = NULL
+     WHERE last_advert IS NOT NULL AND last_advert < ?`,
+  ).run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC);
+
+  db.prepare(
+    `UPDATE meshcore_contacts SET adv_lat = NULL WHERE adv_lat IS NOT NULL AND (adv_lat < -90 OR adv_lat > 90)`,
+  ).run();
+  db.prepare(
+    `UPDATE meshcore_contacts SET adv_lon = NULL WHERE adv_lon IS NOT NULL AND (adv_lon < -180 OR adv_lon > 180)`,
+  ).run();
+
+  if (tableExists(db, 'meshcore_messages')) {
+    db.prepare(
+      `DELETE FROM meshcore_messages
+       WHERE id IN (
+         SELECT m2.id FROM meshcore_messages m1
+         INNER JOIN meshcore_messages m2 ON m1.id < m2.id
+           AND m1.channel_idx = -1 AND m2.channel_idx = -1
+           AND m1.received_via = 'rf' AND m2.received_via = 'rf'
+           AND m1.sender_id IS NOT NULL AND m1.sender_id = m2.sender_id
+           AND COALESCE(m1.to_node, -1) = COALESCE(m2.to_node, -1)
+           AND m1.payload = m2.payload
+           AND ABS(m2.timestamp - m1.timestamp) <= 120000
+       )`,
+    ).run();
+  }
+}
+
 function ensureIndexes(db: NodeSqliteDB): void {
   for (const ddl of INDEX_DDLS) {
     db.execScript(ddl);
@@ -581,6 +644,7 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   ensureMeshcoreMessagesDedupIndex(db);
   migrateLegacyContactGroups(db);
   rebuildMeshcoreTraceHistoryIfNeeded(db);
+  repairMeshcoreContactDataQuality(db);
 }
 
 /**

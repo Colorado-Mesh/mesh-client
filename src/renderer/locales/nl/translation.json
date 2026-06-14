@@ -2523,7 +2523,8 @@
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nieuw bericht",
-    "newMessages_other": "{{protocol}}: {{count}} nieuwe berichten"
+    "newMessages_other": "{{protocol}}: {{count}} nieuwe berichten",
+    "meshcoreDistanceFilterHint": "Je hebt {{count}} contactpersonen met GPS op de kaart staan. Schakel het afstandsfilter in → Vormgeving in om zich te concentreren op knooppunten in de buurt."
   },
   "updateStatus": {
     "checking": "Controleren…",

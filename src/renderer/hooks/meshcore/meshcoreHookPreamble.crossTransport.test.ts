@@ -5,12 +5,14 @@ import type { ChatMessage } from '../../lib/types';
 import {
   findMeshcoreChannelRfDuplicate,
   findMeshcoreCrossTransportDuplicate,
+  findMeshcoreDmRfDuplicate,
   findMeshcoreTapbackEchoDuplicate,
   mapMeshcoreCrossTransportUpgrade,
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
   meshcoreChannelRfMatch,
   meshcoreCrossTransportMatch,
+  meshcoreDmRfMatch,
   meshcoreTapbackEchoMatch,
 } from './meshcoreHookPreamble';
 
@@ -172,5 +174,34 @@ describe('meshcoreChannelRfMatch', () => {
       timestamp: channel.timestamp + 1_000,
     });
     expect(meshcoreChannelRfMatch(channel, dm)).toBe(false);
+  });
+});
+
+describe('meshcoreDmRfMatch', () => {
+  it('matches duplicate RF DMs with the same body within the window', () => {
+    const first = baseMsg({
+      receivedVia: 'rf',
+      channel: -1,
+      to: 0xdeadbeef,
+      timestamp: 1_700_000_000_000,
+    });
+    const replay = baseMsg({
+      receivedVia: 'rf',
+      channel: -1,
+      to: 0xdeadbeef,
+      timestamp: first.timestamp + 52_000,
+    });
+    expect(meshcoreDmRfMatch(first, replay)).toBe(true);
+    expect(findMeshcoreDmRfDuplicate([first], replay)).toBe(first);
+  });
+
+  it('does not match broadcast channel messages', () => {
+    const dm = baseMsg({ receivedVia: 'rf', channel: -1, to: 1, timestamp: 0 });
+    const channel = baseMsg({
+      receivedVia: 'rf',
+      channel: 0,
+      timestamp: 1_000,
+    });
+    expect(meshcoreDmRfMatch(dm, channel)).toBe(false);
   });
 });

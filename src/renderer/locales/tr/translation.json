@@ -2523,7 +2523,8 @@
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} yeni mesaj",
-    "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar"
+    "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar",
+    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişiniz var. Yakındaki düğümlere odaklanmak için → Görünüm'deki mesafe filtresini etkinleştirin."
   },
   "updateStatus": {
     "checking": "Kontrol ediliyor…",

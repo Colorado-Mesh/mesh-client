@@ -5,6 +5,7 @@ import type { ChatMessage } from '@/renderer/lib/types';
 
 import {
   meshcoreRoomServerIdsFromContacts,
+  repairMeshcoreHydratedDmRfDuplicates,
   repairMeshcoreHydratedMessages,
   repairMeshcoreMisfiledRoomDmMessages,
   repairMeshcoreRoomStoredPostPayloads,
@@ -59,5 +60,24 @@ describe('repairMeshcoreRoomStoredPostPayloads', () => {
     };
     const [fixed] = repairMeshcoreHydratedMessages([garbled], new Set([roomId]));
     expect(fixed.payload).toBe('Persisted post');
+  });
+});
+
+describe('repairMeshcoreHydratedDmRfDuplicates', () => {
+  it('drops duplicate RF DM rows loaded from SQLite', () => {
+    const base: ChatMessage = {
+      sender_id: 0x123,
+      sender_name: 'durk',
+      payload: 'N99157 3700ft',
+      channel: -1,
+      to: 0xabc,
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf',
+    };
+    const dup: ChatMessage = {
+      ...base,
+      timestamp: base.timestamp + 52_000,
+    };
+    expect(repairMeshcoreHydratedDmRfDuplicates([base, dup])).toHaveLength(1);
   });
 });

@@ -62,6 +62,7 @@ import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useDualProtocolPanelActions } from './hooks/useDualProtocolPanelActions';
+import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
@@ -734,6 +735,14 @@ function AppContent({
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
+
+  useMeshcoreDistanceFilterHint(
+    protocol,
+    meshcoreUiNodes,
+    meshcoreConnectionView.state.myNodeNum ?? 0,
+    locationFilter.enabled,
+  );
+
   const activeConnectionView = activeFacade.connectionView;
   const activeQueueFromStore = activeFacade.queue;
   const myNodeNumForQueue = activeConnectionView.state.myNodeNum;

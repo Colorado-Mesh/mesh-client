@@ -685,6 +685,15 @@ declare global {
           snr: number | null;
           rssi: number | null;
         } | null>;
+        getAllMeshcoreHopHistory: () => Promise<
+          {
+            node_id: number;
+            timestamp: number;
+            hops: number | null;
+            snr: number | null;
+            rssi: number | null;
+          }[]
+        >;
         saveMeshcoreTraceHistory: (
           nodeId: number,
           timestamp: number,
