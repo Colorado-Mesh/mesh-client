@@ -25,7 +25,7 @@ export default defineConfig({
           name: 'renderer',
           globals: true,
           environment: 'jsdom',
-          setupFiles: ['./src/renderer/vitest.setup.ts'],
+          setupFiles: [resolve(__dirname, 'src/renderer/vitest.setup.ts')],
           include: ['src/renderer/**/*.test.{ts,tsx}'],
         },
         resolve: {
@@ -52,12 +52,19 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
-      include: ['src/main/**', 'src/renderer/lib/**', 'src/preload/**'],
+      include: ['src/main/**', 'src/preload/**', 'src/shared/**', 'src/renderer/**'],
+      exclude: [
+        '**/*.test.{ts,tsx,mjs}',
+        '**/*.d.ts',
+        'src/renderer/locales/**',
+        'src/renderer/index.html',
+        'src/renderer/vitest.setup.ts',
+      ],
       thresholds: {
-        lines: 0,
-        functions: 0,
-        branches: 0,
-        statements: 0,
+        lines: 51,
+        functions: 49,
+        branches: 43,
+        statements: 50,
       },
     },
   },
