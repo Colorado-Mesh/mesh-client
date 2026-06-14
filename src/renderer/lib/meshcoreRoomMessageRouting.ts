@@ -8,6 +8,46 @@ import {
 /** MeshCore contact type for room BBS servers. */
 export const MESHCORE_CONTACT_TYPE_ROOM = 3;
 
+const PRINTABLE_ASCII_MIN = 32;
+const PRINTABLE_ASCII_MAX = 126;
+const REPLACEMENT_CHAR = 0xfffd;
+
+/** PLAIN room-server system lines (e.g. Bot Stats) are readable ASCII from byte 0. */
+export function looksLikeRoomPlainSystemLine(wireText: string): boolean {
+  if (wireText.length <= 4) return true;
+  for (let i = 0; i < 4; i++) {
+    const code = wireText.charCodeAt(i);
+    if (code < PRINTABLE_ASCII_MIN || code > PRINTABLE_ASCII_MAX) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** SignedPlain author prefixes are raw pubkey bytes — often non-printable or U+FFFD. */
+export function looksLikeSignedPlainWirePrefix(wireText: string): boolean {
+  if (wireText.length <= 4) return false;
+  for (let i = 0; i < 4; i++) {
+    const code = wireText.charCodeAt(i);
+    if (code === REPLACEMENT_CHAR || code < PRINTABLE_ASCII_MIN || code > PRINTABLE_ASCII_MAX) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function shouldStripRoomPostAuthorPrefix(
+  wireText: string,
+  txtType: number | undefined,
+  isKnownRoomNode?: boolean,
+): boolean {
+  if (wireText.length <= 4) return false;
+  if (txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN) return true;
+  if (looksLikeRoomPlainSystemLine(wireText)) return false;
+  if (isKnownRoomNode && looksLikeSignedPlainWirePrefix(wireText)) return true;
+  return false;
+}
+
 export function isMeshcoreRoomServerHwModel(hwModel: string | undefined): boolean {
   return hwModel === 'Room';
 }
@@ -36,8 +76,9 @@ export function meshcoreRoomPostBodyFromWire(
   wireText: string,
   txtType: number | undefined,
   pubKeyPrefixToNodeId: Map<string, number>,
+  opts?: { isKnownRoomNode?: boolean },
 ): { authorId: number; payload: string } {
-  if (txtType === MESHCORE_TXT_TYPE_SIGNED_PLAIN) {
+  if (shouldStripRoomPostAuthorPrefix(wireText, txtType, opts?.isKnownRoomNode)) {
     return parseMeshcoreRoomPostPayload(wireText, pubKeyPrefixToNodeId);
   }
   return { authorId: 0, payload: wireText };

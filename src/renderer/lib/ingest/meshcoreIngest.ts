@@ -184,6 +184,7 @@ function handleTextMessage(
       event.payload.payload,
       event.payload.txtType,
       prefixMap,
+      { isKnownRoomNode },
     );
     const authorNode =
       authorId !== 0 ? useNodeStore.getState().nodes[identityId]?.[authorId] : undefined;
