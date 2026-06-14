@@ -280,7 +280,21 @@
       "sendParts_one": "Enviar peça {{count}}",
       "sendParts_other": "Enviar {{count}} peças"
     },
-    "sendFailed": "Falha no envio"
+    "sendFailed": "Falha no envio",
+    "outboxStatusQueued": "Na fila",
+    "outboxStatusSending": "Enviando…",
+    "outboxStatusBlocked": "Bloqueado",
+    "outboxStatusFailed": "Falha",
+    "retryOutboxMessage": "Repetir mensagem da caixa de saída",
+    "retryOutbox": "Tentar novamente",
+    "cancelOutboxMessage": "Cancelar mensagem da caixa de saída",
+    "dayToday": "Hoje",
+    "dayYesterday": "Ontem",
+    "newMessagesDivider": "Novas mensagens",
+    "emptyNoSearchMatches": "Nenhuma mensagem corresponde à sua pesquisa.",
+    "emptyNoDmMessages": "Ainda não há mensagens com {{name}}.",
+    "emptyNoMessagesYet": "Ainda não há mensagens. Envie uma ou aguarde as mensagens recebidas.",
+    "emptyConnectFirst": "Conecte-se a um dispositivo para começar a conversar."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}h atrás",
     "daysAgo": "{{count}}d atrás",
     "days": "dias",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Salvando..."
   },
   "configApplyNotice": {
     "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",

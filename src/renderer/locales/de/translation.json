@@ -280,7 +280,21 @@
       "sendParts_one": "{{count}} Teil senden",
       "sendParts_other": "{{count}} Teile senden"
     },
-    "sendFailed": "Senden fehlgeschlagen."
+    "sendFailed": "Senden fehlgeschlagen.",
+    "outboxStatusQueued": "In Warteschlange",
+    "outboxStatusSending": "Senden…",
+    "outboxStatusBlocked": "Blockiert",
+    "outboxStatusFailed": "Fehlgeschlagen",
+    "retryOutboxMessage": "Postausgang-Nachricht erneut versuchen",
+    "retryOutbox": "Erneut versuchen",
+    "cancelOutboxMessage": "Postausgangsnachricht abbrechen",
+    "dayToday": "Heute",
+    "dayYesterday": "Gestern",
+    "newMessagesDivider": "Neue Nachrichten",
+    "emptyNoSearchMatches": "Keine Nachrichten stimmen mit Ihrer Suche überein.",
+    "emptyNoDmMessages": "Noch keine Nachrichten mit {{name}}.",
+    "emptyNoMessagesYet": "Noch keine Nachrichten. Senden Sie eine oder warten Sie auf eingehende Nachrichten.",
+    "emptyConnectFirst": "Verbinden Sie sich mit einem Gerät, um mit dem Chatten zu beginnen."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "Vor {{count}}h",
     "daysAgo": "Vor {{count}}d",
     "days": "-Tage",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Speichern…"
   },
   "configApplyNotice": {
     "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",

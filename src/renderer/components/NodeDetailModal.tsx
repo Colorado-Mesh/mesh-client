@@ -15,6 +15,7 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { useMeshcoreRoomAuth } from '../hooks/useMeshcoreRoomAuth';
 import { formatCoordPair } from '../lib/coordUtils';
+import { downloadBlob } from '../lib/downloadBlob';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import type {
   MeshCoreNeighborResult,
@@ -1560,12 +1561,7 @@ export default function NodeDetailModal({
                           const blob = new Blob([advert.buffer as ArrayBuffer], {
                             type: 'application/octet-stream',
                           });
-                          const url = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = `contact-${node.node_id.toString(16)}.bin`;
-                          link.click();
-                          URL.revokeObjectURL(url);
+                          downloadBlob(blob, `contact-${node.node_id.toString(16)}.bin`);
                           setActionStatus(null);
                         } else {
                           setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));

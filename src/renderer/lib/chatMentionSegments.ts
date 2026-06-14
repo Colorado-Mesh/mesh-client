@@ -59,3 +59,14 @@ export function parseChatMentionSegments(input: string): ChatMentionSegment[] {
   }
   return out;
 }
+
+/** Defense-in-depth: only http(s) URLs are safe for chat link hrefs. */
+export function isSafeChatUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    // catch-no-log-ok URL parse failure — treat as unsafe link
+    return false;
+  }
+}

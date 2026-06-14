@@ -37,13 +37,29 @@ export default defineConfig({
           name: 'main',
           globals: true,
           environment: 'node',
-          include: ['src/main/**/*.test.ts', 'src/shared/**/*.test.ts', 'scripts/**/*.test.mjs'],
+          include: [
+            'src/main/**/*.test.ts',
+            'src/shared/**/*.test.ts',
+            'src/preload/**/*.test.ts',
+            'scripts/**/*.test.mjs',
+          ],
         },
         resolve: {
           alias: srcAlias,
         },
       },
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'lcov'],
+      include: ['src/main/**', 'src/renderer/lib/**', 'src/preload/**'],
+      thresholds: {
+        lines: 0,
+        functions: 0,
+        branches: 0,
+        statements: 0,
+      },
+    },
   },
   resolve: {
     alias: srcAlias,

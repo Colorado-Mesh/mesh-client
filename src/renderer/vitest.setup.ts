@@ -233,6 +233,7 @@ const electronAPIMock = {
   },
   onPowerSuspend: vi.fn().mockReturnValue(() => {}),
   onPowerResume: vi.fn().mockReturnValue(() => {}),
+  onSpellcheckReplace: vi.fn().mockReturnValue(() => {}),
   meshcore: {
     tcp: {
       connect: vi.fn().mockResolvedValue(undefined),

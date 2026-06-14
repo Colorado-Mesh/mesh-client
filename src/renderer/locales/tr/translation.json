@@ -280,7 +280,21 @@
       "sendParts_one": "{{count}} parça gönder",
       "sendParts_other": "{{count}} parça gönder"
     },
-    "sendFailed": "Gönderilemedi"
+    "sendFailed": "Gönderilemedi",
+    "outboxStatusQueued": "Kuyrukta",
+    "outboxStatusSending": "Gönderiliyor...",
+    "outboxStatusBlocked": "Engellendi",
+    "outboxStatusFailed": "Başarısız",
+    "retryOutboxMessage": "Giden kutusu mesajını yeniden dene",
+    "retryOutbox": "Tekrar dene",
+    "cancelOutboxMessage": "Giden kutusu mesajını iptal et",
+    "dayToday": "Bugün",
+    "dayYesterday": "Dün",
+    "newMessagesDivider": "Yeni mesajlar",
+    "emptyNoSearchMatches": "Aramanızla eşleşen mesaj yok.",
+    "emptyNoDmMessages": "{{name}} ile henüz mesaj yok.",
+    "emptyNoMessagesYet": "Henüz mesaj yok. Bir mesaj gönderin veya gelen mesajları bekleyin.",
+    "emptyConnectFirst": "Sohbete başlamak için bir cihaza bağlanın."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}sa önce",
     "daysAgo": "{{count}} gün önce",
     "days": "günler",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Kaydediliyor..."
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",

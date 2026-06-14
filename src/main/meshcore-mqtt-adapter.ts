@@ -210,6 +210,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearConnectTimers();
     this.clearWssPing();
     this.clearReconnectTimer();
+    this.connectAbortByWatchdog = false;
     this.pendingReconnect = false;
     if (this.pendingReconnectTimer) {
       clearTimeout(this.pendingReconnectTimer);

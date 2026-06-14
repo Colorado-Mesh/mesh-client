@@ -100,7 +100,7 @@ Before PR: `pnpm run lint`, `typecheck`, `test:run`, plus any relevant `check:*`
 
 ## 7. Git & PR Workflow
 
-Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/meshtastic-client`. Pre-PR: refresh `README`/version metadata as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
+Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/mesh-client`. Pre-PR: refresh `README`/version metadata as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
 
 ## 8. Subsystem Quick Reference
 
@@ -242,7 +242,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 
 ## 9. Cursor / Claude indexing
 
-[`.cursorignore`](.cursorignore) and [`.claudeignore`](.claudeignore) exclude noisy paths (build output, dependencies, Cursor debug logs under `.cursor/`). Ignored paths may still be read when you open the file, paste an excerpt, or reference an explicit path in chat.
+Optional local ignore files [`.cursorignore`](.cursorignore) and [`.claudeignore`](.claudeignore) (both listed in `.gitignore`) exclude noisy paths when present (build output, dependencies, Cursor debug logs under `.cursor/`). Ignored paths may still be read when you open the file, paste an excerpt, or reference an explicit path in chat.
 
 ## 10. Context Management
 

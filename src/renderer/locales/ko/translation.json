@@ -280,7 +280,21 @@
       "sendParts_one": "{{count}}개 보내기",
       "sendParts_other": "{{count}}개 보내기"
     },
-    "sendFailed": "전송 실패"
+    "sendFailed": "전송 실패",
+    "outboxStatusQueued": "대기 중",
+    "outboxStatusSending": "전송 중…",
+    "outboxStatusBlocked": "차단됨",
+    "outboxStatusFailed": "실패함",
+    "retryOutboxMessage": "발신함 메시지 재시도",
+    "retryOutbox": "다시 시도",
+    "cancelOutboxMessage": "발신함 메시지 취소",
+    "dayToday": "오늘",
+    "dayYesterday": "어제",
+    "newMessagesDivider": "새 메시지",
+    "emptyNoSearchMatches": "검색 조건에 일치하는 메시지가 없습니다.",
+    "emptyNoDmMessages": "{{name}}님과의 메시지가 아직 없습니다.",
+    "emptyNoMessagesYet": "아직 메시지가 없습니다. 메시지를 보내거나 수신을 기다리세요.",
+    "emptyConnectFirst": "채팅을 시작하려면 기기에 연결하세요."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}시간 전",
     "daysAgo": "{{count}}d 전",
     "days": "날",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "저장 중..."
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",

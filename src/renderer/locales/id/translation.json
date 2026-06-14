@@ -280,7 +280,21 @@
       "sendParts_one": "Kirim {{count}} bagian",
       "sendParts_other": "Kirim {{count}} bagian"
     },
-    "sendFailed": "Pengiriman gagal"
+    "sendFailed": "Pengiriman gagal",
+    "outboxStatusQueued": "Dalam antrean",
+    "outboxStatusSending": "Mengirim...",
+    "outboxStatusBlocked": "Diblokir",
+    "outboxStatusFailed": "Gagal",
+    "retryOutboxMessage": "Coba lagi pesan kotak keluar",
+    "retryOutbox": "Coba lagi",
+    "cancelOutboxMessage": "Batalkan pesan kotak keluar",
+    "dayToday": "Hari ini",
+    "dayYesterday": "Kemarin",
+    "newMessagesDivider": "Pesan baru",
+    "emptyNoSearchMatches": "Tidak ada pesan yang cocok dengan pencarian Anda.",
+    "emptyNoDmMessages": "Belum ada pesan dengan {{name}}.",
+    "emptyNoMessagesYet": "Belum ada pesan. Kirim pesan atau tunggu pesan masuk.",
+    "emptyConnectFirst": "Sambungkan ke perangkat untuk mulai mengobrol."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}jam yang lalu",
     "daysAgo": "{{count}} hari yang lalu",
     "days": "hari",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Menyimpan..."
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",

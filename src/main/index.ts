@@ -1367,6 +1367,30 @@ function configureRendererSpellcheck(sess: Session): void {
   }
 }
 
+interface SpellcheckReplacePayload {
+  suggestion: string;
+  misspelledWord: string;
+  selectionStartOffset?: number;
+}
+
+/** Chromium replaceMisspelling does not update React-controlled fields; renderer syncs via IPC. */
+function applySpellcheckSuggestion(
+  win: BrowserWindow,
+  suggestion: string,
+  misspelledWord: string,
+  selectionStartOffset?: number,
+): void {
+  const wc = win.webContents;
+  wc.replaceMisspelling(suggestion);
+  if (!misspelledWord) return;
+  const payload: SpellcheckReplacePayload = {
+    suggestion,
+    misspelledWord,
+    ...(selectionStartOffset != null ? { selectionStartOffset } : {}),
+  };
+  wc.send('spellcheck:replace', payload);
+}
+
 function parseHttpOrHttpsUrl(raw: string): URL | null {
   try {
     const parsed = new URL(raw);
@@ -1482,7 +1506,12 @@ function createWindow() {
           new MenuItem({
             label: suggestion,
             click: () => {
-              win.webContents.replaceMisspelling(suggestion);
+              applySpellcheckSuggestion(
+                win,
+                suggestion,
+                params.misspelledWord,
+                params.selectionStartOffset,
+              );
             },
           }),
         );

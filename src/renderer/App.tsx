@@ -73,6 +73,7 @@ import {
 } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useSendMessage } from './hooks/useSendMessage';
+import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
@@ -648,6 +649,7 @@ function AppContent({
       onPowerResume: meshcoreRuntime.onPowerResume,
     },
   });
+  useSpellcheckReplaceSync();
 
   const { meshtastic: meshtasticPanelActions, meshcore: meshcorePanelActions } =
     useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime);
@@ -1299,7 +1301,7 @@ function AppContent({
 
   const traceRouteHops = useMemo(() => {
     if (!selectedNode) return undefined;
-    if (protocol === 'meshcore') return undefined;
+    if (capabilities.protocol !== 'meshtastic') return undefined;
     const result = activeRuntime.traceRouteResults.get(selectedNode.node_id);
     if (!result) return undefined;
     return [
@@ -1311,13 +1313,13 @@ function AppContent({
     selectedNode,
     panelActions,
     activeConnectionView.state.myNodeNum,
-    protocol,
+    capabilities.protocol,
     activeRuntime.traceRouteResults,
   ]);
 
   /** In meshcore mode, only show configured channels (key !== all zeros) in chat. */
   const chatChannels = useMemo(() => {
-    if (protocol !== 'meshcore') return activeRuntime.channels;
+    if (capabilities.protocol !== 'meshcore') return activeRuntime.channels;
     const chs = activeRuntime.channels as {
       index: number;
       name: string;
@@ -1331,7 +1333,7 @@ function AppContent({
     return chs
       .filter((ch) => ch.secret?.length === 16 && toHex(ch.secret) !== unconfiguredKey)
       .map((ch) => ({ index: ch.index, name: ch.name }));
-  }, [protocol, activeRuntime.channels]);
+  }, [capabilities.protocol, activeRuntime.channels]);
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
@@ -1372,10 +1374,10 @@ function AppContent({
   }, [protocol]);
 
   useEffect(() => {
-    if (protocol === 'meshcore' && activePanelIndex === ROOMS_PANEL_INDEX) {
+    if (capabilities.hasRoomServersPanel && activePanelIndex === ROOMS_PANEL_INDEX) {
       setRoomsTabVisited(true);
     }
-  }, [activePanelIndex, protocol]);
+  }, [activePanelIndex, capabilities.hasRoomServersPanel]);
 
   const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
   const freeze = chatPanelFreeze;
@@ -2494,7 +2496,7 @@ function AppContent({
                       hidden={activePanelIndex !== 5}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 5 && protocol === 'meshcore' ? (
+                      {activePanelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RepeatersPanel
@@ -2826,7 +2828,7 @@ function AppContent({
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="p-4">
-                              {protocol === 'meshcore' ? (
+                              {capabilities.protocol === 'meshcore' ? (
                                 <PacketDistributionPanel
                                   variant="meshcore"
                                   packets={meshcoreRuntime.rawPackets}
@@ -2839,8 +2841,8 @@ function AppContent({
                                   getNodeLabel={rawPacketGetNodeLabel}
                                 />
                               )}
-                              {protocol !== 'meshcore' && (
-                                <ChannelUtilizationChart nodes={nodesForUi} protocol={protocol} />
+                              {capabilities.protocol === 'meshtastic' && (
+                                <ChannelUtilizationChart nodes={nodesForUi} />
                               )}
                             </div>
                           </Suspense>
@@ -2857,7 +2859,7 @@ function AppContent({
                       {activePanelIndex === 14 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            {protocol === 'meshcore' ? (
+                            {capabilities.protocol === 'meshcore' ? (
                               <RawPacketLogPanel
                                 variant="meshcore"
                                 packets={meshcoreRuntime.rawPackets}

@@ -280,7 +280,21 @@
       "sendParts_one": "Отправить {{count}} деталь",
       "sendParts_other": "Отправьте {{count}} деталей"
     },
-    "sendFailed": "Сбой отправки"
+    "sendFailed": "Сбой отправки",
+    "outboxStatusQueued": "В очереди",
+    "outboxStatusSending": "Отправка…",
+    "outboxStatusBlocked": "Заблокирован",
+    "outboxStatusFailed": "Не удалось",
+    "retryOutboxMessage": "Повторить сообщение в папке «Исходящие»",
+    "retryOutbox": "Повторить попытку",
+    "cancelOutboxMessage": "Отменить сообщение в папке «Исходящие»",
+    "dayToday": "Сегодня",
+    "dayYesterday": "Вчера",
+    "newMessagesDivider": "Новые сообщения",
+    "emptyNoSearchMatches": "Ваш запрос не вернул результатов",
+    "emptyNoDmMessages": "Сообщений с {{name}} пока нет.",
+    "emptyNoMessagesYet": "Сообщений пока нет. Отправьте одно или дождитесь входящих сообщений.",
+    "emptyConnectFirst": "Подключитесь к устройству, чтобы начать чат."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}ч назад",
     "daysAgo": "{{count}}дней назад",
     "days": "дни",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Сохранение..."
   },
   "configApplyNotice": {
     "persistNote": "Примененные настройки сохраняются во флэш-памяти устройства и сохраняются при перезагрузке.",
@@ -2273,7 +2288,7 @@
     "autoLoginFailedAria": "Ошибка автоматического входа: {{error}}",
     "jumpToLatest": "Перейти к последним",
     "jumpToUnread": "Перейти к непрочитанным",
-    "newMessagesDivider": "Новые письма",
+    "newMessagesDivider": "Новые сообщения",
     "loggingInMarkerAria": "Вход на сервер комнаты",
     "savedPasswordNotLoggedIn": "Пароль сохранен — откройте комнату и войдите в систему",
     "favorite": "Избранная комната",

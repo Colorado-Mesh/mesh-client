@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
+import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
@@ -134,16 +134,22 @@ export function ChatPayloadText({ text, query }: ChatPayloadTextProps) {
               </span>
             ) : null
           ) : seg.kind === 'url' ? (
-            <a
-              key={`u-${i}`}
-              href={seg.url}
-              target="_blank"
-              rel="noreferrer"
-              className="break-all text-cyan-400 underline hover:text-cyan-300"
-              title={seg.url}
-            >
-              {highlightCaseInsensitive(seg.url, query)}
-            </a>
+            isSafeChatUrl(seg.url) ? (
+              <a
+                key={`u-${i}`}
+                href={seg.url}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all text-cyan-400 underline hover:text-cyan-300"
+                title={seg.url}
+              >
+                {highlightCaseInsensitive(seg.url, query)}
+              </a>
+            ) : (
+              <span key={`u-${i}`} className="break-all whitespace-pre-wrap">
+                {highlightCaseInsensitive(seg.url, query)}
+              </span>
+            )
           ) : (
             <span key={`t-${i}`} className="whitespace-pre-wrap">
               {highlightCaseInsensitive(seg.text, query)}

@@ -78,6 +78,16 @@ describe('diagnoseConnectedNode Hidden Terminal', () => {
     const findings = diagnoseConnectedNode(node);
     expect(findings.some((f) => f.condition === 'Hidden Terminal Risk')).toBe(true);
   });
+
+  it('does not flag Non-LoRa RFI when num_packets_rx_bad is absent', () => {
+    const node = baseNode({
+      channel_utilization: 50,
+      num_packets_rx: 100,
+      num_packets_rx_bad: undefined,
+    });
+    const findings = diagnoseConnectedNode(node);
+    expect(findings.some((f) => f.condition === 'Non-LoRa Noise / RFI')).toBe(false);
+  });
 });
 
 describe('diagnoseOtherNode', () => {

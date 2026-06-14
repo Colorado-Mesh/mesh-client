@@ -317,9 +317,14 @@ export function KeyBackupRestoreSection({
           <ul className="max-h-48 space-y-1 overflow-y-auto">
             {allBackups.map((entry) => {
               const nodeKey = entryNodeKey(entry, protocol);
-              const prefix = publicKeyPrefixHex(
-                Uint8Array.from(atob(entry.publicKeyB64), (c) => c.charCodeAt(0)),
-              );
+              let prefix = '????';
+              try {
+                prefix = publicKeyPrefixHex(
+                  Uint8Array.from(atob(entry.publicKeyB64), (c) => c.charCodeAt(0)),
+                );
+              } catch {
+                // catch-no-log-ok malformed backup base64 — keep fallback prefix label
+              }
               return (
                 <li key={nodeKey}>
                   <button

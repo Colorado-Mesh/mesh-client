@@ -280,7 +280,21 @@
       "sendParts_one": "Надіслати {{count}} деталь",
       "sendParts_other": "Надіслати запчастини ({{count}})"
     },
-    "sendFailed": "Не вдалося надіслати"
+    "sendFailed": "Не вдалося надіслати",
+    "outboxStatusQueued": "В черзі",
+    "outboxStatusSending": "Надсилання…",
+    "outboxStatusBlocked": "Блоковано",
+    "outboxStatusFailed": "Помилка",
+    "retryOutboxMessage": "Повторити спробу вихідного повідомлення",
+    "retryOutbox": "Повторити спробу",
+    "cancelOutboxMessage": "Скасувати вихідне повідомлення",
+    "dayToday": "Сьогодні",
+    "dayYesterday": "Учора",
+    "newMessagesDivider": "Нові повідомлення",
+    "emptyNoSearchMatches": "Немає повідомлень, які відповідають вашому пошуку.",
+    "emptyNoDmMessages": "Повідомлень з {{name}} ще немає.",
+    "emptyNoMessagesYet": "Повідомлень ще немає. Надішліть одне або дочекайтеся вхідних повідомлень.",
+    "emptyConnectFirst": "Щоб почати спілкування, підключіться до пристрою."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}} год тому",
     "daysAgo": "{{count}} дн. тому",
     "days": "днів",
-    "emDash": "-"
+    "emDash": "-",
+    "saving": "Триває збереження…"
   },
   "configApplyNotice": {
     "persistNote": "Застосовані налаштування зберігаються у флеш-пам 'яті пристрою та зберігаються під час перезавантаження.",
@@ -2273,7 +2288,7 @@
     "autoLoginFailedAria": "Помилка автоматичного входу: {{error}}",
     "jumpToLatest": "Перейти до останньої версії",
     "jumpToUnread": "Перейти до непрочитаного",
-    "newMessagesDivider": "нове повідомлення",
+    "newMessagesDivider": "Нові повідомлення",
     "loggingInMarkerAria": "Вхід на сервер кімнати",
     "savedPasswordNotLoggedIn": "Пароль збережено — відкрийте кімнату та увійдіть",
     "favorite": "Улюблена кімната",

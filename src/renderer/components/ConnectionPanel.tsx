@@ -1837,12 +1837,12 @@ export default function ConnectionPanel({
         {/* PIN input prompt for Linux BLE pairing (connecting view) */}
         {showPinPrompt && (
           <div className="w-full rounded-lg border border-blue-700 bg-blue-900/50 px-4 py-3 text-blue-300">
-            <p className="mb-2 text-sm">Enter the PIN shown on your device:</p>
+            <p className="mb-2 text-sm">{t('connectionPanel.enterPin')}</p>
             {pinCountdown !== null && (
               <p
                 className={`mb-2 text-xs ${pinCountdown <= 10 ? 'font-semibold text-red-400' : 'text-blue-400'}`}
               >
-                {pinCountdown}s — enter PIN quickly, BlueZ pairing window is closing
+                {t('connectionPanel.pinExpiring', { count: pinCountdown })}
               </p>
             )}
             <div className="flex gap-2">
@@ -1864,14 +1864,14 @@ export default function ConnectionPanel({
                 disabled={!normalizePairingPin(pinInputValue)}
                 className="rounded bg-blue-600 px-4 py-1.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                Submit
+                {t('connectionPanel.submit')}
               </button>
               <button
                 type="button"
                 onClick={handlePinCancel}
                 className="rounded bg-gray-600 px-4 py-1.5 font-medium text-white hover:bg-gray-700"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

@@ -3368,7 +3368,7 @@ function MeshcoreChannelSection({
                       disabled={disabled || saving}
                       className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
                     >
-                      Confirm
+                      {t('common.confirm')}
                     </button>
                     <button
                       onClick={() => {
@@ -3376,7 +3376,7 @@ function MeshcoreChannelSection({
                       }}
                       className="text-muted text-xs hover:text-gray-300"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </span>
                 ) : (
@@ -3502,7 +3502,7 @@ function MeshcoreChannelSection({
                 disabled={disabled || saving || !isValidHex || (addingNew && newIdx === '')}
                 className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
               <button
                 onClick={() => {
@@ -3511,7 +3511,7 @@ function MeshcoreChannelSection({
                 }}
                 className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

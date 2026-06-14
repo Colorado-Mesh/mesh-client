@@ -9,7 +9,7 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **22.13.0+** and pnpm **10+** (`package.json` `engines`; `pnpm-workspace.yaml` sets `engineStrict: true` so `pnpm install` fails on version mismatch)
+- Node.js **22.13.0+** and pnpm **10+** (`package.json` `engines`; repository configuration enforces engine checks so `pnpm install` fails on version mismatch)
 - [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
@@ -417,8 +417,13 @@ Auto-translation uses MyMemory by default. Incremental translations (new keys on
    xcode-select --install
    ```
 2. Install Node 22 (22.13.0+ recommended via nvm) and npm:
+
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh -o install_nvm.sh
+   
+   less install_nvm.sh
+   bash install_nvm.sh
+   rm install_nvm.sh
    export NVM_DIR="$HOME/.nvm"
    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
    nvm install 22

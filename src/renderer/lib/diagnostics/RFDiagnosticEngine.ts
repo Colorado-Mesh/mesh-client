@@ -120,8 +120,8 @@ export function diagnoseConnectedNode(
     });
   }
 
-  // 2. High CU + rx_bad = 0 → non-LoRa interference
-  if (cu > HIGH_CU && rxTotal > MIN_SAMPLE && rxBad === 0) {
+  // 2. High CU + rx_bad = 0 → non-LoRa interference (field must be present — undefined is not zero)
+  if (cu > HIGH_CU && rxTotal > MIN_SAMPLE && node.num_packets_rx_bad === 0) {
     findings.push({
       condition: 'Non-LoRa Noise / RFI',
       cause: 'Interference from motors, baby monitors, leaky power lines, etc.',

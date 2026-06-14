@@ -8,10 +8,9 @@ import type { MeshNode } from '../lib/types';
 
 interface ChannelUtilizationChartProps {
   nodes: Map<number, MeshNode>;
-  protocol: 'meshtastic' | 'meshcore';
 }
 
-export default function ChannelUtilizationChart({ nodes, protocol }: ChannelUtilizationChartProps) {
+export default function ChannelUtilizationChart({ nodes }: ChannelUtilizationChartProps) {
   const { t } = useTranslation();
 
   const rows = useMemo(() => {
@@ -40,9 +39,6 @@ export default function ChannelUtilizationChart({ nodes, protocol }: ChannelUtil
   return (
     <div className="mt-6 rounded border border-slate-700 bg-slate-800/50 p-4">
       <h3 className="mb-1 text-sm font-medium text-slate-300">{t('channelUtilization.title')}</h3>
-      {protocol === 'meshcore' && (
-        <p className="mb-2 text-xs text-slate-500">{t('channelUtilization.meshcoreNote')}</p>
-      )}
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 48, left: 0, bottom: 0 }}>
           <XAxis

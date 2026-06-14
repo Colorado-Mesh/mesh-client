@@ -41,10 +41,32 @@ const defaultState: MessageStoreState = {
 
 export const useMessageStore = create<MessageStoreState>()(() => defaultState);
 
+const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
+  'id',
+  'from',
+  'senderName',
+  'to',
+  'payload',
+  'channelIndex',
+  'timestamp',
+  'rxSnr',
+  'rxRssi',
+  'hopCount',
+  'tapback',
+  'replyTo',
+  'replyPreviewText',
+  'replyPreviewSender',
+  'status',
+  'mqttStatus',
+  'receivedVia',
+  'isHistory',
+  'error',
+  'roomServerId',
+];
+
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
   // MessageRecord fields are primitives (string/number/boolean/undefined); strict === is sufficient.
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof MessageRecord>;
-  for (const key of keys) {
+  for (const key of MESSAGE_RECORD_KEYS) {
     if (a[key] !== b[key]) return false;
   }
   return true;

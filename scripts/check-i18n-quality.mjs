@@ -328,7 +328,90 @@ export const COMPOSE_LIMIT_NUMERIC_LEAF_KEYS = new Set(['approaching']);
 export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'replyRequiresPacketId',
   'queueButton',
+  'outboxStatusQueued',
+  'outboxStatusSending',
+  'outboxStatusBlocked',
+  'outboxStatusFailed',
+  'retryOutboxMessage',
+  'retryOutbox',
+  'cancelOutboxMessage',
+  'dayToday',
+  'dayYesterday',
+  'newMessagesDivider',
+  'emptyNoSearchMatches',
+  'emptyNoDmMessages',
+  'emptyNoMessagesYet',
+  'emptyConnectFirst',
 ]);
+
+/** chatPanel outbox / date divider keys checked for known auto-translate false friends. */
+export const CHAT_PANEL_OUTBOX_UI_LEAF_KEYS = new Set([
+  'outboxStatusQueued',
+  'outboxStatusSending',
+  'outboxStatusBlocked',
+  'outboxStatusFailed',
+  'retryOutbox',
+  'cancelOutboxMessage',
+  'dayToday',
+  'dayYesterday',
+  'newMessagesDivider',
+]);
+
+/**
+ * MyMemory often mistranslates chat outbox status and chat date dividers.
+ * Matched on chatPanel.* keys listed in CHAT_PANEL_OUTBOX_UI_LEAF_KEYS.
+ */
+export const CHAT_PANEL_OUTBOX_UI_FALSE_FRIENDS = {
+  de: [
+    {
+      re: /^Nicht bestanden$/i,
+      hint: 'outboxStatusFailed use "Fehlgeschlagen", not exam "Nicht bestanden"',
+    },
+  ],
+  es: [{ re: /En la actualidad/i, hint: 'dayToday must be "Hoy", not "En la actualidad"' }],
+  fr: [
+    { re: /Aujourdh.?ui/i, hint: 'dayToday must be "Aujourd\'hui"' },
+    { re: /^Nouveau message$/i, hint: 'newMessagesDivider must be plural "Nouveaux messages"' },
+  ],
+  id: [
+    { re: /Diantrekan/i, hint: 'outboxStatusQueued use "Dalam antrean", not invalid "Diantrekan"' },
+  ],
+  it: [
+    { re: /^Bloccati$/i, hint: 'outboxStatusBlocked must be singular "Bloccato"' },
+    {
+      re: /Messaggio di annullamento posta/i,
+      hint: 'cancelOutboxMessage must be imperative "Annulla messaggio in uscita"',
+    },
+  ],
+  ja: [
+    {
+      re: /送信中・+/i,
+      hint: 'outboxStatusSending use Unicode ellipsis "送信中…", not middle dots ・',
+    },
+  ],
+  pl: [{ re: /^Yesterday$/i, hint: 'dayYesterday must be "Wczoraj", not English' }],
+  ru: [
+    { re: /Новые письма/i, hint: 'newMessagesDivider must use "сообщения", not email "письма"' },
+    {
+      re: /^За (сегодня|вчера)$/i,
+      hint: 'dayToday/dayYesterday should be "Сегодня"/"Вчера", not "За …"',
+    },
+    { re: /^отправка/, hint: 'outboxStatusSending should be capitalized "Отправка…"' },
+  ],
+  tr: [
+    { re: /Sırada\s+Sırada/i, hint: 'outboxStatusQueued duplicated "Sırada"' },
+    { re: /^Bugun$/i, hint: 'dayToday must be "Bugün"' },
+  ],
+  uk: [
+    { re: /^Заклад,/i, hint: 'outboxStatusSending must be "Надсилання…", not bookmark "Заклад"' },
+    { re: /^нове повідомлення$/i, hint: 'newMessagesDivider must be plural "Нові повідомлення"' },
+  ],
+  zh: [
+    { re: /^封锁$/, hint: 'outboxStatusBlocked use "已阻止", not geopolitical "封锁"' },
+    { re: /支持失败/, hint: 'outboxStatusFailed must be "失败", not "支持失败"' },
+    { re: /再次挑战/, hint: 'retryOutbox must be "重试", not "再次挑战"' },
+  ],
+};
 
 /** MeshCore Rooms saved-password sidebar (recent work). */
 export const ROOMS_SAVED_PASSWORDS_MUST_TRANSLATE_LEAF_KEYS = new Set([
@@ -879,6 +962,18 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     val === enVal
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.') &&
+    CHAT_PANEL_OUTBOX_UI_LEAF_KEYS.has(leafKey)
+  ) {
+    for (const { re, hint } of CHAT_PANEL_OUTBOX_UI_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`chatPanel outbox/date false friend: ${hint}`);
+      }
+    }
   }
 
   if (locale !== 'en' && flatKey === 'chatPanel.replyRequiresPacketId') {

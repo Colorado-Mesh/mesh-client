@@ -161,14 +161,15 @@ function OutboxBubble({
   onRetry: (id: number) => void;
   onCancel: (id: number) => void;
 }) {
+  const { t } = useTranslation();
   const statusLabel =
     row.status === 'queued'
-      ? 'Queued'
+      ? t('chatPanel.outboxStatusQueued')
       : row.status === 'sending'
-        ? 'Sending…'
+        ? t('chatPanel.outboxStatusSending')
         : row.status === 'blocked'
-          ? 'Blocked'
-          : 'Failed';
+          ? t('chatPanel.outboxStatusBlocked')
+          : t('chatPanel.outboxStatusFailed');
   const statusColor =
     row.status === 'queued'
       ? 'text-muted'
@@ -190,23 +191,23 @@ function OutboxBubble({
           )}
           {(row.status === 'failed' || row.status === 'blocked') && (
             <button
-              aria-label="Retry outbox message"
+              aria-label={t('chatPanel.retryOutboxMessage')}
               onClick={() => {
                 onRetry(row.id);
               }}
               className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
             >
-              Retry
+              {t('chatPanel.retryOutbox')}
             </button>
           )}
           <button
-            aria-label="Cancel outbox message"
+            aria-label={t('chatPanel.cancelOutboxMessage')}
             onClick={() => {
               onCancel(row.id);
             }}
             className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>
@@ -258,14 +259,14 @@ function StoreForwardBadge() {
 }
 
 /** Format a date for day separators */
-function formatDayLabel(ts: number): string {
+function formatDayLabel(ts: number, t: TFunction): string {
   const date = new Date(ts);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diff = today.getTime() - msgDay.getTime();
-  if (diff === 0) return 'Today';
-  if (diff === 86_400_000) return 'Yesterday';
+  if (diff === 0) return t('chatPanel.dayToday');
+  if (diff === 86_400_000) return t('chatPanel.dayYesterday');
   return formatIsoDate(date);
 }
 
@@ -276,11 +277,12 @@ function getDayKey(ts: number): string {
 }
 
 function UnreadDivider() {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 border-t border-red-500/50" />
       <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-red-400 uppercase">
-        New messages
+        {t('chatPanel.newMessagesDivider')}
       </span>
       <div className="flex-1 border-t border-red-500/50" />
     </div>
@@ -1644,12 +1646,12 @@ function ChatPanel({
           {filteredMessages.length === 0 ? (
             <div className="text-muted py-12 text-center">
               {searchQuery
-                ? 'No messages match your search.'
+                ? t('chatPanel.emptyNoSearchMatches')
                 : isDmMode
-                  ? `No messages with ${dmNodeName} yet.`
+                  ? t('chatPanel.emptyNoDmMessages', { name: dmNodeName })
                   : isConnected
-                    ? 'No messages yet. Send one or wait for incoming messages.'
-                    : 'Connect to a device to start chatting.'}
+                    ? t('chatPanel.emptyNoMessagesYet')
+                    : t('chatPanel.emptyConnectFirst')}
             </div>
           ) : (
             <div
@@ -1678,7 +1680,7 @@ function ChatPanel({
                   <div className="flex items-center gap-3 py-2">
                     <div className="flex-1 border-t border-gray-700" />
                     <span className="text-muted shrink-0 text-xs font-medium">
-                      {formatDayLabel(msg.timestamp)}
+                      {formatDayLabel(msg.timestamp, t)}
                     </span>
                     <div className="flex-1 border-t border-gray-700" />
                   </div>
