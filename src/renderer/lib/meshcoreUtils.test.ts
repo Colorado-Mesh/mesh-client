@@ -6,6 +6,7 @@ import {
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
+  MESHCORE_CHANNEL_NAME_MAX_LEN,
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   meshcoreAppendRepeaterAuthHint,
@@ -287,6 +288,15 @@ describe('meshcoreDeriveChannelKeyHexFromName', () => {
     const a = await meshcoreDeriveChannelKeyHexFromName('#foo');
     const b = await meshcoreDeriveChannelKeyHexFromName('foo');
     expect(a).toBe(b);
+  });
+
+  it('derives key for long hashtag channel names', async () => {
+    const hex = await meshcoreDeriveChannelKeyHexFromName('#breakingnews');
+    expect(hex).toBe('8c886da2295a9cb0de02299cb6c8598e');
+  });
+
+  it('exports firmware channel name max length', () => {
+    expect(MESHCORE_CHANNEL_NAME_MAX_LEN).toBe(31);
   });
 });
 
