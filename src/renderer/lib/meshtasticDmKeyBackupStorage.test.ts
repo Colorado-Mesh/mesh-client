@@ -94,7 +94,7 @@ describe('meshtasticDmKeyBackupStorage', () => {
 
   it('migrates legacy single-slot backup to per-node storage', async () => {
     const pub = new Uint8Array(32).fill(9);
-    const priv = new Uint8Array(32).fill(8);
+    const priv = new Uint8Array(32).fill(10);
     const legacyPayload = JSON.stringify({
       publicKey: btoa(String.fromCharCode(...pub)),
       privateKey: btoa(String.fromCharCode(...priv)),

@@ -280,7 +280,21 @@
       "sendParts_one": "发送 {{count}} 部分",
       "sendParts_other": "发送 {{count}} 部分"
     },
-    "sendFailed": "发送失败"
+    "sendFailed": "发送失败",
+    "outboxStatusQueued": "已在队列中",
+    "outboxStatusSending": "发送中…",
+    "outboxStatusBlocked": "已阻止",
+    "outboxStatusFailed": "失败",
+    "retryOutboxMessage": "重试发件箱消息",
+    "retryOutbox": "重试",
+    "cancelOutboxMessage": "取消发件箱消息",
+    "dayToday": "今天",
+    "dayYesterday": "昨天",
+    "newMessagesDivider": "新消息",
+    "emptyNoSearchMatches": "没有消息符合您的搜索条件",
+    "emptyNoDmMessages": "暂无与 {{name}} 的消息。",
+    "emptyNoMessagesYet": "还没有消息。发送消息或等待传入消息。",
+    "emptyConnectFirst": "连接到设备以开始聊天。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}} 小时前",
     "daysAgo": "{{count}} 天前",
     "days": "天",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "正在保存…"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",

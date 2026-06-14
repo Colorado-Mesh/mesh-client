@@ -45,6 +45,7 @@
     "check:log-injection": "node scripts/check-log-injection.mjs",
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",
+    "check:protocol-string-gates": "node scripts/check-protocol-string-gates.mjs",
     "check:silent-catches": "node scripts/check-silent-catches.mjs",
     "check:url-hostname-sanitization": "node scripts/check-url-hostname-sanitization.mjs",
     "check:xss-patterns": "node scripts/check-xss-patterns.mjs",

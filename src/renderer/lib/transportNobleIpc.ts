@@ -36,10 +36,7 @@ export class TransportNobleIpc implements Types.Transport {
         });
       },
       cancel: () => {
-        if (this._fromRadioUnsub) {
-          this._fromRadioUnsub();
-          this._fromRadioUnsub = null;
-        }
+        this.unsubscribeFromRadio();
         this._fromDeviceController = null;
       },
     });
@@ -50,20 +47,24 @@ export class TransportNobleIpc implements Types.Transport {
         await window.electronAPI.nobleBleToRadio(this.sessionId, chunk);
       },
       close: () => {
-        if (this._fromRadioUnsub) {
-          this._fromRadioUnsub();
-          this._fromRadioUnsub = null;
-        }
+        this.unsubscribeFromRadio();
+      },
+      abort: () => {
+        this.unsubscribeFromRadio();
       },
     });
   }
 
-  async disconnect(): Promise<void> {
-    await window.electronAPI.disconnectNobleBle(this.sessionId);
+  private unsubscribeFromRadio(): void {
     if (this._fromRadioUnsub) {
       this._fromRadioUnsub();
       this._fromRadioUnsub = null;
     }
+  }
+
+  async disconnect(): Promise<void> {
+    await window.electronAPI.disconnectNobleBle(this.sessionId);
+    this.unsubscribeFromRadio();
     if (this._fromDeviceController) {
       try {
         this._fromDeviceController.close();

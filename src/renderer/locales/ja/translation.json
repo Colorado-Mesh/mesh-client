@@ -280,7 +280,21 @@
       "sendParts_one": "{{count}}件を送信",
       "sendParts_other": "{{count}}件を送信"
     },
-    "sendFailed": "送信に失敗しました"
+    "sendFailed": "送信に失敗しました",
+    "outboxStatusQueued": "待機リストに追加済み",
+    "outboxStatusSending": "送信中…",
+    "outboxStatusBlocked": "ブロック",
+    "outboxStatusFailed": "失敗しました",
+    "retryOutboxMessage": "送信トレイメッセージを再試行",
+    "retryOutbox": "再試行",
+    "cancelOutboxMessage": "送信トレイメッセージをキャンセル",
+    "dayToday": "今日",
+    "dayYesterday": "昨日",
+    "newMessagesDivider": "新着メッセージ",
+    "emptyNoSearchMatches": "該当するメッセージは見つかりませんでした",
+    "emptyNoDmMessages": "{{name}}さんとのメッセージはまだありません。",
+    "emptyNoMessagesYet": "メッセージはまだありません。メッセージを送信するか、受信メッセージを待ちます。",
+    "emptyConnectFirst": "デバイスに接続してチャットを開始してください。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}時間前",
     "daysAgo": "{{count}}日前",
     "days": "日",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "保存中…"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",

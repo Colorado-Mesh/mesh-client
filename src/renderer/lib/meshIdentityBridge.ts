@@ -109,7 +109,14 @@ export function bindMeshtasticIngress(
   setActiveIdentity(identityId);
 
   const teardown = meshtasticProtocol.subscribe(device, (event) => {
-    packetRouter.dispatch(event, identityId);
+    try {
+      packetRouter.dispatch(event, identityId);
+    } catch (err) {
+      console.error(
+        '[meshIdentityBridge] packetRouter.dispatch failed:',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   });
   const detachDriver = connectionDriver.registerLegacyTransport(
     identityId,
@@ -182,7 +189,14 @@ export function bindMeshcoreIngress(
   setActiveIdentity(identityId);
 
   const teardown = meshcoreProtocol.subscribe(conn, (event) => {
-    packetRouter.dispatch(event, identityId);
+    try {
+      packetRouter.dispatch(event, identityId);
+    } catch (err) {
+      console.error(
+        '[meshIdentityBridge] packetRouter.dispatch failed:',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   });
   const detachDriver = connectionDriver.registerLegacyTransport(
     identityId,

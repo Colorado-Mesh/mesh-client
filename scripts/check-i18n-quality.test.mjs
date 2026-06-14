@@ -1003,6 +1003,47 @@ describe('roomsPanel saved passwords per-key quality', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags pl dayYesterday left in English', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'chatPanel.dayYesterday',
+      val: 'Yesterday',
+      enVal: 'Yesterday',
+    });
+    expectIssue(issues, 'dayYesterday must be "Wczoraj"');
+  });
+
+  it('flags uk outboxStatusSending bookmark false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'chatPanel.outboxStatusSending',
+      val: 'Заклад,',
+      enVal: 'Sending…',
+    });
+    expectIssue(issues, 'bookmark "Заклад"');
+  });
+
+  it('flags zh retryOutbox challenge false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'chatPanel.retryOutbox',
+      val: '再次挑战',
+      enVal: 'Retry',
+    });
+    expectIssue(issues, 'retryOutbox must be "重试"');
+  });
+
+  it('passes fixed chatPanel outbox strings', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'zh',
+        flatKey: 'chatPanel.retryOutbox',
+        val: '重试',
+        enVal: 'Retry',
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedBrandIssues', () => {

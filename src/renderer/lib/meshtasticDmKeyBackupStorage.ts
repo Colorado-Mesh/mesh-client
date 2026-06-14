@@ -63,7 +63,13 @@ function readIndex(): MeshtasticDmKeyBackupIndexEntry[] {
     const raw = localStorage.getItem(MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as MeshtasticDmKeyBackupIndexEntry[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) {
+      console.warn(
+        'Meshtastic backup: index JSON is valid but not an array; resetting in-memory index view.',
+      );
+      return [];
+    }
+    return parsed;
   } catch {
     // catch-no-log-ok corrupt index JSON — ensureMeshtasticDmKeyBackupIndex rebuilds async
     return [];

@@ -33,17 +33,19 @@ pnpm run test:run # Run tests
 
 Before each commit, the hook runs (order matters):
 
-1. `pnpm run format`: Prettier writes fixes
-2. `pnpm run lint:md`: Markdown fixes
-3. Re-stage staged files
-4. `pnpm run lint`
-5. `pnpm run typecheck`
-6. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:log-panel-filter`, `check:i18n` (includes `scripts/check-i18n-quality.mjs` locale rules), `check:licenses`
-7. `pnpm audit --audit-level=high`
-8. `actionlint`, `yamllint`
-9. `pnpm run test:run`
+1. `pnpm run format`: Prettier writes fixes (staged files only)
+2. `pnpm run lint:md`: Markdown fixes (staged `.md` files only)
+3. `pnpm dedupe` when dependency manifests are staged (updates `pnpm-lock.yaml`)
+4. Re-stage staged files
+5. `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/`
+6. `pnpm run lint`
+7. `pnpm run typecheck`
+8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:log-panel-filter`, `check:i18n` (includes `scripts/check-i18n-quality.mjs` locale rules), `check:licenses`
+9. `pnpm audit --audit-level=high`
+10. `actionlint`, `yamllint`
+11. `pnpm run test:run`
 
-The live hook in `.githooks/pre-commit` also runs `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stages `src/renderer/locales/` before lint. MyMemory uses **`info@coloradomesh.org`** as the default contact for the higher free quota unless **`MYMEMORY_EMAIL`** is set — see [AGENTS.md](AGENTS.md) (i18n / Localization).
+MyMemory uses **`info@coloradomesh.org`** as the default contact for the higher free quota unless **`MYMEMORY_EMAIL`** is set — see [AGENTS.md](AGENTS.md) (i18n / Localization).
 
 Skip in emergency: `git commit --no-verify`.
 

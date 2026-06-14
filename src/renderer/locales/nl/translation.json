@@ -280,7 +280,21 @@
       "sendParts_one": "Verstuur {{count}} onderdeel",
       "sendParts_other": "Verstuur {{count}} onderdelen"
     },
-    "sendFailed": "Verzenden mislukt"
+    "sendFailed": "Verzenden mislukt",
+    "outboxStatusQueued": "In wachtrij geplaatst",
+    "outboxStatusSending": "Versturen...",
+    "outboxStatusBlocked": "Geblokkeerd",
+    "outboxStatusFailed": "Mislukt",
+    "retryOutboxMessage": "Probeer outbox-bericht opnieuw",
+    "retryOutbox": "Opnieuw proberen",
+    "cancelOutboxMessage": "Outboxbericht annuleren",
+    "dayToday": "Vandaag",
+    "dayYesterday": "Gisteren",
+    "newMessagesDivider": "Nieuwe berichten",
+    "emptyNoSearchMatches": "Er komen geen berichten overeen met uw zoekopdracht.",
+    "emptyNoDmMessages": "Nog geen berichten met {{name}}.",
+    "emptyNoMessagesYet": "Nog geen berichten. Stuur er een of wacht op inkomende berichten.",
+    "emptyConnectFirst": "Maak verbinding met een apparaat om te chatten."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "{{count}}u geleden",
     "daysAgo": "{{count}}d geleden",
     "days": "dagen",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Opslaan..."
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",

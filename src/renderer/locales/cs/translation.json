@@ -280,7 +280,21 @@
       "sendParts_one": "Odeslat {{count}} díl",
       "sendParts_other": "Odeslat {{count}} díly"
     },
-    "sendFailed": "Odeslání se nezdařilo"
+    "sendFailed": "Odeslání se nezdařilo",
+    "outboxStatusQueued": "Ve frontě",
+    "outboxStatusSending": "Odesílání...",
+    "outboxStatusBlocked": "Blokováno",
+    "outboxStatusFailed": "Nezdařilo se",
+    "retryOutboxMessage": "Opakovat odeslání zprávy",
+    "retryOutbox": "Zkusit znovu",
+    "cancelOutboxMessage": "Zrušit zprávu ve frontě odesílání",
+    "dayToday": "Dnes",
+    "dayYesterday": "Včera",
+    "newMessagesDivider": "Nové zprávy",
+    "emptyNoSearchMatches": "Vašemu vyhledávání neodpovídají žádné zprávy.",
+    "emptyNoDmMessages": "Zatím žádné zprávy s {{name}}.",
+    "emptyNoMessagesYet": "Zatím žádné zprávy. Jednu odešlete nebo počkejte na příchozí zprávy.",
+    "emptyConnectFirst": "Připojte se k zařízení a začněte chatovat."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -334,7 +348,8 @@
     "hoursAgo": "před {{count}}h",
     "daysAgo": "před {{count}}d",
     "days": "dní",
-    "emDash": "—"
+    "emDash": "—",
+    "saving": "Ukládání…"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",

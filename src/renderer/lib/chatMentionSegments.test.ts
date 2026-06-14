@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseChatMentionSegments } from './chatMentionSegments';
+import { isSafeChatUrl, parseChatMentionSegments } from './chatMentionSegments';
 
 describe('parseChatMentionSegments', () => {
   it('returns empty array for empty input', () => {
@@ -101,5 +101,17 @@ describe('parseChatMentionSegments', () => {
         { kind: 'text', text: 'ftp://example.com' },
       ]);
     });
+  });
+});
+
+describe('isSafeChatUrl', () => {
+  it('accepts http and https', () => {
+    expect(isSafeChatUrl('https://example.com')).toBe(true);
+    expect(isSafeChatUrl('http://example.com/path')).toBe(true);
+  });
+
+  it('rejects javascript and other schemes', () => {
+    expect(isSafeChatUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeChatUrl('file:///etc/passwd')).toBe(false);
   });
 });

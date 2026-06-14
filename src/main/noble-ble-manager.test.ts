@@ -209,3 +209,22 @@ describe('NobleBleManager.connect — scan-before-connect when cache miss (regre
     expect(SOURCE).toMatch(/releaseEphemeralScanInterest\(\)/);
   });
 });
+
+describe('NobleBleManager — connect/write queue timeouts (regression)', () => {
+  it('bounds connect queue wait with BLE_CONNECT_QUEUE_WAIT_MS', () => {
+    expect(SOURCE).toContain('BLE_CONNECT_QUEUE_WAIT_MS');
+    expect(SOURCE).toMatch(
+      /await withTimeout\(prevQueue,\s*BLE_CONNECT_QUEUE_WAIT_MS,\s*['"]BLE connect queue wait['"]\)/,
+    );
+  });
+
+  it('bounds write queue wait and writeAsync chunks with withTimeout', () => {
+    expect(SOURCE).toContain('BLE_WRITE_QUEUE_WAIT_MS');
+    expect(SOURCE).toMatch(
+      /await withTimeout\(prev,\s*BLE_WRITE_QUEUE_WAIT_MS,\s*['"]BLE write queue wait['"]\)/,
+    );
+    expect(SOURCE).toContain('BLE_WRITE_CHUNK_TIMEOUT_MS');
+    expect(SOURCE).toMatch(/writeAsync\(chunk, false\)/);
+    expect(SOURCE).toContain("'BLE writeAsync'");
+  });
+});

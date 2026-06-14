@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -651,5 +653,14 @@ describe('NodeListPanel show on map', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Show on map' }));
     expect(onShowOnMap).toHaveBeenCalledWith(42, 39.74, -104.99);
+  });
+});
+
+describe('NodeListPanel virtualization', () => {
+  it('enables row virtualization for large node lists', () => {
+    const source = readFileSync(join(__dirname, 'NodeListPanel.tsx'), 'utf8');
+    expect(source).toContain('useVirtualizer');
+    expect(source).toContain('shouldVirtualizeNodeRows');
+    expect(source).toMatch(/nodeList\.length\s*>\s*100/);
   });
 });

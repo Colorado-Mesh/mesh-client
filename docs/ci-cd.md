@@ -6,14 +6,13 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger                         | Purpose                                     |
-| --------------------------- | ------------------------------- | ------------------------------------------- |
-| `ci.yaml`                   | Push/PR to `main`               | Lint, typecheck, build                      |
-| `tests.yaml`                | Push/PR to `main`               | Run unit tests, upload results              |
-| `release.yaml`              | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm) |
-| `flatpak.yaml`              | Push/PR to `main`, tags, manual | Build Flatpak; publish to release on tags   |
-| `docs.yml`                  | Push to `main`                  | Deploy MkDocs to GitHub Pages               |
-| `dependency-submission.yml` | Push/PR to `main`               | Submit Python deps to dependency graph      |
+| Workflow       | Trigger                         | Purpose                                     |
+| -------------- | ------------------------------- | ------------------------------------------- |
+| `ci.yaml`      | Push/PR to `main`               | Lint, typecheck, build                      |
+| `tests.yaml`   | Push/PR to `main`               | Run unit tests, upload results              |
+| `release.yaml` | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm) |
+| `flatpak.yaml` | Push/PR to `main`, tags, manual | Build Flatpak; publish to release on tags   |
+| `docs.yml`     | Push to `main`                  | Deploy MkDocs to GitHub Pages               |
 
 ---
 
@@ -92,12 +91,6 @@ Deploys documentation to GitHub Pages on every push to `main`:
 4. Copy `README.md` → `docs/index.md` and `CONTRIBUTING.md` → `docs/contributing.md`
 5. Rewrite doc links for MkDocs
 6. Deploy with `mkdocs gh-deploy --force`
-
----
-
-## Dependency Submission (`dependency-submission.yml`)
-
-Submits Python dependency information to GitHub's dependency graph for security advisories.
 
 ---
 

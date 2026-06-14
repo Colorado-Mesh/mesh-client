@@ -1,4 +1,5 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as ChatPanel/RawPacketLogPanel */
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   ArrowUpDown,
   ChevronDown,
@@ -8,7 +9,7 @@ import {
   TriangleAlert,
   User,
 } from 'lucide-react-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -27,6 +28,7 @@ import {
 } from '../lib/coordUtils';
 import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
+import { downloadBlob } from '../lib/downloadBlob';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import { MESHCORE_CONTACTS_WARNING_THRESHOLD, MESHCORE_MAX_CONTACTS } from '../lib/meshcoreUtils';
@@ -483,6 +485,29 @@ export default function NodeListPanel({
     groupMemberIds,
   ]);
 
+  const nodeTableScrollRef = useRef<HTMLDivElement>(null);
+  const nodeTableColSpan = (mode === 'meshcore' ? 9 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
+  const shouldVirtualizeNodeRows = nodeList.length > 100;
+  const nodeRowVirtualizer = useVirtualizer({
+    count: nodeList.length,
+    getScrollElement: () => nodeTableScrollRef.current,
+    estimateSize: () => 44,
+    overscan: 10,
+    enabled: shouldVirtualizeNodeRows,
+  });
+  const virtualNodeRows = nodeRowVirtualizer.getVirtualItems();
+  const rowsForRender =
+    shouldVirtualizeNodeRows && virtualNodeRows.length > 0
+      ? virtualNodeRows
+      : nodeList.map((node, index) => ({
+          index,
+          start: index * 44,
+          end: (index + 1) * 44,
+          size: 44,
+          key: node.node_id,
+          lane: 0 as const,
+        }));
+
   const filterStatus = useMemo(() => {
     if (!locationFilter.enabled) return null;
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
@@ -614,14 +639,7 @@ export default function NodeListPanel({
                   type: 'application/json',
                 },
               );
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `mesh-topology-${new Date().toISOString().slice(0, 10)}.json`;
-              a.click();
-              setTimeout(() => {
-                URL.revokeObjectURL(url);
-              }, 0);
+              downloadBlob(blob, `mesh-topology-${new Date().toISOString().slice(0, 10)}.json`);
             }}
           >
             {t('nodeListPanel.buttonExportJson')}
@@ -769,7 +787,7 @@ export default function NodeListPanel({
         </span>
       </div>
 
-      <div className="min-h-0 min-w-0 flex-1">
+      <div ref={nodeTableScrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto">
         <table
           style={{ minWidth: mode === 'meshcore' ? '1000px' : '1600px' }}
           className="text-sm whitespace-nowrap"
@@ -1046,208 +1064,240 @@ export default function NodeListPanel({
           <tbody className="divide-y divide-gray-700/50">
             {nodeList.length === 0 ? (
               <tr>
-                <td
-                  colSpan={(mode === 'meshcore' ? 9 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0)}
-                  className="text-muted py-8 text-center"
-                >
+                <td colSpan={nodeTableColSpan} className="text-muted py-8 text-center">
                   {searchQuery
                     ? t('nodeListPanel.emptyNoSearchMatches')
                     : t('nodeListPanel.emptyNoNodesYet')}
                 </td>
               </tr>
             ) : (
-              nodeList.map((node) => {
-                const isSelf = node.node_id === myNodeNum;
-                const status = getNodeStatus(
-                  node.last_heard,
-                  nodeStaleThresholdMs,
-                  nodeOfflineThresholdMs,
-                );
-                const health = nodeHealthScore(node);
-                const healthTier = nodeHealthTier(health.total);
-                const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
-                const rowOpacity = isMqttOnlyDimmed
-                  ? 'opacity-50'
-                  : status === 'offline'
-                    ? 'opacity-20'
-                    : status === 'stale'
-                      ? 'opacity-35'
-                      : '';
+              <>
+                {shouldVirtualizeNodeRows &&
+                  virtualNodeRows.length > 0 &&
+                  virtualNodeRows[0].start > 0 && (
+                    <tr aria-hidden="true">
+                      <td
+                        colSpan={nodeTableColSpan}
+                        style={{ height: virtualNodeRows[0].start, padding: 0, border: 0 }}
+                      />
+                    </tr>
+                  )}
+                {rowsForRender.map((virtualRow) => {
+                  const node = nodeList[virtualRow.index];
+                  if (!node) return null;
+                  const isSelf = node.node_id === myNodeNum;
+                  const status = getNodeStatus(
+                    node.last_heard,
+                    nodeStaleThresholdMs,
+                    nodeOfflineThresholdMs,
+                  );
+                  const health = nodeHealthScore(node);
+                  const healthTier = nodeHealthTier(health.total);
+                  const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
+                  const rowOpacity = isMqttOnlyDimmed
+                    ? 'opacity-50'
+                    : status === 'offline'
+                      ? 'opacity-20'
+                      : status === 'stale'
+                        ? 'opacity-35'
+                        : '';
 
-                return (
-                  <tr
-                    key={node.node_id}
-                    onClick={() => {
-                      onNodeClick(node);
-                    }}
-                    className={`hover:bg-secondary-dark/50 cursor-pointer transition-colors ${rowOpacity} ${
-                      isSelf ? 'bg-brand-green/5 border-l-brand-green border-l-2' : ''
-                    }`}
-                  >
-                    {/* Status indicator */}
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1">
-                        <span
-                          role="img"
-                          className={`h-2 w-2 rounded-full ${
-                            status === 'online'
-                              ? 'bg-brand-green'
-                              : status === 'stale'
-                                ? 'bg-purple-800'
-                                : 'bg-gray-600'
-                          }`}
-                          aria-label={
-                            status === 'online'
-                              ? t('nodeListPanel.statusOnline')
-                              : status === 'stale'
-                                ? t('nodeListPanel.statusStale')
-                                : t('nodeListPanel.statusOffline')
-                          }
-                          title={
-                            status === 'online'
-                              ? t('nodeListPanel.statusOnline')
-                              : status === 'stale'
-                                ? t('nodeListPanel.statusStale')
-                                : t('nodeListPanel.statusOffline')
-                          }
-                        />
-                        {isSelf && (
-                          <span
-                            className="text-bright-green text-[10px] font-bold"
-                            title={t('nodeListPanel.yourNodeTooltip')}
-                          >
-                            ★
-                          </span>
-                        )}
-                        <span
-                          className={`rounded px-1 text-[9px] leading-tight font-semibold ${
-                            healthTier === 'good'
-                              ? 'bg-green-900/60 text-green-400'
-                              : healthTier === 'warn'
-                                ? 'bg-yellow-900/60 text-yellow-400'
-                                : 'bg-red-900/60 text-red-400'
-                          }`}
-                          title={t('nodeListPanel.healthTooltip', {
-                            total: health.total,
-                            signal: health.signal,
-                            recency: health.recency,
-                            load: health.load,
-                            battery: health.battery,
-                          })}
-                          aria-label={t('nodeListPanel.healthAriaLabel', { total: health.total })}
-                        >
-                          {health.total}
-                        </span>
-                      </div>
-                    </td>
-                    {/* Favorite toggle */}
-                    <td
-                      className="px-2 py-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                  return (
+                    <tr
+                      key={node.node_id}
+                      data-index={shouldVirtualizeNodeRows ? virtualRow.index : undefined}
+                      ref={shouldVirtualizeNodeRows ? nodeRowVirtualizer.measureElement : undefined}
+                      onClick={() => {
+                        onNodeClick(node);
                       }}
+                      className={`hover:bg-secondary-dark/50 cursor-pointer transition-colors ${rowOpacity} ${
+                        isSelf ? 'bg-brand-green/5 border-l-brand-green border-l-2' : ''
+                      }`}
                     >
-                      {!isSelf && (
-                        <button
-                          onClick={() => {
-                            onToggleFavorite(node.node_id, !node.favorited);
-                          }}
-                          aria-label={
-                            node.favorited
-                              ? t('nodeListPanel.removeFromFavorites')
-                              : t('nodeListPanel.addToFavorites')
-                          }
-                          aria-pressed={node.favorited}
-                          title={
-                            node.favorited
-                              ? t('nodeListPanel.removeFromFavorites')
-                              : t('nodeListPanel.addToFavorites')
-                          }
-                        >
+                      {/* Status indicator */}
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
                           <span
-                            className={
-                              node.favorited
-                                ? 'text-yellow-400'
-                                : 'text-gray-600 hover:text-yellow-400'
+                            role="img"
+                            className={`h-2 w-2 rounded-full ${
+                              status === 'online'
+                                ? 'bg-brand-green'
+                                : status === 'stale'
+                                  ? 'bg-purple-800'
+                                  : 'bg-gray-600'
+                            }`}
+                            aria-label={
+                              status === 'online'
+                                ? t('nodeListPanel.statusOnline')
+                                : status === 'stale'
+                                  ? t('nodeListPanel.statusStale')
+                                  : t('nodeListPanel.statusOffline')
                             }
-                            aria-hidden="true"
-                          >
-                            {node.favorited ? '★' : '☆'}
-                          </span>
-                        </button>
-                      )}
-                    </td>
-                    <td className="text-muted px-3 py-2 font-mono text-xs">
-                      {formatMeshtasticNodeId(node.node_id)}
-                      {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
-                        <span className="ml-1">🔑</span>
-                      )}
-                    </td>
-                    <td
-                      className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
-                    >
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="inline-flex min-w-0 items-center gap-1">
-                          <span className="truncate">
-                            {node.long_name || '-'}
-                            {isSelf && (
-                              <span className="text-bright-green/60 ml-1.5 text-[10px]">(you)</span>
-                            )}
-                          </span>
-                          {!isSelf &&
-                            (() => {
-                              const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
-                              if (!routingRow) return null;
-                              return (
-                                <span
-                                  role="img"
-                                  title={routingRow.description}
-                                  aria-label={routingRow.description}
-                                >
-                                  <TriangleAlert
-                                    aria-hidden
-                                    className={`h-4 w-4 shrink-0 ${
-                                      routingRow.severity === 'error'
-                                        ? 'text-red-400'
-                                        : routingRow.severity === 'info'
-                                          ? 'text-blue-400'
-                                          : 'text-orange-400'
-                                    }`}
-                                    trigger={iconTrigger}
-                                    size={16}
-                                  />
-                                </span>
-                              );
-                            })()}
-                        </span>
-                        {mode === 'meshcore' &&
-                          meshcoreShowPublicKeys &&
-                          meshcorePublicKeyHexByNodeId?.get(node.node_id) && (
-                            <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
-                              {meshcorePublicKeyHexByNodeId.get(node.node_id)}
+                            title={
+                              status === 'online'
+                                ? t('nodeListPanel.statusOnline')
+                                : status === 'stale'
+                                  ? t('nodeListPanel.statusStale')
+                                  : t('nodeListPanel.statusOffline')
+                            }
+                          />
+                          {isSelf && (
+                            <span
+                              className="text-bright-green text-[10px] font-bold"
+                              title={t('nodeListPanel.yourNodeTooltip')}
+                            >
+                              ★
                             </span>
                           )}
-                      </div>
-                    </td>
-                    {mode !== 'meshcore' && (
-                      <td
-                        className={`px-3 py-2 text-gray-300 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
-                      >
-                        {node.short_name || '-'}
-                      </td>
-                    )}
-                    <td className="text-muted px-3 py-2">{formatTime(node.last_heard)}</td>
-                    <td className="px-3 py-2 text-xs">
-                      {mode === 'meshcore' ? (
-                        node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
-                          <span className="inline-flex items-center gap-1 text-gray-300">
-                            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
-                            </svg>
-                            {meshcoreContactTypeLabel(t, node.hw_model)}
+                          <span
+                            className={`rounded px-1 text-[9px] leading-tight font-semibold ${
+                              healthTier === 'good'
+                                ? 'bg-green-900/60 text-green-400'
+                                : healthTier === 'warn'
+                                  ? 'bg-yellow-900/60 text-yellow-400'
+                                  : 'bg-red-900/60 text-red-400'
+                            }`}
+                            title={t('nodeListPanel.healthTooltip', {
+                              total: health.total,
+                              signal: health.signal,
+                              recency: health.recency,
+                              load: health.load,
+                              battery: health.battery,
+                            })}
+                            aria-label={t('nodeListPanel.healthAriaLabel', { total: health.total })}
+                          >
+                            {health.total}
                           </span>
+                        </div>
+                      </td>
+                      {/* Favorite toggle */}
+                      <td
+                        className="px-2 py-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        {!isSelf && (
+                          <button
+                            onClick={() => {
+                              onToggleFavorite(node.node_id, !node.favorited);
+                            }}
+                            aria-label={
+                              node.favorited
+                                ? t('nodeListPanel.removeFromFavorites')
+                                : t('nodeListPanel.addToFavorites')
+                            }
+                            aria-pressed={node.favorited}
+                            title={
+                              node.favorited
+                                ? t('nodeListPanel.removeFromFavorites')
+                                : t('nodeListPanel.addToFavorites')
+                            }
+                          >
+                            <span
+                              className={
+                                node.favorited
+                                  ? 'text-yellow-400'
+                                  : 'text-gray-600 hover:text-yellow-400'
+                              }
+                              aria-hidden="true"
+                            >
+                              {node.favorited ? '★' : '☆'}
+                            </span>
+                          </button>
+                        )}
+                      </td>
+                      <td className="text-muted px-3 py-2 font-mono text-xs">
+                        {formatMeshtasticNodeId(node.node_id)}
+                        {mode === 'meshcore' && meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
+                          <span className="ml-1">🔑</span>
+                        )}
+                      </td>
+                      <td
+                        className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
+                      >
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <span className="inline-flex min-w-0 items-center gap-1">
+                            <span className="truncate">
+                              {node.long_name || '-'}
+                              {isSelf && (
+                                <span className="text-bright-green/60 ml-1.5 text-[10px]">
+                                  (you)
+                                </span>
+                              )}
+                            </span>
+                            {!isSelf &&
+                              (() => {
+                                const routingRow = getRoutingRowForNode(
+                                  diagnosticRows,
+                                  node.node_id,
+                                );
+                                if (!routingRow) return null;
+                                return (
+                                  <span
+                                    role="img"
+                                    title={routingRow.description}
+                                    aria-label={routingRow.description}
+                                  >
+                                    <TriangleAlert
+                                      aria-hidden
+                                      className={`h-4 w-4 shrink-0 ${
+                                        routingRow.severity === 'error'
+                                          ? 'text-red-400'
+                                          : routingRow.severity === 'info'
+                                            ? 'text-blue-400'
+                                            : 'text-orange-400'
+                                      }`}
+                                      trigger={iconTrigger}
+                                      size={16}
+                                    />
+                                  </span>
+                                );
+                              })()}
+                          </span>
+                          {mode === 'meshcore' &&
+                            meshcoreShowPublicKeys &&
+                            meshcorePublicKeyHexByNodeId?.get(node.node_id) && (
+                              <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
+                                {meshcorePublicKeyHexByNodeId.get(node.node_id)}
+                              </span>
+                            )}
+                        </div>
+                      </td>
+                      {mode !== 'meshcore' && (
+                        <td
+                          className={`px-3 py-2 text-gray-300 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
+                        >
+                          {node.short_name || '-'}
+                        </td>
+                      )}
+                      <td className="text-muted px-3 py-2">{formatTime(node.last_heard)}</td>
+                      <td className="px-3 py-2 text-xs">
+                        {mode === 'meshcore' ? (
+                          node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
+                            <span className="inline-flex items-center gap-1 text-gray-300">
+                              <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
+                              </svg>
+                              {meshcoreContactTypeLabel(t, node.hw_model)}
+                            </span>
+                          ) : node.hw_model === 'Chat' ? (
+                            <span className="inline-flex items-center gap-1 text-gray-300">
+                              <User
+                                aria-hidden
+                                className="h-3.5 w-3.5"
+                                trigger={iconTrigger}
+                                size={14}
+                              />
+                              {meshcoreContactTypeLabel(t, node.hw_model)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">
+                              {meshcoreContactTypeLabel(t, node.hw_model)}
+                            </span>
+                          )
                         ) : node.hw_model === 'Chat' ? (
-                          <span className="inline-flex items-center gap-1 text-gray-300">
+                          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                             <User
                               aria-hidden
                               className="h-3.5 w-3.5"
@@ -1257,220 +1307,220 @@ export default function NodeListPanel({
                             {meshcoreContactTypeLabel(t, node.hw_model)}
                           </span>
                         ) : (
-                          <span className="text-gray-300">
-                            {meshcoreContactTypeLabel(t, node.hw_model)}
+                          <RoleDisplay role={node.role} />
+                        )}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
+                      >
+                        {node.heard_via_mqtt_only ? (
+                          <span className="text-muted">—</span>
+                        ) : (
+                          (node.hops_away ?? (isSelf ? 0 : '-'))
+                        )}
+                      </td>
+                      {mode !== 'meshcore' && (
+                        <td className="px-3 py-2 text-xs text-gray-300">
+                          <div className="flex justify-center">
+                            {(() => {
+                              const pathBadge = resolveMeshtasticPathBadge({
+                                node,
+                                isSelf,
+                                mqttConnected,
+                                radioConnected,
+                              });
+                              if (pathBadge === 'mqttOnly') {
+                                const title = node.heard_via_mqtt_only
+                                  ? t('nodeListPanel.mqttHeardOnlyTooltip')
+                                  : isSelf
+                                    ? t('nodeListPanel.mqttConnectedTooltip')
+                                    : t('nodeListPanel.mqttHeardOnlyTooltip');
+                                return (
+                                  <MeshtasticMqttOnlyPathIcons title={title} ariaLabel={title} />
+                                );
+                              }
+                              if (pathBadge === 'hybrid') {
+                                const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+                                return (
+                                  <MeshtasticHybridPathIcons
+                                    title={
+                                      isSelfHybrid
+                                        ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
+                                        : t('nodeListPanel.hybridMqttPathTooltip')
+                                    }
+                                    ariaLabel={
+                                      isSelfHybrid
+                                        ? t('nodeListPanel.connectedViaRfAndMqttAria')
+                                        : t('nodeListPanel.hybridMqttPathAria')
+                                    }
+                                  />
+                                );
+                              }
+                              return '-';
+                            })()}
+                          </div>
+                        </td>
+                      )}
+                      {(() => {
+                        const mapPosition = resolveNodeMapPosition(
+                          node,
+                          latestPositionHistoryPoint(positionHistory.get(node.node_id)),
+                        );
+                        const { latCell, lonCell } = formatCoordColumns(
+                          mapPosition?.lat ?? node.latitude,
+                          mapPosition?.lon ?? node.longitude,
+                          coordinateFormat,
+                        );
+                        const canShowOnMap = onShowOnMap != null && mapPosition != null;
+                        return (
+                          <>
+                            <td className="text-muted px-3 py-2 text-right font-mono text-xs">
+                              <span className="inline-flex items-center justify-end gap-1">
+                                {latCell}
+                                {canShowOnMap && (
+                                  <button
+                                    type="button"
+                                    className="text-brand-green hover:text-bright-green rounded p-0.5 transition-colors"
+                                    aria-label={t('nodeListPanel.showOnMap')}
+                                    title={t('nodeListPanel.showOnMap')}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (mapPosition) {
+                                        onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
+                                      }
+                                    }}
+                                  >
+                                    📍
+                                  </button>
+                                )}
+                              </span>
+                            </td>
+                            {coordinateFormat !== 'mgrs' && (
+                              <td className="text-muted px-3 py-2 text-right font-mono text-xs">
+                                {lonCell}
+                              </td>
+                            )}
+                          </>
+                        );
+                      })()}
+                      {mode !== 'meshcore' && (
+                        <>
+                          <td className="px-3 py-2 text-right">
+                            <div className="flex justify-end">
+                              {node.heard_via_mqtt_only ? (
+                                <span className="text-muted text-xs">—</span>
+                              ) : isSelf || snrMeaningfulForNodeDiagnostics(node) ? (
+                                <SignalBars rssi={node.rssi} isSelf={isSelf} />
+                              ) : (
+                                <span
+                                  className="text-muted text-xs"
+                                  title={t('nodeListPanel.signalBarsTooltip')}
+                                >
+                                  —
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="text-muted px-3 py-2 text-right font-mono text-xs">
+                            {node.heard_via_mqtt_only
+                              ? '—'
+                              : isSelf || snrMeaningfulForNodeDiagnostics(node)
+                                ? node.snr != null && node.snr !== 0
+                                  ? `${node.snr.toFixed(1)} dB`
+                                  : '—'
+                                : '—'}
+                          </td>
+                        </>
+                      )}
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {node.battery > 0 && (
+                            <div className="bg-secondary-dark h-1.5 w-10 overflow-hidden rounded-full">
+                              <div
+                                className={`h-full rounded-full ${
+                                  node.battery > 50
+                                    ? 'bg-brand-green'
+                                    : node.battery > 20
+                                      ? 'bg-yellow-500'
+                                      : 'bg-red-500'
+                                }`}
+                                style={{
+                                  width: `${Math.min(node.battery, 100)}%`,
+                                }}
+                              />
+                            </div>
+                          )}
+                          <span
+                            className={
+                              node.battery > 50
+                                ? 'text-bright-green'
+                                : node.battery > 20
+                                  ? 'text-yellow-400'
+                                  : node.battery > 0
+                                    ? 'text-red-400'
+                                    : 'text-muted'
+                            }
+                          >
+                            {node.battery > 0 ? `${node.battery}%` : '-'}
                           </span>
-                        )
-                      ) : node.hw_model === 'Chat' ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                          <User
-                            aria-hidden
-                            className="h-3.5 w-3.5"
-                            trigger={iconTrigger}
-                            size={14}
-                          />
-                          {meshcoreContactTypeLabel(t, node.hw_model)}
-                        </span>
-                      ) : (
-                        <RoleDisplay role={node.role} />
-                      )}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
-                    >
-                      {node.heard_via_mqtt_only ? (
-                        <span className="text-muted">—</span>
-                      ) : (
-                        (node.hops_away ?? (isSelf ? 0 : '-'))
-                      )}
-                    </td>
-                    {mode !== 'meshcore' && (
-                      <td className="px-3 py-2 text-xs text-gray-300">
-                        <div className="flex justify-center">
-                          {(() => {
-                            const pathBadge = resolveMeshtasticPathBadge({
-                              node,
-                              isSelf,
-                              mqttConnected,
-                              radioConnected,
-                            });
-                            if (pathBadge === 'mqttOnly') {
-                              const title = node.heard_via_mqtt_only
-                                ? t('nodeListPanel.mqttHeardOnlyTooltip')
-                                : isSelf
-                                  ? t('nodeListPanel.mqttConnectedTooltip')
-                                  : t('nodeListPanel.mqttHeardOnlyTooltip');
-                              return (
-                                <MeshtasticMqttOnlyPathIcons title={title} ariaLabel={title} />
-                              );
-                            }
-                            if (pathBadge === 'hybrid') {
-                              const isSelfHybrid = isSelf && mqttConnected && radioConnected;
-                              return (
-                                <MeshtasticHybridPathIcons
-                                  title={
-                                    isSelfHybrid
-                                      ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-                                      : t('nodeListPanel.hybridMqttPathTooltip')
-                                  }
-                                  ariaLabel={
-                                    isSelfHybrid
-                                      ? t('nodeListPanel.connectedViaRfAndMqttAria')
-                                      : t('nodeListPanel.hybridMqttPathAria')
-                                  }
-                                />
-                              );
-                            }
-                            return '-';
-                          })()}
                         </div>
                       </td>
-                    )}
-                    {(() => {
-                      const mapPosition = resolveNodeMapPosition(
-                        node,
-                        latestPositionHistoryPoint(positionHistory.get(node.node_id)),
-                      );
-                      const { latCell, lonCell } = formatCoordColumns(
-                        mapPosition?.lat ?? node.latitude,
-                        mapPosition?.lon ?? node.longitude,
-                        coordinateFormat,
-                      );
-                      const canShowOnMap = onShowOnMap != null && mapPosition != null;
-                      return (
+                      {mode !== 'meshcore' && (
                         <>
-                          <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                            <span className="inline-flex items-center justify-end gap-1">
-                              {latCell}
-                              {canShowOnMap && (
-                                <button
-                                  type="button"
-                                  className="text-brand-green hover:text-bright-green rounded p-0.5 transition-colors"
-                                  aria-label={t('nodeListPanel.showOnMap')}
-                                  title={t('nodeListPanel.showOnMap')}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (mapPosition) {
-                                      onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
-                                    }
-                                  }}
-                                >
-                                  📍
-                                </button>
-                              )}
-                            </span>
+                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                            {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}
                           </td>
-                          {coordinateFormat !== 'mgrs' && (
-                            <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                              {lonCell}
-                            </td>
-                          )}
-                        </>
-                      );
-                    })()}
-                    {mode !== 'meshcore' && (
-                      <>
-                        <td className="px-3 py-2 text-right">
-                          <div className="flex justify-end">
-                            {node.heard_via_mqtt_only ? (
-                              <span className="text-muted text-xs">—</span>
-                            ) : isSelf || snrMeaningfulForNodeDiagnostics(node) ? (
-                              <SignalBars rssi={node.rssi} isSelf={isSelf} />
-                            ) : (
-                              <span
-                                className="text-muted text-xs"
-                                title={t('nodeListPanel.signalBarsTooltip')}
+                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                            {node.channel_utilization != null
+                              ? `${node.channel_utilization.toFixed(1)}%`
+                              : '-'}
+                          </td>
+                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                            {node.air_util_tx != null ? `${node.air_util_tx.toFixed(1)}%` : '-'}
+                          </td>
+                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                            {node.altitude != null && node.altitude !== 0
+                              ? `${node.altitude} m`
+                              : '-'}
+                          </td>
+                          {(() => {
+                            const red = nodeRedundancy.get(node.node_id);
+                            const echoes = red ? red.maxPaths - 1 : 0;
+                            return (
+                              <td
+                                className={`px-3 py-2 text-right font-mono text-xs ${
+                                  echoes >= 3
+                                    ? 'text-lime-400'
+                                    : echoes > 0
+                                      ? 'text-gray-300'
+                                      : 'text-muted'
+                                }`}
+                                title={red ? `${red.score}% connection health` : undefined}
                               >
-                                —
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                          {node.heard_via_mqtt_only
-                            ? '—'
-                            : isSelf || snrMeaningfulForNodeDiagnostics(node)
-                              ? node.snr != null && node.snr !== 0
-                                ? `${node.snr.toFixed(1)} dB`
-                                : '—'
-                              : '—'}
-                        </td>
-                      </>
-                    )}
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {node.battery > 0 && (
-                          <div className="bg-secondary-dark h-1.5 w-10 overflow-hidden rounded-full">
-                            <div
-                              className={`h-full rounded-full ${
-                                node.battery > 50
-                                  ? 'bg-brand-green'
-                                  : node.battery > 20
-                                    ? 'bg-yellow-500'
-                                    : 'bg-red-500'
-                              }`}
-                              style={{
-                                width: `${Math.min(node.battery, 100)}%`,
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span
-                          className={
-                            node.battery > 50
-                              ? 'text-bright-green'
-                              : node.battery > 20
-                                ? 'text-yellow-400'
-                                : node.battery > 0
-                                  ? 'text-red-400'
-                                  : 'text-muted'
-                          }
-                        >
-                          {node.battery > 0 ? `${node.battery}%` : '-'}
-                        </span>
-                      </div>
-                    </td>
-                    {mode !== 'meshcore' && (
-                      <>
-                        <td className="px-3 py-2 text-right text-xs text-gray-300">
-                          {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}
-                        </td>
-                        <td className="px-3 py-2 text-right text-xs text-gray-300">
-                          {node.channel_utilization != null
-                            ? `${node.channel_utilization.toFixed(1)}%`
-                            : '-'}
-                        </td>
-                        <td className="px-3 py-2 text-right text-xs text-gray-300">
-                          {node.air_util_tx != null ? `${node.air_util_tx.toFixed(1)}%` : '-'}
-                        </td>
-                        <td className="px-3 py-2 text-right text-xs text-gray-300">
-                          {node.altitude != null && node.altitude !== 0
-                            ? `${node.altitude} m`
-                            : '-'}
-                        </td>
-                        {(() => {
-                          const red = nodeRedundancy.get(node.node_id);
-                          const echoes = red ? red.maxPaths - 1 : 0;
-                          return (
-                            <td
-                              className={`px-3 py-2 text-right font-mono text-xs ${
-                                echoes >= 3
-                                  ? 'text-lime-400'
-                                  : echoes > 0
-                                    ? 'text-gray-300'
-                                    : 'text-muted'
-                              }`}
-                              title={red ? `${red.score}% connection health` : undefined}
-                            >
-                              {echoes > 0 ? `+${echoes}` : '-'}
-                            </td>
-                          );
-                        })()}
-                      </>
-                    )}
+                                {echoes > 0 ? `+${echoes}` : '-'}
+                              </td>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
+                {shouldVirtualizeNodeRows && virtualNodeRows.length > 0 && (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={nodeTableColSpan}
+                      style={{
+                        height:
+                          nodeRowVirtualizer.getTotalSize() -
+                          virtualNodeRows[virtualNodeRows.length - 1].end,
+                        padding: 0,
+                        border: 0,
+                      }}
+                    />
                   </tr>
-                );
-              })
+                )}
+              </>
             )}
           </tbody>
         </table>

@@ -308,10 +308,9 @@ export function analyzeNode(
  * Check if a node is sending excessive traffic on noisy portnums.
  *
  * Thresholds per portnum (per hour):
- * - NodeInfo (4): warning < 4, error >= 4 (default 3h interval → 8/hour at rest)
- * - Telemetry (67): warning < 4, error >= 4 (default 15min → 4/hour)
- * - NeighborInfo (71): warning < 1, error >= 2 (should be <= 1 per few hours)
- * - Other noisy: warning < 5, error >= 10
+ * - NodeInfo (4), Telemetry (67), Position (3): warn >= 4/hr, error >= 10/hr (default error threshold)
+ * - NeighborInfo (71): warn >= 1/hr, error >= 2/hr
+ * - Other noisy: warn >= 5/hr, error >= 10/hr
  */
 export function detectNoisyNode(
   stats: NoiseStats | null,

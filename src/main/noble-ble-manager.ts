@@ -45,6 +45,12 @@ const BLE_CONNECT_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
 const BLE_DISCOVERY_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
 /** Timeout for characteristic subscribeAsync(). */
 const BLE_SUBSCRIBE_TIMEOUT_MS = IS_DARWIN ? 10_000 : 20_000;
+/** Max wait for a prior connect() to finish before the next connect is rejected. */
+const BLE_CONNECT_QUEUE_WAIT_MS = IS_DARWIN ? 60_000 : 90_000;
+/** Max wait for a prior writeToRadio() to finish before the next write is rejected. */
+const BLE_WRITE_QUEUE_WAIT_MS = IS_DARWIN ? 30_000 : 45_000;
+/** Timeout for a single GATT writeAsync chunk. */
+const BLE_WRITE_CHUNK_TIMEOUT_MS = IS_DARWIN ? 10_000 : 15_000;
 /** Timeout for noble.startScanning() callback (IPC must always settle; native cb can hang). */
 const BLE_START_SCAN_TIMEOUT_MS = IS_DARWIN ? 15_000 : 30_000;
 /** After GATT subscribe, wait briefly for `peripheral.mtu` when still null (async negotiation on WinRT/Darwin). */
@@ -824,7 +830,7 @@ export class NobleBleManager extends EventEmitter {
     this.connectQueue = new Promise<void>((r) => {
       releaseQueue = r;
     });
-    await prevQueue;
+    await withTimeout(prevQueue, BLE_CONNECT_QUEUE_WAIT_MS, 'BLE connect queue wait');
 
     const session = this.getSession(sessionId);
     let peripheral: any = null;
@@ -1289,7 +1295,7 @@ export class NobleBleManager extends EventEmitter {
       release = r;
     });
     try {
-      await prev;
+      await withTimeout(prev, BLE_WRITE_QUEUE_WAIT_MS, 'BLE write queue wait');
       if (!session.toRadioChar)
         throw new Error(`Disconnected before write could execute for session ${sessionId}`);
       const peripheral = session.connectedPeripheral;
@@ -1301,7 +1307,11 @@ export class NobleBleManager extends EventEmitter {
       for (let offset = 0; offset < data.length; offset += limit) {
         const end = Math.min(offset + limit, data.length);
         const chunk = data.subarray(offset, end);
-        await session.toRadioChar.writeAsync(chunk, false);
+        await withTimeout(
+          session.toRadioChar.writeAsync(chunk, false),
+          BLE_WRITE_CHUNK_TIMEOUT_MS,
+          'BLE writeAsync',
+        );
       }
     } finally {
       release();

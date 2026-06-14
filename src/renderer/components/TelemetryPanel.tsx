@@ -14,6 +14,7 @@ import {
 
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
+import { downloadBlob } from '../lib/downloadBlob';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
 import RefreshButton from './RefreshButton';
@@ -178,12 +179,7 @@ export default function TelemetryPanel({
     const csv = [headers.map(escapeCsvCell).join(','), ...rows.map((r) => r.join(','))].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mesh-client-telemetry-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `mesh-client-telemetry-${new Date().toISOString().slice(0, 10)}.csv`);
   }, [telemetry, signalTelemetry, environmentTelemetry]);
 
   return (

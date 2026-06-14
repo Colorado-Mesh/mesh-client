@@ -182,7 +182,14 @@ export class ConnectionDriver {
     const teardown = protocol.subscribe(handle, (event: DomainEvent) => {
       const slot = this.slots.get(transportId);
       if (slot) slot.lastDataAt = Date.now();
-      packetRouter.dispatch(event, resolvedIdentityId);
+      try {
+        packetRouter.dispatch(event, resolvedIdentityId);
+      } catch (err) {
+        console.error(
+          '[ConnectionDriver] packetRouter.dispatch failed:',
+          err instanceof Error ? err.message : String(err),
+        );
+      }
     });
 
     const transportRef: TransportRef = {

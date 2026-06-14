@@ -122,6 +122,7 @@ export class TransportWebBluetoothIpc implements Types.Transport {
     if (this._bleManager) {
       await this._bleManager.disconnect();
       this._bleManager = null;
+      webBluetoothManagerBySession.delete(this.sessionId);
     }
   }
 
