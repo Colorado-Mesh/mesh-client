@@ -67,7 +67,10 @@ import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
 import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
-import { syncMeshcoreNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
+import {
+  loadMeshcoreMessagesForHydration,
+  syncMeshcoreNodesMapToIdentityStore,
+} from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSenderRepair';
@@ -752,7 +755,7 @@ export function useMeshcoreRuntime() {
     async (opts?: { hydrateMessages?: boolean; beforeCommit?: () => boolean }) => {
       const [rows, dbMsgs, savedNodes] = await Promise.all([
         window.electronAPI.db.getMeshcoreContacts(),
-        window.electronAPI.db.getMeshcoreMessages(undefined, 500),
+        loadMeshcoreMessagesForHydration(),
         window.electronAPI.db.getNodes(),
       ]);
       if (opts?.beforeCommit && !opts.beforeCommit()) return;
@@ -796,7 +799,7 @@ export function useMeshcoreRuntime() {
           }
         }
       }
-      const meshcoreRows = dbMsgs as MeshcoreMessageDbRow[];
+      const meshcoreRows = dbMsgs;
       const mapped = repairMeshcoreHydratedMessages(
         mapMeshcoreDbRowsToChatMessages(meshcoreRows),
         meshcoreRoomServerIdsFromNodes(initial.values()),
@@ -1544,10 +1547,10 @@ export function useMeshcoreRuntime() {
       // Load persisted messages in background (not required for contact/repeater list).
       void (async () => {
         try {
-          const dbMsgs = (await awaitUnlessMeshcoreSetupCancelled(
+          const dbMsgs = await awaitUnlessMeshcoreSetupCancelled(
             setupGen,
-            window.electronAPI.db.getMeshcoreMessages(undefined, 500),
-          )) as MeshcoreMessageDbRow[];
+            loadMeshcoreMessagesForHydration(),
+          );
           if (dbMsgs.length > 0) {
             const contactRows =
               (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
@@ -1607,14 +1610,14 @@ export function useMeshcoreRuntime() {
         try {
           const [rows, dbMsgs, savedNodes] = await Promise.all([
             window.electronAPI.db.getMeshcoreContacts(),
-            window.electronAPI.db.getMeshcoreMessages(undefined, 500),
+            loadMeshcoreMessagesForHydration(),
             window.electronAPI.db.getNodes(),
           ]);
           const contactRows = rows as MeshcoreContactDbRow[];
           registerMeshcorePubKeysFromContactDbRows(contactRows);
           copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
           const mapped = repairMeshcoreHydratedMessages(
-            mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]),
+            mapMeshcoreDbRowsToChatMessages(dbMsgs),
             meshcoreRoomServerIdsFromContacts(contactRows),
             myNodeNumRef.current,
           );

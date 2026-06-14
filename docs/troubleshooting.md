@@ -560,6 +560,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 **No room history after login**:
 
 - Firmware only **pushes new posts** after a successful login; it does not backfill old BBS messages. Enable **Auto-sync** on the Rooms tab to periodic re-login while connected.
+- mesh-client stores posts received while you are logged in on **this device**. Quitting the app or staying logged out for days means posts from that period will not appear later unless they were persisted locally. See the **Rooms** tab history note under Auto-sync.
 
 **pyMC / server console shows posts but Rooms tab does not (cross-client)**:
 

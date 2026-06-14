@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
 import { upsertMessageRecordsForIdentity, useMessageStore } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { totalUnreadCount } from './chatUnreadCounts';
@@ -9,10 +10,14 @@ import {
   hydrateMeshcoreNodesFromDb,
   hydrateMeshtasticMessagesFromDb,
   hydrateMeshtasticNodesFromDb,
+  mergeMeshcoreDbMessageRowsForHydration,
+  MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
   syncMeshcoreNodesMapToIdentityStore,
   syncMeshtasticNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
 import { resetIdentityHydrationCoordinatorForTests } from './identityHydrationCoordinator';
+import { buildMeshcoreRoomIncomingMessage } from './meshcoreChannelText';
+import { meshcoreMessageStoreId } from './meshcoreStoreDedup';
 import { messageRecordsToChatMessages } from './storeRecordAdapters';
 
 const ID_MT = 'id-hydrate-mt';
@@ -133,6 +138,90 @@ describe('hydrateIdentityStoresFromDb', () => {
     const ownNodes = new Set([1]);
     const unread = totalUnreadCount(messages, { 'ch:1': 1000 }, ownNodes, 'meshcore');
     expect(unread).toBe(1);
+  });
+
+  it('merges room channel rows into hydration beyond the global load window', async () => {
+    const channelRows = Array.from({ length: 600 }, (_, i) => ({
+      id: i + 1,
+      sender_id: 0xabc,
+      sender_name: 'Repeater',
+      payload: `channel-${i}`,
+      channel_idx: 0,
+      timestamp: 10_000 + i,
+      status: 'acked',
+      packet_id: null,
+      emoji: null,
+      reply_id: null,
+      to_node: null,
+    }));
+    const roomRows = Array.from({ length: 10 }, (_, i) => ({
+      id: 700 + i,
+      sender_id: 0x33,
+      sender_name: 'Poster',
+      payload: `room-post-${i}`,
+      channel_idx: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 20_000 + i,
+      status: 'acked',
+      packet_id: null,
+      emoji: null,
+      reply_id: null,
+      to_node: 0xac200e59,
+      room_server_id: 0xac200e59,
+    }));
+
+    expect(mergeMeshcoreDbMessageRowsForHydration(channelRows, roomRows)).toHaveLength(610);
+
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockImplementation((channelIdx) => {
+      if (channelIdx === MESHCORE_ROOM_MESSAGE_CHANNEL) {
+        return Promise.resolve(roomRows.slice(0, MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT));
+      }
+      return Promise.resolve(channelRows);
+    });
+
+    await hydrateMeshcoreMessagesFromDb(ID_MC);
+
+    const records = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+    const roomPosts = messageRecordsToChatMessages(records).filter(
+      (m) => m.roomServerId === 0xac200e59,
+    );
+    expect(roomPosts).toHaveLength(10);
+    expect(roomPosts[0]?.payload).toBe('room-post-0');
+  });
+
+  it('assigns author-inclusive canonical ids to hydrated room posts', async () => {
+    const roomMsg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'persisted room post',
+      roomServerId: 0xac200e59,
+      authorId: 0x33,
+      authorName: 'NV0N 01',
+      timestamp: 1_700_000_300_000,
+      receivedVia: 'rf',
+    });
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getMeshcoreMessages').mockResolvedValue([
+      {
+        id: 99,
+        sender_id: roomMsg.sender_id,
+        sender_name: roomMsg.sender_name,
+        payload: roomMsg.payload,
+        channel_idx: MESHCORE_ROOM_MESSAGE_CHANNEL,
+        timestamp: roomMsg.timestamp,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: 0xac200e59,
+        room_server_id: 0xac200e59,
+      },
+    ]);
+
+    await hydrateMeshcoreMessagesFromDb(ID_MC);
+
+    const canonicalId = meshcoreMessageStoreId(roomMsg);
+    expect(useMessageStore.getState().messages[ID_MC]?.[canonicalId]?.payload).toBe(
+      'persisted room post',
+    );
   });
 
   it('dispatches by protocol via hydrateIdentityStoresFromDb', async () => {

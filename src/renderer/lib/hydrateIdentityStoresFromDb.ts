@@ -1,10 +1,12 @@
 import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import {
   buildMeshcoreNodeMapFromDb,
+  isMeshcoreRoomChatMessage,
   mapMeshcoreDbRowsToChatMessages,
   type MeshcoreSavedNodeHopRow,
   persistMeshcoreMessageSenderRepairs,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../hooks/meshcore/meshcoreHookPreamble';
 import {
   replaceMessageRecordsForIdentity,
   upsertMessageRecordsForIdentity,
@@ -20,6 +22,7 @@ import {
 } from './meshcoreDbCacheHydration';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { rebuildMeshcoreDedupeIndex } from './meshcoreMessageDedupeIndex';
+import { meshcoreMessageStoreId } from './meshcoreStoreDedup';
 import { ensureMeshtasticChatSenderInNodeStore } from './meshtastic/meshtasticChatSenderNode';
 import {
   buildMeshtasticNodeMapFromDbRows,
@@ -32,6 +35,50 @@ import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
 /** MeshCore SQLite message load cap (matches runtime mount hydration). */
 export const MESHCORE_DB_MESSAGE_LOAD_LIMIT = 500;
+
+/** Extra room BBS rows loaded by channel (-2) and merged with the global window. */
+export const MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT = 200;
+
+/** Merge global + room-channel SQLite rows for hydration (dedupe by row id). */
+export function mergeMeshcoreDbMessageRowsForHydration(
+  globalRows: MeshcoreMessageDbRow[],
+  roomRows: MeshcoreMessageDbRow[],
+): MeshcoreMessageDbRow[] {
+  const byId = new Map<number, MeshcoreMessageDbRow>();
+  for (const row of globalRows) {
+    if (typeof row.id === 'number') byId.set(row.id, row);
+  }
+  for (const row of roomRows) {
+    if (typeof row.id === 'number') byId.set(row.id, row);
+  }
+  return Array.from(byId.values()).sort((a, b) => a.id - b.id);
+}
+
+export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessageDbRow[]> {
+  const [globalRows, roomRows] = await Promise.all([
+    window.electronAPI.db.getMeshcoreMessages(undefined, MESHCORE_DB_MESSAGE_LOAD_LIMIT),
+    window.electronAPI.db.getMeshcoreMessages(
+      MESHCORE_ROOM_MESSAGE_CHANNEL,
+      MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+    ),
+  ]);
+  return mergeMeshcoreDbMessageRowsForHydration(
+    globalRows as MeshcoreMessageDbRow[],
+    roomRows as MeshcoreMessageDbRow[],
+  );
+}
+
+function meshcoreHydratedMessageRecords(
+  messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
+) {
+  return messages.map((msg) => {
+    const record = chatMessageToMessageRecord(msg);
+    if (isMeshcoreRoomChatMessage(msg)) {
+      record.id = meshcoreMessageStoreId(msg);
+    }
+    return record;
+  });
+}
 
 export interface HydrateIdentityStoresOptions {
   nodes?: boolean;
@@ -86,11 +133,8 @@ export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promis
     window.electronAPI.db.getMeshcoreContacts(),
     window.electronAPI.db.getNodes(),
   ]);
-  const dbMsgs = await window.electronAPI.db.getMeshcoreMessages(
-    undefined,
-    MESHCORE_DB_MESSAGE_LOAD_LIMIT,
-  );
-  const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs as MeshcoreMessageDbRow[]);
+  const dbMsgs = await loadMeshcoreMessagesForHydration();
+  const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
   const nodeMap = buildMeshcoreNodeMapFromDb(
     rows as MeshcoreContactDbRow[],
     savedNodes as MeshcoreSavedNodeHopRow[],
@@ -126,10 +170,10 @@ export async function hydrateMeshcoreMessagesFromDb(
   messagesMode: 'upsert' | 'replace' = 'upsert',
 ): Promise<void> {
   const [dbMsgs, contactRows] = await Promise.all([
-    window.electronAPI.db.getMeshcoreMessages(undefined, MESHCORE_DB_MESSAGE_LOAD_LIMIT),
+    loadMeshcoreMessagesForHydration(),
     window.electronAPI.db.getMeshcoreContacts(),
   ]);
-  const rows = dbMsgs as MeshcoreMessageDbRow[];
+  const rows = dbMsgs;
   const roomServerIds = meshcoreRoomServerIdsFromContacts(contactRows as MeshcoreContactDbRow[]);
   const mapped = repairMeshcoreHydratedMessages(
     mapMeshcoreDbRowsToChatMessages(rows),
@@ -138,7 +182,7 @@ export async function hydrateMeshcoreMessagesFromDb(
   );
   void persistMeshcoreMessageSenderRepairs(rows, mapped);
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
-  const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
+  const records = meshcoreHydratedMessageRecords(trimmed);
   if (messagesMode === 'replace') {
     replaceMessageRecordsForIdentity(identityId, records);
     rebuildMeshcoreDedupeIndex(

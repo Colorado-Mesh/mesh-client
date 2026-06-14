@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "Sessão ativa do cliente. Ela persiste até que você saia da sala ou se desconecte. Se o servidor da sala estiver inacessível, saia e faça login novamente quando ele estiver de volta.",
     "legendNotSavedTooltip": "Círculo vazio — nenhuma senha armazenada para esta sala",
     "legendSavedTooltip": "Meio círculo azul-céu — senha armazenada; faça login para abrir uma sessão",
-    "legendLoggedInTooltip": "Ponto verde — sessão ativa do cliente (saia da sala se o servidor estiver offline)"
+    "legendLoggedInTooltip": "Ponto verde — sessão ativa do cliente (saia da sala se o servidor estiver offline)",
+    "historyLocalHint": "As postagens aparecem apenas enquanto você está conectado a esta sala neste dispositivo. Ative a sincronização automática para permanecer subscrito; o histórico não é preenchido a partir do servidor da sala."
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

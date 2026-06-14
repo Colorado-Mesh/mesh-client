@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "Sesi klien aktif. Ini berlanjut sampai Anda meninggalkan ruangan atau memutuskan sambungan. Jika server ruangan tidak dapat dijangkau, tinggalkan dan masuk lagi saat kembali.",
     "legendNotSavedTooltip": "Lingkaran kosong — tidak ada kata sandi yang disimpan untuk ruangan ini",
     "legendSavedTooltip": "Setengah lingkaran biru langit — kata sandi disimpan; masuk untuk membuka sesi",
-    "legendLoggedInTooltip": "Titik hijau — sesi klien aktif (tinggalkan ruangan jika server offline)"
+    "legendLoggedInTooltip": "Titik hijau — sesi klien aktif (tinggalkan ruangan jika server offline)",
+    "historyLocalHint": "Pos hanya muncul saat Anda masuk ke ruangan ini di perangkat ini. Aktifkan Sinkronisasi otomatis untuk tetap berlangganan; riwayat tidak diisi ulang dari server ruangan."
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "활성 클라이언트 세션. 룸을 나가거나 연결을 끊을 때까지 지속됩니다. 룸 서버에 연결할 수 없는 경우 나가서 다시 로그인하십시오.",
     "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
     "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
-    "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)"
+    "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
+    "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다."
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

@@ -1535,6 +1535,9 @@ export default function RoomsPanel({
                     </select>
                   )}
                 </div>
+                <p className="w-full text-[10px] leading-snug text-gray-500">
+                  {t('roomsPanel.historyLocalHint')}
+                </p>
                 {syncConfigDirty && (
                   <button
                     type="button"

@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "Aktive Clientsitzung. Sie bleibt bestehen, bis Sie den Raum verlassen oder die Verbindung trennen. Wenn der Raumserver nicht erreichbar ist, verlassen Sie ihn und melden Sie sich wieder an, wenn er zurück ist.",
     "legendNotSavedTooltip": "Leerer Kreis — kein Passwort für diesen Raum gespeichert",
     "legendSavedTooltip": "Himmelblauer Halbkreis — Passwort gespeichert; melden Sie sich an, um eine Sitzung zu öffnen",
-    "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum verlassen, wenn der Server offline ist)"
+    "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum verlassen, wenn der Server offline ist)",
+    "historyLocalHint": "Beiträge werden nur angezeigt, wenn Sie auf diesem Gerät in diesem Raum angemeldet sind. Aktivieren Sie die automatische Synchronisierung, um abonniert zu bleiben; der Verlauf wird nicht vom Raumserver zurückgegeben."
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

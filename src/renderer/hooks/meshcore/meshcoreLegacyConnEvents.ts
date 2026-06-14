@@ -2,6 +2,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import { parseMeshCoreRfPacket } from '../../../shared/meshcoreRfPacketParse';
+import { packetRouter } from '../../lib/drivers/PacketRouter';
 import {
   classifyPayload,
   classifyProximity,
@@ -25,6 +26,7 @@ import {
   meshcoreCoerceRadioRxFrame,
   parseAutoaddConfigResponse,
 } from '../../lib/meshcoreContactAutoAdd';
+import { dispatchMeshcoreWaitingContactMessage } from '../../lib/meshcoreDirectMessageDecode';
 import {
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
@@ -681,11 +683,30 @@ export function attachMeshcoreLegacyConnEvents(
         if (isMeshcoreTransportStatusChatLine(d.text)) {
           logTransportLineAsDevice(d.text);
         } else if (sender?.hw_model === 'Room') {
+          const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
           if (!legacyOwnsRoomPosts()) {
-            void setMeshcoreRoomLastPostAt(
-              senderId,
-              effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-            );
+            const identityId = meshcoreIdentityIdRef.current;
+            if (identityId) {
+              const roomNodeIds = new Set<number>();
+              for (const [nodeId, node] of nodesRef.current) {
+                if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+              }
+              dispatchMeshcoreWaitingContactMessage(
+                identityId,
+                {
+                  pubKeyPrefix: d.pubKeyPrefix,
+                  text: d.text,
+                  senderTimestamp: d.senderTimestamp,
+                },
+                pubKeyPrefixMapRef.current,
+                roomNodeIds,
+                (event, id) => {
+                  packetRouter.dispatch(event, id);
+                },
+                logTransportLineAsDevice,
+              );
+            }
+            void setMeshcoreRoomLastPostAt(senderId, postTs);
           } else {
             const { authorId, payload } = meshcoreRoomPostBodyFromWire(
               d.text,

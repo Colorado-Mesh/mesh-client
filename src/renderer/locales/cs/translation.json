@@ -2306,7 +2306,8 @@
     "statusLoggedInSessionTooltip": "Aktivní relace klienta. Trvá, dokud neopustíte místnost nebo se neodpojíte. Pokud je pokojový server nedostupný, opusťte jej a po návratu se znovu přihlaste.",
     "legendNotSavedTooltip": "Prázdný kruh — pro tuto místnost není uloženo žádné heslo",
     "legendSavedTooltip": "Modrý polokruh — heslo uloženo; přihlaste se pro otevření relace",
-    "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)"
+    "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)",
+    "historyLocalHint": "Příspěvky se zobrazují pouze, když jste na tomto zařízení přihlášeni do této místnosti. Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru; historie není zaplněna z pokojového serveru."
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",
