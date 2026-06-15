@@ -2330,7 +2330,8 @@
     "legendNotSavedTooltip": "Pusty okrąg — nie zapisano hasła do tego pokoju",
     "legendSavedTooltip": "Niebieski półokrąg — hasło zapisane; zaloguj się, aby otworzyć sesję",
     "legendLoggedInTooltip": "Zielona kropka — aktywna sesja klienta (opuść pokój, jeśli serwer jest offline)",
-    "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego."
+    "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego.",
+    "loginAllSavedDisabledNoSavedPasswords": "Najpierw zapisz hasło do pokoju, aby użyć log in all"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

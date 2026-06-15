@@ -111,6 +111,7 @@ export function runMeshcoreRoomLogin(
     let sentWaitTimer: ReturnType<typeof setTimeout> | undefined;
     let estTimeoutMs = 0;
     let sentReceived = false;
+    let acceptSentErr = false;
 
     const cleanup = (): void => {
       if (responseTimeoutId !== undefined) {
@@ -201,6 +202,7 @@ export function runMeshcoreRoomLogin(
     };
 
     const onSent = (response: unknown): void => {
+      if (!acceptSentErr) return;
       if (sentReceived) return;
       sentReceived = true;
       if (sentWaitTimer !== undefined) {
@@ -218,6 +220,7 @@ export function runMeshcoreRoomLogin(
     };
 
     const onErr = (): void => {
+      if (!acceptSentErr) return;
       if (sentWaitTimer !== undefined) {
         clearTimeout(sentWaitTimer);
         sentWaitTimer = undefined;
@@ -227,8 +230,8 @@ export function runMeshcoreRoomLogin(
 
     conn.on(MC_PUSH_LOGIN_SUCCESS, onLoginSuccess);
     conn.on(MC_PUSH_LOGIN_FAIL, onLoginFail);
-    conn.once(MC_RESP_SENT, onSent);
-    conn.once(MC_RESP_ERR, onErr);
+    conn.on(MC_RESP_SENT, onSent);
+    conn.on(MC_RESP_ERR, onErr);
 
     sentWaitTimer = setTimeout(() => {
       if (settled || sentReceived) return;
@@ -237,6 +240,9 @@ export function runMeshcoreRoomLogin(
 
     void conn
       .sendToRadioFrame(buildSendLoginFrame(contactPublicKey, password))
+      .then(() => {
+        acceptSentErr = true;
+      })
       .catch((err: unknown) => {
         fail(err);
       });

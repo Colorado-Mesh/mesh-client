@@ -180,5 +180,5 @@ export function listMeshcoreRoomAutoLoginOnConnectNodeIds(): number[] {
       ids.add(nodeId);
     }
   }
-  return [...ids];
+  return [...ids].filter((nodeId) => getMeshcoreRoomCredential(nodeId) != null);
 }

@@ -147,6 +147,7 @@ import {
 } from '../lib/meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
+  listMeshcoreRoomCredentialNodeIds,
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
@@ -158,7 +159,6 @@ import {
   sendMeshcoreRoomPostWithSentWait,
 } from '../lib/meshcoreRoomSentWait';
 import {
-  MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
   MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE,
   MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE,
   meshcoreCancelRoomLogin,
@@ -3987,21 +3987,22 @@ export function useMeshcoreRuntime() {
       if (!connRef.current) {
         throw new Error('Not connected to device');
       }
-      const fromUi = roomNodeIds?.filter((id) => Number.isFinite(id) && id >= 0) ?? [];
-      const fromRef = [...nodesRef.current.values()]
-        .filter((n) => n.hw_model === 'Room')
-        .map((n) => n.node_id);
-      const nodeIdSet = new Set(fromUi.length > 0 ? fromUi : fromRef);
-      const nodeIds = [...nodeIdSet].filter((id) => !meshcoreIsRoomLoggedIn(id));
+      const savedIds = new Set(listMeshcoreRoomCredentialNodeIds());
+      const fromUi =
+        roomNodeIds?.filter((id) => Number.isFinite(id) && id >= 0 && savedIds.has(id)) ?? [];
+      const candidateIds =
+        fromUi.length > 0
+          ? fromUi
+          : [...savedIds].filter((id) => nodesRef.current.get(id)?.hw_model === 'Room');
+      const nodeIds = candidateIds.filter((id) => !meshcoreIsRoomLoggedIn(id));
       for (const nodeId of nodeIds) {
         const cred = getMeshcoreRoomCredential(nodeId);
-        const guestPassword = meshcoreRoomEffectiveGuestPassword(
-          cred?.guestPassword ?? MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD,
-        );
+        if (!cred) continue;
+        const guestPassword = meshcoreRoomEffectiveGuestPassword(cred.guestPassword);
         try {
           await loginRoom(nodeId, guestPassword, {
             guestPassword,
-            adminPassword: cred?.adminPassword ?? '',
+            adminPassword: cred.adminPassword ?? '',
           });
           clearMeshcoreRoomAutoLoginFailure(nodeId);
         } catch (e: unknown) {

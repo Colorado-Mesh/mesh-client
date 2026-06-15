@@ -686,7 +686,7 @@ export default function RoomsPanel({
   const handleLoginAllSaved = useCallback(() => {
     if (!onLoginAllSaved) return;
     const targets = roomServers
-      .filter((r) => !meshcoreIsRoomLoggedIn(r.node_id))
+      .filter((r) => storedRoomIds.has(r.node_id) && !meshcoreIsRoomLoggedIn(r.node_id))
       .map((r) => r.node_id);
     if (targets.length === 0) return;
     for (const nodeId of targets) {
@@ -700,7 +700,7 @@ export default function RoomsPanel({
       .finally(() => {
         setLocalLoginRoomIds(new Set());
       });
-  }, [onLoginAllSaved, roomServers]);
+  }, [onLoginAllSaved, roomServers, storedRoomIds]);
 
   const handleLogin = useCallback(() => {
     if (selectedRoomId == null) return;
@@ -1005,16 +1005,24 @@ export default function RoomsPanel({
     activeLoginRoomId != null
       ? (nodes.get(activeLoginRoomId)?.long_name ?? String(activeLoginRoomId))
       : '';
-  const roomsNotLoggedInCount = useMemo(() => {
+  const savedRoomsNotLoggedInCount = useMemo(() => {
     void roomSessionRevision;
-    return roomServers.filter((r) => !meshcoreIsRoomLoggedIn(r.node_id)).length;
-  }, [roomServers, roomSessionRevision]);
-  const loginAllSavedDisabled = !isConnected || roomsNotLoggedInCount === 0;
+    return roomServers.filter(
+      (r) => storedRoomIds.has(r.node_id) && !meshcoreIsRoomLoggedIn(r.node_id),
+    ).length;
+  }, [roomServers, roomSessionRevision, storedRoomIds]);
+  const savedRoomCount = useMemo(
+    () => roomServers.filter((r) => storedRoomIds.has(r.node_id)).length,
+    [roomServers, storedRoomIds],
+  );
+  const loginAllSavedDisabled = !isConnected || savedRoomsNotLoggedInCount === 0;
   const loginAllSavedDisabledReason = !isConnected
     ? t('roomsPanel.loginAllSavedDisabledNotConnected')
-    : roomsNotLoggedInCount === 0
-      ? t('roomsPanel.loginAllSavedDisabledAllLoggedIn')
-      : '';
+    : savedRoomCount === 0
+      ? t('roomsPanel.loginAllSavedDisabledNoSavedPasswords')
+      : savedRoomsNotLoggedInCount === 0
+        ? t('roomsPanel.loginAllSavedDisabledAllLoggedIn')
+        : '';
   const loginButtonEnabled = isConnected && !guestFieldEmpty && !selectedRoomLoginLoading;
   const loginButtonClass = loginButtonEnabled
     ? 'border-brand-green bg-brand-green w-full cursor-pointer rounded border px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-brand-green/90'

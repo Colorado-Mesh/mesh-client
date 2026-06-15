@@ -2330,7 +2330,8 @@
     "legendNotSavedTooltip": "Boş daire — bu oda için saklanan parola yok",
     "legendSavedTooltip": "Gökyüzü yarım daire — parola saklanır; bir oturumu açmak için oturum açın",
     "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)",
-    "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz."
+    "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz.",
+    "loginAllSavedDisabledNoSavedPasswords": "Tüm oturum açma bilgilerini kullanmak için önce bir oda parolasını kaydedin"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

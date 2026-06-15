@@ -35,6 +35,12 @@ describe('meshcoreRoomSyncStorage', () => {
       autoLoginOnConnect: true,
     });
     expect(getMeshcoreRoomSyncConfig(42).autoLoginOnConnect).toBe(true);
+    expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toEqual([]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(42),
+      JSON.stringify({ guestPassword: 'secret' }),
+      'meshcoreRoomSyncStorage.test cred',
+    );
     expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toEqual([42]);
   });
 

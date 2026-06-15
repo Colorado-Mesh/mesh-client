@@ -2330,7 +2330,8 @@
     "legendNotSavedTooltip": "Leerer Kreis — kein Passwort für diesen Raum gespeichert",
     "legendSavedTooltip": "Himmelblauer Halbkreis — Passwort gespeichert; melden Sie sich an, um eine Sitzung zu öffnen",
     "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum verlassen, wenn der Server offline ist)",
-    "historyLocalHint": "Beiträge werden nur angezeigt, wenn Sie auf diesem Gerät in diesem Raum angemeldet sind. Aktivieren Sie die automatische Synchronisierung, um abonniert zu bleiben; der Verlauf wird nicht vom Raumserver zurückgegeben."
+    "historyLocalHint": "Beiträge werden nur angezeigt, wenn Sie auf diesem Gerät in diesem Raum angemeldet sind. Aktivieren Sie die automatische Synchronisierung, um abonniert zu bleiben; der Verlauf wird nicht vom Raumserver zurückgegeben.",
+    "loginAllSavedDisabledNoSavedPasswords": "Speichern Sie zuerst ein Raumpasswort, um alle Anmeldedaten zu verwenden"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

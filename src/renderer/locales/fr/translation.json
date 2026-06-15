@@ -2330,7 +2330,8 @@
     "legendNotSavedTooltip": "Cercle vide — aucun mot de passe stocké pour cette salle",
     "legendSavedTooltip": "Demi-cercle bleu ciel — mot de passe enregistré ; connectez-vous pour ouvrir une session",
     "legendLoggedInTooltip": "Point vert — session client active (quittez la salle si le serveur est hors ligne)",
-    "historyLocalHint": "Les publications n'apparaissent que lorsque vous êtes connecté à cette pièce sur cet appareil. Activez la synchronisation automatique pour rester abonné ; l'historique n'est pas remblayé à partir du serveur de la salle."
+    "historyLocalHint": "Les publications n'apparaissent que lorsque vous êtes connecté à cette pièce sur cet appareil. Activez la synchronisation automatique pour rester abonné ; l'historique n'est pas remblayé à partir du serveur de la salle.",
+    "loginAllSavedDisabledNoSavedPasswords": "Enregistrez d'abord un mot de passe de pièce pour utiliser la connexion tout"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",
