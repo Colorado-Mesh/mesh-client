@@ -1636,13 +1636,13 @@ export default function RoomsPanel({
                 </div>
               </div>
 
-              <div className="shrink-0 border-b border-gray-700 px-3 py-1">
+              <div className="shrink-0 border-b border-gray-700">
                 <button
                   type="button"
                   onClick={() => {
                     setMembersOpen((o) => !o);
                   }}
-                  className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-300"
+                  className="flex w-full items-center gap-1 px-3 py-1.5 text-left text-xs font-medium text-gray-300 hover:bg-gray-800/50"
                   aria-expanded={membersOpen}
                   aria-label={
                     membersOpen
@@ -1654,6 +1654,9 @@ export default function RoomsPanel({
                         : t('roomsPanel.membersHeading')
                   }
                 >
+                  <span className="text-gray-500" aria-hidden>
+                    {membersOpen ? '▾' : '▸'}
+                  </span>
                   {membersOpen
                     ? t('roomsPanel.membersHeading')
                     : recognizedPosters.length > 0
@@ -1661,10 +1664,9 @@ export default function RoomsPanel({
                           count: recognizedPosters.length,
                         })
                       : t('roomsPanel.membersHeading')}
-                  <span className="text-gray-500">{membersOpen ? '▾' : '▸'}</span>
                 </button>
                 {membersOpen && (
-                  <div className="mt-2 space-y-3 text-xs">
+                  <div className="space-y-3 border-t border-gray-800/80 px-3 py-2 text-xs">
                     <div>
                       <p className="mb-1 font-medium text-gray-400">
                         {t('roomsPanel.membersRecognizedHeading')}
