@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
@@ -31,12 +32,14 @@ import {
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
 import { meshtasticNodeAwaitingNodeInfo } from '../lib/meshtastic/meshtasticNodeAwaitingNodeInfo';
+import { Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useNodeStore } from '../stores/nodeStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { HelpTooltip } from './HelpTooltip';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
@@ -74,8 +77,10 @@ interface NodeDetailModalProps {
   meshcoreTraceResult?: { pathLen: number; pathSnrs: number[]; lastSnr: number };
   meshcorePingError?: string;
   meshcoreRepeaterStatus?: MeshCoreRepeaterStatus;
+  meshcoreStatusError?: string;
   onRequestRepeaterStatus?: (nodeId: number) => Promise<void>;
   meshcoreNodeTelemetry?: MeshCoreNodeTelemetry;
+  meshcoreTelemetryError?: string;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreNeighbors?: MeshCoreNeighborResult;
   onRequestNeighbors?: (nodeId: number) => Promise<void>;
@@ -105,6 +110,12 @@ interface NodeDetailModalProps {
   onConfigureRemotely?: (nodeNum: number) => void;
   /** Saved admin key for this node (enables configure remotely). */
   hasRemoteAdminKey?: boolean;
+}
+
+function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
+  return Array.from(publicKey)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function WatchToggleButton({ nodeId }: { nodeId: number }) {
@@ -147,8 +158,10 @@ export default function NodeDetailModal({
   meshcoreTraceResult,
   meshcorePingError,
   meshcoreRepeaterStatus,
+  meshcoreStatusError,
   onRequestRepeaterStatus,
   meshcoreNodeTelemetry,
+  meshcoreTelemetryError,
   onRequestTelemetry,
   meshcoreNeighbors,
   onRequestNeighbors,
@@ -171,38 +184,12 @@ export default function NodeDetailModal({
   const parentIconTrigger = useParentIconTrigger();
   const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const { ensureRoomAuth, RemoteAuthModal: RoomAuthModal } = useMeshcoreRoomAuth();
+  const meshcoreIdentityId = protocol === 'meshcore' ? getIdentityIdForProtocol('meshcore') : null;
+  const storeContactPublicKey = useNodeStore((s) => {
+    if (!meshcoreIdentityId || node == null) return undefined;
+    return s.nodes[meshcoreIdentityId]?.[node.node_id]?.publicKey;
+  });
 
-  const ensureRemoteRpcAccess = useCallback(
-    async (
-      nodeId: number,
-      hwModel: string | undefined,
-      mode: 'guest' | 'admin',
-    ): Promise<boolean> => {
-      if (hwModel === 'Room') {
-        const roomName = node?.long_name ?? `Room-${nodeId.toString(16)}`;
-        const auth = await ensureRoomAuth(nodeId, mode === 'admin' ? 'admin' : 'guest', roomName);
-        if (!auth.ok || !onLoginRoom) return false;
-        const password = mode === 'admin' ? auth.adminPassword : auth.guestPassword;
-        const session = meshcoreGetRoomSession(nodeId);
-        const forceRelogin =
-          meshcoreIsRoomLoggedIn(nodeId) &&
-          (session?.role === 'readonly' || (mode === 'admin' && session?.role !== 'admin'));
-        try {
-          await onLoginRoom(nodeId, password, {
-            adminPassword: auth.adminPassword,
-            guestPassword: auth.guestPassword,
-            forceRelogin,
-          });
-          return true;
-        } catch (e) {
-          console.warn('[NodeDetailModal] room login failed ' + errLikeToLogString(e));
-          return false;
-        }
-      }
-      return ensureConfigured();
-    },
-    [ensureConfigured, ensureRoomAuth, node?.long_name, onLoginRoom],
-  );
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [adminKeyStatus, setAdminKeyStatus] = useState<string | null>(null);
@@ -347,6 +334,47 @@ export default function NodeDetailModal({
 
   // Fetch on_radio status and contact count for MeshCore
   const [contactPubkey, setContactPubkey] = useState<string | null>(null);
+
+  const ensureRemoteRpcAccess = useCallback(
+    async (
+      nodeId: number,
+      hwModel: string | undefined,
+      mode: 'guest' | 'admin',
+    ): Promise<boolean> => {
+      if (hwModel === 'Room') {
+        const roomName = node?.long_name ?? `Room-${nodeId.toString(16)}`;
+        const auth = await ensureRoomAuth(nodeId, mode === 'admin' ? 'admin' : 'guest', roomName);
+        if (!auth.ok || !onLoginRoom) {
+          setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
+          return false;
+        }
+        const password = mode === 'admin' ? auth.adminPassword : auth.guestPassword;
+        const session = meshcoreGetRoomSession(nodeId);
+        const forceRelogin =
+          meshcoreIsRoomLoggedIn(nodeId) &&
+          (session?.role === 'readonly' || (mode === 'admin' && session?.role !== 'admin'));
+        try {
+          await onLoginRoom(nodeId, password, {
+            adminPassword: auth.adminPassword,
+            guestPassword: auth.guestPassword,
+            forceRelogin,
+          });
+          return true;
+        } catch (e) {
+          console.warn('[NodeDetailModal] room login failed ' + errLikeToLogString(e));
+          setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
+          return false;
+        }
+      }
+      const configured = await ensureConfigured();
+      if (!configured) {
+        setActionStatus(t('nodeDetailModal.remoteAuthCancelled'));
+      }
+      return configured;
+    },
+    [ensureConfigured, ensureRoomAuth, node?.long_name, onLoginRoom, t],
+  );
+
   useEffect(() => {
     if (protocol !== 'meshcore' || !node) {
       setContactOnRadio(null);
@@ -355,6 +383,8 @@ export default function NodeDetailModal({
       return;
     }
     let cancelled = false;
+    const storeHex =
+      storeContactPublicKey?.length === 32 ? meshcorePublicKeyToHex(storeContactPublicKey) : null;
     const fetchStatus = async () => {
       try {
         const contact = await window.electronAPI.db.getMeshcoreContactById(node.node_id);
@@ -362,17 +392,17 @@ export default function NodeDetailModal({
           if (contact && 'on_radio' in contact) {
             // on_radio: 1 = on radio, 0 = only in DB, null = treat as on radio (legacy data)
             setContactOnRadio(contact.on_radio !== 0);
-            setContactPubkey(contact.public_key ?? null);
+            setContactPubkey(contact.public_key ?? storeHex ?? null);
           } else {
             setContactOnRadio(true);
-            setContactPubkey(null);
+            setContactPubkey(storeHex ?? null);
           }
         }
       } catch {
         // catch-no-log-ok handle gracefully - show as unknown
         if (!cancelled) {
           setContactOnRadio(null);
-          setContactPubkey(null);
+          setContactPubkey(storeHex ?? null);
         }
       }
       try {
@@ -389,7 +419,7 @@ export default function NodeDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [protocol, node]);
+  }, [protocol, node, storeContactPublicKey]);
 
   // Align with MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS (queue + tracePath in useMeshCore)
   useEffect(() => {
@@ -476,7 +506,10 @@ export default function NodeDetailModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+      <div
+        className="fixed inset-0 flex items-center justify-center p-4"
+        style={{ zIndex: Z_NODE_DETAIL_MODAL }}
+      >
         <button
           type="button"
           aria-label={t('aria.closeDialog')}
@@ -662,6 +695,24 @@ export default function NodeDetailModal({
                   {meshcorePingError}
                 </div>
               )}
+
+              {protocol === 'meshcore' &&
+                !isOurNode &&
+                meshcoreStatusError &&
+                !showRepeaterStats && (
+                  <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
+                    {meshcoreStatusError}
+                  </div>
+                )}
+
+              {protocol === 'meshcore' &&
+                !isOurNode &&
+                meshcoreTelemetryError &&
+                !showTelemetry && (
+                  <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
+                    {meshcoreTelemetryError}
+                  </div>
+                )}
 
               {/* MeshCore: trace path result */}
               {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
@@ -1594,7 +1645,11 @@ export default function NodeDetailModal({
                       setActionStatus(t('nodeDetailModal.sharingContact'));
                       try {
                         const success = await onShareContact(node.node_id);
-                        setActionStatus(success ? null : t('nodeDetailModal.shareFailed'));
+                        setActionStatus(
+                          success
+                            ? t('nodeDetailModal.shareContactSent')
+                            : t('nodeDetailModal.shareFailed'),
+                        );
                       } catch (e) {
                         console.warn(
                           '[NodeDetailModal] shareContact failed ' + errLikeToLogString(e),

@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Yerel radyonuzun genel anahtarını (Radio → Security → Copy) bu uzak düğümün Admin keys listesine ekledikten sonra aynı anahtarı onay için buraya yapıştırın. Ardından Radio sekmesinde Yapılandır’ı kullanın.",
     "remoteAdminKeyInvalid": "Geçerli bir yönetici ortak anahtarı girin (base64, base64 :… veya 64 karakterli hex).",
     "configureRemotelyHint": "Bu düğüm için Radyo ayarlarını mesh üzerinden açar (yerel radyo ve kayıtlı yönetici anahtarı gerektirir).",
-    "openRoomButton": "🏠 Odayı aç"
+    "openRoomButton": "🏠 Odayı aç",
+    "remoteAuthCancelled": "Uzaktan erişim iptal edildi.",
+    "shareContactSent": "İletişim paylaşımı telsiz üzerinden gönderilir."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",

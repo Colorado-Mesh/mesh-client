@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Setelah menambahkan kunci publik radio lokal Anda (Radio → Security → Copy) ke Admin keys node jarak jauh ini, tempel kunci yang sama di sini sebagai konfirmasi. Lalu gunakan Konfigurasi di tab Radio.",
     "remoteAdminKeyInvalid": "Masukkan kunci publik admin yang valid (base64, base64 :…, atau hex 64 karakter).",
     "configureRemotelyHint": "Membuka pengaturan Radio untuk simpul ini melalui mesh (memerlukan radio lokal dan kunci admin yang disimpan).",
-    "openRoomButton": "🏠 Buka ruangan"
+    "openRoomButton": "🏠 Buka ruangan",
+    "remoteAuthCancelled": "Akses jarak jauh dibatalkan.",
+    "shareContactSent": "Berbagi kontak yang dikirim melalui radio."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

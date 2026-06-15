@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Après avoir ajouté la clé publique de votre radio locale (Radio → Sécurité → Copier) aux clés Admin de ce nœud distant, collez la même clé ici pour confirmation. Utilisez ensuite Configurer dans l’onglet Radio.",
     "remoteAdminKeyInvalid": "Saisissez une clé publique admin valide (base64, base64 :… ou hexadécimale de 64 caractères).",
     "configureRemotelyHint": "Ouvre les paramètres radio pour ce nœud sur le maillage (nécessite une radio locale et une clé d'administration enregistrée).",
-    "openRoomButton": "🏠 Ouvrir la salle"
+    "openRoomButton": "🏠 Ouvrir la salle",
+    "remoteAuthCancelled": "Accès à distance annulé.",
+    "shareContactSent": "Partage de contact envoyé par radio."
   },
   "nodeInfoBody": {
     "longName": "Nom long",

@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "ローカル無線の公開鍵（Radio → Security → Copy）をこのリモートノードのAdminキーに追加したら、同じキーをここに貼り付けて確認してください。その後、Radioタブの「ノードを構成する」を使います。",
     "remoteAdminKeyInvalid": "有効な管理者公開鍵(base 64、base 64 :…、または64文字の16進数)を入力します。",
     "configureRemotelyHint": "メッシュを介してこのノードのラジオ設定を開きます（ローカルラジオと保存された管理者キーが必要です）。",
-    "openRoomButton": "🏠 ルームを開く"
+    "openRoomButton": "🏠 ルームを開く",
+    "remoteAuthCancelled": "リモートアクセスがキャンセルされました。",
+    "shareContactSent": "無線で送信されたコンタクトシェア。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

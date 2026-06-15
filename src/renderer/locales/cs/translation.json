@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Po přidání veřejného klíče místního rádia (Rádio → Zabezpečení → Kopírovat) do Admin klíčů tohoto vzdáleného uzlu vložte stejný klíč sem jako potvrzení. Poté použijte Konfigurovat na kartě Rádio.",
     "remoteAdminKeyInvalid": "Zadejte platný veřejný klíč správce (base64, base64:… nebo 64místný hexadecimální).",
     "configureRemotelyHint": "Otevře nastavení rádia pro tento uzel přes síť (vyžaduje místní rádio a uložený klíč správce).",
-    "openRoomButton": "🏠 Otevřít místnost"
+    "openRoomButton": "🏠 Otevřít místnost",
+    "remoteAuthCancelled": "Vzdálený přístup byl zrušen.",
+    "shareContactSent": "Sdílení kontaktu odesláno rádiem."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "로컬 라디오의 공개 키(Radio → Security → Copy)를 이 원격 노드의 Admin keys에 추가한 뒤, 같은 키를 여기에 붙여넣어 확인하세요. 그런 다음 Radio 탭에서 구성을 사용하세요.",
     "remoteAdminKeyInvalid": "유효한 관리자 공개 키 (base64, base64: … 또는 64자 16진수) 를 입력합니다.",
     "configureRemotelyHint": "메시를 통해 이 노드에 대한 라디오 설정을 엽니다 (로컬 라디오 및 저장된 관리자 키 필요).",
-    "openRoomButton": "🏠 룸 열기"
+    "openRoomButton": "🏠 룸 열기",
+    "remoteAuthCancelled": "원격 액세스가 취소되었습니다.",
+    "shareContactSent": "라디오를 통해 전송된 연락처 공유."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",

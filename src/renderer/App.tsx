@@ -41,6 +41,7 @@ import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
+import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
@@ -297,7 +298,8 @@ function DialogLazyFallback() {
   const { t } = useTranslation();
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40"
+      className="fixed inset-0 flex items-center justify-center bg-black/40"
+      style={{ zIndex: Z_NODE_DETAIL_MODAL }}
       role="status"
       aria-busy="true"
     >
@@ -1259,6 +1261,21 @@ function AppContent({
 
   const detailModalPanelActions =
     detailModalProtocol === 'meshcore' ? meshcorePanelActions : meshtasticPanelActions;
+
+  const detailConnectionView = useMemo(
+    () => (detailModalProtocol === 'meshcore' ? meshcoreConnectionView : meshtasticConnectionView),
+    [detailModalProtocol, meshcoreConnectionView, meshtasticConnectionView],
+  );
+  const detailIsOperational = useMemo(
+    () =>
+      detailConnectionView.state.status === 'configured' ||
+      detailConnectionView.state.status === 'stale',
+    [detailConnectionView.state.status],
+  );
+  const detailIsConnectedOrOperational = useMemo(
+    () => detailIsOperational || detailConnectionView.state.status === 'connected',
+    [detailIsOperational, detailConnectionView.state.status],
+  );
 
   const detailModalNodes = detailModalProtocol === 'meshcore' ? meshcoreUiNodes : nodesForUi;
   const detailHomeNode =
@@ -3126,9 +3143,9 @@ function AppContent({
                   }
                 : undefined
             }
-            isConnected={isOperational}
-            mqttConnected={activeConnectionView.mqttStatus === 'connected'}
-            radioConnected={isConnectedOrOperational}
+            isConnected={detailIsOperational}
+            mqttConnected={detailConnectionView.mqttStatus === 'connected'}
+            radioConnected={detailIsConnectedOrOperational}
             homeNode={detailHomeNode}
             neighborInfo={activeRuntime.neighborInfo}
             useFahrenheit={useFahrenheit}
@@ -3148,6 +3165,11 @@ function AppContent({
                 ? meshcoreRuntime.meshcoreNodeStatus.get(selectedNode.node_id)
                 : undefined
             }
+            meshcoreStatusError={
+              detailModalProtocol === 'meshcore' && selectedNode
+                ? meshcoreRuntime.meshcoreStatusErrors.get(selectedNode.node_id)
+                : undefined
+            }
             onRequestRepeaterStatus={
               detailModalProtocol === 'meshcore'
                 ? meshcorePanelActions.requestRepeaterStatus
@@ -3156,6 +3178,11 @@ function AppContent({
             meshcoreNodeTelemetry={
               detailModalProtocol === 'meshcore' && selectedNode
                 ? meshcoreRuntime.meshcoreNodeTelemetry.get(selectedNode.node_id)
+                : undefined
+            }
+            meshcoreTelemetryError={
+              detailModalProtocol === 'meshcore' && selectedNode
+                ? meshcoreRuntime.meshcoreTelemetryErrors.get(selectedNode.node_id)
                 : undefined
             }
             onRequestTelemetry={

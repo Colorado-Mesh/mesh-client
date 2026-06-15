@@ -5,6 +5,7 @@ import {
   meshcoreGetRoomSession,
   meshcoreRoomEffectiveGuestPassword,
 } from '@/renderer/lib/meshcoreRoomSession';
+import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
 
 export type RoomAuthMode = 'guest' | 'admin';
 
@@ -169,7 +170,10 @@ export function useMeshcoreRoomAuth() {
 
   const RemoteAuthModal =
     modalOpen && pending != null ? (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div
+        className="fixed inset-0 flex items-center justify-center p-4"
+        style={{ zIndex: Z_NESTED_AUTH_OVERLAY }}
+      >
         <button
           type="button"
           className="absolute inset-0 cursor-default border-0 bg-black/60 p-0"

@@ -8,7 +8,10 @@ import type {
   MeshcoreContactDbRow,
   MeshCoreContactRaw,
 } from '../../lib/meshcore/meshcoreHookTypes';
-import { registerMeshcorePubKey } from '../../lib/meshcore/meshcorePubKeyRegistry';
+import {
+  getMeshcorePubKey,
+  registerMeshcorePubKey,
+} from '../../lib/meshcore/meshcorePubKeyRegistry';
 import {
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
@@ -715,6 +718,40 @@ export function meshcoreFullPubKeyBytesFromContactDbHex(raw: string): Uint8Array
   const pairs = hex.match(/.{2}/g);
   if (pairs?.length !== 32) return null;
   return new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+}
+
+/**
+ * Resolve a 32-byte MeshCore contact pubkey for export/share/DM paths.
+ * Order: runtime map → global registry → live store slice → SQLite contact row.
+ */
+export async function resolveMeshcoreNodePubKey(
+  nodeId: number,
+  pubKeyByNodeId: ReadonlyMap<number, Uint8Array>,
+  storePublicKey?: Uint8Array,
+): Promise<Uint8Array | null> {
+  const fromMap = pubKeyByNodeId.get(nodeId);
+  if (fromMap?.length === 32) return fromMap;
+
+  const fromRegistry = getMeshcorePubKey(nodeId);
+  if (fromRegistry?.length === 32) return fromRegistry;
+
+  if (storePublicKey?.length === 32) return storePublicKey;
+
+  try {
+    const contact = (await window.electronAPI.db.getMeshcoreContactById(nodeId)) as
+      | Pick<MeshcoreContactDbRow, 'public_key'>
+      | null
+      | undefined;
+    if (contact?.public_key) {
+      return meshcoreFullPubKeyBytesFromContactDbHex(contact.public_key);
+    }
+  } catch (e: unknown) {
+    console.warn(
+      '[resolveMeshcoreNodePubKey] getMeshcoreContactById failed ' +
+        (e instanceof Error ? e.message : String(e)),
+    );
+  }
+  return null;
 }
 
 /** Pre-seed global pubkey registry from SQLite before PacketRouter subscribe (DM prefix decode). */

@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Después de añadir la clave pública de su radio local (Radio → Seguridad → Copiar) a las claves de administrador de este nodo remoto, pegue esa misma clave aquí como confirmación. Luego use Configurar en la pestaña Radio.",
     "remoteAdminKeyInvalid": "Introduzca una clave pública de administrador válida (base64, base64:… o hexadecimal de 64 caracteres).",
     "configureRemotelyHint": "Abre la configuración de radio para este nodo a través de la malla (requiere radio local y la clave de administrador guardada).",
-    "openRoomButton": "🏠 Abrir sala"
+    "openRoomButton": "🏠 Abrir sala",
+    "remoteAuthCancelled": "Acceso remoto cancelado.",
+    "shareContactSent": "Contacto compartido enviado por radio."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
