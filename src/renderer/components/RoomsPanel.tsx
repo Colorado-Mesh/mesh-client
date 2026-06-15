@@ -74,7 +74,7 @@ import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 
-import { getDistFromChatBottom } from '../lib/chatScrollUtils';
+import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
@@ -242,6 +242,8 @@ export default function RoomsPanel({
   const loginQueueRevision = useMeshcoreRoomLoginQueueRevision();
   const streamRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  /** Sticky intent: user is reading latest posts and wants auto-follow on new traffic. */
+  const isPinnedToBottomRef = useRef(true);
   const unreadDividerRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
@@ -367,9 +369,11 @@ export default function RoomsPanel({
       outerScrollMetricsRootRef?.current ?? null,
     );
     if (distFromBottom == null) return undefined;
-    setShowScrollButton(distFromBottom > 200);
+    const atEnd = distFromBottom <= CHAT_SCROLL_END_THRESHOLD;
+    isPinnedToBottomRef.current = atEnd;
+    setShowScrollButton(!atEnd);
     const scrollTop = streamRef.current?.scrollTop ?? 0;
-    setShowScrollTopButton(scrollTop > 200);
+    setShowScrollTopButton(scrollTop > CHAT_SCROLL_END_THRESHOLD);
     return distFromBottom;
   }, [outerScrollMetricsRootRef]);
 
@@ -391,12 +395,16 @@ export default function RoomsPanel({
   }, [applyNearBottomReadState, updateScrollButtonVisibility]);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = streamRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    isPinnedToBottomRef.current = true;
   }, []);
 
   const scrollToUnreadOrBottom = useCallback(() => {
     const el = streamRef.current;
     if (unreadDividerRef.current) {
+      isPinnedToBottomRef.current = false;
       if (el) {
         const onEnd = () => {
           el.removeEventListener('scrollend', onEnd);
@@ -411,9 +419,9 @@ export default function RoomsPanel({
       }
       unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
     } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      scrollToBottom();
     }
-  }, [applyNearBottomReadState, outerScrollMetricsRootRef]);
+  }, [applyNearBottomReadState, outerScrollMetricsRootRef, scrollToBottom]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
@@ -423,12 +431,7 @@ export default function RoomsPanel({
 
   useEffect(() => {
     if (!isActive || document.hidden || selectedRoomId == null) return;
-    const distFromBottom = getDistFromChatBottom(
-      streamRef.current,
-      messagesEndRef.current,
-      outerScrollMetricsRootRef?.current ?? null,
-    );
-    if (distFromBottom != null && distFromBottom < 200) {
+    if (isPinnedToBottomRef.current) {
       scrollToBottom();
     }
     requestAnimationFrame(() => {
@@ -438,7 +441,6 @@ export default function RoomsPanel({
   }, [
     applyNearBottomReadState,
     isActive,
-    outerScrollMetricsRootRef,
     roomPosts.length,
     scrollToBottom,
     selectedRoomId,
@@ -479,8 +481,13 @@ export default function RoomsPanel({
     if (!isActive) return;
     if (unreadDividerRef.current) {
       unreadDividerRef.current.scrollIntoView({ block: 'center' });
+      isPinnedToBottomRef.current = false;
     } else {
-      messagesEndRef.current?.scrollIntoView();
+      const el = streamRef.current;
+      if (el) {
+        el.scrollTop = el.scrollHeight;
+      }
+      isPinnedToBottomRef.current = true;
     }
     requestAnimationFrame(() => {
       const dist = updateScrollButtonVisibility();
@@ -1896,7 +1903,11 @@ export default function RoomsPanel({
                               </div>
                             </div>
                             <div className="break-words whitespace-pre-wrap">
-                              <ChatPayloadText text={m.payload} query="" />
+                              <ChatPayloadText
+                                text={m.payload}
+                                query=""
+                                loadLinkPreviews={!showScrollButton}
+                              />
                             </div>
                             {isOwn && m.status && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
@@ -1943,11 +1954,7 @@ export default function RoomsPanel({
                   <button
                     type="button"
                     onClick={() => {
-                      if (unreadDividerRef.current) {
-                        scrollToUnreadOrBottom();
-                      } else {
-                        scrollToBottom();
-                      }
+                      scrollToUnreadOrBottom();
                     }}
                     {...{ [PARENT_HOVER_ATTR]: '' }}
                     className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"

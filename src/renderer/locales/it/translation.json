@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Dopo aver aggiunto la chiave pubblica della radio locale (Radio → Sicurezza → Copia) alle chiavi Admin di questo nodo remoto, incollate la stessa chiave qui per conferma. Poi usate Configura nella scheda Radio.",
     "remoteAdminKeyInvalid": "Immettere una chiave pubblica di amministrazione valida (base64, base64:… o esadecimale di 64 caratteri).",
     "configureRemotelyHint": "Apre le impostazioni radio per questo nodo sulla mesh (richiede la radio locale e la chiave di amministrazione salvata).",
-    "openRoomButton": "🏠 Apri stanza"
+    "openRoomButton": "🏠 Apri stanza",
+    "remoteAuthCancelled": "Accesso remoto annullato.",
+    "shareContactSent": "Condivisione dei contatti inviata via radio."
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",

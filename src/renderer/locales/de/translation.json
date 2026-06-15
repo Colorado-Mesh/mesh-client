@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Nachdem Sie den öffentlichen Schlüssel Ihres lokalen Funkgeräts (Radio → Sicherheit → Kopieren) zu den Admin-Schlüsseln dieses Remote-Knotens hinzugefügt haben, fügen Sie denselben Schlüssel hier zur Bestätigung ein. Verwenden Sie dann „Knoten konfigurieren“ auf der Registerkarte Radio.",
     "remoteAdminKeyInvalid": "Geben Sie einen gültigen öffentlichen Admin-Schlüssel ein (base64, base64:… oder 64-stelliges Hexadezimalzeichen).",
     "configureRemotelyHint": "Öffnet die Radioeinstellungen für diesen Knoten über das Netz (erfordert lokales Radio und gespeicherten Admin-Schlüssel).",
-    "openRoomButton": "🏠 Raum öffnen"
+    "openRoomButton": "🏠 Raum öffnen",
+    "remoteAuthCancelled": "Fernzugriff abgebrochen.",
+    "shareContactSent": "Kontaktfreigabe über Funk gesendet."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",

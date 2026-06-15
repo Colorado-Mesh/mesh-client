@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Nadat u de openbare sleutel van uw lokale radio (Radio → Security → Copy) aan de Admin keys van dit externe knooppunt hebt toegevoegd, plakt u dezelfde sleutel hier ter bevestiging. Gebruik daarna Configureren op het tabblad Radio.",
     "remoteAdminKeyInvalid": "Voer een geldige openbare admin-sleutel in (base64, base64:… of hex van 64 tekens).",
     "configureRemotelyHint": "Opent radio-instellingen voor dit knooppunt via de mesh (vereist lokale radio en opgeslagen admin-sleutel).",
-    "openRoomButton": "🏠 Ruimte openen"
+    "openRoomButton": "🏠 Ruimte openen",
+    "remoteAuthCancelled": "Toegang op afstand geannuleerd.",
+    "shareContactSent": "Contact delen verzonden via de radio."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

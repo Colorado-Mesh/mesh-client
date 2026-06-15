@@ -106,6 +106,8 @@ function LinkPreview({ url }: { url: string }) {
 export interface ChatPayloadTextProps {
   text: string;
   query: string;
+  /** When false, skip async link-preview fetches (avoids layout shift while reading history). */
+  loadLinkPreviews?: boolean;
 }
 
 /**
@@ -113,7 +115,7 @@ export interface ChatPayloadTextProps {
  * compact inline labels (brackets hidden), http/https URLs as clickable links that
  * open in the system browser, and optional search highlighting.
  */
-export function ChatPayloadText({ text, query }: ChatPayloadTextProps) {
+export function ChatPayloadText({ text, query, loadLinkPreviews = true }: ChatPayloadTextProps) {
   const { t } = useTranslation();
   const segments = parseChatMentionSegments(text);
   const urlSegments = segments.filter((seg) => seg.kind === 'url');
@@ -157,7 +159,7 @@ export function ChatPayloadText({ text, query }: ChatPayloadTextProps) {
           ),
         )}
       </div>
-      {urlSegments.length > 0 && (
+      {loadLinkPreviews && urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (
             <LinkPreview key={seg.url} url={seg.url} />

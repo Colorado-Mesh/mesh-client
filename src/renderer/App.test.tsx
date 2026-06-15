@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
-import { OFFLINE_MESHCORE_IDENTITY_ID } from './lib/offlineProtocolIdentities';
+import {
+  ensureOfflineProtocolIdentities,
+  OFFLINE_MESHCORE_IDENTITY_ID,
+} from './lib/offlineProtocolIdentities';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
@@ -13,6 +16,7 @@ import type { ChatMessage } from './lib/types';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMessageStore } from './stores/messageStore';
+import { useNodeStore } from './stores/nodeStore';
 
 const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
 
@@ -359,19 +363,21 @@ vi.mock('./lib/storedMeshProtocol', () => ({
   MESH_PROTOCOL_STORAGE_KEY: 'mesh-protocol',
 }));
 
-vi.mock('./stores/diagnosticsStore', () => ({
-  useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
-    const store = {
-      routingRows: new Map(),
-      rfRows: new Map(),
-      runReanalysis: vi.fn(),
-      clearDiagnostics: vi.fn(),
-      ignoreMqttEnabled: false,
-      envMode: false,
-    };
-    return selector(store);
-  },
-}));
+vi.mock('./stores/diagnosticsStore', () => {
+  const store = {
+    routingRows: new Map(),
+    rfRows: new Map(),
+    runReanalysis: vi.fn(),
+    clearDiagnostics: vi.fn(),
+    ignoreMqttEnabled: false,
+    envMode: false,
+  };
+  const useDiagnosticsStore = Object.assign(
+    (selector: (s: typeof store) => unknown) => selector(store),
+    { getState: () => store },
+  );
+  return { useDiagnosticsStore };
+});
 
 vi.mock('./lib/meshcoreUtils', () => ({
   pubkeyToNodeId: vi.fn(),
@@ -643,6 +649,70 @@ describe('App accessibility', () => {
     expect(lastNodeDetailModalProps.current?.hasRemoteAdminKey).toBe(false);
     expect(lastNodeDetailModalProps.current?.onSaveRemoteAdminKey).toBeUndefined();
     expect(meshtasticRuntime.getRemoteAdminKeyForNode).not.toHaveBeenCalled();
+  });
+
+  it('keeps MeshCore node detail connection props when Meshtastic tab is active', async () => {
+    const peerNodeId = 0x23456789;
+    const meshcoreSelfNodeId = 0x12345678;
+    ensureOfflineProtocolIdentities();
+    useNodeStore.setState({
+      nodes: {
+        [OFFLINE_MESHCORE_IDENTITY_ID]: {
+          [peerNodeId]: {
+            nodeId: peerNodeId,
+            longName: 'Peer Node',
+            shortName: 'Peer',
+            hwModel: 'Repeater',
+          },
+        },
+      },
+    });
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      myNodeNum: meshcoreSelfNodeId,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'disconnected',
+      myNodeNum: 0,
+      connectionType: null,
+      mqttStatus: 'disconnected',
+    });
+
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    const meshtasticRuntime = createDeviceMock();
+    const meshcoreRuntime = {
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: meshcoreSelfNodeId, connectionType: 'serial' },
+      selfNodeId: meshcoreSelfNodeId,
+    };
+    useDeviceMock.mockReturnValue(meshtasticRuntime);
+    useMeshCoreMock.mockReturnValue(meshcoreRuntime);
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    const onNodeClick = lastChatPanelProps.current?.onNodeClick as
+      | ((nodeId: number) => void)
+      | null;
+    onNodeClick?.(peerNodeId);
+
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.protocol).toBe('meshcore');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to Meshtastic' }));
+
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current).not.toBeNull();
+      expect(lastNodeDetailModalProps.current?.protocol).toBe('meshcore');
+      expect(lastNodeDetailModalProps.current?.isConnected).toBe(true);
+      expect(lastNodeDetailModalProps.current?.radioConnected).toBe(true);
+    });
   });
 
   it('keeps scrolling inside the main viewport container', () => {

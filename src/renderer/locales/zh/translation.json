@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "将本地无线电的公钥（Radio → Security → Copy）添加到该远程节点的 Admin keys 后，把同一密钥粘贴到此处以确认。然后在 Radio 标签页使用“配置节点”。",
     "remoteAdminKeyInvalid": "输入有效的管理员公钥（ base64、base64: …或64个字符的十六进制）。",
     "configureRemotelyHint": "在网格上打开此节点的无线电设置（需要本地无线电和已保存的管理密钥）。",
-    "openRoomButton": "🏠 打开房间"
+    "openRoomButton": "🏠 打开房间",
+    "remoteAuthCancelled": "远程访问已取消。",
+    "shareContactSent": "通过无线电发送的联系人共享。"
   },
   "nodeInfoBody": {
     "longName": "长名称",

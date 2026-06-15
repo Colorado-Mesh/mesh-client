@@ -1420,7 +1420,9 @@
     "remoteAdminKeyHint": "Po dodaniu klucza publicznego lokalnego radia (Radio → Bezpieczeństwo → Kopiuj) do kluczy Admin tego zdalnego węzła wklej ten sam klucz tutaj jako potwierdzenie. Następnie użyj Konfiguruj na karcie Radio.",
     "remoteAdminKeyInvalid": "Wprowadź prawidłowy klucz publiczny administratora (base64, base64:… lub 64-znakowy hex).",
     "configureRemotelyHint": "Otwiera ustawienia radia dla tego węzła nad siatką (wymaga lokalnego radia i zapisanego klucza administratora).",
-    "openRoomButton": "🏠 Otwórz pokój"
+    "openRoomButton": "🏠 Otwórz pokój",
+    "remoteAuthCancelled": "Zdalny dostęp anulowany.",
+    "shareContactSent": "Udział kontaktu wysłany przez radio."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
