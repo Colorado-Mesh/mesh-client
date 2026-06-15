@@ -825,15 +825,20 @@ describe('RoomsPanel', () => {
         receivedVia: 'rf',
       }),
     ];
+    const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(300);
 
-    renderRoomsPanel(nodes, {
-      initialRoomTarget: roomB.node_id,
-      messages,
-      isActive: true,
-    });
+    try {
+      renderRoomsPanel(nodes, {
+        initialRoomTarget: roomB.node_id,
+        messages,
+        isActive: true,
+      });
 
-    await userEvent.click(screen.getByRole('button', { name: /Unread Room/i }));
-    expect(screen.getByText('roomsPanel.newMessagesDivider')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /Unread Room/i }));
+      expect(await screen.findByText('roomsPanel.newMessagesDivider')).toBeInTheDocument();
+    } finally {
+      distSpy.mockRestore();
+    }
   });
 
   it('jump-to-unread button scrolls toward the unread divider', async () => {
