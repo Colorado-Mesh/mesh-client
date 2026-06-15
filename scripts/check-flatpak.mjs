@@ -14,12 +14,36 @@ const PKG = path.join(ROOT, 'package.json');
 const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
 const EXPECTED_MAIN = 'dist-electron/main/index.js';
 const EXPECTED_ELECTRON = '/app/lib/mesh-client/electron/electron';
+const SEMVER_PATTERN = /(\d+\.\d+\.\d+)/;
+const PNPM_VERSION_PATTERN = /^pnpm@(\d+\.\d+\.\d+)/;
 
-function checkMetainfoVersionMatchesPackage() {
+function loadPackageJson() {
+  if (!fs.existsSync(PKG)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(PKG, 'utf8'));
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error(
+      `check-flatpak: Failed to parse package.json or missing version field (${detail})`,
+    );
+    process.exit(1);
+  }
+}
+
+const PKG_JSON = loadPackageJson();
+
+function checkMetainfoVersionMatchesPackage(pkg) {
   const violations = [];
-  if (!fs.existsSync(METAINFO) || !fs.existsSync(PKG)) return violations;
+  if (!fs.existsSync(METAINFO) || !pkg) return violations;
 
-  const pkgVersion = JSON.parse(fs.readFileSync(PKG, 'utf8')).version;
+  const pkgVersion = pkg.version;
+  if (typeof pkgVersion !== 'string' || !pkgVersion) {
+    violations.push({
+      file: path.relative(ROOT, PKG),
+      message: 'package.json is missing a valid "version" field',
+    });
+    return violations;
+  }
   const xml = fs.readFileSync(METAINFO, 'utf8');
   const rel = path.relative(ROOT, METAINFO);
 
@@ -82,31 +106,29 @@ function checkManifestAppId() {
   return violations;
 }
 
-function electronVersionFromPackage() {
-  if (!fs.existsSync(PKG)) return null;
-  const pkg = JSON.parse(fs.readFileSync(PKG, 'utf8'));
+function electronVersionFromPackage(pkg) {
+  if (!pkg) return null;
   const spec = pkg.devDependencies?.electron ?? pkg.dependencies?.electron;
   if (typeof spec !== 'string') return null;
-  const m = spec.match(/(\d+\.\d+\.\d+)/);
+  const m = spec.match(SEMVER_PATTERN);
   return m?.[1] ?? null;
 }
 
-function pnpmVersionFromPackage() {
-  if (!fs.existsSync(PKG)) return null;
-  const pkg = JSON.parse(fs.readFileSync(PKG, 'utf8'));
+function pnpmVersionFromPackage(pkg) {
+  if (!pkg) return null;
   const spec = pkg.packageManager;
   if (typeof spec !== 'string') return null;
-  const m = spec.match(/^pnpm@(\d+\.\d+\.\d+)/);
+  const m = spec.match(PNPM_VERSION_PATTERN);
   return m?.[1] ?? null;
 }
 
-function checkManifestPnpmVersion() {
+function checkManifestPnpmVersion(pkg) {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
 
   const yaml = fs.readFileSync(MANIFEST, 'utf8');
   const rel = path.relative(ROOT, MANIFEST);
-  const pnpmVersion = pnpmVersionFromPackage();
+  const pnpmVersion = pnpmVersionFromPackage(pkg);
 
   if (!pnpmVersion) return violations;
 
@@ -121,13 +143,13 @@ function checkManifestPnpmVersion() {
   return violations;
 }
 
-function checkManifestBranchAndElectronPayload() {
+function checkManifestBranchAndElectronPayload(pkg) {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
 
   const yaml = fs.readFileSync(MANIFEST, 'utf8');
   const rel = path.relative(ROOT, MANIFEST);
-  const electronVersion = electronVersionFromPackage();
+  const electronVersion = electronVersionFromPackage(pkg);
 
   if (!/^branch:\s*stable\s*$/m.test(yaml)) {
     violations.push({
@@ -259,11 +281,18 @@ function checkWrapperLaunchPaths() {
   return violations;
 }
 
-function checkDesktopStartupWMClass() {
+function checkDesktopStartupWMClass(pkg) {
   const violations = [];
-  if (!fs.existsSync(DESKTOP) || !fs.existsSync(PKG)) return violations;
+  if (!fs.existsSync(DESKTOP) || !pkg) return violations;
 
-  const pkgName = JSON.parse(fs.readFileSync(PKG, 'utf8')).name;
+  const pkgName = pkg.name;
+  if (typeof pkgName !== 'string' || !pkgName) {
+    violations.push({
+      file: path.relative(ROOT, PKG),
+      message: 'package.json is missing a valid "name" field',
+    });
+    return violations;
+  }
   const desktop = fs.readFileSync(DESKTOP, 'utf8');
   const rel = path.relative(ROOT, DESKTOP);
 
@@ -283,13 +312,13 @@ function checkDesktopStartupWMClass() {
 
 function main() {
   const violations = [
-    ...checkMetainfoVersionMatchesPackage(),
+    ...checkMetainfoVersionMatchesPackage(PKG_JSON),
     ...checkMetainfoAppId(),
     ...checkManifestAppId(),
-    ...checkManifestPnpmVersion(),
-    ...checkManifestBranchAndElectronPayload(),
+    ...checkManifestPnpmVersion(PKG_JSON),
+    ...checkManifestBranchAndElectronPayload(PKG_JSON),
     ...checkWrapperLaunchPaths(),
-    ...checkDesktopStartupWMClass(),
+    ...checkDesktopStartupWMClass(PKG_JSON),
   ];
 
   if (violations.length === 0) {
