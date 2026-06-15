@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "Транспорт",
     "transportCodesAbsent": "Нет региональных транспортных кодов (маршрут {{route}} — только TRANSPORT_FLOOD / TRANSPORT_DIRECT несут scope/return).",
-    "transportCodesAbsentTooltip": "Обычные пакеты FLOOD и DIRECT не включают региональные поля scope/return транспорта в RF-заголовке MeshCore."
+    "transportCodesAbsentTooltip": "Обычные пакеты FLOOD и DIRECT не включают региональные поля scope/return транспорта в RF-заголовке MeshCore.",
+    "meshtasticLegendHint": "Разверните строку: сведения о порте и прыжке находятся вверху. Счетчики прыжков используют hopStart − hopLimit на радиочастотных пакетах (не MQTT).",
+    "portLabel": "Порт",
+    "transportSourceLabel": "Транспорт",
+    "hopsAbsentMqtt": "Нет количества радиочастотных переходов (путь MQTT)."
   },
   "remoteAdmin": {
     "errors": {

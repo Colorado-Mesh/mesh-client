@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "Transport",
     "transportCodesAbsent": "Bölgesel transport kodu yok ({{route}} rotası — yalnızca TRANSPORT_FLOOD / TRANSPORT_DIRECT scope/return taşır).",
-    "transportCodesAbsentTooltip": "Düz FLOOD ve DIRECT paketleri, MeshCore RF başlığında bölgesel transport scope/return alanlarını içermez."
+    "transportCodesAbsentTooltip": "Düz FLOOD ve DIRECT paketleri, MeshCore RF başlığında bölgesel transport scope/return alanlarını içermez.",
+    "meshtasticLegendHint": "Bir satırı genişletin: bağlantı noktası ve atlama noktası ayrıntıları en üsttedir. Hop sayımları RF paketlerinde hopStart − hopLimit kullanır (MQTT değil).",
+    "portLabel": "Liman",
+    "transportSourceLabel": "Ulaşım",
+    "hopsAbsentMqtt": "RF atlama sayısı yok (MQTT yolu)."
   },
   "remoteAdmin": {
     "errors": {

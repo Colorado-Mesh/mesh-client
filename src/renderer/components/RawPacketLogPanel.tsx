@@ -20,6 +20,10 @@ import {
 } from '../../shared/meshcoreRfPath';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
+import {
+  formatMeshtasticRawPacketExpandDebugLine,
+  parseMeshtasticRawPacketExpand,
+} from '../lib/meshtastic/meshtasticRawPacketExpand';
 import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 
@@ -269,6 +273,39 @@ function MeshcoreExpandedDetails({
   );
 }
 
+function meshtasticTransportSourceLabel(p: MeshtasticRawPacketEntry): 'LOCAL' | 'MQTT' | 'RF' {
+  if (p.isLocal) return 'LOCAL';
+  if (p.viaMqtt) return 'MQTT';
+  return 'RF';
+}
+
+function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
+  const { t } = useTranslation();
+  const parsed = parseMeshtasticRawPacketExpand(p.raw, { viaMqtt: p.viaMqtt });
+  if (!parsed.ok) return null;
+
+  const transport = meshtasticTransportSourceLabel(p);
+  const hopLine =
+    transport === 'MQTT' ? (
+      <p className="text-muted/90">{t('rawPacketLog.hopsAbsentMqtt')}</p>
+    ) : parsed.hopsAway != null && parsed.hopStart != null && parsed.hopLimit != null ? (
+      <p>{`hops=${parsed.hopsAway} (hopStart=${parsed.hopStart} hopLimit=${parsed.hopLimit})`}</p>
+    ) : parsed.hopStart != null || parsed.hopLimit != null ? (
+      <p>{`hopStart=${parsed.hopStart ?? '?'} hopLimit=${parsed.hopLimit ?? '?'}`}</p>
+    ) : null;
+
+  return (
+    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+      <p>
+        <span className="text-muted">{t('rawPacketLog.portLabel')}:</span> {p.portLabel}{' '}
+        <span className="text-muted">{t('rawPacketLog.transportSourceLabel')}:</span> {transport}
+      </p>
+      {hopLine}
+      <p>{formatMeshtasticRawPacketExpandDebugLine(parsed)}</p>
+    </div>
+  );
+}
+
 interface MeshcoreProps {
   variant: 'meshcore';
   packets: RxPacketEntry[];
@@ -348,9 +385,13 @@ export default function RawPacketLogPanel(props: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {variant === 'meshcore' && (
+      {variant === 'meshcore' ? (
         <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
           {t('rawPacketLog.transportLegendHint')}
+        </p>
+      ) : (
+        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+          {t('rawPacketLog.meshtasticLegendHint')}
         </p>
       )}
       <div className="flex shrink-0 items-center gap-2 border-b border-gray-700 px-3 py-2">
@@ -445,6 +486,11 @@ export default function RawPacketLogPanel(props: Props) {
                         <MeshcoreExpandedDetails
                           p={(filtered as RxPacketEntry[])[vi.index]}
                           floodScopeHashtag={floodScopeHashtag}
+                        />
+                      )}
+                      {variant === 'meshtastic' && (
+                        <MeshtasticExpandedDetails
+                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
                         />
                       )}
                       <p className="text-muted mb-1 text-[10px]">

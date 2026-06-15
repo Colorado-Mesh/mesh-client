@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "トランスポート",
     "transportCodesAbsent": "リージョン輸送コードなし（{{route}} ルート — TRANSPORT_FLOOD / TRANSPORT_DIRECT のみが scope/return を持ちます）。",
-    "transportCodesAbsentTooltip": "通常の FLOOD と DIRECT パケットには、MeshCore RF ヘッダーにリージョン輸送 scope/return フィールドは含まれません。"
+    "transportCodesAbsentTooltip": "通常の FLOOD と DIRECT パケットには、MeshCore RF ヘッダーにリージョン輸送 scope/return フィールドは含まれません。",
+    "meshtasticLegendHint": "行を展開：ポートとホップの詳細は上部にあります。ホップカウントは、RFパケットでhopStart - hopLimitを使用します（ MQTTではありません）。",
+    "portLabel": "ポート",
+    "transportSourceLabel": "持ち運び",
+    "hopsAbsentMqtt": "RFホップカウントなし（ MQTTパス）。"
   },
   "remoteAdmin": {
     "errors": {

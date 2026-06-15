@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "Transport",
     "transportCodesAbsent": "Keine regionalen Transportcodes (Route {{route}} — nur TRANSPORT_FLOOD / TRANSPORT_DIRECT tragen Scope/Return).",
-    "transportCodesAbsentTooltip": "Einfache FLOOD- und DIRECT-Pakete enthalten keine regionalen Transport-Scope-/Return-Felder im MeshCore-RF-Header."
+    "transportCodesAbsentTooltip": "Einfache FLOOD- und DIRECT-Pakete enthalten keine regionalen Transport-Scope-/Return-Felder im MeshCore-RF-Header.",
+    "meshtasticLegendHint": "Erweitern Sie eine Zeile: Port- und Hop-Details befinden sich oben. Hop-Zählungen verwenden hopStart − hopLimit für RF-Pakete (nicht MQTT).",
+    "portLabel": "Port",
+    "transportSourceLabel": "Transport",
+    "hopsAbsentMqtt": "Keine RF-Hop-Zählung (MQTT-Pfad)."
   },
   "remoteAdmin": {
     "errors": {

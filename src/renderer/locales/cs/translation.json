@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "Transport",
     "transportCodesAbsent": "Žádné regionální transportní kódy (trasa {{route}} — pouze TRANSPORT_FLOOD / TRANSPORT_DIRECT nesou scope/return).",
-    "transportCodesAbsentTooltip": "Prosté pakety FLOOD a DIRECT neobsahují regionální transportní pole scope/return v hlavičce RF MeshCore."
+    "transportCodesAbsentTooltip": "Prosté pakety FLOOD a DIRECT neobsahují regionální transportní pole scope/return v hlavičce RF MeshCore.",
+    "meshtasticLegendHint": "Rozbalte řádek: podrobnosti o portu a hopu jsou nahoře. Počet chmelů používá hopStart − hopLimit na RF paketech (ne MQTT).",
+    "portLabel": "Port",
+    "transportSourceLabel": "Přeprava",
+    "hopsAbsentMqtt": "Žádný počet RF hop (cesta MQTT)."
   },
   "remoteAdmin": {
     "errors": {

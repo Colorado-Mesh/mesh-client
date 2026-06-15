@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "전송",
     "transportCodesAbsent": "지역 전송 코드 없음({{route}} 경로 — TRANSPORT_FLOOD / TRANSPORT_DIRECT만 scope/return 포함).",
-    "transportCodesAbsentTooltip": "일반 FLOOD 및 DIRECT 패킷은 MeshCore RF 헤더에 지역 전송 scope/return 필드를 포함하지 않습니다."
+    "transportCodesAbsentTooltip": "일반 FLOOD 및 DIRECT 패킷은 MeshCore RF 헤더에 지역 전송 scope/return 필드를 포함하지 않습니다.",
+    "meshtasticLegendHint": "행 확장: 포트 및 홉 세부 정보가 맨 위에 있습니다. 홉 카운트는 RF 패킷 (MQTT 아님) 에서 hopStart − hopLimit를 사용합니다.",
+    "portLabel": "포팅하기",
+    "transportSourceLabel": "교통편",
+    "hopsAbsentMqtt": "RF 홉 카운트 (MQTT 경로) 없음."
   },
   "remoteAdmin": {
     "errors": {

@@ -2142,7 +2142,11 @@
     "payloadLabel": "载荷",
     "transportHeading": "传输",
     "transportCodesAbsent": "无区域传输代码（{{route}} 路由 — 仅 TRANSPORT_FLOOD / TRANSPORT_DIRECT 携带 scope/return）。",
-    "transportCodesAbsentTooltip": "普通 FLOOD 和 DIRECT 数据包在 MeshCore RF 标头中不包含区域传输 scope/return 字段。"
+    "transportCodesAbsentTooltip": "普通 FLOOD 和 DIRECT 数据包在 MeshCore RF 标头中不包含区域传输 scope/return 字段。",
+    "meshtasticLegendHint": "展开一行：端口和跃点详细信息位于顶部。跳数在RF数据包上使用hopStart − hopLimit （而不是MQTT ）。",
+    "portLabel": "端口",
+    "transportSourceLabel": "开始运输",
+    "hopsAbsentMqtt": "无射频跳数（ MQTT路径）。"
   },
   "remoteAdmin": {
     "errors": {

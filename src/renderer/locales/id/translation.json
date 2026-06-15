@@ -2142,7 +2142,11 @@
     "payloadLabel": "Payload",
     "transportHeading": "Transport",
     "transportCodesAbsent": "Tidak ada kode transport regional (rute {{route}} — hanya TRANSPORT_FLOOD / TRANSPORT_DIRECT yang membawa scope/return).",
-    "transportCodesAbsentTooltip": "Paket FLOOD dan DIRECT biasa tidak menyertakan bidang scope/return transport regional di header RF MeshCore."
+    "transportCodesAbsentTooltip": "Paket FLOOD dan DIRECT biasa tidak menyertakan bidang scope/return transport regional di header RF MeshCore.",
+    "meshtasticLegendHint": "Perluas baris: detail port dan hop ada di bagian atas. Jumlah hop menggunakan hopStart − hopLimit pada paket RF (bukan MQTT).",
+    "portLabel": "Port",
+    "transportSourceLabel": "Pengangkutan",
+    "hopsAbsentMqtt": "Tidak ada jumlah hop RF (jalur MQTT)."
   },
   "remoteAdmin": {
     "errors": {
