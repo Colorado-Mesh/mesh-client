@@ -91,6 +91,36 @@ function electronVersionFromPackage() {
   return m?.[1] ?? null;
 }
 
+function pnpmVersionFromPackage() {
+  if (!fs.existsSync(PKG)) return null;
+  const pkg = JSON.parse(fs.readFileSync(PKG, 'utf8'));
+  const spec = pkg.packageManager;
+  if (typeof spec !== 'string') return null;
+  const m = spec.match(/^pnpm@(\d+\.\d+\.\d+)/);
+  return m?.[1] ?? null;
+}
+
+function checkManifestPnpmVersion() {
+  const violations = [];
+  if (!fs.existsSync(MANIFEST)) return violations;
+
+  const yaml = fs.readFileSync(MANIFEST, 'utf8');
+  const rel = path.relative(ROOT, MANIFEST);
+  const pnpmVersion = pnpmVersionFromPackage();
+
+  if (!pnpmVersion) return violations;
+
+  const releaseUrlPrefix = `pnpm/pnpm/releases/download/v${pnpmVersion}/`;
+  if (!yaml.includes(releaseUrlPrefix)) {
+    violations.push({
+      file: rel,
+      message: `manifest pnpm standalone URLs must match package.json packageManager (${pnpmVersion}); offline install fetches @pnpm/exe when versions differ`,
+    });
+  }
+
+  return violations;
+}
+
 function checkManifestBranchAndElectronPayload() {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
@@ -256,6 +286,7 @@ function main() {
     ...checkMetainfoVersionMatchesPackage(),
     ...checkMetainfoAppId(),
     ...checkManifestAppId(),
+    ...checkManifestPnpmVersion(),
     ...checkManifestBranchAndElectronPayload(),
     ...checkWrapperLaunchPaths(),
     ...checkDesktopStartupWMClass(),

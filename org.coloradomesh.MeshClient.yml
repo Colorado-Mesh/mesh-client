@@ -78,13 +78,13 @@ modules:
         path: .
       - flatpak/generated-sources.json
       - type: file
-        url: https://github.com/pnpm/pnpm/releases/download/v10.33.2/pnpm-linux-x64
-        sha256: 39d7b6600239712bc9581ea219b17ffef46ba60998779cb717be2e068be029ef
+        url: https://github.com/pnpm/pnpm/releases/download/v10.34.3/pnpm-linux-x64
+        sha256: d2529ffa064e08237a6d8344a3c54e12800a663d9976d481b2c441c10e914fc9
         dest-filename: pnpm-standalone
         only-arches: [x86_64]
       - type: file
-        url: https://github.com/pnpm/pnpm/releases/download/v10.33.2/pnpm-linux-arm64
-        sha256: 0828e5ee23be89d22bd53cc36e93c181ce9d5c47d75f9fe9bf4bdc7a65c66322
+        url: https://github.com/pnpm/pnpm/releases/download/v10.34.3/pnpm-linux-arm64
+        sha256: ca4a85a4eb830713f1c37297d1a2b9fb9953719442bdb26daa8c64fadcc6c0b8
         dest-filename: pnpm-standalone
         only-arches: [aarch64]
       - type: archive
