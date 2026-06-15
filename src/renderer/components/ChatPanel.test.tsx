@@ -14,13 +14,15 @@ vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() })
 
 let mockIsAtEnd = true;
 const mockScrollToEnd = vi.fn();
+const mockScrollToIndex = vi.fn();
 let lastVirtualizerOptions: Record<string, unknown> | undefined;
+let lastVirtualizerInstance: Record<string, unknown> | undefined;
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
     lastVirtualizerOptions = opts;
     const count = opts.count;
-    return {
+    const instance = {
       getVirtualItems: () =>
         Array.from({ length: count }, (_, index) => ({
           index,
@@ -32,8 +34,14 @@ vi.mock('@tanstack/react-virtual', () => ({
       containerRef: { current: null },
       isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
+      scrollToIndex: mockScrollToIndex,
       scrollDirection: 'forward',
+      shouldAdjustScrollPositionOnItemSizeChange: undefined as
+        | ((item: { index: number }) => boolean)
+        | undefined,
     };
+    lastVirtualizerInstance = instance;
+    return instance;
   },
 }));
 
@@ -41,7 +49,9 @@ beforeEach(() => {
   localStorage.clear();
   mockIsAtEnd = true;
   mockScrollToEnd.mockClear();
+  mockScrollToIndex.mockClear();
   lastVirtualizerOptions = undefined;
+  lastVirtualizerInstance = undefined;
 });
 
 describe('ChatPanel accessibility', () => {
@@ -898,6 +908,176 @@ describe('ChatPanel scroll pinning', () => {
     expect(lastVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
     expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(200);
+    const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (item: {
+      index: number;
+    }) => boolean;
+    expect(adjust).toBeTypeOf('function');
+    expect(adjust({ index: 0 })).toBe(true);
+  });
+
+  it('scrolls to unread via scrollToIndex on view switch, not scrollIntoView', async () => {
+    mockIsAtEnd = false;
+    const scrollIntoView = vi.fn();
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+
+    const ts = Date.now();
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 1,
+        sender_name: 'Me',
+        payload: 'Old message',
+        channel: 0,
+        timestamp: ts - 3000,
+        status: 'acked',
+      },
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Unread message',
+        channel: 0,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'center' });
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('Jump to Unread uses scrollToIndex with align start', async () => {
+    mockIsAtEnd = false;
+    const user = userEvent.setup();
+    const ts = Date.now();
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 1,
+        sender_name: 'Me',
+        payload: 'Old message',
+        channel: 0,
+        timestamp: ts - 3000,
+        status: 'acked',
+      },
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Unread message',
+        channel: 0,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} />
+      </ToastProvider>,
+    );
+
+    mockScrollToIndex.mockClear();
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(scrollContainer);
+
+    await user.click(await screen.findByRole('button', { name: 'Jump to Unread' }));
+
+    expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'start', behavior: 'smooth' });
+  });
+
+  it('dismisses unread divider when scrolled past without marking read until near bottom', async () => {
+    mockIsAtEnd = false;
+    const ts = Date.now();
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 1,
+        sender_name: 'Me',
+        payload: 'Old message',
+        channel: 0,
+        timestamp: ts - 3000,
+        status: 'acked',
+      },
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Unread message',
+        channel: 0,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} />
+      </ToastProvider>,
+    );
+
+    await screen.findByText('New messages');
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 1500,
+      writable: true,
+      configurable: true,
+    });
+
+    const divider = container.querySelector('[class*="border-red-500"]')?.parentElement;
+    expect(divider).toBeTruthy();
+    vi.spyOn(scrollContainer, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      bottom: 500,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 400,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(divider!, 'getBoundingClientRect').mockReturnValue({
+      top: 50,
+      bottom: 90,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 40,
+      x: 0,
+      y: 50,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.scroll(scrollContainer);
+
+    await waitFor(() => {
+      expect(screen.queryByText('New messages')).not.toBeInTheDocument();
+    });
+
+    const stored = JSON.parse(
+      localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}',
+    ) as Record<string, number>;
+    expect(stored['ch:0']).toBe(ts - 5000);
   });
 
   it('does not scroll to end when message count increases while reading history', async () => {
