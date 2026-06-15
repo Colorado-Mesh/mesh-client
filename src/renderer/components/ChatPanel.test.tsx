@@ -1032,11 +1032,17 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    await screen.findByText('New messages');
-
     const scrollContainer = container.querySelector('div.overflow-y-auto')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    await screen.findByText('New messages');
+
     Object.defineProperty(scrollContainer, 'scrollTop', {
       value: 1500,
       writable: true,
