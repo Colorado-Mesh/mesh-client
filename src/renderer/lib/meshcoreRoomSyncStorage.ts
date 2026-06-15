@@ -11,6 +11,11 @@ import { MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES } from './timeConstants';
 export const MESHCORE_ROOM_SYNC_SETTING_PREFIX = 'meshcoreRoomSync:';
 export const MESHCORE_ROOM_LAST_POST_SETTING_PREFIX = 'meshcoreRoomLastPost:';
 
+/** Coerce MeshCore node id to unsigned 32-bit for stable setting keys. */
+function toUnsignedNodeId(nodeId: number): number {
+  return nodeId >>> 0;
+}
+
 export interface MeshcoreRoomSyncConfig {
   enabled: boolean;
   intervalMinutes: number;
@@ -20,11 +25,11 @@ export interface MeshcoreRoomSyncConfig {
 }
 
 export function meshcoreRoomSyncSettingForNode(nodeId: number): string {
-  return `${MESHCORE_ROOM_SYNC_SETTING_PREFIX}${String(nodeId >>> 0)}`;
+  return `${MESHCORE_ROOM_SYNC_SETTING_PREFIX}${String(toUnsignedNodeId(nodeId))}`;
 }
 
 export function meshcoreRoomLastPostSettingForNode(nodeId: number): string {
-  return `${MESHCORE_ROOM_LAST_POST_SETTING_PREFIX}${String(nodeId >>> 0)}`;
+  return `${MESHCORE_ROOM_LAST_POST_SETTING_PREFIX}${String(toUnsignedNodeId(nodeId))}`;
 }
 
 function parseSyncConfig(raw: unknown): MeshcoreRoomSyncConfig | undefined {
@@ -63,6 +68,8 @@ export function getMeshcoreRoomSyncConfig(nodeId: number): MeshcoreRoomSyncConfi
   const key = meshcoreRoomSyncSettingForNode(nodeId);
   const parsed = settings ? parseSyncConfig(settings[key]) : undefined;
   const hasSavedPassword = getMeshcoreRoomCredential(nodeId) != null;
+  // Saved room passwords imply connect-time login; default auto-login when the flag
+  // was never persisted (legacy installs and first save after password).
   const autoLoginOnConnect = parsed?.autoLoginOnConnect ?? hasSavedPassword;
   return {
     enabled: parsed?.enabled ?? false,
@@ -121,7 +128,7 @@ export function getMeshcoreRoomLastPostAt(nodeId: number): number | null {
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
   if (typeof raw === 'string' && raw.trim()) {
     const n = Number.parseInt(raw, 10);
-    return Number.isFinite(n) ? n : null;
+    return !Number.isNaN(n) ? n : null;
   }
   return null;
 }
@@ -152,7 +159,7 @@ export function listMeshcoreRoomSyncEnabledNodeIds(): number[] {
     if (!cfg?.enabled) continue;
     const idStr = key.slice(prefix.length);
     const nodeId = Number.parseInt(idStr, 10);
-    if (Number.isFinite(nodeId) && nodeId >= 0) ids.push(nodeId >>> 0);
+    if (!Number.isNaN(nodeId) && nodeId >= 0) ids.push(toUnsignedNodeId(nodeId));
   }
   return ids;
 }
@@ -169,9 +176,9 @@ export function listMeshcoreRoomAutoLoginOnConnectNodeIds(): number[] {
       if (!key.startsWith(prefix)) continue;
       const idStr = key.slice(prefix.length);
       const nodeId = Number.parseInt(idStr, 10);
-      if (!Number.isFinite(nodeId) || nodeId < 0) continue;
-      if (getMeshcoreRoomSyncConfig(nodeId >>> 0).autoLoginOnConnect) {
-        ids.add(nodeId >>> 0);
+      if (Number.isNaN(nodeId) || nodeId < 0) continue;
+      if (getMeshcoreRoomSyncConfig(toUnsignedNodeId(nodeId)).autoLoginOnConnect) {
+        ids.add(toUnsignedNodeId(nodeId));
       }
     }
   }
