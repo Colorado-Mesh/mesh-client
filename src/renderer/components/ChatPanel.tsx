@@ -39,7 +39,11 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
-import { MeshtasticMqttPathIcon, MeshtasticRfPathIcon } from '@/renderer/lib/meshtasticSourceIcons';
+import {
+  MeshtasticHybridPathIcons,
+  MeshtasticMqttPathIcon,
+  MeshtasticRfPathIcon,
+} from '@/renderer/lib/meshtasticSourceIcons';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -232,17 +236,7 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
 
   if (via === 'both') {
     const bothLabel = t('chatPanel.receivedViaRfAndMqtt');
-    return (
-      <span
-        role="img"
-        className="flex flex-col items-center gap-px"
-        title={bothLabel}
-        aria-label={bothLabel}
-      >
-        {rfIcon}
-        {mqttIcon}
-      </span>
-    );
+    return <MeshtasticHybridPathIcons title={bothLabel} ariaLabel={bothLabel} />;
   }
   return via === 'rf' ? rfIcon : mqttIcon;
 }

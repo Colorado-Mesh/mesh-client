@@ -183,6 +183,30 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByRole('img', { name: 'Received via RF' })).toBeInTheDocument();
   });
 
+  it('shows hybrid RF + MQTT transport badge for incoming messages with receivedVia both', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Other',
+              payload: 'Hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'both',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByTitle('Received via RF + MQTT')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Received via RF + MQTT' })).toBeInTheDocument();
+  });
+
   it('shows Store & Forward badge alongside RF transport badge', () => {
     render(
       <ToastProvider>
