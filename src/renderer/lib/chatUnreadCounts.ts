@@ -119,3 +119,16 @@ export function totalUnreadCount(
   for (const n of dm.values()) total += n;
   return total;
 }
+
+/** True when at least one message maps to a view that is not per-conversation muted. */
+export function hasAudibleBackgroundMessages(
+  messages: readonly ChatMessage[],
+  protocol: MeshProtocol,
+  mutedViews: ReadonlySet<string>,
+  ownNodeIds: ReadonlySet<number>,
+  dmOptions?: ChatUnreadDmOptions,
+): boolean {
+  return messages.some(
+    (m) => !mutedViews.has(chatViewKeyForMessage(m, protocol, ownNodeIds, dmOptions)),
+  );
+}

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  chatViewKeyForMessage,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
+  hasAudibleBackgroundMessages,
   totalUnreadCount,
 } from './chatUnreadCounts';
 import type { ChatMessage } from './types';
@@ -160,5 +162,47 @@ describe('chatUnreadCounts', () => {
       'meshcore',
     );
     expect(total).toBe(1);
+  });
+});
+
+describe('chatViewKeyForMessage', () => {
+  it('maps MeshCore channel traffic to ch:N', () => {
+    expect(chatViewKeyForMessage(msg({ channel: 0 }), 'meshcore', ownNodes)).toBe('ch:0');
+  });
+
+  it('maps MeshCore DM with to:0 to dm:sender (not ch:-1)', () => {
+    expect(
+      chatViewKeyForMessage(msg({ channel: -1, to: 0, sender_id: 2 }), 'meshcore', ownNodes),
+    ).toBe('dm:2');
+  });
+});
+
+describe('hasAudibleBackgroundMessages', () => {
+  it('returns false when all messages are on muted views', () => {
+    const messages = [msg({ channel: 0, timestamp: 2000 })];
+    expect(hasAudibleBackgroundMessages(messages, 'meshcore', new Set(['ch:0']), ownNodes)).toBe(
+      false,
+    );
+  });
+
+  it('returns true when at least one message is on an unmuted view', () => {
+    const messages = [msg({ channel: 1, timestamp: 2000 })];
+    expect(hasAudibleBackgroundMessages(messages, 'meshcore', new Set(['ch:0']), ownNodes)).toBe(
+      true,
+    );
+  });
+
+  it('returns false when every new message matches a muted DM key', () => {
+    const messages = [msg({ channel: -1, to: 0, sender_id: 2, timestamp: 2000 })];
+    expect(hasAudibleBackgroundMessages(messages, 'meshcore', new Set(['dm:2']), ownNodes)).toBe(
+      false,
+    );
+  });
+
+  it('returns true when DM mute key does not match chatViewKeyForMessage peer', () => {
+    const messages = [msg({ channel: -1, to: 0, sender_id: 2, timestamp: 2000 })];
+    expect(hasAudibleBackgroundMessages(messages, 'meshcore', new Set(['ch:-1']), ownNodes)).toBe(
+      true,
+    );
   });
 });
