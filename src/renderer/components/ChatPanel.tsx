@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/incompatible-library */
 import 'emoji-picker-element';
 
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import {
   Archive,
@@ -68,6 +68,9 @@ import {
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
 import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
+
+/** Extra virtual row height budget when the unread divider renders in that row. */
+const UNREAD_DIVIDER_ESTIMATE_EXTRA_PX = 40;
 import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
@@ -516,13 +519,11 @@ function ChatPanel({
   // Counter-based trigger: increment → useLayoutEffect fires scroll-to-divider
   const [triggerScrollToUnread, setTriggerScrollToUnread] = useState(0);
 
-  // Ref to divider DOM node for scrollIntoView
+  // Ref to divider DOM node for scroll-past detection
   const unreadDividerRef = useRef<HTMLDivElement>(null);
-  const [hasUnreadDivider, setHasUnreadDivider] = useState(false);
 
   const attachUnreadDividerRef = useCallback((node: HTMLDivElement | null) => {
     unreadDividerRef.current = node;
-    setHasUnreadDivider(node != null);
   }, []);
 
   // Persist lastRead timestamps to localStorage
@@ -681,10 +682,28 @@ function ChatPanel({
     return msgs;
   }, [searchQuery, viewMessages, filterSender]);
 
+  // Index of first message from another node newer than unreadDividerTimestamp.
+  // Returns -1 when: search active, timestamp=0, or no qualifying messages.
+  const unreadStartIndex = useMemo(() => {
+    if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
+    for (let i = 0; i < filteredMessages.length; i++) {
+      const msg = filteredMessages[i];
+      if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
+    }
+    return -1;
+  }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
+
+  const hasUnreadDivider = unreadStartIndex >= 0;
+  const unreadStartIndexRef = useRef(unreadStartIndex);
+  unreadStartIndexRef.current = unreadStartIndex;
+
   const messageVirtualizer = useVirtualizer({
     count: filteredMessages.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => (compactMode ? 56 : 96),
+    estimateSize: (index) => {
+      const base = compactMode ? 56 : 96;
+      return index === unreadStartIndex ? base + UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
+    },
     overscan: 10,
     getItemKey: (index) => {
       const msg = filteredMessages[index];
@@ -695,6 +714,12 @@ function ChatPanel({
     followOnAppend: true,
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
+
+  messageVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item: VirtualItem): boolean => {
+    if (item.index === unreadStartIndexRef.current) return false;
+    if (!isPinnedToBottomRef.current) return false;
+    return true;
+  };
 
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
@@ -866,10 +891,19 @@ function ChatPanel({
 
   // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
   const handleScroll = useCallback(() => {
+    if (unreadStartIndex >= 0 && unreadDividerRef.current && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const divider = unreadDividerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const dividerRect = divider.getBoundingClientRect();
+      if (dividerRect.bottom < containerRect.top) {
+        setUnreadDividerTimestamp(0);
+      }
+    }
     const distFromBottom = updateScrollButtonVisibility();
     if (distFromBottom === undefined) return;
     applyNearBottomReadState(distFromBottom);
-  }, [applyNearBottomReadState, updateScrollButtonVisibility]);
+  }, [applyNearBottomReadState, unreadStartIndex, updateScrollButtonVisibility]);
 
   // Initialize scroll button visibility on mount — critical for async message loading (e.g., meshcore SQLite load)
   useLayoutEffect(() => {
@@ -922,8 +956,8 @@ function ChatPanel({
   useLayoutEffect(() => {
     if (triggerScrollToUnread === 0) return; // skip initial mount
     if (!isActive) return; // skip while hidden
-    if (unreadDividerRef.current) {
-      unreadDividerRef.current.scrollIntoView({ block: 'center' });
+    if (unreadStartIndex >= 0) {
+      messageVirtualizerRef.current.scrollToIndex(unreadStartIndex, { align: 'center' });
       isPinnedToBottomRef.current = false;
     } else {
       messageVirtualizerRef.current.scrollToEnd();
@@ -948,7 +982,7 @@ function ChatPanel({
 
   const scrollToUnreadOrBottom = useCallback(() => {
     const el = scrollContainerRef.current;
-    if (unreadDividerRef.current) {
+    if (unreadStartIndex >= 0) {
       isPinnedToBottomRef.current = false;
       if (el) {
         const onEnd = () => {
@@ -962,12 +996,15 @@ function ChatPanel({
         };
         el.addEventListener('scrollend', onEnd, { once: true });
       }
-      unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      messageVirtualizerRef.current.scrollToIndex(unreadStartIndex, {
+        align: 'start',
+        behavior: 'smooth',
+      });
     } else {
       messageVirtualizerRef.current.scrollToEnd({ behavior: 'smooth' });
       isPinnedToBottomRef.current = true;
     }
-  }, [applyNearBottomReadState, outerScrollMetricsRootRef]);
+  }, [applyNearBottomReadState, outerScrollMetricsRootRef, unreadStartIndex]);
 
   const scrollToQuotedParent = useCallback((replyKey: number) => {
     const root = scrollContainerRef.current;
@@ -1135,17 +1172,6 @@ function ChatPanel({
     }
     return indices;
   }, [filteredMessages]);
-
-  // Index of first message from another node newer than unreadDividerTimestamp.
-  // Returns -1 when: search active, timestamp=0, or no qualifying messages.
-  const unreadStartIndex = useMemo(() => {
-    if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
-    for (let i = 0; i < filteredMessages.length; i++) {
-      const msg = filteredMessages[i];
-      if (!isOwnNode(msg.sender_id) && msg.timestamp > unreadDividerTimestamp) return i;
-    }
-    return -1;
-  }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
 
   // Linux reaction picker — attach emoji-click on the <emoji-picker> web component
   useEffect(() => {
@@ -1683,7 +1709,7 @@ function ChatPanel({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className={`bg-deep-black/50 h-full overflow-y-auto rounded-xl p-3`}
+          className="bg-deep-black/50 h-full overflow-y-auto overscroll-contain rounded-xl p-3 [overflow-anchor:none]"
         >
           {filteredMessages.length === 0 ? (
             <div className="text-muted py-12 text-center">
