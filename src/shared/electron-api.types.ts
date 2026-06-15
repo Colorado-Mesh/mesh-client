@@ -464,6 +464,9 @@ export interface ElectronAPI {
       ) => void,
     ) => () => void;
     onMessage: (cb: (msg: unknown) => void) => () => void;
+    onBrokerRaw: (
+      cb: (payload: { topic: string; payload: Uint8Array; retained: boolean }) => void,
+    ) => () => void;
     onTraceRouteReply: (
       cb: (payload: {
         meshFrom: number;
@@ -528,6 +531,12 @@ export interface ElectronAPI {
         expire?: number;
       };
     }) => Promise<number>;
+    publishProxy: (args: {
+      topic: string;
+      data?: Uint8Array;
+      text?: string;
+      retained?: boolean;
+    }) => Promise<void>;
     publishMeshcore: (args: {
       text: string;
       channelIdx: number;
@@ -627,6 +636,15 @@ export interface ElectronAPI {
     onProgress: (cb: (info: { percent: number }) => void) => () => void;
     onDownloaded: (cb: () => void) => () => void;
     onError: (cb: (info: { message: string }) => void) => () => void;
+  };
+
+  // ─── Meshtastic XMODEM (local radio file transfer) ───────────────────────────
+  meshtasticXmodem: {
+    pickUploadFile: () => Promise<{ filename: string; data: Uint8Array } | null>;
+    saveDownloadFile: (
+      filename: string,
+      data: Uint8Array,
+    ) => Promise<{ success: boolean; path?: string }>;
   };
 
   // ─── Connection status ───────────────────────────────────────────────────────

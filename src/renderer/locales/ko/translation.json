@@ -178,7 +178,10 @@
     "reduceMotion": "동작 줄이기",
     "reduceMotionDesc": "애니메이션 아이콘 및 장식 효과를 비활성화합니다. 로딩 스피너와 연결 상태 표시등은 여전히 애니메이션으로 표시됩니다.",
     "roomMessages": "채팅실 채팅",
-    "importSchemaTooNew": "이 데이터베이스 파일에는 최신 Mesh-Client(스키마 {{dbVersion}})가 필요합니다. 이 빌드는 스키마 {{appVersion}} 이하만 지원합니다. 최신 릴리스를 설치한 뒤 다시 시도하세요."
+    "importSchemaTooNew": "이 데이터베이스 파일에는 최신 Mesh-Client(스키마 {{dbVersion}})가 필요합니다. 이 빌드는 스키마 {{appVersion}} 이하만 지원합니다. 최신 릴리스를 설치한 뒤 다시 시도하세요.",
+    "floodAdvertTypeLabel": "Advert 유형",
+    "floodAdvertTypeFlood": "홍수 (멀티 홉)",
+    "floodAdvertTypeZeroHop": "제로 홉 (직접 이웃만 해당)"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -295,7 +298,11 @@
     "emptyNoSearchMatches": "검색 조건에 일치하는 메시지가 없습니다.",
     "emptyNoDmMessages": "{{name}}님과의 메시지가 아직 없습니다.",
     "emptyNoMessagesYet": "아직 메시지가 없습니다. 메시지를 보내거나 수신을 기다리세요.",
-    "emptyConnectFirst": "채팅을 시작하려면 기기에 연결하세요."
+    "emptyConnectFirst": "채팅을 시작하려면 기기에 연결하세요.",
+    "waitingMessagesBadge": "라디오에서 {{count}} 대기 중인 메시지 동기화 중...",
+    "waitingMessagesSyncNow": "지금 동기화",
+    "jumpToUnread": "읽지 않음으로 이동",
+    "jumpToLatest": "최신으로 이동"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1245,7 +1252,12 @@
       "remoteHardwareEnabled": "원격 하드웨어 활성화",
       "remoteHardwareEnabledDesc": "원격 노드가 이 장치의 GPIO 핀을 읽고 쓸 수 있도록 허용합니다.",
       "remoteHardwareAllowUndefinedPins": "정의되지 않은 핀 접근 허용",
-      "remoteHardwareAllowUndefinedPinsDesc": "사용 가능한 핀 구성에 나열되지 않은 핀의 읽기/쓰기를 허용합니다."
+      "remoteHardwareAllowUndefinedPinsDesc": "사용 가능한 핀 구성에 나열되지 않은 핀의 읽기/쓰기를 허용합니다.",
+      "mqttProxyGatewayHint": "프록시가 활성화된 상태에서 메시-클라이언트는 MqttClientProxyMessage를 통해 트래픽을 중개합니다. MQTT→ RF 릴레이의 라디오 탭에서 채널별 다운링크를 활성화합니다.",
+      "mapReportPublishInterval": "보고 간격(초)",
+      "mapReportPublishIntervalDesc": "0은 펌웨어 기본값을 사용합니다. 지도 보고가 활성화된 경우 장치가 지도 보고서를 게시하는 빈도입니다.",
+      "mapReportPositionPrecision": "지도 보고서 위치 정밀도",
+      "mapReportPositionPrecisionDesc": "지도 보고서 좌표에 대한 정밀 비트 (펌웨어 ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "{{section}} 적용",
     "applyingButton": "신청 중...",
@@ -1254,7 +1266,8 @@
       "ipTunnel": "IP 터널",
       "gpio": "GPIO",
       "rangeTest": "범위 테스트",
-      "storeForward": "S&F를 받았습니다"
+      "storeForward": "S&F를 받았습니다",
+      "audio": "오디오"
     },
     "errors": {
       "generic": "장치가 이 변경을 거부했습니다.",
@@ -1275,7 +1288,14 @@
     "remoteHardwareConfirmEnableLabel": "활성화",
     "remoteHardwareConfirmUndefinedPinsTitle": "정의되지 않은 PIN 액세스를 허용하시겠습니까?",
     "remoteHardwareConfirmUndefinedPinsMessage": "GPIO 핀은 하드웨어 구성에 나열되지 않은 핀을 포함하여 원격으로 읽거나 쓸 수 있습니다. 이로 인해 보안 위험이 증가합니다.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "정의되지 않은 핀 허용"
+    "remoteHardwareConfirmUndefinedPinsLabel": "정의되지 않은 핀 허용",
+    "sectionDebugModules": "모듈 디버그",
+    "sectionAudio": "오디오 모듈",
+    "debugSimulatorPackets": "시뮬레이터 패킷",
+    "debugPrivateAppMessages": "비공개 앱 메시지",
+    "debugPingResponses": "Ping 응답",
+    "sectionMapReport": "지도 보고서",
+    "sectionMapReportHint": "MQTT를 통해 Meshtastic 맵에 위치를 게시합니다. 위에서 활성화된 MQTT 릴레이가 필요합니다. 설정은 장치 MQTT 모듈 구성에 저장됩니다."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "즐겨찾기에서 제거",
@@ -2077,7 +2097,37 @@
     "offloading": "오프로드 중…",
     "offloadingProgress": "총 {{total}}개 중 {{current}}개 제거 중…",
     "offloadCancelled": "오프로드가 취소되었습니다.",
-    "offloadCancelledPartial": "라디오에서 {{count}}개의 연락처를 제거한 후 오프로드가 취소되었습니다."
+    "offloadCancelledPartial": "라디오에서 {{count}}개의 연락처를 제거한 후 오프로드가 취소되었습니다.",
+    "xmodemSection": "XMODEM 파일 전송",
+    "xmodemSectionHint": "연결된 무선 펌웨어로/로부터 파일을 전송합니다 (로컬 연결만 해당).",
+    "xmodemFilenameLabel": "원격 파일 이름",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "파일 업로드",
+    "xmodemDownload": "파일 다운로드",
+    "xmodemUploadSuccess": "업로드됨 {{name}}",
+    "xmodemDownloadSuccess": "다운로드 완료 {{name}}",
+    "xmodemFailed": "XMODEM 실패: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert 전송 완료",
+    "floodScopeTitle": "지역 홍수 범위",
+    "floodScopeHelp": "홍수 트래픽을 해시태그 지역 (펌웨어 v8 +) 으로 제한합니다. meshcore.js setFloodScope가 필요합니다. 다시 연결하면 저장된 범위가 다시 적용됩니다.",
+    "floodScopeNone": "없음 (명확한 범위)",
+    "floodScopePreset": "사전 설정 해시태그",
+    "floodScopePresetSelect": "사전 설정 지역 해시태그",
+    "floodScopeCustom": "사용자 정의 해시태그",
+    "floodScopeCustomPlaceholder": "# myregion",
+    "floodScopeApply": "홍수 범위 적용",
+    "floodScopeApplySuccess": "홍수 범위 적용됨",
+    "floodScopeApplyFailed": "범람 범위 실패: {{message}}",
+    "advertisedPositionLabel": "광고 게재순위: {{lat}}, {{lon}}",
+    "txPowerMax": "송신 전력 (라디오당 최대 {{max}} dBm)",
+    "txPowerMaxUnknown": "송신 전력 (펌웨어가 무선 최대값을 보고할 때까지 {{max}} dBm으로 제한)",
+    "txPowerDeviceCurrent": "장치 보고서 {{current}} dBm (슬라이더 최대 {{max}} dBm)",
+    "sectionTxPower": "Tx Power",
+    "applyTxPowerSuccess": "TX 전원 적용됨",
+    "xmodemInvalidFilename": "파일 이름에 유효하지 않은 문자가 포함되어 있습니다",
+    "validationInvalidPsk": "유효하지 않은 base64 PSK — 키를 확인하고 다시 시도하십시오",
+    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다"
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -2087,7 +2137,21 @@
     "filterPlaceholder": "유형, 이름 또는 16진수로 필터링하세요.",
     "emptyWaiting": "아직 수신된 새 메시 패킷이 없습니다. 기다리세요...",
     "noPacketsMatchFilter": "현재 필터와 일치하는 패킷이 없습니다.",
-    "rawHexLabel": "원시 16진수({{bytes}}바이트):"
+    "rawHexLabel": "원시 16진수({{bytes}}바이트):",
+    "transportScopeTooltip": "운송 범위 코드 — 아웃바운드 경로의 지역 플러드 필터",
+    "transportReturnTooltip": "운송 반송 코드 — 반송 경로의 지역 필터",
+    "transportRegionMatch": "구성된 플러드 범위와 일치",
+    "transportRegionMismatch": "구성된 플러드 범위와 일치하지 않음",
+    "transportLegendHint": "행을 펼치면 상단에 경로와 전송 정보가 표시됩니다. 지역 scope/return 코드는 TRANSPORT_FLOOD 및 TRANSPORT_DIRECT 패킷에만 나타납니다(일반 FLOOD/DIRECT 아님).",
+    "routeLabel": "경로",
+    "payloadLabel": "Payload",
+    "transportHeading": "전송",
+    "transportCodesAbsent": "지역 전송 코드 없음({{route}} 경로 — TRANSPORT_FLOOD / TRANSPORT_DIRECT만 scope/return 포함).",
+    "transportCodesAbsentTooltip": "일반 FLOOD 및 DIRECT 패킷은 MeshCore RF 헤더에 지역 전송 scope/return 필드를 포함하지 않습니다.",
+    "meshtasticLegendHint": "행 확장: 포트 및 홉 세부 정보가 맨 위에 있습니다. 홉 카운트는 RF 패킷 (MQTT 아님) 에서 hopStart − hopLimit를 사용합니다.",
+    "portLabel": "포팅하기",
+    "transportSourceLabel": "교통편",
+    "hopsAbsentMqtt": "RF 홉 카운트 (MQTT 경로) 없음."
   },
   "remoteAdmin": {
     "errors": {

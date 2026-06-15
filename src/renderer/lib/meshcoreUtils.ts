@@ -17,6 +17,23 @@ export const MESHCORE_CONTACTS_WARNING_THRESHOLD = 320;
 /** Critical threshold when radio contact count is near capacity (must exceed {@link MESHCORE_CONTACTS_WARNING_THRESHOLD}). */
 export const MESHCORE_CONTACTS_CRITICAL_THRESHOLD = 340;
 
+/**
+ * Fallback TX ceiling when companion `getSelfInfo` omits `maxTxPower` (common on current firmware).
+ * SX1262-class radios are typically limited to ~22 dBm.
+ */
+export const MESHCORE_TX_POWER_FALLBACK_MAX = 22;
+
+export function meshcoreResolvedTxPowerMax(selfInfo?: { maxTxPower?: number } | null): {
+  max: number;
+  fromFirmware: boolean;
+} {
+  const max = selfInfo?.maxTxPower;
+  if (typeof max === 'number' && Number.isFinite(max) && max > 0) {
+    return { max, fromFirmware: true };
+  }
+  return { max: MESHCORE_TX_POWER_FALLBACK_MAX, fromFirmware: false };
+}
+
 const SYNTH_PLACEHOLDER_PUBKEY_MARKER_HEX = '4d434854'; // "MCHT"
 
 /**

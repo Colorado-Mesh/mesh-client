@@ -627,6 +627,22 @@ function AppContent({
       DEFAULT_APP_SETTINGS_SHARED.autoFloodAdvertIntervalHours
     );
   });
+  const [autoFloodAdvertType, setAutoFloodAdvertType] = useState<'flood' | 'zeroHop'>(() => {
+    const parsed = parseStoredJson<{ autoFloodAdvertType?: string }>(
+      getAppSettingsRaw(),
+      'App autoFloodAdvertType init',
+    );
+    return parsed?.autoFloodAdvertType === 'zeroHop' ? 'zeroHop' : 'flood';
+  });
+  const [meshcoreFloodScopeHashtag, setMeshcoreFloodScopeHashtag] = useState(() => {
+    const parsed = parseStoredJson<{ meshcoreFloodScopeHashtag?: string }>(
+      getAppSettingsRaw(),
+      'App meshcoreFloodScopeHashtag init',
+    );
+    return typeof parsed?.meshcoreFloodScopeHashtag === 'string'
+      ? parsed.meshcoreFloodScopeHashtag
+      : DEFAULT_APP_SETTINGS_SHARED.meshcoreFloodScopeHashtag;
+  });
 
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
@@ -788,7 +804,7 @@ function AppContent({
         : null;
   const contactGroups = useContactGroups(contactGroupsSelfId);
   const [showGroupsModal, setShowGroupsModal] = useState(false);
-  /** Shared panel fields; Meshtastic-only props use {@link meshtasticRuntime} directly. */
+  /** Shared panel fields; Meshtastic-only access uses {@link meshtasticRuntime} directly. */
   const activeRuntime =
     protocol === 'meshcore'
       ? (meshcoreRuntime as unknown as typeof meshtasticRuntime)
@@ -1715,19 +1731,23 @@ function AppContent({
     if (protocol !== 'meshcore' || !isOperational || autoFloodAdvertIntervalHours <= 0) return;
     if (!meshcoreIdentityId || !connectionDriver.getHandle(meshcoreIdentityId)) return;
 
-    if (!advertSentRef.current) {
-      advertSentRef.current = true;
-      void meshcorePanelActions.sendAdvert().catch((e: unknown) => {
+    const sendScheduledAdvert = () => {
+      const action =
+        autoFloodAdvertType === 'zeroHop'
+          ? meshcorePanelActions.sendZeroHopAdvert
+          : meshcorePanelActions.sendAdvert;
+      void action().catch((e: unknown) => {
         console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
       });
+    };
+
+    if (!advertSentRef.current) {
+      advertSentRef.current = true;
+      sendScheduledAdvert();
     }
 
     const ms = autoFloodAdvertIntervalHours * 60 * 60 * 1000;
-    const id = setInterval(() => {
-      void meshcorePanelActions.sendAdvert().catch((e: unknown) => {
-        console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
-      });
-    }, ms);
+    const id = setInterval(sendScheduledAdvert, ms);
 
     return () => {
       clearInterval(id);
@@ -1736,6 +1756,7 @@ function AppContent({
     protocol,
     isOperational,
     autoFloodAdvertIntervalHours,
+    autoFloodAdvertType,
     meshcorePanelActions,
     meshcoreIdentityId,
   ]);
@@ -2278,6 +2299,14 @@ function AppContent({
                                     })
                                 : undefined
                             }
+                            waitingMessagesCount={
+                              protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesCount : 0
+                            }
+                            onSyncWaitingMessages={
+                              protocol === 'meshcore'
+                                ? () => void meshcoreRuntime.getWaitingMessages()
+                                : undefined
+                            }
                           />
                         </Suspense>
                       </div>
@@ -2517,6 +2546,34 @@ function AppContent({
                                   ? meshcorePanelActions.sendAdvert
                                   : undefined
                               }
+                              onSendZeroHopAdvert={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.sendZeroHopAdvert
+                                  : undefined
+                              }
+                              onApplyMeshcoreFloodScopeHashtag={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
+                                  : undefined
+                              }
+                              meshcoreFloodScopeHashtag={
+                                protocol === 'meshcore' ? meshcoreFloodScopeHashtag : ''
+                              }
+                              onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
+                              onXmodemUpload={
+                                protocol === 'meshtastic' &&
+                                isOperational &&
+                                !isRemoteConfigureTarget
+                                  ? meshtasticPanelActions.xmodemUpload
+                                  : undefined
+                              }
+                              onXmodemDownload={
+                                protocol === 'meshtastic' &&
+                                isOperational &&
+                                !isRemoteConfigureTarget
+                                  ? meshtasticPanelActions.xmodemDownload
+                                  : undefined
+                              }
                               onSyncClock={
                                 protocol === 'meshcore' ? meshcorePanelActions.syncClock : undefined
                               }
@@ -2595,7 +2652,22 @@ function AppContent({
                               rangeTestPackets={activeRuntime.rangeTestPackets}
                               serialMessages={activeRuntime.serialMessages}
                               remoteHardwareMessages={activeRuntime.remoteHardwareMessages}
-                              ipTunnelMessages={activeRuntime.ipTunnelMessages}
+                              ipTunnelMessages={
+                                isRemoteConfigureTarget ? undefined : activeRuntime.ipTunnelMessages
+                              }
+                              audioMessages={
+                                isRemoteConfigureTarget ? undefined : activeRuntime.audioMessages
+                              }
+                              simulatorPackets={
+                                isRemoteConfigureTarget ? undefined : activeRuntime.simulatorPackets
+                              }
+                              privateMessages={
+                                isRemoteConfigureTarget ? undefined : activeRuntime.privateMessages
+                              }
+                              pingResponses={
+                                isRemoteConfigureTarget ? undefined : activeRuntime.pingResponses
+                              }
+                              hasAudio={capabilities.hasAudio}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -2823,6 +2895,7 @@ function AppContent({
                                   : undefined
                               }
                               onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
+                              onAutoFloodAdvertTypeChange={setAutoFloodAdvertType}
                               onChatCompactModeChange={handleChatCompactModeChange}
                             />
                           </Suspense>
@@ -2912,6 +2985,7 @@ function AppContent({
                                 onClear={meshcorePanelActions.clearRawPackets}
                                 getNodeLabel={rawPacketGetNodeLabel}
                                 onNodeClick={setSelectedNodeId}
+                                floodScopeHashtag={meshcoreFloodScopeHashtag}
                               />
                             ) : (
                               <RawPacketLogPanel

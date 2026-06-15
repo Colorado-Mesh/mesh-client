@@ -88,6 +88,15 @@ import {
   type MeshtasticLegacyWireSubscriptionDeps,
 } from '../lib/meshtastic/meshtasticLegacyWireSubscriptions';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
+import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
+import {
+  isMeshtasticMqttProxyActive,
+  mqttSettingsFromMeshtasticModuleConfig,
+} from '../lib/meshtastic/meshtasticMqttModuleSettings';
+import {
+  meshtasticXmodemDownload,
+  meshtasticXmodemUpload,
+} from '../lib/meshtastic/meshtasticXmodemTransfer';
 import { setRemoteAdminReadsActive } from '../lib/meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
 import {
@@ -419,6 +428,7 @@ export function useMeshtasticRuntime() {
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
+  const mqttClientProxyBridgeRef = useRef<MeshtasticMqttClientProxyBridge | null>(null);
   const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
   const lastRfDisconnectAtRef = useRef<number | null>(null);
   const lastSfHeartbeatServerRef = useRef<number | null>(null);
@@ -826,6 +836,38 @@ export function useMeshtasticRuntime() {
   useEffect(() => {
     moduleConfigsRef.current = moduleConfigs;
   }, [moduleConfigs]);
+
+  useEffect(() => {
+    mqttClientProxyBridgeRef.current = new MeshtasticMqttClientProxyBridge({
+      isProxyActive: () => isMeshtasticMqttProxyActive(moduleConfigsRef.current),
+      isDeviceConfigured: () => deviceConfiguredRef.current,
+      publishToBroker: async (args) => {
+        await window.electronAPI.mqtt.publishProxy(args);
+      },
+      writeToRadio: async (bytes) => {
+        const device = deviceRef.current;
+        if (!device) throw new Error('No Meshtastic device for MQTT proxy downlink');
+        await writeToRadioWithoutQueue(device, bytes);
+      },
+    });
+    return () => {
+      mqttClientProxyBridgeRef.current?.clearPending();
+      mqttClientProxyBridgeRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMeshtasticMqttProxyActive(moduleConfigs)) return;
+    if (!deviceRef.current || state.status !== 'configured') return;
+    const settings = mqttSettingsFromMeshtasticModuleConfig(moduleConfigs);
+    if (!settings) return;
+    if (mqttStatusRef.current === 'connected' || mqttStatusRef.current === 'connecting') return;
+    void window.electronAPI.mqtt.connect(settings).catch((e: unknown) => {
+      console.warn(
+        '[useMeshtasticRuntime] MQTT proxy gateway connect failed ' + errLikeToLogString(e),
+      );
+    });
+  }, [moduleConfigs, state.status]);
 
   useEffect(() => {
     configureTargetNodeNumRef.current = configureTargetNodeNum;
@@ -1347,6 +1389,15 @@ export function useMeshtasticRuntime() {
       void window.electronAPI.db.saveMessage(mqttWithPreviews);
     });
 
+    const unsubBrokerRaw = window.electronAPI.mqtt.onBrokerRaw((payload) => {
+      if (!isMeshtasticMqttProxyActive(moduleConfigsRef.current)) return;
+      void mqttClientProxyBridgeRef.current?.handleBrokerRaw(
+        payload.topic,
+        payload.payload,
+        payload.retained,
+      );
+    });
+
     const unsubTraceRouteMqtt = window.electronAPI.mqtt.onTraceRouteReply((payload) => {
       if (payload.protocol !== 'meshtastic') return;
       if (!shouldIngestMeshtasticMqttLive(getStoredMeshProtocol(), !!deviceRef.current)) {
@@ -1372,6 +1423,7 @@ export function useMeshtasticRuntime() {
       unsubStatus();
       unsubNode();
       unsubMsg();
+      unsubBrokerRaw();
       unsubTraceRouteMqtt();
       if (mqttPresenceInitTimerRef.current) {
         clearTimeout(mqttPresenceInitTimerRef.current);
@@ -1702,6 +1754,7 @@ export function useMeshtasticRuntime() {
       setAtakMessages,
       setMapReports,
       setPrivateMessages,
+      mqttClientProxyBridgeRef,
     }),
     [
       touchLastData,
@@ -3018,6 +3071,21 @@ export function useMeshtasticRuntime() {
     await deviceRef.current.enterDfuMode();
   }, []);
 
+  const xmodemUpload = useCallback(async () => {
+    if (!deviceRef.current) throw new Error('Not connected to radio');
+    const picked = await window.electronAPI.meshtasticXmodem.pickUploadFile();
+    if (!picked) return;
+    await meshtasticXmodemUpload(deviceRef.current, picked.filename, picked.data);
+  }, []);
+
+  const xmodemDownload = useCallback(async (filename: string) => {
+    if (!deviceRef.current) throw new Error('Not connected to radio');
+    const trimmed = filename.trim();
+    if (!trimmed) throw new Error('Filename required');
+    const data = await meshtasticXmodemDownload(deviceRef.current, trimmed);
+    await window.electronAPI.meshtasticXmodem.saveDownloadFile(trimmed, data);
+  }, []);
+
   const factoryResetConfig = useCallback(async () => {
     const dest = configureTargetNodeNumRef.current;
     const client = remoteAdminClientRef.current;
@@ -3806,6 +3874,8 @@ export function useMeshtasticRuntime() {
       waypoints: resolvedWaypoints,
       rebootOta,
       enterDfuMode,
+      xmodemUpload,
+      xmodemDownload,
       factoryResetConfig,
       sendWaypoint,
       deleteWaypoint,
@@ -3911,6 +3981,8 @@ export function useMeshtasticRuntime() {
       resolvedWaypoints,
       rebootOta,
       enterDfuMode,
+      xmodemUpload,
+      xmodemDownload,
       factoryResetConfig,
       sendWaypoint,
       deleteWaypoint,

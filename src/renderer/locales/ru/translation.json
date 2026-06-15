@@ -178,7 +178,10 @@
     "reduceMotion": "Уменьшить движение",
     "reduceMotionDesc": "Отключает анимированные значки и декоративные эффекты. Индикаторы загрузки и состояния подключения по-прежнему анимируются.",
     "roomMessages": "Сообщения о номере",
-    "importSchemaTooNew": "Для этого файла базы данных требуется более новый Mesh-Client (схема {{dbVersion}}). Эта сборка поддерживает схему {{appVersion}} или старше. Установите последнюю версию и повторите попытку."
+    "importSchemaTooNew": "Для этого файла базы данных требуется более новый Mesh-Client (схема {{dbVersion}}). Эта сборка поддерживает схему {{appVersion}} или старше. Установите последнюю версию и повторите попытку.",
+    "floodAdvertTypeLabel": "Тип advert",
+    "floodAdvertTypeFlood": "Наводнение (многоузловое)",
+    "floodAdvertTypeZeroHop": "Нулевой прыжок (только для прямых соседей)"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -295,7 +298,11 @@
     "emptyNoSearchMatches": "Ваш запрос не вернул результатов",
     "emptyNoDmMessages": "Сообщений с {{name}} пока нет.",
     "emptyNoMessagesYet": "Сообщений пока нет. Отправьте одно или дождитесь входящих сообщений.",
-    "emptyConnectFirst": "Подключитесь к устройству, чтобы начать чат."
+    "emptyConnectFirst": "Подключитесь к устройству, чтобы начать чат.",
+    "waitingMessagesBadge": "Синхронизация {{count}} сообщений в очереди с радио…",
+    "waitingMessagesSyncNow": "Синхронизировать сейчас",
+    "jumpToUnread": "Перейти к непрочитанным",
+    "jumpToLatest": "Перейти к последнему"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -1245,7 +1252,12 @@
       "remoteHardwareEnabled": "Включить удалённое оборудование",
       "remoteHardwareEnabledDesc": "Разрешить удалённым узлам читать и записывать GPIO-пины на этом устройстве.",
       "remoteHardwareAllowUndefinedPins": "Разрешить доступ к неопределённым пинам",
-      "remoteHardwareAllowUndefinedPinsDesc": "Разрешить чтение/запись пинов, не указанных в конфигурации доступных пинов."
+      "remoteHardwareAllowUndefinedPinsDesc": "Разрешить чтение/запись пинов, не указанных в конфигурации доступных пинов.",
+      "mqttProxyGatewayHint": "С включенным прокси-сервером mesh-client bridges broker traffic via MqttClientProxyMessage. Включите нисходящую линию связи для каждого канала на вкладке «Радио» для→ РЧ-реле MQTT.",
+      "mapReportPublishInterval": "Интервал отчета о карте (секунды)",
+      "mapReportPublishIntervalDesc": "0 использует прошивку по умолчанию. Как часто устройство публикует отчеты о картах, когда отчеты о картах включены.",
+      "mapReportPositionPrecision": "Точность позиционирования картографического отчета",
+      "mapReportPositionPrecisionDesc": "Биты точности для координат отчета карты (микропрограмма ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Применить {{section}}",
     "applyingButton": "Применение...",
@@ -1254,7 +1266,8 @@
       "ipTunnel": "IP-туннель",
       "gpio": "GPIO",
       "rangeTest": "Тест дальности",
-      "storeForward": "Получено S&F"
+      "storeForward": "Получено S&F",
+      "audio": "Аудиоданные"
     },
     "errors": {
       "generic": "Устройство отклонило это изменение.",
@@ -1275,7 +1288,14 @@
     "remoteHardwareConfirmEnableLabel": "Редактировать",
     "remoteHardwareConfirmUndefinedPinsTitle": "Разрешить доступ к неопределенному PIN-коду?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Любой PIN-код GPIO может быть прочитан или записан удаленно, включая контакты, не указанные в конфигурации оборудования. Это повышает риск для безопасности.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Разрешить неопределенные контакты"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Разрешить неопределенные контакты",
+    "sectionDebugModules": "Модули отладки",
+    "sectionAudio": "АУДИО МОДУЛЬ",
+    "debugSimulatorPackets": "Пакеты тренажера",
+    "debugPrivateAppMessages": "Личные сообщения в приложении",
+    "debugPingResponses": "Ping-ответы",
+    "sectionMapReport": "Отчет по карте",
+    "sectionMapReportHint": "Публикует позицию на карте Meshtastic по MQTT. Требуется реле MQTT, включенное выше; настройки хранятся в конфигурации модуля MQTT устройства."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Удалить из избранного",
@@ -2077,7 +2097,37 @@
     "offloading": "Разгрузка",
     "offloadingProgress": "Удаление {{current}} из {{total}}…",
     "offloadCancelled": "Разгрузка отменена.",
-    "offloadCancelledPartial": "Разгрузка отменена после удаления контактов {{count}} из радиоприемника."
+    "offloadCancelledPartial": "Разгрузка отменена после удаления контактов {{count}} из радиоприемника.",
+    "xmodemSection": "Передача файла XMODEM",
+    "xmodemSectionHint": "Передача файлов в/из подключенной прошивки радиостанции (только локальное соединение).",
+    "xmodemFilenameLabel": "Удаленное имя файла",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Загрузить файл",
+    "xmodemDownload": "Загрузить файл",
+    "xmodemUploadSuccess": "Загружено {{name}}",
+    "xmodemDownloadSuccess": "Загружено {{name}}",
+    "xmodemFailed": "Ошибка XMODEM: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert отправлен",
+    "floodScopeTitle": "Область регионального наводнения",
+    "floodScopeHelp": "Ограничьте флуд-трафик регионом хэштегов (прошивка v8+). Требуется meshcore.js setFloodScope; переподключение повторно применяет сохраненную область.",
+    "floodScopeNone": "Нет (очистить область применения)",
+    "floodScopePreset": "Предустановленный хэштег",
+    "floodScopePresetSelect": "Предустановленный хэштег региона",
+    "floodScopeCustom": "Пользовательский хэштег",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Применить объем наводнения",
+    "floodScopeApplySuccess": "Применяемый объем наводнения",
+    "floodScopeApplyFailed": "Сбой объема наводнения: {{message}}",
+    "advertisedPositionLabel": "Рекламная позиция: {{lat}}, {{lon}}",
+    "txPowerMax": "Мощность передачи (макс. {{max}} дБм на радиостанцию)",
+    "txPowerMaxUnknown": "Мощность передачи (ограничена {{max}} дБм до тех пор, пока прошивка не сообщит о радио макс.)",
+    "txPowerDeviceCurrent": "Отчеты устройства {{current}} dBm (ползунок макс. {{max}} dBm)",
+    "sectionTxPower": "TX Мощность",
+    "applyTxPowerSuccess": "Питание TX применено",
+    "xmodemInvalidFilename": "Имя файла содержит недопустимые символы",
+    "validationInvalidPsk": "Неверный base64 PSK — проверьте ключ и повторите попытку",
+    "meshcoreChannelNameRequired": "Нужно указать имя канала."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",
@@ -2087,7 +2137,21 @@
     "filterPlaceholder": "Фильтровать по типу, имени или шестнадцатеричному коду...",
     "emptyWaiting": "Новых пакетов Mesh пока не получено. Пожалуйста, подождите...",
     "noPacketsMatchFilter": "Ни один пакет не соответствует текущему фильтру.",
-    "rawHexLabel": "Необработанный шестнадцатеричный код ({{bytes}} байт):"
+    "rawHexLabel": "Необработанный шестнадцатеричный код ({{bytes}} байт):",
+    "transportScopeTooltip": "Код области транспортировки — региональный фильтр наводнений на исходящем пути",
+    "transportReturnTooltip": "Код возврата транспорта — региональный фильтр на обратном пути",
+    "transportRegionMatch": "Соответствует настроенной области флуда",
+    "transportRegionMismatch": "Не соответствует настроенной области флуда",
+    "transportLegendHint": "Разверните строку: маршрут и транспорт — сверху. Региональные коды scope/return появляются только в пакетах TRANSPORT_FLOOD и TRANSPORT_DIRECT (не в обычных FLOOD/DIRECT).",
+    "routeLabel": "Маршрут",
+    "payloadLabel": "Payload",
+    "transportHeading": "Транспорт",
+    "transportCodesAbsent": "Нет региональных транспортных кодов (маршрут {{route}} — только TRANSPORT_FLOOD / TRANSPORT_DIRECT несут scope/return).",
+    "transportCodesAbsentTooltip": "Обычные пакеты FLOOD и DIRECT не включают региональные поля scope/return транспорта в RF-заголовке MeshCore.",
+    "meshtasticLegendHint": "Разверните строку: сведения о порте и прыжке находятся вверху. Счетчики прыжков используют hopStart − hopLimit на радиочастотных пакетах (не MQTT).",
+    "portLabel": "Порт",
+    "transportSourceLabel": "Транспорт",
+    "hopsAbsentMqtt": "Нет количества радиочастотных переходов (путь MQTT)."
   },
   "remoteAdmin": {
     "errors": {

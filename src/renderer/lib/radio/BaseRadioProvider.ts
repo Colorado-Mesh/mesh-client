@@ -83,6 +83,8 @@ export interface ProtocolCapabilities {
   hasAtakPlugin: boolean;
   /** Whether Map Report packets are available */
   hasMapReport: boolean;
+  /** Whether XMODEM file transfer is available (Meshtastic local radio) */
+  hasXmodem: boolean;
   /** Whether contact import/export is available (MeshCore) */
   hasContactImportExport: boolean;
   /** Whether cryptographic signing/key export is available (MeshCore) */
@@ -144,6 +146,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasStoreForward: true,
   hasAtakPlugin: true,
   hasMapReport: true,
+  hasXmodem: true,
   hasContactImportExport: false,
   hasCryptoOperations: true,
   hasRawPacketLog: true,
@@ -197,6 +200,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasStoreForward: false,
   hasAtakPlugin: false,
   hasMapReport: false,
+  hasXmodem: false,
   hasContactImportExport: true,
   hasCryptoOperations: true,
   hasRawPacketLog: true,

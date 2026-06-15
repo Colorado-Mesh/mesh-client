@@ -178,7 +178,10 @@
     "reduceMotion": "Hareketi azalt",
     "reduceMotionDesc": "Animasyonlu simgeleri ve dekoratif efektleri devre dışı bırakır. Yükleme göstergeleri ve bağlantı durumu göstergeleri hâlâ animasyonlu kalır.",
     "roomMessages": "Oda mesajları",
-    "importSchemaTooNew": "Bu veritabanı dosyası daha yeni bir Mesh-Client gerektiriyor (şema {{dbVersion}}). Bu yapı {{appVersion}} veya daha eski bir şemayı destekler. En son sürümü yükleyin ve tekrar deneyin."
+    "importSchemaTooNew": "Bu veritabanı dosyası daha yeni bir Mesh-Client gerektiriyor (şema {{dbVersion}}). Bu yapı {{appVersion}} veya daha eski bir şemayı destekler. En son sürümü yükleyin ve tekrar deneyin.",
+    "floodAdvertTypeLabel": "Advert türü",
+    "floodAdvertTypeFlood": "Sel (çoklu atlama)",
+    "floodAdvertTypeZeroHop": "Sıfır atlama (yalnızca doğrudan komşular)"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -295,7 +298,11 @@
     "emptyNoSearchMatches": "Aramanızla eşleşen mesaj yok.",
     "emptyNoDmMessages": "{{name}} ile henüz mesaj yok.",
     "emptyNoMessagesYet": "Henüz mesaj yok. Bir mesaj gönderin veya gelen mesajları bekleyin.",
-    "emptyConnectFirst": "Sohbete başlamak için bir cihaza bağlanın."
+    "emptyConnectFirst": "Sohbete başlamak için bir cihaza bağlanın.",
+    "waitingMessagesBadge": "Telsizden {{count}} sıraya alınmış mesaj(lar) senkronize ediliyor…",
+    "waitingMessagesSyncNow": "Şimdi senkronize et",
+    "jumpToUnread": "Okunmamışlara Atla",
+    "jumpToLatest": "En Yeniye Atla"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1245,7 +1252,12 @@
       "remoteHardwareEnabled": "Uzak Donanımı Etkinleştir",
       "remoteHardwareEnabledDesc": "Uzak düğümlerin bu cihazdaki GPIO pinlerini okumasına ve yazmasına izin verir.",
       "remoteHardwareAllowUndefinedPins": "Tanımsız Pin Erişimine İzin Ver",
-      "remoteHardwareAllowUndefinedPinsDesc": "Kullanılabilir pin yapılandırmasında listelenmeyen pinlerin okunmasına/yazılmasına izin verir."
+      "remoteHardwareAllowUndefinedPinsDesc": "Kullanılabilir pin yapılandırmasında listelenmeyen pinlerin okunmasına/yazılmasına izin verir.",
+      "mqttProxyGatewayHint": "Proxy etkinleştirildiğinde, mesh - client köprüleri MqttClientProxyMessage aracılığıyla trafiğe aracılık eder. MQTT→RF rölesi için Radyo sekmesinde kanal başına indirme bağlantısını etkinleştirin.",
+      "mapReportPublishInterval": "Harita rapor aralığı (saniye)",
+      "mapReportPublishIntervalDesc": "0, bellenim varsayılanını kullanır. Harita raporlaması etkinleştirildiğinde cihazın harita raporlarını yayınlama sıklığı.",
+      "mapReportPositionPrecision": "Harita raporu konum hassasiyeti",
+      "mapReportPositionPrecisionDesc": "Harita raporu koordinatları için hassasiyet bitleri (üretici yazılımı ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "{{section}} uygula",
     "applyingButton": "Başvuruluyor...",
@@ -1254,7 +1266,8 @@
       "ipTunnel": "IP Tüneli",
       "gpio": "GPIO",
       "rangeTest": "Menzil testi",
-      "storeForward": "S&F alındı"
+      "storeForward": "S&F alındı",
+      "audio": "Ses"
     },
     "errors": {
       "generic": "Cihaz bu değişikliği reddetti.",
@@ -1275,7 +1288,14 @@
     "remoteHardwareConfirmEnableLabel": "Etkinleştir",
     "remoteHardwareConfirmUndefinedPinsTitle": "Tanımsız PIN erişimine izin verilsin mi?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Donanım yapılandırmanızda listelenmeyen pinler de dahil olmak üzere herhangi bir GPIO PIN'i uzaktan okunabilir veya yazılabilir. Bu da güvenlik riskini artırmaktadır.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Tanımsız pinlere izin ver"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Tanımsız pinlere izin ver",
+    "sectionDebugModules": "Hata ayıklama modülleri",
+    "sectionAudio": "Ses modülü",
+    "debugSimulatorPackets": "Simülatör paketleri",
+    "debugPrivateAppMessages": "Özel uygulama mesajları",
+    "debugPingResponses": "Ping yanıtları",
+    "sectionMapReport": "Harita Raporu",
+    "sectionMapReportHint": "MQTT üzerinden Meshtastic haritasına pozisyon yayınlar. Yukarıda etkinleştirilen MQTT Rölesini gerektirir; ayarlar cihaz MQTT modülü yapılandırmasında saklanır."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",
@@ -2077,7 +2097,37 @@
     "offloading": "boşaltma",
     "offloadingProgress": "{{current}}/{{total}} kaldırılıyor…",
     "offloadCancelled": "Boşaltma iptal edildi.",
-    "offloadCancelledPartial": "{{count}} kontakları radyodan kaldırıldıktan sonra boşaltma iptal edildi."
+    "offloadCancelledPartial": "{{count}} kontakları radyodan kaldırıldıktan sonra boşaltma iptal edildi.",
+    "xmodemSection": "XMODEM dosya aktarımı",
+    "xmodemSectionHint": "Dosyaları bağlı radyo donanım yazılımına/yazılımından aktarın (yalnızca yerel bağlantı).",
+    "xmodemFilenameLabel": "Uzak dosya adı",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Dosya yükle",
+    "xmodemDownload": "Dosyayı İndirin",
+    "xmodemUploadSuccess": "Yüklendi {{name}}",
+    "xmodemDownloadSuccess": "{{name}} indirildi",
+    "xmodemFailed": "XMODEM başarısız oldu: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert gönderildi",
+    "floodScopeTitle": "Bölgesel sel kapsamı",
+    "floodScopeHelp": "Taşkın trafiğini bir hashtag bölgesiyle sınırlayın (ürün yazılımı v8+). meshcore.js setFloodScope gerektirir; yeniden bağlanma kaydedilen kapsamı yeniden uygular.",
+    "floodScopeNone": "Yok (net kapsam)",
+    "floodScopePreset": "Önceden ayarlanmış hashtag",
+    "floodScopePresetSelect": "Önceden ayarlanmış bölge etiketi",
+    "floodScopeCustom": "Özel hashtag",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Taşkın kapsamını uygula",
+    "floodScopeApplySuccess": "Taşkın kapsamı uygulandı",
+    "floodScopeApplyFailed": "Taşkın kapsamı başarısız oldu: {{message}}",
+    "advertisedPositionLabel": "İlan edilen pozisyon: {{lat}}, {{lon}}",
+    "txPowerMax": "İletim gücü (radyo başına maksimum {{max}} dBm)",
+    "txPowerMaxUnknown": "İletim gücü (firmware radio max rapor edene kadar {{max}} dBm ile sınırlandırılmıştır)",
+    "txPowerDeviceCurrent": "Cihaz raporları {{current}} dBm (kaydırıcı maks {{max}} dBm)",
+    "sectionTxPower": "TX Gücü",
+    "applyTxPowerSuccess": "TX gücü uygulandı",
+    "xmodemInvalidFilename": "Dosya adı geçersiz karakterler içeriyor",
+    "validationInvalidPsk": "Geçersiz base64 PSK — anahtarı kontrol edin ve tekrar deneyin",
+    "meshcoreChannelNameRequired": "Ad boş olamaz"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -2087,7 +2137,21 @@
     "filterPlaceholder": "Türe, ada veya onaltılıya göre filtreleyin...",
     "emptyWaiting": "Henüz yeni ağ paketi alınmadı. Lütfen bekleyin...",
     "noPacketsMatchFilter": "Geçerli filtreyle eşleşen paket yok.",
-    "rawHexLabel": "Ham onaltılık ({{bytes}} bayt):"
+    "rawHexLabel": "Ham onaltılık ({{bytes}} bayt):",
+    "transportScopeTooltip": "Ulaşım kapsam kodu — giden yolda bölgesel sel filtresi",
+    "transportReturnTooltip": "Taşıma dönüş kodu — dönüş yolunda bölgesel filtre",
+    "transportRegionMatch": "Yapılandırılan taşkın kapsamıyla eşleşir",
+    "transportRegionMismatch": "Yapılandırılan taşkın kapsamıyla eşleşmiyor",
+    "transportLegendHint": "Bir satırı genişletin: rota ve transport üstte görünür. Bölgesel scope/return kodları yalnızca TRANSPORT_FLOOD ve TRANSPORT_DIRECT paketlerinde görünür (düz FLOOD/DIRECT değil).",
+    "routeLabel": "Rota",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Bölgesel transport kodu yok ({{route}} rotası — yalnızca TRANSPORT_FLOOD / TRANSPORT_DIRECT scope/return taşır).",
+    "transportCodesAbsentTooltip": "Düz FLOOD ve DIRECT paketleri, MeshCore RF başlığında bölgesel transport scope/return alanlarını içermez.",
+    "meshtasticLegendHint": "Bir satırı genişletin: bağlantı noktası ve atlama noktası ayrıntıları en üsttedir. Hop sayımları RF paketlerinde hopStart − hopLimit kullanır (MQTT değil).",
+    "portLabel": "Liman",
+    "transportSourceLabel": "Ulaşım",
+    "hopsAbsentMqtt": "RF atlama sayısı yok (MQTT yolu)."
   },
   "remoteAdmin": {
     "errors": {

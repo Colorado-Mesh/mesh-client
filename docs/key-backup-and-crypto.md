@@ -135,6 +135,15 @@ Flashing MeshCore firmware on hardware that previously ran Meshtastic **replaces
 - Does **not** migrate Meshtastic identity into MeshCore contacts — peers see a **new** public key after flash.
 - Does **not** replace MeshCore companion full JSON backup tools; use Security **Backup Keys** for Mesh-Client per-node archives.
 
+### Full companion JSON backup (evaluation, 2026)
+
+The official MeshCore companion can export/import a **full device JSON** (contacts, channels, radio params, and related fields). mesh-client today supports:
+
+- Per-node **Security** archives (`mesh-client:meshcore-key-backup:<nodeId>`) — public + private key pairs only.
+- **Radio** JSON import for a subset of fields (`setRadioParams`, channels where APIs exist).
+
+**Gap:** There is no single-click export/import of the entire companion JSON blob. Implementing parity would require auditing meshcore.js export shape vs `RadioPanel` import, SQLite contact merge, and conflict rules for channels/contacts — estimated multi-day effort. **Deferred** until Tier 1–3 parity items ship; track as a Security/Radio follow-up if users need whole-device migration beyond per-node key archives.
+
 ---
 
 ## Quick reference

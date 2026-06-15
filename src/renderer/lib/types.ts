@@ -795,6 +795,9 @@ declare global {
           ) => void,
         ) => () => void;
         onMessage: (cb: (msg: Omit<ChatMessage, 'id'>) => void) => () => void;
+        onBrokerRaw: (
+          cb: (payload: { topic: string; payload: Uint8Array; retained: boolean }) => void,
+        ) => () => void;
         onTraceRouteReply: (
           cb: (payload: {
             meshFrom: number;
@@ -859,6 +862,12 @@ declare global {
             expire?: number;
           };
         }) => Promise<number>;
+        publishProxy: (args: {
+          topic: string;
+          data?: Uint8Array;
+          text?: string;
+          retained?: boolean;
+        }) => Promise<void>;
         publishMeshcore: (args: {
           text: string;
           channelIdx: number;
@@ -884,6 +893,13 @@ declare global {
         ) => Promise<{ token: string; expiresAt: number } | null>;
         updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
         onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
+      };
+      meshtasticXmodem: {
+        pickUploadFile: () => Promise<{ filename: string; data: Uint8Array } | null>;
+        saveDownloadFile: (
+          filename: string,
+          data: Uint8Array,
+        ) => Promise<{ success: boolean; path?: string }>;
       };
       meshcore: {
         tcp: {

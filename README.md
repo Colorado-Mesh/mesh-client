@@ -291,7 +291,8 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 ## Limitations
 
-- **MQTT → RF**: Messages received via MQTT are shown in chat but are not rebroadcast over the radio. Previous relay behavior caused duplicate or misattributed messages.
+- **MQTT → RF (Meshtastic)**: Downlink uses the firmware **MQTT module** (`proxy_to_client_enabled` on BLE/USB) and per-channel **downlink enabled** on the Radio tab — not legacy app `sendText` relay. mesh-client bridges `MqttClientProxyMessage` between broker and radio when proxy is active.
+- **MQTT → RF (MeshCore JSON)**: Not supported; MeshCore MQTT is chat ingest only.
 - **Meshtastic - PKC remote admin**: Configure-node-over-MQTT is not supported; a connected local RF radio is required to reach remote nodes (firmware 2.5+).
 - **MeshCore - MQTT (JSON v1)**: The Connection tab can connect to an MQTT broker in MeshCore mode using a small JSON chat envelope (see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md)). This is separate from Meshtastic's protobuf MQTT pipeline.
 - **MeshCore - partial routing diagnostics**: MeshCore now supports `route_flapping` / `path_instability` (PathUpdated events), `hop_goblin` / `bad_route` (when `hasHopCount`), and `weak_link` (when `hasPerHopSnr` and a trace is completed). Full hop-anomaly detection and Meshtastic-style LocalStats RF findings require Meshtastic packets; MeshCore provides its own RF findings (Elevated Noise Floor, Excessive Flooding) from Repeater Status packet stats.

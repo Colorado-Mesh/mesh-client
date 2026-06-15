@@ -178,7 +178,10 @@
     "reduceMotion": "Réduire le mouvement",
     "reduceMotionDesc": "Désactive les icônes animées et les effets décoratifs. Les indicateurs de chargement et d'état de connexion restent animés.",
     "roomMessages": "Messages de la chambre",
-    "importSchemaTooNew": "Ce fichier de base de données nécessite un Mesh-Client plus récent (schéma {{dbVersion}}). Cette version prend en charge le schéma {{appVersion}} ou plus ancien. Installez la dernière version et réessayez."
+    "importSchemaTooNew": "Ce fichier de base de données nécessite un Mesh-Client plus récent (schéma {{dbVersion}}). Cette version prend en charge le schéma {{appVersion}} ou plus ancien. Installez la dernière version et réessayez.",
+    "floodAdvertTypeLabel": "Type d'advert",
+    "floodAdvertTypeFlood": "Inondation (multi-sauts)",
+    "floodAdvertTypeZeroHop": "Zero-hop (voisins directs uniquement)"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -295,7 +298,11 @@
     "emptyNoSearchMatches": "Aucun message ne correspond à votre recherche.",
     "emptyNoDmMessages": "Aucun message avec {{name}} pour le moment.",
     "emptyNoMessagesYet": "Aucun message pour le moment. Envoyez-en un ou attendez les messages entrants.",
-    "emptyConnectFirst": "Connectez-vous à un appareil pour commencer à discuter."
+    "emptyConnectFirst": "Connectez-vous à un appareil pour commencer à discuter.",
+    "waitingMessagesBadge": "Synchronisation de {{count}} message(s) en file d'attente à partir de la radio…",
+    "waitingMessagesSyncNow": "Synchroniser maintenant",
+    "jumpToUnread": "Aller à Non lu",
+    "jumpToLatest": "Aller au dernier"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -1245,7 +1252,12 @@
       "remoteHardwareEnabled": "Activer le matériel distant",
       "remoteHardwareEnabledDesc": "Permet aux nœuds distants de lire et d'écrire les broches GPIO sur cet appareil.",
       "remoteHardwareAllowUndefinedPins": "Autoriser l'accès aux broches non définies",
-      "remoteHardwareAllowUndefinedPinsDesc": "Autorise la lecture/écriture des broches non listées dans la configuration des broches disponibles."
+      "remoteHardwareAllowUndefinedPinsDesc": "Autorise la lecture/écriture des broches non listées dans la configuration des broches disponibles.",
+      "mqttProxyGatewayHint": "Avec le proxy activé, le maillage-client relie le trafic du courtier via MqttClientProxyMessage. Activez la liaison descendante par canal dans l'onglet Radio pour le relais→ RF MQTT.",
+      "mapReportPublishInterval": "Intervalle de rapport (secondes)",
+      "mapReportPublishIntervalDesc": "0 utilise le firmware par défaut. Fréquence à laquelle l'appareil publie des rapports cartographiques lorsque les rapports cartographiques sont activés.",
+      "mapReportPositionPrecision": "Précision de position du rapport de carte",
+      "mapReportPositionPrecisionDesc": "Bits de précision pour les coordonnées du rapport de carte (firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Appliquer {{section}}",
     "applyingButton": "Candidature...",
@@ -1254,7 +1266,8 @@
       "ipTunnel": "Tunnel IP",
       "gpio": "GPIO",
       "rangeTest": "Test de portée",
-      "storeForward": "Reçu S&F"
+      "storeForward": "Reçu S&F",
+      "audio": "Audio"
     },
     "errors": {
       "generic": "L'appareil a rejeté cette modification.",
@@ -1275,7 +1288,14 @@
     "remoteHardwareConfirmEnableLabel": "Activer",
     "remoteHardwareConfirmUndefinedPinsTitle": "Autoriser l'accès au code PIN non défini ?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Toute broche GPIO peut être lue ou écrite à distance, y compris les broches non répertoriées dans votre configuration matérielle. Cela augmente les risques de sécurité.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Autoriser les broches non définies"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Autoriser les broches non définies",
+    "sectionDebugModules": "Modules de débogage",
+    "sectionAudio": "Module audio",
+    "debugSimulatorPackets": "Paquets de simulateur",
+    "debugPrivateAppMessages": "Messages privés de l'application",
+    "debugPingResponses": "Réponses ping",
+    "sectionMapReport": "Rapport de carte",
+    "sectionMapReportHint": "Publie la position sur la carte Meshtastic sur MQTT. Nécessite le relais MQTT activé ci-dessus ; les paramètres sont stockés dans la configuration du module MQTT de l'appareil."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Supprimer des favoris",
@@ -2077,7 +2097,37 @@
     "offloading": "Offloading",
     "offloadingProgress": "Suppression de {{current}} de {{total}}…",
     "offloadCancelled": "Déchargement annulé.",
-    "offloadCancelledPartial": "Déchargement annulé après avoir supprimé les contacts {{count}} de la radio."
+    "offloadCancelledPartial": "Déchargement annulé après avoir supprimé les contacts {{count}} de la radio.",
+    "xmodemSection": "Transfert de fichiers XMODEM",
+    "xmodemSectionHint": "Transférer des fichiers vers/depuis le micrologiciel de la radio connectée (connexion locale uniquement).",
+    "xmodemFilenameLabel": "Nom de fichier distant",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Télécharger le fichier",
+    "xmodemDownload": "Télécharger le fichier",
+    "xmodemUploadSuccess": "Téléchargé {{name}}",
+    "xmodemDownloadSuccess": "Téléchargé {{name}}",
+    "xmodemFailed": "XMODEM a échoué : {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert envoyé",
+    "floodScopeTitle": "Champ d'application régional des inondations",
+    "floodScopeHelp": "Limitez le trafic d'inondation à une région de hashtag (firmware v8+). Nécessite meshcore.js setFloodScope ; la reconnexion réapplique l'étendue enregistrée.",
+    "floodScopeNone": "Aucun (champ d'application clair)",
+    "floodScopePreset": "Hashtag prédéfini",
+    "floodScopePresetSelect": "Hashtag de région prédéfini",
+    "floodScopeCustom": "Hashtag personnalisé",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Appliquer la portée de l'inond",
+    "floodScopeApplySuccess": "Portée de l'inondation appliquée",
+    "floodScopeApplyFailed": "Échec de la portée de l'inondation : {{message}}",
+    "advertisedPositionLabel": "Poste annoncé : {{lat}}, {{lon}}",
+    "txPowerMax": "Puissance d'émission (max {{max}} dBm par radio)",
+    "txPowerMaxUnknown": "Puissance d'émission (plafonnée à {{max}} dBm jusqu'à ce que le micrologiciel signale la radio max)",
+    "txPowerDeviceCurrent": "Rapports de l'appareil {{current}} dBm (curseur max {{max}} dBm)",
+    "sectionTxPower": "Alimentation TX",
+    "applyTxPowerSuccess": "Puissance TX appliquée",
+    "xmodemInvalidFilename": "Názov súboru obsahuje neplatné znaky",
+    "validationInvalidPsk": "PSK base64 non valide — vérifiez la clé et réessayez",
+    "meshcoreChannelNameRequired": "Le nom ne doit pas être vide"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -2087,7 +2137,21 @@
     "filterPlaceholder": "Filtrer par type, nom ou hexadécimal...",
     "emptyWaiting": "Aucun nouveau paquet maillé n'a encore été reçu. S'il vous plaît, attendez...",
     "noPacketsMatchFilter": "Aucun paquet ne correspond au filtre actuel.",
-    "rawHexLabel": "Hex brut ({{bytes}} octets) :"
+    "rawHexLabel": "Hex brut ({{bytes}} octets) :",
+    "transportScopeTooltip": "Code de l'étendue du transport — filtre anti-inondation régional sur le chemin de sortie",
+    "transportReturnTooltip": "Code de retour du transport — filtre régional sur le chemin de retour",
+    "transportRegionMatch": "Correspond à la portée d'inondation configurée",
+    "transportRegionMismatch": "Ne correspond pas à la portée d'inondation configurée",
+    "transportLegendHint": "Développer une ligne : la route et le transport sont en haut. Les codes de portée/retour régionaux n'apparaissent que sur les paquets TRANSPORT_FLOOD et TRANSPORT_DIRECT (pas sur FLOOD/DIRECT simple).",
+    "routeLabel": "Route",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Aucun code de transport régional (route {{route}} — seuls TRANSPORT_FLOOD / TRANSPORT_DIRECT portent scope/return).",
+    "transportCodesAbsentTooltip": "Les paquets FLOOD et DIRECT simples n'incluent pas les champs scope/return de transport régional dans l'en-tête RF MeshCore.",
+    "meshtasticLegendHint": "Développez une ligne : les détails du port et du saut sont en haut. Le nombre de sauts utilise hopStart − hopLimit sur les paquets RF (pas MQTT).",
+    "portLabel": "Port",
+    "transportSourceLabel": "Transport",
+    "hopsAbsentMqtt": "Pas de nombre de sauts RF (chemin MQTT)."
   },
   "remoteAdmin": {
     "errors": {

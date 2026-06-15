@@ -126,6 +126,7 @@ function makeDeps() {
     setAtakMessages: noopSet,
     setMapReports: noopSet,
     setPrivateMessages: noopSet,
+    mqttClientProxyBridgeRef: { current: null },
   };
 
   return {

@@ -63,7 +63,7 @@ import {
 } from '../hooks/meshcore/meshcoreLegacyConnEvents';
 import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
-import { mergeAppSettingsPartial } from '../lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSettingsPartial } from '../lib/appSettingsStorage';
 import {
   classifyMeshcoreBleTimeoutStage,
   MESHCORE_SETUP_ABORT_MESSAGE,
@@ -135,6 +135,7 @@ import {
 } from '../lib/meshcoreDbCacheHydration';
 import { setMeshcoreDmAckPendingImpl } from '../lib/meshcoreDmAckDelivery';
 import { awaitDualNobleBleMeshtasticSettle } from '../lib/meshcoreDualNobleBleInit';
+import { applyMeshcoreFloodScope } from '../lib/meshcoreFloodScope';
 import {
   buildMeshcoreGetNeighboursRequest,
   parseMeshcoreGetNeighboursResponse,
@@ -376,6 +377,7 @@ export function useMeshcoreRuntime() {
   const [environmentTelemetry, setEnvironmentTelemetry] = useState<EnvironmentTelemetryPoint[]>([]);
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
   const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
+  const [waitingMessagesCount, setWaitingMessagesCount] = useState(0);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
@@ -1412,6 +1414,7 @@ export function useMeshcoreRuntime() {
       setRawPackets,
       setSignalTelemetry,
       setState,
+      setWaitingMessagesCount,
       addMessage,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
@@ -1503,7 +1506,8 @@ export function useMeshcoreRuntime() {
   const initConn = useCallback(
     async (conn: MeshCoreConnection, setupGen: number, opts?: { driverIdentityId?: string }) => {
       connRef.current = conn;
-      meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
+      meshcoreConnEventListenersTeardownRef.current?.();
+      meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
 
       // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
       // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
@@ -1816,6 +1820,29 @@ export function useMeshcoreRuntime() {
         }),
       );
 
+      try {
+        const settingsRaw = getAppSettingsRaw();
+        const settings = parseStoredJson<{ meshcoreFloodScopeHashtag?: string }>(
+          settingsRaw,
+          'initConn meshcoreFloodScopeHashtag',
+        );
+        const floodHashtag =
+          typeof settings?.meshcoreFloodScopeHashtag === 'string'
+            ? settings.meshcoreFloodScopeHashtag
+            : '';
+        if (floodHashtag) {
+          await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            applyMeshcoreFloodScope(conn, floodHashtag),
+          );
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        console.warn(
+          '[useMeshcoreRuntime] initConn reapply flood scope failed ' + errLikeToLogString(e),
+        );
+      }
+
       // Proactively fetch any messages that queued while disconnected.
       // Mirrors what event 131 does, but covers reconnects where the event was missed.
       try {
@@ -1913,7 +1940,8 @@ export function useMeshcoreRuntime() {
         throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
       }
       connRef.current = conn;
-      meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
+      meshcoreConnEventListenersTeardownRef.current?.();
+      meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
       await initConn(conn, setupGen, { driverIdentityId });
       if (type === 'serial') {
         const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
@@ -2143,6 +2171,20 @@ export function useMeshcoreRuntime() {
       }
       void attemptMeshcoreReconnectRef.current();
     })();
+  }, [teardownMeshcoreConnEventListeners]);
+
+  // Cleanup on unmount — tear down listeners and release connection/driver.
+  useEffect(() => {
+    return () => {
+      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      const conn = connRef.current;
+      connRef.current = null;
+      if (conn) {
+        void conn.close().catch((e: unknown) => {
+          console.debug('[useMeshcoreRuntime] unmount close ' + errLikeToLogString(e));
+        });
+      }
+    };
   }, [teardownMeshcoreConnEventListeners]);
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
@@ -2665,6 +2707,32 @@ export function useMeshcoreRuntime() {
       }
       throw e;
     }
+  }, []);
+
+  const sendZeroHopAdvert = useCallback(async () => {
+    const conn = connRef.current;
+    if (!conn) {
+      throw new Error('Not connected to radio');
+    }
+    try {
+      await withTimeout(
+        conn.sendZeroHopAdvert(),
+        MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+        'MeshCore send zero-hop advert',
+      );
+    } catch (e: unknown) {
+      if (e == null || (e instanceof Error && e.message === '')) {
+        console.warn('[useMeshcoreRuntime] sendZeroHopAdvert: empty rejection from radio');
+        throw new Error('MeshCore zero-hop advert rejected by radio');
+      }
+      throw e;
+    }
+  }, []);
+
+  const applyMeshcoreFloodScopeHashtag = useCallback(async (hashtag: string) => {
+    const conn = connRef.current;
+    if (!conn) throw new Error('Not connected to radio');
+    await applyMeshcoreFloodScope(conn, hashtag);
   }, []);
 
   const syncClock = useCallback(async () => {
@@ -5512,6 +5580,8 @@ export function useMeshcoreRuntime() {
       finalizeDriverDisconnect,
       sendMessage,
       sendAdvert,
+      sendZeroHopAdvert,
+      applyMeshcoreFloodScopeHashtag,
       syncClock,
       refreshContacts,
       reboot,
@@ -5555,6 +5625,7 @@ export function useMeshcoreRuntime() {
       manualAddContacts,
       mqttStatus,
       mqttConnectionLoss,
+      waitingMessagesCount,
       selfNodeId: state.myNodeNum,
       identityId: meshcoreIdentityId,
       getNodes,
@@ -5651,6 +5722,8 @@ export function useMeshcoreRuntime() {
       refreshNodesFromDb,
       refreshMessagesFromDb,
       sendAdvert,
+      sendZeroHopAdvert,
+      applyMeshcoreFloodScopeHashtag,
       syncClock,
       refreshContacts,
       reboot,
@@ -5694,6 +5767,7 @@ export function useMeshcoreRuntime() {
       manualAddContacts,
       mqttStatus,
       mqttConnectionLoss,
+      waitingMessagesCount,
       queueStatus,
       telemetry,
       signalTelemetry,

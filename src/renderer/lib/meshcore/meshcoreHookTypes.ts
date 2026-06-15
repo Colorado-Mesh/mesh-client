@@ -81,6 +81,7 @@ export interface MeshCoreConnection {
   deleteChannel(channelIdx: number): Promise<void>;
   getWaitingMessages(): Promise<unknown[]>;
   sendFloodAdvert(): Promise<void>;
+  sendZeroHopAdvert(): Promise<void>;
   sendTextMessage(
     pubKey: Uint8Array,
     text: string,
@@ -185,6 +186,8 @@ export interface MeshCoreConnection {
   /** Resolves to `{ privateKey: Uint8Array }` from meshcore.js (64-byte ORLP secret). */
   exportPrivateKey(): Promise<unknown>;
   importPrivateKey(privateKey: Uint8Array): Promise<void>;
+  setFloodScope(transportKey: Uint8Array): Promise<void>;
+  clearFloodScope(): Promise<void>;
   // Waiting messages
   syncNextMessage(): Promise<unknown>;
 }

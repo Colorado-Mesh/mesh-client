@@ -4,6 +4,8 @@ import type { MeshcoreRuntime } from '../runtime/runtimeTypes';
 
 /** MeshCore panel callbacks backed by the App-mounted protocol runtime. */
 export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
+  // Runtime object is stable for the App mount lifetime (context provider); do not
+  // pass inline object literals from child components or memoization is defeated.
   return useMemo(
     () => ({
       setConfig: runtime.setConfig,
@@ -24,6 +26,8 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       importContacts: runtime.importContacts,
       refreshContacts: runtime.refreshContacts,
       sendAdvert: runtime.sendAdvert,
+      sendZeroHopAdvert: runtime.sendZeroHopAdvert,
+      applyMeshcoreFloodScopeHashtag: runtime.applyMeshcoreFloodScopeHashtag,
       syncClock: runtime.syncClock,
       meshcoreSetChannel: runtime.setMeshcoreChannel,
       meshcoreDeleteChannel: runtime.deleteMeshcoreChannel,

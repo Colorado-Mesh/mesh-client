@@ -9,7 +9,11 @@ import {
   extractMeshtasticSenderId,
   meshtasticSenderIdForRawLogFallback,
 } from '../../lib/foreignLoraDetection';
-import { shouldPreserveStaticGpsForSelfNode } from '../../lib/gpsSource';
+import {
+  applyMeshcoreAdvertEvent128,
+  applyMeshcorePathUpdated129,
+  updateMeshcorePubKeyPrefixMaps,
+} from '../../lib/meshcore/meshcoreAdvertEventApply';
 import type {
   DeviceLogEntry,
   MeshCoreConnection,
@@ -44,17 +48,14 @@ import { meshcoreRoomPostBodyFromWire } from '../../lib/meshcoreRoomMessageRouti
 import { setMeshcoreRoomLastPostAt } from '../../lib/meshcoreRoomSyncStorage';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
 import {
-  CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
   MESHCORE_COORD_SCALE,
   meshcoreContactToMeshNode,
-  meshcoreContactTypeFromHwModel,
   meshcoreInferHopsFromOutPath,
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
-  meshcoreMinimalNodeFromAdvertEvent,
   meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
   minimalMeshcoreChatNode,
@@ -63,7 +64,6 @@ import {
 import { getMeshtasticConnectedMyNodeNum } from '../../lib/meshtasticConnectedNodeRef';
 import {
   effectiveMessageTimestampMs,
-  LAST_HEARD_MAX_FUTURE_SKEW_SEC,
   mergeMeshcoreLastHeardFromAdvert,
 } from '../../lib/nodeStatus';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
@@ -163,6 +163,7 @@ export function attachMeshcoreLegacyConnEvents(
     setRawPackets,
     setSignalTelemetry,
     setState,
+    setWaitingMessagesCount,
     addMessage,
     addCliHistoryEntry,
     teardownMeshcoreConnEventListeners,
@@ -219,115 +220,38 @@ export function attachMeshcoreLegacyConnEvents(
     const nodeId = pubkeyToNodeId(d.publicKey);
     if (nodeId === 0) return;
     const nowSec = Math.floor(Date.now() / 1000);
-    const persistOut = {
-      kind: 'none' as 'none' | 'insert' | 'update',
-      persistLastAdvert: nowSec,
-      persistLat: null as number | null,
-      persistLon: null as number | null,
-      insertContactType: 0,
-      insertAdvName: null as string | null,
-      /** Set on existing-contact updates when RF advert includes a new `advName` (optional 5th IPC arg). */
-      persistAdvName: undefined as string | undefined,
-    };
+    const nick = nicknameMapRef.current.get(nodeId);
+    let persistOut!: ReturnType<typeof applyMeshcoreAdvertEvent128>['persist'];
     setNodes((prev) => {
-      const existing = prev.get(nodeId);
-      const nick = nicknameMapRef.current.get(nodeId);
-      const hasLat = typeof d.advLat === 'number' && Number.isFinite(d.advLat) && d.advLat !== 0;
-      const hasLon = typeof d.advLon === 'number' && Number.isFinite(d.advLon) && d.advLon !== 0;
-      const rawAdvertSec =
-        typeof d.lastAdvert === 'number' && Number.isFinite(d.lastAdvert) && d.lastAdvert > 0
-          ? Math.floor(d.lastAdvert)
-          : undefined;
-      const lastHeard = mergeMeshcoreLastHeardFromAdvert(
-        rawAdvertSec,
-        existing?.last_heard ?? nowSec,
+      const result = applyMeshcoreAdvertEvent128(prev, d, {
+        nodeId,
         nowSec,
-      );
-      if (rawAdvertSec != null && rawAdvertSec > nowSec + LAST_HEARD_MAX_FUTURE_SKEW_SEC) {
-        console.debug(
-          `[useMeshcoreRuntime] clamped future lastAdvert nodeId=${nodeId.toString(16)} advertSec=${rawAdvertSec} nowSec=${nowSec}`,
-        );
-      }
-      persistOut.persistLastAdvert = lastHeard;
-      if (!existing) {
-        const built = meshcoreMinimalNodeFromAdvertEvent(d.publicKey, {
-          nowSec,
-          advLat: d.advLat,
-          advLon: d.advLon,
-          lastAdvert: d.lastAdvert,
-          contactType: d.type,
-          advName: d.advName,
-        });
-        if (!built) return prev;
-        persistOut.kind = 'insert';
-        persistOut.persistLat = built.persistAdvLatDeg;
-        persistOut.persistLon = built.persistAdvLonDeg;
-        persistOut.insertContactType = built.contactType;
-        persistOut.insertAdvName =
-          typeof d.advName === 'string' && d.advName.trim() ? d.advName.trim() : null;
-        pubKeyMapRef.current.set(nodeId, d.publicKey);
-        const prefix = Array.from(d.publicKey.slice(0, 6))
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('');
-        pubKeyPrefixMapRef.current.set(prefix, nodeId);
-        const nodeWithNick = nick ? { ...built.node, long_name: nick, short_name: '' } : built.node;
-        const next = new Map(prev);
-        next.set(nodeId, nodeWithNick);
-        return next;
-      }
-      persistOut.kind = 'update';
-      pubKeyMapRef.current.set(nodeId, d.publicKey);
-      const prefix = Array.from(d.publicKey.slice(0, 6))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      pubKeyPrefixMapRef.current.set(prefix, nodeId);
-      const next = new Map(prev);
-      const skipSelfStaticCoords = shouldPreserveStaticGpsForSelfNode(nodeId, myNodeNumRef.current);
-      persistOut.persistLat =
-        skipSelfStaticCoords || !hasLat
-          ? (existing.latitude ?? null)
-          : d.advLat! / MESHCORE_COORD_SCALE;
-      persistOut.persistLon =
-        skipSelfStaticCoords || !hasLon
-          ? (existing.longitude ?? null)
-          : d.advLon! / MESHCORE_COORD_SCALE;
-      const advNameTrim = typeof d.advName === 'string' && d.advName.trim() ? d.advName.trim() : '';
-      const applyAdvertName = !nick && Boolean(advNameTrim);
-      if (applyAdvertName) {
-        persistOut.persistAdvName = advNameTrim;
-      }
-      const advertType = typeof d.type === 'number' && Number.isFinite(d.type) ? d.type : -1;
-      const newHwModel =
-        advertType >= 0 ? (CONTACT_TYPE_LABELS[advertType] ?? 'Unknown') : existing.hw_model;
-      const mergedHwModel = mergeHwModelOnContactUpdate(existing.hw_model, newHwModel);
-      next.set(nodeId, {
-        ...existing,
-        last_heard: lastHeard,
-        hw_model: mergedHwModel,
-        latitude:
-          skipSelfStaticCoords || !hasLat ? existing.latitude : d.advLat! / MESHCORE_COORD_SCALE,
-        longitude:
-          skipSelfStaticCoords || !hasLon ? existing.longitude : d.advLon! / MESHCORE_COORD_SCALE,
-        ...(nick
-          ? { long_name: nick, short_name: '' }
-          : applyAdvertName
-            ? { long_name: advNameTrim, short_name: '' }
-            : {}),
+        nick,
+        myNodeNum: myNodeNumRef.current,
       });
-      if (mergedHwModel !== existing.hw_model) {
-        const mergedType = meshcoreContactTypeFromHwModel(mergedHwModel);
-        if (mergedType !== undefined) {
-          void window.electronAPI.db
-            .updateMeshcoreContactType(nodeId, mergedType)
-            .catch((e: unknown) => {
-              console.warn(
-                '[useMeshcoreRuntime] updateMeshcoreContactType error ' + errLikeToLogString(e),
-              );
-            });
-        }
-      }
-      return next;
+      persistOut = result.persist;
+      return result.next;
     });
+    if (persistOut.updatePubKeyMaps) {
+      updateMeshcorePubKeyPrefixMaps(
+        nodeId,
+        d.publicKey,
+        pubKeyMapRef.current,
+        pubKeyPrefixMapRef.current,
+      );
+    }
+    if (persistOut.contactTypeUpdate) {
+      void window.electronAPI.db
+        .updateMeshcoreContactType(
+          persistOut.contactTypeUpdate.nodeId,
+          persistOut.contactTypeUpdate.contactType,
+        )
+        .catch((e: unknown) => {
+          console.warn(
+            '[useMeshcoreRuntime] updateMeshcoreContactType error ' + errLikeToLogString(e),
+          );
+        });
+    }
     if (
       typeof d.advLat === 'number' &&
       Number.isFinite(d.advLat) &&
@@ -393,37 +317,25 @@ export function attachMeshcoreLegacyConnEvents(
     }
     useDiagnosticsStore.getState().recordPathUpdated(nodeId);
     const nowSec = Math.floor(Date.now() / 1000);
-    const persist129 = {
-      kind: 'none' as 'none' | 'insert' | 'update',
-      persistLastAdvert: nowSec,
-    };
+    const nick129 = nicknameMapRef.current.get(nodeId);
+    let persist129!: ReturnType<typeof applyMeshcorePathUpdated129>['persist'];
     setNodes((prev) => {
-      const existing = prev.get(nodeId);
-      const nick = nicknameMapRef.current.get(nodeId);
-      if (!existing) {
-        const built = meshcoreMinimalNodeFromAdvertEvent(d.publicKey, { nowSec });
-        if (!built) return prev;
-        persist129.kind = 'insert';
-        persist129.persistLastAdvert = built.lastHeardSec;
-        pubKeyMapRef.current.set(nodeId, d.publicKey);
-        const prefix = Array.from(d.publicKey.slice(0, 6))
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('');
-        pubKeyPrefixMapRef.current.set(prefix, nodeId);
-        const nodeWithNick = nick ? { ...built.node, long_name: nick, short_name: '' } : built.node;
-        const next = new Map(prev);
-        next.set(nodeId, nodeWithNick);
-        return next;
-      }
-      // update path: only refresh last_heard in memory; DB last_advert is written next time event 128 fires
-      persist129.kind = 'update';
-      const next = new Map(prev);
-      next.set(nodeId, {
-        ...existing,
-        last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+      const result = applyMeshcorePathUpdated129(prev, d.publicKey, {
+        nodeId,
+        nowSec,
+        nick: nick129,
       });
-      return next;
+      persist129 = result.persist;
+      return result.next;
     });
+    if (persist129.updatePubKeyMaps) {
+      updateMeshcorePubKeyPrefixMaps(
+        nodeId,
+        d.publicKey,
+        pubKeyMapRef.current,
+        pubKeyPrefixMapRef.current,
+      );
+    }
     if (persist129.kind === 'insert') {
       void window.electronAPI.db
         .saveMeshcoreContact({
@@ -659,144 +571,149 @@ export function attachMeshcoreLegacyConnEvents(
       };
       channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
     }[];
-    for (const m of arr) {
-      if (m.contactMessage) {
-        const d = m.contactMessage;
-        const prefix = Array.from(d.pubKeyPrefix)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('');
-        const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
-        if (senderId === 0) {
-          console.warn(
-            '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
-            prefix,
-          );
-        }
-        const sender = nodesRef.current.get(senderId);
-        if (senderId !== 0) {
-          setNodes((prev) => {
-            const node = prev.get(senderId);
-            if (!node) return prev;
-            const next = new Map(prev);
-            next.set(senderId, {
-              ...node,
-              last_heard: Math.max(node.last_heard ?? 0, d.senderTimestamp),
-            });
-            return next;
-          });
-        }
-        if (isMeshcoreTransportStatusChatLine(d.text)) {
-          logTransportLineAsDevice(d.text);
-        } else if (sender?.hw_model === 'Room') {
-          const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-          if (!legacyOwnsRoomPosts()) {
-            const identityId = meshcoreIdentityIdRef.current;
-            if (identityId) {
-              const roomNodeIds = new Set<number>();
-              for (const [nodeId, node] of nodesRef.current) {
-                if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
-              }
-              dispatchMeshcoreWaitingContactMessage(
-                identityId,
-                {
-                  pubKeyPrefix: d.pubKeyPrefix,
-                  text: d.text,
-                  senderTimestamp: d.senderTimestamp,
-                  ...(d.txtType != null ? { txtType: d.txtType } : {}),
-                },
-                pubKeyPrefixMapRef.current,
-                roomNodeIds,
-                (event, id) => {
-                  packetRouter.dispatch(event, id);
-                },
-                logTransportLineAsDevice,
-              );
-            }
-            void setMeshcoreRoomLastPostAt(senderId, postTs);
-          } else {
-            const { authorId, payload } = meshcoreRoomPostBodyFromWire(
-              d.text,
-              d.txtType,
-              pubKeyPrefixMapRef.current,
-              { isKnownRoomNode: true },
-            );
-            const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
-            const authorName =
-              authorNode?.long_name ??
-              (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-            addMessage(
-              buildMeshcoreRoomIncomingMessage({
-                rawText: payload,
-                roomServerId: senderId,
-                authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
-                authorName,
-                timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-                receivedVia: 'rf',
-              }),
+    setWaitingMessagesCount(arr.length);
+    try {
+      for (const m of arr) {
+        if (m.contactMessage) {
+          const d = m.contactMessage;
+          const prefix = Array.from(d.pubKeyPrefix)
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+          const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
+          if (senderId === 0) {
+            console.warn(
+              '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
+              prefix,
             );
           }
-        } else {
+          const sender = nodesRef.current.get(senderId);
+          if (senderId !== 0) {
+            setNodes((prev) => {
+              const node = prev.get(senderId);
+              if (!node) return prev;
+              const next = new Map(prev);
+              next.set(senderId, {
+                ...node,
+                last_heard: Math.max(node.last_heard ?? 0, d.senderTimestamp),
+              });
+              return next;
+            });
+          }
+          if (isMeshcoreTransportStatusChatLine(d.text)) {
+            logTransportLineAsDevice(d.text);
+          } else if (sender?.hw_model === 'Room') {
+            const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
+            if (!legacyOwnsRoomPosts()) {
+              const identityId = meshcoreIdentityIdRef.current;
+              if (identityId) {
+                const roomNodeIds = new Set<number>();
+                for (const [nodeId, node] of nodesRef.current) {
+                  if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+                }
+                dispatchMeshcoreWaitingContactMessage(
+                  identityId,
+                  {
+                    pubKeyPrefix: d.pubKeyPrefix,
+                    text: d.text,
+                    senderTimestamp: d.senderTimestamp,
+                    ...(d.txtType != null ? { txtType: d.txtType } : {}),
+                  },
+                  pubKeyPrefixMapRef.current,
+                  roomNodeIds,
+                  (event, id) => {
+                    packetRouter.dispatch(event, id);
+                  },
+                  logTransportLineAsDevice,
+                );
+              }
+              void setMeshcoreRoomLastPostAt(senderId, postTs);
+            } else {
+              const { authorId, payload } = meshcoreRoomPostBodyFromWire(
+                d.text,
+                d.txtType,
+                pubKeyPrefixMapRef.current,
+                { isKnownRoomNode: true },
+              );
+              const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
+              const authorName =
+                authorNode?.long_name ??
+                (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+              addMessage(
+                buildMeshcoreRoomIncomingMessage({
+                  rawText: payload,
+                  roomServerId: senderId,
+                  authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
+                  authorName,
+                  timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+                  receivedVia: 'rf',
+                }),
+              );
+            }
+          } else {
+            addMessage({
+              ...parseMeshcoreDmIncomingFromThread(storePriorForIngest(), {
+                rawText: d.text,
+                senderId,
+                displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
+                timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+                receivedVia: 'rf',
+                peerNodeId: senderId,
+                myNodeId: myNodeNumRef.current || 0,
+                to: myNodeNumRef.current || undefined,
+              }),
+              isHistory: true,
+            });
+          }
+        }
+        if (m.channelMessage) {
+          const d = m.channelMessage;
+          if (isMeshcoreTransportStatusChatLine(d.text)) {
+            logTransportLineAsDevice(d.text);
+            continue;
+          }
+          const resolved = resolveMeshcoreChannelMessageSender({
+            rawText: d.text,
+            nodes: nodesRef.current,
+          });
+          if (resolved.senderId !== 0) {
+            setNodes((prev) => {
+              const next = new Map(prev);
+              const existing = next.get(resolved.senderId);
+              next.set(
+                resolved.senderId,
+                existing
+                  ? meshcoreMergeChannelDisplayNameOntoNode(
+                      {
+                        ...existing,
+                        last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+                      },
+                      resolved.displayName,
+                    )
+                  : minimalMeshcoreChatNode(
+                      resolved.senderId,
+                      resolved.displayName,
+                      d.senderTimestamp,
+                      'rf',
+                    ),
+              );
+              return next;
+            });
+          }
           addMessage({
-            ...parseMeshcoreDmIncomingFromThread(storePriorForIngest(), {
+            ...parseMeshcoreChannelIncomingFromThread(storePriorForIngest(), {
               rawText: d.text,
-              senderId,
-              displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
+              senderId: resolved.senderId,
+              displayName: resolved.displayName,
+              channel: d.channelIdx,
               timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
               receivedVia: 'rf',
-              peerNodeId: senderId,
-              myNodeId: myNodeNumRef.current || 0,
-              to: myNodeNumRef.current || undefined,
             }),
             isHistory: true,
           });
         }
       }
-      if (m.channelMessage) {
-        const d = m.channelMessage;
-        if (isMeshcoreTransportStatusChatLine(d.text)) {
-          logTransportLineAsDevice(d.text);
-          continue;
-        }
-        const resolved = resolveMeshcoreChannelMessageSender({
-          rawText: d.text,
-          nodes: nodesRef.current,
-        });
-        if (resolved.senderId !== 0) {
-          setNodes((prev) => {
-            const next = new Map(prev);
-            const existing = next.get(resolved.senderId);
-            next.set(
-              resolved.senderId,
-              existing
-                ? meshcoreMergeChannelDisplayNameOntoNode(
-                    {
-                      ...existing,
-                      last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-                    },
-                    resolved.displayName,
-                  )
-                : minimalMeshcoreChatNode(
-                    resolved.senderId,
-                    resolved.displayName,
-                    d.senderTimestamp,
-                    'rf',
-                  ),
-            );
-            return next;
-          });
-        }
-        addMessage({
-          ...parseMeshcoreChannelIncomingFromThread(storePriorForIngest(), {
-            rawText: d.text,
-            senderId: resolved.senderId,
-            displayName: resolved.displayName,
-            channel: d.channelIdx,
-            timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-            receivedVia: 'rf',
-          }),
-          isHistory: true,
-        });
-      }
+    } finally {
+      setWaitingMessagesCount(0);
     }
   };
   processWaitingMessagesRef.current = processWaitingMessages;
@@ -1456,8 +1373,8 @@ export function attachMeshcoreLegacyConnEvents(
     });
     const staleConn = connRef.current;
     connRef.current = null;
+    teardownMeshcoreConnEventListeners({ driverDisconnect: false });
     queueMicrotask(() => {
-      teardownMeshcoreConnEventListeners({ driverDisconnect: false });
       meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
       setMeshcorePingRouteReadyEpoch((e) => e + 1);
       setQueueStatus(null);

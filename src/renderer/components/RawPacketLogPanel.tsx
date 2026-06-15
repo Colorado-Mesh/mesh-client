@@ -4,11 +4,14 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
-import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
+import {
+  meshCoreTransportCodeMatchesRegion,
+  parseMeshCoreRfPacket,
+} from '../../shared/meshcoreRfPacketParse';
 import {
   MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_CONTROL_NIBBLE,
@@ -16,6 +19,11 @@ import {
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
+import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
+import {
+  formatMeshtasticRawPacketExpandDebugLine,
+  parseMeshtasticRawPacketExpand,
+} from '../lib/meshtastic/meshtasticRawPacketExpand';
 import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 
@@ -33,6 +41,12 @@ function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+}
+
+/** Stable virtualizer row key — ts alone can collide within the same millisecond. */
+function rawPacketRowKey(ts: number, raw: Uint8Array): string {
+  const prefix = raw.length > 0 ? toHex(raw.subarray(0, Math.min(4, raw.length))) : 'empty';
+  return `${ts}-${raw.length}-${prefix}`;
 }
 
 function formatTs(ts: number): string {
@@ -61,8 +75,42 @@ function toSignedI8(byte: number): number {
   return byte > 127 ? byte - 256 : byte;
 }
 
-function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
+function MeshcoreExpandedDetails({
+  p,
+  floodScopeHashtag,
+}: {
+  p: RxPacketEntry;
+  floodScopeHashtag?: string;
+}) {
   const { t } = useTranslation();
+  const [regionMatch, setRegionMatch] = useState<boolean | null>(null);
+  const tag = floodScopeHashtag?.trim();
+  const canRegionMatch = Boolean(tag && p.transportScopeCode != null && p.parseOk);
+
+  useEffect(() => {
+    if (!canRegionMatch || !tag || p.transportScopeCode == null) {
+      return;
+    }
+    const reparsed = parseMeshCoreRfPacket(p.raw);
+    if (!reparsed.ok) {
+      return;
+    }
+    let cancelled = false;
+    void meshCoreTransportCodeMatchesRegion(
+      normalizeMeshcoreFloodScopeHashtag(tag),
+      reparsed.payloadTypeNibble,
+      reparsed.innerPayload,
+      p.transportScopeCode,
+    ).then((match) => {
+      if (!cancelled) setRegionMatch(match);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [canRegionMatch, floodScopeHashtag, p, tag]);
+
+  const regionMatchDisplay = canRegionMatch ? regionMatch : null;
+
   if (!p.parseOk) return null;
   const reparsed = parseMeshCoreRfPacket(p.raw);
   const innerWords =
@@ -130,6 +178,37 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
   })();
   return (
     <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+      <p>
+        <span className="text-muted">{t('rawPacketLog.routeLabel')}:</span>{' '}
+        {p.routeTypeString ?? '—'}{' '}
+        <span className="text-muted">{t('rawPacketLog.payloadLabel')}:</span>{' '}
+        {p.payloadTypeString ?? '—'}
+      </p>
+      {p.transportScopeCode != null && p.transportReturnCode != null ? (
+        <p>
+          <span className="text-muted">{t('rawPacketLog.transportHeading')}:</span>{' '}
+          <span title={t('rawPacketLog.transportScopeTooltip')}>
+            {`scope=${p.transportScopeCode}`}
+          </span>{' '}
+          <span title={t('rawPacketLog.transportReturnTooltip')}>
+            {`return=${p.transportReturnCode}`}
+          </span>
+          {regionMatchDisplay === true && (
+            <span className="text-brand-green ml-1" title={t('rawPacketLog.transportRegionMatch')}>
+              ✓
+            </span>
+          )}
+          {regionMatchDisplay === false && (
+            <span className="ml-1 text-amber-400" title={t('rawPacketLog.transportRegionMismatch')}>
+              ≠
+            </span>
+          )}
+        </p>
+      ) : (
+        <p className="text-muted/90" title={t('rawPacketLog.transportCodesAbsentTooltip')}>
+          {t('rawPacketLog.transportCodesAbsent', { route: p.routeTypeString ?? '—' })}
+        </p>
+      )}
       {p.messageFingerprintHex != null && (
         <p>
           <span className="text-muted">CRC32 fp:</span> {p.messageFingerprintHex}
@@ -184,12 +263,6 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
           {controlFields.pubkeyPrefix != null ? ` pubkey_prefix=${controlFields.pubkeyPrefix}` : ''}
         </p>
       )}
-      {p.transportScopeCode != null && p.transportReturnCode != null && (
-        <p>
-          <span className="text-muted">Transport:</span>{' '}
-          {`scope=${p.transportScopeCode} return=${p.transportReturnCode}`}
-        </p>
-      )}
       {p.advertTimestampSec != null && p.advertTimestampSec > 0 && (
         <p>
           <span className="text-muted">ADVERT ts:</span> {p.advertTimestampSec}
@@ -206,12 +279,47 @@ function MeshcoreExpandedDetails({ p }: { p: RxPacketEntry }) {
   );
 }
 
+function meshtasticTransportSourceLabel(p: MeshtasticRawPacketEntry): 'LOCAL' | 'MQTT' | 'RF' {
+  if (p.isLocal) return 'LOCAL';
+  if (p.viaMqtt) return 'MQTT';
+  return 'RF';
+}
+
+function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
+  const { t } = useTranslation();
+  const parsed = parseMeshtasticRawPacketExpand(p.raw, { viaMqtt: p.viaMqtt });
+  if (!parsed.ok) return null;
+
+  const transport = meshtasticTransportSourceLabel(p);
+  const hopLine =
+    transport === 'MQTT' ? (
+      <p className="text-muted/90">{t('rawPacketLog.hopsAbsentMqtt')}</p>
+    ) : parsed.hopsAway != null && parsed.hopStart != null && parsed.hopLimit != null ? (
+      <p>{`hops=${parsed.hopsAway} (hopStart=${parsed.hopStart} hopLimit=${parsed.hopLimit})`}</p>
+    ) : parsed.hopStart != null || parsed.hopLimit != null ? (
+      <p>{`hopStart=${parsed.hopStart ?? '?'} hopLimit=${parsed.hopLimit ?? '?'}`}</p>
+    ) : null;
+
+  return (
+    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+      <p>
+        <span className="text-muted">{t('rawPacketLog.portLabel')}:</span> {p.portLabel}{' '}
+        <span className="text-muted">{t('rawPacketLog.transportSourceLabel')}:</span> {transport}
+      </p>
+      {hopLine}
+      <p>{formatMeshtasticRawPacketExpandDebugLine(parsed)}</p>
+    </div>
+  );
+}
+
 interface MeshcoreProps {
   variant: 'meshcore';
   packets: RxPacketEntry[];
   onClear: () => void;
   getNodeLabel: (nodeId: number) => string;
   onNodeClick?: (nodeId: number) => void;
+  /** Configured flood-scope hashtag for transport code region match hints. */
+  floodScopeHashtag?: string;
 }
 
 interface MeshtasticProps {
@@ -226,6 +334,7 @@ type Props = MeshcoreProps | MeshtasticProps;
 
 export default function RawPacketLogPanel(props: Props) {
   const { variant, packets, onClear, getNodeLabel, onNodeClick } = props;
+  const floodScopeHashtag = variant === 'meshcore' ? props.floodScopeHashtag : undefined;
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -262,10 +371,17 @@ export default function RawPacketLogPanel(props: Props) {
     );
   }, [packets, filter, variant, getNodeLabel]);
 
+  useEffect(() => {
+    setExpandedIdx(null);
+  }, [packets, filter]);
+
+  const getScrollElement = useCallback(() => scrollRef.current, []);
+  const estimateSize = useCallback(() => 36, []);
+
   const virtualizer = useVirtualizer({
     count: filtered.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 36,
+    getScrollElement,
+    estimateSize,
     overscan: 12,
   });
 
@@ -282,6 +398,15 @@ export default function RawPacketLogPanel(props: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {variant === 'meshcore' ? (
+        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+          {t('rawPacketLog.transportLegendHint')}
+        </p>
+      ) : (
+        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+          {t('rawPacketLog.meshtasticLegendHint')}
+        </p>
+      )}
       <div className="flex shrink-0 items-center gap-2 border-b border-gray-700 px-3 py-2">
         <input
           type="search"
@@ -289,6 +414,7 @@ export default function RawPacketLogPanel(props: Props) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
+            setExpandedIdx(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
           className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
@@ -338,9 +464,14 @@ export default function RawPacketLogPanel(props: Props) {
                 setExpandedIdx(isExpanded ? null : vi.index);
               };
 
+              const rowPacket =
+                variant === 'meshcore'
+                  ? (filtered as RxPacketEntry[])[vi.index]
+                  : (filtered as MeshtasticRawPacketEntry[])[vi.index];
+
               return (
                 <div
-                  key={`${vi.index}-${variant === 'meshcore' ? (filtered as RxPacketEntry[])[vi.index].ts : (filtered as MeshtasticRawPacketEntry[])[vi.index].ts}`}
+                  key={rawPacketRowKey(rowPacket.ts, rowPacket.raw)}
                   data-index={vi.index}
                   ref={virtualizer.measureElement}
                   className="absolute top-0 left-0 w-full border-b border-gray-800"
@@ -371,7 +502,15 @@ export default function RawPacketLogPanel(props: Props) {
                   {isExpanded && (
                     <div className="bg-slate-900/60 px-3 pb-2">
                       {variant === 'meshcore' && (
-                        <MeshcoreExpandedDetails p={(filtered as RxPacketEntry[])[vi.index]} />
+                        <MeshcoreExpandedDetails
+                          p={(filtered as RxPacketEntry[])[vi.index]}
+                          floodScopeHashtag={floodScopeHashtag}
+                        />
+                      )}
+                      {variant === 'meshtastic' && (
+                        <MeshtasticExpandedDetails
+                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                        />
                       )}
                       <p className="text-muted mb-1 text-[10px]">
                         {t('rawPacketLog.rawHexLabel', { bytes: byteLen })}

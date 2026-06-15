@@ -178,7 +178,10 @@
     "reduceMotion": "Reduzir movimento",
     "reduceMotionDesc": "Desativa ícones animados e efeitos decorativos. Spinners de carregamento e indicadores de status da conexão continuam animados.",
     "roomMessages": "Mensagens da sala",
-    "importSchemaTooNew": "Este arquivo de banco de dados requer um Mesh-Client mais recente (esquema {{dbVersion}}). Esta compilação suporta o esquema {{appVersion}} ou mais antigo. Instale a versão mais recente e tente novamente."
+    "importSchemaTooNew": "Este arquivo de banco de dados requer um Mesh-Client mais recente (esquema {{dbVersion}}). Esta compilação suporta o esquema {{appVersion}} ou mais antigo. Instale a versão mais recente e tente novamente.",
+    "floodAdvertTypeLabel": "Tipo de advert",
+    "floodAdvertTypeFlood": "Inundação (multi-hop)",
+    "floodAdvertTypeZeroHop": "Zero-hop (apenas vizinhos diretos)"
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -295,7 +298,11 @@
     "emptyNoSearchMatches": "Nenhuma mensagem corresponde à sua pesquisa.",
     "emptyNoDmMessages": "Ainda não há mensagens com {{name}}.",
     "emptyNoMessagesYet": "Ainda não há mensagens. Envie uma ou aguarde as mensagens recebidas.",
-    "emptyConnectFirst": "Conecte-se a um dispositivo para começar a conversar."
+    "emptyConnectFirst": "Conecte-se a um dispositivo para começar a conversar.",
+    "waitingMessagesBadge": "Sincronizando {{count}} mensagem(ns) na fila do rádio...",
+    "waitingMessagesSyncNow": "Sincronizar agora",
+    "jumpToUnread": "Pular para Não Lido",
+    "jumpToLatest": "Ir para as últimas"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1245,7 +1252,12 @@
       "remoteHardwareEnabled": "Habilitar hardware remoto",
       "remoteHardwareEnabledDesc": "Permite que nós remotos leiam e escrevam pinos GPIO neste dispositivo.",
       "remoteHardwareAllowUndefinedPins": "Permitir acesso a pinos não definidos",
-      "remoteHardwareAllowUndefinedPinsDesc": "Permite leitura/escrita de pinos não listados na configuração de pinos disponíveis."
+      "remoteHardwareAllowUndefinedPinsDesc": "Permite leitura/escrita de pinos não listados na configuração de pinos disponíveis.",
+      "mqttProxyGatewayHint": "Com o proxy ativado, o mesh-client bridges agencia o tráfego via MqttClientProxyMessage. Habilite o downlink por canal na guia Rádio para o relé MQTT→RF.",
+      "mapReportPublishInterval": "Intervalo de relatório do mapa (segundos)",
+      "mapReportPublishIntervalDesc": "0 usa o padrão de firmware. Com que frequência o dispositivo publica relatórios de mapa quando os relatórios de mapa estão ativados.",
+      "mapReportPositionPrecision": "Precisão da posição do relatório do mapa",
+      "mapReportPositionPrecisionDesc": "Bits de precisão para coordenadas de relatório de mapa (firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Aplicar {{section}}",
     "applyingButton": "Aplicando...",
@@ -1254,7 +1266,8 @@
       "ipTunnel": "Túnel IP",
       "gpio": "GPIO",
       "rangeTest": "Teste de alcance",
-      "storeForward": "S&F recebido"
+      "storeForward": "S&F recebido",
+      "audio": "Áudio"
     },
     "errors": {
       "generic": "O dispositivo rejeitou esta alteração.",
@@ -1275,7 +1288,14 @@
     "remoteHardwareConfirmEnableLabel": "Ativar",
     "remoteHardwareConfirmUndefinedPinsTitle": "Permitir acesso por PIN indefinido?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Qualquer pino GPIO pode ser lido ou gravado remotamente, incluindo pinos não listados na sua configuração de hardware. Isso aumenta o risco de segurança.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Permitir pinos indefinidos"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Permitir pinos indefinidos",
+    "sectionDebugModules": "Módulos de depuração",
+    "sectionAudio": "Módulo de áudio",
+    "debugSimulatorPackets": "Pacotes simuladores",
+    "debugPrivateAppMessages": "Mensagens privadas do aplicativo",
+    "debugPingResponses": "Respostas de ping",
+    "sectionMapReport": "Relatório do Mapa",
+    "sectionMapReportHint": "Publica a posição no mapa Meshtastic através do MQTT. Requer o Relé MQTT habilitado acima; as configurações são armazenadas na configuração do módulo MQTT do dispositivo."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",
@@ -2077,7 +2097,37 @@
     "offloading": "Descarregamento",
     "offloadingProgress": "Removendo {{current}} de {{total}}…",
     "offloadCancelled": "Descarregamento cancelado.",
-    "offloadCancelledPartial": "O descarregamento foi cancelado após a remoção de contatos {{count}} do rádio."
+    "offloadCancelledPartial": "O descarregamento foi cancelado após a remoção de contatos {{count}} do rádio.",
+    "xmodemSection": "Transferência de arquivos XMODEM",
+    "xmodemSectionHint": "Transfira arquivos de/para o firmware do rádio conectado (somente conexão local).",
+    "xmodemFilenameLabel": "Nome do arquivo remoto",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Carregar arquivo",
+    "xmodemDownload": "Baixar arquivo",
+    "xmodemUploadSuccess": "Enviado {{name}}",
+    "xmodemDownloadSuccess": "Transferido {{name}}",
+    "xmodemFailed": "XMODEM falhou: {{message}}",
+    "zeroHopAdvertButton": "Anúncio Zero-hop",
+    "zeroHopAdvertSent": "Anúncio zero-hop enviado",
+    "floodScopeTitle": "Âmbito de inundação regional",
+    "floodScopeHelp": "Limite o tráfego de inundação a uma região de hashtag (firmware v8+). Requer meshcore.js setFloodScope; reconnect reaplica o escopo salvo.",
+    "floodScopeNone": "Nenhum (escopo claro)",
+    "floodScopePreset": "Hashtag predefinida",
+    "floodScopePresetSelect": "Hashtag de região predefinida",
+    "floodScopeCustom": "Hashtag de URL Personalizada",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Aplicar escopo de inundação",
+    "floodScopeApplySuccess": "Escopo de inundação aplicado",
+    "floodScopeApplyFailed": "Falha no escopo da inundação: {{message}}",
+    "advertisedPositionLabel": "Posição anunciada: {{lat}}, {{lon}}",
+    "txPowerMax": "Potência de transmissão (máx. {{max}} dBm por rádio)",
+    "txPowerMaxUnknown": "Potência de transmissão (limitada a {{max}} dBm até que o firmware informe o rádio máximo)",
+    "txPowerDeviceCurrent": "Relatórios do dispositivo {{current}} dBm (slider max {{max}} dBm)",
+    "sectionTxPower": "Tx power",
+    "applyTxPowerSuccess": "Potência TX aplicada",
+    "xmodemInvalidFilename": "contém caracteres inválidos",
+    "validationInvalidPsk": "PSK base64 inválido — verifique a chave e tente novamente",
+    "meshcoreChannelNameRequired": "O nome do canal não pode estar vazio"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -2087,7 +2137,21 @@
     "filterPlaceholder": "Filtrar por tipo, nome ou hexadecimal...",
     "emptyWaiting": "Nenhum novo pacote mesh foi recebido ainda. Por favor, aguarde...",
     "noPacketsMatchFilter": "Nenhum pacote corresponde ao filtro atual.",
-    "rawHexLabel": "Hexadecimal bruto ({{bytes}} bytes):"
+    "rawHexLabel": "Hexadecimal bruto ({{bytes}} bytes):",
+    "transportScopeTooltip": "Código de escopo de transporte — filtro de inundação regional no caminho de saída",
+    "transportReturnTooltip": "Código de retorno de transporte — filtro regional no caminho de retorno",
+    "transportRegionMatch": "Corresponde ao escopo de inundação configurado",
+    "transportRegionMismatch": "Não corresponde ao escopo de inundação configurado",
+    "transportLegendHint": "Expanda uma linha: rota e transport ficam no topo. Códigos regionais de scope/return aparecem apenas em pacotes TRANSPORT_FLOOD e TRANSPORT_DIRECT (não em FLOOD/DIRECT simples).",
+    "routeLabel": "Rota",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Sem códigos de transport regionais (rota {{route}} — apenas TRANSPORT_FLOOD / TRANSPORT_DIRECT carregam scope/return).",
+    "transportCodesAbsentTooltip": "Pacotes FLOOD e DIRECT simples não incluem campos regionais de scope/return de transport no cabeçalho RF MeshCore.",
+    "meshtasticLegendHint": "Expanda uma linha: os detalhes da porta e do salto estão no topo. As contagens de salto usam hopStart − hopLimit em pacotes de RF (não MQTT).",
+    "portLabel": "Porta",
+    "transportSourceLabel": "Transporte",
+    "hopsAbsentMqtt": "Sem contagem de saltos de RF (caminho MQTT)."
   },
   "remoteAdmin": {
     "errors": {

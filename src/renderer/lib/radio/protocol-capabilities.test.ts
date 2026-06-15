@@ -57,6 +57,7 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasStoreForward',
   'hasAtakPlugin',
   'hasMapReport',
+  'hasXmodem',
   'hasContactImportExport',
   'hasCryptoOperations',
   'nodeListTabUsesContactsLabel',
@@ -134,6 +135,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasTraceRoute": true,
         "hasUserManagedContactGroups": true,
         "hasWifiConfig": true,
+        "hasXmodem": true,
         "hopLimitRange": [
           1,
           7,
@@ -193,6 +195,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasTraceRoute": true,
         "hasUserManagedContactGroups": true,
         "hasWifiConfig": false,
+        "hasXmodem": false,
         "hopLimitRange": [
           1,
           64,

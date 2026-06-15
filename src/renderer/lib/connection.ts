@@ -447,31 +447,45 @@ async function cancelMeshtasticFromDeviceBestEffort(
  * Safely disconnect from a device, handling transports that may not
  * have a disconnect() method (e.g. TransportHTTP).
  */
+function isBenignMeshtasticDisconnectError(msg: string): boolean {
+  return (
+    msg.includes('not a function') ||
+    msg.includes('already been closed') ||
+    msg.includes('locked') ||
+    msg.includes("reading 'close'") ||
+    msg.includes('Cannot read properties of undefined')
+  );
+}
+
+async function closeMeshtasticTransportStreamsBestEffort(
+  transport: MeshDevice['transport'] | undefined,
+): Promise<void> {
+  if (!transport) return;
+  try {
+    const toDevice = transport.toDevice as { close?: () => Promise<void> } | undefined;
+    if (toDevice?.close) {
+      await toDevice.close();
+    }
+  } catch (e) {
+    console.debug(
+      `[connection] safeDisconnect toDevice.close ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+  await cancelMeshtasticFromDeviceBestEffort(transport);
+}
+
 export async function safeDisconnect(device: MeshDevice): Promise<void> {
   try {
     await device.disconnect();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (
-      msg.includes('not a function') ||
-      msg.includes('already been closed') ||
-      msg.includes('locked')
-    ) {
-      // HTTP transport doesn't implement disconnect() - manually close the streams
-      try {
-        await device.transport.toDevice.close();
-      } catch (e) {
-        console.debug(
-          `[connection] safeDisconnect toDevice.close ${e instanceof Error ? e.message : String(e)}`,
-        );
-      }
-
-      await cancelMeshtasticFromDeviceBestEffort(device.transport);
-    } else {
+    if (!isBenignMeshtasticDisconnectError(msg)) {
       console.warn(
         `[useMeshtasticRuntime] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+    // HTTP and torn-down transports may lack disconnect() or already-closed streams.
+    await closeMeshtasticTransportStreamsBestEffort(device.transport);
   } finally {
     const serialPort = getSerialPortFromMeshTransport(device.transport);
     if (serialPort) {

@@ -581,8 +581,8 @@ export class MQTTManager extends EventEmitter {
       }
     });
 
-    this.client.on('message', (topic: string, payload: Buffer | string) => {
-      this.onMessage(topic, payload);
+    this.client.on('message', (topic: string, payload: Buffer | string, packet) => {
+      this.onMessage(topic, payload, packet);
     });
 
     this.client.on('error', (err: Error & { code?: string | number }) => {
@@ -962,6 +962,33 @@ export class MQTTManager extends EventEmitter {
   }
 
   /**
+   * Raw MQTT publish for firmware proxy-to-client (MqttClientProxyMessage from device).
+   */
+  publishProxyRaw(args: {
+    topic: string;
+    data?: Uint8Array;
+    text?: string;
+    retained?: boolean;
+  }): void {
+    if (!this.client?.connected) {
+      throw new Error('MQTT not connected');
+    }
+    const topic = args.topic.trim();
+    if (!topic) {
+      throw new Error('MQTT proxy publish: topic required');
+    }
+    let payload: Buffer;
+    if (args.data != null) {
+      payload = Buffer.from(args.data);
+    } else if (args.text != null) {
+      payload = Buffer.from(args.text, 'utf8');
+    } else {
+      throw new Error('MQTT proxy publish: data or text required');
+    }
+    this.client.publish(topic, payload, { qos: 0, retain: args.retained ?? false });
+  }
+
+  /**
    * Publish a Position packet to the mesh (optional, for map presence).
    * Broadcasts to all nodes. latitudeI/longitudeI are in 1e7 units.
    */
@@ -1209,8 +1236,11 @@ export class MQTTManager extends EventEmitter {
     return Array.from(this.nodeCache.values());
   }
 
-  private onMessage(topic: string, payload: Buffer | string): void {
+  private onMessage(topic: string, payload: Buffer | string, packet?: { retain?: boolean }): void {
     const raw = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+    if (raw.length > 0) {
+      this.emit('brokerRaw', { topic, payload: raw, retained: packet?.retain ?? false });
+    }
     const bytes = prepareMqttProtobufBytes(raw);
     if (bytes.length === 0) return;
 

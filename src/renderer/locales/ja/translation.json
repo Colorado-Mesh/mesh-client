@@ -178,7 +178,10 @@
     "reduceMotion": "動きを減らす",
     "reduceMotionDesc": "アニメーションアイコンと装飾効果を無効にします。読み込みスピナーと接続状態インジケーターは引き続きアニメーションします。",
     "roomMessages": "部屋のメッセージ",
-    "importSchemaTooNew": "このデータベースファイルには新しい Mesh-Client（スキーマ {{dbVersion}}）が必要です。このビルドはスキーマ {{appVersion}} 以前のみ対応しています。最新版をインストールして再試行してください。"
+    "importSchemaTooNew": "このデータベースファイルには新しい Mesh-Client（スキーマ {{dbVersion}}）が必要です。このビルドはスキーマ {{appVersion}} 以前のみ対応しています。最新版をインストールして再試行してください。",
+    "floodAdvertTypeLabel": "Advertタイプ",
+    "floodAdvertTypeFlood": "洪水（マルチホップ）",
+    "floodAdvertTypeZeroHop": "ゼロホップ（近隣住民のみ）"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -295,7 +298,11 @@
     "emptyNoSearchMatches": "該当するメッセージは見つかりませんでした",
     "emptyNoDmMessages": "{{name}}さんとのメッセージはまだありません。",
     "emptyNoMessagesYet": "メッセージはまだありません。メッセージを送信するか、受信メッセージを待ちます。",
-    "emptyConnectFirst": "デバイスに接続してチャットを開始してください。"
+    "emptyConnectFirst": "デバイスに接続してチャットを開始してください。",
+    "waitingMessagesBadge": "無線からの{{count}}キューに入れられたメッセージを同期しています…",
+    "waitingMessagesSyncNow": "今すぐ同期",
+    "jumpToUnread": "未読へジャンプ",
+    "jumpToLatest": "最新へジャンプ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1245,7 +1252,12 @@
       "remoteHardwareEnabled": "リモートハードウェアを有効にする",
       "remoteHardwareEnabledDesc": "リモートノードがこのデバイスのGPIOピンを読み書きできるようにします。",
       "remoteHardwareAllowUndefinedPins": "未定義ピンへのアクセスを許可",
-      "remoteHardwareAllowUndefinedPinsDesc": "利用可能なピン設定に記載されていないピンの読み書きを許可します。"
+      "remoteHardwareAllowUndefinedPinsDesc": "利用可能なピン設定に記載されていないピンの読み書きを許可します。",
+      "mqttProxyGatewayHint": "プロキシを有効にすると、メッシュクライアントブリッジはMqttClientProxyMessageを介してトラフィックをブローカーします。MQTT→ RFリレーのラジオタブでチャネルごとのダウンリンクを有効にします。",
+      "mapReportPublishInterval": "マップレポート間隔（秒）",
+      "mapReportPublishIntervalDesc": "0はファームウェアのデフォルトを使用します。マップレポートが有効になっているときに、デバイスがマップレポートを発行する頻度。",
+      "mapReportPositionPrecision": "マップレポートの位置精度",
+      "mapReportPositionPrecisionDesc": "マップレポート座標の精度ビット（ファームウェアModuleConfig.mqtt.map_report_settings ）。"
     },
     "applySection": "{{section}}を適用",
     "applyingButton": "申請中...",
@@ -1254,7 +1266,8 @@
       "ipTunnel": "IPトンネル",
       "gpio": "GPIO",
       "rangeTest": "範囲テスト",
-      "storeForward": "S&Fを受け取りました"
+      "storeForward": "S&Fを受け取りました",
+      "audio": "オーディオ"
     },
     "errors": {
       "generic": "デバイスはこの変更を拒否しました。",
@@ -1275,7 +1288,14 @@
     "remoteHardwareConfirmEnableLabel": "有効にする",
     "remoteHardwareConfirmUndefinedPinsTitle": "未定義のPINアクセスを許可しますか？",
     "remoteHardwareConfirmUndefinedPinsMessage": "GPIOピンは、ハードウェア構成に記載されていないピンを含め、リモートで読み取りまたは書き込みできます。これにより、セキュリティリスクが高まります。",
-    "remoteHardwareConfirmUndefinedPinsLabel": "未定義のピンを許可する"
+    "remoteHardwareConfirmUndefinedPinsLabel": "未定義のピンを許可する",
+    "sectionDebugModules": "モジュールのデバッグ",
+    "sectionAudio": "オーディオモジュール",
+    "debugSimulatorPackets": "シミュレータパケット",
+    "debugPrivateAppMessages": "アプリからの非公開メッセージ",
+    "debugPingResponses": "Ping応答",
+    "sectionMapReport": "マップレポート",
+    "sectionMapReportHint": "MQTT上のMeshtasticマップに位置を公開します。上記で有効になっているMQTTリレーが必要です。設定はデバイスMQTTモジュール構成に保存されます。"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",
@@ -2077,7 +2097,37 @@
     "offloading": "オフロードしています…",
     "offloadingProgress": "{{total}}件中{{current}}件を削除しています…",
     "offloadCancelled": "オフロードがキャンセルされました。",
-    "offloadCancelledPartial": "無線から{{count}}件の連絡先を削除した後、オフロードがキャンセルされました。"
+    "offloadCancelledPartial": "無線から{{count}}件の連絡先を削除した後、オフロードがキャンセルされました。",
+    "xmodemSection": "XMODEMファイル転送",
+    "xmodemSectionHint": "接続された無線ファームウェアとの間でファイルを転送します（ローカル接続のみ）。",
+    "xmodemFilenameLabel": "リモートファイル名",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "ファイルをアップロードする",
+    "xmodemDownload": "ファイルをダウンロード",
+    "xmodemUploadSuccess": "{{name}}をアップロードしました",
+    "xmodemDownloadSuccess": "{{name}}をダウンロードしました",
+    "xmodemFailed": "XMODEMに失敗しました： {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advertを送信しました",
+    "floodScopeTitle": "地域の洪水スコープ",
+    "floodScopeHelp": "ハッシュタグリージョン（ファームウェアv 8 +）へのフラッドトラフィックを制限します。meshcore.js setFloodScopeが必要です。再接続すると、保存されたスコープが再適用されます。",
+    "floodScopeNone": "なし（範囲を明確にする）",
+    "floodScopePreset": "プリセットハッシュタグ",
+    "floodScopePresetSelect": "プリセットされた地域のハッシュタグ",
+    "floodScopeCustom": "カスタムハッシュタグ",
+    "floodScopeCustomPlaceholder": "# myregion",
+    "floodScopeApply": "フラッドスコープを適用する",
+    "floodScopeApplySuccess": "洪水スコープが適用されました",
+    "floodScopeApplyFailed": "フラッドスコープに失敗しました： {{message}}",
+    "advertisedPositionLabel": "掲載ポジション： {{lat}}、{{lon}}",
+    "txPowerMax": "送信電力（ラジオあたり最大{{max}} dBm ）",
+    "txPowerMaxUnknown": "送信電力（ファームウェアがラジオ最大を報告するまで、{{max}} dBmに制限）",
+    "txPowerDeviceCurrent": "デバイスレポート{{current}} dBm （スライダー最大{{max}} dBm ）",
+    "sectionTxPower": "Tx-Power",
+    "applyTxPowerSuccess": "TX電力が適用されました",
+    "xmodemInvalidFilename": "％filename に無効な文字が含まれています。",
+    "validationInvalidPsk": "無効なbase 64 PSK —キーを確認してもう一度やり直してください",
+    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -2087,7 +2137,21 @@
     "filterPlaceholder": "タイプ、名前、または 16 進数でフィルターします...",
     "emptyWaiting": "新しいメッシュ パケットはまだ受信されていません。お待ちください...",
     "noPacketsMatchFilter": "現在のフィルタに一致するパケットはありません。",
-    "rawHexLabel": "生の 16 進数 ({{bytes}} バイト):"
+    "rawHexLabel": "生の 16 進数 ({{bytes}} バイト):",
+    "transportScopeTooltip": "トランスポートスコープコード—アウトバウンドパス上の地域フラッドフィルター",
+    "transportReturnTooltip": "トランスポートリターンコード-リターンパスの地域フィルタ",
+    "transportRegionMatch": "設定されたフラッドスコープと一致します",
+    "transportRegionMismatch": "設定されたフラッドスコープと一致しません",
+    "transportLegendHint": "行を展開：ルートとトランスポートは上部に表示されます。リージョンスコープ/リターンコードは TRANSPORT_FLOOD と TRANSPORT_DIRECT パケットにのみ表示されます（通常の FLOOD/DIRECT ではありません）。",
+    "routeLabel": "ルート",
+    "payloadLabel": "Payload",
+    "transportHeading": "トランスポート",
+    "transportCodesAbsent": "リージョン輸送コードなし（{{route}} ルート — TRANSPORT_FLOOD / TRANSPORT_DIRECT のみが scope/return を持ちます）。",
+    "transportCodesAbsentTooltip": "通常の FLOOD と DIRECT パケットには、MeshCore RF ヘッダーにリージョン輸送 scope/return フィールドは含まれません。",
+    "meshtasticLegendHint": "行を展開：ポートとホップの詳細は上部にあります。ホップカウントは、RFパケットでhopStart - hopLimitを使用します（ MQTTではありません）。",
+    "portLabel": "ポート",
+    "transportSourceLabel": "持ち運び",
+    "hopsAbsentMqtt": "RFホップカウントなし（ MQTTパス）。"
   },
   "remoteAdmin": {
     "errors": {

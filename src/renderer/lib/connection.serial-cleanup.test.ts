@@ -30,9 +30,18 @@ function makeMockSerialPort(overrides: Partial<MockSerialPort> = {}): MockSerial
 }
 
 describe('connection serial cleanup', () => {
+  const originalSerial = navigator.serial;
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: originalSerial,
+    });
   });
 
   it('closeSerialPortIfOpen closes port when streams are active', async () => {
@@ -106,5 +115,22 @@ describe('connection serial cleanup', () => {
     await safeDisconnect(device);
 
     expect(port.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('safeDisconnect treats undefined transport close as benign during disconnect', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const device = {
+      disconnect: vi
+        .fn()
+        .mockRejectedValue(new Error("Cannot read properties of undefined (reading 'close')")),
+      complete: vi.fn(),
+      transport: undefined,
+    } as unknown as MeshDevice;
+
+    await safeDisconnect(device);
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(device.complete).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 });
