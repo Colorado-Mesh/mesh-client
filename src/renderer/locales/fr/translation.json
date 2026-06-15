@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Échec : {{message}}",
     "applyUserApplying": "Application de l'identité de l'utilisateur…",
     "applyUserSuccess": "Identité de l'utilisateur appliquée avec succès !",
-    "applyLoraSuccess": "Paramètres LoRa appliqués avec succès !"
+    "applyLoraSuccess": "Paramètres LoRa appliqués avec succès !",
+    "offloading": "Offloading",
+    "offloadingProgress": "Suppression de {{current}} de {{total}}…",
+    "offloadCancelled": "Déchargement annulé.",
+    "offloadCancelledPartial": "Déchargement annulé après avoir supprimé les contacts {{count}} de la radio."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "Cercle vide — aucun mot de passe stocké pour cette salle",
     "legendSavedTooltip": "Demi-cercle bleu ciel — mot de passe enregistré ; connectez-vous pour ouvrir une session",
     "legendLoggedInTooltip": "Point vert — session client active (quittez la salle si le serveur est hors ligne)",
-    "historyLocalHint": "Les publications n'apparaissent que lorsque vous êtes connecté à cette pièce sur cet appareil. Activez la synchronisation automatique pour rester abonné ; l'historique n'est pas remblayé à partir du serveur de la salle."
+    "historyLocalHint": "Les publications n'apparaissent que lorsque vous êtes connecté à cette pièce sur cet appareil. Activez la synchronisation automatique pour rester abonné ; l'historique n'est pas remblayé à partir du serveur de la salle.",
+    "loginAllSavedDisabledNoSavedPasswords": "Enregistrez d'abord un mot de passe de pièce pour utiliser la connexion tout",
+    "membersHeadingWithCount": "Membres ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "失败：{{message}}",
     "applyUserApplying": "正在应用用户身份…",
     "applyUserSuccess": "用户身份已成功应用！",
-    "applyLoraSuccess": "LoRa设置已成功应用！"
+    "applyLoraSuccess": "LoRa设置已成功应用！",
+    "offloading": "卸载中…",
+    "offloadingProgress": "正在移除第 {{current}} 个，共 {{total}} 个…",
+    "offloadCancelled": "卸载已取消。",
+    "offloadCancelledPartial": "从无线电中删除 {{count}} 个联系人后，已取消卸载。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "空圆—此房间未存储密码",
     "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
     "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
-    "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。"
+    "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。",
+    "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
+    "membersHeadingWithCount": "成员({{count}})"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

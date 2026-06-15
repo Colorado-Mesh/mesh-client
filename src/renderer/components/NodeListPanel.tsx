@@ -21,7 +21,10 @@ import {
   meshtasticNodeIdMatchesHexQuery,
 } from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
-import { useMeshcoreContactCapacity } from '../hooks/useMeshcoreContactCapacity';
+import {
+  type OffloadContactsFromRadioFn,
+  useMeshcoreContactCapacity,
+} from '../hooks/useMeshcoreContactCapacity';
 import {
   formatCoordColumns,
   latestPositionHistoryPoint,
@@ -32,6 +35,10 @@ import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfu
 import { downloadBlob } from '../lib/downloadBlob';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import {
+  isMeshcoreOffloadAbortError,
+  meshcoreOffloadAbortRemovedCount,
+} from '../lib/meshcoreOffload';
 import { MESHCORE_CONTACTS_WARNING_THRESHOLD, MESHCORE_MAX_CONTACTS } from '../lib/meshcoreUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
@@ -107,8 +114,6 @@ const MESHCORE_INAPPLICABLE_SORT_FIELDS: readonly SortField[] = [
   'short_name',
   'role',
   'via_mqtt',
-  'rssi',
-  'snr',
   'voltage',
   'channel_utilization',
   'air_util_tx',
@@ -165,7 +170,7 @@ interface Props {
   meshcoreShowPublicKeys?: boolean;
   meshcorePublicKeyHexByNodeId?: Map<number, string>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
-  onOffloadContactsFromRadio?: () => Promise<number>;
+  onOffloadContactsFromRadio?: OffloadContactsFromRadioFn;
 }
 
 export default function NodeListPanel({
@@ -197,7 +202,8 @@ export default function NodeListPanel({
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
   const iconTrigger = useIconTrigger();
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(mode);
+  const capabilities = useRadioProvider(mode);
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = capabilities;
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const staleLegendColor = getMapOverlayColors(MAP_BASEMAPS[basemapId].isDark).stale;
@@ -214,6 +220,8 @@ export default function NodeListPanel({
   const {
     contactCount,
     loading: offloadLoading,
+    offloadProgress,
+    cancelOffload,
     offloadAndReconcile,
     summary,
   } = useMeshcoreContactCapacity({ enabled: mode === 'meshcore' });
@@ -310,6 +318,16 @@ export default function NodeListPanel({
         addToast(t('radioPanel.offloadReconcileRefreshFailed'), 'error');
       }
     } catch (e) {
+      if (isMeshcoreOffloadAbortError(e)) {
+        const removed = meshcoreOffloadAbortRemovedCount(e);
+        addToast(
+          removed > 0
+            ? t('radioPanel.offloadCancelledPartial', { count: removed })
+            : t('radioPanel.offloadCancelled'),
+          'info',
+        );
+        return;
+      }
       console.warn('[NodeListPanel] offload contacts failed:', e instanceof Error ? e.message : e);
       addToast(t('radioPanel.failedOffloadContacts'), 'error');
     }
@@ -487,7 +505,7 @@ export default function NodeListPanel({
   ]);
 
   const nodeTableScrollRef = useRef<HTMLDivElement>(null);
-  const nodeTableColSpan = (mode === 'meshcore' ? 9 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
+  const nodeTableColSpan = (mode === 'meshcore' ? 11 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
   const shouldVirtualizeNodeRows = nodeList.length > 100;
   const nodeRowVirtualizer = useVirtualizer({
     count: nodeList.length,
@@ -666,17 +684,43 @@ export default function NodeListPanel({
               })}
             </span>
             {contactCount !== null && contactCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  void handleOffloadContacts();
-                }}
-                disabled={offloadLoading}
-                aria-label={t('radioPanel.offloadContacts')}
-                className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50 disabled:opacity-40"
-              >
-                {offloadLoading ? '...' : t('radioPanel.offloadContacts')}
-              </button>
+              offloadLoading ? (
+                <div
+                  className="flex items-center gap-2"
+                  role="status"
+                  aria-live="polite"
+                  aria-label={t('radioPanel.offloading')}
+                >
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+                  <span>
+                    {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
+                      ? t('radioPanel.offloadingProgress', {
+                          current: offloadProgress.current,
+                          total: offloadProgress.total,
+                        })
+                      : t('radioPanel.offloading')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={cancelOffload}
+                    aria-label={t('common.cancel')}
+                    className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleOffloadContacts();
+                  }}
+                  aria-label={t('radioPanel.offloadContacts')}
+                  className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+                >
+                  {t('radioPanel.offloadContacts')}
+                </button>
+              )
             ) : null}
           </div>
         </div>
@@ -942,37 +986,31 @@ export default function NodeListPanel({
                   <SortIcon field="longitude" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
-              {mode !== 'meshcore' && (
-                <>
-                  <th
-                    scope="col"
-                    aria-sort={
-                      sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'
-                    }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
-                    onClick={() => {
-                      handleSort('rssi');
-                    }}
-                  >
-                    {t('nodeListPanel.columnSignal')}{' '}
-                    <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
-                  </th>
-                  <th
-                    scope="col"
-                    aria-sort={
-                      sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'
-                    }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
-                    onClick={() => {
-                      handleSort('snr');
-                    }}
-                    title={t('nodeListPanel.snrTooltip')}
-                  >
-                    {t('nodeListPanel.columnSnr')}{' '}
-                    <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
-                  </th>
-                </>
-              )}
+              <>
+                <th
+                  scope="col"
+                  aria-sort={sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                  onClick={() => {
+                    handleSort('rssi');
+                  }}
+                >
+                  {t('nodeListPanel.columnSignal')}{' '}
+                  <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
+                </th>
+                <th
+                  scope="col"
+                  aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                  onClick={() => {
+                    handleSort('snr');
+                  }}
+                  title={t('nodeListPanel.snrTooltip')}
+                >
+                  {t('nodeListPanel.columnSnr')}{' '}
+                  <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
+                </th>
+              </>
               <th
                 scope="col"
                 aria-sort={
@@ -1406,35 +1444,33 @@ export default function NodeListPanel({
                           </>
                         );
                       })()}
-                      {mode !== 'meshcore' && (
-                        <>
-                          <td className="px-3 py-2 text-right">
-                            <div className="flex justify-end">
-                              {node.heard_via_mqtt_only ? (
-                                <span className="text-muted text-xs">—</span>
-                              ) : isSelf || snrMeaningfulForNodeDiagnostics(node) ? (
-                                <SignalBars rssi={node.rssi} isSelf={isSelf} />
-                              ) : (
-                                <span
-                                  className="text-muted text-xs"
-                                  title={t('nodeListPanel.signalBarsTooltip')}
-                                >
-                                  —
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                            {node.heard_via_mqtt_only
-                              ? '—'
-                              : isSelf || snrMeaningfulForNodeDiagnostics(node)
-                                ? node.snr != null && node.snr !== 0
-                                  ? `${node.snr.toFixed(1)} dB`
-                                  : '—'
-                                : '—'}
-                          </td>
-                        </>
-                      )}
+                      <>
+                        <td className="px-3 py-2 text-right">
+                          <div className="flex justify-end">
+                            {node.heard_via_mqtt_only ? (
+                              <span className="text-muted text-xs">—</span>
+                            ) : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities) ? (
+                              <SignalBars rssi={node.rssi} isSelf={isSelf} />
+                            ) : (
+                              <span
+                                className="text-muted text-xs"
+                                title={t('nodeListPanel.signalBarsTooltip')}
+                              >
+                                —
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-muted px-3 py-2 text-right font-mono text-xs">
+                          {node.heard_via_mqtt_only
+                            ? '—'
+                            : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities)
+                              ? node.snr != null && node.snr !== 0
+                                ? `${node.snr.toFixed(1)} dB`
+                                : '—'
+                              : '—'}
+                        </td>
+                      </>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {node.battery > 0 && (

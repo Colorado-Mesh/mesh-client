@@ -25,12 +25,18 @@ import {
   ensureMeshcoreChatLastReadSanitized,
   getSanitizedMeshcoreChatLastRead,
   getSanitizedMeshcoreRoomsLastRead,
+  loadMutedViews,
   loadPersistedLastReadInitial,
   removePersistedLastReadForChannel,
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import { filterRegularChatMessages, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
+import {
+  type ChatUnreadDmOptions,
+  filterRegularChatMessages,
+  hasAudibleBackgroundMessages,
+  totalUnreadCount,
+} from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -877,6 +883,8 @@ function AppContent({
     }),
     [meshcoreUiNodes],
   );
+  const meshcoreOwnNodeIdSetRef = useRef(meshcoreOwnNodeIdSet);
+  const meshcoreChatUnreadDmOptionsRef = useRef<ChatUnreadDmOptions>(meshcoreChatUnreadDmOptions);
 
   const meshcoreChatUnread = useMemo(() => {
     return totalUnreadCount(
@@ -973,6 +981,8 @@ function AppContent({
     meshcoreMsgsRef.current = meshcoreUiMessages;
     meshtasticMyNodeNumRef.current = meshtasticRuntime.state.myNodeNum;
     meshcoreSelfIdRef.current = meshcoreRuntime.selfNodeId;
+    meshcoreOwnNodeIdSetRef.current = meshcoreOwnNodeIdSet;
+    meshcoreChatUnreadDmOptionsRef.current = meshcoreChatUnreadDmOptions;
     lastMeshtasticTab.current = protocol === 'meshtastic' ? activeTab : lastMeshtasticTab.current;
     lastMeshcoreTab.current = protocol === 'meshcore' ? activeTab : lastMeshcoreTab.current;
     lastMeshtasticPanel.current =
@@ -988,6 +998,8 @@ function AppContent({
     meshtasticRuntime.state.myNodeNum,
     meshcoreUiMessages,
     meshcoreRuntime.selfNodeId,
+    meshcoreOwnNodeIdSet,
+    meshcoreChatUnreadDmOptions,
   ]);
 
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
@@ -1679,7 +1691,15 @@ function AppContent({
       );
       if (realNew.length > 0) {
         if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
-          playMessageNotification();
+          const mutedViews = loadMutedViews('meshcore');
+          const audible = hasAudibleBackgroundMessages(
+            realNew,
+            'meshcore',
+            mutedViews,
+            meshcoreOwnNodeIdSetRef.current,
+            meshcoreChatUnreadDmOptionsRef.current,
+          );
+          if (audible) playMessageNotification();
         }
       }
     }
@@ -1955,7 +1975,7 @@ function AppContent({
               >
                 MeshCore
                 {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
-                  <span className="text-deep-black ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-400 px-0.5 text-[10px] font-bold">
+                  <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600 px-0.5 text-[10px] font-bold text-white">
                     {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
                   </span>
                 )}

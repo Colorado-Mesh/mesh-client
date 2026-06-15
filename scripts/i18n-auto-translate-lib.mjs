@@ -2,6 +2,36 @@
  * Pure helpers for i18n-auto-translate.mjs (unit-tested).
  */
 
+/** MyMemory/CAT often spaces out __PHn__ tokens (e.g. __ PH0 __, __ PH 1 __). */
+export const MT_PLACEHOLDER_TOKEN_RE = /__\s*PH\s*(\d+)\s*__/gi;
+
+/**
+ * Replace i18next {{name}} tokens with opaque __PHn__ markers before MT.
+ *
+ * @param {string} str
+ * @returns {{ stripped: string; placeholders: string[] }}
+ */
+export function stripPlaceholders(str) {
+  const placeholders = [];
+  const stripped = str.replace(/\{\{[^}]+\}\}/g, (m) => {
+    const idx = placeholders.length;
+    placeholders.push(m);
+    return `__PH${idx}__`;
+  });
+  return { stripped, placeholders };
+}
+
+/**
+ * Restore i18next placeholders after MT, tolerating spaced __ PH n __ variants.
+ *
+ * @param {string} str
+ * @param {string[]} placeholders
+ * @returns {string}
+ */
+export function restorePlaceholders(str, placeholders) {
+  return str.replace(MT_PLACEHOLDER_TOKEN_RE, (_, idx) => placeholders[Number(idx)] ?? '');
+}
+
 /** Segments that must not be used as nested object keys (prototype pollution). */
 const UNSAFE_LOCALE_KEY_PARTS = new Set(['__proto__', 'constructor', 'prototype']);
 

@@ -1,6 +1,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  isMeshcoreOffloadAbortError,
+  MeshcoreOffloadAbortedError,
+  meshcoreOffloadAbortRemovedCount,
+  type MeshcoreOffloadFromRadioOptions,
+  type MeshcoreOffloadProgress,
+  throwIfMeshcoreOffloadAborted,
+} from '../lib/meshcoreOffload';
 import {
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
@@ -21,6 +29,10 @@ export interface OffloadMeshcoreContactsResult {
   reconciledCount: number | null;
   refreshFailed: boolean;
 }
+
+export type OffloadContactsFromRadioFn = (
+  options?: MeshcoreOffloadFromRadioOptions,
+) => Promise<number>;
 
 function summarizeMeshcoreContactCapacity(count: number | null): MeshcoreContactCapacitySummary {
   if (count === null) {
@@ -43,6 +55,9 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
   const { enabled = true } = options;
   const [contactCount, setContactCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [offloadProgress, setOffloadProgress] = useState<MeshcoreOffloadProgress | null>(null);
+  const offloadAbortRef = useRef<AbortController | null>(null);
+  const removedFromRadioRef = useRef(0);
 
   const refreshCount = useCallback(async (opts?: { preserveOnError?: boolean }) => {
     const preserveOnError = opts?.preserveOnError ?? false;
@@ -62,26 +77,56 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
     }
   }, []);
 
+  const cancelOffload = useCallback(() => {
+    offloadAbortRef.current?.abort();
+  }, []);
+
   const offloadAndReconcile = useCallback(
     async (
       refreshContacts?: () => Promise<void>,
-      offloadFromRadio?: () => Promise<number>,
+      offloadFromRadio?: OffloadContactsFromRadioFn,
     ): Promise<OffloadMeshcoreContactsResult> => {
+      offloadAbortRef.current?.abort();
+      const controller = new AbortController();
+      offloadAbortRef.current = controller;
+      const { signal } = controller;
+
       setLoading(true);
+      setOffloadProgress(null);
+      removedFromRadioRef.current = 0;
+      let radioOffloadStarted = false;
+      let offloadedFromRadioCount: number | null = null;
+
       try {
-        let offloadedFromRadioCount: number | null = null;
         if (offloadFromRadio) {
-          const offloadFromRadioResult = await offloadFromRadio();
-          offloadedFromRadioCount = offloadFromRadioResult;
+          radioOffloadStarted = true;
+          offloadedFromRadioCount = await offloadFromRadio({
+            signal,
+            onProgress: (progress) => {
+              setOffloadProgress(progress);
+              if (progress.phase === 'removing') {
+                removedFromRadioRef.current = progress.current;
+              }
+            },
+          });
+          removedFromRadioRef.current = offloadedFromRadioCount;
         }
 
+        throwIfMeshcoreOffloadAborted(signal, removedFromRadioRef.current);
+
+        setOffloadProgress({ phase: 'reconciling', current: 0, total: 0 });
         const offloadedCount = await window.electronAPI.db.offloadAllMeshcoreContacts();
+
+        throwIfMeshcoreOffloadAborted(signal, removedFromRadioRef.current);
 
         let refreshFailed = false;
         if (refreshContacts) {
           try {
             await refreshContacts();
           } catch (e) {
+            if (isMeshcoreOffloadAbortError(e)) {
+              throw e;
+            }
             refreshFailed = true;
             console.warn(
               '[useMeshcoreContactCapacity] refreshContacts after offload failed:',
@@ -90,10 +135,36 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
           }
         }
 
+        throwIfMeshcoreOffloadAborted(signal, removedFromRadioRef.current);
+
         const reconciledCount = await refreshCount({ preserveOnError: true });
         return { offloadedFromRadioCount, offloadedCount, reconciledCount, refreshFailed };
+      } catch (e) {
+        if (isMeshcoreOffloadAbortError(e)) {
+          if (radioOffloadStarted && refreshContacts) {
+            try {
+              await refreshContacts();
+            } catch (refreshErr) {
+              console.warn(
+                '[useMeshcoreContactCapacity] refreshContacts after offload cancel failed:',
+                refreshErr instanceof Error ? refreshErr.message : String(refreshErr),
+              );
+            }
+          }
+          await refreshCount({ preserveOnError: true });
+          const removedFromRadio = Math.max(
+            meshcoreOffloadAbortRemovedCount(e),
+            removedFromRadioRef.current,
+          );
+          throw new MeshcoreOffloadAbortedError(removedFromRadio);
+        }
+        throw e;
       } finally {
+        if (offloadAbortRef.current === controller) {
+          offloadAbortRef.current = null;
+        }
         setLoading(false);
+        setOffloadProgress(null);
       }
     },
     [refreshCount],
@@ -109,6 +180,8 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
   return {
     contactCount,
     loading,
+    offloadProgress,
+    cancelOffload,
     refreshCount,
     offloadAndReconcile,
     summary,

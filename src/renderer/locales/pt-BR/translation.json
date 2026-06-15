@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Reprovado: {{message}}",
     "applyUserApplying": "Aplicando identidade de usuário...",
     "applyUserSuccess": "Identidade do usuário aplicada com sucesso!",
-    "applyLoraSuccess": "Configurações LoRa aplicadas com sucesso!"
+    "applyLoraSuccess": "Configurações LoRa aplicadas com sucesso!",
+    "offloading": "Descarregamento",
+    "offloadingProgress": "Removendo {{current}} de {{total}}…",
+    "offloadCancelled": "Descarregamento cancelado.",
+    "offloadCancelledPartial": "O descarregamento foi cancelado após a remoção de contatos {{count}} do rádio."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "Círculo vazio — nenhuma senha armazenada para esta sala",
     "legendSavedTooltip": "Meio círculo azul-céu — senha armazenada; faça login para abrir uma sessão",
     "legendLoggedInTooltip": "Ponto verde — sessão ativa do cliente (saia da sala se o servidor estiver offline)",
-    "historyLocalHint": "As postagens aparecem apenas enquanto você está conectado a esta sala neste dispositivo. Ative a sincronização automática para permanecer subscrito; o histórico não é preenchido a partir do servidor da sala."
+    "historyLocalHint": "As postagens aparecem apenas enquanto você está conectado a esta sala neste dispositivo. Ative a sincronização automática para permanecer subscrito; o histórico não é preenchido a partir do servidor da sala.",
+    "loginAllSavedDisabledNoSavedPasswords": "Salve uma senha de sala primeiro para usar o login em todos",
+    "membersHeadingWithCount": "Membros ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

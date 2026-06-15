@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Başarısız: {{message}}",
     "applyUserApplying": "Kullanıcı kimliği uygulanıyor…",
     "applyUserSuccess": "Kullanıcı kimliği başarıyla uygulandı!",
-    "applyLoraSuccess": "LoRa ayarları başarıyla uygulandı!"
+    "applyLoraSuccess": "LoRa ayarları başarıyla uygulandı!",
+    "offloading": "boşaltma",
+    "offloadingProgress": "{{current}}/{{total}} kaldırılıyor…",
+    "offloadCancelled": "Boşaltma iptal edildi.",
+    "offloadCancelledPartial": "{{count}} kontakları radyodan kaldırıldıktan sonra boşaltma iptal edildi."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "Boş daire — bu oda için saklanan parola yok",
     "legendSavedTooltip": "Gökyüzü yarım daire — parola saklanır; bir oturumu açmak için oturum açın",
     "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)",
-    "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz."
+    "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz.",
+    "loginAllSavedDisabledNoSavedPasswords": "Tüm oturum açma bilgilerini kullanmak için önce bir oda parolasını kaydedin",
+    "membersHeadingWithCount": "Üyeler ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

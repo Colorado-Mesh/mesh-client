@@ -1679,7 +1679,7 @@
     "encryptionKeyTooltip": "Base64로 인코딩된 암호화 키입니다. AES-128 = 16바이트(base64 문자 24개) AES-256 = 32바이트(base64 문자 44개) 임의의 키에 대해 '생성'을 사용하거나 다른 노드의 공유 키를 붙여넣습니다.",
     "connectToConfigure": "구성을 수정하려면 장치에 연결하세요.",
     "importConfigJson": "구성 JSON 가져오기",
-    "offloadContacts": "짐을 내리다",
+    "offloadContacts": "오프로드",
     "deviceMetricsDescription": "메시 브로드캐스트: 배터리, 전압 및 채널 사용률이 LoRa를 통해 전송되는 빈도입니다. 0 = 비활성화됨; 기본값은 1800초(30분)입니다. 연결된 앱: Bluetooth, 직렬 또는 Wi-Fi를 통해 연결된 경우 펌웨어는 화면의 최신성을 위해 약 60초마다 장치 측정항목을 이 클라이언트에 푸시하는 경우가 많습니다. 이는 메시 간격과 동일하지 않습니다.",
     "deviceMetricsTooltip": "Meshtastic 펌웨어는 메시 원격 측정 간격에 관계없이 로컬 모니터링을 위해 장치 메트릭을 연결된 클라이언트에 약 1분에 한 번씩 보냅니다. 공식 참조: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "실패: {{message}}",
     "applyUserApplying": "사용자 ID 적용 중...",
     "applyUserSuccess": "사용자 ID가 성공적으로 적용되었습니다!",
-    "applyLoraSuccess": "LoRa 설정이 성공적으로 적용되었습니다!"
+    "applyLoraSuccess": "LoRa 설정이 성공적으로 적용되었습니다!",
+    "offloading": "오프로드 중…",
+    "offloadingProgress": "총 {{total}}개 중 {{current}}개 제거 중…",
+    "offloadCancelled": "오프로드가 취소되었습니다.",
+    "offloadCancelledPartial": "라디오에서 {{count}}개의 연락처를 제거한 후 오프로드가 취소되었습니다."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
     "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
     "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
-    "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다."
+    "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다.",
+    "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
+    "membersHeadingWithCount": "회원 ({{count}})"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

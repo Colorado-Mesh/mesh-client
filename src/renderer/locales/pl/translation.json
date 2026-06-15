@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Niepowodzenie: {{message}}",
     "applyUserApplying": "Stosowanie tożsamości użytkownika…",
     "applyUserSuccess": "Tożsamość użytkownika została pomyślnie zastosowana!",
-    "applyLoraSuccess": "Ustawienia LoRa zostały pomyślnie zastosowane!"
+    "applyLoraSuccess": "Ustawienia LoRa zostały pomyślnie zastosowane!",
+    "offloading": "rozładunek",
+    "offloadingProgress": "Usuwanie {{current}} z {{total}}…",
+    "offloadCancelled": "Anulowano rozładunek.",
+    "offloadCancelledPartial": "Anulowano odciążanie po usunięciu kontaktów {{count}} z radia."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "Pusty okrąg — nie zapisano hasła do tego pokoju",
     "legendSavedTooltip": "Niebieski półokrąg — hasło zapisane; zaloguj się, aby otworzyć sesję",
     "legendLoggedInTooltip": "Zielona kropka — aktywna sesja klienta (opuść pokój, jeśli serwer jest offline)",
-    "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego."
+    "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego.",
+    "loginAllSavedDisabledNoSavedPasswords": "Najpierw zapisz hasło do pokoju, aby użyć log in all",
+    "membersHeadingWithCount": "Członkowie ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

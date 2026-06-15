@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "失敗: {{message}}",
     "applyUserApplying": "ユーザーIDを適用しています…",
     "applyUserSuccess": "ユーザーIDが正常に適用されました！",
-    "applyLoraSuccess": "設定が適用されました。"
+    "applyLoraSuccess": "設定が適用されました。",
+    "offloading": "オフロードしています…",
+    "offloadingProgress": "{{total}}件中{{current}}件を削除しています…",
+    "offloadCancelled": "オフロードがキャンセルされました。",
+    "offloadCancelledPartial": "無線から{{count}}件の連絡先を削除した後、オフロードがキャンセルされました。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "空の円—このルームにはパスワードが保存されていません",
     "legendSavedTooltip": "空色の半円 — パスワード保存済み。ログインしてセッションを開く",
     "legendLoggedInTooltip": "緑の点 — アクティブなクライアントセッション（サーバーがオフラインの場合はルームを退出）",
-    "historyLocalHint": "投稿は、このデバイスでこのルームにログインしている間にのみ表示されます。自動同期を有効にして購読したままにします。履歴はルームサーバーから埋め戻されません。"
+    "historyLocalHint": "投稿は、このデバイスでこのルームにログインしている間にのみ表示されます。自動同期を有効にして購読したままにします。履歴はルームサーバーから埋め戻されません。",
+    "loginAllSavedDisabledNoSavedPasswords": "すべてログインするには、まずルームパスワードを保存してください",
+    "membersHeadingWithCount": "メンバー（ {{count}} ）"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

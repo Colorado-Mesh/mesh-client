@@ -256,6 +256,33 @@ describe('runMeshcoreRoomLogin', () => {
     await expect(loginPromise).rejects.toThrow(/rejected room login/i);
   });
 
+  it('ignores Err emitted before sendToRadioFrame resolves', async () => {
+    const conn = createMockConn();
+    const pubKey = makePubKey(8);
+    let resolveSend: (() => void) | undefined;
+    conn.sendToRadioFrame = (data) => {
+      conn.sentFrames.push(data);
+      return new Promise<void>((resolve) => {
+        resolveSend = resolve;
+      });
+    };
+
+    const loginPromise = runMeshcoreRoomLogin(conn, pubKey, 'hello');
+    await Promise.resolve();
+
+    conn.emit(MC_RESP_ERR);
+    resolveSend?.();
+    await Promise.resolve();
+
+    conn.emit(MC_RESP_SENT, { estTimeout: 1_000 });
+    conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6), reserved: 1 });
+
+    await expect(loginPromise).resolves.toEqual({
+      pubKeyPrefix: pubKey.subarray(0, 6),
+      reserved: 1,
+    });
+  });
+
   it('rejects immediately on matching LoginFail push', async () => {
     const conn = createMockConn();
     const pubKey = makePubKey(0xab);

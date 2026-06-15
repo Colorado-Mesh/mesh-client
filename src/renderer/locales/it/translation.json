@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Non riuscito: {{message}}",
     "applyUserApplying": "Applicazione dell'identità utente in corso...",
     "applyUserSuccess": "Identità utente applicata correttamente!",
-    "applyLoraSuccess": "Impostazioni LoRa applicate correttamente!"
+    "applyLoraSuccess": "Impostazioni LoRa applicate correttamente!",
+    "offloading": "Offloading",
+    "offloadingProgress": "Rimozione di {{current}} di {{total}} in corso...",
+    "offloadCancelled": "Offload annullato.",
+    "offloadCancelledPartial": "Scarico annullato dopo aver rimosso i contatti {{count}} dalla radio."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",
@@ -2326,7 +2330,9 @@
     "legendNotSavedTooltip": "Cerchio vuoto — nessuna password memorizzata per questa stanza",
     "legendSavedTooltip": "Semicerchio azzurro — password memorizzata; accedi per aprire una sessione",
     "legendLoggedInTooltip": "Punto verde — sessione client attiva (esci dalla stanza se il server è offline)",
-    "historyLocalHint": "I post vengono visualizzati solo quando si è connessi a questa stanza su questo dispositivo. Abilita la sincronizzazione automatica per rimanere iscritto; la cronologia non viene riempita dal server della stanza."
+    "historyLocalHint": "I post vengono visualizzati solo quando si è connessi a questa stanza su questo dispositivo. Abilita la sincronizzazione automatica per rimanere iscritto; la cronologia non viene riempita dal server della stanza.",
+    "loginAllSavedDisabledNoSavedPasswords": "Salva prima una password della stanza per utilizzare l'accesso a tutti",
+    "membersHeadingWithCount": "Membri ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

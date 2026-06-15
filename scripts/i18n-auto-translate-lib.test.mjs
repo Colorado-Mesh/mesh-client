@@ -1,9 +1,34 @@
 import { describe, it, expect } from 'vitest';
 import {
   filterMissingKeysToTranslate,
+  restorePlaceholders,
   sanitizeLocaleTranslationJsonFileBodyForDisk,
   setDeepLocaleValue,
+  stripPlaceholders,
 } from './i18n-auto-translate-lib.mjs';
+
+describe('stripPlaceholders / restorePlaceholders', () => {
+  it('round-trips compact __PHn__ tokens', () => {
+    const en = 'Removing {{current}} of {{total}}…';
+    const { stripped, placeholders } = stripPlaceholders(en);
+    expect(stripped).toBe('Removing __PH0__ of __PH1__…');
+    expect(restorePlaceholders(stripped, placeholders)).toBe(en);
+  });
+
+  it('restores spaced MyMemory __ PH n __ tokens', () => {
+    const en = 'Removing {{current}} of {{total}}…';
+    const { placeholders } = stripPlaceholders(en);
+    expect(restorePlaceholders('Removing __ PH0 __ of __ PH 1 __…', placeholders)).toBe(en);
+  });
+
+  it('restores offload partial count placeholder', () => {
+    const en = 'Offload cancelled after removing {{count}} contacts from radio.';
+    const { placeholders } = stripPlaceholders(en);
+    expect(
+      restorePlaceholders('Cancelled after __ PH0 __ contacts from radio.', placeholders),
+    ).toBe('Cancelled after {{count}} contacts from radio.');
+  });
+});
 
 describe('filterMissingKeysToTranslate', () => {
   const enKeys = ['a', 'b', 'c'];

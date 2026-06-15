@@ -43,6 +43,7 @@ import {
   resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
+import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
 import type { HopHistoryPoint, MeshNode, MeshProtocol, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
@@ -207,6 +208,7 @@ export default function NodeInfoBody({
 }: NodeInfoBodyProps) {
   const { t } = useTranslation();
   const iconTrigger = useIconTrigger();
+  const capabilities = useRadioProvider(protocol);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
@@ -251,7 +253,7 @@ export default function NodeInfoBody({
           : 'text-muted';
 
   const isOurNode = node.node_id === homeNode?.node_id;
-  const showSnr = snrMeaningfulForNodeDiagnostics(node) || isOurNode;
+  const showSnr = snrMeaningfulForNodeDiagnostics(node, capabilities) || isOurNode;
   const showLastHopSnr =
     !isOurNode &&
     !node.heard_via_mqtt_only &&

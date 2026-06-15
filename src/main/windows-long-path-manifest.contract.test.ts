@@ -14,8 +14,17 @@ describe('Windows long-path application manifest (packaging contract)', () => {
       join(REPO_ROOT, 'scripts', 'electron-builder-after-pack.cjs'),
       'utf-8',
     );
-    expect(hook).toContain("'application-manifest'");
+    expect(hook).toContain('resedit');
+    expect(hook).toMatch(/RT_MANIFEST_TYPE|type === 24/);
     expect(hook).toContain('mesh-client-long-path.manifest.xml');
+    expect(hook).toContain('renameSync');
+    expect(hook).toMatch(/\.tmp['"`]/);
+
+    const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
+      devDependencies?: Record<string, string>;
+    };
+    expect(packageJson.devDependencies?.rcedit).toBeUndefined();
+    expect(packageJson.devDependencies?.resedit).toMatch(/^[\^~]?1\.7/);
 
     const manifest = readFileSync(
       join(REPO_ROOT, 'resources', 'win', 'mesh-client-long-path.manifest.xml'),

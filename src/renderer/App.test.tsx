@@ -476,6 +476,41 @@ describe('App accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('has no axe violations on MeshCore protocol switcher unread badge', async () => {
+    const selfNodeId = 0x12345678;
+    const messages = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Ops ping',
+        channel: 0,
+        timestamp: Date.now(),
+        status: 'acked' as const,
+      },
+    ];
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: selfNodeId, connectionType: 'serial' },
+      selfNodeId,
+      messages,
+    });
+    syncMeshcoreMessagesToStore(messages);
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: null },
+      selfNodeId: 1,
+    });
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    render(<App />);
+    const meshcoreSwitcher = screen.getByRole('button', { name: 'Switch to MeshCore' });
+    const badge = await waitFor(() => {
+      const el = meshcoreSwitcher.querySelector('span.rounded-full');
+      if (!el?.textContent) throw new Error('badge not ready');
+      return el;
+    });
+    expect(await axe(badge)).toHaveNoViolations();
+  });
+
   it('has no page landmark axe violations', async () => {
     const { baseElement } = render(<App />);
     const landmarkAxe = configureAxe({
