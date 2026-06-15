@@ -2,14 +2,16 @@
 
 /**
  * electron-builder afterPack: embed a Windows application manifest with longPathAware
- * before fuses + rcedit metadata + code signing (see platformPackager pack ordering).
+ * before fuses + resedit metadata + code signing (see platformPackager pack ordering).
  *
- * Failure point: rcedit requires Windows, or Wine on non-Windows when building --win.
- * Fallback: skip only when exe missing; otherwise surface errors so CI does not ship a silent miss.
+ * Uses pure-JS resedit (no native binary or Wine). Surface errors so CI does not ship a silent miss.
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// Ref: https://learn.microsoft.com/en-us/windows/win32/menurc/resource-types
+const RT_MANIFEST_TYPE = 24;
 
 module.exports = async function electronBuilderAfterPack(context) {
   if (context.electronPlatformName !== 'win32') {
@@ -33,13 +35,23 @@ module.exports = async function electronBuilderAfterPack(context) {
     throw new Error(`[afterPack] Missing Windows app exe: ${exePath}`);
   }
 
-  const rceditMod = await import('rcedit');
-  const rceditFn = rceditMod.rcedit ?? rceditMod.default;
-  if (typeof rceditFn !== 'function') {
-    throw new Error('[afterPack] rcedit module has no callable export');
+  const { NtExecutable, NtExecutableResource } = await import('resedit');
+  const exeData = fs.readFileSync(exePath);
+  const exe = NtExecutable.from(exeData);
+  const res = NtExecutableResource.from(exe);
+
+  const manifests = res.entries.filter((e) => e.type === RT_MANIFEST_TYPE);
+  if (manifests.length !== 1) {
+    throw new Error(`[afterPack] Expected one RT_MANIFEST resource, found ${manifests.length}`);
   }
-  await rceditFn(exePath, {
-    'application-manifest': manifestPath,
-  });
+
+  const manifestData = fs.readFileSync(manifestPath);
+  manifests[0].bin = manifestData.buffer.slice(
+    manifestData.byteOffset,
+    manifestData.byteOffset + manifestData.byteLength,
+  );
+
+  res.outputResource(exe);
+  fs.writeFileSync(exePath, Buffer.from(exe.generate()));
   console.debug(`[afterPack] Embedded longPathAware manifest: ${exePath}`);
 };
