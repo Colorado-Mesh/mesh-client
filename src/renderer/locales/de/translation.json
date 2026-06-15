@@ -2331,7 +2331,8 @@
     "legendSavedTooltip": "Himmelblauer Halbkreis — Passwort gespeichert; melden Sie sich an, um eine Sitzung zu öffnen",
     "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum verlassen, wenn der Server offline ist)",
     "historyLocalHint": "Beiträge werden nur angezeigt, wenn Sie auf diesem Gerät in diesem Raum angemeldet sind. Aktivieren Sie die automatische Synchronisierung, um abonniert zu bleiben; der Verlauf wird nicht vom Raumserver zurückgegeben.",
-    "loginAllSavedDisabledNoSavedPasswords": "Speichern Sie zuerst ein Raumpasswort, um alle Anmeldedaten zu verwenden"
+    "loginAllSavedDisabledNoSavedPasswords": "Speichern Sie zuerst ein Raumpasswort, um alle Anmeldedaten zu verwenden",
+    "membersHeadingWithCount": "Mitglieder ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

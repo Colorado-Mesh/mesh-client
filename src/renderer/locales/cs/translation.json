@@ -2331,7 +2331,8 @@
     "legendSavedTooltip": "Modrý polokruh — heslo uloženo; přihlaste se pro otevření relace",
     "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)",
     "historyLocalHint": "Příspěvky se zobrazují pouze, když jste na tomto zařízení přihlášeni do této místnosti. Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru; historie není zaplněna z pokojového serveru.",
-    "loginAllSavedDisabledNoSavedPasswords": "Pro použití všech přihlašovacích údajů si nejprve uložte heslo místnosti"
+    "loginAllSavedDisabledNoSavedPasswords": "Pro použití všech přihlašovacích údajů si nejprve uložte heslo místnosti",
+    "membersHeadingWithCount": "Členové ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

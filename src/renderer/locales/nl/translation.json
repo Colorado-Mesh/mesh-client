@@ -2331,7 +2331,8 @@
     "legendSavedTooltip": "Lichtblauwe halve cirkel — wachtwoord opgeslagen; log in om een sessie te openen",
     "legendLoggedInTooltip": "Groene stip — actieve clientsessie (verlaat de ruimte als de server offline is)",
     "historyLocalHint": "Berichten worden alleen weergegeven terwijl u bent ingelogd in deze ruimte op dit apparaat. Schakel automatisch synchroniseren in om geabonneerd te blijven; de geschiedenis wordt niet opnieuw ingevuld vanaf de roomserver.",
-    "loginAllSavedDisabledNoSavedPasswords": "Sla eerst een ruimtewachtwoord op om alles in te loggen"
+    "loginAllSavedDisabledNoSavedPasswords": "Sla eerst een ruimtewachtwoord op om alles in te loggen",
+    "membersHeadingWithCount": "Leden ({{count}})"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

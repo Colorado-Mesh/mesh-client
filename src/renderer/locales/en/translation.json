@@ -2323,6 +2323,7 @@
     "newMessagesDivider": "New messages",
     "lastSync": "Last sync",
     "membersHeading": "Members",
+    "membersHeadingWithCount": "Members ({{count}})",
     "membersRecognizedHeading": "Recognized posters",
     "membersRecognizedEmpty": "No recognized posters in this room yet.",
     "membersAclHeading": "Access control (ACL)",

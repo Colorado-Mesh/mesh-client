@@ -78,6 +78,7 @@ import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScr
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
+import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 
 function RoomUnreadDivider({ label }: { label: string }) {
@@ -250,7 +251,7 @@ export default function RoomsPanel({
   );
   const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
-  const [membersOpen, setMembersOpen] = useState(true);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [aclEntries, setAclEntries] = useState<MeshcoreRoomAclEntry[]>([]);
   const [aclLoading, setAclLoading] = useState(false);
   const [aclError, setAclError] = useState<string | null>(null);
@@ -1469,60 +1470,125 @@ export default function RoomsPanel({
 
           {selectedRoomId && loggedIn && (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
-                <span className="text-sm font-medium text-gray-200">{activeRoom?.long_name}</span>
-                <span
-                  className="border-brand-green/40 bg-brand-green/10 text-brand-green inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]"
-                  title={t('roomsPanel.statusLoggedInSessionTooltip')}
-                >
-                  <span aria-hidden>●</span>
-                  {t('roomsPanel.statusLoggedInSession')}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {t('roomsPanel.postCount', { count: roomPosts.length })}
-                  {newestPostTs != null && (
-                    <>
-                      {' '}
-                      · {t('roomsPanel.lastPost')}: {formatTimestamp(newestPostTs)}
-                    </>
-                  )}
-                  {lastSyncAt != null && (
-                    <>
-                      {' '}
-                      · {t('roomsPanel.lastSync')}: {formatTimestamp(lastSyncAt)}
-                    </>
-                  )}
-                </span>
-                <label
-                  className="flex items-center gap-1.5 text-xs text-gray-400"
-                  title={t('roomsPanel.autoLoginOnConnectTooltip')}
-                >
-                  <input
-                    type="checkbox"
-                    checked={autoLoginOnConnect}
-                    onChange={(e) => {
-                      void handleAutoLoginOnConnectChange(selectedRoomId, e.target.checked);
-                    }}
-                    disabled={
-                      !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
-                    }
-                    aria-label={t('roomsPanel.autoLoginOnConnect')}
-                  />
-                  {t('roomsPanel.autoLoginOnConnect')}
-                </label>
-                {!storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId) && (
-                  <span className="text-[10px] text-gray-500">
-                    {t('roomsPanel.autoLoginRequiresSavedPassword')}
-                  </span>
-                )}
-                <span className="mx-1 hidden text-gray-600 sm:inline" aria-hidden="true">
-                  |
-                </span>
-                <div
-                  className="flex flex-wrap items-center gap-1.5 rounded border border-gray-700/80 px-2 py-0.5"
-                  title={t('roomsPanel.autoSyncTooltip')}
-                >
-                  <label className="flex items-center gap-1.5 text-xs text-gray-400">
+              <div className="shrink-0 border-b border-gray-700">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-3 py-1.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <span className="truncate text-sm font-medium text-gray-200">
+                      {activeRoom?.long_name}
+                    </span>
+                    <span
+                      className="border-brand-green/40 bg-brand-green/10 text-brand-green inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]"
+                      title={t('roomsPanel.statusLoggedInSessionTooltip')}
+                    >
+                      <span aria-hidden>●</span>
+                      {t('roomsPanel.statusLoggedInSession')}
+                    </span>
+                    <span className="min-w-0 truncate text-xs text-gray-500">
+                      {t('roomsPanel.postCount', { count: roomPosts.length })}
+                      {newestPostTs != null && (
+                        <>
+                          {' '}
+                          · {t('roomsPanel.lastPost')}: {formatTimestamp(newestPostTs)}
+                        </>
+                      )}
+                      {lastSyncAt != null && (
+                        <>
+                          {' '}
+                          · {t('roomsPanel.lastSync')}: {formatTimestamp(lastSyncAt)}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    {storedRoomIds.has(selectedRoomId) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgetConfirmNodeId(selectedRoomId);
+                        }}
+                        className="rounded border border-red-900/50 bg-red-950/40 px-2 py-1 text-xs text-red-300 hover:bg-red-900/30"
+                        aria-label={t('roomsPanel.forgetSavedPasswordAria')}
+                      >
+                        {t('roomsPanel.forgetSavedPassword')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleLeaveRoom}
+                      disabled={!isConnected || selectedRoomLeaveLoading}
+                      className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={
+                        selectedRoomLeaveLoading
+                          ? t('roomsPanel.leavingRoom')
+                          : t('roomsPanel.leaveRoom')
+                      }
+                    >
+                      {selectedRoomLeaveLoading
+                        ? t('roomsPanel.leavingRoom')
+                        : t('roomsPanel.leaveRoom')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStreamView((v) => (v === 'starred' ? 'posts' : 'starred'));
+                      }}
+                      className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 ${
+                        streamView === 'starred'
+                          ? 'border-amber-600/50 bg-amber-900/30 text-amber-300'
+                          : 'border-gray-600 bg-gray-800'
+                      }`}
+                      aria-pressed={streamView === 'starred'}
+                      aria-label={t('chatPanel.starredMessages')}
+                      title={t('chatPanel.starredMessages')}
+                    >
+                      {t('chatPanel.starredMessages')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleAdminLogin();
+                      }}
+                      disabled={!isConnected}
+                      className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40 ${
+                        manageOpen
+                          ? 'border-brand-green/50 bg-brand-green/20 text-brand-green'
+                          : 'border-gray-600 bg-gray-800'
+                      }`}
+                      aria-pressed={manageOpen}
+                    >
+                      {t('roomsPanel.manageRoom')}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 pb-1.5">
+                  <label
+                    className="flex items-center gap-1.5 text-xs text-gray-400"
+                    title={t('roomsPanel.autoLoginOnConnectTooltip')}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={autoLoginOnConnect}
+                      onChange={(e) => {
+                        void handleAutoLoginOnConnectChange(selectedRoomId, e.target.checked);
+                      }}
+                      disabled={
+                        !storedRoomIds.has(selectedRoomId) &&
+                        !meshcoreIsRoomLoggedIn(selectedRoomId)
+                      }
+                      aria-label={t('roomsPanel.autoLoginOnConnect')}
+                    />
+                    {t('roomsPanel.badgeAutoLogin')}
+                  </label>
+                  {!storedRoomIds.has(selectedRoomId) &&
+                    !meshcoreIsRoomLoggedIn(selectedRoomId) && (
+                      <span className="text-[10px] text-gray-500">
+                        {t('roomsPanel.autoLoginRequiresSavedPassword')}
+                      </span>
+                    )}
+                  <label
+                    className="flex items-center gap-1.5 text-xs text-gray-400"
+                    title={t('roomsPanel.autoSyncTooltip')}
+                  >
                     <input
                       type="checkbox"
                       checked={syncEnabled}
@@ -1549,90 +1615,28 @@ export default function RoomsPanel({
                       <option value={240}>{t('roomsPanel.syncInterval240')}</option>
                     </select>
                   )}
-                </div>
-                <p className="w-full text-[10px] leading-snug text-gray-500">
-                  {t('roomsPanel.historyLocalHint')}
-                </p>
-                {syncConfigDirty && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleSaveSyncConfig();
-                    }}
-                    className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-300 hover:bg-gray-700"
-                    aria-label={t('roomsPanel.saveSyncConfig')}
-                  >
-                    {t('roomsPanel.saveSyncConfig')}
-                  </button>
-                )}
-                {sessionRole === 'readonly' && (
-                  <span className="rounded bg-amber-900/40 px-2 py-0.5 text-xs text-amber-200">
-                    {t('roomsPanel.readOnlyBadge')}
-                  </span>
-                )}
-                <div className="ml-auto flex gap-2">
-                  {storedRoomIds.has(selectedRoomId) && (
+                  <HelpTooltip text={t('roomsPanel.historyLocalHint')} className="shrink-0" />
+                  {syncConfigDirty && (
                     <button
                       type="button"
                       onClick={() => {
-                        setForgetConfirmNodeId(selectedRoomId);
+                        void handleSaveSyncConfig();
                       }}
-                      className="rounded border border-red-900/50 bg-red-950/40 px-2 py-1 text-xs text-red-300 hover:bg-red-900/30"
-                      aria-label={t('roomsPanel.forgetSavedPasswordAria')}
+                      className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-300 hover:bg-gray-700"
+                      aria-label={t('roomsPanel.saveSyncConfig')}
                     >
-                      {t('roomsPanel.forgetSavedPassword')}
+                      {t('roomsPanel.saveSyncConfig')}
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={handleLeaveRoom}
-                    disabled={!isConnected || selectedRoomLeaveLoading}
-                    className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label={
-                      selectedRoomLeaveLoading
-                        ? t('roomsPanel.leavingRoom')
-                        : t('roomsPanel.leaveRoom')
-                    }
-                  >
-                    {selectedRoomLeaveLoading
-                      ? t('roomsPanel.leavingRoom')
-                      : t('roomsPanel.leaveRoom')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStreamView((v) => (v === 'starred' ? 'posts' : 'starred'));
-                    }}
-                    className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 ${
-                      streamView === 'starred'
-                        ? 'border-amber-600/50 bg-amber-900/30 text-amber-300'
-                        : 'border-gray-600 bg-gray-800'
-                    }`}
-                    aria-pressed={streamView === 'starred'}
-                    aria-label={t('chatPanel.starredMessages')}
-                    title={t('chatPanel.starredMessages')}
-                  >
-                    {t('chatPanel.starredMessages')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleAdminLogin();
-                    }}
-                    disabled={!isConnected}
-                    className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40 ${
-                      manageOpen
-                        ? 'border-brand-green/50 bg-brand-green/20 text-brand-green'
-                        : 'border-gray-600 bg-gray-800'
-                    }`}
-                    aria-pressed={manageOpen}
-                  >
-                    {t('roomsPanel.manageRoom')}
-                  </button>
+                  {sessionRole === 'readonly' && (
+                    <span className="rounded bg-amber-900/40 px-2 py-0.5 text-xs text-amber-200">
+                      {t('roomsPanel.readOnlyBadge')}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="shrink-0 border-b border-gray-700 px-3 py-2">
+              <div className="shrink-0 border-b border-gray-700 px-3 py-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -1640,9 +1644,23 @@ export default function RoomsPanel({
                   }}
                   className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-300"
                   aria-expanded={membersOpen}
-                  aria-label={t('roomsPanel.membersHeading')}
+                  aria-label={
+                    membersOpen
+                      ? t('roomsPanel.membersHeading')
+                      : recognizedPosters.length > 0
+                        ? t('roomsPanel.membersHeadingWithCount', {
+                            count: recognizedPosters.length,
+                          })
+                        : t('roomsPanel.membersHeading')
+                  }
                 >
-                  {t('roomsPanel.membersHeading')}
+                  {membersOpen
+                    ? t('roomsPanel.membersHeading')
+                    : recognizedPosters.length > 0
+                      ? t('roomsPanel.membersHeadingWithCount', {
+                          count: recognizedPosters.length,
+                        })
+                      : t('roomsPanel.membersHeading')}
                   <span className="text-gray-500">{membersOpen ? '▾' : '▸'}</span>
                 </button>
                 {membersOpen && (

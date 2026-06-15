@@ -2331,7 +2331,8 @@
     "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
     "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
     "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다.",
-    "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요."
+    "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
+    "membersHeadingWithCount": "회원 ({{count}})"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
