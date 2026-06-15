@@ -847,9 +847,9 @@ export default function ModulePanel({
     setApplyingSection(moduleCase);
     try {
       await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
-      addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       try {
         await onCommit();
+        addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in module panel toast
         addToast(
@@ -878,11 +878,20 @@ export default function ModulePanel({
     deviceSlice: unknown,
     uiOverrides: Record<string, unknown>,
   ) => {
-    void applyModule(
-      sectionLabel,
-      moduleCase,
-      buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides),
-    );
+    let value: unknown;
+    try {
+      value = buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides);
+    } catch (err: unknown) {
+      console.warn('[ModulePanel] build apply value failed ' + errLikeToLogString(err));
+      addToast(
+        t('modulePanel.failed', {
+          message: formatMeshtasticModuleApplyError(err, t),
+        }),
+        'error',
+      );
+      return;
+    }
+    void applyModule(sectionLabel, moduleCase, value);
   };
 
   const validateMqttRelayBeforeApply = (): string | null => {

@@ -30,9 +30,18 @@ function makeMockSerialPort(overrides: Partial<MockSerialPort> = {}): MockSerial
 }
 
 describe('connection serial cleanup', () => {
+  const originalSerial = navigator.serial;
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: originalSerial,
+    });
   });
 
   it('closeSerialPortIfOpen closes port when streams are active', async () => {

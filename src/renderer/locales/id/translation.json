@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Belum ada pesan. Kirim pesan atau tunggu pesan masuk.",
     "emptyConnectFirst": "Sambungkan ke perangkat untuk mulai mengobrol.",
     "waitingMessagesBadge": "Menyinkronkan pesan antrian {{count}} dari radio…",
-    "waitingMessagesSyncNow": "Sinkronkan sekarang"
+    "waitingMessagesSyncNow": "Sinkronkan sekarang",
+    "jumpToUnread": "Langsung ke Belum Dibaca",
+    "jumpToLatest": "Langsung ke Terbaru"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Memancarkan daya (dibatasi pada {{max}} dBm hingga firmware melaporkan maksimum radio)",
     "txPowerDeviceCurrent": "Laporan perangkat {{current}} dBm (slider maks {{max}} dBm)",
     "sectionTxPower": "Daya TX",
-    "applyTxPowerSuccess": "Daya TX diterapkan"
+    "applyTxPowerSuccess": "Daya TX diterapkan",
+    "xmodemInvalidFilename": "Nama file berisi karakter yang tidak valid",
+    "validationInvalidPsk": "Base64 PSK tidak valid — periksa kuncinya dan coba lagi",
+    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

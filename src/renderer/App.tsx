@@ -804,7 +804,7 @@ function AppContent({
         : null;
   const contactGroups = useContactGroups(contactGroupsSelfId);
   const [showGroupsModal, setShowGroupsModal] = useState(false);
-  /** Shared panel fields; Meshtastic-only props use {@link meshtasticRuntime} directly. */
+  /** Shared panel fields; Meshtastic-only access uses {@link meshtasticRuntime} directly. */
   const activeRuntime =
     protocol === 'meshcore'
       ? (meshcoreRuntime as unknown as typeof meshtasticRuntime)

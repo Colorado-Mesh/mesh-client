@@ -131,4 +131,45 @@ describe('meshtasticMqttClientProxy', () => {
     expect(publishToBroker).not.toHaveBeenCalled();
     expect(writeToRadio).not.toHaveBeenCalled();
   });
+
+  it('logs publishToBroker rejection without throwing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const publishToBroker = vi.fn().mockRejectedValue(new Error('broker down'));
+    const bridge = new MeshtasticMqttClientProxyBridge({
+      isProxyActive: () => true,
+      isDeviceConfigured: () => true,
+      publishToBroker,
+      writeToRadio: vi.fn(),
+    });
+    const proxy = create(Mesh.MqttClientProxyMessageSchema, {
+      topic: 'msh/test',
+      payloadVariant: { case: 'data', value: new Uint8Array([1]) },
+    });
+    const fromRadio = create(Mesh.FromRadioSchema, {
+      payloadVariant: { case: 'mqttClientProxyMessage', value: proxy },
+    });
+    await expect(
+      bridge.handleFromRadio(fromRadio as unknown as FromRadioMqttProxyCarrier),
+    ).resolves.toBeUndefined();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('logs flush writeToRadio rejection without throwing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let configured = false;
+    const writeToRadio = vi.fn().mockRejectedValue(new Error('radio busy'));
+    const bridge = new MeshtasticMqttClientProxyBridge({
+      isProxyActive: () => true,
+      isDeviceConfigured: () => configured,
+      publishToBroker: vi.fn(),
+      writeToRadio,
+    });
+    await bridge.handleBrokerRaw('msh/down', new Uint8Array([9]), false);
+    configured = true;
+    bridge.flushPendingToDevice();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 });

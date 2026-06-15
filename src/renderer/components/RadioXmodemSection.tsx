@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isValidXmodemRemoteFilename } from '@/renderer/lib/meshtastic/xmodemFilename';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { useToast } from './Toast';
@@ -80,13 +81,15 @@ export function RadioXmodemSection({
             type="button"
             disabled={localOnlyDisabled || xmodemBusy || !xmodemFilename.trim()}
             onClick={() => {
+              const name = xmodemFilename.trim();
+              if (!isValidXmodemRemoteFilename(name)) {
+                addToast(t('radioPanel.xmodemInvalidFilename'), 'error');
+                return;
+              }
               setXmodemBusy(true);
-              void onXmodemDownload(xmodemFilename.trim())
+              void onXmodemDownload(name)
                 .then(() => {
-                  addToast(
-                    t('radioPanel.xmodemDownloadSuccess', { name: xmodemFilename.trim() }),
-                    'success',
-                  );
+                  addToast(t('radioPanel.xmodemDownloadSuccess', { name }), 'success');
                 })
                 .catch((err: unknown) => {
                   addToast(

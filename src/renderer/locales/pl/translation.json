@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Brak wiadomości. Wyślij jedną lub poczekaj na przychodzące wiadomości.",
     "emptyConnectFirst": "Połącz się z urządzeniem, aby rozpocząć rozmowę.",
     "waitingMessagesBadge": "Synchronizowanie wiadomości oczekujących {{count}} z radia…",
-    "waitingMessagesSyncNow": "Synchronizuj teraz"
+    "waitingMessagesSyncNow": "Synchronizuj teraz",
+    "jumpToUnread": "Przejdź do nieprzeczytanych",
+    "jumpToLatest": "Przejdź do najnowszych"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Moc nadawania (ograniczona do {{max}} dBm, dopóki oprogramowanie sprzętowe nie zgłosi maks. sygnału radiowego)",
     "txPowerDeviceCurrent": "Urządzenie zgłasza {{current}} dBm (suwak maks. {{max}} dBm)",
     "sectionTxPower": "Moc optyczna Tx",
-    "applyTxPowerSuccess": "Zastosowano zasilanie TX"
+    "applyTxPowerSuccess": "Zastosowano zasilanie TX",
+    "xmodemInvalidFilename": "zawiera niedozwolone znaki",
+    "validationInvalidPsk": "Nieprawidłowy base64 PSK — sprawdź klucz i spróbuj ponownie",
+    "meshcoreChannelNameRequired": "Nazwa nie może być pusta"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

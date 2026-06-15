@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Nog geen berichten. Stuur er een of wacht op inkomende berichten.",
     "emptyConnectFirst": "Maak verbinding met een apparaat om te chatten.",
     "waitingMessagesBadge": "{{count}} bericht(en) in de wachtrij van de radio synchroniseren...",
-    "waitingMessagesSyncNow": "Synchroniseer nu"
+    "waitingMessagesSyncNow": "Synchroniseer nu",
+    "jumpToUnread": "Ga naar Ongelezen",
+    "jumpToLatest": "Spring naar de laatste"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Zendvermogen (afgetopt op {{max}} dBm totdat de firmware radio Max meldt)",
     "txPowerDeviceCurrent": "Apparaat meldt {{current}} dBm (schuifregelaar max {{max}} dBm)",
     "sectionTxPower": "Tx Vermogen:",
-    "applyTxPowerSuccess": "TX-vermogen toegepast"
+    "applyTxPowerSuccess": "TX-vermogen toegepast",
+    "xmodemInvalidFilename": "Bestandsnaam bevat ongeldige tekens.",
+    "validationInvalidPsk": "Ongeldige base64 PSK — controleer de sleutel en probeer het opnieuw",
+    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

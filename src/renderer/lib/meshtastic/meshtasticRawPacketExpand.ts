@@ -34,6 +34,9 @@ export function parseMeshtasticRawPacketExpand(
   raw: Uint8Array,
   opts?: { viaMqtt?: boolean },
 ): MeshtasticRawPacketExpandResult {
+  if (raw.byteLength > 65_536) {
+    return { ok: false };
+  }
   try {
     const packet = fromBinary(Mesh.MeshPacketSchema, raw) as {
       id?: number;

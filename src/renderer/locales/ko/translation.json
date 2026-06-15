@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "아직 메시지가 없습니다. 메시지를 보내거나 수신을 기다리세요.",
     "emptyConnectFirst": "채팅을 시작하려면 기기에 연결하세요.",
     "waitingMessagesBadge": "라디오에서 {{count}} 대기 중인 메시지 동기화 중...",
-    "waitingMessagesSyncNow": "지금 동기화"
+    "waitingMessagesSyncNow": "지금 동기화",
+    "jumpToUnread": "읽지 않음으로 이동",
+    "jumpToLatest": "최신으로 이동"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "송신 전력 (펌웨어가 무선 최대값을 보고할 때까지 {{max}} dBm으로 제한)",
     "txPowerDeviceCurrent": "장치 보고서 {{current}} dBm (슬라이더 최대 {{max}} dBm)",
     "sectionTxPower": "Tx Power",
-    "applyTxPowerSuccess": "TX 전원 적용됨"
+    "applyTxPowerSuccess": "TX 전원 적용됨",
+    "xmodemInvalidFilename": "파일 이름에 유효하지 않은 문자가 포함되어 있습니다",
+    "validationInvalidPsk": "유효하지 않은 base64 PSK — 키를 확인하고 다시 시도하십시오",
+    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다"
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

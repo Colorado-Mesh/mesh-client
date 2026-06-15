@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Aún no hay mensajes. Envíe uno o espere los mensajes entrantes.",
     "emptyConnectFirst": "Conéctate a un dispositivo para empezar a chatear.",
     "waitingMessagesBadge": "Sincronizando {{count}} mensajes en cola de radio...",
-    "waitingMessagesSyncNow": "Sincronizar ahora"
+    "waitingMessagesSyncNow": "Sincronizar ahora",
+    "jumpToUnread": "Saltar a no leído",
+    "jumpToLatest": "Saltar a lo último"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Potencia de transmisión (limitada a {{max}} dBm hasta que el firmware informe de radio max)",
     "txPowerDeviceCurrent": "Informes de dispositivos {{current}} dBm (slider max {{max}} dBm)",
     "sectionTxPower": "Potencia TX",
-    "applyTxPowerSuccess": "Potencia TX aplicada"
+    "applyTxPowerSuccess": "Potencia TX aplicada",
+    "xmodemInvalidFilename": "Contiene caracteres no válidos",
+    "validationInvalidPsk": "PSK de base64 no válido: comprueba la clave e inténtalo de nuevo",
+    "meshcoreChannelNameRequired": "El nombre no debe estar vacío"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",

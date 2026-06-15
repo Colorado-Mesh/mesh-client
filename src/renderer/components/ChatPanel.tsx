@@ -92,6 +92,10 @@ import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { useToast } from './Toast';
 
+function chatPanelIsLinux(): boolean {
+  return window.electronAPI.getPlatform() === 'linux';
+}
+
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
 function ChatToolbarTooltipButton({
   tooltip,
@@ -426,7 +430,6 @@ function ChatPanel({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
-  const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -515,6 +518,12 @@ function ChatPanel({
 
   // Ref to divider DOM node for scrollIntoView
   const unreadDividerRef = useRef<HTMLDivElement>(null);
+  const [hasUnreadDivider, setHasUnreadDivider] = useState(false);
+
+  const attachUnreadDividerRef = useCallback((node: HTMLDivElement | null) => {
+    unreadDividerRef.current = node;
+    setHasUnreadDivider(node != null);
+  }, []);
 
   // Persist lastRead timestamps to localStorage
   useEffect(() => {
@@ -1297,15 +1306,20 @@ function ChatPanel({
             aria-label={t('chatPanel.exportChat')}
             onClick={() => {
               void (async () => {
-                const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
-                  timestamp: m.timestamp,
-                  sender_name: m.sender_name,
-                  payload: m.payload,
-                  channel: m.channel,
-                  to: m.to,
-                }));
-                const result = await window.electronAPI.chat.export(msgs);
-                if (!result.success) {
+                try {
+                  const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
+                    timestamp: m.timestamp,
+                    sender_name: m.sender_name,
+                    payload: m.payload,
+                    channel: m.channel,
+                    to: m.to,
+                  }));
+                  const result = await window.electronAPI.chat.export(msgs);
+                  if (!result.success) {
+                    setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
+                  }
+                } catch (e: unknown) {
+                  console.warn('[ChatPanel] export failed ' + errLikeToLogString(e));
                   setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
                 }
               })();
@@ -1750,7 +1764,7 @@ function ChatPanel({
                     <div className={isContinuation ? '!mt-0' : undefined}>
                       {daySeparator}
                       {isUnreadStart && (
-                        <div ref={unreadDividerRef}>
+                        <div ref={attachUnreadDividerRef}>
                           <UnreadDivider />
                         </div>
                       )}
@@ -2074,12 +2088,13 @@ function ChatPanel({
                                 <button
                                   onMouseDown={(e) => {
                                     e.preventDefault();
-                                    if (!isLinux) reactionHiddenInputRef.current?.focus();
+                                    if (!chatPanelIsLinux())
+                                      reactionHiddenInputRef.current?.focus();
                                   }}
                                   onClick={() => {
                                     const id = msg.packetId ?? msg.timestamp;
                                     reactionPickerTarget.current = { id, channel: msg.channel };
-                                    if (isLinux) {
+                                    if (chatPanelIsLinux()) {
                                       setPickerOpenFor(showPicker ? null : id);
                                     } else {
                                       void window.electronAPI.showEmojiPanel();
@@ -2156,7 +2171,7 @@ function ChatPanel({
                         </div>
 
                         {/* Reaction picker — Linux: emoji-picker-element; macOS/Windows: showEmojiPanel() */}
-                        {showPicker && isLinux && (
+                        {showPicker && chatPanelIsLinux() && (
                           <div
                             className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
                           >
@@ -2227,7 +2242,7 @@ function ChatPanel({
             className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" trigger={parentIconTrigger} size={14} />
-            {unreadDividerRef.current ? 'Jump to Unread' : 'Jump to Latest'}
+            {hasUnreadDivider ? t('chatPanel.jumpToUnread') : t('chatPanel.jumpToLatest')}
           </button>
         )}
       </div>

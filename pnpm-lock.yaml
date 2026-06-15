@@ -5204,7 +5204,7 @@ snapshots:
   '@serialport/binding-mock@10.2.2':
     dependencies:
       '@serialport/bindings-interface': 1.2.2
-      debug: 4.4.0
+      debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)
     transitivePeerDependencies:
       - supports-color
 

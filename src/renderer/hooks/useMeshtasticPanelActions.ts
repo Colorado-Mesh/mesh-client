@@ -4,6 +4,7 @@ import type { MeshtasticRuntime } from '../runtime/runtimeTypes';
 
 /** Meshtastic panel callbacks backed by the App-mounted protocol runtime. */
 export function useMeshtasticPanelActions(runtime: MeshtasticRuntime) {
+  // Runtime object is stable for the App mount lifetime (context provider).
   return useMemo(
     () => ({
       setConfig: runtime.setConfig,

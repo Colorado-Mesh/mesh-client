@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "还没有消息。发送消息或等待传入消息。",
     "emptyConnectFirst": "连接到设备以开始聊天。",
     "waitingMessagesBadge": "正在同步来自无线电的{{count}}队列消息…",
-    "waitingMessagesSyncNow": "立即同步"
+    "waitingMessagesSyncNow": "立即同步",
+    "jumpToUnread": "跳至未读",
+    "jumpToLatest": "跳到最新"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "发射功率（限制在{{max}} dBm ，直到固件报告无线电最大值）",
     "txPowerDeviceCurrent": "器械报告{{current}} dBm （滑块最大{{max}} dBm ）",
     "sectionTxPower": "发送功率",
-    "applyTxPowerSuccess": "已应用TX功率"
+    "applyTxPowerSuccess": "已应用TX功率",
+    "xmodemInvalidFilename": "文件名包含无效字符",
+    "validationInvalidPsk": "Base64 PSK无效—请检查密钥并重试",
+    "meshcoreChannelNameRequired": "频道名称不能为空"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

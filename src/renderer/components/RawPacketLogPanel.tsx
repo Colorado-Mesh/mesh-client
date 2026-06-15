@@ -43,6 +43,12 @@ function toHex(bytes: Uint8Array): string {
     .join('');
 }
 
+/** Stable virtualizer row key — ts alone can collide within the same millisecond. */
+function rawPacketRowKey(ts: number, raw: Uint8Array): string {
+  const prefix = raw.length > 0 ? toHex(raw.subarray(0, Math.min(4, raw.length))) : 'empty';
+  return `${ts}-${raw.length}-${prefix}`;
+}
+
 function formatTs(ts: number): string {
   return formatLogTimeOfDay(ts);
 }
@@ -365,10 +371,17 @@ export default function RawPacketLogPanel(props: Props) {
     );
   }, [packets, filter, variant, getNodeLabel]);
 
+  useEffect(() => {
+    setExpandedIdx(null);
+  }, [packets, filter]);
+
+  const getScrollElement = useCallback(() => scrollRef.current, []);
+  const estimateSize = useCallback(() => 36, []);
+
   const virtualizer = useVirtualizer({
     count: filtered.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 36,
+    getScrollElement,
+    estimateSize,
     overscan: 12,
   });
 
@@ -401,6 +414,7 @@ export default function RawPacketLogPanel(props: Props) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
+            setExpandedIdx(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
           className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
@@ -450,9 +464,14 @@ export default function RawPacketLogPanel(props: Props) {
                 setExpandedIdx(isExpanded ? null : vi.index);
               };
 
+              const rowPacket =
+                variant === 'meshcore'
+                  ? (filtered as RxPacketEntry[])[vi.index]
+                  : (filtered as MeshtasticRawPacketEntry[])[vi.index];
+
               return (
                 <div
-                  key={`${vi.index}-${variant === 'meshcore' ? (filtered as RxPacketEntry[])[vi.index].ts : (filtered as MeshtasticRawPacketEntry[])[vi.index].ts}`}
+                  key={rawPacketRowKey(rowPacket.ts, rowPacket.raw)}
                   data-index={vi.index}
                   ref={virtualizer.measureElement}
                   className="absolute top-0 left-0 w-full border-b border-gray-800"

@@ -66,9 +66,9 @@ declare module '@liamcottle/meshcore.js' {
 
   /** Logical companion protocol base (BLE / TCP use different byte framing on the wire). */
   export class Connection {
-    on(event: string, cb: (...args: unknown[]) => void): void;
-    off(event: string, cb: (...args: unknown[]) => void): void;
-    once(event: string, cb: (...args: unknown[]) => void): void;
+    on(event: string | number, cb: (...args: unknown[]) => void): void;
+    off(event: string | number, cb: (...args: unknown[]) => void): void;
+    once(event: string | number, cb: (...args: unknown[]) => void): void;
     emit(event: string | number, ...args: unknown[]): void;
     onConnected(): Promise<void>;
     onDisconnected(): void;
@@ -258,9 +258,9 @@ declare module '@liamcottle/meshcore.js' {
 
   export class WebBleConnection {
     static open(): Promise<WebBleConnection>;
-    on(event: string, cb: (...args: unknown[]) => void): void;
-    off(event: string, cb: (...args: unknown[]) => void): void;
-    once(event: string, cb: (...args: unknown[]) => void): void;
+    on(event: string | number, cb: (...args: unknown[]) => void): void;
+    off(event: string | number, cb: (...args: unknown[]) => void): void;
+    once(event: string | number, cb: (...args: unknown[]) => void): void;
     close(): Promise<void>;
     getSelfInfo(timeout?: number): Promise<unknown>;
     getContacts(): Promise<unknown[]>;

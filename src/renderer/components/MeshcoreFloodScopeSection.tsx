@@ -95,7 +95,6 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
             message: e instanceof Error ? e.message : String(e),
           }),
         );
-        throw e;
       } finally {
         setApplying(false);
       }

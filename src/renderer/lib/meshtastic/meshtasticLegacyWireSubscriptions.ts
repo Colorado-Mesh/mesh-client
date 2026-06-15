@@ -944,9 +944,19 @@ export function attachMeshtasticLegacyWireSubscriptions(
     // Desktop notification for incoming messages when app is not focused
     if (!isEcho && !emoji && document.hidden) {
       try {
-        const title = msg.to ? `DM from ${msg.sender_name}` : `Message from ${msg.sender_name}`;
+        const stripControl = (text: string) => {
+          let out = '';
+          for (const ch of text) {
+            const code = ch.charCodeAt(0);
+            if (code >= 0x20 && code !== 0x7f) out += ch;
+          }
+          return out;
+        };
+        const safeSender = stripControl(msg.sender_name).slice(0, 120);
+        const title = msg.to ? `DM from ${safeSender}` : `Message from ${safeSender}`;
+        const body = stripControl(msg.payload).slice(0, 100);
         new Notification(title, {
-          body: msg.payload.slice(0, 100),
+          body,
           silent: false,
         });
       } catch (e) {

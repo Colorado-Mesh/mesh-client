@@ -1506,7 +1506,8 @@ export function useMeshcoreRuntime() {
   const initConn = useCallback(
     async (conn: MeshCoreConnection, setupGen: number, opts?: { driverIdentityId?: string }) => {
       connRef.current = conn;
-      meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
+      meshcoreConnEventListenersTeardownRef.current?.();
+      meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
 
       // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
       // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
@@ -1939,7 +1940,8 @@ export function useMeshcoreRuntime() {
         throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
       }
       connRef.current = conn;
-      meshcoreConnEventListenersTeardownRef.current ??= setupEventListeners(conn);
+      meshcoreConnEventListenersTeardownRef.current?.();
+      meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
       await initConn(conn, setupGen, { driverIdentityId });
       if (type === 'serial') {
         const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
@@ -2169,6 +2171,20 @@ export function useMeshcoreRuntime() {
       }
       void attemptMeshcoreReconnectRef.current();
     })();
+  }, [teardownMeshcoreConnEventListeners]);
+
+  // Cleanup on unmount — tear down listeners and release connection/driver.
+  useEffect(() => {
+    return () => {
+      teardownMeshcoreConnEventListeners({ driverDisconnect: true });
+      const conn = connRef.current;
+      connRef.current = null;
+      if (conn) {
+        void conn.close().catch((e: unknown) => {
+          console.debug('[useMeshcoreRuntime] unmount close ' + errLikeToLogString(e));
+        });
+      }
+    };
   }, [teardownMeshcoreConnEventListeners]);
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;

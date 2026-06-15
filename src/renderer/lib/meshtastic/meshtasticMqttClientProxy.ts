@@ -85,8 +85,11 @@ export class MeshtasticMqttClientProxyBridge {
     const pending = [...this.pendingToDevice];
     this.pendingToDevice = [];
     for (const bytes of pending) {
-      void this.deps.writeToRadio(bytes).catch(() => {
-        // catch-no-log-ok flush best-effort after configure
+      void this.deps.writeToRadio(bytes).catch((e: unknown) => {
+        console.warn(
+          '[MeshtasticMqttClientProxyBridge] flush writeToRadio failed ' +
+            (e instanceof Error ? e.message : String(e)),
+        );
       });
     }
   }
@@ -99,19 +102,26 @@ export class MeshtasticMqttClientProxyBridge {
     const proxy = parseMqttClientProxyFromFromRadio(fromRadio);
     if (!proxy || !this.deps.isProxyActive()) return;
 
-    if (proxy.payloadVariant.case === 'data') {
+    try {
+      if (proxy.payloadVariant.case === 'data') {
+        await this.deps.publishToBroker({
+          topic: proxy.topic,
+          data: proxy.payloadVariant.value,
+          retained: proxy.retained,
+        });
+        return;
+      }
       await this.deps.publishToBroker({
         topic: proxy.topic,
-        data: proxy.payloadVariant.value,
+        text: proxy.payloadVariant.value,
         retained: proxy.retained,
       });
-      return;
+    } catch (e: unknown) {
+      console.warn(
+        '[MeshtasticMqttClientProxyBridge] publishToBroker failed ' +
+          (e instanceof Error ? e.message : String(e)),
+      );
     }
-    await this.deps.publishToBroker({
-      topic: proxy.topic,
-      text: proxy.payloadVariant.value,
-      retained: proxy.retained,
-    });
   }
 
   async handleBrokerRaw(topic: string, payload: Uint8Array, retained: boolean): Promise<void> {

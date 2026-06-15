@@ -59,6 +59,10 @@ describe('parseMeshtasticRawPacketExpand', () => {
   it('returns ok false for invalid bytes', () => {
     expect(parseMeshtasticRawPacketExpand(new Uint8Array([0xff, 0xfe]))).toEqual({ ok: false });
   });
+
+  it('returns ok false when raw exceeds size cap', () => {
+    expect(parseMeshtasticRawPacketExpand(new Uint8Array(65_537))).toEqual({ ok: false });
+  });
 });
 
 describe('formatMeshtasticRawPacketExpandDebugLine', () => {

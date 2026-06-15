@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "メッセージはまだありません。メッセージを送信するか、受信メッセージを待ちます。",
     "emptyConnectFirst": "デバイスに接続してチャットを開始してください。",
     "waitingMessagesBadge": "無線からの{{count}}キューに入れられたメッセージを同期しています…",
-    "waitingMessagesSyncNow": "今すぐ同期"
+    "waitingMessagesSyncNow": "今すぐ同期",
+    "jumpToUnread": "未読へジャンプ",
+    "jumpToLatest": "最新へジャンプ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "送信電力（ファームウェアがラジオ最大を報告するまで、{{max}} dBmに制限）",
     "txPowerDeviceCurrent": "デバイスレポート{{current}} dBm （スライダー最大{{max}} dBm ）",
     "sectionTxPower": "Tx-Power",
-    "applyTxPowerSuccess": "TX電力が適用されました"
+    "applyTxPowerSuccess": "TX電力が適用されました",
+    "xmodemInvalidFilename": "％filename に無効な文字が含まれています。",
+    "validationInvalidPsk": "無効なbase 64 PSK —キーを確認してもう一度やり直してください",
+    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

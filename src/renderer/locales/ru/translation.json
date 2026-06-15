@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Сообщений пока нет. Отправьте одно или дождитесь входящих сообщений.",
     "emptyConnectFirst": "Подключитесь к устройству, чтобы начать чат.",
     "waitingMessagesBadge": "Синхронизация {{count}} сообщений в очереди с радио…",
-    "waitingMessagesSyncNow": "Синхронизировать сейчас"
+    "waitingMessagesSyncNow": "Синхронизировать сейчас",
+    "jumpToUnread": "Перейти к непрочитанным",
+    "jumpToLatest": "Перейти к последнему"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Мощность передачи (ограничена {{max}} дБм до тех пор, пока прошивка не сообщит о радио макс.)",
     "txPowerDeviceCurrent": "Отчеты устройства {{current}} dBm (ползунок макс. {{max}} dBm)",
     "sectionTxPower": "TX Мощность",
-    "applyTxPowerSuccess": "Питание TX применено"
+    "applyTxPowerSuccess": "Питание TX применено",
+    "xmodemInvalidFilename": "Имя файла содержит недопустимые символы",
+    "validationInvalidPsk": "Неверный base64 PSK — проверьте ключ и повторите попытку",
+    "meshcoreChannelNameRequired": "Нужно указать имя канала."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

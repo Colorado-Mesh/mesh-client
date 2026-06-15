@@ -84,7 +84,7 @@ export function buildMeshtasticMqttModuleApplyValue(
 }
 
 export function isDefaultMeshtasticMqttServer(address: string): boolean {
-  const host = address.trim().split(':')[0] ?? '';
+  const host = address.trim().split(':')[0];
   return host.length === 0 || host === DEFAULT_MQTT_ADDRESS;
 }
 

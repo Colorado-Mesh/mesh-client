@@ -235,8 +235,8 @@ for (const dir of localeDirs) {
   try {
     existing = new Set(Object.keys(flatten(readJson(path))));
   } catch {
-    console.warn(`Warning: cannot read ${path}`);
-    warnings++;
+    console.error(`Error: cannot read ${path}`);
+    errors++;
     continue;
   }
   const missing = [...enKeys].filter((k) => !existing.has(k));

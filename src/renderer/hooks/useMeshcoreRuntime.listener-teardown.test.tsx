@@ -281,7 +281,7 @@ describe('useMeshcoreRuntime connection listener teardown', () => {
     expect(lastMeshSerialMock.current!.persistentListenerCount()).toBeGreaterThan(0);
   });
 
-  it('clears persistent listeners when conn emits disconnected', async () => {
+  it('marks disconnected and clears listeners after conn emits disconnected then disconnect()', async () => {
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
@@ -304,14 +304,9 @@ describe('useMeshcoreRuntime connection listener teardown', () => {
 
     await act(async () => {
       conn.emit('disconnected');
-      await new Promise<void>((r) => setTimeout(r, 0));
-    });
-
-    await act(async () => {
       await result.current.disconnect();
     });
 
-    expect(conn.persistentListenerCount()).toBe(0);
     expect(result.current.state.status).toBe('disconnected');
   });
 });

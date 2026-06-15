@@ -526,7 +526,7 @@ function base64ToPsk(b64: string): Uint8Array {
     return Uint8Array.from(binary, (c) => c.charCodeAt(0));
   } catch (e) {
     console.debug('[RadioPanel] base64ToPsk invalid ' + errLikeToLogString(e));
-    return new Uint8Array([1]);
+    throw new Error('Invalid base64 PSK');
   }
 }
 
@@ -1133,9 +1133,19 @@ export default function RadioPanel({
               if (pubArr?.length === 32 && privArr && privArr.length >= 32) {
                 void tryPersistMeshcoreIdentityFromRadioExport(pubArr, privArr);
               } else {
+                const publicKeyJson = Array.isArray(cfg.public_key)
+                  ? cfg.public_key
+                  : pubArr
+                    ? Array.from(pubArr)
+                    : cfg.public_key;
+                const privateKeyJson = privArr
+                  ? Array.from(privArr)
+                  : Array.isArray(cfg.private_key)
+                    ? cfg.private_key
+                    : cfg.private_key;
                 localStorage.setItem(
                   'mesh-client:meshcoreIdentity',
-                  JSON.stringify({ public_key: cfg.public_key, private_key: cfg.private_key }),
+                  JSON.stringify({ public_key: publicKeyJson, private_key: privateKeyJson }),
                 );
                 window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
               }
@@ -3037,7 +3047,14 @@ function ChannelSection({
   const saveChannel = async () => {
     if (selectedIndex === null || saving) return;
     setValidationError(null);
-    const psk = base64ToPsk(editPskB64);
+    let psk: Uint8Array;
+    try {
+      psk = base64ToPsk(editPskB64);
+    } catch {
+      // catch-no-log-ok base64ToPsk logs invalid input; user sees validation toast
+      setValidationError(t('radioPanel.validationInvalidPsk'));
+      return;
+    }
     if (editKeySize === 'aes128' && psk.length !== 16) {
       setValidationError(t('radioPanel.validationAes128'));
       return;
@@ -3448,6 +3465,7 @@ function MeshcoreChannelSection({
   disabled: boolean;
 }) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editKeyHex, setEditKeyHex] = useState('');
@@ -3495,7 +3513,7 @@ function MeshcoreChannelSection({
     if (!isValidHex) return;
     const finalName = editName.trim();
     if (!finalName) {
-      alert('Channel name must not be empty.');
+      addToast(t('radioPanel.meshcoreChannelNameRequired'), 'error');
       return;
     }
     setSaving(true);
@@ -3504,10 +3522,9 @@ function MeshcoreChannelSection({
       setEditingIdx(null);
       setAddingNew(false);
     } catch (e) {
-      const errorMsg = serializeErrorLike(e) || 'Unknown error';
+      const errorMsg = serializeErrorLike(e) || t('common.unknown');
       console.warn(`[MeshcoreChannelSection] save failed ${errorMsg}`);
-      // Show error to user - could add toast notification here
-      alert(`Failed to save channel: ${errorMsg}`);
+      addToast(t('radioPanel.channelSaveFailed', { message: errorMsg }), 'error');
     } finally {
       setSaving(false);
     }

@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Henüz mesaj yok. Bir mesaj gönderin veya gelen mesajları bekleyin.",
     "emptyConnectFirst": "Sohbete başlamak için bir cihaza bağlanın.",
     "waitingMessagesBadge": "Telsizden {{count}} sıraya alınmış mesaj(lar) senkronize ediliyor…",
-    "waitingMessagesSyncNow": "Şimdi senkronize et"
+    "waitingMessagesSyncNow": "Şimdi senkronize et",
+    "jumpToUnread": "Okunmamışlara Atla",
+    "jumpToLatest": "En Yeniye Atla"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "İletim gücü (firmware radio max rapor edene kadar {{max}} dBm ile sınırlandırılmıştır)",
     "txPowerDeviceCurrent": "Cihaz raporları {{current}} dBm (kaydırıcı maks {{max}} dBm)",
     "sectionTxPower": "TX Gücü",
-    "applyTxPowerSuccess": "TX gücü uygulandı"
+    "applyTxPowerSuccess": "TX gücü uygulandı",
+    "xmodemInvalidFilename": "Dosya adı geçersiz karakterler içeriyor",
+    "validationInvalidPsk": "Geçersiz base64 PSK — anahtarı kontrol edin ve tekrar deneyin",
+    "meshcoreChannelNameRequired": "Ad boş olamaz"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

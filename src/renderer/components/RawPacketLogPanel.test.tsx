@@ -8,9 +8,10 @@ import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import RawPacketLogPanel from './RawPacketLogPanel';
 
 vi.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: () => ({
-    getVirtualItems: () => [{ index: 0, start: 0 }],
-    getTotalSize: () => 36,
+  useVirtualizer: (opts: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: opts.count }, (_, index) => ({ index, start: index * 36 })),
+    getTotalSize: () => opts.count * 36,
     measureElement: () => {},
   }),
 }));
@@ -162,5 +163,27 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
     expect(onNodeClick).toHaveBeenCalledOnce();
     expect(onNodeClick).toHaveBeenCalledWith(0xabcdef01);
     expect(screen.queryByText(/Raw hex/)).not.toBeInTheDocument();
+  });
+
+  it('collapses expanded row when filter excludes it', () => {
+    const packets = [
+      meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' }),
+      meshtasticPacket({ portLabel: 'POSITION_APP' }),
+    ];
+    render(
+      <RawPacketLogPanel
+        variant="meshtastic"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'TestNode'}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('TEXT_MESSAGE_APP'));
+    expect(screen.getByText(/id=0x12345678/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'POSITION' } });
+    expect(screen.queryByText(/id=0x12345678/)).not.toBeInTheDocument();
+    expect(screen.getByText('POSITION_APP')).toBeInTheDocument();
   });
 });

@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Zatím žádné zprávy. Jednu odešlete nebo počkejte na příchozí zprávy.",
     "emptyConnectFirst": "Připojte se k zařízení a začněte chatovat.",
     "waitingMessagesBadge": "Synchronizace {{count}} zpráv ve frontě z rádia…",
-    "waitingMessagesSyncNow": "Synchronizovat nyní"
+    "waitingMessagesSyncNow": "Synchronizovat nyní",
+    "jumpToUnread": "Přejít na nepřečtené",
+    "jumpToLatest": "Přejít na nejnovější"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Vysílací výkon (omezen na {{max}} dBm, dokud firmware nenahlásí rádio max)",
     "txPowerDeviceCurrent": "Hlášení zařízení {{current}} dBm (posuvník max {{max}} dBm)",
     "sectionTxPower": "\"Výkon Tx\"",
-    "applyTxPowerSuccess": "TX napájení použito"
+    "applyTxPowerSuccess": "TX napájení použito",
+    "xmodemInvalidFilename": "Název souboru obsahuje neplatné znaky",
+    "validationInvalidPsk": "Neplatný base64 PSK — zkontrolujte klíč a zkuste to znovu",
+    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

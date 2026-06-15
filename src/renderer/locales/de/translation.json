@@ -300,7 +300,9 @@
     "emptyNoMessagesYet": "Noch keine Nachrichten. Senden Sie eine oder warten Sie auf eingehende Nachrichten.",
     "emptyConnectFirst": "Verbinden Sie sich mit einem Gerät, um mit dem Chatten zu beginnen.",
     "waitingMessagesBadge": "{{count}} Nachricht(en) aus der Warteschlange vom Funkgerät werden synchronisiert...",
-    "waitingMessagesSyncNow": "Jetzt synchronisieren"
+    "waitingMessagesSyncNow": "Jetzt synchronisieren",
+    "jumpToUnread": "Gehe zu Ungelesen",
+    "jumpToLatest": "Zum neuesten Stand springen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2122,7 +2124,10 @@
     "txPowerMaxUnknown": "Sendeleistung (begrenzt auf {{max}} dBm, bis Firmware Funk-Max meldet)",
     "txPowerDeviceCurrent": "Gerätemeldungen {{current}} dBm (Schieber max {{max}} dBm)",
     "sectionTxPower": "TX Power",
-    "applyTxPowerSuccess": "TX-Leistung angelegt"
+    "applyTxPowerSuccess": "TX-Leistung angelegt",
+    "xmodemInvalidFilename": "Dateiname enthält unzulässige Zeichen.",
+    "validationInvalidPsk": "Ungültiges base64 PSK — überprüfen Sie den Schlüssel und versuchen Sie es erneut",
+    "meshcoreChannelNameRequired": "Kanalname darf nicht leer sein"
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",

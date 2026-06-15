@@ -1,5 +1,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 
+import { withTimeout } from '@/shared/withTimeout';
+
 /** SDK Xmodem keeps rx data in a private buffer — read after downloadFile settles. */
 interface XmodemInternal {
   rxBuffer: Uint8Array[];
@@ -21,7 +23,6 @@ function concatChunks(chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
-const XMODEM_POLL_MS = 200;
 const XMODEM_DOWNLOAD_TIMEOUT_MS = 120_000;
 
 /** Upload bytes to the connected Meshtastic device via firmware XMODEM. */
@@ -46,18 +47,17 @@ export async function meshtasticXmodemDownload(
 ): Promise<Uint8Array> {
   const internal = xmodemInternal(device);
   internal.rxBuffer = [];
-  const started = Date.now();
-  const kickoff = device.xModem.downloadFile(filename);
-  while (Date.now() - started < XMODEM_DOWNLOAD_TIMEOUT_MS) {
-    const chunks = internal.rxBuffer.filter((c) => c && c.length > 0);
-    if (chunks.length > 0) {
-      const result = await kickoff;
-      if (result !== 0) {
-        throw new Error(`XMODEM download rejected (code ${result})`);
-      }
-      return concatChunks(chunks);
-    }
-    await new Promise((r) => setTimeout(r, XMODEM_POLL_MS));
+  const result = await withTimeout(
+    device.xModem.downloadFile(filename),
+    XMODEM_DOWNLOAD_TIMEOUT_MS,
+    'XMODEM download',
+  );
+  if (result !== 0) {
+    throw new Error(`XMODEM download rejected (code ${result})`);
   }
-  throw new Error('XMODEM download timed out');
+  const chunks = internal.rxBuffer.filter((c) => c && c.length > 0);
+  if (chunks.length === 0) {
+    throw new Error('XMODEM download returned no data');
+  }
+  return concatChunks(chunks);
 }
