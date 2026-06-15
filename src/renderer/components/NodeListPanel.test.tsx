@@ -51,27 +51,38 @@ const { addToastMock } = vi.hoisted(() => ({
   addToastMock: vi.fn(),
 }));
 
-const { meshcoreContactCapacityState, offloadAndReconcileMock, refreshCountMock } = vi.hoisted(
-  () => ({
-    meshcoreContactCapacityState: {
-      contactCount: null as number | null,
-      loading: false,
-      summary: {
-        count: null as number | null,
-        level: 'normal',
-        isWarning: false,
-        isCritical: false,
-      },
+const {
+  meshcoreContactCapacityState,
+  offloadAndReconcileMock,
+  refreshCountMock,
+  cancelOffloadMock,
+} = vi.hoisted(() => ({
+  meshcoreContactCapacityState: {
+    contactCount: null as number | null,
+    loading: false,
+    offloadProgress: null as {
+      phase: 'saving' | 'removing' | 'reconciling';
+      current: number;
+      total: number;
+    } | null,
+    summary: {
+      count: null as number | null,
+      level: 'normal',
+      isWarning: false,
+      isCritical: false,
     },
-    offloadAndReconcileMock: vi.fn(),
-    refreshCountMock: vi.fn(),
-  }),
-);
+  },
+  offloadAndReconcileMock: vi.fn(),
+  refreshCountMock: vi.fn(),
+  cancelOffloadMock: vi.fn(),
+}));
 
 vi.mock('../hooks/useMeshcoreContactCapacity', () => ({
   useMeshcoreContactCapacity: () => ({
     contactCount: meshcoreContactCapacityState.contactCount,
     loading: meshcoreContactCapacityState.loading,
+    offloadProgress: meshcoreContactCapacityState.offloadProgress,
+    cancelOffload: cancelOffloadMock,
     summary: meshcoreContactCapacityState.summary,
     offloadAndReconcile: offloadAndReconcileMock,
     refreshCount: refreshCountMock,
@@ -95,6 +106,7 @@ describe('NodeListPanel accessibility', () => {
   beforeEach(() => {
     meshcoreContactCapacityState.contactCount = null;
     meshcoreContactCapacityState.loading = false;
+    meshcoreContactCapacityState.offloadProgress = null;
     meshcoreContactCapacityState.summary = {
       count: null,
       level: 'normal',
@@ -103,6 +115,7 @@ describe('NodeListPanel accessibility', () => {
     };
     offloadAndReconcileMock.mockReset();
     refreshCountMock.mockReset();
+    cancelOffloadMock.mockReset();
   });
 
   it('has no axe violations with empty nodes', async () => {
@@ -464,6 +477,32 @@ describe('NodeListPanel import contacts', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Offload' }));
     expect(offloadAndReconcileMock).toHaveBeenCalledWith(onRefreshContacts, undefined);
+  });
+
+  it('shows offload progress spinner and cancel while loading', () => {
+    meshcoreContactCapacityState.contactCount = 349;
+    meshcoreContactCapacityState.loading = true;
+    meshcoreContactCapacityState.offloadProgress = { phase: 'removing', current: 12, total: 349 };
+    meshcoreContactCapacityState.summary = {
+      count: 349,
+      level: 'critical',
+      isWarning: true,
+      isCritical: true,
+    };
+    render(
+      <NodeListPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByText('Removing 12 of 349…')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Offload' })).not.toBeInTheDocument();
   });
 
   it('renders full public key under name when meshcoreShowPublicKeys and map entry exist', () => {

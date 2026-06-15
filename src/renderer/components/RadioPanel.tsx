@@ -26,11 +26,18 @@ import {
 } from '@/shared/meshtasticUrlEncoder';
 
 import { serializeErrorLike } from '../hooks/meshcore/meshcoreHookPreamble';
-import { useMeshcoreContactCapacity } from '../hooks/useMeshcoreContactCapacity';
+import {
+  type OffloadContactsFromRadioFn,
+  useMeshcoreContactCapacity,
+} from '../hooks/useMeshcoreContactCapacity';
 import { useSyncFormFromConfig } from '../hooks/useSyncFormFromConfig';
 import type { OurPosition } from '../lib/gpsSource';
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshcoreAutoaddWireState } from '../lib/meshcoreContactAutoAdd';
+import {
+  isMeshcoreOffloadAbortError,
+  meshcoreOffloadAbortRemovedCount,
+} from '../lib/meshcoreOffload';
 import {
   MESHCORE_CHANNEL_INDEX_MAX,
   MESHCORE_CHANNEL_NAME_MAX_LEN,
@@ -227,9 +234,10 @@ function ContactCountBadge({
   onOffloadContactsFromRadio,
 }: {
   onRefreshContacts?: () => Promise<void>;
-  onOffloadContactsFromRadio?: () => Promise<number>;
+  onOffloadContactsFromRadio?: OffloadContactsFromRadioFn;
 }) {
-  const { contactCount, loading, offloadAndReconcile, summary } = useMeshcoreContactCapacity();
+  const { contactCount, loading, offloadProgress, cancelOffload, offloadAndReconcile, summary } =
+    useMeshcoreContactCapacity();
   const { addToast } = useToast();
   const { t } = useTranslation();
 
@@ -254,6 +262,16 @@ function ContactCountBadge({
         addToast(t('radioPanel.offloadReconcileRefreshFailed'), 'error');
       }
     } catch (e) {
+      if (isMeshcoreOffloadAbortError(e)) {
+        const removed = meshcoreOffloadAbortRemovedCount(e);
+        addToast(
+          removed > 0
+            ? t('radioPanel.offloadCancelledPartial', { count: removed })
+            : t('radioPanel.offloadCancelled'),
+          'info',
+        );
+        return;
+      }
       console.warn('[RadioPanel] offloadAllMeshcoreContacts error ' + errLikeToLogString(e));
       addToast(t('radioPanel.failedOffloadContacts'), 'error');
     }
@@ -271,17 +289,45 @@ function ContactCountBadge({
       >
         {contactCount ?? '?'}/{MESHCORE_MAX_CONTACTS}
       </span>
-      {contactCount !== null && contactCount > 0 && (
-        <button
-          type="button"
-          onClick={handleOffload}
-          disabled={loading}
-          className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50 disabled:opacity-40"
-          title={t('radioPanel.removeAllContactsTitle')}
-        >
-          {loading ? '...' : t('radioPanel.offloadContacts')}
-        </button>
-      )}
+      {contactCount !== null &&
+        contactCount > 0 &&
+        (loading ? (
+          <div
+            className="flex items-center gap-2"
+            role="status"
+            aria-live="polite"
+            aria-label={t('radioPanel.offloading')}
+          >
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+            <span>
+              {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
+                ? t('radioPanel.offloadingProgress', {
+                    current: offloadProgress.current,
+                    total: offloadProgress.total,
+                  })
+                : t('radioPanel.offloading')}
+            </span>
+            <button
+              type="button"
+              onClick={cancelOffload}
+              aria-label={t('common.cancel')}
+              className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              void handleOffload();
+            }}
+            className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+            title={t('radioPanel.removeAllContactsTitle')}
+          >
+            {t('radioPanel.offloadContacts')}
+          </button>
+        ))}
     </div>
   );
 }

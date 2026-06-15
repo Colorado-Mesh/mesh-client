@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Başarısız: {{message}}",
     "applyUserApplying": "Kullanıcı kimliği uygulanıyor…",
     "applyUserSuccess": "Kullanıcı kimliği başarıyla uygulandı!",
-    "applyLoraSuccess": "LoRa ayarları başarıyla uygulandı!"
+    "applyLoraSuccess": "LoRa ayarları başarıyla uygulandı!",
+    "offloading": "boşaltma",
+    "offloadingProgress": "{{current}}/{{total}} kaldırılıyor…",
+    "offloadCancelled": "Boşaltma iptal edildi.",
+    "offloadCancelledPartial": "{{count}} kontakları radyodan kaldırıldıktan sonra boşaltma iptal edildi."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

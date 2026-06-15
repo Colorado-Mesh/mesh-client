@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Помилка: {{message}}",
     "applyUserApplying": "Застосування ідентифікації користувача...",
     "applyUserSuccess": "Ідентифікатор користувача успішно застосовано!",
-    "applyLoraSuccess": "Налаштування LoRa успішно застосовано!"
+    "applyLoraSuccess": "Налаштування LoRa успішно застосовано!",
+    "offloading": "Розвантаження…",
+    "offloadingProgress": "Видалення {{current}} з {{total}}…",
+    "offloadCancelled": "Розвантаження скасовано.",
+    "offloadCancelledPartial": "Розвантаження скасовано після видалення {{count}} контактів з радіоприймача."
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",

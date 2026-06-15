@@ -5,6 +5,11 @@ import { flushSync } from 'react-dom';
 
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  isMeshcoreOffloadAbortError,
+  type MeshcoreOffloadFromRadioOptions,
+  throwIfMeshcoreOffloadAborted,
+} from '@/renderer/lib/meshcoreOffload';
 
 import { withTimeout } from '../../shared/withTimeout';
 import {
@@ -2787,53 +2792,66 @@ export function useMeshcoreRuntime() {
     }
   }, []);
 
-  const offloadContactsFromRadio = useCallback(async (): Promise<number> => {
-    const conn = connRef.current;
-    if (!conn) {
-      throw new Error('Not connected to radio');
-    }
-    const myId = myNodeNumRef.current;
-    const raw = await conn.getContacts();
-    const contacts = raw.map(meshcoreContactRawFromDevice);
-    const now = new Date().toISOString();
-    const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
-    for (const contact of contacts) {
-      const id = pubkeyToNodeId(contact.publicKey);
-      if (id === myId) continue;
-      const prevHops = nodesRef.current.get(id)?.hops_away;
-      const base = meshcoreContactToMeshNode(contact);
-      const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, prevHops, 0);
-      pendingDbRows.push(
-        contactToDbRow(contact, nicknameMapRef.current.get(id) ?? null, 1, now, mergedHops),
-      );
-    }
-    if (pendingDbRows.length > 0) {
-      try {
-        await window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
-      } catch (e: unknown) {
-        console.warn(
-          '[useMeshcoreRuntime] offloadContactsFromRadio saveMeshcoreContactsBatch error ' +
-            errLikeToLogString(e),
-        );
-        throw e;
+  const offloadContactsFromRadio = useCallback(
+    async (options?: MeshcoreOffloadFromRadioOptions): Promise<number> => {
+      const { signal, onProgress } = options ?? {};
+      const conn = connRef.current;
+      if (!conn) {
+        throw new Error('Not connected to radio');
       }
-    }
-    let removed = 0;
-    for (const c of raw) {
-      const id = pubkeyToNodeId(c.publicKey);
-      if (id === myId) continue;
-      try {
-        await conn.removeContact(c.publicKey);
-        removed += 1;
-      } catch (e: unknown) {
-        console.warn(
-          '[useMeshcoreRuntime] offloadContactsFromRadio removeContact error ' +
-            errLikeToLogString(e),
+      const myId = myNodeNumRef.current;
+      const raw = await conn.getContacts();
+      throwIfMeshcoreOffloadAborted(signal);
+      const contacts = raw.map(meshcoreContactRawFromDevice);
+      const now = new Date().toISOString();
+      const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
+      for (const contact of contacts) {
+        const id = pubkeyToNodeId(contact.publicKey);
+        if (id === myId) continue;
+        const prevHops = nodesRef.current.get(id)?.hops_away;
+        const base = meshcoreContactToMeshNode(contact);
+        const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, prevHops, 0);
+        pendingDbRows.push(
+          contactToDbRow(contact, nicknameMapRef.current.get(id) ?? null, 1, now, mergedHops),
         );
       }
-    }
-    return removed;
-  }, []);
+      const toRemove = pendingDbRows.length;
+      onProgress?.({ phase: 'saving', current: 0, total: toRemove });
+      if (pendingDbRows.length > 0) {
+        try {
+          await window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
+        } catch (e: unknown) {
+          console.warn(
+            '[useMeshcoreRuntime] offloadContactsFromRadio saveMeshcoreContactsBatch error ' +
+              errLikeToLogString(e),
+          );
+          throw e;
+        }
+      }
+      throwIfMeshcoreOffloadAborted(signal);
+      let removed = 0;
+      for (const c of raw) {
+        const id = pubkeyToNodeId(c.publicKey);
+        if (id === myId) continue;
+        throwIfMeshcoreOffloadAborted(signal, removed);
+        try {
+          await conn.removeContact(c.publicKey);
+          removed += 1;
+          onProgress?.({ phase: 'removing', current: removed, total: toRemove });
+        } catch (e: unknown) {
+          if (isMeshcoreOffloadAbortError(e)) {
+            throw e;
+          }
+          console.warn(
+            '[useMeshcoreRuntime] offloadContactsFromRadio removeContact error ' +
+              errLikeToLogString(e),
+          );
+        }
+      }
+      return removed;
+    },
+    [],
+  );
 
   const setOwner = useCallback(
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {

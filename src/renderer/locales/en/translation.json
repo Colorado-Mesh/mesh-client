@@ -1714,6 +1714,10 @@
     "applyLoraSuccess": "LoRa settings applied successfully!",
     "importConfigJson": "Import Config JSON",
     "offloadContacts": "Offload",
+    "offloading": "Offloading…",
+    "offloadingProgress": "Removing {{current}} of {{total}}…",
+    "offloadCancelled": "Offload cancelled.",
+    "offloadCancelledPartial": "Offload cancelled after removing {{count}} contacts from radio.",
     "deviceMetricsDescription": "Mesh broadcast: how often battery, voltage, and channel utilization are sent over LoRa. 0 = disabled; default 1800 s (30 min). Connected app: when linked over Bluetooth, serial, or Wi-Fi, the firmware often still pushes device metrics to this client about every 60 s for on-screen freshness—that is not the same as your mesh interval.",
     "deviceMetricsTooltip": "Meshtastic firmware sends device metrics to a connected client roughly once per minute for local monitoring, regardless of the mesh telemetry interval. Official reference: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {

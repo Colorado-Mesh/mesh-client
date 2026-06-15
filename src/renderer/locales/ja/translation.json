@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "失敗: {{message}}",
     "applyUserApplying": "ユーザーIDを適用しています…",
     "applyUserSuccess": "ユーザーIDが正常に適用されました！",
-    "applyLoraSuccess": "設定が適用されました。"
+    "applyLoraSuccess": "設定が適用されました。",
+    "offloading": "オフロードしています…",
+    "offloadingProgress": "{{total}}件中{{current}}件を削除しています…",
+    "offloadCancelled": "オフロードがキャンセルされました。",
+    "offloadCancelledPartial": "無線から{{count}}件の連絡先を削除した後、オフロードがキャンセルされました。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

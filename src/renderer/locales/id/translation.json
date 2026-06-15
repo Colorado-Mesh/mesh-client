@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Gagal: {{message}}",
     "applyUserApplying": "Menerapkan identitas pengguna…",
     "applyUserSuccess": "Identitas pengguna berhasil diterapkan!",
-    "applyLoraSuccess": "Pengaturan LoRa berhasil diterapkan!"
+    "applyLoraSuccess": "Pengaturan LoRa berhasil diterapkan!",
+    "offloading": "Pembongkaran muatan",
+    "offloadingProgress": "Menghapus {{current}} dari {{total}}…",
+    "offloadCancelled": "Offload dibatalkan.",
+    "offloadCancelledPartial": "Offload dibatalkan setelah menghapus kontak {{count}} dari radio."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

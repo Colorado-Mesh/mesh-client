@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "失败：{{message}}",
     "applyUserApplying": "正在应用用户身份…",
     "applyUserSuccess": "用户身份已成功应用！",
-    "applyLoraSuccess": "LoRa设置已成功应用！"
+    "applyLoraSuccess": "LoRa设置已成功应用！",
+    "offloading": "卸载中…",
+    "offloadingProgress": "正在移除第 {{current}} 个，共 {{total}} 个…",
+    "offloadCancelled": "卸载已取消。",
+    "offloadCancelledPartial": "从无线电中删除 {{count}} 个联系人后，已取消卸载。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

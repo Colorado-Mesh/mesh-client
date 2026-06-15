@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Ошибка: {{message}}",
     "applyUserApplying": "Применение удостоверения пользователя...",
     "applyUserSuccess": "Удостоверение пользователя успешно применено!",
-    "applyLoraSuccess": "Настройки LoRa успешно применены!"
+    "applyLoraSuccess": "Настройки LoRa успешно применены!",
+    "offloading": "Разгрузка",
+    "offloadingProgress": "Удаление {{current}} из {{total}}…",
+    "offloadCancelled": "Разгрузка отменена.",
+    "offloadCancelledPartial": "Разгрузка отменена после удаления контактов {{count}} из радиоприемника."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

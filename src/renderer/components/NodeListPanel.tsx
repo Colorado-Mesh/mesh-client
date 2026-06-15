@@ -21,7 +21,10 @@ import {
   meshtasticNodeIdMatchesHexQuery,
 } from '../../shared/nodeNameUtils';
 import type { LocationFilter } from '../App';
-import { useMeshcoreContactCapacity } from '../hooks/useMeshcoreContactCapacity';
+import {
+  type OffloadContactsFromRadioFn,
+  useMeshcoreContactCapacity,
+} from '../hooks/useMeshcoreContactCapacity';
 import {
   formatCoordColumns,
   latestPositionHistoryPoint,
@@ -32,6 +35,10 @@ import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfu
 import { downloadBlob } from '../lib/downloadBlob';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import {
+  isMeshcoreOffloadAbortError,
+  meshcoreOffloadAbortRemovedCount,
+} from '../lib/meshcoreOffload';
 import { MESHCORE_CONTACTS_WARNING_THRESHOLD, MESHCORE_MAX_CONTACTS } from '../lib/meshcoreUtils';
 import {
   MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS,
@@ -165,7 +172,7 @@ interface Props {
   meshcoreShowPublicKeys?: boolean;
   meshcorePublicKeyHexByNodeId?: Map<number, string>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
-  onOffloadContactsFromRadio?: () => Promise<number>;
+  onOffloadContactsFromRadio?: OffloadContactsFromRadioFn;
 }
 
 export default function NodeListPanel({
@@ -214,6 +221,8 @@ export default function NodeListPanel({
   const {
     contactCount,
     loading: offloadLoading,
+    offloadProgress,
+    cancelOffload,
     offloadAndReconcile,
     summary,
   } = useMeshcoreContactCapacity({ enabled: mode === 'meshcore' });
@@ -310,6 +319,16 @@ export default function NodeListPanel({
         addToast(t('radioPanel.offloadReconcileRefreshFailed'), 'error');
       }
     } catch (e) {
+      if (isMeshcoreOffloadAbortError(e)) {
+        const removed = meshcoreOffloadAbortRemovedCount(e);
+        addToast(
+          removed > 0
+            ? t('radioPanel.offloadCancelledPartial', { count: removed })
+            : t('radioPanel.offloadCancelled'),
+          'info',
+        );
+        return;
+      }
       console.warn('[NodeListPanel] offload contacts failed:', e instanceof Error ? e.message : e);
       addToast(t('radioPanel.failedOffloadContacts'), 'error');
     }
@@ -666,17 +685,43 @@ export default function NodeListPanel({
               })}
             </span>
             {contactCount !== null && contactCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  void handleOffloadContacts();
-                }}
-                disabled={offloadLoading}
-                aria-label={t('radioPanel.offloadContacts')}
-                className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50 disabled:opacity-40"
-              >
-                {offloadLoading ? '...' : t('radioPanel.offloadContacts')}
-              </button>
+              offloadLoading ? (
+                <div
+                  className="flex items-center gap-2"
+                  role="status"
+                  aria-live="polite"
+                  aria-label={t('radioPanel.offloading')}
+                >
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+                  <span>
+                    {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
+                      ? t('radioPanel.offloadingProgress', {
+                          current: offloadProgress.current,
+                          total: offloadProgress.total,
+                        })
+                      : t('radioPanel.offloading')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={cancelOffload}
+                    aria-label={t('common.cancel')}
+                    className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleOffloadContacts();
+                  }}
+                  aria-label={t('radioPanel.offloadContacts')}
+                  className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+                >
+                  {t('radioPanel.offloadContacts')}
+                </button>
+              )
             ) : null}
           </div>
         </div>

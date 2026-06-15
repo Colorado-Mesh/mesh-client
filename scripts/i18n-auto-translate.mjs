@@ -27,8 +27,10 @@ import { fileURLToPath } from 'node:url';
 
 import {
   filterMissingKeysToTranslate,
+  restorePlaceholders,
   sanitizeLocaleTranslationJsonFileBodyForDisk,
   setDeepLocaleValue,
+  stripPlaceholders,
 } from './i18n-auto-translate-lib.mjs';
 
 /** RFC 6585 / IANA: Too Many Requests (avoid hardcoded status literals for static analysis). */
@@ -76,20 +78,6 @@ function flatten(obj, prefix = '') {
     }
   }
   return out;
-}
-
-function stripPlaceholders(str) {
-  const placeholders = [];
-  const stripped = str.replace(/\{\{[^}]+\}\}/g, (m) => {
-    const idx = placeholders.length;
-    placeholders.push(m);
-    return `__PH${idx}__`;
-  });
-  return { stripped, placeholders };
-}
-
-function restorePlaceholders(str, placeholders) {
-  return str.replace(/__PH(\d+)__/g, (_, idx) => placeholders[Number(idx)] ?? '');
 }
 
 function readJson(path) {

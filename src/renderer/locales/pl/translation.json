@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Niepowodzenie: {{message}}",
     "applyUserApplying": "Stosowanie tożsamości użytkownika…",
     "applyUserSuccess": "Tożsamość użytkownika została pomyślnie zastosowana!",
-    "applyLoraSuccess": "Ustawienia LoRa zostały pomyślnie zastosowane!"
+    "applyLoraSuccess": "Ustawienia LoRa zostały pomyślnie zastosowane!",
+    "offloading": "rozładunek",
+    "offloadingProgress": "Usuwanie {{current}} z {{total}}…",
+    "offloadCancelled": "Anulowano rozładunek.",
+    "offloadCancelledPartial": "Anulowano odciążanie po usunięciu kontaktów {{count}} z radia."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Échec : {{message}}",
     "applyUserApplying": "Application de l'identité de l'utilisateur…",
     "applyUserSuccess": "Identité de l'utilisateur appliquée avec succès !",
-    "applyLoraSuccess": "Paramètres LoRa appliqués avec succès !"
+    "applyLoraSuccess": "Paramètres LoRa appliqués avec succès !",
+    "offloading": "Offloading",
+    "offloadingProgress": "Suppression de {{current}} de {{total}}…",
+    "offloadCancelled": "Déchargement annulé.",
+    "offloadCancelledPartial": "Déchargement annulé après avoir supprimé les contacts {{count}} de la radio."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

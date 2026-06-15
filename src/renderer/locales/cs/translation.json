@@ -2073,7 +2073,11 @@
     "applyStatusFailed": "Nezdařilo se: {{message}}",
     "applyUserApplying": "Aplikuje se identita uživatele...",
     "applyUserSuccess": "Identita uživatele byla úspěšně použita!",
-    "applyLoraSuccess": "Nastavení LoRa bylo úspěšně použito!"
+    "applyLoraSuccess": "Nastavení LoRa bylo úspěšně použito!",
+    "offloading": "Vykládání...",
+    "offloadingProgress": "Odstranění {{current}} z {{total}}…",
+    "offloadCancelled": "Odstranění zátěže bylo zrušeno.",
+    "offloadCancelledPartial": "Snížení zátěže bylo zrušeno po odstranění kontaktů {{count}} z rádia."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

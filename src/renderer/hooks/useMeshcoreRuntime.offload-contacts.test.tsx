@@ -4,6 +4,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { isMeshcoreOffloadAbortError } from '../lib/meshcoreOffload';
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 
 vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -23,6 +24,8 @@ function pubKeyBytesFromHex(hex: string): Uint8Array {
 }
 
 const PEER_PUBKEY = pubKeyBytesFromHex(PEER_PUBKEY_HEX);
+const PEER_PUBKEY_2_HEX = '2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40';
+const PEER_PUBKEY_2 = pubKeyBytesFromHex(PEER_PUBKEY_2_HEX);
 const PEER_NODE_ID = pubkeyToNodeId(PEER_PUBKEY);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
@@ -249,5 +252,88 @@ describe('useMeshcoreRuntime offloadContactsFromRadio', () => {
     expect(removeContactMock).toHaveBeenCalledWith(PEER_PUBKEY);
     expect(removeContactMock).not.toHaveBeenCalledWith(SELF_PUBKEY);
     void MY_NODE_ID;
+  });
+
+  it('stops removeContact loop when aborted mid-offload', async () => {
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: PEER_PUBKEY,
+        type: 1,
+        advName: 'PeerOffload',
+        lastAdvert: 1_700_000_000,
+        advLat: 0,
+        advLon: 0,
+        flags: 0,
+        outPathLen: 0,
+        outPath: new Uint8Array(0),
+      },
+      {
+        publicKey: PEER_PUBKEY_2,
+        type: 1,
+        advName: 'PeerOffload2',
+        lastAdvert: 1_700_000_000,
+        advLat: 0,
+        advLon: 0,
+        flags: 0,
+        outPathLen: 0,
+        outPath: new Uint8Array(0),
+      },
+      {
+        publicKey: SELF_PUBKEY,
+        type: 1,
+        advName: 'SelfRadio',
+        lastAdvert: 1_700_000_000,
+        advLat: 0,
+        advLon: 0,
+        flags: 0,
+        outPathLen: 0,
+        outPath: new Uint8Array(0),
+      },
+    ]);
+
+    const controller = new AbortController();
+    let removeCalls = 0;
+    removeContactMock.mockImplementation(() => {
+      removeCalls += 1;
+      if (removeCalls >= 1) {
+        controller.abort();
+      }
+      return Promise.resolve();
+    });
+
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort: vi.fn().mockResolvedValue(port) },
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    removeContactMock.mockClear();
+    removeCalls = 0;
+    removeContactMock.mockImplementation(() => {
+      removeCalls += 1;
+      if (removeCalls >= 1) {
+        controller.abort();
+      }
+      return Promise.resolve();
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.offloadContactsFromRadio({ signal: controller.signal }),
+      ).rejects.toSatisfy((e: unknown) => isMeshcoreOffloadAbortError(e));
+    });
+
+    expect(removeContactMock).toHaveBeenCalledTimes(1);
+    expect(removeContactMock).toHaveBeenCalledWith(PEER_PUBKEY);
   });
 });
