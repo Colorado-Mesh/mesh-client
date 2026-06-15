@@ -63,7 +63,7 @@ import {
   saveStarred,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
-import { getDistFromChatBottom } from '../lib/chatScrollUtils';
+import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
 import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
@@ -433,6 +433,8 @@ function ChatPanel({
   const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
+  const isPinnedToBottomRef = useRef(true);
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -671,6 +673,37 @@ function ChatPanel({
     return msgs;
   }, [searchQuery, viewMessages, filterSender]);
 
+  const messageVirtualizer = useVirtualizer({
+    count: filteredMessages.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => (compactMode ? 56 : 96),
+    overscan: 10,
+    getItemKey: (index) => {
+      const msg = filteredMessages[index];
+      if (!msg) return index;
+      return msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
+    },
+    anchorTo: 'end',
+    followOnAppend: true,
+    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
+  });
+
+  const messageVirtualizerRef = useRef(messageVirtualizer);
+  messageVirtualizerRef.current = messageVirtualizer;
+
+  const computeIsAtChatEnd = useCallback(() => {
+    const inner = scrollContainerRef.current;
+    if (!inner) return false;
+    const virtualAtEnd = messageVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
+    const outerDist = getDistFromChatBottom(
+      inner,
+      messagesEndRef.current,
+      outerScrollMetricsRootRef?.current ?? null,
+    );
+    if (outerDist != null && outerDist > CHAT_SCROLL_END_THRESHOLD) return false;
+    return virtualAtEnd;
+  }, [outerScrollMetricsRootRef]);
+
   const viewKey = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
     return `ch:${channel}`;
@@ -762,15 +795,17 @@ function ChatPanel({
   }, [messages, isActive, mutedViews, viewKey, isOwnNode, resolveDmPeer]);
 
   const updateScrollButtonVisibility = useCallback(() => {
+    const atEnd = computeIsAtChatEnd();
+    isPinnedToBottomRef.current = atEnd;
+    setShowScrollButton(!atEnd);
     const distFromBottom = getDistFromChatBottom(
       scrollContainerRef.current,
       messagesEndRef.current,
       outerScrollMetricsRootRef?.current ?? null,
     );
     if (distFromBottom == null) return undefined;
-    setShowScrollButton(distFromBottom > 200);
     return distFromBottom;
-  }, [outerScrollMetricsRootRef]);
+  }, [computeIsAtChatEnd, outerScrollMetricsRootRef]);
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
@@ -835,30 +870,14 @@ function ChatPanel({
     });
   }, [updateScrollButtonVisibility]);
 
-  // Auto-scroll on new messages (only if near bottom)
+  // Refresh scroll button + mark-read when message list changes (followOnAppend handles auto-scroll when pinned).
   useEffect(() => {
     if (!isActive || document.hidden) return;
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const distFromBottom = getDistFromChatBottom(
-      el,
-      messagesEndRef.current,
-      outerScrollMetricsRootRef?.current ?? null,
-    );
-    if (distFromBottom != null && distFromBottom < 200) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
     requestAnimationFrame(() => {
       const dist = updateScrollButtonVisibility();
       if (dist !== undefined) applyNearBottomReadState(dist);
     });
-  }, [
-    filteredMessages.length,
-    isActive,
-    outerScrollMetricsRootRef,
-    updateScrollButtonVisibility,
-    applyNearBottomReadState,
-  ]);
+  }, [filteredMessages.length, isActive, updateScrollButtonVisibility, applyNearBottomReadState]);
 
   // Outer shell scroll (when the message list box does not overflow on its own)
   useEffect(() => {
@@ -897,8 +916,10 @@ function ChatPanel({
     if (!isActive) return; // skip while hidden
     if (unreadDividerRef.current) {
       unreadDividerRef.current.scrollIntoView({ block: 'center' });
+      isPinnedToBottomRef.current = false;
     } else {
-      messagesEndRef.current?.scrollIntoView();
+      messageVirtualizerRef.current.scrollToEnd();
+      isPinnedToBottomRef.current = true;
     }
     requestAnimationFrame(() => {
       const dist = updateScrollButtonVisibility();
@@ -906,7 +927,9 @@ function ChatPanel({
       // check here and mark read if the user is already at the bottom.
       if (dist !== undefined && dist < 50) applyNearBottomReadState(dist);
     });
-  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility, applyNearBottomReadState]);
+    // Only scroll on explicit view-switch trigger — not when message list or virtualizer updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
+  }, [triggerScrollToUnread, isActive]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -918,6 +941,7 @@ function ChatPanel({
   const scrollToUnreadOrBottom = useCallback(() => {
     const el = scrollContainerRef.current;
     if (unreadDividerRef.current) {
+      isPinnedToBottomRef.current = false;
       if (el) {
         const onEnd = () => {
           el.removeEventListener('scrollend', onEnd);
@@ -932,7 +956,8 @@ function ChatPanel({
       }
       unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
     } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messageVirtualizerRef.current.scrollToEnd({ behavior: 'smooth' });
+      isPinnedToBottomRef.current = true;
     }
   }, [applyNearBottomReadState, outerScrollMetricsRootRef]);
 
@@ -1113,18 +1138,6 @@ function ChatPanel({
     }
     return -1;
   }, [filteredMessages, isOwnNode, searchQuery, unreadDividerTimestamp]);
-
-  const messageVirtualizer = useVirtualizer({
-    count: filteredMessages.length,
-    getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => (compactMode ? 56 : 96),
-    overscan: 10,
-    getItemKey: (index) => {
-      const msg = filteredMessages[index];
-      if (!msg) return index;
-      return msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
-    },
-  });
 
   // Linux reaction picker — attach emoji-click on the <emoji-picker> web component
   useEffect(() => {
@@ -1655,6 +1668,7 @@ function ChatPanel({
             </div>
           ) : (
             <div
+              ref={messageVirtualizer.containerRef}
               className="relative w-full"
               style={{ height: `${messageVirtualizer.getTotalSize()}px` }}
             >
@@ -1926,7 +1940,11 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              <ChatPayloadText text={msg.payload} query={searchQuery} />
+                              <ChatPayloadText
+                                text={msg.payload}
+                                query={searchQuery}
+                                loadLinkPreviews={!showScrollButton}
+                              />
                             </div>
 
                             {/* Transport + RF hop count (incoming) */}
@@ -2189,11 +2207,7 @@ function ChatPanel({
         {showScrollButton && (
           <button
             onClick={() => {
-              if (unreadDividerRef.current) {
-                scrollToUnreadOrBottom();
-              } else {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }
+              scrollToUnreadOrBottom();
             }}
             className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
           >

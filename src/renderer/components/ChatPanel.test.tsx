@@ -12,21 +12,36 @@ import { ToastProvider } from './Toast';
 
 vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
 
+let mockIsAtEnd = true;
+const mockScrollToEnd = vi.fn();
+let lastVirtualizerOptions: Record<string, unknown> | undefined;
+
 vi.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: ({ count }: { count: number }) => ({
-    getVirtualItems: () =>
-      Array.from({ length: count }, (_, index) => ({
-        index,
-        key: index,
-        start: index * 96,
-      })),
-    getTotalSize: () => count * 96,
-    measureElement: () => {},
-  }),
+  useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
+    lastVirtualizerOptions = opts;
+    const count = opts.count;
+    return {
+      getVirtualItems: () =>
+        Array.from({ length: count }, (_, index) => ({
+          index,
+          key: index,
+          start: index * 96,
+        })),
+      getTotalSize: () => count * 96,
+      measureElement: () => {},
+      containerRef: { current: null },
+      isAtEnd: () => mockIsAtEnd,
+      scrollToEnd: mockScrollToEnd,
+      scrollDirection: 'forward',
+    };
+  },
 }));
 
 beforeEach(() => {
   localStorage.clear();
+  mockIsAtEnd = true;
+  mockScrollToEnd.mockClear();
+  lastVirtualizerOptions = undefined;
 });
 
 describe('ChatPanel accessibility', () => {
@@ -825,6 +840,94 @@ describe('getDistFromChatBottom', () => {
       toJSON: () => ({}),
     });
     expect(getDistFromChatBottom(inner, end, root)).toBe(150);
+  });
+});
+
+describe('ChatPanel scroll pinning', () => {
+  const baseProps = {
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+  };
+
+  const makeMsg = (idx: number): ChatMessage => ({
+    sender_id: 2,
+    sender_name: 'Alice',
+    payload: `message ${idx}`,
+    channel: 0,
+    timestamp: Date.now() - (100 - idx) * 1000,
+    status: 'acked',
+  });
+
+  it('configures TanStack Virtual with chat scroll contract', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg(0)]} />
+      </ToastProvider>,
+    );
+    expect(lastVirtualizerOptions?.anchorTo).toBe('end');
+    expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
+    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(200);
+  });
+
+  it('does not scroll to end when message count increases while reading history', async () => {
+    mockIsAtEnd = false;
+    const scrollIntoView = vi.fn();
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+
+    const initial = Array.from({ length: 5 }, (_, i) => makeMsg(i));
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={initial} />
+      </ToastProvider>,
+    );
+
+    mockScrollToEnd.mockClear();
+    scrollIntoView.mockClear();
+
+    const more = [...initial, makeMsg(5), makeMsg(6)];
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={more} />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockScrollToEnd).not.toHaveBeenCalled();
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('shows Jump to Latest when virtualizer reports not at end', async () => {
+    mockIsAtEnd = false;
+    const longMessages = Array.from({ length: 20 }, (_, idx) => makeMsg(idx));
+
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={longMessages} />
+      </ToastProvider>,
+    );
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    fireEvent.scroll(scrollContainer);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
+    });
   });
 });
 

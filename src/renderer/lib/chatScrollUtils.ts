@@ -1,3 +1,6 @@
+/** Pixels from latest message treated as “at bottom” (Jump to Latest, follow-on-append, mark read). */
+export const CHAT_SCROLL_END_THRESHOLD = 200;
+
 /**
  * Distance from the “bottom” of the chat (latest messages). Uses the **maximum** of:
  * - Inner `overflow-y-auto` distance when the message list overflows, and
