@@ -52,6 +52,18 @@ module.exports = async function electronBuilderAfterPack(context) {
   );
 
   res.outputResource(exe);
-  fs.writeFileSync(exePath, Buffer.from(exe.generate()));
+  const outData = Buffer.from(exe.generate());
+  const tmpPath = `${exePath}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, outData);
+    fs.renameSync(tmpPath, exePath);
+  } catch (e) {
+    try {
+      fs.rmSync(tmpPath, { force: true });
+    } catch {
+      // catch-no-log-ok best-effort cleanup
+    }
+    throw e;
+  }
   console.debug(`[afterPack] Embedded longPathAware manifest: ${exePath}`);
 };

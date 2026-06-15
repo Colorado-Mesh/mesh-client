@@ -17,6 +17,8 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     expect(hook).toContain('resedit');
     expect(hook).toMatch(/RT_MANIFEST_TYPE|type === 24/);
     expect(hook).toContain('mesh-client-long-path.manifest.xml');
+    expect(hook).toContain('renameSync');
+    expect(hook).toMatch(/\.tmp['"`]/);
 
     const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
       devDependencies?: Record<string, string>;
