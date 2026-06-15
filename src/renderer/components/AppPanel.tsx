@@ -130,6 +130,8 @@ interface AppSettings {
   messageLimitEnabled: boolean;
   messageLimitCount: number;
   autoFloodAdvertIntervalHours: number;
+  autoFloodAdvertType: 'flood' | 'zeroHop';
+  meshcoreFloodScopeHashtag: string;
   chatCompactMode: boolean;
   storeForwardAutoFetchHistory: boolean;
   reduceMotion: boolean;
@@ -168,6 +170,7 @@ interface Props {
   onMessagesPruned?: (opts?: MessageClearRefreshOptions) => void;
   onClearMeshcoreRepeaters?: () => Promise<void>;
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
+  onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
   onChatCompactModeChange?: (compact: boolean) => void;
 }
 
@@ -198,6 +201,7 @@ export default function AppPanel({
   onMessagesPruned,
   onClearMeshcoreRepeaters,
   onAutoFloodAdvertIntervalChange,
+  onAutoFloodAdvertTypeChange,
   onChatCompactModeChange,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
@@ -623,6 +627,22 @@ export default function AppPanel({
               <option value={24}>{t('appPanel.floodAdvertEvery24h')}</option>
             </select>
             <p className="text-muted text-xs">{t('appPanel.floodAdvertHelp')}</p>
+            <label htmlFor="flood-advert-type" className="text-sm text-gray-300">
+              {t('appPanel.floodAdvertTypeLabel')}
+            </label>
+            <select
+              id="flood-advert-type"
+              value={settings.autoFloodAdvertType}
+              onChange={(e) => {
+                const type = e.target.value === 'zeroHop' ? 'zeroHop' : 'flood';
+                setSettings((prev) => ({ ...prev, autoFloodAdvertType: type }));
+                onAutoFloodAdvertTypeChange?.(type);
+              }}
+              className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+            >
+              <option value="flood">{t('appPanel.floodAdvertTypeFlood')}</option>
+              <option value="zeroHop">{t('appPanel.floodAdvertTypeZeroHop')}</option>
+            </select>
           </div>
         </div>
       )}

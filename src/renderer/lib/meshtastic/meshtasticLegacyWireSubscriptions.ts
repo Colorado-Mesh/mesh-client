@@ -94,6 +94,7 @@ import type {
 import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
+import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
 
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
@@ -191,6 +192,7 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
   meshtasticIngestSessionRef: RefObject<MeshtasticIngestSession | null>;
   meshtasticIngressDetachRef: RefObject<(() => void) | null>;
   messagesRef: RefObject<ChatMessage[]>;
+  mqttClientProxyBridgeRef: RefObject<MeshtasticMqttClientProxyBridge | null>;
   mqttStatusRef: RefObject<MQTTStatus>;
   myNodeNumRef: RefObject<number>;
   nodesRef: RefObject<Map<number, MeshNode>>;
@@ -354,6 +356,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     meshtasticIngestSessionRef,
     meshtasticIngressDetachRef,
     messagesRef,
+    mqttClientProxyBridgeRef,
     mqttStatusRef,
     myNodeNumRef,
     nodesRef,
@@ -537,6 +540,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       startGpsInterval();
       setQueueStatus({ free: 16, maxlen: 16, res: 0 });
       deviceConfiguredRef.current = true;
+      mqttClientProxyBridgeRef.current?.flushPendingToDevice();
       const myNode = myNodeNumRef.current;
       if (myNode > 0) {
         const requestMetadataAfterConfigure = (attempt: 1 | 2): void => {
@@ -1673,6 +1677,14 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   const unsubFromRadio = device.events.onFromRadio.subscribe((packet) => {
     const variant = packet.payloadVariant;
+    if (variant?.case === 'mqttClientProxyMessage') {
+      void mqttClientProxyBridgeRef.current?.handleFromRadio(packet).catch((e: unknown) => {
+        console.warn(
+          '[useMeshtasticRuntime] mqttClientProxy FromRadio failed ' + errLikeToLogString(e),
+        );
+      });
+      return;
+    }
     if (variant?.case === 'clientNotification') {
       const message = variant.value?.message;
       if (typeof message === 'string' && message.trim()) {

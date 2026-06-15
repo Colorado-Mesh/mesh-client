@@ -178,7 +178,10 @@
     "reduceMotion": "Zmniejszyć ruch",
     "reduceMotionDesc": "Wyłącza animowane ikony i efekty dekoracyjne. Wskaźniki ładowania i stanu połączenia nadal są animowane.",
     "roomMessages": "Wiadomości z pokoju",
-    "importSchemaTooNew": "Ten plik bazy danych wymaga nowszego klienta Mesh (schemat {{dbVersion}}). Ta kompilacja obsługuje schemat {{appVersion}} lub starszy. Zainstaluj najnowszą wersję i spróbuj ponownie."
+    "importSchemaTooNew": "Ten plik bazy danych wymaga nowszego klienta Mesh (schemat {{dbVersion}}). Ta kompilacja obsługuje schemat {{appVersion}} lub starszy. Zainstaluj najnowszą wersję i spróbuj ponownie.",
+    "floodAdvertTypeLabel": "Typ ogłoszenia",
+    "floodAdvertTypeFlood": "Powódź (wielokrotny przeskok)",
+    "floodAdvertTypeZeroHop": "Zero hop (tylko bezpośredni sąsiedzi)"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "Brak wiadomości pasujących do wyszukiwania",
     "emptyNoDmMessages": "Nie ma jeszcze wiadomości z {{name}}.",
     "emptyNoMessagesYet": "Brak wiadomości. Wyślij jedną lub poczekaj na przychodzące wiadomości.",
-    "emptyConnectFirst": "Połącz się z urządzeniem, aby rozpocząć rozmowę."
+    "emptyConnectFirst": "Połącz się z urządzeniem, aby rozpocząć rozmowę.",
+    "waitingMessagesBadge": "Synchronizowanie wiadomości oczekujących {{count}} z radia…",
+    "waitingMessagesSyncNow": "Synchronizuj teraz"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "Włącz zdalny sprzęt",
       "remoteHardwareEnabledDesc": "Zezwala zdalnym węzłom na odczyt i zapis pinów GPIO na tym urządzeniu.",
       "remoteHardwareAllowUndefinedPins": "Zezwól na dostęp do niezdefiniowanych pinów",
-      "remoteHardwareAllowUndefinedPinsDesc": "Zezwala na odczyt/zapis pinów niewymienionych w konfiguracji dostępnych pinów."
+      "remoteHardwareAllowUndefinedPinsDesc": "Zezwala na odczyt/zapis pinów niewymienionych w konfiguracji dostępnych pinów.",
+      "mqttProxyGatewayHint": "Z włączonym proxy, mesh-client łączy ruch brokera przez MqttClientProxyMessage. Włącz łącze w dół dla poszczególnych kanałów na karcie Radio dla przekaźnika MQTT→RF.",
+      "mapReportPublishInterval": "Interwał raportowania mapy (sekundy)",
+      "mapReportPublishIntervalDesc": "0 używa domyślnego oprogramowania sprzętowego. Jak często urządzenie publikuje raporty map po włączeniu raportowania map.",
+      "mapReportPositionPrecision": "Odwzoruj dokładność pozycji raportu",
+      "mapReportPositionPrecisionDesc": "Dokładność współrzędnych raportu mapy (firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Zastosuj {{section}}",
     "applyingButton": "Stosowanie...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "Tunel IP",
       "gpio": "GPIO",
       "rangeTest": "Test zasięgu",
-      "storeForward": "Otrzymano S&F"
+      "storeForward": "Otrzymano S&F",
+      "audio": "Dźwięk"
     },
     "errors": {
       "generic": "Urządzenie odrzuciło tę zmianę.",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "Włącz",
     "remoteHardwareConfirmUndefinedPinsTitle": "Zezwolić na niezdefiniowany dostęp PIN?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Każdy kod PIN GPIO może być odczytywany lub zapisywany zdalnie, w tym piny niewymienione w konfiguracji sprzętu. Zwiększa to ryzyko dla bezpieczeństwa.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Zezwalaj na niezdefiniowane pinezki"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Zezwalaj na niezdefiniowane pinezki",
+    "sectionDebugModules": "Moduły debugowania",
+    "sectionAudio": "Moduł audio",
+    "debugSimulatorPackets": "Pakiety symulatora",
+    "debugPrivateAppMessages": "Prywatne wiadomości w aplikacji",
+    "debugPingResponses": "Odpowiedzi ping",
+    "sectionMapReport": "Raport mapy",
+    "sectionMapReportHint": "Publikuje pozycję na mapie Meshtastic nad MQTT. Wymaga włączenia przekaźnika MQTT powyżej; ustawienia są przechowywane w konfiguracji modułu MQTT urządzenia."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Usuń z ulubionych",
@@ -2077,7 +2095,34 @@
     "offloading": "rozładunek",
     "offloadingProgress": "Usuwanie {{current}} z {{total}}…",
     "offloadCancelled": "Anulowano rozładunek.",
-    "offloadCancelledPartial": "Anulowano odciążanie po usunięciu kontaktów {{count}} z radia."
+    "offloadCancelledPartial": "Anulowano odciążanie po usunięciu kontaktów {{count}} z radia.",
+    "xmodemSection": "Transfer plików XMODEM",
+    "xmodemSectionHint": "Przesyłaj pliki do/z podłączonego oprogramowania sprzętowego radia (tylko połączenie lokalne).",
+    "xmodemFilenameLabel": "Zdalna nazwa pliku",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Prześlij plik",
+    "xmodemDownload": "Pobierz plik",
+    "xmodemUploadSuccess": "Przesłano {{name}}",
+    "xmodemDownloadSuccess": "Pobrano: {{name}}",
+    "xmodemFailed": "XMODEM nie powiódł się: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Wysłano ogłoszenie zero-hop",
+    "floodScopeTitle": "Regionalny zasięg powodzi",
+    "floodScopeHelp": "Ogranicz ruch powodziowy do regionu z hashtagiem (firmware v8+). Wymaga meshcore.js setFloodScope; ponowne połączenie powoduje zapisanie endoskopu.",
+    "floodScopeNone": "Brak (jasny zakres)",
+    "floodScopePreset": "Wstępnie ustawiony hashtag",
+    "floodScopePresetSelect": "Hashtag regionu ustawień wstępnych",
+    "floodScopeCustom": "Niestandardowy hasztag",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Zastosuj zakres zalewania",
+    "floodScopeApplySuccess": "Zastosowano zakres powodzi",
+    "floodScopeApplyFailed": "Zakres powodzi nie powiódł się: {{message}}",
+    "advertisedPositionLabel": "Ogłoszenie: {{lat}}, {{lon}}",
+    "txPowerMax": "Moc nadawania (maks. {{max}} dBm na radio)",
+    "txPowerMaxUnknown": "Moc nadawania (ograniczona do {{max}} dBm, dopóki oprogramowanie sprzętowe nie zgłosi maks. sygnału radiowego)",
+    "txPowerDeviceCurrent": "Urządzenie zgłasza {{current}} dBm (suwak maks. {{max}} dBm)",
+    "sectionTxPower": "Moc optyczna Tx",
+    "applyTxPowerSuccess": "Zastosowano zasilanie TX"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "Filtruj według typu, nazwy lub szesnastkowo...",
     "emptyWaiting": "Nie otrzymano jeszcze żadnych nowych pakietów mesh. Proszę czekać...",
     "noPacketsMatchFilter": "Żaden pakiet nie pasuje do bieżącego filtra.",
-    "rawHexLabel": "Surowy szesnastkowy ({{bytes}} bajtów):"
+    "rawHexLabel": "Surowy szesnastkowy ({{bytes}} bajtów):",
+    "transportScopeTooltip": "Kod zakresu transportu — regionalny filtr przeciwpowodziowy na ścieżce wychodzącej",
+    "transportReturnTooltip": "Transportowy kod zwrotny — filtr regionalny na ścieżce powrotnej",
+    "transportRegionMatch": "Dopasowuje skonfigurowany zakres powodzi",
+    "transportRegionMismatch": "Nie odpowiada skonfigurowanemu zakresowi zalania",
+    "transportLegendHint": "Rozwiń wiersz: trasa i transport są na górze. Regionalne kody scope/return pojawiają się tylko w pakietach TRANSPORT_FLOOD i TRANSPORT_DIRECT (nie w zwykłych FLOOD/DIRECT).",
+    "routeLabel": "Trasa",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Brak regionalnych kodów transportu (trasa {{route}} — tylko TRANSPORT_FLOOD / TRANSPORT_DIRECT niosą scope/return).",
+    "transportCodesAbsentTooltip": "Zwykłe pakiety FLOOD i DIRECT nie zawierają regionalnych pól scope/return transportu w nagłówku RF MeshCore."
   },
   "remoteAdmin": {
     "errors": {

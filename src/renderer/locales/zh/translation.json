@@ -178,7 +178,10 @@
     "reduceMotion": "减少动态效果",
     "reduceMotionDesc": "禁用动画图标和装饰效果。加载指示器和连接状态指示器仍会动画显示。",
     "roomMessages": "房间消息",
-    "importSchemaTooNew": "此数据库文件需要较新的 Mesh-Client（架构 {{dbVersion}}）。此版本仅支持架构 {{appVersion}} 或更早版本。请安装最新版本后重试。"
+    "importSchemaTooNew": "此数据库文件需要较新的 Mesh-Client（架构 {{dbVersion}}）。此版本仅支持架构 {{appVersion}} 或更早版本。请安装最新版本后重试。",
+    "floodAdvertTypeLabel": "通告类型",
+    "floodAdvertTypeFlood": "洪水（多跳）",
+    "floodAdvertTypeZeroHop": "零跳（仅限直系邻居）"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "没有消息符合您的搜索条件",
     "emptyNoDmMessages": "暂无与 {{name}} 的消息。",
     "emptyNoMessagesYet": "还没有消息。发送消息或等待传入消息。",
-    "emptyConnectFirst": "连接到设备以开始聊天。"
+    "emptyConnectFirst": "连接到设备以开始聊天。",
+    "waitingMessagesBadge": "正在同步来自无线电的{{count}}队列消息…",
+    "waitingMessagesSyncNow": "立即同步"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "启用远程硬件",
       "remoteHardwareEnabledDesc": "允许远程节点读取和写入此设备上的 GPIO 引脚。",
       "remoteHardwareAllowUndefinedPins": "允许访问未定义引脚",
-      "remoteHardwareAllowUndefinedPinsDesc": "允许读取/写入未在可用引脚配置中列出的引脚。"
+      "remoteHardwareAllowUndefinedPinsDesc": "允许读取/写入未在可用引脚配置中列出的引脚。",
+      "mqttProxyGatewayHint": "启用代理后，网格客户端通过MqttClientProxyMessage桥接流量。在MQTT→射频中继的“无线电”选项卡上启用每通道下行链路。",
+      "mapReportPublishInterval": "映射报告间隔（秒）",
+      "mapReportPublishIntervalDesc": "0使用固件默认值。启用地图报告后，设备发布地图报告的频率。",
+      "mapReportPositionPrecision": "地图报告位置精度",
+      "mapReportPositionPrecisionDesc": "地图报告坐标的精度位（固件ModuleConfig.mqtt.map_report_settings ）。"
     },
     "applySection": "申请 {{section}}",
     "applyingButton": "正在申请...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "IP隧道",
       "gpio": "GPIO",
       "rangeTest": "范围测试",
-      "storeForward": "收到S&F"
+      "storeForward": "收到S&F",
+      "audio": "音频"
     },
     "errors": {
       "generic": "设备拒绝了此更改。",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "启用",
     "remoteHardwareConfirmUndefinedPinsTitle": "是否允许未定义的PIN访问？",
     "remoteHardwareConfirmUndefinedPinsMessage": "任何GPIO引脚都可以远程读取或写入，包括硬件配置中未列出的引脚。这增加了安全风险。",
-    "remoteHardwareConfirmUndefinedPinsLabel": "允许未定义的引脚"
+    "remoteHardwareConfirmUndefinedPinsLabel": "允许未定义的引脚",
+    "sectionDebugModules": "调试模块",
+    "sectionAudio": "音频模块",
+    "debugSimulatorPackets": "模拟器数据包",
+    "debugPrivateAppMessages": "私人应用消息",
+    "debugPingResponses": "Ping响应",
+    "sectionMapReport": "地图报告",
+    "sectionMapReportHint": "在MQTT上发布Meshtastic地图的位置。需要启用上面的MQTT中继；设置存储在设备MQTT模块配置中。"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "从收藏夹中移除",
@@ -2077,7 +2095,34 @@
     "offloading": "卸载中…",
     "offloadingProgress": "正在移除第 {{current}} 个，共 {{total}} 个…",
     "offloadCancelled": "卸载已取消。",
-    "offloadCancelledPartial": "从无线电中删除 {{count}} 个联系人后，已取消卸载。"
+    "offloadCancelledPartial": "从无线电中删除 {{count}} 个联系人后，已取消卸载。",
+    "xmodemSection": "XMODEM文件传输",
+    "xmodemSectionHint": "向/从连接的无线电固件传输文件（仅限本地连接）。",
+    "xmodemFilenameLabel": "远程文件名",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "上传文件",
+    "xmodemDownload": "下载文件",
+    "xmodemUploadSuccess": "已上传{{name}}",
+    "xmodemDownloadSuccess": "已下载{{name}}",
+    "xmodemFailed": "XMODEM失败： {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "零跳 advert 已发送",
+    "floodScopeTitle": "区域防洪范围",
+    "floodScopeHelp": "将泛洪流量限制在主题标签区域（固件v8 + ）。需要meshcore.js setFloodScope ；重新连接会重新应用保存的范围。",
+    "floodScopeNone": "无（明确范围）",
+    "floodScopePreset": "预设主题标签",
+    "floodScopePresetSelect": "预设区域主题标签",
+    "floodScopeCustom": "自定义主题标签",
+    "floodScopeCustomPlaceholder": "# myregion",
+    "floodScopeApply": "应用泛洪范围",
+    "floodScopeApplySuccess": "已应用洪水范围",
+    "floodScopeApplyFailed": "泛洪范围失败： {{message}}",
+    "advertisedPositionLabel": "广告位置： {{lat}} ， {{lon}}",
+    "txPowerMax": "发射功率（每个无线电最大{{max}} dBm ）",
+    "txPowerMaxUnknown": "发射功率（限制在{{max}} dBm ，直到固件报告无线电最大值）",
+    "txPowerDeviceCurrent": "器械报告{{current}} dBm （滑块最大{{max}} dBm ）",
+    "sectionTxPower": "发送功率",
+    "applyTxPowerSuccess": "已应用TX功率"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "按类型、名称或十六进制过滤...",
     "emptyWaiting": "尚未收到新的网状数据包。请稍等...",
     "noPacketsMatchFilter": "没有数据包与当前过滤器匹配。",
-    "rawHexLabel": "原始十六进制（{{bytes}} 字节）："
+    "rawHexLabel": "原始十六进制（{{bytes}} 字节）：",
+    "transportScopeTooltip": "传输范围代码—出站路径上的区域泛洪过滤器",
+    "transportReturnTooltip": "运输退货代码—返回路径上的区域过滤器",
+    "transportRegionMatch": "匹配配置的泛洪作用域",
+    "transportRegionMismatch": "与配置的泛洪范围不匹配",
+    "transportLegendHint": "展开一行：路由和传输信息在顶部。区域作用域/返回代码仅出现在 TRANSPORT_FLOOD 和 TRANSPORT_DIRECT 数据包上（而非普通 FLOOD/DIRECT）。",
+    "routeLabel": "路由",
+    "payloadLabel": "载荷",
+    "transportHeading": "传输",
+    "transportCodesAbsent": "无区域传输代码（{{route}} 路由 — 仅 TRANSPORT_FLOOD / TRANSPORT_DIRECT 携带 scope/return）。",
+    "transportCodesAbsentTooltip": "普通 FLOOD 和 DIRECT 数据包在 MeshCore RF 标头中不包含区域传输 scope/return 字段。"
   },
   "remoteAdmin": {
     "errors": {

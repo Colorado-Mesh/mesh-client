@@ -178,7 +178,10 @@
     "reduceMotion": "Kurangi gerakan",
     "reduceMotionDesc": "Menonaktifkan ikon animasi dan efek dekoratif. Spinner pemuatan dan indikator status koneksi tetap animasi.",
     "roomMessages": "Pesan kamar",
-    "importSchemaTooNew": "File database ini memerlukan Mesh-Client yang lebih baru (skema {{dbVersion}}). Build ini mendukung skema {{appVersion}} atau lebih lama. Instal rilis terbaru dan coba lagi."
+    "importSchemaTooNew": "File database ini memerlukan Mesh-Client yang lebih baru (skema {{dbVersion}}). Build ini mendukung skema {{appVersion}} atau lebih lama. Instal rilis terbaru dan coba lagi.",
+    "floodAdvertTypeLabel": "Jenis advert",
+    "floodAdvertTypeFlood": "Banjir (multi - hop)",
+    "floodAdvertTypeZeroHop": "Zero - hop (hanya tetangga langsung)"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "Tidak ada pesan yang cocok dengan pencarian Anda.",
     "emptyNoDmMessages": "Belum ada pesan dengan {{name}}.",
     "emptyNoMessagesYet": "Belum ada pesan. Kirim pesan atau tunggu pesan masuk.",
-    "emptyConnectFirst": "Sambungkan ke perangkat untuk mulai mengobrol."
+    "emptyConnectFirst": "Sambungkan ke perangkat untuk mulai mengobrol.",
+    "waitingMessagesBadge": "Menyinkronkan pesan antrian {{count}} dari radio…",
+    "waitingMessagesSyncNow": "Sinkronkan sekarang"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "Aktifkan Perangkat Keras Jarak Jauh",
       "remoteHardwareEnabledDesc": "Izinkan node jarak jauh membaca dan menulis pin GPIO di perangkat ini.",
       "remoteHardwareAllowUndefinedPins": "Izinkan Akses Pin Tak Terdefinisi",
-      "remoteHardwareAllowUndefinedPinsDesc": "Izinkan pembacaan/penulisan pin yang tidak tercantum dalam konfigurasi pin yang tersedia."
+      "remoteHardwareAllowUndefinedPinsDesc": "Izinkan pembacaan/penulisan pin yang tidak tercantum dalam konfigurasi pin yang tersedia.",
+      "mqttProxyGatewayHint": "Dengan proxy diaktifkan, mesh - client menjembatani lalu lintas broker melalui MqttClientProxyMessage. Aktifkan downlink per saluran pada tab Radio untuk relai→ RF MQTT.",
+      "mapReportPublishInterval": "Interval laporan peta (detik)",
+      "mapReportPublishIntervalDesc": "0 menggunakan firmware default. Seberapa sering perangkat memublikasikan laporan peta saat pelaporan peta diaktifkan.",
+      "mapReportPositionPrecision": "Presisi posisi laporan peta",
+      "mapReportPositionPrecisionDesc": "Bit presisi untuk koordinat laporan peta (firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Terapkan {{section}}",
     "applyingButton": "Melamar...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "Terowongan IP",
       "gpio": "GPIO",
       "rangeTest": "Tes jangkauan",
-      "storeForward": "Menerima S&F"
+      "storeForward": "Menerima S&F",
+      "audio": "Audio"
     },
     "errors": {
       "generic": "Perangkat menolak perubahan ini.",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "Fungsikan",
     "remoteHardwareConfirmUndefinedPinsTitle": "Izinkan akses PIN yang tidak ditentukan?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Setiap pin GPIO dapat dibaca atau ditulis dari jarak jauh, termasuk pin yang tidak tercantum dalam konfigurasi perangkat keras Anda. Hal ini meningkatkan risiko keamanan.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Izinkan pin yang tidak terdefinisi"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Izinkan pin yang tidak terdefinisi",
+    "sectionDebugModules": "Modul debug",
+    "sectionAudio": "Modul audio",
+    "debugSimulatorPackets": "Paket simulator",
+    "debugPrivateAppMessages": "Pesan aplikasi pribadi",
+    "debugPingResponses": "Respons ping",
+    "sectionMapReport": "Laporan Peta",
+    "sectionMapReportHint": "Mempublikasikan posisi ke peta Meshtastic melalui MQTT. Memerlukan MQTT Relay diaktifkan di atas; pengaturan disimpan dalam konfigurasi modul MQTT perangkat."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",
@@ -2077,7 +2095,34 @@
     "offloading": "Pembongkaran muatan",
     "offloadingProgress": "Menghapus {{current}} dari {{total}}…",
     "offloadCancelled": "Offload dibatalkan.",
-    "offloadCancelledPartial": "Offload dibatalkan setelah menghapus kontak {{count}} dari radio."
+    "offloadCancelledPartial": "Offload dibatalkan setelah menghapus kontak {{count}} dari radio.",
+    "xmodemSection": "Transfer file XMODEM",
+    "xmodemSectionHint": "Mentransfer file ke/dari firmware radio yang terhubung (hanya koneksi lokal).",
+    "xmodemFilenameLabel": "Nama file jarak jauh",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Unggah file",
+    "xmodemDownload": "Unduh berkas",
+    "xmodemUploadSuccess": "Diunggah {{name}}",
+    "xmodemDownloadSuccess": "Diunduh {{name}}",
+    "xmodemFailed": "XMODEM gagal: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert terkirim",
+    "floodScopeTitle": "Lingkup banjir regional",
+    "floodScopeHelp": "Batasi lalu lintas banjir ke wilayah tagar (firmware v8+). Membutuhkan meshcore.js setFloodScope; sambungkan kembali penerapan ruang lingkup yang disimpan.",
+    "floodScopeNone": "Tidak ada (lingkup yang jelas)",
+    "floodScopePreset": "Hashtag prasetel",
+    "floodScopePresetSelect": "Hashtag wilayah prasetel",
+    "floodScopeCustom": "Tagar kustom",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Terapkan cakupan banjir",
+    "floodScopeApplySuccess": "Ruang lingkup banjir diterapkan",
+    "floodScopeApplyFailed": "Ruang lingkup banjir gagal: {{message}}",
+    "advertisedPositionLabel": "Posisi yang diiklankan: {{lat}}, {{lon}}",
+    "txPowerMax": "Mengirimkan daya (maks {{max}} dBm per radio)",
+    "txPowerMaxUnknown": "Memancarkan daya (dibatasi pada {{max}} dBm hingga firmware melaporkan maksimum radio)",
+    "txPowerDeviceCurrent": "Laporan perangkat {{current}} dBm (slider maks {{max}} dBm)",
+    "sectionTxPower": "Daya TX",
+    "applyTxPowerSuccess": "Daya TX diterapkan"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "Filter menurut jenis, nama, atau hex...",
     "emptyWaiting": "Belum ada paket mesh baru yang diterima. Harap tunggu...",
     "noPacketsMatchFilter": "Tidak ada paket yang cocok dengan filter saat ini.",
-    "rawHexLabel": "Hex mentah ({{bytes}} byte):"
+    "rawHexLabel": "Hex mentah ({{bytes}} byte):",
+    "transportScopeTooltip": "Kode ruang lingkup transportasi — filter banjir regional di jalur keluar",
+    "transportReturnTooltip": "Kode pengembalian transportasi — filter regional pada jalur pengembalian",
+    "transportRegionMatch": "Cocok dengan lingkup banjir yang dikonfigurasi",
+    "transportRegionMismatch": "Tidak cocok dengan lingkup banjir yang dikonfigurasi",
+    "transportLegendHint": "Buka baris: rute dan transport ada di atas. Kode ruang lingkup/pengembalian regional hanya muncul pada paket TRANSPORT_FLOOD dan TRANSPORT_DIRECT (bukan FLOOD/DIRECT biasa).",
+    "routeLabel": "Rute",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Tidak ada kode transport regional (rute {{route}} — hanya TRANSPORT_FLOOD / TRANSPORT_DIRECT yang membawa scope/return).",
+    "transportCodesAbsentTooltip": "Paket FLOOD dan DIRECT biasa tidak menyertakan bidang scope/return transport regional di header RF MeshCore."
   },
   "remoteAdmin": {
     "errors": {

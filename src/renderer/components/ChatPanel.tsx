@@ -352,6 +352,9 @@ export interface ChatPanelProps {
   compactMode?: boolean;
   /** Meshtastic RF: request Store & Forward chat history from the router. */
   onFetchStoreForwardHistory?: () => Promise<RequestStoreForwardHistoryResult>;
+  /** MeshCore MsgWaiting drain — messages queued on device. */
+  waitingMessagesCount?: number;
+  onSyncWaitingMessages?: () => void;
 }
 
 function ChatPanel({
@@ -376,6 +379,8 @@ function ChatPanel({
   outerScrollMetricsRootRef,
   compactMode = false,
   onFetchStoreForwardHistory,
+  waitingMessagesCount = 0,
+  onSyncWaitingMessages,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1381,6 +1386,22 @@ function ChatPanel({
           </ChatToolbarTooltipButton>
         </div>
       </div>
+
+      {protocol === 'meshcore' && waitingMessagesCount > 0 && (
+        <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200">
+          <span>{t('chatPanel.waitingMessagesBadge', { count: waitingMessagesCount })}</span>
+          {onSyncWaitingMessages && (
+            <button
+              type="button"
+              onClick={onSyncWaitingMessages}
+              className="rounded border border-amber-600/60 px-2 py-0.5 text-[10px] font-medium hover:bg-amber-800/40"
+              aria-label={t('chatPanel.waitingMessagesSyncNow')}
+            >
+              {t('chatPanel.waitingMessagesSyncNow')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Row 2 — DM tabs */}
       <div

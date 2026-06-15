@@ -28,6 +28,7 @@ import {
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcoreResolvedTxPowerMax,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
@@ -44,6 +45,16 @@ describe('MeshCore contact capacity thresholds', () => {
     expect(MESHCORE_CONTACTS_CRITICAL_THRESHOLD).toBeGreaterThan(
       MESHCORE_CONTACTS_WARNING_THRESHOLD,
     );
+  });
+});
+
+describe('meshcoreResolvedTxPowerMax', () => {
+  it('uses firmware maxTxPower when present', () => {
+    expect(meshcoreResolvedTxPowerMax({ maxTxPower: 14 })).toEqual({ max: 14, fromFirmware: true });
+  });
+
+  it('falls back when maxTxPower is missing', () => {
+    expect(meshcoreResolvedTxPowerMax({})).toEqual({ max: 22, fromFirmware: false });
   });
 });
 

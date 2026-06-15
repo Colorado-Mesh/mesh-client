@@ -107,4 +107,21 @@ describe('connection serial cleanup', () => {
 
     expect(port.close).toHaveBeenCalledTimes(1);
   });
+
+  it('safeDisconnect treats undefined transport close as benign during disconnect', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const device = {
+      disconnect: vi
+        .fn()
+        .mockRejectedValue(new Error("Cannot read properties of undefined (reading 'close')")),
+      complete: vi.fn(),
+      transport: undefined,
+    } as unknown as MeshDevice;
+
+    await safeDisconnect(device);
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(device.complete).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
 });

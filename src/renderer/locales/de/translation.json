@@ -178,7 +178,10 @@
     "reduceMotion": "Bewegung reduzieren",
     "reduceMotionDesc": "Deaktiviert animierte Symbole und dekorative Effekte. Lade-Spinner und Verbindungsstatusanzeigen sind immer noch animiert.",
     "roomMessages": "Zimmernachrichten",
-    "importSchemaTooNew": "Diese Datenbankdatei erfordert einen neueren Mesh-Client (Schema {{dbVersion}}). Dieser Build unterstützt Schema {{appVersion}} oder älter. Installieren Sie die neueste Version und versuchen Sie es erneut."
+    "importSchemaTooNew": "Diese Datenbankdatei erfordert einen neueren Mesh-Client (Schema {{dbVersion}}). Dieser Build unterstützt Schema {{appVersion}} oder älter. Installieren Sie die neueste Version und versuchen Sie es erneut.",
+    "floodAdvertTypeLabel": "Advert-Typ",
+    "floodAdvertTypeFlood": "Hochwasser (Multi-Hop)",
+    "floodAdvertTypeZeroHop": "Zero-Hop (nur direkte Nachbarn)"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "Keine Nachrichten stimmen mit Ihrer Suche überein.",
     "emptyNoDmMessages": "Noch keine Nachrichten mit {{name}}.",
     "emptyNoMessagesYet": "Noch keine Nachrichten. Senden Sie eine oder warten Sie auf eingehende Nachrichten.",
-    "emptyConnectFirst": "Verbinden Sie sich mit einem Gerät, um mit dem Chatten zu beginnen."
+    "emptyConnectFirst": "Verbinden Sie sich mit einem Gerät, um mit dem Chatten zu beginnen.",
+    "waitingMessagesBadge": "{{count}} Nachricht(en) aus der Warteschlange vom Funkgerät werden synchronisiert...",
+    "waitingMessagesSyncNow": "Jetzt synchronisieren"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "Remote Hardware aktivieren",
       "remoteHardwareEnabledDesc": "Ermöglicht entfernten Knoten, GPIO-Pins auf diesem Gerät zu lesen und zu schreiben.",
       "remoteHardwareAllowUndefinedPins": "Zugriff auf undefinierte Pins erlauben",
-      "remoteHardwareAllowUndefinedPinsDesc": "Lese-/Schreibzugriff auf Pins erlauben, die nicht in der verfügbaren Pin-Konfiguration aufgeführt sind."
+      "remoteHardwareAllowUndefinedPinsDesc": "Lese-/Schreibzugriff auf Pins erlauben, die nicht in der verfügbaren Pin-Konfiguration aufgeführt sind.",
+      "mqttProxyGatewayHint": "Bei aktiviertem Proxy vermittelt der Mesh-Client den Datenverkehr über MqttClientProxyMessage. Aktivieren Sie den kanalbezogenen Downlink auf der Registerkarte Radio für→das MQTT-RF-Relais.",
+      "mapReportPublishInterval": "MAP-Berichtsintervall (Sekunden)",
+      "mapReportPublishIntervalDesc": "0 verwendet Firmware-Standard. Wie oft das Gerät Kartenberichte veröffentlicht, wenn die Kartenberichterstattung aktiviert ist.",
+      "mapReportPositionPrecision": "Positionsgenauigkeit des Kartenberichts",
+      "mapReportPositionPrecisionDesc": "Präzisionsbits für Kartenberichtkoordinaten (Firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Bewerben Sie sich {{section}}",
     "applyingButton": "Bewerben...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "IP-Tunnel",
       "gpio": "GPIO",
       "rangeTest": "Reichweitentest",
-      "storeForward": "S&F erhalten"
+      "storeForward": "S&F erhalten",
+      "audio": "Audio"
     },
     "errors": {
       "generic": "Das Gerät hat diese Änderung abgelehnt.",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "Aktivieren",
     "remoteHardwareConfirmUndefinedPinsTitle": "Undefinierten PIN-Zugriff erlauben?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Jede GPIO-PIN kann aus der Ferne gelesen oder geschrieben werden, einschließlich Pins, die nicht in Ihrer Hardwarekonfiguration aufgeführt sind. Dies erhöht das Sicherheitsrisiko.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Undefinierte Pins zulassen"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Undefinierte Pins zulassen",
+    "sectionDebugModules": "Debug-Module",
+    "sectionAudio": "Audio-Modul",
+    "debugSimulatorPackets": "Simulatorpakete",
+    "debugPrivateAppMessages": "Private App-Nachrichten",
+    "debugPingResponses": "Ping-Antworten",
+    "sectionMapReport": "Karte-Bericht",
+    "sectionMapReportHint": "Veröffentlicht Position zur Meshtastic-Karte über MQTT. Erfordert oben aktiviertes MQTT-Relais; Einstellungen werden in der MQTT-Modulkonfiguration des Geräts gespeichert."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Aus Favoriten-Liste entfernen",
@@ -2077,7 +2095,34 @@
     "offloading": "Entladen",
     "offloadingProgress": "Entfernen von {{current}} von {{total}}…",
     "offloadCancelled": "Entladen abgebrochen.",
-    "offloadCancelledPartial": "Das Entladen wurde abgebrochen, nachdem {{count}} Kontakte aus dem Funkgerät entfernt wurden."
+    "offloadCancelledPartial": "Das Entladen wurde abgebrochen, nachdem {{count}} Kontakte aus dem Funkgerät entfernt wurden.",
+    "xmodemSection": "XMODEM-Dateiübertragung",
+    "xmodemSectionHint": "Übertragen Sie Dateien zur/von der angeschlossenen Funk-Firmware (nur lokale Verbindung).",
+    "xmodemFilenameLabel": "Remote Dateiname",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Datei hochladen",
+    "xmodemDownload": "Datei herunterladen",
+    "xmodemUploadSuccess": "Hochgeladen {{name}}",
+    "xmodemDownloadSuccess": "{{name}} heruntergeladen",
+    "xmodemFailed": "XMODEM fehlgeschlagen: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert gesendet",
+    "floodScopeTitle": "Regionaler Überschwemmungsbereich",
+    "floodScopeHelp": "Beschränken Sie den Hochwasserverkehr auf eine Hashtag-Region (Firmware v8+). Benötigt meshcore.js setFloodScope; Wiederverbinden wendet den gespeicherten Bereich wieder an.",
+    "floodScopeNone": "Keine (klarer Umfang)",
+    "floodScopePreset": "Voreingestellter Hashtag",
+    "floodScopePresetSelect": "Voreingestellter Region-Hashtag",
+    "floodScopeCustom": "Benutzerdefinierter Hashtag",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Überschwemmungsumfang anwenden",
+    "floodScopeApplySuccess": "Angewandter Hochwasserbereich",
+    "floodScopeApplyFailed": "Flood scope failed: {{message}}",
+    "advertisedPositionLabel": "Inserierte Position: {{lat}}, {{lon}}",
+    "txPowerMax": "Sendeleistung (max {{max}} dBm pro Funk)",
+    "txPowerMaxUnknown": "Sendeleistung (begrenzt auf {{max}} dBm, bis Firmware Funk-Max meldet)",
+    "txPowerDeviceCurrent": "Gerätemeldungen {{current}} dBm (Schieber max {{max}} dBm)",
+    "sectionTxPower": "TX Power",
+    "applyTxPowerSuccess": "TX-Leistung angelegt"
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "Filtern Sie nach Typ, Name oder Hex ...",
     "emptyWaiting": "Es wurden noch keine neuen Mesh-Pakete empfangen. Bitte warten...",
     "noPacketsMatchFilter": "Keine Pakete entsprechen dem aktuellen Filter.",
-    "rawHexLabel": "Rohes Hex ({{bytes}} Bytes):"
+    "rawHexLabel": "Rohes Hex ({{bytes}} Bytes):",
+    "transportScopeTooltip": "Transportumfangscode — regionaler Hochwasserfilter auf Hinweg",
+    "transportReturnTooltip": "Transportrückgabecode — Regionalfilter auf Rückweg",
+    "transportRegionMatch": "Entspricht dem konfigurierten Überschwemmungsbereich",
+    "transportRegionMismatch": "Entspricht nicht dem konfigurierten Überschwemmungsbereich",
+    "transportLegendHint": "Zeile aufklappen: Route und Transport stehen oben. Regionale Scope-/Rückgabecodes erscheinen nur bei Paketen TRANSPORT_FLOOD und TRANSPORT_DIRECT (nicht bei reinem FLOOD/DIRECT).",
+    "routeLabel": "Route",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Keine regionalen Transportcodes (Route {{route}} — nur TRANSPORT_FLOOD / TRANSPORT_DIRECT tragen Scope/Return).",
+    "transportCodesAbsentTooltip": "Einfache FLOOD- und DIRECT-Pakete enthalten keine regionalen Transport-Scope-/Return-Felder im MeshCore-RF-Header."
   },
   "remoteAdmin": {
     "errors": {

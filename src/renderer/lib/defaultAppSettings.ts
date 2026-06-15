@@ -20,6 +20,10 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   distanceUnit: 'miles' as const,
   coordinateFormat: 'decimal' as const,
   autoFloodAdvertIntervalHours: 12,
+  /** MeshCore auto-flood schedule: `flood` (multi-hop) or `zeroHop` (direct neighbors). */
+  autoFloodAdvertType: 'flood' as 'flood' | 'zeroHop',
+  /** Persisted MeshCore regional flood scope hashtag (empty = none). */
+  meshcoreFloodScopeHashtag: '',
   locale: 'en' as string,
   chatCompactMode: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */

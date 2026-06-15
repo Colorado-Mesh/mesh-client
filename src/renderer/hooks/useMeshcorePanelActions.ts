@@ -24,6 +24,8 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       importContacts: runtime.importContacts,
       refreshContacts: runtime.refreshContacts,
       sendAdvert: runtime.sendAdvert,
+      sendZeroHopAdvert: runtime.sendZeroHopAdvert,
+      applyMeshcoreFloodScopeHashtag: runtime.applyMeshcoreFloodScopeHashtag,
       syncClock: runtime.syncClock,
       meshcoreSetChannel: runtime.setMeshcoreChannel,
       meshcoreDeleteChannel: runtime.deleteMeshcoreChannel,

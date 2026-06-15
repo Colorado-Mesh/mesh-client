@@ -178,7 +178,10 @@
     "reduceMotion": "Snížit pohyb",
     "reduceMotionDesc": "Zakáže animované ikony a dekorativní efekty. Načítací spinnery a indikátory stavu připojení se stále animují.",
     "roomMessages": "Zprávy z pokoje",
-    "importSchemaTooNew": "Tento databázový soubor vyžaduje novější Mesh-Client (schéma {{dbVersion}}). Tato sestava podporuje schéma {{appVersion}} nebo starší. Nainstalujte nejnovější verzi a zkuste to znovu."
+    "importSchemaTooNew": "Tento databázový soubor vyžaduje novější Mesh-Client (schéma {{dbVersion}}). Tato sestava podporuje schéma {{appVersion}} nebo starší. Nainstalujte nejnovější verzi a zkuste to znovu.",
+    "floodAdvertTypeLabel": "Typ advertu",
+    "floodAdvertTypeFlood": "Záplavy (multi-hop)",
+    "floodAdvertTypeZeroHop": "Zero-hop (pouze přímí sousedé)"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "Vašemu vyhledávání neodpovídají žádné zprávy.",
     "emptyNoDmMessages": "Zatím žádné zprávy s {{name}}.",
     "emptyNoMessagesYet": "Zatím žádné zprávy. Jednu odešlete nebo počkejte na příchozí zprávy.",
-    "emptyConnectFirst": "Připojte se k zařízení a začněte chatovat."
+    "emptyConnectFirst": "Připojte se k zařízení a začněte chatovat.",
+    "waitingMessagesBadge": "Synchronizace {{count}} zpráv ve frontě z rádia…",
+    "waitingMessagesSyncNow": "Synchronizovat nyní"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "Povolit vzdálený hardware",
       "remoteHardwareEnabledDesc": "Umožňuje vzdáleným uzlům číst a zapisovat GPIO piny na tomto zařízení.",
       "remoteHardwareAllowUndefinedPins": "Povolit přístup k nedefinovaným pinům",
-      "remoteHardwareAllowUndefinedPinsDesc": "Povoluje čtení/zápis pinů neuvedených v konfiguraci dostupných pinů."
+      "remoteHardwareAllowUndefinedPinsDesc": "Povoluje čtení/zápis pinů neuvedených v konfiguraci dostupných pinů.",
+      "mqttProxyGatewayHint": "S povoleným serverem proxy překlenuje síťový klient provoz zprostředkovatele prostřednictvím zprávy MqttClientProxyMessage. Povolit downlink na kanál na kartě Rádio pro MQTT→RF relé.",
+      "mapReportPublishInterval": "Interval hlášení mapy (sekundy)",
+      "mapReportPublishIntervalDesc": "0 používá výchozí firmware. Jak často zařízení publikuje přehledy map, když je povoleno vytváření přehledů map.",
+      "mapReportPositionPrecision": "Přesnost zprávy o poloze mapy",
+      "mapReportPositionPrecisionDesc": "Bity přesnosti pro souřadnice zprávy mapy (firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Použít {{section}}",
     "applyingButton": "Aplikace...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "IP tunel",
       "gpio": "GPIO",
       "rangeTest": "Test rozsahu",
-      "storeForward": "Přijato S&F"
+      "storeForward": "Přijato S&F",
+      "audio": "Audio"
     },
     "errors": {
       "generic": "Zařízení tuto změnu odmítlo.",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "Povolit",
     "remoteHardwareConfirmUndefinedPinsTitle": "Povolit nedefinovaný přístup PIN?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Jakýkoli PIN GPIO může být čten nebo zapsán na dálku, včetně pinů, které nejsou uvedeny ve vaší hardwarové konfiguraci. Tím se zvyšuje bezpečnostní riziko.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Povolit nedefinované kolíky"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Povolit nedefinované kolíky",
+    "sectionDebugModules": "Ladicí moduly",
+    "sectionAudio": "Audio modul",
+    "debugSimulatorPackets": "Simulátor paketů",
+    "debugPrivateAppMessages": "Soukromé zprávy v aplikaci",
+    "debugPingResponses": "Odpovědi na ping",
+    "sectionMapReport": "Zpráva o mapě",
+    "sectionMapReportHint": "Publikuje pozici na mapě Meshtastic nad MQTT. Vyžaduje MQTT Relay povoleno výše; nastavení jsou uložena v konfiguraci modulu MQTT zařízení."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",
@@ -2077,7 +2095,34 @@
     "offloading": "Vykládání...",
     "offloadingProgress": "Odstranění {{current}} z {{total}}…",
     "offloadCancelled": "Odstranění zátěže bylo zrušeno.",
-    "offloadCancelledPartial": "Snížení zátěže bylo zrušeno po odstranění kontaktů {{count}} z rádia."
+    "offloadCancelledPartial": "Snížení zátěže bylo zrušeno po odstranění kontaktů {{count}} z rádia.",
+    "xmodemSection": "Přenos souborů XMODEM",
+    "xmodemSectionHint": "Přenášejte soubory do/z připojeného firmwaru rádia (pouze místní připojení).",
+    "xmodemFilenameLabel": "Vzdálený název souboru",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Nahrát soubor",
+    "xmodemDownload": "Stáhnout soubor",
+    "xmodemUploadSuccess": "Nahráno {{name}}",
+    "xmodemDownloadSuccess": "Staženo {{name}}",
+    "xmodemFailed": "XMODEM selhal: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert odeslán",
+    "floodScopeTitle": "Regionální rozsah povodní",
+    "floodScopeHelp": "Omezte povodňový provoz na oblast s hashtagy (firmware v8+). Vyžaduje meshcore.js setFloodScope; znovu připojí znovu uložený rozsah.",
+    "floodScopeNone": "Žádné (jasný rozsah)",
+    "floodScopePreset": "Přednastavený hashtag",
+    "floodScopePresetSelect": "Hashtag přednastavené oblasti",
+    "floodScopeCustom": "Vlastní hashtag",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Použít rozsah povodně",
+    "floodScopeApplySuccess": "Byl použit rozsah povodně",
+    "floodScopeApplyFailed": "Rozsah povodně se nezdařil: {{message}}",
+    "advertisedPositionLabel": "Inzerovaná pozice: {{lat}}, {{lon}}",
+    "txPowerMax": "Vysílací výkon (max {{max}} dBm na rádio)",
+    "txPowerMaxUnknown": "Vysílací výkon (omezen na {{max}} dBm, dokud firmware nenahlásí rádio max)",
+    "txPowerDeviceCurrent": "Hlášení zařízení {{current}} dBm (posuvník max {{max}} dBm)",
+    "sectionTxPower": "\"Výkon Tx\"",
+    "applyTxPowerSuccess": "TX napájení použito"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "Filtrujte podle typu, názvu nebo hex...",
     "emptyWaiting": "Zatím nebyly přijaty žádné nové síťové pakety. Čekejte prosím...",
     "noPacketsMatchFilter": "Žádné pakety neodpovídají aktuálnímu filtru.",
-    "rawHexLabel": "Nezpracovaný hex ({{bytes}} bajtů):"
+    "rawHexLabel": "Nezpracovaný hex ({{bytes}} bajtů):",
+    "transportScopeTooltip": "Kód rozsahu přepravy — regionální protipovodňový filtr na odchozí cestě",
+    "transportReturnTooltip": "Dopravní návratový kód — regionální filtr na zpáteční cestě",
+    "transportRegionMatch": "Shoduje se s nakonfigurovaným rozsahem",
+    "transportRegionMismatch": "Neshoduje se s nakonfigurovaným rozsahem povod",
+    "transportLegendHint": "Rozbalte řádek: trasa a transport jsou nahoře. Regionální scope/return kódy se zobrazují jen u paketů TRANSPORT_FLOOD a TRANSPORT_DIRECT (ne u prostého FLOOD/DIRECT).",
+    "routeLabel": "Trasa",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Žádné regionální transportní kódy (trasa {{route}} — pouze TRANSPORT_FLOOD / TRANSPORT_DIRECT nesou scope/return).",
+    "transportCodesAbsentTooltip": "Prosté pakety FLOOD a DIRECT neobsahují regionální transportní pole scope/return v hlavičce RF MeshCore."
   },
   "remoteAdmin": {
     "errors": {

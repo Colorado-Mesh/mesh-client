@@ -1100,6 +1100,48 @@ describe('roomsPanel saved passwords per-key quality', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags nl advertentie on floodAdvertTypeLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'appPanel.floodAdvertTypeLabel',
+      val: 'Advertentietype',
+      enVal: 'Advert type',
+    });
+    expectIssue(issues, 'mesh-advert false friend');
+  });
+
+  it('flags CAT dot padding in rawPacketLog.payloadLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'rawPacketLog.payloadLabel',
+      val: 'Payload .................................................................... ',
+      enVal: 'Payload',
+    });
+    expectIssue(issues, 'CAT dot-padding garbage');
+  });
+
+  it('flags missing TRANSPORT_FLOOD token in rawPacketLog.transportCodesAbsent', () => {
+    const enVal =
+      'No regional transport codes ({{route}} route — only TRANSPORT_FLOOD / TRANSPORT_DIRECT carry scope/return).';
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'rawPacketLog.transportCodesAbsent',
+      val: '无区域运输代码（ {{route}}路线—仅运输_洪水/运输_直接运输范围/回程）。',
+      enVal,
+    });
+    expectIssue(issues, 'preserve protocol token "TRANSPORT_FLOOD"');
+  });
+
+  it('flags uk teleport false friend on transportHeading', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'rawPacketLog.transportHeading',
+      val: 'Телепортувати',
+      enVal: 'Transport',
+    });
+    expectIssue(issues, 'teleport');
+  });
 });
 
 describe('protectedBrandIssues', () => {

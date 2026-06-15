@@ -44,6 +44,8 @@ import {
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   MESHCORE_MAX_CONTACTS,
   meshcoreDeriveChannelKeyHexFromName,
+  meshcoreResolvedTxPowerMax,
+  meshcoreScaledAdvLatLonToDeg,
   meshcoreSelfInfoBwToDisplayKhz,
   meshcoreSelfInfoFreqToDisplayHz,
 } from '../lib/meshcoreUtils';
@@ -53,7 +55,12 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
+import {
+  type MeshcoreFloodScopeHandle,
+  MeshcoreFloodScopeSection,
+} from './MeshcoreFloodScopeSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
+import { RadioXmodemSection } from './RadioXmodemSection';
 import { useToast } from './Toast';
 
 interface ChannelConfig {
@@ -136,6 +143,12 @@ interface Props {
   onMeshcoreContactsShowRefreshControlChange?: (value: boolean) => void;
   onClearAllMeshcoreContacts?: () => Promise<void>;
   onSendAdvert?: () => Promise<void>;
+  onSendZeroHopAdvert?: () => Promise<void>;
+  onApplyMeshcoreFloodScopeHashtag?: (hashtag: string) => Promise<void>;
+  meshcoreFloodScopeHashtag?: string;
+  onMeshcoreFloodScopeHashtagChange?: (hashtag: string) => void;
+  onXmodemUpload?: () => Promise<void>;
+  onXmodemDownload?: (filename: string) => Promise<void>;
   onSyncClock?: () => Promise<void>;
   onRefreshContacts?: () => Promise<void>;
   onOffloadContactsFromRadio?: () => Promise<number>;
@@ -472,12 +485,14 @@ function ConfigSection({
   onApply,
   applying,
   disabled,
+  hideApply = false,
 }: {
   title: string;
   children: React.ReactNode;
   onApply?: () => void;
   applying: boolean;
   disabled: boolean;
+  hideApply?: boolean;
 }) {
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
@@ -487,7 +502,7 @@ function ConfigSection({
       </summary>
       <div className="space-y-4 px-4 pb-4">
         {children}
-        {onApply && (
+        {onApply && !hideApply && (
           <button
             onClick={onApply}
             disabled={disabled || applying}
@@ -624,6 +639,12 @@ export default function RadioPanel({
   onMeshcoreContactsShowRefreshControlChange,
   onClearAllMeshcoreContacts,
   onSendAdvert,
+  onSendZeroHopAdvert,
+  onApplyMeshcoreFloodScopeHashtag,
+  meshcoreFloodScopeHashtag = '',
+  onMeshcoreFloodScopeHashtagChange,
+  onXmodemUpload,
+  onXmodemDownload,
   onSyncClock,
   onRefreshContacts,
   onOffloadContactsFromRadio,
@@ -653,6 +674,12 @@ export default function RadioPanel({
   const [spreadFactor, setSpreadFactor] = useState(12);
   const [codingRate, setCodingRate] = useState(8);
   const [txPower, setTxPower] = useState(17);
+  const meshcoreTxPowerLimit = useMemo(
+    () => meshcoreResolvedTxPowerMax(meshcoreSelfInfo),
+    [meshcoreSelfInfo],
+  );
+  const meshcoreTxPowerMax = meshcoreTxPowerLimit.max;
+  const floodScopeRef = useRef<MeshcoreFloodScopeHandle>(null);
   const [rxBoostedGain, setRxBoostedGain] = useState(false);
   const [txEnabled, setTxEnabled] = useState(true);
   const [channelNum, setChannelNum] = useState(0);
@@ -673,8 +700,15 @@ export default function RadioPanel({
     if (loraConfig.bw != null) setBandwidth(meshcoreSelfInfoBwToDisplayKhz(loraConfig.bw));
     if (loraConfig.sf != null) setSpreadFactor(loraConfig.sf);
     if (loraConfig.cr != null) setCodingRate(loraConfig.cr);
-    if (loraConfig.txPower != null) setTxPower(loraConfig.txPower);
-  }, [loraConfig]);
+    if (loraConfig.txPower != null) {
+      setTxPower(Math.min(loraConfig.txPower, meshcoreTxPowerMax));
+    }
+  }, [loraConfig, meshcoreTxPowerMax]);
+
+  useEffect(() => {
+    if (!meshcoreSelfInfo) return;
+    setTxPower((prev) => Math.min(Math.max(1, prev), meshcoreTxPowerMax));
+  }, [meshcoreSelfInfo, meshcoreTxPowerMax]);
 
   // ─── Device settings ──────────────────────────────────────────
   const [deviceRole, setDeviceRole] = useState(0);
@@ -909,6 +943,7 @@ export default function RadioPanel({
   const [applyingMeshcoreTelemetryPrivacy, setApplyingMeshcoreTelemetryPrivacy] = useState(false);
   const [applyingMeshcoreContactMgmt, setApplyingMeshcoreContactMgmt] = useState(false);
   const [advertLoading, setAdvertLoading] = useState(false);
+  const [zeroHopAdvertLoading, setZeroHopAdvertLoading] = useState(false);
   const [syncClockLoading, setSyncClockLoading] = useState(false);
 
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
@@ -988,6 +1023,23 @@ export default function RadioPanel({
       );
     } finally {
       setAdvertLoading(false);
+    }
+  };
+
+  const handleSendZeroHopAdvert = async () => {
+    if (!onSendZeroHopAdvert) return;
+    setZeroHopAdvertLoading(true);
+    try {
+      await onSendZeroHopAdvert();
+      addToast(t('radioPanel.zeroHopAdvertSent'), 'success');
+    } catch (e) {
+      console.warn('[RadioPanel] sendZeroHopAdvert failed:', e instanceof Error ? e.message : e);
+      addToast(
+        t('radioPanel.advertFailed', { message: e instanceof Error ? e.message : String(e) }),
+        'error',
+      );
+    } finally {
+      setZeroHopAdvertLoading(false);
     }
   };
 
@@ -1298,112 +1350,199 @@ export default function RadioPanel({
       {/* ═══ LoRa / Radio ═══ */}
       {onApplyLoraParams ? (
         /* MeshCore path: direct radio params (freq, bw, sf, cr, txPower) */
-        <ConfigSection
-          title={t('radioPanel.sectionLora')}
-          onApply={async () => {
-            if (!onApplyLoraParams) return;
-            setApplyingSection('lora');
-            setStatus(
-              t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionLora') }),
-            );
-            try {
-              await onApplyLoraParams({
-                freq: radioFreqHz,
-                bw: bandwidth * 1000,
-                sf: spreadFactor,
-                cr: codingRate,
-                txPower,
-              });
-              setStatus(t('radioPanel.applyLoraSuccess'));
-            } catch (err) {
-              console.warn(
-                '[RadioPanel] setLoRaConfig failed:',
-                err instanceof Error ? err.message : err,
-              );
+        <>
+          <ConfigSection
+            title={t('radioPanel.sectionLora')}
+            onApply={async () => {
+              if (!onApplyLoraParams) return;
+              setApplyingSection('lora');
               setStatus(
-                t('radioPanel.applyStatusFailed', {
-                  message: err instanceof Error ? err.message : t('common.unknown'),
-                }),
+                t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionLora') }),
               );
-            } finally {
-              setApplyingSection(null);
-            }
-          }}
-          applying={applyingSection === 'lora'}
-          disabled={loraDisabled}
-        >
-          <div className="space-y-1">
-            <label htmlFor="radio-freq-mhz" className="text-muted text-sm">
-              {t('radioPanel.frequencyMhzLabel')}
-            </label>
-            <input
-              id="radio-freq-mhz"
-              type="number"
-              value={(radioFreqHz / 1e6).toFixed(3)}
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                if (!Number.isNaN(parsed)) setRadioFreqHz(Math.round(parsed * 1e6));
-              }}
-              step={0.001}
-              min={150}
-              max={960}
-              disabled={disabled || applyingSection !== null}
-              className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
-            />
-            <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
-          </div>
-          <div className="space-y-4 border-l border-gray-700 pl-3">
-            <ConfigSelect
-              label={t('radioPanel.bandwidthLabel')}
-              value={bandwidth}
-              options={[
-                { value: 31.25, label: '31.25 kHz' },
-                { value: 62.5, label: '62.5 kHz' },
-                { value: 125, label: '125 kHz' },
-                { value: 250, label: '250 kHz' },
-                { value: 500, label: '500 kHz' },
-              ]}
-              onChange={setBandwidth}
-              disabled={disabled || applyingSection !== null}
-              tooltip={t('radioPanel.bandwidthTooltip')}
-            />
-            <ConfigSelect
-              label={t('radioPanel.spreadFactorLabel')}
-              value={spreadFactor}
-              options={Array.from({ length: 6 }, (_, i) => ({
-                value: i + 7,
-                label: `SF${i + 7}`,
-              }))}
-              onChange={setSpreadFactor}
-              disabled={disabled || applyingSection !== null}
-              description={t('radioPanel.spreadFactorDesc')}
-            />
-            <ConfigSelect
-              label={t('radioPanel.codingRateLabel')}
-              value={codingRate}
-              options={[
-                { value: 5, label: '4/5' },
-                { value: 6, label: '4/6' },
-                { value: 7, label: '4/7' },
-                { value: 8, label: '4/8' },
-              ]}
-              onChange={setCodingRate}
-              disabled={disabled || applyingSection !== null}
-              tooltip={t('radioPanel.codingRateTooltip')}
-            />
+              try {
+                const clampedTxPower = Math.min(Math.max(1, txPower), meshcoreTxPowerMax);
+                await onApplyLoraParams({
+                  freq: radioFreqHz,
+                  bw: bandwidth * 1000,
+                  sf: spreadFactor,
+                  cr: codingRate,
+                  txPower: clampedTxPower,
+                });
+                setStatus(t('radioPanel.applyLoraSuccess'));
+              } catch (err) {
+                console.warn(
+                  '[RadioPanel] setLoRaConfig failed:',
+                  err instanceof Error ? err.message : err,
+                );
+                setStatus(
+                  t('radioPanel.applyStatusFailed', {
+                    message: err instanceof Error ? err.message : t('common.unknown'),
+                  }),
+                );
+              } finally {
+                setApplyingSection(null);
+              }
+            }}
+            applying={applyingSection === 'lora'}
+            disabled={loraDisabled}
+          >
+            <div className="space-y-1">
+              <label htmlFor="radio-freq-mhz" className="text-muted text-sm">
+                {t('radioPanel.frequencyMhzLabel')}
+              </label>
+              <input
+                id="radio-freq-mhz"
+                type="number"
+                value={(radioFreqHz / 1e6).toFixed(3)}
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!Number.isNaN(parsed)) setRadioFreqHz(Math.round(parsed * 1e6));
+                }}
+                step={0.001}
+                min={150}
+                max={960}
+                disabled={disabled || applyingSection !== null}
+                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+              />
+              <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
+            </div>
+            <div className="space-y-4 border-l border-gray-700 pl-3">
+              <ConfigSelect
+                label={t('radioPanel.bandwidthLabel')}
+                value={bandwidth}
+                options={[
+                  { value: 31.25, label: '31.25 kHz' },
+                  { value: 62.5, label: '62.5 kHz' },
+                  { value: 125, label: '125 kHz' },
+                  { value: 250, label: '250 kHz' },
+                  { value: 500, label: '500 kHz' },
+                ]}
+                onChange={setBandwidth}
+                disabled={disabled || applyingSection !== null}
+                tooltip={t('radioPanel.bandwidthTooltip')}
+              />
+              <ConfigSelect
+                label={t('radioPanel.spreadFactorLabel')}
+                value={spreadFactor}
+                options={Array.from({ length: 6 }, (_, i) => ({
+                  value: i + 7,
+                  label: `SF${i + 7}`,
+                }))}
+                onChange={setSpreadFactor}
+                disabled={disabled || applyingSection !== null}
+                description={t('radioPanel.spreadFactorDesc')}
+              />
+              <ConfigSelect
+                label={t('radioPanel.codingRateLabel')}
+                value={codingRate}
+                options={[
+                  { value: 5, label: '4/5' },
+                  { value: 6, label: '4/6' },
+                  { value: 7, label: '4/7' },
+                  { value: 8, label: '4/8' },
+                ]}
+                onChange={setCodingRate}
+                disabled={disabled || applyingSection !== null}
+                tooltip={t('radioPanel.codingRateTooltip')}
+              />
+            </div>
+          </ConfigSection>
+          <ConfigSection
+            title={t('radioPanel.sectionTxPower')}
+            onApply={async () => {
+              if (!onApplyLoraParams) return;
+              setApplyingSection('txPower');
+              setStatus(
+                t('radioPanel.applyStatusApplying', { section: t('radioPanel.sectionTxPower') }),
+              );
+              try {
+                const clampedTxPower = Math.min(Math.max(1, txPower), meshcoreTxPowerMax);
+                await onApplyLoraParams({
+                  freq: radioFreqHz,
+                  bw: bandwidth * 1000,
+                  sf: spreadFactor,
+                  cr: codingRate,
+                  txPower: clampedTxPower,
+                });
+                setStatus(t('radioPanel.applyTxPowerSuccess'));
+              } catch (err) {
+                console.warn(
+                  '[RadioPanel] setTxPower failed:',
+                  err instanceof Error ? err.message : err,
+                );
+                setStatus(
+                  t('radioPanel.applyStatusFailed', {
+                    message: err instanceof Error ? err.message : t('common.unknown'),
+                  }),
+                );
+              } finally {
+                setApplyingSection(null);
+              }
+            }}
+            applying={applyingSection === 'txPower'}
+            disabled={loraDisabled}
+          >
             <ConfigNumber
               label={t('radioPanel.txPowerLabel')}
               value={txPower}
               onChange={setTxPower}
               disabled={disabled || applyingSection !== null}
               min={1}
-              max={30}
+              max={meshcoreTxPowerMax}
               unit="dBm"
-              description={t('radioPanel.txPowerDesc')}
+              description={
+                meshcoreTxPowerLimit.fromFirmware
+                  ? t('radioPanel.txPowerMax', { max: meshcoreTxPowerMax })
+                  : t('radioPanel.txPowerMaxUnknown', { max: meshcoreTxPowerMax })
+              }
               tooltip={t('radioPanel.txPowerTooltip')}
             />
-          </div>
-        </ConfigSection>
+            {meshcoreSelfInfo?.txPower != null && (
+              <p className="text-muted text-xs">
+                {t('radioPanel.txPowerDeviceCurrent', {
+                  current: meshcoreSelfInfo.txPower,
+                  max: meshcoreTxPowerMax,
+                })}
+              </p>
+            )}
+          </ConfigSection>
+          {onApplyMeshcoreFloodScopeHashtag && (
+            <ConfigSection
+              title={t('radioPanel.floodScopeTitle')}
+              onApply={async () => {
+                setApplyingSection('floodScope');
+                setStatus(
+                  t('radioPanel.applyStatusApplying', { section: t('radioPanel.floodScopeTitle') }),
+                );
+                try {
+                  await floodScopeRef.current?.apply();
+                  setStatus(t('radioPanel.floodScopeApplySuccess'));
+                } catch (err) {
+                  // catch-no-log-ok MeshcoreFloodScopeSection logs; inline status shown below
+                  setStatus(
+                    t('radioPanel.applyStatusFailed', {
+                      message: err instanceof Error ? err.message : t('common.unknown'),
+                    }),
+                  );
+                } finally {
+                  setApplyingSection(null);
+                }
+              }}
+              applying={applyingSection === 'floodScope'}
+              disabled={loraDisabled}
+            >
+              <MeshcoreFloodScopeSection
+                ref={floodScopeRef}
+                embedded
+                disabled={disabled}
+                isConnected={isConnected}
+                savedHashtag={meshcoreFloodScopeHashtag}
+                onApplyFloodScope={onApplyMeshcoreFloodScopeHashtag}
+                onSavedHashtagChange={onMeshcoreFloodScopeHashtagChange}
+              />
+            </ConfigSection>
+          )}
+        </>
       ) : (
         /* Meshtastic path: region, presets, hop limit */
         <ConfigSection
@@ -1619,6 +1758,24 @@ export default function RadioPanel({
           disabled={disabled}
         />
       )}
+
+      {capabilities?.hasXmodem &&
+        configTarget?.mode !== 'remote' &&
+        (onXmodemUpload || onXmodemDownload) && (
+          <ConfigSection
+            title={t('radioPanel.xmodemSection')}
+            applying={false}
+            disabled={disabled}
+            hideApply
+          >
+            <RadioXmodemSection
+              configTarget={configTarget}
+              isConnected={isConnected}
+              onXmodemUpload={onXmodemUpload}
+              onXmodemDownload={onXmodemDownload}
+            />
+          </ConfigSection>
+        )}
 
       {capabilities?.hasCompanionContactManagementConfig &&
         meshcoreSelfInfo &&
@@ -2346,21 +2503,57 @@ export default function RadioPanel({
       )}
 
       {/* Device Actions (MeshCore) — non-destructive commands */}
-      {(onSendAdvert || onSyncClock || capabilities?.hasCompanionContactManagementConfig) && (
+      {(onSendAdvert ||
+        onSendZeroHopAdvert ||
+        onSyncClock ||
+        capabilities?.hasCompanionContactManagementConfig ||
+        meshcoreSelfInfo) && (
         <div className="space-y-3">
           <h3 className="text-muted text-sm font-medium">{t('radioPanel.deviceActions')}</h3>
-          <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
+          {meshcoreSelfInfo &&
+            (() => {
+              const { lat, lon } = meshcoreScaledAdvLatLonToDeg(
+                meshcoreSelfInfo.advLat,
+                meshcoreSelfInfo.advLon,
+              );
+              if (lat == null && lon == null) return null;
+              return (
+                <p className="text-muted text-xs">
+                  {t('radioPanel.advertisedPositionLabel', {
+                    lat: lat?.toFixed(5) ?? '—',
+                    lon: lon?.toFixed(5) ?? '—',
+                  })}
+                </p>
+              );
+            })()}
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
             {onSendAdvert && (
               <button
                 type="button"
                 onClick={() => void handleSendAdvert()}
-                disabled={!isConnected || advertLoading}
+                disabled={!isConnected || advertLoading || zeroHopAdvertLoading}
                 className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 rounded border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-40"
+                aria-label={t('radioPanel.floodAdvertButton')}
               >
                 {advertLoading ? (
                   <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
                 ) : (
                   t('radioPanel.floodAdvertButton')
+                )}
+              </button>
+            )}
+            {onSendZeroHopAdvert && (
+              <button
+                type="button"
+                onClick={() => void handleSendZeroHopAdvert()}
+                disabled={!isConnected || zeroHopAdvertLoading || advertLoading}
+                className="rounded border border-teal-700 bg-teal-900/40 px-3 py-1 text-xs font-medium text-teal-300 transition-colors hover:bg-teal-800/50 disabled:opacity-40"
+                aria-label={t('radioPanel.zeroHopAdvertButton')}
+              >
+                {zeroHopAdvertLoading ? (
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-teal-400 border-t-transparent" />
+                ) : (
+                  t('radioPanel.zeroHopAdvertButton')
                 )}
               </button>
             )}

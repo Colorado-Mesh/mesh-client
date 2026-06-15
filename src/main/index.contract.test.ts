@@ -220,6 +220,13 @@ describe('MQTT IPC handlers (source contract)', () => {
   it('registers mqtt:publish with payload validation', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publish'");
     expect(INDEX_SOURCE).toMatch(/validateMqttPublish/);
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishProxy'");
+    expect(INDEX_SOURCE).toContain('validateMqttPublishProxyArgs');
+  });
+
+  it('registers meshtastic XMODEM file IPC handlers', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('meshtastic:xmodemPickUpload'");
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('meshtastic:xmodemSaveDownload'");
   });
 
   it('registers mqtt:publishNodeInfo and mqtt:publishPosition', () => {

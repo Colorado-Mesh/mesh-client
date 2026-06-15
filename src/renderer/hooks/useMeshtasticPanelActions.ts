@@ -19,6 +19,8 @@ export function useMeshtasticPanelActions(runtime: MeshtasticRuntime) {
       setOwner: runtime.setOwner,
       rebootOta: runtime.rebootOta,
       enterDfuMode: runtime.enterDfuMode,
+      xmodemUpload: runtime.xmodemUpload,
+      xmodemDownload: runtime.xmodemDownload,
       factoryResetConfig: runtime.factoryResetConfig,
       traceRoute: runtime.traceRoute,
       setConfigureTargetNodeNum: runtime.setConfigureTargetNodeNum,

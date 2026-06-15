@@ -97,22 +97,24 @@ export default function AdminPanel({
             {t('radioPanel.deviceCommandsImmediateWarning')}
           </p>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.enterDfuName'),
-                  title: t('radioPanel.enterDfuTitle'),
-                  message: t('radioPanel.enterDfuMessage'),
-                  confirmLabel: t('radioPanel.enterDfuConfirm'),
-                  action: () => onEnterDfu?.() ?? Promise.resolve(),
-                });
-              }}
-              disabled={localOnlyCommandsDisabled || !onEnterDfu}
-              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-            >
-              {t('radioPanel.enterDfuButton')}
-            </button>
+            {!isRemoteTarget && (
+              <button
+                type="button"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: t('radioPanel.enterDfuName'),
+                    title: t('radioPanel.enterDfuTitle'),
+                    message: t('radioPanel.enterDfuMessage'),
+                    confirmLabel: t('radioPanel.enterDfuConfirm'),
+                    action: () => onEnterDfu?.() ?? Promise.resolve(),
+                  });
+                }}
+                disabled={localOnlyCommandsDisabled || !onEnterDfu}
+                className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
+              >
+                {t('radioPanel.enterDfuButton')}
+              </button>
+            )}
 
             <button
               type="button"
@@ -133,22 +135,24 @@ export default function AdminPanel({
               {t('radioPanel.rebootButton')}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.rebootOtaName'),
-                  title: t('radioPanel.rebootOtaTitle'),
-                  message: t('radioPanel.rebootOtaMessage'),
-                  confirmLabel: t('radioPanel.rebootOtaConfirm'),
-                  action: () => onRebootOta?.(10) ?? Promise.resolve(),
-                });
-              }}
-              disabled={localOnlyCommandsDisabled || !onRebootOta}
-              className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
-            >
-              {t('radioPanel.rebootOtaButton')}
-            </button>
+            {!isRemoteTarget && (
+              <button
+                type="button"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: t('radioPanel.rebootOtaName'),
+                    title: t('radioPanel.rebootOtaTitle'),
+                    message: t('radioPanel.rebootOtaMessage'),
+                    confirmLabel: t('radioPanel.rebootOtaConfirm'),
+                    action: () => onRebootOta?.(10) ?? Promise.resolve(),
+                  });
+                }}
+                disabled={localOnlyCommandsDisabled || !onRebootOta}
+                className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
+              >
+                {t('radioPanel.rebootOtaButton')}
+              </button>
+            )}
 
             {capabilities?.hasNodeDbReset !== false && (
               <button
@@ -199,23 +203,25 @@ export default function AdminPanel({
           <h3 className="text-sm font-medium text-red-400">{t('radioPanel.dangerZone')}</h3>
           <div className="space-y-2 rounded-lg border border-red-900 p-4">
             <p className="text-xs text-red-400/80">{t('radioPanel.dangerZonePermanent')}</p>
-            <button
-              type="button"
-              onClick={() => {
-                executeWithConfirmation({
-                  name: t('radioPanel.factoryResetConfigName'),
-                  title: t('radioPanel.factoryResetConfigTitle'),
-                  message: t('radioPanel.factoryResetConfigMessage'),
-                  confirmLabel: t('radioPanel.factoryResetConfigConfirm'),
-                  danger: true,
-                  action: () => onFactoryResetConfig?.() ?? Promise.resolve(),
-                });
-              }}
-              disabled={!isConnected || !onFactoryResetConfig}
-              className="w-full rounded-lg border border-red-800/60 bg-red-900/40 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/60 disabled:opacity-50"
-            >
-              {t('radioPanel.factoryResetConfigButton')}
-            </button>
+            {!isRemoteTarget && (
+              <button
+                type="button"
+                onClick={() => {
+                  executeWithConfirmation({
+                    name: t('radioPanel.factoryResetConfigName'),
+                    title: t('radioPanel.factoryResetConfigTitle'),
+                    message: t('radioPanel.factoryResetConfigMessage'),
+                    confirmLabel: t('radioPanel.factoryResetConfigConfirm'),
+                    danger: true,
+                    action: () => onFactoryResetConfig?.() ?? Promise.resolve(),
+                  });
+                }}
+                disabled={!isConnected || !onFactoryResetConfig}
+                className="w-full rounded-lg border border-red-800/60 bg-red-900/40 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/60 disabled:opacity-50"
+              >
+                {t('radioPanel.factoryResetConfigButton')}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

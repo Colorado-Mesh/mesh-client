@@ -67,6 +67,11 @@ interface Props {
   remoteHardwareMessages?: Map<number, PacketMessage[]>;
   /** IP tunnel packet stream; null/absent = daemon not running. */
   ipTunnelMessages?: Map<number, PacketMessage[]>;
+  audioMessages?: Map<number, PacketMessage[]>;
+  simulatorPackets?: Map<number, PacketMessage[]>;
+  privateMessages?: Map<number, PacketMessage[]>;
+  pingResponses?: Map<number, PacketMessage>;
+  hasAudio?: boolean;
 }
 
 // ─── Reusable config components (same pattern as RadioPanel) ─────
@@ -404,6 +409,11 @@ export default function ModulePanel({
   serialMessages,
   remoteHardwareMessages,
   ipTunnelMessages,
+  audioMessages,
+  simulatorPackets,
+  privateMessages,
+  pingResponses,
+  hasAudio,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -470,6 +480,16 @@ export default function ModulePanel({
   const [mqttMapReporting, setMqttMapReporting] = useState<boolean>(
     cfgBool(mqttCfg.mapReportingEnabled, false),
   );
+  const mapReportCfg =
+    mqttCfg.mapReportSettings && typeof mqttCfg.mapReportSettings === 'object'
+      ? (mqttCfg.mapReportSettings as Record<string, unknown>)
+      : {};
+  const [mqttMapReportInterval, setMqttMapReportInterval] = useState<number>(
+    cfgNum(mapReportCfg.publishIntervalSecs, 0),
+  );
+  const [mqttMapReportPrecision, setMqttMapReportPrecision] = useState<number>(
+    cfgNum(mapReportCfg.positionPrecision, 10),
+  );
   const [mqttProxyToClient, setMqttProxyToClient] = useState<boolean>(
     cfgBool(mqttCfg.proxyToClientEnabled, false),
   );
@@ -486,6 +506,8 @@ export default function ModulePanel({
     tlsEnabled: mqttTls,
     root: mqttRoot,
     mapReportingEnabled: mqttMapReporting,
+    mapReportPublishIntervalSecs: mqttMapReportInterval,
+    mapReportPositionPrecision: mqttMapReportPrecision,
     proxyToClientEnabled: mqttProxyToClientChecked,
   });
 
@@ -705,6 +727,12 @@ export default function ModulePanel({
     setMqttTls(cfgBool(cfg.tlsEnabled, false));
     setMqttRoot(cfgStr(cfg.root, ''));
     setMqttMapReporting(cfgBool(cfg.mapReportingEnabled, false));
+    const mrs =
+      cfg.mapReportSettings && typeof cfg.mapReportSettings === 'object'
+        ? (cfg.mapReportSettings as Record<string, unknown>)
+        : {};
+    setMqttMapReportInterval(cfgNum(mrs.publishIntervalSecs, 0));
+    setMqttMapReportPrecision(cfgNum(mrs.positionPrecision, 10));
     setMqttProxyToClient(cfgBool(cfg.proxyToClientEnabled, false));
   });
 
@@ -921,6 +949,9 @@ export default function ModulePanel({
           disabled={disabled || !mqttEnabled || mqttProxyForced}
           description={t('modulePanel.fields.mqttProxyToClientEnabledDesc')}
         />
+        {mqttProxyToClientChecked && !remoteTarget && (
+          <p className="text-muted text-xs">{t('modulePanel.fields.mqttProxyGatewayHint')}</p>
+        )}
         <ConfigText
           label={t('modulePanel.fields.serverAddress')}
           value={mqttAddress}
@@ -968,6 +999,28 @@ export default function ModulePanel({
           onChange={setMqttTls}
           disabled={disabled || !mqttEnabled}
         />
+      </ModuleSection>
+
+      {/* ═══ Map Report (MQTT module fields) ═══ */}
+      <ModuleSection
+        title={t('modulePanel.sectionMapReport')}
+        {...moduleSectionProps('mqtt')}
+        onApply={() => {
+          const validationError = validateMqttRelayBeforeApply();
+          if (validationError) {
+            addToast(validationError, 'error');
+            return;
+          }
+          void applyModule(
+            t('modulePanel.sectionMapReport'),
+            'mqtt',
+            buildMeshtasticMqttModuleApplyValue(mqttCfg, buildMqttUiValues(), deviceNetwork),
+          );
+        }}
+        applying={applyingSection === 'mqtt'}
+        disabled={disabled}
+      >
+        <p className="text-muted text-xs">{t('modulePanel.sectionMapReportHint')}</p>
         <ConfigToggle
           label={t('modulePanel.fields.mapReportingEnabled')}
           checked={mqttMapReporting}
@@ -975,6 +1028,29 @@ export default function ModulePanel({
           disabled={disabled || !mqttEnabled}
           description={t('modulePanel.fields.mapReportingEnabledDesc')}
         />
+        {mqttMapReporting && (
+          <>
+            <ConfigNumber
+              label={t('modulePanel.fields.mapReportPublishInterval')}
+              value={mqttMapReportInterval}
+              onChange={setMqttMapReportInterval}
+              disabled={disabled || !mqttEnabled}
+              min={0}
+              max={86400}
+              unit={secondsUnit}
+              description={t('modulePanel.fields.mapReportPublishIntervalDesc')}
+            />
+            <ConfigNumber
+              label={t('modulePanel.fields.mapReportPositionPrecision')}
+              value={mqttMapReportPrecision}
+              onChange={setMqttMapReportPrecision}
+              disabled={disabled || !mqttEnabled}
+              min={0}
+              max={32}
+              description={t('modulePanel.fields.mapReportPositionPrecisionDesc')}
+            />
+          </>
+        )}
       </ModuleSection>
 
       {/* ═══ Serial Module ═══ */}
@@ -2148,7 +2224,41 @@ export default function ModulePanel({
       )}
 
       {/* ═══ IP Tunnel ═══ */}
-      {ipTunnelMessages != null && (
+      {!remoteTarget && hasAudio && audioMessages != null && (
+        <StatusOnlySection title={t('modulePanel.sectionAudio')}>
+          <ModuleStatus packets={audioMessages} label={t('modulePanel.statusLabels.audio')} />
+        </StatusOnlySection>
+      )}
+
+      {!remoteTarget &&
+        (simulatorPackets != null || privateMessages != null || pingResponses != null) && (
+          <StatusOnlySection title={t('modulePanel.sectionDebugModules')}>
+            {simulatorPackets != null && (
+              <ModuleStatus
+                packets={simulatorPackets}
+                label={t('modulePanel.debugSimulatorPackets')}
+              />
+            )}
+            {privateMessages != null && (
+              <ModuleStatus
+                packets={privateMessages}
+                label={t('modulePanel.debugPrivateAppMessages')}
+              />
+            )}
+            {pingResponses != null && pingResponses.size > 0 && (
+              <ModuleStatus
+                packets={
+                  new Map(
+                    Array.from(pingResponses.entries()).map(([nodeId, pkt]) => [nodeId, [pkt]]),
+                  )
+                }
+                label={t('modulePanel.debugPingResponses')}
+              />
+            )}
+          </StatusOnlySection>
+        )}
+
+      {!remoteTarget && ipTunnelMessages != null && (
         <StatusOnlySection title={t('modulePanel.sectionIpTunnel')}>
           <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
           <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>

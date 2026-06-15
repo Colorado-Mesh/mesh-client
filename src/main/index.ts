@@ -820,6 +820,33 @@ function validateMqttPublishArgs(args: unknown): void {
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publish');
 }
 
+function validateMqttPublishProxyArgs(args: unknown): void {
+  if (!args || typeof args !== 'object') {
+    throw new Error('mqtt:publishProxy: args must be an object');
+  }
+  const a = args as Record<string, unknown>;
+  if (typeof a.topic !== 'string' || !a.topic.trim()) {
+    throw new Error('mqtt:publishProxy: topic must be a non-empty string');
+  }
+  if (a.topic.length > 512) {
+    throw new Error('mqtt:publishProxy: topic too long');
+  }
+  const hasData = a.data != null;
+  const hasText = typeof a.text === 'string';
+  if (!hasData && !hasText) {
+    throw new Error('mqtt:publishProxy: data or text required');
+  }
+  if (hasText && (a.text as string).length > 512 * 1024) {
+    throw new Error('mqtt:publishProxy: text too long');
+  }
+  if (hasData && !(a.data instanceof Uint8Array) && !ArrayBuffer.isView(a.data)) {
+    throw new Error('mqtt:publishProxy: data must be Uint8Array');
+  }
+  if (a.retained != null && typeof a.retained !== 'boolean') {
+    throw new Error('mqtt:publishProxy: retained must be a boolean');
+  }
+}
+
 function validateMqttPublishWaypointArgs(args: unknown): void {
   if (!args || typeof args !== 'object') {
     throw new Error('mqtt:publishWaypoint: args must be an object');
@@ -2576,6 +2603,17 @@ mqttManager.on('message', (m) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:message', m);
   else console.debug('[main] mqtt:message dropped (mainWindow not ready)');
 });
+mqttManager.on('brokerRaw', (payload: { topic: string; payload: Buffer; retained: boolean }) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('mqtt:brokerRaw', {
+      topic: payload.topic,
+      payload: new Uint8Array(payload.payload),
+      retained: payload.retained,
+    });
+  } else {
+    console.debug('[main] mqtt:brokerRaw dropped (mainWindow not ready)');
+  }
+});
 
 meshcoreMqttAdapter.on('status', (s) => {
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshcore' });
@@ -2784,6 +2822,31 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
   } catch (err) {
     console.error(
       '[IPC] mqtt:publish failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('mqtt:publishProxy', (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:publishProxy');
+    validateMqttPublishProxyArgs(args);
+    const a = args as {
+      topic: string;
+      data?: Uint8Array;
+      text?: string;
+      retained?: boolean;
+    };
+    mqttManager.publishProxyRaw({
+      topic: a.topic,
+      data: a.data,
+      text: a.text,
+      retained: a.retained,
+    });
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:publishProxy failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -4097,6 +4160,54 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   } catch (err) {
     console.error(
       '[IPC] chat:export failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!mainWindow) return null;
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select file to upload',
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const filePath = result.filePaths[0];
+    const data = await fs.promises.readFile(filePath);
+    const filename = path.basename(filePath);
+    return { filename, data: new Uint8Array(data) };
+  } catch (err) {
+    console.error(
+      '[IPC] meshtastic:xmodemPickUpload failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('meshtastic:xmodemSaveDownload', async (event, filename: unknown, data: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (typeof filename !== 'string' || filename.length === 0 || filename.length > 256) {
+    throw new Error('meshtastic:xmodemSaveDownload: invalid filename');
+  }
+  if (!(data instanceof Uint8Array) || data.length === 0) {
+    throw new Error('meshtastic:xmodemSaveDownload: data must be non-empty Uint8Array');
+  }
+  if (!mainWindow) return { success: false };
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save downloaded file',
+      defaultPath: path.basename(filename),
+    });
+    if (result.canceled || !result.filePath) return { success: false };
+    await fs.promises.writeFile(result.filePath, data);
+    return { success: true, path: result.filePath };
+  } catch (err) {
+    console.error(
+      '[IPC] meshtastic:xmodemSaveDownload failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

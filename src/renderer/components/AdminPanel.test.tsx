@@ -67,7 +67,7 @@ describe('AdminPanel', () => {
     expect(screen.getByRole('button', { name: /shutdown/i })).toBeInTheDocument();
   });
 
-  it('disables local-only Enter DFU and Reboot OTA when configure target is remote', () => {
+  it('hides local-only Enter DFU and Reboot OTA when configure target is remote', () => {
     renderAdmin({
       onEnterDfu: vi.fn().mockResolvedValue(undefined),
       onRebootOta: vi.fn().mockResolvedValue(undefined),
@@ -79,8 +79,8 @@ describe('AdminPanel', () => {
       },
     });
 
-    expect(screen.getByRole('button', { name: /enter dfu/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /reboot to ota/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /enter dfu/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reboot to ota/i })).not.toBeInTheDocument();
   });
 
   it('passes preserve-favorites flag on remote NodeDB reset confirm', async () => {

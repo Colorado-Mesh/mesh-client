@@ -133,6 +133,7 @@ function makeDeps() {
       setAtakMessages: vi.fn(),
       setMapReports: vi.fn(),
       setPrivateMessages: vi.fn(),
+      mqttClientProxyBridgeRef: { current: null },
     },
   };
 }

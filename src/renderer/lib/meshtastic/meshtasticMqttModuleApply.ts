@@ -14,6 +14,10 @@ function cfgStr(v: unknown, fallback: string): string {
   return typeof v === 'string' ? v : fallback;
 }
 
+function cfgNum(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+}
+
 export interface MqttModuleUiValues {
   enabled: boolean;
   address: string;
@@ -24,6 +28,8 @@ export interface MqttModuleUiValues {
   tlsEnabled: boolean;
   root: string;
   mapReportingEnabled: boolean;
+  mapReportPublishIntervalSecs?: number;
+  mapReportPositionPrecision?: number;
   proxyToClientEnabled: boolean;
 }
 
@@ -62,10 +68,15 @@ export function buildMeshtasticMqttModuleApplyValue(
     proxyToClientEnabled,
   });
 
-  if (merged.mapReportingEnabled === true && merged.mapReportSettings == null) {
+  if (merged.mapReportingEnabled === true) {
+    const existing =
+      merged.mapReportSettings && typeof merged.mapReportSettings === 'object'
+        ? (merged.mapReportSettings as Record<string, unknown>)
+        : {};
     merged.mapReportSettings = {
-      publishIntervalSecs: 0,
-      positionPrecision: 10,
+      publishIntervalSecs:
+        ui.mapReportPublishIntervalSecs ?? cfgNum(existing.publishIntervalSecs, 0),
+      positionPrecision: ui.mapReportPositionPrecision ?? cfgNum(existing.positionPrecision, 10),
     };
   }
 

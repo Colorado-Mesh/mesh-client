@@ -134,9 +134,143 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
   ja: [{ re: /部屋/, hint: 'use "ルーム" for MeshCore Room, not hotel 部屋' }],
 };
 
-/** Dutch MT often uses commercial "advertentie" for mesh presence adverts / flood adverts. */
-/** Substring match — Dutch compounds like "overstromingsadvertentie" have no \\b before advertentie. */
-export const NL_MESH_ADVERT_FALSE_FRIEND_RE = /advertentie/i;
+/** Leaf keys from flood-advert / zero-hop UI where MT must not use commercial "ad" wording. */
+export const MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS = new Set([
+  'floodAdvertTypeLabel',
+  'floodAdvertTypeFlood',
+  'floodAdvertTypeZeroHop',
+  'zeroHopAdvertButton',
+  'zeroHopAdvertSent',
+]);
+
+export function isMeshAdvertCommercialCheckKey(flatKey) {
+  const leaf = flatKey.split('.').pop() ?? flatKey;
+  return MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS.has(leaf);
+}
+
+/**
+ * Auto-translate often turns mesh "advert" into commercial advertising by locale.
+ * Checked on MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS and (nl only) any isMeshAdvertUiKey().
+ */
+export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
+  nl: [
+    {
+      re: /advertentie/i,
+      hint: 'use "advert" or "flood-advert", not commercial "advertentie"',
+    },
+  ],
+  de: [
+    {
+      re: /\b(Werbung|Anzeigen)\b/i,
+      hint: 'use "Advert" mesh protocol term, not commercial Werbung/Anzeigen',
+    },
+  ],
+  fr: [
+    {
+      re: /\b[Pp]ublicité\b/i,
+      hint: 'use "advert", not commercial "publicité"',
+    },
+  ],
+  ru: [
+    {
+      re: /\bРеклам/i,
+      hint: 'use "advert", not commercial "реклама"',
+    },
+  ],
+  uk: [
+    {
+      re: /\bРеклам/i,
+      hint: 'use "advert", not commercial "реклама"',
+    },
+  ],
+  tr: [
+    {
+      re: /\b[Rr]eklam\b/i,
+      hint: 'use "advert", not commercial "reklam"',
+    },
+  ],
+  id: [
+    {
+      re: /\b[Ii]klan\b/i,
+      hint: 'use "advert", not commercial "iklan"',
+    },
+  ],
+  cs: [
+    {
+      re: /\b[Rr]eklam/i,
+      hint: 'use "advert", not commercial "reklama"',
+    },
+  ],
+  pl: [
+    {
+      re: /\b[Rr]eklam/i,
+      hint: 'use "advert" or "ogłoszenie", not commercial "reklama"',
+    },
+  ],
+  ko: [
+    {
+      re: /광고/,
+      hint: 'use "advert" protocol term, not commercial 광고',
+    },
+  ],
+  ja: [
+    {
+      re: /広告/,
+      hint: 'use "advert" protocol term, not commercial 広告',
+    },
+  ],
+  zh: [
+    {
+      re: /广告/,
+      hint: 'use "advert" or 通告, not commercial 广告',
+    },
+  ],
+};
+
+/** Raw packet log panel — route/transport labels and protocol enum copy. */
+export const RAW_PACKET_LOG_PREFIX = 'rawPacketLog.';
+
+export const RAW_PACKET_LOG_PROTOCOL_KEYS = new Set([
+  'transportLegendHint',
+  'transportCodesAbsent',
+  'transportCodesAbsentTooltip',
+]);
+
+export const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set([
+  'routeLabel',
+  'payloadLabel',
+  'transportHeading',
+]);
+
+/** MyMemory/CAT padding with dot runs in short UI labels. */
+export const CAT_DOT_PADDING_RE = /\.{4,}/;
+
+/** Protocol enum names that must stay verbatim when English includes them. */
+export const MESHCORE_ROUTE_PROTOCOL_TOKENS = [
+  'TRANSPORT_FLOOD',
+  'TRANSPORT_DIRECT',
+  'FLOOD',
+  'DIRECT',
+];
+
+/**
+ * @param {string} flatKey
+ * @param {string} enVal
+ * @param {string} val
+ * @returns {string[]}
+ */
+export function meshcoreProtocolTokenIssues(flatKey, enVal, val) {
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return [];
+  const leafKey = flatKey.split('.').pop() ?? flatKey;
+  if (!RAW_PACKET_LOG_PROTOCOL_KEYS.has(leafKey)) return [];
+  const issues = [];
+  for (const tok of MESHCORE_ROUTE_PROTOCOL_TOKENS) {
+    if (enVal.includes(tok) && !val.includes(tok)) {
+      issues.push(`preserve protocol token "${tok}" from English in rawPacketLog copy`);
+    }
+  }
+  return issues;
+}
 
 /** App → Appearance reduce-motion accessibility copy (added with lucide icon motion). */
 export const REDUCE_MOTION_KEY = 'appPanel.reduceMotion';
@@ -830,14 +964,35 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     issues.push('roomsPanel false friend: use "ルーム" for MeshCore Room type, not hotel 部屋');
   }
 
-  if (
-    locale === 'nl' &&
-    isMeshAdvertUiKey(flatKey, enVal) &&
-    NL_MESH_ADVERT_FALSE_FRIEND_RE.test(val)
-  ) {
-    issues.push(
-      'nl mesh-advert false friend: use "advert" or "flood-advert", not commercial "advertentie"',
-    );
+  const shouldCheckMeshAdvertCommercial =
+    isMeshAdvertCommercialCheckKey(flatKey) ||
+    (locale === 'nl' && isMeshAdvertUiKey(flatKey, enVal));
+  if (shouldCheckMeshAdvertCommercial) {
+    for (const { re, hint } of MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`${locale} mesh-advert false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) {
+    const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+    if (RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) {
+      if (CAT_DOT_PADDING_RE.test(val)) {
+        issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
+      }
+      if (packetLeaf === 'payloadLabel' && val.length > 24) {
+        issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
+      }
+    }
+    if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
+      issues.push(
+        'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
+      );
+    }
+    for (const issue of meshcoreProtocolTokenIssues(flatKey, enVal, val)) {
+      issues.push(issue);
+    }
   }
 
   if (

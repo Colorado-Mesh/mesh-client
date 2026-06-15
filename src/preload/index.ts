@@ -373,6 +373,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('mqtt:message', handler);
       return () => ipcRenderer.off('mqtt:message', handler);
     },
+    onBrokerRaw: (
+      cb: (payload: { topic: string; payload: Uint8Array; retained: boolean }) => void,
+    ) => {
+      const handler = (_: unknown, p: unknown) => {
+        cb(p as { topic: string; payload: Uint8Array; retained: boolean });
+      };
+      ipcRenderer.on('mqtt:brokerRaw', handler);
+      return () => ipcRenderer.off('mqtt:brokerRaw', handler);
+    },
     onTraceRouteReply: (
       cb: (payload: {
         meshFrom: number;
@@ -422,6 +431,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       replyId?: number;
       publishJsonMirror: boolean;
     }) => ipcRenderer.invoke('mqtt:publish', args),
+    publishProxy: (args: { topic: string; data?: Uint8Array; text?: string; retained?: boolean }) =>
+      ipcRenderer.invoke('mqtt:publishProxy', args),
     publishNodeInfo: (args: {
       from: number;
       longName: string;
@@ -892,6 +903,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('chat:outbox:updateStatus', id, status, error, nextRetryAt),
       remove: (id: number) => ipcRenderer.invoke('chat:outbox:remove', id),
     },
+  },
+
+  meshtasticXmodem: {
+    pickUploadFile: () =>
+      ipcRenderer.invoke('meshtastic:xmodemPickUpload') as Promise<{
+        filename: string;
+        data: Uint8Array;
+      } | null>,
+    saveDownloadFile: (filename: string, data: Uint8Array) =>
+      ipcRenderer.invoke('meshtastic:xmodemSaveDownload', filename, data) as Promise<{
+        success: boolean;
+        path?: string;
+      }>,
   },
 
   // ─── Log panel ───────────────────────────────────────────────────

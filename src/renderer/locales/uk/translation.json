@@ -178,7 +178,10 @@
     "reduceMotion": "Зменшити рух",
     "reduceMotionDesc": "Вимикає анімовані іконки та декоративні ефекти. Індикатори завантаження та стану з'єднання все ще анімуються.",
     "roomMessages": "Повідомлення про кімнату",
-    "importSchemaTooNew": "Для цього файлу бази даних потрібен новий Mesh-Client (схема {{dbVersion}}). Ця збірка підтримує схему {{appVersion}} або старішу. Встановіть останню версію та повторіть спробу."
+    "importSchemaTooNew": "Для цього файлу бази даних потрібен новий Mesh-Client (схема {{dbVersion}}). Ця збірка підтримує схему {{appVersion}} або старішу. Встановіть останню версію та повторіть спробу.",
+    "floodAdvertTypeLabel": "Тип оголошення",
+    "floodAdvertTypeFlood": "Повінь (багатомагістральна)",
+    "floodAdvertTypeZeroHop": "Нульовий стрибок (лише прямі сусіди)"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "Немає повідомлень, які відповідають вашому пошуку.",
     "emptyNoDmMessages": "Повідомлень з {{name}} ще немає.",
     "emptyNoMessagesYet": "Повідомлень ще немає. Надішліть одне або дочекайтеся вхідних повідомлень.",
-    "emptyConnectFirst": "Щоб почати спілкування, підключіться до пристрою."
+    "emptyConnectFirst": "Щоб почати спілкування, підключіться до пристрою.",
+    "waitingMessagesBadge": "Синхронізація повідомлень у черзі {{count}} з радіо…",
+    "waitingMessagesSyncNow": "Синхронізувати зараз"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "Увімкнути віддалене обладнання",
       "remoteHardwareEnabledDesc": "Дозволяє віддаленим вузлам читати та записувати GPIO-піни на цьому пристрої.",
       "remoteHardwareAllowUndefinedPins": "Дозволити доступ до невизначених пінів",
-      "remoteHardwareAllowUndefinedPinsDesc": "Дозволяє читання/запис пінів, не зазначених у конфігурації доступних пінів."
+      "remoteHardwareAllowUndefinedPinsDesc": "Дозволяє читання/запис пінів, не зазначених у конфігурації доступних пінів.",
+      "mqttProxyGatewayHint": "Якщо проксі-сервер увімкнено, mesh-клієнт об 'єднує трафік брокера через MqttClientProxyMessage. Увімкніть низхідну лінію зв' язку для кожного каналу на вкладці Radio (Радіо) для→ радіорелейної передачі MQTT.",
+      "mapReportPublishInterval": "Інтервал звіту про карту (секунди)",
+      "mapReportPublishIntervalDesc": "0 використовує прошивку за замовчуванням. Як часто пристрій публікує звіти про карту, коли звіт про карту ввімкнено.",
+      "mapReportPositionPrecision": "Точність позиції звіту на карті",
+      "mapReportPositionPrecisionDesc": "Біти точності для координат звіту карти (прошивка ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Застосувати {{section}}",
     "applyingButton": "Застосування...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "IP тунель",
       "gpio": "GPIO",
       "rangeTest": "Тест діапазону",
-      "storeForward": "Отримано S&F"
+      "storeForward": "Отримано S&F",
+      "audio": "Аудіо"
     },
     "errors": {
       "generic": "Пристрій відхилив цю зміну.",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "Увімкнути",
     "remoteHardwareConfirmUndefinedPinsTitle": "Дозволити доступ до невизначеного PIN-коду?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Будь-який PIN-код GPIO можна зчитувати або записувати віддалено, включаючи контакти, не зазначені у конфігурації апаратного забезпечення. Це підвищує ризик для безпеки.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Дозволити невизначені PIN-коди"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Дозволити невизначені PIN-коди",
+    "sectionDebugModules": "Модулі налагодження",
+    "sectionAudio": "Аудіомодуль",
+    "debugSimulatorPackets": "Пакети тренажера",
+    "debugPrivateAppMessages": "Приватні повідомлення в додатку",
+    "debugPingResponses": "Ping-відповіді",
+    "sectionMapReport": "Звіт про карту",
+    "sectionMapReportHint": "Публікує позицію на карті Meshtastic через MQTT. Потрібно увімкнути MQTT Relay вище; налаштування зберігаються в конфігурації модуля MQTT пристрою."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Видалити з обраного",
@@ -2077,7 +2095,34 @@
     "offloading": "Розвантаження…",
     "offloadingProgress": "Видалення {{current}} з {{total}}…",
     "offloadCancelled": "Розвантаження скасовано.",
-    "offloadCancelledPartial": "Розвантаження скасовано після видалення {{count}} контактів з радіоприймача."
+    "offloadCancelledPartial": "Розвантаження скасовано після видалення {{count}} контактів з радіоприймача.",
+    "xmodemSection": "Передача файлів XMODEM",
+    "xmodemSectionHint": "Передавайте файли на/з підключеної радіопрошивки (лише локальне з 'єднання).",
+    "xmodemFilenameLabel": "Віддалена назва файлу",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Завантажити файл",
+    "xmodemDownload": "Звантажити файл",
+    "xmodemUploadSuccess": "Завантажено {{name}}",
+    "xmodemDownloadSuccess": "Завантажено {{name}}",
+    "xmodemFailed": "Помилка XMODEM: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertSent": "Zero-hop advert надіслано",
+    "floodScopeTitle": "Регіональний масштаб повені",
+    "floodScopeHelp": "Обмежте трафік повені до регіону хештегів (прошивка v8+). Потрібен meshcore.js setFloodScope; повторне підключення повторно застосовує збережену область.",
+    "floodScopeNone": "Немає (чітка сфера застосування)",
+    "floodScopePreset": "Попередньо встановлений хештег",
+    "floodScopePresetSelect": "Попередньо встановлений хештег регіону",
+    "floodScopeCustom": "Користувацький хештег",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Застосувати обсяг повені",
+    "floodScopeApplySuccess": "Застосований обсяг повені",
+    "floodScopeApplyFailed": "Помилка об 'єму повені: {{message}}",
+    "advertisedPositionLabel": "Оголошена позиція: {{lat}}, {{lon}}",
+    "txPowerMax": "Потужність передачі (макс. {{max}} дБм на радіоприймач)",
+    "txPowerMaxUnknown": "Потужність передачі (обмежена на {{max}} дБм, поки вбудоване програмне забезпечення не повідомить про радіо макс.)",
+    "txPowerDeviceCurrent": "Звіти про пристрій {{current}} dBm (повзунок макс. {{max}} dBm)",
+    "sectionTxPower": "Потужність передавача",
+    "applyTxPowerSuccess": "Увімкнено живлення TX"
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "Фільтрувати за типом, назвою чи шістнадцятковим...",
     "emptyWaiting": "Нових пакетів mesh ще не отримано. Будь ласка, зачекайте...",
     "noPacketsMatchFilter": "Жоден пакет не відповідає поточному фільтру.",
-    "rawHexLabel": "Необроблений шістнадцятковий ({{bytes}} байт):"
+    "rawHexLabel": "Необроблений шістнадцятковий ({{bytes}} байт):",
+    "transportScopeTooltip": "Код обсягу перевезення — регіональний фільтр повені на вихідному шляху",
+    "transportReturnTooltip": "Код повернення транспорту — регіональний фільтр на зворотному шляху",
+    "transportRegionMatch": "Збігається з налаштованою областю повені",
+    "transportRegionMismatch": "Не відповідає налаштованому обсягу повені",
+    "transportLegendHint": "Розгорніть рядок: маршрут і транспорт — зверху. Регіональні коди scope/return з’являються лише в пакетах TRANSPORT_FLOOD і TRANSPORT_DIRECT (не в звичайних FLOOD/DIRECT).",
+    "routeLabel": "Маршрут",
+    "payloadLabel": "Payload",
+    "transportHeading": "Транспорт",
+    "transportCodesAbsent": "Немає регіональних транспортних кодів (маршрут {{route}} — лише TRANSPORT_FLOOD / TRANSPORT_DIRECT несуть scope/return).",
+    "transportCodesAbsentTooltip": "Звичайні пакети FLOOD і DIRECT не містять регіональних полів scope/return транспорту в RF-заголовку MeshCore."
   },
   "remoteAdmin": {
     "errors": {

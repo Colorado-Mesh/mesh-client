@@ -178,7 +178,10 @@
     "reduceMotion": "Beweging verminderen",
     "reduceMotionDesc": "Schakelt geanimeerde pictogrammen en decoratieve effecten uit. Laadspinners en verbindingsstatusindicatoren blijven geanimeerd.",
     "roomMessages": "Berichten in de kamer",
-    "importSchemaTooNew": "Dit databasebestand vereist een nieuwere Mesh-Client (schema {{dbVersion}}). Deze build ondersteunt schema {{appVersion}} of ouder. Installeer de nieuwste versie en probeer het opnieuw."
+    "importSchemaTooNew": "Dit databasebestand vereist een nieuwere Mesh-Client (schema {{dbVersion}}). Deze build ondersteunt schema {{appVersion}} of ouder. Installeer de nieuwste versie en probeer het opnieuw.",
+    "floodAdvertTypeLabel": "Advert-type",
+    "floodAdvertTypeFlood": "Overstroming (multi-hop)",
+    "floodAdvertTypeZeroHop": "Zero-hop (alleen directe buren)"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -295,7 +298,9 @@
     "emptyNoSearchMatches": "Er komen geen berichten overeen met uw zoekopdracht.",
     "emptyNoDmMessages": "Nog geen berichten met {{name}}.",
     "emptyNoMessagesYet": "Nog geen berichten. Stuur er een of wacht op inkomende berichten.",
-    "emptyConnectFirst": "Maak verbinding met een apparaat om te chatten."
+    "emptyConnectFirst": "Maak verbinding met een apparaat om te chatten.",
+    "waitingMessagesBadge": "{{count}} bericht(en) in de wachtrij van de radio synchroniseren...",
+    "waitingMessagesSyncNow": "Synchroniseer nu"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1245,7 +1250,12 @@
       "remoteHardwareEnabled": "Externe hardware inschakelen",
       "remoteHardwareEnabledDesc": "Staat externe knooppunten toe GPIO-pinnen op dit apparaat te lezen en schrijven.",
       "remoteHardwareAllowUndefinedPins": "Toegang tot ongedefinieerde pinnen toestaan",
-      "remoteHardwareAllowUndefinedPinsDesc": "Staat het lezen/schrijven toe van pinnen die niet in de beschikbare pinconfiguratie staan."
+      "remoteHardwareAllowUndefinedPinsDesc": "Staat het lezen/schrijven toe van pinnen die niet in de beschikbare pinconfiguratie staan.",
+      "mqttProxyGatewayHint": "Met proxy ingeschakeld, overbrugt mesh-client brokerverkeer via MqttClientProxyMessage. Schakel de downlink per kanaal in op het tabblad Radio voor→ MQTT RF-relais.",
+      "mapReportPublishInterval": "Rapportinterval in kaart brengen (seconden)",
+      "mapReportPublishIntervalDesc": "0 gebruikt de standaardfirmware. Hoe vaak het apparaat kaartrapporten publiceert wanneer kaartrapportage is ingeschakeld.",
+      "mapReportPositionPrecision": "Positieprecisie van kaartrapport",
+      "mapReportPositionPrecisionDesc": "Precisiebits voor coördinaten van kaartrapporten (firmware ModuleConfig.mqtt.map_report_settings)."
     },
     "applySection": "Toepassen {{section}}",
     "applyingButton": "Toepassen...",
@@ -1254,7 +1264,8 @@
       "ipTunnel": "IP-tunnel",
       "gpio": "GPIO",
       "rangeTest": "Bereiktest",
-      "storeForward": "S&F ontvangen"
+      "storeForward": "S&F ontvangen",
+      "audio": "Audio"
     },
     "errors": {
       "generic": "Het apparaat heeft deze wijziging geweigerd.",
@@ -1275,7 +1286,14 @@
     "remoteHardwareConfirmEnableLabel": "Activeer",
     "remoteHardwareConfirmUndefinedPinsTitle": "Ongedefinieerde PIN-toegang toestaan?",
     "remoteHardwareConfirmUndefinedPinsMessage": "Elke GPIO-pincode kan op afstand worden gelezen of geschreven, inclusief pinnen die niet in uw hardwareconfiguratie staan. Dit verhoogt het beveiligingsrisico.",
-    "remoteHardwareConfirmUndefinedPinsLabel": "Ongedefinieerde pins toestaan"
+    "remoteHardwareConfirmUndefinedPinsLabel": "Ongedefinieerde pins toestaan",
+    "sectionDebugModules": "Foutopsporingsmodules",
+    "sectionAudio": "Audiomodule",
+    "debugSimulatorPackets": "Simulatorpakketten",
+    "debugPrivateAppMessages": "Privé app-berichten",
+    "debugPingResponses": "Ping-antwoorden",
+    "sectionMapReport": "Kaartrapport",
+    "sectionMapReportHint": "Publiceert positie naar de Meshtastic-kaart over MQTT. Vereist MQTT-relais ingeschakeld hierboven; instellingen worden opgeslagen in de configuratie van de MQTT-module van het apparaat."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Verwijderen uit favorieten",
@@ -2077,7 +2095,34 @@
     "offloading": "offloading",
     "offloadingProgress": "{{current}} van {{total}} verwijderen…",
     "offloadCancelled": "Offload geannuleerd.",
-    "offloadCancelledPartial": "Offload geannuleerd na het verwijderen van {{count}} contacten van de radio."
+    "offloadCancelledPartial": "Offload geannuleerd na het verwijderen van {{count}} contacten van de radio.",
+    "xmodemSection": "XMODEM-bestandsoverdracht",
+    "xmodemSectionHint": "Bestanden overbrengen van/naar de aangesloten radio-firmware (alleen lokale verbinding).",
+    "xmodemFilenameLabel": "Bestandsnaam op afstand",
+    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemUpload": "Upload bestand",
+    "xmodemDownload": "Download bestand",
+    "xmodemUploadSuccess": "{{name}} geüpload",
+    "xmodemDownloadSuccess": "Gedownload {{name}}",
+    "xmodemFailed": "XMODEM mislukt: {{message}}",
+    "zeroHopAdvertButton": "Zero-hop-advert",
+    "zeroHopAdvertSent": "Zero-hop advert verzonden",
+    "floodScopeTitle": "Regionale overstromingsomvang",
+    "floodScopeHelp": "Beperk het overstromingsverkeer tot een hashtagregio (firmware v8+). Vereist meshcore.js setFloodScope; reconnect past opgeslagen scope opnieuw toe.",
+    "floodScopeNone": "Geen (duidelijke scope)",
+    "floodScopePreset": "Vooraf ingestelde hashtag",
+    "floodScopePresetSelect": "Vooraf ingestelde hashtag voor regio",
+    "floodScopeCustom": "Aangepaste hashtag",
+    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeApply": "Overstromingsbereik toepassen",
+    "floodScopeApplySuccess": "Overstromingsbereik toegepast",
+    "floodScopeApplyFailed": "Overstromingsbereik mislukt: {{message}}",
+    "advertisedPositionLabel": "Geadverteerde functie: {{lat}}, {{lon}}",
+    "txPowerMax": "Zendvermogen (max {{max}} dBm per radio)",
+    "txPowerMaxUnknown": "Zendvermogen (afgetopt op {{max}} dBm totdat de firmware radio Max meldt)",
+    "txPowerDeviceCurrent": "Apparaat meldt {{current}} dBm (schuifregelaar max {{max}} dBm)",
+    "sectionTxPower": "Tx Vermogen:",
+    "applyTxPowerSuccess": "TX-vermogen toegepast"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -2087,7 +2132,17 @@
     "filterPlaceholder": "Filter op type, naam of hex...",
     "emptyWaiting": "Nog geen nieuwe mesh-pakketten ontvangen. Even geduld a.u.b....",
     "noPacketsMatchFilter": "Er zijn geen pakketten die overeenkomen met het huidige filter.",
-    "rawHexLabel": "Ruwe hex ({{bytes}} bytes):"
+    "rawHexLabel": "Ruwe hex ({{bytes}} bytes):",
+    "transportScopeTooltip": "Transportbereikcode — regionaal overstromingsfilter op uitgaand pad",
+    "transportReturnTooltip": "Transportretourcode — regionaal filter op retourpad",
+    "transportRegionMatch": "Komt overeen met geconfigureerde overstromingsomvang",
+    "transportRegionMismatch": "Komt niet overeen met geconfigureerde overstromingsbereik",
+    "transportLegendHint": "Vouw een rij uit: route en transport staan bovenaan. Regionale scope/return-codes verschijnen alleen op TRANSPORT_FLOOD- en TRANSPORT_DIRECT-pakketten (niet op gewone FLOOD/DIRECT).",
+    "routeLabel": "Route",
+    "payloadLabel": "Payload",
+    "transportHeading": "Transport",
+    "transportCodesAbsent": "Geen regionale transportcodes (route {{route}} — alleen TRANSPORT_FLOOD / TRANSPORT_DIRECT dragen scope/return).",
+    "transportCodesAbsentTooltip": "Gewone FLOOD- en DIRECT-pakketten bevatten geen regionale transport scope/return-velden in de MeshCore RF-header."
   },
   "remoteAdmin": {
     "errors": {

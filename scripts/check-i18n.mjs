@@ -8,8 +8,9 @@
  * 4. Fails on CAT/XLIFF/Memsource residue in non-English strings; fails if {{placeholder}}
  *    name sets differ from English for the same key.
  * 5. Fails on locale quality issues (mojibake, broken meshtastic://, false friends, etc.)
- *    via check-i18n-quality.mjs — including modulePanel.* strings still identical to English
- *    and appPanel.reduceMotionDesc loading-spinner false friends.
+ *    via check-i18n-quality.mjs — including modulePanel.* strings still identical to English,
+ *    appPanel.reduceMotionDesc loading-spinner false friends, rawPacketLog protocol tokens,
+ *    and flood/zero-hop advert commercial false friends on branch advert UI keys.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *
