@@ -1955,7 +1955,7 @@ function AppContent({
               >
                 MeshCore
                 {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
-                  <span className="text-deep-black ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-400 px-0.5 text-[10px] font-bold">
+                  <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600 px-0.5 text-[10px] font-bold text-white">
                     {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
                   </span>
                 )}

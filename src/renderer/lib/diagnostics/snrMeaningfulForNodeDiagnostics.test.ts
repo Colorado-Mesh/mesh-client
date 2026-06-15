@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MESHCORE_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { MeshNode } from '../types';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
@@ -53,5 +54,11 @@ describe('snrMeaningfulForNodeDiagnostics', () => {
 
   it('true when hops_away 0 and no MQTT flags', () => {
     expect(snrMeaningfulForNodeDiagnostics(node({ hops_away: 0 }))).toBe(true);
+  });
+
+  it('true for MeshCore when hasPerHopSnr even with multi-hop', () => {
+    expect(snrMeaningfulForNodeDiagnostics(node({ hops_away: 3 }), MESHCORE_CAPABILITIES)).toBe(
+      true,
+    );
   });
 });

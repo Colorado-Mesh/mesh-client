@@ -114,8 +114,6 @@ const MESHCORE_INAPPLICABLE_SORT_FIELDS: readonly SortField[] = [
   'short_name',
   'role',
   'via_mqtt',
-  'rssi',
-  'snr',
   'voltage',
   'channel_utilization',
   'air_util_tx',
@@ -204,7 +202,8 @@ export default function NodeListPanel({
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
   const iconTrigger = useIconTrigger();
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(mode);
+  const capabilities = useRadioProvider(mode);
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = capabilities;
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const staleLegendColor = getMapOverlayColors(MAP_BASEMAPS[basemapId].isDark).stale;
@@ -506,7 +505,7 @@ export default function NodeListPanel({
   ]);
 
   const nodeTableScrollRef = useRef<HTMLDivElement>(null);
-  const nodeTableColSpan = (mode === 'meshcore' ? 9 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
+  const nodeTableColSpan = (mode === 'meshcore' ? 11 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
   const shouldVirtualizeNodeRows = nodeList.length > 100;
   const nodeRowVirtualizer = useVirtualizer({
     count: nodeList.length,
@@ -987,37 +986,31 @@ export default function NodeListPanel({
                   <SortIcon field="longitude" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
-              {mode !== 'meshcore' && (
-                <>
-                  <th
-                    scope="col"
-                    aria-sort={
-                      sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'
-                    }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
-                    onClick={() => {
-                      handleSort('rssi');
-                    }}
-                  >
-                    {t('nodeListPanel.columnSignal')}{' '}
-                    <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
-                  </th>
-                  <th
-                    scope="col"
-                    aria-sort={
-                      sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'
-                    }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
-                    onClick={() => {
-                      handleSort('snr');
-                    }}
-                    title={t('nodeListPanel.snrTooltip')}
-                  >
-                    {t('nodeListPanel.columnSnr')}{' '}
-                    <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
-                  </th>
-                </>
-              )}
+              <>
+                <th
+                  scope="col"
+                  aria-sort={sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                  onClick={() => {
+                    handleSort('rssi');
+                  }}
+                >
+                  {t('nodeListPanel.columnSignal')}{' '}
+                  <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
+                </th>
+                <th
+                  scope="col"
+                  aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                  onClick={() => {
+                    handleSort('snr');
+                  }}
+                  title={t('nodeListPanel.snrTooltip')}
+                >
+                  {t('nodeListPanel.columnSnr')}{' '}
+                  <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
+                </th>
+              </>
               <th
                 scope="col"
                 aria-sort={
@@ -1451,35 +1444,33 @@ export default function NodeListPanel({
                           </>
                         );
                       })()}
-                      {mode !== 'meshcore' && (
-                        <>
-                          <td className="px-3 py-2 text-right">
-                            <div className="flex justify-end">
-                              {node.heard_via_mqtt_only ? (
-                                <span className="text-muted text-xs">—</span>
-                              ) : isSelf || snrMeaningfulForNodeDiagnostics(node) ? (
-                                <SignalBars rssi={node.rssi} isSelf={isSelf} />
-                              ) : (
-                                <span
-                                  className="text-muted text-xs"
-                                  title={t('nodeListPanel.signalBarsTooltip')}
-                                >
-                                  —
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                            {node.heard_via_mqtt_only
-                              ? '—'
-                              : isSelf || snrMeaningfulForNodeDiagnostics(node)
-                                ? node.snr != null && node.snr !== 0
-                                  ? `${node.snr.toFixed(1)} dB`
-                                  : '—'
-                                : '—'}
-                          </td>
-                        </>
-                      )}
+                      <>
+                        <td className="px-3 py-2 text-right">
+                          <div className="flex justify-end">
+                            {node.heard_via_mqtt_only ? (
+                              <span className="text-muted text-xs">—</span>
+                            ) : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities) ? (
+                              <SignalBars rssi={node.rssi} isSelf={isSelf} />
+                            ) : (
+                              <span
+                                className="text-muted text-xs"
+                                title={t('nodeListPanel.signalBarsTooltip')}
+                              >
+                                —
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-muted px-3 py-2 text-right font-mono text-xs">
+                          {node.heard_via_mqtt_only
+                            ? '—'
+                            : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities)
+                              ? node.snr != null && node.snr !== 0
+                                ? `${node.snr.toFixed(1)} dB`
+                                : '—'
+                              : '—'}
+                        </td>
+                      </>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {node.battery > 0 && (

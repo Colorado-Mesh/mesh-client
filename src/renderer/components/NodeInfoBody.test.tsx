@@ -113,4 +113,17 @@ describe('NodeInfoBody', () => {
     expect(screen.getByText('Source')).toBeInTheDocument();
     expect(screen.getByLabelText('Connected via RF and MQTT')).toBeInTheDocument();
   });
+
+  it('shows SNR for meshcore multi-hop contacts', () => {
+    const node = makeNode({
+      node_id: 0xabcd,
+      long_name: 'Remote Peer',
+      hw_model: 'Chat',
+      snr: 4.2,
+      hops_away: 2,
+    });
+    render(<NodeInfoBody node={node} protocol="meshcore" />);
+    expect(screen.getByText('SNR')).toBeInTheDocument();
+    expect(screen.getByText('4.2 dB')).toBeInTheDocument();
+  });
 });

@@ -145,6 +145,35 @@ describe('NodeListPanel accessibility', () => {
     );
     expect(screen.getByRole('heading', { name: 'Contacts (0)' })).toBeInTheDocument();
   });
+
+  it('shows Signal and SNR columns for meshcore contacts with RF data', () => {
+    const nodes = new Map<number, MeshNode>([
+      [
+        0xabcd,
+        makeNode({
+          node_id: 0xabcd,
+          long_name: 'Remote Peer',
+          hw_model: 'Chat',
+          snr: 5.5,
+          rssi: -70,
+          hops_away: 2,
+        }),
+      ],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshcore"
+      />,
+    );
+    expect(screen.getByRole('columnheader', { name: /Signal/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /SNR/i })).toBeInTheDocument();
+    expect(screen.getByText('5.5 dB')).toBeInTheDocument();
+  });
 });
 
 describe('NodeListPanel import contacts', () => {
