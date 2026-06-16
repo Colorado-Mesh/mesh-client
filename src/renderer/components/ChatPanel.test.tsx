@@ -13,6 +13,7 @@ import { ToastProvider } from './Toast';
 vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
 
 let mockIsAtEnd = true;
+let mockScrollDirection: 'forward' | 'backward' | null = 'forward';
 const mockScrollToEnd = vi.fn();
 const mockScrollToIndex = vi.fn();
 let lastVirtualizerOptions: Record<string, unknown> | undefined;
@@ -35,9 +36,15 @@ vi.mock('@tanstack/react-virtual', () => ({
       isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
       scrollToIndex: mockScrollToIndex,
-      scrollDirection: 'forward',
+      get scrollDirection() {
+        return mockScrollDirection;
+      },
       shouldAdjustScrollPositionOnItemSizeChange: undefined as
-        | ((item: { index: number }) => boolean)
+        | ((
+            item: { index: number },
+            delta: number,
+            inst: { scrollDirection: string | null },
+          ) => boolean)
         | undefined,
     };
     lastVirtualizerInstance = instance;
@@ -48,6 +55,7 @@ vi.mock('@tanstack/react-virtual', () => ({
 beforeEach(() => {
   localStorage.clear();
   mockIsAtEnd = true;
+  mockScrollDirection = 'forward';
   mockScrollToEnd.mockClear();
   mockScrollToIndex.mockClear();
   lastVirtualizerOptions = undefined;
@@ -908,11 +916,15 @@ describe('ChatPanel scroll pinning', () => {
     expect(lastVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
     expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(200);
-    const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (item: {
-      index: number;
-    }) => boolean;
+    expect(lastVirtualizerOptions?.measureElement).toBeTypeOf('function');
+    const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
+      item: { index: number },
+      delta: number,
+      instance: { scrollDirection: 'forward' | 'backward' | null },
+    ) => boolean;
     expect(adjust).toBeTypeOf('function');
-    expect(adjust({ index: 0 })).toBe(true);
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward' })).toBe(true);
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'backward' })).toBe(false);
   });
 
   it('scrolls to unread via scrollToIndex on view switch, not scrollIntoView', async () => {
@@ -1138,6 +1150,45 @@ describe('ChatPanel scroll pinning', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
     });
+  });
+
+  it('jumps to quoted parent via scrollToIndex, not scrollIntoView', async () => {
+    mockScrollToIndex.mockClear();
+    const scrollIntoView = vi.fn();
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+    const t0 = Date.now() - 5000;
+    const t1 = t0 + 1000;
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'original',
+              channel: 0,
+              timestamp: t0,
+              packetId: 77,
+              status: 'acked',
+            },
+            {
+              sender_id: 3,
+              sender_name: 'Bob',
+              payload: 'reply text',
+              channel: 0,
+              timestamp: t1,
+              replyId: 77,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: /Jump to quoted message from Alice/i }));
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center', behavior: 'smooth' });
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });
 
@@ -2512,6 +2563,36 @@ describe('ChatPanel — jump to date', () => {
     expect(screen.queryByLabelText('Jump to date', { selector: 'input' })).not.toBeInTheDocument();
     await user.click(calBtn);
     expect(screen.getByLabelText('Jump to date', { selector: 'input' })).toBeInTheDocument();
+  });
+
+  it('scrolls to matching day via scrollToIndex, not scrollIntoView', async () => {
+    mockScrollToIndex.mockClear();
+    const scrollIntoView = vi.fn();
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+    const day = new Date(2026, 5, 10, 14, 0, 0);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'June tenth',
+              channel: 0,
+              timestamp: day.getTime(),
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByLabelText('Jump to date'));
+    const input = screen.getByLabelText('Jump to date', { selector: 'input' });
+    fireEvent.change(input, { target: { value: '2026-06-10' } });
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'start', behavior: 'smooth' });
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });
 
