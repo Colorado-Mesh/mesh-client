@@ -5,6 +5,7 @@ import type { ChatMessage } from '@/renderer/lib/types';
 
 import {
   meshcoreRoomServerIdsFromContacts,
+  repairMeshcoreChatWireTailGarbage,
   repairMeshcoreHydratedDmRfDuplicates,
   repairMeshcoreHydratedMessages,
   repairMeshcoreMisfiledRoomDmMessages,
@@ -60,6 +61,34 @@ describe('repairMeshcoreRoomStoredPostPayloads', () => {
     };
     const [fixed] = repairMeshcoreHydratedMessages([garbled], new Set([roomId]));
     expect(fixed.payload).toBe('Persisted post');
+  });
+});
+
+describe('repairMeshcoreChatWireTailGarbage', () => {
+  it('strips tail garbage from stored channel rows', () => {
+    const tail = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+    const garbled: ChatMessage = {
+      sender_id: 20,
+      sender_name: 'LLAP 🖖 TD',
+      payload: `called wadamesh\u0000${tail}`,
+      channel: 0,
+      timestamp: 1_700_000_000,
+    };
+    const [fixed] = repairMeshcoreChatWireTailGarbage([garbled]);
+    expect(fixed.payload).toBe('called wadamesh');
+  });
+
+  it('repairs channel tail garbage via repairMeshcoreHydratedMessages', () => {
+    const tail = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+    const garbled: ChatMessage = {
+      sender_id: 20,
+      sender_name: 'LLAP 🖖 TD',
+      payload: `called wadamesh\u0000${tail}`,
+      channel: 0,
+      timestamp: 1_700_000_000,
+    };
+    const [fixed] = repairMeshcoreHydratedMessages([garbled], new Set());
+    expect(fixed.payload).toBe('called wadamesh');
   });
 });
 

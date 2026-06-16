@@ -135,11 +135,11 @@ elif [ "$1" = "patch" ] || [ "$1" = "minor" ] || [ "$1" = "major" ]; then
 elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   VERSION_TYPE="$1"
 else
-  echo "Usage: ./release.sh [patch|minor|major|x.x.x|--auto]"
-  echo "       ./release.sh                    # Auto-detect from commits"
-  echo "       ./release.sh --auto             # Explicit auto-detect"
-  echo "       ./release.sh minor              # Force minor release"
-  echo "       ./release.sh 2.0.0              # Force specific version"
+  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto]"
+  echo "       pnpm run release               # Auto-detect from commits"
+  echo "       pnpm run release --auto         # Explicit auto-detect"
+  echo "       pnpm run release minor          # Force minor release"
+  echo "       pnpm run release 2.0.0          # Force specific version"
   exit 1
 fi
 

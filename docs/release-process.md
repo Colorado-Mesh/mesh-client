@@ -45,7 +45,7 @@ pnpm run build
 Use the release script, which handles the version bump, MetaInfo update, commit, tag, and push in one step:
 
 ```bash
-./release.sh
+pnpm run release
 ```
 
 The script auto-detects the bump type (patch / minor / major) from conventional commits since the last tag, confirms with you before applying, and:

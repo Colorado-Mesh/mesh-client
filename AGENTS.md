@@ -81,7 +81,9 @@ Adding a cross-boundary feature:
 
 ## 6. Commands & CI Checks
 
-**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`.
+**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`.
+
+> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency.
 
 **Pre-commit hook order:**
 

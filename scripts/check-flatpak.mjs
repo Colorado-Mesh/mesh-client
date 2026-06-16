@@ -51,7 +51,7 @@ function checkMetainfoVersionMatchesPackage(pkg) {
   if (!m) {
     violations.push({
       file: rel,
-      message: '<releases> has no <release> entries — run release.sh or add one manually',
+      message: '<releases> has no <release> entries — run `pnpm run release` or add one manually',
     });
     return violations;
   }
@@ -59,7 +59,7 @@ function checkMetainfoVersionMatchesPackage(pkg) {
   if (m[1] !== pkgVersion) {
     violations.push({
       file: rel,
-      message: `top <release version="${m[1]}"> does not match package.json version "${pkgVersion}" — re-run release.sh or update MetaInfo manually`,
+      message: `top <release version="${m[1]}"> does not match package.json version "${pkgVersion}" — re-run \`pnpm run release\` or update MetaInfo manually`,
     });
   }
   return violations;

@@ -38,6 +38,7 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
   resolveMeshcoreRoomLoginHopsAway,
+  sanitizeMeshcoreChatWireText,
 } from './meshcoreUtils';
 
 describe('MeshCore contact capacity thresholds', () => {
@@ -190,6 +191,28 @@ describe('isMeshcoreTransportStatusChatLine', () => {
         '[111b] @[🏴‍☠️CatDude AF5F] | 5 hops, 2-byte hashes, SNR 12.00 | recv 21:56:11',
       ),
     ).toBe(true);
+  });
+});
+
+describe('sanitizeMeshcoreChatWireText', () => {
+  it('truncates at first NUL and drops binary tail bytes', () => {
+    const tail = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+    expect(sanitizeMeshcoreChatWireText(`called wadamesh\u0000${tail}`)).toBe('called wadamesh');
+  });
+
+  it('preserves sender prefix when stripping channel wire tail', () => {
+    const tail = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+    expect(sanitizeMeshcoreChatWireText(`LLAP 🖖 TD: called wadamesh\u0000${tail}`)).toBe(
+      'LLAP 🖖 TD: called wadamesh',
+    );
+  });
+
+  it('leaves emoji and Unicode messages unchanged', () => {
+    expect(sanitizeMeshcoreChatWireText('Hello 🌍 v2.0')).toBe('Hello 🌍 v2.0');
+  });
+
+  it('strips trailing replacement characters without NUL', () => {
+    expect(sanitizeMeshcoreChatWireText('hello\uFFFD\uFFFD')).toBe('hello');
   });
 });
 

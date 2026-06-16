@@ -364,6 +364,20 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
     expect(msg.replyPreviewSender).toBe('Target');
   });
 
+  it('strips firmware tail garbage from T-Deck-style channel wire text', () => {
+    const tail = String.fromCharCode(0x93, 0x6c, 0x73, 0x49);
+    const msg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: `LLAP 🖖 TD: called wadamesh\u0000${tail}`,
+      senderId: 20,
+      displayName: 'LLAP 🖖 TD',
+      channel: 0,
+      timestamp: baseTime + 500,
+      receivedVia: 'rf',
+    });
+    expect(msg.payload).toBe('called wadamesh');
+    expect(msg.meshcoreDedupeKey).toBe(`LLAP 🖖 TD: called wadamesh`);
+  });
+
   it('prefers explicit wire reply key over latest-from-sender heuristic', () => {
     const wireReplyKey = 1_780_235_760_847;
     const msg1: ChatMessage = {
