@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  CHAT_LINK_PREVIEW_ESTIMATE_PX,
+  CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
   createStableChatMeasureElement,
+  estimateChatRowHeight,
   findFirstMessageIndexByDayKey,
   findIndexByRowKey,
   findMessageIndexByKey,
@@ -86,16 +89,28 @@ describe('findIndexByRowKey', () => {
 });
 
 describe('createStableChatMeasureElement', () => {
-  it('returns measured cache when scrolling backward', () => {
+  it('locks cached size when scrolling backward and DOM would shrink', () => {
     const measure = createStableChatMeasureElement(() => 96);
     const el = document.createElement('div');
-    Object.defineProperty(el, 'offsetHeight', { value: 200, configurable: true });
+    Object.defineProperty(el, 'offsetHeight', { value: 170, configurable: true });
     const size = measure(
       el,
       undefined,
       mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 180 }) as never,
     );
     expect(size).toBe(180);
+  });
+
+  it('allows growth when scrolling backward and DOM is taller than cache', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'offsetHeight', { value: 220, configurable: true });
+    const size = measure(
+      el,
+      undefined,
+      mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 180 }) as never,
+    );
+    expect(size).toBe(220);
   });
 
   it('measures DOM when backward cache is still an estimate', () => {
@@ -145,6 +160,68 @@ describe('createStableChatMeasureElement', () => {
     } as unknown as ResizeObserverEntry;
     const size = measure(el, entry, mockMeasureInstance({ scrollDirection: 'forward' }) as never);
     expect(size).toBe(110);
+  });
+
+  it('honors ResizeObserver growth when scrolling backward', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'offsetHeight', { value: 96, configurable: true });
+    const entry = {
+      borderBoxSize: [{ blockSize: 240, inlineSize: 300 }],
+    } as unknown as ResizeObserverEntry;
+    const size = measure(
+      el,
+      entry,
+      mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 180 }) as never,
+    );
+    expect(size).toBe(240);
+  });
+
+  it('locks ResizeObserver shrink when scrolling backward', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    const entry = {
+      borderBoxSize: [{ blockSize: 160, inlineSize: 300 }],
+    } as unknown as ResizeObserverEntry;
+    const size = measure(
+      el,
+      entry,
+      mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 180 }) as never,
+    );
+    expect(size).toBe(180);
+  });
+});
+
+describe('estimateChatRowHeight', () => {
+  it('adds reply and long-payload budgets', () => {
+    expect(estimateChatRowHeight(makeMsg({ timestamp: 1 }))).toBe(96);
+    expect(
+      estimateChatRowHeight(makeMsg({ timestamp: 1, replyId: 42, replyPreviewText: 'parent' })),
+    ).toBe(168);
+    expect(estimateChatRowHeight(makeMsg({ timestamp: 1, payload: 'x'.repeat(121) }))).toBe(144);
+  });
+
+  it('adds per-URL link preview budget', () => {
+    const oneUrl = estimateChatRowHeight(
+      makeMsg({ timestamp: 1, payload: 'see https://example.com now' }),
+    );
+    expect(oneUrl).toBe(96 + CHAT_LINK_PREVIEW_ESTIMATE_PX);
+    const twoUrls = estimateChatRowHeight(
+      makeMsg({
+        timestamp: 1,
+        payload: 'https://a.com and https://b.com',
+      }),
+    );
+    expect(twoUrls).toBe(96 + CHAT_LINK_PREVIEW_ESTIMATE_PX * 2);
+  });
+
+  it('applies compact mode and unread divider extra', () => {
+    expect(estimateChatRowHeight(makeMsg({ timestamp: 1 }), { compactMode: true })).toBe(56);
+    expect(
+      estimateChatRowHeight(makeMsg({ timestamp: 1 }), {
+        unreadDividerExtra: CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
+      }),
+    ).toBe(96 + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX);
   });
 });
 

@@ -71,4 +71,16 @@ describe('ChatPayloadText', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://example.com');
     expect(mockFetch).toHaveBeenCalledWith('https://other.org');
   });
+
+  it('calls onContentResize when link preview mounts', async () => {
+    const onContentResize = vi.fn();
+    mockFetch.mockResolvedValue({ title: 'Example Site', description: 'desc' });
+    render(
+      <ChatPayloadText text="see https://example.com" query="" onContentResize={onContentResize} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Example Site')).toBeInTheDocument();
+    });
+    expect(onContentResize).toHaveBeenCalled();
+  });
 });

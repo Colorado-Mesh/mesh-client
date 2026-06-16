@@ -72,10 +72,12 @@ import {
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
+  estimateChatRowHeight,
   findFirstMessageIndexByDayKey,
   findMessageIndexByKey,
   getChatDayKey,
   getDistFromChatBottom,
+  scheduleVirtualRowRemeasure,
 } from '../lib/chatScrollUtils';
 import {
   type ChatUnreadDmOptions,
@@ -699,14 +701,11 @@ function ChatPanel({
   const estimateMessageSize = useCallback(
     (index: number) => {
       const msg = filteredMessages[index];
-      let base = compactMode ? 56 : 96;
-      if (msg?.replyId != null || msg?.replyPreviewText) {
-        base += compactMode ? 40 : 72;
-      }
-      if ((msg?.payload.length ?? 0) > 120) {
-        base += compactMode ? 24 : 48;
-      }
-      return index === unreadStartIndex ? base + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
+      return estimateChatRowHeight(msg, {
+        compactMode,
+        unreadDividerExtra:
+          index === unreadStartIndex ? CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : undefined,
+      });
     },
     [compactMode, filteredMessages, unreadStartIndex],
   );
@@ -739,6 +738,16 @@ function ChatPanel({
 
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
+
+  const scheduleMessageRowRemeasure = useCallback((rowIndex: number) => {
+    scheduleVirtualRowRemeasure(
+      (node) => {
+        messageVirtualizerRef.current.measureElement(node);
+      },
+      scrollContainerRef.current,
+      rowIndex,
+    );
+  }, []);
 
   const computeIsAtChatEnd = useCallback(() => {
     const inner = scrollContainerRef.current;
@@ -2020,6 +2029,9 @@ function ChatPanel({
                                 text={msg.payload}
                                 query={searchQuery}
                                 loadLinkPreviews={!showScrollButton}
+                                onContentResize={() => {
+                                  scheduleMessageRowRemeasure(i);
+                                }}
                               />
                             </div>
 
