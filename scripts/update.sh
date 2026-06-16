@@ -20,10 +20,10 @@ fi
 # Usage: get_version "<lockfile-key>"
 # Example: get_version "@jsr/meshtastic__core" -> "2.6.6"
 get_version() {
-  grep -E "^  '$1@" "$LOCKFILE" \
+  grep -E "^  '?$1@" "$LOCKFILE" \
     | grep -v '(' \
     | head -1 \
-    | sed 's/.*@//; s/.:$//' \
+    | sed "s/.*@//; s/'//; s/:\$//" \
     || echo ""
 }
 
@@ -57,16 +57,36 @@ if [ ! -f "${LOCKFILE}" ]; then
 fi
 
 # --- Packages to watch ---
-# Format: "lockfile-key:display-name:review-url"
+# Format: "lockfile-key|display-name|review-url|tracking-reason"
 WATCH_ENTRIES=(
-  '@jsr/meshtastic__core:@meshtastic/core:https://www.npmjs.com/package/@meshtastic/core'
-  '@liamcottle/meshcore.js:@liamcottle/meshcore.js:https://www.npmjs.com/package/@liamcottle/meshcore.js'
+  '@jsr/meshtastic__core|@meshtastic/core|https://www.npmjs.com/package/@meshtastic/core|Custom patch (clean BLE disconnect) + upstream may introduce breaking changes'
+  '@jsr/meshtastic__transport-web-serial|@jsr/meshtastic__transport-web-serial|https://www.npmjs.com/package/@jsr/meshtastic__transport-web-serial|Custom patch (USB serial clean disconnect)'
+  '@liamcottle/meshcore.js|@liamcottle/meshcore.js|https://www.npmjs.com/package/@liamcottle/meshcore.js|Custom patch (protocol fixes) + upstream may introduce breaking changes'
+  '@stoprocent/noble|@stoprocent/noble|https://www.npmjs.com/package/@stoprocent/noble|Custom patch (Windows C++ coroutine compat)'
+  'usb|usb|https://www.npmjs.com/package/usb|Custom patch (macOS C++17 std compat)'
+  'readable-stream|readable-stream|https://www.npmjs.com/package/readable-stream|Custom patch (bundler process/ path compat)'
+  'debug|debug|https://www.npmjs.com/package/debug|Custom patch (inlined ms/humanize for bundler compat)'
 )
 
-# --- Snapshot current versions ---
+# --- Snapshot old versions ---
 echo 'Snapshotting current dependency versions...'
-MESHTASTIC_OLD=$(get_version '@jsr/meshtastic__core')
-MESHCORE_OLD=$(get_version '@liamcottle/meshcore.js')
+KEYS=()
+DISPLAYS=()
+URLS=()
+REASONS_TEXT=()
+OLDS=()
+idx=0
+for entry in "${WATCH_ENTRIES[@]}"; do
+  IFS='|' read -r key display url reason <<< "$entry"
+  KEYS[idx]="$key"
+  DISPLAYS[idx]="$display"
+  URLS[idx]="$url"
+  REASONS_TEXT[idx]="$reason"
+  ver="$(get_version "$key")"
+  OLDS[idx]="$ver"
+  echo "  ${display} = ${ver}  (${reason})"
+  idx=$((idx + 1))
+done
 
 # --- Run updates ---
 echo ''
@@ -81,20 +101,25 @@ echo ''
 echo 'Running pnpm install...'
 pnpm install
 
+echo ''
+echo 'Running pnpm prune...'
+pnpm prune
+
 # --- Detect and warn on updates ---
 HAS_WARNING=0
-MESHTASTIC_NEW=$(get_version '@jsr/meshtastic__core')
-MESHCORE_NEW=$(get_version '@liamcottle/meshcore.js')
-
-if [ -n "${MESHTASTIC_OLD}" ] && [ "${MESHTASTIC_OLD}" != "${MESHTASTIC_NEW}" ]; then
-  warn_box '@meshtastic/core' "${MESHTASTIC_OLD}" "${MESHTASTIC_NEW}" 'https://www.npmjs.com/package/@meshtastic/core'
-  HAS_WARNING=1
-fi
-
-if [ -n "${MESHCORE_OLD}" ] && [ "${MESHCORE_OLD}" != "${MESHCORE_NEW}" ]; then
-  warn_box '@liamcottle/meshcore.js' "${MESHCORE_OLD}" "${MESHCORE_NEW}" 'https://www.npmjs.com/package/@liamcottle/meshcore.js'
-  HAS_WARNING=1
-fi
+for i in "${!KEYS[@]}"; do
+  key="${KEYS[$i]}"
+  display="${DISPLAYS[$i]}"
+  url="${URLS[$i]}"
+  reason="${REASONS_TEXT[$i]}"
+  old="${OLDS[$i]}"
+  new=$(get_version "$key")
+  if [ -n "$old" ] && [ "$old" != "$new" ]; then
+    warn_box "$display" "$old" "$new" "$url"
+    echo "  Reason tracked: ${reason}"
+    HAS_WARNING=1
+  fi
+done
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'
