@@ -71,6 +71,7 @@ describe('Windows long-path application manifest (packaging contract)', () => {
       expect(script).toMatch(
         /pnpm run build && pnpm install --config\.node-linker=hoisted && electron-builder --win/,
       );
+      expect(script).toContain('node scripts/dist-win-restore-node-modules.mjs');
     }
   });
 
