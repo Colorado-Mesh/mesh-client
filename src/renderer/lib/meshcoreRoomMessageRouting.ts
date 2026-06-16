@@ -4,6 +4,7 @@ import {
   MESHCORE_TXT_TYPE_SIGNED_PLAIN,
   parseMeshcoreRoomPostPayload,
 } from './meshcoreChannelText';
+import { sanitizeMeshcoreChatWireText } from './meshcoreUtils';
 
 /** MeshCore contact type for room BBS servers. */
 export const MESHCORE_CONTACT_TYPE_ROOM = 3;
@@ -79,9 +80,10 @@ export function meshcoreRoomPostBodyFromWire(
   opts?: { isKnownRoomNode?: boolean },
 ): { authorId: number; payload: string } {
   if (shouldStripRoomPostAuthorPrefix(wireText, txtType, opts?.isKnownRoomNode)) {
-    return parseMeshcoreRoomPostPayload(wireText, pubKeyPrefixToNodeId);
+    const { authorId, payload } = parseMeshcoreRoomPostPayload(wireText, pubKeyPrefixToNodeId);
+    return { authorId, payload: sanitizeMeshcoreChatWireText(payload) };
   }
-  return { authorId: 0, payload: wireText };
+  return { authorId: 0, payload: sanitizeMeshcoreChatWireText(wireText) };
 }
 
 export function meshcoreRoomMessageId(

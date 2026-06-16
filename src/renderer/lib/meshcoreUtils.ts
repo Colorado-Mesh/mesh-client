@@ -118,6 +118,30 @@ export function isMeshcoreTransportStatusChatLine(text: string): boolean {
   return false;
 }
 
+const MESHCORE_CHAT_WIRE_REPLACEMENT_CHAR = 0xfffd;
+
+function isMeshcoreChatWireTailGarbageChar(code: number): boolean {
+  if (code === MESHCORE_CHAT_WIRE_REPLACEMENT_CHAR || code === 0x7f) return true;
+  if (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d) return true;
+  return false;
+}
+
+/**
+ * Strip firmware padding from MeshCore channel/DM wire text.
+ * Failure point: meshcore.js readString() decodes the full frame remainder including bytes after NUL.
+ * Fallback: truncate at first NUL (official GRP_TXT decoder behavior), then drop trailing FFFD/C0 controls.
+ */
+export function sanitizeMeshcoreChatWireText(raw: string): string {
+  if (!raw) return raw;
+  const nullIdx = raw.indexOf('\u0000');
+  const text = nullIdx >= 0 ? raw.slice(0, nullIdx) : raw;
+  let end = text.length;
+  while (end > 0 && isMeshcoreChatWireTailGarbageChar(text.charCodeAt(end - 1))) {
+    end--;
+  }
+  return end === text.length ? text : text.slice(0, end);
+}
+
 /**
  * Max payload length for reconciling Unknown-stub rows onto a named sender with the same
  * channel+payload. Longer shared phrases (e.g. "good morning!") are usually different people.

@@ -1,4 +1,7 @@
-import { meshcoreChatStubNodeIdFromDisplayName } from './meshcoreUtils';
+import {
+  meshcoreChatStubNodeIdFromDisplayName,
+  sanitizeMeshcoreChatWireText,
+} from './meshcoreUtils';
 import { normalizeReactionEmoji } from './reactions';
 import { truncateReplyPreviewText } from './replyPreview';
 import type { ChatMessage, MeshNode } from './types';
@@ -375,10 +378,10 @@ export function buildMeshcoreChannelIncomingMessage(
   messages: readonly ChatMessage[],
   opts: BuildMeshcoreChannelIncomingOpts,
 ): ChatMessage {
-  const normalized = normalizeMeshcoreIncomingText(opts.rawText);
-  const colonIdx = opts.rawText.indexOf(':');
-  const fallbackPayload =
-    colonIdx > 0 ? opts.rawText.slice(colonIdx + 1).trim() : opts.rawText.trim();
+  const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
+  const normalized = normalizeMeshcoreIncomingText(rawText);
+  const colonIdx = rawText.indexOf(':');
+  const fallbackPayload = colonIdx > 0 ? rawText.slice(colonIdx + 1).trim() : rawText.trim();
 
   const rxFields =
     opts.rxHops != null && Number.isFinite(opts.rxHops)
@@ -395,7 +398,7 @@ export function buildMeshcoreChannelIncomingMessage(
     timestamp: opts.timestamp,
     status: 'acked',
     receivedVia: opts.receivedVia,
-    meshcoreDedupeKey: opts.rawText,
+    meshcoreDedupeKey: rawText,
     ...rxFields,
   };
 
@@ -972,7 +975,8 @@ export function buildMeshcoreDmIncomingMessage(
   messages: readonly ChatMessage[],
   opts: BuildMeshcoreDmIncomingOpts,
 ): ChatMessage {
-  const parsed = parseMeshcorePlainBracketLine(opts.rawText);
+  const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
+  const parsed = parseMeshcorePlainBracketLine(rawText);
   const rxFields =
     opts.rxHops != null && Number.isFinite(opts.rxHops)
       ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
@@ -989,13 +993,13 @@ export function buildMeshcoreDmIncomingMessage(
     status: 'acked',
     receivedVia: opts.receivedVia,
     to: opts.to,
-    meshcoreDedupeKey: opts.rawText,
+    meshcoreDedupeKey: rawText,
     ...rxFields,
   };
 
   if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
     const body = parsed.payload.trim();
-    return { ...base, payload: body.length > 0 ? body : opts.rawText };
+    return { ...base, payload: body.length > 0 ? body : rawText };
   }
   const target = parsed.bracketTargetName;
   if (target) {
@@ -1046,10 +1050,10 @@ export function buildMeshcoreDmIncomingMessage(
       }
     }
     const body = parsed.payload.trim();
-    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, opts.rawText) };
+    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, rawText) };
   }
 
-  return { ...base, payload: opts.rawText };
+  return { ...base, payload: rawText };
 }
 
 /** meshcore.js `TxtTypes.Plain` — outbound room BBS posts (companion SendTxtMsg). */
@@ -1097,6 +1101,7 @@ export interface BuildMeshcoreRoomIncomingOpts {
 }
 
 export function buildMeshcoreRoomIncomingMessage(opts: BuildMeshcoreRoomIncomingOpts): ChatMessage {
+  const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
   const rxFields =
     opts.rxHops != null && Number.isFinite(opts.rxHops)
       ? ({ rxHops: opts.rxHops } satisfies Pick<ChatMessage, 'rxHops'>)
@@ -1104,14 +1109,14 @@ export function buildMeshcoreRoomIncomingMessage(opts: BuildMeshcoreRoomIncoming
   return {
     sender_id: opts.authorId,
     sender_name: opts.authorName,
-    payload: opts.rawText,
+    payload: rawText,
     channel: -2,
     timestamp: opts.timestamp,
     status: 'acked',
     receivedVia: opts.receivedVia,
     roomServerId: opts.roomServerId,
     to: opts.roomServerId,
-    meshcoreDedupeKey: opts.rawText,
+    meshcoreDedupeKey: rawText,
     ...rxFields,
   };
 }

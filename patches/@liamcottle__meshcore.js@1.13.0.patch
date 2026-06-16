@@ -68,3 +68,19 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          });
      }
  
+diff --git a/src/buffer_reader.js b/src/buffer_reader.js
+index 9142fbc9fda24c07082d63ced24117a35b29dc93..0000000000000000000000000000000000000000 100644
+--- a/src/buffer_reader.js
++++ b/src/buffer_reader.js
+@@ -23,7 +23,10 @@ class BufferReader {
+     }
+ 
+     readString() {
+-        return new TextDecoder().decode(this.readRemainingBytes());
++        const bytes = this.readRemainingBytes();
++        const nullIdx = bytes.indexOf(0);
++        const slice = nullIdx >= 0 ? bytes.subarray(0, nullIdx) : bytes;
++        return new TextDecoder().decode(slice);
+     }
+ 
+     readCString(maxLength) {

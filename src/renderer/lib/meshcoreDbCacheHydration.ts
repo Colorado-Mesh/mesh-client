@@ -8,6 +8,7 @@ import {
   isMeshcoreRoomServerContactType,
   meshcoreRoomPostBodyFromWire,
 } from './meshcoreRoomMessageRouting';
+import { sanitizeMeshcoreChatWireText } from './meshcoreUtils';
 import type { ChatMessage, MeshNode } from './types';
 
 /** Room posts older than this are not still in-flight on the radio. */
@@ -91,6 +92,21 @@ export function repairMeshcoreRoomStoredPostPayloads(
   });
 }
 
+/**
+ * Strip firmware tail padding from channel/DM rows already stored in SQLite.
+ * Failure point: older builds persisted wire text including bytes after NUL.
+ * Fallback: re-run sanitizer on hydration so reload fixes historical rows.
+ */
+export function repairMeshcoreChatWireTailGarbage(messages: ChatMessage[]): ChatMessage[] {
+  return messages.map((m) => {
+    if (isMeshcoreRoomChatMessage(m)) return m;
+    if (m.channel !== -1 && m.channel < 0) return m;
+    const payload = sanitizeMeshcoreChatWireText(m.payload);
+    if (payload === m.payload) return m;
+    return { ...m, payload };
+  });
+}
+
 /** Collapse RF DM echoes loaded from SQLite (same sender/body/recipient within dedup window). */
 export function repairMeshcoreHydratedDmRfDuplicates(messages: ChatMessage[]): ChatMessage[] {
   const kept: ChatMessage[] = [];
@@ -112,14 +128,18 @@ export function repairMeshcoreHydratedMessages(
   selfNodeId?: number,
   pubKeyPrefixToNodeId?: Map<string, number>,
 ): ChatMessage[] {
-  return repairMeshcoreRoomStoredPostPayloads(
-    repairMeshcoreMisfiledRoomDmMessages(
-      repairMeshcoreHydratedDmRfDuplicates(
-        repairMeshcoreHydrationStaleRoomSends(repairMeshcoreHydratedDmToNode(messages, selfNodeId)),
+  return repairMeshcoreChatWireTailGarbage(
+    repairMeshcoreRoomStoredPostPayloads(
+      repairMeshcoreMisfiledRoomDmMessages(
+        repairMeshcoreHydratedDmRfDuplicates(
+          repairMeshcoreHydrationStaleRoomSends(
+            repairMeshcoreHydratedDmToNode(messages, selfNodeId),
+          ),
+        ),
+        roomServerIds,
       ),
-      roomServerIds,
+      pubKeyPrefixToNodeId,
     ),
-    pubKeyPrefixToNodeId,
   );
 }
 

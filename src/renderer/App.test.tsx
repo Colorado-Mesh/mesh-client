@@ -379,9 +379,14 @@ vi.mock('./stores/diagnosticsStore', () => {
   return { useDiagnosticsStore };
 });
 
-vi.mock('./lib/meshcoreUtils', () => ({
-  pubkeyToNodeId: vi.fn(),
-}));
+vi.mock('./lib/meshcoreUtils', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/meshcoreUtils')>();
+  return {
+    ...actual,
+    pubkeyToNodeId: vi.fn(),
+  };
+});
 
 vi.mock('./lib/letsMeshConnectionGuards', () => ({
   validateLetsMeshManualCredentials: vi.fn().mockResolvedValue(null),
