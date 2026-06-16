@@ -30,6 +30,36 @@ import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
 
+const mockScrollToEnd = vi.fn();
+const mockScrollToIndex = vi.fn();
+let lastRoomsVirtualizerOptions: Record<string, unknown> | undefined;
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
+    lastRoomsVirtualizerOptions = opts;
+    const count = opts.count;
+    const instance = {
+      getVirtualItems: () =>
+        Array.from({ length: count }, (_, index) => ({
+          index,
+          key: index,
+          start: index * 96,
+        })),
+      getTotalSize: () => count * 96,
+      measureElement: () => {},
+      containerRef: { current: null },
+      isAtEnd: () => false,
+      scrollToEnd: mockScrollToEnd,
+      scrollToIndex: mockScrollToIndex,
+      scrollDirection: 'forward' as const,
+      shouldAdjustScrollPositionOnItemSizeChange: undefined as
+        | ((item: { index: number }) => boolean)
+        | undefined,
+    };
+    return instance;
+  },
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -791,7 +821,7 @@ describe('RoomsPanel', () => {
     );
 
     const stream = screen.getByTestId('rooms-post-stream');
-    expect(stream).toHaveClass('overflow-y-auto');
+    expect(stream).toHaveClass('overflow-y-auto', 'overscroll-contain', '[overflow-anchor:none]');
     expect(stream.parentElement).toHaveClass('min-h-0', 'flex-1');
     expect(screen.getByTestId('rooms-composer-footer')).toHaveClass('shrink-0');
   });
@@ -872,6 +902,7 @@ describe('RoomsPanel', () => {
     const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(300);
     const scrollIntoView = vi.fn();
     vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+    mockScrollToIndex.mockClear();
 
     renderRoomsPanel(nodes, {
       initialRoomTarget: room.node_id,
@@ -882,8 +913,40 @@ describe('RoomsPanel', () => {
     const jumpButton = await screen.findByRole('button', { name: 'roomsPanel.jumpToUnread' });
     await userEvent.click(jumpButton);
 
-    expect(scrollIntoView).toHaveBeenCalled();
+    expect(mockScrollToIndex).toHaveBeenLastCalledWith(0, {
+      align: 'start',
+      behavior: 'smooth',
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
     distSpy.mockRestore();
     vi.restoreAllMocks();
+  });
+
+  it('configures TanStack Virtual with rooms scroll contract', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1015, 'Virtual Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      messages: [
+        buildMeshcoreRoomIncomingMessage({
+          rawText: 'hello',
+          roomServerId: room.node_id,
+          authorId: 0x200,
+          authorName: 'Alice',
+          timestamp: 2000,
+          receivedVia: 'rf',
+        }),
+      ],
+      isActive: true,
+    });
+    expect(lastRoomsVirtualizerOptions?.anchorTo).toBe('end');
+    expect(lastRoomsVirtualizerOptions?.followOnAppend).toBe(true);
+    expect(lastRoomsVirtualizerOptions?.measureElement).toBeTypeOf('function');
   });
 });

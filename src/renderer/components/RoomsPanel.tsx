@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as ChatPanel */
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, Copy, Mail, PARENT_HOVER_ATTR, Star } from 'lucide-react-motion';
 import {
   useCallback,
@@ -74,7 +76,14 @@ import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 
-import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
+import {
+  CHAT_SCROLL_END_THRESHOLD,
+  CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
+  createChatScrollAdjustPredicate,
+  createStableChatMeasureElement,
+  findIndexByRowKey,
+  getDistFromChatBottom,
+} from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
@@ -257,7 +266,10 @@ export default function RoomsPanel({
   const [aclError, setAclError] = useState<string | null>(null);
   const [aclFetchedAt, setAclFetchedAt] = useState<number | null>(null);
   const [scrollToRowKey, setScrollToRowKey] = useState<string | null>(null);
-  const postRowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const attachUnreadDividerRef = useCallback((node: HTMLDivElement | null) => {
+    unreadDividerRef.current = node;
+  }, []);
 
   const ownNodeIdSet = useMemo(
     () => (myNodeNum > 0 ? new Set([myNodeNum]) : new Set<number>()),
@@ -319,6 +331,54 @@ export default function RoomsPanel({
     return repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts));
   }, [messages, selectedRoomId]);
 
+  const unreadStartIndex = useMemo(() => {
+    if (unreadDividerTimestamp === 0) return -1;
+    for (let i = 0; i < roomPosts.length; i++) {
+      if (roomPosts[i].timestamp > unreadDividerTimestamp) return i;
+    }
+    return -1;
+  }, [roomPosts, unreadDividerTimestamp]);
+
+  const unreadStartIndexRef = useRef(unreadStartIndex);
+  unreadStartIndexRef.current = unreadStartIndex;
+
+  const estimatePostSize = useCallback(
+    (index: number) => {
+      const base = 96;
+      return index === unreadStartIndex ? base + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
+    },
+    [unreadStartIndex],
+  );
+
+  const measurePostElement = useMemo(
+    () => createStableChatMeasureElement(estimatePostSize),
+    [estimatePostSize],
+  );
+
+  const postVirtualizer = useVirtualizer({
+    count: roomPosts.length,
+    getScrollElement: () => streamRef.current,
+    estimateSize: estimatePostSize,
+    measureElement: measurePostElement,
+    overscan: 10,
+    getItemKey: (index) => {
+      const post = roomPosts[index];
+      if (!post) return index;
+      return roomPostRowKey(post);
+    },
+    anchorTo: 'end',
+    followOnAppend: true,
+    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
+  });
+
+  postVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({
+    unreadStartIndexRef,
+    isPinnedToBottomRef,
+  });
+
+  const postVirtualizerRef = useRef(postVirtualizer);
+  postVirtualizerRef.current = postVirtualizer;
+
   const newestPostTs = useMemo(() => {
     if (roomPosts.length === 0) {
       if (selectedRoomId == null) return null;
@@ -363,20 +423,33 @@ export default function RoomsPanel({
     }
   }, [persistedRoomsLastRead]);
 
+  const computeIsAtChatEnd = useCallback(() => {
+    const inner = streamRef.current;
+    if (!inner) return false;
+    const virtualAtEnd = postVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
+    const outerDist = getDistFromChatBottom(
+      inner,
+      messagesEndRef.current,
+      outerScrollMetricsRootRef?.current ?? null,
+    );
+    if (outerDist != null && outerDist > CHAT_SCROLL_END_THRESHOLD) return false;
+    return virtualAtEnd;
+  }, [outerScrollMetricsRootRef]);
+
   const updateScrollButtonVisibility = useCallback(() => {
+    const atEnd = computeIsAtChatEnd();
+    isPinnedToBottomRef.current = atEnd;
+    setShowScrollButton(!atEnd);
+    const scrollTop = streamRef.current?.scrollTop ?? 0;
+    setShowScrollTopButton(scrollTop > CHAT_SCROLL_END_THRESHOLD);
     const distFromBottom = getDistFromChatBottom(
       streamRef.current,
       messagesEndRef.current,
       outerScrollMetricsRootRef?.current ?? null,
     );
     if (distFromBottom == null) return undefined;
-    const atEnd = distFromBottom <= CHAT_SCROLL_END_THRESHOLD;
-    isPinnedToBottomRef.current = atEnd;
-    setShowScrollButton(!atEnd);
-    const scrollTop = streamRef.current?.scrollTop ?? 0;
-    setShowScrollTopButton(scrollTop > CHAT_SCROLL_END_THRESHOLD);
     return distFromBottom;
-  }, [outerScrollMetricsRootRef]);
+  }, [computeIsAtChatEnd, outerScrollMetricsRootRef]);
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
@@ -390,21 +463,28 @@ export default function RoomsPanel({
   );
 
   const handleStreamScroll = useCallback(() => {
+    if (unreadStartIndex >= 0 && unreadDividerRef.current && streamRef.current) {
+      const container = streamRef.current;
+      const divider = unreadDividerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const dividerRect = divider.getBoundingClientRect();
+      if (dividerRect.bottom < containerRect.top) {
+        setUnreadDividerTimestamp(0);
+      }
+    }
     const distFromBottom = updateScrollButtonVisibility();
     if (distFromBottom === undefined) return;
     applyNearBottomReadState(distFromBottom);
-  }, [applyNearBottomReadState, updateScrollButtonVisibility]);
+  }, [applyNearBottomReadState, unreadStartIndex, updateScrollButtonVisibility]);
 
   const scrollToBottom = useCallback(() => {
-    const el = streamRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    postVirtualizerRef.current.scrollToEnd({ behavior: 'smooth' });
     isPinnedToBottomRef.current = true;
   }, []);
 
   const scrollToUnreadOrBottom = useCallback(() => {
     const el = streamRef.current;
-    if (unreadDividerRef.current) {
+    if (unreadStartIndex >= 0) {
       isPinnedToBottomRef.current = false;
       if (el) {
         const onEnd = () => {
@@ -418,11 +498,14 @@ export default function RoomsPanel({
         };
         el.addEventListener('scrollend', onEnd, { once: true });
       }
-      unreadDividerRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      postVirtualizerRef.current.scrollToIndex(unreadStartIndex, {
+        align: 'start',
+        behavior: 'smooth',
+      });
     } else {
       scrollToBottom();
     }
-  }, [applyNearBottomReadState, outerScrollMetricsRootRef, scrollToBottom]);
+  }, [applyNearBottomReadState, outerScrollMetricsRootRef, scrollToBottom, unreadStartIndex]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
@@ -480,21 +563,19 @@ export default function RoomsPanel({
   useLayoutEffect(() => {
     if (triggerScrollToUnread === 0) return;
     if (!isActive) return;
-    if (unreadDividerRef.current) {
-      unreadDividerRef.current.scrollIntoView({ block: 'center' });
+    if (unreadStartIndex >= 0) {
+      postVirtualizerRef.current.scrollToIndex(unreadStartIndex, { align: 'center' });
       isPinnedToBottomRef.current = false;
     } else {
-      const el = streamRef.current;
-      if (el) {
-        el.scrollTop = el.scrollHeight;
-      }
+      postVirtualizerRef.current.scrollToEnd();
       isPinnedToBottomRef.current = true;
     }
     requestAnimationFrame(() => {
       const dist = updateScrollButtonVisibility();
       if (dist !== undefined && dist < 50) applyNearBottomReadState(dist);
     });
-  }, [triggerScrollToUnread, isActive, updateScrollButtonVisibility, applyNearBottomReadState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
+  }, [triggerScrollToUnread, isActive]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -506,7 +587,6 @@ export default function RoomsPanel({
   useEffect(() => {
     if (selectedRoomId == null) return;
     const snapshot = persistedRoomsLastRead[selectedRoomId] ?? 0;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- placed after scroll/read effects so their rAF does not clear the watermark before it is applied
     setUnreadDividerTimestamp(snapshot);
     setTriggerScrollToUnread((n) => n + 1);
   }, [selectedRoomId, persistedRoomsLastRead]);
@@ -787,11 +867,12 @@ export default function RoomsPanel({
 
   useEffect(() => {
     if (streamView !== 'posts' || !scrollToRowKey) return;
-    const el = postRowRefs.current.get(scrollToRowKey);
-    if (el) {
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      setScrollToRowKey(null);
+    const index = findIndexByRowKey(roomPosts, scrollToRowKey, roomPostRowKey);
+    if (index >= 0) {
+      isPinnedToBottomRef.current = false;
+      postVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
     }
+    setScrollToRowKey(null);
   }, [scrollToRowKey, streamView, roomPosts]);
 
   const toggleStar = useCallback(
@@ -1777,7 +1858,7 @@ export default function RoomsPanel({
                   ref={streamRef}
                   data-testid="rooms-post-stream"
                   onScroll={handleStreamScroll}
-                  className="h-full min-h-0 space-y-2 overflow-y-auto px-3 py-2"
+                  className="h-full min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [overflow-anchor:none]"
                 >
                   {streamView === 'starred' ? (
                     roomStarred.length === 0 ? (
@@ -1826,145 +1907,153 @@ export default function RoomsPanel({
                   ) : roomPosts.length === 0 ? (
                     <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
                   ) : (
-                    roomPosts.map((m, index) => {
-                      const isOwn = m.sender_id === myNodeNum;
-                      const rowKey = roomPostRowKey(m);
-                      const starId = roomMsgStarId(m);
-                      const isStarred = starredIdSet.has(starId);
-                      const showDm =
-                        onMessageNode != null && canDmMeshcorePoster(m.sender_id, myNodeNum, nodes);
-                      const showUnreadDivider =
-                        unreadDividerTimestamp > 0 &&
-                        m.timestamp > unreadDividerTimestamp &&
-                        (index === 0 || roomPosts[index - 1].timestamp <= unreadDividerTimestamp);
-                      return (
-                        <div key={rowKey}>
-                          {showUnreadDivider && (
-                            <div ref={unreadDividerRef}>
-                              <RoomUnreadDivider label={t('roomsPanel.newMessagesDivider')} />
-                            </div>
-                          )}
+                    <div
+                      ref={postVirtualizer.containerRef}
+                      className="relative w-full"
+                      style={{ height: `${postVirtualizer.getTotalSize()}px` }}
+                    >
+                      {postVirtualizer.getVirtualItems().map((vi) => {
+                        const index = vi.index;
+                        const m = roomPosts[index];
+                        if (!m) return null;
+                        const isOwn = m.sender_id === myNodeNum;
+                        const starId = roomMsgStarId(m);
+                        const isStarred = starredIdSet.has(starId);
+                        const showDm =
+                          onMessageNode != null &&
+                          canDmMeshcorePoster(m.sender_id, myNodeNum, nodes);
+                        const isUnreadStart = index === unreadStartIndex;
+                        return (
                           <div
-                            ref={(el) => {
-                              if (el) postRowRefs.current.set(rowKey, el);
-                              else postRowRefs.current.delete(rowKey);
-                            }}
-                            className={`group/msg rounded-lg px-3 py-2 text-sm ${
-                              isOwn
-                                ? 'bg-purple-900/30 text-purple-100'
-                                : 'bg-gray-800/60 text-gray-200'
-                            }`}
+                            key={vi.key}
+                            data-index={vi.index}
+                            ref={postVirtualizer.measureElement}
+                            className="absolute top-0 left-0 w-full pb-2"
+                            style={{ transform: `translateY(${vi.start}px)` }}
                           >
-                            <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
-                              <span className="font-medium text-gray-300">{m.sender_name}</span>
-                              <span>{formatTimestamp(m.timestamp)}</span>
-                              <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
-                                {showDm && (
+                            {isUnreadStart && (
+                              <div ref={attachUnreadDividerRef}>
+                                <RoomUnreadDivider label={t('roomsPanel.newMessagesDivider')} />
+                              </div>
+                            )}
+                            <div
+                              className={`group/msg rounded-lg px-3 py-2 text-sm ${
+                                isOwn
+                                  ? 'bg-purple-900/30 text-purple-100'
+                                  : 'bg-gray-800/60 text-gray-200'
+                              }`}
+                            >
+                              <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
+                                <span className="font-medium text-gray-300">{m.sender_name}</span>
+                                <span>{formatTimestamp(m.timestamp)}</span>
+                                <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+                                  {showDm && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        onMessageNode?.(m.sender_id);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
+                                      aria-label={t('nodeDetailModal.messageButton')}
+                                      title={t('nodeDetailModal.messageButton')}
+                                    >
+                                      <Mail
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      onMessageNode?.(m.sender_id);
+                                      toggleStar(m);
                                     }}
                                     {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
-                                    aria-label={t('nodeDetailModal.messageButton')}
-                                    title={t('nodeDetailModal.messageButton')}
+                                    className={`rounded p-0.5 transition-colors ${
+                                      isStarred
+                                        ? 'text-amber-400 hover:text-amber-200'
+                                        : 'text-gray-500 hover:text-amber-400'
+                                    }`}
+                                    aria-label={
+                                      isStarred
+                                        ? t('chatPanel.unstarMessage')
+                                        : t('chatPanel.starMessage')
+                                    }
+                                    title={
+                                      isStarred
+                                        ? t('chatPanel.unstarMessage')
+                                        : t('chatPanel.starMessage')
+                                    }
                                   >
-                                    <Mail
+                                    <Star
+                                      aria-hidden
+                                      className={`h-3.5 w-3.5 ${isStarred ? 'fill-current' : ''}`}
+                                      trigger={parentIconTrigger}
+                                      size={14}
+                                    />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      void writeClipboardText(m.payload).catch((err: unknown) => {
+                                        console.warn(
+                                          '[RoomsPanel] copy failed ' + errLikeToLogString(err),
+                                        );
+                                      });
+                                    }}
+                                    {...{ [PARENT_HOVER_ATTR]: '' }}
+                                    className="rounded p-0.5 text-gray-500 hover:text-gray-300"
+                                    aria-label={t('chatPanel.copyMessage')}
+                                    title={t('chatPanel.copyMessage')}
+                                  >
+                                    <Copy
                                       aria-hidden
                                       className="h-3.5 w-3.5"
                                       trigger={parentIconTrigger}
                                       size={14}
                                     />
                                   </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    toggleStar(m);
-                                  }}
-                                  {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className={`rounded p-0.5 transition-colors ${
-                                    isStarred
-                                      ? 'text-amber-400 hover:text-amber-200'
-                                      : 'text-gray-500 hover:text-amber-400'
-                                  }`}
-                                  aria-label={
-                                    isStarred
-                                      ? t('chatPanel.unstarMessage')
-                                      : t('chatPanel.starMessage')
-                                  }
-                                  title={
-                                    isStarred
-                                      ? t('chatPanel.unstarMessage')
-                                      : t('chatPanel.starMessage')
-                                  }
-                                >
-                                  <Star
-                                    aria-hidden
-                                    className={`h-3.5 w-3.5 ${isStarred ? 'fill-current' : ''}`}
-                                    trigger={parentIconTrigger}
-                                    size={14}
-                                  />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    void writeClipboardText(m.payload).catch((err: unknown) => {
-                                      console.warn(
-                                        '[RoomsPanel] copy failed ' + errLikeToLogString(err),
-                                      );
-                                    });
-                                  }}
-                                  {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="rounded p-0.5 text-gray-500 hover:text-gray-300"
-                                  aria-label={t('chatPanel.copyMessage')}
-                                  title={t('chatPanel.copyMessage')}
-                                >
-                                  <Copy
-                                    aria-hidden
-                                    className="h-3.5 w-3.5"
-                                    trigger={parentIconTrigger}
-                                    size={14}
-                                  />
-                                </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="break-words whitespace-pre-wrap">
-                              <ChatPayloadText
-                                text={m.payload}
-                                query=""
-                                loadLinkPreviews={!showScrollButton}
-                              />
-                            </div>
-                            {isOwn && m.status && (
-                              <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {m.status === 'failed' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      void onSendRoomPost(selectedRoomId, m.payload);
-                                    }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
-                                    title={t('chatPanel.resendMessage')}
-                                    aria-label={t('chatPanel.resendMessage')}
-                                  >
-                                    ↻
-                                  </button>
-                                )}
-                                <MessageStatusBadge
-                                  status={m.status}
-                                  transport="device"
-                                  connectionType={connectionType}
-                                  error={m.error ?? undefined}
-                                  context="room"
+                              <div className="break-words whitespace-pre-wrap">
+                                <ChatPayloadText
+                                  text={m.payload}
+                                  query=""
+                                  loadLinkPreviews={!showScrollButton}
                                 />
                               </div>
-                            )}
+                              {isOwn && m.status && selectedRoomId != null && (
+                                <div className="mt-0.5 flex items-center justify-end gap-1">
+                                  {m.status === 'failed' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        void onSendRoomPost(selectedRoomId, m.payload);
+                                      }}
+                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      title={t('chatPanel.resendMessage')}
+                                      aria-label={t('chatPanel.resendMessage')}
+                                    >
+                                      ↻
+                                    </button>
+                                  )}
+                                  <MessageStatusBadge
+                                    status={m.status}
+                                    transport="device"
+                                    connectionType={connectionType}
+                                    error={m.error ?? undefined}
+                                    context="room"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </div>
                   )}
                   <div ref={messagesEndRef} />
                 </div>

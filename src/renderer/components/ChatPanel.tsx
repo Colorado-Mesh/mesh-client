@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/incompatible-library */
 import 'emoji-picker-element';
 
-import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import {
   Archive,
@@ -67,10 +67,16 @@ import {
   saveStarred,
   type StarredMessage,
 } from '../lib/chatPanelProtocolStorage';
-import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
-
-/** Extra virtual row height budget when the unread divider renders in that row. */
-const UNREAD_DIVIDER_ESTIMATE_EXTRA_PX = 40;
+import {
+  CHAT_SCROLL_END_THRESHOLD,
+  CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
+  createChatScrollAdjustPredicate,
+  createStableChatMeasureElement,
+  findFirstMessageIndexByDayKey,
+  findMessageIndexByKey,
+  getChatDayKey,
+  getDistFromChatBottom,
+} from '../lib/chatScrollUtils';
 import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
@@ -270,13 +276,6 @@ function formatDayLabel(ts: number, t: TFunction): string {
   if (diff === 86_400_000) return t('chatPanel.dayYesterday');
   return formatIsoDate(date);
 }
-
-/** Get a day key for grouping messages */
-function getDayKey(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
-
 function UnreadDivider() {
   const { t } = useTranslation();
   return (
@@ -697,13 +696,24 @@ function ChatPanel({
   const unreadStartIndexRef = useRef(unreadStartIndex);
   unreadStartIndexRef.current = unreadStartIndex;
 
+  const estimateMessageSize = useCallback(
+    (index: number) => {
+      const base = compactMode ? 56 : 96;
+      return index === unreadStartIndex ? base + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
+    },
+    [compactMode, unreadStartIndex],
+  );
+
+  const measureMessageElement = useMemo(
+    () => createStableChatMeasureElement(estimateMessageSize),
+    [estimateMessageSize],
+  );
+
   const messageVirtualizer = useVirtualizer({
     count: filteredMessages.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: (index) => {
-      const base = compactMode ? 56 : 96;
-      return index === unreadStartIndex ? base + UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
-    },
+    estimateSize: estimateMessageSize,
+    measureElement: measureMessageElement,
     overscan: 10,
     getItemKey: (index) => {
       const msg = filteredMessages[index];
@@ -715,11 +725,10 @@ function ChatPanel({
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
 
-  messageVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item: VirtualItem): boolean => {
-    if (item.index === unreadStartIndexRef.current) return false;
-    if (!isPinnedToBottomRef.current) return false;
-    return true;
-  };
+  messageVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({
+    unreadStartIndexRef,
+    isPinnedToBottomRef,
+  });
 
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
@@ -1006,12 +1015,15 @@ function ChatPanel({
     }
   }, [applyNearBottomReadState, outerScrollMetricsRootRef, unreadStartIndex]);
 
-  const scrollToQuotedParent = useCallback((replyKey: number) => {
-    const root = scrollContainerRef.current;
-    if (!root) return;
-    const el = root.querySelector(`[data-chat-message-key="${replyKey}"]`);
-    (el as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, []);
+  const scrollToQuotedParent = useCallback(
+    (replyKey: number) => {
+      const index = findMessageIndexByKey(filteredMessages, replyKey);
+      if (index < 0) return;
+      isPinnedToBottomRef.current = false;
+      messageVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
+    },
+    [filteredMessages],
+  );
 
   // Escape key handler
   useEffect(() => {
@@ -1164,7 +1176,7 @@ function ChatPanel({
     const indices = new Set<number>();
     let prevDayKey = '';
     for (let i = 0; i < filteredMessages.length; i++) {
-      const dayKey = getDayKey(filteredMessages[i].timestamp);
+      const dayKey = getChatDayKey(filteredMessages[i].timestamp);
       if (dayKey !== prevDayKey) {
         indices.add(i);
         prevDayKey = dayKey;
@@ -1219,17 +1231,19 @@ function ChatPanel({
   const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Jump to date — scroll to first message with matching day key
-  const handleJumpToDate = useCallback((dateStr: string) => {
-    if (!dateStr) return;
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const targetKey = `${y}-${m - 1}-${d}`;
-    const root = scrollContainerRef.current;
-    if (!root) return;
-    const el = root.querySelector(`[data-chat-day-key="${targetKey}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
+  const handleJumpToDate = useCallback(
+    (dateStr: string) => {
+      if (!dateStr) return;
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const targetKey = `${y}-${m - 1}-${d}`;
+      const index = findFirstMessageIndexByDayKey(filteredMessages, targetKey);
+      if (index < 0) return;
+      isPinnedToBottomRef.current = false;
+      messageVirtualizerRef.current.scrollToIndex(index, { align: 'start', behavior: 'smooth' });
+      setShowDatePicker(false);
+    },
+    [filteredMessages],
+  );
 
   const composePlaceholder = useMemo(
     () =>
@@ -1797,7 +1811,7 @@ function ChatPanel({
                       <div
                         className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                         data-chat-message-key={messageRowKey}
-                        data-chat-day-key={getDayKey(msg.timestamp)}
+                        data-chat-day-key={getChatDayKey(msg.timestamp)}
                       >
                         {/* Bubble row */}
                         <div
