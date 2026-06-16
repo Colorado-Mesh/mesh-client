@@ -1864,6 +1864,39 @@ export default function ModulePanel({
         />
       </ModuleSection>
 
+      {/* ═══ Pax Counter Module ═══ */}
+      {'paxcounter' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionPaxCounter')}
+          {...moduleSectionProps('paxcounter')}
+          onApply={() => {
+            applyMeshtasticModule(t('modulePanel.sectionPaxCounter'), 'paxcounter', paxCfg, {
+              enabled: paxEnabled,
+              paxcounterUpdateInterval: paxInterval,
+            });
+          }}
+          applying={applyingSection === 'paxcounter'}
+          disabled={disabled}
+        >
+          <ConfigToggle
+            label={t('modulePanel.fields.paxCounterEnabled')}
+            checked={paxEnabled}
+            onChange={setPaxEnabled}
+            disabled={disabled}
+            description={t('modulePanel.fields.paxCounterEnabledDesc')}
+          />
+          <ConfigNumber
+            label={t('modulePanel.fields.paxUpdateInterval')}
+            value={paxInterval}
+            onChange={setPaxInterval}
+            disabled={disabled || !paxEnabled}
+            min={0}
+            unit={secondsUnit}
+            description={t('modulePanel.fields.paxUpdateIntervalDesc')}
+          />
+        </ModuleSection>
+      )}
+
       {/* ═══ Remote Hardware Module ═══ */}
       {'remoteHardware' in moduleConfigs && (
         <ModuleSection
@@ -1917,39 +1950,6 @@ export default function ModulePanel({
             description={t('modulePanel.fields.remoteHardwareAllowUndefinedPinsDesc')}
           />
           <p className="text-muted text-xs">{t('modulePanel.fields.remoteHardwareHint')}</p>
-        </ModuleSection>
-      )}
-
-      {/* ═══ Pax Counter Module ═══ */}
-      {'paxcounter' in moduleConfigs && (
-        <ModuleSection
-          title={t('modulePanel.sectionPaxCounter')}
-          {...moduleSectionProps('paxcounter')}
-          onApply={() => {
-            applyMeshtasticModule(t('modulePanel.sectionPaxCounter'), 'paxcounter', paxCfg, {
-              enabled: paxEnabled,
-              paxcounterUpdateInterval: paxInterval,
-            });
-          }}
-          applying={applyingSection === 'paxcounter'}
-          disabled={disabled}
-        >
-          <ConfigToggle
-            label={t('modulePanel.fields.paxCounterEnabled')}
-            checked={paxEnabled}
-            onChange={setPaxEnabled}
-            disabled={disabled}
-            description={t('modulePanel.fields.paxCounterEnabledDesc')}
-          />
-          <ConfigNumber
-            label={t('modulePanel.fields.paxUpdateInterval')}
-            value={paxInterval}
-            onChange={setPaxInterval}
-            disabled={disabled || !paxEnabled}
-            min={0}
-            unit={secondsUnit}
-            description={t('modulePanel.fields.paxUpdateIntervalDesc')}
-          />
         </ModuleSection>
       )}
 
@@ -2153,6 +2153,48 @@ export default function ModulePanel({
         </ModuleSection>
       )}
 
+      {/* ═══ IP Tunnel ═══ */}
+      {!remoteTarget && hasAudio && audioMessages != null && (
+        <StatusOnlySection title={t('modulePanel.sectionAudio')}>
+          <ModuleStatus packets={audioMessages} label={t('modulePanel.statusLabels.audio')} />
+        </StatusOnlySection>
+      )}
+
+      {!remoteTarget &&
+        (simulatorPackets != null || privateMessages != null || pingResponses != null) && (
+          <StatusOnlySection title={t('modulePanel.sectionDebugModules')}>
+            {simulatorPackets != null && (
+              <ModuleStatus
+                packets={simulatorPackets}
+                label={t('modulePanel.debugSimulatorPackets')}
+              />
+            )}
+            {privateMessages != null && (
+              <ModuleStatus
+                packets={privateMessages}
+                label={t('modulePanel.debugPrivateAppMessages')}
+              />
+            )}
+            {pingResponses != null && pingResponses.size > 0 && (
+              <ModuleStatus
+                packets={
+                  new Map(
+                    Array.from(pingResponses.entries()).map(([nodeId, pkt]) => [nodeId, [pkt]]),
+                  )
+                }
+                label={t('modulePanel.debugPingResponses')}
+              />
+            )}
+          </StatusOnlySection>
+        )}
+
+      {!remoteTarget && ipTunnelMessages != null && (
+        <StatusOnlySection title={t('modulePanel.sectionIpTunnel')}>
+          <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
+          <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>
+        </StatusOnlySection>
+      )}
+
       {/* ═══ RTTTL Ringtone ═══ */}
       {onSetRingtone && (
         <ModuleSection
@@ -2230,48 +2272,6 @@ export default function ModulePanel({
             </div>
           </div>
         </ModuleSection>
-      )}
-
-      {/* ═══ IP Tunnel ═══ */}
-      {!remoteTarget && hasAudio && audioMessages != null && (
-        <StatusOnlySection title={t('modulePanel.sectionAudio')}>
-          <ModuleStatus packets={audioMessages} label={t('modulePanel.statusLabels.audio')} />
-        </StatusOnlySection>
-      )}
-
-      {!remoteTarget &&
-        (simulatorPackets != null || privateMessages != null || pingResponses != null) && (
-          <StatusOnlySection title={t('modulePanel.sectionDebugModules')}>
-            {simulatorPackets != null && (
-              <ModuleStatus
-                packets={simulatorPackets}
-                label={t('modulePanel.debugSimulatorPackets')}
-              />
-            )}
-            {privateMessages != null && (
-              <ModuleStatus
-                packets={privateMessages}
-                label={t('modulePanel.debugPrivateAppMessages')}
-              />
-            )}
-            {pingResponses != null && pingResponses.size > 0 && (
-              <ModuleStatus
-                packets={
-                  new Map(
-                    Array.from(pingResponses.entries()).map(([nodeId, pkt]) => [nodeId, [pkt]]),
-                  )
-                }
-                label={t('modulePanel.debugPingResponses')}
-              />
-            )}
-          </StatusOnlySection>
-        )}
-
-      {!remoteTarget && ipTunnelMessages != null && (
-        <StatusOnlySection title={t('modulePanel.sectionIpTunnel')}>
-          <ModuleStatus packets={ipTunnelMessages} label={t('modulePanel.statusLabels.ipTunnel')} />
-          <p className="text-muted text-xs">{t('modulePanel.fields.ipTunnelHint')}</p>
-        </StatusOnlySection>
       )}
 
       {rhPendingConfirm === 'enable' && (
