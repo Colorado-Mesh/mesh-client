@@ -81,8 +81,10 @@ import {
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
+  estimateChatRowHeight,
   findIndexByRowKey,
   getDistFromChatBottom,
+  scheduleVirtualRowRemeasure,
 } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -344,10 +346,13 @@ export default function RoomsPanel({
 
   const estimatePostSize = useCallback(
     (index: number) => {
-      const base = 96;
-      return index === unreadStartIndex ? base + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
+      const post = roomPosts[index];
+      return estimateChatRowHeight(post, {
+        unreadDividerExtra:
+          index === unreadStartIndex ? CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : undefined,
+      });
     },
-    [unreadStartIndex],
+    [roomPosts, unreadStartIndex],
   );
 
   const measurePostElement = useMemo(
@@ -378,6 +383,16 @@ export default function RoomsPanel({
 
   const postVirtualizerRef = useRef(postVirtualizer);
   postVirtualizerRef.current = postVirtualizer;
+
+  const schedulePostRowRemeasure = useCallback((rowIndex: number) => {
+    scheduleVirtualRowRemeasure(
+      (node) => {
+        postVirtualizerRef.current.measureElement(node);
+      },
+      streamRef.current,
+      rowIndex,
+    );
+  }, []);
 
   const newestPostTs = useMemo(() => {
     if (roomPosts.length === 0) {
@@ -2023,6 +2038,9 @@ export default function RoomsPanel({
                                   text={m.payload}
                                   query=""
                                   loadLinkPreviews={!showScrollButton}
+                                  onContentResize={() => {
+                                    schedulePostRowRemeasure(index);
+                                  }}
                                 />
                               </div>
                               {isOwn && m.status && selectedRoomId != null && (

@@ -1,6 +1,7 @@
 import type { VirtualItem, Virtualizer } from '@tanstack/react-virtual';
 import type { RefObject } from 'react';
 
+import { parseChatMentionSegments } from './chatMentionSegments';
 import type { ChatMessage } from './types';
 
 /** Pixels from latest message treated as “at bottom” (Jump to Latest, follow-on-append, mark read). */
@@ -8,6 +9,39 @@ export const CHAT_SCROLL_END_THRESHOLD = 200;
 
 /** Extra virtual row height budget when the unread divider renders in that row. */
 export const CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX = 40;
+
+/** Per-URL link-preview card height budget (matches LinkPreview layout). */
+export const CHAT_LINK_PREVIEW_ESTIMATE_PX = 120;
+export const CHAT_LINK_PREVIEW_ESTIMATE_COMPACT_PX = 80;
+
+export interface EstimateChatRowHeightOptions {
+  compactMode?: boolean;
+  unreadDividerExtra?: number;
+}
+
+/** Heuristic virtual row height for chat messages and room posts. */
+export function estimateChatRowHeight(
+  msg: Pick<ChatMessage, 'payload' | 'replyId' | 'replyPreviewText'> | null | undefined,
+  options: EstimateChatRowHeightOptions = {},
+): number {
+  const compactMode = options.compactMode ?? false;
+  let base = compactMode ? 56 : 96;
+  if (msg?.replyId != null || msg?.replyPreviewText) {
+    base += compactMode ? 40 : 72;
+  }
+  if ((msg?.payload.length ?? 0) > 120) {
+    base += compactMode ? 24 : 48;
+  }
+  const urlCount = parseChatMentionSegments(msg?.payload ?? '').filter(
+    (seg) => seg.kind === 'url',
+  ).length;
+  if (urlCount > 0) {
+    base +=
+      urlCount *
+      (compactMode ? CHAT_LINK_PREVIEW_ESTIMATE_COMPACT_PX : CHAT_LINK_PREVIEW_ESTIMATE_PX);
+  }
+  return base + (options.unreadDividerExtra ?? 0);
+}
 
 /**
  * Distance from the “bottom” of the chat (latest messages). Uses the **maximum** of:
@@ -84,17 +118,32 @@ export function createStableChatMeasureElement(
     const cached = instance.measurementsCache[index]?.size ?? instance.itemSizeCache.get(key);
     const hasMeasuredSize = cached != null && cached !== estimated;
 
-    if (instance.scrollDirection === 'backward' && hasMeasuredSize) {
-      return cached;
-    }
-
     const box = entry?.borderBoxSize?.[0];
-    if (box) {
-      return Math.round(box[instance.options.horizontal ? 'inlineSize' : 'blockSize']);
+    const domSize = box
+      ? Math.round(box[instance.options.horizontal ? 'inlineSize' : 'blockSize'])
+      : htmlEl[sizeProp];
+
+    if (instance.scrollDirection === 'backward' && hasMeasuredSize) {
+      // Allow growth (async previews, layout) but prevent shrink jitter while scrolling up.
+      return domSize > cached ? domSize : cached;
     }
 
-    return htmlEl[sizeProp];
+    return domSize;
   };
+}
+
+/** Re-measure a virtualized chat row after async content (e.g. link preview) changes height. */
+export function scheduleVirtualRowRemeasure(
+  measureElement: (node: Element) => void,
+  container: HTMLElement | null,
+  rowIndex: number,
+): void {
+  requestAnimationFrame(() => {
+    const row = container?.querySelector(`[data-index="${rowIndex}"]`);
+    if (row instanceof HTMLElement) {
+      measureElement(row);
+    }
+  });
 }
 
 export interface ChatScrollAdjustDeps {

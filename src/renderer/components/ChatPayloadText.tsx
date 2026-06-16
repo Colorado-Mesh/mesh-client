@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
@@ -54,7 +54,7 @@ function fetchLinkPreviewDeduped(url: string): Promise<LinkPreviewData | null> {
   return pending;
 }
 
-function LinkPreview({ url }: { url: string }) {
+function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: () => void }) {
   const [preview, setPreview] = useState<LinkPreviewData | null>(null);
 
   useEffect(() => {
@@ -70,6 +70,10 @@ function LinkPreview({ url }: { url: string }) {
       cancelled = true;
     };
   }, [url]);
+
+  useLayoutEffect(() => {
+    if (preview) onContentResize?.();
+  }, [preview, onContentResize]);
 
   if (!preview) return null;
 
@@ -108,6 +112,8 @@ export interface ChatPayloadTextProps {
   query: string;
   /** When false, skip async link-preview fetches (avoids layout shift while reading history). */
   loadLinkPreviews?: boolean;
+  /** Fired when async link-preview content mounts and row height may have grown. */
+  onContentResize?: () => void;
 }
 
 /**
@@ -115,7 +121,12 @@ export interface ChatPayloadTextProps {
  * compact inline labels (brackets hidden), http/https URLs as clickable links that
  * open in the system browser, and optional search highlighting.
  */
-export function ChatPayloadText({ text, query, loadLinkPreviews = true }: ChatPayloadTextProps) {
+export function ChatPayloadText({
+  text,
+  query,
+  loadLinkPreviews = true,
+  onContentResize,
+}: ChatPayloadTextProps) {
   const { t } = useTranslation();
   const segments = parseChatMentionSegments(text);
   const urlSegments = segments.filter((seg) => seg.kind === 'url');
@@ -162,7 +173,7 @@ export function ChatPayloadText({ text, query, loadLinkPreviews = true }: ChatPa
       {loadLinkPreviews && urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (
-            <LinkPreview key={seg.url} url={seg.url} />
+            <LinkPreview key={seg.url} url={seg.url} onContentResize={onContentResize} />
           ))}
         </div>
       )}
