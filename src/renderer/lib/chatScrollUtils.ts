@@ -72,28 +72,28 @@ export function createStableChatMeasureElement(
 ): NonNullable<Virtualizer<HTMLDivElement, Element>['options']['measureElement']> {
   return (element, entry, instance: ScrollMeasureInstance) => {
     const index = instance.indexFromElement(element);
+    const htmlEl = element as HTMLElement;
+    const sizeProp = instance.options.horizontal ? 'offsetWidth' : 'offsetHeight';
+
     if (index < 0) {
-      return (element as HTMLElement).offsetHeight;
+      return htmlEl[sizeProp];
     }
 
     const key = instance.options.getItemKey(index);
+    const estimated = estimateSize(index);
     const cached = instance.measurementsCache[index]?.size ?? instance.itemSizeCache.get(key);
+    const hasMeasuredSize = cached != null && cached !== estimated;
 
-    if (instance.scrollDirection === 'backward') {
-      if (cached != null) return cached;
-      return estimateSize(index);
+    if (instance.scrollDirection === 'backward' && hasMeasuredSize) {
+      return cached;
     }
 
     const box = entry?.borderBoxSize?.[0];
     if (box) {
       return Math.round(box[instance.options.horizontal ? 'inlineSize' : 'blockSize']);
     }
-    if (cached != null && !entry) {
-      return cached;
-    }
 
-    const htmlEl = element as HTMLElement;
-    return htmlEl[instance.options.horizontal ? 'offsetWidth' : 'offsetHeight'];
+    return htmlEl[sizeProp];
   };
 }
 

@@ -86,16 +86,40 @@ describe('findIndexByRowKey', () => {
 });
 
 describe('createStableChatMeasureElement', () => {
-  it('returns cached size when scrolling backward', () => {
+  it('returns measured cache when scrolling backward', () => {
     const measure = createStableChatMeasureElement(() => 96);
     const el = document.createElement('div');
     Object.defineProperty(el, 'offsetHeight', { value: 200, configurable: true });
     const size = measure(
       el,
       undefined,
-      mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 72 }) as never,
+      mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 180 }) as never,
     );
-    expect(size).toBe(72);
+    expect(size).toBe(180);
+  });
+
+  it('measures DOM when backward cache is still an estimate', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'offsetHeight', { value: 200, configurable: true });
+    const size = measure(
+      el,
+      undefined,
+      mockMeasureInstance({ scrollDirection: 'backward', cachedSize: 96 }) as never,
+    );
+    expect(size).toBe(200);
+  });
+
+  it('measures DOM instead of estimate cache when not scrolling backward', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'offsetHeight', { value: 200, configurable: true });
+    const size = measure(
+      el,
+      undefined,
+      mockMeasureInstance({ scrollDirection: null, cachedSize: 96 }) as never,
+    );
+    expect(size).toBe(200);
   });
 
   it('remeasures when scrolling forward with ResizeObserver entry', () => {

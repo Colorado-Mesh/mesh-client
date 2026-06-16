@@ -698,10 +698,17 @@ function ChatPanel({
 
   const estimateMessageSize = useCallback(
     (index: number) => {
-      const base = compactMode ? 56 : 96;
+      const msg = filteredMessages[index];
+      let base = compactMode ? 56 : 96;
+      if (msg?.replyId != null || msg?.replyPreviewText) {
+        base += compactMode ? 40 : 72;
+      }
+      if ((msg?.payload.length ?? 0) > 120) {
+        base += compactMode ? 24 : 48;
+      }
       return index === unreadStartIndex ? base + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : base;
     },
-    [compactMode, unreadStartIndex],
+    [compactMode, filteredMessages, unreadStartIndex],
   );
 
   const measureMessageElement = useMemo(
