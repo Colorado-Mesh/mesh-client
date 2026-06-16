@@ -82,7 +82,13 @@ export class MeshtasticProtocol implements Protocol {
       case 'ble':
         return createBleConnection(params.peripheralId, 'meshtastic');
       case 'serial':
-        return reconnectSerial(params.portSignature);
+        // Use gesture-free reconnect only when a previously-granted port signature is
+        // known; otherwise call requestPort() so Electron fires select-serial-port and
+        // the port picker appears (mirrors MeshCoreProtocol.createDevice pattern).
+        if (params.portSignature) {
+          return reconnectSerial(params.portSignature);
+        }
+        return createConnection('serial');
       case 'http':
         return createConnection('http', params.host);
       default:
