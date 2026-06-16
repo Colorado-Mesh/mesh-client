@@ -27,6 +27,7 @@ pnpm run dev      # Development mode
 pnpm run build    # Production build
 pnpm run lint     # ESLint
 pnpm run test:run # Run tests
+pnpm run update   # Update all deps, with update warnings for @meshtastic/core and @liamcottle/meshcore.js
 ```
 
 ## Pre-commit Hook

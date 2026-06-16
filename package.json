@@ -74,6 +74,7 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
     "prepare": "git config core.hooksPath .githooks",
     "rebuild": "node scripts/rebuild-native.mjs",
+    "release": "bash scripts/release.sh",
     "setup:actionlint": "node scripts/install-actionlint.mjs",
     "setup:build-deps": "node scripts/setup-build-deps.mjs",
     "setup:dialout": "node scripts/setup-dialout.mjs",
@@ -84,7 +85,8 @@
     "test:verbose": "vitest run --reporter=verbose",
     "trace-deprecation": "pnpm run build && NODE_OPTIONS='--trace-deprecation' node scripts/start-electron.mjs",
     "typecheck": "pnpm exec tsc --noEmit && pnpm exec tsc --noEmit -p tsconfig.main.json",
-    "typecheck:strict-shared": "pnpm exec tsc --noEmit -p tsconfig.strict.json"
+    "typecheck:strict-shared": "pnpm exec tsc --noEmit -p tsconfig.strict.json",
+    "update": "bash scripts/update.sh"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.12.0",
