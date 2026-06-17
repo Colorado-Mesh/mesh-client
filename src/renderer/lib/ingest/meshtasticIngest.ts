@@ -9,6 +9,7 @@ import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { meshcoreHwModelIsContactTypeLabel } from '../meshcoreUtils';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import {
   findMeshtasticCrossTransportDuplicate,
@@ -63,6 +64,7 @@ function persistNode(identityId: IdentityId, nodeId: number): void {
   const record = useNodeStore.getState().nodes[identityId]?.[nodeId];
   if (!record) return;
   const meshNode = nodeRecordToMeshNode(record);
+  if (meshcoreHwModelIsContactTypeLabel(meshNode.hw_model)) return;
   void window.electronAPI.db.saveNode(meshNode).catch((e: unknown) => {
     console.debug('[meshtasticIngest] saveNode failed ' + errLikeToLogString(e));
   });

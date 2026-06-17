@@ -201,4 +201,85 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(tables).toHaveLength(0);
     db.close();
   });
+
+  it('promotes stale meshcore room sending rows to acked', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-mc-room-send-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const staleTs = Date.now() - 60_000;
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp, status, room_server_id)
+       VALUES (?, ?, -2, ?, 'sending', ?)`,
+    ).run(0xabc, 'test post', staleTs, 0xdef);
+
+    runSchemaUpgrade(db);
+
+    const row = db
+      .prepareOnce('SELECT status FROM meshcore_messages WHERE sender_id = ?')
+      .get(0xabc) as { status: string };
+    expect(row.status).toBe('acked');
+    db.close();
+  });
+
+  it('removes orphan meshcore sending rows when acked twin exists', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-mc-orphan-send-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const ts = Date.now() - 60_000;
+    db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp, status)
+       VALUES (?, ?, 0, ?, 'sending'), (?, ?, 0, ?, 'acked')`,
+    ).run(100, 'hello', ts, 100, 'hello', ts + 1000);
+
+    runSchemaUpgrade(db);
+
+    const count = (
+      db.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_messages').get() as { cnt: number }
+    ).cnt;
+    expect(count).toBe(1);
+    const row = db.prepareOnce('SELECT status FROM meshcore_messages').get() as { status: string };
+    expect(row.status).toBe('acked');
+    db.close();
+  });
+
+  it('purges MeshCore contact hw_model rows from meshtastic nodes table', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-purge-mc-nodes-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    db.prepareOnce(
+      `INSERT INTO nodes (node_id, hw_model, source) VALUES (1, 'RAK4631', 'rf'), (2, 'Repeater', 'rf')`,
+    ).run();
+
+    runSchemaUpgrade(db);
+
+    const rows = db.prepareOnce('SELECT node_id FROM nodes ORDER BY node_id').all() as {
+      node_id: number;
+    }[];
+    expect(rows).toEqual([{ node_id: 1 }]);
+    db.close();
+  });
+
+  it('repairs meshtastic inbound messages with NULL status to acked', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-null-status-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    db.prepareOnce(
+      `INSERT INTO messages (sender_id, payload, channel, timestamp, packet_id, status, received_via)
+       VALUES (100, 'hi', 0, ?, 999, NULL, 'rf')`,
+    ).run(Date.now());
+
+    runSchemaUpgrade(db);
+
+    const row = db.prepareOnce('SELECT status FROM messages').get() as { status: string };
+    expect(row.status).toBe('acked');
+    db.close();
+  });
 });

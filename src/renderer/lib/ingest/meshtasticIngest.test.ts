@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useMessageStore } from '../../stores/messageStore';
+import { upsertNode } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import { attachMeshtasticIngest } from './meshtasticIngest';
 
@@ -126,5 +127,39 @@ describe('attachMeshtasticIngest', () => {
     expect(updateReceivedVia).toHaveBeenCalled();
     expect(useMessageStore.getState().messages[ID]['1'].receivedVia).toBe('both');
     session.detach();
+  });
+
+  it('skips saveNode when node hw_model is a MeshCore contact label', () => {
+    const saveNode = vi.spyOn(window.electronAPI.db, 'saveNode').mockResolvedValue(undefined);
+    saveNode.mockClear();
+    const session = attachMeshtasticIngest(ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0xaaaa,
+    });
+    upsertNode(ID, {
+      nodeId: 0x1234,
+      longName: 'Some Repeater',
+      hwModel: 'Repeater',
+      lastHeardAt: Date.now(),
+    });
+    saveNode.mockClear();
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: 'm1',
+          from: 0x1234,
+          to: 0xffffffff,
+          payload: 'hello',
+          channelIndex: 0,
+          timestamp: Date.now(),
+          hopCount: 0,
+        },
+      },
+      ID,
+    );
+    expect(saveNode).not.toHaveBeenCalled();
+    session.detach();
+    saveNode.mockRestore();
   });
 });

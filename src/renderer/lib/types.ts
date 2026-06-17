@@ -606,6 +606,13 @@ declare global {
           }[],
         ) => Promise<number>;
         updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<unknown>;
+        updateMeshcoreMessageStatusByKey: (
+          senderId: number,
+          timestamp: number,
+          channelIdx: number,
+          payload: string,
+          status: string,
+        ) => Promise<{ changes: number }>;
         updateMeshcoreContactAdvert: (
           nodeId: number,
           lastAdvert: number | null,

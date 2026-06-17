@@ -4436,6 +4436,22 @@ export function useMeshcoreRuntime() {
               '[useMeshcoreRuntime] saveMeshcoreMessage (room post) error ' + errLikeToLogString(e),
             );
           });
+        if (acked.packetId == null) {
+          void window.electronAPI.db
+            .updateMeshcoreMessageStatusByKey(
+              myNodeNumRef.current,
+              sentAt,
+              MESHCORE_ROOM_MESSAGE_CHANNEL,
+              text,
+              'acked',
+            )
+            .catch((e: unknown) => {
+              console.warn(
+                '[useMeshcoreRuntime] updateMeshcoreMessageStatusByKey (room post) error ' +
+                  errLikeToLogString(e),
+              );
+            });
+        }
         void setMeshcoreRoomLastPostAt(nodeId, sentAt);
       } catch (e: unknown) {
         const errMsg = meshcoreRoomPostSendErrorMessage(e);

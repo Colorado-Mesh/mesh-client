@@ -3334,7 +3334,7 @@ ipcMain.handle('db:saveMessage', (event, message) => {
       channel: safeNonNegativeInt(message.channel),
       timestamp: message.timestamp,
       packet_id: message.packetId != null ? safeNonNegativeInt(message.packetId) : null,
-      status: message.status ?? null,
+      status: message.status ?? 'acked',
       error: message.error ?? null,
       emoji: message.emoji != null ? (sanitizeUnicodeReactionScalar(message.emoji) ?? null) : null,
       reply_id: message.replyId != null ? safeNonNegativeInt(message.replyId) : null,
@@ -4651,6 +4651,46 @@ ipcMain.handle('db:updateMeshcoreMessageStatus', (_event, packetId: number, stat
     finishDbIpcHandler('db:updateMeshcoreMessageStatus', err);
   }
 });
+
+ipcMain.handle(
+  'db:updateMeshcoreMessageStatusByKey',
+  (
+    _event,
+    senderId: number,
+    timestamp: number,
+    channelIdx: number,
+    payload: string,
+    status: string,
+  ) => {
+    try {
+      const db = getDbForIpc('db:updateMeshcoreMessageStatusByKey');
+      if (!db) return { changes: 0 };
+      const sid = senderId;
+      const ts = timestamp;
+      const ch = Math.trunc(channelIdx);
+      if (!Number.isFinite(sid) || sid < 0)
+        throw new Error('db:updateMeshcoreMessageStatusByKey: invalid senderId');
+      if (!Number.isFinite(ts))
+        throw new Error('db:updateMeshcoreMessageStatusByKey: invalid timestamp');
+      if (!Number.isFinite(ch))
+        throw new Error('db:updateMeshcoreMessageStatusByKey: invalid channelIdx');
+      if (typeof payload !== 'string')
+        throw new Error('db:updateMeshcoreMessageStatusByKey: payload must be a string');
+      if (payload.length > MAX_PAYLOAD_LENGTH)
+        throw new Error('db:updateMeshcoreMessageStatusByKey: payload too long');
+      if (typeof status !== 'string' || status.length > MAX_STATUS_STRING)
+        throw new Error('db:updateMeshcoreMessageStatusByKey: invalid status');
+      return db
+        .prepareOnce(
+          `UPDATE meshcore_messages SET status = ?
+           WHERE sender_id = ? AND timestamp = ? AND channel_idx = ? AND payload = ?`,
+        )
+        .run(status, sid, ts, ch, payload);
+    } catch (err) {
+      finishDbIpcHandler('db:updateMeshcoreMessageStatusByKey', err);
+    }
+  },
+);
 
 ipcMain.handle('db:deleteMeshcoreContact', (_event, nodeId: number) => {
   try {
