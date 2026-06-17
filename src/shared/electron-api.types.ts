@@ -301,6 +301,13 @@ export interface ElectronAPI {
       timestamp?: number | null,
     ) => Promise<void>;
     updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<void>;
+    updateMeshcoreMessageStatusByKey: (
+      senderId: number,
+      timestamp: number,
+      channelIdx: number,
+      payload: string,
+      status: string,
+    ) => Promise<{ changes: number }>;
     deleteMeshcoreContact: (nodeId: number) => Promise<void>;
     clearMeshcoreMessages: () => Promise<void>;
     getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;

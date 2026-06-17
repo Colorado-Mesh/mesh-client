@@ -307,15 +307,7 @@ export function meshcoreContactTypeFromHwModel(hwModel: string): number | undefi
   return undefined;
 }
 
-/**
- * True when `hw_model` is a MeshCore {@link CONTACT_TYPE_LABELS} string (chat/repeater/room/sensor).
- * Those labels are not used by Meshtastic protobuf hardware names; when both stacks share the renderer
- * node map, use this to keep MeshCore-only contacts off the Meshtastic map.
- */
-export function meshcoreHwModelIsContactTypeLabel(hwModel: string | undefined): boolean {
-  const t = meshcoreContactTypeFromHwModel(hwModel ?? '');
-  return t !== undefined && t >= 1;
-}
+export { meshcoreHwModelIsContactTypeLabel } from '../../shared/meshcoreContactHwLabels';
 
 /**
  * Map measured cell voltage to an approximate 0–100% for UI (e.g. node list bar).

@@ -1,7 +1,11 @@
 import {
+  MESHCORE_ROOM_MESSAGE_CHANNEL,
+  MESHCORE_ROOM_STALE_SENDING_MS,
+} from '@/shared/meshcoreContactHwLabels';
+
+import {
   findMeshcoreDmRfDuplicate,
   isMeshcoreRoomChatMessage,
-  MESHCORE_ROOM_MESSAGE_CHANNEL,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import {
@@ -10,9 +14,6 @@ import {
 } from './meshcoreRoomMessageRouting';
 import { sanitizeMeshcoreChatWireText } from './meshcoreUtils';
 import type { ChatMessage, MeshNode } from './types';
-
-/** Room posts older than this are not still in-flight on the radio. */
-const MESHCORE_ROOM_STALE_SENDING_MS = 30_000;
 
 export function meshcoreRoomServerIdsFromNodes(nodes: Iterable<MeshNode>): Set<number> {
   const ids = new Set<number>();

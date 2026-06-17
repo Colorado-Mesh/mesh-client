@@ -6,6 +6,11 @@
  * Logging: errors use sanitizeLogMessage before console.error.
  */
 import { LAST_HEARD_MS_THRESHOLD } from '../shared/lastHeardUnits';
+import {
+  MESHCORE_CONTACT_HW_LABELS,
+  MESHCORE_ROOM_MESSAGE_CHANNEL,
+  MESHCORE_ROOM_STALE_SENDING_MS,
+} from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
@@ -644,6 +649,62 @@ function repairMeshtasticOrphanSendingMessages(db: NodeSqliteDB): void {
 }
 
 /**
+ * Delete orphan optimistic MeshCore `sending` rows when an acked/failed twin exists; promote stale
+ * room posts to acked; fail aged lone sends (mirrors Meshtastic repair + hydration threshold).
+ * Idempotent — safe on every startup.
+ */
+function repairMeshcoreOrphanSendingMessages(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'meshcore_messages')) return;
+
+  db.prepare(
+    `DELETE FROM meshcore_messages
+     WHERE status = 'sending'
+       AND id IN (
+         SELECT s.id FROM meshcore_messages s
+         INNER JOIN meshcore_messages a ON s.id != a.id
+           AND s.sender_id = a.sender_id
+           AND s.channel_idx = a.channel_idx
+           AND s.payload = a.payload
+           AND a.status != 'sending'
+           AND ABS(a.timestamp - s.timestamp) <= ?
+       )`,
+  ).run(MESHTASTIC_ORPHAN_SENDING_WINDOW_MS);
+
+  const staleRoomCutoff = Date.now() - MESHCORE_ROOM_STALE_SENDING_MS;
+  db.prepare(
+    `UPDATE meshcore_messages SET status = 'acked'
+     WHERE status = 'sending'
+       AND (channel_idx = ? OR room_server_id IS NOT NULL)
+       AND timestamp < ?`,
+  ).run(MESHCORE_ROOM_MESSAGE_CHANNEL, staleRoomCutoff);
+
+  const staleCutoff = Date.now() - MESHTASTIC_STALE_SENDING_MS;
+  db.prepare(
+    `UPDATE meshcore_messages SET status = 'failed'
+     WHERE status = 'sending' AND timestamp < ?`,
+  ).run(staleCutoff);
+}
+
+/** Default inbound Meshtastic rows that bypassed column default via explicit NULL insert. */
+function repairMeshtasticInboundNullStatus(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'messages')) return;
+  db.prepare(
+    `UPDATE messages SET status = 'acked'
+     WHERE status IS NULL
+       AND (received_via IS NOT NULL OR packet_id IS NOT NULL)`,
+  ).run();
+}
+
+/** Remove MeshCore contact rows incorrectly persisted in the Meshtastic `nodes` table. */
+function purgeMeshcoreRowsFromMeshtasticNodesTable(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'nodes')) return;
+  const placeholders = MESHCORE_CONTACT_HW_LABELS.map(() => '?').join(', ');
+  db.prepare(`DELETE FROM nodes WHERE hw_model IN (${placeholders})`).run(
+    ...MESHCORE_CONTACT_HW_LABELS,
+  );
+}
+
+/**
  * Repair repeater uptime stored as last_advert, invalid GPS, and orphan hop rows (schema v35).
  * Idempotent — safe on every startup.
  */
@@ -734,6 +795,9 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   repairNodesLastHeardUnits(db);
   repairMeshcoreContactDataQuality(db);
   repairMeshtasticOrphanSendingMessages(db);
+  repairMeshcoreOrphanSendingMessages(db);
+  repairMeshtasticInboundNullStatus(db);
+  purgeMeshcoreRowsFromMeshtasticNodesTable(db);
 }
 
 /**

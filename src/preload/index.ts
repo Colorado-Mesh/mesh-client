@@ -205,6 +205,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ),
     updateMeshcoreMessageStatus: (packetId: number, status: string) =>
       ipcRenderer.invoke('db:updateMeshcoreMessageStatus', packetId, status),
+    updateMeshcoreMessageStatusByKey: (
+      senderId: number,
+      timestamp: number,
+      channelIdx: number,
+      payload: string,
+      status: string,
+    ) =>
+      ipcRenderer.invoke(
+        'db:updateMeshcoreMessageStatusByKey',
+        senderId,
+        timestamp,
+        channelIdx,
+        payload,
+        status,
+      ),
     deleteMeshcoreContact: (nodeId: number) =>
       ipcRenderer.invoke('db:deleteMeshcoreContact', nodeId),
     clearMeshcoreMessages: () => ipcRenderer.invoke('db:clearMeshcoreMessages'),
