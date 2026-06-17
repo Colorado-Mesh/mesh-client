@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useReduceMotion } from '@/renderer/lib/icons/iconMotionContext';
+import {
+  getSignalPulseTheme,
+  pickInclusiveOneLinerKey,
+} from '@/renderer/lib/signalPulseSplashUtils';
+
 import type { IdentityId, MeshProtocol } from '../lib/types';
 import { useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useIdentityStore } from '../stores/identityStore';
 import { useNodeStore } from '../stores/nodeStore';
-import { getSignalPulseTheme, pickInclusiveOneLinerKey } from './SignalPropagation';
 
 export interface BootSequenceProps {
   protocol: MeshProtocol;
@@ -23,7 +28,9 @@ const PAUSE_BEFORE_CURSOR_MS = 50;
 const CURSOR_BLINK_MS = 400;
 const CURSOR_BLINKS = 2;
 const SCAN_LINE_SPACING = 3;
-const REDUCED_MOTION_DURATION_MS = 1000;
+export const REDUCED_MOTION_DURATION_MS = 1000;
+
+const BOOT_FONT_FAMILY = `"JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace`;
 
 export interface BootLine {
   prefix: string;
@@ -145,6 +152,20 @@ export interface BootTiming {
 }
 
 export function computeTiming(bootLines: BootLine[], oneLinerLen: number): BootTiming {
+  if (bootLines.length === 0) {
+    const oneLinerStart = PAUSE_BEFORE_ONELINER_MS;
+    const oneLinerEnd = oneLinerStart + oneLinerLen * CHAR_MS;
+    const cursorStart = oneLinerEnd + PAUSE_BEFORE_CURSOR_MS;
+    return {
+      lineStarts: [],
+      lineEnds: [],
+      oneLinerStart,
+      oneLinerEnd,
+      cursorStart,
+      totalMs: cursorStart + CURSOR_BLINKS * CURSOR_BLINK_MS * 2,
+    };
+  }
+
   const lineStarts = bootLines.map((_, i) => FADE_IN_MS + i * LINE_GAP_MS);
   const lineEnds = bootLines.map((line, i) => lineStarts[i] + line.message.length * CHAR_MS);
   const oneLinerStart = Math.max(...lineEnds) + PAUSE_BEFORE_ONELINER_MS;
@@ -153,6 +174,64 @@ export function computeTiming(bootLines: BootLine[], oneLinerLen: number): BootT
   const totalMs = cursorStart + CURSOR_BLINKS * CURSOR_BLINK_MS * 2;
 
   return { lineStarts, lineEnds, oneLinerStart, oneLinerEnd, cursorStart, totalMs };
+}
+
+export interface BootCanvasLayout {
+  fontPx: number;
+  font: string;
+  lineWidth: number;
+  prefixWidth: number;
+  maxMsgWidth: number;
+  oneLinerWidth: number;
+  lineHeight: number;
+  startX: number;
+  startY: number;
+}
+
+export function computeBootCanvasLayout(
+  w: number,
+  h: number,
+  bootLines: BootLine[],
+  oneLinerText: string,
+  measure: (text: string, font: string) => number,
+): BootCanvasLayout {
+  let fontPx = Math.max(13, Math.round(Math.min(w, h) * 0.028));
+  let font = `600 ${fontPx}px ${BOOT_FONT_FAMILY}`;
+  let lineWidth = Math.max(1, fontPx * 0.07);
+
+  const prefixWidth = measure('[ OK ]  ', font);
+  const maxMsgWidth = Math.max(0, ...bootLines.map((l) => measure(l.message, font)));
+  const maxLineWidth = prefixWidth + maxMsgWidth;
+  const maxAllowedWidth = w * 0.8;
+
+  if (maxLineWidth > maxAllowedWidth && maxLineWidth > 0) {
+    fontPx = Math.max(10, Math.floor((fontPx * maxAllowedWidth) / maxLineWidth));
+    font = `600 ${fontPx}px ${BOOT_FONT_FAMILY}`;
+    lineWidth = Math.max(1, fontPx * 0.07);
+  }
+
+  const resolvedPrefixWidth = measure('[ OK ]  ', font);
+  const resolvedMaxMsgWidth = Math.max(0, ...bootLines.map((l) => measure(l.message, font)));
+  const oneLinerWidth = measure(oneLinerText, font);
+  const lineHeight = fontPx * 1.7;
+  const bootBlockHeight = bootLines.length * lineHeight + lineHeight + fontPx * 2.2;
+  const startY = (h - bootBlockHeight) / 2 + fontPx * 1.5;
+  const startX = Math.max(
+    w * 0.08,
+    (w - (resolvedPrefixWidth + resolvedMaxMsgWidth)) / 2 - fontPx * 2,
+  );
+
+  return {
+    fontPx,
+    font,
+    lineWidth,
+    prefixWidth: resolvedPrefixWidth,
+    maxMsgWidth: resolvedMaxMsgWidth,
+    oneLinerWidth,
+    lineHeight,
+    startX,
+    startY,
+  };
 }
 
 function drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number): void {
@@ -186,13 +265,13 @@ export default function BootSequence({
   const startTimeRef = useRef<number | null>(null);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
+  const layoutRef = useRef<BootCanvasLayout | null>(null);
 
   const bootLines = useMemo(() => buildBootLines(protocol, identityId), [protocol, identityId]);
   const oneLinerKey = useMemo(() => pickInclusiveOneLinerKey(phraseSeed), [phraseSeed]);
   const oneLinerText = useMemo(() => `> ${t(oneLinerKey)}`, [oneLinerKey, t]);
   const theme = useMemo(() => getSignalPulseTheme(protocol), [protocol]);
-  const isReducedMotion =
-    typeof document !== 'undefined' && document.documentElement.dataset.reduceMotion === 'true';
+  const isReducedMotion = useReduceMotion();
 
   const timing = useMemo(
     () => computeTiming(bootLines, oneLinerText.length),
@@ -208,7 +287,7 @@ export default function BootSequence({
     const ctx = canvas?.getContext('2d', { alpha: true }) ?? null;
 
     const syncSize = () => {
-      if (!canvas) return;
+      if (!canvas || !ctx) return;
       const dpr = window.devicePixelRatio || 1;
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -216,6 +295,11 @@ export default function BootSequence({
       canvas.height = Math.max(1, Math.floor(h * dpr));
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
+
+      layoutRef.current = computeBootCanvasLayout(w, h, bootLines, oneLinerText, (text, font) => {
+        ctx.font = font;
+        return ctx.measureText(text).width;
+      });
     };
 
     if (canvas && ctx) {
@@ -225,6 +309,9 @@ export default function BootSequence({
 
     const draw = (elapsed: number) => {
       if (!ctx) return;
+      const layout = layoutRef.current;
+      if (!layout) return;
+
       const dpr = window.devicePixelRatio || 1;
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -235,28 +322,12 @@ export default function BootSequence({
       ctx.fillStyle = '#020617';
       ctx.fillRect(0, 0, w, h);
 
-      let fontPx = Math.max(13, Math.round(Math.min(w, h) * 0.028));
-      const fontFamily = `"JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace`;
-      ctx.font = `600 ${fontPx}px ${fontFamily}`;
+      ctx.font = layout.font;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.lineWidth = Math.max(1, fontPx * 0.07);
+      ctx.lineWidth = layout.lineWidth;
 
-      const prefixWidth = ctx.measureText('[ OK ]  ').width;
-      const maxMsgWidth = Math.max(0, ...bootLines.map((l) => ctx.measureText(l.message).width));
-      const maxLineWidth = prefixWidth + maxMsgWidth;
-      const maxAllowedWidth = w * 0.8;
-      if (maxLineWidth > maxAllowedWidth && maxLineWidth > 0) {
-        fontPx = Math.max(10, Math.floor((fontPx * maxAllowedWidth) / maxLineWidth));
-        ctx.font = `600 ${fontPx}px ${fontFamily}`;
-        ctx.lineWidth = Math.max(1, fontPx * 0.07);
-      }
-
-      const lineHeight = fontPx * 1.7;
-      const oneLinerWidth = ctx.measureText(oneLinerText).width;
-      const bootBlockHeight = bootLines.length * lineHeight + lineHeight + fontPx * 2.2;
-      const startY = (h - bootBlockHeight) / 2 + fontPx * 1.5;
-      const startX = Math.max(w * 0.08, (w - (prefixWidth + maxMsgWidth)) / 2 - fontPx * 2);
+      const { prefixWidth, oneLinerWidth, lineHeight, startX, startY, fontPx } = layout;
 
       for (let i = 0; i < bootLines.length; i++) {
         const lineStart = timing.lineStarts[i];
@@ -318,7 +389,7 @@ export default function BootSequence({
           if (cursorElapsed < totalBlinkMs) {
             const inBlink = cursorElapsed % (CURSOR_BLINK_MS * 2) < CURSOR_BLINK_MS;
             if (inBlink) {
-              const cursorX = oneLinerX + ctx.measureText(oneLinerText).width + 4;
+              const cursorX = oneLinerX + oneLinerWidth + 4;
               ctx.save();
               ctx.globalCompositeOperation = 'screen';
               ctx.fillStyle = theme.letterFill(1);
@@ -347,7 +418,7 @@ export default function BootSequence({
       ctx.fillRect(0, 0, w, h);
 
       const fontPx = Math.max(16, Math.round(Math.min(w, h) * 0.04));
-      ctx.font = `600 ${fontPx}px "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace`;
+      ctx.font = `600 ${fontPx}px ${BOOT_FONT_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = Math.max(1.5, fontPx * 0.07);
