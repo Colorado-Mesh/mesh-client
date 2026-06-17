@@ -51,6 +51,7 @@ import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 
+import BootSequence from './components/BootSequence';
 import ChannelUtilizationChart from './components/ChannelUtilizationChart';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -59,7 +60,6 @@ import LanguageSelector from './components/LanguageSelector';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
-import SignalPropagation from './components/SignalPropagation';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
@@ -1889,10 +1889,11 @@ function AppContent({
         onResult={handleFirmwareResult}
       />
       {signalPulseKey !== null && (
-        <SignalPropagation
+        <BootSequence
           key={signalPulseKey}
           phraseSeed={signalPulseKey}
           protocol={protocol}
+          identityId={focusedIdentityId}
           onComplete={handleSignalPulseComplete}
         />
       )}
