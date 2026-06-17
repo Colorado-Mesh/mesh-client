@@ -1190,6 +1190,39 @@ describe('ChatPanel scroll pinning', () => {
     expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center', behavior: 'smooth' });
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
+
+  it('restores scrollTop on tab re-entry instead of leaving it at the value set while hidden', () => {
+    const { container, rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg(0)]} isActive />
+      </ToastProvider>,
+    );
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 500,
+      writable: true,
+      configurable: true,
+    });
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg(0)]} isActive={false} />
+      </ToastProvider>,
+    );
+
+    // Simulate the scroll position drifting while the tab is hidden (e.g. a stale
+    // virtualizer recalculation against the collapsed 0x0 `display: none` container).
+    (scrollContainer as HTMLDivElement).scrollTop = 0;
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg(0)]} isActive />
+      </ToastProvider>,
+    );
+
+    expect((scrollContainer as HTMLDivElement).scrollTop).toBe(500);
+  });
 });
 
 describe('ChatPanel StatusBadge', () => {
