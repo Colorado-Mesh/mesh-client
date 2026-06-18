@@ -826,6 +826,48 @@ describe('RoomsPanel', () => {
     expect(screen.getByTestId('rooms-composer-footer')).toHaveClass('shrink-0');
   });
 
+  it('restores stream scrollTop on tab re-entry instead of leaving it at the value set while hidden', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1017, 'Scroll Restore Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const commonProps = {
+      nodes,
+      messages: [],
+      myNodeNum: 1,
+      isConnected: true,
+      initialRoomTarget: room.node_id,
+      onLoginRoom: vi.fn().mockResolvedValue(undefined),
+      onCancelRoomLogin: vi.fn(),
+      onLeaveRoom: vi.fn().mockResolvedValue(undefined),
+      onSendRoomPost: vi.fn(),
+      onSendRoomAdminCli: vi.fn(),
+    };
+
+    const { rerender } = render(<RoomsPanel {...commonProps} isActive />);
+
+    const stream = screen.getByTestId('rooms-post-stream');
+    Object.defineProperty(stream, 'scrollTop', {
+      value: 500,
+      writable: true,
+      configurable: true,
+    });
+
+    rerender(<RoomsPanel {...commonProps} isActive={false} />);
+
+    // Simulate the scroll position drifting while the tab is hidden (e.g. a stale
+    // virtualizer recalculation against the collapsed 0x0 `display: none` container).
+    (stream as HTMLDivElement).scrollTop = 0;
+
+    rerender(<RoomsPanel {...commonProps} isActive />);
+
+    expect((stream as HTMLDivElement).scrollTop).toBe(500);
+  });
+
   it('shows new messages divider when selecting a room with unread posts', async () => {
     meshcoreClearAllRoomSessions();
     const roomA = makeRoom(0x1012, 'Unread Room');

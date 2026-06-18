@@ -256,6 +256,7 @@ export default function RoomsPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   /** Sticky intent: user is reading latest posts and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  const savedScrollTopRef = useRef<number | null>(null);
   const unreadDividerRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
@@ -591,6 +592,19 @@ export default function RoomsPanel({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
   }, [triggerScrollToUnread, isActive]);
+
+  // Preserve native scroll position across tab/view switches (separate from the
+  // virtualizer-driven unread-scroll effect above, which only fires on new triggers).
+  useLayoutEffect(() => {
+    const el = streamRef.current;
+    if (!el) return;
+    if (!isActive) {
+      savedScrollTopRef.current = el.scrollTop;
+    } else if (savedScrollTopRef.current !== null) {
+      el.scrollTop = savedScrollTopRef.current;
+      savedScrollTopRef.current = null;
+    }
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
