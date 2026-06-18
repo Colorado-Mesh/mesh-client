@@ -444,6 +444,8 @@ function ChatPanel({
   const isPinnedToBottomRef = useRef(true);
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
+  /** Distinguishes a tab return (isActive false→true) from a view switch while already active. */
+  const wasActiveRef = useRef(isActive);
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -994,11 +996,41 @@ function ChatPanel({
     };
   }, [isActive, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
 
-  // Fires after view switch (triggerScrollToUnread increments). useLayoutEffect
-  // ensures DOM is committed before scrolling, preventing flash of wrong position.
+  // Owns all tab/view-switch scrolling. Distinguishes a tab return (isActive
+  // false→true) from a genuine view switch while already active (channel/DM
+  // change bumps triggerScrollToUnread): a tab return restores the
+  // position/pin-state snapshotted on exit; a view switch scrolls to the
+  // unread divider or end. These used to be two separate effects that both
+  // reacted to `isActive`, so a tab return fired the view-switch scroll too
+  // and the restore immediately clobbered it (visible as a jump).
   useLayoutEffect(() => {
+    const el = scrollContainerRef.current;
+    const wasActive = wasActiveRef.current;
+    wasActiveRef.current = isActive;
+
+    if (!isActive) {
+      if (el) {
+        savedScrollTopRef.current = el.scrollTop;
+        savedWasPinnedToBottomRef.current = isPinnedToBottomRef.current;
+      }
+      return;
+    }
+
+    if (!wasActive) {
+      if (savedScrollTopRef.current !== null) {
+        if (savedWasPinnedToBottomRef.current) {
+          messageVirtualizerRef.current.scrollToEnd();
+          isPinnedToBottomRef.current = true;
+        } else if (el) {
+          el.scrollTop = savedScrollTopRef.current;
+        }
+        savedScrollTopRef.current = null;
+        savedWasPinnedToBottomRef.current = false;
+      }
+      return;
+    }
+
     if (triggerScrollToUnread === 0) return; // skip initial mount
-    if (!isActive) return; // skip while hidden
     if (unreadStartIndex >= 0) {
       messageVirtualizerRef.current.scrollToIndex(unreadStartIndex, { align: 'center' });
       isPinnedToBottomRef.current = false;
@@ -1015,26 +1047,6 @@ function ChatPanel({
     // Only scroll on explicit view-switch trigger — not when message list or virtualizer updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
   }, [triggerScrollToUnread, isActive]);
-
-  // Preserve native scroll position across tab/view switches (separate from the
-  // virtualizer-driven unread-scroll effect above, which only fires on new triggers).
-  useLayoutEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    if (!isActive) {
-      savedScrollTopRef.current = el.scrollTop;
-      savedWasPinnedToBottomRef.current = isPinnedToBottomRef.current;
-    } else if (savedScrollTopRef.current !== null) {
-      if (savedWasPinnedToBottomRef.current) {
-        messageVirtualizerRef.current.scrollToEnd();
-        isPinnedToBottomRef.current = true;
-      } else {
-        el.scrollTop = savedScrollTopRef.current;
-      }
-      savedScrollTopRef.current = null;
-      savedWasPinnedToBottomRef.current = false;
-    }
-  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
