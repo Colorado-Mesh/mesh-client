@@ -123,6 +123,14 @@ export function createStableChatMeasureElement(
       ? Math.round(box[instance.options.horizontal ? 'inlineSize' : 'blockSize'])
       : htmlEl[sizeProp];
 
+    // A real chat row is never 0px. The ancestor tab panel goes `display:none` on
+    // tab switch, which fires a 0x0 ResizeObserver entry for every rendered row;
+    // caching that would corrupt the size cache while hidden and make scrollToEnd()
+    // land at a wrong, variable position on return. Fall back to what we already know.
+    if (domSize === 0) {
+      return cached ?? estimated;
+    }
+
     if (instance.scrollDirection === 'backward' && hasMeasuredSize) {
       // Allow growth (async previews, layout) but prevent shrink jitter while scrolling up.
       return domSize > cached ? domSize : cached;

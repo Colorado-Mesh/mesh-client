@@ -190,6 +190,32 @@ describe('createStableChatMeasureElement', () => {
     );
     expect(size).toBe(180);
   });
+
+  it('ignores a 0px offsetHeight (ancestor display:none) and keeps the cached size', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'offsetHeight', { value: 0, configurable: true });
+    const size = measure(
+      el,
+      undefined,
+      mockMeasureInstance({ scrollDirection: 'forward', cachedSize: 180 }) as never,
+    );
+    expect(size).toBe(180);
+  });
+
+  it('ignores a 0px ResizeObserver entry (ancestor display:none) and keeps the cached size', () => {
+    const measure = createStableChatMeasureElement(() => 96);
+    const el = document.createElement('div');
+    const entry = {
+      borderBoxSize: [{ blockSize: 0, inlineSize: 0 }],
+    } as unknown as ResizeObserverEntry;
+    const size = measure(
+      el,
+      entry,
+      mockMeasureInstance({ scrollDirection: 'forward', cachedSize: 180 }) as never,
+    );
+    expect(size).toBe(180);
+  });
 });
 
 describe('estimateChatRowHeight', () => {
