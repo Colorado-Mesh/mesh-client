@@ -91,7 +91,7 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.12.0",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.23",
-    "@stoprocent/noble": "^2.5.4",
+    "@stoprocent/noble": "^2.5.5",
     "builder-util-runtime": "9.7.0",
     "electron-updater": "^6.8.9",
     "emoji-picker-element": "^1.29.1",
@@ -206,7 +206,7 @@
       "@jsr/meshtastic__core@2.6.6": "patches/@jsr__meshtastic__core@2.6.6.patch",
       "@jsr/meshtastic__transport-web-serial@0.2.5": "patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch",
       "@liamcottle/meshcore.js@1.13.0": "patches/@liamcottle__meshcore.js@1.13.0.patch",
-      "@stoprocent/noble@2.5.4": "patches/@stoprocent__noble@2.5.4.patch",
+      "@stoprocent/noble@2.5.5": "patches/@stoprocent__noble@2.5.5.patch",
       "debug@4.4.3": "patches/debug@4.4.3.patch",
       "readable-stream@4.7.0": "patches/readable-stream@4.7.0.patch",
       "usb@2.18.0": "patches/usb@2.18.0.patch"

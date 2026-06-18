@@ -26,9 +26,9 @@ patchedDependencies:
   '@liamcottle/meshcore.js@1.13.0':
     hash: 4ab82a2116470a7e524c4e4a82698b15589fa492155395634e44bf51c76481b8
     path: patches/@liamcottle__meshcore.js@1.13.0.patch
-  '@stoprocent/noble@2.5.4':
+  '@stoprocent/noble@2.5.5':
     hash: df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca
-    path: patches/@stoprocent__noble@2.5.4.patch
+    path: patches/@stoprocent__noble@2.5.5.patch
   debug@4.4.3:
     hash: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
     path: patches/debug@4.4.3.patch
@@ -50,8 +50,8 @@ importers:
         specifier: npm:@jsr/meshtastic__protobufs@^2.7.23
         version: '@jsr/meshtastic__protobufs@2.7.23'
       '@stoprocent/noble':
-        specifier: ^2.5.4
-        version: 2.5.4(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)
+        specifier: ^2.5.5
+        version: 2.5.5(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)
       builder-util-runtime:
         specifier: 9.7.0
         version: 9.7.0
@@ -1068,8 +1068,8 @@ packages:
     resolution: {integrity: sha512-elKIsQe78EnxXzxfA/iuqGufD02d6t3S95eNhFaPvTJs7S3IHq2CdIHwTg3BLwae7Jw14mwK0VhWVtNtzrLyoA==}
     os: [linux, android, freebsd, win32, darwin]
 
-  '@stoprocent/noble@2.5.4':
-    resolution: {integrity: sha512-MojZwVQPapozemto5VP5RSlPL6lOuiLe/S0Ybcfqu9H6yciFIagjKYe4vIjEIUxhES/iazGiZpP5ErWHvaAP/w==}
+  '@stoprocent/noble@2.5.5':
+    resolution: {integrity: sha512-tHtc8nEvf+J11MedleT0YBhxBrWTqJaoXQJ9H983Gnrus1cHHxs2YtCHMk/3mFuoUAIvW0o1JcH8cHBieqkUYQ==}
     engines: {node: '>=14'}
     peerDependencies:
       dbus-next: ^0.10.0
@@ -1610,8 +1610,8 @@ packages:
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
-  baseline-browser-mapping@2.10.37:
-    resolution: {integrity: sha512-girxaJ7WZssDOFhzCGZTDKoTa1gk6A1TbflaYTpykLJ4UU9Fz9kx1aREM8JCuoVHbL8X8T/mJg7w2oYSq72Oig==}
+  baseline-browser-mapping@2.10.38:
+    resolution: {integrity: sha512-31/02mVB4yuQU6adKk5SlY6m+mxDwUq5KZkyYgnLrrKl7TEm1+3PyDtDBz2kOv/wxZz41GHsvV1A/u6RmiyBvw==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -5333,7 +5333,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@stoprocent/noble@2.5.4(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)':
+  '@stoprocent/noble@2.5.5(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)':
     dependencies:
       debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)
       node-addon-api: 8.8.0
@@ -5945,7 +5945,7 @@ snapshots:
 
   base64-js@1.5.1: {}
 
-  baseline-browser-mapping@2.10.37: {}
+  baseline-browser-mapping@2.10.38: {}
 
   bidi-js@1.0.3:
     dependencies:
@@ -5989,7 +5989,7 @@ snapshots:
 
   browserslist@4.28.2:
     dependencies:
-      baseline-browser-mapping: 2.10.37
+      baseline-browser-mapping: 2.10.38
       caniuse-lite: 1.0.30001799
       electron-to-chromium: 1.5.375
       node-releases: 2.0.47
