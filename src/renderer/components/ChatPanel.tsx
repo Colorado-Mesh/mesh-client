@@ -1301,7 +1301,7 @@ function ChatPanel({
     (dateStr: string) => {
       if (!dateStr) return;
       const [y, m, d] = dateStr.split('-').map(Number);
-      const targetKey = `${y}-${m - 1}-${d}`;
+      const targetKey = `${y}-${m}-${d}`;
       const index = findFirstMessageIndexByDayKey(filteredMessages, targetKey);
       if (index < 0) return;
       isPinnedToBottomRef.current = false;

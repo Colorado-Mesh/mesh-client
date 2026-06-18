@@ -175,6 +175,22 @@ describe('meshtasticMqttClientProxy', () => {
     warnSpy.mockRestore();
   });
 
+  it('logs configured writeToRadio rejection without throwing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const writeToRadio = vi.fn().mockRejectedValue(new Error('radio busy'));
+    const bridge = new MeshtasticMqttClientProxyBridge({
+      isProxyActive: () => true,
+      isDeviceConfigured: () => true,
+      publishToBroker: vi.fn(),
+      writeToRadio,
+    });
+    await expect(
+      bridge.handleBrokerRaw('msh/in', new Uint8Array([4, 5]), false),
+    ).resolves.toBeUndefined();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
   it('drops oldest pending frames when count cap exceeded', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     let configured = false;

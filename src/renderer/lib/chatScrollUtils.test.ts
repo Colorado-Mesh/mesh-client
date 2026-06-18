@@ -48,9 +48,9 @@ function mockMeasureInstance(
 }
 
 describe('getChatDayKey', () => {
-  it('matches local calendar day components', () => {
+  it('uses 1-based calendar month (June is 6, not zero-based 5)', () => {
     const ts = new Date(2026, 5, 15, 23, 59).getTime();
-    expect(getChatDayKey(ts)).toBe('2026-5-15');
+    expect(getChatDayKey(ts)).toBe('2026-6-15');
   });
 });
 

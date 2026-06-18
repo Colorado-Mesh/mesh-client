@@ -171,6 +171,13 @@ export class MeshtasticMqttClientProxyBridge {
       this.enqueuePendingToDevice(bytes);
       return;
     }
-    await this.deps.writeToRadio(bytes);
+    try {
+      await this.deps.writeToRadio(bytes);
+    } catch (e: unknown) {
+      console.warn(
+        '[MeshtasticMqttClientProxyBridge] writeToRadio failed ' +
+          (e instanceof Error ? e.message : String(e)),
+      );
+    }
   }
 }
