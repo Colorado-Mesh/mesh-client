@@ -60,7 +60,7 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     expect(lockfile).toContain("'@electron/asar': ^4.0.1");
   });
 
-  it('skips dedupe:dist in dist:win scripts; hoisted install reshapes node_modules before packaging', () => {
+  it('skips dedupe:dist in dist:win scripts; hoisted install helper runs before packaging', () => {
     const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
       scripts?: Record<string, string>;
     };
@@ -69,7 +69,7 @@ describe('Windows long-path application manifest (packaging contract)', () => {
       expect(script, scriptName).toBeDefined();
       expect(script).not.toContain('dedupe:dist');
       expect(script).toMatch(
-        /pnpm run build && pnpm install --config\.node-linker=hoisted && electron-builder --win/,
+        /pnpm run build && node scripts\/dist-win-hoisted-install\.mjs && electron-builder --win/,
       );
       expect(script).toContain('node scripts/dist-win-restore-node-modules.mjs');
     }
