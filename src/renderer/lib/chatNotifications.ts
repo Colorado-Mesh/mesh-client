@@ -41,19 +41,35 @@ function playTonePulse(ctx: AudioContext, freq: number, dur: number, startTime: 
   osc.stop(startTime + dur);
 }
 
+function scheduleMessageNotification(ctx: AudioContext, type: ChatNotificationType): void {
+  const profile = SOUND_PROFILES[type];
+  const now = ctx.currentTime;
+  if (profile.kind === 'single') {
+    playTonePulse(ctx, profile.freq, profile.dur, now);
+    return;
+  }
+  playTonePulse(ctx, profile.pulse1Freq, profile.dur, now);
+  playTonePulse(ctx, profile.pulse2Freq, profile.dur, now + profile.dur + profile.gap);
+}
+
 export function playMessageNotification(type: ChatNotificationType = 'channel'): void {
   const ctx = getSharedAudioContext();
   if (!ctx) return;
-  try {
-    const profile = SOUND_PROFILES[type];
-    const now = ctx.currentTime;
-    if (profile.kind === 'single') {
-      playTonePulse(ctx, profile.freq, profile.dur, now);
-      return;
+  const run = () => {
+    try {
+      scheduleMessageNotification(ctx, type);
+    } catch {
+      // catch-no-log-ok: AudioContext unavailable in test/headless environments
     }
-    playTonePulse(ctx, profile.pulse1Freq, profile.dur, now);
-    playTonePulse(ctx, profile.pulse2Freq, profile.dur, now + profile.dur + profile.gap);
-  } catch {
-    // catch-no-log-ok: AudioContext unavailable in test/headless environments
+  };
+  if (ctx.state === 'suspended') {
+    void ctx
+      .resume()
+      .then(run)
+      .catch(() => {
+        // catch-no-log-ok: resume blocked without user gesture in some environments
+      });
+    return;
   }
+  run();
 }
