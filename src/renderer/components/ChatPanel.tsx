@@ -441,6 +441,7 @@ function ChatPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  const savedScrollTopRef = useRef<number | null>(null);
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -997,6 +998,19 @@ function ChatPanel({
     // Only scroll on explicit view-switch trigger — not when message list or virtualizer updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
   }, [triggerScrollToUnread, isActive]);
+
+  // Preserve native scroll position across tab/view switches (separate from the
+  // virtualizer-driven unread-scroll effect above, which only fires on new triggers).
+  useLayoutEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    if (!isActive) {
+      savedScrollTopRef.current = el.scrollTop;
+    } else if (savedScrollTopRef.current !== null) {
+      el.scrollTop = savedScrollTopRef.current;
+      savedScrollTopRef.current = null;
+    }
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
