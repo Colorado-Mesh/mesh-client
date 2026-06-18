@@ -2743,7 +2743,7 @@ describe('ChatPanel — notification sound on new messages', () => {
     expect(playMock).not.toHaveBeenCalled();
   });
 
-  it('plays sound for a new message when not on the chat panel (isActive=false)', async () => {
+  it('does not play sound when not on the chat panel (App owns that case)', async () => {
     const { rerender } = render(
       <ToastProvider>
         <ChatPanel {...baseProps} messages={[]} isActive={false} />
@@ -2761,7 +2761,79 @@ describe('ChatPanel — notification sound on new messages', () => {
     );
 
     await screen.findByRole('textbox');
+    expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays channel sound when active on a different channel view', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
+    playMock.mockClear();
+
+    const newMsg = makeMsg({ sender_id: 2, channel: 1, isHistory: undefined });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[newMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
     expect(playMock).toHaveBeenCalledOnce();
+    expect(playMock).toHaveBeenCalledWith('channel');
+  });
+
+  it('plays dm sound for incoming direct messages on another view', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
+    playMock.mockClear();
+
+    const newMsg = makeMsg({ sender_id: 2, to: 1, channel: 0, isHistory: undefined });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[newMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
+    expect(playMock).toHaveBeenCalledOnce();
+    expect(playMock).toHaveBeenCalledWith('dm');
+  });
+
+  it('plays reply sound when a reply targets your message on another view', async () => {
+    const user = userEvent.setup();
+    const parent = makeMsg({ sender_id: 1, channel: 0, packetId: 100, timestamp: 500 });
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[parent]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
+    const channelButtons = screen.getAllByRole('button', { name: /General|Admin|ch0|ch1/i });
+    const adminBtn = channelButtons.find((b) => /Admin|ch1|1/i.test(b.textContent ?? ''));
+    expect(adminBtn).toBeDefined();
+    await user.click(adminBtn!);
+    playMock.mockClear();
+
+    const reply = makeMsg({ sender_id: 2, channel: 0, replyId: 100, timestamp: 1000 });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[parent, reply]} isActive />
+      </ToastProvider>,
+    );
+
+    await screen.findByRole('textbox');
+    expect(playMock).toHaveBeenCalledOnce();
+    expect(playMock).toHaveBeenCalledWith('reply');
   });
 
   it('does not play sound when notifMuted=1 in localStorage (global setting from AppPanel)', async () => {

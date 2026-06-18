@@ -83,6 +83,7 @@ import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
+  pickAudibleNotificationType,
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import {
@@ -834,25 +835,40 @@ function ChatPanel({
     saveStarred(protocol, starred);
   }, [protocol, starred]);
 
-  // Sound notification: plays when a new message arrives and the user isn't actively reading it.
+  // Sound notification: plays when a new message arrives on a view the user is not reading.
   useEffect(() => {
     const prevLen = prevMessagesLengthRef.current;
     prevMessagesLengthRef.current = messages.length;
     if (localStorage.getItem('mesh-client:notifMuted') === '1' || messages.length <= prevLen)
       return;
     const newMsgs = messages.slice(prevLen);
-    for (const msg of newMsgs) {
-      if (isOwnNode(msg.sender_id)) continue;
-      if (msg.isHistory) continue;
+    const gated = newMsgs.filter((msg) => {
+      if (isOwnNode(msg.sender_id) || msg.isHistory) return false;
       const peer = resolveDmPeer(msg);
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
-      if (mutedViews.has(msgViewKey)) continue;
-      if ((!isActive || msgViewKey !== viewKey) && !document.hidden) {
-        playMessageNotification();
-        break;
-      }
-    }
-  }, [messages, isActive, mutedViews, viewKey, isOwnNode, resolveDmPeer]);
+      if (mutedViews.has(msgViewKey)) return false;
+      return isActive && msgViewKey !== viewKey && !document.hidden;
+    });
+    const type = pickAudibleNotificationType(
+      gated,
+      protocol,
+      mutedViews,
+      ownNodeIdSet,
+      chatUnreadDmOptions,
+      messages,
+    );
+    if (type) playMessageNotification(type);
+  }, [
+    messages,
+    isActive,
+    mutedViews,
+    viewKey,
+    isOwnNode,
+    resolveDmPeer,
+    protocol,
+    ownNodeIdSet,
+    chatUnreadDmOptions,
+  ]);
 
   const updateScrollButtonVisibility = useCallback(() => {
     const atEnd = computeIsAtChatEnd();

@@ -5,6 +5,8 @@ import {
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
   hasAudibleBackgroundMessages,
+  pickAudibleNotificationType,
+  resolveChatNotificationType,
   totalUnreadCount,
 } from './chatUnreadCounts';
 import type { ChatMessage } from './types';
@@ -204,5 +206,90 @@ describe('hasAudibleBackgroundMessages', () => {
     expect(hasAudibleBackgroundMessages(messages, 'meshcore', new Set(['ch:-1']), ownNodes)).toBe(
       true,
     );
+  });
+});
+
+describe('resolveChatNotificationType', () => {
+  it('classifies channel messages', () => {
+    const messages = [msg({ channel: 0 })];
+    expect(resolveChatNotificationType(messages[0], messages, ownNodes, 'meshtastic')).toBe(
+      'channel',
+    );
+  });
+
+  it('classifies DMs', () => {
+    const messages = [msg({ channel: 0, to: 1, sender_id: 2 })];
+    expect(resolveChatNotificationType(messages[0], messages, ownNodes, 'meshtastic')).toBe('dm');
+  });
+
+  it('classifies replies to own messages', () => {
+    const parent = msg({ channel: 0, sender_id: 1, packetId: 100, timestamp: 500 });
+    const reply = msg({ channel: 0, sender_id: 2, replyId: 100, timestamp: 1000 });
+    const messages = [parent, reply];
+    expect(resolveChatNotificationType(reply, messages, ownNodes, 'meshtastic')).toBe('reply');
+  });
+
+  it('returns null for tapbacks', () => {
+    const reaction = msg({ channel: 0, emoji: 0x1f44d, replyId: 42 });
+    expect(resolveChatNotificationType(reaction, [reaction], ownNodes, 'meshtastic')).toBeNull();
+  });
+
+  it('classifies DM replies to own messages as reply', () => {
+    const parent = msg({ channel: 0, sender_id: 1, packetId: 100, timestamp: 500, to: 1 });
+    const reply = msg({ channel: 0, sender_id: 2, replyId: 100, timestamp: 1000, to: 1 });
+    const messages = [parent, reply];
+    expect(resolveChatNotificationType(reply, messages, ownNodes, 'meshtastic')).toBe('reply');
+  });
+});
+
+describe('pickAudibleNotificationType', () => {
+  it('returns null when all messages are muted', () => {
+    const messages = [msg({ channel: 0, timestamp: 2000 })];
+    expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(['ch:0']), ownNodes)).toBe(
+      null,
+    );
+  });
+
+  it('returns channel for unmuted channel traffic', () => {
+    const messages = [msg({ channel: 1, timestamp: 2000 })];
+    expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(['ch:0']), ownNodes)).toBe(
+      'channel',
+    );
+  });
+
+  it('picks dm over channel in a batch', () => {
+    const messages = [
+      msg({ channel: 0, timestamp: 2000 }),
+      msg({ channel: 0, to: 1, sender_id: 2, timestamp: 3000 }),
+    ];
+    expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(), ownNodes)).toBe('dm');
+  });
+
+  it('picks reply over channel in a batch', () => {
+    const parent = msg({ channel: 0, sender_id: 1, packetId: 100, timestamp: 500 });
+    const channelMsg = msg({ channel: 0, timestamp: 2000 });
+    const reply = msg({ channel: 0, sender_id: 2, replyId: 100, timestamp: 3000 });
+    const messages = [parent, channelMsg, reply];
+    expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(), ownNodes)).toBe('reply');
+  });
+
+  it('skips history and own messages', () => {
+    const messages = [
+      msg({ channel: 0, isHistory: true }),
+      msg({ channel: 0, sender_id: 1 }),
+      msg({ channel: 0, emoji: 0x1f44d, replyId: 99 }),
+    ];
+    expect(pickAudibleNotificationType(messages, 'meshtastic', new Set(), ownNodes)).toBe(null);
+  });
+
+  it('resolves reply parents from allMessages when batch only contains the reply', () => {
+    const parent = msg({ channel: 0, sender_id: 1, packetId: 100, timestamp: 500 });
+    const reply = msg({ channel: 0, sender_id: 2, replyId: 100, timestamp: 1000 });
+    expect(
+      pickAudibleNotificationType([reply], 'meshtastic', new Set(), ownNodes, undefined, [
+        parent,
+        reply,
+      ]),
+    ).toBe('reply');
   });
 });

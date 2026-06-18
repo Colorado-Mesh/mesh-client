@@ -19,6 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
 import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
@@ -31,12 +32,7 @@ import {
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import {
-  type ChatUnreadDmOptions,
-  filterRegularChatMessages,
-  hasAudibleBackgroundMessages,
-  totalUnreadCount,
-} from '@/renderer/lib/chatUnreadCounts';
+import { type ChatUnreadDmOptions, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -864,6 +860,8 @@ function AppContent({
     meshtasticRuntime.lastRfSelfNodeId,
   ]);
 
+  const meshtasticOwnNodeIdSetRef = useRef(meshtasticOwnNodeIdSet);
+
   const meshcoreOwnNodeIdSet = useMemo(() => {
     const identitySelfNodeNum =
       meshcoreIdentityId != null
@@ -996,6 +994,7 @@ function AppContent({
     meshtasticMsgsRef.current = meshtasticUiMessages;
     meshcoreMsgsRef.current = meshcoreUiMessages;
     meshtasticMyNodeNumRef.current = meshtasticRuntime.state.myNodeNum;
+    meshtasticOwnNodeIdSetRef.current = meshtasticOwnNodeIdSet;
     meshcoreSelfIdRef.current = meshcoreRuntime.selfNodeId;
     meshcoreOwnNodeIdSetRef.current = meshcoreOwnNodeIdSet;
     meshcoreChatUnreadDmOptionsRef.current = meshcoreChatUnreadDmOptions;
@@ -1012,6 +1011,7 @@ function AppContent({
     protocol,
     meshtasticUiMessages,
     meshtasticRuntime.state.myNodeNum,
+    meshtasticOwnNodeIdSet,
     meshcoreUiMessages,
     meshcoreRuntime.selfNodeId,
     meshcoreOwnNodeIdSet,
@@ -1668,24 +1668,20 @@ function AppContent({
       protocolRef.current === 'meshtastic' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshtasticMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshtasticMsgsRef.current.slice(prevMeshtasticMsgCountRef.current);
-      const realNew = newMsgs.filter(
-        (m) => m.sender_id !== meshtasticMyNodeNumRef.current && !m.emoji && !m.isHistory,
-      );
-      if (realNew.length > 0) {
-        if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
-          const mutedRaw = localStorage.getItem('mesh-client:mutedViews:meshtastic');
-          const mutedViews: Set<string> = mutedRaw
-            ? new Set(JSON.parse(mutedRaw) as string[])
-            : new Set();
-          const myNum = meshtasticMyNodeNumRef.current;
-          const audible = realNew.some((m) => {
-            const peer = m.to != null ? (m.to === myNum ? m.sender_id : m.to) : null;
-            const vk = peer != null ? `dm:${peer}` : `ch:${m.channel}`;
-            return !mutedViews.has(vk);
-          });
-          if (audible) playMessageNotification();
-        }
-      }
+      const mutedRaw = localStorage.getItem('mesh-client:mutedViews:meshtastic');
+      const mutedViews: Set<string> = mutedRaw
+        ? new Set(JSON.parse(mutedRaw) as string[])
+        : new Set();
+      const type = resolveInactiveChatNotificationType({
+        newMessages: newMsgs,
+        allMessages: meshtasticMsgsRef.current,
+        protocol: 'meshtastic',
+        ownNodeIds: meshtasticOwnNodeIdSetRef.current,
+        ownSenderId: meshtasticMyNodeNumRef.current,
+        mutedViews,
+        notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
+      });
+      if (type) playMessageNotification(type);
     }
     prevMeshtasticMsgCountRef.current = count;
   }, [meshtasticUiMessages.length]);
@@ -1702,22 +1698,17 @@ function AppContent({
       protocolRef.current === 'meshcore' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
-      const realNew = filterRegularChatMessages(newMsgs, 'meshcore').filter(
-        (m) => m.sender_id !== meshcoreSelfIdRef.current && !m.emoji && !m.isHistory,
-      );
-      if (realNew.length > 0) {
-        if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
-          const mutedViews = loadMutedViews('meshcore');
-          const audible = hasAudibleBackgroundMessages(
-            realNew,
-            'meshcore',
-            mutedViews,
-            meshcoreOwnNodeIdSetRef.current,
-            meshcoreChatUnreadDmOptionsRef.current,
-          );
-          if (audible) playMessageNotification();
-        }
-      }
+      const type = resolveInactiveChatNotificationType({
+        newMessages: newMsgs,
+        allMessages: meshcoreMsgsRef.current,
+        protocol: 'meshcore',
+        ownNodeIds: meshcoreOwnNodeIdSetRef.current,
+        ownSenderId: meshcoreSelfIdRef.current,
+        mutedViews: loadMutedViews('meshcore'),
+        notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
+        dmOptions: meshcoreChatUnreadDmOptionsRef.current,
+      });
+      if (type) playMessageNotification(type);
     }
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length]);
@@ -1976,7 +1967,7 @@ function AppContent({
               >
                 Meshtastic
                 {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
-                  <span className="bg-brand-green text-deep-black ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
+                  <span className="bg-readable-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-white">
                     {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
                   </span>
                 )}

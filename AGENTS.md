@@ -93,7 +93,7 @@ Adding a cross-boundary feature:
 4. `pnpm run i18n:auto-translate`: fills missing translation keys; re-stages `src/renderer/locales/`
 5. `pnpm run lint`
 6. `pnpm run typecheck`
-7. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:log-panel-filter`, `check:i18n`, `check:licenses`
+7. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n`, `check:licenses`
 8. `pnpm audit --audit-level=high`
 9. `actionlint`, `yamllint`
 10. `pnpm run test:run`
@@ -196,7 +196,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Components:** `ChatPanel.tsx` (channel/DM UI) + shared `ChatComposer.tsx` (drafts, mentions, chunking, spellcheck, emoji; also used by `RoomsPanel.tsx`). Scroll-at-bottom helper: `chatScrollUtils.ts` (`getDistFromChatBottom`).
 - **Payload / links:** `ChatPayloadText.tsx` — mention highlighting, search marks, URL linkification; link previews via `chat:fetchLinkPreview` (`src/main/fetchLinkPreview.ts`, blocks localhost/private IPs, 10s timeout, 64 KiB HTML cap). Reply quotes: `replyPreview.ts`.
 - **Storage helpers:** `src/renderer/lib/chatPanelProtocolStorage.ts` — drafts (`mesh-client:drafts:<protocol>`), open DM tabs, last-read, per-view mute (`mesh-client:mutedViews:<protocol>`), starred (`mesh-client:starred:<protocol>`, cap 200).
-- **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification()` (AudioContext beep); global mute `mesh-client:notifMuted`; per-view mute in `mutedViews`. Main-process **tray** icon shows unread when chat or MeshCore Rooms traffic arrives while backgrounded (`src/main/index.ts` `buildTrayIcon`).
+- **Notifications:** `src/renderer/lib/chatNotifications.ts` — `playMessageNotification(type)` via Web Audio: `channel` = single 880 Hz pulse (150 ms); `dm` / `reply` = dual pulse (587.33 Hz then 783.99 Hz, 50 ms each, 35 ms gap). Type selection in `chatUnreadCounts.ts` (`resolveChatNotificationType`, `pickAudibleNotificationType`; batch priority reply > dm > channel). **ChatPanel** plays when the user is on Chat but reading another view; **App** plays for other panels / backgrounded window (avoids double beep). Global mute `mesh-client:notifMuted`; per-view mute in `mutedViews`. Main-process **tray** icon shows unread when chat or MeshCore Rooms traffic arrives while backgrounded (`src/main/index.ts` `buildTrayIcon`).
 - **Meshtastic dedup:** `meshtasticMessageDedup.ts` — merges delayed RF/MQTT duplicates (10-minute content window) in `useMeshtasticRuntime` ingest.
 - **MeshCore dedup:** `meshcoreStoreDedup.ts` — RF/MQTT merge, companion TX echo, tapback self-echo, room BBS paths in `useMeshcoreRuntime` ingest.
 - **Reactions / tapbacks:** `reactions.ts` (Meshtastic protobuf) + `meshcoreChannelText.ts` (MeshCore wire lines); `ChatPanel.tsx` attaches tapbacks via `replyId` + runtime/panel `sendReaction`.

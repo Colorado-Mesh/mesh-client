@@ -842,6 +842,12 @@ function validateMqttPublishProxyArgs(args: unknown): void {
   if (hasData && !(a.data instanceof Uint8Array) && !ArrayBuffer.isView(a.data)) {
     throw new Error('mqtt:publishProxy: data must be Uint8Array');
   }
+  if (hasData) {
+    const dataBytes = a.data instanceof Uint8Array ? a.data : new Uint8Array(a.data as ArrayBuffer);
+    if (dataBytes.byteLength > 512 * 1024) {
+      throw new Error('mqtt:publishProxy: data too long');
+    }
+  }
   if (a.retained != null && typeof a.retained !== 'boolean') {
     throw new Error('mqtt:publishProxy: retained must be a boolean');
   }

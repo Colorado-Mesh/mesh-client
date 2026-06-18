@@ -70,12 +70,18 @@ export function buildToRadioMqttClientProxyBytes(msg: MqttClientProxyWire): Uint
   return toBinary(MeshPb.ToRadioSchema, toRadio);
 }
 
+/** Max buffered broker downlinks while radio is not yet configured. */
+export const MQTT_PROXY_PENDING_MAX_COUNT = 64;
+/** Max total bytes of buffered ToRadio proxy frames (aligned with mqtt:publishProxy IPC cap). */
+export const MQTT_PROXY_PENDING_MAX_BYTES = 512 * 1024;
+
 /**
  * Bridges Meshtastic firmware MQTT proxy (PhoneAPI §14) between radio and mqtt-manager.
  * Failure point: broker publish or ToRadio write — logs via deps; buffers ToRadio until configured.
  */
 export class MeshtasticMqttClientProxyBridge {
   private pendingToDevice: Uint8Array[] = [];
+  private pendingBytes = 0;
 
   constructor(private readonly deps: MeshtasticMqttClientProxyDeps) {}
 
@@ -84,6 +90,7 @@ export class MeshtasticMqttClientProxyBridge {
     if (!this.deps.isDeviceConfigured()) return;
     const pending = [...this.pendingToDevice];
     this.pendingToDevice = [];
+    this.pendingBytes = 0;
     for (const bytes of pending) {
       void this.deps.writeToRadio(bytes).catch((e: unknown) => {
         console.warn(
@@ -96,6 +103,33 @@ export class MeshtasticMqttClientProxyBridge {
 
   clearPending(): void {
     this.pendingToDevice = [];
+    this.pendingBytes = 0;
+  }
+
+  /**
+   * Buffer ToRadio proxy bytes until configured.
+   * Failure point: broker burst during configure — drop oldest frames and log.
+   */
+  private enqueuePendingToDevice(bytes: Uint8Array): void {
+    let droppedCount = 0;
+    let droppedBytes = 0;
+    while (
+      this.pendingToDevice.length >= MQTT_PROXY_PENDING_MAX_COUNT ||
+      this.pendingBytes + bytes.byteLength > MQTT_PROXY_PENDING_MAX_BYTES
+    ) {
+      const removed = this.pendingToDevice.shift();
+      if (!removed) break;
+      droppedCount += 1;
+      droppedBytes += removed.byteLength;
+      this.pendingBytes -= removed.byteLength;
+    }
+    if (droppedCount > 0) {
+      console.warn(
+        `[MeshtasticMqttClientProxyBridge] dropped ${droppedCount} pending proxy frame(s) (${droppedBytes} bytes)`,
+      );
+    }
+    this.pendingToDevice.push(bytes);
+    this.pendingBytes += bytes.byteLength;
   }
 
   async handleFromRadio(fromRadio: FromRadioMqttProxyCarrier): Promise<void> {
@@ -134,7 +168,7 @@ export class MeshtasticMqttClientProxyBridge {
     });
 
     if (!this.deps.isDeviceConfigured()) {
-      this.pendingToDevice.push(bytes);
+      this.enqueuePendingToDevice(bytes);
       return;
     }
     await this.deps.writeToRadio(bytes);

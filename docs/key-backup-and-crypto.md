@@ -34,11 +34,13 @@ Restore lists prefix entries with **Meshtastic ·** or **MeshCore ·** so archiv
 
 **Storage:**
 
-| Item                                  | Location                                                            |
-| ------------------------------------- | ------------------------------------------------------------------- |
-| Per-node encrypted blob               | `localStorage` → `mesh-client:meshtastic-dm-key-backup:<nodeNum>`   |
-| Index (labels, dates, pub-key prefix) | `localStorage` → `mesh-client:meshtastic-dm-key-backup-index`       |
-| Legacy (migrated on upgrade)          | `mesh-client:key-backup` → moved into per-`nodeNum` slot when valid |
+| Item                                                | Location                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------------- |
+| Per-node encrypted blob                             | `localStorage` → `mesh-client:meshtastic-dm-key-backup:<nodeNum>`   |
+| Index (labels, dates, full public key in plaintext) | `localStorage` → `mesh-client:meshtastic-dm-key-backup-index`       |
+| Legacy (migrated on upgrade)                        | `mesh-client:key-backup` → moved into per-`nodeNum` slot when valid |
+
+**Index privacy:** Per-node **private keys** live in `safeStorage`-encrypted blobs. The **index** JSON in `localStorage` is **not** encrypted: each entry stores plaintext `nodeLabel`, `backedUpAt`, and the **full** `publicKeyB64` (the restore UI shows only an 8-character hex prefix). Public keys are not secret, but they are identity/correlation metadata readable by anything with access to this profile’s `localStorage`.
 
 **Scope: per node, Meshtastic only**
 
@@ -71,6 +73,8 @@ Implementation: [`meshtasticDmKeyBackupStorage.ts`](../src/renderer/lib/meshtast
 | Per-node encrypted archive                             | `localStorage` → `mesh-client:meshcore-key-backup:<nodeId>`         |
 | Index                                                  | `localStorage` → `mesh-client:meshcore-key-backup-index`            |
 | **Active MQTT cache** (last connected/restored device) | `mesh-client:meshcoreIdentity` (+ optional `meshcoreIdentityEncPK`) |
+
+**Index privacy:** Same as Meshtastic — encrypted per-node archives hold private keys; the index JSON stores plaintext `nodeLabel`, `backedUpAt`, and full `publicKeyB64` (UI shows an 8-character hex prefix only).
 
 The **active MQTT cache** is separate from per-node archives: LetsMesh JWT signing uses whichever identity was last connected or restored. Per-node archives retain full pairs without overwriting each other.
 
