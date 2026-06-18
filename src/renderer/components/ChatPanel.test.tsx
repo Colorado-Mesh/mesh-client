@@ -1264,6 +1264,68 @@ describe('ChatPanel scroll pinning', () => {
     expect(mockScrollToEnd).toHaveBeenCalled();
     expect((scrollContainer as HTMLDivElement).scrollTop).toBe(900);
   });
+
+  it('restores raw scrollTop on tab re-entry instead of re-centering on a still-present unread divider', () => {
+    mockIsAtEnd = false;
+    const ts = Date.now();
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 1,
+        sender_name: 'Me',
+        payload: 'Old message',
+        channel: 0,
+        timestamp: ts - 3000,
+        status: 'acked',
+      },
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Unread message',
+        channel: 0,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+
+    const { container, rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} isActive />
+      </ToastProvider>,
+    );
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    // Keep distFromBottom large so applyNearBottomReadState doesn't clear the
+    // divider via setUnreadDividerTimestamp(0) before the test exercises it.
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 250,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(scrollContainer);
+
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} isActive={false} />
+      </ToastProvider>,
+    );
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} isActive />
+      </ToastProvider>,
+    );
+
+    // A bare tab return must not re-fire the unread-divider scroll (it would
+    // clobber the restored position with a re-center on the divider — the jump).
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+    expect((scrollContainer as HTMLDivElement).scrollTop).toBe(250);
+  });
 });
 
 describe('ChatPanel StatusBadge', () => {

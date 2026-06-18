@@ -257,6 +257,9 @@ export default function RoomsPanel({
   /** Sticky intent: user is reading latest posts and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
   const savedScrollTopRef = useRef<number | null>(null);
+  const savedWasPinnedToBottomRef = useRef(false);
+  /** Distinguishes a tab return (isActive false→true) from a view switch while already active. */
+  const wasActiveRef = useRef(isActive);
   const unreadDividerRef = useRef<HTMLDivElement>(null);
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
@@ -269,6 +272,9 @@ export default function RoomsPanel({
   const [aclError, setAclError] = useState<string | null>(null);
   const [aclFetchedAt, setAclFetchedAt] = useState<number | null>(null);
   const [scrollToRowKey, setScrollToRowKey] = useState<string | null>(null);
+  /** Set alongside an explicit row-key jump so the room-switch effect skips its
+   * own unread/end auto-scroll for that transition instead of racing it. */
+  const suppressNextRoomSwitchScrollRef = useRef(false);
 
   const attachUnreadDividerRef = useCallback((node: HTMLDivElement | null) => {
     unreadDividerRef.current = node;
@@ -576,9 +582,42 @@ export default function RoomsPanel({
     };
   }, [isActive, outerScrollMetricsRootRef, updateScrollButtonVisibility]);
 
+  // Owns all tab/view-switch scrolling. Distinguishes a tab return (isActive
+  // false→true) from a genuine view switch while already active (room change
+  // bumps triggerScrollToUnread): a tab return restores the position/pin-state
+  // snapshotted on exit; a view switch scrolls to the unread divider or end.
+  // These used to be two separate effects that both reacted to `isActive`, so
+  // a tab return fired the view-switch scroll too and the restore immediately
+  // clobbered it — visible as a jump (raw scrollTop restore painted one frame,
+  // then the live-append effect below smooth-scrolled to the true end).
   useLayoutEffect(() => {
+    const el = streamRef.current;
+    const wasActive = wasActiveRef.current;
+    wasActiveRef.current = isActive;
+
+    if (!isActive) {
+      if (el) {
+        savedScrollTopRef.current = el.scrollTop;
+        savedWasPinnedToBottomRef.current = isPinnedToBottomRef.current;
+      }
+      return;
+    }
+
+    if (!wasActive) {
+      if (savedScrollTopRef.current !== null) {
+        if (savedWasPinnedToBottomRef.current) {
+          postVirtualizerRef.current.scrollToEnd();
+          isPinnedToBottomRef.current = true;
+        } else if (el) {
+          el.scrollTop = savedScrollTopRef.current;
+        }
+        savedScrollTopRef.current = null;
+        savedWasPinnedToBottomRef.current = false;
+      }
+      return;
+    }
+
     if (triggerScrollToUnread === 0) return;
-    if (!isActive) return;
     if (unreadStartIndex >= 0) {
       postVirtualizerRef.current.scrollToIndex(unreadStartIndex, { align: 'center' });
       isPinnedToBottomRef.current = false;
@@ -593,19 +632,6 @@ export default function RoomsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
   }, [triggerScrollToUnread, isActive]);
 
-  // Preserve native scroll position across tab/view switches (separate from the
-  // virtualizer-driven unread-scroll effect above, which only fires on new triggers).
-  useLayoutEffect(() => {
-    const el = streamRef.current;
-    if (!el) return;
-    if (!isActive) {
-      savedScrollTopRef.current = el.scrollTop;
-    } else if (savedScrollTopRef.current !== null) {
-      el.scrollTop = savedScrollTopRef.current;
-      savedScrollTopRef.current = null;
-    }
-  }, [isActive]);
-
   useEffect(() => {
     if (!isActive) return;
     requestAnimationFrame(() => {
@@ -617,6 +643,13 @@ export default function RoomsPanel({
     if (selectedRoomId == null) return;
     const snapshot = persistedRoomsLastRead[selectedRoomId] ?? 0;
     setUnreadDividerTimestamp(snapshot);
+    if (suppressNextRoomSwitchScrollRef.current) {
+      // An explicit row-key jump (e.g. "Go to message" from Starred) selected this
+      // room and owns the scroll for this transition — skip the auto unread/end
+      // scroll, which would otherwise fire one render later and clobber it.
+      suppressNextRoomSwitchScrollRef.current = false;
+      return;
+    }
     setTriggerScrollToUnread((n) => n + 1);
   }, [selectedRoomId, persistedRoomsLastRead]);
 
@@ -1919,6 +1952,7 @@ export default function RoomsPanel({
                                 const [, roomRaw] = s.viewKey.split(':');
                                 const roomId = Number.parseInt(roomRaw ?? '', 10);
                                 if (Number.isFinite(roomId)) {
+                                  suppressNextRoomSwitchScrollRef.current = true;
                                   handleSelectRoom(roomId);
                                 }
                                 setStreamView('posts');

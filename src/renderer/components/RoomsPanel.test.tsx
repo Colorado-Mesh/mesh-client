@@ -7,6 +7,8 @@ import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
   mergeRoomLastReadWatermark,
   savePersistedRoomsLastRead,
+  saveStarred,
+  type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
@@ -856,6 +858,10 @@ describe('RoomsPanel', () => {
       writable: true,
       configurable: true,
     });
+    // isAtEnd is mocked false, so this marks the user as reading history (not
+    // pinned) before leaving — otherwise the pinned-snapshot branch would
+    // scrollToEnd() on return instead of restoring the raw scrollTop.
+    fireEvent.scroll(stream);
 
     rerender(<RoomsPanel {...commonProps} isActive={false} />);
 
@@ -866,6 +872,181 @@ describe('RoomsPanel', () => {
     rerender(<RoomsPanel {...commonProps} isActive />);
 
     expect((stream as HTMLDivElement).scrollTop).toBe(500);
+  });
+
+  it('scrolls to end on tab re-entry when pinned and posts grew while away', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1018, 'Pinned Restore Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const commonProps = {
+      nodes,
+      messages: [],
+      myNodeNum: 1,
+      isConnected: true,
+      initialRoomTarget: room.node_id,
+      onLoginRoom: vi.fn().mockResolvedValue(undefined),
+      onCancelRoomLogin: vi.fn(),
+      onLeaveRoom: vi.fn().mockResolvedValue(undefined),
+      onSendRoomPost: vi.fn(),
+      onSendRoomAdminCli: vi.fn(),
+    };
+
+    const { rerender } = render(<RoomsPanel {...commonProps} isActive />);
+
+    const stream = screen.getByTestId('rooms-post-stream');
+    Object.defineProperty(stream, 'scrollTop', {
+      value: 400,
+      writable: true,
+      configurable: true,
+    });
+    // Stays pinned (no scroll event fired — isPinnedToBottomRef defaults true).
+    rerender(<RoomsPanel {...commonProps} isActive={false} />);
+
+    mockScrollToEnd.mockClear();
+    mockScrollToEnd.mockImplementation(() => {
+      (stream as HTMLDivElement).scrollTop = 900;
+    });
+
+    rerender(<RoomsPanel {...commonProps} isActive />);
+
+    // The pinned snapshot must win outright — a stale raw-scrollTop restore
+    // running after scrollToEnd() would clobber it back to the pre-thaw value.
+    expect(mockScrollToEnd).toHaveBeenCalled();
+    expect((stream as HTMLDivElement).scrollTop).toBe(900);
+  });
+
+  it('does not re-fire the unread-divider scroll on a bare tab return (only the raw restore should run)', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1019, 'Divider Restore Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    savePersistedRoomsLastRead(mergeRoomLastReadWatermark({}, room.node_id, 1000));
+    const messages: ChatMessage[] = [
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Older post',
+        roomServerId: room.node_id,
+        authorId: 0x200,
+        authorName: 'Alice',
+        timestamp: 2000,
+        receivedVia: 'rf',
+      }),
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'Unread post',
+        roomServerId: room.node_id,
+        authorId: 0x201,
+        authorName: 'Bob',
+        timestamp: 5000,
+        receivedVia: 'rf',
+      }),
+    ];
+    const commonProps = {
+      nodes,
+      messages,
+      myNodeNum: 1,
+      isConnected: true,
+      initialRoomTarget: room.node_id,
+      onLoginRoom: vi.fn().mockResolvedValue(undefined),
+      onCancelRoomLogin: vi.fn(),
+      onLeaveRoom: vi.fn().mockResolvedValue(undefined),
+      onSendRoomPost: vi.fn(),
+      onSendRoomAdminCli: vi.fn(),
+    };
+    // Keeps distFromBottom large so applyNearBottomReadState doesn't clear the
+    // divider via setUnreadDividerTimestamp(0) before the test exercises it.
+    const distSpy = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(300);
+
+    try {
+      const { rerender } = render(<RoomsPanel {...commonProps} isActive />);
+
+      const stream = screen.getByTestId('rooms-post-stream');
+      Object.defineProperty(stream, 'scrollTop', {
+        value: 250,
+        writable: true,
+        configurable: true,
+      });
+      fireEvent.scroll(stream);
+
+      mockScrollToIndex.mockClear();
+
+      rerender(<RoomsPanel {...commonProps} isActive={false} />);
+      rerender(<RoomsPanel {...commonProps} isActive />);
+
+      expect(mockScrollToIndex).not.toHaveBeenCalled();
+      expect((stream as HTMLDivElement).scrollTop).toBe(250);
+    } finally {
+      distSpy.mockRestore();
+    }
+  });
+
+  it('lets an explicit Go to message jump win over the room-switch unread/end scroll', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomA = makeRoom(0x1021, 'Origin Room');
+    const roomB = makeRoom(0x1022, 'Target Room');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    meshcoreApplyRoomSession(roomA.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    meshcoreApplyRoomSession(roomB.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    const targetMsg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Find me',
+      roomServerId: roomB.node_id,
+      authorId: 0x200,
+      authorName: 'Alice',
+      timestamp: 5000,
+      receivedVia: 'rf',
+    });
+    const starId = `room:${roomB.node_id}:${Math.floor(targetMsg.timestamp / 1000)}:${targetMsg.sender_id}`;
+    const starred: StarredMessage[] = [
+      {
+        starId,
+        timestamp: targetMsg.timestamp,
+        payload: targetMsg.payload,
+        sender_name: targetMsg.sender_name,
+        sender_id: targetMsg.sender_id,
+        viewKey: `room:${roomB.node_id}`,
+        channel: targetMsg.channel,
+        to: targetMsg.to ?? null,
+        starredAt: Date.now(),
+      },
+    ];
+    saveStarred('meshcore', starred);
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomA.node_id,
+      messages: [targetMsg],
+      isActive: true,
+    });
+
+    await userEvent.click(screen.getByLabelText('chatPanel.starredMessages'));
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    await userEvent.click(screen.getByLabelText('chatPanel.goToMessage'));
+
+    // The room switch (roomA -> roomB) has no unread divider, so without the
+    // scrollToRowKey guard it would also call scrollToEnd() here — clobbering
+    // the explicit jump-to-message the user actually asked for.
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center', behavior: 'smooth' });
   });
 
   it('shows new messages divider when selecting a room with unread posts', async () => {
