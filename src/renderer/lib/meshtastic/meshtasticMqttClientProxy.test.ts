@@ -6,6 +6,8 @@ import {
   buildToRadioMqttClientProxyBytes,
   type FromRadioMqttProxyCarrier,
   MeshtasticMqttClientProxyBridge,
+  MQTT_PROXY_PENDING_MAX_BYTES,
+  MQTT_PROXY_PENDING_MAX_COUNT,
   parseMqttClientProxyFromFromRadio,
 } from './meshtasticMqttClientProxy';
 
@@ -170,6 +172,48 @@ describe('meshtasticMqttClientProxy', () => {
     bridge.flushPendingToDevice();
     await new Promise((r) => setTimeout(r, 0));
     expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('drops oldest pending frames when count cap exceeded', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let configured = false;
+    const writeToRadio = vi.fn().mockResolvedValue(undefined);
+    const bridge = new MeshtasticMqttClientProxyBridge({
+      isProxyActive: () => true,
+      isDeviceConfigured: () => configured,
+      publishToBroker: vi.fn(),
+      writeToRadio,
+    });
+    for (let i = 0; i < MQTT_PROXY_PENDING_MAX_COUNT + 1; i++) {
+      await bridge.handleBrokerRaw('msh/down', new Uint8Array([i]), false);
+    }
+    expect(warnSpy).toHaveBeenCalled();
+    configured = true;
+    bridge.flushPendingToDevice();
+    expect(writeToRadio).toHaveBeenCalledTimes(MQTT_PROXY_PENDING_MAX_COUNT);
+    warnSpy.mockRestore();
+  });
+
+  it('drops oldest pending frames when byte cap exceeded', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let configured = false;
+    const writeToRadio = vi.fn().mockResolvedValue(undefined);
+    const bridge = new MeshtasticMqttClientProxyBridge({
+      isProxyActive: () => true,
+      isDeviceConfigured: () => configured,
+      publishToBroker: vi.fn(),
+      writeToRadio,
+    });
+    const largePayload = new Uint8Array(Math.floor(MQTT_PROXY_PENDING_MAX_BYTES / 2));
+    await bridge.handleBrokerRaw('msh/down', largePayload, false);
+    await bridge.handleBrokerRaw('msh/down', largePayload, false);
+    await bridge.handleBrokerRaw('msh/down', largePayload, false);
+    expect(warnSpy).toHaveBeenCalled();
+    configured = true;
+    bridge.flushPendingToDevice();
+    expect(writeToRadio.mock.calls.length).toBeLessThan(3);
+    expect(writeToRadio.mock.calls.length).toBeGreaterThan(0);
     warnSpy.mockRestore();
   });
 });

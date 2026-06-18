@@ -155,9 +155,6 @@ export function resolveChatNotificationType(
   if (msg.emoji && msg.replyId) return null;
   if (ownNodeIds.has(msg.sender_id)) return null;
 
-  const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
-  if (peer != null) return 'dm';
-
   if (msg.replyId != null) {
     const parent =
       protocol === 'meshtastic'
@@ -171,6 +168,9 @@ export function resolveChatNotificationType(
         : findParentMessageForReply(allMessages, msg.replyId);
     if (parent && ownNodeIds.has(parent.sender_id)) return 'reply';
   }
+
+  const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
+  if (peer != null) return 'dm';
 
   return 'channel';
 }

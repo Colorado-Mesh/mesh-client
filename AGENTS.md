@@ -93,7 +93,7 @@ Adding a cross-boundary feature:
 4. `pnpm run i18n:auto-translate`: fills missing translation keys; re-stages `src/renderer/locales/`
 5. `pnpm run lint`
 6. `pnpm run typecheck`
-7. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:log-panel-filter`, `check:i18n`, `check:licenses`
+7. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n`, `check:licenses`
 8. `pnpm audit --audit-level=high`
 9. `actionlint`, `yamllint`
 10. `pnpm run test:run`

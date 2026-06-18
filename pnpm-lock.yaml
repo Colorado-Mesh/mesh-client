@@ -73,9 +73,6 @@ importers:
       lucide-react-motion:
         specifier: ^0.4.0
         version: 0.4.0(motion@12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      mesh-client:
-        specifier: 'link:'
-        version: 'link:'
       mgrs:
         specifier: ^2.1.0
         version: 2.1.0

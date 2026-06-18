@@ -19,6 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
 import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
@@ -31,12 +32,7 @@ import {
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import {
-  type ChatUnreadDmOptions,
-  filterRegularChatMessages,
-  pickAudibleNotificationType,
-  totalUnreadCount,
-} from '@/renderer/lib/chatUnreadCounts';
+import { type ChatUnreadDmOptions, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -1672,26 +1668,20 @@ function AppContent({
       protocolRef.current === 'meshtastic' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshtasticMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshtasticMsgsRef.current.slice(prevMeshtasticMsgCountRef.current);
-      const realNew = newMsgs.filter(
-        (m) => m.sender_id !== meshtasticMyNodeNumRef.current && !m.emoji && !m.isHistory,
-      );
-      if (realNew.length > 0) {
-        if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
-          const mutedRaw = localStorage.getItem('mesh-client:mutedViews:meshtastic');
-          const mutedViews: Set<string> = mutedRaw
-            ? new Set(JSON.parse(mutedRaw) as string[])
-            : new Set();
-          const type = pickAudibleNotificationType(
-            realNew,
-            'meshtastic',
-            mutedViews,
-            meshtasticOwnNodeIdSetRef.current,
-            undefined,
-            meshtasticMsgsRef.current,
-          );
-          if (type) playMessageNotification(type);
-        }
-      }
+      const mutedRaw = localStorage.getItem('mesh-client:mutedViews:meshtastic');
+      const mutedViews: Set<string> = mutedRaw
+        ? new Set(JSON.parse(mutedRaw) as string[])
+        : new Set();
+      const type = resolveInactiveChatNotificationType({
+        newMessages: newMsgs,
+        allMessages: meshtasticMsgsRef.current,
+        protocol: 'meshtastic',
+        ownNodeIds: meshtasticOwnNodeIdSetRef.current,
+        ownSenderId: meshtasticMyNodeNumRef.current,
+        mutedViews,
+        notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
+      });
+      if (type) playMessageNotification(type);
     }
     prevMeshtasticMsgCountRef.current = count;
   }, [meshtasticUiMessages.length]);
@@ -1708,23 +1698,17 @@ function AppContent({
       protocolRef.current === 'meshcore' && activePanelIndexRef.current === 1 && !document.hidden;
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
-      const realNew = filterRegularChatMessages(newMsgs, 'meshcore').filter(
-        (m) => m.sender_id !== meshcoreSelfIdRef.current && !m.emoji && !m.isHistory,
-      );
-      if (realNew.length > 0) {
-        if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
-          const mutedViews = loadMutedViews('meshcore');
-          const type = pickAudibleNotificationType(
-            realNew,
-            'meshcore',
-            mutedViews,
-            meshcoreOwnNodeIdSetRef.current,
-            meshcoreChatUnreadDmOptionsRef.current,
-            meshcoreMsgsRef.current,
-          );
-          if (type) playMessageNotification(type);
-        }
-      }
+      const type = resolveInactiveChatNotificationType({
+        newMessages: newMsgs,
+        allMessages: meshcoreMsgsRef.current,
+        protocol: 'meshcore',
+        ownNodeIds: meshcoreOwnNodeIdSetRef.current,
+        ownSenderId: meshcoreSelfIdRef.current,
+        mutedViews: loadMutedViews('meshcore'),
+        notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
+        dmOptions: meshcoreChatUnreadDmOptionsRef.current,
+      });
+      if (type) playMessageNotification(type);
     }
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length]);

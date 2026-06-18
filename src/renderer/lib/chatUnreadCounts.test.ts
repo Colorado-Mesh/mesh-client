@@ -234,11 +234,11 @@ describe('resolveChatNotificationType', () => {
     expect(resolveChatNotificationType(reaction, [reaction], ownNodes, 'meshtastic')).toBeNull();
   });
 
-  it('prefers dm over reply when both apply', () => {
+  it('classifies DM replies to own messages as reply', () => {
     const parent = msg({ channel: 0, sender_id: 1, packetId: 100, timestamp: 500, to: 1 });
     const reply = msg({ channel: 0, sender_id: 2, replyId: 100, timestamp: 1000, to: 1 });
     const messages = [parent, reply];
-    expect(resolveChatNotificationType(reply, messages, ownNodes, 'meshtastic')).toBe('dm');
+    expect(resolveChatNotificationType(reply, messages, ownNodes, 'meshtastic')).toBe('reply');
   });
 });
 

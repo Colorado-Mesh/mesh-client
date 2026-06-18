@@ -99,7 +99,6 @@
     "jszip": "^3.10.1",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react-motion": "^0.4.0",
-    "mesh-client": "link:",
     "mgrs": "^2.1.0",
     "motion": "^12.40.0",
     "mqtt": "^5.15.1",

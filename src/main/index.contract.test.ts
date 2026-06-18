@@ -222,6 +222,7 @@ describe('MQTT IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(/validateMqttPublish/);
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:publishProxy'");
     expect(INDEX_SOURCE).toContain('validateMqttPublishProxyArgs');
+    expect(INDEX_SOURCE).toContain('mqtt:publishProxy: data too long');
   });
 
   it('registers meshtastic XMODEM file IPC handlers', () => {
