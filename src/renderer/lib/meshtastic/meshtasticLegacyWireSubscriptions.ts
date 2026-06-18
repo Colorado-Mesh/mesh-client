@@ -957,7 +957,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
         const body = stripControl(msg.payload).slice(0, 100);
         new Notification(title, {
           body,
-          silent: false,
+          silent: true,
         });
       } catch (e) {
         console.debug('[useMeshtasticRuntime] Notification not available ' + errLikeToLogString(e));

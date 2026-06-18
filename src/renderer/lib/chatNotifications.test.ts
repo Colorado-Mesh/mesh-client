@@ -9,16 +9,26 @@ describe('playMessageNotification', () => {
   let constructCount = 0;
   let oscillatorCount = 0;
   const oscillatorFrequencies: number[] = [];
+  let mockState: AudioContextState = 'running';
+  let resumeMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     constructCount = 0;
     oscillatorCount = 0;
     oscillatorFrequencies.length = 0;
+    mockState = 'running';
+    resumeMock = vi.fn(() => {
+      mockState = 'running';
+      return Promise.resolve();
+    });
     resetChatNotificationAudioContextForTests();
     class MockAudioContext {
-      state = 'running';
       destination = {};
       currentTime = 0;
+      get state() {
+        return mockState;
+      }
+      resume = resumeMock;
       createOscillator() {
         oscillatorCount += 1;
         const frequency = { value: 0 };
@@ -87,5 +97,16 @@ describe('playMessageNotification', () => {
     playMessageNotification();
     expect(oscillatorCount).toBe(1);
     expect(oscillatorFrequencies).toEqual([880]);
+  });
+
+  it('resumes suspended AudioContext before scheduling tones', async () => {
+    mockState = 'suspended';
+    playMessageNotification('dm');
+    expect(resumeMock).toHaveBeenCalledOnce();
+    expect(oscillatorCount).toBe(0);
+    await vi.waitFor(() => {
+      expect(oscillatorCount).toBe(2);
+    });
+    expect(oscillatorFrequencies).toEqual([587.33, 783.99]);
   });
 });
