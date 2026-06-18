@@ -72,10 +72,10 @@ export function getDistFromChatBottom(
   return dist;
 }
 
-/** Day key for grouping messages (matches ChatPanel jump-to-date). */
+/** Day key for grouping messages (matches ChatPanel jump-to-date). Month is 1-based. */
 export function getChatDayKey(ts: number): string {
   const d = new Date(ts);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
 /** Scroll an element within a scroll container without scrollIntoView (avoids outer viewport fights). */

@@ -40,9 +40,15 @@ describe('Windows long-path application manifest (packaging contract)', () => {
       dependencies?: Record<string, string>;
       pnpm?: { patchedDependencies?: Record<string, string> };
     };
+    const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
     expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[\^~]?4\./);
-    expect(packageJson.pnpm?.patchedDependencies?.['readable-stream@4.7.0']).toBe(
-      'patches/readable-stream@4.7.0.patch',
+
+    const readableStreamLockRe = /^ {2}readable-stream@(4\.\d+\.\d+):$/m;
+    const resolvedMatch = readableStreamLockRe.exec(lockfile);
+    expect(resolvedMatch).not.toBeNull();
+    const resolvedVersion = resolvedMatch![1];
+    expect(packageJson.pnpm?.patchedDependencies?.[`readable-stream@${resolvedVersion}`]).toBe(
+      `patches/readable-stream@${resolvedVersion}.patch`,
     );
   });
 
@@ -57,7 +63,7 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     expect(major).toBeGreaterThanOrEqual(4);
 
     const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
-    expect(lockfile).toContain("'@electron/asar': ^4.0.1");
+    expect(lockfile).toMatch(/'@electron\/asar': [\^~]?4\.\d+/);
   });
 
   it('skips dedupe:dist in dist:win scripts; hoisted install helper runs before packaging', () => {

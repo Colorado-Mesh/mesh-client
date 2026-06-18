@@ -15,6 +15,7 @@ import {
   resolveMeshtasticMqttPublishFieldsForChannel,
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
+import { stripControlCharacters } from '@/renderer/lib/stripControlCharacters';
 import { resolveMeshtasticTextMessagePayload } from '@/shared/meshtasticTextMessagePayload';
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
 
@@ -941,20 +942,13 @@ export function attachMeshtasticLegacyWireSubscriptions(
       }
     }
 
-    // Desktop notification for incoming messages when app is not focused
+    // OS toast when hidden: silent so App.tsx owns typed Web Audio (chatNotifications.ts).
+    // Sound plays via resolveInactiveChatNotificationType + playMessageNotification on message store growth.
     if (!isEcho && !emoji && document.hidden) {
       try {
-        const stripControl = (text: string) => {
-          let out = '';
-          for (const ch of text) {
-            const code = ch.charCodeAt(0);
-            if (code >= 0x20 && code !== 0x7f) out += ch;
-          }
-          return out;
-        };
-        const safeSender = stripControl(msg.sender_name).slice(0, 120);
+        const safeSender = stripControlCharacters(msg.sender_name).slice(0, 120);
         const title = msg.to ? `DM from ${safeSender}` : `Message from ${safeSender}`;
-        const body = stripControl(msg.payload).slice(0, 100);
+        const body = stripControlCharacters(msg.payload).slice(0, 100);
         new Notification(title, {
           body,
           silent: true,
