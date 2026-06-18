@@ -1192,6 +1192,7 @@ describe('ChatPanel scroll pinning', () => {
   });
 
   it('restores scrollTop on tab re-entry instead of leaving it at the value set while hidden', () => {
+    mockIsAtEnd = false;
     const { container, rerender } = render(
       <ToastProvider>
         <ChatPanel {...baseProps} messages={[makeMsg(0)]} isActive />
@@ -1204,6 +1205,7 @@ describe('ChatPanel scroll pinning', () => {
       writable: true,
       configurable: true,
     });
+    fireEvent.scroll(scrollContainer);
 
     rerender(
       <ToastProvider>
@@ -1222,6 +1224,45 @@ describe('ChatPanel scroll pinning', () => {
     );
 
     expect((scrollContainer as HTMLDivElement).scrollTop).toBe(500);
+  });
+
+  it('scrolls to end on tab re-entry when pinned and messages grew while away', () => {
+    mockIsAtEnd = true;
+    const initialMessages = Array.from({ length: 5 }, (_, i) => makeMsg(i));
+    const { container, rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={initialMessages} isActive />
+      </ToastProvider>,
+    );
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 400,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(scrollContainer);
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={initialMessages} isActive={false} />
+      </ToastProvider>,
+    );
+
+    mockScrollToEnd.mockClear();
+    mockScrollToEnd.mockImplementation(() => {
+      (scrollContainer as HTMLDivElement).scrollTop = 900;
+    });
+
+    const messagesWhileAway = Array.from({ length: 10 }, (_, i) => makeMsg(i));
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messagesWhileAway} isActive />
+      </ToastProvider>,
+    );
+
+    expect(mockScrollToEnd).toHaveBeenCalled();
+    expect((scrollContainer as HTMLDivElement).scrollTop).toBe(900);
   });
 });
 

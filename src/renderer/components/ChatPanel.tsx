@@ -442,6 +442,7 @@ function ChatPanel({
   /** Sticky intent: user is reading latest messages and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
   const savedScrollTopRef = useRef<number | null>(null);
+  const savedWasPinnedToBottomRef = useRef(false);
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
@@ -1006,9 +1007,16 @@ function ChatPanel({
     if (!el) return;
     if (!isActive) {
       savedScrollTopRef.current = el.scrollTop;
+      savedWasPinnedToBottomRef.current = isPinnedToBottomRef.current;
     } else if (savedScrollTopRef.current !== null) {
-      el.scrollTop = savedScrollTopRef.current;
+      if (savedWasPinnedToBottomRef.current) {
+        messageVirtualizerRef.current.scrollToEnd();
+        isPinnedToBottomRef.current = true;
+      } else {
+        el.scrollTop = savedScrollTopRef.current;
+      }
       savedScrollTopRef.current = null;
+      savedWasPinnedToBottomRef.current = false;
     }
   }, [isActive]);
 
