@@ -17,19 +17,42 @@ export function resetChatNotificationAudioContextForTests(): void {
   sharedAudioContext = null;
 }
 
-export function playMessageNotification(): void {
+export type ChatNotificationType = 'channel' | 'dm' | 'reply';
+
+type SoundProfile =
+  | { kind: 'single'; freq: number; dur: number }
+  | { kind: 'dual'; pulse1Freq: number; pulse2Freq: number; dur: number; gap: number };
+
+const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
+  channel: { kind: 'single', freq: 880, dur: 0.15 },
+  dm: { kind: 'dual', pulse1Freq: 587.33, pulse2Freq: 783.99, dur: 0.05, gap: 0.035 },
+  reply: { kind: 'dual', pulse1Freq: 587.33, pulse2Freq: 783.99, dur: 0.05, gap: 0.035 },
+};
+
+function playTonePulse(ctx: AudioContext, freq: number, dur: number, startTime: number): void {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.3, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+  osc.start(startTime);
+  osc.stop(startTime + dur);
+}
+
+export function playMessageNotification(type: ChatNotificationType = 'channel'): void {
   const ctx = getSharedAudioContext();
   if (!ctx) return;
   try {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+    const profile = SOUND_PROFILES[type];
+    const now = ctx.currentTime;
+    if (profile.kind === 'single') {
+      playTonePulse(ctx, profile.freq, profile.dur, now);
+      return;
+    }
+    playTonePulse(ctx, profile.pulse1Freq, profile.dur, now);
+    playTonePulse(ctx, profile.pulse2Freq, profile.dur, now + profile.dur + profile.gap);
   } catch {
     // catch-no-log-ok: AudioContext unavailable in test/headless environments
   }

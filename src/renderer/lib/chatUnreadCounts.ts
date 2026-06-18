@@ -1,4 +1,9 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
+import {
+  findMeshtasticParentMessageForReply,
+  findParentMessageForReply,
+} from '@/renderer/lib/replyPreview';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
@@ -131,4 +136,72 @@ export function hasAudibleBackgroundMessages(
   return messages.some(
     (m) => !mutedViews.has(chatViewKeyForMessage(m, protocol, ownNodeIds, dmOptions)),
   );
+}
+
+const NOTIFICATION_TYPE_PRIORITY: Record<ChatNotificationType, number> = {
+  channel: 0,
+  dm: 1,
+  reply: 2,
+};
+
+export function resolveChatNotificationType(
+  msg: ChatMessage,
+  allMessages: readonly ChatMessage[],
+  ownNodeIds: ReadonlySet<number>,
+  protocol: MeshProtocol,
+  dmOptions?: ChatUnreadDmOptions,
+): ChatNotificationType | null {
+  if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return null;
+  if (msg.emoji && msg.replyId) return null;
+  if (ownNodeIds.has(msg.sender_id)) return null;
+
+  const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
+  if (peer != null) return 'dm';
+
+  if (msg.replyId != null) {
+    const parent =
+      protocol === 'meshtastic'
+        ? findMeshtasticParentMessageForReply(allMessages, msg.replyId, {
+            replyPreviewSender: msg.replyPreviewSender,
+            beforeTimestamp: msg.timestamp,
+            channel: msg.channel,
+            to: msg.to,
+            excludeSenderId: msg.sender_id,
+          })
+        : findParentMessageForReply(allMessages, msg.replyId);
+    if (parent && ownNodeIds.has(parent.sender_id)) return 'reply';
+  }
+
+  return 'channel';
+}
+
+export function pickAudibleNotificationType(
+  messages: readonly ChatMessage[],
+  protocol: MeshProtocol,
+  mutedViews: ReadonlySet<string>,
+  ownNodeIds: ReadonlySet<number>,
+  dmOptions?: ChatUnreadDmOptions,
+  allMessages?: readonly ChatMessage[],
+): ChatNotificationType | null {
+  let highest: ChatNotificationType | null = null;
+  let highestPriority = -1;
+  const lookupMessages = allMessages ?? messages;
+
+  const regular = filterRegularChatMessages(messages, protocol);
+  for (const msg of regular) {
+    if (ownNodeIds.has(msg.sender_id)) continue;
+    if (msg.isHistory) continue;
+    if (mutedViews.has(chatViewKeyForMessage(msg, protocol, ownNodeIds, dmOptions))) continue;
+
+    const type = resolveChatNotificationType(msg, lookupMessages, ownNodeIds, protocol, dmOptions);
+    if (type == null) continue;
+
+    const priority = NOTIFICATION_TYPE_PRIORITY[type];
+    if (priority > highestPriority) {
+      highestPriority = priority;
+      highest = type;
+    }
+  }
+
+  return highest;
 }

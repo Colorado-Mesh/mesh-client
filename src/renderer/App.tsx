@@ -34,7 +34,7 @@ import {
 import {
   type ChatUnreadDmOptions,
   filterRegularChatMessages,
-  hasAudibleBackgroundMessages,
+  pickAudibleNotificationType,
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -864,6 +864,8 @@ function AppContent({
     meshtasticRuntime.lastRfSelfNodeId,
   ]);
 
+  const meshtasticOwnNodeIdSetRef = useRef(meshtasticOwnNodeIdSet);
+
   const meshcoreOwnNodeIdSet = useMemo(() => {
     const identitySelfNodeNum =
       meshcoreIdentityId != null
@@ -996,6 +998,7 @@ function AppContent({
     meshtasticMsgsRef.current = meshtasticUiMessages;
     meshcoreMsgsRef.current = meshcoreUiMessages;
     meshtasticMyNodeNumRef.current = meshtasticRuntime.state.myNodeNum;
+    meshtasticOwnNodeIdSetRef.current = meshtasticOwnNodeIdSet;
     meshcoreSelfIdRef.current = meshcoreRuntime.selfNodeId;
     meshcoreOwnNodeIdSetRef.current = meshcoreOwnNodeIdSet;
     meshcoreChatUnreadDmOptionsRef.current = meshcoreChatUnreadDmOptions;
@@ -1012,6 +1015,7 @@ function AppContent({
     protocol,
     meshtasticUiMessages,
     meshtasticRuntime.state.myNodeNum,
+    meshtasticOwnNodeIdSet,
     meshcoreUiMessages,
     meshcoreRuntime.selfNodeId,
     meshcoreOwnNodeIdSet,
@@ -1677,13 +1681,15 @@ function AppContent({
           const mutedViews: Set<string> = mutedRaw
             ? new Set(JSON.parse(mutedRaw) as string[])
             : new Set();
-          const myNum = meshtasticMyNodeNumRef.current;
-          const audible = realNew.some((m) => {
-            const peer = m.to != null ? (m.to === myNum ? m.sender_id : m.to) : null;
-            const vk = peer != null ? `dm:${peer}` : `ch:${m.channel}`;
-            return !mutedViews.has(vk);
-          });
-          if (audible) playMessageNotification();
+          const type = pickAudibleNotificationType(
+            realNew,
+            'meshtastic',
+            mutedViews,
+            meshtasticOwnNodeIdSetRef.current,
+            undefined,
+            meshtasticMsgsRef.current,
+          );
+          if (type) playMessageNotification(type);
         }
       }
     }
@@ -1708,14 +1714,15 @@ function AppContent({
       if (realNew.length > 0) {
         if (localStorage.getItem('mesh-client:notifMuted') !== '1') {
           const mutedViews = loadMutedViews('meshcore');
-          const audible = hasAudibleBackgroundMessages(
+          const type = pickAudibleNotificationType(
             realNew,
             'meshcore',
             mutedViews,
             meshcoreOwnNodeIdSetRef.current,
             meshcoreChatUnreadDmOptionsRef.current,
+            meshcoreMsgsRef.current,
           );
-          if (audible) playMessageNotification();
+          if (type) playMessageNotification(type);
         }
       }
     }
@@ -1976,7 +1983,7 @@ function AppContent({
               >
                 Meshtastic
                 {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
-                  <span className="bg-brand-green text-deep-black ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold">
+                  <span className="bg-readable-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-white">
                     {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
                   </span>
                 )}
