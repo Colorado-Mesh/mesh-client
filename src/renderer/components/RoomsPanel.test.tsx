@@ -7,6 +7,8 @@ import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
   mergeRoomLastReadWatermark,
   savePersistedRoomsLastRead,
+  saveStarred,
+  type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
@@ -983,6 +985,68 @@ describe('RoomsPanel', () => {
     } finally {
       distSpy.mockRestore();
     }
+  });
+
+  it('lets an explicit Go to message jump win over the room-switch unread/end scroll', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomA = makeRoom(0x1021, 'Origin Room');
+    const roomB = makeRoom(0x1022, 'Target Room');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    meshcoreApplyRoomSession(roomA.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    meshcoreApplyRoomSession(roomB.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    const targetMsg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Find me',
+      roomServerId: roomB.node_id,
+      authorId: 0x200,
+      authorName: 'Alice',
+      timestamp: 5000,
+      receivedVia: 'rf',
+    });
+    const starId = `room:${roomB.node_id}:${Math.floor(targetMsg.timestamp / 1000)}:${targetMsg.sender_id}`;
+    const starred: StarredMessage[] = [
+      {
+        starId,
+        timestamp: targetMsg.timestamp,
+        payload: targetMsg.payload,
+        sender_name: targetMsg.sender_name,
+        sender_id: targetMsg.sender_id,
+        viewKey: `room:${roomB.node_id}`,
+        channel: targetMsg.channel,
+        to: targetMsg.to ?? null,
+        starredAt: Date.now(),
+      },
+    ];
+    saveStarred('meshcore', starred);
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomA.node_id,
+      messages: [targetMsg],
+      isActive: true,
+    });
+
+    await userEvent.click(screen.getByLabelText('chatPanel.starredMessages'));
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    await userEvent.click(screen.getByLabelText('chatPanel.goToMessage'));
+
+    // The room switch (roomA -> roomB) has no unread divider, so without the
+    // scrollToRowKey guard it would also call scrollToEnd() here — clobbering
+    // the explicit jump-to-message the user actually asked for.
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center', behavior: 'smooth' });
   });
 
   it('shows new messages divider when selecting a room with unread posts', async () => {

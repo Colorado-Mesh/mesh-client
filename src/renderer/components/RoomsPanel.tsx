@@ -272,6 +272,9 @@ export default function RoomsPanel({
   const [aclError, setAclError] = useState<string | null>(null);
   const [aclFetchedAt, setAclFetchedAt] = useState<number | null>(null);
   const [scrollToRowKey, setScrollToRowKey] = useState<string | null>(null);
+  /** Set alongside an explicit row-key jump so the room-switch effect skips its
+   * own unread/end auto-scroll for that transition instead of racing it. */
+  const suppressNextRoomSwitchScrollRef = useRef(false);
 
   const attachUnreadDividerRef = useCallback((node: HTMLDivElement | null) => {
     unreadDividerRef.current = node;
@@ -640,6 +643,13 @@ export default function RoomsPanel({
     if (selectedRoomId == null) return;
     const snapshot = persistedRoomsLastRead[selectedRoomId] ?? 0;
     setUnreadDividerTimestamp(snapshot);
+    if (suppressNextRoomSwitchScrollRef.current) {
+      // An explicit row-key jump (e.g. "Go to message" from Starred) selected this
+      // room and owns the scroll for this transition — skip the auto unread/end
+      // scroll, which would otherwise fire one render later and clobber it.
+      suppressNextRoomSwitchScrollRef.current = false;
+      return;
+    }
     setTriggerScrollToUnread((n) => n + 1);
   }, [selectedRoomId, persistedRoomsLastRead]);
 
@@ -1942,6 +1952,7 @@ export default function RoomsPanel({
                                 const [, roomRaw] = s.viewKey.split(':');
                                 const roomId = Number.parseInt(roomRaw ?? '', 10);
                                 if (Number.isFinite(roomId)) {
+                                  suppressNextRoomSwitchScrollRef.current = true;
                                   handleSelectRoom(roomId);
                                 }
                                 setStreamView('posts');
