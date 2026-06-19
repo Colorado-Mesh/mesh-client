@@ -19,6 +19,7 @@ patches/
 *.desktop
 *.metainfo.xml
 resources/win/*.xml
+*.nsh
 
 # CodeQL MaD — Prettier line-wrap breaks yamllint indentation for barrier tuples
 .github/codeql/extensions/**/*.yml

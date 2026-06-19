@@ -76,3 +76,4 @@ win:
   icon: resources/icons/win/colorado-mesh.ico
 nsis:
   buildUniversalInstaller: false
+  include: resources/installer.nsh
