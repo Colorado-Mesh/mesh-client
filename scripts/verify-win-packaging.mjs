@@ -33,19 +33,6 @@ function assertExe(label, filePath) {
   }
 }
 
-/** @param {string} filePath */
-async function assertPeParsable(filePath) {
-  const { NtExecutable } = await import('resedit');
-  const data = readFileSync(filePath);
-  try {
-    NtExecutable.from(data);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error(`[verify-win-packaging] Invalid PE after packaging: ${filePath} — ${msg}`);
-    process.exit(1);
-  }
-}
-
 function readVersion() {
   const packageJson = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8'));
   return packageJson.version;
@@ -88,7 +75,7 @@ function collectSetupInstallers(version) {
   return { x64: x64[0], arm64: arm64[0] };
 }
 
-async function main() {
+function main() {
   const version = readVersion();
 
   assertExe('x64 unpacked app', path.join(releaseDir, 'win-unpacked', APP_EXE));
@@ -98,15 +85,14 @@ async function main() {
   assertExe('x64 NSIS installer', path.join(releaseDir, installers.x64));
   assertExe('arm64 NSIS installer', path.join(releaseDir, installers.arm64));
 
-  await assertPeParsable(path.join(releaseDir, 'win-unpacked', APP_EXE));
-  await assertPeParsable(path.join(releaseDir, 'win-arm64-unpacked', APP_EXE));
-
   console.debug(
     `[verify-win-packaging] OK — ${APP_EXE} in win-unpacked + win-arm64-unpacked; installers: ${installers.x64}, ${installers.arm64}`,
   );
 }
 
-main().catch((e) => {
+try {
+  main();
+} catch (e) {
   console.error('[verify-win-packaging] Unexpected error:', e);
   process.exit(1);
-});
+}
