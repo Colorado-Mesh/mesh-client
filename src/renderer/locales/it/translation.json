@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Questo file di database richiede un Mesh-Client più recente (schema {{dbVersion}}). Questa build supporta lo schema {{appVersion}} o versioni precedenti. Installa l'ultima versione e riprova.",
     "floodAdvertTypeLabel": "Tipo di advert",
     "floodAdvertTypeFlood": "Inondazione (multi-hop)",
-    "floodAdvertTypeZeroHop": "Zero hop (solo vicini diretti)"
+    "floodAdvertTypeZeroHop": "Zero hop (solo vicini diretti)",
+    "copyDebugSnapshot": "Copia istantanea di debug",
+    "copyDebugSnapshotButton": "Copia istantanea di debug",
+    "debugSnapshotCopied": "Istantanea di debug copiata negli appunti",
+    "debugSnapshotFailed": "Impossibile copiare l'istantanea di debug"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

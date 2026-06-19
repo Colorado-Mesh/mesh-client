@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Este archivo de base de datos requiere un cliente de malla más nuevo (esquema {{dbVersion}}). Esta compilación es compatible con el esquema {{appVersion}} o anterior. Instale la última versión e inténtelo de nuevo.",
     "floodAdvertTypeLabel": "Tipo de advert",
     "floodAdvertTypeFlood": "Inundación (multi-salto)",
-    "floodAdvertTypeZeroHop": "Salto cero (solo vecinos directos)"
+    "floodAdvertTypeZeroHop": "Salto cero (solo vecinos directos)",
+    "copyDebugSnapshot": "Copiar instantánea de depuración",
+    "copyDebugSnapshotButton": "Copiar instantánea de depuración",
+    "debugSnapshotCopied": "Instantánea de depuración copiada al portapapeles",
+    "debugSnapshotFailed": "No se ha podido copiar la instantánea de depuración"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

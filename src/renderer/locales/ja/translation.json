@@ -181,7 +181,11 @@
     "importSchemaTooNew": "このデータベースファイルには新しい Mesh-Client（スキーマ {{dbVersion}}）が必要です。このビルドはスキーマ {{appVersion}} 以前のみ対応しています。最新版をインストールして再試行してください。",
     "floodAdvertTypeLabel": "Advertタイプ",
     "floodAdvertTypeFlood": "洪水（マルチホップ）",
-    "floodAdvertTypeZeroHop": "ゼロホップ（近隣住民のみ）"
+    "floodAdvertTypeZeroHop": "ゼロホップ（近隣住民のみ）",
+    "copyDebugSnapshot": "デバッグスナップショットのコピー",
+    "copyDebugSnapshotButton": "デバッグスナップショットをコピー",
+    "debugSnapshotCopied": "デバッグスナップショットをクリップボードにコピーしました",
+    "debugSnapshotFailed": "デバッグスナップショットをコピーできませんでした"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

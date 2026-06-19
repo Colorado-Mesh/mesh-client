@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { copyDebugSnapshotToClipboard } from '@/renderer/lib/debugSnapshot';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
@@ -1346,6 +1347,26 @@ export default function AppPanel({
             className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
             {t('appPanel.exportDatabaseButton')}
+          </button>
+
+          <button
+            aria-label={t('appPanel.copyDebugSnapshot')}
+            onClick={async () => {
+              try {
+                const copied = await copyDebugSnapshotToClipboard();
+                if (copied) {
+                  addToast(t('appPanel.debugSnapshotCopied'), 'success');
+                } else {
+                  addToast(t('appPanel.debugSnapshotFailed'), 'error');
+                }
+              } catch (err) {
+                console.warn('[AppPanel] debug snapshot failed ' + errLikeToLogString(err));
+                addToast(t('appPanel.debugSnapshotFailed'), 'error');
+              }
+            }}
+            className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+          >
+            {t('appPanel.copyDebugSnapshotButton')}
           </button>
 
           <button

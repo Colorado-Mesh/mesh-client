@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Tento databázový soubor vyžaduje novější Mesh-Client (schéma {{dbVersion}}). Tato sestava podporuje schéma {{appVersion}} nebo starší. Nainstalujte nejnovější verzi a zkuste to znovu.",
     "floodAdvertTypeLabel": "Typ advertu",
     "floodAdvertTypeFlood": "Záplavy (multi-hop)",
-    "floodAdvertTypeZeroHop": "Zero-hop (pouze přímí sousedé)"
+    "floodAdvertTypeZeroHop": "Zero-hop (pouze přímí sousedé)",
+    "copyDebugSnapshot": "Kopírovat snímek ladění",
+    "copyDebugSnapshotButton": "Kopírovat snímek ladění",
+    "debugSnapshotCopied": "Ladicí snímek zkopírován do schránky",
+    "debugSnapshotFailed": "Nelze zkopírovat snímek ladění"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

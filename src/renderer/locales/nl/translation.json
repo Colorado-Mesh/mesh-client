@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Dit databasebestand vereist een nieuwere Mesh-Client (schema {{dbVersion}}). Deze build ondersteunt schema {{appVersion}} of ouder. Installeer de nieuwste versie en probeer het opnieuw.",
     "floodAdvertTypeLabel": "Advert-type",
     "floodAdvertTypeFlood": "Overstroming (multi-hop)",
-    "floodAdvertTypeZeroHop": "Zero-hop (alleen directe buren)"
+    "floodAdvertTypeZeroHop": "Zero-hop (alleen directe buren)",
+    "copyDebugSnapshot": "Momentopname van foutopsporing kopiëren",
+    "copyDebugSnapshotButton": "Momentopname van foutopsporing kopiëren",
+    "debugSnapshotCopied": "Foutopsporing snapshot gekopieerd naar klembord",
+    "debugSnapshotFailed": "Kon foutopsporingsmomentopname niet kopiëren"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

@@ -12,6 +12,7 @@ import {
 } from '../stores/identityStore';
 import { connectionDriver } from './drivers/ConnectionDriver';
 import { packetRouter } from './drivers/PacketRouter';
+import { mergeOfflineStoreIntoIdentity } from './mergeOfflineIdentityStore';
 import { tryReuseOfflineProtocolIdentity } from './offlineProtocolIdentities';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
@@ -36,6 +37,7 @@ function resolveOrCreateIdentity(
     null;
   if (existing) {
     connectionDriver.registerTransportKeys(existing, provisionalKey, resolvedKey);
+    mergeOfflineStoreIntoIdentity(protocol.type, existing);
     return existing;
   }
   const reusableOffline = tryReuseOfflineProtocolIdentity(protocol.type);
@@ -59,6 +61,7 @@ function resolveOrCreateIdentity(
     lastSeenAt: Date.now(),
   });
   connectionDriver.registerTransportKeys(identityId, provisionalKey, resolvedKey);
+  mergeOfflineStoreIntoIdentity(protocol.type, identityId);
   return identityId;
 }
 

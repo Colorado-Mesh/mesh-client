@@ -181,7 +181,11 @@
     "importSchemaTooNew": "此数据库文件需要较新的 Mesh-Client（架构 {{dbVersion}}）。此版本仅支持架构 {{appVersion}} 或更早版本。请安装最新版本后重试。",
     "floodAdvertTypeLabel": "通告类型",
     "floodAdvertTypeFlood": "洪水（多跳）",
-    "floodAdvertTypeZeroHop": "零跳（仅限直系邻居）"
+    "floodAdvertTypeZeroHop": "零跳（仅限直系邻居）",
+    "copyDebugSnapshot": "复制调试快照",
+    "copyDebugSnapshotButton": "复制调试快照",
+    "debugSnapshotCopied": "调试快照已复制到剪贴板",
+    "debugSnapshotFailed": "无法复制调试快照"
   },
   "aria": {
     "closeDialog": "关闭对话框",

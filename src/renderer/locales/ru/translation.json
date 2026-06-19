@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Для этого файла базы данных требуется более новый Mesh-Client (схема {{dbVersion}}). Эта сборка поддерживает схему {{appVersion}} или старше. Установите последнюю версию и повторите попытку.",
     "floodAdvertTypeLabel": "Тип advert",
     "floodAdvertTypeFlood": "Наводнение (многоузловое)",
-    "floodAdvertTypeZeroHop": "Нулевой прыжок (только для прямых соседей)"
+    "floodAdvertTypeZeroHop": "Нулевой прыжок (только для прямых соседей)",
+    "copyDebugSnapshot": "Копировать моментальный снимок отладки",
+    "copyDebugSnapshotButton": "Копировать моментальный снимок отладки",
+    "debugSnapshotCopied": "Снимок отладки скопирован в буфер обмена",
+    "debugSnapshotFailed": "Не удалось скопировать моментальный снимок отладки"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

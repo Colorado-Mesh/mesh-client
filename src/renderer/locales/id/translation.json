@@ -181,7 +181,11 @@
     "importSchemaTooNew": "File database ini memerlukan Mesh-Client yang lebih baru (skema {{dbVersion}}). Build ini mendukung skema {{appVersion}} atau lebih lama. Instal rilis terbaru dan coba lagi.",
     "floodAdvertTypeLabel": "Jenis advert",
     "floodAdvertTypeFlood": "Banjir (multi - hop)",
-    "floodAdvertTypeZeroHop": "Zero - hop (hanya tetangga langsung)"
+    "floodAdvertTypeZeroHop": "Zero - hop (hanya tetangga langsung)",
+    "copyDebugSnapshot": "Salin snapshot debug",
+    "copyDebugSnapshotButton": "Salin Snapshot Debug",
+    "debugSnapshotCopied": "Snapshot debug disalin ke clipboard",
+    "debugSnapshotFailed": "Tidak dapat menyalin snapshot debug"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
