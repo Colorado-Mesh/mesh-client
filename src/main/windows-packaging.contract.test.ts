@@ -23,7 +23,7 @@ describe('Windows packaging (contract)', () => {
       pnpm?: { patchedDependencies?: Record<string, string> };
     };
     const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
-    expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[\^~]?4\./);
+    expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[~^]?4\./);
 
     const readableStreamLockRe = /^ {2}readable-stream@(4\.\d+\.\d+):$/m;
     const resolvedMatch = readableStreamLockRe.exec(lockfile);
@@ -45,7 +45,7 @@ describe('Windows packaging (contract)', () => {
     expect(major).toBeGreaterThanOrEqual(4);
 
     const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
-    expect(lockfile).toMatch(/'@electron\/asar': [\^~]?4\.\d+/);
+    expect(lockfile).toMatch(/'@electron\/asar': [~^]?4\.\d+/);
   });
 
   it('skips dedupe:dist in dist:win scripts; hoisted install helper runs before packaging', () => {
@@ -109,7 +109,8 @@ describe('Windows packaging (contract)', () => {
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
       'utf-8',
     );
-    expect(buildWorkflow).toMatch(/- os: windows-latest\s+build_script: pnpm run dist:win/);
+    // Matrix entry: `os` on its own line; `build_script` indented on the next line.
+    expect(buildWorkflow).toMatch(/- os: windows-latest\s*\n\s+build_script: pnpm run dist:win/);
     expect(buildWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
     );
@@ -124,8 +125,9 @@ describe('Windows packaging (contract)', () => {
       join(REPO_ROOT, '.github', 'workflows', 'release.yaml'),
       'utf-8',
     );
+    // Matrix entry: `os` on its own line; `build_script` indented on the next line.
     expect(releaseWorkflow).toMatch(
-      /- os: windows-latest\s+build_script: pnpm run dist:win:publish/,
+      /- os: windows-latest\s*\n\s+build_script: pnpm run dist:win:publish/,
     );
     expect(releaseWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
