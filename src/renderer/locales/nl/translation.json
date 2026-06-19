@@ -182,10 +182,10 @@
     "floodAdvertTypeLabel": "Advert-type",
     "floodAdvertTypeFlood": "Overstroming (multi-hop)",
     "floodAdvertTypeZeroHop": "Zero-hop (alleen directe buren)",
-    "copyDebugSnapshot": "Momentopname van foutopsporing kopiëren",
-    "copyDebugSnapshotButton": "Momentopname van foutopsporing kopiëren",
-    "debugSnapshotCopied": "Foutopsporing snapshot gekopieerd naar klembord",
-    "debugSnapshotFailed": "Kon foutopsporingsmomentopname niet kopiëren"
+    "copyDebugSnapshot": "Debug-snapshot kopiëren",
+    "copyDebugSnapshotButton": "Debug-snapshot kopiëren",
+    "debugSnapshotCopied": "Debug-snapshot gekopieerd naar klembord",
+    "debugSnapshotFailed": "Kon debug-snapshot niet kopiëren"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

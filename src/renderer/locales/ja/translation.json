@@ -182,7 +182,7 @@
     "floodAdvertTypeLabel": "Advertタイプ",
     "floodAdvertTypeFlood": "洪水（マルチホップ）",
     "floodAdvertTypeZeroHop": "ゼロホップ（近隣住民のみ）",
-    "copyDebugSnapshot": "デバッグスナップショットのコピー",
+    "copyDebugSnapshot": "デバッグスナップショットをコピー",
     "copyDebugSnapshotButton": "デバッグスナップショットをコピー",
     "debugSnapshotCopied": "デバッグスナップショットをクリップボードにコピーしました",
     "debugSnapshotFailed": "デバッグスナップショットをコピーできませんでした"

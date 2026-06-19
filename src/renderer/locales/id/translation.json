@@ -183,8 +183,8 @@
     "floodAdvertTypeFlood": "Banjir (multi - hop)",
     "floodAdvertTypeZeroHop": "Zero - hop (hanya tetangga langsung)",
     "copyDebugSnapshot": "Salin snapshot debug",
-    "copyDebugSnapshotButton": "Salin Snapshot Debug",
-    "debugSnapshotCopied": "Snapshot debug disalin ke clipboard",
+    "copyDebugSnapshotButton": "Salin snapshot debug",
+    "debugSnapshotCopied": "Snapshot debug disalin ke papan klip",
     "debugSnapshotFailed": "Tidak dapat menyalin snapshot debug"
   },
   "aria": {

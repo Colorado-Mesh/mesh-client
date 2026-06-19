@@ -184,7 +184,7 @@
     "floodAdvertTypeZeroHop": "제로 홉 (직접 이웃만 해당)",
     "copyDebugSnapshot": "디버그 스냅샷 복사",
     "copyDebugSnapshotButton": "디버그 스냅샷 복사",
-    "debugSnapshotCopied": "클립보드에 복사된 스냅샷 디버그",
+    "debugSnapshotCopied": "디버그 스냅샷이 클립보드에 복사되었습니다",
     "debugSnapshotFailed": "디버그 스냅샷을 복사할 수 없습니다"
   },
   "aria": {

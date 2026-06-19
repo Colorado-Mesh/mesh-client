@@ -184,7 +184,7 @@
     "floodAdvertTypeZeroHop": "Zero-hop (apenas vizinhos diretos)",
     "copyDebugSnapshot": "Copiar instantâneo de depuração",
     "copyDebugSnapshotButton": "Copiar instantâneo de depuração",
-    "debugSnapshotCopied": "Depurar instantâneo copiado para a área de transferência",
+    "debugSnapshotCopied": "Instantâneo de depuração copiado para a área de transferência",
     "debugSnapshotFailed": "Não foi possível copiar o instantâneo de depuração"
   },
   "aria": {

@@ -282,6 +282,57 @@ export const MESHCORE_DISTANCE_FILTER_HINT_KEY = 'toasts.meshcoreDistanceFilterH
 /** appPanel import guard when backup schema exceeds build version. */
 export const IMPORT_SCHEMA_TOO_NEW_KEY = 'appPanel.importSchemaTooNew';
 
+/** App Panel debug snapshot copy (support reports). */
+export const APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS = new Set([
+  'copyDebugSnapshot',
+  'copyDebugSnapshotButton',
+  'debugSnapshotCopied',
+  'debugSnapshotFailed',
+]);
+
+export const DEBUG_SNAPSHOT_COPIED_KEY = 'appPanel.debugSnapshotCopied';
+
+/** MT parses "Debug snapshot copied" as imperative "Debug [the] snapshot". */
+export const DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS = {
+  fr: [
+    {
+      re: /^D[ée]boguer\b/i,
+      hint: 'debugSnapshotCopied must be "Instantané de débogage copié…", not imperative "Déboguer"',
+    },
+  ],
+  'pt-BR': [
+    {
+      re: /^Depurar\b/i,
+      hint: 'debugSnapshotCopied must be "Instantâneo de depuração copiado…", not imperative "Depurar"',
+    },
+  ],
+  ko: [
+    {
+      re: /^클립보드에 복사된\s+스냅샷\s+디버그$/,
+      hint: 'debugSnapshotCopied word order should be "디버그 스냅샷이 클립보드에 복사되었습니다"',
+    },
+  ],
+};
+
+/** English "snapshot" loanword in locales that should fully translate debug snapshot UI. */
+export const DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES = {
+  nl: [
+    {
+      re: /\bfoutopsporing\s+snapshot\b/i,
+      hint: 'use consistent "Debug-snapshot", not mixed EN "snapshot"',
+    },
+  ],
+  fr: [
+    {
+      re: /\bsnapshot\b/i,
+      hint: 'translate "snapshot" as "instantané", not English "snapshot"',
+    },
+  ],
+};
+
+/** German debugSnapshotFailed must match Debug-Snapshot term used elsewhere. */
+export const DE_DEBUG_SNAPSHOT_FAILED_WRONG_TERM_RE = /Fehlerbehebungs/i;
+
 /** MyMemory often inserts spaces in the Mesh-Client product name. */
 export const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
 
@@ -1387,6 +1438,50 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (enVal.includes('Mesh-Client') && MESH_CLIENT_SPACED_RE.test(val)) {
     issues.push('use "Mesh-Client" without spaces around the hyphen (not "Mesh - Client")');
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('appPanel.') &&
+    APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (flatKey === DEBUG_SNAPSHOT_COPIED_KEY) {
+    for (const { re, hint } of DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`debugSnapshotCopied false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey.startsWith('appPanel.') && APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS.has(leafKey)) {
+    for (const { re, hint } of DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`debugSnapshot mixed EN snapshot: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    locale === 'de' &&
+    flatKey === 'appPanel.debugSnapshotFailed' &&
+    DE_DEBUG_SNAPSHOT_FAILED_WRONG_TERM_RE.test(val)
+  ) {
+    issues.push(
+      'debugSnapshotFailed must use "Debug-Snapshot" consistently, not "Fehlerbehebungs-Snapshot"',
+    );
+  }
+
+  if (
+    locale === 'id' &&
+    flatKey === DEBUG_SNAPSHOT_COPIED_KEY &&
+    enVal.includes('clipboard') &&
+    /\bclipboard\b/i.test(val)
+  ) {
+    issues.push('debugSnapshotCopied uses English "clipboard" — use "papan klip"');
   }
 
   if (flatKey === MESHCORE_DISTANCE_FILTER_HINT_KEY && enVal.includes('App → Appearance')) {

@@ -184,8 +184,8 @@
     "floodAdvertTypeZeroHop": "Zero-hop (voisins directs uniquement)",
     "copyDebugSnapshot": "Copier l'instantané de débogage",
     "copyDebugSnapshotButton": "Copier l'instantané de débogage",
-    "debugSnapshotCopied": "Déboguer l'instantané copié dans le presse-papiers",
-    "debugSnapshotFailed": "Impossible de copier le snapshot de débogage"
+    "debugSnapshotCopied": "Instantané de débogage copié dans le presse-papiers",
+    "debugSnapshotFailed": "Impossible de copier l'instantané de débogage"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
