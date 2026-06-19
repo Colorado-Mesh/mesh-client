@@ -1,4 +1,4 @@
-import { randomCorrelationSuffix } from '@/shared/randomCorrelationSuffix';
+import { randomPrefixedId } from '@/shared/randomPrefixedId';
 
 import { removeConnection, setConnection } from '../../stores/connectionStore';
 import { clearDeviceIdentity } from '../../stores/deviceStore';
@@ -38,10 +38,6 @@ interface TransportSlot {
   params: TransportParams;
   teardown: () => void;
   lastDataAt: number;
-}
-
-function randomId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${randomCorrelationSuffix()}`;
 }
 
 function transportTypeToConnectionType(type: TransportType): ConnectionType | null {
@@ -127,7 +123,7 @@ export class ConnectionDriver {
           lastSeenAt: Date.now(),
         });
       } else {
-        identityId = randomId('id');
+        identityId = randomPrefixedId('id');
         addIdentity({
           id: identityId,
           protocol,
@@ -178,7 +174,7 @@ export class ConnectionDriver {
       this.registerTransportKeys(identityId, provisionalKey);
     }
 
-    const transportId = randomId('t');
+    const transportId = randomPrefixedId('t');
     const resolvedIdentityId = identityId;
     const teardown = protocol.subscribe(handle, (event: DomainEvent) => {
       const slot = this.slots.get(transportId);
@@ -266,7 +262,7 @@ export class ConnectionDriver {
     params: TransportParams,
     teardown: () => void,
   ): () => void {
-    const transportId = randomId('t');
+    const transportId = randomPrefixedId('t');
     const transportRef: TransportRef = {
       transportId,
       type,

@@ -1,7 +1,7 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 import type { MeshDevice } from '@meshtastic/core';
 
-import { randomCorrelationSuffix } from '@/shared/randomCorrelationSuffix';
+import { randomPrefixedId } from '@/shared/randomPrefixedId';
 
 import { setConnection } from '../stores/connectionStore';
 import {
@@ -19,8 +19,17 @@ import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 import type { DiscoveryInfo } from './protocols/Protocol';
 import type { ConnectionType, IdentityId, TransportParams } from './types';
 
-function randomIdentityId(prefix: string): IdentityId {
-  return `${prefix}-${Date.now()}-${randomCorrelationSuffix()}`;
+function patchIdentityFromDiscovery(
+  identityId: IdentityId,
+  protocol: typeof meshtasticProtocol | typeof meshcoreProtocol,
+  params: TransportParams,
+  discovery: DiscoveryInfo,
+): void {
+  updateIdentity(identityId, {
+    signature: protocol.identitySignature(params, discovery),
+    ...(discovery.myNodeNum != null ? { selfNodeNum: discovery.myNodeNum } : {}),
+    ...(discovery.publicKey ? { publicKey: discovery.publicKey } : {}),
+  });
 }
 
 function resolveOrCreateIdentity(
@@ -38,20 +47,21 @@ function resolveOrCreateIdentity(
   if (existing) {
     connectionDriver.registerTransportKeys(existing, provisionalKey, resolvedKey);
     mergeOfflineStoreIntoIdentity(protocol.type, existing);
+    if (discovery) patchIdentityFromDiscovery(existing, protocol, params, discovery);
     return existing;
   }
   const reusableOffline = tryReuseOfflineProtocolIdentity(protocol.type);
   if (reusableOffline) {
-    updateIdentity(reusableOffline, {
-      signature: resolvedKey,
-      lastSeenAt: Date.now(),
-      ...(discovery?.myNodeNum != null ? { selfNodeNum: discovery.myNodeNum } : {}),
-      ...(discovery?.publicKey ? { publicKey: discovery.publicKey } : {}),
-    });
+    updateIdentity(reusableOffline, { lastSeenAt: Date.now() });
+    if (discovery) {
+      patchIdentityFromDiscovery(reusableOffline, protocol, params, discovery);
+    } else {
+      updateIdentity(reusableOffline, { signature: resolvedKey });
+    }
     connectionDriver.registerTransportKeys(reusableOffline, provisionalKey, resolvedKey);
     return reusableOffline;
   }
-  const identityId = randomIdentityId(protocol.type);
+  const identityId = randomPrefixedId(protocol.type);
   addIdentity({
     id: identityId,
     protocol,
@@ -62,6 +72,7 @@ function resolveOrCreateIdentity(
   });
   connectionDriver.registerTransportKeys(identityId, provisionalKey, resolvedKey);
   mergeOfflineStoreIntoIdentity(protocol.type, identityId);
+  if (discovery) patchIdentityFromDiscovery(identityId, protocol, params, discovery);
   return identityId;
 }
 
@@ -141,11 +152,7 @@ export function finalizeMeshcoreDriverIdentity(
 ): void {
   const provisionalKey = meshcoreProtocol.identitySignature(params);
   const resolvedKey = meshcoreProtocol.identitySignature(params, discovery);
-  updateIdentity(identityId, {
-    signature: resolvedKey,
-    selfNodeNum: discovery.myNodeNum,
-    publicKey: discovery.publicKey,
-  });
+  patchIdentityFromDiscovery(identityId, meshcoreProtocol, params, discovery);
   connectionDriver.registerTransportKeys(identityId, provisionalKey, resolvedKey);
 }
 
@@ -180,13 +187,6 @@ export function bindMeshcoreIngress(
 ): MeshcoreIngressBind {
   const params = meshcoreTransportParams(type, opts);
   const identityId = resolveOrCreateIdentity(meshcoreProtocol, params, discovery);
-  if (discovery) {
-    updateIdentity(identityId, {
-      signature: meshcoreProtocol.identitySignature(params, discovery),
-      selfNodeNum: discovery.myNodeNum,
-      publicKey: discovery.publicKey,
-    });
-  }
   const connectionType = type === 'tcp' ? 'http' : type;
   setConnection(identityId, { status: 'connecting', connectionType });
   setActiveIdentity(identityId);
