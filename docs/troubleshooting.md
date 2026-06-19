@@ -16,7 +16,7 @@ See [development-environment.md](development-environment.md) for OS-specific pre
 
 **Cause**
 
-On **native Windows 11 ARM**, the arm64 NSIS installer can partially extract support files while failing to copy the main executable. CI builds the exe correctly (it is inside the installer's `app-arm64.7z`); the failure happens at **install time**, not during packaging.
+On **native Windows 11 ARM**, older arm64 NSIS installers used `Nsis7z` on `app-arm64.7z` archives compressed with ARM64 LZMA. That path can partially extract support files while dropping the main executable. CI builds the exe correctly (it is inside the installer payload); the failure happens at **install time**, not during packaging. Current releases use zip-compressed NSIS payloads (`useZip`) to avoid this extractor path.
 
 Older releases also shipped a **universal** NSIS installer (x64 + arm64 in one `.exe`), which made arch selection worse — use the split **`-arm64.exe`** installer on WoA hardware.
 

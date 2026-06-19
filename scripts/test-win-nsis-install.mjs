@@ -118,7 +118,7 @@ function probe7zExtract(installerPath, outDir) {
   const appArchivePath = findAppArchive(outDir);
   if (!appArchivePath) {
     dumpDir('probe-7z output', outDir, 2);
-    fail('No app*.7z found inside installer after 7z extract');
+    fail('No app*.7z or app*.zip found inside installer after 7z extract');
   }
 
   const archiveDir = path.join(outDir, 'app-payload');
