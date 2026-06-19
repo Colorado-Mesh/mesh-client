@@ -10,11 +10,24 @@
 const fs = require('fs');
 const path = require('path');
 
+const { Arch } = require('builder-util');
+
 // Ref: https://learn.microsoft.com/en-us/windows/win32/menurc/resource-types
 const RT_MANIFEST_TYPE = 24;
 
 module.exports = async function electronBuilderAfterPack(context) {
   if (context.electronPlatformName !== 'win32') {
+    return;
+  }
+
+  const exeName = `${context.packager.appInfo.productFilename}.exe`;
+  const exePath = path.join(context.appOutDir, exeName);
+
+  // resedit regenerate() can produce an ARM64 PE that passes Node parsing but fails to
+  // materialize during NSIS install on Windows 11 ARM (support files land, exe missing).
+  // Keep stock Electron manifest on arm64; longPathAware remains on x64 builds.
+  if (context.arch === Arch.arm64) {
+    console.debug(`[afterPack] Skipping resedit manifest embed on arm64: ${exePath}`);
     return;
   }
 
@@ -29,8 +42,6 @@ module.exports = async function electronBuilderAfterPack(context) {
     throw new Error(`[afterPack] Missing manifest: ${manifestPath}`);
   }
 
-  const exeName = `${context.packager.appInfo.productFilename}.exe`;
-  const exePath = path.join(context.appOutDir, exeName);
   if (!fs.existsSync(exePath)) {
     throw new Error(`[afterPack] Missing Windows app exe: ${exePath}`);
   }
