@@ -1,6 +1,5 @@
 appId: com.mesh-client.app
 productName: Mesh-client
-afterPack: scripts/electron-builder-after-pack.cjs
 directories:
   buildResources: resources
   output: release
@@ -77,3 +76,4 @@ win:
   icon: resources/icons/win/colorado-mesh.ico
 nsis:
   buildUniversalInstaller: false
+  include: resources/installer.nsh

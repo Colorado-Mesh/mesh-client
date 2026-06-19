@@ -16,13 +16,33 @@ See [development-environment.md](development-environment.md) for OS-specific pre
 
 **Cause**
 
-Older releases shipped a **universal** NSIS installer (x64 + arm64 in one `.exe`). On **native Windows 11 ARM**, that installer can partially extract support files while failing to copy the main executable.
+On **native Windows 11 ARM**, the arm64 NSIS installer can partially extract support files while failing to copy the main executable. CI builds the exe correctly (it is inside the installer's `app-arm64.7z`); the failure happens at **install time**, not during packaging.
+
+Older releases also shipped a **universal** NSIS installer (x64 + arm64 in one `.exe`), which made arch selection worse — use the split **`-arm64.exe`** installer on WoA hardware.
 
 **Fix**
 
 1. Delete the broken install folder: `%LOCALAPPDATA%\Programs\Mesh-client\`
 2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client Setup {version}-arm64.exe` (not the x64-only `Mesh-client Setup {version}.exe`).
 3. Re-run the installer. Confirm `Mesh-client.exe` exists in the install folder and the app appears in **Installed apps**.
+
+**Diagnostic checklist (if the exe is still missing)**
+
+Capture this before opening a GitHub issue — it helps isolate NSIS extract vs copy vs policy blocks:
+
+1. **NSIS install log** — run the installer from Command Prompt or PowerShell with logging:
+   ```bat
+   "Mesh-client Setup {version}-arm64.exe" /LOG=%USERPROFILE%\Desktop\mesh-install.log
+   ```
+   After failure, open `mesh-install.log` and search for `Mesh-client.exe`, `CopyFiles`, or `error`.
+2. **Event Viewer** — **Windows Logs → Application** during the install window; note any errors from `MsiInstaller`, `Application Error`, or antivirus agents.
+3. **Controlled folder access** — **Windows Security → Virus & threat protection → Ransomware protection**; if enabled, try temporarily allowing the installer or install to a short path such as `C:\mc-test` (see step 5).
+4. **Install path** — confirm `%LOCALAPPDATA%` is on a local NTFS volume, not OneDrive-redirected or sync-rooted.
+5. **Custom install directory** — test a short path:
+   ```bat
+   "Mesh-client Setup {version}-arm64.exe" /D=C:\mc-test /LOG=%USERPROFILE%\Desktop\mesh-install.log
+   ```
+6. **Clean tree** — ensure no leftover `Mesh-client` folder or running `Mesh-client.exe` from a prior partial install before re-running the installer.
 
 **Workaround before a fixed release**
 
@@ -319,7 +339,6 @@ CI builds avoid both issues by using short paths and clean agents; local Windows
 2. **Enable long paths in Git** (helps clones/checkouts): `git config --global core.longpaths true`, then re-clone or ensure no stuck long paths in the worktree.
 3. **Enable Win32 long paths in Windows** (Windows 10 1607+): this option is **not** available as a normal toggle in **Settings**; enable it via **Local Group Policy** → _Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths_, or set the registry DWORD **`LongPathsEnabled = 1`** under `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (admin rights; reboot may be required). See [Microsoft: Maximum Path Length Limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
 4. **`pnpm run dist:win`** already runs a **hoisted** `pnpm install` to shorten `node_modules` depth before packaging; if **`pnpm install`** / **`pnpm run rebuild`** fails earlier with this error, try the short path and long-path OS settings first, or temporarily: `pnpm install --config.node-linker=hoisted` from a short root path.
-5. **Packaged app (`dist:win`)**: the build embeds a Windows application manifest with **`longPathAware`** so the installed **Mesh-client.exe** can use long paths when the machine has long paths enabled (registry / policy). That helps **runtime** paths inside the app; it does **not** shorten **`node_modules`** during **`pnpm install`** on the build machine—CI and developers still benefit from short clone paths for native rebuilds.
 
 ### Database schema newer than this app (downgrade blocked)
 

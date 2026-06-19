@@ -68,6 +68,20 @@ jobs:
       - name: Build
         run: ${{ matrix.build_script }}
 
+      - name: Smoke test x64 NSIS install
+        if: matrix.os == 'windows-latest'
+        run: node scripts/test-win-nsis-install.mjs --arch x64
+
+      - name: Upload Windows install failure logs
+        if: failure() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-win-x64-install-logs-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/mesh-client-install-x64.log
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v7
@@ -104,3 +118,33 @@ jobs:
             # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
             release/*.exe
           retention-days: 30
+
+  win-arm64-install:
+    name: Smoke test arm64 NSIS install (WoA)
+    needs: build
+    runs-on: windows-11-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download Windows build artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: mesh-client-windows-${{ github.sha }}
+          path: release
+
+      - name: Smoke test arm64 NSIS install (7z probe + install)
+        run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
+
+      - name: Upload arm64 install failure logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-win-arm64-install-logs-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/mesh-client-install-arm64.log
+            ${{ runner.temp }}/mesh-client-7z-probe/**
+          if-no-files-found: ignore
+          retention-days: 7

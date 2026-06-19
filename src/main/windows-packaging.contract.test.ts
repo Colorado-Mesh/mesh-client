@@ -5,36 +5,16 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = join(__dirname, '..', '..');
 
-describe('Windows long-path application manifest (packaging contract)', () => {
-  it('wires electron-builder afterPack and embeds longPathAware in the manifest resource', () => {
+describe('Windows packaging (contract)', () => {
+  it('does not use afterPack resedit or longPathAware manifest embedding', () => {
     const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
-    expect(yml).toContain('afterPack: scripts/electron-builder-after-pack.cjs');
-
-    const hook = readFileSync(
-      join(REPO_ROOT, 'scripts', 'electron-builder-after-pack.cjs'),
-      'utf-8',
-    );
-    expect(hook).toContain('resedit');
-    expect(hook).toMatch(/RT_MANIFEST_TYPE|type === 24/);
-    expect(hook).toContain('mesh-client-long-path.manifest.xml');
-    expect(hook).toContain('Arch.arm64');
-    expect(hook).toContain('Skipping resedit manifest embed on arm64');
-    expect(hook).toContain('renameSync');
-    expect(hook).toMatch(/\.tmp['"`]/);
+    expect(yml).not.toContain('afterPack:');
 
     const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
       devDependencies?: Record<string, string>;
     };
+    expect(packageJson.devDependencies?.resedit).toBeUndefined();
     expect(packageJson.devDependencies?.rcedit).toBeUndefined();
-    expect(packageJson.devDependencies?.resedit).toMatch(/^[\^~]?1\.7/);
-
-    const manifest = readFileSync(
-      join(REPO_ROOT, 'resources', 'win', 'mesh-client-long-path.manifest.xml'),
-      'utf-8',
-    );
-    expect(manifest).toContain('urn:schemas-microsoft-com:asm.v3');
-    expect(manifest).toContain('http://schemas.microsoft.com/SMI/2016/WindowsSettings');
-    expect(manifest).toMatch(/ws2:longPathAware>true</);
   });
 
   it('declares readable-stream as a direct production dep with pnpm patch for asar packaging', () => {
@@ -84,9 +64,14 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     }
   });
 
-  it('disables universal NSIS and verifies split Windows installers after dist:win', () => {
+  it('disables universal NSIS, includes post-install guard, and verifies split Windows installers', () => {
     const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
     expect(yml).toMatch(/nsis:\s*\n\s*buildUniversalInstaller:\s*false/);
+    expect(yml).toContain('include: resources/installer.nsh');
+
+    const installerNsh = readFileSync(join(REPO_ROOT, 'resources', 'installer.nsh'), 'utf-8');
+    expect(installerNsh).toContain('Mesh-client.exe');
+    expect(installerNsh).toContain('customFinish');
 
     const verifyScript = readFileSync(
       join(REPO_ROOT, 'scripts', 'verify-win-packaging.mjs'),
@@ -94,10 +79,32 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     );
     expect(verifyScript).toContain('win-arm64-unpacked');
     expect(verifyScript).toContain('-arm64.exe');
-    expect(verifyScript).toContain('NtExecutable.from');
+    expect(verifyScript).not.toContain('resedit');
   });
 
-  it('keeps dist:win build and release workflows bound to windows-latest', () => {
+  it('pins electron-builder to 26.15.4 or newer', () => {
+    const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
+      devDependencies?: Record<string, string>;
+    };
+    const version = packageJson.devDependencies?.['electron-builder']?.replace(/^[^\d]*/, '');
+    expect(version).toBeDefined();
+    const [major, minor, patch] = version!.split('.').map(Number);
+    expect(major).toBe(26);
+    expect(minor).toBeGreaterThanOrEqual(15);
+    if (minor === 15) {
+      expect(patch).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('runs NSIS install smoke tests in Windows CI workflows', () => {
+    const installScript = readFileSync(
+      join(REPO_ROOT, 'scripts', 'test-win-nsis-install.mjs'),
+      'utf-8',
+    );
+    expect(installScript).toContain('--arch x64');
+    expect(installScript).toContain('--probe-7z');
+    expect(installScript).toContain('/LOG=');
+
     const buildWorkflow = readFileSync(
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
       'utf-8',
@@ -105,6 +112,12 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     expect(buildWorkflow).toMatch(/- os: windows-latest\s+build_script: pnpm run dist:win/);
     expect(buildWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
+    );
+    expect(buildWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
+    expect(buildWorkflow).toContain('win-arm64-install:');
+    expect(buildWorkflow).toContain('runs-on: windows-11-arm');
+    expect(buildWorkflow).toContain(
+      'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
 
     const releaseWorkflow = readFileSync(
@@ -116,6 +129,12 @@ describe('Windows long-path application manifest (packaging contract)', () => {
     );
     expect(releaseWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
+    );
+    expect(releaseWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
+    expect(releaseWorkflow).toContain('win-arm64-install:');
+    expect(releaseWorkflow).toContain('runs-on: windows-11-arm');
+    expect(releaseWorkflow).toContain(
+      'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
   });
 });
