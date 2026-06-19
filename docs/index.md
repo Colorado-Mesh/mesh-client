@@ -61,6 +61,7 @@ For development setup and local build/test workflow, see:
   - [Diagnostics](diagnostics.md)
   - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
+  - Copy Debug Snapshot / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)
   - [Localization & Languages](localization.md)
   - [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md)
 - **Project**

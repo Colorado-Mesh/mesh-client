@@ -46,5 +46,7 @@ Describe any troubleshooting steps you've already attempted.
 **Logs**
 If applicable, paste relevant log output from the Log panel or main process terminal. For sensitive data, attach as a file or redact the content.
 
+For Chat, unread badge, or “connected but UI stale” issues, also paste the JSON from **App → Copy Debug Snapshot** (see [Troubleshooting — Copy Debug Snapshot](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)). Redact `myNodeNum` if you prefer.
+
 **Additional context**
 Add any other context about the problem here.

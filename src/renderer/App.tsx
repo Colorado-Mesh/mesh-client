@@ -33,6 +33,7 @@ import {
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { type ChatUnreadDmOptions, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
+import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -1438,6 +1439,27 @@ function AppContent({
   const chatMessagesForPanel = isChatPanelFrozen && freeze ? freeze.messages : activeUiMessages;
   const chatNodesForPanel = isChatPanelFrozen && freeze ? freeze.nodes : nodesForUi;
   const chatChannelsForPanel = isChatPanelFrozen && freeze ? freeze.channels : chatChannels;
+
+  useEffect(() => {
+    const liveResolvedMessageCount =
+      protocol === 'meshcore' ? meshcoreStoreMessages.length : meshtasticStoreMessages.length;
+    setDebugSnapshotUiContext({
+      activePanelIndex,
+      chatTabVisited,
+      chatPanelFrozen: isChatPanelFrozen,
+      frozenMessageCount: isChatPanelFrozen && freeze ? freeze.messages.length : null,
+      liveResolvedMessageCount,
+      activeProtocol: protocol,
+    });
+  }, [
+    activePanelIndex,
+    chatTabVisited,
+    isChatPanelFrozen,
+    freeze,
+    protocol,
+    meshcoreStoreMessages.length,
+    meshtasticStoreMessages.length,
+  ]);
 
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
