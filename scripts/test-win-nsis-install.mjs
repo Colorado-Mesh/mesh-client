@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } fr
 import { tmpdir } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { findAppArchive } from './find-nsis-app-archive.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -63,25 +64,34 @@ function run(cmd, args) {
   return result.status ?? 1;
 }
 
-/** @param {string} logLabel @param {string} dirPath */
-function dumpDir(logLabel, dirPath) {
+/** @param {string} logLabel @param {string} dirPath @param {number} [maxDepth] */
+function dumpDir(logLabel, dirPath, maxDepth = 1) {
   console.error(`[test-win-nsis-install] --- ${logLabel}: ${dirPath} ---`);
   if (!existsSync(dirPath)) {
     console.error('  (path does not exist)');
     return;
   }
-  try {
-    for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-      const full = path.join(dirPath, entry.name);
-      if (entry.isDirectory()) {
-        console.error(`  ${entry.name}/`);
-      } else {
-        console.error(`  ${entry.name} (${statSync(full).size} bytes)`);
+
+  /** @param {string} dir @param {string} indent @param {number} depth */
+  function list(dir, indent, depth) {
+    try {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          console.error(`${indent}${entry.name}/`);
+          if (depth < maxDepth) {
+            list(full, `${indent}  `, depth + 1);
+          }
+        } else {
+          console.error(`${indent}${entry.name} (${statSync(full).size} bytes)`);
+        }
       }
+    } catch (e) {
+      console.error(`${indent}(listing failed: ${e})`);
     }
-  } catch (e) {
-    console.error(`  (listing failed: ${e})`);
   }
+
+  list(dirPath, '  ', 0);
 }
 
 /** @param {string} installerPath @param {string} outDir */
@@ -105,23 +115,25 @@ function probe7zExtract(installerPath, outDir) {
     fail(`7z extract from installer failed (exit ${extractInstaller})`);
   }
 
-  const archives = readdirSync(outDir).filter((n) => n.endsWith('.7z'));
-  const appArchive = archives.find((n) => n.startsWith('app')) ?? archives[0];
-  if (!appArchive) {
-    dumpDir('probe-7z output', outDir);
+  const appArchivePath = findAppArchive(outDir);
+  if (!appArchivePath) {
+    dumpDir('probe-7z output', outDir, 2);
     fail('No app*.7z found inside installer after 7z extract');
   }
 
   const archiveDir = path.join(outDir, 'app-payload');
   mkdirSync(archiveDir, { recursive: true });
-  const extractArchive = run(sevenZ, ['x', `-o${archiveDir}`, path.join(outDir, appArchive), '-y']);
+  const appArchiveName = path.basename(appArchivePath);
+  const extractArchive = run(sevenZ, ['x', `-o${archiveDir}`, appArchivePath, '-y']);
   if (extractArchive !== 0) {
-    fail(`7z extract from ${appArchive} failed (exit ${extractArchive})`);
+    fail(`7z extract from ${appArchiveName} failed (exit ${extractArchive})`);
   }
 
   const exePath = path.join(archiveDir, APP_EXE);
   assertExe(`7z probe ${APP_EXE}`, exePath);
-  console.debug(`[test-win-nsis-install] OK — ${APP_EXE} present after 7z probe (${appArchive})`);
+  console.debug(
+    `[test-win-nsis-install] OK — ${APP_EXE} present after 7z probe (${appArchiveName})`,
+  );
 }
 
 /** @param {'x64' | 'arm64'} arch @param {boolean} probe7z */

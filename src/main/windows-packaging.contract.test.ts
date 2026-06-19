@@ -104,6 +104,14 @@ describe('Windows packaging (contract)', () => {
     expect(installScript).toContain('--arch x64');
     expect(installScript).toContain('--probe-7z');
     expect(installScript).toContain('/LOG=');
+    expect(installScript).toContain('find-nsis-app-archive.mjs');
+
+    const finderScript = readFileSync(
+      join(REPO_ROOT, 'scripts', 'find-nsis-app-archive.mjs'),
+      'utf-8',
+    );
+    expect(finderScript).toContain('$PLUGINSDIR');
+    expect(finderScript).toContain('findAppArchive');
 
     const buildWorkflow = readFileSync(
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
@@ -115,6 +123,8 @@ describe('Windows packaging (contract)', () => {
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
     );
     expect(buildWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
+    expect(buildWorkflow).toContain('Smoke test macOS packaging');
+    expect(buildWorkflow).toContain('Smoke test Linux packaging');
     expect(buildWorkflow).toContain('win-arm64-install:');
     expect(buildWorkflow).toContain('runs-on: windows-11-arm');
     expect(buildWorkflow).toContain(
@@ -138,5 +148,42 @@ describe('Windows packaging (contract)', () => {
     expect(releaseWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
+  });
+
+  it('runs macOS and Linux packaging smoke tests in dist scripts and CI workflows', () => {
+    const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
+      scripts?: Record<string, string>;
+    };
+    for (const scriptName of ['dist:mac', 'dist:mac:publish'] as const) {
+      const script = packageJson.scripts?.[scriptName];
+      expect(script, scriptName).toBeDefined();
+      expect(script).toContain('node scripts/verify-mac-packaging.mjs');
+    }
+    for (const scriptName of ['dist:linux', 'dist:linux:publish'] as const) {
+      const script = packageJson.scripts?.[scriptName];
+      expect(script, scriptName).toBeDefined();
+      expect(script).toContain('node scripts/verify-linux-packaging.mjs');
+    }
+
+    const macVerify = readFileSync(join(REPO_ROOT, 'scripts', 'verify-mac-packaging.mjs'), 'utf-8');
+    expect(macVerify).toContain('.app');
+    expect(macVerify).toContain("'Contents', 'MacOS'");
+    expect(macVerify).toContain('Mesh-client');
+
+    const linuxVerify = readFileSync(
+      join(REPO_ROOT, 'scripts', 'verify-linux-packaging.mjs'),
+      'utf-8',
+    );
+    expect(linuxVerify).toContain('.AppImage');
+    expect(linuxVerify).toContain('.deb');
+    expect(linuxVerify).toContain('.rpm');
+
+    for (const workflowName of ['build.yaml', 'release.yaml'] as const) {
+      const workflow = readFileSync(join(REPO_ROOT, '.github', 'workflows', workflowName), 'utf-8');
+      expect(workflow).toContain('Smoke test macOS packaging');
+      expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
+      expect(workflow).toContain('Smoke test Linux packaging');
+      expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
+    }
   });
 });

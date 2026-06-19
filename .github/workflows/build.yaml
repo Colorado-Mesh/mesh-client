@@ -68,6 +68,14 @@ jobs:
       - name: Build
         run: ${{ matrix.build_script }}
 
+      - name: Smoke test macOS packaging
+        if: matrix.os == 'macos-latest'
+        run: node scripts/verify-mac-packaging.mjs
+
+      - name: Smoke test Linux packaging
+        if: matrix.os == 'ubuntu-latest'
+        run: node scripts/verify-linux-packaging.mjs
+
       - name: Smoke test x64 NSIS install
         if: matrix.os == 'windows-latest'
         run: node scripts/test-win-nsis-install.mjs --arch x64
