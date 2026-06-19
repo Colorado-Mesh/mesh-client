@@ -30,6 +30,7 @@ import {
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
+  meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
   MESHMAPPER_HOST,
   readMeshcoreIdentity,
@@ -490,6 +491,8 @@ interface Props {
   onToggleManualContacts?: (manual: boolean) => Promise<void>;
   firmwareCheckState?: FirmwareCheckResult;
   onOpenFirmwareReleases?: () => void;
+  /** MeshCore: export private key from connected radio when MQTT identity cache is incomplete. */
+  ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
 }
 
 export default function ConnectionPanel({
@@ -504,6 +507,7 @@ export default function ConnectionPanel({
   onToggleManualContacts,
   firmwareCheckState,
   onOpenFirmwareReleases,
+  ensureMeshcoreMqttIdentity,
 }: Props) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -2537,6 +2541,9 @@ export default function ConnectionPanel({
                   if (presetErr) {
                     setMqttError(presetErr);
                     return;
+                  }
+                  if (ensureMeshcoreMqttIdentity && !meshcoreIdentityHasFullKeyPair()) {
+                    await ensureMeshcoreMqttIdentity();
                   }
                   const identity = await readMeshcoreIdentityAsync();
                   const hasFullIdentity = !!(identity?.private_key && identity?.public_key);

@@ -11,9 +11,11 @@ import {
   MESHCORE_ENC_PK_KEY,
   MESHCORE_IDENTITY_STORAGE_KEY,
   MESHCORE_PUBLIC_KEY_LENGTH,
+  meshcoreIdentityHasPrivateKey,
   MESHMAPPER_HOST,
   readMeshcoreIdentity,
   tryPersistMeshcoreIdentityFromRadioExport,
+  tryPersistMeshcorePublicKeyFromRadio,
 } from './letsMeshJwt';
 import { meshcoreSyntheticPlaceholderPubKeyHex } from './meshcoreUtils';
 
@@ -144,5 +146,41 @@ describe('letsMeshJwt', () => {
     expect(warnSpy.mock.calls[0]?.[0]).toContain('encrypt failed');
     encrypt.mockResolvedValue(null);
     warnSpy.mockRestore();
+  });
+
+  it('tryPersistMeshcorePublicKeyFromRadio stores public key only', () => {
+    const pub = Uint8Array.from(
+      sampleKeyPair.publicKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+    );
+    expect(tryPersistMeshcorePublicKeyFromRadio(pub)).toBe(true);
+    const id = readMeshcoreIdentity();
+    expect((id?.public_key as number[]).length).toBe(MESHCORE_PUBLIC_KEY_LENGTH);
+    expect(id?.private_key).toBeUndefined();
+    localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
+  });
+
+  it('tryPersistMeshcorePublicKeyFromRadio clears stale private key when pubkey changes', async () => {
+    const pubA = Uint8Array.from(
+      sampleKeyPair.publicKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+    );
+    const priv = Uint8Array.from(
+      sampleKeyPair.privateKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+    );
+    expect(await tryPersistMeshcoreIdentityFromRadioExport(pubA, priv)).toBe(true);
+    expect(meshcoreIdentityHasPrivateKey()).toBe(true);
+
+    const pubB = Uint8Array.from(pubA);
+    pubB[0] = (pubB[0] + 1) & 0xff;
+    expect(tryPersistMeshcorePublicKeyFromRadio(pubB)).toBe(true);
+    expect(meshcoreIdentityHasPrivateKey()).toBe(false);
+    localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
+    localStorage.removeItem(MESHCORE_ENC_PK_KEY);
+  });
+
+  it('tryPersistMeshcorePublicKeyFromRadio rejects synthetic placeholder pubkey', () => {
+    const hex = meshcoreSyntheticPlaceholderPubKeyHex(0xabc);
+    const pub = Uint8Array.from(hex.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+    expect(tryPersistMeshcorePublicKeyFromRadio(pub)).toBe(false);
+    expect(localStorage.getItem(MESHCORE_IDENTITY_STORAGE_KEY)).toBeNull();
   });
 });

@@ -82,7 +82,10 @@ import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSenderRepair';
 import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
-import { tryPersistMeshcoreIdentityFromRadioExport } from '../lib/letsMeshJwt';
+import {
+  meshcoreIdentityHasFullKeyPair,
+  tryPersistMeshcorePublicKeyFromRadio,
+} from '../lib/letsMeshJwt';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import type {
   CayenneLppEntry,
@@ -141,6 +144,8 @@ import {
   parseMeshcoreGetNeighboursResponse,
 } from '../lib/meshcoreGetNeighboursBinary';
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
+import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
+import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomAutoLoginFailure,
@@ -237,6 +242,7 @@ import {
   finalizeMeshcoreDriverIdentity,
   meshcoreTransportParams,
 } from '../lib/meshIdentityBridge';
+import { tryAutoLaunchMqtt } from '../lib/mqttAutoLaunch';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import {
   effectiveMessageTimestampMs,
@@ -757,6 +763,17 @@ export function useMeshcoreRuntime() {
       } else if (prev === 'connected') {
         setMqttConnectionLoss(true);
       }
+    });
+  }, []);
+
+  const maybeAutoLaunchMeshcoreMqttAfterIdentity = useCallback(() => {
+    if (!readMeshcoreMqttSettingsFromStorage().autoLaunch) return;
+    if (mqttStatusRef.current !== 'disconnected') return;
+    void tryAutoLaunchMqtt('meshcore').catch((e: unknown) => {
+      console.warn(
+        '[useMeshcoreRuntime] MQTT auto-launch after identity persist failed ' +
+          errLikeToLogString(e),
+      );
     });
   }, []);
 
@@ -1630,6 +1647,7 @@ export function useMeshcoreRuntime() {
 
       const myNodeId = pubkeyToNodeId(info.publicKey);
       persistMeshcoreSelfNodeId(myNodeId);
+      tryPersistMeshcorePublicKeyFromRadio(info.publicKey);
       setState((prev) => ({
         ...prev,
         myNodeNum: myNodeId,
@@ -1725,41 +1743,6 @@ export function useMeshcoreRuntime() {
       triggerRoomAutoLoginRef.current();
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
-      // MQTT identity, firmware, channels — deferred so Repeaters/Contacts populate first.
-      void (async () => {
-        try {
-          const rawExport = await awaitUnlessMeshcoreSetupCancelled(
-            setupGen,
-            withTimeout(conn.exportPrivateKey(), 10_000, 'exportPrivateKey'),
-          );
-          const privBytes = coerceMeshcoreExportPrivateKeyResult(rawExport);
-          void tryPersistMeshcoreIdentityFromRadioExport(info.publicKey, privBytes);
-        } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') return;
-          console.debug(
-            '[useMeshcoreRuntime] exportPrivateKey for MQTT identity cache skipped ' +
-              errLikeToLogString(e),
-          );
-        }
-
-        try {
-          const deviceInfo = await conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER);
-          setState((prev) => {
-            const next = { ...prev };
-            if (deviceInfo?.firmware_build_date) {
-              next.firmwareVersion = deviceInfo.firmware_build_date;
-            }
-            const mm = meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
-            if (mm) {
-              next.manufacturerModel = mm;
-            }
-            return next;
-          });
-        } catch {
-          // catch-no-log-ok deviceQuery optional for firmware string
-        }
-      })();
-
       // Re-resolve map/App GPS after nodesRef picks up getSelfInfo advert coords (same tick as setNodes is too early).
       requestAnimationFrame(() => {
         queueMicrotask(() => {
@@ -1843,6 +1826,44 @@ export function useMeshcoreRuntime() {
         );
       }
 
+      try {
+        const deviceInfo = await awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
+        );
+        setState((prev) => {
+          const next = { ...prev };
+          if (deviceInfo?.firmware_build_date) {
+            next.firmwareVersion = deviceInfo.firmware_build_date;
+          }
+          const mm = meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
+          if (mm) {
+            next.manufacturerModel = mm;
+          }
+          return next;
+        });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        // catch-no-log-ok deviceQuery optional for firmware string
+      }
+
+      // MQTT private key export runs after other init RPCs to avoid meshcore.js listener races
+      // (Linux Web Bluetooth is especially sensitive).
+      try {
+        const persisted = await awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          exportAndPersistMeshcoreMqttIdentity(conn, info.publicKey, transportType),
+        );
+        if (persisted) {
+          maybeAutoLaunchMeshcoreMqttAfterIdentity();
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        console.warn(
+          '[useMeshcoreRuntime] initConn MQTT identity export failed ' + errLikeToLogString(e),
+        );
+      }
+
       // Proactively fetch any messages that queued while disconnected.
       // Mirrors what event 131 does, but covers reconnects where the event was missed.
       try {
@@ -1875,6 +1896,7 @@ export function useMeshcoreRuntime() {
       buildNodesFromContacts,
       deferMeshcoreDbContactMerge,
       handleMeshcorePathUpdatedFromIngest,
+      maybeAutoLaunchMeshcoreMqttAfterIdentity,
       meshcorePreviousNodesBaselineForBuild,
       refreshMeshcoreAutoaddFromDevice,
       resolveMeshcoreStoreIdentityId,
@@ -5254,6 +5276,28 @@ export function useMeshcoreRuntime() {
     }
   }, []);
 
+  const ensureMeshcoreMqttIdentity = useCallback(async (): Promise<boolean> => {
+    if (meshcoreIdentityHasFullKeyPair()) return true;
+    const conn = connRef.current;
+    const publicKey = selfInfoRef.current?.publicKey;
+    if (
+      !conn ||
+      !publicKey?.length ||
+      (state.status !== 'configured' && state.status !== 'connected')
+    ) {
+      return false;
+    }
+    const ok = await exportAndPersistMeshcoreMqttIdentity(
+      conn,
+      publicKey,
+      meshcoreConnectTypeRef.current,
+    );
+    if (ok) {
+      maybeAutoLaunchMeshcoreMqttAfterIdentity();
+    }
+    return ok;
+  }, [maybeAutoLaunchMeshcoreMqttAfterIdentity, state.status]);
+
   // ─── MeshCore Waiting Messages ───────────────────────────────────
   const getWaitingMessages = useCallback(async (): Promise<unknown[] | null> => {
     const conn = connRef.current;
@@ -5711,6 +5755,7 @@ export function useMeshcoreRuntime() {
       signData,
       exportPrivateKey,
       importPrivateKey,
+      ensureMeshcoreMqttIdentity,
       getWaitingMessages,
       syncNextMessage,
       getRemoteAdminKeyForNode,
@@ -5818,6 +5863,7 @@ export function useMeshcoreRuntime() {
       signData,
       exportPrivateKey,
       importPrivateKey,
+      ensureMeshcoreMqttIdentity,
       getWaitingMessages,
       syncNextMessage,
       getRemoteAdminKeyForNode,
