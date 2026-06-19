@@ -51,9 +51,13 @@ export async function exportAndPersistMeshcoreMqttIdentity(
   const maxAttempts = meshcoreMqttIdentityExportMaxAttempts(transportType);
   let lastErr: unknown = null;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const rawExport = await withTimeout(conn.exportPrivateKey(), timeoutMs, 'exportPrivateKey');
+      const rawExport = await withTimeout(
+        conn.exportPrivateKey(),
+        timeoutMs,
+        'MeshCore MQTT identity export (exportPrivateKey)',
+      );
       const privBytes = coerceMeshcoreExportPrivateKeyResult(rawExport);
       if (await tryPersistMeshcoreIdentityFromRadioExport(publicKey, privBytes)) {
         return true;
@@ -62,7 +66,7 @@ export async function exportAndPersistMeshcoreMqttIdentity(
     } catch (e) {
       // catch-no-log-ok retry loop — final failure logged once after all attempts
       lastErr = e;
-      if (attempt < maxAttempts) {
+      if (attempt < maxAttempts - 1) {
         await new Promise<void>((r) =>
           setTimeout(r, MESHCORE_MQTT_IDENTITY_EXPORT_LINUX_BLE_RETRY_DELAY_MS),
         );
