@@ -4,8 +4,15 @@ import type { RefObject } from 'react';
 import { parseChatMentionSegments } from './chatMentionSegments';
 import type { ChatMessage } from './types';
 
-/** Pixels from latest message treated as “at bottom” (Jump to Latest, follow-on-append, mark read). */
+/** Pixels from latest message treated as “at bottom” (Jump to Latest, read-state, mark read). */
 export const CHAT_SCROLL_END_THRESHOLD = 200;
+
+/**
+ * TanStack Virtual end-pin threshold (`wasAtEnd`, `followOnAppend`, default `isAtEnd()`).
+ * Tighter than {@link CHAT_SCROLL_END_THRESHOLD} so one Windows mouse wheel notch (~60px)
+ * clears the library's independent resize scroll-correction path.
+ */
+export const VIRTUALIZER_SCROLL_END_THRESHOLD = 30;
 
 /** Extra virtual row height budget when the unread divider renders in that row. */
 export const CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX = 40;
@@ -164,9 +171,11 @@ export function createChatScrollAdjustPredicate(deps: ChatScrollAdjustDeps) {
   return (
     item: VirtualItem,
     _delta: number,
-    instance: Pick<Virtualizer<HTMLDivElement, Element>, 'scrollDirection'>,
+    instance: Pick<Virtualizer<HTMLDivElement, Element>, 'scrollDirection' | 'isAtEnd'>,
   ): boolean => {
     if (instance.scrollDirection === 'backward') return false;
+    // Pin ref updates in React onScroll, after virtualizer flushSync during resizeItem.
+    if (!instance.isAtEnd()) return false;
     if (item.index === deps.unreadStartIndexRef.current) return false;
     if (!deps.isPinnedToBottomRef.current) return false;
     return true;

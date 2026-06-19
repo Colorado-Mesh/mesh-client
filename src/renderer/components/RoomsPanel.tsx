@@ -85,6 +85,7 @@ import {
   findIndexByRowKey,
   getDistFromChatBottom,
   scheduleVirtualRowRemeasure,
+  VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -380,7 +381,7 @@ export default function RoomsPanel({
     },
     anchorTo: 'end',
     followOnAppend: true,
-    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
+    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
   });
 
   postVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({

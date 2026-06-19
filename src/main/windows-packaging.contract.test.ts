@@ -146,12 +146,13 @@ describe('Windows packaging (contract)', () => {
     expect(buildWorkflow).toContain('packaging-smoke:');
     expect(buildWorkflow).toContain('label: x64 NSIS install');
     expect(buildWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
-    expect(buildWorkflow).toContain('win-arm64-install:');
-    expect(buildWorkflow).toContain('runs-on: windows-11-arm');
+    expect(buildWorkflow).toContain('label: arm64 NSIS install (WoA)');
+    expect(buildWorkflow).toContain('- os: windows-11-arm');
     expect(buildWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
     expect(buildWorkflow).toContain('needs: build');
+    expect(buildWorkflow).not.toContain('win-arm64-install:');
 
     const buildJobBlock = buildWorkflow.slice(
       buildWorkflow.indexOf('  build:'),
@@ -174,12 +175,13 @@ describe('Windows packaging (contract)', () => {
     expect(releaseWorkflow).toContain('packaging-smoke:');
     expect(releaseWorkflow).toContain('label: x64 NSIS install');
     expect(releaseWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
-    expect(releaseWorkflow).toContain('win-arm64-install:');
-    expect(releaseWorkflow).toContain('runs-on: windows-11-arm');
+    expect(releaseWorkflow).toContain('label: arm64 NSIS install (WoA)');
+    expect(releaseWorkflow).toContain('- os: windows-11-arm');
     expect(releaseWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
     expect(releaseWorkflow).toContain('needs: release');
+    expect(releaseWorkflow).not.toContain('win-arm64-install:');
 
     const releaseJobBlock = releaseWorkflow.slice(
       releaseWorkflow.indexOf('  release:'),

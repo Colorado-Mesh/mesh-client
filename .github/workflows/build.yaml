@@ -127,6 +127,10 @@ jobs:
             label: x64 NSIS install
             artifact: mesh-client-windows-${{ github.sha }}
             smoke_run: node scripts/test-win-nsis-install.mjs --arch x64
+          - os: windows-11-arm
+            label: arm64 NSIS install (WoA)
+            artifact: mesh-client-windows-${{ github.sha }}
+            smoke_run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -150,27 +154,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  win-arm64-install:
-    name: Smoke test arm64 NSIS install (WoA)
-    needs: build
-    runs-on: windows-11-arm
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Download Windows build artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: mesh-client-windows-${{ github.sha }}
-          path: release
-
-      - name: Smoke test arm64 NSIS install (7z probe + install)
-        run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
-
-      - name: Upload arm64 install failure logs
-        if: failure()
+      - name: Upload Windows arm64 install failure logs
+        if: failure() && matrix.os == 'windows-11-arm'
         uses: actions/upload-artifact@v7
         with:
           name: mesh-client-win-arm64-install-logs-${{ github.sha }}
