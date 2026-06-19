@@ -308,7 +308,12 @@ MeshCore runs simultaneously alongside Meshtastic. Use the protocol switcher pil
 
 ## Quick Start
 
-**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required. **Flatpak** bundles (`org.coloradomesh.MeshClient-x86_64.flatpak` and `org.coloradomesh.MeshClient-aarch64.flatpak`) are published on each version tag for Flatpak-enabled Linux:
+**Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required.
+
+- **Windows (Intel/AMD x64):** `Mesh-client Setup {version}.exe`
+- **Windows 11 on ARM (Snapdragon, etc.):** `Mesh-client Setup {version}-arm64.exe` — do not use the x64 installer on native ARM hardware.
+
+**Flatpak** bundles (`org.coloradomesh.MeshClient-x86_64.flatpak` and `org.coloradomesh.MeshClient-aarch64.flatpak`) are published on each version tag for Flatpak-enabled Linux:
 
 ```bash
 flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak # or -aarch64

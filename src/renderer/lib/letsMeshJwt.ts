@@ -64,6 +64,57 @@ export async function syncMeshcoreActiveIdentityFromBackup(
 }
 
 /**
+ * After getSelfInfo, persist public key only so MQTT username (`v1_<pubkey>`) can populate before
+ * exportPrivateKey completes (Linux Web Bluetooth can be slow).
+ *
+ * If the pubkey changed vs stored identity, clears any stale private key material.
+ *
+ * @returns true if storage was updated or already held this pubkey.
+ */
+export function tryPersistMeshcorePublicKeyFromRadio(
+  publicKey: Uint8Array | null | undefined,
+): boolean {
+  if (publicKey?.length !== MESHCORE_PUBLIC_KEY_LENGTH) return false;
+  const pubHex = meshcorePubKeyBytesToHexLower(publicKey);
+  if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubHex)) return false;
+
+  try {
+    const existing = readMeshcoreIdentity();
+    const existingPub = normalizePublicKeyHex(existing?.public_key);
+    const pubkeyChanged = existingPub !== null && existingPub !== pubHex;
+
+    if (existingPub === pubHex && existing?.public_key) {
+      window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+      return true;
+    }
+
+    if (pubkeyChanged) {
+      localStorage.removeItem(MESHCORE_ENC_PK_KEY);
+    }
+
+    localStorage.setItem(
+      MESHCORE_IDENTITY_STORAGE_KEY,
+      JSON.stringify({ public_key: Array.from(publicKey) }),
+    );
+    window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+    return true;
+  } catch (err) {
+    console.warn(
+      '[letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' + errLikeToLogString(err),
+    );
+    return false;
+  }
+}
+
+/** True when active MQTT identity cache has both public and private key material. */
+export function meshcoreIdentityHasFullKeyPair(): boolean {
+  return (
+    meshcoreIdentityHasPrivateKey() &&
+    normalizePublicKeyHex(readMeshcoreIdentity()?.public_key) !== null
+  );
+}
+
+/**
  * After a MeshCore radio connects, persist identity from firmware export so LetsMesh MQTT can sign
  * JWTs without a separate JSON import (same storage shape as RadioPanel config import).
  *

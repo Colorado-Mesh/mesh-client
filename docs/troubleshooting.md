@@ -6,6 +6,28 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 
 See [development-environment.md](development-environment.md) for OS-specific prerequisite installation.
 
+### Windows: installed files present but `Mesh-client.exe` is missing (Windows 11 ARM)
+
+**Symptoms**
+
+- After running the NSIS installer, `%LOCALAPPDATA%\Programs\Mesh-client\` contains `resources\`, `locales\`, DLLs, and a Start Menu shortcut, but **`Mesh-client.exe` is absent**.
+- The app does not appear under **Settings → Apps → Installed apps**, so there is no uninstall entry (registry `DisplayIcon` points at the missing exe).
+- Windows Security **Protection history** shows no quarantine.
+
+**Cause**
+
+Older releases shipped a **universal** NSIS installer (x64 + arm64 in one `.exe`). On **native Windows 11 ARM**, that installer can partially extract support files while failing to copy the main executable.
+
+**Fix**
+
+1. Delete the broken install folder: `%LOCALAPPDATA%\Programs\Mesh-client\`
+2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client Setup {version}-arm64.exe` (not the x64-only `Mesh-client Setup {version}.exe`).
+3. Re-run the installer. Confirm `Mesh-client.exe` exists in the install folder and the app appears in **Installed apps**.
+
+**Workaround before a fixed release**
+
+Download a CI or release artifact's `win-arm64-unpacked` folder and run `Mesh-client.exe` directly (portable, no installer).
+
 ### Windows: "Could not find any Visual Studio installation to use"
 
 See [development-environment.md](development-environment.md#windows) for required build tools and the full recovery steps.

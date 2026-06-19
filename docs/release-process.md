@@ -84,7 +84,7 @@ Two workflows trigger automatically when the tag is pushed.
 
 - `macos-latest` → builds macOS `.dmg` and `.zip`
 - `ubuntu-latest` → builds Linux `.AppImage`, `.deb`, and `.rpm`
-- `windows-latest` → builds Windows `.exe` (NSIS installer)
+- `windows-latest` → builds Windows NSIS installers (x64 + arm64, separate `.exe` files)
 
 **`flatpak.yaml`** (GitHub → Actions → "Build Flatpak"):
 
@@ -104,7 +104,7 @@ Once the workflow completes:
    - macOS: `.dmg`, `.zip` (x64 and arm64)
    - Linux: `.AppImage`, `.deb`, `.rpm`
    - Linux Flatpak: `org.coloradomesh.MeshClient-x86_64.flatpak` and `org.coloradomesh.MeshClient-aarch64.flatpak` (added by `flatpak.yaml` — may arrive a few minutes after the others)
-   - Windows: `.exe`
+   - Windows: `Mesh-client Setup {version}.exe` (x64) and `Mesh-client Setup {version}-arm64.exe` (Windows 11 on ARM)
 4. Verify release notes are populated (auto-generated from commits)
 
 ### 6. Publish Release Notes (Optional)
@@ -188,7 +188,8 @@ The workflow produces the following artifacts:
 | macOS (arm64)   | `{name}-{version}-arm64-mac.zip`, `{name}-{version}-arm64.dmg`                              |
 | Linux           | `{name}-{version}.AppImage`, `{name}-{version}.deb`, `{name}-{version}.rpm`                 |
 | Linux (Flatpak) | `org.coloradomesh.MeshClient-x86_64.flatpak`, `org.coloradomesh.MeshClient-aarch64.flatpak` |
-| Windows         | `{name} Setup {version}.exe`                                                                |
+| Windows (x64)   | `{name} Setup {version}.exe`                                                                |
+| Windows (arm64) | `{name} Setup {version}-arm64.exe` (Windows 11 on ARM — use this, not the x64 installer)    |
 
 Artifacts are signed with your developer certificate (macOS/Windows) if configured in `electron-builder` config.
 

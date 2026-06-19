@@ -77,8 +77,22 @@ describe('Windows long-path application manifest (packaging contract)', () => {
       expect(script).toMatch(
         /pnpm run build && node scripts\/dist-win-hoisted-install\.mjs && electron-builder --win/,
       );
+      expect(script).toContain('node scripts/verify-win-packaging.mjs');
       expect(script).toContain('node scripts/dist-win-restore-node-modules.mjs');
     }
+  });
+
+  it('disables universal NSIS and verifies split Windows installers after dist:win', () => {
+    const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
+    expect(yml).toMatch(/nsis:\s*\n\s*buildUniversalInstaller:\s*false/);
+
+    const verifyScript = readFileSync(
+      join(REPO_ROOT, 'scripts', 'verify-win-packaging.mjs'),
+      'utf-8',
+    );
+    expect(verifyScript).toContain('win-arm64-unpacked');
+    expect(verifyScript).toContain('-arm64.exe');
+    expect(verifyScript).toContain('NtExecutable.from');
   });
 
   it('keeps dist:win build and release workflows bound to windows-latest', () => {

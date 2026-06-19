@@ -2219,6 +2219,7 @@ function AppContent({
                                 : undefined
                             }
                             protocol="meshcore"
+                            ensureMeshcoreMqttIdentity={meshcoreRuntime.ensureMeshcoreMqttIdentity}
                             firmwareCheckState={
                               protocol === 'meshcore' ? firmwareCheckState : undefined
                             }
