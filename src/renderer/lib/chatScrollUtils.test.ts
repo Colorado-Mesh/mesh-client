@@ -1,8 +1,10 @@
+import type { RefObject } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   CHAT_LINK_PREVIEW_ESTIMATE_PX,
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
+  createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   estimateChatRowHeight,
   findFirstMessageIndexByDayKey,
@@ -46,6 +48,56 @@ function mockMeasureInstance(
     },
   };
 }
+
+describe('createChatScrollAdjustPredicate', () => {
+  const item = { index: 2, key: 'k2', start: 192, size: 96, end: 288, lane: 0 };
+
+  function makePredicate(
+    overrides: {
+      unreadStartIndex?: number;
+      isPinned?: boolean;
+    } = {},
+  ) {
+    const unreadStartIndexRef = {
+      current: overrides.unreadStartIndex ?? -1,
+    } as RefObject<number>;
+    const isPinnedToBottomRef = {
+      current: overrides.isPinned ?? true,
+    } as RefObject<boolean>;
+    return createChatScrollAdjustPredicate({ unreadStartIndexRef, isPinnedToBottomRef });
+  }
+
+  function mockInstance(scrollDirection: 'forward' | 'backward' | null, atEnd: boolean) {
+    return { scrollDirection, isAtEnd: () => atEnd };
+  }
+
+  it('returns false when scrolling backward', () => {
+    const adjust = makePredicate();
+    expect(adjust(item, 0, mockInstance('backward', true) as never)).toBe(false);
+  });
+
+  it('returns false when virtualizer is no longer at end (stale pin ref)', () => {
+    const adjust = makePredicate({ isPinned: true });
+    expect(adjust(item, 0, mockInstance('forward', false) as never)).toBe(false);
+    expect(adjust(item, 0, mockInstance(null, false) as never)).toBe(false);
+  });
+
+  it('returns false at unread divider index', () => {
+    const adjust = makePredicate({ unreadStartIndex: 2 });
+    expect(adjust(item, 0, mockInstance('forward', true) as never)).toBe(false);
+  });
+
+  it('returns false when not pinned to bottom', () => {
+    const adjust = makePredicate({ isPinned: false });
+    expect(adjust(item, 0, mockInstance('forward', true) as never)).toBe(false);
+  });
+
+  it('returns true when pinned, at end, and not on unread divider', () => {
+    const adjust = makePredicate();
+    expect(adjust(item, 0, mockInstance('forward', true) as never)).toBe(true);
+    expect(adjust(item, 0, mockInstance(null, true) as never)).toBe(true);
+  });
+});
 
 describe('getChatDayKey', () => {
   it('uses 1-based calendar month (June is 6, not zero-based 5)', () => {

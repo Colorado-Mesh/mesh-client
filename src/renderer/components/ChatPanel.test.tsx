@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe';
 
 import * as chatNotifications from '../lib/chatNotifications';
 import { draftsStorageKey, lastReadStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
-import { getDistFromChatBottom } from '../lib/chatScrollUtils';
+import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
@@ -915,16 +915,24 @@ describe('ChatPanel scroll pinning', () => {
     );
     expect(lastVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
-    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(200);
+    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
     expect(lastVirtualizerOptions?.measureElement).toBeTypeOf('function');
     const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
       item: { index: number },
       delta: number,
-      instance: { scrollDirection: 'forward' | 'backward' | null },
+      instance: {
+        scrollDirection: 'forward' | 'backward' | null;
+        isAtEnd: () => boolean;
+      },
     ) => boolean;
     expect(adjust).toBeTypeOf('function');
-    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward' })).toBe(true);
-    expect(adjust({ index: 0 }, 0, { scrollDirection: 'backward' })).toBe(false);
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => true })).toBe(true);
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'backward', isAtEnd: () => true })).toBe(
+      false,
+    );
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => false })).toBe(
+      false,
+    );
   });
 
   it('scrolls to unread via scrollToIndex on view switch, not scrollIntoView', async () => {
@@ -1104,11 +1112,21 @@ describe('ChatPanel scroll pinning', () => {
     vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
 
     const initial = Array.from({ length: 5 }, (_, i) => makeMsg(i));
-    const { rerender } = render(
+    const { container, rerender } = render(
       <ToastProvider>
         <ChatPanel {...baseProps} messages={initial} />
       </ToastProvider>,
     );
+
+    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(scrollContainer);
 
     mockScrollToEnd.mockClear();
     scrollIntoView.mockClear();

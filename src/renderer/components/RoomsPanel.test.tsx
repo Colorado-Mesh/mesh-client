@@ -10,6 +10,7 @@ import {
   saveStarred,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { VIRTUALIZER_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
 import { buildMeshcoreRoomIncomingMessage } from '@/renderer/lib/meshcoreChannelText';
 import {
   clearAllMeshcoreRoomAutoLoginFailures,
@@ -1170,6 +1171,7 @@ describe('RoomsPanel', () => {
     });
     expect(lastRoomsVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastRoomsVirtualizerOptions?.followOnAppend).toBe(true);
+    expect(lastRoomsVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
     expect(lastRoomsVirtualizerOptions?.measureElement).toBeTypeOf('function');
   });
 });
