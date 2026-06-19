@@ -213,34 +213,35 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 
 ### Common issues
 
-| Symptom                   | Where to check                                                                                                                                  |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection fails          | `ConnectionDriver`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts`                                                          |
-| Send fails                | `useSendMessage`, runtime send paths                                                                                                            |
-| UI stale                  | Zustand store, effect deps                                                                                                                      |
-| Empty chat/nodes offline  | `hydrateIdentityStoresFromDb`, connect-time cache in runtimes, `useDbRefresh`                                                                   |
-| BLE timeout               | `noble-ble-manager.ts`, `bleConnectErrors`                                                                                                      |
-| Serial missing            | `serialPortSignature.ts`                                                                                                                        |
-| MQTT loop                 | `mqtt-manager.ts`                                                                                                                               |
-| DB errors                 | `database.ts` migrations                                                                                                                        |
-| Log gaps                  | `log-service.ts`, log tags                                                                                                                      |
-| Chat export fails         | `chat:export` handler in `src/main/index.ts`                                                                                                    |
-| Draft not restored        | `chatPanelProtocolStorage.ts`, `viewKey` logic                                                                                                  |
-| Mention picker missing    | `MentionAutocomplete.tsx`, `buildMentionCandidates`                                                                                             |
-| Link preview missing      | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC                                                                                              |
-| Duplicate RF+MQTT msg     | `meshtasticMessageDedup.ts`, Meshtastic runtime ingest                                                                                          |
-| MeshCore duplicate/echo   | `meshcoreStoreDedup.ts`, `useMeshcoreRuntime.ts`                                                                                                |
-| Room login/post fails     | `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, [troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10) |
-| Rooms unread vs Chat      | `meshcoreRoomsUnread.ts` — Rooms tab badge only                                                                                                 |
-| MQTT decrypt / sender     | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`                                                                                                  |
-| Remote admin fails        | `meshtasticRemoteAdmin.ts`, key storage                                                                                                         |
-| S&F history garbled       | `meshtasticBacklogUtils.ts` decode, heartbeat trigger                                                                                           |
-| Garbled TEXT_MESSAGE      | `meshtasticBacklogUtils.ts` readable-text filter                                                                                                |
-| Channel URL apply         | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts`                                                                                          |
-| Header red on loss        | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts`                                                                                          |
-| Sleep/wake reconnect      | `usePowerRecovery`, `systemPowerState`, `bleReconnectHelper`, `rfReconnectHelper`, runtimes; ~4s post-wake delay                                |
-| MeshCore contact prune    | `meshcoreContactAgeCutoff.ts`, `database.ts` (`last_advert` seconds); favorited exempt                                                          |
-| MQTT transient after wake | `networkTransientErrors.ts`, `mqtt:powerSuspend` / `mqtt:powerResume` IPC                                                                       |
+| Symptom                               | Where to check                                                                                                                                                                                         |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Connection fails                      | `ConnectionDriver`, `runtime/useMeshtasticRuntime.ts`, `runtime/useMeshcoreRuntime.ts`                                                                                                                 |
+| Send fails                            | `useSendMessage`, runtime send paths                                                                                                                                                                   |
+| UI stale                              | Zustand store, effect deps                                                                                                                                                                             |
+| Empty chat/nodes offline              | `hydrateIdentityStoresFromDb`, connect-time cache in runtimes, `useDbRefresh`; identity split — [troubleshooting](docs/troubleshooting.md#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) |
+| Chat stuck / badge moves, no new rows | `identityByProtocol`, `useActiveMeshIdentity`, `mergeOfflineIdentityStore`; **Copy Debug Snapshot** — [troubleshooting](docs/troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)            |
+| BLE timeout                           | `noble-ble-manager.ts`, `bleConnectErrors`                                                                                                                                                             |
+| Serial missing                        | `serialPortSignature.ts`                                                                                                                                                                               |
+| MQTT loop                             | `mqtt-manager.ts`                                                                                                                                                                                      |
+| DB errors                             | `database.ts` migrations                                                                                                                                                                               |
+| Log gaps                              | `log-service.ts`, log tags                                                                                                                                                                             |
+| Chat export fails                     | `chat:export` handler in `src/main/index.ts`                                                                                                                                                           |
+| Draft not restored                    | `chatPanelProtocolStorage.ts`, `viewKey` logic                                                                                                                                                         |
+| Mention picker missing                | `MentionAutocomplete.tsx`, `buildMentionCandidates`                                                                                                                                                    |
+| Link preview missing                  | `fetchLinkPreview.ts`, `chat:fetchLinkPreview` IPC                                                                                                                                                     |
+| Duplicate RF+MQTT msg                 | `meshtasticMessageDedup.ts`, Meshtastic runtime ingest                                                                                                                                                 |
+| MeshCore duplicate/echo               | `meshcoreStoreDedup.ts`, `useMeshcoreRuntime.ts`                                                                                                                                                       |
+| Room login/post fails                 | `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, [troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)                                                        |
+| Rooms unread vs Chat                  | `meshcoreRoomsUnread.ts` — Rooms tab badge only                                                                                                                                                        |
+| MQTT decrypt / sender                 | `mqtt-manager.ts`, `meshtasticMqttIdentity.ts`                                                                                                                                                         |
+| Remote admin fails                    | `meshtasticRemoteAdmin.ts`, key storage                                                                                                                                                                |
+| S&F history garbled                   | `meshtasticBacklogUtils.ts` decode, heartbeat trigger                                                                                                                                                  |
+| Garbled TEXT_MESSAGE                  | `meshtasticBacklogUtils.ts` readable-text filter                                                                                                                                                       |
+| Channel URL apply                     | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts`                                                                                                                                                 |
+| Header red on loss                    | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts`                                                                                                                                                 |
+| Sleep/wake reconnect                  | `usePowerRecovery`, `systemPowerState`, `bleReconnectHelper`, `rfReconnectHelper`, runtimes; ~4s post-wake delay                                                                                       |
+| MeshCore contact prune                | `meshcoreContactAgeCutoff.ts`, `database.ts` (`last_advert` seconds); favorited exempt                                                                                                                 |
+| MQTT transient after wake             | `networkTransientErrors.ts`, `mqtt:powerSuspend` / `mqtt:powerResume` IPC                                                                                                                              |
 
 ## 9. Cursor / Claude indexing
 

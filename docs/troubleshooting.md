@@ -265,6 +265,99 @@ BLE or Wi‑Fi/HTTP avoids this USB serial path when you need a reliable reconne
 
 Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.
 
+### Reporting bugs: **Copy Debug Snapshot** (App tab)
+
+For Chat, unread badges, or “connected but UI looks stale” reports, use **App → Data Management → Copy Debug Snapshot** before opening a GitHub issue. The button copies a JSON support bundle to the clipboard (via Electron clipboard IPC, not the browser API).
+
+**What to read first (ignore misleading `offline-*` ids):**
+
+| Field                                    | Healthy connected example | Meaning                           |
+| ---------------------------------------- | ------------------------- | --------------------------------- |
+| `sessionSummary.<protocol>.liveSession`  | `true`                    | RF/MQTT session is live           |
+| `sessionSummary.<protocol>.sessionState` | `"live"`                  | Not DB-hydrated-only              |
+| `activeTab.liveSession`                  | `true`                    | Active protocol tab is connected  |
+| `warnings`                               | `[]`                      | No stuck-chat signatures detected |
+
+The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
+
+**Per-protocol bucket fields** (under `meshtastic` / `meshcore`):
+
+- `hydrationSlotId` — pre-connect DB hydration bucket (`offline-meshtastic` / `offline-meshcore`).
+- `connectIdentityId` — connected radio/MQTT identity.
+- `uiStoreIdentityId` — bucket Chat and Nodes read from.
+- `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
+- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — Chat list may be frozen while messages still arrive.
+
+**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen`, `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
+
+Attach the JSON (redact `myNodeNum` if you prefer) alongside **Log → Export** when possible.
+
+### Chat stuck: new traffic in logs/DB but messages do not appear
+
+**Symptoms**
+
+- BLE/MQTT show connected; **Log** or SQLite still records new messages.
+- Chat scroll area jumps or unread badges move, but **message list stops updating** (often after reconnect or protocol switch).
+- A **Copy Debug Snapshot** may show `identitySplit: true`, `staleResolvedBucket`, or `connectMessageCount` newer than `uiStoreMessageCount`.
+
+**Cause**
+
+Live packets were written to the **connected identity** store bucket while Chat read the **offline hydration** bucket (`offline-meshcore` / `offline-meshtastic`). This could happen when the connected identity was empty on reconnect and the UI fell back to the hydration slot even though ingress had resumed on the live id.
+
+**Fix**
+
+1. Update to a build that includes the identity-bucket fix (merge on connect, stricter offline fallback, reactive identity resolution).
+2. **Disconnect and reconnect**, or quit and reopen the app so offline slices merge into the connected identity.
+3. If Chat is still stale: **App → Copy Debug Snapshot** and attach to your issue; check `warnings` and `sessionSummary`.
+4. As a last resort before clearing data: **App → Export Database**, then try **Import (merge)** after updating — do not downgrade the app after migrations.
+
+This is **not** SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.
+
+### Chat or Rooms: scroll jumps when switching tabs
+
+**Symptoms**
+
+- Leaving **Chat** or **Rooms** and returning jumps to the bottom, or scroll position is lost, even when you were reading older messages.
+
+**Cause**
+
+Older builds remounted panel content on tab switch. Recent fixes restore scroll position on re-entry and only auto-scroll to latest when you were already pinned to the bottom.
+
+**Fix**
+
+- Update to the latest release.
+- If you were scrolled up reading history, the panel should return to the same position after tab switch.
+- If you were at the bottom, new messages should still scroll into view on return.
+
+### Nodes list shows wrong protocol labels or mixed Meshtastic/MeshCore rows
+
+**Symptoms**
+
+- Meshtastic **Nodes** includes MeshCore-only contacts (or vice versa) after upgrading from an older database.
+- Room-server rows appear under the wrong protocol tab.
+
+**Cause**
+
+Legacy SQLite rows could cross-contaminate the shared `nodes` table before protocol-scoped identity stores. Startup maintenance now repairs and guards ingest on current builds.
+
+**Fix**
+
+- Update to the latest release and **restart once** so idempotent startup repairs run (`db-schema-sync`).
+- If the list is still wrong, export the DB, note your app version, and file an issue with **Copy Debug Snapshot** + **Log → Export**.
+
+### Chat notification sounds when the window is minimized
+
+**Symptoms**
+
+- No sound for DMs/replies when the app is in the background, or only a single tone for all message types.
+
+**Fix**
+
+- Check **App** notification mute and per-channel/DM mute in Chat.
+- Recent builds use distinct Web Audio tones (channel vs DM/reply) and resume audio when the window is hidden or minimized. Ensure the app is not globally muted (`mesh-client:notifMuted` in localStorage clears when you re-enable sounds in UI).
+
+**Meshtastic desktop notifications** remain visual-only (`silent: true`); typed sounds come from the app’s Web Audio path.
+
 ### Permission messages in the console
 
 `[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation**; media and web-app-installation are intentionally denied.

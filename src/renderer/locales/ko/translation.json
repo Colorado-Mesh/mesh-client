@@ -181,7 +181,11 @@
     "importSchemaTooNew": "이 데이터베이스 파일에는 최신 Mesh-Client(스키마 {{dbVersion}})가 필요합니다. 이 빌드는 스키마 {{appVersion}} 이하만 지원합니다. 최신 릴리스를 설치한 뒤 다시 시도하세요.",
     "floodAdvertTypeLabel": "Advert 유형",
     "floodAdvertTypeFlood": "홍수 (멀티 홉)",
-    "floodAdvertTypeZeroHop": "제로 홉 (직접 이웃만 해당)"
+    "floodAdvertTypeZeroHop": "제로 홉 (직접 이웃만 해당)",
+    "copyDebugSnapshot": "디버그 스냅샷 복사",
+    "copyDebugSnapshotButton": "디버그 스냅샷 복사",
+    "debugSnapshotCopied": "디버그 스냅샷이 클립보드에 복사되었습니다",
+    "debugSnapshotFailed": "디버그 스냅샷을 복사할 수 없습니다"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Для цього файлу бази даних потрібен новий Mesh-Client (схема {{dbVersion}}). Ця збірка підтримує схему {{appVersion}} або старішу. Встановіть останню версію та повторіть спробу.",
     "floodAdvertTypeLabel": "Тип оголошення",
     "floodAdvertTypeFlood": "Повінь (багатомагістральна)",
-    "floodAdvertTypeZeroHop": "Нульовий стрибок (лише прямі сусіди)"
+    "floodAdvertTypeZeroHop": "Нульовий стрибок (лише прямі сусіди)",
+    "copyDebugSnapshot": "Копіювати знімок налагодження",
+    "copyDebugSnapshotButton": "Копіювати знімок налагодження",
+    "debugSnapshotCopied": "Знімок налагодження скопійовано до буфера обміну",
+    "debugSnapshotFailed": "Не вдалося скопіювати знімок налагодження"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

@@ -1090,6 +1090,145 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'Mesh-Client');
   });
 
+  const enDebugSnapshotCopied = 'Debug snapshot copied to clipboard';
+  const enDebugSnapshotFailed = 'Could not copy debug snapshot';
+
+  it('flags French Déboguer imperative on debugSnapshotCopied', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'appPanel.debugSnapshotCopied',
+      val: "Déboguer l'instantané copié dans le presse-papiers",
+      enVal: enDebugSnapshotCopied,
+    });
+    expectIssue(issues, 'debugSnapshotCopied false friend');
+  });
+
+  it('flags pt-BR Depurar imperative on debugSnapshotCopied', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pt-BR',
+      flatKey: 'appPanel.debugSnapshotCopied',
+      val: 'Depurar instantâneo copiado para a área de transferência',
+      enVal: enDebugSnapshotCopied,
+    });
+    expectIssue(issues, 'debugSnapshotCopied false friend');
+  });
+
+  it('flags Korean scrambled word order on debugSnapshotCopied', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'appPanel.debugSnapshotCopied',
+      val: '클립보드에 복사된 스냅샷 디버그',
+      enVal: enDebugSnapshotCopied,
+    });
+    expectIssue(issues, 'debugSnapshotCopied false friend');
+  });
+
+  it('flags Dutch mixed EN snapshot on debugSnapshotCopied', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'appPanel.debugSnapshotCopied',
+      val: 'Foutopsporing snapshot gekopieerd naar klembord',
+      enVal: enDebugSnapshotCopied,
+    });
+    expectIssue(issues, 'debugSnapshot mixed EN snapshot');
+  });
+
+  it('flags French EN snapshot on debugSnapshotFailed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'appPanel.debugSnapshotFailed',
+      val: 'Impossible de copier le snapshot de débogage',
+      enVal: enDebugSnapshotFailed,
+    });
+    expectIssue(issues, 'debugSnapshot mixed EN snapshot');
+  });
+
+  it('flags German Fehlerbehebungs term on debugSnapshotFailed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'appPanel.debugSnapshotFailed',
+      val: 'Fehlerbehebungs-Snapshot konnte nicht kopiert werden',
+      enVal: enDebugSnapshotFailed,
+    });
+    expectIssue(issues, 'Debug-Snapshot" consistently');
+  });
+
+  it('flags Indonesian clipboard on debugSnapshotCopied', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'appPanel.debugSnapshotCopied',
+      val: 'Snapshot debug disalin ke clipboard',
+      enVal: enDebugSnapshotCopied,
+    });
+    expectIssue(issues, 'papan klip');
+  });
+
+  it('passes fixed debugSnapshotCopied in French', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'fr',
+        flatKey: 'appPanel.debugSnapshotCopied',
+        val: 'Instantané de débogage copié dans le presse-papiers',
+        enVal: enDebugSnapshotCopied,
+      }),
+    ).toEqual([]);
+  });
+
+  it('passes fixed debugSnapshotCopied in Korean', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'ko',
+        flatKey: 'appPanel.debugSnapshotCopied',
+        val: '디버그 스냅샷이 클립보드에 복사되었습니다',
+        enVal: enDebugSnapshotCopied,
+      }),
+    ).toEqual([]);
+  });
+
+  it('passes fixed debugSnapshotCopied in Dutch', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'nl',
+        flatKey: 'appPanel.debugSnapshotCopied',
+        val: 'Debug-snapshot gekopieerd naar klembord',
+        enVal: enDebugSnapshotCopied,
+      }),
+    ).toEqual([]);
+  });
+
+  it('passes fixed debugSnapshotCopied in pt-BR', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'pt-BR',
+        flatKey: 'appPanel.debugSnapshotCopied',
+        val: 'Instantâneo de depuração copiado para a área de transferência',
+        enVal: enDebugSnapshotCopied,
+      }),
+    ).toEqual([]);
+  });
+
+  it('passes fixed debugSnapshotFailed in German', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'appPanel.debugSnapshotFailed',
+        val: 'Debug-Snapshot konnte nicht kopiert werden',
+        enVal: enDebugSnapshotFailed,
+      }),
+    ).toEqual([]);
+  });
+
+  it('passes fixed debugSnapshotCopied in Indonesian', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'id',
+        flatKey: 'appPanel.debugSnapshotCopied',
+        val: 'Snapshot debug disalin ke papan klip',
+        enVal: enDebugSnapshotCopied,
+      }),
+    ).toEqual([]);
+  });
+
   it('passes fixed meshcoreDistanceFilterHint in Japanese', () => {
     expect(
       localeStringQualityIssues({

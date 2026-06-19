@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Bu veritabanı dosyası daha yeni bir Mesh-Client gerektiriyor (şema {{dbVersion}}). Bu yapı {{appVersion}} veya daha eski bir şemayı destekler. En son sürümü yükleyin ve tekrar deneyin.",
     "floodAdvertTypeLabel": "Advert türü",
     "floodAdvertTypeFlood": "Sel (çoklu atlama)",
-    "floodAdvertTypeZeroHop": "Sıfır atlama (yalnızca doğrudan komşular)"
+    "floodAdvertTypeZeroHop": "Sıfır atlama (yalnızca doğrudan komşular)",
+    "copyDebugSnapshot": "Hata ayıklama anlık görüntüsünü kopyala",
+    "copyDebugSnapshotButton": "Hata Ayıklama Anlık Görüntüsünü Kopyala",
+    "debugSnapshotCopied": "Hata ayıklama anlık görüntüsü panoya kopyalandı",
+    "debugSnapshotFailed": "Hata ayıklama anlık görüntüsü kopyalanamadı"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

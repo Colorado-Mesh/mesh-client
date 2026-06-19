@@ -15,6 +15,7 @@ import {
 import { clearMessageIdentity } from '../../stores/messageStore';
 import { clearNodeIdentity } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { mergeOfflineStoreIntoIdentity } from '../mergeOfflineIdentityStore';
 import { tryReuseOfflineProtocolIdentity } from '../offlineProtocolIdentities';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
@@ -217,6 +218,7 @@ export class ConnectionDriver {
       connectionType: transportTypeToConnectionType(params.type),
     });
     setActiveIdentity(identityId);
+    mergeOfflineStoreIntoIdentity(protocol.type as 'meshtastic' | 'meshcore', identityId);
 
     return identityId;
   }

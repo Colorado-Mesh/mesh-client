@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Ce fichier de base de données nécessite un Mesh-Client plus récent (schéma {{dbVersion}}). Cette version prend en charge le schéma {{appVersion}} ou plus ancien. Installez la dernière version et réessayez.",
     "floodAdvertTypeLabel": "Type d'advert",
     "floodAdvertTypeFlood": "Inondation (multi-sauts)",
-    "floodAdvertTypeZeroHop": "Zero-hop (voisins directs uniquement)"
+    "floodAdvertTypeZeroHop": "Zero-hop (voisins directs uniquement)",
+    "copyDebugSnapshot": "Copier l'instantané de débogage",
+    "copyDebugSnapshotButton": "Copier l'instantané de débogage",
+    "debugSnapshotCopied": "Instantané de débogage copié dans le presse-papiers",
+    "debugSnapshotFailed": "Impossible de copier l'instantané de débogage"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

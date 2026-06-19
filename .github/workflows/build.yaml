@@ -68,28 +68,6 @@ jobs:
       - name: Build
         run: ${{ matrix.build_script }}
 
-      - name: Smoke test macOS packaging
-        if: matrix.os == 'macos-latest'
-        run: node scripts/verify-mac-packaging.mjs
-
-      - name: Smoke test Linux packaging
-        if: matrix.os == 'ubuntu-latest'
-        run: node scripts/verify-linux-packaging.mjs
-
-      - name: Smoke test x64 NSIS install
-        if: matrix.os == 'windows-latest'
-        run: node scripts/test-win-nsis-install.mjs --arch x64
-
-      - name: Upload Windows install failure logs
-        if: failure() && matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v7
-        with:
-          name: mesh-client-win-x64-install-logs-${{ github.sha }}
-          path: |
-            ${{ runner.temp }}/mesh-client-install-x64.log
-          if-no-files-found: ignore
-          retention-days: 7
-
       - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v7
@@ -102,6 +80,7 @@ jobs:
             release/mac-arm64/**/*.zip
             release/mac-universal/**/*.dmg
             release/mac-universal/**/*.zip
+            release/mac*/**/Mesh-client.app/**
             release/*.dmg
             release/*.zip
           retention-days: 30
@@ -126,6 +105,50 @@ jobs:
             # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
             release/*.exe
           retention-days: 30
+
+  packaging-smoke:
+    name: Smoke test ${{ matrix.label }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            label: macOS packaging
+            artifact: mesh-client-macos-${{ github.sha }}
+            smoke_run: node scripts/verify-mac-packaging.mjs
+          - os: ubuntu-latest
+            label: Linux packaging
+            artifact: mesh-client-linux-${{ github.sha }}
+            smoke_run: node scripts/verify-linux-packaging.mjs
+          - os: windows-latest
+            label: x64 NSIS install
+            artifact: mesh-client-windows-${{ github.sha }}
+            smoke_run: node scripts/test-win-nsis-install.mjs --arch x64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: release
+
+      - name: Run packaging smoke test
+        run: ${{ matrix.smoke_run }}
+
+      - name: Upload Windows x64 install failure logs
+        if: failure() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-win-x64-install-logs-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/mesh-client-install-x64.log
+          if-no-files-found: ignore
+          retention-days: 7
 
   win-arm64-install:
     name: Smoke test arm64 NSIS install (WoA)

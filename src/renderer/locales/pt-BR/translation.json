@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Este arquivo de banco de dados requer um Mesh-Client mais recente (esquema {{dbVersion}}). Esta compilação suporta o esquema {{appVersion}} ou mais antigo. Instale a versão mais recente e tente novamente.",
     "floodAdvertTypeLabel": "Tipo de advert",
     "floodAdvertTypeFlood": "Inundação (multi-hop)",
-    "floodAdvertTypeZeroHop": "Zero-hop (apenas vizinhos diretos)"
+    "floodAdvertTypeZeroHop": "Zero-hop (apenas vizinhos diretos)",
+    "copyDebugSnapshot": "Copiar instantâneo de depuração",
+    "copyDebugSnapshotButton": "Copiar instantâneo de depuração",
+    "debugSnapshotCopied": "Instantâneo de depuração copiado para a área de transferência",
+    "debugSnapshotFailed": "Não foi possível copiar o instantâneo de depuração"
   },
   "aria": {
     "closeDialog": "Fechar janela",

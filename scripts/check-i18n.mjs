@@ -9,7 +9,8 @@
  *    name sets differ from English for the same key.
  * 5. Fails on locale quality issues (mojibake, broken meshtastic://, false friends, etc.)
  *    via check-i18n-quality.mjs — including modulePanel.* strings still identical to English,
- *    appPanel.reduceMotionDesc loading-spinner false friends, rawPacketLog protocol tokens,
+ *    appPanel.reduceMotionDesc loading-spinner false friends, appPanel.debugSnapshot*
+ *    copied-toast false friends and mixed EN "snapshot" residue, rawPacketLog protocol tokens,
  *    and flood/zero-hop advert commercial false friends on branch advert UI keys.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.

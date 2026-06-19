@@ -181,7 +181,11 @@
     "importSchemaTooNew": "Ten plik bazy danych wymaga nowszego klienta Mesh (schemat {{dbVersion}}). Ta kompilacja obsługuje schemat {{appVersion}} lub starszy. Zainstaluj najnowszą wersję i spróbuj ponownie.",
     "floodAdvertTypeLabel": "Typ ogłoszenia",
     "floodAdvertTypeFlood": "Powódź (wielokrotny przeskok)",
-    "floodAdvertTypeZeroHop": "Zero hop (tylko bezpośredni sąsiedzi)"
+    "floodAdvertTypeZeroHop": "Zero hop (tylko bezpośredni sąsiedzi)",
+    "copyDebugSnapshot": "Kopiuj migawkę debugowania",
+    "copyDebugSnapshotButton": "Kopiuj migawkę debugowania",
+    "debugSnapshotCopied": "Skopiowano migawkę debugowania do schowka",
+    "debugSnapshotFailed": "Nie można skopiować migawki debugowania"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
