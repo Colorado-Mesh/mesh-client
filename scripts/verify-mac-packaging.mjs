@@ -14,8 +14,18 @@ const projectRoot = path.resolve(__dirname, '..');
 const releaseDir = path.join(projectRoot, 'release');
 
 const APP_NAME = 'Mesh-client';
-const MACOS_BINARY = path.join('Contents', 'MacOS', APP_NAME);
-const MIN_EXE_BYTES = 50 * 1024 * 1024;
+const MACOS_LAUNCHER = path.join('Contents', 'MacOS', APP_NAME);
+const ELECTRON_FRAMEWORK_BINARY = path.join(
+  'Contents',
+  'Frameworks',
+  'Electron Framework.framework',
+  'Versions',
+  'A',
+  'Electron Framework',
+);
+/** Thin Mach-O launcher in Contents/MacOS (Electron 30+); real runtime is in the framework. */
+const MIN_LAUNCHER_BYTES = 1024;
+const MIN_FRAMEWORK_BYTES = 50 * 1024 * 1024;
 const MIN_DMG_BYTES = 1024 * 1024;
 const MIN_ZIP_BYTES = 1024 * 1024;
 
@@ -65,17 +75,22 @@ function main() {
     fail(`No ${APP_NAME}.app bundle found under ${releaseDir}`);
   }
 
-  let validatedBinary = false;
+  let validatedBundle = false;
   for (const bundle of appBundles) {
-    const binaryPath = path.join(bundle, MACOS_BINARY);
-    if (existsSync(binaryPath)) {
-      assertMinSize(`macOS binary in ${path.basename(bundle)}`, binaryPath, MIN_EXE_BYTES);
-      validatedBinary = true;
+    const launcherPath = path.join(bundle, MACOS_LAUNCHER);
+    const frameworkPath = path.join(bundle, ELECTRON_FRAMEWORK_BINARY);
+    if (existsSync(launcherPath) && existsSync(frameworkPath)) {
+      const bundleName = path.basename(bundle);
+      assertMinSize(`macOS launcher in ${bundleName}`, launcherPath, MIN_LAUNCHER_BYTES);
+      assertMinSize(`Electron Framework in ${bundleName}`, frameworkPath, MIN_FRAMEWORK_BYTES);
+      validatedBundle = true;
       break;
     }
   }
-  if (!validatedBinary) {
-    fail(`No ${MACOS_BINARY} found in any .app bundle under ${releaseDir}`);
+  if (!validatedBundle) {
+    fail(
+      `No ${MACOS_LAUNCHER} + ${ELECTRON_FRAMEWORK_BINARY} found in any .app bundle under ${releaseDir}`,
+    );
   }
 
   const releaseFiles = readdirSync(releaseDir, { withFileTypes: true })
@@ -100,7 +115,7 @@ function main() {
 
   const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
   console.debug(
-    `[verify-mac-packaging] OK — ${APP_NAME}.app binary + ${dmgs.length} dmg, ${zips.length} zip (v${version})`,
+    `[verify-mac-packaging] OK — ${APP_NAME}.app launcher + Electron Framework + ${dmgs.length} dmg, ${zips.length} zip (v${version})`,
   );
 }
 

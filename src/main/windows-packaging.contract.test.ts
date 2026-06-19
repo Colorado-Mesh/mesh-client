@@ -168,6 +168,7 @@ describe('Windows packaging (contract)', () => {
     const macVerify = readFileSync(join(REPO_ROOT, 'scripts', 'verify-mac-packaging.mjs'), 'utf-8');
     expect(macVerify).toContain('.app');
     expect(macVerify).toContain("'Contents', 'MacOS'");
+    expect(macVerify).toContain('Electron Framework.framework');
     expect(macVerify).toContain('Mesh-client');
 
     const linuxVerify = readFileSync(
