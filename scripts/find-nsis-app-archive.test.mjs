@@ -21,10 +21,20 @@ describe('findAppArchive', () => {
     return dir;
   }
 
-  it('returns null when no .7z archives exist', () => {
+  it('returns null when no payload archives exist', () => {
     const root = makeTemp();
     mkdirSync(path.join(root, '$PLUGINSDIR'));
     expect(findAppArchive(root)).toBeNull();
+  });
+
+  it('finds app-arm64.zip nested under $PLUGINSDIR', () => {
+    const root = makeTemp();
+    const pluginsDir = path.join(root, '$PLUGINSDIR');
+    mkdirSync(pluginsDir, { recursive: true });
+    const archive = path.join(pluginsDir, 'app-arm64.zip');
+    writeFileSync(archive, 'fake');
+
+    expect(findAppArchive(root)).toBe(archive);
   });
 
   it('finds app-arm64.7z nested under $PLUGINSDIR', () => {

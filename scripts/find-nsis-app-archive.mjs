@@ -3,10 +3,10 @@ import path from 'path';
 
 /**
  * Recursively find the electron-builder NSIS app payload archive inside a 7z NSIS extract.
- * Prefers app*.7z under $PLUGINSDIR (electron-builder layout).
+ * Prefers app*.7z or app*.zip under $PLUGINSDIR (electron-builder layout).
  *
  * @param {string} rootDir
- * @returns {string | null} absolute path to the chosen .7z archive
+ * @returns {string | null} absolute path to the chosen payload archive
  */
 export function findAppArchive(rootDir) {
   /** @type {string[]} */
@@ -18,7 +18,7 @@ export function findAppArchive(rootDir) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (entry.name.endsWith('.7z')) {
+      } else if (entry.name.endsWith('.7z') || entry.name.endsWith('.zip')) {
         archives.push(full);
       }
     }

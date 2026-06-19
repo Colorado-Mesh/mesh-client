@@ -67,11 +67,13 @@ describe('Windows packaging (contract)', () => {
   it('disables universal NSIS, includes post-install guard, and verifies split Windows installers', () => {
     const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
     expect(yml).toMatch(/nsis:\s*\n\s*buildUniversalInstaller:\s*false/);
+    expect(yml).toMatch(/useZip:\s*true/);
+    expect(yml).toMatch(/differentialPackage:\s*false/);
     expect(yml).toContain('include: resources/installer.nsh');
 
     const installerNsh = readFileSync(join(REPO_ROOT, 'resources', 'installer.nsh'), 'utf-8');
     expect(installerNsh).toContain('Mesh-client.exe');
-    expect(installerNsh).toContain('customFinish');
+    expect(installerNsh).toContain('customInstall');
 
     const verifyScript = readFileSync(
       join(REPO_ROOT, 'scripts', 'verify-win-packaging.mjs'),

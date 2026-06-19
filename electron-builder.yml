@@ -76,4 +76,7 @@ win:
   icon: resources/icons/win/colorado-mesh.ico
 nsis:
   buildUniversalInstaller: false
+  # WoA: Nsis7z cannot reliably extract ARM64 LZMA app-arm64.7z (main exe missing).
+  useZip: true
+  differentialPackage: false
   include: resources/installer.nsh
