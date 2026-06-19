@@ -10,15 +10,7 @@
  *   node scripts/test-win-nsis-install.mjs --arch arm64 [--probe-7z]
  */
 import { spawnSync } from 'child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -182,10 +174,6 @@ function main(arch, probe7z) {
   }
 
   assertExe(`installed ${APP_EXE}`, exePath);
-  writeFileSync(
-    path.join(tmpdir(), `mesh-client-install-${arch}-ok.txt`),
-    `${exePath}\n${statSync(exePath).size}\n`,
-  );
   console.debug(`[test-win-nsis-install] OK — ${arch} NSIS install left ${exePath}`);
 }
 
