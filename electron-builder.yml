@@ -75,3 +75,5 @@ win:
         - x64
         - arm64
   icon: resources/icons/win/colorado-mesh.ico
+nsis:
+  buildUniversalInstaller: false

@@ -101,6 +101,7 @@ jobs:
         with:
           name: mesh-client-windows-${{ github.sha }}
           path: |
+            # Per-arch NSIS installers: Mesh-client Setup {version}.exe + {version}-arm64.exe
             release/*.exe
             release/win-unpacked/**/*
             release/win-arm64-unpacked/**/*
