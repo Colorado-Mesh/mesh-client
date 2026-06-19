@@ -119,37 +119,55 @@ describe('Windows packaging (contract)', () => {
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
       'utf-8',
     );
-    // Matrix entry: `os` on its own line; `build_script` indented on the next line.
     expect(buildWorkflow).toMatch(/- os: windows-latest\s*\n\s+build_script: pnpm run dist:win/);
     expect(buildWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
     );
+    expect(buildWorkflow).toContain('packaging-smoke:');
+    expect(buildWorkflow).toContain('label: x64 NSIS install');
     expect(buildWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
-    expect(buildWorkflow).toContain('Smoke test macOS packaging');
-    expect(buildWorkflow).toContain('Smoke test Linux packaging');
     expect(buildWorkflow).toContain('win-arm64-install:');
     expect(buildWorkflow).toContain('runs-on: windows-11-arm');
     expect(buildWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
+    expect(buildWorkflow).toContain('needs: build');
+
+    const buildJobBlock = buildWorkflow.slice(
+      buildWorkflow.indexOf('  build:'),
+      buildWorkflow.indexOf('  packaging-smoke:'),
+    );
+    expect(buildJobBlock).not.toContain('- name: Smoke test macOS packaging');
+    expect(buildJobBlock).not.toContain('- name: Smoke test Linux packaging');
+    expect(buildJobBlock).not.toContain('- name: Smoke test x64 NSIS install');
 
     const releaseWorkflow = readFileSync(
       join(REPO_ROOT, '.github', 'workflows', 'release.yaml'),
       'utf-8',
     );
-    // Matrix entry: `os` on its own line; `build_script` indented on the next line.
     expect(releaseWorkflow).toMatch(
       /- os: windows-latest\s*\n\s+build_script: pnpm run dist:win:publish/,
     );
     expect(releaseWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
     );
+    expect(releaseWorkflow).toContain('packaging-smoke:');
+    expect(releaseWorkflow).toContain('label: x64 NSIS install');
     expect(releaseWorkflow).toContain('node scripts/test-win-nsis-install.mjs --arch x64');
     expect(releaseWorkflow).toContain('win-arm64-install:');
     expect(releaseWorkflow).toContain('runs-on: windows-11-arm');
     expect(releaseWorkflow).toContain(
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
+    expect(releaseWorkflow).toContain('needs: release');
+
+    const releaseJobBlock = releaseWorkflow.slice(
+      releaseWorkflow.indexOf('  release:'),
+      releaseWorkflow.indexOf('  packaging-smoke:'),
+    );
+    expect(releaseJobBlock).not.toContain('- name: Smoke test macOS packaging');
+    expect(releaseJobBlock).not.toContain('- name: Smoke test Linux packaging');
+    expect(releaseJobBlock).not.toContain('- name: Smoke test x64 NSIS install');
   });
 
   it('runs macOS and Linux packaging smoke tests in dist scripts and CI workflows', () => {
@@ -183,10 +201,13 @@ describe('Windows packaging (contract)', () => {
 
     for (const workflowName of ['build.yaml', 'release.yaml'] as const) {
       const workflow = readFileSync(join(REPO_ROOT, '.github', 'workflows', workflowName), 'utf-8');
-      expect(workflow).toContain('Smoke test macOS packaging');
+      expect(workflow).toContain('packaging-smoke:');
+      expect(workflow).toContain('name: Smoke test ${{ matrix.label }}');
+      expect(workflow).toContain('label: macOS packaging');
+      expect(workflow).toContain('label: Linux packaging');
       expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
-      expect(workflow).toContain('Smoke test Linux packaging');
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
+      expect(workflow).toContain('release/mac*/**/Mesh-client.app/**');
     }
   });
 });
