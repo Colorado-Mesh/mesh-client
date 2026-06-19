@@ -6,7 +6,7 @@ This document describes how maintainers create releases for Mesh-Client.
 
 ## Overview
 
-Releases are automated via the `.github/workflows/release.yaml` workflow. When a version tag is pushed, the workflow builds and publishes binaries for macOS, Linux, and Windows to GitHub Releases.
+Releases are automated via the `.github/workflows/release.yaml` workflow. When a version tag is pushed, the workflow builds and publishes binaries for macOS, Linux, and Windows to a **draft** GitHub Release. A maintainer reviews artifacts and publishes the release manually when ready.
 
 ---
 
@@ -94,12 +94,14 @@ Two workflows trigger automatically when the tag is pushed.
 
 Both workflows must complete before the release is fully populated.
 
-### 5. Verify Release
+### 5. Verify Release (Draft)
+
+Workflows create the GitHub Release as a **draft** so you can verify artifacts before users see it. The Flatpak publish step must pass `draft: true` to `action-gh-release`; otherwise it auto-publishes an existing draft after attaching bundles.
 
 Once the workflow completes:
 
 1. Go to GitHub → Releases
-2. Verify the new release appears with version tag
+2. Verify the new **draft** release appears with version tag
 3. Verify all platform artifacts are attached:
    - macOS: `.dmg`, `.zip` (x64 and arm64)
    - Linux: `.AppImage`, `.deb`, `.rpm`
@@ -107,15 +109,19 @@ Once the workflow completes:
    - Windows: `Mesh-client Setup {version}.exe` (x64) and `Mesh-client Setup {version}-arm64.exe` (Windows 11 on ARM)
 4. Verify release notes are populated (auto-generated from commits)
 
-### 6. Publish Release Notes (Optional)
+### 6. Publish the Release
 
-Edit the release on GitHub to add:
+When smoke tests pass and artifacts look correct:
 
-- Summary of changes
-- Breaking changes (if any)
-- New features
-- Bug fixes
-- Contributors
+1. Edit the draft release on GitHub to add release notes (if needed):
+   - Summary of changes
+   - Breaking changes (if any)
+   - New features
+   - Bug fixes
+   - Contributors
+2. Click **Publish release** to make it live.
+
+Until you publish, the tag exists but the release stays hidden from the public Releases page.
 
 ---
 
@@ -216,9 +222,11 @@ Upload artifacts manually to GitHub Releases, but note that this bypasses the au
 
 ## Post-Release Checklist
 
-- [ ] Verify release appears on GitHub Releases page
+- [ ] Verify draft release appears on GitHub Releases page
 - [ ] Verify all platform artifacts are attached
 - [ ] Test download and install on at least one platform
+- [ ] Edit release notes if needed
+- [ ] **Publish** the draft release on GitHub
 - [ ] Update documentation if needed
 - [ ] Announce release (Discord, etc.)
 - [ ] Close milestone if using GitHub milestones
