@@ -5,6 +5,27 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = join(__dirname, '..', '..');
 
+const SEMVER_CORE_RE = /^\d+\.\d+\.\d+$/;
+
+function stripSemverRange(version: string): string {
+  return version.replace(/^[^\d]*/, '');
+}
+
+function expectSemverParts(
+  version: string | undefined,
+  label: string,
+): [major: number, minor: number, patch: number] {
+  expect(version, label).toBeDefined();
+  const core = stripSemverRange(version!);
+  expect(core, `${label} semver`).toMatch(SEMVER_CORE_RE);
+  const parts = core.split('.').map(Number);
+  expect(parts, `${label} segments`).toHaveLength(3);
+  for (const part of parts) {
+    expect(Number.isFinite(part), `${label} numeric segment`).toBe(true);
+  }
+  return parts as [number, number, number];
+}
+
 describe('Windows packaging (contract)', () => {
   it('does not use afterPack resedit or longPathAware manifest embedding', () => {
     const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
@@ -23,7 +44,7 @@ describe('Windows packaging (contract)', () => {
       pnpm?: { patchedDependencies?: Record<string, string> };
     };
     const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
-    expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[~^]?4\./);
+    expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[~^]?4\.\d+\.\d+$/);
 
     const readableStreamLockRe = /^ {2}readable-stream@(4\.\d+\.\d+):$/m;
     const resolvedMatch = readableStreamLockRe.exec(lockfile);
@@ -39,9 +60,7 @@ describe('Windows packaging (contract)', () => {
       pnpm?: { overrides?: Record<string, string> };
     };
     const override = packageJson.pnpm?.overrides?.['@electron/asar'];
-    expect(override).toBeDefined();
-
-    const major = Number(override?.replace(/^[^\d]*/, '').split('.')[0]);
+    const [major] = expectSemverParts(override, '@electron/asar override');
     expect(major).toBeGreaterThanOrEqual(4);
 
     const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
@@ -88,9 +107,10 @@ describe('Windows packaging (contract)', () => {
     const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
       devDependencies?: Record<string, string>;
     };
-    const version = packageJson.devDependencies?.['electron-builder']?.replace(/^[^\d]*/, '');
-    expect(version).toBeDefined();
-    const [major, minor, patch] = version!.split('.').map(Number);
+    const [major, minor, patch] = expectSemverParts(
+      packageJson.devDependencies?.['electron-builder'],
+      'electron-builder',
+    );
     expect(major).toBe(26);
     expect(minor).toBeGreaterThanOrEqual(15);
     if (minor === 15) {
