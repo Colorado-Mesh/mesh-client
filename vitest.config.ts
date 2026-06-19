@@ -51,7 +51,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      reporter: ['text-summary', 'lcov'],
+      reporter: ['text-summary', 'lcov', 'cobertura'],
       include: ['src/main/**', 'src/preload/**', 'src/shared/**', 'src/renderer/**'],
       exclude: [
         '**/*.test.{ts,tsx,mjs}',
