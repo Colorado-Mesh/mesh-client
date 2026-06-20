@@ -7,32 +7,50 @@ const MESHCORE_GIF_SHORT_WIRE = /^g:([A-Za-z0-9_-]+)$/;
 const MESHCORE_GIF_ID = /^[A-Za-z0-9_-]+$/;
 const MESHCORE_GIF_PAGE_ID = /^[A-Za-z0-9_]+$/;
 
-function stripOptionalHttpPrefix(text: string): string {
-  return text.replace(/^https?:\/\//i, '');
+const GIPHY_MEDIA_ORIGIN = 'https://media.giphy.com';
+const GIPHY_PAGE_ORIGIN = 'https://giphy.com';
+
+function readHttpUrl(text: string): URL | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  try {
+    const href = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const url = new URL(href);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    return url;
+  } catch {
+    // catch-no-log-ok invalid user/mesh wire URL string
+    return null;
+  }
 }
 
 function parseGiphyMediaUrlId(text: string): string | null {
-  const path = stripOptionalHttpPrefix(text.trim());
-  const prefix = 'media.giphy.com/media/';
-  if (!path.startsWith(prefix)) return null;
-  const rest = path.slice(prefix.length);
-  const slashIdx = rest.indexOf('/');
-  if (slashIdx <= 0) return null;
-  const id = rest.slice(0, slashIdx);
-  const suffix = rest.slice(slashIdx);
-  if (suffix !== '/giphy.gif') return null;
+  const url = readHttpUrl(text);
+  if (url?.hostname !== 'media.giphy.com') return null;
+  const segments = url.pathname.split('/').filter((part) => part.length > 0);
+  if (segments.length !== 3 || segments[0] !== 'media' || segments[2] !== 'giphy.gif') {
+    return null;
+  }
+  const id = segments[1];
   return MESHCORE_GIF_ID.test(id) ? id : null;
 }
 
 function parseGiphyPageUrlId(text: string): string | null {
-  const path = stripOptionalHttpPrefix(text.trim()).replace(/\/$/, '');
-  const prefix = 'giphy.com/gifs/';
-  if (!path.startsWith(prefix)) return null;
-  const slug = path.slice(prefix.length);
+  const url = readHttpUrl(text);
+  if (url?.hostname !== 'giphy.com') return null;
+  const segments = url.pathname.split('/').filter((part) => part.length > 0);
+  if (segments.length < 2 || segments[0] !== 'gifs') return null;
+  const slug = segments.slice(1).join('/');
   if (!slug) return null;
   const dashIdx = slug.lastIndexOf('-');
   const id = dashIdx >= 0 ? slug.slice(dashIdx + 1) : slug;
   return MESHCORE_GIF_PAGE_ID.test(id) ? id : null;
+}
+
+function assertMeshcoreGifId(gifId: string): void {
+  if (!MESHCORE_GIF_ID.test(gifId)) {
+    throw new Error('Invalid Giphy id');
+  }
 }
 
 /** Parse Giphy GIF id from MeshCore Open wire text; null when not a GIF payload. */
@@ -44,9 +62,11 @@ export function parseMeshcoreGifId(text: string): string | null {
 }
 
 export function meshcoreGiphyMediaUrl(gifId: string): string {
-  return `https://media.giphy.com/media/${gifId}/giphy.gif`;
+  assertMeshcoreGifId(gifId);
+  return new URL(`/media/${gifId}/giphy.gif`, `${GIPHY_MEDIA_ORIGIN}/`).href;
 }
 
 export function meshcoreGiphyPageUrl(gifId: string): string {
-  return `https://giphy.com/gifs/${gifId}`;
+  assertMeshcoreGifId(gifId);
+  return new URL(`/gifs/${gifId}`, `${GIPHY_PAGE_ORIGIN}/`).href;
 }

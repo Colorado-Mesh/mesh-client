@@ -23,6 +23,11 @@ describe('parseMeshcoreGifId', () => {
     expect(parseMeshcoreGifId('hello mesh')).toBeNull();
     expect(parseMeshcoreGifId('g:')).toBeNull();
   });
+
+  it('rejects hostname bypass via substring prefix checks', () => {
+    expect(parseMeshcoreGifId('https://evil.com/media/giphy.com/media/x/giphy.gif')).toBeNull();
+    expect(parseMeshcoreGifId('https://media.giphy.com.evil.com/media/x/giphy.gif')).toBeNull();
+  });
 });
 
 describe('meshcoreGiphyMediaUrl', () => {
