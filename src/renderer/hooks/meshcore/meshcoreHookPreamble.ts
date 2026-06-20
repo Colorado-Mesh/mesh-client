@@ -534,7 +534,7 @@ export function findMeshcoreCrossTransportDuplicate(
   return undefined;
 }
 
-export function mapMeshcoreCrossTransportUpgrade(
+export function upgradeMeshcoreCrossTransportMessage(
   messages: readonly ChatMessage[],
   incoming: ChatMessage,
   windowMs: number = MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,

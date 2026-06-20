@@ -1088,6 +1088,9 @@ export function buildMeshcoreDmIncomingMessage(
 /** meshcore.js `TxtTypes.Plain` — outbound room BBS posts (companion SendTxtMsg). */
 export const MESHCORE_TXT_TYPE_PLAIN = 0;
 
+/** meshcore.js `TxtTypes.CliData` — remote CLI command/response wire text. */
+export const MESHCORE_TXT_TYPE_CLI_DATA = 1;
+
 /** meshcore.js `TxtTypes.SignedPlain` — room server pushed posts to logged-in clients. */
 export const MESHCORE_TXT_TYPE_SIGNED_PLAIN = 2;
 
