@@ -1238,6 +1238,8 @@ describe('RoomsPanel', () => {
     await user.click(screen.getByLabelText('roomsPanel.collapseRoomList'));
     expect(localStorage.getItem('mesh-client:roomsListCollapsed')).toBe('true');
     expect(screen.getByLabelText('roomsPanel.expandRoomList')).toBeInTheDocument();
+    expect(screen.queryByLabelText('roomsPanel.loginAllSavedAria')).not.toBeInTheDocument();
+    expect(screen.getByText('CR')).toBeInTheDocument();
     expect(screen.getByLabelText('Collapse Room')).toBeInTheDocument();
   });
 });

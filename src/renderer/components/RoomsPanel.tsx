@@ -137,6 +137,16 @@ function formatDayLabel(ts: number, t: TFunction): string {
 
 const ROOMS_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:roomsListCollapsed';
 
+function roomCollapsedLabel(longName: string | undefined, nodeId: number): string {
+  const name = longName?.trim();
+  if (name) {
+    const words = name.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  return nodeId.toString(16).slice(-2).toUpperCase();
+}
+
 interface Props {
   nodes: Map<number, MeshNode>;
   messages: ChatMessage[];
@@ -1370,41 +1380,34 @@ export default function RoomsPanel({
             roomListCollapsed ? 'w-16' : 'w-64'
           }`}
         >
-          <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
-            {!roomListCollapsed && (
+          {!roomListCollapsed && (
+            <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
               <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
                 {t('roomsPanel.title')}{' '}
                 <span className="text-gray-500">({roomServers.length})</span>
               </span>
-            )}
-            {roomListCollapsed && (
-              <span className="sr-only">
-                {t('roomsPanel.title')} ({roomServers.length})
-              </span>
-            )}
-            {onLoginAllSaved && roomServers.length > 0 ? (
-              <button
-                type="button"
-                onClick={handleLoginAllSaved}
-                disabled={loginAllSavedDisabled}
-                className={`shrink-0 rounded border ${
-                  roomListCollapsed ? 'px-1.5 py-1' : 'px-2 py-0.5 text-[10px] font-medium'
-                } ${
-                  loginAllSavedDisabled
-                    ? 'cursor-not-allowed border-gray-600 bg-gray-800 text-gray-500'
-                    : 'border-brand-green/60 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 cursor-pointer'
-                }`}
-                aria-label={t('roomsPanel.loginAllSavedAria')}
-                title={
-                  loginAllSavedDisabled && loginAllSavedDisabledReason
-                    ? loginAllSavedDisabledReason
-                    : t('roomsPanel.loginAllSavedTooltip')
-                }
-              >
-                {roomListCollapsed ? '↻' : t('roomsPanel.loginAllSaved')}
-              </button>
-            ) : null}
-          </div>
+              {onLoginAllSaved && roomServers.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleLoginAllSaved}
+                  disabled={loginAllSavedDisabled}
+                  className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-medium ${
+                    loginAllSavedDisabled
+                      ? 'cursor-not-allowed border-gray-600 bg-gray-800 text-gray-500'
+                      : 'border-brand-green/60 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 cursor-pointer'
+                  }`}
+                  aria-label={t('roomsPanel.loginAllSavedAria')}
+                  title={
+                    loginAllSavedDisabled && loginAllSavedDisabledReason
+                      ? loginAllSavedDisabledReason
+                      : t('roomsPanel.loginAllSavedTooltip')
+                  }
+                >
+                  {t('roomsPanel.loginAllSaved')}
+                </button>
+              ) : null}
+            </div>
+          )}
           {!roomListCollapsed && roomServers.length > 0 && (
             <div
               className="shrink-0 border-b border-gray-800 px-3 py-1.5 text-[10px] text-gray-500"
@@ -1562,8 +1565,14 @@ export default function RoomsPanel({
                       }
                     }}
                     className={`w-full cursor-pointer border-b border-gray-800 text-left transition-colors hover:bg-gray-800/60 ${
-                      roomListCollapsed ? 'flex justify-center px-1 py-2' : 'px-3 py-2'
-                    } ${selectedRoomId === room.node_id ? 'bg-gray-800/80' : ''}`}
+                      roomListCollapsed
+                        ? `flex justify-center border-l-2 px-1 py-1.5 ${
+                            selectedRoomId === room.node_id
+                              ? 'border-bright-green bg-sidebar-active-bg'
+                              : 'border-transparent'
+                          }`
+                        : `px-3 py-2 ${selectedRoomId === room.node_id ? 'bg-gray-800/80' : ''}`
+                    }`}
                     title={roomListCollapsed ? (room.long_name ?? String(room.node_id)) : undefined}
                     aria-label={
                       roomListCollapsed
@@ -1577,6 +1586,16 @@ export default function RoomsPanel({
                   >
                     {roomListCollapsed ? (
                       <div className="relative flex flex-col items-center gap-0.5">
+                        <span
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] leading-none font-semibold ${
+                            selectedRoomId === room.node_id
+                              ? 'text-bright-green bg-gray-800'
+                              : 'bg-gray-800/80 text-gray-200'
+                          }`}
+                          aria-hidden
+                        >
+                          {roomCollapsedLabel(room.long_name, room.node_id)}
+                        </span>
                         {isLoggingIn ? (
                           <span
                             className={ROOM_LOGIN_PROGRESS_DOT}
