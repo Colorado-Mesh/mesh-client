@@ -5,6 +5,7 @@ import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
   findMeshcoreDmReplyParent,
+  formatMeshcoreWireTapbackPrefix,
   meshcoreBracketDisplayNamesMatch,
   meshcoreChannelRepairRawText,
   meshcoreChatMessagesForDisplay,
@@ -474,6 +475,12 @@ describe('meshcoreChannelRepairRawText', () => {
       status: 'acked',
     });
     expect(raw).toBe('TB-Dek: @[W0STR mobl] agreed');
+  });
+});
+
+describe('formatMeshcoreWireTapbackPrefix', () => {
+  it('omits wire reply key so MQTT bridges do not show #timestamp in mentions', () => {
+    expect(formatMeshcoreWireTapbackPrefix('🐧 KF0KIT EDC')).toBe('@[🐧 KF0KIT EDC]');
   });
 });
 

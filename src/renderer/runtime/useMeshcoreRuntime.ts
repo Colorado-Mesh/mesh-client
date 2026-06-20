@@ -116,6 +116,7 @@ import {
 import {
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
+  formatMeshcoreWireTapbackPrefix,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
@@ -4977,8 +4978,7 @@ export function useMeshcoreRuntime() {
         storeMessages.find((m) => m.packetId === replyId || m.timestamp === replyId) ??
         messagesRef.current.find((m) => m.packetId === replyId || m.timestamp === replyId);
       const targetName = reactedTo?.sender_name || 'Unknown';
-      const replyKey = reactedTo ? (reactedTo.packetId ?? reactedTo.timestamp) : replyId;
-      const tapbackText = `${formatMeshcoreWireReplyPrefix(targetName, replyKey)} ${parsed.glyph}`;
+      const tapbackText = `${formatMeshcoreWireTapbackPrefix(targetName)} ${parsed.glyph}`;
       const conn = connRef.current;
       const me = myNodeNumRef.current;
 
