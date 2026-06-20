@@ -270,6 +270,24 @@ describe('buildMeshcoreDmIncomingMessage', () => {
     expect(msg.replyPreviewText).toBe('ping');
     expect(msg.replyPreviewSender).toBe('Bob');
   });
+
+  it('builds DM reaction from MeshCore Open r:HASH:INDEX wire', () => {
+    const hash = computeMeshcoreOpenReactionHash(Math.floor(t0 / 1000), null, 'ping');
+    const msg = buildMeshcoreDmIncomingMessage(thread, {
+      rawText: `r:${hash}:00`,
+      senderId: peer,
+      displayName: 'Bob',
+      timestamp: t0 + 100,
+      receivedVia: 'rf',
+      peerNodeId: peer,
+      myNodeId: me,
+      to: me,
+    });
+    expect(msg.emoji).toBe(0x1f44d);
+    expect(msg.replyId).toBe(t0);
+    expect(msg.payload).toBe('👍');
+    expect(msg.replyPreviewText).toBe('ping');
+  });
 });
 
 describe('meshcorePayloadIsTapbackEmojiOnly', () => {

@@ -195,9 +195,6 @@ export const MESHCORE_OPEN_REACTION_EMOJIS: readonly string[] = [
   '🚀',
 ] as const;
 
-/** Thrown from MeshCore `sendReaction` when the glyph is not in the Open index table. */
-export const MESHCORE_REACTION_NOT_INTEROPERABLE = 'MESHCORE_REACTION_NOT_INTEROPERABLE';
-
 const MESHCORE_OPEN_REACTION_WIRE = /^r:([0-9a-f]{4}):([0-9a-f]{2})$/i;
 
 /** Dart VM `StringHasher` + 30-bit finalize — matches MeshCore Open `String.hashCode`. */

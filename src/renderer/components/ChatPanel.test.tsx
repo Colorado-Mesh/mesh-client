@@ -143,6 +143,49 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByText('beta message')).toBeInTheDocument();
   });
 
+  it('clears message filter via search clear button without closing search', async () => {
+    const now = Date.now();
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          isConnected
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'alpha message',
+              channel: 0,
+              timestamp: now - 2000,
+              status: 'acked',
+            },
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'beta message',
+              channel: 0,
+              timestamp: now - 1000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByLabelText('Search messages'));
+    const searchInput = screen.getByLabelText('Search messages...');
+    await user.type(searchInput, 'alpha');
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(1);
+    });
+    await user.click(screen.getByLabelText('Clear'));
+    expect(searchInput).toHaveValue('');
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(2);
+    });
+    expect(screen.getByLabelText('Search messages...')).toBeInTheDocument();
+  });
+
   it('emoji picker opens for the correct message when messages have no packetId', async () => {
     // Messages without packetId must use timestamp as picker key so re-renders
     // don't shift the picker to a different message (regression: was using -(i+1)).
