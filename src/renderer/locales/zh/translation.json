@@ -2400,7 +2400,9 @@
     "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
     "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。",
     "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
-    "membersHeadingWithCount": "成员({{count}})"
+    "membersHeadingWithCount": "成员({{count}})",
+    "collapseRoomList": "折叠房间列表",
+    "expandRoomList": "展开房间列表"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

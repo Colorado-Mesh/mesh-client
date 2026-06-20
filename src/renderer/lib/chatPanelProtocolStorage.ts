@@ -117,9 +117,25 @@ export function loadMutedViews(protocol: MeshProtocol): Set<string> {
 export function saveMutedViews(protocol: MeshProtocol, views: Set<string>): void {
   try {
     localStorage.setItem(`mesh-client:mutedViews:${protocol}`, JSON.stringify([...views]));
+    notifyMutedViewsChanged(protocol);
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] saveMutedViews failed ' + errLikeToLogString(e));
   }
+}
+
+const mutedViewsSubscribers = new Set<(protocol: MeshProtocol) => void>();
+
+export function notifyMutedViewsChanged(protocol: MeshProtocol): void {
+  for (const cb of mutedViewsSubscribers) {
+    cb(protocol);
+  }
+}
+
+export function subscribeMutedViewsChanged(listener: (protocol: MeshProtocol) => void): () => void {
+  mutedViewsSubscribers.add(listener);
+  return () => {
+    mutedViewsSubscribers.delete(listener);
+  };
 }
 
 export interface StarredMessage {

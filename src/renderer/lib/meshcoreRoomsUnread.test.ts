@@ -87,4 +87,18 @@ describe('meshcoreRoomsUnread', () => {
     const counts = computeRoomUnreadCounts([msg], {}, new Set([0x100]));
     expect(counts.get(roomA)).toBe(1);
   });
+
+  it('excludes unread posts in muted rooms', () => {
+    const msg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Muted room post',
+      roomServerId: 0x1001,
+      authorId: 0x300,
+      authorName: 'Alice',
+      timestamp: 2000,
+      receivedVia: 'rf',
+    });
+    const muted = new Set(['room:4097']); // 0x1001
+    expect(computeRoomUnreadCounts([msg], {}, ownNodes, muted).size).toBe(0);
+    expect(totalRoomsUnreadCount([msg], {}, ownNodes, muted)).toBe(0);
+  });
 });

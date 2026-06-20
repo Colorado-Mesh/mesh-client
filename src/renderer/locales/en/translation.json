@@ -2288,6 +2288,8 @@
   },
   "roomsPanel": {
     "title": "Room servers",
+    "collapseRoomList": "Collapse room list",
+    "expandRoomList": "Expand room list",
     "noRoomsYet": "No room servers discovered yet. Room contacts appear when type Room advertises on the mesh.",
     "selectRoom": "Select a room server to view and post messages",
     "postCount": "{{count}} posts",

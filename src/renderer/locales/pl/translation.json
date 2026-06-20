@@ -2400,7 +2400,9 @@
     "legendLoggedInTooltip": "Zielona kropka — aktywna sesja klienta (opuść pokój, jeśli serwer jest offline)",
     "historyLocalHint": "Wpisy pojawiają się tylko wtedy, gdy jesteś zalogowany do tego pokoju na tym urządzeniu. Włącz automatyczną synchronizację, aby pozostać subskrybentem; historia nie jest uzupełniana z serwera pokojowego.",
     "loginAllSavedDisabledNoSavedPasswords": "Najpierw zapisz hasło do pokoju, aby użyć log in all",
-    "membersHeadingWithCount": "Członkowie ({{count}})"
+    "membersHeadingWithCount": "Członkowie ({{count}})",
+    "collapseRoomList": "Zwiń listę pokoi",
+    "expandRoomList": "Rozwiń listę pokoi"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

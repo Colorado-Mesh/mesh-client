@@ -6,11 +6,13 @@ export function computeRoomUnreadCounts(
   messages: readonly ChatMessage[],
   persistedLastRead: Readonly<Record<number, number>>,
   ownNodeIds: ReadonlySet<number>,
+  mutedViews?: ReadonlySet<string>,
 ): Map<number, number> {
   const counts = new Map<number, number>();
   for (const msg of messages) {
     if (!isMeshcoreRoomChatMessage(msg)) continue;
     if (msg.roomServerId == null) continue;
+    if (mutedViews?.has(`room:${msg.roomServerId}`)) continue;
     if (ownNodeIds.has(msg.sender_id)) continue;
     if (msg.isHistory) continue;
     if (msg.status === 'sending' || msg.status === 'failed') continue;
@@ -26,9 +28,15 @@ export function totalRoomsUnreadCount(
   messages: readonly ChatMessage[],
   persistedLastRead: Readonly<Record<number, number>>,
   ownNodeIds: ReadonlySet<number>,
+  mutedViews?: ReadonlySet<string>,
 ): number {
   let total = 0;
-  for (const n of computeRoomUnreadCounts(messages, persistedLastRead, ownNodeIds).values()) {
+  for (const n of computeRoomUnreadCounts(
+    messages,
+    persistedLastRead,
+    ownNodeIds,
+    mutedViews,
+  ).values()) {
     total += n;
   }
   return total;

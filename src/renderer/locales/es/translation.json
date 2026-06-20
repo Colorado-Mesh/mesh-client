@@ -2400,7 +2400,9 @@
     "legendLoggedInTooltip": "Punto verde — sesión de cliente activa (abandona la sala si el servidor está fuera de línea)",
     "historyLocalHint": "Las publicaciones solo aparecen mientras está conectado a esta sala en este dispositivo. Habilite la sincronización automática para permanecer suscrito; el historial no se rellena desde el servidor de la sala.",
     "loginAllSavedDisabledNoSavedPasswords": "Guarde primero una contraseña de sala para usar el inicio de sesión en todo",
-    "membersHeadingWithCount": "Miembros ({{count}})"
+    "membersHeadingWithCount": "Miembros ({{count}})",
+    "collapseRoomList": "Contraer lista de salas",
+    "expandRoomList": "Expandir lista de salas"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

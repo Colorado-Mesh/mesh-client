@@ -2400,7 +2400,9 @@
     "legendLoggedInTooltip": "緑の点 — アクティブなクライアントセッション（サーバーがオフラインの場合はルームを退出）",
     "historyLocalHint": "投稿は、このデバイスでこのルームにログインしている間にのみ表示されます。自動同期を有効にして購読したままにします。履歴はルームサーバーから埋め戻されません。",
     "loginAllSavedDisabledNoSavedPasswords": "すべてログインするには、まずルームパスワードを保存してください",
-    "membersHeadingWithCount": "メンバー（ {{count}} ）"
+    "membersHeadingWithCount": "メンバー（ {{count}} ）",
+    "collapseRoomList": "ルームリストを折りたたむ",
+    "expandRoomList": "ルームリストを展開"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

@@ -96,6 +96,53 @@ describe('ChatPanel accessibility', () => {
     expect(screen.queryByLabelText('Search all channels')).not.toBeInTheDocument();
   });
 
+  it('clears message filter when search is closed', async () => {
+    const now = Date.now();
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          isConnected
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'alpha message',
+              channel: 0,
+              timestamp: now - 2000,
+              status: 'acked',
+            },
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'beta message',
+              channel: 0,
+              timestamp: now - 1000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByLabelText('Search messages'));
+    const searchInput = screen.getByLabelText('Search messages...');
+    await user.type(searchInput, 'alpha');
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(1);
+    });
+    // Search highlight wraps matches in <mark>, so assert the highlighted token.
+    expect(screen.getByText('alpha')).toBeInTheDocument();
+    expect(screen.queryByText('beta message')).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText('Search messages'));
+    expect(screen.queryByLabelText('Search messages...')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(2);
+    });
+    expect(screen.getByText('alpha message')).toBeInTheDocument();
+    expect(screen.getByText('beta message')).toBeInTheDocument();
+  });
+
   it('emoji picker opens for the correct message when messages have no packetId', async () => {
     // Messages without packetId must use timestamp as picker key so re-renders
     // don't shift the picker to a different message (regression: was using -(i+1)).

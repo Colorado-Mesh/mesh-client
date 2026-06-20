@@ -1174,4 +1174,70 @@ describe('RoomsPanel', () => {
     expect(lastRoomsVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
     expect(lastRoomsVirtualizerOptions?.measureElement).toBeTypeOf('function');
   });
+
+  it('filters room posts in search and clears when search is closed', async () => {
+    meshcoreClearAllRoomSessions();
+    const user = userEvent.setup();
+    const room = makeRoom(0x1030, 'Search Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const messages: ChatMessage[] = [
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'alpha post',
+        roomServerId: room.node_id,
+        authorId: 0x200,
+        authorName: 'Alice',
+        timestamp: 2000,
+        receivedVia: 'rf',
+      }),
+      buildMeshcoreRoomIncomingMessage({
+        rawText: 'beta post',
+        roomServerId: room.node_id,
+        authorId: 0x201,
+        authorName: 'Bob',
+        timestamp: 3000,
+        receivedVia: 'rf',
+      }),
+    ];
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      messages,
+      isActive: true,
+    });
+    await waitFor(() => {
+      expect(screen.getByText('alpha post')).toBeInTheDocument();
+    });
+    await user.click(screen.getByLabelText('chatPanel.searchMessages'));
+    await user.clear(screen.getByLabelText('chatPanel.searchMessagesPlaceholder'));
+    await user.type(screen.getByLabelText('chatPanel.searchMessagesPlaceholder'), 'alpha');
+    await waitFor(() => {
+      expect(lastRoomsVirtualizerOptions?.count).toBe(1);
+    });
+    // Search highlight wraps matches in <mark>, so assert the highlighted token.
+    expect(screen.getByText('alpha')).toBeInTheDocument();
+    expect(screen.queryByText('beta post')).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText('chatPanel.searchMessages'));
+    expect(screen.queryByLabelText('chatPanel.searchMessagesPlaceholder')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('beta post')).toBeInTheDocument();
+    });
+    expect(lastRoomsVirtualizerOptions?.count).toBe(2);
+  });
+
+  it('collapses room list and persists preference', async () => {
+    meshcoreClearAllRoomSessions();
+    localStorage.removeItem('mesh-client:roomsListCollapsed');
+    const user = userEvent.setup();
+    const room = makeRoom(0x1031, 'Collapse Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    await user.click(screen.getByLabelText('roomsPanel.collapseRoomList'));
+    expect(localStorage.getItem('mesh-client:roomsListCollapsed')).toBe('true');
+    expect(screen.getByLabelText('roomsPanel.expandRoomList')).toBeInTheDocument();
+    expect(screen.getByLabelText('Collapse Room')).toBeInTheDocument();
+  });
 });

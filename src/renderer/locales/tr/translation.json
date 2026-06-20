@@ -2400,7 +2400,9 @@
     "legendLoggedInTooltip": "Yeşil nokta — aktif istemci oturumu (sunucu çevrimdışıysa odayı terk edin)",
     "historyLocalHint": "Gönderiler yalnızca bu cihazda bu odaya giriş yaptığınızda görünür. Abone kalmak için Otomatik senkronizasyonu etkinleştirin; geçmiş oda sunucusundan doldurulmaz.",
     "loginAllSavedDisabledNoSavedPasswords": "Tüm oturum açma bilgilerini kullanmak için önce bir oda parolasını kaydedin",
-    "membersHeadingWithCount": "Üyeler ({{count}})"
+    "membersHeadingWithCount": "Üyeler ({{count}})",
+    "collapseRoomList": "Oda listesini daralt",
+    "expandRoomList": "Oda listesini genişlet"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

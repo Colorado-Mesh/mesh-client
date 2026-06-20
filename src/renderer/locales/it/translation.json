@@ -2400,7 +2400,9 @@
     "legendLoggedInTooltip": "Punto verde — sessione client attiva (esci dalla stanza se il server è offline)",
     "historyLocalHint": "I post vengono visualizzati solo quando si è connessi a questa stanza su questo dispositivo. Abilita la sincronizzazione automatica per rimanere iscritto; la cronologia non viene riempita dal server della stanza.",
     "loginAllSavedDisabledNoSavedPasswords": "Salva prima una password della stanza per utilizzare l'accesso a tutti",
-    "membersHeadingWithCount": "Membri ({{count}})"
+    "membersHeadingWithCount": "Membri ({{count}})",
+    "collapseRoomList": "Comprimi l'elenco delle stanze",
+    "expandRoomList": "Espandi l'elenco delle stanze"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",
