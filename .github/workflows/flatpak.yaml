@@ -81,6 +81,9 @@ jobs:
 
       - name: Attach Flatpak to release
         # softprops/action-gh-release v3 (Node 24)
+        # draft: true — required so we do not auto-publish an existing draft release
+        # after uploading assets (default behavior when draft is omitted).
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
+          draft: true
           files: flatpak-dist/*.flatpak
