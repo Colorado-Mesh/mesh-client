@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "{{count}} Nachricht(en) aus der Warteschlange vom Funkgerät werden synchronisiert...",
     "waitingMessagesSyncNow": "Jetzt synchronisieren",
     "jumpToUnread": "Gehe zu Ungelesen",
-    "jumpToLatest": "Zum neuesten Stand springen"
+    "jumpToLatest": "Zum neuesten Stand springen",
+    "meshcoreReactionPickerLabel": "Mesh-Reaktion wählen",
+    "meshcoreReactionEmojiOption": "Reagiere mit {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Dieses Emoji wird für MeshCore-Mesh-Reaktionen nicht unterstützt.",
+    "reactionFailed": "Reaktion fehlgeschlagen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
-    "emptyMention": "Leere Erwähnung"
+    "emptyMention": "Leere Erwähnung",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Auf Giphy öffnen"
   },
   "common": {
     "close": "Schließen",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Grüner Punkt — aktive Client-Sitzung (Raum verlassen, wenn der Server offline ist)",
     "historyLocalHint": "Beiträge werden nur angezeigt, wenn Sie auf diesem Gerät in diesem Raum angemeldet sind. Aktivieren Sie die automatische Synchronisierung, um abonniert zu bleiben; der Verlauf wird nicht vom Raumserver zurückgegeben.",
     "loginAllSavedDisabledNoSavedPasswords": "Speichern Sie zuerst ein Raumpasswort, um alle Anmeldedaten zu verwenden",
-    "membersHeadingWithCount": "Mitglieder ({{count}})"
+    "membersHeadingWithCount": "Mitglieder ({{count}})",
+    "collapseRoomList": "Raumliste ausblenden",
+    "expandRoomList": "Raumliste einblenden"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

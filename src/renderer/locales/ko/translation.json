@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "라디오에서 {{count}} 대기 중인 메시지 동기화 중...",
     "waitingMessagesSyncNow": "지금 동기화",
     "jumpToUnread": "읽지 않음으로 이동",
-    "jumpToLatest": "최신으로 이동"
+    "jumpToLatest": "최신으로 이동",
+    "meshcoreReactionPickerLabel": "메시 반응 선택",
+    "meshcoreReactionEmojiOption": "{{emoji}} 와 (과) 반응",
+    "meshcoreReactionNotInteroperable": "해당 이모티콘은 MeshCore 메시 반응에서 지원되지 않습니다.",
+    "reactionFailed": "반응 실패"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
-    "emptyMention": "빈 언급"
+    "emptyMention": "빈 언급",
+    "meshcoreGif": "Gif",
+    "meshcoreGifOpen": "Giphy에서 열기"
   },
   "common": {
     "close": "닫다",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
     "historyLocalHint": "게시물은 이 기기에서 이 룸에 로그인한 경우에만 표시됩니다. 자동 동기화를 활성화하여 구독 상태를 유지하세요. 기록은 룸 서버에서 채워지지 않습니다.",
     "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
-    "membersHeadingWithCount": "회원 ({{count}})"
+    "membersHeadingWithCount": "회원 ({{count}})",
+    "collapseRoomList": "방 목록 접기",
+    "expandRoomList": "방 목록 펼치기"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

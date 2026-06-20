@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "Menyinkronkan pesan antrian {{count}} dari radio…",
     "waitingMessagesSyncNow": "Sinkronkan sekarang",
     "jumpToUnread": "Langsung ke Belum Dibaca",
-    "jumpToLatest": "Langsung ke Terbaru"
+    "jumpToLatest": "Langsung ke Terbaru",
+    "meshcoreReactionPickerLabel": "Pilih reaksi mesh",
+    "meshcoreReactionEmojiOption": "Bereaksi dengan {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Emoji itu tidak didukung untuk reaksi mesh MeshCore.",
+    "reactionFailed": "Reaksi gagal"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
-    "emptyMention": "Sebutan kosong"
+    "emptyMention": "Sebutan kosong",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Buka di Giphy"
   },
   "common": {
     "close": "Menutup",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Titik hijau — sesi klien aktif (tinggalkan ruangan jika server offline)",
     "historyLocalHint": "Pos hanya muncul saat Anda masuk ke ruangan ini di perangkat ini. Aktifkan Sinkronisasi otomatis untuk tetap berlangganan; riwayat tidak diisi ulang dari server ruangan.",
     "loginAllSavedDisabledNoSavedPasswords": "Simpan kata sandi ruangan terlebih dahulu untuk menggunakan log masuk semua",
-    "membersHeadingWithCount": "Anggota ({{count}})"
+    "membersHeadingWithCount": "Anggota ({{count}})",
+    "collapseRoomList": "Ciutkan daftar ruangan",
+    "expandRoomList": "Perluas daftar ruangan"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",

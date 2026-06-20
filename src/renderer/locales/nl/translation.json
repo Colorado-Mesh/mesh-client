@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "{{count}} bericht(en) in de wachtrij van de radio synchroniseren...",
     "waitingMessagesSyncNow": "Synchroniseer nu",
     "jumpToUnread": "Ga naar Ongelezen",
-    "jumpToLatest": "Spring naar de laatste"
+    "jumpToLatest": "Spring naar de laatste",
+    "meshcoreReactionPickerLabel": "Kies een maasreactie",
+    "meshcoreReactionEmojiOption": "Reageer met {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Die emoji wordt niet ondersteund voor MeshCore mesh reacties.",
+    "reactionFailed": "Reactie mislukt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
-    "emptyMention": "Lege vermelding"
+    "emptyMention": "Lege vermelding",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Openen op Giphy"
   },
   "common": {
     "close": "Dichtbij",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Groene stip — actieve clientsessie (verlaat de ruimte als de server offline is)",
     "historyLocalHint": "Berichten worden alleen weergegeven terwijl u bent ingelogd in deze ruimte op dit apparaat. Schakel automatisch synchroniseren in om geabonneerd te blijven; de geschiedenis wordt niet opnieuw ingevuld vanaf de roomserver.",
     "loginAllSavedDisabledNoSavedPasswords": "Sla eerst een ruimtewachtwoord op om alles in te loggen",
-    "membersHeadingWithCount": "Leden ({{count}})"
+    "membersHeadingWithCount": "Leden ({{count}})",
+    "collapseRoomList": "Ruimtelijst samenvouwen",
+    "expandRoomList": "Ruimtelijst uitbreiden"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

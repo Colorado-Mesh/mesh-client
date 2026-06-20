@@ -1096,6 +1096,18 @@ function ChatPanel({
     [filteredMessages],
   );
 
+  const closeSearch = useCallback(() => {
+    setShowSearch(false);
+    setSearchQuery('');
+  }, []);
+
+  const toggleSearch = useCallback(() => {
+    setShowSearch((open) => {
+      if (open) setSearchQuery('');
+      return !open;
+    });
+  }, []);
+
   // Escape key handler
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -1108,7 +1120,7 @@ function ChatPanel({
         } else if (showDatePicker) {
           setShowDatePicker(false);
         } else if (showSearch) {
-          setShowSearch(false);
+          closeSearch();
         } else if (viewMode === 'dm') {
           setViewMode('channels');
         }
@@ -1118,7 +1130,7 @@ function ChatPanel({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [showSearch, viewMode, replyTo, filterSender, showDatePicker]);
+  }, [closeSearch, showSearch, viewMode, replyTo, filterSender, showDatePicker]);
 
   useEffect(() => {
     if (showSearch) {
@@ -1146,8 +1158,9 @@ function ChatPanel({
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
+      const message = err instanceof Error ? err.message : t('chatPanel.reactionFailed');
       setChatActionError({
-        message: err instanceof Error ? err.message : 'Reaction failed',
+        message,
         viewKey,
       });
     }
@@ -1447,7 +1460,7 @@ function ChatPanel({
               showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
             }`}
             onClick={() => {
-              setShowSearch(!showSearch);
+              toggleSearch();
             }}
           >
             <Search aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
@@ -1621,18 +1634,32 @@ function ChatPanel({
       {/* Search bar */}
       {showSearch && (
         <div className="mb-2">
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-            placeholder={t('chatPanel.searchMessagesPlaceholder')}
-            aria-label={t('chatPanel.searchMessagesPlaceholder')}
-            spellCheck={false}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 w-full rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
+              placeholder={t('chatPanel.searchMessagesPlaceholder')}
+              aria-label={t('chatPanel.searchMessagesPlaceholder')}
+              spellCheck={false}
+              className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                }}
+                className="text-muted shrink-0 px-1 text-lg leading-none hover:text-gray-300"
+                aria-label={t('common.clear')}
+              >
+                ×
+              </button>
+            )}
+          </div>
           {searchQuery && (
             <div className="text-muted mt-1 text-xs">
               {t('chatPanel.searchResults', { count: filteredMessages.length })}

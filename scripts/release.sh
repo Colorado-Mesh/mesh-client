@@ -35,29 +35,29 @@ generate_release_notes() {
 
 EOF
 
+  local commit_logs
+  commit_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
+
   # Features
   echo "### Features"
-  feature_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
-  if printf '%s\n' "$feature_logs" | grep -qE "^\* feat"; then
-    printf '%s\n' "$feature_logs" | grep -E "^\* feat" | sed 's/^\* feat[^:]*: /* /'
+  if printf '%s\n' "$commit_logs" | grep -qE "^\* feat"; then
+    printf '%s\n' "$commit_logs" | grep -E "^\* feat" | sed 's/^\* feat[^:]*: /* /'
   else
     echo "*(No new features)*"
   fi
 
   echo ""
   echo "### Bug Fixes"
-  fix_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
-  if printf '%s\n' "$fix_logs" | grep -qE "^\* fix"; then
-    printf '%s\n' "$fix_logs" | grep -E "^\* fix" | sed 's/^\* fix[^:]*: /* /'
+  if printf '%s\n' "$commit_logs" | grep -qE "^\* fix"; then
+    printf '%s\n' "$commit_logs" | grep -E "^\* fix" | sed 's/^\* fix[^:]*: /* /'
   else
     echo "*(No bug fixes)*"
   fi
 
   echo ""
   echo "### Other Changes"
-  other_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
-  if printf '%s\n' "$other_logs" | grep -qE "^\* (chore|docs|refactor|test|style|perf|build|ci)"; then
-    printf '%s\n' "$other_logs" \
+  if printf '%s\n' "$commit_logs" | grep -qE "^\* (chore|docs|refactor|test|style|perf|build|ci)"; then
+    printf '%s\n' "$commit_logs" \
       | grep -E "^\* (chore|docs|refactor|test|style|perf|build|ci)" \
       | sed 's/^\* [^:]*: /* /'
   else
@@ -66,9 +66,8 @@ EOF
 
   echo ""
   echo "### Breaking Changes"
-  breaking_logs=$(git log "$last_tag"..HEAD --pretty=format:"* %s" 2> /dev/null || true)
-  if printf '%s\n' "$breaking_logs" | grep -qE "(BREAKING CHANGE|!)"; then
-    printf '%s\n' "$breaking_logs" | grep -E "(BREAKING CHANGE|!)" | sed 's/^/* /'
+  if printf '%s\n' "$commit_logs" | grep -qE "(BREAKING CHANGE|!)"; then
+    printf '%s\n' "$commit_logs" | grep -E "(BREAKING CHANGE|!)" | sed 's/^/* /'
   else
     echo "*(None)*"
   fi
@@ -101,7 +100,7 @@ detect_version_bump() {
     has_breaking=true
   fi
 
-  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)![[:space:]]*:"; then
+  if echo "$commits" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|perf|build|ci)!:"; then
     has_breaking=true
   fi
 
@@ -332,7 +331,7 @@ fi
 echo "Checking for Node.js deprecation warnings..."
 PKG_JSON_BACKUP=$(mktemp)
 cp package.json "$PKG_JSON_BACKUP"
-DEPRECATION_OUTPUT=$(NODE_OPTIONS="--trace-deprecation" pnpm version patch --no-git-tag-version 2>&1 || true)
+DEPRECATION_OUTPUT=$(NODE_OPTIONS="--trace-deprecation" pnpm version "$VERSION_TYPE" --no-git-tag-version 2>&1 || true)
 cp "$PKG_JSON_BACKUP" package.json
 rm -f "$PKG_JSON_BACKUP"
 if echo "$DEPRECATION_OUTPUT" | grep -q "DEP0187"; then
@@ -404,7 +403,7 @@ git commit -m "chore: release $NEW_VERSION"
 
 # 12. Create the git tag
 print_header "Creating tag $NEW_VERSION..."
-git tag "$NEW_VERSION"
+git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
 
 # 13. Push to GitHub
 print_header "Pushing to GitHub..."

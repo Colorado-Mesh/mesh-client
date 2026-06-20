@@ -20,7 +20,6 @@ import {
   INITIAL_STATE,
   isMeshcoreRoomChatMessage,
   MANUAL_CONTACTS_KEY,
-  mapMeshcoreCrossTransportUpgrade,
   mapMeshcoreDbRowsToChatMessages,
   MAX_ENV_TELEMETRY_POINTS,
   MAX_TELEMETRY_POINTS,
@@ -55,6 +54,7 @@ import {
   registerMeshcorePubKeysFromContactDbRows,
   resolveMeshcoreNodePubKey,
   serializeErrorLike,
+  upgradeMeshcoreCrossTransportMessage,
   waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import {
@@ -117,6 +117,7 @@ import {
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
   formatMeshcoreWireTapbackPrefix,
+  MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
@@ -270,7 +271,9 @@ import {
   MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
   MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS,
   MESHCORE_ROOM_SYNC_TICK_MS,
+  MESHCORE_STATS_POLL_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+  MESHCORE_WAITING_MESSAGES_POLL_MS,
 } from '../lib/timeConstants';
 import type {
   ChatMessage,
@@ -474,7 +477,7 @@ export function useMeshcoreRuntime() {
   const prevTxAirSecsRef = useRef<number | null>(null);
   /** Previous timestamp for calculating channel utilization delta. */
   const prevStatsTimestampRef = useRef<number | null>(null);
-  /** Periodic poll for local radio stats (see MESHCORE_STATS_POLL_MS in stats effect). */
+  /** Periodic poll for local radio stats ({@link MESHCORE_STATS_POLL_MS}). */
   const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Auto-expire {@link MESHCORE_PING_NO_ROUTE_ERROR_MSG} after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}. */
   const meshcorePingNoRouteExpiryTimersRef = useRef<Map<number, number>>(new Map());
@@ -699,7 +702,6 @@ export function useMeshcoreRuntime() {
   // Start stats polling when connected
   useEffect(() => {
     if (state.status === 'configured') {
-      const MESHCORE_STATS_POLL_MS = 30 * 1_000;
       if (meshcoreStatsPollRef.current) clearInterval(meshcoreStatsPollRef.current);
       meshcoreStatsPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
@@ -903,7 +905,7 @@ export function useMeshcoreRuntime() {
           }
           const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
           if (crossTransportDup) {
-            const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
+            const { messages: next, matched } = upgradeMeshcoreCrossTransportMessage(prev, msg);
             if (matched) return next;
             return prev;
           }
@@ -937,7 +939,7 @@ export function useMeshcoreRuntime() {
           if (!result.inserted) {
             const crossDup = findMeshcoreCrossTransportDuplicate(prev, msg);
             if (crossDup) {
-              const { messages: next, matched } = mapMeshcoreCrossTransportUpgrade(prev, msg);
+              const { messages: next, matched } = upgradeMeshcoreCrossTransportMessage(prev, msg);
               if (matched) return next;
             }
             return prev;
@@ -1877,7 +1879,6 @@ export function useMeshcoreRuntime() {
       }
 
       // Periodic safety-net poll in case the device never re-sends event 131.
-      const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * 60 * 1_000;
       if (meshcoreWaitingMessagesPollRef.current)
         clearInterval(meshcoreWaitingMessagesPollRef.current);
       meshcoreWaitingMessagesPollRef.current = setInterval(() => {
@@ -3791,8 +3792,7 @@ export function useMeshcoreRuntime() {
             pubKey,
             nodesRef.current.get(nodeId)?.hw_model,
           );
-          const txtType = 1; // TxtTypes.CliData
-          await conn.sendTextMessage(pubKey, commandWithToken, txtType);
+          await conn.sendTextMessage(pubKey, commandWithToken, MESHCORE_TXT_TYPE_CLI_DATA);
 
           const response = await promise;
           addCliHistoryEntry(nodeId, {
@@ -4977,7 +4977,10 @@ export function useMeshcoreRuntime() {
       const reactedTo =
         storeMessages.find((m) => m.packetId === replyId || m.timestamp === replyId) ??
         messagesRef.current.find((m) => m.packetId === replyId || m.timestamp === replyId);
-      const targetName = reactedTo?.sender_name || 'Unknown';
+      if (reactedTo == null) {
+        throw new Error('Reaction target message not found');
+      }
+      const targetName = reactedTo.sender_name || 'Unknown';
       const tapbackText = `${formatMeshcoreWireTapbackPrefix(targetName)} ${parsed.glyph}`;
       const conn = connRef.current;
       const me = myNodeNumRef.current;

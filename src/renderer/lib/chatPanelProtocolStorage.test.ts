@@ -21,6 +21,7 @@ import {
   savePersistedRoomsLastRead,
   saveStarred,
   type StarredMessage,
+  subscribeMutedViewsChanged,
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts } from './chatUnreadCounts';
 import { effectiveMessageTimestampMs } from './nodeStatus';
@@ -143,6 +144,25 @@ describe('loadMutedViews / saveMutedViews', () => {
   it('returns empty Set when stored value is not an array of strings', () => {
     localStorage.setItem('mesh-client:mutedViews:meshtastic', JSON.stringify([1, 2, 3]));
     expect(loadMutedViews('meshtastic').size).toBe(0);
+  });
+});
+
+describe('subscribeMutedViewsChanged', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('notifies listeners when saveMutedViews succeeds', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeMutedViewsChanged(listener);
+    saveMutedViews('meshcore', new Set(['room:4097']));
+    expect(listener).toHaveBeenCalledWith('meshcore');
+    saveMutedViews('meshtastic', new Set(['ch:0']));
+    expect(listener).toHaveBeenCalledWith('meshtastic');
+    unsubscribe();
+    listener.mockClear();
+    saveMutedViews('meshcore', new Set(['room:4098']));
+    expect(listener).not.toHaveBeenCalled();
   });
 });
 

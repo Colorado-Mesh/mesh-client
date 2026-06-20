@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "Синхронізація повідомлень у черзі {{count}} з радіо…",
     "waitingMessagesSyncNow": "Синхронізувати зараз",
     "jumpToUnread": "Перейти до непрочитаного",
-    "jumpToLatest": "Перейти до останнього"
+    "jumpToLatest": "Перейти до останнього",
+    "meshcoreReactionPickerLabel": "Виберіть реакцію сіті",
+    "meshcoreReactionEmojiOption": "Зв 'яжіться з {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Цей смайлик не підтримується для реакцій сітки MeshCore.",
+    "reactionFailed": "Не вдалося відреагувати"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
-    "emptyMention": "Порожня згадка"
+    "emptyMention": "Порожня згадка",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Відкрити на Giphy"
   },
   "common": {
     "close": "Закрити",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Зелена крапка — активна клієнтська сесія (вийдіть із кімнати, якщо сервер не в мережі)",
     "historyLocalHint": "Дописи з 'являються лише під час входу в цю кімнату на цьому пристрої. Увімкніть автоматичну синхронізацію, щоб залишатися передплаченим; історія не заповнюється з сервера кімнати.",
     "loginAllSavedDisabledNoSavedPasswords": "Спочатку збережіть пароль кімнати, щоб увійти в усі",
-    "membersHeadingWithCount": "Учасники ({{count}})"
+    "membersHeadingWithCount": "Учасники ({{count}})",
+    "collapseRoomList": "Згорнути список кімнат",
+    "expandRoomList": "Розгорнути список кімнат"
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",

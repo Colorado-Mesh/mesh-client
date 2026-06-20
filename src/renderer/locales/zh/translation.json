@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "正在同步来自无线电的{{count}}队列消息…",
     "waitingMessagesSyncNow": "立即同步",
     "jumpToUnread": "跳至未读",
-    "jumpToLatest": "跳到最新"
+    "jumpToLatest": "跳到最新",
+    "meshcoreReactionPickerLabel": "选择网格反应",
+    "meshcoreReactionEmojiOption": "与{{emoji}}反应",
+    "meshcoreReactionNotInteroperable": "MeshCore网格反应不支持该表情符号。",
+    "reactionFailed": "反应失败"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
-    "emptyMention": "空提及"
+    "emptyMention": "空提及",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "在Giphy上打开"
   },
   "common": {
     "close": "关闭",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
     "historyLocalHint": "仅当您在此设备上登录此聊天室时，帖子才会显示。启用自动同步以保持订阅状态；历史记录不会从聊天室服务器回填。",
     "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
-    "membersHeadingWithCount": "成员({{count}})"
+    "membersHeadingWithCount": "成员({{count}})",
+    "collapseRoomList": "折叠房间列表",
+    "expandRoomList": "展开房间列表"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

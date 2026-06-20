@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "Sincronizando {{count}} mensajes en cola de radio...",
     "waitingMessagesSyncNow": "Sincronizar ahora",
     "jumpToUnread": "Saltar a no leído",
-    "jumpToLatest": "Saltar a lo último"
+    "jumpToLatest": "Saltar a lo último",
+    "meshcoreReactionPickerLabel": "Elige la reacción de malla",
+    "meshcoreReactionEmojiOption": "Reacciona con {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Ese emoji no es compatible con las reacciones de malla de MeshCore.",
+    "reactionFailed": "Reacción fallida"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
-    "emptyMention": "Mención vacía"
+    "emptyMention": "Mención vacía",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Abrir en Giphy"
   },
   "common": {
     "close": "Cerrar",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Punto verde — sesión de cliente activa (abandona la sala si el servidor está fuera de línea)",
     "historyLocalHint": "Las publicaciones solo aparecen mientras está conectado a esta sala en este dispositivo. Habilite la sincronización automática para permanecer suscrito; el historial no se rellena desde el servidor de la sala.",
     "loginAllSavedDisabledNoSavedPasswords": "Guarde primero una contraseña de sala para usar el inicio de sesión en todo",
-    "membersHeadingWithCount": "Miembros ({{count}})"
+    "membersHeadingWithCount": "Miembros ({{count}})",
+    "collapseRoomList": "Contraer lista de salas",
+    "expandRoomList": "Expandir lista de salas"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

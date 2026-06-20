@@ -1,6 +1,20 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as ChatPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, Copy, Mail, PARENT_HOVER_ATTR, Star } from 'lucide-react-motion';
+import type { TFunction } from 'i18next';
+import {
+  ArrowDown,
+  Bell,
+  BellOff,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Download,
+  Mail,
+  PARENT_HOVER_ATTR,
+  Search,
+  Star,
+} from 'lucide-react-motion';
 import {
   useCallback,
   useEffect,
@@ -16,16 +30,19 @@ import { useMeshcoreRoomAuth } from '@/renderer/hooks/useMeshcoreRoomAuth';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import {
+  loadMutedViews,
   loadPersistedRoomsLastRead,
   loadStarred,
   mergeRoomLastReadWatermark,
   notifyPersistedRoomsLastReadChanged,
+  saveMutedViews,
   savePersistedRoomsLastRead,
   saveStarred,
   type StarredMessage,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { ROOM_LOGIN_PROGRESS_DOT } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import type { CliHistoryEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import { repairMeshcoreHydrationStaleRoomSends } from '@/renderer/lib/meshcoreDbCacheHydration';
@@ -74,7 +91,7 @@ import {
 import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/lib/nodeStatus';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
-import { formatIsoDateTime } from '@/shared/formatIsoDate';
+import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 
 import {
   CHAT_SCROLL_END_THRESHOLD,
@@ -82,7 +99,9 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   estimateChatRowHeight,
+  findFirstMessageIndexByDayKey,
   findIndexByRowKey,
+  getChatDayKey,
   getDistFromChatBottom,
   scheduleVirtualRowRemeasure,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
@@ -103,6 +122,29 @@ function RoomUnreadDivider({ label }: { label: string }) {
       <div className="flex-1 border-t border-red-500/50" />
     </div>
   );
+}
+
+function formatDayLabel(ts: number, t: TFunction): string {
+  const date = new Date(ts);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diff = today.getTime() - msgDay.getTime();
+  if (diff === 0) return t('chatPanel.dayToday');
+  if (diff === 86_400_000) return t('chatPanel.dayYesterday');
+  return formatIsoDate(date);
+}
+
+const ROOMS_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:roomsListCollapsed';
+
+function roomCollapsedLabel(longName: string | undefined, nodeId: number): string {
+  const name = longName?.trim();
+  if (name) {
+    const words = name.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  return nodeId.toString(16).slice(-2).toUpperCase();
 }
 
 interface Props {
@@ -139,6 +181,8 @@ interface Props {
   scrollToTopRef?: React.RefObject<(() => void) | null>;
   /** Main app scrollport for distance-from-bottom when outer viewport scrolls. */
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
+  /** Denser post bubbles (same App Appearance setting as Chat). */
+  compactMode?: boolean;
 }
 
 function formatTimestamp(ts: number): string {
@@ -215,6 +259,7 @@ export default function RoomsPanel({
   onToggleFavorite,
   scrollToTopRef,
   outerScrollMetricsRootRef,
+  compactMode = false,
 }: Props) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -273,6 +318,17 @@ export default function RoomsPanel({
   const [aclError, setAclError] = useState<string | null>(null);
   const [aclFetchedAt, setAclFetchedAt] = useState<number | null>(null);
   const [scrollToRowKey, setScrollToRowKey] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [jumpDate, setJumpDate] = useState('');
+  const [filterSender, setFilterSender] = useState<number | null>(null);
+  const [mutedViews, setMutedViews] = useState<Set<string>>(() => loadMutedViews('meshcore'));
+  const [roomListCollapsed, setRoomListCollapsed] = useState(
+    () => localStorage.getItem(ROOMS_LIST_COLLAPSED_STORAGE_KEY) === 'true',
+  );
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const listCollapseTrigger = useParentIconTrigger();
   /** Set alongside an explicit row-key jump so the room-switch effect skips its
    * own unread/end auto-scroll for that transition instead of racing it. */
   const suppressNextRoomSwitchScrollRef = useRef(false);
@@ -341,26 +397,53 @@ export default function RoomsPanel({
     return repairMeshcoreHydrationStaleRoomSends(mergeDisplayedRoomPostChunks(posts));
   }, [messages, selectedRoomId]);
 
+  const filteredRoomPosts = useMemo(() => {
+    let posts = roomPosts;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      posts = posts.filter(
+        (m) => m.payload.toLowerCase().includes(q) || m.sender_name.toLowerCase().includes(q),
+      );
+    }
+    if (filterSender != null) {
+      posts = posts.filter((m) => m.sender_id === filterSender);
+    }
+    return posts;
+  }, [filterSender, roomPosts, searchQuery]);
+
+  const daySeparatorIndices = useMemo(() => {
+    const indices = new Set<number>();
+    let prevDayKey = '';
+    for (let i = 0; i < filteredRoomPosts.length; i++) {
+      const dayKey = getChatDayKey(filteredRoomPosts[i].timestamp);
+      if (dayKey !== prevDayKey) {
+        indices.add(i);
+        prevDayKey = dayKey;
+      }
+    }
+    return indices;
+  }, [filteredRoomPosts]);
+
   const unreadStartIndex = useMemo(() => {
-    if (unreadDividerTimestamp === 0) return -1;
-    for (let i = 0; i < roomPosts.length; i++) {
-      if (roomPosts[i].timestamp > unreadDividerTimestamp) return i;
+    if (searchQuery.trim() || unreadDividerTimestamp === 0) return -1;
+    for (let i = 0; i < filteredRoomPosts.length; i++) {
+      if (filteredRoomPosts[i].timestamp > unreadDividerTimestamp) return i;
     }
     return -1;
-  }, [roomPosts, unreadDividerTimestamp]);
+  }, [filteredRoomPosts, searchQuery, unreadDividerTimestamp]);
 
   const unreadStartIndexRef = useRef(unreadStartIndex);
   unreadStartIndexRef.current = unreadStartIndex;
 
   const estimatePostSize = useCallback(
     (index: number) => {
-      const post = roomPosts[index];
+      const post = filteredRoomPosts[index];
       return estimateChatRowHeight(post, {
         unreadDividerExtra:
           index === unreadStartIndex ? CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : undefined,
       });
     },
-    [roomPosts, unreadStartIndex],
+    [filteredRoomPosts, unreadStartIndex],
   );
 
   const measurePostElement = useMemo(
@@ -369,13 +452,13 @@ export default function RoomsPanel({
   );
 
   const postVirtualizer = useVirtualizer({
-    count: roomPosts.length,
+    count: filteredRoomPosts.length,
     getScrollElement: () => streamRef.current,
     estimateSize: estimatePostSize,
     measureElement: measurePostElement,
     overscan: 10,
     getItemKey: (index) => {
-      const post = roomPosts[index];
+      const post = filteredRoomPosts[index];
       if (!post) return index;
       return roomPostRowKey(post);
     },
@@ -423,8 +506,8 @@ export default function RoomsPanel({
   }, [messages]);
 
   const roomUnreadCounts = useMemo(
-    () => computeRoomUnreadCounts(messages, persistedRoomsLastRead, ownNodeIdSet),
-    [messages, ownNodeIdSet, persistedRoomsLastRead],
+    () => computeRoomUnreadCounts(messages, persistedRoomsLastRead, ownNodeIdSet, mutedViews),
+    [messages, mutedViews, ownNodeIdSet, persistedRoomsLastRead],
   );
 
   const markSelectedRoomRead = useCallback(() => {
@@ -910,6 +993,98 @@ export default function RoomsPanel({
 
   const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
 
+  const closeSearch = useCallback(() => {
+    setShowSearch(false);
+    setSearchQuery('');
+  }, []);
+
+  const toggleSearch = useCallback(() => {
+    setShowSearch((open) => {
+      if (open) setSearchQuery('');
+      return !open;
+    });
+  }, []);
+
+  const toggleMuteView = useCallback((viewKey: string) => {
+    setMutedViews((prev) => {
+      const next = new Set(prev);
+      if (next.has(viewKey)) next.delete(viewKey);
+      else next.add(viewKey);
+      return next;
+    });
+  }, []);
+
+  const handleRoomListToggle = useCallback(() => {
+    setRoomListCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(ROOMS_LIST_COLLAPSED_STORAGE_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const handleJumpToDate = useCallback(
+    (dateStr: string) => {
+      if (!dateStr) return;
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const targetKey = `${y}-${m}-${d}`;
+      const index = findFirstMessageIndexByDayKey(filteredRoomPosts, targetKey);
+      if (index < 0) return;
+      isPinnedToBottomRef.current = false;
+      postVirtualizerRef.current.scrollToIndex(index, { align: 'start', behavior: 'smooth' });
+      setShowDatePicker(false);
+    },
+    [filteredRoomPosts],
+  );
+
+  useEffect(() => {
+    saveMutedViews('meshcore', mutedViews);
+  }, [mutedViews]);
+
+  useEffect(() => {
+    setShowSearch(false);
+    setSearchQuery('');
+    setShowDatePicker(false);
+    setJumpDate('');
+    setFilterSender(null);
+  }, [selectedRoomId]);
+
+  useEffect(() => {
+    if (streamView === 'starred') {
+      closeSearch();
+    }
+  }, [closeSearch, streamView]);
+
+  useEffect(() => {
+    if (showSearch) {
+      searchInputRef.current?.focus();
+    }
+  }, [showSearch]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (manageOpen) {
+        setManageOpen(false);
+        return;
+      }
+      if (filterSender != null) {
+        setFilterSender(null);
+        return;
+      }
+      if (showDatePicker) {
+        setShowDatePicker(false);
+        return;
+      }
+      if (showSearch) {
+        closeSearch();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [closeSearch, filterSender, manageOpen, showDatePicker, showSearch]);
+
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
   const roomStarred = useMemo(
     () =>
@@ -1100,17 +1275,6 @@ export default function RoomsPanel({
     t,
   ]);
 
-  useEffect(() => {
-    if (!manageOpen) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setManageOpen(false);
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [manageOpen]);
-
   const handleCliSend = useCallback(async () => {
     if (selectedRoomId == null || !cliInput.trim()) return;
     setCliPending(true);
@@ -1211,33 +1375,40 @@ export default function RoomsPanel({
         />
       )}
       <div className="flex min-h-0 flex-1 gap-3">
-        <div className="bg-secondary-dark flex min-h-0 w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700">
-          <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
-            <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
-              {t('roomsPanel.title')} <span className="text-gray-500">({roomServers.length})</span>
-            </span>
-            {onLoginAllSaved && roomServers.length > 0 ? (
-              <button
-                type="button"
-                onClick={handleLoginAllSaved}
-                disabled={loginAllSavedDisabled}
-                className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-medium ${
-                  loginAllSavedDisabled
-                    ? 'cursor-not-allowed border-gray-600 bg-gray-800 text-gray-500'
-                    : 'border-brand-green/60 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 cursor-pointer'
-                }`}
-                aria-label={t('roomsPanel.loginAllSavedAria')}
-                title={
-                  loginAllSavedDisabled && loginAllSavedDisabledReason
-                    ? loginAllSavedDisabledReason
-                    : t('roomsPanel.loginAllSavedTooltip')
-                }
-              >
-                {t('roomsPanel.loginAllSaved')}
-              </button>
-            ) : null}
-          </div>
-          {roomServers.length > 0 && (
+        <div
+          className={`bg-secondary-dark flex min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700 transition-[width] duration-300 ${
+            roomListCollapsed ? 'w-16' : 'w-64'
+          }`}
+        >
+          {!roomListCollapsed && (
+            <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
+              <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
+                {t('roomsPanel.title')}{' '}
+                <span className="text-gray-500">({roomServers.length})</span>
+              </span>
+              {onLoginAllSaved && roomServers.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleLoginAllSaved}
+                  disabled={loginAllSavedDisabled}
+                  className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-medium ${
+                    loginAllSavedDisabled
+                      ? 'cursor-not-allowed border-gray-600 bg-gray-800 text-gray-500'
+                      : 'border-brand-green/60 bg-brand-green/20 text-brand-green hover:bg-brand-green/30 cursor-pointer'
+                  }`}
+                  aria-label={t('roomsPanel.loginAllSavedAria')}
+                  title={
+                    loginAllSavedDisabled && loginAllSavedDisabledReason
+                      ? loginAllSavedDisabledReason
+                      : t('roomsPanel.loginAllSavedTooltip')
+                  }
+                >
+                  {t('roomsPanel.loginAllSaved')}
+                </button>
+              ) : null}
+            </div>
+          )}
+          {!roomListCollapsed && roomServers.length > 0 && (
             <div
               className="shrink-0 border-b border-gray-800 px-3 py-1.5 text-[10px] text-gray-500"
               aria-label={t('roomsPanel.sidebarLegendTitle')}
@@ -1270,7 +1441,7 @@ export default function RoomsPanel({
               </ul>
             </div>
           )}
-          {savedCredentialNodeIds.length > 0 && (
+          {!roomListCollapsed && savedCredentialNodeIds.length > 0 && (
             <div className="shrink-0 border-b border-gray-800">
               <h3 id="rooms-saved-passwords-heading" className="sr-only">
                 {t('roomsPanel.savedPasswordsHeading')}
@@ -1393,67 +1564,150 @@ export default function RoomsPanel({
                         handleSelectRoom(room.node_id);
                       }
                     }}
-                    className={`w-full cursor-pointer border-b border-gray-800 px-3 py-2 text-left transition-colors hover:bg-gray-800/60 ${
-                      selectedRoomId === room.node_id ? 'bg-gray-800/80' : ''
+                    className={`w-full cursor-pointer border-b border-gray-800 text-left transition-colors hover:bg-gray-800/60 ${
+                      roomListCollapsed
+                        ? `flex justify-center border-l-2 px-1 py-1.5 ${
+                            selectedRoomId === room.node_id
+                              ? 'border-bright-green bg-sidebar-active-bg'
+                              : 'border-transparent'
+                          }`
+                        : `px-3 py-2 ${selectedRoomId === room.node_id ? 'bg-gray-800/80' : ''}`
                     }`}
+                    title={roomListCollapsed ? (room.long_name ?? String(room.node_id)) : undefined}
+                    aria-label={
+                      roomListCollapsed
+                        ? `${room.long_name ?? String(room.node_id)}${
+                            unread > 0 && selectedRoomId !== room.node_id
+                              ? `, ${unread > 99 ? '99+' : unread} unread`
+                              : ''
+                          }`
+                        : undefined
+                    }
                   >
-                    <div className="flex items-center gap-2 text-sm text-gray-200">
-                      {onToggleFavorite ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleFavorite(room.node_id, !room.favorited);
-                          }}
-                          className="text-brand-yellow/70 hover:text-brand-yellow z-10 shrink-0 text-sm leading-none"
-                          aria-label={
-                            room.favorited ? t('roomsPanel.unfavorite') : t('roomsPanel.favorite')
-                          }
-                        >
-                          {room.favorited ? '★' : '☆'}
-                        </button>
-                      ) : null}
-                      {isLoggingIn ? (
+                    {roomListCollapsed ? (
+                      <div className="relative flex flex-col items-center gap-0.5">
                         <span
-                          className={ROOM_LOGIN_PROGRESS_DOT}
-                          aria-label={t('roomsPanel.loggingInMarkerAria')}
-                          title={t('roomsPanel.loggingIn')}
-                        />
-                      ) : (
-                        <span
-                          className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${showAutoLoginFailed ? 'ring-1 ring-red-500' : ''} ${marker.colorClass}`}
-                          aria-hidden={!showAutoLoginFailed}
-                          aria-label={
-                            showAutoLoginFailed
-                              ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
-                              : undefined
-                          }
-                          title={markerTitle}
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] leading-none font-semibold ${
+                            selectedRoomId === room.node_id
+                              ? 'text-bright-green bg-gray-800'
+                              : 'bg-gray-800/80 text-gray-200'
+                          }`}
+                          aria-hidden
                         >
-                          {marker.glyph}
+                          {roomCollapsedLabel(room.long_name, room.node_id)}
                         </span>
-                      )}
-                      <span className="truncate">{room.long_name}</span>
-                      {unread > 0 && selectedRoomId !== room.node_id && (
-                        <span className="ml-auto shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                          {unread > 99 ? '99+' : unread}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-0.5 pl-5 text-xs text-gray-500">
-                      {t('roomsPanel.postCount', { count })}
-                      {unread > 0 && selectedRoomId !== room.node_id && (
-                        <>
-                          {' '}
-                          · {t('roomsPanel.unreadPosts', { count: unread > 99 ? '99+' : unread })}
-                        </>
-                      )}
-                    </div>
+                        {isLoggingIn ? (
+                          <span
+                            className={ROOM_LOGIN_PROGRESS_DOT}
+                            aria-label={t('roomsPanel.loggingInMarkerAria')}
+                            title={t('roomsPanel.loggingIn')}
+                          />
+                        ) : (
+                          <span
+                            className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${showAutoLoginFailed ? 'ring-1 ring-red-500' : ''} ${marker.colorClass}`}
+                            aria-hidden={!showAutoLoginFailed}
+                            title={markerTitle}
+                          >
+                            {marker.glyph}
+                          </span>
+                        )}
+                        {unread > 0 && selectedRoomId !== room.node_id && (
+                          <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-600 px-0.5 text-[9px] font-bold text-white">
+                            {unread > 99 ? '99+' : unread}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-gray-200">
+                          {onToggleFavorite ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(room.node_id, !room.favorited);
+                              }}
+                              className="text-brand-yellow/70 hover:text-brand-yellow z-10 shrink-0 text-sm leading-none"
+                              aria-label={
+                                room.favorited
+                                  ? t('roomsPanel.unfavorite')
+                                  : t('roomsPanel.favorite')
+                              }
+                            >
+                              {room.favorited ? '★' : '☆'}
+                            </button>
+                          ) : null}
+                          {isLoggingIn ? (
+                            <span
+                              className={ROOM_LOGIN_PROGRESS_DOT}
+                              aria-label={t('roomsPanel.loggingInMarkerAria')}
+                              title={t('roomsPanel.loggingIn')}
+                            />
+                          ) : (
+                            <span
+                              className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${showAutoLoginFailed ? 'ring-1 ring-red-500' : ''} ${marker.colorClass}`}
+                              aria-hidden={!showAutoLoginFailed}
+                              aria-label={
+                                showAutoLoginFailed
+                                  ? t('roomsPanel.autoLoginFailedAria', { error: autoLoginFailed })
+                                  : undefined
+                              }
+                              title={markerTitle}
+                            >
+                              {marker.glyph}
+                            </span>
+                          )}
+                          <span className="truncate">{room.long_name}</span>
+                          {unread > 0 && selectedRoomId !== room.node_id && (
+                            <span className="ml-auto shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                              {unread > 99 ? '99+' : unread}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 pl-5 text-xs text-gray-500">
+                          {t('roomsPanel.postCount', { count })}
+                          {unread > 0 && selectedRoomId !== room.node_id && (
+                            <>
+                              {' '}
+                              ·{' '}
+                              {t('roomsPanel.unreadPosts', {
+                                count: unread > 99 ? '99+' : unread,
+                              })}
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })
             )}
           </div>
+          <button
+            type="button"
+            onClick={handleRoomListToggle}
+            aria-expanded={!roomListCollapsed}
+            aria-label={
+              roomListCollapsed ? t('roomsPanel.expandRoomList') : t('roomsPanel.collapseRoomList')
+            }
+            className="text-muted hover:text-bright-green mx-2 mt-auto mb-2 flex shrink-0 items-center justify-center rounded-sm border border-gray-700 py-2 transition-colors hover:border-gray-600"
+          >
+            {roomListCollapsed ? (
+              <ChevronRight
+                aria-hidden
+                className={ICON_MD}
+                trigger={listCollapseTrigger}
+                size={16}
+              />
+            ) : (
+              <ChevronLeft
+                aria-hidden
+                className={ICON_MD}
+                trigger={listCollapseTrigger}
+                size={16}
+              />
+            )}
+          </button>
         </div>
 
         <div className="bg-secondary-dark relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
@@ -1674,6 +1928,117 @@ export default function RoomsPanel({
                     <button
                       type="button"
                       onClick={() => {
+                        setShowDatePicker((v) => !v);
+                      }}
+                      className={`rounded border px-2 py-1 text-xs hover:bg-gray-700 ${
+                        showDatePicker
+                          ? 'border-brand-green/50 bg-brand-green/20 text-brand-green'
+                          : 'border-gray-600 bg-gray-800 text-gray-300'
+                      }`}
+                      aria-pressed={showDatePicker}
+                      aria-label={t('chatPanel.jumpToDate')}
+                      title={t('chatPanel.jumpToDate')}
+                    >
+                      <Calendar
+                        aria-hidden
+                        className="h-3.5 w-3.5"
+                        trigger={parentIconTrigger}
+                        size={14}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void (async () => {
+                          try {
+                            const msgs = filteredRoomPosts.map((m) => ({
+                              timestamp: m.timestamp,
+                              sender_name: m.sender_name,
+                              payload: m.payload,
+                              channel: m.channel,
+                              to: m.to,
+                            }));
+                            await window.electronAPI.chat.export(msgs);
+                          } catch (e: unknown) {
+                            console.warn('[RoomsPanel] export failed ' + errLikeToLogString(e));
+                          }
+                        })();
+                      }}
+                      className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
+                      aria-label={t('chatPanel.exportChat')}
+                      title={t('chatPanel.exportChat')}
+                    >
+                      <Download
+                        aria-hidden
+                        className="h-3.5 w-3.5"
+                        trigger={parentIconTrigger}
+                        size={14}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleSearch();
+                      }}
+                      className={`rounded border px-2 py-1 text-xs hover:bg-gray-700 ${
+                        showSearch
+                          ? 'border-brand-green/50 bg-brand-green/20 text-brand-green'
+                          : 'border-gray-600 bg-gray-800 text-gray-300'
+                      }`}
+                      aria-pressed={showSearch}
+                      aria-label={t('chatPanel.searchMessages')}
+                      title={t('chatPanel.searchMessages')}
+                    >
+                      <Search
+                        aria-hidden
+                        className="h-3.5 w-3.5"
+                        trigger={parentIconTrigger}
+                        size={14}
+                      />
+                    </button>
+                    {streamView === 'posts' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleMuteView(roomViewKey);
+                        }}
+                        className={`rounded border px-2 py-1 text-xs hover:bg-gray-700 ${
+                          mutedViews.has(roomViewKey)
+                            ? 'border-amber-600/50 bg-amber-900/30 text-amber-300'
+                            : 'border-gray-600 bg-gray-800 text-gray-300'
+                        }`}
+                        aria-pressed={mutedViews.has(roomViewKey)}
+                        aria-label={
+                          mutedViews.has(roomViewKey)
+                            ? t('chatPanel.unmuteConversation')
+                            : t('chatPanel.muteConversation')
+                        }
+                        title={
+                          mutedViews.has(roomViewKey)
+                            ? t('chatPanel.unmuteConversation')
+                            : t('chatPanel.muteConversation')
+                        }
+                      >
+                        {mutedViews.has(roomViewKey) ? (
+                          <BellOff
+                            aria-hidden
+                            className="h-3.5 w-3.5"
+                            trigger={parentIconTrigger}
+                            size={14}
+                          />
+                        ) : (
+                          <Bell
+                            aria-hidden
+                            className="h-3.5 w-3.5"
+                            trigger={parentIconTrigger}
+                            size={14}
+                          />
+                        )}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
                         setStreamView((v) => (v === 'starred' ? 'posts' : 'starred'));
                       }}
                       className={`rounded border px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 ${
@@ -1778,6 +2143,89 @@ export default function RoomsPanel({
                     </span>
                   )}
                 </div>
+                {showSearch && streamView === 'posts' && (
+                  <div className="border-b border-gray-800 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                        }}
+                        placeholder={t('chatPanel.searchMessagesPlaceholder')}
+                        aria-label={t('chatPanel.searchMessagesPlaceholder')}
+                        spellCheck={false}
+                        className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                          }}
+                          className="text-muted shrink-0 px-1 text-lg leading-none hover:text-gray-300"
+                          aria-label={t('common.clear')}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    {searchQuery && (
+                      <div className="text-muted mt-1 text-xs">
+                        {t('chatPanel.searchResults', { count: filteredRoomPosts.length })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {showDatePicker && streamView === 'posts' && (
+                  <div className="flex items-center gap-2 border-b border-gray-800 px-3 py-2">
+                    <input
+                      type="date"
+                      value={jumpDate}
+                      max={new Date().toISOString().slice(0, 10)}
+                      aria-label={t('chatPanel.jumpToDate')}
+                      onChange={(e) => {
+                        setJumpDate(e.target.value);
+                        handleJumpToDate(e.target.value);
+                      }}
+                      className="bg-secondary-dark/80 focus:border-brand-green/50 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+                    />
+                    {jumpDate && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setJumpDate('');
+                        }}
+                        className="text-muted text-xs hover:text-gray-300"
+                        aria-label={t('common.clear')}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                )}
+                {filterSender != null && streamView === 'posts' && (
+                  <div className="flex items-center justify-between border-b border-blue-600/40 bg-blue-900/20 px-3 py-1.5 text-xs text-blue-300">
+                    <span>
+                      {t('chatPanel.filteringBySender', {
+                        name:
+                          nodes.get(filterSender)?.long_name?.trim() ||
+                          `#${filterSender.toString(16)}`,
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterSender(null);
+                      }}
+                      aria-label={t('chatPanel.clearSenderFilter')}
+                      className="ml-2 hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="shrink-0 border-b border-gray-700">
@@ -1968,8 +2416,12 @@ export default function RoomsPanel({
                         );
                       })
                     )
-                  ) : roomPosts.length === 0 ? (
-                    <p className="text-sm text-gray-500">{t('roomsPanel.noPostsYet')}</p>
+                  ) : filteredRoomPosts.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      {searchQuery.trim() || filterSender != null
+                        ? t('chatPanel.emptyNoSearchMatches')
+                        : t('roomsPanel.noPostsYet')}
+                    </p>
                   ) : (
                     <div
                       ref={postVirtualizer.containerRef}
@@ -1978,7 +2430,7 @@ export default function RoomsPanel({
                     >
                       {postVirtualizer.getVirtualItems().map((vi) => {
                         const index = vi.index;
-                        const m = roomPosts[index];
+                        const m = filteredRoomPosts[index];
                         if (!m) return null;
                         const isOwn = m.sender_id === myNodeNum;
                         const starId = roomMsgStarId(m);
@@ -1987,135 +2439,191 @@ export default function RoomsPanel({
                           onMessageNode != null &&
                           canDmMeshcorePoster(m.sender_id, myNodeNum, nodes);
                         const isUnreadStart = index === unreadStartIndex;
+                        const daySeparator = daySeparatorIndices.has(index) ? (
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="flex-1 border-t border-gray-700" />
+                            <span className="text-muted shrink-0 text-xs font-medium">
+                              {formatDayLabel(m.timestamp, t)}
+                            </span>
+                            <div className="flex-1 border-t border-gray-700" />
+                          </div>
+                        ) : null;
+                        const prevMsg = index > 0 ? filteredRoomPosts[index - 1] : null;
+                        const nextMsg =
+                          index < filteredRoomPosts.length - 1
+                            ? filteredRoomPosts[index + 1]
+                            : null;
+                        const isContinuation =
+                          compactMode &&
+                          daySeparator === null &&
+                          prevMsg !== null &&
+                          prevMsg.sender_id === m.sender_id;
+                        const isFollowedByContinuation =
+                          compactMode &&
+                          nextMsg !== null &&
+                          nextMsg.sender_id === m.sender_id &&
+                          !daySeparatorIndices.has(index + 1);
+                        const compactMerged =
+                          compactMode && (isContinuation || isFollowedByContinuation);
+                        const compactStackTop = compactMode && isContinuation;
+                        const compactStackBottom = compactMode && isFollowedByContinuation;
                         return (
                           <div
                             key={vi.key}
                             data-index={vi.index}
                             ref={postVirtualizer.measureElement}
-                            className="absolute top-0 left-0 w-full pb-2"
+                            className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-2'}`}
                             style={{ transform: `translateY(${vi.start}px)` }}
                           >
+                            {daySeparator}
                             {isUnreadStart && (
                               <div ref={attachUnreadDividerRef}>
                                 <RoomUnreadDivider label={t('roomsPanel.newMessagesDivider')} />
                               </div>
                             )}
-                            <div
-                              className={`group/msg rounded-lg px-3 py-2 text-sm ${
-                                isOwn
-                                  ? 'bg-purple-900/30 text-purple-100'
-                                  : 'bg-gray-800/60 text-gray-200'
-                              }`}
-                            >
-                              <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
-                                <span className="font-medium text-gray-300">{m.sender_name}</span>
-                                <span>{formatTimestamp(m.timestamp)}</span>
-                                <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
-                                  {showDm && (
+                            <div className={isContinuation ? '!mt-0' : undefined}>
+                              <div
+                                className={`group/msg rounded-lg px-3 text-sm ${
+                                  compactMode ? 'py-1' : 'py-2'
+                                } ${
+                                  isOwn
+                                    ? 'bg-purple-900/30 text-purple-100'
+                                    : 'bg-gray-800/60 text-gray-200'
+                                } ${
+                                  compactMerged
+                                    ? compactStackTop
+                                      ? 'rounded-t-none border-t-0'
+                                      : compactStackBottom
+                                        ? 'rounded-b-none'
+                                        : 'rounded-none border-t-0'
+                                    : ''
+                                }`}
+                              >
+                                <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFilterSender((prev) =>
+                                        prev === m.sender_id ? null : m.sender_id,
+                                      );
+                                    }}
+                                    className={`font-medium hover:underline ${
+                                      filterSender === m.sender_id
+                                        ? 'text-blue-300'
+                                        : 'text-gray-300'
+                                    }`}
+                                    aria-pressed={filterSender === m.sender_id}
+                                  >
+                                    {m.sender_name}
+                                  </button>
+                                  <span>{formatTimestamp(m.timestamp)}</span>
+                                  <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+                                    {showDm && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          onMessageNode?.(m.sender_id);
+                                        }}
+                                        {...{ [PARENT_HOVER_ATTR]: '' }}
+                                        className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
+                                        aria-label={t('nodeDetailModal.messageButton')}
+                                        title={t('nodeDetailModal.messageButton')}
+                                      >
+                                        <Mail
+                                          aria-hidden
+                                          className="h-3.5 w-3.5"
+                                          trigger={parentIconTrigger}
+                                          size={14}
+                                        />
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        onMessageNode?.(m.sender_id);
+                                        toggleStar(m);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="rounded p-0.5 text-gray-500 hover:text-cyan-300"
-                                      aria-label={t('nodeDetailModal.messageButton')}
-                                      title={t('nodeDetailModal.messageButton')}
+                                      className={`rounded p-0.5 transition-colors ${
+                                        isStarred
+                                          ? 'text-amber-400 hover:text-amber-200'
+                                          : 'text-gray-500 hover:text-amber-400'
+                                      }`}
+                                      aria-label={
+                                        isStarred
+                                          ? t('chatPanel.unstarMessage')
+                                          : t('chatPanel.starMessage')
+                                      }
+                                      title={
+                                        isStarred
+                                          ? t('chatPanel.unstarMessage')
+                                          : t('chatPanel.starMessage')
+                                      }
                                     >
-                                      <Mail
+                                      <Star
+                                        aria-hidden
+                                        className={`h-3.5 w-3.5 ${isStarred ? 'fill-current' : ''}`}
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        void writeClipboardText(m.payload).catch((err: unknown) => {
+                                          console.warn(
+                                            '[RoomsPanel] copy failed ' + errLikeToLogString(err),
+                                          );
+                                        });
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="rounded p-0.5 text-gray-500 hover:text-gray-300"
+                                      aria-label={t('chatPanel.copyMessage')}
+                                      title={t('chatPanel.copyMessage')}
+                                    >
+                                      <Copy
                                         aria-hidden
                                         className="h-3.5 w-3.5"
                                         trigger={parentIconTrigger}
                                         size={14}
                                       />
                                     </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      toggleStar(m);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className={`rounded p-0.5 transition-colors ${
-                                      isStarred
-                                        ? 'text-amber-400 hover:text-amber-200'
-                                        : 'text-gray-500 hover:text-amber-400'
-                                    }`}
-                                    aria-label={
-                                      isStarred
-                                        ? t('chatPanel.unstarMessage')
-                                        : t('chatPanel.starMessage')
-                                    }
-                                    title={
-                                      isStarred
-                                        ? t('chatPanel.unstarMessage')
-                                        : t('chatPanel.starMessage')
-                                    }
-                                  >
-                                    <Star
-                                      aria-hidden
-                                      className={`h-3.5 w-3.5 ${isStarred ? 'fill-current' : ''}`}
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      void writeClipboardText(m.payload).catch((err: unknown) => {
-                                        console.warn(
-                                          '[RoomsPanel] copy failed ' + errLikeToLogString(err),
-                                        );
-                                      });
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="rounded p-0.5 text-gray-500 hover:text-gray-300"
-                                    aria-label={t('chatPanel.copyMessage')}
-                                    title={t('chatPanel.copyMessage')}
-                                  >
-                                    <Copy
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="break-words whitespace-pre-wrap">
-                                <ChatPayloadText
-                                  text={m.payload}
-                                  query=""
-                                  loadLinkPreviews={!showScrollButton}
-                                  onContentResize={() => {
-                                    schedulePostRowRemeasure(index);
-                                  }}
-                                />
-                              </div>
-                              {isOwn && m.status && selectedRoomId != null && (
-                                <div className="mt-0.5 flex items-center justify-end gap-1">
-                                  {m.status === 'failed' && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        void onSendRoomPost(selectedRoomId, m.payload);
-                                      }}
-                                      className="text-gray-500 transition-colors hover:text-gray-300"
-                                      title={t('chatPanel.resendMessage')}
-                                      aria-label={t('chatPanel.resendMessage')}
-                                    >
-                                      ↻
-                                    </button>
-                                  )}
-                                  <MessageStatusBadge
-                                    status={m.status}
-                                    transport="device"
-                                    connectionType={connectionType}
-                                    error={m.error ?? undefined}
-                                    context="room"
+                                <div className="break-words whitespace-pre-wrap">
+                                  <ChatPayloadText
+                                    text={m.payload}
+                                    query={searchQuery}
+                                    loadLinkPreviews={!showScrollButton}
+                                    onContentResize={() => {
+                                      schedulePostRowRemeasure(index);
+                                    }}
                                   />
                                 </div>
-                              )}
+                                {isOwn && m.status && selectedRoomId != null && (
+                                  <div className="mt-0.5 flex items-center justify-end gap-1">
+                                    {m.status === 'failed' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          void onSendRoomPost(selectedRoomId, m.payload);
+                                        }}
+                                        className="text-gray-500 transition-colors hover:text-gray-300"
+                                        title={t('chatPanel.resendMessage')}
+                                        aria-label={t('chatPanel.resendMessage')}
+                                      >
+                                        ↻
+                                      </button>
+                                    )}
+                                    <MessageStatusBadge
+                                      status={m.status}
+                                      transport="device"
+                                      connectionType={connectionType}
+                                      error={m.error ?? undefined}
+                                      context="room"
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );

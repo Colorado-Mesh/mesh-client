@@ -29,6 +29,7 @@ import {
   loadMutedViews,
   loadPersistedLastReadInitial,
   removePersistedLastReadForChannel,
+  subscribeMutedViewsChanged,
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
@@ -540,6 +541,7 @@ function AppContent({
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({ meshtastic: 0, meshcore: 0 });
   const [roomsLastReadRevision, setRoomsLastReadRevision] = useState(0);
+  const [meshcoreMutedViewsRevision, setMeshcoreMutedViewsRevision] = useState(0);
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
   const prevMeshtasticMsgCountRef = useRef(0);
   const prevMeshcoreMsgCountRef = useRef(0);
@@ -835,6 +837,14 @@ function AppContent({
     });
   }, []);
 
+  useEffect(() => {
+    return subscribeMutedViewsChanged((protocol) => {
+      if (protocol === 'meshcore') {
+        setMeshcoreMutedViewsRevision((n) => n + 1);
+      }
+    });
+  }, []);
+
   const meshcoreLastReadSanitizedRef = useRef(false);
   useEffect(() => {
     if (!meshcoreIdentityId || meshcoreLastReadSanitizedRef.current) return;
@@ -913,12 +923,19 @@ function AppContent({
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
+    void meshcoreMutedViewsRevision;
     const roomsLastRead = getSanitizedMeshcoreRoomsLastRead(meshcoreUiMessages);
-    const rawCount = totalRoomsUnreadCount(meshcoreUiMessages, roomsLastRead, meshcoreOwnNodeIdSet);
+    const rawCount = totalRoomsUnreadCount(
+      meshcoreUiMessages,
+      roomsLastRead,
+      meshcoreOwnNodeIdSet,
+      loadMutedViews('meshcore'),
+    );
     const count =
       meshcoreRuntime.state.status === 'configured' || meshcoreOwnNodeIdSet.size > 0 ? rawCount : 0;
     return count;
   }, [
+    meshcoreMutedViewsRevision,
     roomsLastReadRevision,
     meshcoreOwnNodeIdSet,
     meshcoreUiMessages,
@@ -2763,6 +2780,7 @@ function AppContent({
                                 onToggleFavorite={meshcorePanelActions.setNodeFavorited}
                                 scrollToTopRef={scrollToTopRoomsRef}
                                 outerScrollMetricsRootRef={mainViewportRef}
+                                compactMode={chatCompactMode}
                               />
                             </div>
                           </Suspense>

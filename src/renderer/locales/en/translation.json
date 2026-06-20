@@ -235,6 +235,10 @@
     "resendMessage": "Resend message",
     "replyButton": "Reply",
     "reactButton": "React",
+    "meshcoreReactionPickerLabel": "Choose mesh reaction",
+    "meshcoreReactionEmojiOption": "React with {{emoji}}",
+    "meshcoreReactionNotInteroperable": "That emoji is not supported for MeshCore mesh reactions.",
+    "reactionFailed": "Reaction failed",
     "cancelReply": "Cancel reply",
     "replyRequiresPacketId": "Reply requires the message RF packet id (wait for send ack or refresh chat).",
     "insertEmoji": "Insert emoji",
@@ -310,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
-    "emptyMention": "Empty mention"
+    "emptyMention": "Empty mention",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Open on Giphy"
   },
   "common": {
     "close": "Close",
@@ -2288,6 +2294,8 @@
   },
   "roomsPanel": {
     "title": "Room servers",
+    "collapseRoomList": "Collapse room list",
+    "expandRoomList": "Expand room list",
     "noRoomsYet": "No room servers discovered yet. Room contacts appear when type Room advertises on the mesh.",
     "selectRoom": "Select a room server to view and post messages",
     "postCount": "{{count}} posts",

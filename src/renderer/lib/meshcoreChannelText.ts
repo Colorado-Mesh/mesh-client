@@ -1,4 +1,8 @@
 import {
+  buildMeshcoreOpenReactionIncomingMessage,
+  parseMeshcoreOpenReactionWire,
+} from './meshcoreOpenReaction';
+import {
   meshcoreChatStubNodeIdFromDisplayName,
   sanitizeMeshcoreChatWireText,
 } from './meshcoreUtils';
@@ -406,6 +410,15 @@ export function buildMeshcoreChannelIncomingMessage(
     meshcoreDedupeKey: rawText,
     ...rxFields,
   };
+
+  const openWire = parseMeshcoreOpenReactionWire(normalized.payload.trim());
+  if (openWire) {
+    return buildMeshcoreOpenReactionIncomingMessage(messages, base, openWire, {
+      channel: opts.channel,
+      beforeTimestamp: opts.timestamp,
+      isDm: false,
+    });
+  }
 
   const target = normalized.bracketTargetName;
   if (normalized.hadBracketReplyPrefix && !target) {
@@ -1002,6 +1015,17 @@ export function buildMeshcoreDmIncomingMessage(
     ...rxFields,
   };
 
+  const openWire =
+    parseMeshcoreOpenReactionWire(parsed.payload.trim()) ??
+    parseMeshcoreOpenReactionWire(rawText.trim());
+  if (openWire) {
+    return buildMeshcoreOpenReactionIncomingMessage(messages, base, openWire, {
+      channel: -1,
+      beforeTimestamp: opts.timestamp,
+      isDm: true,
+    });
+  }
+
   if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
     const body = parsed.payload.trim();
     return { ...base, payload: body.length > 0 ? body : rawText };
@@ -1063,6 +1087,9 @@ export function buildMeshcoreDmIncomingMessage(
 
 /** meshcore.js `TxtTypes.Plain` — outbound room BBS posts (companion SendTxtMsg). */
 export const MESHCORE_TXT_TYPE_PLAIN = 0;
+
+/** meshcore.js `TxtTypes.CliData` — remote CLI command/response wire text. */
+export const MESHCORE_TXT_TYPE_CLI_DATA = 1;
 
 /** meshcore.js `TxtTypes.SignedPlain` — room server pushed posts to logged-in clients. */
 export const MESHCORE_TXT_TYPE_SIGNED_PLAIN = 2;

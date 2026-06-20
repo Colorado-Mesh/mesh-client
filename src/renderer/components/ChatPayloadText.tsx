@@ -3,6 +3,11 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
+import {
+  meshcoreGiphyMediaUrl,
+  meshcoreGiphyPageUrl,
+  parseMeshcoreGifId,
+} from '@/renderer/lib/meshcoreGifWire';
 
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
@@ -107,6 +112,52 @@ function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: 
   );
 }
 
+function MeshcoreGifEmbed({
+  gifId,
+  query,
+  onContentResize,
+}: {
+  gifId: string;
+  query: string;
+  onContentResize?: () => void;
+}) {
+  const { t } = useTranslation();
+  const [failed, setFailed] = useState(false);
+  const src = meshcoreGiphyMediaUrl(gifId);
+  const pageUrl = meshcoreGiphyPageUrl(gifId);
+  const wireText = `g:${gifId}`;
+
+  if (failed) {
+    return (
+      <span className="whitespace-pre-wrap text-gray-300">
+        {highlightCaseInsensitive(wireText, query)}
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={pageUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-1 inline-block max-w-xs"
+      title={t('chatPayload.meshcoreGifOpen')}
+    >
+      <img
+        src={src}
+        alt={t('chatPayload.meshcoreGif')}
+        className="max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain"
+        onLoad={() => {
+          onContentResize?.();
+        }}
+        onError={() => {
+          setFailed(true);
+        }}
+      />
+    </a>
+  );
+}
+
 export interface ChatPayloadTextProps {
   text: string;
   query: string;
@@ -128,6 +179,14 @@ export function ChatPayloadText({
   onContentResize,
 }: ChatPayloadTextProps) {
   const { t } = useTranslation();
+  const gifId = parseMeshcoreGifId(text);
+  if (gifId) {
+    return (
+      <div>
+        <MeshcoreGifEmbed gifId={gifId} query={query} onContentResize={onContentResize} />
+      </div>
+    );
+  }
   const segments = parseChatMentionSegments(text);
   const urlSegments = segments.filter((seg) => seg.kind === 'url');
 

@@ -112,6 +112,12 @@ export const MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS = 2_000;
 /** Background room sync scheduler tick interval. */
 export const MESHCORE_ROOM_SYNC_TICK_MS = 60_000;
 
+/** Periodic poll for local radio stats while connected (useMeshcoreRuntime). */
+export const MESHCORE_STATS_POLL_MS = 30_000;
+
+/** Safety-net poll for queued waiting messages when event 131 may have been missed. */
+export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
+
 /** Minimum spacing between mesh TX operations used by room sync (login counts as TX). */
 export const MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS = 60_000;
 

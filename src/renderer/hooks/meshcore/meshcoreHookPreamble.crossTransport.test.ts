@@ -7,13 +7,13 @@ import {
   findMeshcoreCrossTransportDuplicate,
   findMeshcoreDmRfDuplicate,
   findMeshcoreTapbackEchoDuplicate,
-  mapMeshcoreCrossTransportUpgrade,
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
   meshcoreChannelRfMatch,
   meshcoreCrossTransportMatch,
   meshcoreDmRfMatch,
   meshcoreTapbackEchoMatch,
+  upgradeMeshcoreCrossTransportMessage,
 } from './meshcoreHookPreamble';
 
 function baseMsg(overrides: Partial<ChatMessage> = {}): ChatMessage {
@@ -109,14 +109,14 @@ describe('meshcoreCrossTransportMatch', () => {
   });
 });
 
-describe('mapMeshcoreCrossTransportUpgrade', () => {
+describe('upgradeMeshcoreCrossTransportMessage', () => {
   it('upgrades mqtt row to both without inserting duplicate', () => {
     const mqtt = baseMsg({ receivedVia: 'mqtt' });
     const rf = baseMsg({
       receivedVia: 'rf',
       timestamp: mqtt.timestamp + 2_000,
     });
-    const { messages, matched } = mapMeshcoreCrossTransportUpgrade([mqtt], rf);
+    const { messages, matched } = upgradeMeshcoreCrossTransportMessage([mqtt], rf);
     expect(matched).toBe(true);
     expect(messages).toHaveLength(1);
     expect(messages[0].receivedVia).toBe('both');
@@ -129,7 +129,7 @@ describe('mapMeshcoreCrossTransportUpgrade', () => {
       meshcoreDedupeKey: 'Bob: other',
       receivedVia: 'rf',
     });
-    const { messages, matched } = mapMeshcoreCrossTransportUpgrade([msg], unrelated);
+    const { messages, matched } = upgradeMeshcoreCrossTransportMessage([msg], unrelated);
     expect(matched).toBe(false);
     expect(messages[0]).toBe(msg);
   });

@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "Sincronizzazione dei messaggi in coda {{count}} dalla radio...",
     "waitingMessagesSyncNow": "Sincronizza adesso",
     "jumpToUnread": "Non letto",
-    "jumpToLatest": "Passa all'ultimo"
+    "jumpToLatest": "Passa all'ultimo",
+    "meshcoreReactionPickerLabel": "Scegli la reazione a rete",
+    "meshcoreReactionEmojiOption": "Reagisci con {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Quell' emoji non è supportata per le reazioni mesh MeshCore.",
+    "reactionFailed": "Reazione fallita"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
-    "emptyMention": "Menzione vuota"
+    "emptyMention": "Menzione vuota",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Apri su Giphy"
   },
   "common": {
     "close": "Chiudi",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Punto verde — sessione client attiva (esci dalla stanza se il server è offline)",
     "historyLocalHint": "I post vengono visualizzati solo quando si è connessi a questa stanza su questo dispositivo. Abilita la sincronizzazione automatica per rimanere iscritto; la cronologia non viene riempita dal server della stanza.",
     "loginAllSavedDisabledNoSavedPasswords": "Salva prima una password della stanza per utilizzare l'accesso a tutti",
-    "membersHeadingWithCount": "Membri ({{count}})"
+    "membersHeadingWithCount": "Membri ({{count}})",
+    "collapseRoomList": "Comprimi l'elenco delle stanze",
+    "expandRoomList": "Espandi l'elenco delle stanze"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

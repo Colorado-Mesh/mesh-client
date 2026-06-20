@@ -306,11 +306,17 @@
     "waitingMessagesBadge": "Synchronizace {{count}} zpráv ve frontě z rádia…",
     "waitingMessagesSyncNow": "Synchronizovat nyní",
     "jumpToUnread": "Přejít na nepřečtené",
-    "jumpToLatest": "Přejít na nejnovější"
+    "jumpToLatest": "Přejít na nejnovější",
+    "meshcoreReactionPickerLabel": "Zvolte reakci sítě",
+    "meshcoreReactionEmojiOption": "Reagovat s {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Tento emodži není podporován pro MeshCore mesh reakce.",
+    "reactionFailed": "Reakce selhala"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
-    "emptyMention": "Prázdná zmínka"
+    "emptyMention": "Prázdná zmínka",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Otevřít na Giphy"
   },
   "common": {
     "close": "Blízko",
@@ -2400,7 +2406,9 @@
     "legendLoggedInTooltip": "Zelená tečka — aktivní relace klienta (opuste místnost, pokud je server offline)",
     "historyLocalHint": "Příspěvky se zobrazují pouze, když jste na tomto zařízení přihlášeni do této místnosti. Povolte automatickou synchronizaci, abyste zůstali přihlášeni k odběru; historie není zaplněna z pokojového serveru.",
     "loginAllSavedDisabledNoSavedPasswords": "Pro použití všech přihlašovacích údajů si nejprve uložte heslo místnosti",
-    "membersHeadingWithCount": "Členové ({{count}})"
+    "membersHeadingWithCount": "Členové ({{count}})",
+    "collapseRoomList": "Sbalit seznam místností",
+    "expandRoomList": "Rozbalit seznam místností"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

@@ -96,6 +96,96 @@ describe('ChatPanel accessibility', () => {
     expect(screen.queryByLabelText('Search all channels')).not.toBeInTheDocument();
   });
 
+  it('clears message filter when search is closed', async () => {
+    const now = Date.now();
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          isConnected
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'alpha message',
+              channel: 0,
+              timestamp: now - 2000,
+              status: 'acked',
+            },
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'beta message',
+              channel: 0,
+              timestamp: now - 1000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByLabelText('Search messages'));
+    const searchInput = screen.getByLabelText('Search messages...');
+    await user.type(searchInput, 'alpha');
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(1);
+    });
+    // Search highlight wraps matches in <mark>, so assert the highlighted token.
+    expect(screen.getByText('alpha')).toBeInTheDocument();
+    expect(screen.queryByText('beta message')).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText('Search messages'));
+    expect(screen.queryByLabelText('Search messages...')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(2);
+    });
+    expect(screen.getByText('alpha message')).toBeInTheDocument();
+    expect(screen.getByText('beta message')).toBeInTheDocument();
+  });
+
+  it('clears message filter via search clear button without closing search', async () => {
+    const now = Date.now();
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          isConnected
+          messages={[
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'alpha message',
+              channel: 0,
+              timestamp: now - 2000,
+              status: 'acked',
+            },
+            {
+              sender_id: 1,
+              sender_name: 'A',
+              payload: 'beta message',
+              channel: 0,
+              timestamp: now - 1000,
+              status: 'acked',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByLabelText('Search messages'));
+    const searchInput = screen.getByLabelText('Search messages...');
+    await user.type(searchInput, 'alpha');
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(1);
+    });
+    await user.click(screen.getByLabelText('Clear'));
+    expect(searchInput).toHaveValue('');
+    await waitFor(() => {
+      expect(lastVirtualizerOptions?.count).toBe(2);
+    });
+    expect(screen.getByLabelText('Search messages...')).toBeInTheDocument();
+  });
+
   it('emoji picker opens for the correct message when messages have no packetId', async () => {
     // Messages without packetId must use timestamp as picker key so re-renders
     // don't shift the picker to a different message (regression: was using -(i+1)).
@@ -2322,57 +2412,69 @@ describe('ChatPanel tapback reaction picker', () => {
     vi.mocked(window.electronAPI.showEmojiPanel).mockClear().mockResolvedValue(undefined);
   });
 
-  it('shows emoji-picker element on Linux when React button is clicked', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel {...defaultProps} />
-      </ToastProvider>,
-    );
-    const reactBtn = screen.getByTitle('React');
-    await user.click(reactBtn);
-    await waitFor(() => {
-      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
-    });
-    expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
-  });
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'shows emoji-picker element on Linux when React button is clicked (%s)',
+    async (protocol) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel {...defaultProps} protocol={protocol} />
+        </ToastProvider>,
+      );
+      const reactBtn = screen.getByTitle('React');
+      await user.click(reactBtn);
+      await waitFor(() => {
+        expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+      });
+      expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    },
+  );
 
-  it('calls onReact with full grapheme when Linux emoji-picker fires emoji-click', async () => {
-    const US_FLAG = '\u{1F1FA}\u{1F1F8}';
-    const onReact = vi.fn().mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel
-          {...defaultProps}
-          onReact={onReact}
-          messages={[{ ...baseMessage, packetId: 42 }]}
-        />
-      </ToastProvider>,
-    );
-    await user.click(screen.getByTitle('React'));
-    await waitFor(() => {
-      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
-    });
-    const picker = document.querySelector('emoji-picker');
-    expect(picker).not.toBeNull();
-    picker!.dispatchEvent(
-      new CustomEvent('emoji-click', { detail: { emoji: { unicode: US_FLAG } }, bubbles: true }),
-    );
-    await waitFor(() => {
-      expect(onReact).toHaveBeenCalledWith(US_FLAG, 42, 0);
-    });
-  });
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'calls onReact with full grapheme when Linux emoji-picker fires emoji-click (%s)',
+    async (protocol) => {
+      const US_FLAG = '\u{1F1FA}\u{1F1F8}';
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol={protocol}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      await waitFor(() => {
+        expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+      });
+      const picker = document.querySelector('emoji-picker');
+      expect(picker).not.toBeNull();
+      picker!.dispatchEvent(
+        new CustomEvent('emoji-click', { detail: { emoji: { unicode: US_FLAG } }, bubbles: true }),
+      );
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith(US_FLAG, 42, 0);
+      });
+    },
+  );
 
-  it.each(['darwin', 'win32'] as const)(
-    'calls showEmojiPanel and does not render emoji-picker on %s when React button is clicked',
-    async (platform) => {
+  it.each([
+    ['darwin', 'meshtastic'] as const,
+    ['darwin', 'meshcore'] as const,
+    ['win32', 'meshtastic'] as const,
+    ['win32', 'meshcore'] as const,
+  ])(
+    'calls showEmojiPanel and does not render emoji-picker on %s when React button is clicked (%s)',
+    async (platform, protocol) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const user = userEvent.setup();
       render(
         <ToastProvider>
-          <ChatPanel {...defaultProps} />
+          <ChatPanel {...defaultProps} protocol={protocol} />
         </ToastProvider>,
       );
       const reactBtn = screen.getByTitle('React');
