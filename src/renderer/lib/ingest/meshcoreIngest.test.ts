@@ -462,6 +462,55 @@ describe('attachMeshcoreIngest', () => {
     );
   });
 
+  it('parses keyed inbound tapback wire into messageStore with emoji + replyTo', () => {
+    const parentTs = 1_700_000_000_000;
+    const parentId = 'ch:0:1700000000';
+    const tapbackId = 'ch:0:1700000001';
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          [parentId]: {
+            id: parentId,
+            from: 0x42,
+            senderName: 'Alice',
+            to: 0xffffffff,
+            payload: 'hello',
+            channelIndex: 0,
+            timestamp: parentTs,
+          },
+        },
+      },
+    });
+
+    const wire = `Bob: @[Alice#${parentTs}] 👍`;
+    upsertMessage(ID, {
+      id: tapbackId,
+      from: 0x99,
+      to: 0xffffffff,
+      senderName: 'Bob',
+      payload: wire,
+      channelIndex: 0,
+      timestamp: parentTs + 1000,
+    });
+    meshcoreIngestHandleTextMessage(ID, {
+      type: 'text_message',
+      payload: {
+        id: tapbackId,
+        from: 0x99,
+        to: 0,
+        payload: wire,
+        channelIndex: 0,
+        timestamp: parentTs + 1000,
+      },
+    });
+
+    const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+    const tapback = rows.find((r) => r.tapback);
+    expect(tapback).toBeDefined();
+    expect(tapback!.payload).toBe('👍');
+    expect(tapback!.replyTo).toBe(String(parentTs));
+  });
+
   it('does not create a contacts-list stub for unresolved RF DMs (from=0)', () => {
     const botId = 0xac200e59;
     const msgId = `${botId}:1700000300`;

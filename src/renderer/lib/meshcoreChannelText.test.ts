@@ -4,12 +4,15 @@ import { mapMeshcoreDbRowsToChatMessages } from '../hooks/meshcore/meshcoreHookP
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  buildMeshcoreOutboundTapbackWire,
   findMeshcoreDmReplyParent,
+  formatMeshcoreWireReplyPrefix,
   formatMeshcoreWireTapbackPrefix,
   meshcoreBracketDisplayNamesMatch,
   meshcoreChannelRepairRawText,
   meshcoreChatMessagesForDisplay,
   meshcorePayloadIsTapbackEmojiOnly,
+  meshcorePromoteEmojiOnlyReplyToTapback,
   meshcoreReplyBodyReferencesParent,
   normalizeMeshcoreIncomingText,
   parseMeshcoreBracketPrefix,
@@ -17,6 +20,7 @@ import {
   resolveMeshcoreBracketParentKey,
   resolveMeshcoreBracketParentKeyDm,
   resolveMeshcoreChannelMessageSender,
+  sanitizeMeshcoreWireName,
 } from './meshcoreChannelText';
 import { computeMeshcoreOpenReactionHash } from './meshcoreOpenReaction';
 import {
@@ -267,8 +271,26 @@ describe('buildMeshcoreDmIncomingMessage', () => {
     expect(msg.replyId).toBe(t0);
     expect(msg.payload).toBe(thumb);
     expect(msg.channel).toBe(-1);
-    expect(msg.replyPreviewText).toBe('ping');
-    expect(msg.replyPreviewSender).toBe('Bob');
+    expect(msg.replyPreviewText).toBeUndefined();
+    expect(msg.replyPreviewSender).toBeUndefined();
+  });
+
+  it('builds DM reaction when keyed @[Name#replyKey] emoji (official companion wire)', () => {
+    const thumb = String.fromCodePoint(0x1f44d);
+    const msg = buildMeshcoreDmIncomingMessage(thread, {
+      rawText: `@[Bob#${t0}] ${thumb}`,
+      senderId: peer,
+      displayName: 'Bob',
+      timestamp: t0 + 100,
+      receivedVia: 'rf',
+      peerNodeId: peer,
+      myNodeId: me,
+      to: me,
+    });
+    expect(msg.emoji).toBe(0x1f44d);
+    expect(msg.replyId).toBe(t0);
+    expect(msg.payload).toBe(thumb);
+    expect(msg.replyPreviewText).toBeUndefined();
   });
 
   it('builds DM reaction from MeshCore Open r:HASH:INDEX wire', () => {
@@ -366,6 +388,40 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
     expect(msg.emoji).toBe(0x1f44d);
     expect(msg.replyId).toBe(99);
     expect(msg.payload).toBe(String.fromCodePoint(0x1f44d));
+  });
+
+  it('builds reaction message when keyed bracket tapback matches explicit wire reply key', () => {
+    const wireReplyKey = 1_780_235_760_847;
+    const msg1: ChatMessage = {
+      sender_id: 10,
+      sender_name: 'Target',
+      payload: 'message 1',
+      channel: 0,
+      timestamp: baseTime,
+      status: 'acked',
+      packetId: wireReplyKey,
+    };
+    const msg2: ChatMessage = {
+      sender_id: 10,
+      sender_name: 'Target',
+      payload: 'message 2',
+      channel: 0,
+      timestamp: baseTime + 100,
+      status: 'acked',
+      packetId: wireReplyKey + 1,
+    };
+    const thumb = String.fromCodePoint(0x1f44d);
+    const msg = buildMeshcoreChannelIncomingMessage([msg1, msg2], {
+      rawText: `Someone: @[Target#${wireReplyKey}] ${thumb}`,
+      senderId: 20,
+      displayName: 'Someone',
+      channel: 0,
+      timestamp: baseTime + 500,
+      receivedVia: 'rf',
+    });
+    expect(msg.emoji).toBe(0x1f44d);
+    expect(msg.replyId).toBe(wireReplyKey);
+    expect(msg.replyPreviewText).toBeUndefined();
   });
 
   it('builds reaction message from MeshCore Open r:HASH:INDEX wire', () => {
@@ -516,13 +572,70 @@ describe('meshcoreChannelRepairRawText', () => {
   });
 });
 
-describe('formatMeshcoreWireTapbackPrefix', () => {
-  it('omits wire reply key so MQTT bridges do not show #timestamp in mentions', () => {
-    expect(formatMeshcoreWireTapbackPrefix('🐧 KF0KIT EDC')).toBe('@[🐧 KF0KIT EDC]');
+describe('sanitizeMeshcoreWireName', () => {
+  it('strips emojis for official tapback wire names', () => {
+    expect(sanitizeMeshcoreWireName('🛩️ NV0N 01')).toBe('NV0N 01');
+    expect(sanitizeMeshcoreWireName('NV0N 01')).toBe('NV0N 01');
+  });
+});
+
+describe('buildMeshcoreOutboundTapbackWire', () => {
+  it('uses keyless companion tapback wire (@[Name] emoji)', () => {
+    expect(buildMeshcoreOutboundTapbackWire('NV0N 01', '🧐')).toBe('@[NV0N 01] 🧐');
   });
 
-  it('builds official companion outbound tapback line without #key', () => {
-    expect(`${formatMeshcoreWireTapbackPrefix('MeshnCrap T096')} 👍`).toBe('@[MeshnCrap T096] 👍');
+  it('sanitizes emojis from target name', () => {
+    expect(buildMeshcoreOutboundTapbackWire('🛩️ NV0N 01', '🧐')).toBe('@[NV0N 01] 🧐');
+  });
+
+  it('uses formatMeshcoreWireTapbackPrefix for the bracket segment', () => {
+    expect(buildMeshcoreOutboundTapbackWire('Bob', '👍')).toBe(
+      `${formatMeshcoreWireTapbackPrefix('Bob')} 👍`,
+    );
+  });
+
+  it('does not include replyKey on outbound tapback wire', () => {
+    expect(buildMeshcoreOutboundTapbackWire('NV0N 01', '🧪')).not.toMatch(/#\d/);
+  });
+});
+
+describe('meshcorePromoteEmojiOnlyReplyToTapback', () => {
+  it('promotes replyId + single emoji payload to tapback fields', () => {
+    const thumb = String.fromCodePoint(0x1f44d);
+    const promoted = meshcorePromoteEmojiOnlyReplyToTapback({
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: thumb,
+      channel: 0,
+      timestamp: 1000,
+      replyId: 99,
+      replyPreviewText: 'hello',
+      replyPreviewSender: 'Alice',
+    });
+    expect(promoted.emoji).toBe(0x1f44d);
+    expect(promoted.replyId).toBe(99);
+    expect(promoted.replyPreviewText).toBeUndefined();
+    expect(promoted.replyPreviewSender).toBeUndefined();
+  });
+
+  it('leaves text replies unchanged', () => {
+    const msg = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: 'agreed',
+      channel: 0,
+      timestamp: 1000,
+      replyId: 99,
+    };
+    expect(meshcorePromoteEmojiOnlyReplyToTapback(msg)).toBe(msg);
+  });
+});
+
+describe('formatMeshcoreWireReplyPrefix', () => {
+  it('sanitizes display name before adding reply key', () => {
+    expect(formatMeshcoreWireReplyPrefix('🛩️ NV0N 01', 1_780_235_760_847)).toBe(
+      '@[NV0N 01#1780235760847]',
+    );
   });
 });
 
@@ -576,6 +689,34 @@ describe('repairMeshcoreDisplayMessages', () => {
     expect(out[1]?.payload).toBe('agreed');
     expect(out[1]?.replyId).toBe(77);
     expect(out[1]?.replyPreviewSender).toBe('🛩️ W0STR 01');
+  });
+
+  it('promotes emoji-only reply rows to tapbacks after repair', () => {
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Alice',
+      payload: 'hello',
+      channel: 0,
+      timestamp: 1_000,
+      status: 'acked',
+      packetId: 1_780_235_760_847,
+    };
+    const thumb = String.fromCodePoint(0x1f44d);
+    const emojiReply: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: thumb,
+      channel: 0,
+      timestamp: 2_000,
+      status: 'acked',
+      replyId: 1_780_235_760_847,
+      replyPreviewText: 'hello',
+      replyPreviewSender: 'Alice',
+    };
+    const out = meshcoreChatMessagesForDisplay([parent, emojiReply]);
+    expect(out[1]?.emoji).toBe(0x1f44d);
+    expect(out[1]?.replyId).toBe(1_780_235_760_847);
+    expect(out[1]?.replyPreviewText).toBeUndefined();
   });
 
   it('repairs @[] empty bracket by inferring latest prior speaker on channel', () => {

@@ -49,7 +49,8 @@ export function computeRoomLoginExtraTimeoutMs(hopsAway?: number | null): number
  * Total wait for LoginSuccess/LoginFail after SendLogin SENT.
  * Firmware `estTimeout` is often too low on multi-hop paths; apply a hop-scaled floor.
  */
-/** Hard cap so multi-hop login cannot wait 6+ minutes (hopFloor was unbounded). */
+/** Hard cap for multi-hop room login response wait. Without this, `hopFloor` in
+ * `computeRoomLoginResponseWaitMs` (`45_000 + hops * 20_000`) grows unbounded and can exceed 6 minutes. */
 export const MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS = 90_000;
 
 export function computeRoomLoginResponseWaitMs(
@@ -95,7 +96,8 @@ export const MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 export const MESHCORE_DM_RF_DEDUP_WINDOW_MS = 2 * MS_PER_MINUTE;
 
 /** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
-/** Wider window for tapback optimistic rows (client Date.now vs radio rxTime skew). */
+/** Wider than `MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS` (1 min) for tapback optimistic rows
+ * (client Date.now vs radio rxTime skew). */
 export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 
 export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = MS_PER_MINUTE;

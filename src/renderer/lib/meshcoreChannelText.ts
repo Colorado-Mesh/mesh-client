@@ -27,16 +27,50 @@ const BRACKET_PREFIX = /^@\[([^\]]*)\]\s*(.*)$/su;
 /** Wire reply keys use ms-scale timestamps (10+ digits) from {@link formatMeshcoreWireReplyPrefix}. */
 const BRACKET_REPLY_KEY_SUFFIX = /#(\d{10,})$/;
 
-/** Build `@[Name#replyKey]` prefix for outbound MeshCore replies (explicit parent on wire). */
-export function formatMeshcoreWireReplyPrefix(displayName: string, replyKey: number): string {
-  const key = Math.trunc(replyKey);
-  if (!Number.isFinite(key) || key <= 0) return `@[${displayName}]`;
-  return `@[${displayName}#${key}]`;
+export function sanitizeMeshcoreWireName(name: string): string {
+  return name
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/[\uFE00-\uFE0F\u200D]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-/** Tapback wire prefix — name only (no `#key`; bridges and other clients show `#timestamp` as part of the mention). */
+/** Build `@[Name#replyKey]` prefix for outbound MeshCore replies (explicit parent on wire). */
+export function formatMeshcoreWireReplyPrefix(displayName: string, replyKey: number): string {
+  const clean = sanitizeMeshcoreWireName(displayName);
+  const name = clean.length > 0 ? clean : 'Unknown';
+  const key = Math.trunc(replyKey);
+  if (!Number.isFinite(key) || key <= 0) return `@[${name}]`;
+  return `@[${name}#${key}]`;
+}
+
+/** Keyless tapback prefix: `@[Display Name]` (sanitized; official companion tapback wire). */
 export function formatMeshcoreWireTapbackPrefix(displayName: string): string {
-  return `@[${displayName}]`;
+  const clean = sanitizeMeshcoreWireName(displayName);
+  return `@[${clean.length > 0 ? clean : 'Unknown'}]`;
+}
+
+/** Outbound tapback wire: keyless `@[Display Name] emoji` (official companion shape). */
+export function buildMeshcoreOutboundTapbackWire(displayName: string, glyph: string): string {
+  return `${formatMeshcoreWireTapbackPrefix(displayName)} ${glyph}`;
+}
+
+/**
+ * Classify a resolved reply as a tapback when the body is a single emoji (companion tapback wire).
+ * Clears quote preview fields so ChatPanel renders a reaction badge, not a reply bubble.
+ */
+export function meshcorePromoteEmojiOnlyReplyToTapback(msg: ChatMessage): ChatMessage {
+  if (msg.emoji != null) return msg;
+  if (msg.replyId == null) return msg;
+  if (!meshcorePayloadIsTapbackEmojiOnly(msg.payload)) return msg;
+  const emoji = normalizeReactionEmoji(undefined, msg.payload.trim());
+  if (emoji == null) return msg;
+  return {
+    ...msg,
+    emoji,
+    replyPreviewText: undefined,
+    replyPreviewSender: undefined,
+  };
 }
 
 function parseMeshcoreBracketTarget(rawTarget: string): {
@@ -465,14 +499,13 @@ export function buildMeshcoreChannelIncomingMessage(
             replyPreviewSender: parent.sender_name,
           }
         : undefined;
-      if (meshcorePayloadIsTapbackEmojiOnly(body)) {
-        const emoji = normalizeReactionEmoji(undefined, body);
-        if (emoji != null) {
-          return { ...base, payload: body, emoji, replyId: parentKey, ...previewFields };
-        }
-      }
       if (body.length > 0) {
-        return { ...base, payload: body, replyId: parentKey, ...previewFields };
+        return meshcorePromoteEmojiOnlyReplyToTapback({
+          ...base,
+          payload: body,
+          replyId: parentKey,
+          ...previewFields,
+        });
       }
     }
     const body = normalized.payload.trim();
@@ -965,6 +998,7 @@ export function repairMeshcoreDisplayMessages(messages: readonly ChatMessage[]):
       }
     }
     next = refreshMeshcoreReplyParent(next, prior);
+    next = meshcorePromoteEmojiOnlyReplyToTapback(next);
     prior.push(next);
     out.push(next);
   }
@@ -1068,14 +1102,13 @@ export function buildMeshcoreDmIncomingMessage(
             replyPreviewSender: parent.sender_name,
           }
         : undefined;
-      if (meshcorePayloadIsTapbackEmojiOnly(body)) {
-        const emoji = normalizeReactionEmoji(undefined, body);
-        if (emoji != null) {
-          return { ...base, payload: body, emoji, replyId: parentKey, ...previewFields };
-        }
-      }
       if (body.length > 0) {
-        return { ...base, payload: body, replyId: parentKey, ...previewFields };
+        return meshcorePromoteEmojiOnlyReplyToTapback({
+          ...base,
+          payload: body,
+          replyId: parentKey,
+          ...previewFields,
+        });
       }
     }
     const body = parsed.payload.trim();
