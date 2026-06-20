@@ -30,6 +30,11 @@ export function formatMeshcoreWireReplyPrefix(displayName: string, replyKey: num
   return `@[${displayName}#${key}]`;
 }
 
+/** Tapback wire prefix — name only (no `#key`; bridges and other clients show `#timestamp` as part of the mention). */
+export function formatMeshcoreWireTapbackPrefix(displayName: string): string {
+  return `@[${displayName}]`;
+}
+
 function parseMeshcoreBracketTarget(rawTarget: string): {
   targetName?: string;
   wireReplyKey?: number;
