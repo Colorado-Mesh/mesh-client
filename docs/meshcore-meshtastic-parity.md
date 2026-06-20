@@ -82,6 +82,10 @@ Linux uses **Web Bluetooth** in the renderer (not Noble). After you pick a devic
 
 Meshtastic and MeshCore use the literal form `@[Display Name]` in channel payloads for **thread replies**, legacy **emoji tapbacks**, **path / hop summaries**, and **inline references**. The client may keep the raw string in storage when a reply parent cannot be matched; the **Chat** tab still parses these segments for **display** only: brackets are hidden and the name is shown as a compact inline label (`ChatPayloadText` in [`ChatPanel.tsx`](../src/renderer/components/ChatPanel.tsx), parser in [`chatMentionSegments.ts`](../src/renderer/lib/chatMentionSegments.ts)). Threading / `replyId` behavior is unchanged; this is purely presentational.
 
+## MeshCore Open: GIF wire (`g:GIFID`)
+
+MeshCore Open sends GIFs as compact wire text `g:{giphyId}` (Giphy CDN). mesh-client renders these inline in chat via [`meshcoreGifWire.ts`](../src/renderer/lib/meshcoreGifWire.ts) and [`ChatPayloadText.tsx`](../src/renderer/components/ChatPayloadText.tsx). Full Giphy media/page URLs are also recognized. Outbound GIF send is not implemented yet.
+
 ## MeshCore: emoji reactions (tapbacks)
 
 **UI:** MeshCore Chat uses the same reaction picker as Meshtastic — native macOS/Windows emoji panel (`showEmojiPanel()`) or Linux `emoji-picker-element` — plus 12 quick reactions on hover.

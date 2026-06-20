@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
-    "emptyMention": "Empty mention"
+    "emptyMention": "Empty mention",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Open on Giphy"
   },
   "common": {
     "close": "Close",

@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "提及{{label}}",
-    "emptyMention": "空提及"
+    "emptyMention": "空提及",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "在Giphy上打开"
   },
   "common": {
     "close": "关闭",

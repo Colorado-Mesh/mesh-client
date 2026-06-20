@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
-    "emptyMention": "Порожня згадка"
+    "emptyMention": "Порожня згадка",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Відкрити на Giphy"
   },
   "common": {
     "close": "Закрити",

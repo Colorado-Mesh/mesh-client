@@ -22,6 +22,16 @@ describe('ChatPayloadText', () => {
     expect(screen.getByText(/hello world/)).toBeInTheDocument();
   });
 
+  it('renders MeshCore Open g:GIFID wire as inline GIF', () => {
+    render(<ChatPayloadText text="g:a5viI92PAF89q" query="" />);
+    const img = screen.getByRole('img', { name: 'GIF' });
+    expect(img).toHaveAttribute('src', 'https://media.giphy.com/media/a5viI92PAF89q/giphy.gif');
+    expect(screen.getByRole('link')).toHaveAttribute(
+      'href',
+      'https://giphy.com/gifs/a5viI92PAF89q',
+    );
+  });
+
   it('renders URLs as clickable links', () => {
     mockFetch.mockResolvedValue(null);
     render(<ChatPayloadText text="see https://example.com out" query="" />);

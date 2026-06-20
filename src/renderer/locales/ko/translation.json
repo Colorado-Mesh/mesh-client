@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
-    "emptyMention": "빈 언급"
+    "emptyMention": "빈 언급",
+    "meshcoreGif": "Gif",
+    "meshcoreGifOpen": "Giphy에서 열기"
   },
   "common": {
     "close": "닫다",

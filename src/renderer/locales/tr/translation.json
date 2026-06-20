@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
-    "emptyMention": "Boş söz"
+    "emptyMention": "Boş söz",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Giphy'de aç"
   },
   "common": {
     "close": "Kapalı",

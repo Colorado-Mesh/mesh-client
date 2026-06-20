@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
-    "emptyMention": "Lege vermelding"
+    "emptyMention": "Lege vermelding",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Openen op Giphy"
   },
   "common": {
     "close": "Dichtbij",

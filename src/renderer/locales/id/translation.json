@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
-    "emptyMention": "Sebutan kosong"
+    "emptyMention": "Sebutan kosong",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Buka di Giphy"
   },
   "common": {
     "close": "Menutup",

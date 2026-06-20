@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
-    "emptyMention": "空の言及"
+    "emptyMention": "空の言及",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Giphyで開く"
   },
   "common": {
     "close": "近い",

@@ -314,7 +314,9 @@
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
-    "emptyMention": "Prázdná zmínka"
+    "emptyMention": "Prázdná zmínka",
+    "meshcoreGif": "GIF",
+    "meshcoreGifOpen": "Otevřít na Giphy"
   },
   "common": {
     "close": "Blízko",
