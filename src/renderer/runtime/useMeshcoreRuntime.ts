@@ -114,9 +114,9 @@ import {
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import {
+  buildMeshcoreOutboundTapbackWire,
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
-  formatMeshcoreWireTapbackPrefix,
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
@@ -4981,7 +4981,8 @@ export function useMeshcoreRuntime() {
         throw new Error('Reaction target message not found');
       }
       const targetName = reactedTo.sender_name || 'Unknown';
-      const tapbackText = `${formatMeshcoreWireTapbackPrefix(targetName)} ${parsed.glyph}`;
+      const replyKey = reactedTo.packetId ?? reactedTo.timestamp;
+      const tapbackText = buildMeshcoreOutboundTapbackWire(targetName, parsed.glyph);
       const conn = connRef.current;
       const me = myNodeNumRef.current;
 
@@ -5016,7 +5017,7 @@ export function useMeshcoreRuntime() {
           timestamp: tapbackTs,
           status: 'acked',
           emoji: parsed.scalar,
-          replyId,
+          replyId: replyKey,
           to: peerNodeId,
         };
         publishTapback(tapbackMsg);
@@ -5037,7 +5038,7 @@ export function useMeshcoreRuntime() {
           timestamp: Date.now(),
           status: 'acked',
           emoji: parsed.scalar,
-          replyId,
+          replyId: replyKey,
         });
       }
     },
