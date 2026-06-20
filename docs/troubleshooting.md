@@ -122,6 +122,8 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 
 The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cross-transport and channel RF replay). Room posts and tapbacks use a **60 second** window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.
 
+**Reactions on other clients:** mesh-client collapses duplicate tapback hears into one reaction badge and sends MeshCore Open wire (`r:HASH:INDEX`) for all MeshCore tapbacks. The **MeshCore Open / official app**, **MQTT bridges** (e.g. Discord bots), and other clients may still show **multiple identical lines** when a reaction was sent as legacy text (`@[Name] emoji`) from an older mesh-client or another app. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks).
+
 ### Meshtastic Modules tab: “waiting for settings”
 
 If a module section stays on **Waiting for … settings from the device** with Apply disabled:

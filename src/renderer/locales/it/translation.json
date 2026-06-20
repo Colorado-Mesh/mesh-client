@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Sincronizzazione dei messaggi in coda {{count}} dalla radio...",
     "waitingMessagesSyncNow": "Sincronizza adesso",
     "jumpToUnread": "Non letto",
-    "jumpToLatest": "Passa all'ultimo"
+    "jumpToLatest": "Passa all'ultimo",
+    "meshcoreReactionPickerLabel": "Scegli la reazione a rete",
+    "meshcoreReactionEmojiOption": "Reagisci con {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Quell' emoji non è supportata per le reazioni mesh MeshCore.",
+    "reactionFailed": "Reazione fallita"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Synchronizowanie wiadomości oczekujących {{count}} z radia…",
     "waitingMessagesSyncNow": "Synchronizuj teraz",
     "jumpToUnread": "Przejdź do nieprzeczytanych",
-    "jumpToLatest": "Przejdź do najnowszych"
+    "jumpToLatest": "Przejdź do najnowszych",
+    "meshcoreReactionPickerLabel": "Wybierz reakcję siatki",
+    "meshcoreReactionEmojiOption": "Reaguj z {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Ten emotikon nie jest obsługiwany w przypadku reakcji siatkowych MeshCore.",
+    "reactionFailed": "Reakcja nie powiodła się"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

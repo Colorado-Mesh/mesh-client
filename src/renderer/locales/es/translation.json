@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Sincronizando {{count}} mensajes en cola de radio...",
     "waitingMessagesSyncNow": "Sincronizar ahora",
     "jumpToUnread": "Saltar a no leído",
-    "jumpToLatest": "Saltar a lo último"
+    "jumpToLatest": "Saltar a lo último",
+    "meshcoreReactionPickerLabel": "Elige la reacción de malla",
+    "meshcoreReactionEmojiOption": "Reacciona con {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Ese emoji no es compatible con las reacciones de malla de MeshCore.",
+    "reactionFailed": "Reacción fallida"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

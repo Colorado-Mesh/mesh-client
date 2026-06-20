@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "라디오에서 {{count}} 대기 중인 메시지 동기화 중...",
     "waitingMessagesSyncNow": "지금 동기화",
     "jumpToUnread": "읽지 않음으로 이동",
-    "jumpToLatest": "최신으로 이동"
+    "jumpToLatest": "최신으로 이동",
+    "meshcoreReactionPickerLabel": "메시 반응 선택",
+    "meshcoreReactionEmojiOption": "{{emoji}} 와 (과) 반응",
+    "meshcoreReactionNotInteroperable": "해당 이모티콘은 MeshCore 메시 반응에서 지원되지 않습니다.",
+    "reactionFailed": "반응 실패"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

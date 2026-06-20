@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "無線からの{{count}}キューに入れられたメッセージを同期しています…",
     "waitingMessagesSyncNow": "今すぐ同期",
     "jumpToUnread": "未読へジャンプ",
-    "jumpToLatest": "最新へジャンプ"
+    "jumpToLatest": "最新へジャンプ",
+    "meshcoreReactionPickerLabel": "メッシュリアクションを選択",
+    "meshcoreReactionEmojiOption": "{{emoji}}で反応",
+    "meshcoreReactionNotInteroperable": "その絵文字は、MeshCoreメッシュリアクションではサポートされていません。",
+    "reactionFailed": "リアクションに失敗しました"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

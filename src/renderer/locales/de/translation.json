@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "{{count}} Nachricht(en) aus der Warteschlange vom Funkgerät werden synchronisiert...",
     "waitingMessagesSyncNow": "Jetzt synchronisieren",
     "jumpToUnread": "Gehe zu Ungelesen",
-    "jumpToLatest": "Zum neuesten Stand springen"
+    "jumpToLatest": "Zum neuesten Stand springen",
+    "meshcoreReactionPickerLabel": "Mesh-Reaktion wählen",
+    "meshcoreReactionEmojiOption": "Reagiere mit {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Dieses Emoji wird für MeshCore-Mesh-Reaktionen nicht unterstützt.",
+    "reactionFailed": "Reaktion fehlgeschlagen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

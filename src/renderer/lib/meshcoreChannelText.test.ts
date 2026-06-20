@@ -18,6 +18,7 @@ import {
   resolveMeshcoreBracketParentKeyDm,
   resolveMeshcoreChannelMessageSender,
 } from './meshcoreChannelText';
+import { computeMeshcoreOpenReactionHash } from './meshcoreOpenReaction';
 import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
   meshcoreChatStubNodeIdFromDisplayName,
@@ -347,6 +348,25 @@ describe('buildMeshcoreChannelIncomingMessage', () => {
     expect(msg.emoji).toBe(0x1f44d);
     expect(msg.replyId).toBe(99);
     expect(msg.payload).toBe(String.fromCodePoint(0x1f44d));
+  });
+
+  it('builds reaction message from MeshCore Open r:HASH:INDEX wire', () => {
+    const hash = computeMeshcoreOpenReactionHash(
+      Math.floor(baseTime / 1000),
+      'Target',
+      'parent text',
+    );
+    const msg = buildMeshcoreChannelIncomingMessage(parents, {
+      rawText: `Someone: r:${hash}:00`,
+      senderId: 20,
+      displayName: 'Someone',
+      channel: 0,
+      timestamp: baseTime + 500,
+      receivedVia: 'rf',
+    });
+    expect(msg.emoji).toBe(0x1f44d);
+    expect(msg.replyId).toBe(99);
+    expect(msg.payload).toBe('👍');
   });
 
   it('builds text reply with replyId', () => {

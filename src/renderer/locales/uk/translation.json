@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Синхронізація повідомлень у черзі {{count}} з радіо…",
     "waitingMessagesSyncNow": "Синхронізувати зараз",
     "jumpToUnread": "Перейти до непрочитаного",
-    "jumpToLatest": "Перейти до останнього"
+    "jumpToLatest": "Перейти до останнього",
+    "meshcoreReactionPickerLabel": "Виберіть реакцію сіті",
+    "meshcoreReactionEmojiOption": "Зв 'яжіться з {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Цей смайлик не підтримується для реакцій сітки MeshCore.",
+    "reactionFailed": "Не вдалося відреагувати"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

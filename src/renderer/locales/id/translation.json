@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Menyinkronkan pesan antrian {{count}} dari radio…",
     "waitingMessagesSyncNow": "Sinkronkan sekarang",
     "jumpToUnread": "Langsung ke Belum Dibaca",
-    "jumpToLatest": "Langsung ke Terbaru"
+    "jumpToLatest": "Langsung ke Terbaru",
+    "meshcoreReactionPickerLabel": "Pilih reaksi mesh",
+    "meshcoreReactionEmojiOption": "Bereaksi dengan {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Emoji itu tidak didukung untuk reaksi mesh MeshCore.",
+    "reactionFailed": "Reaksi gagal"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

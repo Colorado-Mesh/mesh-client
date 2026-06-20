@@ -1,4 +1,8 @@
 import {
+  buildMeshcoreOpenReactionIncomingMessage,
+  parseMeshcoreOpenReactionWire,
+} from './meshcoreOpenReaction';
+import {
   meshcoreChatStubNodeIdFromDisplayName,
   sanitizeMeshcoreChatWireText,
 } from './meshcoreUtils';
@@ -406,6 +410,15 @@ export function buildMeshcoreChannelIncomingMessage(
     meshcoreDedupeKey: rawText,
     ...rxFields,
   };
+
+  const openWire = parseMeshcoreOpenReactionWire(normalized.payload.trim());
+  if (openWire) {
+    return buildMeshcoreOpenReactionIncomingMessage(messages, base, openWire, {
+      channel: opts.channel,
+      beforeTimestamp: opts.timestamp,
+      isDm: false,
+    });
+  }
 
   const target = normalized.bracketTargetName;
   if (normalized.hadBracketReplyPrefix && !target) {
@@ -1001,6 +1014,17 @@ export function buildMeshcoreDmIncomingMessage(
     meshcoreDedupeKey: rawText,
     ...rxFields,
   };
+
+  const openWire =
+    parseMeshcoreOpenReactionWire(parsed.payload.trim()) ??
+    parseMeshcoreOpenReactionWire(rawText.trim());
+  if (openWire) {
+    return buildMeshcoreOpenReactionIncomingMessage(messages, base, openWire, {
+      channel: -1,
+      beforeTimestamp: opts.timestamp,
+      isDm: true,
+    });
+  }
 
   if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
     const body = parsed.payload.trim();

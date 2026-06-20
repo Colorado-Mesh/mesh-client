@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Synchronizace {{count}} zpráv ve frontě z rádia…",
     "waitingMessagesSyncNow": "Synchronizovat nyní",
     "jumpToUnread": "Přejít na nepřečtené",
-    "jumpToLatest": "Přejít na nejnovější"
+    "jumpToLatest": "Přejít na nejnovější",
+    "meshcoreReactionPickerLabel": "Zvolte reakci sítě",
+    "meshcoreReactionEmojiOption": "Reagovat s {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Tento emodži není podporován pro MeshCore mesh reakce.",
+    "reactionFailed": "Reakce selhala"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

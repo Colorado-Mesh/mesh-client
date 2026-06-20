@@ -306,7 +306,11 @@
     "waitingMessagesBadge": "Синхронизация {{count}} сообщений в очереди с радио…",
     "waitingMessagesSyncNow": "Синхронизировать сейчас",
     "jumpToUnread": "Перейти к непрочитанным",
-    "jumpToLatest": "Перейти к последнему"
+    "jumpToLatest": "Перейти к последнему",
+    "meshcoreReactionPickerLabel": "Выберите реакцию сетки",
+    "meshcoreReactionEmojiOption": "Вступите в реакцию с {{emoji}}",
+    "meshcoreReactionNotInteroperable": "Этот смайлик не поддерживается для реакций сетки MeshCore.",
+    "reactionFailed": "Реакция не прошла."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
