@@ -2369,58 +2369,69 @@ describe('ChatPanel tapback reaction picker', () => {
     vi.mocked(window.electronAPI.showEmojiPanel).mockClear().mockResolvedValue(undefined);
   });
 
-  it('shows emoji-picker element on Linux when React button is clicked (Meshtastic)', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel {...defaultProps} protocol="meshtastic" />
-      </ToastProvider>,
-    );
-    const reactBtn = screen.getByTitle('React');
-    await user.click(reactBtn);
-    await waitFor(() => {
-      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
-    });
-    expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
-  });
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'shows emoji-picker element on Linux when React button is clicked (%s)',
+    async (protocol) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel {...defaultProps} protocol={protocol} />
+        </ToastProvider>,
+      );
+      const reactBtn = screen.getByTitle('React');
+      await user.click(reactBtn);
+      await waitFor(() => {
+        expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+      });
+      expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    },
+  );
 
-  it('calls onReact with full grapheme when Linux emoji-picker fires emoji-click (Meshtastic)', async () => {
-    const US_FLAG = '\u{1F1FA}\u{1F1F8}';
-    const onReact = vi.fn().mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel
-          {...defaultProps}
-          protocol="meshtastic"
-          onReact={onReact}
-          messages={[{ ...baseMessage, packetId: 42 }]}
-        />
-      </ToastProvider>,
-    );
-    await user.click(screen.getByTitle('React'));
-    await waitFor(() => {
-      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
-    });
-    const picker = document.querySelector('emoji-picker');
-    expect(picker).not.toBeNull();
-    picker!.dispatchEvent(
-      new CustomEvent('emoji-click', { detail: { emoji: { unicode: US_FLAG } }, bubbles: true }),
-    );
-    await waitFor(() => {
-      expect(onReact).toHaveBeenCalledWith(US_FLAG, 42, 0);
-    });
-  });
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'calls onReact with full grapheme when Linux emoji-picker fires emoji-click (%s)',
+    async (protocol) => {
+      const US_FLAG = '\u{1F1FA}\u{1F1F8}';
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol={protocol}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      await waitFor(() => {
+        expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+      });
+      const picker = document.querySelector('emoji-picker');
+      expect(picker).not.toBeNull();
+      picker!.dispatchEvent(
+        new CustomEvent('emoji-click', { detail: { emoji: { unicode: US_FLAG } }, bubbles: true }),
+      );
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith(US_FLAG, 42, 0);
+      });
+    },
+  );
 
-  it.each(['darwin', 'win32'] as const)(
-    'calls showEmojiPanel and does not render emoji-picker on %s when React button is clicked (Meshtastic)',
-    async (platform) => {
+  it.each([
+    ['darwin', 'meshtastic'] as const,
+    ['darwin', 'meshcore'] as const,
+    ['win32', 'meshtastic'] as const,
+    ['win32', 'meshcore'] as const,
+  ])(
+    'calls showEmojiPanel and does not render emoji-picker on %s when React button is clicked (%s)',
+    async (platform, protocol) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const user = userEvent.setup();
       render(
         <ToastProvider>
-          <ChatPanel {...defaultProps} protocol="meshtastic" />
+          <ChatPanel {...defaultProps} protocol={protocol} />
         </ToastProvider>,
       );
       const reactBtn = screen.getByTitle('React');
@@ -2429,44 +2440,6 @@ describe('ChatPanel tapback reaction picker', () => {
       expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
     },
   );
-
-  it.each(['linux', 'darwin', 'win32'] as const)(
-    'shows MeshCore interop reaction picker on %s and does not call showEmojiPanel',
-    async (platform) => {
-      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      const user = userEvent.setup();
-      render(
-        <ToastProvider>
-          <ChatPanel {...defaultProps} protocol="meshcore" />
-        </ToastProvider>,
-      );
-      await user.click(screen.getByTitle('React'));
-      expect(screen.getByTestId('meshcore-reaction-picker')).toBeInTheDocument();
-      expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
-      expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
-    },
-  );
-
-  it('calls onReact when MeshCore interop picker emoji is clicked', async () => {
-    const onReact = vi.fn().mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel
-          {...defaultProps}
-          protocol="meshcore"
-          onReact={onReact}
-          messages={[{ ...baseMessage, packetId: 42 }]}
-        />
-      </ToastProvider>,
-    );
-    await user.click(screen.getByTitle('React'));
-    const [thumbBtn] = screen.getAllByRole('button', { name: 'React with 👍' });
-    await user.click(thumbBtn);
-    await waitFor(() => {
-      expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
-    });
-  });
 });
 
 describe('ChatPanel RF hop label', () => {

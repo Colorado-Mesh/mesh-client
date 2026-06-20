@@ -91,7 +91,6 @@ import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
 } from '../lib/meshcoreChannelText';
-import { MESHCORE_REACTION_NOT_INTEROPERABLE } from '../lib/meshcoreOpenReaction';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
@@ -103,7 +102,6 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
-import { MeshcoreReactionPicker } from './MeshcoreReactionPicker';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { useToast } from './Toast';
 
@@ -1160,12 +1158,7 @@ function ChatPanel({
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
-      const message =
-        err instanceof Error && err.message === MESHCORE_REACTION_NOT_INTEROPERABLE
-          ? t('chatPanel.meshcoreReactionNotInteroperable')
-          : err instanceof Error
-            ? err.message
-            : t('chatPanel.reactionFailed');
+      const message = err instanceof Error ? err.message : t('chatPanel.reactionFailed');
       setChatActionError({
         message,
         viewKey,
@@ -1276,9 +1269,8 @@ function ChatPanel({
     return indices;
   }, [filteredMessages]);
 
-  // Linux reaction picker — attach emoji-click on the <emoji-picker> web component (Meshtastic only)
+  // Linux reaction picker — attach emoji-click on the <emoji-picker> web component
   useEffect(() => {
-    if (protocol === 'meshcore') return;
     if (!pickerOpenFor) return;
     const el = reactionPickerRef.current;
     if (!el) return;
@@ -1295,11 +1287,10 @@ function ChatPanel({
     return () => {
       el.removeEventListener('emoji-click', handler);
     };
-  }, [pickerOpenFor, protocol]);
+  }, [pickerOpenFor]);
 
   // macOS/Windows reaction picker — intercept emoji inserted into hidden input by showEmojiPanel()
   useEffect(() => {
-    if (protocol === 'meshcore') return;
     const el = reactionHiddenInputRef.current;
     if (!el) return;
     const handler = () => {
@@ -1316,7 +1307,7 @@ function ChatPanel({
     return () => {
       el.removeEventListener('input', handler);
     };
-  }, [protocol]);
+  }, []);
 
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
   const nowMs = useNowMs(isDmMode);
@@ -2238,15 +2229,13 @@ function ChatPanel({
                                 <button
                                   onMouseDown={(e) => {
                                     e.preventDefault();
-                                    if (protocol !== 'meshcore' && !chatPanelIsLinux())
+                                    if (!chatPanelIsLinux())
                                       reactionHiddenInputRef.current?.focus();
                                   }}
                                   onClick={() => {
                                     const id = msg.packetId ?? msg.timestamp;
                                     reactionPickerTarget.current = { id, channel: msg.channel };
-                                    if (protocol === 'meshcore') {
-                                      setPickerOpenFor(showPicker ? null : id);
-                                    } else if (chatPanelIsLinux()) {
+                                    if (chatPanelIsLinux()) {
                                       setPickerOpenFor(showPicker ? null : id);
                                     } else {
                                       void window.electronAPI.showEmojiPanel();
@@ -2322,20 +2311,8 @@ function ChatPanel({
                           </div>
                         </div>
 
-                        {/* Reaction picker — MeshCore: interoperable grid; Linux Meshtastic: emoji-picker-element; macOS/Windows Meshtastic: showEmojiPanel() */}
-                        {showPicker && protocol === 'meshcore' && (
-                          <div
-                            className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
-                          >
-                            <MeshcoreReactionPicker
-                              onSelect={(glyph) => {
-                                const id = msg.packetId ?? msg.timestamp;
-                                void handleReactRef.current?.(glyph, id, msg.channel);
-                              }}
-                            />
-                          </div>
-                        )}
-                        {showPicker && chatPanelIsLinux() && protocol !== 'meshcore' && (
+                        {/* Reaction picker — Linux: emoji-picker-element; macOS/Windows: showEmojiPanel() */}
+                        {showPicker && chatPanelIsLinux() && (
                           <div
                             className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
                           >

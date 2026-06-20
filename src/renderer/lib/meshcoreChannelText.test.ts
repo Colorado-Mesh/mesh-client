@@ -502,6 +502,10 @@ describe('formatMeshcoreWireTapbackPrefix', () => {
   it('omits wire reply key so MQTT bridges do not show #timestamp in mentions', () => {
     expect(formatMeshcoreWireTapbackPrefix('🐧 KF0KIT EDC')).toBe('@[🐧 KF0KIT EDC]');
   });
+
+  it('builds official companion outbound tapback line without #key', () => {
+    expect(`${formatMeshcoreWireTapbackPrefix('MeshnCrap T096')} 👍`).toBe('@[MeshnCrap T096] 👍');
+  });
 });
 
 describe('parseMeshcoreBracketPrefix', () => {

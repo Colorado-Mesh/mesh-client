@@ -116,6 +116,7 @@ import {
 import {
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
+  formatMeshcoreWireTapbackPrefix,
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
@@ -147,10 +148,6 @@ import {
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
-import {
-  buildMeshcoreOpenReactionWire,
-  MESHCORE_REACTION_NOT_INTEROPERABLE,
-} from '../lib/meshcoreOpenReaction';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomAutoLoginFailure,
@@ -4983,13 +4980,8 @@ export function useMeshcoreRuntime() {
       if (reactedTo == null) {
         throw new Error('Reaction target message not found');
       }
-      const isDmReaction = reactedTo.to != null;
-      const tapbackText = buildMeshcoreOpenReactionWire(reactedTo, parsed.glyph, {
-        isDm: isDmReaction,
-      });
-      if (tapbackText == null) {
-        throw new Error(MESHCORE_REACTION_NOT_INTEROPERABLE);
-      }
+      const targetName = reactedTo.sender_name || 'Unknown';
+      const tapbackText = `${formatMeshcoreWireTapbackPrefix(targetName)} ${parsed.glyph}`;
       const conn = connRef.current;
       const me = myNodeNumRef.current;
 

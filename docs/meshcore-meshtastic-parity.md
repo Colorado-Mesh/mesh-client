@@ -84,27 +84,28 @@ Meshtastic and MeshCore use the literal form `@[Display Name]` in channel payloa
 
 ## MeshCore: emoji reactions (tapbacks)
 
-**UI:** On the **MeshCore** Chat tab, the React control opens an **interop-only picker** listing every glyph in the MeshCore Open index table (~190 emojis). The native macOS/Windows emoji panel and Linux `emoji-picker-element` are **not** used for MeshCore tapbacks — only indexed glyphs can be sent. **Meshtastic** Chat keeps the existing native / Linux emoji picker (12 quick reactions + full panel).
+**UI:** MeshCore Chat uses the same reaction picker as Meshtastic — native macOS/Windows emoji panel (`showEmojiPanel()`) or Linux `emoji-picker-element` — plus 12 quick reactions on hover.
 
-**Wire (interop with MeshCore Open / official app):** Outbound MeshCore reactions always use:
+**Wire (official MeshCore companion):** Outbound tapbacks use legacy companion text:
 
 ```text
-r:4-char-hex-hash:2-char-hex-index
+@[Display Name] emoji
 ```
 
-Hash input matches [meshcore-open-mx `ReactionHelper`](https://github.com/musznik/meshcore-open-mx/blob/dev/lib/helpers/reaction_helper.dart): `timestampSeconds` + optional channel `senderName` + first five characters of the target message payload (DM hashes omit sender name). Implementation: [`meshcoreOpenReaction.ts`](../src/renderer/lib/meshcoreOpenReaction.ts).
+No `#replyKey` suffix on tapbacks (that key is for text replies only). Implementation: [`formatMeshcoreWireTapbackPrefix`](../src/renderer/lib/meshcoreChannelText.ts) in [`useMeshcoreRuntime`](../src/renderer/runtime/useMeshcoreRuntime.ts) `sendReaction`.
+
+**MeshCore Open (`r:HASH:INDEX`):** Inbound-only for now — parsed in [`meshcoreOpenReaction.ts`](../src/renderer/lib/meshcoreOpenReaction.ts) / [`meshcoreChannelText.ts`](../src/renderer/lib/meshcoreChannelText.ts) for display when other clients send Open wire. mesh-client does **not** send `r:` until Open users are present in the mesh.
 
 **Limitations:**
 
-| Topic                             | Behavior                                                                                                                                                                                                                                                |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Emoji not in Open index table** | Cannot be sent from mesh-client (picker lists only indexed glyphs). Legacy inbound `@[Display Name] emoji` from other clients is still parsed for display.                                                                                              |
-| **Interop picker**                | Full MeshCore Open table in [`MeshcoreReactionPicker.tsx`](../src/renderer/components/MeshcoreReactionPicker.tsx); wire via [`meshcoreOpenReaction.ts`](../src/renderer/lib/meshcoreOpenReaction.ts).                                                   |
-| **Text replies**                  | Unchanged: `@[Name#replyKey] body` (optional `#key` for parent disambiguation) via [`formatMeshcoreWireReplyPrefix`](../src/renderer/lib/meshcoreChannelText.ts).                                                                                       |
-| **Meshtastic**                    | Unaffected — protobuf tapbacks (`replyId` + emoji flag), not MeshCore text lines.                                                                                                                                                                       |
-| **Dedup**                         | mesh-client merges tapback RF/MQTT echoes ([`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts), 60 s window). Other apps and bridges often do **not** dedupe flooded copies — duplicates there are expected if fallback text was used. |
+| Topic            | Behavior                                                                                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Emoji choice** | Any glyph from the native/Linux picker; not limited to the Open index table.                                                                                                                                                                            |
+| **Text replies** | Unchanged: `@[Name#replyKey] body` (optional `#key` for parent disambiguation) via [`formatMeshcoreWireReplyPrefix`](../src/renderer/lib/meshcoreChannelText.ts).                                                                                       |
+| **Meshtastic**   | Unaffected — protobuf tapbacks (`replyId` + emoji flag), not MeshCore text lines.                                                                                                                                                                       |
+| **Dedup**        | mesh-client merges tapback RF/MQTT echoes ([`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts), 60 s window). Other apps and bridges often do **not** dedupe flooded copies — duplicates there are expected if fallback text was used. |
 
-Inbound: parse both `r:HASH:INDEX` (Open) and `@[Name] emoji` (legacy / other mesh-client users). See [troubleshooting.md — MeshCore duplicate chat messages](troubleshooting.md#meshcore-duplicate-chat-messages).
+Inbound: parse both `r:HASH:INDEX` (MeshCore Open) and `@[Name] emoji` (official companion / mesh-client). See [troubleshooting.md — MeshCore duplicate chat messages](troubleshooting.md#meshcore-duplicate-chat-messages).
 
 ## MeshCore MQTT JSON envelope (v1)
 
