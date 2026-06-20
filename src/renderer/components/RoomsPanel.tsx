@@ -1664,20 +1664,18 @@ export default function RoomsPanel({
                             </span>
                           )}
                         </div>
-                        {!roomListCollapsed && (
-                          <div className="mt-0.5 pl-5 text-xs text-gray-500">
-                            {t('roomsPanel.postCount', { count })}
-                            {unread > 0 && selectedRoomId !== room.node_id && (
-                              <>
-                                {' '}
-                                ·{' '}
-                                {t('roomsPanel.unreadPosts', {
-                                  count: unread > 99 ? '99+' : unread,
-                                })}
-                              </>
-                            )}
-                          </div>
-                        )}
+                        <div className="mt-0.5 pl-5 text-xs text-gray-500">
+                          {t('roomsPanel.postCount', { count })}
+                          {unread > 0 && selectedRoomId !== room.node_id && (
+                            <>
+                              {' '}
+                              ·{' '}
+                              {t('roomsPanel.unreadPosts', {
+                                count: unread > 99 ? '99+' : unread,
+                              })}
+                            </>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
