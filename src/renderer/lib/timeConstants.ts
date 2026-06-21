@@ -103,8 +103,11 @@ export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 /** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
 export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = MS_PER_MINUTE;
 
-/** Outbound tapback vs RF/MQTT echo of `@[Name] emoji`. */
-export const MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS = MS_PER_MINUTE;
+/**
+ * Outbound tapback vs RF/MQTT echo of `@[Name] emoji`.
+ * Wider than room post dedup (1 min) because client Date.now vs radio rxTime can skew several minutes.
+ */
+export const MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 
 /** Room login attempts before giving up (matches MeshMonitor loginToRoom). */
 export const MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS = 2;

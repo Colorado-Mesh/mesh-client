@@ -7,12 +7,16 @@ import {
   findMeshcoreCrossTransportDuplicate,
   findMeshcoreDmRfDuplicate,
   findMeshcoreTapbackEchoDuplicate,
+  findMeshcoreTapbackRfReplayDuplicate,
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
+  MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
   meshcoreChannelRfMatch,
   meshcoreCrossTransportMatch,
   meshcoreDmRfMatch,
   meshcoreTapbackEchoMatch,
+  meshcoreTapbackReplyIdsMatch,
+  meshcoreTapbackRfReplayMatch,
   upgradeMeshcoreCrossTransportMessage,
 } from './meshcoreHookPreamble';
 
@@ -106,6 +110,103 @@ describe('meshcoreCrossTransportMatch', () => {
       timestamp: mqtt.timestamp + 500,
     });
     expect(meshcoreCrossTransportMatch(mqtt, rf)).toBe(true);
+  });
+});
+
+describe('meshcoreTapbackEchoMatch', () => {
+  it('matches replyId in firmware seconds against stored ms parent key', () => {
+    const parentMs = 1_719_000_000_000;
+    const parentSec = Math.floor(parentMs / 1000);
+    const local = baseMsg({
+      emoji: 0x1f44d,
+      replyId: parentMs,
+      payload: '👍',
+      timestamp: Date.now(),
+    });
+    const echo = baseMsg({
+      emoji: 0x1f44d,
+      replyId: parentSec,
+      payload: '👍',
+      timestamp: local.timestamp + 90_000,
+    });
+    expect(meshcoreTapbackReplyIdsMatch(local.replyId, echo.replyId)).toBe(true);
+    expect(meshcoreTapbackEchoMatch(local, echo)).toBe(true);
+  });
+
+  it('matches composer-shaped optimistic row without emoji field', () => {
+    const composer = baseMsg({
+      replyId: 1_719_000_000_000,
+      payload: '👍',
+      timestamp: Date.now(),
+    });
+    const echo = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 1_719_000_000_000,
+      payload: '👍',
+      timestamp: composer.timestamp + 120_000,
+    });
+    expect(meshcoreTapbackEchoMatch(composer, echo)).toBe(true);
+    expect(findMeshcoreTapbackEchoDuplicate([composer], echo)).toBe(composer);
+  });
+
+  it('matches optimistic client time vs skewed device echo beyond 60s within 10 min', () => {
+    const local = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 42,
+      payload: '👍',
+      timestamp: 1_700_000_000_000,
+    });
+    const echo = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 42,
+      payload: '👍',
+      timestamp: local.timestamp - 120_000,
+      receivedVia: 'rf',
+    });
+    expect(meshcoreTapbackEchoMatch(local, echo)).toBe(true);
+    expect(local.timestamp - echo.timestamp).toBeGreaterThan(60_000);
+    expect(local.timestamp - echo.timestamp).toBeLessThanOrEqual(
+      MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
+    );
+  });
+});
+
+describe('meshcoreTapbackRfReplayMatch', () => {
+  it('matches duplicate RF hears of the same tapback', () => {
+    const first = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 99,
+      payload: '👍',
+      receivedVia: 'rf',
+      timestamp: 1_700_000_000_000,
+    });
+    const replay = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 99,
+      payload: '👍',
+      receivedVia: 'rf',
+      timestamp: first.timestamp + 60_000,
+    });
+    expect(meshcoreTapbackRfReplayMatch(first, replay)).toBe(true);
+    expect(findMeshcoreTapbackRfReplayDuplicate([first], replay)).toBe(first);
+  });
+
+  it('does not match RF replay across RF/MQTT paths', () => {
+    const rf = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 99,
+      payload: '👍',
+      receivedVia: 'rf',
+    });
+    const mqtt = baseMsg({
+      emoji: 0x1f44d,
+      replyId: 99,
+      payload: '👍',
+      receivedVia: 'mqtt',
+      timestamp: rf.timestamp + 500,
+    });
+    expect(meshcoreTapbackRfReplayMatch(rf, mqtt)).toBe(false);
+    expect(meshcoreCrossTransportMatch(rf, mqtt)).toBe(true);
   });
 });
 

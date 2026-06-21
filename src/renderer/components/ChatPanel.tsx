@@ -90,6 +90,7 @@ import {
 import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
+  meshcorePayloadIsTapbackEmojiOnly,
 } from '../lib/meshcoreChannelText';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import {
@@ -595,20 +596,28 @@ function ChatPanel({
       { emoji: number; payload: string; sender_id: number; sender_name: string; id?: number }[]
     >();
 
+    const reactionDedupeKey = (senderId: number, emoji: number, payload: string): string =>
+      `${senderId}|${emoji}|${payload.trim()}`;
+
     for (const msg of displayMessages) {
       if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) {
         continue;
       }
       if (msg.emoji && msg.replyId) {
         const existing = reactions.get(msg.replyId) ?? [];
-        existing.push({
-          emoji: msg.emoji,
-          payload: msg.payload,
-          sender_id: msg.sender_id,
-          sender_name: msg.sender_name,
-          id: msg.id,
-        });
-        reactions.set(msg.replyId, existing);
+        const dedupeKey = reactionDedupeKey(msg.sender_id, msg.emoji, msg.payload);
+        if (
+          !existing.some((r) => reactionDedupeKey(r.sender_id, r.emoji, r.payload) === dedupeKey)
+        ) {
+          existing.push({
+            emoji: msg.emoji,
+            payload: msg.payload,
+            sender_id: msg.sender_id,
+            sender_name: msg.sender_name,
+            id: msg.id,
+          });
+          reactions.set(msg.replyId, existing);
+        }
       } else {
         regular.push(msg);
       }
@@ -1147,10 +1156,18 @@ function ChatPanel({
     async (text: string, opts?: { replyId?: number }) => {
       const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
+      if (
+        protocol === 'meshcore' &&
+        opts?.replyId != null &&
+        meshcorePayloadIsTapbackEmojiOnly(text)
+      ) {
+        await onReact(text, opts.replyId, sendChannel);
+        return;
+      }
       const sendOutcome = onSend(text, sendChannel, destination, opts?.replyId);
       await Promise.resolve(sendOutcome);
     },
-    [activeDmNode, channel, onSend, viewMode],
+    [activeDmNode, channel, onReact, onSend, protocol, viewMode],
   );
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
@@ -1255,9 +1272,30 @@ function ChatPanel({
   }
 
   /** Flat reaction rows for a message key (chronological as stored). */
-  function getReactionRows(messageKey: number | undefined) {
-    if (!messageKey) return [];
-    return reactionsByReplyId.get(messageKey) ?? [];
+  function getReactionRows(messageKey: number | undefined, parentMsg?: ChatMessage) {
+    if (messageKey == null) return [];
+    const lookupKeys = new Set<number>([messageKey]);
+    if (parentMsg?.packetId != null && parentMsg.packetId !== parentMsg.timestamp) {
+      lookupKeys.add(parentMsg.packetId);
+      lookupKeys.add(parentMsg.timestamp);
+    }
+    const seen = new Set<string>();
+    const rows: {
+      emoji: number;
+      payload: string;
+      sender_id: number;
+      sender_name: string;
+      id?: number;
+    }[] = [];
+    for (const key of lookupKeys) {
+      for (const row of reactionsByReplyId.get(key) ?? []) {
+        const dedupeKey = `${row.sender_id}|${row.emoji}|${row.payload.trim()}`;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+        rows.push(row);
+      }
+    }
+    return rows;
   }
 
   // Pre-compute day separator indices (avoids mutable variable during render)
@@ -1850,7 +1888,7 @@ function ChatPanel({
                 if (!msg) return null;
                 const isOwn = isOwnNode(msg.sender_id);
                 const isDm = !!msg.to;
-                const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp);
+                const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp, msg);
                 const messageRowKey = msg.packetId ?? msg.timestamp;
                 const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
                 const pickerOpensAbove = i >= filteredMessages.length - 3;

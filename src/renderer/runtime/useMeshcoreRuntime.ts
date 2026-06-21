@@ -4996,13 +4996,6 @@ export function useMeshcoreRuntime() {
 
       const publishTapback = (tapbackMsg: ChatMessage) => {
         addMessage(tapbackMsg);
-        void window.electronAPI.db
-          .saveMeshcoreMessage(messageToDbRow(tapbackMsg))
-          .catch((e: unknown) => {
-            console.warn(
-              '[useMeshcoreRuntime] saveMeshcoreMessage (tapback) error ' + errLikeToLogString(e),
-            );
-          });
       };
 
       if (reactedTo?.to != null) {

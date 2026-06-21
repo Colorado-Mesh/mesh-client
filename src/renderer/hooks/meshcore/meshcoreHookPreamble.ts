@@ -14,6 +14,8 @@ import {
 } from '../../lib/meshcore/meshcorePubKeyRegistry';
 import {
   meshcoreChatMessagesForDisplay,
+  meshcoreMessageMatchesReplyKey,
+  meshcorePayloadIsTapbackEmojiOnly,
   normalizeMeshcoreIncomingText,
 } from '../../lib/meshcoreChannelText';
 import {
@@ -34,6 +36,7 @@ import {
   effectiveMessageTimestampMs,
   mergeMeshcoreLastHeardFromAdvert,
 } from '../../lib/nodeStatus';
+import { normalizeReactionEmoji } from '../../lib/reactions';
 import {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
@@ -342,6 +345,38 @@ function meshcoreReceivedViaMerged(
   return existing;
 }
 
+function meshcoreIsTapbackShapedRow(msg: ChatMessage): boolean {
+  return (
+    (msg.emoji != null && msg.replyId != null) ||
+    (msg.replyId != null && meshcorePayloadIsTapbackEmojiOnly(msg.payload))
+  );
+}
+
+/** True when two tapback `replyId` values refer to the same parent (packetId / sec / ms). */
+export function meshcoreTapbackReplyIdsMatch(
+  a: number | undefined,
+  b: number | undefined,
+): boolean {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  if (a === b) return true;
+  const synthA = { packetId: a, timestamp: a } as ChatMessage;
+  const synthB = { packetId: b, timestamp: b } as ChatMessage;
+  return meshcoreMessageMatchesReplyKey(synthA, b) || meshcoreMessageMatchesReplyKey(synthB, a);
+}
+
+function meshcoreTapbackEmojiScalar(msg: ChatMessage): number | undefined {
+  if (msg.emoji != null) return msg.emoji;
+  return normalizeReactionEmoji(undefined, msg.payload.trim());
+}
+
+function meshcoreTapbackEmojisMatch(existing: ChatMessage, incoming: ChatMessage): boolean {
+  const existingScalar = meshcoreTapbackEmojiScalar(existing);
+  const incomingScalar = meshcoreTapbackEmojiScalar(incoming);
+  if (existingScalar == null || incomingScalar == null) return false;
+  return existingScalar === incomingScalar;
+}
+
 export function meshcoreCrossTransportMatch(
   existing: ChatMessage,
   incoming: ChatMessage,
@@ -351,11 +386,16 @@ export function meshcoreCrossTransportMatch(
   if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
   if (existing.channel !== incoming.channel) return false;
   if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
-  if ((existing.emoji ?? undefined) !== (incoming.emoji ?? undefined)) return false;
-  if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
-  const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
-  const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
-  if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
+  if (meshcoreIsTapbackShapedRow(existing) || meshcoreIsTapbackShapedRow(incoming)) {
+    if (!meshcoreTapbackReplyIdsMatch(existing.replyId, incoming.replyId)) return false;
+    if (!meshcoreTapbackEmojisMatch(existing, incoming)) return false;
+  } else {
+    if ((existing.emoji ?? undefined) !== (incoming.emoji ?? undefined)) return false;
+    if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
+    const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
+    const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
+    if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
+  }
   if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
   return true;
 }
@@ -455,7 +495,12 @@ function meshcoreRoomServerIdForDedup(msg: ChatMessage): number | undefined {
   return undefined;
 }
 
-/** Same room, author, and body within a clock-skew window (RF echo / dual ingress). */
+/**
+ * Same room, author, and body within a clock-skew window (RF echo / dual ingress).
+ * Separate from chat tapback echo and cross-transport dedup; when tuning skew windows,
+ * keep `MESHCORE_ROOM_POST_DEDUP_WINDOW_MS` aligned with chat tapback/optimistic constants
+ * where behavior should match (see `timeConstants.ts`).
+ */
 export function meshcoreRoomPostMatch(
   existing: ChatMessage,
   incoming: ChatMessage,
@@ -494,11 +539,13 @@ export function meshcoreTapbackEchoMatch(
   incoming: ChatMessage,
   windowMs: number = MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
 ): boolean {
-  if (existing.emoji == null || incoming.emoji == null) return false;
-  if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
+  if (!meshcoreIsTapbackShapedRow(existing) && !meshcoreIsTapbackShapedRow(incoming)) {
+    return false;
+  }
+  if (!meshcoreTapbackReplyIdsMatch(existing.replyId, incoming.replyId)) return false;
   if (existing.channel !== incoming.channel) return false;
   if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
-  if (existing.emoji !== incoming.emoji) return false;
+  if (!meshcoreTapbackEmojisMatch(existing, incoming)) return false;
   if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
   if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
   return true;
@@ -513,6 +560,42 @@ export function findMeshcoreTapbackEchoDuplicate(
   for (let i = messages.length - 1; i >= start; i--) {
     const existing = messages[i];
     if (meshcoreTapbackEchoMatch(existing, incoming, windowMs)) {
+      return existing;
+    }
+  }
+  return undefined;
+}
+
+/** Same tapback heard again on RF (multi-hop / repeater re-hear), not RF/MQTT cross-path. */
+export function meshcoreTapbackRfReplayMatch(
+  existing: ChatMessage,
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
+): boolean {
+  if (!meshcoreIsTapbackShapedRow(existing) || !meshcoreIsTapbackShapedRow(incoming)) {
+    return false;
+  }
+  if (!meshcoreReceivedViaIncludesRf(existing.receivedVia)) return false;
+  if (incoming.receivedVia !== 'rf') return false;
+  if (meshcoreTransportsAreCross(existing, incoming)) return false;
+  if (!meshcoreSenderMatchesForDedup(existing, incoming)) return false;
+  if (existing.channel !== incoming.channel) return false;
+  if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
+  if (!meshcoreTapbackReplyIdsMatch(existing.replyId, incoming.replyId)) return false;
+  if (!meshcoreTapbackEmojisMatch(existing, incoming)) return false;
+  if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
+  return true;
+}
+
+export function findMeshcoreTapbackRfReplayDuplicate(
+  messages: readonly ChatMessage[],
+  incoming: ChatMessage,
+  windowMs: number = MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
+): ChatMessage | undefined {
+  const start = Math.max(0, messages.length - MESHCORE_CROSS_TRANSPORT_SCAN_LIMIT);
+  for (let i = messages.length - 1; i >= start; i--) {
+    const existing = messages[i];
+    if (meshcoreTapbackRfReplayMatch(existing, incoming, windowMs)) {
       return existing;
     }
   }

@@ -4,6 +4,7 @@ import {
   findMeshcoreDmRfDuplicate,
   findMeshcoreRoomPostDuplicate,
   findMeshcoreTapbackEchoDuplicate,
+  findMeshcoreTapbackRfReplayDuplicate,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   meshcoreMessageDedupeKey,
   messageToDbRow,
@@ -351,6 +352,30 @@ export function upsertMeshcoreMessageWithDedup(
     const canonicalId =
       preferredId ??
       findStoreRecordIdForMessage(identityId, tapbackDup) ??
+      meshcoreMessageStoreId(merged);
+    const record = chatMessageToMessageRecord(merged);
+    record.id = canonicalId;
+    upsertMessage(identityId, record);
+    persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
+    const altId = meshcoreMessageStoreId(msg);
+    if (altId !== canonicalId) {
+      deleteMessage(identityId, altId);
+      removeMeshcoreDedupeIndexForMessage(identityId, msg);
+    }
+    return { inserted: false, storeUpdated: true, message: merged, canonicalId };
+  }
+
+  const tapbackRfDup = findMeshcoreTapbackRfReplayDuplicate(storeMessages, msg);
+  if (tapbackRfDup) {
+    const merged: ChatMessage = {
+      ...tapbackRfDup,
+      receivedVia: mergeMeshcoreReceivedVia(tapbackRfDup.receivedVia, msg.receivedVia),
+      rxHops: tapbackRfDup.rxHops ?? msg.rxHops,
+      meshcoreDedupeKey: msg.meshcoreDedupeKey ?? tapbackRfDup.meshcoreDedupeKey,
+    };
+    const canonicalId =
+      preferredId ??
+      findStoreRecordIdForMessage(identityId, tapbackRfDup) ??
       meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
