@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   clampMeshcoreMessageTimestampForStorage,
+  clampReadWatermarkMs,
   effectiveMessageTimestampMs,
   isUnreasonablyFutureMessageTimestampMs,
 } from './messageTimestampSkew';
@@ -23,5 +24,17 @@ describe('messageTimestampSkew', () => {
     const within = nowMs + 60_000;
     expect(effectiveMessageTimestampMs(within, nowMs)).toBe(within);
     expect(isUnreasonablyFutureMessageTimestampMs(within, nowMs)).toBe(false);
+  });
+
+  it('treats zero message timestamp as missing (not Unix epoch)', () => {
+    const nowMs = 1_700_000_000_000;
+    expect(effectiveMessageTimestampMs(0, nowMs)).toBe(nowMs);
+    expect(clampMeshcoreMessageTimestampForStorage(0, nowMs)).toBe(nowMs);
+    expect(isUnreasonablyFutureMessageTimestampMs(0, nowMs)).toBe(false);
+  });
+
+  it('treats zero watermark as no last-read marker', () => {
+    const nowMs = 1_700_000_000_000;
+    expect(clampReadWatermarkMs(0, nowMs)).toBe(0);
   });
 });
