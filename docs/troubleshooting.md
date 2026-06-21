@@ -118,7 +118,9 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 - Contacts with **`NULL last_advert`** are never age-pruned (only count-based limits apply).
 - If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (`patchNodeFavorited` on the active connection identity).
 
-### MeshCore duplicate chat messages
+### MeshCore reply misquote / duplicate chat messages
+
+**Reply misquote cause:** The official MeshCore companion firmware sends unkeyed replies — `@[Display Name] body` — without identifying the parent message. The receiving client makes a best-guess match using the most recent message from that sender, which is wrong when the user replies to an older message. This is a wire protocol limitation, not a bug in any single client.
 
 The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cross-transport and channel RF replay). Room posts and tapbacks use a **60 second** window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.
 

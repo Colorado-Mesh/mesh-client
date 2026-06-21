@@ -68,6 +68,10 @@ export interface MeshcoreRoomPostSentResult {
  * Send a plain-text room BBS post via SendTxtMsg + SENT wait.
  * Companion firmware accepts TXT_TYPE_PLAIN (0) only for outbound SendTxtMsg; SignedPlain is
  * for room-server pushes inbound. Avoids meshcore.js `sendTextMessage` bare reject() on Err.
+ *
+ * Intentionally not routed through chat reply/tapback helpers (`buildMeshcoreOutboundSendText`,
+ * Open wire toggle): room outbound is raw post body only. When extending Rooms (replies,
+ * reactions), align UX with Chat but confirm room-server wire before reusing chat prefixes.
  */
 export function runMeshcoreRoomPostSend(
   conn: MeshcoreRoomPostRpcConnection,

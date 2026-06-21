@@ -402,4 +402,67 @@ describe('meshcoreStoreDedup', () => {
     expect(row?.replyTo).toBe('99');
     expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalled();
   });
+
+  it('merges optimistic sendReaction row with skewed RF echo into one entry', () => {
+    const parentReplyId = 1_719_000_000_000;
+    const optimisticTs = 1_780_240_708_234;
+    const deviceTs = 1_780_240_600_000;
+    const optimistic: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'Me',
+      payload: '👍',
+      channel: 25,
+      timestamp: optimisticTs,
+      status: 'acked',
+      emoji: 0x1f44d,
+      replyId: parentReplyId,
+    };
+    upsertMeshcoreMessageWithDedup(ID, optimistic);
+
+    const rfEcho: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'Me',
+      payload: '👍',
+      channel: 25,
+      timestamp: deviceTs,
+      status: 'acked',
+      emoji: 0x1f44d,
+      replyId: parentReplyId,
+      receivedVia: 'rf',
+      meshcoreDedupeKey: 'Me: @[durk] 👍',
+    };
+    const result = upsertMeshcoreMessageWithDedup(ID, rfEcho);
+    expect(result.inserted).toBe(false);
+
+    const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.tapback).toBe(true);
+    expect(rows[0]?.replyTo).toBe(String(parentReplyId));
+    expect(rows[0]?.payload).toBe('👍');
+  });
+
+  it('merges duplicate RF tapback replays into one entry', () => {
+    const tapback: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'Me',
+      payload: '👍',
+      channel: 0,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+      emoji: 0x1f44d,
+      replyId: 42,
+      receivedVia: 'rf',
+    };
+    upsertMeshcoreMessageWithDedup(ID, tapback);
+
+    const replay: ChatMessage = {
+      ...tapback,
+      timestamp: tapback.timestamp + 45_000,
+    };
+    const result = upsertMeshcoreMessageWithDedup(ID, replay);
+    expect(result.inserted).toBe(false);
+
+    const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
+    expect(rows).toHaveLength(1);
+  });
 });

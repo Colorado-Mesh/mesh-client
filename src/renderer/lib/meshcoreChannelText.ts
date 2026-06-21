@@ -1238,6 +1238,12 @@ export function buildMeshcoreDmIncomingMessage(
   return { ...base, payload: rawText };
 }
 
+/**
+ * Room BBS txtTypes (SendTxtMsg). Chat channel/DM text uses the bracket/reply helpers above;
+ * room posts use PLAIN outbound + SignedPlain inbound — see module comment in
+ * `meshcoreRoomMessageRouting.ts`. Keep new room wire features in sync with chat only when
+ * firmware and official clients share the same format.
+ */
 /** meshcore.js `TxtTypes.Plain` — outbound room BBS posts (companion SendTxtMsg). */
 export const MESHCORE_TXT_TYPE_PLAIN = 0;
 
@@ -1285,6 +1291,7 @@ export interface BuildMeshcoreRoomIncomingOpts {
   rxHops?: number;
 }
 
+/** Build a room BBS row after author-prefix strip. Payload is stored verbatim (no bracket reply parse). */
 export function buildMeshcoreRoomIncomingMessage(opts: BuildMeshcoreRoomIncomingOpts): ChatMessage {
   const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
   const rxFields =

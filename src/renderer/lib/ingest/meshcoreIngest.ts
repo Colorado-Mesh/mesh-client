@@ -180,6 +180,8 @@ function handleTextMessage(
   const roomServerId = resolveRoomServerIdForIngest(identityId, event.payload);
   const isRoomEvent = looksLikeRoom && roomServerId !== 0;
 
+  // Room BBS branch: SignedPlain strip + plain store — not `parseMeshcoreChannelIncomingFromThread`.
+  // See `meshcoreRoomMessageRouting.ts` for wire vs chat and protocol-alignment notes.
   if (isRoomEvent) {
     const prefixMap = buildPrefixToNodeIdMap(identityId);
     const { authorId, payload } = meshcoreRoomPostBodyFromWire(
