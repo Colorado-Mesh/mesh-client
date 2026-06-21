@@ -707,6 +707,7 @@ export default function RoomsPanel({
     }
 
     if (triggerScrollToUnread === 0) return;
+    if (suppressNextRoomSwitchScrollRef.current || scrollToRowKey != null) return;
     if (unreadStartIndex >= 0) {
       postVirtualizerRef.current.scrollToIndex(unreadStartIndex, { align: 'center' });
       isPinnedToBottomRef.current = false;
@@ -719,7 +720,7 @@ export default function RoomsPanel({
       if (dist !== undefined && dist < 50) applyNearBottomReadState(dist);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerScrollToUnread is the sole scroll intent
-  }, [triggerScrollToUnread, isActive]);
+  }, [triggerScrollToUnread, isActive, scrollToRowKey]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -735,8 +736,8 @@ export default function RoomsPanel({
     if (suppressNextRoomSwitchScrollRef.current) {
       // An explicit row-key jump (e.g. "Go to message" from Starred) selected this
       // room and owns the scroll for this transition — skip the auto unread/end
-      // scroll, which would otherwise fire one render later and clobber it.
-      suppressNextRoomSwitchScrollRef.current = false;
+      // scroll. suppressNextRoomSwitchScrollRef clears in the scrollToRowKey effect
+      // after scrollToIndex so pinned-bottom follow cannot race ahead of it.
       return;
     }
     setTriggerScrollToUnread((n) => n + 1);
@@ -1116,6 +1117,9 @@ export default function RoomsPanel({
       postVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
     }
     setScrollToRowKey(null);
+    requestAnimationFrame(() => {
+      suppressNextRoomSwitchScrollRef.current = false;
+    });
   }, [scrollToRowKey, streamView, roomPosts]);
 
   const toggleStar = useCallback(
@@ -2407,6 +2411,7 @@ export default function RoomsPanel({
                                 const roomId = Number.parseInt(roomRaw ?? '', 10);
                                 if (Number.isFinite(roomId)) {
                                   suppressNextRoomSwitchScrollRef.current = true;
+                                  setTriggerScrollToUnread(0);
                                   handleSelectRoom(roomId);
                                 }
                                 setStreamView('posts');
