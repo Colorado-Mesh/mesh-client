@@ -23,6 +23,24 @@ export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS = 45_000;
 /** Post-SENT wait when the room server is direct on mesh (0 hops). LAN/TCP users often hit this path. */
 export const MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS = 15_000;
 
+/**
+ * Base post-SENT extra wait before hop scaling in `computeRoomLoginExtraTimeoutMs`.
+ * Matches outbound DM ACK timeout base in `useMeshcoreRuntime` (`3s base + per-hop increment`).
+ */
+export const MESHCORE_ROOM_LOGIN_HOP_BASE_MS = 3_000;
+
+/** Per-hop increment for post-SENT extra wait; each relay adds airtime and queueing on the path. */
+export const MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS = 2_500;
+
+/**
+ * Minimum LoginSuccess/LoginFail wait for 1+ hop paths in `computeRoomLoginResponseWaitMs`.
+ * Aligns with the RF extra-timeout floor; hop floor uses a larger per-hop increment below.
+ */
+export const MESHCORE_ROOM_LOGIN_RESPONSE_HOP_BASE_MS = MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS;
+
+/** Per-hop increment for LoginSuccess/LoginFail floor (response may re-traverse the mesh). */
+export const MESHCORE_ROOM_LOGIN_RESPONSE_HOP_INCREMENT_MS = 20_000;
+
 /** Max wait for `RESP_SENT` after SendLogin before rejecting (companion never acked the command). */
 export const MESHCORE_ROOM_LOGIN_SENT_WAIT_MS = MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS;
 
@@ -41,13 +59,12 @@ export function computeRoomLoginExtraTimeoutMs(hopsAway?: number | null): number
   if (hops <= 0) {
     return MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_DIRECT_MS;
   }
-  const hopScaled = 3_000 + hops * 2_500;
+  const hopScaled = MESHCORE_ROOM_LOGIN_HOP_BASE_MS + hops * MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS;
   return Math.max(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS, hopScaled);
 }
 
-/** Hard cap for multi-hop room login response wait. Without this, `hopFloor` in
- * `computeRoomLoginResponseWaitMs` (`hops <= 0 ? 0 : 45_000 + hops * 20_000`) grows unbounded
- * and can exceed 6 minutes. */
+/** Hard cap for multi-hop room login response wait. Without this, the hop floor in
+ * `computeRoomLoginResponseWaitMs` grows unbounded and can exceed 6 minutes. */
 export const MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS = 90_000;
 
 /**
@@ -62,7 +79,11 @@ export function computeRoomLoginResponseWaitMs(
   const extra = computeRoomLoginExtraTimeoutMs(hopsAway);
   const hops =
     hopsAway != null && Number.isFinite(hopsAway) ? Math.max(0, Math.trunc(hopsAway)) : 0;
-  const hopFloor = hops <= 0 ? 0 : 45_000 + hops * 20_000;
+  const hopFloor =
+    hops <= 0
+      ? 0
+      : MESHCORE_ROOM_LOGIN_RESPONSE_HOP_BASE_MS +
+        hops * MESHCORE_ROOM_LOGIN_RESPONSE_HOP_INCREMENT_MS;
   return Math.min(MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS, Math.max(est + extra, hopFloor));
 }
 

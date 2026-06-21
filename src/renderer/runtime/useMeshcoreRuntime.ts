@@ -270,6 +270,8 @@ import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
+  MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
+  MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
   MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
   MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS,
@@ -2459,7 +2461,8 @@ export function useMeshcoreRuntime() {
         // Calculate dynamic timeout based on hop count for multi-hop paths
         const destNode = nodesRef.current.get(destNodeId);
         const hopsAway = destNode?.hops_away ?? 0;
-        const hopBasedTimeoutMs = 3000 + hopsAway * 2500; // 3s base + 2.5s per hop
+        const hopBasedTimeoutMs =
+          MESHCORE_ROOM_LOGIN_HOP_BASE_MS + hopsAway * MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS;
 
         try {
           const result = await connRef.current.sendTextMessage(pubKey, textToSend);
