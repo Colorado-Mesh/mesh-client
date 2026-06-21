@@ -7,7 +7,7 @@ export function isUnreasonablyFutureMessageTimestampMs(
   nowMs = Date.now(),
   maxFutureSkewSec = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 ): boolean {
-  if (!timestampMs || !Number.isFinite(timestampMs)) return false;
+  if (timestampMs <= 0 || !Number.isFinite(timestampMs)) return false;
   return timestampMs > nowMs + maxFutureSkewSec * 1000;
 }
 
@@ -20,7 +20,7 @@ export function effectiveMessageTimestampMs(
   nowMs = Date.now(),
   maxFutureSkewSec = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 ): number {
-  if (!timestampMs || !Number.isFinite(timestampMs)) return nowMs;
+  if (timestampMs <= 0 || !Number.isFinite(timestampMs)) return nowMs;
   const maxFuture = nowMs + maxFutureSkewSec * 1000;
   if (timestampMs > maxFuture) return nowMs;
   return timestampMs;
@@ -32,8 +32,7 @@ export function clampReadWatermarkMs(
   nowMs = Date.now(),
   maxFutureSkewSec = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 ): number {
-  if (!watermarkMs || !Number.isFinite(watermarkMs)) return 0;
-  if (watermarkMs < 0) return 0;
+  if (watermarkMs <= 0 || !Number.isFinite(watermarkMs)) return 0;
   const maxAllowed = nowMs + maxFutureSkewSec * 1000;
   return Math.min(watermarkMs, maxAllowed);
 }
