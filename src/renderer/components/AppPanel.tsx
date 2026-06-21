@@ -136,6 +136,7 @@ interface AppSettings {
   chatCompactMode: boolean;
   storeForwardAutoFetchHistory: boolean;
   reduceMotion: boolean;
+  meshcoreOpenWireCompatEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -1149,6 +1150,38 @@ export default function AppPanel({
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.contacts')}</span>
+            </div>
+          </div>
+        )}
+
+        {/* MeshCore Open wire compatibility (experimental) */}
+        {protocol === 'meshcore' && (
+          <div className="space-y-2">
+            <h3 className="text-muted text-sm font-medium">
+              {t('appPanel.meshcoreOpenWireExperimentalTitle')}
+            </h3>
+            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="meshcoreOpenWireCompat"
+                  checked={settings.meshcoreOpenWireCompatEnabled}
+                  onChange={(e) => {
+                    updateSetting('meshcoreOpenWireCompatEnabled', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.meshcoreOpenWireCompatLabel')}
+                  className="accent-brand-green mt-0.5"
+                />
+                <label
+                  htmlFor="meshcoreOpenWireCompat"
+                  className="flex-1 cursor-pointer text-sm text-yellow-100"
+                >
+                  {t('appPanel.meshcoreOpenWireCompatLabel')}
+                </label>
+              </div>
+              <p className="text-xs leading-relaxed text-yellow-300/90">
+                {t('appPanel.meshcoreOpenWireCompatHint')}
+              </p>
             </div>
           </div>
         )}

@@ -3,19 +3,26 @@ import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
-import { lastReadStorageKey } from './chatPanelProtocolStorage';
+import {
+  getSanitizedMeshcoreChatLastRead,
+  lastReadStorageKey,
+  loadPersistedLastReadInitial,
+} from './chatPanelProtocolStorage';
+import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
 import { getDebugSnapshotUiContext } from './debugSnapshotUiContext';
 import {
   resolveIdentityIdForProtocol,
   resolvePrimaryIdentityIdForProtocol,
 } from './identityByProtocol';
+import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
 import {
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
 } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
-import type { IdentityId, MeshProtocol, MQTTStatus } from './types';
+import { messageRecordsToChatMessages } from './storeRecordAdapters';
+import type { ChatMessage, IdentityId, MeshProtocol, MQTTStatus } from './types';
 import { writeClipboardText } from './writeClipboardText';
 
 export const DEBUG_SNAPSHOT_ID_LEGEND =
@@ -73,7 +80,26 @@ export interface DebugIdentityBucketSnapshot {
   connectNewestMessageTs: number | null;
   uiStoreNewestMessageTs: number | null;
   lastReadWatermarkCount: number;
+  /** Raw last-read map from localStorage (for badge triage; compare viewKey watermarks to newest inbound). */
+  lastReadByViewKey: Record<string, number>;
+  /** MeshCore one-time sanitize flag (`mesh-client:lastReadSanitized:meshcore`). */
+  lastReadSanitizedFlag: string | null;
+  /** Per-channel unread triage: watermark vs newest non-self inbound (top channels by volume). */
+  channelLastReadTriage: DebugChannelLastReadTriageRow[];
   connection: DebugConnectionSnapshot | null;
+}
+
+export interface DebugChannelLastReadTriageRow {
+  viewKey: string;
+  channelIndex: number;
+  /** Raw value from `mesh-client:lastRead:protocol` localStorage. */
+  lastReadWatermark: number;
+  /** Sanitized watermark used for unread badge math (MeshCore only). */
+  lastReadWatermarkEffective: number;
+  newestInboundEffectiveTs: number | null;
+  watermarkAheadOfNewestInboundMs: number | null;
+  unreadEstimate: number;
+  hasFuturePoisonInbound: boolean;
 }
 
 export type DebugSnapshotWarningCode =
@@ -81,7 +107,8 @@ export type DebugSnapshotWarningCode =
   | 'staleResolvedBucket'
   | 'chatPanelFrozen'
   | 'connectedNoPrimaryMessages'
-  | 'windowHiddenOnChat';
+  | 'windowHiddenOnChat'
+  | 'lastReadSuppressesChannelUnread';
 
 export interface DebugSnapshotWarning {
   code: DebugSnapshotWarningCode;
@@ -114,6 +141,91 @@ function newestMessageTimestamp(identityId: IdentityId | null): number | null {
     if (row.timestamp > max) max = row.timestamp;
   }
   return max > 0 ? max : null;
+}
+
+function loadLastReadByViewKey(protocol: MeshProtocol): Record<string, number> {
+  return loadPersistedLastReadInitial(protocol);
+}
+
+function loadLastReadSanitizedFlag(protocol: MeshProtocol): string | null {
+  if (protocol !== 'meshcore') return null;
+  return localStorage.getItem('mesh-client:lastReadSanitized:meshcore');
+}
+
+function listChatMessagesForIdentity(identityId: IdentityId | null): ChatMessage[] {
+  if (!identityId) return [];
+  const bucket = useMessageStore.getState().messages[identityId];
+  if (!bucket) return [];
+  return messageRecordsToChatMessages(Object.values(bucket));
+}
+
+function buildChannelLastReadTriage(
+  protocol: MeshProtocol,
+  identityId: IdentityId | null,
+  persistedLastRead: Readonly<Record<string, number>>,
+  ownNodeId: number,
+): DebugChannelLastReadTriageRow[] {
+  const nowMs = Date.now();
+  const ownNodeIds = ownNodeId > 0 ? new Set([ownNodeId]) : new Set<number>();
+  const messages = listChatMessagesForIdentity(identityId);
+  const sanitizedLastRead =
+    protocol === 'meshcore' ? getSanitizedMeshcoreChatLastRead(messages) : persistedLastRead;
+  const unreadByChannel = computeChannelUnreadCounts(
+    messages,
+    sanitizedLastRead,
+    ownNodeIds,
+    protocol,
+    nowMs,
+  );
+
+  const volumeByChannel = new Map<number, number>();
+  const regular = filterRegularChatMessages(messages, protocol);
+  for (const msg of regular) {
+    if (msg.channel < 0 || msg.to) continue;
+    volumeByChannel.set(msg.channel, (volumeByChannel.get(msg.channel) ?? 0) + 1);
+  }
+
+  const topChannels = [...volumeByChannel.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([ch]) => ch);
+
+  const rows: DebugChannelLastReadTriageRow[] = [];
+  for (const channelIndex of topChannels) {
+    const viewKey = `ch:${channelIndex}`;
+    const lastReadWatermark = persistedLastRead[viewKey] ?? 0;
+    const lastReadWatermarkEffective = sanitizedLastRead[viewKey] ?? 0;
+    let newestInboundEffectiveTs: number | null = null;
+    let hasFuturePoisonInbound = false;
+    for (const msg of regular) {
+      if (msg.channel !== channelIndex) continue;
+      if (ownNodeIds.has(msg.sender_id)) continue;
+      if (msg.to) continue;
+      if (msg.isHistory) continue;
+      if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) {
+        hasFuturePoisonInbound = true;
+        continue;
+      }
+      const ts = effectiveMessageTimestampMs(msg.timestamp, nowMs);
+      if (newestInboundEffectiveTs == null || ts > newestInboundEffectiveTs) {
+        newestInboundEffectiveTs = ts;
+      }
+    }
+    rows.push({
+      viewKey,
+      channelIndex,
+      lastReadWatermark,
+      lastReadWatermarkEffective,
+      newestInboundEffectiveTs,
+      watermarkAheadOfNewestInboundMs:
+        newestInboundEffectiveTs != null && lastReadWatermark >= newestInboundEffectiveTs
+          ? lastReadWatermark - newestInboundEffectiveTs
+          : null,
+      unreadEstimate: unreadByChannel.get(channelIndex) ?? 0,
+      hasFuturePoisonInbound,
+    });
+  }
+  return rows;
 }
 
 function countLastReadWatermarks(protocol: MeshProtocol): number {
@@ -209,6 +321,8 @@ function buildProtocolBucketSnapshot(protocol: MeshProtocol): DebugIdentityBucke
   const hydrationSlotMessageCount = Object.keys(messages[hydrationSlotId] ?? {}).length;
   const connection = buildConnectionSnapshot(uiStoreIdentityId);
   const primaryTransportStatuses = connectRec?.transports.map((t) => t.status) ?? [];
+  const lastReadByViewKey = loadLastReadByViewKey(protocol);
+  const ownNodeId = connection?.myNodeNum ?? 0;
 
   return {
     hydrationSlotId,
@@ -240,6 +354,14 @@ function buildProtocolBucketSnapshot(protocol: MeshProtocol): DebugIdentityBucke
     connectNewestMessageTs: newestMessageTimestamp(connectIdentityId),
     uiStoreNewestMessageTs: newestMessageTimestamp(uiStoreIdentityId),
     lastReadWatermarkCount: countLastReadWatermarks(protocol),
+    lastReadByViewKey,
+    lastReadSanitizedFlag: loadLastReadSanitizedFlag(protocol),
+    channelLastReadTriage: buildChannelLastReadTriage(
+      protocol,
+      uiStoreIdentityId,
+      lastReadByViewKey,
+      ownNodeId,
+    ),
     connection,
   };
 }
@@ -280,6 +402,27 @@ function analyzeProtocolBucket(
       protocol,
       detail: 'Connect identity store empty while hydration slot has messages',
     });
+  }
+
+  for (const row of bucket.channelLastReadTriage) {
+    if (
+      row.watermarkAheadOfNewestInboundMs != null &&
+      row.watermarkAheadOfNewestInboundMs > 0 &&
+      row.unreadEstimate === 0
+    ) {
+      warnings.push({
+        code: 'lastReadSuppressesChannelUnread',
+        protocol,
+        detail: `${row.viewKey} lastRead watermark is ${row.watermarkAheadOfNewestInboundMs}ms ahead of newest inbound; unread badge likely suppressed`,
+      });
+    }
+    if (row.hasFuturePoisonInbound) {
+      warnings.push({
+        code: 'lastReadSuppressesChannelUnread',
+        protocol,
+        detail: `${row.viewKey} has future-dated inbound messages (RTC skew); last-read watermarks may be unreliable until clamped`,
+      });
+    }
   }
 
   return warnings;

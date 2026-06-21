@@ -63,7 +63,11 @@ import {
 } from '../hooks/meshcore/meshcoreLegacyConnEvents';
 import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
-import { getAppSettingsRaw, mergeAppSettingsPartial } from '../lib/appSettingsStorage';
+import {
+  getAppSettingsRaw,
+  isMeshcoreOpenWireCompatEnabled,
+  mergeAppSettingsPartial,
+} from '../lib/appSettingsStorage';
 import {
   classifyMeshcoreBleTimeoutStage,
   MESHCORE_SETUP_ABORT_MESSAGE,
@@ -115,14 +119,13 @@ import {
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import {
   buildMeshcoreOutboundTapbackWire,
-  findMeshcoreDmReplyParent,
-  formatMeshcoreWireReplyPrefix,
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
   normalizeMeshcoreIncomingText,
   parseMeshcoreChannelIncomingFromThread,
   resolveMeshcoreChannelMessageSender,
+  resolveMeshcoreOutboundWireText,
 } from '../lib/meshcoreChannelText';
 import {
   buildGetAutoaddConfigFrame,
@@ -148,6 +151,7 @@ import {
 import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
+import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomAutoLoginFailure,
@@ -2423,24 +2427,25 @@ export function useMeshcoreRuntime() {
           );
         }
         const sentAt = Date.now();
-        let textToSend = text;
-        let replyField: number | undefined;
-        if (replyId != null && text.trim()) {
-          const parent = findMeshcoreDmReplyParent(messagesRef.current, {
-            peerNodeId: destNodeId,
-            myNodeId: myNodeNumRef.current,
-            replyKey: replyId,
-          });
-          if (parent) {
-            textToSend = `${formatMeshcoreWireReplyPrefix(parent.sender_name, replyId)} ${text}`;
-            replyField = replyId;
-          }
-        }
+        const openWireCompat = isMeshcoreOpenWireCompatEnabled();
+        const { wireText: textToSend, displayPayload } = resolveMeshcoreOutboundWireText({
+          text,
+          replyTo: replyId != null ? String(replyId) : undefined,
+          channelIndex: channelIdx,
+          destination: destNodeId,
+          myNodeNum: myNodeNumRef.current,
+          messages: messagesRef.current,
+          openWireCompat,
+        });
+        const replyField: number | undefined =
+          replyId != null && displayPayload.trim() && textToSend !== displayPayload
+            ? replyId
+            : undefined;
         // Optimistically add own message with 'sending' status (DM uses channel -1, not UI sendChannel)
         const tempMsg: ChatMessage = {
           sender_id: myNodeNumRef.current,
           sender_name: selfInfo?.name ?? 'Me',
-          payload: text,
+          payload: displayPayload,
           channel: -1,
           timestamp: sentAt,
           status: 'sending',
@@ -2588,22 +2593,19 @@ export function useMeshcoreRuntime() {
         }
       } else {
         const sentAt = Date.now();
-        let textToSend = text;
-        let replyField: number | undefined;
-        if (replyId != null && text.trim()) {
-          const parent = messagesRef.current.find(
-            (m) =>
-              !m.to &&
-              m.channel === channelIdx &&
-              (m.packetId === replyId || m.timestamp === replyId) &&
-              !(m.emoji != null && m.replyId != null),
-          );
-          if (parent) {
-            const parentKey = parent.packetId ?? parent.timestamp;
-            textToSend = `${formatMeshcoreWireReplyPrefix(parent.sender_name, parentKey)} ${text}`;
-            replyField = replyId;
-          }
-        }
+        const openWireCompat = isMeshcoreOpenWireCompatEnabled();
+        const { wireText: textToSend, displayPayload } = resolveMeshcoreOutboundWireText({
+          text,
+          replyTo: replyId != null ? String(replyId) : undefined,
+          channelIndex: channelIdx,
+          myNodeNum: myNodeNumRef.current,
+          messages: messagesRef.current,
+          openWireCompat,
+        });
+        const replyField: number | undefined =
+          replyId != null && displayPayload.trim() && textToSend !== displayPayload
+            ? replyId
+            : undefined;
         try {
           const channelConn = connRef.current;
           if (channelConn) {
@@ -2617,7 +2619,7 @@ export function useMeshcoreRuntime() {
             addMessage({
               sender_id: myNodeNumRef.current,
               sender_name: selfInfo?.name ?? 'Me',
-              payload: text,
+              payload: displayPayload,
               channel: channelIdx,
               timestamp: sentAt,
               status: 'acked',
@@ -4982,7 +4984,13 @@ export function useMeshcoreRuntime() {
       }
       const targetName = reactedTo.sender_name || 'Unknown';
       const replyKey = reactedTo.packetId ?? reactedTo.timestamp;
-      const tapbackText = buildMeshcoreOutboundTapbackWire(targetName, parsed.glyph);
+      const openWireCompat = isMeshcoreOpenWireCompatEnabled();
+      const isDm = reactedTo.to != null;
+      const openReactionWire = openWireCompat
+        ? buildMeshcoreOpenReactionWire(reactedTo, parsed.glyph, { isDm })
+        : null;
+      const tapbackText =
+        openReactionWire ?? buildMeshcoreOutboundTapbackWire(targetName, parsed.glyph);
       const conn = connRef.current;
       const me = myNodeNumRef.current;
 

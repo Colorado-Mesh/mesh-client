@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Debug-Snapshot kopieren",
     "copyDebugSnapshotButton": "Debug-Snapshot kopieren",
     "debugSnapshotCopied": "Debug-Snapshot in Zwischenablage kopiert",
-    "debugSnapshotFailed": "Debug-Snapshot konnte nicht kopiert werden"
+    "debugSnapshotFailed": "Debug-Snapshot konnte nicht kopiert werden",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open Wire (experimentell)",
+    "meshcoreOpenWireCompatLabel": "MeshCore Open-Kompatibilität aktivieren",
+    "meshcoreOpenWireCompatHint": "Wenn aktiviert, sendet mesh-client Schlüssel-Textantworten (@[Name#key]), kompakte r:-Reaktionen und g:-Giphy-GIFs. Das entspricht möglicherweise nicht dem offiziellen Companion-Wire-Format; Empfänger benötigen MeshCore-Open-kompatible Clients."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Mesh-Reaktion wählen",
     "meshcoreReactionEmojiOption": "Reagiere mit {{emoji}}",
     "meshcoreReactionNotInteroperable": "Dieses Emoji wird für MeshCore-Mesh-Reaktionen nicht unterstützt.",
-    "reactionFailed": "Reaktion fehlgeschlagen"
+    "reactionFailed": "Reaktion fehlgeschlagen",
+    "meshcoreGifButton": "Giphy GIF einfügen",
+    "meshcoreGifButtonHint": "Giphy-GIF im MeshCore-Open-g:-Wire-Format senden",
+    "meshcoreGifTitle": "Giphy GIF senden",
+    "meshcoreGifHint": "Fügen Sie eine Giphy-Seiten-URL, Medien-URL, g:ID oder bloße GIF-ID ein.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… oder g:ID",
+    "meshcoreGifSend": "GIF senden",
+    "meshcoreGifInvalid": "Geben Sie eine gültige Giphy-URL oder GIF-ID ein."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

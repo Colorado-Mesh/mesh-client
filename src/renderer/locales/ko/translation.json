@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "디버그 스냅샷 복사",
     "copyDebugSnapshotButton": "디버그 스냅샷 복사",
     "debugSnapshotCopied": "디버그 스냅샷이 클립보드에 복사되었습니다",
-    "debugSnapshotFailed": "디버그 스냅샷을 복사할 수 없습니다"
+    "debugSnapshotFailed": "디버그 스냅샷을 복사할 수 없습니다",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (실험용)",
+    "meshcoreOpenWireCompatLabel": "MeshCore Open 호환성 활성화",
+    "meshcoreOpenWireCompatHint": "활성화하면 mesh-client가 키가 있는 텍스트 답장(@[Name#key]), 컴팩트 r: 반응, g: Giphy GIF를 보냅니다. 공식 companion wire 형식과 다를 수 있으며, 수신자는 MeshCore Open 호환 클라이언트가 필요합니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "메시 반응 선택",
     "meshcoreReactionEmojiOption": "{{emoji}} 와 (과) 반응",
     "meshcoreReactionNotInteroperable": "해당 이모티콘은 MeshCore 메시 반응에서 지원되지 않습니다.",
-    "reactionFailed": "반응 실패"
+    "reactionFailed": "반응 실패",
+    "meshcoreGifButton": "Giphy GIF 삽입",
+    "meshcoreGifButtonHint": "Giphy GIF를 MeshCore Open g: wire로 보내기",
+    "meshcoreGifTitle": "Giphy GIF 보내기",
+    "meshcoreGifHint": "Giphy 페이지 URL, 미디어 URL, g:ID 또는 GIF ID만 붙여넣으세요.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… 또는 g:ID",
+    "meshcoreGifSend": "GIF 보내기",
+    "meshcoreGifInvalid": "유효한 Giphy URL 또는 GIF ID를 입력하세요."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

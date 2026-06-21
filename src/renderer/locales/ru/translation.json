@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Копировать снимок отладки",
     "copyDebugSnapshotButton": "Копировать снимок отладки",
     "debugSnapshotCopied": "Снимок отладки скопирован в буфер обмена",
-    "debugSnapshotFailed": "Не удалось скопировать снимок отладки"
+    "debugSnapshotFailed": "Не удалось скопировать снимок отладки",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (экспериментально)",
+    "meshcoreOpenWireCompatLabel": "Включить совместимость MeshCore Open",
+    "meshcoreOpenWireCompatHint": "Если включено, mesh-client отправляет текстовые ответы с ключом (@[Name#key]), компактные реакции r: и GIF Giphy g:. Это может не соответствовать официальному формату wire companion; получателям нужны клиенты с поддержкой MeshCore Open."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Выберите реакцию сетки",
     "meshcoreReactionEmojiOption": "Вступите в реакцию с {{emoji}}",
     "meshcoreReactionNotInteroperable": "Этот смайлик не поддерживается для реакций сетки MeshCore.",
-    "reactionFailed": "Реакция не прошла."
+    "reactionFailed": "Реакция не прошла.",
+    "meshcoreGifButton": "Вставить Giphy GIF",
+    "meshcoreGifButtonHint": "Отправить Giphy GIF в wire g: MeshCore Open",
+    "meshcoreGifTitle": "Отправить Giphy GIF",
+    "meshcoreGifHint": "Вставьте URL-адрес страницы Giphy, URL-адрес медиафайла, g:ID или идентификатор GIF.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… или g:ID",
+    "meshcoreGifSend": "Отправить GIF",
+    "meshcoreGifInvalid": "Введите действительный URL-адрес Giphy или идентификатор GIF."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

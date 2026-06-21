@@ -194,6 +194,26 @@ describe('ingestMeshcoreChannelMessage + store persist', () => {
     useMessageStore.setState({ messages: {} });
   });
 
+  it('persists reply parent matched by firmware seconds wire key', () => {
+    const tsSec = 1_780_240_708;
+    const tsMs = tsSec * 1000;
+    seedStore([nv0n('message one', tsMs), nv0n('message two', tsMs + 60_000)]);
+    const parsed = ingestMeshcoreChannelMessage(ID, {
+      rawText: `🆎 Alex: @[${NV0N}#${tsSec}] replying to first`,
+      senderId: 205,
+      displayName: '🆎 Alex',
+      channel: CH,
+      timestamp: tsMs + 120_000,
+      receivedVia: 'rf',
+    });
+    const result = upsertMeshcoreMessageWithDedup(ID, parsed);
+    expect(result.message.replyId).toBe(tsMs);
+    expect(result.message.replyPreviewText).toBe('message one');
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'replying to first');
+    expect(inStore?.replyId).toBe(tsMs);
+    expect(inStore?.replyPreviewText).toBe('message one');
+  });
+
   it('persists corrected reply into Zustand when parent was seeded first', () => {
     upsertMeshcoreMessageWithDedup(ID, nv0n('Message B - reply to this please.', 1780240608140));
     const parsed = ingestMeshcoreChannelMessage(ID, {

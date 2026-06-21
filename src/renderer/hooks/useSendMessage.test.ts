@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
@@ -11,7 +12,7 @@ import {
 } from '../lib/sessions/meshtasticSession';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
-import { useMessageStore } from '../stores/messageStore';
+import { addMessage, useMessageStore } from '../stores/messageStore';
 import { upsertNode } from '../stores/nodeStore';
 
 const ID_MC_FAIL = 'id-send-mc-fail';
@@ -156,6 +157,114 @@ describe('useSendMessage', () => {
         expect.objectContaining({ text: 'hi meshcore', channelIndex: 1 }),
       );
     });
+    sendSpy.mockRestore();
+  });
+
+  it('sends MeshCore channel reply with keyless @[Name] wire prefix when parent is in store', async () => {
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+    addMessage(ID_MC, {
+      id: '99',
+      from: 10,
+      senderName: 'durk',
+      to: 0xffffffff,
+      payload: 'flight data',
+      channelIndex: 25,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+    });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('reply test', 25, undefined, '99');
+
+    await vi.waitFor(() => {
+      expect(sendSpy).toHaveBeenCalledWith(
+        handle,
+        expect.objectContaining({ text: '@[durk] reply test', channelIndex: 25 }),
+      );
+    });
+    const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+    const outbound = rows.find((m) => m.payload === 'reply test');
+    expect(outbound?.payload).toBe('reply test');
+    expect(outbound?.replyTo).toBe('99');
+    sendSpy.mockRestore();
+  });
+
+  it('sends MeshCore GIF as g: wire when Open compat is enabled', async () => {
+    mergeAppSetting('meshcoreOpenWireCompatEnabled', true, 'useSendMessage.test');
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('https://giphy.com/gifs/funny-a5viI92PAF89q', 1);
+
+    await vi.waitFor(() => {
+      expect(sendSpy).toHaveBeenCalledWith(
+        handle,
+        expect.objectContaining({ text: 'g:a5viI92PAF89q', channelIndex: 1 }),
+      );
+    });
+    const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+    expect(rows[0]?.payload).toBe('g:a5viI92PAF89q');
+    mergeAppSetting('meshcoreOpenWireCompatEnabled', false, 'useSendMessage.test');
+    sendSpy.mockRestore();
+  });
+
+  it('sends keyed MeshCore channel reply when Open compat is enabled', async () => {
+    mergeAppSetting('meshcoreOpenWireCompatEnabled', true, 'useSendMessage.test');
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+    addMessage(ID_MC, {
+      id: '99',
+      from: 10,
+      senderName: 'durk',
+      to: 0xffffffff,
+      payload: 'flight data',
+      channelIndex: 25,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+    });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('reply test', 25, undefined, '99');
+
+    await vi.waitFor(() => {
+      expect(sendSpy).toHaveBeenCalledWith(
+        handle,
+        expect.objectContaining({ text: '@[durk#99] reply test', channelIndex: 25 }),
+      );
+    });
+    mergeAppSetting('meshcoreOpenWireCompatEnabled', false, 'useSendMessage.test');
     sendSpy.mockRestore();
   });
 

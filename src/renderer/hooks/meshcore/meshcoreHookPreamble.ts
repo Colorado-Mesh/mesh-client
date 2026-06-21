@@ -150,7 +150,7 @@ export function messageToDbRow(
     sender_name: msg.sender_name ?? null,
     payload: msg.payload,
     channel_idx: msg.channel,
-    timestamp: msg.timestamp,
+    timestamp: effectiveMessageTimestampMs(msg.timestamp),
     status: msg.status ?? 'acked',
     packet_id: msg.packetId ?? null,
     emoji: msg.emoji ?? null,

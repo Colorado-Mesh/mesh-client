@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Копіювати знімок налагодження",
     "copyDebugSnapshotButton": "Копіювати знімок налагодження",
     "debugSnapshotCopied": "Знімок налагодження скопійовано до буфера обміну",
-    "debugSnapshotFailed": "Не вдалося скопіювати знімок налагодження"
+    "debugSnapshotFailed": "Не вдалося скопіювати знімок налагодження",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (експериментально)",
+    "meshcoreOpenWireCompatLabel": "Увімкнути сумісність MeshCore Open",
+    "meshcoreOpenWireCompatHint": "Якщо ввімкнено, mesh-client надсилає текстові відповіді з ключем (@[Name#key]), компактні реакції r: і GIF Giphy g:. Це може не відповідати офіційному формату wire companion; одержувачам потрібні клієнти з підтримкою MeshCore Open."
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Виберіть реакцію сіті",
     "meshcoreReactionEmojiOption": "Зв 'яжіться з {{emoji}}",
     "meshcoreReactionNotInteroperable": "Цей смайлик не підтримується для реакцій сітки MeshCore.",
-    "reactionFailed": "Не вдалося відреагувати"
+    "reactionFailed": "Не вдалося відреагувати",
+    "meshcoreGifButton": "Вставити Giphy GIF",
+    "meshcoreGifButtonHint": "Надіслати Giphy GIF у wire g: MeshCore Open",
+    "meshcoreGifTitle": "Надіслати GIPHY GIF",
+    "meshcoreGifHint": "Вставте URL-адресу сторінки Giphy, URL-адресу медіафайлу, g:ID або ідентифікатор GIF.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… або g:ID",
+    "meshcoreGifSend": "Надіслати GIF",
+    "meshcoreGifInvalid": "Введіть дійсну URL-адресу Giphy або ідентифікатор GIF."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

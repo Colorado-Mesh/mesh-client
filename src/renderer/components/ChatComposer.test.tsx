@@ -22,6 +22,10 @@ vi.mock('react-i18next', () => ({
         'chatPanel.replyingTo': 'Replying to',
         'chatPanel.composeLimit.limitHint': `Up to ${opts?.limit} characters per message.`,
         'chatPanel.composeLimit.splitHint': 'Sent as separate packets labeled [1/N], [2/N], …',
+        'chatPanel.meshcoreGifButton': 'Insert Giphy GIF',
+        'chatPanel.meshcoreGifPlaceholder': 'Giphy URL or id',
+        'chatPanel.meshcoreGifSend': 'Send GIF',
+        'common.cancel': 'Cancel',
       };
       if (key === 'chatPanel.composeLimit.approaching') {
         return `${opts?.count} / ${opts?.limit}`;
@@ -305,5 +309,43 @@ describe('ChatComposer', () => {
     fireEvent.change(textarea, { target: { value: 'a'.repeat(250) } });
     expect(screen.getAllByText('250 characters · 2 messages').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Send 2 parts' })).toBeInTheDocument();
+  });
+
+  it('hides GIF button when MeshCore Open wire compat is disabled', () => {
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Insert Giphy GIF' })).toBeNull();
+  });
+
+  it('sends g: wire from GIF modal when Open wire compat is enabled', async () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ meshcoreOpenWireCompatEnabled: true }),
+    );
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Insert Giphy GIF' }));
+    const gifField = screen.getByRole('textbox', { name: 'Giphy URL or id' });
+    fireEvent.change(gifField, { target: { value: 'g:a5viI92PAF89q' } });
+    await user.click(screen.getByRole('button', { name: 'Send GIF' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith('g:a5viI92PAF89q');
+    });
   });
 });

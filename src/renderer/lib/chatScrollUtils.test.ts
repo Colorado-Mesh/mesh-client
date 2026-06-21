@@ -119,6 +119,20 @@ describe('findMessageIndexByKey', () => {
     const messages = [makeMsg({ timestamp: 12345 })];
     expect(findMessageIndexByKey(messages, 12345)).toBe(0);
   });
+
+  it('finds row when reply key is firmware seconds and stored timestamp is ms', () => {
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 1,
+        sender_name: 'A',
+        payload: 'x',
+        channel: 0,
+        timestamp: 1_780_240_708_000,
+        status: 'acked',
+      },
+    ];
+    expect(findMessageIndexByKey(messages, 1_780_240_708)).toBe(0);
+  });
 });
 
 describe('findFirstMessageIndexByDayKey', () => {

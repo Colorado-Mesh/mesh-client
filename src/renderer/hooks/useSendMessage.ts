@@ -1,8 +1,11 @@
 import { useCallback } from 'react';
 
 import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
+import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
+import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
@@ -97,11 +100,24 @@ export function useSendMessage(
         identity.protocol.type === 'meshcore'
           ? (useNodeStore.getState().nodes[identityId]?.[myNodeNum]?.longName ?? 'Me')
           : 'Me';
+      const isMeshcore = identity.protocol.type === 'meshcore';
+      const openWireCompat = isMeshcore && isMeshcoreOpenWireCompatEnabled();
+      const resolvedOutbound = isMeshcore
+        ? resolveMeshcoreOutboundWireText({
+            text,
+            replyTo,
+            channelIndex,
+            destination,
+            myNodeNum,
+            messages: listChatMessagesFromStore(identityId),
+            openWireCompat,
+          })
+        : { wireText: text, displayPayload: text };
       const record = {
         id: provisionalId,
         from: myNodeNum,
         to: destination ?? 0xffffffff,
-        payload: text,
+        payload: resolvedOutbound.displayPayload,
         channelIndex,
         timestamp: Date.now(),
         status: 'sending' as const,
@@ -123,8 +139,16 @@ export function useSendMessage(
         destinationPubKey ??= tryGetMeshcoreSession()?.getDestinationPubKey?.(destination);
       }
 
+      const wireText = resolvedOutbound.wireText;
+
       void identity.protocol
-        .sendMessage(handle, { text, channelIndex, destination, destinationPubKey, replyTo })
+        .sendMessage(handle, {
+          text: wireText,
+          channelIndex,
+          destination,
+          destinationPubKey,
+          replyTo,
+        })
         .then((res) => {
           const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
           if (res.packetId != null && resolvedId !== provisionalId) {

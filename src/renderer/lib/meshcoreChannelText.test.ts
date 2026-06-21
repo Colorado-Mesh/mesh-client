@@ -4,6 +4,7 @@ import { mapMeshcoreDbRowsToChatMessages } from '../hooks/meshcore/meshcoreHookP
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  buildMeshcoreOutboundSendText,
   buildMeshcoreOutboundTapbackWire,
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
@@ -11,6 +12,7 @@ import {
   meshcoreBracketDisplayNamesMatch,
   meshcoreChannelRepairRawText,
   meshcoreChatMessagesForDisplay,
+  meshcoreMessageMatchesReplyKey,
   meshcorePayloadIsTapbackEmojiOnly,
   meshcorePromoteEmojiOnlyReplyToTapback,
   meshcoreReplyBodyReferencesParent,
@@ -20,6 +22,7 @@ import {
   resolveMeshcoreBracketParentKey,
   resolveMeshcoreBracketParentKeyDm,
   resolveMeshcoreChannelMessageSender,
+  resolveMeshcoreOutboundWireText,
   sanitizeMeshcoreWireName,
 } from './meshcoreChannelText';
 import { computeMeshcoreOpenReactionHash } from './meshcoreOpenReaction';
@@ -636,6 +639,248 @@ describe('formatMeshcoreWireReplyPrefix', () => {
     expect(formatMeshcoreWireReplyPrefix('🛩️ NV0N 01', 1_780_235_760_847)).toBe(
       '@[NV0N 01#1780235760847]',
     );
+  });
+});
+
+describe('meshcoreMessageMatchesReplyKey', () => {
+  const parentMs: ChatMessage = {
+    sender_id: 10,
+    sender_name: 'You',
+    payload: 'first message',
+    channel: 25,
+    timestamp: 1_780_240_708_000,
+    status: 'acked',
+  };
+
+  it('matches exact ms timestamp', () => {
+    expect(meshcoreMessageMatchesReplyKey(parentMs, 1_780_240_708_000)).toBe(true);
+  });
+
+  it('matches firmware Unix seconds key against stored ms timestamp', () => {
+    expect(meshcoreMessageMatchesReplyKey(parentMs, 1_780_240_708)).toBe(true);
+  });
+
+  it('matches by packetId', () => {
+    const withPacket: ChatMessage = { ...parentMs, packetId: 42, timestamp: 999 };
+    expect(meshcoreMessageMatchesReplyKey(withPacket, 42)).toBe(true);
+  });
+
+  it('rejects unrelated keys', () => {
+    expect(meshcoreMessageMatchesReplyKey(parentMs, 1_780_240_709)).toBe(false);
+  });
+});
+
+describe('buildMeshcoreChannelIncomingMessage inbound reply keys', () => {
+  const sender = { id: 20, name: 'Someone' };
+  const you = '🛜 NV0N 01';
+  const tsSec = 1_780_240_708;
+  const tsMs = tsSec * 1000;
+
+  it('quotes first message when wire key is firmware seconds', () => {
+    const first: ChatMessage = {
+      sender_id: 100,
+      sender_name: you,
+      payload: 'message one',
+      channel: 6,
+      timestamp: tsMs,
+      status: 'acked',
+    };
+    const second: ChatMessage = {
+      sender_id: 100,
+      sender_name: you,
+      payload: 'message two',
+      channel: 6,
+      timestamp: tsMs + 60_000,
+      status: 'acked',
+    };
+    const msg = buildMeshcoreChannelIncomingMessage([first, second], {
+      rawText: `${sender.name}: @[${you}#${tsSec}] replying to first`,
+      senderId: sender.id,
+      displayName: sender.name,
+      channel: 6,
+      timestamp: tsMs + 120_000,
+      receivedVia: 'rf',
+    });
+    expect(msg.replyId).toBe(tsMs);
+    expect(msg.replyPreviewText).toBe('message one');
+  });
+
+  it('does not fall back to latest when explicit wire key does not match', () => {
+    const first: ChatMessage = {
+      sender_id: 100,
+      sender_name: you,
+      payload: 'message one',
+      channel: 6,
+      timestamp: tsMs,
+      status: 'acked',
+    };
+    const second: ChatMessage = {
+      sender_id: 100,
+      sender_name: you,
+      payload: 'message two',
+      channel: 6,
+      timestamp: tsMs + 60_000,
+      status: 'acked',
+    };
+    const msg = buildMeshcoreChannelIncomingMessage([first, second], {
+      rawText: `${sender.name}: @[${you}#9999999999] unknown key reply`,
+      senderId: sender.id,
+      displayName: sender.name,
+      channel: 6,
+      timestamp: tsMs + 120_000,
+      receivedVia: 'rf',
+    });
+    expect(msg.replyPreviewText).toBeUndefined();
+    expect(msg.replyId).toBeUndefined();
+    expect(msg.payload).toBe('unknown key reply');
+  });
+});
+
+describe('buildMeshcoreOutboundSendText', () => {
+  const parentChannel: ChatMessage = {
+    sender_id: 10,
+    sender_name: 'durk',
+    payload: 'flight data',
+    channel: 25,
+    timestamp: 1_700_000_000_000,
+    status: 'acked',
+    packetId: 99,
+  };
+
+  it('prefixes channel reply with keyless @[Name] when parent is found', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'reply test',
+        replyTo: '99',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parentChannel],
+      }),
+    ).toBe('@[durk] reply test');
+  });
+
+  it('prefixes channel reply with keyed @[Name#key] when useKeyedReplies is true', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'reply test',
+        replyTo: '99',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parentChannel],
+        useKeyedReplies: true,
+      }),
+    ).toBe('@[durk#99] reply test');
+  });
+
+  it('returns plain text when parent is not found', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'reply test',
+        replyTo: '999',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parentChannel],
+      }),
+    ).toBe('reply test');
+  });
+
+  it('uses keyless prefix when parent has packetId', () => {
+    const parent: ChatMessage = {
+      ...parentChannel,
+      timestamp: 1_700_000_000_001,
+      packetId: 42,
+    };
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'hi',
+        replyTo: '42',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parent],
+      }),
+    ).toBe('@[durk] hi');
+  });
+
+  it('prefixes DM reply when parent is in thread', () => {
+    const myNode = 7;
+    const peer = 0x22;
+    const parent: ChatMessage = {
+      sender_id: peer,
+      sender_name: 'Alice',
+      payload: 'parent line',
+      channel: -1,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+      packetId: 77_777,
+      to: myNode,
+    };
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'hi',
+        replyTo: '77777',
+        channelIndex: 0,
+        destination: peer,
+        myNodeNum: myNode,
+        messages: [parent],
+      }),
+    ).toBe('@[Alice] hi');
+  });
+
+  it('returns plain text when replyTo is absent', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'hello',
+        channelIndex: 0,
+        myNodeNum: 7,
+        messages: [],
+      }),
+    ).toBe('hello');
+  });
+
+  it('uses keyless official companion wire for stub display names', () => {
+    const parent: ChatMessage = {
+      sender_id: 10,
+      sender_name: '!5534aa28',
+      payload: 'original',
+      channel: 6,
+      timestamp: 1_782_006_950_000,
+      status: 'acked',
+    };
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'still sending the timestamp keys',
+        replyTo: String(1_782_006_950_000),
+        channelIndex: 6,
+        myNodeNum: 7,
+        messages: [parent],
+      }),
+    ).toBe('@[!5534aa28] still sending the timestamp keys');
+  });
+});
+
+describe('resolveMeshcoreOutboundWireText', () => {
+  it('normalizes Giphy URL to g: wire when openWireCompat is enabled', () => {
+    expect(
+      resolveMeshcoreOutboundWireText({
+        text: 'https://giphy.com/gifs/funny-a5viI92PAF89q',
+        channelIndex: 0,
+        myNodeNum: 7,
+        messages: [],
+        openWireCompat: true,
+      }),
+    ).toEqual({ wireText: 'g:a5viI92PAF89q', displayPayload: 'g:a5viI92PAF89q' });
+  });
+
+  it('does not normalize GIF wire when openWireCompat is disabled', () => {
+    expect(
+      resolveMeshcoreOutboundWireText({
+        text: 'g:a5viI92PAF89q',
+        channelIndex: 0,
+        myNodeNum: 7,
+        messages: [],
+        openWireCompat: false,
+      }),
+    ).toEqual({ wireText: 'g:a5viI92PAF89q', displayPayload: 'g:a5viI92PAF89q' });
   });
 });
 

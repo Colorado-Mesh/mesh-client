@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "デバッグスナップショットをコピー",
     "copyDebugSnapshotButton": "デバッグスナップショットをコピー",
     "debugSnapshotCopied": "デバッグスナップショットをクリップボードにコピーしました",
-    "debugSnapshotFailed": "デバッグスナップショットをコピーできませんでした"
+    "debugSnapshotFailed": "デバッグスナップショットをコピーできませんでした",
+    "meshcoreOpenWireExperimentalTitle": "MeshCoreオープンワイヤー（実験用）",
+    "meshcoreOpenWireCompatLabel": "MeshCore Openの互換性を有効にする",
+    "meshcoreOpenWireCompatHint": "有効にすると、mesh-clientはキー付きテキスト返信（@[Name#key]）、コンパクトなr:リアクション、g: Giphy GIFを送信します。公式のcompanion wire形式と一致しない場合があります。受信側はMeshCore Open対応クライアントが必要です。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "メッシュリアクションを選択",
     "meshcoreReactionEmojiOption": "{{emoji}}で反応",
     "meshcoreReactionNotInteroperable": "その絵文字は、MeshCoreメッシュリアクションではサポートされていません。",
-    "reactionFailed": "リアクションに失敗しました"
+    "reactionFailed": "リアクションに失敗しました",
+    "meshcoreGifButton": "Giphy GIFを挿入",
+    "meshcoreGifButtonHint": "Giphy GIFをMeshCore Open g: wireとして送信",
+    "meshcoreGifTitle": "Giphy GIFを送信",
+    "meshcoreGifHint": "GiphyページURL、メディアURL、g:ID、またはGIF IDのみを貼り付け。",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… または g:ID",
+    "meshcoreGifSend": "GIFを送信",
+    "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

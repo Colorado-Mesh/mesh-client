@@ -11,6 +11,7 @@ import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
+import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import {
   type ComposerWireContext,
   computeComposerLimitStatus,
@@ -19,6 +20,12 @@ import {
   splitChatMessage,
 } from '../lib/chatComposerLimits';
 import { clearDraft, loadDraftsInitial, saveDraft } from '../lib/chatPanelProtocolStorage';
+import {
+  formatMeshcoreGifWire,
+  meshcoreGiphyMediaUrl,
+  normalizeMeshcoreGifOutboundWire,
+  parseMeshcoreGifId,
+} from '../lib/meshcoreGifWire';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
 
@@ -111,6 +118,9 @@ export function ChatComposer({
     viewKey: string;
   } | null>(null);
   const [showComposePicker, setShowComposePicker] = useState(false);
+  const [showGifModal, setShowGifModal] = useState(false);
+  const [gifInput, setGifInput] = useState('');
+  const [gifPreviewFailed, setGifPreviewFailed] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
   const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
@@ -122,6 +132,14 @@ export function ChatComposer({
   const prevViewKeyRef = useRef<string | null>(null);
 
   const replyToSenderName = replyTo?.sender_name;
+  const meshcoreOpenWireCompat =
+    protocol === 'meshcore' ? isMeshcoreOpenWireCompatEnabled() : false;
+  const replyKey =
+    replyTo == null
+      ? undefined
+      : protocol === 'meshtastic'
+        ? replyTo.packetId
+        : (replyTo.packetId ?? replyTo.timestamp);
 
   const limitStatus = useMemo(
     () =>
@@ -130,8 +148,19 @@ export function ChatComposer({
         composerContext,
         senderDisplayName,
         replyToSenderName,
+        replyKey,
+        useKeyedReplies: meshcoreOpenWireCompat,
       }),
-    [input, protocol, payloadLimit, composerContext, senderDisplayName, replyToSenderName],
+    [
+      input,
+      protocol,
+      payloadLimit,
+      composerContext,
+      senderDisplayName,
+      replyToSenderName,
+      replyKey,
+      meshcoreOpenWireCompat,
+    ],
   );
 
   const wireOverheadFirstChunk = useMemo(
@@ -139,9 +168,13 @@ export function ChatComposer({
       getComposerWireOverhead({
         protocol,
         replyToSenderName,
+        replyKey,
+        useKeyedReplies: meshcoreOpenWireCompat,
       }),
-    [protocol, replyToSenderName],
+    [protocol, replyToSenderName, replyKey, meshcoreOpenWireCompat],
   );
+
+  const gifPreviewId = useMemo(() => parseMeshcoreGifId(gifInput), [gifInput]);
 
   const maxInputLength = limitStatus.totalMaxChars;
 
@@ -226,21 +259,20 @@ export function ChatComposer({
   const handleSend = useCallback(async () => {
     if (!input.trim() || sending || disabled) return;
     const draftSnapshot = input;
+    let trimmedSend = input.trim();
+    if (meshcoreOpenWireCompat) {
+      const gifWire = normalizeMeshcoreGifOutboundWire(trimmedSend);
+      if (gifWire != null) trimmedSend = gifWire;
+    }
     const chunks = splitChatMessage(
-      input.trim(),
+      trimmedSend,
       protocol,
       limitStatus.singleMessageLimit,
       wireOverheadFirstChunk,
     );
     if (chunks === null) return;
 
-    const replyKey =
-      replyTo == null
-        ? undefined
-        : protocol === 'meshtastic'
-          ? replyTo.packetId
-          : (replyTo.packetId ?? replyTo.timestamp);
-    const textsToSend = chunks.length === 0 ? [input.trim()] : chunks;
+    const textsToSend = chunks.length === 0 ? [trimmedSend] : chunks;
 
     if (replyTo && protocol === 'meshtastic' && (replyKey == null || replyKey === 0)) {
       setChatActionError({
@@ -326,12 +358,56 @@ export function ChatComposer({
     queueOutboxProp,
     queueOutbox,
     replyTo,
+    replyKey,
     sending,
     t,
     variant,
     viewKey,
     wireOverheadFirstChunk,
+    meshcoreOpenWireCompat,
   ]);
+
+  const sendGifWire = useCallback(
+    async (wireText: string) => {
+      if (sending || disabled) return;
+      if (!isConnected && !allowOutbox) {
+        setChatActionError({
+          message: t('chatPanel.composePlaceholderConnectFirst'),
+          viewKey,
+        });
+        return;
+      }
+      setSending(true);
+      setChatActionError(null);
+      try {
+        await onSendChunk(wireText);
+        setShowGifModal(false);
+        setGifInput('');
+        onSendSuccess?.();
+      } catch (err) {
+        console.error('[ChatComposer] GIF send failed: ' + errLikeToLogString(err));
+        setChatActionError({
+          message: err instanceof Error ? err.message : t('chatPanel.sendFailed'),
+          viewKey,
+        });
+      } finally {
+        setSending(false);
+      }
+    },
+    [allowOutbox, disabled, isConnected, onSendChunk, onSendSuccess, sending, t, viewKey],
+  );
+
+  const handleGifConfirm = useCallback(() => {
+    const gifId = parseMeshcoreGifId(gifInput);
+    if (gifId == null) {
+      setChatActionError({
+        message: t('chatPanel.meshcoreGifInvalid'),
+        viewKey,
+      });
+      return;
+    }
+    void sendGifWire(formatMeshcoreGifWire(gifId));
+  }, [gifInput, sendGifWire, t, viewKey]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -488,8 +564,79 @@ export function ChatComposer({
             : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
         }`;
 
+  const showMeshcoreGifButton =
+    protocol === 'meshcore' && meshcoreOpenWireCompat && variant === 'chat';
+
   return (
     <div className={className}>
+      {showGifModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <button
+            type="button"
+            aria-label={t('common.cancel')}
+            className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
+            onClick={() => {
+              setShowGifModal(false);
+              setGifInput('');
+              setGifPreviewFailed(false);
+            }}
+          />
+          <div className="bg-deep-black relative mx-4 w-full max-w-md space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-200">
+              {t('chatPanel.meshcoreGifTitle')}
+            </h3>
+            <p className="text-muted text-sm leading-relaxed">{t('chatPanel.meshcoreGifHint')}</p>
+            <input
+              type="text"
+              value={gifInput}
+              onChange={(e) => {
+                setGifInput(e.target.value);
+                setGifPreviewFailed(false);
+                setChatActionError(null);
+              }}
+              placeholder={t('chatPanel.meshcoreGifPlaceholder')}
+              aria-label={t('chatPanel.meshcoreGifPlaceholder')}
+              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+            />
+            {gifPreviewId != null && !gifPreviewFailed && (
+              <img
+                src={meshcoreGiphyMediaUrl(gifPreviewId)}
+                alt={t('chatPayload.meshcoreGif')}
+                className="max-h-48 max-w-full rounded-md border border-cyan-500/20 object-contain"
+                onError={() => {
+                  setGifPreviewFailed(true);
+                }}
+              />
+            )}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGifModal(false);
+                  setGifInput('');
+                  setGifPreviewFailed(false);
+                }}
+                aria-label={t('common.cancel')}
+                className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleGifConfirm();
+                }}
+                disabled={gifPreviewId == null || sending}
+                aria-label={t('chatPanel.meshcoreGifSend')}
+                className="flex-1 rounded-lg bg-yellow-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-yellow-500 disabled:opacity-40"
+              >
+                {t('chatPanel.meshcoreGifSend')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isLinux && showComposePicker && (
         <emoji-picker
           ref={emojiPickerRef}
@@ -612,6 +759,23 @@ export function ChatComposer({
             😊
           </button>
         </HelpTooltip>
+        {showMeshcoreGifButton && (
+          <HelpTooltip text={t('chatPanel.meshcoreGifButtonHint')}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowGifModal(true);
+                setGifInput('');
+                setGifPreviewFailed(false);
+              }}
+              disabled={disabled || !isConnected}
+              aria-label={t('chatPanel.meshcoreGifButton')}
+              className={emojiButtonClass}
+            >
+              GIF
+            </button>
+          </HelpTooltip>
+        )}
         <button
           type="button"
           onMouseDown={(e) => {

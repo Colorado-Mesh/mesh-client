@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "复制调试快照",
     "copyDebugSnapshotButton": "复制调试快照",
     "debugSnapshotCopied": "调试快照已复制到剪贴板",
-    "debugSnapshotFailed": "无法复制调试快照"
+    "debugSnapshotFailed": "无法复制调试快照",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (实验)",
+    "meshcoreOpenWireCompatLabel": "启用 MeshCore Open 兼容性",
+    "meshcoreOpenWireCompatHint": "启用后，mesh-client 会发送带密钥的文本回复（@[Name#key]）、紧凑型 r: 反应和 g: Giphy GIF。这可能与官方 companion wire 格式不一致；接收方需要支持 MeshCore Open 的客户端。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "选择网格反应",
     "meshcoreReactionEmojiOption": "与{{emoji}}反应",
     "meshcoreReactionNotInteroperable": "MeshCore网格反应不支持该表情符号。",
-    "reactionFailed": "反应失败"
+    "reactionFailed": "反应失败",
+    "meshcoreGifButton": "插入Giphy GIF",
+    "meshcoreGifButtonHint": "以 MeshCore Open g: wire 格式发送 Giphy GIF",
+    "meshcoreGifTitle": "发送 Giphy GIF",
+    "meshcoreGifHint": "粘贴 Giphy 页面 URL、媒体 URL、g:ID 或纯 GIF ID。",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… 或 g:ID",
+    "meshcoreGifSend": "发送GIF",
+    "meshcoreGifInvalid": "请输入有效的Giphy URL或GIF ID。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

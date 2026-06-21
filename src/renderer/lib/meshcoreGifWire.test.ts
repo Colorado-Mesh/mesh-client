@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { meshcoreGiphyMediaUrl, meshcoreGiphyPageUrl, parseMeshcoreGifId } from './meshcoreGifWire';
+import {
+  formatMeshcoreGifWire,
+  meshcoreGiphyMediaUrl,
+  meshcoreGiphyPageUrl,
+  normalizeMeshcoreGifOutboundWire,
+  parseMeshcoreGifId,
+} from './meshcoreGifWire';
 
 describe('parseMeshcoreGifId', () => {
   it('parses MeshCore Open short wire g:GIFID', () => {
@@ -36,5 +42,27 @@ describe('meshcoreGiphyMediaUrl', () => {
       'https://media.giphy.com/media/a5viI92PAF89q/giphy.gif',
     );
     expect(meshcoreGiphyPageUrl('a5viI92PAF89q')).toBe('https://giphy.com/gifs/a5viI92PAF89q');
+  });
+});
+
+describe('formatMeshcoreGifWire', () => {
+  it('encodes gif id as g: wire', () => {
+    expect(formatMeshcoreGifWire('a5viI92PAF89q')).toBe('g:a5viI92PAF89q');
+  });
+
+  it('throws for invalid gif id', () => {
+    expect(() => formatMeshcoreGifWire('bad id!')).toThrow('Invalid Giphy id');
+  });
+});
+
+describe('normalizeMeshcoreGifOutboundWire', () => {
+  it('normalizes media URL to compact wire', () => {
+    expect(
+      normalizeMeshcoreGifOutboundWire('https://media.giphy.com/media/a5viI92PAF89q/giphy.gif'),
+    ).toBe('g:a5viI92PAF89q');
+  });
+
+  it('returns null for plain chat text', () => {
+    expect(normalizeMeshcoreGifOutboundWire('hello')).toBeNull();
   });
 });

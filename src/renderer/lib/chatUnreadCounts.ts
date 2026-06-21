@@ -1,6 +1,11 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
 import {
+  clampReadWatermarkMs,
+  effectiveMessageTimestampMs,
+  isUnreasonablyFutureMessageTimestampMs,
+} from '@/renderer/lib/nodeStatus';
+import {
   findMeshtasticParentMessageForReply,
   findParentMessageForReply,
 } from '@/renderer/lib/replyPreview';
@@ -72,6 +77,7 @@ export function computeChannelUnreadCounts(
   persistedLastRead: Readonly<Record<string, number>>,
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
+  nowMs = Date.now(),
 ): Map<number, number> {
   const counts = new Map<number, number>();
   const regular = filterRegularChatMessages(messages, protocol);
@@ -80,8 +86,11 @@ export function computeChannelUnreadCounts(
     if (msg.to) continue;
     if (msg.channel < 0) continue;
     if (msg.isHistory) continue;
-    const lastRead = persistedLastRead[`ch:${msg.channel}`] ?? 0;
-    if (msg.timestamp > lastRead) {
+    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
+    const viewKey = `ch:${msg.channel}`;
+    const lastRead = clampReadWatermarkMs(persistedLastRead[viewKey] ?? 0, nowMs);
+    const msgTs = effectiveMessageTimestampMs(msg.timestamp, nowMs);
+    if (msgTs > lastRead) {
       counts.set(msg.channel, (counts.get(msg.channel) ?? 0) + 1);
     }
   }
@@ -94,6 +103,7 @@ export function computeDmUnreadCounts(
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
   options?: ChatUnreadDmOptions,
+  nowMs = Date.now(),
 ): Map<number, number> {
   const counts = new Map<number, number>();
   const regular = filterRegularChatMessages(messages, protocol);
@@ -102,8 +112,10 @@ export function computeDmUnreadCounts(
     const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, options);
     if (peer == null) continue;
     if (ownNodeIds.has(msg.sender_id)) continue;
-    const lr = persistedLastRead[`dm:${peer}`] ?? 0;
-    if (msg.timestamp > lr) {
+    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
+    const lr = clampReadWatermarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
+    const msgTs = effectiveMessageTimestampMs(msg.timestamp, nowMs);
+    if (msgTs > lr) {
       counts.set(peer, (counts.get(peer) ?? 0) + 1);
     }
   }
@@ -116,9 +128,23 @@ export function totalUnreadCount(
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
   dmOptions?: ChatUnreadDmOptions,
+  nowMs = Date.now(),
 ): number {
-  const channel = computeChannelUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol);
-  const dm = computeDmUnreadCounts(messages, persistedLastRead, ownNodeIds, protocol, dmOptions);
+  const channel = computeChannelUnreadCounts(
+    messages,
+    persistedLastRead,
+    ownNodeIds,
+    protocol,
+    nowMs,
+  );
+  const dm = computeDmUnreadCounts(
+    messages,
+    persistedLastRead,
+    ownNodeIds,
+    protocol,
+    dmOptions,
+    nowMs,
+  );
   let total = 0;
   for (const n of channel.values()) total += n;
   for (const n of dm.values()) total += n;

@@ -195,6 +195,15 @@ describe('findParentMessageForReply', () => {
   it('finds by timestamp when packetId does not match', () => {
     expect(findParentMessageForReply([parent], t0)).toBe(parent);
   });
+
+  it('finds by firmware seconds key against ms timestamp', () => {
+    const msParent: ChatMessage = {
+      ...parent,
+      packetId: undefined,
+      timestamp: 1_780_240_708_000,
+    };
+    expect(findParentMessageForReply([msParent], 1_780_240_708)).toBe(msParent);
+  });
 });
 
 describe('enrichMeshtasticReplyPreviews', () => {

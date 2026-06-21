@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Kopírovat snímek ladění",
     "copyDebugSnapshotButton": "Kopírovat snímek ladění",
     "debugSnapshotCopied": "Ladicí snímek zkopírován do schránky",
-    "debugSnapshotFailed": "Nelze zkopírovat snímek ladění"
+    "debugSnapshotFailed": "Nelze zkopírovat snímek ladění",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (experimentální)",
+    "meshcoreOpenWireCompatLabel": "Povolit kompatibilitu MeshCore Open",
+    "meshcoreOpenWireCompatHint": "Je-li povoleno, mesh-client odešle textové odpovědi s klíčem (@[Name#key]), kompaktní reakce r: a Giphy GIFy g:. To nemusí odpovídat oficiálnímu formátu wire companiona; příjemci potřebují klienty kompatibilní s MeshCore Open."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Zvolte reakci sítě",
     "meshcoreReactionEmojiOption": "Reagovat s {{emoji}}",
     "meshcoreReactionNotInteroperable": "Tento emodži není podporován pro MeshCore mesh reakce.",
-    "reactionFailed": "Reakce selhala"
+    "reactionFailed": "Reakce selhala",
+    "meshcoreGifButton": "Vložit GIPHY GIF",
+    "meshcoreGifButtonHint": "Odeslat Giphy GIF ve wire g: MeshCore Open",
+    "meshcoreGifTitle": "Odeslat GIPHY GIF",
+    "meshcoreGifHint": "Vložte adresu URL stránky GIPHY, adresu URL média, g:ID nebo ID holého GIF.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… nebo g:ID",
+    "meshcoreGifSend": "Odeslat gif",
+    "meshcoreGifInvalid": "Zadejte platnou adresu URL GIPHY nebo ID GIF."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

@@ -92,7 +92,11 @@ import {
   meshcoreChatMessagesForDisplay,
 } from '../lib/meshcoreChannelText';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
-import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '../lib/nodeStatus';
+import {
+  clampReadWatermarkMs,
+  effectiveMessageTimestampMs,
+  isUnreasonablyFutureMessageTimestampMs,
+} from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
@@ -300,6 +304,7 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
 function latestMessageTimestamp(messages: readonly ChatMessage[], nowMs = Date.now()): number {
   let latest = 0;
   for (const msg of messages) {
+    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
     const ts = effectiveMessageTimestampMs(msg.timestamp, nowMs);
     if (ts > latest) latest = ts;
   }

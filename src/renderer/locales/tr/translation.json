@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Hata ayıklama anlık görüntüsünü kopyala",
     "copyDebugSnapshotButton": "Hata Ayıklama Anlık Görüntüsünü Kopyala",
     "debugSnapshotCopied": "Hata ayıklama anlık görüntüsü panoya kopyalandı",
-    "debugSnapshotFailed": "Hata ayıklama anlık görüntüsü kopyalanamadı"
+    "debugSnapshotFailed": "Hata ayıklama anlık görüntüsü kopyalanamadı",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (deneysel)",
+    "meshcoreOpenWireCompatLabel": "MeshCore Open uyumluluğunu etkinleştir",
+    "meshcoreOpenWireCompatHint": "Etkinleştirildiğinde mesh-client, anahtarlı metin yanıtları (@[Name#key]), kompakt r: tepkileri ve g: Giphy GIF'leri gönderir. Bu, resmi companion wire biçimiyle uyuşmayabilir; alıcıların MeshCore Open uyumlu istemcilere ihtiyacı vardır."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Ağ reaksiyonunu seçin",
     "meshcoreReactionEmojiOption": "{{emoji}} ile tepki verin",
     "meshcoreReactionNotInteroperable": "Bu emoji, MeshCore mesh reaksiyonları için desteklenmiyor.",
-    "reactionFailed": "Tepki başarısız oldu"
+    "reactionFailed": "Tepki başarısız oldu",
+    "meshcoreGifButton": "Giphy GIF Ekle",
+    "meshcoreGifButtonHint": "Giphy GIF'i MeshCore Open g: wire olarak gönder",
+    "meshcoreGifTitle": "Giphy GIF gönder",
+    "meshcoreGifHint": "Bir Giphy sayfa URL'si, medya URL'si, g:ID veya yalnızca GIF kimliği yapıştırın.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… veya g:ID",
+    "meshcoreGifSend": "GIF gönder",
+    "meshcoreGifInvalid": "Geçerli bir Giphy URL'si veya GIF kimliği girin."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1263,7 +1273,7 @@
       "remoteHardwareEnabledDesc": "Uzak düğümlerin bu cihazdaki GPIO pinlerini okumasına ve yazmasına izin verir.",
       "remoteHardwareAllowUndefinedPins": "Tanımsız Pin Erişimine İzin Ver",
       "remoteHardwareAllowUndefinedPinsDesc": "Kullanılabilir pin yapılandırmasında listelenmeyen pinlerin okunmasına/yazılmasına izin verir.",
-      "mqttProxyGatewayHint": "Proxy etkinleştirildiğinde, mesh - client köprüleri MqttClientProxyMessage aracılığıyla trafiğe aracılık eder. MQTT→RF rölesi için Radyo sekmesinde kanal başına indirme bağlantısını etkinleştirin.",
+      "mqttProxyGatewayHint": "Proxy etkinleştirildiğinde, mesh-client köprüleri MqttClientProxyMessage aracılığıyla trafiğe aracılık eder. MQTT→RF rölesi için Radyo sekmesinde kanal başına indirme bağlantısını etkinleştirin.",
       "mapReportPublishInterval": "Harita rapor aralığı (saniye)",
       "mapReportPublishIntervalDesc": "0, bellenim varsayılanını kullanır. Harita raporlaması etkinleştirildiğinde cihazın harita raporlarını yayınlama sıklığı.",
       "mapReportPositionPrecision": "Harita raporu konum hassasiyeti",

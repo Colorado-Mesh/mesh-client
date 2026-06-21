@@ -1,5 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { parseStoredJson } from './parseStoredJson';
 
 /** Current localStorage key for merged app + diagnostics preference JSON. */
@@ -38,6 +39,18 @@ export function setAppSettingsRaw(json: string): void {
 
 export function mergeAppSetting(key: string, value: unknown, parseContext: string): void {
   mergeAppSettingsPartial({ [key]: value }, parseContext);
+}
+
+/** Whether MeshCore Open wire formats (keyed replies, r: reactions, g: GIFs) are enabled. */
+export function isMeshcoreOpenWireCompatEnabled(): boolean {
+  const parsed = parseStoredJson<{ meshcoreOpenWireCompatEnabled?: boolean }>(
+    getAppSettingsRaw(),
+    'isMeshcoreOpenWireCompatEnabled',
+  );
+  return (
+    parsed?.meshcoreOpenWireCompatEnabled ??
+    DEFAULT_APP_SETTINGS_SHARED.meshcoreOpenWireCompatEnabled
+  );
 }
 
 /** Merge keys into existing app settings without dropping unrelated persisted fields. */

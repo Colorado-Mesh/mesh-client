@@ -621,6 +621,10 @@ export default function RoomsPanel({
 
   useEffect(() => {
     if (!isActive || document.hidden || selectedRoomId == null) return;
+    // An explicit row-key jump (Starred → Go to message) or its room-switch guard
+    // owns scroll for this transition — skip pinned-bottom follow so we do not race
+    // scrollToEnd ahead of scrollToRowKey (effect order: this runs before both).
+    if (scrollToRowKey != null || suppressNextRoomSwitchScrollRef.current) return;
     if (isPinnedToBottomRef.current) {
       scrollToBottom();
     }
@@ -633,6 +637,7 @@ export default function RoomsPanel({
     isActive,
     roomPosts.length,
     scrollToBottom,
+    scrollToRowKey,
     selectedRoomId,
     updateScrollButtonVisibility,
   ]);

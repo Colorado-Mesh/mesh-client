@@ -11,7 +11,8 @@
  *    via check-i18n-quality.mjs — including modulePanel.* strings still identical to English,
  *    appPanel.reduceMotionDesc loading-spinner false friends, appPanel.debugSnapshot*
  *    copied-toast false friends and mixed EN "snapshot" residue, rawPacketLog protocol tokens,
- *    and flood/zero-hop advert commercial false friends on branch advert UI keys.
+ *    flood/zero-hop advert commercial false friends on branch advert UI keys, and MeshCore Open
+ *    wire / g: GIF composer strings (protocol tokens, companion-wire false friends, Open-aware).
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

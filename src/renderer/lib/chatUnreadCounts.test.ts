@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   chatViewKeyForMessage,
@@ -81,16 +81,54 @@ describe('chatUnreadCounts', () => {
     expect(total).toBe(2);
   });
 
-  it('counts device-timestamp message unread despite client-clock lastRead watermark', () => {
-    const clientNow = 1_700_000_000_000;
-    const deviceTs = clientNow - 60_000;
+  it('does not count future poison rows toward channel unread (RTC skew)', () => {
+    vi.useFakeTimers();
+    const nowMs = 1_700_000_000_000;
+    vi.setSystemTime(nowMs);
+    const futurePoison = nowMs + 8 * 365 * 24 * 3600 * 1000;
+    const legitBot = nowMs - 60_000;
     const counts = computeChannelUnreadCounts(
-      [msg({ channel: 0, timestamp: deviceTs })],
-      { 'ch:0': clientNow },
+      [
+        msg({ channel: 4, timestamp: futurePoison, sender_id: 99 }),
+        msg({ channel: 4, timestamp: legitBot, sender_id: 99 }),
+      ],
+      { 'ch:4': 0 },
       ownNodes,
       'meshcore',
+      nowMs,
+    );
+    expect(counts.get(4)).toBe(1);
+    vi.useRealTimers();
+  });
+
+  it('counts device-timestamp message unread when lastRead used client clock from poison mark-read', () => {
+    const nowMs = 1_700_000_000_000;
+    const deviceTs = nowMs - 60_000;
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: deviceTs })],
+      { 'ch:0': nowMs },
+      ownNodes,
+      'meshcore',
+      nowMs,
     );
     expect(counts.get(0)).toBeUndefined();
+  });
+
+  it('counts inbound after lastRead when watermark matches newest legitimate message only', () => {
+    const nowMs = 1_700_000_000_000;
+    const olderBot = nowMs - 120_000;
+    const newerBot = nowMs - 30_000;
+    const counts = computeChannelUnreadCounts(
+      [
+        msg({ channel: 4, timestamp: olderBot, sender_id: 99 }),
+        msg({ channel: 4, timestamp: newerBot, sender_id: 99 }),
+      ],
+      { 'ch:4': olderBot },
+      ownNodes,
+      'meshcore',
+      nowMs,
+    );
+    expect(counts.get(4)).toBe(1);
   });
 
   it('excludes MeshCore room BBS posts from channel unread', () => {

@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Copia istantanea di debug",
     "copyDebugSnapshotButton": "Copia istantanea di debug",
     "debugSnapshotCopied": "Istantanea di debug copiata negli appunti",
-    "debugSnapshotFailed": "Impossibile copiare l'istantanea di debug"
+    "debugSnapshotFailed": "Impossibile copiare l'istantanea di debug",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (sperimentale)",
+    "meshcoreOpenWireCompatLabel": "Abilita compatibilità MeshCore Open",
+    "meshcoreOpenWireCompatHint": "Se abilitato, mesh-client invia risposte testo con chiave (@[Name#key]), reazioni compatte r: e GIF Giphy g:. Potrebbe non corrispondere al formato wire ufficiale del companion; i destinatari devono usare client compatibili con MeshCore Open."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Scegli la reazione a rete",
     "meshcoreReactionEmojiOption": "Reagisci con {{emoji}}",
     "meshcoreReactionNotInteroperable": "Quell' emoji non è supportata per le reazioni mesh MeshCore.",
-    "reactionFailed": "Reazione fallita"
+    "reactionFailed": "Reazione fallita",
+    "meshcoreGifButton": "Inserisci GIF GIPHY",
+    "meshcoreGifButtonHint": "Invia una GIF Giphy nel wire g: MeshCore Open",
+    "meshcoreGifTitle": "Invia GIF Giphy",
+    "meshcoreGifHint": "Incolla un URL pagina Giphy, un URL media, g:ID o un id GIF senza prefisso.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/... o g:ID",
+    "meshcoreGifSend": "Invia GIF",
+    "meshcoreGifInvalid": "Inserisci un URL Giphy o un ID GIF valido."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

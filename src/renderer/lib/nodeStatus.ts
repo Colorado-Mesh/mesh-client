@@ -1,11 +1,21 @@
 import { isPlausibleMeshcoreLastAdvertSec } from '../../shared/meshcoreLastAdvertPlausible';
+import {
+  clampReadWatermarkMs as sharedClampReadWatermarkMs,
+  effectiveMessageTimestampMs as sharedEffectiveMessageTimestampMs,
+  MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
+} from '../../shared/messageTimestampSkew';
+
+export {
+  isUnreasonablyFutureMessageTimestampMs,
+  MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
+} from '../../shared/messageTimestampSkew';
 
 // Time thresholds for node freshness
 const STALE_MS = 2 * 3_600_000; // 2 hours
 const OFFLINE_MS = 7 * 24 * 3_600_000; // 7 days
 
 /** Max device clock lead we accept before treating timestamp as receive-time est. */
-export const LAST_HEARD_MAX_FUTURE_SKEW_SEC = 300; // 5 min
+export const LAST_HEARD_MAX_FUTURE_SKEW_SEC = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC;
 
 export type NodeStatus = 'online' | 'stale' | 'offline';
 
@@ -52,10 +62,7 @@ export function effectiveMessageTimestampMs(
   nowMs = Date.now(),
   maxFutureSkewSec = LAST_HEARD_MAX_FUTURE_SKEW_SEC,
 ): number {
-  if (!timestampMs || !Number.isFinite(timestampMs)) return nowMs;
-  const maxFuture = nowMs + maxFutureSkewSec * 1000;
-  if (timestampMs > maxFuture) return nowMs;
-  return timestampMs;
+  return sharedEffectiveMessageTimestampMs(timestampMs, nowMs, maxFutureSkewSec);
 }
 
 /** Cap a last-read watermark so device-ahead clocks cannot suppress future unread badges. */
@@ -64,10 +71,7 @@ export function clampReadWatermarkMs(
   nowMs = Date.now(),
   maxFutureSkewSec = LAST_HEARD_MAX_FUTURE_SKEW_SEC,
 ): number {
-  if (!watermarkMs || !Number.isFinite(watermarkMs)) return 0;
-  if (watermarkMs < 0) return 0;
-  const maxAllowed = nowMs + maxFutureSkewSec * 1000;
-  return Math.min(watermarkMs, maxAllowed);
+  return sharedClampReadWatermarkMs(watermarkMs, nowMs, maxFutureSkewSec);
 }
 
 /**
