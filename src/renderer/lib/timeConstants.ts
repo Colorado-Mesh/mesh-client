@@ -45,14 +45,15 @@ export function computeRoomLoginExtraTimeoutMs(hopsAway?: number | null): number
   return Math.max(MESHCORE_ROOM_LOGIN_EXTRA_TIMEOUT_MS, hopScaled);
 }
 
+/** Hard cap for multi-hop room login response wait. Without this, `hopFloor` in
+ * `computeRoomLoginResponseWaitMs` (`hops <= 0 ? 0 : 45_000 + hops * 20_000`) grows unbounded
+ * and can exceed 6 minutes. */
+export const MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS = 90_000;
+
 /**
  * Total wait for LoginSuccess/LoginFail after SendLogin SENT.
  * Firmware `estTimeout` is often too low on multi-hop paths; apply a hop-scaled floor.
  */
-/** Hard cap for multi-hop room login response wait. Without this, `hopFloor` in
- * `computeRoomLoginResponseWaitMs` (`45_000 + hops * 20_000`) grows unbounded and can exceed 6 minutes. */
-export const MESHCORE_ROOM_LOGIN_RESPONSE_WAIT_CAP_MS = 90_000;
-
 export function computeRoomLoginResponseWaitMs(
   hopsAway: number | null | undefined,
   estTimeoutMs: number,
@@ -95,11 +96,11 @@ export const MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 /** Same DM body re-heard on RF (multi-path / repeater echo) within this window. */
 export const MESHCORE_DM_RF_DEDUP_WINDOW_MS = 2 * MS_PER_MINUTE;
 
-/** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
-/** Wider than `MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS` (1 min) for tapback optimistic rows
- * (client Date.now vs radio rxTime skew). */
+/** PacketRouter tapback optimistic row match before Meshtastic RF echo re-key (temp packet_id → real id).
+ * Wider than room post dedup (1 min) because client Date.now vs radio rxTime can skew several minutes. */
 export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 
+/** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
 export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = MS_PER_MINUTE;
 
 /** Outbound tapback vs RF/MQTT echo of `@[Name] emoji`. */
