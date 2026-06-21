@@ -7,6 +7,7 @@ export function isUnreasonablyFutureMessageTimestampMs(
   nowMs = Date.now(),
   maxFutureSkewSec = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 ): boolean {
+  // Zero/negative = missing wire timestamp, not Unix epoch (1970-01-01).
   if (timestampMs <= 0 || !Number.isFinite(timestampMs)) return false;
   return timestampMs > nowMs + maxFutureSkewSec * 1000;
 }
@@ -20,6 +21,7 @@ export function effectiveMessageTimestampMs(
   nowMs = Date.now(),
   maxFutureSkewSec = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 ): number {
+  // Zero/negative = missing wire timestamp; use receive time instead of Unix epoch.
   if (timestampMs <= 0 || !Number.isFinite(timestampMs)) return nowMs;
   const maxFuture = nowMs + maxFutureSkewSec * 1000;
   if (timestampMs > maxFuture) return nowMs;
@@ -32,6 +34,7 @@ export function clampReadWatermarkMs(
   nowMs = Date.now(),
   maxFutureSkewSec = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 ): number {
+  // Zero = no last-read watermark (never read), not Unix epoch.
   if (watermarkMs <= 0 || !Number.isFinite(watermarkMs)) return 0;
   const maxAllowed = nowMs + maxFutureSkewSec * 1000;
   return Math.min(watermarkMs, maxAllowed);
