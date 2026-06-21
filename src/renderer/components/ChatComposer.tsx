@@ -123,11 +123,7 @@ export function ChatComposer({
 
   const replyToSenderName = replyTo?.sender_name;
   const replyKey =
-    replyTo == null
-      ? undefined
-      : protocol === 'meshtastic'
-        ? replyTo.packetId
-        : (replyTo.packetId ?? replyTo.timestamp);
+    replyTo == null ? undefined : protocol === 'meshtastic' ? replyTo.packetId : undefined;
 
   const limitStatus = useMemo(
     () =>

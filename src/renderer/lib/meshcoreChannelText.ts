@@ -23,8 +23,8 @@ export interface MeshcoreNormalizedText {
 
 /** Leading reply/tapback marker; name inside brackets may be empty on the wire (`@[] body`). */
 const BRACKET_PREFIX = /^@\[([^\]]*)\]\s*(.*)$/su;
-/** Optional mesh-client parent key suffix inside brackets: `@[Display Name#1780235760847]`. */
-/** Wire reply keys use ms-scale timestamps (10+ digits) from {@link formatMeshcoreWireReplyPrefix}. */
+/** Optional mesh-client parent key suffix inside brackets: `@[Display Name#1780235760]`. */
+/** Inbound keys may be firmware seconds or ms-scale; outbound text replies are keyless. */
 const BRACKET_REPLY_KEY_SUFFIX = /#(\d{10,})$/;
 
 export function sanitizeMeshcoreWireName(name: string): string {
@@ -35,7 +35,7 @@ export function sanitizeMeshcoreWireName(name: string): string {
     .trim();
 }
 
-/** Build `@[Name#replyKey]` prefix for outbound MeshCore replies (explicit parent on wire). */
+/** Build `@[Name#replyKey]` prefix (keyed wire; used by some inbound clients, not mesh-client outbound). */
 export function formatMeshcoreWireReplyPrefix(displayName: string, replyKey: number): string {
   const clean = sanitizeMeshcoreWireName(displayName);
   const name = clean.length > 0 ? clean : 'Unknown';
@@ -440,8 +440,9 @@ export interface BuildMeshcoreOutboundSendTextOpts {
 }
 
 /**
- * Build on-wire MeshCore send text for channel/DM replies: `@[Name#replyKey] body`.
- * Returns plain `text` when there is no reply parent or the parent cannot be resolved.
+ * Build on-wire MeshCore send text for channel/DM replies: keyless `@[Name] body`
+ * (official companion shape — same as tapbacks). Returns plain `text` when there is no
+ * reply parent or the parent cannot be resolved.
  */
 export function buildMeshcoreOutboundSendText(opts: BuildMeshcoreOutboundSendTextOpts): string {
   const body = opts.text;
@@ -468,8 +469,7 @@ export function buildMeshcoreOutboundSendText(opts: BuildMeshcoreOutboundSendTex
   }
 
   if (!parent) return body;
-  const parentKey = meshcoreCanonicalReplyKey(parent);
-  return `${formatMeshcoreWireReplyPrefix(parent.sender_name, parentKey)} ${body}`;
+  return `${formatMeshcoreWireTapbackPrefix(parent.sender_name)} ${body}`;
 }
 
 export interface BuildMeshcoreChannelIncomingOpts {

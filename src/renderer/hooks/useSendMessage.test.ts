@@ -159,7 +159,7 @@ describe('useSendMessage', () => {
     sendSpy.mockRestore();
   });
 
-  it('sends MeshCore channel reply with @[Name#key] wire prefix when parent is in store', async () => {
+  it('sends MeshCore channel reply with keyless @[Name] wire prefix when parent is in store', async () => {
     const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
     const handle = { kind: 'rf' };
     vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
@@ -189,7 +189,7 @@ describe('useSendMessage', () => {
     await vi.waitFor(() => {
       expect(sendSpy).toHaveBeenCalledWith(
         handle,
-        expect.objectContaining({ text: '@[durk#99] reply test', channelIndex: 25 }),
+        expect.objectContaining({ text: '@[durk] reply test', channelIndex: 25 }),
       );
     });
     const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});

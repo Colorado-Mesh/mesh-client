@@ -746,7 +746,7 @@ describe('buildMeshcoreOutboundSendText', () => {
     packetId: 99,
   };
 
-  it('prefixes channel reply when parent is found', () => {
+  it('prefixes channel reply with keyless @[Name] when parent is found', () => {
     expect(
       buildMeshcoreOutboundSendText({
         text: 'reply test',
@@ -755,7 +755,7 @@ describe('buildMeshcoreOutboundSendText', () => {
         myNodeNum: 7,
         messages: [parentChannel],
       }),
-    ).toBe('@[durk#99] reply test');
+    ).toBe('@[durk] reply test');
   });
 
   it('returns plain text when parent is not found', () => {
@@ -770,7 +770,7 @@ describe('buildMeshcoreOutboundSendText', () => {
     ).toBe('reply test');
   });
 
-  it('uses packetId over timestamp for wire reply key', () => {
+  it('uses keyless prefix when parent has packetId', () => {
     const parent: ChatMessage = {
       ...parentChannel,
       timestamp: 1_700_000_000_001,
@@ -784,7 +784,7 @@ describe('buildMeshcoreOutboundSendText', () => {
         myNodeNum: 7,
         messages: [parent],
       }),
-    ).toBe('@[durk#42] hi');
+    ).toBe('@[durk] hi');
   });
 
   it('prefixes DM reply when parent is in thread', () => {
@@ -809,7 +809,7 @@ describe('buildMeshcoreOutboundSendText', () => {
         myNodeNum: myNode,
         messages: [parent],
       }),
-    ).toBe('@[Alice#77777] hi');
+    ).toBe('@[Alice] hi');
   });
 
   it('returns plain text when replyTo is absent', () => {
@@ -821,6 +821,26 @@ describe('buildMeshcoreOutboundSendText', () => {
         messages: [],
       }),
     ).toBe('hello');
+  });
+
+  it('uses keyless official companion wire for stub display names', () => {
+    const parent: ChatMessage = {
+      sender_id: 10,
+      sender_name: '!5534aa28',
+      payload: 'original',
+      channel: 6,
+      timestamp: 1_782_006_950_000,
+      status: 'acked',
+    };
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'still sending the timestamp keys',
+        replyTo: String(1_782_006_950_000),
+        channelIndex: 6,
+        myNodeNum: 7,
+        messages: [parent],
+      }),
+    ).toBe('@[!5534aa28] still sending the timestamp keys');
   });
 });
 

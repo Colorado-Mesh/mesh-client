@@ -55,7 +55,7 @@ export function getComposerPayloadLimit(opts: {
   return getMeshcoreChannelPayloadLimit(opts.senderDisplayName ?? '');
 }
 
-/** MeshCore reply wire prefix `@[Name#replyKey] ` on the first chunk only. */
+/** MeshCore reply wire prefix `@[Name] ` (keyless official companion shape) on the first chunk only. */
 export function getComposerWireOverhead(opts: {
   protocol: MeshProtocol;
   replyToSenderName?: string;
