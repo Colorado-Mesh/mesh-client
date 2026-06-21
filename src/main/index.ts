@@ -32,6 +32,7 @@ import {
   sanitizeMeshcoreLastAdvertForDb,
 } from '../shared/meshcoreContactSanitize';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
+import { clampMeshcoreMessageTimestampForStorage } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { formatChatExportLines } from './chatExportFormat';
@@ -4347,13 +4348,19 @@ ipcMain.handle('db:getMeshcoreMessages', (_event, channelIdx?: number, limit = 2
         )
         .all(ch, safeLimit) as Record<string, unknown>[];
       rows.reverse();
-      return rows;
+      return rows.map((row) => ({
+        ...row,
+        timestamp: clampMeshcoreMessageTimestampForStorage(Number(row.timestamp)),
+      }));
     }
     const rows = db
       .prepareOnce('SELECT * FROM meshcore_messages ORDER BY id DESC LIMIT ?')
       .all(safeLimit) as Record<string, unknown>[];
     rows.reverse();
-    return rows;
+    return rows.map((row) => ({
+      ...row,
+      timestamp: clampMeshcoreMessageTimestampForStorage(Number(row.timestamp)),
+    }));
   } catch (err) {
     finishDbIpcHandler('db:getMeshcoreMessages', err);
   }
@@ -4417,7 +4424,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
       sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
       payload: m.payload as string,
       channel_idx: m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
-      timestamp: m.timestamp,
+      timestamp: clampMeshcoreMessageTimestampForStorage(Number(m.timestamp)),
       status: typeof m.status === 'string' ? m.status : 'acked',
       packet_id: m.packet_id != null ? Number(m.packet_id) : null,
       emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,

@@ -39,6 +39,7 @@ import {
   meshcoreIsChatStubNodeId,
   meshcoreMinimalNodeFromAdvertEvent,
 } from '../meshcoreUtils';
+import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { DomainEvent } from '../protocols/Protocol';
 import type { ChatMessage, IdentityId } from '../types';
 
@@ -164,6 +165,7 @@ function handleTextMessage(
 
   const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
   const messages = listChatMessages(identityId);
+  const wireTimestampMs = effectiveMessageTimestampMs(event.payload.timestamp);
   const isChannel = event.payload.id.startsWith('ch:');
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
   const isKnownRoomNode = isMeshcoreRoomServerHwModel(fromNode?.hwModel);
@@ -196,7 +198,7 @@ function handleTextMessage(
       roomServerId,
       authorId: authorId !== 0 ? authorId : myNodeNum || 0,
       authorName,
-      timestamp: event.payload.timestamp,
+      timestamp: wireTimestampMs,
       receivedVia: record.receivedVia ?? 'rf',
       rxHops: event.payload.hopCount,
     });
@@ -208,7 +210,7 @@ function handleTextMessage(
     const isEcho = myNodeNum > 0 && authorId === myNodeNum;
     if (!isEcho) {
       bumpMeshcoreChatSenderLastHeard(identityId, authorId, {
-        timestampMs: event.payload.timestamp,
+        timestampMs: wireTimestampMs,
         displayName: authorName !== 'Unknown' ? authorName : undefined,
         receivedVia: record.receivedVia,
         hopCount: event.payload.hopCount,
@@ -248,7 +250,7 @@ function handleTextMessage(
         senderId,
         displayName,
         channel: event.payload.channelIndex,
-        timestamp: event.payload.timestamp,
+        timestamp: wireTimestampMs,
         receivedVia: 'rf',
         rxHops: event.payload.hopCount,
       })
@@ -256,7 +258,7 @@ function handleTextMessage(
         rawText: event.payload.payload,
         senderId,
         displayName,
-        timestamp: event.payload.timestamp,
+        timestamp: wireTimestampMs,
         receivedVia: 'rf',
         peerNodeId: senderId,
         myNodeId: myNodeNum,
@@ -294,7 +296,7 @@ function handleTextMessage(
       !meshcoreIsChatStubNodeId(senderId));
   if (!isEcho && mayBumpDmSender && senderId > 0) {
     bumpMeshcoreChatSenderLastHeard(identityId, senderId, {
-      timestampMs: event.payload.timestamp,
+      timestampMs: wireTimestampMs,
       displayName: displayName !== 'Unknown' ? displayName : undefined,
       receivedVia: record.receivedVia,
       hopCount: event.payload.hopCount,

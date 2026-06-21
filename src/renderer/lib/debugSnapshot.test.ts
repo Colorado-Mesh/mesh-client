@@ -55,6 +55,9 @@ function makeBucketOverrides(
     connectNewestMessageTs: null,
     uiStoreNewestMessageTs: null,
     lastReadWatermarkCount: 0,
+    lastReadByViewKey: {},
+    lastReadSanitizedFlag: null,
+    channelLastReadTriage: [],
     connection: null,
     ...overrides,
   };
@@ -330,6 +333,42 @@ describe('buildDebugSnapshot', () => {
     expect(snap.storedProtocol).toBe('meshcore');
     expect(snap.ui).toEqual(getDebugSnapshotUiContext());
     expect(snap.meshcore.lastReadWatermarkCount).toBe(2);
+    expect(snap.meshcore.lastReadByViewKey).toEqual({ 'ch:0': 100, 'dm:1': 200 });
+  });
+
+  it('includes channel last-read triage and flags suppressed unread on poisoned watermark', () => {
+    ensureOfflineProtocolIdentities();
+    vi.useFakeTimers();
+    const nowMs = 1_700_000_000_000;
+    vi.setSystemTime(nowMs);
+    localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshcore');
+    const botTs = nowMs - 120_000;
+    localStorage.setItem(lastReadStorageKey('meshcore'), JSON.stringify({ 'ch:4': nowMs }));
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      mqttStatus: 'disconnected',
+      connectionType: 'ble',
+      myNodeNum: 279817148,
+      connectionLoss: false,
+    });
+    upsertMessage(OFFLINE_MESHCORE_IDENTITY_ID, {
+      id: 'mc-bot-1',
+      from: 2706664648,
+      senderName: 'RunrBot',
+      payload: 'path update',
+      channelIndex: 4,
+      timestamp: botTs,
+      to: 0,
+      status: 'acked',
+    });
+
+    const snap = buildDebugSnapshot();
+    const ch4 = snap.meshcore.channelLastReadTriage.find((r) => r.channelIndex === 4);
+    expect(ch4?.lastReadWatermark).toBe(nowMs);
+    expect(ch4?.watermarkAheadOfNewestInboundMs).toBeGreaterThan(0);
+    expect(ch4?.unreadEstimate).toBe(0);
+    expect(snap.warnings.some((w) => w.code === 'lastReadSuppressesChannelUnread')).toBe(true);
+    vi.useRealTimers();
   });
 });
 
