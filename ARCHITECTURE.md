@@ -100,7 +100,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 - **UI:** `RoomsPanel.tsx` + shared `ChatComposer.tsx`; unread `meshcoreRoomsUnread.ts`.
 - **Runtime:** `useMeshcoreRuntime.ts` coordinates login queue, auto-sync (`meshcoreRoomSyncScheduler.ts`), and ingest dedup (`meshcoreStoreDedup.ts`).
-- **RPC/helpers:** `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, `meshcoreRoomSession.ts`, `meshcoreChannelText.ts` (SignedPlain / tapbacks). RF-only (not MQTT). User guide: [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers).
+- **RPC/helpers:** `meshcoreRoomLoginRpc.ts`, `meshcoreRoomPostRpc.ts`, `meshcoreRoomSession.ts`, `meshcoreChannelText.ts` (SignedPlain / tapbacks / Open wire via optional App toggle), `meshcoreGifWire.ts`, `meshcoreOpenReaction.ts`. RF-only (not MQTT). User guide: [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers).
 
 ### UI
 

@@ -30,4 +30,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   reduceMotion: false,
   /** Auto-request Store & Forward chat history on RF connect (with cap/cooldown). */
   storeForwardAutoFetchHistory: true,
+  /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
+  meshcoreOpenWireCompatEnabled: false,
 };

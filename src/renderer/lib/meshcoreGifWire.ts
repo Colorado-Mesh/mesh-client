@@ -70,3 +70,16 @@ export function meshcoreGiphyPageUrl(gifId: string): string {
   assertMeshcoreGifId(gifId);
   return new URL(`/gifs/${gifId}`, `${GIPHY_PAGE_ORIGIN}/`).href;
 }
+
+/** Encode Giphy id as MeshCore Open compact wire (`g:GIFID`). Mirrors Open encodeGif(). */
+export function formatMeshcoreGifWire(gifId: string): string {
+  assertMeshcoreGifId(gifId);
+  return `g:${gifId}`;
+}
+
+/** If text is a Giphy URL, short wire, or bare id, return compact `g:ID`; else null. */
+export function normalizeMeshcoreGifOutboundWire(text: string): string | null {
+  const gifId = parseMeshcoreGifId(text);
+  if (gifId == null) return null;
+  return formatMeshcoreGifWire(gifId);
+}

@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Salin snapshot debug",
     "copyDebugSnapshotButton": "Salin snapshot debug",
     "debugSnapshotCopied": "Snapshot debug disalin ke papan klip",
-    "debugSnapshotFailed": "Tidak dapat menyalin snapshot debug"
+    "debugSnapshotFailed": "Tidak dapat menyalin snapshot debug",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (eksperimental)",
+    "meshcoreOpenWireCompatLabel": "Aktifkan kompatibilitas MeshCore Open",
+    "meshcoreOpenWireCompatHint": "Saat diaktifkan, mesh-client mengirim balasan teks berkunci (@[Name#key]), reaksi ringkas r:, dan GIF Giphy g:. Ini mungkin tidak sesuai format wire companion resmi; penerima membutuhkan klien yang mendukung MeshCore Open."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Pilih reaksi mesh",
     "meshcoreReactionEmojiOption": "Bereaksi dengan {{emoji}}",
     "meshcoreReactionNotInteroperable": "Emoji itu tidak didukung untuk reaksi mesh MeshCore.",
-    "reactionFailed": "Reaksi gagal"
+    "reactionFailed": "Reaksi gagal",
+    "meshcoreGifButton": "Masukkan GIF Giphy",
+    "meshcoreGifButtonHint": "Kirim GIF Giphy sebagai MeshCore Open g: wire",
+    "meshcoreGifTitle": "Kirim GIF Giphy",
+    "meshcoreGifHint": "Tempel URL halaman Giphy, URL media, g:ID, atau id GIF kosong.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… atau g:ID",
+    "meshcoreGifSend": "Kirim GIF",
+    "meshcoreGifInvalid": "Masukkan URL Giphy atau id GIF yang valid."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -503,7 +513,7 @@
         "accessDeniedLinuxHint": "Di Linux, tambahkan pengguna Anda ke grup dialout: sudo usermod -aG dialout $USER (lalu logout dan masuk kembali)",
         "disconnectedHint": "Pastikan kabel USB terhubung dan perangkat dihidupkan.",
         "timeoutHint": "Jika port muncul sebentar, coba sambungkan kembali kabel USB.",
-        "portStillOpenHint": "Port serial USB tidak terlepas dengan bersih. Keluar dari mesh - client sepenuhnya dan buka kembali, atau cabut dan pasang kembali kabel USB, lalu sambungkan lagi."
+        "portStillOpenHint": "Port serial USB tidak terlepas dengan bersih. Keluar dari mesh-client sepenuhnya dan buka kembali, atau cabut dan pasang kembali kabel USB, lalu sambungkan lagi."
       },
       "http": {
         "timeoutMdnsWindows": "Di Windows, meshtastic.local memerlukan Bonjour (diinstal dengan iTunes). Gunakan alamat IP perangkat sebagai gantinya.",
@@ -903,7 +913,7 @@
       },
       "serial-reconnect": {
         "label": "Sambungkan Ulang Serial USB",
-        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh - client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
+        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh-client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
       }
     },
     "recommendationGroups": {
@@ -911,7 +921,7 @@
         "recommendation": "Lakukan hal itu."
       },
       "serial-reconnect": {
-        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh - client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
+        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh-client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
       }
     }
   },
@@ -1263,7 +1273,7 @@
       "remoteHardwareEnabledDesc": "Izinkan node jarak jauh membaca dan menulis pin GPIO di perangkat ini.",
       "remoteHardwareAllowUndefinedPins": "Izinkan Akses Pin Tak Terdefinisi",
       "remoteHardwareAllowUndefinedPinsDesc": "Izinkan pembacaan/penulisan pin yang tidak tercantum dalam konfigurasi pin yang tersedia.",
-      "mqttProxyGatewayHint": "Dengan proxy diaktifkan, mesh - client menjembatani lalu lintas broker melalui MqttClientProxyMessage. Aktifkan downlink per saluran pada tab Radio untuk relai→ RF MQTT.",
+      "mqttProxyGatewayHint": "Dengan proxy diaktifkan, mesh-client menjembatani lalu lintas broker melalui MqttClientProxyMessage. Aktifkan downlink per saluran pada tab Radio untuk relai→ RF MQTT.",
       "mapReportPublishInterval": "Interval laporan peta (detik)",
       "mapReportPublishIntervalDesc": "0 menggunakan firmware default. Seberapa sering perangkat memublikasikan laporan peta saat pelaporan peta diaktifkan.",
       "mapReportPositionPrecision": "Presisi posisi laporan peta",

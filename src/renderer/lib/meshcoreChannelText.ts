@@ -1,3 +1,4 @@
+import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import {
   buildMeshcoreOpenReactionIncomingMessage,
   parseMeshcoreOpenReactionWire,
@@ -437,12 +438,14 @@ export interface BuildMeshcoreOutboundSendTextOpts {
   destination?: number;
   myNodeNum: number;
   messages: readonly ChatMessage[];
+  /** When true (MeshCore Open compat), use keyed `@[Name#key]` prefix instead of keyless. */
+  useKeyedReplies?: boolean;
 }
 
 /**
- * Build on-wire MeshCore send text for channel/DM replies: keyless `@[Name] body`
- * (official companion shape — same as tapbacks). Returns plain `text` when there is no
- * reply parent or the parent cannot be resolved.
+ * Build on-wire MeshCore send text for channel/DM replies. Default: keyless `@[Name] body`
+ * (official companion shape). With `useKeyedReplies`, uses `@[Name#replyKey] body`.
+ * Returns plain `text` when there is no reply parent or the parent cannot be resolved.
  */
 export function buildMeshcoreOutboundSendText(opts: BuildMeshcoreOutboundSendTextOpts): string {
   const body = opts.text;
@@ -469,7 +472,33 @@ export function buildMeshcoreOutboundSendText(opts: BuildMeshcoreOutboundSendTex
   }
 
   if (!parent) return body;
-  return `${formatMeshcoreWireTapbackPrefix(parent.sender_name)} ${body}`;
+  const prefix = opts.useKeyedReplies
+    ? formatMeshcoreWireReplyPrefix(parent.sender_name, replyKey)
+    : formatMeshcoreWireTapbackPrefix(parent.sender_name);
+  return `${prefix} ${body}`;
+}
+
+export interface ResolveMeshcoreOutboundWireTextOpts extends BuildMeshcoreOutboundSendTextOpts {
+  openWireCompat?: boolean;
+}
+
+/** Resolve full MeshCore outbound wire text (GIF wire or reply-prefixed text). */
+export function resolveMeshcoreOutboundWireText(opts: ResolveMeshcoreOutboundWireTextOpts): {
+  wireText: string;
+  displayPayload: string;
+} {
+  const openCompat = opts.openWireCompat ?? false;
+  if (openCompat) {
+    const gifWire = normalizeMeshcoreGifOutboundWire(opts.text);
+    if (gifWire != null) {
+      return { wireText: gifWire, displayPayload: gifWire };
+    }
+  }
+  const wireText = buildMeshcoreOutboundSendText({
+    ...opts,
+    useKeyedReplies: openCompat,
+  });
+  return { wireText, displayPayload: opts.text };
 }
 
 export interface BuildMeshcoreChannelIncomingOpts {

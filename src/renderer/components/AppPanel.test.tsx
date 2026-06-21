@@ -197,3 +197,57 @@ describe('AppPanel: sound notification toggle', () => {
     expect(localStorage.getItem('mesh-client:notifMuted')).toBe('0');
   });
 });
+
+describe('AppPanel: MeshCore Open wire toggle', () => {
+  const defaultProps = {
+    nodes: new Map(),
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:appSettings');
+  });
+
+  it('shows Open wire toggle only on MeshCore protocol tab', async () => {
+    const { unmount } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshtastic" />
+      </ToastProvider>,
+    );
+    expect(
+      screen.queryByRole('checkbox', { name: /Enable MeshCore Open compatibility/i }),
+    ).toBeNull();
+    unmount();
+
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshcore" />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Enable MeshCore Open compatibility/i,
+    });
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('persists meshcoreOpenWireCompatEnabled to app settings', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshcore" />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Enable MeshCore Open compatibility/i,
+    });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:appSettings');
+      expect(raw).toContain('"meshcoreOpenWireCompatEnabled":true');
+    });
+  });
+});

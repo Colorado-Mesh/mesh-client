@@ -55,16 +55,18 @@ export function getComposerPayloadLimit(opts: {
   return getMeshcoreChannelPayloadLimit(opts.senderDisplayName ?? '');
 }
 
-/** MeshCore reply wire prefix `@[Name] ` (keyless official companion shape) on the first chunk only. */
+/** MeshCore reply wire prefix on the first chunk only (keyless companion or keyed Open). */
 export function getComposerWireOverhead(opts: {
   protocol: MeshProtocol;
   replyToSenderName?: string;
   replyKey?: number;
+  /** When true, count keyed `@[Name#key] ` overhead (MeshCore Open compat). */
+  useKeyedReplies?: boolean;
 }): number {
   if (opts.protocol !== 'meshcore' || !opts.replyToSenderName?.trim()) return 0;
   const cleanName = opts.replyToSenderName.trim();
   const key = opts.replyKey;
-  if (key != null && Number.isFinite(key) && key > 0) {
+  if (opts.useKeyedReplies && key != null && Number.isFinite(key) && key > 0) {
     return countMessageChars(`@[${cleanName}#${Math.trunc(key)}] `);
   }
   return countMessageChars(`@[${cleanName}] `);
@@ -96,6 +98,7 @@ export function computeComposerLimitStatus(
     senderDisplayName?: string;
     replyToSenderName?: string;
     replyKey?: number;
+    useKeyedReplies?: boolean;
   },
 ): ComposerLimitStatus {
   const singleMessageLimit = getComposerPayloadLimit({
@@ -108,6 +111,7 @@ export function computeComposerLimitStatus(
     protocol,
     replyToSenderName: opts?.replyToSenderName,
     replyKey: opts?.replyKey,
+    useKeyedReplies: opts?.useKeyedReplies,
   });
   const trimmed = text.trim();
   const charCount = countMessageChars(trimmed);

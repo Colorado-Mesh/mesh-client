@@ -336,6 +336,109 @@ export const DE_DEBUG_SNAPSHOT_FAILED_WRONG_TERM_RE = /Fehlerbehebungs/i;
 /** MyMemory often inserts spaces in the Mesh-Client product name. */
 export const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
 
+/** Lowercase mesh-client product name with CAT spaces around the hyphen. */
+export const MESH_CLIENT_LOWERCASE_SPACED_RE = /mesh\s+-\s+client/i;
+
+/** App → MeshCore Open wire (experimental) toggle copy. */
+export const MESHCORE_OPEN_WIRE_APP_LEAF_KEYS = new Set([
+  'meshcoreOpenWireExperimentalTitle',
+  'meshcoreOpenWireCompatLabel',
+  'meshcoreOpenWireCompatHint',
+]);
+
+/** Chat composer Giphy / MeshCore Open g: wire copy. */
+export const MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS = new Set([
+  'meshcoreGifButton',
+  'meshcoreGifButtonHint',
+  'meshcoreGifTitle',
+  'meshcoreGifHint',
+  'meshcoreGifPlaceholder',
+  'meshcoreGifSend',
+  'meshcoreGifInvalid',
+]);
+
+/** MT leaves English "Open-aware" in meshcoreOpenWireCompatHint. */
+export const OPEN_AWARE_ENGLISH_RE = /\bOpen\s*-?\s*aware\b/i;
+
+/** MT mistranslates mesh "companion wire format" as physical cable/wiring. */
+export const COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES = [
+  { re: /metaaldraad/i, hint: 'use companion wire protocol format, not metal "metaaldraad"' },
+  {
+    re: /Begleitdraht/i,
+    hint: 'use "Companion-Wire-Format", not physical cable "Begleitdraht"',
+  },
+  {
+    re: /Przerwa w przewodzie/i,
+    hint: 'title is MeshCore Open wire format, not a break/pause in a cable',
+  },
+  { re: /przewód towarzyszą/i, hint: 'use companion wire format, not "przewód towarzyszący"' },
+  { re: /cavo associato/i, hint: 'use companion wire format, not "cavo associato"' },
+  { re: /cable complementario/i, hint: 'use companion wire format, not "cable complementario"' },
+  { re: /fio complementar/i, hint: 'use companion wire format, not "fio complementar"' },
+  { re: /doprovodného drátu/i, hint: 'use companion wire format, not "doprovodný drát"' },
+  { re: /kawat pendamping/i, hint: 'use companion wire format, not "kawat pendamping"' },
+  { re: /tamamlayıcı kablo/i, hint: 'use companion wire format, not "tamamlayıcı kablo"' },
+  { re: /сопутствующего провода/i, hint: 'use companion wire format, not "сопутствующий провод"' },
+  { re: /супутнього дроту/i, hint: 'use companion wire format, not "супутній дріт"' },
+  { re: /配套电线/, hint: 'use companion wire format, not electrical "配套电线"' },
+];
+
+/** MT confuses keyed text replies with encryption/typing/encoding. */
+export const KEYED_REPLY_FALSE_FRIENDS = {
+  de: [
+    {
+      re: /verschlüsselte/i,
+      hint: 'use "mit Schlüssel" for keyed replies, not encrypted "verschlüsselte"',
+    },
+  ],
+  it: [
+    {
+      re: /\bdigitate\b/i,
+      hint: 'use "con chiave" for keyed replies, not typed "digitate"',
+    },
+  ],
+  nl: [
+    {
+      re: /gecodeerde/i,
+      hint: 'use "met sleutel" for keyed replies, not encoded "gecodeerde"',
+    },
+  ],
+};
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @returns {string[]}
+ */
+export function meshcoreOpenWireProtocolTokenIssues(enVal, val) {
+  const issues = [];
+  if (enVal.includes('@[Name#key]')) {
+    if (!val.includes('@[Name#key]')) {
+      if (/@[\s\u00a0]+\[|@\[\s|Name\s+#|#\s+key/i.test(val)) {
+        issues.push('preserve wire token "@[Name#key]" without spaces inside brackets');
+      } else {
+        issues.push('preserve wire token "@[Name#key]" from English');
+      }
+    }
+  }
+  if (enVal.includes('g:ID') && !val.includes('g:ID') && /g:\s+ID/i.test(val)) {
+    issues.push('preserve wire token "g:ID" without space after colon');
+  }
+  if (enVal.includes('r:') && /r\s+:/.test(val)) {
+    issues.push('preserve wire prefix "r:" without space before colon');
+  }
+  if (enVal.includes('g:') && /g\s+:/.test(val)) {
+    issues.push('preserve wire prefix "g:" without space before colon');
+  }
+  return issues;
+}
+
+export function isMeshcoreOpenWireUiLeafKey(leafKey) {
+  return (
+    MESHCORE_OPEN_WIRE_APP_LEAF_KEYS.has(leafKey) || MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS.has(leafKey)
+  );
+}
+
 /** English UI nav left in auto-translated meshcoreDistanceFilterHint. */
 export const UNTRANSLATED_APP_APPEARANCE_NAV_RE = /App\s*→\s*Appearance/i;
 
@@ -1438,6 +1541,71 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 
   if (enVal.includes('Mesh-Client') && MESH_CLIENT_SPACED_RE.test(val)) {
     issues.push('use "Mesh-Client" without spaces around the hyphen (not "Mesh - Client")');
+  }
+
+  if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {
+    issues.push('use "mesh-client" without spaces around the hyphen (not "mesh - client")');
+  }
+
+  if (locale !== 'en' && isMeshcoreOpenWireUiLeafKey(leafKey) && val === enVal) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (isMeshcoreOpenWireUiLeafKey(leafKey)) {
+    for (const issue of meshcoreOpenWireProtocolTokenIssues(enVal, val)) {
+      issues.push(`meshcoreOpenWire protocol token: ${issue}`);
+    }
+  }
+
+  if (
+    leafKey === 'meshcoreOpenWireCompatHint' &&
+    enVal.includes('companion wire') &&
+    locale !== 'en'
+  ) {
+    for (const { re, hint } of COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`companion wire false friend: ${hint}`);
+      }
+    }
+    if (OPEN_AWARE_ENGLISH_RE.test(val)) {
+      issues.push(
+        'translate "Open-aware" — use locale wording for MeshCore Open-compatible clients',
+      );
+    }
+    if (/\br:\s*reactions\b/i.test(val)) {
+      issues.push(
+        'translate "r: reactions" — do not leave English "reactions" after wire prefix r:',
+      );
+    }
+    for (const { re, hint } of KEYED_REPLY_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`keyed reply false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    leafKey === 'meshcoreOpenWireExperimentalTitle' &&
+    enVal.includes('Open wire') &&
+    locale !== 'en'
+  ) {
+    for (const { re, hint } of COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`open wire title false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'meshcoreGifHint' && enVal.includes('bare GIF id') && /\bBARE GIF\b/i.test(val)) {
+    issues.push('translate "bare GIF id" — do not leave English "BARE GIF"');
+  }
+
+  if (
+    leafKey === 'meshcoreGifButtonHint' &&
+    enVal.includes('MeshCore Open g: wire') &&
+    /MeshCore\s+Abrir\s+g:/i.test(val)
+  ) {
+    issues.push('meshcoreGifButtonHint broke "MeshCore Open" — do not translate Open as a verb');
   }
 
   if (

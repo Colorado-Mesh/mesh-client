@@ -122,7 +122,9 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 
 The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cross-transport and channel RF replay). Room posts and tapbacks use a **60 second** window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.
 
-**Reactions on other clients:** mesh-client sends tapbacks as keyless `@[Display Name] emoji` (text replies use keyed `@[Name#replyKey] body`). Inbound emoji-only replies render locally as tapback badges via [`meshcorePromoteEmojiOnlyReplyToTapback`](../src/renderer/lib/meshcoreChannelText.ts). Inbound MeshCore Open wire (`r:HASH:INDEX`) is parsed for display but not sent outbound yet. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks).
+**Reactions on other clients:** By default mesh-client sends tapbacks and text replies as keyless `@[Display Name] …` (official companion wire). Inbound keyed `@[Name#key]` and emoji-only replies render locally as tapback badges via [`meshcorePromoteEmojiOnlyReplyToTapback`](../src/renderer/lib/meshcoreChannelText.ts). Inbound MeshCore Open wire (`r:HASH:INDEX`, `g:GIFID`) is always parsed for display.
+
+**MeshCore Open compatibility (optional):** In **App → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
 
 ### Meshtastic Modules tab: “waiting for settings”
 

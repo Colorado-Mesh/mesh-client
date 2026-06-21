@@ -185,7 +185,10 @@
     "copyDebugSnapshot": "Debug-snapshot kopiëren",
     "copyDebugSnapshotButton": "Debug-snapshot kopiëren",
     "debugSnapshotCopied": "Debug-snapshot gekopieerd naar klembord",
-    "debugSnapshotFailed": "Kon debug-snapshot niet kopiëren"
+    "debugSnapshotFailed": "Kon debug-snapshot niet kopiëren",
+    "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (experimenteel)",
+    "meshcoreOpenWireCompatLabel": "MeshCore Open-compatibiliteit inschakelen",
+    "meshcoreOpenWireCompatHint": "Indien ingeschakeld, verzendt mesh-client tekstantwoorden met sleutel (@[Name#key]), compacte r:-reacties en g:-Giphy-GIF's. Dit komt mogelijk niet overeen met het officiële companion-wireformaat; ontvangers hebben MeshCore-Open-compatibele clients nodig."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -310,7 +313,14 @@
     "meshcoreReactionPickerLabel": "Kies een maasreactie",
     "meshcoreReactionEmojiOption": "Reageer met {{emoji}}",
     "meshcoreReactionNotInteroperable": "Die emoji wordt niet ondersteund voor MeshCore mesh reacties.",
-    "reactionFailed": "Reactie mislukt"
+    "reactionFailed": "Reactie mislukt",
+    "meshcoreGifButton": "Giphy gif invoegen",
+    "meshcoreGifButtonHint": "Stuur een Giphy-GIF via MeshCore Open g: wire",
+    "meshcoreGifTitle": "Stuur Giphy gif",
+    "meshcoreGifHint": "Plak een Giphy-pagina-URL, media-URL, g:ID of kale GIF-ID.",
+    "meshcoreGifPlaceholder": "https://giphy.com/gifs/… of g:ID",
+    "meshcoreGifSend": "Verstuur gif",
+    "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

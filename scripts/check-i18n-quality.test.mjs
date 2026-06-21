@@ -1281,6 +1281,70 @@ describe('roomsPanel saved passwords per-key quality', () => {
     });
     expectIssue(issues, 'teleport');
   });
+
+  const enMeshcoreOpenWireCompatHint =
+    'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
+
+  it('flags spaced @[Name#key] token in meshcoreOpenWireCompatHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'appPanel.meshcoreOpenWireCompatHint',
+      val: '启用后发送（ @ [Name # key] ）',
+      enVal: enMeshcoreOpenWireCompatHint,
+    });
+    expectIssue(issues, 'meshcoreOpenWire protocol token');
+  });
+
+  it('flags companion wire metal false friend in Dutch meshcoreOpenWireCompatHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'appPanel.meshcoreOpenWireCompatHint',
+      val: 'metaaldraadformaat',
+      enVal: enMeshcoreOpenWireCompatHint,
+    });
+    expectIssue(issues, 'companion wire false friend');
+  });
+
+  it('flags Open-aware English residue in meshcoreOpenWireCompatHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'appPanel.meshcoreOpenWireCompatHint',
+      val: 'clientes MeshCore Open-aware',
+      enVal: enMeshcoreOpenWireCompatHint,
+    });
+    expectIssue(issues, 'translate "Open-aware"');
+  });
+
+  it('flags Przerwa open-wire title false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'appPanel.meshcoreOpenWireExperimentalTitle',
+      val: 'Przerwa w przewodzie MeshCore (eksperymentalnie)',
+      enVal: 'MeshCore Open wire (experimental)',
+    });
+    expectIssue(issues, 'open wire title false friend');
+  });
+
+  it('flags mesh - client spacing in unrelated keys when English uses mesh-client', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'modulePanel.fields.mqttProxyGatewayHint',
+      val: 'mesh - client menjembatani',
+      enVal: 'With proxy enabled, mesh-client bridges broker traffic via MqttClientProxyMessage.',
+    });
+    expectIssue(issues, 'use "mesh-client" without spaces');
+  });
+
+  it('passes fixed meshcoreOpenWireCompatHint in German', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'appPanel.meshcoreOpenWireCompatHint',
+        val: 'Wenn aktiviert, sendet mesh-client Schlüssel-Textantworten (@[Name#key]), kompakte r:-Reaktionen und g:-Giphy-GIFs. Das entspricht möglicherweise nicht dem offiziellen Companion-Wire-Format; Empfänger benötigen MeshCore-Open-kompatible Clients.',
+        enVal: enMeshcoreOpenWireCompatHint,
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedBrandIssues', () => {

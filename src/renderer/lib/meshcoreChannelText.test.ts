@@ -22,6 +22,7 @@ import {
   resolveMeshcoreBracketParentKey,
   resolveMeshcoreBracketParentKeyDm,
   resolveMeshcoreChannelMessageSender,
+  resolveMeshcoreOutboundWireText,
   sanitizeMeshcoreWireName,
 } from './meshcoreChannelText';
 import { computeMeshcoreOpenReactionHash } from './meshcoreOpenReaction';
@@ -758,6 +759,19 @@ describe('buildMeshcoreOutboundSendText', () => {
     ).toBe('@[durk] reply test');
   });
 
+  it('prefixes channel reply with keyed @[Name#key] when useKeyedReplies is true', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'reply test',
+        replyTo: '99',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parentChannel],
+        useKeyedReplies: true,
+      }),
+    ).toBe('@[durk#99] reply test');
+  });
+
   it('returns plain text when parent is not found', () => {
     expect(
       buildMeshcoreOutboundSendText({
@@ -841,6 +855,32 @@ describe('buildMeshcoreOutboundSendText', () => {
         messages: [parent],
       }),
     ).toBe('@[!5534aa28] still sending the timestamp keys');
+  });
+});
+
+describe('resolveMeshcoreOutboundWireText', () => {
+  it('normalizes Giphy URL to g: wire when openWireCompat is enabled', () => {
+    expect(
+      resolveMeshcoreOutboundWireText({
+        text: 'https://giphy.com/gifs/funny-a5viI92PAF89q',
+        channelIndex: 0,
+        myNodeNum: 7,
+        messages: [],
+        openWireCompat: true,
+      }),
+    ).toEqual({ wireText: 'g:a5viI92PAF89q', displayPayload: 'g:a5viI92PAF89q' });
+  });
+
+  it('does not normalize GIF wire when openWireCompat is disabled', () => {
+    expect(
+      resolveMeshcoreOutboundWireText({
+        text: 'g:a5viI92PAF89q',
+        channelIndex: 0,
+        myNodeNum: 7,
+        messages: [],
+        openWireCompat: false,
+      }),
+    ).toEqual({ wireText: 'g:a5viI92PAF89q', displayPayload: 'g:a5viI92PAF89q' });
   });
 });
 
