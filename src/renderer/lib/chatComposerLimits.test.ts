@@ -52,6 +52,16 @@ describe('getComposerWireOverhead', () => {
   it('counts MeshCore reply prefix on first chunk', () => {
     expect(getComposerWireOverhead({ protocol: 'meshcore', replyToSenderName: 'Bob' })).toBe(7);
   });
+
+  it('counts keyed MeshCore reply prefix when replyKey is set', () => {
+    expect(
+      getComposerWireOverhead({
+        protocol: 'meshcore',
+        replyToSenderName: 'Bob',
+        replyKey: 1_780_235_760_847,
+      }),
+    ).toBe(countMessageChars('@[Bob#1780235760847] '));
+  });
 });
 
 describe('countMessageChars', () => {

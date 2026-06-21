@@ -114,9 +114,8 @@ import {
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
 import {
+  buildMeshcoreOutboundSendText,
   buildMeshcoreOutboundTapbackWire,
-  findMeshcoreDmReplyParent,
-  formatMeshcoreWireReplyPrefix,
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
@@ -2423,19 +2422,16 @@ export function useMeshcoreRuntime() {
           );
         }
         const sentAt = Date.now();
-        let textToSend = text;
-        let replyField: number | undefined;
-        if (replyId != null && text.trim()) {
-          const parent = findMeshcoreDmReplyParent(messagesRef.current, {
-            peerNodeId: destNodeId,
-            myNodeId: myNodeNumRef.current,
-            replyKey: replyId,
-          });
-          if (parent) {
-            textToSend = `${formatMeshcoreWireReplyPrefix(parent.sender_name, replyId)} ${text}`;
-            replyField = replyId;
-          }
-        }
+        const textToSend = buildMeshcoreOutboundSendText({
+          text,
+          replyTo: replyId != null ? String(replyId) : undefined,
+          channelIndex: channelIdx,
+          destination: destNodeId,
+          myNodeNum: myNodeNumRef.current,
+          messages: messagesRef.current,
+        });
+        const replyField: number | undefined =
+          replyId != null && text.trim() && textToSend !== text ? replyId : undefined;
         // Optimistically add own message with 'sending' status (DM uses channel -1, not UI sendChannel)
         const tempMsg: ChatMessage = {
           sender_id: myNodeNumRef.current,
@@ -2588,22 +2584,15 @@ export function useMeshcoreRuntime() {
         }
       } else {
         const sentAt = Date.now();
-        let textToSend = text;
-        let replyField: number | undefined;
-        if (replyId != null && text.trim()) {
-          const parent = messagesRef.current.find(
-            (m) =>
-              !m.to &&
-              m.channel === channelIdx &&
-              (m.packetId === replyId || m.timestamp === replyId) &&
-              !(m.emoji != null && m.replyId != null),
-          );
-          if (parent) {
-            const parentKey = parent.packetId ?? parent.timestamp;
-            textToSend = `${formatMeshcoreWireReplyPrefix(parent.sender_name, parentKey)} ${text}`;
-            replyField = replyId;
-          }
-        }
+        const textToSend = buildMeshcoreOutboundSendText({
+          text,
+          replyTo: replyId != null ? String(replyId) : undefined,
+          channelIndex: channelIdx,
+          myNodeNum: myNodeNumRef.current,
+          messages: messagesRef.current,
+        });
+        const replyField: number | undefined =
+          replyId != null && text.trim() && textToSend !== text ? replyId : undefined;
         try {
           const channelConn = connRef.current;
           if (channelConn) {

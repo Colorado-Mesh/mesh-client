@@ -55,13 +55,19 @@ export function getComposerPayloadLimit(opts: {
   return getMeshcoreChannelPayloadLimit(opts.senderDisplayName ?? '');
 }
 
-/** MeshCore reply wire prefix `@[Name] ` on the first chunk only. */
+/** MeshCore reply wire prefix `@[Name#replyKey] ` on the first chunk only. */
 export function getComposerWireOverhead(opts: {
   protocol: MeshProtocol;
   replyToSenderName?: string;
+  replyKey?: number;
 }): number {
   if (opts.protocol !== 'meshcore' || !opts.replyToSenderName?.trim()) return 0;
-  return countMessageChars(`@[${opts.replyToSenderName.trim()}] `);
+  const cleanName = opts.replyToSenderName.trim();
+  const key = opts.replyKey;
+  if (key != null && Number.isFinite(key) && key > 0) {
+    return countMessageChars(`@[${cleanName}#${Math.trunc(key)}] `);
+  }
+  return countMessageChars(`@[${cleanName}] `);
 }
 
 export function countMessageChars(text: string): number {
@@ -89,6 +95,7 @@ export function computeComposerLimitStatus(
     composerContext?: ComposerWireContext;
     senderDisplayName?: string;
     replyToSenderName?: string;
+    replyKey?: number;
   },
 ): ComposerLimitStatus {
   const singleMessageLimit = getComposerPayloadLimit({
@@ -100,6 +107,7 @@ export function computeComposerLimitStatus(
   const wireOverheadFirstChunk = getComposerWireOverhead({
     protocol,
     replyToSenderName: opts?.replyToSenderName,
+    replyKey: opts?.replyKey,
   });
   const trimmed = text.trim();
   const charCount = countMessageChars(trimmed);

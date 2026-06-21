@@ -402,6 +402,48 @@ export function findMeshcoreDmReplyParent(
   });
 }
 
+export interface BuildMeshcoreOutboundSendTextOpts {
+  text: string;
+  replyTo?: string;
+  channelIndex: number;
+  destination?: number;
+  myNodeNum: number;
+  messages: readonly ChatMessage[];
+}
+
+/**
+ * Build on-wire MeshCore send text for channel/DM replies: `@[Name#replyKey] body`.
+ * Returns plain `text` when there is no reply parent or the parent cannot be resolved.
+ */
+export function buildMeshcoreOutboundSendText(opts: BuildMeshcoreOutboundSendTextOpts): string {
+  const body = opts.text;
+  if (!body.trim()) return body;
+  const replyKey =
+    opts.replyTo != null && opts.replyTo !== '' ? Number.parseInt(opts.replyTo, 10) : Number.NaN;
+  if (!Number.isFinite(replyKey) || replyKey <= 0) return body;
+
+  let parent: ChatMessage | undefined;
+  if (opts.destination != null) {
+    parent = findMeshcoreDmReplyParent(opts.messages, {
+      peerNodeId: opts.destination,
+      myNodeId: opts.myNodeNum,
+      replyKey,
+    });
+  } else {
+    parent = opts.messages.find(
+      (m) =>
+        !m.to &&
+        m.channel === opts.channelIndex &&
+        (m.packetId === replyKey || m.timestamp === replyKey) &&
+        !(m.emoji != null && m.replyId != null),
+    );
+  }
+
+  if (!parent) return body;
+  const parentKey = parent.packetId ?? parent.timestamp;
+  return `${formatMeshcoreWireReplyPrefix(parent.sender_name, parentKey)} ${body}`;
+}
+
 export interface BuildMeshcoreChannelIncomingOpts {
   rawText: string;
   senderId: number;

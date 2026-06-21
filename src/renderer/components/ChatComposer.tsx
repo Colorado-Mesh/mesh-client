@@ -122,6 +122,12 @@ export function ChatComposer({
   const prevViewKeyRef = useRef<string | null>(null);
 
   const replyToSenderName = replyTo?.sender_name;
+  const replyKey =
+    replyTo == null
+      ? undefined
+      : protocol === 'meshtastic'
+        ? replyTo.packetId
+        : (replyTo.packetId ?? replyTo.timestamp);
 
   const limitStatus = useMemo(
     () =>
@@ -130,8 +136,17 @@ export function ChatComposer({
         composerContext,
         senderDisplayName,
         replyToSenderName,
+        replyKey,
       }),
-    [input, protocol, payloadLimit, composerContext, senderDisplayName, replyToSenderName],
+    [
+      input,
+      protocol,
+      payloadLimit,
+      composerContext,
+      senderDisplayName,
+      replyToSenderName,
+      replyKey,
+    ],
   );
 
   const wireOverheadFirstChunk = useMemo(
@@ -139,8 +154,9 @@ export function ChatComposer({
       getComposerWireOverhead({
         protocol,
         replyToSenderName,
+        replyKey,
       }),
-    [protocol, replyToSenderName],
+    [protocol, replyToSenderName, replyKey],
   );
 
   const maxInputLength = limitStatus.totalMaxChars;
@@ -234,12 +250,6 @@ export function ChatComposer({
     );
     if (chunks === null) return;
 
-    const replyKey =
-      replyTo == null
-        ? undefined
-        : protocol === 'meshtastic'
-          ? replyTo.packetId
-          : (replyTo.packetId ?? replyTo.timestamp);
     const textsToSend = chunks.length === 0 ? [input.trim()] : chunks;
 
     if (replyTo && protocol === 'meshtastic' && (replyKey == null || replyKey === 0)) {
@@ -326,6 +336,7 @@ export function ChatComposer({
     queueOutboxProp,
     queueOutbox,
     replyTo,
+    replyKey,
     sending,
     t,
     variant,

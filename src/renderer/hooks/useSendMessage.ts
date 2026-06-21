@@ -3,6 +3,8 @@ import { useCallback } from 'react';
 import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import { buildMeshcoreOutboundSendText } from '../lib/meshcoreChannelText';
+import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
@@ -123,8 +125,26 @@ export function useSendMessage(
         destinationPubKey ??= tryGetMeshcoreSession()?.getDestinationPubKey?.(destination);
       }
 
+      const isMeshcore = identity.protocol.type === 'meshcore';
+      const wireText = isMeshcore
+        ? buildMeshcoreOutboundSendText({
+            text,
+            replyTo,
+            channelIndex,
+            destination,
+            myNodeNum,
+            messages: listChatMessagesFromStore(identityId),
+          })
+        : text;
+
       void identity.protocol
-        .sendMessage(handle, { text, channelIndex, destination, destinationPubKey, replyTo })
+        .sendMessage(handle, {
+          text: wireText,
+          channelIndex,
+          destination,
+          destinationPubKey,
+          replyTo,
+        })
         .then((res) => {
           const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
           if (res.packetId != null && resolvedId !== provisionalId) {

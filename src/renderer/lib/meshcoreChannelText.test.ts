@@ -4,6 +4,7 @@ import { mapMeshcoreDbRowsToChatMessages } from '../hooks/meshcore/meshcoreHookP
 import {
   buildMeshcoreChannelIncomingMessage,
   buildMeshcoreDmIncomingMessage,
+  buildMeshcoreOutboundSendText,
   buildMeshcoreOutboundTapbackWire,
   findMeshcoreDmReplyParent,
   formatMeshcoreWireReplyPrefix,
@@ -636,6 +637,95 @@ describe('formatMeshcoreWireReplyPrefix', () => {
     expect(formatMeshcoreWireReplyPrefix('🛩️ NV0N 01', 1_780_235_760_847)).toBe(
       '@[NV0N 01#1780235760847]',
     );
+  });
+});
+
+describe('buildMeshcoreOutboundSendText', () => {
+  const parentChannel: ChatMessage = {
+    sender_id: 10,
+    sender_name: 'durk',
+    payload: 'flight data',
+    channel: 25,
+    timestamp: 1_700_000_000_000,
+    status: 'acked',
+    packetId: 99,
+  };
+
+  it('prefixes channel reply when parent is found', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'reply test',
+        replyTo: '99',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parentChannel],
+      }),
+    ).toBe('@[durk#99] reply test');
+  });
+
+  it('returns plain text when parent is not found', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'reply test',
+        replyTo: '999',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parentChannel],
+      }),
+    ).toBe('reply test');
+  });
+
+  it('uses packetId over timestamp for wire reply key', () => {
+    const parent: ChatMessage = {
+      ...parentChannel,
+      timestamp: 1_700_000_000_001,
+      packetId: 42,
+    };
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'hi',
+        replyTo: '42',
+        channelIndex: 25,
+        myNodeNum: 7,
+        messages: [parent],
+      }),
+    ).toBe('@[durk#42] hi');
+  });
+
+  it('prefixes DM reply when parent is in thread', () => {
+    const myNode = 7;
+    const peer = 0x22;
+    const parent: ChatMessage = {
+      sender_id: peer,
+      sender_name: 'Alice',
+      payload: 'parent line',
+      channel: -1,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+      packetId: 77_777,
+      to: myNode,
+    };
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'hi',
+        replyTo: '77777',
+        channelIndex: 0,
+        destination: peer,
+        myNodeNum: myNode,
+        messages: [parent],
+      }),
+    ).toBe('@[Alice#77777] hi');
+  });
+
+  it('returns plain text when replyTo is absent', () => {
+    expect(
+      buildMeshcoreOutboundSendText({
+        text: 'hello',
+        channelIndex: 0,
+        myNodeNum: 7,
+        messages: [],
+      }),
+    ).toBe('hello');
   });
 });
 

@@ -11,7 +11,7 @@ import {
 } from '../lib/sessions/meshtasticSession';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
-import { useMessageStore } from '../stores/messageStore';
+import { addMessage, useMessageStore } from '../stores/messageStore';
 import { upsertNode } from '../stores/nodeStore';
 
 const ID_MC_FAIL = 'id-send-mc-fail';
@@ -156,6 +156,46 @@ describe('useSendMessage', () => {
         expect.objectContaining({ text: 'hi meshcore', channelIndex: 1 }),
       );
     });
+    sendSpy.mockRestore();
+  });
+
+  it('sends MeshCore channel reply with @[Name#key] wire prefix when parent is in store', async () => {
+    const sendSpy = vi.spyOn(meshcoreProtocol, 'sendMessage').mockResolvedValue({});
+    const handle = { kind: 'rf' };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcoreProtocol,
+      signature: 'sig-mc',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID_MC, { status: 'configured', myNodeNum: 7 });
+    addMessage(ID_MC, {
+      id: '99',
+      from: 10,
+      senderName: 'durk',
+      to: 0xffffffff,
+      payload: 'flight data',
+      channelIndex: 25,
+      timestamp: 1_700_000_000_000,
+      status: 'acked',
+    });
+
+    const { result } = renderHook(() => useSendMessage(ID_MC));
+    result.current('reply test', 25, undefined, '99');
+
+    await vi.waitFor(() => {
+      expect(sendSpy).toHaveBeenCalledWith(
+        handle,
+        expect.objectContaining({ text: '@[durk#99] reply test', channelIndex: 25 }),
+      );
+    });
+    const rows = Object.values(useMessageStore.getState().messages[ID_MC] ?? {});
+    const outbound = rows.find((m) => m.payload === 'reply test');
+    expect(outbound?.payload).toBe('reply test');
+    expect(outbound?.replyTo).toBe('99');
     sendSpy.mockRestore();
   });
 
