@@ -59,6 +59,32 @@ describe('meshcoreStoreDedup', () => {
     expect(rows[0]?.receivedVia).toBe('both');
   });
 
+  it('adopts firmware timestamp on cross-transport channel merge', () => {
+    const optimisticTs = 1_780_240_708_234;
+    const firmwareTs = 1_780_240_708_000;
+    const payload = 'hello from me';
+    const mqttMsg: ChatMessage = {
+      sender_id: 100,
+      sender_name: 'Me',
+      payload,
+      channel: 0,
+      timestamp: optimisticTs,
+      status: 'acked',
+      receivedVia: 'mqtt',
+    };
+    upsertMeshcoreMessageWithDedup(ID, mqttMsg);
+
+    const rfMsg: ChatMessage = {
+      ...mqttMsg,
+      timestamp: firmwareTs,
+      receivedVia: 'rf',
+    };
+    const result = upsertMeshcoreMessageWithDedup(ID, rfMsg);
+    expect(result.inserted).toBe(false);
+    expect(result.message.timestamp).toBe(firmwareTs);
+    expect(result.message.receivedVia).toBe('both');
+  });
+
   it('merges receivedVia on exact dedupe-key match', () => {
     const tsMs = 1_700_000_010_000;
     const channelMsg = buildMeshcoreChannelIncomingMessage([], {

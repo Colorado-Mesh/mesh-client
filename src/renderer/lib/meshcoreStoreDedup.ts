@@ -181,6 +181,10 @@ function meshcoreIsRoomPostMessage(msg: ChatMessage): boolean {
   return msg.roomServerId != null || msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL;
 }
 
+function meshcoreIsBroadcastChannelMessage(msg: ChatMessage): boolean {
+  return msg.channel != null && msg.channel >= 0 && msg.roomServerId == null;
+}
+
 /** Merge outbound lifecycle fields when the dedupe key matches exactly (optimistic send → ack/fail). */
 function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): ChatMessage | null {
   const mergedReceivedVia = mergeMeshcoreReceivedVia(existing.receivedVia, incoming.receivedVia);
@@ -188,12 +192,17 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     existing.status === 'sending' && (incoming.status === 'acked' || incoming.status === 'failed');
   const richerPacketId = incoming.packetId != null && existing.packetId == null;
   const richerError = incoming.error != null && existing.error == null;
+  const channelTimestampAdopt =
+    meshcoreIsBroadcastChannelMessage(existing) &&
+    incoming.receivedVia === 'rf' &&
+    incoming.timestamp !== existing.timestamp;
 
   if (
     !statusAdvances &&
     mergedReceivedVia === existing.receivedVia &&
     !richerPacketId &&
-    !richerError
+    !richerError &&
+    !channelTimestampAdopt
   ) {
     return null;
   }
@@ -203,6 +212,12 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
   }
 
   const replyFields = meshcorePreferIncomingReplyFields(existing, incoming);
+  const timestamp =
+    meshcoreIsBroadcastChannelMessage(existing) &&
+    incoming.receivedVia === 'rf' &&
+    incoming.timestamp !== existing.timestamp
+      ? incoming.timestamp
+      : existing.timestamp;
   return {
     ...existing,
     ...incoming,
@@ -211,6 +226,7 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     status: statusAdvances ? incoming.status : (existing.status ?? incoming.status),
     packetId: incoming.packetId ?? existing.packetId,
     error: incoming.error ?? existing.error,
+    timestamp,
   };
 }
 
@@ -350,11 +366,16 @@ export function upsertMeshcoreMessageWithDedup(
 
   const crossDup = findMeshcoreCrossTransportDuplicate(storeMessages, msg);
   if (crossDup) {
+    const adoptChannelTimestamp =
+      meshcoreIsBroadcastChannelMessage(crossDup) &&
+      msg.receivedVia === 'rf' &&
+      msg.timestamp !== crossDup.timestamp;
     const merged: ChatMessage = {
       ...crossDup,
       ...(meshcorePreferIncomingReplyFields(crossDup, msg) ?? {}),
       receivedVia: mergeMeshcoreReceivedVia(crossDup.receivedVia, msg.receivedVia),
       rxHops: crossDup.rxHops ?? msg.rxHops,
+      ...(adoptChannelTimestamp ? { timestamp: msg.timestamp } : {}),
     };
     const canonicalId =
       preferredId ??

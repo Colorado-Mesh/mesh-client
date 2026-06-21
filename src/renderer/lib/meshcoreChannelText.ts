@@ -345,6 +345,36 @@ function meshcoreThreadMatchesForReply(
   return true;
 }
 
+const MESHCORE_REPLY_KEY_MS_THRESHOLD = 1_000_000_000_000;
+
+/** Canonical parent key for replyId storage and quote jump (`packetId` preferred). */
+export function meshcoreCanonicalReplyKey(msg: ChatMessage): number {
+  return msg.packetId ?? msg.timestamp;
+}
+
+/**
+ * True when wire reply key matches a stored row (exact, firmware seconds ↔ stored ms, or packetId).
+ * Official clients often embed `senderTimestamp` (Unix seconds) in `@[Name#key]`.
+ */
+export function meshcoreMessageMatchesReplyKey(msg: ChatMessage, replyKey: number): boolean {
+  if (!Number.isFinite(replyKey) || replyKey <= 0) return false;
+  if (msg.packetId === replyKey || msg.timestamp === replyKey) return true;
+
+  const keyLooksSec = replyKey < MESHCORE_REPLY_KEY_MS_THRESHOLD;
+  if (keyLooksSec && msg.timestamp >= MESHCORE_REPLY_KEY_MS_THRESHOLD) {
+    if (Math.floor(msg.timestamp / 1000) === replyKey) return true;
+    if (msg.timestamp === replyKey * 1000) return true;
+  }
+
+  if (msg.packetId != null && msg.packetId !== replyKey) {
+    if (keyLooksSec && msg.packetId >= MESHCORE_REPLY_KEY_MS_THRESHOLD) {
+      if (Math.floor(msg.packetId / 1000) === replyKey) return true;
+    }
+  }
+
+  return false;
+}
+
 /** Resolve quoted parent for MeshCore (`packetId` or `timestamp` keys) with thread/chronology guards. */
 export function findMeshcoreParentMessageForReply(
   messages: readonly ChatMessage[],
@@ -352,9 +382,7 @@ export function findMeshcoreParentMessageForReply(
   opts?: MeshcoreReplyLookupOptions,
 ): ChatMessage | undefined {
   let matches = messages.filter(
-    (m) =>
-      (m.packetId === replyKey || m.timestamp === replyKey) &&
-      !(m.emoji != null && m.replyId != null),
+    (m) => meshcoreMessageMatchesReplyKey(m, replyKey) && !(m.emoji != null && m.replyId != null),
   );
   if (opts?.channel != null || opts?.to != null) {
     const threaded = matches.filter((m) => meshcoreThreadMatchesForReply(m, opts));
@@ -396,7 +424,7 @@ export function findMeshcoreDmReplyParent(
       (m.sender_id === opts.myNodeId && m.to === opts.peerNodeId);
     return (
       inDmThread &&
-      (m.packetId === opts.replyKey || m.timestamp === opts.replyKey) &&
+      meshcoreMessageMatchesReplyKey(m, opts.replyKey) &&
       !(m.emoji != null && m.replyId != null)
     );
   });
@@ -434,13 +462,13 @@ export function buildMeshcoreOutboundSendText(opts: BuildMeshcoreOutboundSendTex
       (m) =>
         !m.to &&
         m.channel === opts.channelIndex &&
-        (m.packetId === replyKey || m.timestamp === replyKey) &&
+        meshcoreMessageMatchesReplyKey(m, replyKey) &&
         !(m.emoji != null && m.replyId != null),
     );
   }
 
   if (!parent) return body;
-  const parentKey = parent.packetId ?? parent.timestamp;
+  const parentKey = meshcoreCanonicalReplyKey(parent);
   return `${formatMeshcoreWireReplyPrefix(parent.sender_name, parentKey)} ${body}`;
 }
 
@@ -514,10 +542,10 @@ export function buildMeshcoreChannelIncomingMessage(
         channel: opts.channel,
         replyPreviewSender: target,
       });
-      if (parent) parentKey = normalized.wireReplyKey;
+      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
     }
 
-    if (parentKey == null) {
+    if (parentKey == null && normalized.wireReplyKey == null) {
       parentKey = resolveMeshcoreBracketParentKey(messages, {
         channel: opts.channel,
         targetName: target,
@@ -530,6 +558,7 @@ export function buildMeshcoreChannelIncomingMessage(
           channel: opts.channel,
           replyPreviewSender: target,
         });
+        if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
       }
     }
 
@@ -873,6 +902,22 @@ function meshcoreWireHadExplicitReplyKey(msg: ChatMessage): boolean {
   return /#\d{4,}\]/u.test(raw);
 }
 
+function meshcoreWireReplyKeyFromMessage(msg: ChatMessage): number | undefined {
+  const normalized = normalizeMeshcoreIncomingText(msg.meshcoreDedupeKey ?? msg.payload);
+  return normalized.wireReplyKey;
+}
+
+/** Firmware seconds `#key` resolved a parent — keep it; do not upgrade to latest-from-sender. */
+function meshcoreTrustExplicitSecWireReplyKey(
+  msg: ChatMessage,
+  parent: ChatMessage | undefined,
+): boolean {
+  const wireReplyKey = meshcoreWireReplyKeyFromMessage(msg);
+  if (wireReplyKey == null || parent == null) return false;
+  if (wireReplyKey >= MESHCORE_REPLY_KEY_MS_THRESHOLD) return false;
+  return meshcoreMessageMatchesReplyKey(parent, wireReplyKey);
+}
+
 /** True when this row is a reply to someone else's message (not self-tapback / own outbound). */
 function meshcoreIsIncomingBracketReply(msg: ChatMessage, targetName: string | undefined): boolean {
   if (!targetName?.trim()) return false;
@@ -907,9 +952,12 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
   if (incomingBracket && targetName) {
     const hintParent = meshcoreFindParentFromReplyPayloadHint(msg, prior, targetName);
     if (hintParent) {
-      replyId = hintParent.packetId ?? hintParent.timestamp;
+      replyId = meshcoreCanonicalReplyKey(hintParent);
       parent = hintParent;
-    } else {
+    } else if (
+      !(explicitWireKey && !parent) &&
+      !meshcoreTrustExplicitSecWireReplyKey(msg, parent)
+    ) {
       const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
         msg,
         prior,
@@ -923,7 +971,7 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
         parent = upgraded.parent;
       }
     }
-  } else if (!parent && targetName) {
+  } else if (!parent && targetName && !explicitWireKey) {
     const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
       msg,
       prior,
@@ -1117,10 +1165,10 @@ export function buildMeshcoreDmIncomingMessage(
         myNodeId: opts.myNodeId,
         replyKey: parsed.wireReplyKey,
       });
-      if (parent) parentKey = parsed.wireReplyKey;
+      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
     }
 
-    if (parentKey == null) {
+    if (parentKey == null && parsed.wireReplyKey == null) {
       parentKey = resolveMeshcoreBracketParentKeyDm(messages, {
         peerNodeId: opts.peerNodeId,
         myNodeId: opts.myNodeId,
@@ -1133,6 +1181,7 @@ export function buildMeshcoreDmIncomingMessage(
           myNodeId: opts.myNodeId,
           replyKey: parentKey,
         });
+        if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
       }
     }
 

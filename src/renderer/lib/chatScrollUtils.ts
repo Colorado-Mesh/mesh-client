@@ -2,6 +2,7 @@ import type { VirtualItem, Virtualizer } from '@tanstack/react-virtual';
 import type { RefObject } from 'react';
 
 import { parseChatMentionSegments } from './chatMentionSegments';
+import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
 import type { ChatMessage } from './types';
 
 /** Pixels from latest message treated as “at bottom” (Jump to Latest, read-state, mark read). */
@@ -186,7 +187,9 @@ export function createChatScrollAdjustPredicate(deps: ChatScrollAdjustDeps) {
 export function findMessageIndexByKey(messages: readonly ChatMessage[], key: number): number {
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
-    if ((msg.packetId ?? msg.timestamp) === key) return i;
+    if ((msg.packetId ?? msg.timestamp) === key || meshcoreMessageMatchesReplyKey(msg, key)) {
+      return i;
+    }
   }
   return -1;
 }

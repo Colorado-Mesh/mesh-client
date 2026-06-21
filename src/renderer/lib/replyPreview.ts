@@ -1,3 +1,4 @@
+import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
 import type { ChatMessage } from './types';
 
 /** MM-PLAN Feature 2: truncated original message text (max 50 chars). */
@@ -137,12 +138,12 @@ export function repairMeshtasticReplyPreviews(messages: readonly ChatMessage[]):
   });
 }
 
-/** MeshCore reply lookup: packetId first, timestamp fallback for legacy rows. */
+/** MeshCore reply lookup: packetId first, timestamp fallback, sec↔ms normalization. */
 export function findParentMessageForReply(
   messages: readonly ChatMessage[],
   replyId: number,
 ): ChatMessage | undefined {
-  return messages.find((m) => m.packetId === replyId || m.timestamp === replyId);
+  return messages.find((m) => meshcoreMessageMatchesReplyKey(m, replyId));
 }
 
 /**
