@@ -1894,6 +1894,28 @@ function AppContent({
       : queueUsed <= 14
         ? 'bg-amber-900/60 text-amber-300 border border-amber-700'
         : 'bg-red-900/60 text-red-300 border border-red-700';
+  const takStatusLabel =
+    takClientLoss && takStatus.running
+      ? t('app.takClientLost')
+      : takStatus.running
+        ? t('app.takRunning')
+        : t('app.takStopped');
+  const takStatusAriaLabel =
+    takClientLoss && takStatus.running
+      ? t('app.takClientLost')
+      : takStatus.running
+        ? t('app.takServerRunning')
+        : t('app.takServerStopped');
+  const mqttStatusLabel =
+    activeConnectionView.mqttStatus === 'connected'
+      ? t('app.mqttConnected')
+      : activeConnectionView.mqttStatus === 'connecting'
+        ? t('app.mqttConnecting')
+        : activeConnectionView.mqttStatus === 'error' || mqttLoss
+          ? t('app.mqttError')
+          : t('app.mqttDisconnected');
+  const deviceStatusLabel = deviceConnectionStatusLabel(t, activeConnectionView.state.status);
+  const deviceStatusText = `${deviceStatusLabel}${activeConnectionView.state.connectionType ? ` (${activeConnectionView.state.connectionType.toUpperCase()})` : ''}`;
 
   return (
     <ToastProvider>
@@ -1931,7 +1953,7 @@ function AppContent({
         {/* Header - full width; sidebar + main start below */}
         <div
           role="banner"
-          className={`bg-deep-black relative flex w-full items-center border-b py-2 pr-4 ${
+          className={`bg-deep-black relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-center border-b py-2 pr-4 ${
             isConfigured
               ? protocol === 'meshcore'
                 ? 'border-cyan-500/20'
@@ -1984,162 +2006,161 @@ function AppContent({
               </button>
             )}
           </div>
-          <div className="flex min-w-0 flex-1 justify-start pl-8">
-            {/* Protocol context switcher — centered in the gap (narrow) or viewport (xl+ grid) */}
-            <div
-              role="group"
-              aria-label={t('aria.protocolSwitcher')}
-              className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
-            >
-              <button
-                type="button"
-                aria-pressed={protocol === 'meshtastic'}
-                aria-label={t('aria.switchToMeshtastic')}
-                onClick={() => {
-                  handleProtocolChange('meshtastic');
-                }}
-                className={`px-3 py-0.5 transition-colors ${
-                  protocol === 'meshtastic'
-                    ? 'bg-brand-green/20 text-brand-green'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                }`}
+          <div className="flex min-w-0 items-center overflow-hidden">
+            <div className="flex shrink-0 items-center pl-8">
+              <div
+                role="group"
+                aria-label={t('aria.protocolSwitcher')}
+                className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
               >
-                Meshtastic
-                {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
-                  <span className="bg-readable-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-white">
-                    {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
-                  </span>
-                )}
-              </button>
-              <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
-              <button
-                type="button"
-                aria-pressed={protocol === 'meshcore'}
-                aria-label={t('aria.switchToMeshCore')}
-                onClick={() => {
-                  handleProtocolChange('meshcore');
-                }}
-                className={`px-3 py-0.5 transition-colors ${
-                  protocol === 'meshcore'
-                    ? 'bg-cyan-600/20 text-cyan-400'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                }`}
-              >
-                MeshCore
-                {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600 px-0.5 text-[10px] font-bold text-white">
-                    {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-2">
-            {capabilities.hasTakPanel && (
-              <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-                <TakStatusIcon variant={takVariant} />
-                <span
-                  aria-label={
-                    takClientLoss && takStatus.running
-                      ? t('app.takClientLost')
-                      : takStatus.running
-                        ? t('app.takServerRunning')
-                        : t('app.takServerStopped')
-                  }
-                  className={`text-xs ${headerTextClass(takVariant)}`}
+                <button
+                  type="button"
+                  aria-pressed={protocol === 'meshtastic'}
+                  aria-label={t('aria.switchToMeshtastic')}
+                  onClick={() => {
+                    handleProtocolChange('meshtastic');
+                  }}
+                  className={`px-3 py-0.5 transition-colors ${
+                    protocol === 'meshtastic'
+                      ? 'bg-brand-green/20 text-brand-green'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                  }`}
                 >
-                  {takClientLoss && takStatus.running
-                    ? t('app.takClientLost')
-                    : takStatus.running
-                      ? t('app.takRunning')
-                      : t('app.takStopped')}
+                  Meshtastic
+                  {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
+                    <span className="bg-readable-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-white">
+                      {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
+                    </span>
+                  )}
+                </button>
+                <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
+                <button
+                  type="button"
+                  aria-pressed={protocol === 'meshcore'}
+                  aria-label={t('aria.switchToMeshCore')}
+                  onClick={() => {
+                    handleProtocolChange('meshcore');
+                  }}
+                  className={`px-3 py-0.5 transition-colors ${
+                    protocol === 'meshcore'
+                      ? 'bg-cyan-600/20 text-cyan-400'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                  }`}
+                >
+                  MeshCore
+                  {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
+                    <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600 px-0.5 text-[10px] font-bold text-white">
+                      {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              {capabilities.hasTakPanel && (
+                <div
+                  role="group"
+                  className="mr-3 flex shrink-0 items-center gap-1.5 border-r border-gray-700 pr-3"
+                  title={takStatusAriaLabel}
+                  aria-label={takStatusAriaLabel}
+                >
+                  <TakStatusIcon variant={takVariant} />
+                  <span
+                    aria-hidden="true"
+                    className={`hidden text-xs lg:inline ${headerTextClass(takVariant)}`}
+                  >
+                    {takStatusLabel}
+                  </span>
+                </div>
+              )}
+              <div
+                role="group"
+                className="mr-3 flex shrink-0 items-center gap-1.5 border-r border-gray-700 pr-3"
+                title={mqttStatusLabel}
+                aria-label={mqttStatusLabel}
+              >
+                <HeaderMqttGlobeIcon variant={mqttVariant} />
+                <span
+                  aria-hidden="true"
+                  className={`hidden text-xs lg:inline ${headerTextClass(mqttVariant)}`}
+                >
+                  {mqttStatusLabel}
                 </span>
               </div>
-            )}
-            <div className="mr-3 flex items-center gap-1.5 border-r border-gray-700 pr-3">
-              <HeaderMqttGlobeIcon variant={mqttVariant} />
-              <span
-                aria-label={
-                  activeConnectionView.mqttStatus === 'connected'
-                    ? t('app.mqttConnected')
-                    : activeConnectionView.mqttStatus === 'connecting'
-                      ? t('app.mqttConnecting')
-                      : activeConnectionView.mqttStatus === 'error' || mqttLoss
-                        ? t('app.mqttError')
-                        : t('app.mqttDisconnected')
-                }
-                className={`text-xs ${headerTextClass(mqttVariant)}`}
-              >
-                {activeConnectionView.mqttStatus === 'connected'
-                  ? t('app.mqttConnected')
-                  : activeConnectionView.mqttStatus === 'connecting'
-                    ? t('app.mqttConnecting')
-                    : activeConnectionView.mqttStatus === 'error' || mqttLoss
-                      ? t('app.mqttError')
-                      : t('app.mqttDisconnected')}
-              </span>
-            </div>
-            {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
-            <div
-              className={`h-2.5 w-2.5 rounded-full ${headerDotClass(deviceVariant)}`}
-              aria-hidden="true"
-              title={deviceConnectionStatusLabel(t, activeConnectionView.state.status)}
-            />
-            <div role="status" aria-live="polite" aria-atomic="true">
-              <span
-                aria-label={`${deviceConnectionStatusLabel(t, activeConnectionView.state.status)}${activeConnectionView.state.connectionType ? ` (${activeConnectionView.state.connectionType.toUpperCase()})` : ''}`}
-                className={`text-xs ${headerTextClass(deviceVariant)}`}
-              >
-                {deviceConnectionStatusLabel(t, activeConnectionView.state.status)}
-                {activeConnectionView.state.connectionType
-                  ? ` (${activeConnectionView.state.connectionType.toUpperCase()})`
-                  : ''}
-              </span>
-            </div>
-            {activeConnectionView.state.myNodeNum > 0 &&
-              (protocol !== 'meshcore' || activeConnectionView.state.status === 'configured') && (
-                <span
-                  aria-label={t('app.nodeLabel', {
-                    name:
-                      protocol === 'meshcore'
-                        ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
-                          panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
-                        : panelActions.getPickerStyleNodeLabel(
-                            activeConnectionView.state.myNodeNum,
-                          ),
-                  })}
-                  className="text-muted ml-2 text-xs whitespace-nowrap"
-                >
-                  {t('app.nodeLabel', {
-                    name:
-                      protocol === 'meshcore'
-                        ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
-                          panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
-                        : panelActions.getPickerStyleNodeLabel(
-                            activeConnectionView.state.myNodeNum,
-                          ),
-                  })}
-                </span>
-              )}
-            {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
-            {queueShowBadge && activeQueue && (
-              <HelpTooltip
-                text={
-                  protocol === 'meshcore'
-                    ? t('app.meshcoreQueueTooltip')
-                    : t('app.meshtasticQueueTooltip')
-                }
-              >
+              <div className="flex shrink-0 items-center gap-2" title={deviceStatusText}>
+                {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
                 <div
-                  aria-label={`Q: ${queueUsed}/${activeQueue.maxlen}`}
-                  className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
+                  className={`h-2.5 w-2.5 rounded-full ${headerDotClass(deviceVariant)}`}
+                  aria-hidden="true"
+                />
+                <div
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label={deviceStatusText}
                 >
-                  Q: {queueUsed}/{activeQueue.maxlen}
+                  <span
+                    aria-hidden="true"
+                    className={`hidden text-xs lg:inline ${headerTextClass(deviceVariant)}`}
+                  >
+                    {deviceStatusLabel}
+                    {activeConnectionView.state.connectionType
+                      ? ` (${activeConnectionView.state.connectionType.toUpperCase()})`
+                      : ''}
+                  </span>
                 </div>
-              </HelpTooltip>
-            )}
-            <LanguageSelector />
+              </div>
+              {activeConnectionView.state.myNodeNum > 0 &&
+                (protocol !== 'meshcore' || activeConnectionView.state.status === 'configured') && (
+                  <span
+                    aria-label={t('app.nodeLabel', {
+                      name:
+                        protocol === 'meshcore'
+                          ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
+                            panelActions.getPickerStyleNodeLabel(
+                              activeConnectionView.state.myNodeNum,
+                            )
+                          : panelActions.getPickerStyleNodeLabel(
+                              activeConnectionView.state.myNodeNum,
+                            ),
+                    })}
+                    className="text-muted hidden shrink-0 text-xs xl:inline"
+                  >
+                    {t('app.nodeLabel', {
+                      name:
+                        protocol === 'meshcore'
+                          ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
+                            panelActions.getPickerStyleNodeLabel(
+                              activeConnectionView.state.myNodeNum,
+                            )
+                          : panelActions.getPickerStyleNodeLabel(
+                              activeConnectionView.state.myNodeNum,
+                            ),
+                    })}
+                  </span>
+                )}
+              {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
+              {queueShowBadge && activeQueue && (
+                <HelpTooltip
+                  text={
+                    protocol === 'meshcore'
+                      ? t('app.meshcoreQueueTooltip')
+                      : t('app.meshtasticQueueTooltip')
+                  }
+                >
+                  <div
+                    aria-label={`Q: ${queueUsed}/${activeQueue.maxlen}`}
+                    className={`flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
+                  >
+                    Q: {queueUsed}/{activeQueue.maxlen}
+                  </div>
+                </HelpTooltip>
+              )}
+              <div className="shrink-0">
+                <LanguageSelector />
+              </div>
+            </div>
           </div>
         </div>
 

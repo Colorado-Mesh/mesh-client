@@ -461,6 +461,31 @@ describe('legacy hook mount invariant', () => {
   });
 });
 
+describe('App header layout', () => {
+  it('keeps the protocol switcher left of the status cluster without overlap', () => {
+    render(<App />);
+    const banner = screen.getByRole('banner');
+    expect(banner.className).toMatch(/\bgrid\b/);
+    expect(banner.className).toMatch(/grid-cols-\[auto_minmax\(0,1fr\)\]/);
+
+    const protocolGroup = screen.getByRole('group', { name: 'Protocol switcher' });
+    expect(protocolGroup).toBeInTheDocument();
+    expect(protocolGroup.closest('.pl-8')).not.toBeNull();
+
+    const headerMain = banner.querySelector(':scope > div:last-of-type');
+    expect(headerMain?.className).toMatch(/overflow-hidden/);
+
+    const statusCluster = headerMain?.querySelector(':scope > div:last-of-type');
+    expect(statusCluster).not.toBeNull();
+    expect(statusCluster?.className).toMatch(/justify-end/);
+    expect(statusCluster?.className).toMatch(/min-w-0/);
+    expect(statusCluster?.className).not.toMatch(/\bml-auto\b/);
+
+    const statusLabels = statusCluster?.querySelectorAll('span.hidden.lg\\:inline');
+    expect(statusLabels?.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe('App accessibility', () => {
   it('does not log mount-time act warnings during render', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -565,8 +590,8 @@ describe('App accessibility', () => {
     render(<App />);
 
     const mqttLabel = await screen.findByLabelText('MQTT error');
-    expect(mqttLabel).toHaveClass('animate-pulse');
-    expect(mqttLabel).toHaveClass('text-red-400');
+    expect(mqttLabel.querySelector('span.lg\\:inline')).toHaveClass('animate-pulse');
+    expect(mqttLabel.querySelector('span.lg\\:inline')).toHaveClass('text-red-400');
   });
 
   it('shows pulsing red device status when reconnecting after loss', async () => {
@@ -590,8 +615,8 @@ describe('App accessibility', () => {
     render(<App />);
 
     const deviceLabel = await screen.findByLabelText('Reconnecting (BLE)');
-    expect(deviceLabel).toHaveClass('animate-pulse');
-    expect(deviceLabel).toHaveClass('text-red-400');
+    expect(deviceLabel.querySelector('span.lg\\:inline')).toHaveClass('animate-pulse');
+    expect(deviceLabel.querySelector('span.lg\\:inline')).toHaveClass('text-red-400');
   });
 
   it('renders the queue badge in meshcore mode when queueStatus is available', async () => {
