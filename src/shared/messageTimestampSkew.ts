@@ -39,11 +39,3 @@ export function clampReadWatermarkMs(
   const maxAllowed = nowMs + maxFutureSkewSec * 1000;
   return Math.min(watermarkMs, maxAllowed);
 }
-
-/** Clamp a MeshCore message timestamp before SQLite persist or IPC return. */
-export function clampMeshcoreMessageTimestampForStorage(
-  timestampMs: number,
-  nowMs = Date.now(),
-): number {
-  return effectiveMessageTimestampMs(timestampMs, nowMs);
-}
