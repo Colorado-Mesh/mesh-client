@@ -271,6 +271,7 @@ import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
+  MESHCORE_MAX_RECONNECT_DELAY_MS,
   MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
   MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
@@ -2132,7 +2133,10 @@ export function useMeshcoreRuntime() {
       reconnectAttempt: meshcoreReconnectAttemptRef.current,
     }));
 
-    const delay = Math.min(2000 * Math.pow(2, meshcoreReconnectAttemptRef.current - 1), 32_000);
+    const delay = Math.min(
+      2000 * Math.pow(2, meshcoreReconnectAttemptRef.current - 1),
+      MESHCORE_MAX_RECONNECT_DELAY_MS,
+    );
     console.debug(
       `[useMeshcoreRuntime] reconnect: waiting ${delay}ms before attempt ${meshcoreReconnectAttemptRef.current}/${MESHCORE_MAX_RECONNECT_ATTEMPTS}`,
     );

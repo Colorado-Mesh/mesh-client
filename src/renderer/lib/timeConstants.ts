@@ -168,3 +168,21 @@ export const MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS = 2_500;
 
 /** Grace delay before transport teardown/reconnect after DeviceRestarting (Serial/BLE). */
 export const MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS = 15_000;
+
+/** Max wait before MeshCore `getContacts` when Meshtastic Noble BLE is still configuring. */
+export const MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS = 4_000;
+
+/** Poll interval inside `awaitDualNobleBleMeshtasticSettle`. */
+export const MESHCORE_DUAL_NOBLE_BLE_POLL_MS = 200;
+
+/** BlueZ is slower than macOS CBCentralManager — requestDevice / reuse granted device. */
+export const MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS = 60_000;
+
+/** Web Bluetooth transport connect (Linux MeshCore companion). */
+export const MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
+
+/** MeshCore BLE protocol handshake after Web Bluetooth connect. */
+export const MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
+
+/** Exponential backoff cap for RF auto-reconnect (2s × 2^attempt, max this value). */
+export const MESHCORE_MAX_RECONNECT_DELAY_MS = 32_000;

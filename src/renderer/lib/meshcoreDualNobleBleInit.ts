@@ -1,10 +1,9 @@
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
-
-/** Max wait before MeshCore `getContacts` when Meshtastic Noble BLE is still configuring. */
-export const MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS = 4_000;
-
-const DUAL_NOBLE_BLE_POLL_MS = 200;
+import {
+  MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS,
+  MESHCORE_DUAL_NOBLE_BLE_POLL_MS,
+} from './timeConstants';
 
 /** True when the renderer uses Noble IPC for BLE (macOS / Windows), not Web Bluetooth. */
 export function isRendererNobleBlePlatform(): boolean {
@@ -55,6 +54,6 @@ export async function awaitDualNobleBleMeshtasticSettle(
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     if (!meshtasticNobleBleConfigureBusy()) return;
-    await new Promise<void>((resolve) => setTimeout(resolve, DUAL_NOBLE_BLE_POLL_MS));
+    await new Promise<void>((resolve) => setTimeout(resolve, MESHCORE_DUAL_NOBLE_BLE_POLL_MS));
   }
 }

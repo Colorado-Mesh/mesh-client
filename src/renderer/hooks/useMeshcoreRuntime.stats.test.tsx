@@ -8,6 +8,14 @@ const getStatsPacketsMock = vi.fn();
 const getContactsMock = vi.fn();
 const getChannelsMock = vi.fn();
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
     private listeners = new Map<string | number, Set<(...args: unknown[]) => void>>();
@@ -260,12 +268,9 @@ describe('useMeshcoreRuntime stats parsing', () => {
   });
 
   it('serial awaits channel hydration after contacts before connect resolves', async () => {
-    let resolveContacts: ((value: []) => void) | undefined;
-    const contactsPromise = new Promise<[]>((resolve) => {
-      resolveContacts = resolve;
-    });
+    const contactsGate = deferred<[]>();
     const opsSecret = new Uint8Array(16).fill(0x11);
-    getContactsMock.mockReturnValueOnce(contactsPromise);
+    getContactsMock.mockReturnValueOnce(contactsGate.promise);
     getChannelsMock.mockResolvedValueOnce([
       {
         channelIdx: 1,
@@ -297,7 +302,7 @@ describe('useMeshcoreRuntime stats parsing', () => {
     expect(getChannelsMock).not.toHaveBeenCalled();
     expect(result.current.nodes.size).toBe(0);
 
-    resolveContacts?.([]);
+    contactsGate.resolve([]);
     await act(async () => {
       await connectPromise;
     });
