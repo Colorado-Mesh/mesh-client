@@ -1572,33 +1572,42 @@ export function useMeshcoreRuntime() {
         setMeshcoreIdentityId(driverStoreId);
       }
 
+      const isSerialInit = meshcoreConnectTypeRef.current === 'serial';
       const getSelfInfoStart = performance.now();
-      const selfInfoPromise = awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000));
-      const getContactsStart = performance.now();
-      const contactsPromise = awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        (async () => {
-          if (meshcoreConnectTypeRef.current === 'ble') {
-            await awaitDualNobleBleMeshtasticSettle();
+      let getContactsStart = getSelfInfoStart;
+      let parallelSelfInfoPromise: ReturnType<MeshCoreConnection['getSelfInfo']> | undefined;
+      let parallelContactsPromise: Promise<MeshCoreContactRaw[]> | undefined;
+      if (!isSerialInit) {
+        parallelSelfInfoPromise = awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          conn.getSelfInfo(5000),
+        );
+        getContactsStart = performance.now();
+        parallelContactsPromise = awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          (async () => {
+            if (meshcoreConnectTypeRef.current === 'ble') {
+              await awaitDualNobleBleMeshtasticSettle();
+            }
+            return withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts');
+          })(),
+        );
+        const channelsPromise = awaitUnlessMeshcoreSetupCancelled(
+          setupGen,
+          withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+        );
+        void (async () => {
+          try {
+            const rawChannels = await channelsPromise;
+            setChannels(
+              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+            );
+          } catch (e) {
+            if (e instanceof DOMException && e.name === 'AbortError') return;
+            console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
           }
-          return withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts');
-        })(),
-      );
-      const channelsPromise = awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
-      );
-      void (async () => {
-        try {
-          const rawChannels = await channelsPromise;
-          setChannels(
-            rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
-          );
-        } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') return;
-          console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
-        }
-      })();
+        })();
+      }
 
       // Show persisted contacts immediately while the radio contact dump runs over BLE.
       const dbCacheStart = performance.now();
@@ -1638,7 +1647,9 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`,
       );
 
-      const rawInfo = await selfInfoPromise;
+      const rawInfo = isSerialInit
+        ? await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000))
+        : await parallelSelfInfoPromise!;
       const getSelfInfoMs = Math.round(performance.now() - getSelfInfoStart);
       console.debug(`[useMeshcoreRuntime] initConn getSelfInfo ${getSelfInfoMs}ms`);
       const info = enrichMeshCoreSelfInfo(rawInfo);
@@ -1704,7 +1715,15 @@ export function useMeshcoreRuntime() {
         });
       }
 
-      const contactsRaw = await contactsPromise;
+      if (isSerialInit) {
+        getContactsStart = performance.now();
+      }
+      const contactsRaw = isSerialInit
+        ? await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
+          )
+        : await parallelContactsPromise!;
       const getContactsMs = Math.round(performance.now() - getContactsStart);
       console.debug(
         `[useMeshcoreRuntime] initConn getContacts ${getContactsMs}ms (total ${Math.round(performance.now() - initConnPerfStart)}ms)`,
@@ -1742,6 +1761,23 @@ export function useMeshcoreRuntime() {
       );
       triggerRoomAutoLoginRef.current();
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
+
+      if (isSerialInit) {
+        void (async () => {
+          try {
+            const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
+              setupGen,
+              withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+            );
+            setChannels(
+              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+            );
+          } catch (e) {
+            if (e instanceof DOMException && e.name === 'AbortError') return;
+            console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
+          }
+        })();
+      }
 
       // Re-resolve map/App GPS after nodesRef picks up getSelfInfo advert coords (same tick as setNodes is too early).
       requestAnimationFrame(() => {

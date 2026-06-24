@@ -197,6 +197,7 @@ async function openSerialPort(port: SerialPort): Promise<Connection> {
 async function connectSerial(): Promise<Connection> {
   if (!navigator.serial?.requestPort) throw new Error('Web Serial API not available');
   const port = await navigator.serial.requestPort();
+  await closeSerialPortIfOpen(port);
   return openSerialPort(port);
 }
 

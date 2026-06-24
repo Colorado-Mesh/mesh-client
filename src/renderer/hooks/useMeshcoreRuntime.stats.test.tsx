@@ -259,7 +259,7 @@ describe('useMeshcoreRuntime stats parsing', () => {
     expect(getStatsPacketsMock).toHaveBeenCalled();
   });
 
-  it('hydrates channels before a slow contacts refresh completes', async () => {
+  it('serial defers channel hydration until contacts refresh completes', async () => {
     let resolveContacts: ((value: []) => void) | undefined;
     const contactsPromise = new Promise<[]>((resolve) => {
       resolveContacts = resolve;
@@ -292,13 +292,18 @@ describe('useMeshcoreRuntime stats parsing', () => {
 
     await waitFor(() => {
       expect(result.current.state.status).toBe('configured');
-      expect(result.current.channels).toEqual([{ index: 1, name: 'Ops', secret: opsSecret }]);
     });
+    expect(result.current.channels).toEqual([]);
+    expect(getChannelsMock).not.toHaveBeenCalled();
     expect(result.current.nodes.size).toBe(0);
 
     resolveContacts?.([]);
     await act(async () => {
       await connectPromise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.channels).toEqual([{ index: 1, name: 'Ops', secret: opsSecret }]);
     });
   });
 });
