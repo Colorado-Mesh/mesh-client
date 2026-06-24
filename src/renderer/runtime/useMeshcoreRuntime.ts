@@ -140,7 +140,10 @@ import {
   repairMeshcoreHydratedMessages,
 } from '../lib/meshcoreDbCacheHydration';
 import { setMeshcoreDmAckPendingImpl } from '../lib/meshcoreDmAckDelivery';
-import { awaitDualNobleBleMeshtasticSettle } from '../lib/meshcoreDualNobleBleInit';
+import {
+  awaitDualNobleBleMeshtasticSettle,
+  needsSequentialMeshcoreRadioInit,
+} from '../lib/meshcoreDualNobleBleInit';
 import { applyMeshcoreFloodScope } from '../lib/meshcoreFloodScope';
 import {
   buildMeshcoreGetNeighboursRequest,
@@ -1572,12 +1575,12 @@ export function useMeshcoreRuntime() {
         setMeshcoreIdentityId(driverStoreId);
       }
 
-      const isSerialInit = meshcoreConnectTypeRef.current === 'serial';
+      const sequentialRadioInit = needsSequentialMeshcoreRadioInit(meshcoreConnectTypeRef.current);
       const getSelfInfoStart = performance.now();
       let getContactsStart = getSelfInfoStart;
       let parallelSelfInfoPromise: ReturnType<MeshCoreConnection['getSelfInfo']> | undefined;
       let parallelContactsPromise: Promise<MeshCoreContactRaw[]> | undefined;
-      if (!isSerialInit) {
+      if (!sequentialRadioInit) {
         parallelSelfInfoPromise = awaitUnlessMeshcoreSetupCancelled(
           setupGen,
           conn.getSelfInfo(5000),
@@ -1647,7 +1650,7 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] initConn dbCache→UI ${dbCacheMs}ms (${dbCacheNodeCount} nodes)`,
       );
 
-      const rawInfo = isSerialInit
+      const rawInfo = sequentialRadioInit
         ? await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.getSelfInfo(5000))
         : await parallelSelfInfoPromise!;
       const getSelfInfoMs = Math.round(performance.now() - getSelfInfoStart);
@@ -1715,10 +1718,10 @@ export function useMeshcoreRuntime() {
         });
       }
 
-      if (isSerialInit) {
+      if (sequentialRadioInit) {
         getContactsStart = performance.now();
       }
-      const contactsRaw = isSerialInit
+      const contactsRaw = sequentialRadioInit
         ? await awaitUnlessMeshcoreSetupCancelled(
             setupGen,
             withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
@@ -1762,21 +1765,24 @@ export function useMeshcoreRuntime() {
       triggerRoomAutoLoginRef.current();
       void deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
-      if (isSerialInit) {
-        void (async () => {
-          try {
-            const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
-              setupGen,
-              withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
-            );
-            setChannels(
-              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
-            );
-          } catch (e) {
-            if (e instanceof DOMException && e.name === 'AbortError') return;
-            console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
-          }
-        })();
+      if (sequentialRadioInit) {
+        const getChannelsStart = performance.now();
+        try {
+          const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+          );
+          setChannels(
+            rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+          );
+          const getChannelsMs = Math.round(performance.now() - getChannelsStart);
+          console.debug(
+            `[useMeshcoreRuntime] initConn getChannels ${getChannelsMs}ms (${rawChannels.length} channels)`,
+          );
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
+        }
       }
 
       // Re-resolve map/App GPS after nodesRef picks up getSelfInfo advert coords (same tick as setNodes is too early).

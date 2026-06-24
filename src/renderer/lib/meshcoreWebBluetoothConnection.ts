@@ -5,6 +5,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { MeshcoreCompanionTxEchoFilter } from '@/renderer/lib/meshcoreCompanionTxEchoFilter';
 
 import { withTimeout } from '../../shared/withTimeout';
+import { createSerializedWritableStream } from './meshtastic/meshtasticTransportLossDetection';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- TransportWebBluetoothIpc is used as a value (new) in connect()
 import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
 
@@ -17,6 +18,7 @@ export class MeshcoreWebBluetoothConnection extends Connection {
   private readonly transport: TransportWebBluetoothIpc;
   private readonly txEchoFilter = new MeshcoreCompanionTxEchoFilter();
   private _fromDeviceReader: ReadableStreamDefaultReader<Types.DeviceOutput> | null = null;
+  private _serializedToDevice: WritableStream<Uint8Array> | null = null;
 
   constructor(transport: TransportWebBluetoothIpc) {
     super();
@@ -26,7 +28,8 @@ export class MeshcoreWebBluetoothConnection extends Connection {
   async sendToRadioFrame(data: Uint8Array): Promise<void> {
     this.txEchoFilter.noteOutbound(data);
     this.emit('tx', data);
-    const writer = this.transport.toDevice.getWriter();
+    const toDevice = this._serializedToDevice ?? this.transport.toDevice;
+    const writer = toDevice.getWriter();
     try {
       await writer.ready;
       await writer.write(data);
@@ -36,6 +39,7 @@ export class MeshcoreWebBluetoothConnection extends Connection {
   }
 
   async close(): Promise<void> {
+    this._serializedToDevice = null;
     if (this._fromDeviceReader) {
       await this._fromDeviceReader.cancel().catch(() => {});
       this._fromDeviceReader = null;
@@ -64,6 +68,8 @@ export class MeshcoreWebBluetoothConnection extends Connection {
       WEB_BLUETOOTH_CONNECT_TIMEOUT_MS,
       'Web Bluetooth transport connect',
     );
+
+    this._serializedToDevice = createSerializedWritableStream(this.transport.toDevice);
 
     this._fromDeviceReader = this.transport.fromDevice.getReader();
     void this._readLoop();

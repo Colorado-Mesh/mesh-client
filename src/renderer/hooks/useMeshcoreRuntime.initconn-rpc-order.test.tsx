@@ -1,6 +1,6 @@
 /**
- * Serial USB init must run getSelfInfo → getContacts before getChannels (UART single-flight).
- * TCP/BLE keep overlapping init RPCs for faster connect.
+ * Serial USB and Linux Web Bluetooth init run getSelfInfo → getContacts → getChannels
+ * before post-init RPCs. TCP and Noble BLE keep overlapping init RPCs.
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -194,7 +194,7 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     vi.restoreAllMocks();
   });
 
-  it('serial: getContacts waits for getSelfInfo; getChannels starts after contacts', async () => {
+  it('serial: getContacts waits for getSelfInfo; getChannels runs after contacts before connect finishes', async () => {
     const callOrder: string[] = [];
     const selfInfoGate = deferred<undefined>();
     const contactsGate = deferred<undefined>();
@@ -268,5 +268,5 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     unmount();
   });
 
-  // TCP/BLE parallel init is preserved in initConn's `if (!isSerialInit)` branch (see useMeshcoreRuntime.ts).
+  // TCP/Noble BLE parallel init is preserved when !needsSequentialMeshcoreRadioInit (useMeshcoreRuntime.ts).
 });

@@ -23,6 +23,15 @@ export function isRendererNobleBlePlatform(): boolean {
   return true;
 }
 
+/**
+ * USB serial and Linux Web Bluetooth share single-flight companion RPC + WritableStream
+ * writes; init must run getSelfInfo → getContacts → getChannels before post-init side effects.
+ * Noble BLE (macOS/Windows) and TCP keep parallel overlap.
+ */
+export function needsSequentialMeshcoreRadioInit(transport: 'ble' | 'serial' | 'tcp'): boolean {
+  return transport === 'serial' || (transport === 'ble' && !isRendererNobleBlePlatform());
+}
+
 /** Meshtastic identity on Noble BLE that has not reached `configured` yet. */
 export function meshtasticNobleBleConfigureBusy(): boolean {
   const { identities } = useIdentityStore.getState();
