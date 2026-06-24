@@ -28,6 +28,10 @@ vi.mock('../../connection', () => ({
 
 import { closeSerialPortIfOpen } from '../../connection';
 import {
+  type MeshcoreEchoFilterableConnection,
+  patchMeshcoreCompanionTxEchoFilter,
+} from '../../meshcoreCompanionTxEchoFilter';
+import {
   createMeshCoreConnection,
   patchMeshcoreWebSerialWritable,
   reconnectMeshcoreSerial,
@@ -153,5 +157,21 @@ describe('createMeshCoreConnection serial', () => {
 
     expect(closeSerialPortIfOpen).toHaveBeenCalledWith(port);
     expect(port.open).toHaveBeenCalledWith({ baudRate: 115200 });
+  });
+});
+
+describe('openSerialPort TX echo filter', () => {
+  it('patches WebSerialConnection so DeviceQuery echo is dropped before onFrameReceived', async () => {
+    const onFrameReceived = vi.fn<(frame: Uint8Array) => void>();
+    const conn: MeshcoreEchoFilterableConnection = {
+      sendToRadioFrame: vi.fn(async () => {}),
+      onFrameReceived,
+    };
+    patchMeshcoreCompanionTxEchoFilter(conn);
+
+    const deviceQuery = new Uint8Array([22, 1]);
+    await conn.sendToRadioFrame(deviceQuery);
+    conn.onFrameReceived(deviceQuery);
+    expect(onFrameReceived).not.toHaveBeenCalled();
   });
 });

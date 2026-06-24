@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
+import { getProtocolUnreadBadgeLabel, hydrateAxeThemeColors } from './lib/a11yTestHelpers';
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
@@ -342,11 +343,6 @@ vi.mock('./lazyModals', () => ({
   },
 }));
 
-vi.mock('./lib/themeColors', () => ({
-  applyThemeColors: vi.fn(),
-  loadThemeColors: vi.fn().mockResolvedValue({}),
-}));
-
 vi.mock('./lib/appSettingsStorage', () => ({
   getAppSettingsRaw: vi.fn().mockReturnValue({}),
 }));
@@ -533,12 +529,16 @@ describe('App accessibility', () => {
     getStoredMeshProtocolMock.mockReturnValue('meshtastic');
     render(<App />);
     const meshcoreSwitcher = screen.getByRole('button', { name: 'Switch to MeshCore' });
-    const badge = await waitFor(() => {
-      const el = meshcoreSwitcher.querySelector('span.rounded-full');
-      if (!el?.textContent) throw new Error('badge not ready');
-      return el;
+    const badgeWrapper = await waitFor(() => {
+      const label = meshcoreSwitcher.querySelector('[data-protocol-unread-label]');
+      if (!label?.textContent) throw new Error('badge not ready');
+      return label.parentElement!;
     });
-    expect(await axe(badge)).toHaveNoViolations();
+    const label = getProtocolUnreadBadgeLabel(badgeWrapper);
+    expect(label.className).not.toContain('animate-pulse');
+    expect(badgeWrapper.querySelector('[aria-hidden="true"].animate-pulse')).toBeTruthy();
+    hydrateAxeThemeColors(label);
+    expect(await axe(label)).toHaveNoViolations();
   });
 
   it('has no axe violations on Meshtastic protocol switcher unread badge', async () => {
@@ -566,12 +566,16 @@ describe('App accessibility', () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     render(<App />);
     const meshtasticSwitcher = screen.getByRole('button', { name: 'Switch to Meshtastic' });
-    const badge = await waitFor(() => {
-      const el = meshtasticSwitcher.querySelector('span.rounded-full');
-      if (el?.textContent !== '86') throw new Error('badge not ready');
-      return el;
+    const badgeWrapper = await waitFor(() => {
+      const label = meshtasticSwitcher.querySelector('[data-protocol-unread-label]');
+      if (label?.textContent !== '86') throw new Error('badge not ready');
+      return label.parentElement!;
     });
-    expect(await axe(badge)).toHaveNoViolations();
+    const label = getProtocolUnreadBadgeLabel(badgeWrapper);
+    expect(label.className).not.toContain('animate-pulse');
+    expect(badgeWrapper.querySelector('[aria-hidden="true"].animate-pulse')).toBeTruthy();
+    hydrateAxeThemeColors(label);
+    expect(await axe(label)).toHaveNoViolations();
   });
 
   it('has no page landmark axe violations', async () => {

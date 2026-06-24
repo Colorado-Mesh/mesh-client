@@ -202,12 +202,16 @@ function resolveThemeHex(raw: string | undefined, key: ThemeColorKey): string | 
  * and logs once — never applies partial/unsane strings.
  */
 export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
+  const merged = { ...colors };
+  if (ensureReadableGreenContrast(merged)) {
+    persistThemeColors(merged);
+  }
   const resolved: Record<ThemeColorKey, string> = { ...DEFAULT_THEME_COLORS };
   for (const key of Object.keys(THEME_CSS_VARS) as ThemeColorKey[]) {
-    const hex = resolveThemeHex(colors[key], key);
+    const hex = resolveThemeHex(merged[key], key);
     if (!hex) {
       console.warn(
-        `[themeColors] applyThemeColors skipped — invalid or non-strict hex key=${sanitizeLogMessage(key)} raw=${sanitizeLogMessage(colors[key])}`,
+        `[themeColors] applyThemeColors skipped — invalid or non-strict hex key=${sanitizeLogMessage(key)} raw=${sanitizeLogMessage(merged[key])}`,
       );
       return;
     }

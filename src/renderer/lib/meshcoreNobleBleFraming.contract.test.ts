@@ -14,7 +14,10 @@
 import { Connection, Constants, SerialConnection } from '@liamcottle/meshcore.js';
 import { describe, expect, it, vi } from 'vitest';
 
-import { MeshcoreCompanionTxEchoFilter } from './meshcoreCompanionTxEchoFilter';
+import {
+  MeshcoreCompanionTxEchoFilter,
+  patchMeshcoreCompanionTxEchoFilter,
+} from './meshcoreCompanionTxEchoFilter';
 
 class CaptureSerial extends SerialConnection {
   writes: Uint8Array[] = [];
@@ -91,6 +94,29 @@ describe('MeshCore Noble IPC TX echo filter contract', () => {
     expect(onFrameReceived).not.toHaveBeenCalled();
 
     onNobleBleFromRadio(new Uint8Array([0])); // RESP_OK
+    expect(onFrameReceived).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops inbound DeviceQuery echo (code 22) via patchMeshcoreCompanionTxEchoFilter', async () => {
+    const onFrameReceived = vi.fn<(frame: Uint8Array) => void>();
+    const conn: {
+      sendToRadioFrame(data: Uint8Array): Promise<void>;
+      onFrameReceived(frame: Uint8Array): void;
+    } = {
+      sendToRadioFrame: async () => {},
+      onFrameReceived,
+    };
+    patchMeshcoreCompanionTxEchoFilter(conn);
+
+    const deviceQuery = new Uint8Array([
+      Constants.CommandCodes.DeviceQuery,
+      Constants.SupportedCompanionProtocolVersion,
+    ]);
+    await conn.sendToRadioFrame(deviceQuery);
+    conn.onFrameReceived(deviceQuery);
+    expect(onFrameReceived).not.toHaveBeenCalled();
+
+    conn.onFrameReceived(new Uint8Array([0])); // RESP_OK
     expect(onFrameReceived).toHaveBeenCalledTimes(1);
   });
 });

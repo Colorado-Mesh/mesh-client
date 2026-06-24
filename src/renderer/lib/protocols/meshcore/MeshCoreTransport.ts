@@ -3,7 +3,7 @@ import { Connection, SerialConnection, WebSerialConnection } from '@liamcottle/m
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { closeSerialPortIfOpen } from '../../connection';
-import { MeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
+import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
@@ -91,6 +91,7 @@ interface NobleIpcMeshcoreConnectionInstance {
   emit(event: string | number, ...args: unknown[]): void;
   onConnected(): Promise<void>;
   onDisconnected(): void;
+  sendToRadioFrame(data: Uint8Array): Promise<void>;
   onFrameReceived(frame: Uint8Array): void;
 }
 
@@ -191,6 +192,7 @@ async function openSerialPort(port: SerialPort): Promise<Connection> {
     port,
   );
   patchMeshcoreWebSerialWritable(conn, rawWritable);
+  patchMeshcoreCompanionTxEchoFilter(conn);
   return conn;
 }
 
@@ -220,7 +222,6 @@ class IpcNobleConnection {
 
   private readonly peripheralId: string;
   private readonly sessionId: NobleBleSessionId;
-  private readonly txEchoFilter = new MeshcoreCompanionTxEchoFilter();
   private inner: NobleIpcMeshcoreConnectionInstance | null = null;
   private cleanupFns: (() => void)[] = [];
 
@@ -232,14 +233,12 @@ class IpcNobleConnection {
   async connect(): Promise<void> {
     const runConnect = async () => {
       const { sessionId } = this;
-      const txEchoFilter = this.txEchoFilter;
 
       class NobleOverIpc extends MeshcoreConnectionBase {
         constructor(private readonly session: NobleBleSessionId) {
           super();
         }
         async sendToRadioFrame(data: Uint8Array) {
-          txEchoFilter.noteOutbound(data);
           this.emit('tx', data);
           await this.write(data);
         }
@@ -252,6 +251,7 @@ class IpcNobleConnection {
       }
 
       const instance = new NobleOverIpc(sessionId) as unknown as NobleIpcMeshcoreConnectionInstance;
+      patchMeshcoreCompanionTxEchoFilter(instance);
       this.inner = instance;
 
       let rejectHandshakeOnDisconnect: ((err: Error) => void) | undefined;
@@ -263,7 +263,6 @@ class IpcNobleConnection {
       const offData = window.electronAPI.onNobleBleFromRadio(({ sessionId: sid, bytes }) => {
         if (sid !== sessionId) return;
         const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-        if (txEchoFilter.isEcho(frame)) return;
         instance.onFrameReceived(frame);
       });
       const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {

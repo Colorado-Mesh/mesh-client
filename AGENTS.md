@@ -92,8 +92,10 @@ Adding a cross-boundary feature:
 
 - **Dev:** `@axe-core/react` runs in `pnpm run dev` (`src/renderer/main.tsx`); treat `serious` axe console output as a bug.
 - **CI:** Use `vitest-axe` (`import { axe } from 'vitest-axe'`); assert `toHaveNoViolations()` on the rendered subtree.
+- **Do not mock `themeColors` in component axe tests** — call `hydrateAxeThemeColors()` from `src/renderer/lib/a11yTestHelpers.ts` so color-contrast runs against real hex values (jsdom does not load Tailwind CSS).
 - **When to add tests:** New or changed UI with custom foreground/background pairs (badges, pills, buttons)—especially `text-[10px]` / `text-xs` on saturated fills.
 - **Theme tokens:** `readable-green` is for white-on-green fills; the default must pass **4.5:1** contrast with white (enforced in `src/renderer/lib/themeColors.test.ts`).
+- **`animate-pulse`:** Never on the same element as small text with strict contrast fills. Use a separate `aria-hidden` decorative pulse layer; the text-bearing element stays fully opaque (see `ProtocolUnreadBadge.tsx`). Connection-status header pulses remain the documented exception.
 - **Badge patterns:** Sidebar/Chat unread badges use `bg-red-600 text-white`; protocol-switcher badges use brand colors (`bg-readable-green`, `bg-cyan-600`)—add axe coverage when touching either.
 - **Manual:** See [`docs/accessibility-checklist.md`](docs/accessibility-checklist.md).
 
