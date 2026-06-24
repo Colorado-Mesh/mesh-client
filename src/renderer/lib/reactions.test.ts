@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '../../shared/reactionEmoji';
 import {
   firstGraphemeCluster,
+  isReactionPickerEmojiGlyph,
   normalizeReactionEmoji,
   reactionDisplayGlyph,
   reactionGlyphFromPicker,
@@ -56,6 +57,18 @@ describe('reactionDisplayGlyph', () => {
 
   it('falls back to scalar when payload is empty', () => {
     expect(reactionDisplayGlyph(0x1f44d, '')).toBe('👍');
+  });
+});
+
+describe('isReactionPickerEmojiGlyph', () => {
+  it('accepts emoji glyphs from the native panel', () => {
+    expect(isReactionPickerEmojiGlyph('👍')).toBe(true);
+    expect(isReactionPickerEmojiGlyph(US_FLAG)).toBe(true);
+  });
+
+  it('rejects plain ASCII letters', () => {
+    expect(isReactionPickerEmojiGlyph('j')).toBe(false);
+    expect(isReactionPickerEmojiGlyph('a')).toBe(false);
   });
 });
 

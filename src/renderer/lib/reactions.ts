@@ -136,6 +136,11 @@ export interface ReactionGlyphFromPicker {
   scalar: number;
 }
 
+/** True when `glyph` looks like an emoji from the native panel (not plain ASCII letters). */
+export function isReactionPickerEmojiGlyph(glyph: string): boolean {
+  return /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(glyph);
+}
+
 /** Parse emoji-picker / native panel output into wire payload + storage scalar. */
 export function reactionGlyphFromPicker(unicode: string): ReactionGlyphFromPicker | undefined {
   const glyph = firstGraphemeCluster(unicode);
