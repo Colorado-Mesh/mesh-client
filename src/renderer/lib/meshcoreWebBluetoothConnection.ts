@@ -6,13 +6,13 @@ import { MeshcoreCompanionTxEchoFilter } from '@/renderer/lib/meshcoreCompanionT
 
 import { withTimeout } from '../../shared/withTimeout';
 import { createSerializedWritableStream } from './meshtastic/meshtasticTransportLossDetection';
+import {
+  MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS,
+  MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS,
+  MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
+} from './timeConstants';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- TransportWebBluetoothIpc is used as a value (new) in connect()
 import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
-
-// BlueZ is slower than macOS CBCentralManager - use generous timeouts
-const WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS = 60_000;
-const WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
-const WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
 
 export class MeshcoreWebBluetoothConnection extends Connection {
   private readonly transport: TransportWebBluetoothIpc;
@@ -52,20 +52,20 @@ export class MeshcoreWebBluetoothConnection extends Connection {
     if (reuseDeviceId) {
       await withTimeout(
         this.transport.requestGrantedDevice(reuseDeviceId),
-        WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
+        MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
         'Web Bluetooth reuse granted device',
       );
     } else {
       await withTimeout(
         this.transport.requestDevice(),
-        WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
+        MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS,
         'Web Bluetooth request device',
       );
     }
 
     await withTimeout(
       this.transport.connect(),
-      WEB_BLUETOOTH_CONNECT_TIMEOUT_MS,
+      MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS,
       'Web Bluetooth transport connect',
     );
 
@@ -76,7 +76,7 @@ export class MeshcoreWebBluetoothConnection extends Connection {
 
     await withTimeout(
       this.onConnected(),
-      WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS,
+      MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS,
       'MeshCore BLE protocol handshake',
     );
   }

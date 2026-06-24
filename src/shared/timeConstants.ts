@@ -10,4 +10,6 @@ export const CHAT_COMPACT_CONTINUATION_TIME_GAP_MS = 5 * MS_PER_MINUTE;
 
 export const MS_PER_HOUR = 60 * MS_PER_MINUTE;
 export const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+/** Non-leap year (365 days). Coarse duration only; not for calendar-accurate multi-year intervals. */
 export const MS_PER_YEAR = 365 * MS_PER_DAY;
