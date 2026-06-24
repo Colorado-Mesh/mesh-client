@@ -166,6 +166,7 @@ async function connectTcp(hostAddr: string): Promise<Connection> {
 
 // ─── Serial ───────────────────────────────────────────────────────────────────
 
+/** WebSerialConnection instance — meshcore.js assigns `.writable` for frame writes. */
 type MeshcoreWebSerialConn = Connection & { writable: WritableStream<Uint8Array> };
 
 /**
@@ -176,17 +177,19 @@ type MeshcoreWebSerialConn = Connection & { writable: WritableStream<Uint8Array>
  * Patch the connection instance (not the SerialPort) so native port methods keep correct `this`.
  */
 export function patchMeshcoreWebSerialWritable(
-  conn: Connection,
+  conn: MeshcoreWebSerialConn,
   rawWritable: WritableStream<Uint8Array>,
 ): void {
-  (conn as MeshcoreWebSerialConn).writable = createSerializedWritableStream(rawWritable);
+  conn.writable = createSerializedWritableStream(rawWritable);
 }
 
 async function openSerialPort(port: SerialPort): Promise<Connection> {
   persistSerialPortIdentity(port);
   await (port as unknown as { open(opts: object): Promise<void> }).open({ baudRate: 115200 });
   const rawWritable = port.writable;
-  const conn = new (WebSerialConnection as unknown as new (port: unknown) => Connection)(port);
+  const conn = new (WebSerialConnection as unknown as new (port: unknown) => MeshcoreWebSerialConn)(
+    port,
+  );
   patchMeshcoreWebSerialWritable(conn, rawWritable);
   return conn;
 }

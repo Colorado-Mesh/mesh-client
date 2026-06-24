@@ -11,6 +11,7 @@ export const MESHCORE_RESP_CODE_ERR = 1;
 /** meshcore.js `ErrorCodes.UnsupportedCmd` */
 export const MESHCORE_ERR_UNSUPPORTED_CMD = 1;
 
+/** Allow queued serial init RPCs to drain before timing out (was 5s inline in runtime). */
 export const MESHCORE_AUTOADD_GET_TIMEOUT_MS = 8_000;
 
 /** Bit 0: overwrite oldest non-favourite when contacts storage is full */
@@ -121,6 +122,7 @@ export function fetchMeshcoreAutoaddConfigFromConn(
       }
       if (isMeshcoreAutoaddGetUnsupportedErrFrame(frame)) {
         finish({ kind: 'unsupported' });
+        return;
       }
     };
 
@@ -131,6 +133,7 @@ export function fetchMeshcoreAutoaddConfigFromConn(
           : undefined;
       if (errCode === MESHCORE_ERR_UNSUPPORTED_CMD) {
         finish({ kind: 'unsupported' });
+        return;
       }
     };
 
