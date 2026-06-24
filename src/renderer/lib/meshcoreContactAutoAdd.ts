@@ -6,6 +6,12 @@
 export const MESHCORE_CMD_SET_AUTOADD_CONFIG = 58;
 export const MESHCORE_CMD_GET_AUTOADD_CONFIG = 59;
 export const MESHCORE_RESP_CODE_AUTOADD_CONFIG = 25;
+/** meshcore.js `ResponseCodes.Err` — also the first byte of an Err radio frame */
+export const MESHCORE_RESP_CODE_ERR = 1;
+/** meshcore.js `ErrorCodes.UnsupportedCmd` */
+export const MESHCORE_ERR_UNSUPPORTED_CMD = 1;
+
+export const MESHCORE_AUTOADD_GET_TIMEOUT_MS = 8_000;
 
 /** Bit 0: overwrite oldest non-favourite when contacts storage is full */
 export const MESHCORE_AUTO_ADD_OVERWRITE_OLDEST = 1 << 0;
@@ -54,6 +60,88 @@ export function parseAutoaddConfigResponse(frame: Uint8Array): MeshcoreAutoaddWi
     autoaddConfig: frame[1] & 0xff,
     autoaddMaxHops: frame[2] & 0xff,
   };
+}
+
+/** True when firmware rejects CMD_GET_AUTOADD_CONFIG (older companion builds). */
+export function isMeshcoreAutoaddGetUnsupportedErrFrame(frame: Uint8Array): boolean {
+  return (
+    frame.length >= 2 &&
+    frame[0] === MESHCORE_RESP_CODE_ERR &&
+    frame[1] === MESHCORE_ERR_UNSUPPORTED_CMD
+  );
+}
+
+export type MeshcoreAutoaddFetchOutcome =
+  | { kind: 'ok'; state: MeshcoreAutoaddWireState }
+  | { kind: 'unsupported' }
+  | { kind: 'timeout' };
+
+export interface MeshcoreAutoaddQueryConn {
+  on(event: string | number, cb: (...args: unknown[]) => void): void;
+  off(event: string | number, cb: (...args: unknown[]) => void): void;
+  sendToRadioFrame(data: Uint8Array): Promise<void>;
+}
+
+/**
+ * Query companion auto-add prefs over the radio link. Resolves with `unsupported` or
+ * `timeout` when the device lacks CMD_GET_AUTOADD_CONFIG (non-fatal on connect).
+ */
+export function fetchMeshcoreAutoaddConfigFromConn(
+  conn: MeshcoreAutoaddQueryConn,
+  timeoutMs = MESHCORE_AUTOADD_GET_TIMEOUT_MS,
+): Promise<MeshcoreAutoaddFetchOutcome> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (outcome: MeshcoreAutoaddFetchOutcome) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(outcome);
+    };
+    const fail = (err: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err instanceof Error ? err : new Error(String(err)));
+    };
+
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      conn.off('rx', onRx);
+      conn.off(MESHCORE_RESP_CODE_ERR, onErrEvent);
+    };
+
+    const onRx = (data: unknown) => {
+      const frame = meshcoreCoerceRadioRxFrame(data);
+      if (!frame) return;
+      const parsed = parseAutoaddConfigResponse(frame);
+      if (parsed) {
+        finish({ kind: 'ok', state: parsed });
+        return;
+      }
+      if (isMeshcoreAutoaddGetUnsupportedErrFrame(frame)) {
+        finish({ kind: 'unsupported' });
+      }
+    };
+
+    const onErrEvent = (data: unknown) => {
+      const errCode =
+        data != null && typeof data === 'object' && 'errCode' in data
+          ? (data as { errCode?: number | null }).errCode
+          : undefined;
+      if (errCode === MESHCORE_ERR_UNSUPPORTED_CMD) {
+        finish({ kind: 'unsupported' });
+      }
+    };
+
+    const timer = window.setTimeout(() => {
+      finish({ kind: 'timeout' });
+    }, timeoutMs);
+
+    conn.on('rx', onRx);
+    conn.on(MESHCORE_RESP_CODE_ERR, onErrEvent);
+    void conn.sendToRadioFrame(buildGetAutoaddConfigFrame()).catch(fail);
+  });
 }
 
 export function mergeAutoaddConfigByte(options: {

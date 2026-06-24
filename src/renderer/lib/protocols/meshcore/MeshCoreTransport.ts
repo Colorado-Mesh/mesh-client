@@ -5,6 +5,7 @@ import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { closeSerialPortIfOpen } from '../../connection';
 import { MeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
+import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import { TransportWebBluetoothIpc } from '../../transportWebBluetoothIpc';
@@ -165,10 +166,29 @@ async function connectTcp(hostAddr: string): Promise<Connection> {
 
 // ─── Serial ───────────────────────────────────────────────────────────────────
 
+type MeshcoreWebSerialConn = Connection & { writable: WritableStream<Uint8Array> };
+
+/**
+ * MeshCore's WebSerialConnection calls `this.writable.getWriter()` per frame write with no
+ * serialization; concurrent init RPCs (getSelfInfo, getContacts, getChannels, setAdvertLatLong)
+ * throw WritableStream locked and stall contact sync.
+ *
+ * Patch the connection instance (not the SerialPort) so native port methods keep correct `this`.
+ */
+export function patchMeshcoreWebSerialWritable(
+  conn: Connection,
+  rawWritable: WritableStream<Uint8Array>,
+): void {
+  (conn as MeshcoreWebSerialConn).writable = createSerializedWritableStream(rawWritable);
+}
+
 async function openSerialPort(port: SerialPort): Promise<Connection> {
   persistSerialPortIdentity(port);
   await (port as unknown as { open(opts: object): Promise<void> }).open({ baudRate: 115200 });
-  return new (WebSerialConnection as unknown as new (port: unknown) => Connection)(port);
+  const rawWritable = port.writable;
+  const conn = new (WebSerialConnection as unknown as new (port: unknown) => Connection)(port);
+  patchMeshcoreWebSerialWritable(conn, rawWritable);
+  return conn;
 }
 
 async function connectSerial(): Promise<Connection> {
