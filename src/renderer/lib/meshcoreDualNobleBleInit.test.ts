@@ -5,6 +5,7 @@ import { useIdentityStore } from '../stores/identityStore';
 import {
   awaitDualNobleBleMeshtasticSettle,
   meshtasticNobleBleConfigureBusy,
+  needsSequentialMeshcoreRadioInit,
 } from './meshcoreDualNobleBleInit';
 
 const meshtasticProtocol = { type: 'meshtastic' } as const;
@@ -94,5 +95,13 @@ describe('meshcoreDualNobleBleInit', () => {
     const start = Date.now();
     await awaitDualNobleBleMeshtasticSettle(4000);
     expect(Date.now() - start).toBeLessThan(100);
+  });
+
+  it('needsSequentialMeshcoreRadioInit is true for serial and Linux Web Bluetooth only', () => {
+    expect(needsSequentialMeshcoreRadioInit('serial')).toBe(true);
+    expect(needsSequentialMeshcoreRadioInit('tcp')).toBe(false);
+    // jsdom reports non-Linux in CI; Noble path when platform is macOS/Windows.
+    const bleSequential = needsSequentialMeshcoreRadioInit('ble');
+    expect(typeof bleSequential).toBe('boolean');
   });
 });

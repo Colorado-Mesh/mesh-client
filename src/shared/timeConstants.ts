@@ -8,6 +8,6 @@ export const MS_PER_MINUTE = 60_000;
  */
 export const CHAT_COMPACT_CONTINUATION_TIME_GAP_MS = 5 * MS_PER_MINUTE;
 
-export const MS_PER_HOUR = 3_600_000;
-export const MS_PER_DAY = 86_400_000;
+export const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+export const MS_PER_DAY = 24 * MS_PER_HOUR;
 export const MS_PER_YEAR = 365 * MS_PER_DAY;

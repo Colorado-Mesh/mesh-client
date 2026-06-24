@@ -259,7 +259,7 @@ describe('useMeshcoreRuntime stats parsing', () => {
     expect(getStatsPacketsMock).toHaveBeenCalled();
   });
 
-  it('serial defers channel hydration until contacts refresh completes', async () => {
+  it('serial awaits channel hydration after contacts before connect resolves', async () => {
     let resolveContacts: ((value: []) => void) | undefined;
     const contactsPromise = new Promise<[]>((resolve) => {
       resolveContacts = resolve;
