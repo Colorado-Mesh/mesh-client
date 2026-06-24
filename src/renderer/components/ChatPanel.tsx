@@ -99,7 +99,12 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import { emojiDisplayLabel, reactionDisplayGlyph, reactionGlyphFromPicker } from '../lib/reactions';
+import {
+  emojiDisplayLabel,
+  isReactionPickerEmojiGlyph,
+  reactionDisplayGlyph,
+  reactionGlyphFromPicker,
+} from '../lib/reactions';
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
@@ -460,7 +465,18 @@ function ChatPanel({
   const handleReactRef = useRef<
     ((glyph: string, packetId: number, msgChannel: number) => Promise<void>) | null
   >(null);
+  const clearReactionCaptureRef = useRef<() => void>(() => {});
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const clearReactionCapture = useCallback(() => {
+    reactionPickerTarget.current = null;
+    const el = reactionHiddenInputRef.current;
+    if (el) {
+      el.value = '';
+      el.blur();
+    }
+  }, []);
+  clearReactionCaptureRef.current = clearReactionCapture;
 
   // Feature: sender filter
   const [filterSender, setFilterSender] = useState<number | null>(null);
@@ -1127,6 +1143,7 @@ function ChatPanel({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setPickerOpenFor(null);
+        clearReactionCaptureRef.current();
         if (replyTo) {
           setReplyTo(null);
         } else if (filterSender != null) {
@@ -1173,6 +1190,7 @@ function ChatPanel({
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
     const sendChannel = msgChannel === -1 ? 0 : msgChannel;
+    clearReactionCapture();
     setPickerOpenFor(null);
     setChatActionError(null);
     try {
@@ -1342,13 +1360,18 @@ function ChatPanel({
       if (!unicode) return;
       const parsed = reactionGlyphFromPicker(unicode);
       const target = reactionPickerTarget.current;
-      if (parsed && target) {
+      if (parsed && target && isReactionPickerEmojiGlyph(parsed.glyph)) {
         void handleReactRef.current?.(parsed.glyph, target.id, target.channel);
       }
     };
+    const onBlur = () => {
+      clearReactionCaptureRef.current();
+    };
     el.addEventListener('input', handler);
+    el.addEventListener('blur', onBlur);
     return () => {
       el.removeEventListener('input', handler);
+      el.removeEventListener('blur', onBlur);
     };
   }, []);
 
@@ -2279,7 +2302,12 @@ function ChatPanel({
                                     const id = msg.packetId ?? msg.timestamp;
                                     reactionPickerTarget.current = { id, channel: msg.channel };
                                     if (chatPanelIsLinux()) {
-                                      setPickerOpenFor(showPicker ? null : id);
+                                      if (showPicker) {
+                                        clearReactionCapture();
+                                        setPickerOpenFor(null);
+                                      } else {
+                                        setPickerOpenFor(id);
+                                      }
                                     } else {
                                       void window.electronAPI.showEmojiPanel();
                                     }
@@ -2437,6 +2465,7 @@ function ChatPanel({
         aria-hidden="true"
         tabIndex={-1}
         readOnly={false}
+        onBlur={clearReactionCapture}
         style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
       />
 

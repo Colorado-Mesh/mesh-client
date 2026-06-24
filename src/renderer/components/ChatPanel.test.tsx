@@ -2483,6 +2483,90 @@ describe('ChatPanel tapback reaction picker', () => {
       expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
     },
   );
+
+  function reactionHiddenInput(): HTMLInputElement {
+    const input = document.querySelector<HTMLInputElement>(
+      'input[aria-hidden="true"][tabindex="-1"]',
+    );
+    expect(input).not.toBeNull();
+    return input!;
+  }
+
+  it.each(['darwin', 'win32'] as const)(
+    'calls onReact when native panel inserts emoji into hidden input (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      const hidden = reactionHiddenInput();
+      hidden.value = '👍';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+      });
+      expect(onReact).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('does not send plain keystrokes as reactions after emoji reaction on Windows', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42 }]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('React'));
+    const hidden = reactionHiddenInput();
+    hidden.value = '👍';
+    fireEvent.input(hidden);
+    await waitFor(() => {
+      expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+    });
+    hidden.value = 'j';
+    fireEvent.input(hidden);
+    await waitFor(() => {
+      expect(onReact).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('does not send keystrokes as reactions after dismissing native panel without selection', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42 }]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('React'));
+    const hidden = reactionHiddenInput();
+    fireEvent.blur(hidden);
+    hidden.value = 'a';
+    fireEvent.input(hidden);
+    await waitFor(() => {
+      expect(onReact).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe('ChatPanel RF hop label', () => {

@@ -1,4 +1,4 @@
-/** Max device clock lead we accept before treating chat timestamps as receive-time estimate. */
+/** Max device clock lead we accept before replacing chat timestamps with local receive time. */
 export const MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC = 300; // 5 min
 
 /** True when raw device timestamp is unreasonably far in the future (RTC skew / poison). */
@@ -14,7 +14,7 @@ export function isUnreasonablyFutureMessageTimestampMs(
 
 /**
  * Effective chat message timestamp in ms; caps device RTC skew beyond `maxFutureSkewSec`.
- * Timestamps unreasonably far in the future clamp to `nowMs` (receive-time estimate).
+ * Missing or future-skewed timestamps are replaced with `nowMs` (local receive time).
  */
 export function effectiveMessageTimestampMs(
   timestampMs: number,
