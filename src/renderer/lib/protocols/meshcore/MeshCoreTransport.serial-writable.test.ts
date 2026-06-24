@@ -26,7 +26,16 @@ vi.mock('../../connection', () => ({
   closeSerialPortIfOpen: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { patchMeshcoreWebSerialWritable, reconnectMeshcoreSerial } from './MeshCoreTransport';
+import { closeSerialPortIfOpen } from '../../connection';
+import {
+  type MeshcoreEchoFilterableConnection,
+  patchMeshcoreCompanionTxEchoFilter,
+} from '../../meshcoreCompanionTxEchoFilter';
+import {
+  createMeshCoreConnection,
+  patchMeshcoreWebSerialWritable,
+  reconnectMeshcoreSerial,
+} from './MeshCoreTransport';
 
 describe('patchMeshcoreWebSerialWritable', () => {
   it('serializes concurrent getWriter calls like WebSerialConnection.write', async () => {
@@ -114,5 +123,55 @@ describe('reconnectMeshcoreSerial writable patch', () => {
     expect(conn).toBe(patched);
     expect(patched.writable).not.toBe(innerWritable);
     expect(port.writable).toBe(innerWritable);
+  });
+});
+
+describe('createMeshCoreConnection serial', () => {
+  const originalSerial = navigator.serial;
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: originalSerial,
+    });
+  });
+
+  it('closes a stale open port before openSerialPort on first connect', async () => {
+    webSerialInstances.length = 0;
+    const port = {
+      writable: new WritableStream<Uint8Array>({ write: vi.fn() }),
+      readable: new ReadableStream(),
+      open: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      getInfo: vi.fn().mockReturnValue({ usbVendorId: 0x1234, usbProductId: 0x5678 }),
+    };
+
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        requestPort: vi.fn().mockResolvedValue(port),
+      },
+    });
+
+    await createMeshCoreConnection({ transport: 'serial' });
+
+    expect(closeSerialPortIfOpen).toHaveBeenCalledWith(port);
+    expect(port.open).toHaveBeenCalledWith({ baudRate: 115200 });
+  });
+});
+
+describe('openSerialPort TX echo filter', () => {
+  it('patches WebSerialConnection so DeviceQuery echo is dropped before onFrameReceived', async () => {
+    const onFrameReceived = vi.fn<(frame: Uint8Array) => void>();
+    const conn: MeshcoreEchoFilterableConnection = {
+      sendToRadioFrame: vi.fn(async () => {}),
+      onFrameReceived,
+    };
+    patchMeshcoreCompanionTxEchoFilter(conn);
+
+    const deviceQuery = new Uint8Array([22, 1]);
+    await conn.sendToRadioFrame(deviceQuery);
+    conn.onFrameReceived(deviceQuery);
+    expect(onFrameReceived).not.toHaveBeenCalled();
   });
 });

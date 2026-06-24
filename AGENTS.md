@@ -9,6 +9,14 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 - **Stateful/I/O code:** Preserve integrity on failure; document failure point, fallback, and logging where it matters.
 - **Pre-commit patience:** This repo has a very long pre-commit hook chain (lint, typecheck, thousands of tests, audit, actionlint, yamllint, many check:\* scripts). Commits can take 2+ minutes. Be patient and let them finish — do not interrupt or force-skip hooks.
 
+### Platform parity
+
+- **Default:** behavioral fixes and UI lifecycle changes apply to **linux, darwin, and win32** unless there is a documented, justified OS-specific exception.
+- A reporter platform (e.g. Windows) does **not** by itself narrow scope — reproduce or reason about other platforms before splitting code paths.
+- **When branching on `getPlatform()` / `process.platform`:** prefer shared state machines and teardown helpers; branch only at the boundary where the OS API differs (e.g. `showEmojiPanel()` vs inline `<emoji-picker>`).
+- **Document exceptions inline** with a short comment (`// OS-specific: …`) and, for non-obvious splits, a note in the PR body.
+- **Tests:** cover all three platforms when behavior is shared (`it.each(['linux', 'darwin', 'win32'])`); use platform-specific cases only when the mechanism under test exists on that OS.
+
 ## 2. Architecture & Domain
 
 Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Dual-protocol:** meshtastic and meshcore; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc.). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
@@ -84,8 +92,10 @@ Adding a cross-boundary feature:
 
 - **Dev:** `@axe-core/react` runs in `pnpm run dev` (`src/renderer/main.tsx`); treat `serious` axe console output as a bug.
 - **CI:** Use `vitest-axe` (`import { axe } from 'vitest-axe'`); assert `toHaveNoViolations()` on the rendered subtree.
+- **Do not mock `themeColors` in component axe tests** — call `hydrateAxeThemeColors()` from `src/renderer/lib/a11yTestHelpers.ts` so color-contrast runs against real hex values (jsdom does not load Tailwind CSS).
 - **When to add tests:** New or changed UI with custom foreground/background pairs (badges, pills, buttons)—especially `text-[10px]` / `text-xs` on saturated fills.
 - **Theme tokens:** `readable-green` is for white-on-green fills; the default must pass **4.5:1** contrast with white (enforced in `src/renderer/lib/themeColors.test.ts`).
+- **`animate-pulse`:** Never on the same element as small text with strict contrast fills. Use a separate `aria-hidden` decorative pulse layer; the text-bearing element stays fully opaque (see `ProtocolUnreadBadge.tsx`). Connection-status header pulses remain the documented exception.
 - **Badge patterns:** Sidebar/Chat unread badges use `bg-red-600 text-white`; protocol-switcher badges use brand colors (`bg-readable-green`, `bg-cyan-600`)—add axe coverage when touching either.
 - **Manual:** See [`docs/accessibility-checklist.md`](docs/accessibility-checklist.md).
 

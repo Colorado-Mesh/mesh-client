@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-motion';
 import {
   type ComponentProps,
+  type KeyboardEvent as ReactKeyboardEvent,
   memo,
   type ReactNode,
   useCallback,
@@ -47,7 +48,13 @@ import {
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
+import {
+  clampReadWatermarkMs,
+  effectiveMessageTimestampMs,
+  isUnreasonablyFutureMessageTimestampMs,
+} from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
+import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -87,17 +94,13 @@ import {
   pickAudibleNotificationType,
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
+import { applyControlledEditableValue } from '../lib/controlledEditableValue';
 import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
   meshcorePayloadIsTapbackEmojiOnly,
 } from '../lib/meshcoreChannelText';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
-import {
-  clampReadWatermarkMs,
-  effectiveMessageTimestampMs,
-  isUnreasonablyFutureMessageTimestampMs,
-} from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import {
   emojiDisplayLabel,
@@ -106,7 +109,6 @@ import {
   reactionGlyphFromPicker,
 } from '../lib/reactions';
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
-import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '../lib/timeConstants';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { ChatComposer } from './ChatComposer';
@@ -461,22 +463,53 @@ function ChatPanel({
   const reactionPickerRef = useRef<HTMLElement | null>(null);
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
+  const reactionCapturePendingRef = useRef(false);
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const handleReactRef = useRef<
     ((glyph: string, packetId: number, msgChannel: number) => Promise<void>) | null
   >(null);
-  const clearReactionCaptureRef = useRef<() => void>(() => {});
+  const clearReactionCaptureRef = useRef<(opts?: { refocusComposer?: boolean }) => void>(() => {});
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const clearReactionCapture = useCallback(() => {
+  const clearReactionCapture = useCallback((opts?: { refocusComposer?: boolean }) => {
+    reactionCapturePendingRef.current = false;
     reactionPickerTarget.current = null;
     const el = reactionHiddenInputRef.current;
     if (el) {
       el.value = '';
       el.blur();
     }
+    if (opts?.refocusComposer) {
+      composerInputRef.current?.focus();
+    }
   }, []);
   clearReactionCaptureRef.current = clearReactionCapture;
+
+  const insertCharIntoComposer = useCallback((char: string) => {
+    const textarea = composerInputRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    const next = textarea.value.slice(0, start) + char + textarea.value.slice(end);
+    applyControlledEditableValue(textarea, next);
+    const caret = start + char.length;
+    textarea.setSelectionRange(caret, caret);
+  }, []);
+
+  const handleHiddenReactionKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLInputElement>) => {
+      // OS-specific: hidden reaction input exists only on darwin/win32 (showEmojiPanel)
+      if (chatPanelIsLinux()) return;
+      if (!reactionCapturePendingRef.current) return;
+      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isReactionPickerEmojiGlyph(e.key)) return;
+      e.preventDefault();
+      clearReactionCapture({ refocusComposer: true });
+      insertCharIntoComposer(e.key);
+    },
+    [clearReactionCapture, insertCharIntoComposer],
+  );
 
   // Feature: sender filter
   const [filterSender, setFilterSender] = useState<number | null>(null);
@@ -1143,7 +1176,7 @@ function ChatPanel({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setPickerOpenFor(null);
-        clearReactionCaptureRef.current();
+        clearReactionCaptureRef.current({ refocusComposer: true });
         if (replyTo) {
           setReplyTo(null);
         } else if (filterSender != null) {
@@ -1190,7 +1223,7 @@ function ChatPanel({
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
     const sendChannel = msgChannel === -1 ? 0 : msgChannel;
-    clearReactionCapture();
+    clearReactionCapture({ refocusComposer: true });
     setPickerOpenFor(null);
     setChatActionError(null);
     try {
@@ -1335,9 +1368,10 @@ function ChatPanel({
     if (!pickerOpenFor) return;
     const el = reactionPickerRef.current;
     if (!el) return;
-    const target = reactionPickerTarget.current;
-    if (!target) return;
     const handler = (e: Event) => {
+      if (!reactionCapturePendingRef.current) return;
+      const target = reactionPickerTarget.current;
+      if (!target) return;
       const unicode = (e as CustomEvent).detail.emoji.unicode as string;
       const parsed = reactionGlyphFromPicker(unicode);
       if (parsed) {
@@ -1355,6 +1389,7 @@ function ChatPanel({
     const el = reactionHiddenInputRef.current;
     if (!el) return;
     const handler = () => {
+      if (!reactionCapturePendingRef.current) return;
       const unicode = el.value;
       el.value = '';
       if (!unicode) return;
@@ -1375,10 +1410,21 @@ function ChatPanel({
     };
   }, []);
 
+  useEffect(() => {
+    const onWindowFocus = () => {
+      if (reactionCapturePendingRef.current) {
+        clearReactionCapture({ refocusComposer: true });
+      }
+    };
+    window.addEventListener('focus', onWindowFocus);
+    return () => {
+      window.removeEventListener('focus', onWindowFocus);
+    };
+  }, [clearReactionCapture]);
+
   const isDmMode = viewMode === 'dm' && activeDmNode != null;
   const nowMs = useNowMs(isDmMode);
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
-  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Jump to date — scroll to first message with matching day key
   const handleJumpToDate = useCallback(
@@ -2299,16 +2345,20 @@ function ChatPanel({
                                       reactionHiddenInputRef.current?.focus();
                                   }}
                                   onClick={() => {
+                                    setReplyTo(null);
                                     const id = msg.packetId ?? msg.timestamp;
-                                    reactionPickerTarget.current = { id, channel: msg.channel };
                                     if (chatPanelIsLinux()) {
                                       if (showPicker) {
-                                        clearReactionCapture();
+                                        clearReactionCapture({ refocusComposer: true });
                                         setPickerOpenFor(null);
                                       } else {
+                                        reactionPickerTarget.current = { id, channel: msg.channel };
+                                        reactionCapturePendingRef.current = true;
                                         setPickerOpenFor(id);
                                       }
                                     } else {
+                                      reactionPickerTarget.current = { id, channel: msg.channel };
+                                      reactionCapturePendingRef.current = true;
                                       void window.electronAPI.showEmojiPanel();
                                     }
                                   }}
@@ -2465,7 +2515,10 @@ function ChatPanel({
         aria-hidden="true"
         tabIndex={-1}
         readOnly={false}
-        onBlur={clearReactionCapture}
+        onBlur={() => {
+          clearReactionCapture();
+        }}
+        onKeyDown={handleHiddenReactionKeyDown}
         style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
       />
 

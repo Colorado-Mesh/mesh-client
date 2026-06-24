@@ -1,12 +1,12 @@
 import { MS_PER_MINUTE } from '../../shared/timeConstants';
 
-export { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
-
-/**
- * Compact chat: merged consecutive bubbles from the same sender show a muted timestamp when the gap
- * from the previous message is at least this long (same calendar day; day separators still break groups).
- */
-export const CHAT_COMPACT_CONTINUATION_TIME_GAP_MS = 5 * MS_PER_MINUTE;
+export {
+  CHAT_COMPACT_CONTINUATION_TIME_GAP_MS,
+  MS_PER_DAY,
+  MS_PER_HOUR,
+  MS_PER_MINUTE,
+  MS_PER_SECOND,
+} from '../../shared/timeConstants';
 
 /** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); matches `useMeshCore` `withTimeout`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;

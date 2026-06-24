@@ -54,6 +54,7 @@ import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpTooltip } from './components/HelpTooltip';
 import LanguageSelector from './components/LanguageSelector';
+import { ProtocolUnreadBadge } from './components/ProtocolUnreadBadge';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
@@ -2032,9 +2033,10 @@ function AppContent({
                 >
                   Meshtastic
                   {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
-                    <span className="bg-readable-green ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-white">
-                      {meshtasticChatUnread > 99 ? '99+' : meshtasticChatUnread}
-                    </span>
+                    <ProtocolUnreadBadge
+                      count={meshtasticChatUnread}
+                      fillClass="bg-readable-green"
+                    />
                   )}
                 </button>
                 <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
@@ -2053,9 +2055,7 @@ function AppContent({
                 >
                   MeshCore
                   {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
-                    <span className="ml-1.5 inline-flex h-4 min-w-[1.1rem] animate-pulse items-center justify-center rounded-full bg-cyan-600 px-0.5 text-[10px] font-bold text-white">
-                      {meshcoreChatUnread > 99 ? '99+' : meshcoreChatUnread}
-                    </span>
+                    <ProtocolUnreadBadge count={meshcoreChatUnread} fillClass="bg-cyan-600" />
                   )}
                 </button>
               </div>
