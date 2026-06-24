@@ -7,7 +7,7 @@ import {
   meshcoreChatStubNodeIdFromDisplayName,
   sanitizeMeshcoreChatWireText,
 } from './meshcoreUtils';
-import { normalizeReactionEmoji } from './reactions';
+import { isReactionPickerEmojiGlyph, normalizeReactionEmoji } from './reactions';
 import { truncateReplyPreviewText } from './replyPreview';
 import type { ChatMessage, MeshNode } from './types';
 
@@ -205,6 +205,7 @@ export function meshcorePayloadIsTapbackEmojiOnly(payload: string): boolean {
   } else if (t.length > 8) {
     return false;
   }
+  if (!isReactionPickerEmojiGlyph(t)) return false;
   return normalizeReactionEmoji(undefined, t) !== undefined;
 }
 

@@ -323,6 +323,11 @@ describe('meshcorePayloadIsTapbackEmojiOnly', () => {
   it('rejects multi-word reply', () => {
     expect(meshcorePayloadIsTapbackEmojiOnly('hello 👍')).toBe(false);
   });
+
+  it('rejects plain ASCII letters', () => {
+    expect(meshcorePayloadIsTapbackEmojiOnly('g')).toBe(false);
+    expect(meshcorePayloadIsTapbackEmojiOnly('a')).toBe(false);
+  });
 });
 
 describe('meshcoreBracketDisplayNamesMatch', () => {

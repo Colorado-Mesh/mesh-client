@@ -2492,6 +2492,27 @@ describe('ChatPanel tapback reaction picker', () => {
     return input!;
   }
 
+  function composeTextarea(): HTMLTextAreaElement {
+    return screen.getByPlaceholderText('Enter message here');
+  }
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'clears replyTo when React is clicked (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel {...defaultProps} />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('Reply'));
+      expect(screen.getByText(/Replying to/)).toBeInTheDocument();
+      await user.click(screen.getByTitle('React'));
+      expect(screen.queryByText(/Replying to/)).not.toBeInTheDocument();
+    },
+  );
+
   it.each(['darwin', 'win32'] as const)(
     'calls onReact when native panel inserts emoji into hidden input (%s)',
     async (platform) => {
@@ -2518,32 +2539,114 @@ describe('ChatPanel tapback reaction picker', () => {
     },
   );
 
-  it('does not send plain keystrokes as reactions after emoji reaction on Windows', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
-    const onReact = vi.fn().mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <ChatPanel
-          {...defaultProps}
-          onReact={onReact}
-          messages={[{ ...baseMessage, packetId: 42 }]}
-        />
-      </ToastProvider>,
-    );
-    await user.click(screen.getByTitle('React'));
-    const hidden = reactionHiddenInput();
-    hidden.value = '👍';
-    fireEvent.input(hidden);
-    await waitFor(() => {
-      expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
-    });
-    hidden.value = 'j';
-    fireEvent.input(hidden);
-    await waitFor(() => {
-      expect(onReact).toHaveBeenCalledTimes(1);
-    });
-  });
+  it.each(['darwin', 'win32'] as const)(
+    'refocuses composer after native emoji reaction (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      const hidden = reactionHiddenInput();
+      hidden.value = '👍';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+      });
+      expect(composeTextarea()).toBe(document.activeElement);
+    },
+  );
+
+  it.each(['darwin', 'win32'] as const)(
+    'does not send plain keystrokes as reactions after emoji reaction (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      const hidden = reactionHiddenInput();
+      hidden.value = '👍';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+      });
+      hidden.value = 'j';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledTimes(1);
+      });
+    },
+  );
+
+  it.each(['darwin', 'win32'] as const)(
+    'redirects printable keys from hidden input to composer while capture is pending (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      const hidden = reactionHiddenInput();
+      fireEvent.keyDown(hidden, { key: 'g' });
+      await waitFor(() => {
+        expect(onReact).not.toHaveBeenCalled();
+        expect(composeTextarea()).toHaveValue('g');
+        expect(composeTextarea()).toBe(document.activeElement);
+      });
+    },
+  );
+
+  it.each(['darwin', 'win32'] as const)(
+    'clears capture on window focus and refocuses composer (%s)',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByTitle('React'));
+      fireEvent.focus(window);
+      const hidden = reactionHiddenInput();
+      hidden.value = 'a';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).not.toHaveBeenCalled();
+        expect(composeTextarea()).toBe(document.activeElement);
+      });
+    },
+  );
 
   it('does not send keystrokes as reactions after dismissing native panel without selection', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
@@ -2565,6 +2668,69 @@ describe('ChatPanel tapback reaction picker', () => {
     fireEvent.input(hidden);
     await waitFor(() => {
       expect(onReact).not.toHaveBeenCalled();
+    });
+  });
+
+  it('does not send a second Linux emoji-click after reaction without re-opening React', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    const US_FLAG = '\u{1F1FA}\u{1F1F8}';
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42 }]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('React'));
+    await waitFor(() => {
+      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+    });
+    const picker = document.querySelector('emoji-picker');
+    expect(picker).not.toBeNull();
+    picker!.dispatchEvent(
+      new CustomEvent('emoji-click', { detail: { emoji: { unicode: US_FLAG } }, bubbles: true }),
+    );
+    await waitFor(() => {
+      expect(onReact).toHaveBeenCalledWith(US_FLAG, 42, 0);
+    });
+    picker!.dispatchEvent(
+      new CustomEvent('emoji-click', { detail: { emoji: { unicode: '👍' } }, bubbles: true }),
+    );
+    await waitFor(() => {
+      expect(onReact).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('clears Linux capture on window focus while inline picker is open', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          onReact={onReact}
+          messages={[{ ...baseMessage, packetId: 42 }]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByTitle('React'));
+    await waitFor(() => {
+      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+    });
+    fireEvent.focus(window);
+    const picker = document.querySelector('emoji-picker');
+    expect(picker).not.toBeNull();
+    picker!.dispatchEvent(
+      new CustomEvent('emoji-click', { detail: { emoji: { unicode: '👍' } }, bubbles: true }),
+    );
+    await waitFor(() => {
+      expect(onReact).not.toHaveBeenCalled();
+      expect(composeTextarea()).toBe(document.activeElement);
     });
   });
 });

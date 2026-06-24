@@ -9,6 +9,14 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 - **Stateful/I/O code:** Preserve integrity on failure; document failure point, fallback, and logging where it matters.
 - **Pre-commit patience:** This repo has a very long pre-commit hook chain (lint, typecheck, thousands of tests, audit, actionlint, yamllint, many check:\* scripts). Commits can take 2+ minutes. Be patient and let them finish — do not interrupt or force-skip hooks.
 
+### Platform parity
+
+- **Default:** behavioral fixes and UI lifecycle changes apply to **linux, darwin, and win32** unless there is a documented, justified OS-specific exception.
+- A reporter platform (e.g. Windows) does **not** by itself narrow scope — reproduce or reason about other platforms before splitting code paths.
+- **When branching on `getPlatform()` / `process.platform`:** prefer shared state machines and teardown helpers; branch only at the boundary where the OS API differs (e.g. `showEmojiPanel()` vs inline `<emoji-picker>`).
+- **Document exceptions inline** with a short comment (`// OS-specific: …`) and, for non-obvious splits, a note in the PR body.
+- **Tests:** cover all three platforms when behavior is shared (`it.each(['linux', 'darwin', 'win32'])`); use platform-specific cases only when the mechanism under test exists on that OS.
+
 ## 2. Architecture & Domain
 
 Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Dual-protocol:** meshtastic and meshcore; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc.). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
