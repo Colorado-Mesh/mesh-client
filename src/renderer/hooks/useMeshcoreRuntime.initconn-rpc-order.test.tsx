@@ -23,12 +23,35 @@ function deferred<T>() {
 
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
+    private listeners = new Map<string | number, Set<(...args: unknown[]) => void>>();
+
     constructor(port: unknown) {
       void port;
     }
-    on = vi.fn();
-    off = vi.fn();
-    once = vi.fn();
+    on(event: string | number, cb: (...args: unknown[]) => void) {
+      const listeners = this.listeners.get(event) ?? new Set();
+      listeners.add(cb);
+      this.listeners.set(event, listeners);
+      return undefined;
+    }
+    off(event: string | number, cb: (...args: unknown[]) => void) {
+      this.listeners.get(event)?.delete(cb);
+      return undefined;
+    }
+    once(event: string | number, cb: (...args: unknown[]) => void) {
+      const wrapped = (...args: unknown[]) => {
+        this.off(event, wrapped);
+        cb(...args);
+      };
+      this.on(event, wrapped);
+      return undefined;
+    }
+    emit(event: string | number, ...args: unknown[]) {
+      this.listeners.get(event)?.forEach((cb) => {
+        cb(...args);
+      });
+      return undefined;
+    }
     close = vi.fn().mockResolvedValue(undefined);
     getSelfInfo = getSelfInfoMock;
     getContacts = getContactsMock;
@@ -69,7 +92,10 @@ vi.mock('@liamcottle/meshcore.js', () => {
       },
     });
     sendFloodAdvert = vi.fn().mockResolvedValue(undefined);
-    sendToRadioFrame = vi.fn().mockResolvedValue(undefined);
+    sendToRadioFrame = vi.fn().mockImplementation((data: Uint8Array) => {
+      void data;
+      this.emit('rx', new Uint8Array([25, 0x0f, 3]));
+    });
   }
 
   class MockSerialConnection {
@@ -146,6 +172,8 @@ const selfInfoPayload = {
 };
 
 describe('useMeshcoreRuntime initConn RPC ordering', () => {
+  const originalSerial = navigator.serial;
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
@@ -159,6 +187,10 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
   });
 
   afterEach(() => {
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: originalSerial,
+    });
     vi.restoreAllMocks();
   });
 
@@ -194,8 +226,10 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     });
 
     const { result, unmount } = renderHook(() => useMeshcoreRuntime());
-    void act(async () => {
-      await result.current.connect('serial');
+    let connectPromise: Promise<void> | undefined;
+    await act(async () => {
+      connectPromise = result.current.connect('serial');
+      await Promise.resolve();
     });
 
     await waitFor(() => {
@@ -225,7 +259,11 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
     });
 
     await act(async () => {
-      await result.current.disconnect().catch(() => {});
+      await connectPromise;
+    });
+
+    await act(async () => {
+      await result.current.disconnect();
     });
     unmount();
   });
