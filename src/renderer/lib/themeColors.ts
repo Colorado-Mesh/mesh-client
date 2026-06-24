@@ -5,6 +5,7 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { parseStoredJson } from './parseStoredJson';
+import { contrastRatio } from './wcagContrast';
 
 export const THEME_COLORS_STORAGE_KEY = 'mesh-client:themeColors';
 
@@ -41,7 +42,7 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   sidebarActiveBg: '#1e293b',
   brandGreen: '#86efac',
   brightGreen: '#86efac',
-  readableGreen: '#16a34a',
+  readableGreen: '#15803d',
   deepBlack: '#0f172a',
   secondaryDark: '#334155',
   muted: '#94a3b8',
@@ -69,7 +70,7 @@ export const THEME_COLOR_PRESETS: { label: string; hex: string }[] = [
   { label: 'Amber 500', hex: '#f59e0b' },
   { label: 'Red 500', hex: '#ef4444' },
   { label: 'Emerald 500', hex: '#10b981' },
-  { label: 'Green 600', hex: '#16a34a' },
+  { label: 'Green 700', hex: '#15803d' },
   { label: 'Violet 500', hex: '#8b5cf6' },
   { label: 'Cyan 400', hex: '#22d3ee' },
   { label: 'Purple 400', hex: '#c084fc' },
@@ -226,6 +227,19 @@ export function applyThemeColors(colors: Record<ThemeColorKey, string>): void {
   }
 }
 
+const READABLE_GREEN_ON_WHITE_MIN_RATIO = 4.5;
+
+/** readableGreen is for white-on-green fills — persisted overrides must meet WCAG AA. */
+function ensureReadableGreenContrast(colors: Record<ThemeColorKey, string>): boolean {
+  const hex = normalizeHex(colors.readableGreen);
+  if (!hex || contrastRatio('#ffffff', hex) < READABLE_GREEN_ON_WHITE_MIN_RATIO) {
+    const wasDifferent = colors.readableGreen !== DEFAULT_THEME_COLORS.readableGreen;
+    colors.readableGreen = DEFAULT_THEME_COLORS.readableGreen;
+    return wasDifferent;
+  }
+  return false;
+}
+
 export type StoredThemeColors = Partial<Record<ThemeColorKey, string>>;
 
 /**
@@ -242,6 +256,9 @@ export function loadThemeColors(): Record<ThemeColorKey, string> {
       const v = parsed[key];
       if (typeof v === 'string' && normalizeHex(v)) merged[key] = normalizeHex(v)!;
     }
+  }
+  if (ensureReadableGreenContrast(merged)) {
+    persistThemeColors(merged);
   }
   return merged;
 }

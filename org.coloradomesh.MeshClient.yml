@@ -88,12 +88,12 @@ modules:
         dest-filename: pnpm-standalone
         only-arches: [aarch64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v41.8.0/electron-v41.8.0-linux-x64.zip
-        sha256: 93385de93f30880e01acda4e5c24ddd84001257ac8c6859cc2df93764e809339
+        url: https://github.com/electron/electron/releases/download/v41.9.0/electron-v41.9.0-linux-x64.zip
+        sha256: 3d9d4eed2e0177d8dc3d9b3567775b234eb3c81d67967447ebefbf040cbc3604
         dest: electron-prebuilt
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/electron/electron/releases/download/v41.8.0/electron-v41.8.0-linux-arm64.zip
-        sha256: 3dddc1e3331c3d4ac819ff71573c95367ec81e1941263a5578ddb4769b449473
+        url: https://github.com/electron/electron/releases/download/v41.9.0/electron-v41.9.0-linux-arm64.zip
+        sha256: cb4994c389e5b2f5f55a892faa45ece972512d4b09cb3cc8c9ad18a4896cb393
         dest: electron-prebuilt
         only-arches: [aarch64]

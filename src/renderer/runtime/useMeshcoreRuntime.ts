@@ -128,12 +128,10 @@ import {
   resolveMeshcoreOutboundWireText,
 } from '../lib/meshcoreChannelText';
 import {
-  buildGetAutoaddConfigFrame,
   buildSetAutoaddConfigFrame,
+  fetchMeshcoreAutoaddConfigFromConn,
   mergeAutoaddConfigByte,
   type MeshcoreAutoaddWireState,
-  meshcoreCoerceRadioRxFrame,
-  parseAutoaddConfigResponse,
 } from '../lib/meshcoreContactAutoAdd';
 import { queueLenFromMeshCoreCoreStatsRaw } from '../lib/meshcoreCoreStatsQueue';
 import {
@@ -1505,27 +1503,20 @@ export function useMeshcoreRuntime() {
   const refreshMeshcoreAutoaddFromDevice = useCallback(async () => {
     const conn = connRef.current;
     if (!conn) return;
-    await new Promise<void>((resolve, reject) => {
-      const t = window.setTimeout(() => {
-        conn.off('rx', onRx);
-        reject(new Error('Timed out waiting for auto-add config'));
-      }, 5000);
-      const onRx = (data: unknown) => {
-        const frame = meshcoreCoerceRadioRxFrame(data);
-        const parsed = frame && parseAutoaddConfigResponse(frame);
-        if (!parsed) return;
-        window.clearTimeout(t);
-        conn.off('rx', onRx);
-        setMeshcoreAutoadd(parsed);
-        resolve();
-      };
-      conn.on('rx', onRx);
-      void conn.sendToRadioFrame(buildGetAutoaddConfigFrame()).catch((e: unknown) => {
-        window.clearTimeout(t);
-        conn.off('rx', onRx);
-        reject(e instanceof Error ? e : new Error(String(e)));
-      });
-    });
+    try {
+      const outcome = await fetchMeshcoreAutoaddConfigFromConn(conn);
+      if (outcome.kind === 'ok') {
+        setMeshcoreAutoadd(outcome.state);
+        return;
+      }
+      console.debug(
+        `[useMeshcoreRuntime] refreshMeshcoreAutoaddFromDevice skipped (${outcome.kind})`,
+      );
+    } catch (e: unknown) {
+      console.warn(
+        '[useMeshcoreRuntime] refreshMeshcoreAutoaddFromDevice error ' + errLikeToLogString(e),
+      );
+    }
   }, []);
 
   /** Shared post-connection handshake: wire events, fetch self info, contacts, channels. */
@@ -1802,15 +1793,7 @@ export function useMeshcoreRuntime() {
           }),
       );
 
-      await awaitUnlessMeshcoreSetupCancelled(
-        setupGen,
-        refreshMeshcoreAutoaddFromDevice().catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] refreshMeshcoreAutoaddFromDevice (init) error ' +
-              errLikeToLogString(e),
-          );
-        }),
-      );
+      await awaitUnlessMeshcoreSetupCancelled(setupGen, refreshMeshcoreAutoaddFromDevice());
 
       try {
         const settingsRaw = getAppSettingsRaw();

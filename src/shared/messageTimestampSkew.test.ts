@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  clampMeshcoreMessageTimestampForStorage,
   clampReadWatermarkMs,
   effectiveMessageTimestampMs,
   isUnreasonablyFutureMessageTimestampMs,
+  MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 } from './messageTimestampSkew';
 
 describe('messageTimestampSkew', () => {
@@ -14,7 +14,6 @@ describe('messageTimestampSkew', () => {
     vi.setSystemTime(nowMs);
     const future = nowMs + 8 * 365 * 24 * 3600 * 1000;
     expect(effectiveMessageTimestampMs(future, nowMs)).toBe(nowMs);
-    expect(clampMeshcoreMessageTimestampForStorage(future, nowMs)).toBe(nowMs);
     expect(isUnreasonablyFutureMessageTimestampMs(future, nowMs)).toBe(true);
     vi.useRealTimers();
   });
@@ -29,12 +28,39 @@ describe('messageTimestampSkew', () => {
   it('treats zero message timestamp as missing (not Unix epoch)', () => {
     const nowMs = 1_700_000_000_000;
     expect(effectiveMessageTimestampMs(0, nowMs)).toBe(nowMs);
-    expect(clampMeshcoreMessageTimestampForStorage(0, nowMs)).toBe(nowMs);
     expect(isUnreasonablyFutureMessageTimestampMs(0, nowMs)).toBe(false);
+  });
+
+  it('treats negative and non-finite message timestamps as missing', () => {
+    const nowMs = 1_700_000_000_000;
+    for (const bad of [-1, -1000, NaN, Infinity, -Infinity]) {
+      expect(effectiveMessageTimestampMs(bad, nowMs)).toBe(nowMs);
+      expect(isUnreasonablyFutureMessageTimestampMs(bad, nowMs)).toBe(false);
+    }
   });
 
   it('treats zero watermark as no last-read marker', () => {
     const nowMs = 1_700_000_000_000;
     expect(clampReadWatermarkMs(0, nowMs)).toBe(0);
+  });
+
+  it('clamps watermark beyond max future skew to allowed maximum', () => {
+    const nowMs = 1_700_000_000_000;
+    const maxAllowed = nowMs + MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC * 1000;
+    const farFuture = nowMs + 8 * 365 * 24 * 3600 * 1000;
+    expect(clampReadWatermarkMs(farFuture, nowMs)).toBe(maxAllowed);
+  });
+
+  it('preserves watermark within skew window', () => {
+    const nowMs = 1_700_000_000_000;
+    const within = nowMs + 60_000;
+    expect(clampReadWatermarkMs(within, nowMs)).toBe(within);
+  });
+
+  it('treats negative and non-finite watermarks as no last-read marker', () => {
+    const nowMs = 1_700_000_000_000;
+    for (const bad of [-1, -1000, NaN, Infinity, -Infinity]) {
+      expect(clampReadWatermarkMs(bad, nowMs)).toBe(0);
+    }
   });
 });

@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildGetAutoaddConfigFrame,
   buildSetAutoaddConfigFrame,
+  fetchMeshcoreAutoaddConfigFromConn,
+  isMeshcoreAutoaddGetUnsupportedErrFrame,
   mergeAutoaddConfigByte,
   MESHCORE_AUTO_ADD_CHAT,
   MESHCORE_AUTO_ADD_OVERWRITE_OLDEST,
@@ -11,7 +13,9 @@ import {
   MESHCORE_AUTO_ADD_SENSOR,
   MESHCORE_CMD_GET_AUTOADD_CONFIG,
   MESHCORE_CMD_SET_AUTOADD_CONFIG,
+  MESHCORE_ERR_UNSUPPORTED_CMD,
   MESHCORE_RESP_CODE_AUTOADD_CONFIG,
+  MESHCORE_RESP_CODE_ERR,
   meshcoreCoerceRadioRxFrame,
   parseAutoaddConfigResponse,
   splitAutoaddConfigByte,
@@ -82,5 +86,70 @@ describe('meshcoreContactAutoAdd', () => {
       roomServer: true,
       sensor: true,
     });
+  });
+
+  it('isMeshcoreAutoaddGetUnsupportedErrFrame detects Err UnsupportedCmd', () => {
+    expect(
+      isMeshcoreAutoaddGetUnsupportedErrFrame(
+        new Uint8Array([MESHCORE_RESP_CODE_ERR, MESHCORE_ERR_UNSUPPORTED_CMD]),
+      ),
+    ).toBe(true);
+    expect(
+      isMeshcoreAutoaddGetUnsupportedErrFrame(new Uint8Array([MESHCORE_RESP_CODE_ERR, 2])),
+    ).toBe(false);
+  });
+
+  it('fetchMeshcoreAutoaddConfigFromConn resolves ok on RESP 25', async () => {
+    const handlers = new Map<string | number, (...args: unknown[]) => void>();
+    const conn = {
+      on: vi.fn((event: string | number, cb: (...args: unknown[]) => void) => {
+        handlers.set(event, cb);
+      }),
+      off: vi.fn((event: string | number) => {
+        handlers.delete(event);
+      }),
+      sendToRadioFrame: vi.fn(() => {
+        handlers.get('rx')?.(new Uint8Array([MESHCORE_RESP_CODE_AUTOADD_CONFIG, 0x0f, 4]));
+        return Promise.resolve();
+      }),
+    };
+    await expect(fetchMeshcoreAutoaddConfigFromConn(conn, 1000)).resolves.toEqual({
+      kind: 'ok',
+      state: { autoaddConfig: 0x0f, autoaddMaxHops: 4 },
+    });
+  });
+
+  it('fetchMeshcoreAutoaddConfigFromConn resolves unsupported on Err frame', async () => {
+    const handlers = new Map<string | number, (...args: unknown[]) => void>();
+    const conn = {
+      on: vi.fn((event: string | number, cb: (...args: unknown[]) => void) => {
+        handlers.set(event, cb);
+      }),
+      off: vi.fn((event: string | number) => {
+        handlers.delete(event);
+      }),
+      sendToRadioFrame: vi.fn(() => {
+        handlers.get('rx')?.(
+          new Uint8Array([MESHCORE_RESP_CODE_ERR, MESHCORE_ERR_UNSUPPORTED_CMD]),
+        );
+        return Promise.resolve();
+      }),
+    };
+    await expect(fetchMeshcoreAutoaddConfigFromConn(conn, 1000)).resolves.toEqual({
+      kind: 'unsupported',
+    });
+  });
+
+  it('fetchMeshcoreAutoaddConfigFromConn resolves timeout when device is silent', async () => {
+    vi.useFakeTimers();
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendToRadioFrame: vi.fn(() => Promise.resolve()),
+    };
+    const p = fetchMeshcoreAutoaddConfigFromConn(conn, 500);
+    await vi.advanceTimersByTimeAsync(500);
+    await expect(p).resolves.toEqual({ kind: 'timeout' });
+    vi.useRealTimers();
   });
 });

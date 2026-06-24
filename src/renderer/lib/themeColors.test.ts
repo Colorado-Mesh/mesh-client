@@ -4,9 +4,12 @@ import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
   isValidHex,
+  loadThemeColors,
   normalizeHex,
   sanitizeHexDraft,
+  THEME_COLORS_STORAGE_KEY,
 } from './themeColors';
+import { contrastRatio } from './wcagContrast';
 
 describe('themeColors', () => {
   describe('normalizeHex', () => {
@@ -60,6 +63,27 @@ describe('themeColors', () => {
     for (const hex of Object.values(DEFAULT_THEME_COLORS)) {
       expect(normalizeHex(hex)).toBe(hex.toLowerCase());
     }
+  });
+
+  it('readableGreen meets WCAG AA 4.5:1 with white text', () => {
+    expect(contrastRatio('#ffffff', DEFAULT_THEME_COLORS.readableGreen)).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  });
+
+  describe('loadThemeColors', () => {
+    it('migrates persisted legacy readableGreen (#16a34a) to accessible default', () => {
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ readableGreen: '#16a34a' }));
+      const colors = loadThemeColors();
+      expect(colors.readableGreen).toBe('#15803d');
+      expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
+    });
+
+    it('keeps accessible readableGreen override', () => {
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ readableGreen: '#14532d' }));
+      const colors = loadThemeColors();
+      expect(colors.readableGreen).toBe('#14532d');
+    });
   });
 
   describe('applyThemeColors', () => {

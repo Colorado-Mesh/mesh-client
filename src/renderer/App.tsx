@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * App mount effect graph (order-sensitive):
  * 1. Identity / connection hydration and startup DB prune (`useAppStartupDbPrune`)
@@ -508,6 +507,7 @@ function AppContent({
     const phase = meshTubePhaseRef.current;
     if (phase === 'flicker-on') setMeshTubeLit(false);
     if (phase === 'flicker-off') setMeshTubeLit(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- cancel in-flight mesh-tube animation when sidebar collapses
     setMeshTubePhase('idle');
   }, [sidebarCollapsed]);
 
@@ -855,6 +855,7 @@ function AppContent({
     if (meshcoreUiMessages.length === 0) return;
     ensureMeshcoreChatLastReadSanitized(meshcoreUiMessages);
     meshcoreLastReadSanitizedRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
     setLastReadRevision((prev) => ({ ...prev, meshcore: prev.meshcore + 1 }));
   }, [meshcoreIdentityId, meshcoreUiMessages]);
 
@@ -1422,6 +1423,7 @@ function AppContent({
     prevPanelIndexForChatFreezeRef.current = now;
 
     if (now === 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Chat tab visit for freeze-on-leave
       setChatTabVisited(true);
     }
 
@@ -1438,6 +1440,7 @@ function AppContent({
   }, [activePanelIndex]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears chat/rooms visit and freeze state
     setChatTabVisited(false);
     setChatPanelFreeze(null);
     setRoomsTabVisited(false);
@@ -1447,6 +1450,7 @@ function AppContent({
 
   useEffect(() => {
     if (capabilities.hasRoomServersPanel && activePanelIndex === ROOMS_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Rooms tab visit for unread badge
       setRoomsTabVisited(true);
     }
   }, [activePanelIndex, capabilities.hasRoomServersPanel]);
@@ -3580,6 +3584,7 @@ function ConnectionBanner({
           <span className="text-sm text-yellow-200">{t('connectionBanner.staleLoss')}</span>
         </div>
         <button
+          type="button"
           onClick={onReconnect}
           aria-label={t('connectionBanner.reconnect')}
           className="text-sm font-medium text-yellow-300 underline hover:text-yellow-100"
