@@ -95,7 +95,7 @@
     "builder-util-runtime": "9.7.0",
     "electron-updater": "^6.8.9",
     "emoji-picker-element": "^1.29.1",
-    "i18next": "^26.3.1",
+    "i18next": "^26.3.2",
     "jszip": "^3.10.1",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react-motion": "^0.4.0",
