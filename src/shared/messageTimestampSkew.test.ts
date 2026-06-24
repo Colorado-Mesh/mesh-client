@@ -6,13 +6,17 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
   MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 } from './messageTimestampSkew';
+import { MS_PER_YEAR } from './timeConstants';
+
+/** Well beyond MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC — simulates poisoned RTC skew. */
+const EIGHT_YEARS_MS = 8 * MS_PER_YEAR;
 
 describe('messageTimestampSkew', () => {
   it('clamps unreasonably future message timestamps to now', () => {
     const nowMs = 1_700_000_000_000;
     vi.useFakeTimers();
     vi.setSystemTime(nowMs);
-    const future = nowMs + 8 * 365 * 24 * 3600 * 1000;
+    const future = nowMs + EIGHT_YEARS_MS;
     expect(effectiveMessageTimestampMs(future, nowMs)).toBe(nowMs);
     expect(isUnreasonablyFutureMessageTimestampMs(future, nowMs)).toBe(true);
     vi.useRealTimers();
@@ -47,7 +51,7 @@ describe('messageTimestampSkew', () => {
   it('clamps watermark beyond max future skew to allowed maximum', () => {
     const nowMs = 1_700_000_000_000;
     const maxAllowed = nowMs + MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC * 1000;
-    const farFuture = nowMs + 8 * 365 * 24 * 3600 * 1000;
+    const farFuture = nowMs + EIGHT_YEARS_MS;
     expect(clampReadWatermarkMs(farFuture, nowMs)).toBe(maxAllowed);
   });
 
