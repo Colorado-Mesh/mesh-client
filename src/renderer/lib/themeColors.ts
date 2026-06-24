@@ -41,7 +41,7 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   sidebarActiveBg: '#1e293b',
   brandGreen: '#86efac',
   brightGreen: '#86efac',
-  readableGreen: '#16a34a',
+  readableGreen: '#15803d',
   deepBlack: '#0f172a',
   secondaryDark: '#334155',
   muted: '#94a3b8',

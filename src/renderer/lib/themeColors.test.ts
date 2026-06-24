@@ -7,6 +7,7 @@ import {
   normalizeHex,
   sanitizeHexDraft,
 } from './themeColors';
+import { contrastRatio } from './wcagContrast';
 
 describe('themeColors', () => {
   describe('normalizeHex', () => {
@@ -60,6 +61,12 @@ describe('themeColors', () => {
     for (const hex of Object.values(DEFAULT_THEME_COLORS)) {
       expect(normalizeHex(hex)).toBe(hex.toLowerCase());
     }
+  });
+
+  it('readableGreen meets WCAG AA 4.5:1 with white text', () => {
+    expect(contrastRatio('#ffffff', DEFAULT_THEME_COLORS.readableGreen)).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 
   describe('applyThemeColors', () => {

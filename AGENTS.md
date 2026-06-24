@@ -80,6 +80,15 @@ Adding a cross-boundary feature:
 - Mock console before spying logged errors: `vi.spyOn(console, 'warn').mockImplementation(() => {})` in `beforeEach` when shared.
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 
+### Accessibility / axe
+
+- **Dev:** `@axe-core/react` runs in `pnpm run dev` (`src/renderer/main.tsx`); treat `serious` axe console output as a bug.
+- **CI:** Use `vitest-axe` (`import { axe } from 'vitest-axe'`); assert `toHaveNoViolations()` on the rendered subtree.
+- **When to add tests:** New or changed UI with custom foreground/background pairs (badges, pills, buttons)—especially `text-[10px]` / `text-xs` on saturated fills.
+- **Theme tokens:** `readable-green` is for white-on-green fills; the default must pass **4.5:1** contrast with white (enforced in `src/renderer/lib/themeColors.test.ts`).
+- **Badge patterns:** Sidebar/Chat unread badges use `bg-red-600 text-white`; protocol-switcher badges use brand colors (`bg-readable-green`, `bg-cyan-600`)—add axe coverage when touching either.
+- **Manual:** See [`docs/accessibility-checklist.md`](docs/accessibility-checklist.md).
+
 ## 6. Commands & CI Checks
 
 **Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`.

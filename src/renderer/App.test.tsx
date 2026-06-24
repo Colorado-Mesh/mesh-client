@@ -541,6 +541,39 @@ describe('App accessibility', () => {
     expect(await axe(badge)).toHaveNoViolations();
   });
 
+  it('has no axe violations on Meshtastic protocol switcher unread badge', async () => {
+    const selfNodeId = 1;
+    const messages = Array.from({ length: 86 }, (_, i) => ({
+      sender_id: 2 + (i % 10),
+      sender_name: 'Alice',
+      payload: `Ops ping ${i}`,
+      channel: 0,
+      timestamp: Date.now() + i,
+      status: 'acked' as const,
+    }));
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: selfNodeId, connectionType: 'serial' },
+      selfNodeId,
+      messages,
+    });
+    syncMeshtasticMessagesToStore(messages);
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: 0x12345678, connectionType: 'serial' },
+      selfNodeId: 0x12345678,
+    });
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    render(<App />);
+    const meshtasticSwitcher = screen.getByRole('button', { name: 'Switch to Meshtastic' });
+    const badge = await waitFor(() => {
+      const el = meshtasticSwitcher.querySelector('span.rounded-full');
+      if (el?.textContent !== '86') throw new Error('badge not ready');
+      return el;
+    });
+    expect(await axe(badge)).toHaveNoViolations();
+  });
+
   it('has no page landmark axe violations', async () => {
     const { baseElement } = render(<App />);
     const landmarkAxe = configureAxe({

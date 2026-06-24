@@ -18,6 +18,7 @@ Thank you for your interest in contributing. See [docs/development-environment.m
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
 - Mock console before spying logged errors (e.g. `vi.spyOn(console, 'warn').mockImplementation(() => {})`; use `beforeEach` when shared).
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
+- Accessibility: vitest-axe in component tests; see **Accessibility / axe** in [AGENTS.md](AGENTS.md#5-testing).
 
 ## Quick Commands
 
