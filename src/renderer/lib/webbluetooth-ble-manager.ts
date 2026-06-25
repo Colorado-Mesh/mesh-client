@@ -2,6 +2,7 @@ import type { Types } from '@meshtastic/core';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { BLE_TO_RADIO_PAYLOAD_CAP } from '@/shared/bleAttWriteLimit';
+import { markPairingRelatedError } from '@/shared/blePairingError';
 
 import type { NobleBleSessionId } from './types';
 
@@ -470,10 +471,10 @@ export class WebBluetoothManager {
       );
       console.debug('[WebBluetooth] raw error: ' + errLikeToLogString(err));
       // Wrap the error with classification info for the UI layer
-      const error = new Error(
+      const error = markPairingRelatedError(
         `Bluetooth connection failed${isPairing ? ' (pairing issue)' : ''}: ${domErr?.message ?? String(err)}`,
-      ) as Error & { isPairingRelated?: boolean };
-      error.isPairingRelated = isPairing;
+        isPairing,
+      );
       throw error;
     }
 
@@ -546,10 +547,10 @@ export class WebBluetoothManager {
       );
       console.debug('[WebBluetooth] GATT discovery raw error: ' + errLikeToLogString(err));
       // "GATT Error: Not supported" typically means device requires pairing before GATT operations
-      const error = new Error(
+      const error = markPairingRelatedError(
         `GATT Error: Not supported. The device may require pairing. ${domErr?.message ?? String(err)}`,
-      ) as Error & { isPairingRelated?: boolean };
-      error.isPairingRelated = true; // This error type is almost always pairing-related
+        true,
+      );
       throw error;
     }
 
@@ -610,10 +611,10 @@ export class WebBluetoothManager {
         isPairing ? '(pairing-related)' : '',
       );
       console.debug('[WebBluetooth] startNotifications raw error: ' + errLikeToLogString(err));
-      const error = new Error(
+      const error = markPairingRelatedError(
         `Failed to start Bluetooth notifications${isPairing ? ' (pairing issue)' : ''}: ${domErr?.message ?? String(err)}`,
-      ) as Error & { isPairingRelated?: boolean };
-      error.isPairingRelated = isPairing;
+        isPairing,
+      );
       throw error;
     }
   }

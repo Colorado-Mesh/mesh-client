@@ -40,11 +40,11 @@ Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.ts
 
 ### Renderer: hooks vs runtime vs lib
 
-| Layer        | Path                    | Role                                                                                                                                                                          |
-| ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **runtime/** | `src/renderer/runtime/` | Protocol side effects (`useMeshtasticRuntime`, `useMeshcoreRuntime`). Mount **once** from `App.tsx` via context providers; do not remount in child components or hooks.       |
-| **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic. |
-| **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                        |
+| Layer        | Path                    | Role                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **runtime/** | `src/renderer/runtime/` | Protocol side effects (`useMeshtasticRuntime`, `useMeshcoreRuntime`). Mount **once** from `App.tsx` via context providers; do not remount in child components or hooks. Large runtimes are legacy; **new** protocol logic belongs in `lib/` + thin runtime wiring — do not grow monolithic return objects without grouping related fields into sub-objects when extending the public API. |
+| **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic.                                                                                                                                                                                                             |
+| **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                                                                                                                                                                                                                                    |
 
 **App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use per-protocol `useProtocolConnectionActions('meshtastic' \| 'meshcore')` only when both protocol tabs need separate ConnectionPanel props. **`usePowerRecovery`** mounts once from `App.tsx` — coordinates macOS sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, and runtime `onPowerResume` (~4s delayed RF recovery).
 
@@ -78,6 +78,9 @@ Adding a cross-boundary feature:
 
 - **Prettier:** Semi always, single quotes, trailing commas, print width 100, tab 2, LF.
 - **TypeScript:** Strict; avoid `any`; prefer `unknown` + guards; export types; prefer interfaces over type aliases.
+- **Shared validation:** Reuse helpers instead of inline clamps/parsers. TCP ports → `clampTcpPort()` in `src/shared/tcpPort.ts`; time units in `src/shared/timeConstants.ts` must derive from `MS_PER_SECOND` (e.g. `MS_PER_MINUTE = 60 * MS_PER_SECOND`).
+- **Domain error tags:** Do not attach ad-hoc properties to `Error` with type assertions. Use `markPairingRelatedError()` / `isPairingRelatedError()` from `src/shared/blePairingError.ts` for BLE pairing classification.
+- **RF connect APIs:** Transport-specific connect args use discriminated unions in `src/renderer/lib/rfConnectionTypes.ts` (`RfConnectionTransportOpts`, `RfConnectFn`, `RfConnectAutomaticFn`). Do not pass `httpAddress` and `blePeripheralId` as unrelated optional params on a flat signature.
 - **React:** Function components only; `exhaustive-deps` is errors; `?.` in JSX; every interactive control needs `aria-label`.
 - **Zustand:** Module-level defaults for stable refs; prefer `useStore(s => s.field)` over broad subscriptions; avoid subscribing to whole Maps when one id suffices; `persist` for localStorage, IPC from an effect for SQLite; extract time constants to `src/renderer/lib/timeConstants.ts`.
 - **Performance:** No hot-path O(n); lazy cleanup when collections grow large.

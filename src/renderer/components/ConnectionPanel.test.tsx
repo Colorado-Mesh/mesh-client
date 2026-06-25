@@ -665,7 +665,7 @@ describe('ConnectionPanel exit actions', () => {
     await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /USB Serial/i }));
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
-    expect(onConnect).toHaveBeenCalledWith('serial', 'meshtastic.local');
+    expect(onConnect).toHaveBeenCalledWith('serial');
     expect(capturedCb).toBeDefined();
 
     act(() => {
