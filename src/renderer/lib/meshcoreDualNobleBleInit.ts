@@ -1,5 +1,6 @@
 import { getConnection } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
+import { resolveLastBlePeripheralId } from './lastConnectionStorage';
 import {
   MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS,
   MESHCORE_DUAL_NOBLE_BLE_POLL_MS,
@@ -41,6 +42,18 @@ export function meshtasticNobleBleConfigureBusy(): boolean {
     if (conn.status === 'connecting' || conn.status === 'connected') return true;
   }
   return false;
+}
+
+/**
+ * MeshCore and Meshtastic cannot hold separate Noble GATT sessions to the same peripheral.
+ * Skip MeshCore BLE auto-connect when it targets the same device as Meshtastic RF.
+ */
+export function meshcoreTargetsSharedMeshtasticBlePeripheral(
+  meshcoreBlePeripheralId: string | null | undefined,
+): boolean {
+  if (!meshcoreBlePeripheralId) return false;
+  const meshtasticBleId = resolveLastBlePeripheralId('meshtastic');
+  return Boolean(meshtasticBleId && meshtasticBleId === meshcoreBlePeripheralId);
 }
 
 /**

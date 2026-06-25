@@ -72,7 +72,10 @@ describe('useProtocolConnect (driver-first)', () => {
       'configure failed',
     );
 
-    expect(meshtastic.handleRfConnectFailure).toHaveBeenCalledWith('id-meshtastic-driver');
+    expect(meshtastic.handleRfConnectFailure).toHaveBeenCalledWith(
+      'id-meshtastic-driver',
+      expect.objectContaining({ message: 'configure failed' }),
+    );
     expect(meshtastic.attachRfSession).toHaveBeenCalled();
   });
 
@@ -86,7 +89,10 @@ describe('useProtocolConnect (driver-first)', () => {
       'driver connect failed',
     );
 
-    expect(meshtastic.handleRfConnectFailure).toHaveBeenCalledWith(undefined);
+    expect(meshtastic.handleRfConnectFailure).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ message: 'driver connect failed' }),
+    );
     expect(meshtastic.attachRfSession).not.toHaveBeenCalled();
   });
 

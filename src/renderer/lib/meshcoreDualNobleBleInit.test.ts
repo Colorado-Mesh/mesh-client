@@ -4,6 +4,7 @@ import { useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
   awaitDualNobleBleMeshtasticSettle,
+  meshcoreTargetsSharedMeshtasticBlePeripheral,
   meshtasticNobleBleConfigureBusy,
   needsSequentialMeshcoreRadioInit,
 } from './meshcoreDualNobleBleInit';
@@ -103,5 +104,14 @@ describe('meshcoreDualNobleBleInit', () => {
     // jsdom reports non-Linux in CI; Noble path when platform is macOS/Windows.
     const bleSequential = needsSequentialMeshcoreRadioInit('ble');
     expect(typeof bleSequential).toBe('boolean');
+  });
+
+  it('meshcoreTargetsSharedMeshtasticBlePeripheral when both remember the same BLE id', () => {
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'shared-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'shared-peripheral');
+    expect(meshcoreTargetsSharedMeshtasticBlePeripheral('shared-peripheral')).toBe(true);
+    expect(meshcoreTargetsSharedMeshtasticBlePeripheral('other-peripheral')).toBe(false);
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
   });
 });
