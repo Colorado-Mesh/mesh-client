@@ -35,7 +35,8 @@ const mockRunMeshcoreRoomLogout = vi.mocked(runMeshcoreRoomLogout);
 describe('meshcoreRoomSession', () => {
   afterEach(() => {
     vi.useRealTimers();
-    vi.clearAllMocks();
+    mockRunMeshcoreRoomLogin.mockClear();
+    mockRunMeshcoreRoomLogout.mockClear();
     meshcoreClearAllRoomSessions();
   });
 

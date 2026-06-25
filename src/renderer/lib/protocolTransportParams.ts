@@ -1,4 +1,5 @@
 import { meshcoreTransportParams, meshtasticTransportParams } from './meshIdentityBridge';
+import type { RfConnectionTransportOpts } from './rfConnectionTypes';
 import type { ConnectionType, MeshProtocol, TransportParams } from './types';
 
 export function meshcoreConnectionType(type: ConnectionType): 'ble' | 'serial' | 'tcp' {
@@ -8,24 +9,24 @@ export function meshcoreConnectionType(type: ConnectionType): 'ble' | 'serial' |
 /** Build {@link TransportParams} for {@link ConnectionDriver.connect} from UI connection type. */
 export function protocolTransportParams(
   protocol: MeshProtocol,
-  type: ConnectionType,
-  opts: {
-    httpAddress?: string;
-    blePeripheralId?: string;
-    lastSerialPortId?: string | null;
-  },
+  opts: RfConnectionTransportOpts,
 ): TransportParams {
   if (protocol === 'meshcore') {
-    const mcType = meshcoreConnectionType(type);
+    const mcType = meshcoreConnectionType(opts.type);
     return meshcoreTransportParams(mcType, {
-      peripheralId: opts.blePeripheralId,
-      host: mcType === 'tcp' ? (opts.httpAddress ?? 'localhost') : undefined,
-      portSignature: opts.lastSerialPortId ?? undefined,
+      peripheralId: opts.type === 'ble' ? opts.blePeripheralId : undefined,
+      host:
+        mcType === 'tcp'
+          ? opts.type === 'http'
+            ? (opts.httpAddress ?? 'localhost')
+            : undefined
+          : undefined,
+      portSignature: opts.type === 'serial' ? (opts.lastSerialPortId ?? undefined) : undefined,
     });
   }
-  return meshtasticTransportParams(type, {
-    peripheralId: opts.blePeripheralId,
-    portSignature: opts.lastSerialPortId ?? undefined,
-    host: opts.httpAddress,
+  return meshtasticTransportParams(opts.type, {
+    peripheralId: opts.type === 'ble' ? opts.blePeripheralId : undefined,
+    portSignature: opts.type === 'serial' ? (opts.lastSerialPortId ?? undefined) : undefined,
+    host: opts.type === 'http' ? opts.httpAddress : undefined,
   });
 }

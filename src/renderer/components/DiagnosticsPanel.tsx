@@ -789,7 +789,7 @@ export default function DiagnosticsPanel({
           {t('diagnosticsPanel.networkDiagnosticsTitle')}
         </h2>
         <a
-          href="https://github.com/Colorado-Mesh/mesh-client/blob/main/DIAGNOSTICS.md"
+          href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/diagnostics.md"
           target="_blank"
           rel="noreferrer"
           className="text-muted hover:text-brand-green text-xs transition-colors"

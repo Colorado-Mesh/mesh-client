@@ -1,5 +1,7 @@
 import { Connection, SerialConnection, WebSerialConnection } from '@liamcottle/meshcore.js';
 
+import { isPairingRelatedError } from '@/shared/blePairingError';
+
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { closeSerialPortIfOpen } from '../../connection';
@@ -409,9 +411,7 @@ async function connectBleWebBluetooth(): Promise<Connection> {
 
       const msg = err instanceof Error ? err.message : String(err);
       const isTimeout = msg.includes('timed out');
-      const isPairingError =
-        err instanceof Error &&
-        (err as Error & { isPairingRelated?: boolean }).isPairingRelated === true;
+      const isPairingError = isPairingRelatedError(err);
 
       console.warn(
         `[MeshCoreTransport] Web Bluetooth attempt ${attempt}/${WEB_BLUETOOTH_CONNECT_MAX_ATTEMPTS} failed: ${msg}`,

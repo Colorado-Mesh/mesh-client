@@ -141,6 +141,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 });
 
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 /** Pubkey whose XOR-folded node id is non-zero (matches import-contacts tests). */
 const PEER_PUBKEY_HEX = '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20';
@@ -169,7 +170,10 @@ function makeMockSerialPort() {
 
 describe('useMeshcoreRuntime DB pubkey backfill for DM send', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
+    getContactsMock.mockClear();
+    sendTextMessageMock.mockClear();
+    getSelfInfoMock.mockClear();
     getContactsMock.mockResolvedValue([]);
     sendTextMessageMock.mockResolvedValue({ expectedAckCrc: MOCK_ACK_CRC, estTimeout: 30_000 });
     getSelfInfoMock.mockResolvedValue({
@@ -309,7 +313,10 @@ describe('useMeshcoreRuntime DM reply (wire + persistence)', () => {
   };
 
   function resetMocksAndBaseContacts(messagesFromDb: (typeof dmParentFromPeer)[]) {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
+    getContactsMock.mockClear();
+    sendTextMessageMock.mockClear();
+    getSelfInfoMock.mockClear();
     getContactsMock.mockResolvedValue([]);
     sendTextMessageMock.mockResolvedValue({ expectedAckCrc: MOCK_ACK_CRC, estTimeout: 30_000 });
     getSelfInfoMock.mockResolvedValue({

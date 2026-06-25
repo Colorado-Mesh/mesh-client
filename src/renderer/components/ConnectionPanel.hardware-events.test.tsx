@@ -46,7 +46,9 @@ describe('ConnectionPanel hardware event wiring', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    DEFAULT_PROPS.onConnect.mockClear();
+    DEFAULT_PROPS.onAutoConnect.mockClear();
+    DEFAULT_PROPS.onDisconnect.mockClear();
   });
 
   // ─── BLE device discovery ──────────────────────────────────────────────────

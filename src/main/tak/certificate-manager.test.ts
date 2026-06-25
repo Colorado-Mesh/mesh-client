@@ -2,7 +2,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-client-tak-certs-'));
 
@@ -22,10 +22,6 @@ describe('certificate-manager', () => {
         fs.rmSync(path.join(dir, file), { force: true });
       }
     }
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   it('generates and persists a full cert bundle on first load', async () => {

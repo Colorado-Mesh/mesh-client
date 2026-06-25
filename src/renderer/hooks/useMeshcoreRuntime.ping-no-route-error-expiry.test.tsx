@@ -22,6 +22,7 @@ import {
   meshcorePingNoRouteErrorExpiryUpdate,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 const getSelfInfoMock = vi.fn();
 
@@ -222,7 +223,7 @@ describe('meshcorePingNoRouteErrorExpiryUpdate', () => {
 
 describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
     usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
@@ -267,7 +268,7 @@ describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
 
 describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
     runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
@@ -359,7 +360,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
 
 describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
     runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],

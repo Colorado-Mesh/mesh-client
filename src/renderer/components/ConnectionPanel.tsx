@@ -12,11 +12,14 @@ import { meshcoreTargetsSharedMeshtasticBlePeripheral } from '@/renderer/lib/mes
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
+import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
+import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -263,9 +266,7 @@ function humanizeBleError(err: unknown, t: TFunction): string {
 
 function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boolean {
   const rawMessage = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
-  const pairingFlag =
-    err instanceof Error &&
-    (err as Error & { isPairingRelated?: boolean }).isPairingRelated === true;
+  const pairingFlag = isPairingRelatedError(err);
   const domPairingSignal =
     err instanceof DOMException && (err.name === 'SecurityError' || err.name === 'NetworkError');
   // MeshCore Linux Web Bluetooth: handshake timeout often means PIN not paired at OS level (Electron may never fire providePin).
@@ -473,17 +474,8 @@ function loadMeshcoreMqttSettings(): MQTTSettings {
 
 interface Props {
   state: DeviceState;
-  onConnect: (
-    type: ConnectionType,
-    httpAddress?: string,
-    blePeripheralId?: string,
-  ) => Promise<void>;
-  onAutoConnect: (
-    type: ConnectionType,
-    httpAddress?: string,
-    lastSerialPortId?: string | null,
-    blePeripheralId?: string,
-  ) => Promise<void>;
+  onConnect: RfConnectFn;
+  onAutoConnect: RfConnectAutomaticFn;
   onDisconnect: () => Promise<void>;
   mqttStatus: MQTTStatus;
   myNodeLabel?: string;
@@ -531,10 +523,7 @@ export default function ConnectionPanel({
     }
     return '5000';
   });
-  const tcpPort = (() => {
-    const n = parseInt(tcpPortStr, 10);
-    return Number.isInteger(n) && n >= 1 && n <= 65535 ? n : 5000;
-  })();
+  const tcpPort = parseTcpPortFromString(tcpPortStr, 5000);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
@@ -1272,8 +1261,8 @@ export default function ConnectionPanel({
             }
           }
           if (bleErrMsg) setError(bleErrMsg);
-          const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
-          if (isPairingRelatedError) {
+          const showRePairFromBleError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
+          if (showRePairFromBleError) {
             setShowRePairButton(true);
             setShowBlePicker(false);
             setConnectionStage('connectionPanel.stagePairingFailed');
@@ -1306,7 +1295,11 @@ export default function ConnectionPanel({
 
     try {
       console.debug('[ConnectionPanel] handleConnect', connectionType, activeHostAddress);
-      await onConnect(connectionType, activeHostAddress);
+      if (connectionType === 'http') {
+        await onConnect('http', activeHostAddress);
+      } else {
+        await onConnect('serial');
+      }
     } catch (err) {
       console.warn('[ConnectionPanel] handleConnect failed ' + errLikeToLogString(err));
       let errorMsg: string;
@@ -2297,10 +2290,7 @@ export default function ConnectionPanel({
                 type="number"
                 value={activeMqttSettings.port}
                 onChange={(e) => {
-                  updateMqtt(
-                    'port',
-                    Math.max(1, Math.min(65535, parseInt(e.target.value) || 1883)),
-                  );
+                  updateMqtt('port', clampTcpPort(e.target.value, 1883));
                 }}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
               />

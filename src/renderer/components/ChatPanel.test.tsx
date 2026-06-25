@@ -10,6 +10,10 @@ import type { ChatMessage, MeshNode } from '../lib/types';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
+async function waitForComposer(): Promise<HTMLElement> {
+  return screen.findByRole('textbox');
+}
+
 vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
 
 let mockIsAtEnd = true;
@@ -3141,7 +3145,7 @@ describe('ChatPanel — draft restored on initial mount', () => {
       </ToastProvider>,
     );
 
-    const textarea = await screen.findByRole('textbox');
+    const textarea = await waitForComposer();
     expect(textarea).toHaveValue('persisted draft');
 
     localStorage.setItem(draftsStorageKey('meshtastic'), '{}');
@@ -3171,7 +3175,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
   });
 
@@ -3182,7 +3186,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     playMock.mockClear();
 
     const newMsg = makeMsg({ sender_id: 2, channel: 0, isHistory: undefined });
@@ -3192,7 +3196,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
   });
 
@@ -3203,7 +3207,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     playMock.mockClear();
 
     const newMsg = makeMsg({ sender_id: 2, channel: 1, isHistory: undefined });
@@ -3213,7 +3217,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     expect(playMock).toHaveBeenCalledOnce();
     expect(playMock).toHaveBeenCalledWith('channel');
   });
@@ -3225,7 +3229,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     playMock.mockClear();
 
     const newMsg = makeMsg({ sender_id: 2, to: 1, channel: 0, isHistory: undefined });
@@ -3235,7 +3239,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     expect(playMock).toHaveBeenCalledOnce();
     expect(playMock).toHaveBeenCalledWith('dm');
   });
@@ -3249,7 +3253,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     const channelButtons = screen.getAllByRole('button', { name: /General|Admin|ch0|ch1/i });
     const adminBtn = channelButtons.find((b) => /Admin|ch1|1/i.test(b.textContent ?? ''));
     expect(adminBtn).toBeDefined();
@@ -3263,7 +3267,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     expect(playMock).toHaveBeenCalledOnce();
     expect(playMock).toHaveBeenCalledWith('reply');
   });
@@ -3277,7 +3281,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     playMock.mockClear();
 
     const newMsg = makeMsg({ sender_id: 2, channel: 0, isHistory: undefined });
@@ -3287,7 +3291,7 @@ describe('ChatPanel — notification sound on new messages', () => {
       </ToastProvider>,
     );
 
-    await screen.findByRole('textbox');
+    await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
   });
 });

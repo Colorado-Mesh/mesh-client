@@ -147,6 +147,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
@@ -161,9 +162,11 @@ function makeMockSerialPort() {
 
 describe('useMeshcoreRuntime stats parsing', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    resetMeshcoreRuntimeElectronMocks();
+    getSelfInfoMock.mockClear();
+    getContactsMock.mockClear();
+    getChannelsMock.mockClear();
+    getStatsCoreMock.mockClear();
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',
       publicKey: SELF_PUBKEY,

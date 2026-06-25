@@ -83,8 +83,14 @@ const STUB_SETTINGS = {
 
 describe('generateDataPackage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     fileCallArgs.length = 0;
+    vi.mocked(fs.writeFileSync).mockClear();
+    vi.mocked(fs.renameSync).mockClear();
+    vi.mocked(fs.rmSync).mockClear();
+    vi.mocked(shell.showItemInFolder).mockClear();
+    mockZipInstance.folder.mockClear();
+    mockZipInstance.file.mockClear();
+    mockZipInstance.generateAsync.mockClear();
     mockZipInstance.generateAsync.mockResolvedValue(Buffer.from('zip-content'));
   });
 

@@ -152,6 +152,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 });
 
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 function makeMockSerialPort() {
   return {
@@ -173,15 +174,16 @@ const selfInfoPayload = {
 
 describe('useMeshcoreRuntime initConn RPC ordering', () => {
   const originalSerial = navigator.serial;
+  let subscribeSpy: ReturnType<typeof vi.spyOn>;
+  let destroySpy: ReturnType<typeof vi.spyOn>;
+  let discoverSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    resetMeshcoreRuntimeElectronMocks();
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
-    vi.spyOn(meshcoreProtocol, 'subscribe').mockReturnValue(() => {});
-    vi.spyOn(meshcoreProtocol, 'destroyDevice').mockResolvedValue(undefined);
-    vi.spyOn(meshcoreProtocol, 'discoverSelf').mockResolvedValue({
+    subscribeSpy = vi.spyOn(meshcoreProtocol, 'subscribe').mockReturnValue(() => {});
+    destroySpy = vi.spyOn(meshcoreProtocol, 'destroyDevice').mockResolvedValue(undefined);
+    discoverSpy = vi.spyOn(meshcoreProtocol, 'discoverSelf').mockResolvedValue({
       publicKey: SELF_PUBKEY,
     });
   });
@@ -191,7 +193,9 @@ describe('useMeshcoreRuntime initConn RPC ordering', () => {
       configurable: true,
       value: originalSerial,
     });
-    vi.restoreAllMocks();
+    subscribeSpy.mockRestore();
+    destroySpy.mockRestore();
+    discoverSpy.mockRestore();
   });
 
   it('serial: getContacts waits for getSelfInfo; getChannels runs after contacts before connect finishes', async () => {

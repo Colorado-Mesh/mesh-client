@@ -24,7 +24,10 @@ describe('useMeshtasticRuntime — configure() rejection', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(connection.createBleConnection).mockClear();
+    vi.mocked(connection.createConnection).mockClear();
+    vi.mocked(connection.reconnectSerial).mockClear();
+    vi.mocked(connection.safeDisconnect).mockClear();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 

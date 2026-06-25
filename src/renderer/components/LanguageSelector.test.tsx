@@ -19,7 +19,8 @@ vi.mock('../lib/appSettingsStorage', async (importOriginal) => {
 
 describe('LanguageSelector', () => {
   beforeEach(async () => {
-    vi.clearAllMocks();
+    vi.mocked(mergeAppSetting).mockClear();
+    vi.mocked(window.electronAPI.appSettings.getAll).mockClear();
     await i18n.changeLanguage('en');
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
   });

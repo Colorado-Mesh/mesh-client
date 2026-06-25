@@ -1,6 +1,6 @@
 /** Time duration constants in milliseconds (main + renderer). */
 export const MS_PER_SECOND = 1_000;
-export const MS_PER_MINUTE = 60_000;
+export const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 
 /**
  * Compact chat: merged consecutive bubbles from the same sender show a muted timestamp when the gap

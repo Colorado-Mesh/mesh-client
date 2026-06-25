@@ -271,6 +271,10 @@ function setDocumentHidden(hidden: boolean): void {
   Object.defineProperty(document, 'hidden', { value: hidden, configurable: true });
 }
 
+function renderApp() {
+  return render(<App />);
+}
+
 vi.mock('./runtime/useMeshtasticRuntime', () => ({
   useMeshtasticRuntime: () => useDeviceMock(),
 }));
@@ -450,7 +454,7 @@ vi.mock('../preload', () => ({
 
 describe('legacy hook mount invariant', () => {
   it('does not multiply legacy hook mounts via connection/panel wrappers', () => {
-    render(<App />);
+    renderApp();
     // Pre-dedupe App mounted useMeshtasticRuntime 3× (App + two connection wrappers). Allow one re-render.
     expect(useDeviceMock.mock.calls.length).toBeLessThan(3);
     expect(useMeshCoreMock.mock.calls.length).toBeLessThan(3);
@@ -459,7 +463,7 @@ describe('legacy hook mount invariant', () => {
 
 describe('App header layout', () => {
   it('keeps the protocol switcher left of the status cluster without overlap', () => {
-    render(<App />);
+    renderApp();
     const banner = screen.getByRole('banner');
     expect(banner.className).toMatch(/\bgrid\b/);
     expect(banner.className).toMatch(/grid-cols-\[auto_minmax\(0,1fr\)\]/);
@@ -486,7 +490,7 @@ describe('App accessibility', () => {
   it('does not log mount-time act warnings during render', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    render(<App />);
+    renderApp();
     await Promise.resolve();
 
     expect(
@@ -497,7 +501,7 @@ describe('App accessibility', () => {
   });
 
   it('has no axe violations', async () => {
-    const { container } = render(<App />);
+    const { container } = renderApp();
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -527,7 +531,7 @@ describe('App accessibility', () => {
       selfNodeId: 1,
     });
     getStoredMeshProtocolMock.mockReturnValue('meshtastic');
-    render(<App />);
+    renderApp();
     const meshcoreSwitcher = screen.getByRole('button', { name: 'Switch to MeshCore' });
     const badgeWrapper = await waitFor(() => {
       const label = meshcoreSwitcher.querySelector('[data-protocol-unread-label]');
@@ -564,7 +568,7 @@ describe('App accessibility', () => {
       selfNodeId: 0x12345678,
     });
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
-    render(<App />);
+    renderApp();
     const meshtasticSwitcher = screen.getByRole('button', { name: 'Switch to Meshtastic' });
     const badgeWrapper = await waitFor(() => {
       const label = meshtasticSwitcher.querySelector('[data-protocol-unread-label]');
@@ -579,7 +583,7 @@ describe('App accessibility', () => {
   });
 
   it('has no page landmark axe violations', async () => {
-    const { baseElement } = render(<App />);
+    const { baseElement } = renderApp();
     const landmarkAxe = configureAxe({
       rules: {
         'landmark-one-main': { enabled: true },
@@ -598,7 +602,7 @@ describe('App accessibility', () => {
   });
 
   it('footer shows tagline and Discord, GitHub, Website links', () => {
-    render(<App />);
+    renderApp();
 
     expect(screen.getByText(/For everyone, everywhere/)).toBeInTheDocument();
     expect(screen.getByText(/Join us:/)).toBeInTheDocument();
@@ -624,7 +628,7 @@ describe('App accessibility', () => {
       mqttConnectionLoss: true,
     });
 
-    render(<App />);
+    renderApp();
 
     const mqttLabel = await screen.findByLabelText('MQTT error');
     expect(mqttLabel.querySelector('span.lg\\:inline')).toHaveClass('animate-pulse');
@@ -649,7 +653,7 @@ describe('App accessibility', () => {
       mqttStatus: 'disconnected',
     });
 
-    render(<App />);
+    renderApp();
 
     const deviceLabel = await screen.findByLabelText('Reconnecting (BLE)');
     expect(deviceLabel.querySelector('span.lg\\:inline')).toHaveClass('animate-pulse');
@@ -665,7 +669,7 @@ describe('App accessibility', () => {
       getPickerStyleNodeLabel: vi.fn((num) => `!${num.toString(16)}`),
     });
 
-    render(<App />);
+    renderApp();
 
     expect(await screen.findByText('Q: 7/256')).toBeInTheDocument();
   });
@@ -677,7 +681,7 @@ describe('App accessibility', () => {
       state: { status: 'configured', myNodeNum: 0x12345678, connectionType: 'serial' },
     });
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByRole('tab', { name: 'Stats' }));
 
     await waitFor(() => {
@@ -698,7 +702,7 @@ describe('App accessibility', () => {
       ],
     });
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
 
     await waitFor(() => {
@@ -730,7 +734,7 @@ describe('App accessibility', () => {
     useDeviceMock.mockReturnValue(meshtasticRuntime);
     useMeshCoreMock.mockReturnValue(meshcoreRuntime);
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
 
     await waitFor(() => {
@@ -792,7 +796,7 @@ describe('App accessibility', () => {
     useDeviceMock.mockReturnValue(meshtasticRuntime);
     useMeshCoreMock.mockReturnValue(meshcoreRuntime);
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
 
     await waitFor(() => {
@@ -818,7 +822,7 @@ describe('App accessibility', () => {
   });
 
   it('keeps scrolling inside the main viewport container', () => {
-    render(<App />);
+    renderApp();
 
     // Main content area wraps the viewport - find the div with scroll container inside
     const mainContent = document.querySelector('.flex-1.flex-col.overflow-hidden')!;
@@ -828,7 +832,7 @@ describe('App accessibility', () => {
   });
 
   it('does not create nested horizontal scroll containers', () => {
-    render(<App />);
+    renderApp();
 
     // Find the main content area and scroll container inside
     const mainContent = document.querySelector('.flex-1.flex-col.overflow-hidden')!;
@@ -846,7 +850,7 @@ describe('App accessibility', () => {
   });
 
   it('shows global back-to-top control after main viewport scroll', () => {
-    render(<App />);
+    renderApp();
 
     // Main content area wraps the viewport and scroll container
     const mainContent = document.querySelector('.flex-1.flex-col.overflow-hidden')!;
@@ -885,7 +889,7 @@ describe('App accessibility', () => {
     };
     useDeviceMock.mockReturnValue(initialDevice);
     syncMeshtasticMessagesToStore(initialDevice.messages);
-    const { rerender } = render(<App />);
+    const { rerender } = renderApp();
 
     fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
     await waitFor(() => {
@@ -947,7 +951,7 @@ describe('App accessibility', () => {
     };
     useDeviceMock.mockReturnValue(initialDevice);
     syncMeshtasticMessagesToStore(messages);
-    render(<App />);
+    renderApp();
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
@@ -983,7 +987,7 @@ describe('App accessibility', () => {
       selfNodeId: 1,
       messages: [],
     });
-    render(<App />);
+    renderApp();
 
     expect(screen.queryByText('4')).not.toBeInTheDocument();
   });
@@ -1019,7 +1023,7 @@ describe('App accessibility', () => {
       connectionType: 'serial',
       mqttStatus: 'disconnected',
     });
-    render(<App />);
+    renderApp();
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Chat 1 unread' })).toBeInTheDocument();
@@ -1057,7 +1061,7 @@ describe('App accessibility', () => {
       mqttStatus: 'disconnected',
     });
 
-    render(<App />);
+    renderApp();
 
     await waitFor(() => {
       expect(window.electronAPI.setTrayUnread).toHaveBeenCalledWith(1);
@@ -1128,7 +1132,7 @@ describe('App accessibility', () => {
       mqttStatus: 'disconnected',
     });
 
-    render(<App />);
+    renderApp();
 
     await waitFor(() => {
       expect(window.electronAPI.setTrayUnread).toHaveBeenCalledWith(3);

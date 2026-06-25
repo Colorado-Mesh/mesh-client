@@ -45,7 +45,6 @@ describe('useMeshtasticRuntime post-reboot recovery', () => {
   let stubDevice: MeshDevice & { emitDeviceStatus: (status: number) => void };
 
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.useFakeTimers();
     stubDevice = createStubDevice() as MeshDevice & { emitDeviceStatus: (status: number) => void };
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

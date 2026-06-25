@@ -41,7 +41,7 @@ function createMeshtasticSessionStub(): MeshtasticSessionApi {
 
 describe('useSendMessage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(connectionDriver.getHandle).mockClear();
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });

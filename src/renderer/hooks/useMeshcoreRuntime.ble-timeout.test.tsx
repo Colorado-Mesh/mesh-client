@@ -7,6 +7,7 @@ vi.mock('../../shared/withTimeout', () => ({
 
 import { withTimeout } from '../../shared/withTimeout';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -15,7 +16,10 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
   const originalProcessPlatform = process.platform;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
+    warnSpy.mockClear();
+    errorSpy.mockClear();
+    vi.mocked(withTimeout).mockClear();
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
@@ -317,7 +321,7 @@ describe('useMeshcoreRuntime Linux BLE routing', () => {
   const originalProcessPlatform = process.platform;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
     Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')

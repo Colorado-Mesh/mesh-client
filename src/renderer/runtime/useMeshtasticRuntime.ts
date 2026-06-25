@@ -48,6 +48,7 @@ import {
   type MeshtasticLoraConfig,
   type ParsedChannelSet,
 } from '@/shared/meshtasticUrlEncoder';
+import { isStoredMqttVirtualNodeId, randomMqttVirtualNodeId } from '@/shared/mqttVirtualNodeId';
 
 import {
   formatMeshtasticNodeId,
@@ -144,6 +145,7 @@ import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
+import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import {
   clearMeshtasticOutboundTempId,
@@ -235,17 +237,15 @@ function getOrCreateVirtualNodeId(): number {
   const existing = localStorage.getItem(key);
   if (existing) {
     const n = parseInt(existing, 10);
-    if (n > 0 && n < 0xffffffff) return n;
+    if (isStoredMqttVirtualNodeId(n)) return n;
   }
   let id: number;
   if (typeof window !== 'undefined') {
     const buf = new Uint32Array(1);
     window.crypto.getRandomValues(buf);
-    // Limit to 0x0FFFFFFF to stay consistent with the previous range, then make it > 0
-    id = (buf[0] & 0x0fffffff) + 1;
+    id = randomMqttVirtualNodeId(buf[0]);
   } else {
-    // Fallback: still avoid returning 0; range 1..0x0FFFFFFF
-    id = ((Math.random() * 0x0fffffff) >>> 0) + 1;
+    id = randomMqttVirtualNodeId((Math.random() * 0xffffffff) >>> 0);
   }
   localStorage.setItem(key, String(id));
   return id;
@@ -1630,16 +1630,20 @@ export function useMeshtasticRuntime() {
   const openMeshtasticTransport = useCallback(
     async (
       type: ConnectionType,
-      opts: {
+      fields: {
         httpAddress?: string;
         blePeripheralId?: string;
         lastSerialPortId?: string | null;
       },
     ): Promise<{ device: MeshDevice; driverIdentityId: string }> => {
-      const params = meshtasticTransportParams(type, {
-        peripheralId: opts.blePeripheralId,
-        portSignature: opts.lastSerialPortId ?? undefined,
-        host: opts.httpAddress,
+      const transportOpts = rfConnectionTransportOpts(type, fields);
+      const params = meshtasticTransportParams(transportOpts.type, {
+        peripheralId: transportOpts.type === 'ble' ? transportOpts.blePeripheralId : undefined,
+        portSignature:
+          transportOpts.type === 'serial'
+            ? (transportOpts.lastSerialPortId ?? undefined)
+            : undefined,
+        host: transportOpts.type === 'http' ? transportOpts.httpAddress : undefined,
       });
       const identityId = await connectionDriver.connect('meshtastic', params);
       meshtasticDriverConnectedRef.current = true;

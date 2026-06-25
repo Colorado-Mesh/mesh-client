@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from 'react';
 
 import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
+import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes';
+import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
@@ -16,13 +18,8 @@ const INITIAL_DEVICE_STATE: DeviceState = {
 export interface ProtocolConnectionActions {
   state: DeviceState;
   mqttStatus: MQTTStatus;
-  connect: (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) => Promise<void>;
-  connectAutomatic: (
-    type: ConnectionType,
-    httpAddress?: string,
-    lastSerialPortId?: string | null,
-    blePeripheralId?: string,
-  ) => Promise<void>;
+  connect: RfConnectFn;
+  connectAutomatic: RfConnectAutomaticFn;
   disconnect: () => Promise<void>;
 }
 
@@ -46,7 +43,12 @@ function deviceStateFromConnection(conn: ReturnType<typeof useConnectionByProtoc
  * RF connect: `ConnectionDriver` opens the transport; protocol runtime attaches wire listeners,
  * configure/initConn, and reconnect state ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
  */
-export function useProtocolConnect() {
+export function useProtocolConnect(): (
+  protocol: MeshProtocol,
+  type: ConnectionType,
+  httpAddress?: string,
+  blePeripheralId?: string,
+) => Promise<void> {
   const driverConnect = useConnect();
 
   return useCallback(
@@ -56,10 +58,10 @@ export function useProtocolConnect() {
       httpAddress?: string,
       blePeripheralId?: string,
     ) => {
-      const params = protocolTransportParams(protocol, type, {
-        httpAddress,
-        blePeripheralId,
-      });
+      const params = protocolTransportParams(
+        protocol,
+        rfConnectionTransportOpts(type, { httpAddress, blePeripheralId }),
+      );
 
       if (protocol === 'meshcore') {
         const mcType = meshcoreConnectionType(type);
@@ -134,13 +136,13 @@ export function useProtocolConnectionActions(protocol: MeshProtocol): ProtocolCo
       );
     },
     [protocol],
-  );
+  ) as RfConnectAutomaticFn;
 
   const connectForProtocol = useCallback(
     (type: ConnectionType, httpAddress?: string, blePeripheralId?: string) =>
       connect(protocol, type, httpAddress, blePeripheralId),
     [connect, protocol],
-  );
+  ) as RfConnectFn;
 
   const disconnectForProtocol = useCallback(() => disconnect(protocol), [disconnect, protocol]);
 

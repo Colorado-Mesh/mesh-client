@@ -43,13 +43,17 @@ describe('createBleConnection retry behavior', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockRequestDevice.mockClear();
+    mockRequestGrantedDevice.mockClear();
+    mockConnect.mockClear();
+    vi.mocked(MeshDevice).mockClear();
     mockRequestDevice.mockResolvedValue({ deviceId: 'linux-dev-1', deviceName: 'Radio' });
     mockRequestGrantedDevice.mockResolvedValue({ deviceId: 'linux-granted', deviceName: 'Radio' });
     mockConnect.mockResolvedValue(undefined);
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+    vi.mocked(window.electronAPI.connectNobleBle).mockClear();
     vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.resetBlePairingRetryCount).mockImplementation(() => {});
   });
@@ -112,7 +116,10 @@ describe('createBleConnection Linux Web Bluetooth', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockRequestDevice.mockClear();
+    mockRequestGrantedDevice.mockClear();
+    mockConnect.mockClear();
+    vi.mocked(MeshDevice).mockClear();
     mockRequestDevice.mockResolvedValue({ deviceId: 'linux-dev-1', deviceName: 'Radio' });
     mockRequestGrantedDevice.mockResolvedValue({ deviceId: 'linux-granted', deviceName: 'Radio' });
     mockConnect.mockResolvedValue(undefined);

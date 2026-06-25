@@ -1,6 +1,8 @@
 import { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
+import { isPairingRelatedError } from '@/shared/blePairingError';
+
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import {
   assertMeshtasticSerialWebStreamsAvailable,
@@ -149,8 +151,7 @@ export async function createBleConnection(
 
         const message = err instanceof Error ? err.message : String(err);
         const isTimeout = /timed out/i.test(message);
-        const isPairingError =
-          err instanceof Error && (err as Error & { isPairingRelated?: boolean }).isPairingRelated;
+        const isPairingError = isPairingRelatedError(err);
         console.warn(
           `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
             sessionId,

@@ -46,7 +46,7 @@ function createMeshcoreSessionStub(): MeshcoreSessionApi {
 
 describe('useProtocolConnect (driver-first)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockDriverConnect.mockClear();
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
   });
@@ -123,7 +123,7 @@ describe('useProtocolConnect (driver-first)', () => {
 
 describe('useProtocolDisconnect (driver-first)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockDriverConnect.mockClear();
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
     addIdentity({
@@ -149,7 +149,7 @@ describe('useProtocolDisconnect (driver-first)', () => {
 
 describe('useProtocolConnectionActions', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockDriverConnect.mockClear();
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
     useConnectionStore.setState({ connections: {} });

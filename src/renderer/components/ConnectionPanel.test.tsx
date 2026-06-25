@@ -279,7 +279,7 @@ describe('ConnectionPanel BLE error humanization', () => {
 describe('ConnectionPanel Linux BLE path', () => {
   it('uses Web Bluetooth connect path on Linux instead of noble scanning', async () => {
     const user = userEvent.setup();
-    vi.clearAllMocks();
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -308,7 +308,7 @@ describe('ConnectionPanel Linux BLE path', () => {
 
   it('keeps MeshCore PIN guidance in Linux BLE pairing-related errors', async () => {
     const user = userEvent.setup();
-    vi.clearAllMocks();
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
     userAgentSpy.mockReturnValue(
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -665,7 +665,7 @@ describe('ConnectionPanel exit actions', () => {
     await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /USB Serial/i }));
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
-    expect(onConnect).toHaveBeenCalledWith('serial', 'meshtastic.local');
+    expect(onConnect).toHaveBeenCalledWith('serial');
     expect(capturedCb).toBeDefined();
 
     act(() => {
