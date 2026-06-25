@@ -2092,9 +2092,12 @@ export function useMeshtasticRuntime() {
   );
 
   const handleRfConnectFailure = useCallback(
-    async (driverIdentityId?: string): Promise<void> => {
+    async (driverIdentityId?: string, reason?: unknown): Promise<void> => {
       clearConfigureTimeout();
-      console.error('[useMeshtasticRuntime] Connection failed');
+      console.error(
+        '[useMeshtasticRuntime] Connection failed: ' +
+          errLikeToLogString(reason ?? new Error('unknown connection failure')),
+      );
       isReconnectingRef.current = false;
       reconnectGenerationRef.current += 1;
       cleanupSubscriptions();
@@ -2198,8 +2201,7 @@ export function useMeshtasticRuntime() {
         });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
-        console.error('[useMeshtasticRuntime] Connection failed: ' + errLikeToLogString(err));
-        await handleRfConnectFailure(opened?.driverIdentityId);
+        await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
       }
     },
@@ -2233,8 +2235,7 @@ export function useMeshtasticRuntime() {
         });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
-        console.error('[useMeshtasticRuntime] Auto-connect failed: ' + errLikeToLogString(err));
-        await handleRfConnectFailure(opened?.driverIdentityId);
+        await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
       }
     },

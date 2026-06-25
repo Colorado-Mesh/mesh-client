@@ -716,6 +716,129 @@ describe('ConnectionPanel exit actions', () => {
   });
 });
 
+describe('ConnectionPanel meshcore shared Meshtastic BLE auto-connect', () => {
+  it('skips meshcore noble scan when last BLE device matches Meshtastic', async () => {
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const sharedId = 'shared-ble-peripheral';
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtBleKey = 'mesh-client:lastBleDevice:meshtastic';
+    localStorage.setItem(mcConnKey, JSON.stringify({ type: 'ble', bleDeviceId: sharedId }));
+    localStorage.setItem(mtBleKey, sharedId);
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+      });
+    } finally {
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtBleKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+});
+
+describe('ConnectionPanel serial auto-connect BLE fallback', () => {
+  it('falls back to noble BLE scan when serial auto-connect fails and lastBleDevice exists', async () => {
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'serial', serialPortId: 'port-1' }));
+    localStorage.setItem(lastBleKey, 'ble-device-abc');
+    const onAutoConnect = vi
+      .fn()
+      .mockRejectedValue(new Error('Serial auto-connect failed (radio did not respond)'));
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue(undefined);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith('serial', undefined, 'port-1');
+      });
+      await waitFor(() => {
+        expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalledWith('meshcore');
+      });
+
+      const migrated = JSON.parse(localStorage.getItem(lastConnKey) ?? '{}') as {
+        type?: string;
+        bleDeviceId?: string;
+      };
+      expect(migrated.type).toBe('ble');
+      expect(migrated.bleDeviceId).toBe('ble-device-abc');
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+
+  it('does not fall back to noble BLE when serial fails but BLE id is shared with Meshtastic', async () => {
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const sharedId = 'shared-ble-device';
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'serial', serialPortId: 'port-1' }));
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', sharedId);
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', sharedId);
+    const onAutoConnect = vi
+      .fn()
+      .mockRejectedValue(new Error('Serial auto-connect failed (radio did not respond)'));
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith('serial', undefined, 'port-1');
+      });
+      expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+      userAgentSpy.mockRestore();
+    }
+  });
+});
+
 describe('ConnectionPanel MeshCore TCP port field', () => {
   it('renders host and port inputs with default port 5000 when TCP/IP is selected', async () => {
     const user = userEvent.setup();

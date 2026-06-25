@@ -2403,10 +2403,16 @@ export function useMeshcoreRuntime() {
             err.name === 'AbortError' &&
             err.message === MESHCORE_SETUP_ABORT_MESSAGE;
           if (!isSetupAbort) {
-            console.error(
-              '[useMeshcoreRuntime] connectAutomatic serial error',
-              serializeErrorLike(err) || err,
+            const normalized = normalizeMeshCoreError(
+              err,
+              'Serial auto-connect failed (radio did not respond)',
             );
+            const stage = opened ? 'attachRfSession' : 'openMeshCoreTransport';
+            console.warn(
+              `[useMeshcoreRuntime] connectAutomatic serial error stage=${stage} ${errLikeToLogString(normalized)} raw=${errLikeToLogString(err)}`,
+            );
+            await handleRfConnectFailure('serial', opened?.driverIdentityId);
+            throw normalized;
           }
           await handleRfConnectFailure('serial', opened?.driverIdentityId);
           throw err;

@@ -83,7 +83,7 @@ export function useProtocolConnect() {
         driverIdentityId = await driverConnect('meshtastic', params);
         await meshtastic.attachRfSession(driverIdentityId, type);
       } catch (err) {
-        await meshtastic.handleRfConnectFailure(driverIdentityId);
+        await meshtastic.handleRfConnectFailure(driverIdentityId, err);
         throw err;
       }
     },

@@ -9,7 +9,7 @@ export interface MeshtasticSessionApi {
     lastSerialPortId?: string | null,
   ) => Promise<void>;
   attachRfSession: (driverIdentityId: string, type: ConnectionType) => Promise<void>;
-  handleRfConnectFailure: (driverIdentityId?: string) => Promise<void>;
+  handleRfConnectFailure: (driverIdentityId?: string, reason?: unknown) => Promise<void>;
   finalizeDriverDisconnect: (opts?: { disconnectDriver?: boolean }) => Promise<void>;
   /** Meshtastic chat send (RF and MQTT-only via TransportManager). */
   sendChatMessage: (

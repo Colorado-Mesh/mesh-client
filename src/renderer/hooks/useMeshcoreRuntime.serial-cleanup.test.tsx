@@ -169,6 +169,31 @@ describe('useMeshcoreRuntime serial cleanup', () => {
     serialConnCloseMock.mockResolvedValue(undefined);
   });
 
+  it('connectAutomatic maps bare meshcore.js reject() to a readable serial error', async () => {
+    const port = makeMockSerialPort('auto-port');
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: {
+        getPorts: vi.fn().mockResolvedValue([port]),
+      },
+    });
+    serialConnGetSelfInfoMock.mockRejectedValue(undefined);
+
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await expect(
+      act(async () => {
+        await result.current.connectAutomatic('serial', undefined, 'auto-port');
+      }),
+    ).rejects.toThrow('Serial auto-connect failed (radio did not respond)');
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/connectAutomatic serial error.*Serial auto-connect failed/),
+    );
+    consoleWarnSpy.mockRestore();
+  });
+
   it('connectAutomatic closes raw port even when connection close throws', async () => {
     const port = makeMockSerialPort('auto-port');
     Object.defineProperty(navigator, 'serial', {
