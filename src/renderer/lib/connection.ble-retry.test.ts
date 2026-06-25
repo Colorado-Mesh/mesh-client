@@ -53,6 +53,7 @@ describe('createBleConnection retry behavior', () => {
     userAgentSpy = vi
       .spyOn(window.navigator, 'userAgent', 'get')
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+    vi.mocked(window.electronAPI.connectNobleBle).mockClear();
     vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.resetBlePairingRetryCount).mockImplementation(() => {});
   });

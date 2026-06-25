@@ -1,5 +1,6 @@
 import os from 'node:os';
-import { dirname, resolve } from 'path';
+import { readdirSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 import react from '@vitejs/plugin-react';
@@ -114,6 +115,41 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/stores/watchedNodesStore.test.ts',
 ];
 
+const RENDERER_LOGIC_LIB_GLOB = 'src/renderer/lib/**/*.test.ts';
+
+/** Lib tests that need jsdom/setup — excluded from renderer-logic, routed to renderer-ui */
+const RENDERER_LOGIC_LIB_UI_FALLBACK = RENDERER_LOGIC_EXCLUDE.filter((f) =>
+  f.startsWith('src/renderer/lib/'),
+);
+
+function collectRendererLibTestFiles(): string[] {
+  const libRoot = join(__dirname, 'src/renderer/lib');
+  const results: string[] = [];
+  const walk = (dir: string): void => {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, ent.name);
+      if (ent.isDirectory()) {
+        walk(path);
+      } else if (ent.name.endsWith('.test.ts')) {
+        results.push(relative(__dirname, path).split('\\').join('/'));
+      }
+    }
+  };
+  walk(libRoot);
+  return results;
+}
+
+/** Pure lib unit tests owned by renderer-logic; borderline files run in renderer-ui instead */
+const RENDERER_LOGIC_LIB_NODE_ONLY = collectRendererLibTestFiles().filter(
+  (f) => !RENDERER_LOGIC_LIB_UI_FALLBACK.includes(f),
+);
+
+/** renderer-ui skips tests that run in renderer-logic (node), not borderline jsdom lib tests */
+const RENDERER_UI_EXCLUDE = [
+  ...RENDERER_LOGIC_INCLUDE.filter((pattern) => pattern !== RENDERER_LOGIC_LIB_GLOB),
+  ...RENDERER_LOGIC_LIB_NODE_ONLY,
+];
+
 export default defineConfig({
   server: {
     deps: {
@@ -163,7 +199,7 @@ export default defineConfig({
           environment: 'jsdom',
           setupFiles: [resolve(__dirname, 'src/renderer/vitest.setup.ts')],
           include: ['src/renderer/**/*.test.{ts,tsx}'],
-          exclude: RENDERER_LOGIC_INCLUDE,
+          exclude: RENDERER_UI_EXCLUDE,
           pool: 'forks',
           maxWorkers: rendererUiWorkers,
           isolate: true,
