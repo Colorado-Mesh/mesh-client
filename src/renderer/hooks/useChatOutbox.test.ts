@@ -31,7 +31,10 @@ describe('useChatOutbox', () => {
   const mockOutbox = window.electronAPI.chat.outbox;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(mockOutbox.list).mockClear();
+    vi.mocked(mockOutbox.add).mockClear();
+    vi.mocked(mockOutbox.updateStatus).mockClear();
+    vi.mocked(mockOutbox.remove).mockClear();
     vi.mocked(mockOutbox.list).mockResolvedValue([]);
     vi.mocked(mockOutbox.add).mockImplementation((entry) =>
       Promise.resolve({

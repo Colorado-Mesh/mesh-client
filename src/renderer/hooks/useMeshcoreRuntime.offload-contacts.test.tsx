@@ -143,6 +143,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 });
 
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 function makeMockSerialPort() {
   return {
@@ -156,7 +157,9 @@ function makeMockSerialPort() {
 
 describe('useMeshcoreRuntime offloadContactsFromRadio', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshcoreRuntimeElectronMocks();
+    getSelfInfoMock.mockClear();
+    getContactsMock.mockClear();
     offloadCallOrder.length = 0;
     getSelfInfoMock.mockResolvedValue({
       name: 'SelfRadio',

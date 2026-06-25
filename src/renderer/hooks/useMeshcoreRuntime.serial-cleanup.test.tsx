@@ -143,6 +143,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
 });
 
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 interface MockSerialPort {
   portId?: string;
@@ -162,9 +163,9 @@ function makeMockSerialPort(portId = 'port-1'): MockSerialPort {
 
 describe('useMeshcoreRuntime serial cleanup', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    resetMeshcoreRuntimeElectronMocks();
+    serialConnGetSelfInfoMock.mockClear();
+    serialConnCloseMock.mockClear();
     serialConnGetSelfInfoMock.mockRejectedValue(new Error('serial init failed'));
     serialConnCloseMock.mockResolvedValue(undefined);
   });

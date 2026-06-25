@@ -43,7 +43,10 @@ describe('createBleConnection retry behavior', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockRequestDevice.mockClear();
+    mockRequestGrantedDevice.mockClear();
+    mockConnect.mockClear();
+    vi.mocked(MeshDevice).mockClear();
     mockRequestDevice.mockResolvedValue({ deviceId: 'linux-dev-1', deviceName: 'Radio' });
     mockRequestGrantedDevice.mockResolvedValue({ deviceId: 'linux-granted', deviceName: 'Radio' });
     mockConnect.mockResolvedValue(undefined);
@@ -112,7 +115,10 @@ describe('createBleConnection Linux Web Bluetooth', () => {
   let userAgentSpy: { mockRestore: () => void } | null = null;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockRequestDevice.mockClear();
+    mockRequestGrantedDevice.mockClear();
+    mockConnect.mockClear();
+    vi.mocked(MeshDevice).mockClear();
     mockRequestDevice.mockResolvedValue({ deviceId: 'linux-dev-1', deviceName: 'Radio' });
     mockRequestGrantedDevice.mockResolvedValue({ deviceId: 'linux-granted', deviceName: 'Radio' });
     mockConnect.mockResolvedValue(undefined);

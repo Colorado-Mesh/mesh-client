@@ -11,6 +11,7 @@ import { MESHTASTIC_MQTT_SETTINGS_KEY } from '@/renderer/lib/meshtasticMqttSetti
 
 import * as connection from '../lib/connection';
 import { useMeshtasticRuntime } from '../runtime/useMeshtasticRuntime';
+import { resetMeshtasticMqttElectronMocks } from '../vitestClearHelpers';
 
 vi.mock('../lib/connection', () => ({
   createBleConnection: vi.fn(),
@@ -56,7 +57,11 @@ describe('useMeshtasticRuntime — MQTT-first virtual id handoff', () => {
   let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetMeshtasticMqttElectronMocks();
+    vi.mocked(connection.createBleConnection).mockClear();
+    vi.mocked(connection.createConnection).mockClear();
+    vi.mocked(connection.reconnectSerial).mockClear();
+    vi.mocked(connection.safeDisconnect).mockClear();
     localStorage.clear();
     mqttStatusHandler = undefined;
     myNodeInfoHandler = undefined;

@@ -29,12 +29,11 @@ vi.mock('@liamcottle/meshcore.js', () => ({
 }));
 
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
+import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 describe('useMeshcoreRuntime channel send transport', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
+    resetMeshcoreRuntimeElectronMocks();
   });
 
   it('throws when neither radio nor MQTT is available for channel send', async () => {

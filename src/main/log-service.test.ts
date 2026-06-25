@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readFileSync } from 'fs';
+import fs, { readFileSync } from 'fs';
 import { join } from 'path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -136,8 +136,13 @@ vi.mock('fs', async (importOriginal) => {
 
 describe('getRecentLines', () => {
   beforeEach(() => {
-    // Reset mocked call counts between tests
-    vi.clearAllMocks();
+    vi.mocked(fs.writeFileSync).mockClear();
+    vi.mocked(fs.existsSync).mockClear();
+    vi.mocked(fs.unlinkSync).mockClear();
+    vi.mocked(fs.promises.appendFile).mockClear();
+    vi.mocked(fs.promises.stat).mockClear();
+    vi.mocked(fs.promises.rename).mockClear();
+    vi.mocked(fs.promises.copyFile).mockClear();
   });
 
   it('returns a copy of buffered entries (not the live array)', async () => {
@@ -176,7 +181,13 @@ describe('getRecentLines', () => {
 
 describe('appendLine disk write behavior', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(fs.writeFileSync).mockClear();
+    vi.mocked(fs.existsSync).mockClear();
+    vi.mocked(fs.unlinkSync).mockClear();
+    vi.mocked(fs.promises.appendFile).mockClear();
+    vi.mocked(fs.promises.stat).mockClear();
+    vi.mocked(fs.promises.rename).mockClear();
+    vi.mocked(fs.promises.copyFile).mockClear();
   });
 
   it('writes non-debug messages to disk (no logFilePath set → pending buffer)', async () => {
