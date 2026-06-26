@@ -51,7 +51,16 @@ const defaultState: ConnectionStoreState = {
   connections: {},
 };
 
-/** Imperative store: use module-level setters and always subscribe with selectors (never bare useConnectionStore()). */
+/**
+ * Identity-scoped connection state. Writes go through `setConnection` / `removeConnection`.
+ *
+ * In React, subscribe with a selector so components re-render only when their slice
+ * changes — e.g. `useConnectionStore((s) => (identityId ? (s.connections[identityId] ?? null) : null))`.
+ * Avoid bare `useConnectionStore()` or `useConnectionStore((s) => s)`; those subscribe to the
+ * whole store and re-render whenever any identity's connection record changes.
+ *
+ * `getState()` / `setState()` outside React (tests, BootSequence, drivers) is fine.
+ */
 export const useConnectionStore = create<ConnectionStoreState>()(() => defaultState);
 
 export function setConnection(
@@ -87,7 +96,13 @@ export function getConnection(id: IdentityId): ConnectionRecord | undefined {
   return useConnectionStore.getState().connections[id];
 }
 
-/** Mirrors MQTT IPC status into the identity-scoped connection store. */
+/**
+ * Bridges main-process `mqtt.onStatus` IPC into `connectionStore.mqttStatus` for one identity.
+ *
+ * Called from legacy runtime handlers (`useMeshtasticRuntime`, `useMeshcoreRuntime`) until
+ * MQTT lifecycle moves fully into ConnectionDriver. No-op when `identityId` is null (MQTT can
+ * arrive before the active identity is bound). See ConnectionDriver class doc and AGENTS.md.
+ */
 export function mirrorMqttStatusToConnection(
   identityId: IdentityId | null,
   status: MQTTStatus,

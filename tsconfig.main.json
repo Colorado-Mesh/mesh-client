@@ -17,6 +17,13 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/main/**/*", "src/preload/**/*", "src/shared/**/*", "src/main/types/**/*"],
+  "include": [
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/shared/**/*",
+    "src/main/types/**/*",
+    "vitest.harness.ts",
+    "vitest.harness.test.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

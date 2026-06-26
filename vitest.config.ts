@@ -6,17 +6,25 @@ import { fileURLToPath } from 'url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+import {
+  computeVitestMaxWorkers,
+  NODE_WORKER_CPU_RATIO,
+  RENDERER_UI_CPU_RATIO,
+  VITEST_CORE_DEPS,
+  VITEST_SERVER_INLINE_DEPS,
+} from './vitest.harness';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcAlias = { '@': resolve(__dirname, 'src') };
 const cpuCount = os.cpus().length;
-// jsdom workers are memory-heavy; pure node workers can saturate CPU
-const rendererUiWorkers = Math.max(2, Math.floor(cpuCount * 0.5));
-const nodeWorkers = Math.max(2, Math.floor(cpuCount * 0.75));
+const rendererUiWorkers = computeVitestMaxWorkers(cpuCount, RENDERER_UI_CPU_RATIO);
+const nodeWorkers = computeVitestMaxWorkers(cpuCount, NODE_WORKER_CPU_RATIO);
 
 /** Pure renderer unit tests — no RTL, no window, no setup stubs */
 const RENDERER_LOGIC_INCLUDE = [
   'src/renderer/lib/**/*.test.ts',
   'src/renderer/stores/messageStore.test.ts',
+  'src/renderer/stores/connectionStore.test.ts',
   'src/renderer/stores/nodeStore.meshcore-meshtastic.test.ts',
   'src/renderer/stores/nodeStore.test.ts',
   'src/renderer/hooks/meshcore/buildMeshcoreNodeMapFromDb.test.ts',
@@ -153,30 +161,12 @@ const RENDERER_UI_EXCLUDE = [
 export default defineConfig({
   server: {
     deps: {
-      inline: [
-        '@liamcottle/meshcore.js',
-        '@michaelhart/meshcore-decoder',
-        '@jsr/meshtastic__core',
-        '@jsr/meshtastic__transport-web-serial',
-        'mqtt',
-        'i18next',
-        'react-i18next',
-        'leaflet',
-        'react-leaflet',
-        'zustand',
-        'vitest-axe',
-      ],
+      inline: [...VITEST_SERVER_INLINE_DEPS],
     },
   },
   ssr: {
     optimizeDeps: {
-      include: [
-        '@liamcottle/meshcore.js',
-        '@michaelhart/meshcore-decoder',
-        '@jsr/meshtastic__core',
-        'mqtt',
-        'zustand',
-      ],
+      include: [...VITEST_CORE_DEPS],
     },
   },
   test: {
@@ -237,6 +227,7 @@ export default defineConfig({
             'src/shared/**/*.test.ts',
             'src/preload/**/*.test.ts',
             'scripts/**/*.test.mjs',
+            'vitest.harness.test.ts',
           ],
           pool: 'forks',
           maxWorkers: nodeWorkers,
