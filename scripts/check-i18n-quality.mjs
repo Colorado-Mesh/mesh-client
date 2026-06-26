@@ -906,13 +906,18 @@ export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChan
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
 
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
+const placeholderNameSetCache = new Map();
+
 export function placeholderNameSet(s) {
+  const cached = placeholderNameSetCache.get(s);
+  if (cached) return cached;
   const re = /\{\{\s*([^}]+?)\s*\}\}/g;
   const out = new Set();
   let m;
   while ((m = re.exec(s))) {
     out.add(m[1]);
   }
+  placeholderNameSetCache.set(s, out);
   return out;
 }
 
@@ -1027,13 +1032,16 @@ export function protectedBrandIssues(enVal, val, brands = PROTECTED_BRANDS) {
 }
 
 /**
- * @param {LocaleStringContext} ctx
- * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ * @typedef {{ locale: string, flatKey: string, val: string, enVal: string, leafKey: string }} LocaleQualityCtx
  */
-export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
-  const issues = [];
-  const leafKey = flatKey.split('.').pop() ?? flatKey;
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkCatEncodingAndMeshtasticIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (CAT_PH_PLACEHOLDER_RE.test(val)) {
     issues.push('CAT/XLIFF __ PH __ placeholder residue is not allowed');
   }
@@ -1084,7 +1092,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   ) {
     issues.push('French "chaîne(s)" means broadcast channel; use "canal/canaux" for mesh channels');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkMustTranslateAndFormFieldIssues(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (locale !== 'en' && MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
@@ -1141,7 +1158,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   ) {
     issues.push('use Unicode ellipsis (…) instead of ASCII dots when English uses …');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRadioPanelChannelIssues(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (flatKey === RETRY_REMOTE_CHANNELS_KEY) {
     for (const { re, hint } of RETRY_REMOTE_CHANNELS_FORBIDDEN[locale] ?? []) {
       if (re.test(val)) {
@@ -1153,7 +1179,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   if (locale === 'nl' && leafKey === 'channelLoadFailed' && /\bmislukte\b/i.test(val)) {
     issues.push('use past participle "mislukt" for failed-state labels, not "mislukte"');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRoomsPanelFalseFriendIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (isMeshcoreRoomUiKey(flatKey)) {
     for (const { re, hint } of ROOMS_PANEL_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -1165,7 +1200,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   if (locale === 'ja' && flatKey === 'nodesPanel.meshcoreTypeRoom' && /部屋/.test(val)) {
     issues.push('roomsPanel false friend: use "ルーム" for MeshCore Room type, not hotel 部屋');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkMeshAdvertAndRawPacketLogIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   const shouldCheckMeshAdvertCommercial =
     isMeshAdvertCommercialCheckKey(flatKey) ||
     (locale === 'nl' && isMeshAdvertUiKey(flatKey, enVal));
@@ -1207,7 +1251,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
       }
     }
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRoomsGuestPasswordAndNlMeshIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}guestPasswordPlaceholder` &&
@@ -1225,7 +1278,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     const gaasIssue = nlMeshGaasIssue(enVal, val);
     if (gaasIssue) issues.push(gaasIssue);
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkMqttWifiAndScriptIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (isMqttProxyUiKey(flatKey)) {
     for (const { re, hint } of MQTT_PROXY_LEGAL_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -1250,7 +1312,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   if (!CJK_LOCALES.has(locale) && CJK_SCRIPT_RE.test(val) && !CJK_SCRIPT_RE.test(enVal)) {
     issues.push('wrong-script contamination (CJK characters in a non-CJK locale)');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRoomsPanelTranslationIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -1317,7 +1388,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   ) {
     issues.push('unreadPosts uses "Nowość" (novelty) — use "nowe" or "nowych" for unread count');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkChatPanelIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.composeLimit.') &&
@@ -1361,7 +1441,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
       }
     }
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRoomsPanelMembersIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -1558,7 +1647,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
       );
     }
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkAppPanelReduceMotionAndBrandIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === REDUCE_MOTION_DESC_KEY && enVal.includes('Loading spinners')) {
     for (const { re, hint } of REDUCE_MOTION_LOADING_SPINNER_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -1594,7 +1692,16 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {
     issues.push('use "mesh-client" without spaces around the hyphen (not "mesh - client")');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkMeshcoreOpenWireIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (locale !== 'en' && isMeshcoreOpenWireUiLeafKey(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
@@ -1706,13 +1813,31 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
   ) {
     issues.push('debugSnapshotCopied uses English "clipboard" — use "papan klip"');
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkUkrainianApostropheIssues(ctx) {
+  const { locale, val } = ctx;
+  const issues = [];
   if (locale === 'uk' && UK_BROKEN_APOSTROPHE_RE.test(val)) {
     issues.push(
       "Ukrainian apostrophe words must not have a space before ' (e.g. з'єднання, not з 'єднання)",
     );
   }
+  return issues;
+}
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkMeshcoreReactionAndConnectionIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -1775,6 +1900,37 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     }
   }
 
+  return issues;
+}
+
+const LOCALE_STRING_QUALITY_CHECKS = [
+  checkCatEncodingAndMeshtasticIssues,
+  checkMustTranslateAndFormFieldIssues,
+  checkRadioPanelChannelIssues,
+  checkRoomsPanelFalseFriendIssues,
+  checkMeshAdvertAndRawPacketLogIssues,
+  checkRoomsGuestPasswordAndNlMeshIssues,
+  checkMqttWifiAndScriptIssues,
+  checkRoomsPanelTranslationIssues,
+  checkChatPanelIssues,
+  checkRoomsPanelMembersIssues,
+  checkAppPanelReduceMotionAndBrandIssues,
+  checkMeshcoreOpenWireIssues,
+  checkUkrainianApostropheIssues,
+  checkMeshcoreReactionAndConnectionIssues,
+];
+
+/**
+ * @param {LocaleStringContext} ctx
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
+  const leafKey = flatKey.split('.').pop() ?? flatKey;
+  const qualityCtx = { locale, flatKey, val, enVal, leafKey };
+  const issues = [];
+  for (const check of LOCALE_STRING_QUALITY_CHECKS) {
+    issues.push(...check(qualityCtx));
+  }
   return issues;
 }
 

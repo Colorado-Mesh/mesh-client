@@ -36,7 +36,8 @@ import {
 } from './check-i18n-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LOCALES_DIR = join(__dirname, '../src/renderer/locales');
+const LOCALES_DIR =
+  process.env.MESH_CLIENT_LOCALES_DIR ?? join(__dirname, '../src/renderer/locales');
 
 /** Log copy for opaque rooms-hello-* codes from check-i18n-quality.mjs (kept here for CodeQL). */
 const ROOMS_HELLO_FALSE_FRIEND_LOG = {
@@ -73,6 +74,25 @@ function formatLocaleQualityIssueForLog(issue) {
 }
 const SRC_DIR = join(__dirname, '../src/renderer');
 const EN_FILE = join(LOCALES_DIR, 'en/translation.json');
+
+function failLocalesDirAccess(err) {
+  const reason = err instanceof Error ? err.message : String(err);
+  console.error(
+    `Error: locales directory is missing or inaccessible: ${LOCALES_DIR} (${reason}). ` +
+      'Ensure src/renderer/locales exists and is readable.',
+  );
+  process.exit(1);
+}
+
+function readLocalesDirEntries() {
+  try {
+    return readdirSync(LOCALES_DIR);
+  } catch (err) {
+    failLocalesDirAccess(err);
+  }
+}
+
+readLocalesDirEntries();
 
 function flatten(obj, prefix = '') {
   const out = {};
@@ -228,7 +248,7 @@ for (const file of files) {
 }
 
 // ── 2. Check completeness across locale files (warn only — rate limits can leave gaps) ──
-const localeDirs = readdirSync(LOCALES_DIR).filter((d) => {
+const localeDirs = readLocalesDirEntries().filter((d) => {
   const full = join(LOCALES_DIR, d);
   return statSync(full).isDirectory() && d !== 'en';
 });

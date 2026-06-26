@@ -123,6 +123,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/stores/watchedNodesStore.test.ts',
 ];
 
+/** Glob in renderer-logic include; excluded from renderer-ui via RENDERER_UI_EXCLUDE filter below */
 const RENDERER_LOGIC_LIB_GLOB = 'src/renderer/lib/**/*.test.ts';
 
 /** Lib tests that need jsdom/setup — excluded from renderer-logic, routed to renderer-ui */
@@ -206,6 +207,7 @@ export default defineConfig({
           globals: true,
           environment: 'node',
           include: RENDERER_LOGIC_INCLUDE,
+          // RENDERER_LOGIC_LIB_GLOB in include matches all lib tests; exclude routes jsdom cases to renderer-ui.
           exclude: RENDERER_LOGIC_EXCLUDE,
           pool: 'threads',
           maxWorkers: nodeWorkers,
