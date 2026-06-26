@@ -6,6 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
+import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
 import { ensureLocaleLoaded } from './lib/localeResources';
@@ -24,6 +25,8 @@ if (import.meta.env.DEV) {
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
+
+  installDevElectronApiStubIfNeeded();
 
   initReduceMotionDefaultIfAbsent();
   syncReduceMotionDatasetFromStorage();

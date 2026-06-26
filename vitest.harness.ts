@@ -7,12 +7,20 @@ export const RENDERER_UI_CPU_RATIO = 0.5;
 /** node renderer-logic / main workers are lighter; can use more CPU. */
 export const NODE_WORKER_CPU_RATIO = 0.75;
 
+/** Effective CPU count cap so worker pools stay bounded on many-core hosts. */
+export const MAX_VITEST_CPU_COUNT = 32;
+
+function isFinitePositive(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
 export function computeVitestMaxWorkers(cpuCount: number, ratio: number): number {
-  if (!Number.isFinite(cpuCount) || !Number.isFinite(ratio) || cpuCount <= 0 || ratio <= 0) {
+  if (!isFinitePositive(cpuCount) || !isFinitePositive(ratio)) {
     return MIN_VITEST_WORKERS;
   }
+  const boundedCpuCount = Math.min(cpuCount, MAX_VITEST_CPU_COUNT);
   const boundedRatio = Math.min(ratio, 1);
-  return Math.max(MIN_VITEST_WORKERS, Math.floor(cpuCount * boundedRatio));
+  return Math.max(MIN_VITEST_WORKERS, Math.floor(boundedCpuCount * boundedRatio));
 }
 
 /** Shared deps inlined for Vite SSR optimizeDeps and server.deps.inline. */
