@@ -100,7 +100,7 @@
     "leaflet.markercluster": "^1.5.3",
     "lucide-react-motion": "^0.4.0",
     "mgrs": "^2.1.0",
-    "motion": "^12.41.0",
+    "motion": "^12.42.0",
     "mqtt": "^5.15.1",
     "node-forge": "^1.4.0",
     "react-i18next": "^17.0.8",
