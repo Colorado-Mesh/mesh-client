@@ -312,7 +312,7 @@
     "jumpToLatest": "Passa all'ultimo",
     "meshcoreReactionPickerLabel": "Scegli la reazione a rete",
     "meshcoreReactionEmojiOption": "Reagisci con {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Quell' emoji non è supportata per le reazioni mesh MeshCore.",
+    "meshcoreReactionNotInteroperable": "Quell'emoji non è supportata per le reazioni mesh MeshCore.",
     "reactionFailed": "Reazione fallita",
     "meshcoreGifButton": "Inserisci GIF GIPHY",
     "meshcoreGifButtonHint": "Invia una GIF Giphy nel wire g: MeshCore Open",
@@ -402,7 +402,7 @@
     "reconnect": "Connessione",
     "reconnectingAttempt": "Riconnessione in corso... tentativo {{attempt}}/{{max}}",
     "serialReselect": "Connessione seriale USB persa — seleziona di nuovo il tuo dispositivo",
-    "serialReselectAction": "Selezionare la Porta Seriale."
+    "serialReselectAction": "Seleziona porta seriale"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Numero massimo di tentativi di riconnessione MQTT",
@@ -2419,8 +2419,8 @@
     "historyLocalHint": "I post vengono visualizzati solo quando si è connessi a questa stanza su questo dispositivo. Abilita la sincronizzazione automatica per rimanere iscritto; la cronologia non viene riempita dal server della stanza.",
     "loginAllSavedDisabledNoSavedPasswords": "Salva prima una password della stanza per utilizzare l'accesso a tutti",
     "membersHeadingWithCount": "Membri ({{count}})",
-    "collapseRoomList": "Comprimi l'elenco delle stanze",
-    "expandRoomList": "Espandi l'elenco delle stanze"
+    "collapseRoomList": "Comprimi l'elenco delle sale",
+    "expandRoomList": "Espandi l'elenco delle sale"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

@@ -310,7 +310,7 @@
     "waitingMessagesSyncNow": "Synchroniseer nu",
     "jumpToUnread": "Ga naar Ongelezen",
     "jumpToLatest": "Spring naar de laatste",
-    "meshcoreReactionPickerLabel": "Kies een maasreactie",
+    "meshcoreReactionPickerLabel": "Kies een mesh-reactie",
     "meshcoreReactionEmojiOption": "Reageer met {{emoji}}",
     "meshcoreReactionNotInteroperable": "Die emoji wordt niet ondersteund voor MeshCore mesh reacties.",
     "reactionFailed": "Reactie mislukt",

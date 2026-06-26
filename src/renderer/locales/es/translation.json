@@ -402,7 +402,7 @@
     "reconnect": "Reconectar",
     "reconnectingAttempt": "Volviendo a conectar… intento {{attempt}}/{{max}}",
     "serialReselect": "Conexión serie USB perdida — seleccione su dispositivo de nuevo",
-    "serialReselectAction": "Seleccionar porto serie"
+    "serialReselectAction": "Seleccionar puerto serie"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Intentos de reconexión MQTT máximos",

@@ -317,7 +317,7 @@
     "meshcoreGifButton": "Masukkan GIF Giphy",
     "meshcoreGifButtonHint": "Kirim GIF Giphy sebagai MeshCore Open g: wire",
     "meshcoreGifTitle": "Kirim GIF Giphy",
-    "meshcoreGifHint": "Tempel URL halaman Giphy, URL media, g:ID, atau id GIF kosong.",
+    "meshcoreGifHint": "Tempel URL halaman Giphy, URL media, g:ID, atau ID GIF tanpa awalan.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… atau g:ID",
     "meshcoreGifSend": "Kirim GIF",
     "meshcoreGifInvalid": "Masukkan URL Giphy atau id GIF yang valid."
