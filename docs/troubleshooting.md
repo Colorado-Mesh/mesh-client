@@ -267,6 +267,21 @@ This means Chromium still holds the previous Web Serial session (locked streams)
 
 BLE or Wi‑Fi/HTTP avoids this USB serial path when you need a reliable reconnect loop.
 
+### MeshCore / Meshtastic USB serial: app frozen or stuck on "Reconnecting…"
+
+If the UI stops updating but the radio is still powered, Chromium may be holding a **zombie Web Serial session** (streams stalled with no error). mesh-client now:
+
+1. Times out serial `open` / reconnect after **15 seconds** instead of hanging forever.
+2. Treats **3 minutes** without inbound traffic as a dead link (serial watchdog) and starts auto-reconnect.
+3. After **5 failed** auto-reconnect attempts, revokes the stale port permission (`SerialPort.forget()` when supported), clears saved port identity, and shows **Select serial port** in the connection banner (opens the normal port picker).
+
+If auto-recovery does not help:
+
+1. **Quit mesh-client completely** (not only Disconnect), unplug/replug USB if needed, reopen, and use **Select serial port**.
+2. Open **Log → Analyze** after enabling **debug** — look for **USB Serial Reconnect** patterns.
+
+This applies on **Windows, macOS, and Linux** (same Web Serial stack). Linux **permission denied** before the first connect is a separate issue — see [Linux: serial port access denied](#linux-serial-port-access-denied).
+
 ### Connection or transport issues: use Log **Analyze**
 
 Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.

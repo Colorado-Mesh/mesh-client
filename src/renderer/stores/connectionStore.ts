@@ -18,6 +18,8 @@ export interface ConnectionRecord {
   mqttStatus: MQTTStatus;
   /** True when the last drop was unexpected (not manual disconnect). */
   connectionLoss?: boolean;
+  /** Serial auto-reconnect exhausted; user must pick the port again via requestPort(). */
+  serialNeedsReselect?: boolean;
   reconnectAttempt: number;
   myNodeNum: number;
   lastDataReceivedAt?: Date;

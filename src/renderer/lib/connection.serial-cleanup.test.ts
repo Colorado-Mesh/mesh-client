@@ -3,6 +3,7 @@ import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeSerialPortIfOpen, reconnectSerial, safeDisconnect } from './connection';
+import { SERIAL_OPEN_TIMEOUT_MS } from './serialPortRecovery';
 
 vi.mock('@meshtastic/transport-web-serial', () => ({
   TransportWebSerial: {
@@ -84,6 +85,30 @@ describe('connection serial cleanup', () => {
 
     expect(port.close).toHaveBeenCalledTimes(1);
     expect(TransportWebSerial.createFromPort).toHaveBeenCalledWith(port, 115200);
+  });
+
+  it('reconnectSerial rejects when createFromPort hangs past serial open timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const port = makeMockSerialPort({ portId: 'saved-port' });
+      Object.defineProperty(navigator, 'serial', {
+        configurable: true,
+        value: {
+          getPorts: vi.fn().mockResolvedValue([port]),
+        },
+      });
+      localStorage.setItem('mesh-client:lastSerialPort', 'saved-port');
+      vi.mocked(TransportWebSerial.createFromPort).mockImplementation(() => new Promise(() => {}));
+
+      const reconnectPromise = reconnectSerial('saved-port');
+      const rejection = expect(reconnectPromise).rejects.toThrow(
+        /Meshtastic serial reconnect timed out/,
+      );
+      await vi.advanceTimersByTimeAsync(SERIAL_OPEN_TIMEOUT_MS);
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('safeDisconnect closes underlying serial port after device.disconnect', async () => {

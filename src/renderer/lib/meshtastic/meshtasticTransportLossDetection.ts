@@ -139,14 +139,13 @@ export function attachMeshtasticTransportLossWatch(
 
   if (type === 'serial') {
     const port = getSerialPortFromMeshTransport(device.transport);
-    const portWithDisconnect = port as (SerialPort & EventTarget) | null;
-    if (portWithDisconnect && typeof portWithDisconnect.addEventListener === 'function') {
+    if (port && typeof port.addEventListener === 'function') {
       const onDisconnect = () => {
         notify('serial-disconnect');
       };
-      portWithDisconnect.addEventListener('disconnect', onDisconnect);
+      port.addEventListener('disconnect', onDisconnect);
       cleanups.push(() => {
-        portWithDisconnect.removeEventListener('disconnect', onDisconnect);
+        port.removeEventListener('disconnect', onDisconnect);
       });
     }
   }

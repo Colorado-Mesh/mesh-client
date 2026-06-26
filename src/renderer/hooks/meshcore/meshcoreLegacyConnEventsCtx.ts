@@ -68,4 +68,5 @@ export interface MeshcoreLegacyConnEventsCtx {
   teardownMeshcoreConnEventListeners: (opts?: { driverDisconnect?: boolean }) => void;
   meshcorePreviousNodesBaselineForBuild: () => Map<number, MeshNode>;
   handleConnectionLostRef: RefObject<() => void>;
+  bumpLastDataReceived?: () => void;
 }

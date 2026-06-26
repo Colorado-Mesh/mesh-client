@@ -36,6 +36,7 @@ function deviceStateFromConnection(conn: ReturnType<typeof useConnectionByProtoc
     batteryPercent: conn.batteryPercent,
     batteryCharging: conn.batteryCharging,
     connectionLoss: conn.connectionLoss,
+    serialNeedsReselect: conn.serialNeedsReselect,
   };
 }
 

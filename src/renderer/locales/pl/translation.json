@@ -400,7 +400,9 @@
     "disconnectedLoss": "Utracono połączenie — rozłączono radio",
     "staleLoss": "Połączenie może zostać utracone — brak danych otrzymanych ostatnio",
     "reconnect": "Połącz ponownie",
-    "reconnectingAttempt": "Ponowne łączenie… próba {{attempt}}/{{max}}"
+    "reconnectingAttempt": "Ponowne łączenie… próba {{attempt}}/{{max}}",
+    "serialReselect": "Utracono połączenie szeregowe USB — wybierz ponownie swoje urządzenie",
+    "serialReselectAction": "Wybierz port szeregowy"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",

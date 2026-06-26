@@ -400,7 +400,9 @@
     "disconnectedLoss": "Připojení ztraceno — rádio odpojeno",
     "staleLoss": "Připojení může být ztraceno — v poslední době nebyla přijata žádná data",
     "reconnect": "Znovu připojit",
-    "reconnectingAttempt": "Opětovné připojení... Pokus {{attempt}}/{{max}}"
+    "reconnectingAttempt": "Opětovné připojení... Pokus {{attempt}}/{{max}}",
+    "serialReselect": "Ztráta sériového připojení USB — vyberte zařízení znovu",
+    "serialReselectAction": "Výběr sériového portu"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",

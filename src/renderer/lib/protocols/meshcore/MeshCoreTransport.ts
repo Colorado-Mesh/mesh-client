@@ -9,6 +9,7 @@ import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEch
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
+import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import { TransportWebBluetoothIpc } from '../../transportWebBluetoothIpc';
 import type { NobleBleSessionId } from '../../types';
@@ -188,12 +189,14 @@ export function patchMeshcoreWebSerialWritable(
 
 async function openSerialPort(port: SerialPort): Promise<Connection> {
   persistSerialPortIdentity(port);
-  await (port as unknown as { open(opts: object): Promise<void> }).open({ baudRate: 115200 });
+  await openSerialPortWithTimeout(port, 115200, 'MeshCore serial open');
   const rawWritable = port.writable;
   const conn = new (WebSerialConnection as unknown as new (port: unknown) => MeshcoreWebSerialConn)(
     port,
   );
-  patchMeshcoreWebSerialWritable(conn, rawWritable);
+  if (rawWritable) {
+    patchMeshcoreWebSerialWritable(conn, rawWritable);
+  }
   patchMeshcoreCompanionTxEchoFilter(conn);
   return conn;
 }

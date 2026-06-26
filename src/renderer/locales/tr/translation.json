@@ -400,7 +400,9 @@
     "disconnectedLoss": "Bağlantı kesildi — radyo bağlantısı kesildi",
     "staleLoss": "Bağlantı kaybolabilir — yakın zamanda veri alınmadı",
     "reconnect": "Yeniden bağlanınız",
-    "reconnectingAttempt": "Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi"
+    "reconnectingAttempt": "Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi",
+    "serialReselect": "USB seri bağlantısı kesildi — cihazınızı tekrar seçin",
+    "serialReselectAction": "COM… seri portunu seçin"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",
