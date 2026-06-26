@@ -44,3 +44,22 @@ describe('check-i18n locale fixtures', () => {
     expect(() => JSON.parse('{not json')).toThrow();
   });
 });
+
+describe('check-i18n locales directory access', () => {
+  it('fails with a helpful message when LOCALES_DIR is missing', async () => {
+    const { spawnSync } = await import('node:child_process');
+    const { join, dirname } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const scriptDir = dirname(fileURLToPath(import.meta.url));
+    const missingLocales = join(scriptDir, '__missing_locales_dir__');
+    const result = spawnSync(process.execPath, ['scripts/check-i18n.mjs'], {
+      cwd: join(scriptDir, '..'),
+      env: { ...process.env, MESH_CLIENT_LOCALES_DIR: missingLocales },
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(1);
+    const output = `${result.stderr}\n${result.stdout}`;
+    expect(output).toContain('locales directory is missing or inaccessible');
+    expect(output).toContain(missingLocales);
+  });
+});

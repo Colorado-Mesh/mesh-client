@@ -8,7 +8,11 @@ export const RENDERER_UI_CPU_RATIO = 0.5;
 export const NODE_WORKER_CPU_RATIO = 0.75;
 
 export function computeVitestMaxWorkers(cpuCount: number, ratio: number): number {
-  return Math.max(MIN_VITEST_WORKERS, Math.floor(cpuCount * ratio));
+  if (!Number.isFinite(cpuCount) || !Number.isFinite(ratio) || cpuCount <= 0 || ratio <= 0) {
+    return MIN_VITEST_WORKERS;
+  }
+  const boundedRatio = Math.min(ratio, 1);
+  return Math.max(MIN_VITEST_WORKERS, Math.floor(cpuCount * boundedRatio));
 }
 
 /** Shared deps inlined for Vite SSR optimizeDeps and server.deps.inline. */

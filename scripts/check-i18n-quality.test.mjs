@@ -633,6 +633,12 @@ describe('localeStringQualityIssues', () => {
 });
 
 describe('interpolationPlaceholderIssues', () => {
+  it('memoizes placeholderNameSet for identical strings', async () => {
+    const { placeholderNameSet } = await import('./check-i18n-quality.mjs');
+    const text = 'Hello {{name}} and {{count}}';
+    expect(placeholderNameSet(text)).toBe(placeholderNameSet(text));
+  });
+
   it('flags missing {{count}} when CAT left __ PH0 __ residue', () => {
     const issues = interpolationPlaceholderIssues(
       'Logging in to {{count}} rooms (one at a time)…',

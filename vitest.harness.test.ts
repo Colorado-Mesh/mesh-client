@@ -16,6 +16,20 @@ describe('vitest.harness', () => {
     expect(computeVitestMaxWorkers(8, NODE_WORKER_CPU_RATIO)).toBe(6);
   });
 
+  it('computeVitestMaxWorkers returns MIN_VITEST_WORKERS for invalid inputs', () => {
+    expect(computeVitestMaxWorkers(0, RENDERER_UI_CPU_RATIO)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(-4, NODE_WORKER_CPU_RATIO)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(8, 0)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(8, -0.5)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(Number.NaN, RENDERER_UI_CPU_RATIO)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(8, Number.POSITIVE_INFINITY)).toBe(MIN_VITEST_WORKERS);
+  });
+
+  it('computeVitestMaxWorkers caps ratio above 1', () => {
+    expect(computeVitestMaxWorkers(8, 2)).toBe(8);
+    expect(computeVitestMaxWorkers(4, 1.5)).toBe(4);
+  });
+
   it('renderer-ui uses a lower CPU ratio than node workers', () => {
     expect(RENDERER_UI_CPU_RATIO).toBeLessThan(NODE_WORKER_CPU_RATIO);
   });
