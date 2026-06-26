@@ -39,6 +39,16 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
     expect(RUNTIME_SOURCE).toContain('power resume — resetting reconnect budget');
   });
+
+  it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /meshcoreReconnectAttemptRef\.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS[\s\S]{0,500}escalateSerialReconnectExhaustion/,
+    );
+    expect(RUNTIME_SOURCE).toContain('serialNeedsReselect');
+    expect(RUNTIME_SOURCE).toContain('attachMeshcoreSerialTransportLossWatch');
+    expect(RUNTIME_SOURCE).toContain('startMeshcoreSerialWatchdog');
+    expect(RUNTIME_SOURCE).toContain('registerMeshcoreSerialDisconnectTarget');
+  });
 });
 
 describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {

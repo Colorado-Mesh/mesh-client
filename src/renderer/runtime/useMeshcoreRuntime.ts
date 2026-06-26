@@ -117,6 +117,7 @@ import {
   replaceMeshcorePubKeyRegistry,
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
+import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_DATA,
@@ -265,6 +266,13 @@ import {
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
+import { registerMeshcoreSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
+import {
+  escalateSerialReconnectExhaustion,
+  SERIAL_DEAD_THRESHOLD_MS,
+  SERIAL_STALE_THRESHOLD_MS,
+  SERIAL_WATCHDOG_INTERVAL_MS,
+} from '../lib/serialPortRecovery';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -413,10 +421,14 @@ export function useMeshcoreRuntime() {
     httpAddress?: string;
     blePeripheralId?: string;
     serialPortId?: string | null;
+    serialPort?: SerialPort | null;
   } | null>(null);
   const meshcoreReconnectAttemptRef = useRef(0);
   const meshcoreReconnectGenerationRef = useRef(0);
   const meshcoreIsReconnectingRef = useRef(false);
+  const meshcoreLastDataReceivedRef = useRef<number>(Date.now());
+  const meshcoreSerialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const meshcoreSerialLossCleanupRef = useRef<(() => void) | null>(null);
   const handleMeshcoreConnectionLostRef = useRef<() => void>(() => {});
   const attemptMeshcoreReconnectRef = useRef<() => Promise<void>>(async () => {});
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
@@ -618,6 +630,7 @@ export function useMeshcoreRuntime() {
         return updated;
       });
     }
+    meshcoreLastDataReceivedRef.current = Date.now();
   }, [state.myNodeNum]);
 
   const buildNodesFromContactsRef = useRef<
@@ -1407,6 +1420,66 @@ export function useMeshcoreRuntime() {
     return Promise.resolve();
   }, []);
 
+  const bumpMeshcoreLastDataReceived = useCallback(() => {
+    meshcoreLastDataReceivedRef.current = Date.now();
+    setState((s) => {
+      if (s.status === 'stale') {
+        return { ...s, status: 'configured', lastDataReceived: Date.now() };
+      }
+      return s;
+    });
+  }, []);
+
+  const stopMeshcoreSerialWatchdog = useCallback(() => {
+    if (meshcoreSerialWatchdogRef.current) {
+      clearInterval(meshcoreSerialWatchdogRef.current);
+      meshcoreSerialWatchdogRef.current = null;
+    }
+    meshcoreSerialLossCleanupRef.current?.();
+    meshcoreSerialLossCleanupRef.current = null;
+  }, []);
+
+  const startMeshcoreSerialWatchdog = useCallback(
+    (conn: MeshCoreConnection) => {
+      if (meshcoreConnectionParamsRef.current?.rfType !== 'serial') return;
+      stopMeshcoreSerialWatchdog();
+      meshcoreLastDataReceivedRef.current = Date.now();
+      meshcoreSerialLossCleanupRef.current = attachMeshcoreSerialTransportLossWatch(
+        conn as unknown as Connection & { writable: WritableStream<Uint8Array> },
+        () => {
+          if (meshcoreIsReconnectingRef.current) return;
+          handleMeshcoreConnectionLostRef.current();
+        },
+      );
+      meshcoreSerialWatchdogRef.current = setInterval(() => {
+        if (meshcoreIsReconnectingRef.current) return;
+        if (meshcoreConnectionParamsRef.current?.rfType !== 'serial') return;
+        const identityId =
+          meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current;
+        const driverLast = identityId
+          ? connectionDriver.getLastDataAtForIdentity(identityId)
+          : null;
+        const lastAt = Math.max(meshcoreLastDataReceivedRef.current, driverLast ?? 0);
+        const elapsed = Date.now() - lastAt;
+        if (elapsed > SERIAL_DEAD_THRESHOLD_MS) {
+          console.warn(
+            `[useMeshcoreRuntime] watchdog: serial dead for ${elapsed}ms, triggering reconnect`,
+          );
+          handleMeshcoreConnectionLostRef.current();
+        } else if (elapsed > SERIAL_STALE_THRESHOLD_MS) {
+          console.warn(`[useMeshcoreRuntime] watchdog: serial stale for ${elapsed}ms`);
+          setState((s) => {
+            if (s.status === 'configured' || s.status === 'connected') {
+              return { ...s, status: 'stale', lastDataReceived: lastAt };
+            }
+            return s;
+          });
+        }
+      }, SERIAL_WATCHDOG_INTERVAL_MS);
+    },
+    [stopMeshcoreSerialWatchdog],
+  );
+
   const meshcoreLegacyConnEventsCtx = useMemo<MeshcoreLegacyConnEventsCtx>(
     () => ({
       meshcoreIdentityIdRef,
@@ -1448,12 +1521,14 @@ export function useMeshcoreRuntime() {
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
       handleConnectionLostRef: handleMeshcoreConnectionLostRef,
+      bumpLastDataReceived: bumpMeshcoreLastDataReceived,
     }),
     [
       addMessage,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
+      bumpMeshcoreLastDataReceived,
     ],
   );
 
@@ -1668,6 +1743,7 @@ export function useMeshcoreRuntime() {
         myNodeNum: myNodeId,
         status: 'configured',
         connectionLoss: false,
+        serialNeedsReselect: false,
       }));
       if (getStoredMeshProtocol() === 'meshcore') {
         useDiagnosticsStore.getState().migrateForeignLoraFromZero(myNodeId);
@@ -1969,6 +2045,7 @@ export function useMeshcoreRuntime() {
         myNodeNum: 0,
         connectionType: type === 'tcp' ? 'http' : type,
         connectionLoss: false,
+        serialNeedsReselect: false,
       });
       if (type === 'ble') bleConnectInProgressRef.current = true;
     },
@@ -2000,6 +2077,14 @@ export function useMeshcoreRuntime() {
       meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
       await initConn(conn, setupGen, { driverIdentityId });
       if (type === 'serial') {
+        const serialPort =
+          meshcoreConnectionParamsRef.current?.serialPort ??
+          (conn as { port?: SerialPort }).port ??
+          null;
+        if (meshcoreConnectionParamsRef.current) {
+          meshcoreConnectionParamsRef.current.serialPort = serialPort;
+        }
+        startMeshcoreSerialWatchdog(conn);
         const portId = localStorage.getItem(LAST_SERIAL_PORT_KEY);
         const nodeName = selfInfoRef.current?.name?.trim() || null;
         if (portId && nodeName) {
@@ -2018,7 +2103,7 @@ export function useMeshcoreRuntime() {
         }
       }
     },
-    [initConn, setupEventListeners],
+    [initConn, setupEventListeners, startMeshcoreSerialWatchdog],
   );
 
   const handleRfConnectFailure = useCallback(
@@ -2088,6 +2173,7 @@ export function useMeshcoreRuntime() {
       setMeshcoreCliHistories(new Map());
       setMeshcoreCliErrors(new Map());
       meshcoreClearAllRoomSessions();
+      stopMeshcoreSerialWatchdog();
       setEnvironmentTelemetry([]);
       setState(INITIAL_STATE);
       if (meshcoreStatsPollRef.current) {
@@ -2102,7 +2188,7 @@ export function useMeshcoreRuntime() {
       prevStatsTimestampRef.current = null;
       bleConnectInProgressRef.current = false;
     },
-    [teardownMeshcoreConnEventListeners, reloadMeshcoreNodesFromDb],
+    [teardownMeshcoreConnEventListeners, reloadMeshcoreNodesFromDb, stopMeshcoreSerialWatchdog],
   );
 
   const attemptMeshcoreReconnect = useCallback(async () => {
@@ -2115,11 +2201,16 @@ export function useMeshcoreRuntime() {
     if (meshcoreReconnectAttemptRef.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS) {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
+      stopMeshcoreSerialWatchdog();
+      if (params.rfType === 'serial') {
+        await escalateSerialReconnectExhaustion(params.serialPort ?? null);
+      }
       setState((s) => ({
         ...s,
         status: 'disconnected',
-        connectionType: null,
+        connectionType: params.rfType === 'serial' ? 'serial' : null,
         connectionLoss: true,
+        serialNeedsReselect: params.rfType === 'serial',
       }));
       return;
     }
@@ -2182,6 +2273,11 @@ export function useMeshcoreRuntime() {
       );
       meshcoreReconnectAttemptRef.current = 0;
       meshcoreIsReconnectingRef.current = false;
+      setState((s) => ({
+        ...s,
+        serialNeedsReselect: false,
+        connectionLoss: false,
+      }));
     } catch (err) {
       if (opened?.driverIdentityId) {
         await connectionDriver.disconnect(opened.driverIdentityId).catch((e: unknown) => {
@@ -2196,7 +2292,7 @@ export function useMeshcoreRuntime() {
       );
       void attemptMeshcoreReconnectRef.current();
     }
-  }, [attachRfSession, prepareRfConnect]);
+  }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
 
   attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
 
@@ -2285,6 +2381,7 @@ export function useMeshcoreRuntime() {
           httpAddress: type === 'tcp' ? tcpHost : undefined,
           blePeripheralId: type === 'ble' ? blePeripheralId : undefined,
           serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
+          serialPort: null,
         };
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
@@ -2394,6 +2491,7 @@ export function useMeshcoreRuntime() {
           meshcoreConnectionParamsRef.current = {
             rfType: 'serial',
             serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
+            serialPort: null,
           };
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;
@@ -5570,6 +5668,7 @@ export function useMeshcoreRuntime() {
     setConnection(meshcoreIdentityId, {
       status: state.status,
       connectionLoss: state.connectionLoss,
+      serialNeedsReselect: state.serialNeedsReselect,
       myNodeNum: state.myNodeNum,
       connectionType: state.connectionType,
       reconnectAttempt: state.reconnectAttempt,
@@ -5645,6 +5744,14 @@ export function useMeshcoreRuntime() {
       copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
     });
     return () => setMeshcorePubKeyRegistryRefSync(null);
+  }, []);
+
+  useEffect(() => {
+    registerMeshcoreSerialDisconnectTarget({
+      isSerialConnected: () => meshcoreConnectionParamsRef.current?.rfType === 'serial',
+      onDisconnected: () => handleMeshcoreConnectionLostRef.current(),
+    });
+    return () => registerMeshcoreSerialDisconnectTarget(null);
   }, []);
 
   useEffect(() => {

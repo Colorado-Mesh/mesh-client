@@ -400,7 +400,9 @@
     "disconnectedLoss": "接続が切断されました—無線が切断されました",
     "staleLoss": "接続が失われる可能性があります—最近受信したデータはありません",
     "reconnect": "再接続",
-    "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目"
+    "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目",
+    "serialReselect": "USBシリアル接続が失われました—デバイスを再度選択してください",
+    "serialReselectAction": "シリアルポートを選択"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",

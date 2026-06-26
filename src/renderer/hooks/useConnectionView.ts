@@ -8,6 +8,7 @@ function deviceStateFromStore(record: ConnectionRecord): DeviceState {
   return {
     status: record.status,
     connectionLoss: record.connectionLoss,
+    serialNeedsReselect: record.serialNeedsReselect,
     myNodeNum: record.myNodeNum,
     connectionType: record.connectionType,
     reconnectAttempt: record.reconnectAttempt,

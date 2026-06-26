@@ -400,7 +400,9 @@
     "disconnectedLoss": "З 'єднання втрачено — радіо роз' єднано",
     "staleLoss": "З 'єднання може бути втрачено — нещодавно не було отримано жодних даних",
     "reconnect": "Повторно під’єднати",
-    "reconnectingAttempt": "Повторне підключення… спроба {{attempt}}/{{max}}"
+    "reconnectingAttempt": "Повторне підключення… спроба {{attempt}}/{{max}}",
+    "serialReselect": "Серійне з 'єднання USB втрачено — виберіть пристрій знову",
+    "serialReselectAction": "Виберіть послідовний порт"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Максимальна кількість спроб повторного підключення MQTT",

@@ -169,6 +169,7 @@ export function attachMeshcoreLegacyConnEvents(
     teardownMeshcoreConnEventListeners,
     meshcorePreviousNodesBaselineForBuild,
     handleConnectionLostRef,
+    bumpLastDataReceived,
   } = ctx;
 
   /** PacketRouter + meshcoreIngest own parsed room posts when identity is bound. */
@@ -186,8 +187,12 @@ export function attachMeshcoreLegacyConnEvents(
   }[] = [];
   const onMeshcoreConn = (event: string | number, handler: (...args: unknown[]) => void) => {
     if (protocolOwnedEvents.has(event)) return;
-    conn.on(event, handler);
-    meshcorePersistentListenerRegs.push({ event, handler });
+    const wrapped = (...args: unknown[]) => {
+      bumpLastDataReceived?.();
+      handler(...args);
+    };
+    conn.on(event, wrapped);
+    meshcorePersistentListenerRegs.push({ event, handler: wrapped });
   };
 
   const logTransportLineAsDevice = (line: string) => {

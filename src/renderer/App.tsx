@@ -79,6 +79,7 @@ import {
 } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useSendMessage } from './hooks/useSendMessage';
+import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
@@ -674,6 +675,7 @@ function AppContent({
       onPowerResume: meshcoreRuntime.onPowerResume,
     },
   });
+  useSerialServiceListeners();
   useSpellcheckReplaceSync();
 
   const { meshtastic: meshtasticPanelActions, meshcore: meshcorePanelActions } =
@@ -1802,6 +1804,7 @@ function AppContent({
     if (reconnectInFlightRef.current) return;
     reconnectInFlightRef.current = true;
 
+    const serialNeedsReselect = activeConnectionView.state.serialNeedsReselect ?? false;
     const lastStored = loadLastConnection(protocol);
     const lastType =
       activeConnectionView.state.connectionType ?? lastStored?.type ?? ('ble' as const);
@@ -1812,6 +1815,15 @@ function AppContent({
           const finish = () => {
             reconnectInFlightRef.current = false;
           };
+
+          if (serialNeedsReselect && lastType === 'serial') {
+            void protocolConnect(protocol, 'serial')
+              .catch((err: unknown) => {
+                logRfReconnectFailure('[App] handleReconnect serial reselect failed', err);
+              })
+              .finally(finish);
+            return;
+          }
 
           void reconnectRfFromLastConnection(protocol, lastType, {
             connectBleAutomatic: (bleDeviceId) =>
@@ -1838,6 +1850,7 @@ function AppContent({
       });
   }, [
     activeConnectionView.state.connectionType,
+    activeConnectionView.state.serialNeedsReselect,
     meshcoreConnection,
     meshtasticConnection,
     protocol,
@@ -2172,6 +2185,8 @@ function AppContent({
         <ConnectionBanner
           status={activeConnectionView.state.status}
           connectionLoss={deviceLoss}
+          serialNeedsReselect={activeConnectionView.state.serialNeedsReselect}
+          connectionType={activeConnectionView.state.connectionType}
           reconnectAttempt={activeConnectionView.state.reconnectAttempt}
           onReconnect={handleReconnect}
         />
@@ -3547,15 +3562,43 @@ function FirmwareUpdateNotifier({
 function ConnectionBanner({
   status,
   connectionLoss,
+  serialNeedsReselect,
+  connectionType,
   reconnectAttempt,
   onReconnect,
 }: {
   status: string;
   connectionLoss?: boolean;
+  serialNeedsReselect?: boolean;
+  connectionType?: string | null;
   reconnectAttempt?: number;
   onReconnect: () => void;
 }) {
   const { t } = useTranslation();
+
+  if (
+    status === 'disconnected' &&
+    connectionLoss &&
+    serialNeedsReselect &&
+    connectionType === 'serial'
+  ) {
+    return (
+      <div className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-red-400">⚠</span>
+          <span className="text-sm text-red-200">{t('connectionBanner.serialReselect')}</span>
+        </div>
+        <button
+          type="button"
+          onClick={onReconnect}
+          aria-label={t('connectionBanner.serialReselectAction')}
+          className="text-sm font-medium text-red-300 underline hover:text-red-100"
+        >
+          {t('connectionBanner.serialReselectAction')}
+        </button>
+      </div>
+    );
+  }
 
   if (status === 'disconnected' && connectionLoss) {
     return (

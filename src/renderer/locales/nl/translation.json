@@ -400,7 +400,9 @@
     "disconnectedLoss": "Verbinding verbroken — radio losgekoppeld",
     "staleLoss": "De verbinding kan verloren gaan — er zijn onlangs geen gegevens ontvangen",
     "reconnect": "Opnieuw verbinden",
-    "reconnectingAttempt": "Opnieuw verbinden… poging {{attempt}}/{{max}}"
+    "reconnectingAttempt": "Opnieuw verbinden… poging {{attempt}}/{{max}}",
+    "serialReselect": "USB seriële verbinding verbroken — selecteer uw apparaat opnieuw",
+    "serialReselectAction": "Seriële poort selecteren"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",

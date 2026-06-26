@@ -400,7 +400,9 @@
     "disconnectedLoss": "Koneksi terputus — radio terputus",
     "staleLoss": "Koneksi mungkin terputus — tidak ada data yang diterima baru - baru ini",
     "reconnect": "Sambung ulang",
-    "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}"
+    "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}",
+    "serialReselect": "Koneksi serial USB terputus — pilih perangkat Anda lagi",
+    "serialReselectAction": "Pilih port serial"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",

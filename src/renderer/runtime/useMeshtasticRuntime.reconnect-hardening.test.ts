@@ -38,8 +38,11 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
       /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}stopWatchdog/,
     );
     expect(SOURCE).toMatch(
-      /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}deviceRef\.current = null/,
+      /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,2000}deviceRef\.current = null/,
     );
+    expect(SOURCE).toContain('escalateSerialReconnectExhaustion');
+    expect(SOURCE).toContain('serialNeedsReselect');
+    expect(SOURCE).toContain('registerMeshtasticSerialDisconnectTarget');
   });
 
   it('clears reconnect refs in handleRfConnectFailure', () => {

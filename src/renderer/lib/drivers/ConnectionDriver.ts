@@ -305,6 +305,17 @@ export class ConnectionDriver {
   getSlot(transportId: string): TransportSlot | undefined {
     return this.slots.get(transportId);
   }
+
+  /** Latest inbound activity timestamp for an identity's RF transport (excludes MQTT). */
+  getLastDataAtForIdentity(identityId: IdentityId): number | null {
+    let latest = 0;
+    for (const slot of this.slots.values()) {
+      if (slot.identityId === identityId && slot.type !== 'mqtt') {
+        latest = Math.max(latest, slot.lastDataAt);
+      }
+    }
+    return latest > 0 ? latest : null;
+  }
 }
 
 export const connectionDriver = new ConnectionDriver();

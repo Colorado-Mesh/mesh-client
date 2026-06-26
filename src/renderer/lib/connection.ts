@@ -11,6 +11,7 @@ import {
   getMeshtasticStreamsDiagnostics,
   logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
+import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
   persistSerialPortIdentity,
@@ -267,7 +268,6 @@ export async function createConnection(
           ...getMeshtasticStreamsDiagnostics(),
         })}`,
       );
-      const SERIAL_CONNECT_TIMEOUT_MS = 15_000;
       const serialApi = navigator.serial;
       const origRequestPort = serialApi.requestPort.bind(serialApi);
       let capturedSerialPort: SerialPort | null = null;
@@ -281,9 +281,9 @@ export async function createConnection(
         const serialTimeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => {
             reject(
-              new Error(`Serial connection timed out after ${SERIAL_CONNECT_TIMEOUT_MS / 1000}s`),
+              new Error(`Serial connection timed out after ${SERIAL_OPEN_TIMEOUT_MS / 1000}s`),
             );
-          }, SERIAL_CONNECT_TIMEOUT_MS),
+          }, SERIAL_OPEN_TIMEOUT_MS),
         );
         try {
           transport = await Promise.race([serialPromise, serialTimeoutPromise]);
@@ -408,7 +408,10 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
   );
   let transport: Awaited<ReturnType<typeof TransportWebSerial.createFromPort>>;
   try {
-    transport = await TransportWebSerial.createFromPort(port, 115200);
+    transport = await withSerialTransportTimeout(
+      TransportWebSerial.createFromPort(port, 115200),
+      'Meshtastic serial reconnect',
+    );
   } catch (err) {
     console.warn(
       `[connection] TransportWebSerial.createFromPort failed ${err instanceof Error ? err.message : String(err)}`,

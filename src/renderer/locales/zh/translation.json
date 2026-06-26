@@ -400,7 +400,9 @@
     "disconnectedLoss": "连接断开—无线电断开",
     "staleLoss": "连接可能丢失—最近未收到任何数据",
     "reconnect": "重新连接",
-    "reconnectingAttempt": "正在重新连接… 尝试 {{attempt}}/{{max}}"
+    "reconnectingAttempt": "正在重新连接… 尝试 {{attempt}}/{{max}}",
+    "serialReselect": "USB串行连接丢失—请重新选择您的设备",
+    "serialReselectAction": "选择串行端口"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",

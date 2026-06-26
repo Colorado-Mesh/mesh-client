@@ -66,7 +66,7 @@ import {
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
-import { safeDisconnect } from '../lib/connection';
+import { getSerialPortFromMeshTransport, safeDisconnect } from '../lib/connection';
 import { validateCoords } from '../lib/coordUtils';
 import {
   getMergedNodesForForeignLoraDiagnostics,
@@ -146,6 +146,8 @@ import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
+import { registerMeshtasticSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
+import { escalateSerialReconnectExhaustion } from '../lib/serialPortRecovery';
 import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import {
   clearMeshtasticOutboundTempId,
@@ -212,7 +214,7 @@ const BROADCAST_ADDR = 0xffffffff;
 const BLE_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const BLE_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const SERIAL_STALE_THRESHOLD_MS = 120_000; // 2min
-const SERIAL_DEAD_THRESHOLD_MS = 300_000; // 5min
+const SERIAL_DEAD_THRESHOLD_MS = 180_000; // 3min — align with BLE/HTTP
 // HTTP: align closer to BLE thresholds so WiFi behaves similarly for staleness/reconnect.
 const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
@@ -307,6 +309,7 @@ export function useMeshtasticRuntime() {
     httpAddress?: string;
     blePeripheralId?: string;
     lastSerialPortId?: string | null;
+    serialPort?: SerialPort | null;
   } | null>(null);
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
@@ -1857,14 +1860,21 @@ export function useMeshtasticRuntime() {
       cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
+      const exhaustedParams = connectionParamsRef.current;
+      const exhaustedSerialPort =
+        exhaustedParams?.type === 'serial' ? (exhaustedParams.serialPort ?? null) : null;
+      if (exhaustedParams?.type === 'serial') {
+        await escalateSerialReconnectExhaustion(exhaustedSerialPort);
+      }
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       setState((s) => ({
         ...s,
         status: 'disconnected',
-        connectionType: null,
+        connectionType: exhaustedParams?.type === 'serial' ? 'serial' : null,
         connectionLoss: true,
+        serialNeedsReselect: exhaustedParams?.type === 'serial',
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
@@ -1929,8 +1939,18 @@ export function useMeshtasticRuntime() {
       console.debug(
         `[useMeshtasticRuntime] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`,
       );
+      if (params.type === 'serial' && connectionParamsRef.current && opened?.device) {
+        connectionParamsRef.current.serialPort = getSerialPortFromMeshTransport(
+          opened.device.transport,
+        );
+      }
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
+      setState((s) => ({
+        ...s,
+        serialNeedsReselect: false,
+        connectionLoss: false,
+      }));
     } catch (err) {
       const failedDriverIdentity =
         opened?.driverIdentityId ??
@@ -2012,6 +2032,7 @@ export function useMeshtasticRuntime() {
         httpAddress,
         blePeripheralId,
         lastSerialPortId: resolvedSerialPortId,
+        serialPort: null,
       };
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
@@ -2021,6 +2042,7 @@ export function useMeshtasticRuntime() {
         status: 'connecting',
         connectionType: type,
         connectionLoss: false,
+        serialNeedsReselect: false,
         batteryPercent: undefined,
         batteryCharging: undefined,
       }));
@@ -2049,6 +2071,11 @@ export function useMeshtasticRuntime() {
         );
       }
       deviceRef.current = activeDevice;
+      if (type === 'serial' && connectionParamsRef.current) {
+        connectionParamsRef.current.serialPort = getSerialPortFromMeshTransport(
+          activeDevice.transport,
+        );
+      }
       wireSubscriptions(activeDevice, type, { driverIdentityId });
 
       // Show persisted nodes immediately while NodeDB configure replays over BLE/serial.
@@ -3781,6 +3808,7 @@ export function useMeshtasticRuntime() {
     setConnection(meshtasticIdentityId, {
       status: state.status,
       connectionLoss: state.connectionLoss,
+      serialNeedsReselect: state.serialNeedsReselect,
       myNodeNum: state.myNodeNum,
       connectionType: state.connectionType,
       reconnectAttempt: state.reconnectAttempt,
@@ -3792,6 +3820,14 @@ export function useMeshtasticRuntime() {
       mqttStatus,
     });
   }, [meshtasticIdentityId, state, mqttStatus]);
+
+  useEffect(() => {
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => connectionParamsRef.current?.type === 'serial',
+      onDisconnected: () => handleConnectionLostRef.current(),
+    });
+    return () => registerMeshtasticSerialDisconnectTarget(null);
+  }, []);
 
   useEffect(() => {
     registerMeshtasticSession({

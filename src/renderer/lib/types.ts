@@ -433,6 +433,8 @@ export interface DeviceState {
   status: 'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
   /** True when the last drop was unexpected (not manual disconnect). */
   connectionLoss?: boolean;
+  /** Serial auto-reconnect exhausted; user must re-select the USB serial port. */
+  serialNeedsReselect?: boolean;
   myNodeNum: number;
   connectionType: ConnectionType | null;
   reconnectAttempt?: number;

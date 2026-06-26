@@ -400,7 +400,9 @@
     "disconnectedLoss": "Connection lost — radio disconnected",
     "staleLoss": "Connection may be lost — no data received recently",
     "reconnect": "Reconnect",
-    "reconnectingAttempt": "Reconnecting… attempt {{attempt}}/{{max}}"
+    "reconnectingAttempt": "Reconnecting… attempt {{attempt}}/{{max}}",
+    "serialReselect": "USB serial connection lost — select your device again",
+    "serialReselectAction": "Select serial port"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max MQTT reconnect attempts",
