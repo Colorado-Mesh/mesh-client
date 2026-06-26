@@ -60,7 +60,8 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
  * they layer on top of the slot registry's `lastDataAt`.
  *
  * MQTT status mirroring into `connectionStore` is updated from legacy runtime
- * MQTT IPC handlers until MQTT moves fully into drivers (see AGENTS.md).
+ * MQTT IPC handlers via `mirrorMqttStatusToConnection` until MQTT moves fully into
+ * drivers (see AGENTS.md).
  */
 export class ConnectionDriver {
   private slots = new Map<string, TransportSlot>();

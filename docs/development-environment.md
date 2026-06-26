@@ -304,6 +304,18 @@ Not installed by pnpm (install separately when needed):
 - `docker` and `act` (only if you run GitHub Actions locally)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
+#### Vitest projects and worker allocation
+
+`vitest.config.ts` defines three projects:
+
+| Project          | Environment | Role                                    |
+| ---------------- | ----------- | --------------------------------------- |
+| `renderer-ui`    | jsdom       | Component/hook tests with setup stubs   |
+| `renderer-logic` | node        | Pure renderer unit tests (no setup)     |
+| `main`           | node        | Main, shared, preload, and script tests |
+
+Worker counts are derived in [`vitest.harness.ts`](../vitest.harness.ts): jsdom workers use `RENDERER_UI_CPU_RATIO` (0.5) because they are memory-heavy; node workers use `NODE_WORKER_CPU_RATIO` (0.75). Both pools floor at `MIN_VITEST_WORKERS` (2). Shared Vite dependency inline lists (`VITEST_CORE_DEPS`, `VITEST_SERVER_INLINE_DEPS`) also live there — add new deps to the harness when tests need them inlined.
+
 Run these quality checks before opening a PR:
 
 ```bash

@@ -82,12 +82,13 @@ Adding a cross-boundary feature:
 - **Domain error tags:** Do not attach ad-hoc properties to `Error` with type assertions. Use `markPairingRelatedError()` / `isPairingRelatedError()` from `src/shared/blePairingError.ts` for BLE pairing classification.
 - **RF connect APIs:** Transport-specific connect args use discriminated unions in `src/renderer/lib/rfConnectionTypes.ts` (`RfConnectionTransportOpts`, `RfConnectFn`, `RfConnectAutomaticFn`). Do not pass `httpAddress` and `blePeripheralId` as unrelated optional params on a flat signature.
 - **React:** Function components only; `exhaustive-deps` is errors; `?.` in JSX; every interactive control needs `aria-label`.
-- **Zustand:** Module-level defaults for stable refs; prefer `useStore(s => s.field)` over broad subscriptions; avoid subscribing to whole Maps when one id suffices; `persist` for localStorage, IPC from an effect for SQLite; extract time constants to `src/renderer/lib/timeConstants.ts`.
+- **Zustand:** Module-level defaults for stable refs; prefer `useStore(s => s.field)` over broad subscriptions; avoid subscribing to whole Maps when one id suffices; for `connectionStore`, never bare `useConnectionStore()` — use a selector such as `useConnectionStore((s) => (identityId ? (s.connections[identityId] ?? null) : null))` so components re-render only when that identity's record changes; `persist` for localStorage, IPC from an effect for SQLite; extract time constants to `src/renderer/lib/timeConstants.ts`.
 - **Performance:** No hot-path O(n); lazy cleanup when collections grow large.
 
 ## 5. Testing
 
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
+- Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
 - Mock console before spying logged errors: `vi.spyOn(console, 'warn').mockImplementation(() => {})` in `beforeEach` when shared.
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 
@@ -154,7 +155,7 @@ Do **not** remount protocol runtimes in child components. Do **not** compare `pr
 
 Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `ConnectionDriver`; inbound domain events: `PacketRouter` → stores. **MeshCore post-router side effects:** `lib/ingest/meshcoreIngest.ts` (chat persist, `last_heard`, path-updated), `lib/meshcore/meshcoreLiveContactPersist.ts` (SQLite contact rows), `lib/meshcore/meshcorePubKeyRegistry.ts` (DM/trace pubkeys mirrored into runtime refs). Live UI nodes/messages read `nodeStore` / `messageStore`; `useMeshcoreRuntime` still keeps hook-local `nodesRef` for send/RPC until contact rebuild syncs it. **Favorites:** `setNodeFavorited` patches `meshcoreIdentityIdRef` (fallback `getIdentityIdForProtocol('meshcore')`). **Dedup windows:** cross-transport and channel RF **5 min**; room/tapback **60 s**. Path-updated (129) for existing contacts does not bump SQLite `last_advert` until the next advert (128).
 
-**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`; message cap: `meshtasticMessageLoadLimit.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes may still merge DB rows into hook-local refs on connect; identity-scoped Zustand hydration is the canonical UI path ([#375]). **MeshCore contacts DB:** `meshcore_contacts.last_advert` is Unix **seconds**; age prune uses `src/shared/meshcoreContactAgeCutoff.ts` (do not compare in ms).
+**Identity-scoped UI stores:** `identityStore`, `nodeStore`, `messageStore`, `connectionStore` — nodes/messages keyed by `identityId`. **MQTT status bridge:** `mirrorMqttStatusToConnection` copies main-process `mqtt.onStatus` IPC into `connectionStore.mqttStatus` from legacy runtime handlers until MQTT moves fully into `ConnectionDriver`. **SQLite → UI:** `lib/hydrateIdentityStoresFromDb.ts` (coordinator: `identityHydrationCoordinator.ts`; Meshtastic node map: `meshtasticDbCacheHydration.ts`; message cap: `meshtasticMessageLoadLimit.ts`); manual refresh via `hooks/useDbRefresh.ts`. Runtimes may still merge DB rows into hook-local refs on connect; identity-scoped Zustand hydration is the canonical UI path ([#375]). **MeshCore contacts DB:** `meshcore_contacts.last_advert` is Unix **seconds**; age prune uses `src/shared/meshcoreContactAgeCutoff.ts` (do not compare in ms).
 
 ### First places to look
 

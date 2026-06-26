@@ -317,7 +317,7 @@
     "meshcoreGifButton": "Vložit GIPHY GIF",
     "meshcoreGifButtonHint": "Odeslat Giphy GIF ve wire g: MeshCore Open",
     "meshcoreGifTitle": "Odeslat GIPHY GIF",
-    "meshcoreGifHint": "Vložte adresu URL stránky GIPHY, adresu URL média, g:ID nebo ID holého GIF.",
+    "meshcoreGifHint": "Vložte URL stránky Giphy, URL média, g:ID nebo samotné ID GIFu.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… nebo g:ID",
     "meshcoreGifSend": "Odeslat gif",
     "meshcoreGifInvalid": "Zadejte platnou adresu URL GIPHY nebo ID GIF."

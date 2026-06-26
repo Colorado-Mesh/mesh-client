@@ -1345,6 +1345,76 @@ describe('roomsPanel saved passwords per-key quality', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags Portuguese porto in Spanish serialReselectAction', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'connectionBanner.serialReselectAction',
+      val: 'Seleccionar porto serie',
+      enVal: 'Select serial port',
+    });
+    expectIssue(issues, 'serialReselectAction false friend');
+  });
+
+  it('flags COM ellipsis garbage in Turkish serialReselectAction', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'connectionBanner.serialReselectAction',
+      val: 'COM… seri portunu seçin',
+      enVal: 'Select serial port',
+    });
+    expectIssue(issues, 'COM…');
+  });
+
+  it('flags bare GIF kosong false friend in Indonesian meshcoreGifHint', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'chatPanel.meshcoreGifHint',
+      val: 'id GIF kosong',
+      enVal: 'Paste a Giphy page URL, media URL, g:ID, or bare GIF id.',
+    });
+    expectIssue(issues, 'meshcoreGifHint bare-id false friend');
+  });
+
+  it('flags contact false friend on Ukrainian meshcoreReactionEmojiOption', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'chatPanel.meshcoreReactionEmojiOption',
+      val: "Зв'яжіться з {{emoji}}",
+      enVal: 'React with {{emoji}}',
+    });
+    expectIssue(issues, 'meshcoreReaction false friend');
+  });
+
+  it('flags fabric maasreactie in Dutch meshcoreReactionPickerLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'chatPanel.meshcoreReactionPickerLabel',
+      val: 'Kies een maasreactie',
+      enVal: 'Choose mesh reaction',
+    });
+    expectIssue(issues, 'maasreactie');
+  });
+
+  it('flags hotel stanze in Italian roomsPanel collapseRoomList', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'roomsPanel.collapseRoomList',
+      val: "Comprimi l'elenco delle stanze",
+      enVal: 'Collapse room list',
+    });
+    expectIssue(issues, 'hotel "stanze"');
+  });
+
+  it('flags broken Ukrainian apostrophe spacing', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'connectionBanner.serialReselect',
+      val: "Серійне з 'єднання USB втрачено",
+      enVal: 'USB serial connection lost — select your device again',
+    });
+    expectIssue(issues, 'Ukrainian apostrophe words must not have a space');
+  });
 });
 
 describe('protectedBrandIssues', () => {

@@ -357,6 +357,54 @@ export const MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS = new Set([
   'meshcoreGifInvalid',
 ]);
 
+/** MeshCore mesh reaction picker (added with Open wire / tapback work). */
+export const MESHCORE_REACTION_UI_LEAF_KEYS = new Set([
+  'meshcoreReactionPickerLabel',
+  'meshcoreReactionEmojiOption',
+  'meshcoreReactionNotInteroperable',
+]);
+
+/** connectionBanner USB serial reselect CTA (added with zombie-port recovery). */
+export const CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY = 'connectionBanner.serialReselectAction';
+
+/** MT often copies COM-port picker ellipsis into the reselect action label. */
+export const SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES = [
+  { re: /COM…/, hint: 'serialReselectAction must not include COM… placeholder text' },
+  {
+    re: /\bporto\s+serie\b/i,
+    hint: 'serialReselectAction use Spanish "puerto serie", not Portuguese "porto"',
+  },
+];
+
+/** MT mistranslates "bare GIF id" as naked/empty instead of without g: prefix. */
+export const MESHCORE_GIF_HINT_BARE_FALSE_FRIEND_RES = [
+  { re: /\bholého\b/i, hint: 'bare GIF id means without g: prefix, not Czech "holý/naked"' },
+  { re: /\bkosong\b/i, hint: 'bare GIF id means without prefix, not Indonesian "empty/kosong"' },
+];
+
+/** MT inserts spaces inside Ukrainian apostrophe words (з 'єднання, пам 'ять). */
+export const UK_BROKEN_APOSTROPHE_RE =
+  /[\s(][а-яіїєґА-ЯІЇЄҐ]+\s+'|[а-яіїєґА-ЯІЇЄҐ]\s+'|[а-яіїєґА-ЯІЇЄҐ]'\s+[а-яіїєґ]/;
+
+/** MT confuses "React with" and "Contact" on meshcoreReactionEmojiOption. */
+export const MESHCORE_REACTION_EMOJI_OPTION_FALSE_FRIENDS = {
+  uk: [
+    {
+      re: /Зв\s*'?яжіться/i,
+      hint: 'meshcoreReactionEmojiOption must be "Реагуйте з {{emoji}}", not contact "Зв\'яжіться"',
+    },
+  ],
+  nl: [
+    {
+      re: /\bmaasreactie\b/i,
+      hint: 'use "mesh-reactie", not fabric "maasreactie"',
+    },
+  ],
+};
+
+/** roomsPanel sidebar collapse/expand controls (MeshCore Room servers). */
+export const ROOMS_LIST_COLLAPSE_LEAF_KEYS = new Set(['collapseRoomList', 'expandRoomList']);
+
 /** MT leaves English "Open-aware" in meshcoreOpenWireCompatHint. */
 export const OPEN_AWARE_ENGLISH_RE = /\bOpen\s*-?\s*aware\b/i;
 
@@ -1596,8 +1644,15 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     }
   }
 
-  if (leafKey === 'meshcoreGifHint' && enVal.includes('bare GIF id') && /\bBARE GIF\b/i.test(val)) {
-    issues.push('translate "bare GIF id" — do not leave English "BARE GIF"');
+  if (leafKey === 'meshcoreGifHint' && enVal.includes('bare GIF id')) {
+    if (/\bBARE GIF\b/i.test(val)) {
+      issues.push('translate "bare GIF id" — do not leave English "BARE GIF"');
+    }
+    for (const { re, hint } of MESHCORE_GIF_HINT_BARE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`meshcoreGifHint bare-id false friend: ${hint}`);
+      }
+    }
   }
 
   if (
@@ -1650,6 +1705,58 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
     /\bclipboard\b/i.test(val)
   ) {
     issues.push('debugSnapshotCopied uses English "clipboard" — use "papan klip"');
+  }
+
+  if (locale === 'uk' && UK_BROKEN_APOSTROPHE_RE.test(val)) {
+    issues.push(
+      "Ukrainian apostrophe words must not have a space before ' (e.g. з'єднання, not з 'єднання)",
+    );
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.') &&
+    MESHCORE_REACTION_UI_LEAF_KEYS.has(leafKey) &&
+    val === enVal
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey.startsWith('chatPanel.') &&
+    MESHCORE_REACTION_UI_LEAF_KEYS.has(leafKey)
+  ) {
+    for (const { re, hint } of MESHCORE_REACTION_EMOJI_OPTION_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`meshcoreReaction false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY &&
+    val === enVal
+  ) {
+    issues.push('"serialReselectAction" is still identical to English — translate the UI text');
+  }
+
+  if (flatKey === CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY) {
+    for (const { re, hint } of SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`serialReselectAction false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    locale === 'it' &&
+    flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
+    ROOMS_LIST_COLLAPSE_LEAF_KEYS.has(leafKey) &&
+    /\bstanze\b/i.test(val)
+  ) {
+    issues.push('roomsPanel false friend: use "sale" for MeshCore Room list, not hotel "stanze"');
   }
 
   if (flatKey === MESHCORE_DISTANCE_FILTER_HINT_KEY && enVal.includes('App → Appearance')) {
