@@ -28,9 +28,18 @@ export function isMeshtasticTransportLostError(err: unknown): boolean {
  * writer chain so concurrent getWriter() calls do not throw WritableStream is locked.
  */
 export function createSerializedWritableStream(
-  inner: WritableStream<Uint8Array>,
+  inner: WritableStream<Uint8Array> | undefined | null,
   onWriteError?: (err: unknown) => void,
 ): WritableStream<Uint8Array> {
+  if (inner == null || typeof inner.getWriter !== 'function') {
+    return new WritableStream<Uint8Array>({
+      write: () =>
+        Promise.reject(new DOMException('Transport stream unavailable', 'InvalidStateError')),
+      close: () => Promise.resolve(),
+      abort: () => Promise.resolve(),
+    });
+  }
+
   let chain: Promise<void> = Promise.resolve();
 
   const runExclusive = <T>(fn: () => Promise<T>): Promise<T> => {

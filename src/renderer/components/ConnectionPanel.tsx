@@ -261,6 +261,18 @@ function humanizeBleError(err: unknown, t: TFunction): string {
     }
     return enhanced;
   }
+  const isDarwin = !isLinux && !isWindows;
+  if (
+    isDarwin &&
+    (/BLE connectAsync timed out/i.test(msg) ||
+      /BLE peripheral not found/i.test(msg) ||
+      /unknown peripheral/i.test(msg))
+  ) {
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.ble.macWakeRecoveryHint'),
+    });
+  }
   return msg;
 }
 
@@ -1236,6 +1248,29 @@ export default function ConnectionPanel({
     setConnectionStage('connectionPanel.stagePleaseWait');
 
     if (connectionType === 'ble') {
+      if (!isLinux) {
+        const lastBleId = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
+        if (lastBleId) {
+          setConnectionType('ble');
+          setConnectionStage('connectionPanel.stageConnecting');
+          try {
+            await onConnect('ble', undefined, lastBleId);
+            setConnecting(false);
+            setConnectionStage('');
+            return;
+          } catch (err) {
+            console.warn(
+              '[ConnectionPanel] handleConnect last-device reconnect failed ' +
+                errLikeToLogString(err),
+            );
+            const bleErrMsg = humanizeBleError(err, t);
+            if (bleErrMsg) setError(bleErrMsg);
+            setConnecting(false);
+            setConnectionStage('');
+            return;
+          }
+        }
+      }
       if (isLinux) {
         console.debug('[ConnectionPanel] handleConnect Linux BLE path');
         setConnectionStage('connectionPanel.stageSelectBluetoothDots');
@@ -1314,7 +1349,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
+  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t, lastConnection]);
 
   const handleCancelConnection = useCallback(async () => {
     isAutoConnectingRef.current = false;

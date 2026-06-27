@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "Perangkat mungkin tidak dipasangkan dengan komputer Anda. Hapus perangkat dari pengaturan Bluetooth, lalu pasangkan kembali. Untuk Meshtastic gunakan PIN 123456. Untuk MeshCore, PIN dibuat secara acak dan ditampilkan pada perangkat.",
         "connectionAttemptFailedLinuxHint": "Di Linux, Anda dapat mengatur pemasangan melalui pengaturan Bluetooth sistem atau alat 'bluetoothctl'.",
         "meshcoreHandshakeHint": "Pastikan perangkat MeshCore Anda dalam mode Bluetooth Companion dan dipasangkan dengan komputer Anda menggunakan PIN. Hapus semua pasangan yang ada dan pasangkan kembali jika masalah koneksi terus berlanjut.",
-        "meshcoreHandshakeWindowsExtra": "Di Windows, matikan/hidupkan Bluetooth dan perbarui driver adaptor di Pengelola Perangkat jika pemutusan sambungan masih terjadi."
+        "meshcoreHandshakeWindowsExtra": "Di Windows, matikan/hidupkan Bluetooth dan perbarui driver adaptor di Pengelola Perangkat jika pemutusan sambungan masih terjadi.",
+        "macWakeRecoveryHint": "Setelah tidur, keluar dari mesh-client (Cmd+Q), matikan dan nyalakan Bluetooth di Pengaturan Sistem, tunggu beberapa detik, lalu Hubungkan lagi. Dengan dua radio, hubungkan MeshCore sebelum Meshtastic."
       }
     },
     "error": {

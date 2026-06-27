@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "Urządzenie może nie być sparowane z komputerem. Usuń urządzenie z ustawień Bluetooth, a następnie sparuj je ponownie. W przypadku Meshtastic użyj kodu PIN 123456. W przypadku MeshCore PIN jest generowany losowo i wyświetlany na urządzeniu.",
         "connectionAttemptFailedLinuxHint": "W systemie Linux możesz zarządzać parowaniem za pomocą systemowych ustawień Bluetooth lub narzędzia „bluetoothctl”.",
         "meshcoreHandshakeHint": "Upewnij się, że urządzenie MeshCore działa w trybie Bluetooth Companion i jest sparowane z komputerem za pomocą kodu PIN. Usuń istniejące parowanie i sparuj ponownie, jeśli problemy z połączeniem będą się powtarzać.",
-        "meshcoreHandshakeWindowsExtra": "W systemie Windows wyłącz/włącz Bluetooth i zaktualizuj sterownik karty w Menedżerze urządzeń, jeśli rozłączenia będą się utrzymywać."
+        "meshcoreHandshakeWindowsExtra": "W systemie Windows wyłącz/włącz Bluetooth i zaktualizuj sterownik karty w Menedżerze urządzeń, jeśli rozłączenia będą się utrzymywać.",
+        "macWakeRecoveryHint": "Po uśpieniu zamknij mesh-client (Cmd+Q), wyłącz i włącz Bluetooth w ustawieniach systemu, odczekaj kilka sekund, a następnie połącz się ponownie. Za pomocą dwóch radiotelefonów podłącz MeshCore przed Meshtastic."
       }
     },
     "error": {

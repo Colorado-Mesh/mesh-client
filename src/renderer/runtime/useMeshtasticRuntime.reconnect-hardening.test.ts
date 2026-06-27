@@ -55,5 +55,8 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   it('exports power suspend/resume handlers for usePowerRecovery', () => {
     expect(SOURCE).toContain('onPowerSuspend');
     expect(SOURCE).toContain('onPowerResume');
+    expect(SOURCE).toContain('rehydrateMeshtasticConnectionParamsFromStorage');
+    expect(SOURCE).toContain('handleConnectionLost safeDisconnect');
+    expect(SOURCE).toContain('meshtasticExplicitDisconnectRef');
   });
 });

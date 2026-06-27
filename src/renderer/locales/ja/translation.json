@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "デバイスがコンピュータとペアリングされていない可能性があります。 Bluetooth 設定からデバイスを削除し、再度ペアリングします。 Meshtastic の場合は、PIN 123456 を使用します。MeshCore の場合、PIN はランダムに生成され、デバイスに表示されます。",
         "connectionAttemptFailedLinuxHint": "Linux では、システムの Bluetooth 設定または「bluetoothctl」ツールを介してペアリングを管理できます。",
         "meshcoreHandshakeHint": "MeshCore デバイスが Bluetooth コンパニオン モードになっていて、PIN を使用してコンピュータとペアリングされていることを確認します。接続の問題が解決しない場合は、既存のペアリングを削除し、再度ペアリングします。",
-        "meshcoreHandshakeWindowsExtra": "Windows では、切断が続く場合は、Bluetooth のオフ/オンを切り替え、デバイス マネージャーでアダプター ドライバーを更新します。"
+        "meshcoreHandshakeWindowsExtra": "Windows では、切断が続く場合は、Bluetooth のオフ/オンを切り替え、デバイス マネージャーでアダプター ドライバーを更新します。",
+        "macWakeRecoveryHint": "スリープ後、メッシュクライアント（ Command + Q ）を終了し、システム設定でBluetoothのオフとオンを切り替え、数秒待ってから再度接続します。2つのラジオで、Meshtasticの前にMeshCoreを接続します。"
       }
     },
     "error": {

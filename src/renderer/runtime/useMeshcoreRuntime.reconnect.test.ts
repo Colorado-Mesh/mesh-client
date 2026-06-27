@@ -38,6 +38,9 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('onPowerResume');
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
     expect(RUNTIME_SOURCE).toContain('power resume — resetting reconnect budget');
+    expect(RUNTIME_SOURCE).toContain('rehydrateMeshcoreConnectionParamsFromStorage');
+    expect(RUNTIME_SOURCE).toContain('Noble BLE disconnected');
+    expect(RUNTIME_SOURCE).toContain('meshcoreExplicitDisconnectRef');
   });
 
   it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {

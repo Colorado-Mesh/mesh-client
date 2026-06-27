@@ -82,6 +82,7 @@ import {
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
+import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import {
@@ -311,6 +312,8 @@ export function useMeshtasticRuntime() {
     lastSerialPortId?: string | null;
     serialPort?: SerialPort | null;
   } | null>(null);
+  /** Cleared on successful connect; set when user explicitly disconnects (blocks auto-reconnect). */
+  const meshtasticExplicitDisconnectRef = useRef(false);
   const isReconnectingRef = useRef<boolean>(false);
   const reconnectGenerationRef = useRef<number>(0);
   const postRebootRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1809,6 +1812,7 @@ export function useMeshtasticRuntime() {
       deviceConfiguredRef.current = false;
       // Clean up existing connection before reconnect (BlueZ needs GATT fully torn down).
       clearConfigureTimeout();
+      const staleDevice = deviceRef.current;
       cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
@@ -1817,6 +1821,13 @@ export function useMeshtasticRuntime() {
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
+      if (staleDevice) {
+        await safeDisconnect(staleDevice).catch((e: unknown) => {
+          console.debug(
+            '[useMeshtasticRuntime] handleConnectionLost safeDisconnect ' + errLikeToLogString(e),
+          );
+        });
+      }
       if (driverIdentity) {
         await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
           console.debug(
@@ -1988,7 +1999,21 @@ export function useMeshtasticRuntime() {
   }, []);
 
   const onPowerResume = useCallback(() => {
-    if (!connectionParamsRef.current) return;
+    if (!connectionParamsRef.current) {
+      if (meshtasticExplicitDisconnectRef.current) {
+        console.debug('[useMeshtasticRuntime] power resume — skip reconnect (user disconnect)');
+        return;
+      }
+      const rehydrated = rehydrateMeshtasticConnectionParamsFromStorage();
+      if (!rehydrated) {
+        console.debug('[useMeshtasticRuntime] power resume — skip reconnect (no stored session)');
+        return;
+      }
+      connectionParamsRef.current = rehydrated;
+      console.debug(
+        '[useMeshtasticRuntime] power resume — rehydrated reconnect params from storage',
+      );
+    }
     console.debug('[useMeshtasticRuntime] power resume — resetting reconnect budget');
     reconnectAttemptRef.current = 0;
     reconnectGenerationRef.current += 1;
@@ -2034,6 +2059,7 @@ export function useMeshtasticRuntime() {
         lastSerialPortId: resolvedSerialPortId,
         serialPort: null,
       };
+      meshtasticExplicitDisconnectRef.current = false;
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       reconnectGenerationRef.current++;
@@ -2274,6 +2300,7 @@ export function useMeshtasticRuntime() {
   );
 
   const disconnect = useCallback(async () => {
+    meshtasticExplicitDisconnectRef.current = true;
     await finalizeDriverDisconnect({ disconnectDriver: true });
   }, [finalizeDriverDisconnect]);
 

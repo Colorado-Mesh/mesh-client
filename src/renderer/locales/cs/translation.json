@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "Zařízení nemusí být spárováno s vaším počítačem. Odeberte zařízení z nastavení Bluetooth a poté jej znovu spárujte. Pro Meshtastic použijte PIN 123456. Pro MeshCore je PIN náhodně vygenerován a zobrazen na zařízení.",
         "connectionAttemptFailedLinuxHint": "V systému Linux můžete spravovat párování pomocí systémového nastavení Bluetooth nebo nástroje „bluetoothctl“.",
         "meshcoreHandshakeHint": "Ujistěte se, že je vaše zařízení MeshCore v režimu Bluetooth Companion a je spárováno s počítačem pomocí kódu PIN. Pokud problémy s připojením přetrvávají, odstraňte veškeré stávající párování a znovu spárujte.",
-        "meshcoreHandshakeWindowsExtra": "V systému Windows vypněte/zapněte Bluetooth a aktualizujte ovladač adaptéru ve Správci zařízení, pokud odpojení přetrvávají."
+        "meshcoreHandshakeWindowsExtra": "V systému Windows vypněte/zapněte Bluetooth a aktualizujte ovladač adaptéru ve Správci zařízení, pokud odpojení přetrvávají.",
+        "macWakeRecoveryHint": "Po spánku ukončete klientskou síť (Cmd+Q), vypněte a zapněte Bluetooth v Nastavení systému, počkejte několik sekund a poté se znovu připojte. Se dvěma rádii připojte MeshCore před Meshtastic."
       }
     },
     "error": {
