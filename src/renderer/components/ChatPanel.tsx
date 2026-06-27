@@ -718,10 +718,22 @@ function ChatPanel({
 
   // Meshtastic / MeshCore quoted replies use protocol-specific parent lookup (see quote render below).
 
+  const configuredChannelIndices = useMemo(
+    () => new Set(channels.map((ch) => ch.index)),
+    [channels],
+  );
+
   const unreadCounts = useMemo(
     () =>
-      computeChannelUnreadCounts(unreadSourceMessages, persistedLastRead, ownNodeIdSet, protocol),
-    [ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
+      computeChannelUnreadCounts(
+        unreadSourceMessages,
+        persistedLastRead,
+        ownNodeIdSet,
+        protocol,
+        Date.now(),
+        { configuredChannelIndices },
+      ),
+    [configuredChannelIndices, ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
   );
 
   const viewMessages = useMemo(() => {

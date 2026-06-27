@@ -4,6 +4,7 @@ import {
   clearDraft,
   draftsStorageKey,
   ensureMeshcoreChatLastReadSanitized,
+  getSanitizedMeshtasticChatLastRead,
   lastReadStorageKey,
   loadDraftsInitial,
   loadMutedViews,
@@ -16,6 +17,7 @@ import {
   roomsLastReadStorageKey,
   sanitizeMeshcoreChatLastRead,
   sanitizeMeshcoreRoomsLastRead,
+  sanitizeMeshtasticChatLastRead,
   saveDraft,
   saveMutedViews,
   savePersistedRoomsLastRead,
@@ -23,7 +25,7 @@ import {
   type StarredMessage,
   subscribeMutedViewsChanged,
 } from './chatPanelProtocolStorage';
-import { computeChannelUnreadCounts } from './chatUnreadCounts';
+import { computeChannelUnreadCounts, totalUnreadCount } from './chatUnreadCounts';
 import { effectiveMessageTimestampMs } from './nodeStatus';
 import type { ChatMessage } from './types';
 
@@ -58,6 +60,27 @@ describe('chatPanelProtocolStorage', () => {
     const mc = loadPersistedLastReadInitial('meshcore');
     expect(mc).toEqual({});
     expect(localStorage.getItem(lastReadStorageKey('meshcore'))).toBeNull();
+  });
+
+  it('merges missing legacy lastRead keys into partial meshtastic protocol key', () => {
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': 5000 }));
+    localStorage.setItem('mesh-client:lastRead', JSON.stringify({ 'ch:0': 1000, 'ch:1': 9000 }));
+    const mt = loadPersistedLastReadInitial('meshtastic');
+    expect(mt).toEqual({ 'ch:0': 5000, 'ch:1': 9000 });
+    expect(JSON.parse(localStorage.getItem(lastReadStorageKey('meshtastic'))!)).toEqual({
+      'ch:0': 5000,
+      'ch:1': 9000,
+    });
+  });
+
+  it('keeps higher legacy lastRead when meshtastic protocol key has stale lower watermark', () => {
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:1': 1000 }));
+    localStorage.setItem('mesh-client:lastRead', JSON.stringify({ 'ch:1': 9000 }));
+    const mt = loadPersistedLastReadInitial('meshtastic');
+    expect(mt['ch:1']).toBe(9000);
+    expect(JSON.parse(localStorage.getItem(lastReadStorageKey('meshtastic'))!)).toEqual({
+      'ch:1': 9000,
+    });
   });
 });
 
@@ -241,6 +264,73 @@ describe('sanitizeMeshcoreChatLastRead', () => {
       { sender_id: 2, channel: 0, timestamp: deviceTs },
     ]);
     expect(sanitized['ch:0']).toBe(deviceTs);
+  });
+
+  it('clamps Meshtastic channel lastRead down to newest stored message timestamp', () => {
+    const clientNow = 1_700_000_000_000;
+    const deviceTs = clientNow - 60_000;
+    const ownNodes = new Set([1]);
+    const sanitized = sanitizeMeshtasticChatLastRead(
+      { 'ch:1': clientNow },
+      [{ sender_id: 2, channel: 1, timestamp: deviceTs }],
+      ownNodes,
+    );
+    expect(sanitized['ch:1']).toBe(deviceTs);
+  });
+
+  it('counts no Meshtastic channel unread after legacy merge restores ch:1 watermark', () => {
+    const ch1LastRead = 1_782_396_059_000;
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': 1000 }));
+    localStorage.setItem(
+      'mesh-client:lastRead',
+      JSON.stringify({ 'ch:0': 1000, 'ch:1': ch1LastRead }),
+    );
+    const lastRead = loadPersistedLastReadInitial('meshtastic');
+    const ownNodes = new Set([1772175303]);
+    const counts = computeChannelUnreadCounts(
+      [
+        {
+          sender_id: 649425065,
+          sender_name: 'peer',
+          channel: 1,
+          payload: 'ooh',
+          timestamp: 1_781_638_548_254,
+          status: 'acked',
+        },
+      ],
+      lastRead,
+      ownNodes,
+      'meshtastic',
+      ch1LastRead + 60_000,
+    );
+    expect(counts.get(1)).toBeUndefined();
+  });
+
+  it('returns zero unread when ch:1 traffic is excluded by configured channel filter', () => {
+    const ch1LastRead = 1_782_396_059_000;
+    const msgTs = 1_781_638_548_254;
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:1': 1000 }));
+    localStorage.setItem(
+      'mesh-client:lastRead',
+      JSON.stringify({ 'ch:0': 1000, 'ch:1': ch1LastRead }),
+    );
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 649425065,
+        sender_name: 'peer',
+        channel: 1,
+        payload: 'ooh',
+        timestamp: msgTs,
+        status: 'acked',
+      },
+    ];
+    const ownNodes = new Set([1772175303]);
+    const lastRead = getSanitizedMeshtasticChatLastRead(messages, ownNodes);
+    expect(lastRead['ch:1']).toBeGreaterThanOrEqual(msgTs);
+    const total = totalUnreadCount(messages, lastRead, ownNodes, 'meshtastic', undefined, {
+      configuredChannelIndices: new Set([0]),
+    });
+    expect(total).toBe(0);
   });
 
   it('clamps inbound MeshCore DM lastRead using peer key, not recipient self id', () => {

@@ -1138,4 +1138,75 @@ describe('App accessibility', () => {
       expect(window.electronAPI.setTrayUnread).toHaveBeenCalledWith(3);
     });
   });
+
+  it('does not count Meshtastic unread on channels not programmed on the connected radio', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    const ts = Date.now();
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Old ops traffic',
+        channel: 1,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+    useDeviceMock.mockReturnValue({
+      ...createDeviceMock(),
+      state: { status: 'configured', myNodeNum: 1, connectionType: 'serial' },
+      selfNodeId: 1,
+      channels: [{ index: 0, name: 'Primary' }],
+      messages,
+    });
+    syncMeshtasticMessagesToStore(messages);
+    renderApp();
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /^Chat/ })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('tab', { name: /Chat.*unread/i })).not.toBeInTheDocument();
+  });
+
+  it('does not count MeshCore unread on unconfigured zero-PSK channel slots', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    const selfNodeId = 0x12345678;
+    const ts = Date.now();
+    const messages: ChatMessage[] = [
+      {
+        sender_id: 2,
+        sender_name: 'Alice',
+        payload: 'Stale channel 1',
+        channel: 1,
+        timestamp: ts,
+        status: 'acked',
+      },
+    ];
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: selfNodeId, connectionType: 'serial' },
+      selfNodeId,
+      channels: [
+        { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },
+        { index: 1, name: 'Unset', secret: new Uint8Array(16) },
+      ],
+      messages,
+    });
+    syncMeshcoreMessagesToStore(messages);
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      myNodeNum: selfNodeId,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+    renderApp();
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /^Chat/ })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('tab', { name: /Chat.*unread/i })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('0');
+    });
+  });
 });

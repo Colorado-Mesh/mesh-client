@@ -31,7 +31,11 @@ export interface ChatUnreadDmOptions {
   excludeDmPeer?: (peer: number) => boolean;
 }
 
-/** DM peer for unread counting; excludes broadcast and non-DM traffic. */
+/** Limit broadcast unread to channel slots visible in Chat (radio-programmed / configured). */
+export interface ChatUnreadChannelOptions {
+  configuredChannelIndices?: ReadonlySet<number>;
+}
+
 /** Persisted last-read / unread view key (`ch:N` or `dm:peer`). */
 export function chatViewKeyForMessage(
   msg: Pick<ChatMessage, 'channel' | 'to' | 'sender_id'>,
@@ -78,13 +82,16 @@ export function computeChannelUnreadCounts(
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
   nowMs = Date.now(),
+  channelOptions?: ChatUnreadChannelOptions,
 ): Map<number, number> {
   const counts = new Map<number, number>();
+  const configured = channelOptions?.configuredChannelIndices;
   const regular = filterRegularChatMessages(messages, protocol);
   for (const msg of regular) {
     if (ownNodeIds.has(msg.sender_id)) continue;
     if (msg.to) continue;
     if (msg.channel < 0) continue;
+    if (configured && configured.size > 0 && !configured.has(msg.channel)) continue;
     if (msg.isHistory) continue;
     if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
     const viewKey = `ch:${msg.channel}`;
@@ -128,6 +135,7 @@ export function totalUnreadCount(
   ownNodeIds: ReadonlySet<number>,
   protocol: MeshProtocol,
   dmOptions?: ChatUnreadDmOptions,
+  channelOptions?: ChatUnreadChannelOptions,
   nowMs = Date.now(),
 ): number {
   const channel = computeChannelUnreadCounts(
@@ -136,6 +144,7 @@ export function totalUnreadCount(
     ownNodeIds,
     protocol,
     nowMs,
+    channelOptions,
   );
   const dm = computeDmUnreadCounts(
     messages,

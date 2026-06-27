@@ -50,6 +50,53 @@ describe('chatUnreadCounts', () => {
     expect(counts.size).toBe(0);
   });
 
+  it('ignores broadcast unread on channels not configured on the connected radio', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 1, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'meshtastic',
+      Date.now(),
+      { configuredChannelIndices: new Set([0]) },
+    );
+    expect(counts.get(0)).toBe(1);
+    expect(counts.get(1)).toBeUndefined();
+    const total = totalUnreadCount(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 1, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'meshtastic',
+      undefined,
+      { configuredChannelIndices: new Set([0]) },
+    );
+    expect(total).toBe(1);
+  });
+
+  it('ignores MeshCore broadcast unread on unconfigured channel slots', () => {
+    const total = totalUnreadCount(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 1, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'meshcore',
+      undefined,
+      { configuredChannelIndices: new Set([0]) },
+    );
+    expect(total).toBe(1);
+  });
+
+  it('does not filter channels when configuredChannelIndices is empty', () => {
+    const counts = computeChannelUnreadCounts(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 1, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'meshtastic',
+      Date.now(),
+      { configuredChannelIndices: new Set() },
+    );
+    expect(counts.get(0)).toBe(1);
+    expect(counts.get(1)).toBe(1);
+  });
+
   it('counts DM unread separately from channels', () => {
     const dmCounts = computeDmUnreadCounts(
       [msg({ channel: 0, to: 1, timestamp: 2000 })],
