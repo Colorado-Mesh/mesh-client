@@ -104,12 +104,24 @@ See [development-environment.md](development-environment.md#windows) for Python 
 
 After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before RF auto-reconnect runs (Meshtastic first, MeshCore about **2 seconds** later when both protocols use BLE).
 
-- **Noble BLE (macOS/Windows):** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
+- **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
 - **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
 - **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
-- **Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker).
+
+### Windows sleep / wake and auto-reconnect
+
+After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before RF auto-reconnect runs (Meshtastic first, MeshCore about **2 seconds** later when both protocols use BLE over Noble IPC).
+
+- **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
+- **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
+- **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
+- **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
+- **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
+
+**Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
 
 ### MeshCore contact age prune and favorites
 
