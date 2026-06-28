@@ -202,6 +202,17 @@ describe('humanizeBleError', () => {
     expect(result).toContain('meshcoreHandshakeWindowsExtra');
   });
 
+  it('adds dual-protocol contention hint for already-in-progress BLE errors', () => {
+    mockPlatform('darwin');
+    const result = humanizeBleError(
+      new Error(
+        'Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.',
+      ),
+      t,
+    );
+    expect(result).toContain('dualProtocolContentionHint');
+  });
+
   it.each([
     ['connectAsync timed out', 'BLE connectAsync timed out'],
     ['unknown peripheral', 'unknown peripheral id in noble cache'],

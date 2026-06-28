@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Sous Linux, vous pouvez gérer les appairages via les paramètres Bluetooth du système ou l'outil « bluetoothctl ».",
         "meshcoreHandshakeHint": "Assurez-vous que votre appareil MeshCore est en mode Bluetooth Companion et couplé à votre ordinateur à l'aide d'un code PIN. Supprimez tout couplage existant et ré-appairez si les problèmes de connexion persistent.",
         "meshcoreHandshakeWindowsExtra": "Sous Windows, activez/désactivez Bluetooth et mettez à jour le pilote de l'adaptateur dans le Gestionnaire de périphériques si les déconnexions persistent.",
-        "macWakeRecoveryHint": "Après le sommeil, quittez le client maillé (Cmd+Q), désactivez et activez Bluetooth dans les paramètres système, attendez quelques secondes, puis reconnectez-vous. Avec deux radios, connectez MeshCore avant Meshtastic."
+        "macWakeRecoveryHint": "Après le sommeil, quittez le client maillé (Cmd+Q), désactivez et activez Bluetooth dans les paramètres système, attendez quelques secondes, puis reconnectez-vous. Avec deux radios, connectez MeshCore avant Meshtastic.",
+        "dualProtocolContentionHint": "L'autre protocole peut toujours se connecter via Bluetooth. Attendez quelques secondes et réessayez, ou passez à l'autre onglet de protocole pour vérifier son état de connexion."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Base64 non valide sur une ligne PSK de canal.",
     "mqttTlsEnabled": "Activer TLS (mqtts / wss)",
     "mqttTlsInsecure": "Autoriser les TLS non sécurisés (certificat auto-signé). Désactivé par défaut — activer uniquement si votre courtier utilise une autorité de certification non publique.",
-    "channelPsksPrivateUplinkNote": "La liaison montante du canal est chiffrée AES-PSK sur /2/e/ (pas de miroir JSON pour les clés privées). Les moniteurs de courtier peuvent toujours enregistrer les échecs de décryptage du trafic PKI/DM entre d'autres nœuds — c'est normal et sans rapport avec les PSK de canal ici."
+    "channelPsksPrivateUplinkNote": "La liaison montante du canal est chiffrée AES-PSK sur /2/e/ (pas de miroir JSON pour les clés privées). Les moniteurs de courtier peuvent toujours enregistrer les échecs de décryptage du trafic PKI/DM entre d'autres nœuds — c'est normal et sans rapport avec les PSK de canal ici.",
+    "sharedBleWithMeshtastic": "Cet appareil Bluetooth est déjà connecté via Meshtastic. Passez à l'onglet Meshtastic pour l'utiliser, ou choisissez une radio ou un transport différent pour MeshCore.",
+    "sharedBleWithMeshtasticHint": "Une radio physique ne peut pas tenir des sessions Bluetooth Meshtastic et MeshCore séparées en même temps."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "W systemie Linux możesz zarządzać parowaniem za pomocą systemowych ustawień Bluetooth lub narzędzia „bluetoothctl”.",
         "meshcoreHandshakeHint": "Upewnij się, że urządzenie MeshCore działa w trybie Bluetooth Companion i jest sparowane z komputerem za pomocą kodu PIN. Usuń istniejące parowanie i sparuj ponownie, jeśli problemy z połączeniem będą się powtarzać.",
         "meshcoreHandshakeWindowsExtra": "W systemie Windows wyłącz/włącz Bluetooth i zaktualizuj sterownik karty w Menedżerze urządzeń, jeśli rozłączenia będą się utrzymywać.",
-        "macWakeRecoveryHint": "Po uśpieniu zamknij mesh-client (Cmd+Q), wyłącz i włącz Bluetooth w ustawieniach systemu, odczekaj kilka sekund, a następnie połącz się ponownie. Za pomocą dwóch radiotelefonów podłącz MeshCore przed Meshtastic."
+        "macWakeRecoveryHint": "Po uśpieniu zamknij mesh-client (Cmd+Q), wyłącz i włącz Bluetooth w ustawieniach systemu, odczekaj kilka sekund, a następnie połącz się ponownie. Za pomocą dwóch radiotelefonów podłącz MeshCore przed Meshtastic.",
+        "dualProtocolContentionHint": "Drugi protokół może nadal łączyć się przez Bluetooth. Odczekaj kilka sekund i spróbuj ponownie lub przejdź do karty innego protokołu, aby sprawdzić stan połączenia."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Nieprawidłowy base64 na kanale PSK.",
     "mqttTlsEnabled": "Włącz TLS (mqtts / wss)",
     "mqttTlsInsecure": "Zezwalaj na niezabezpieczony TLS (certyfikat z podpisem własnym). Domyślnie wyłączone — włącz tylko wtedy, gdy broker korzysta z niepublicznego urzędu certyfikacji.",
-    "channelPsksPrivateUplinkNote": "Kanał uplink jest AES-PSK zaszyfrowany na /2/e/ (brak lustra JSON dla kluczy prywatnych). Monitory brokerów mogą nadal rejestrować błędy deszyfrowania dla ruchu PKI/DM między innymi węzłami — jest to normalne i niezwiązane z kanałami PSK."
+    "channelPsksPrivateUplinkNote": "Kanał uplink jest AES-PSK zaszyfrowany na /2/e/ (brak lustra JSON dla kluczy prywatnych). Monitory brokerów mogą nadal rejestrować błędy deszyfrowania dla ruchu PKI/DM między innymi węzłami — jest to normalne i niezwiązane z kanałami PSK.",
+    "sharedBleWithMeshtastic": "To urządzenie Bluetooth jest już połączone przez Meshtastic. Przejdź do zakładki Meshtastic, aby go użyć, lub wybierz inne radio lub transport dla MeshCore.",
+    "sharedBleWithMeshtasticHint": "Jedno fizyczne radio nie może pomieścić oddzielnych sesji Bluetooth Meshtastic i MeshCore w tym samym czasie."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

@@ -4,10 +4,13 @@ import { useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
   awaitDualNobleBleMeshtasticSettle,
+  awaitNobleBleProtocolSettle,
   isRendererNobleBlePlatform,
+  meshcoreNobleBleConfigureBusy,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   meshtasticNobleBleConfigureBusy,
   needsSequentialMeshcoreRadioInit,
+  nobleBleConfigureBusyForProtocol,
 } from './meshcoreDualNobleBleInit';
 
 const meshtasticProtocol = { type: 'meshtastic' } as const;
@@ -92,6 +95,92 @@ describe('meshcoreDualNobleBleInit', () => {
       },
     });
     expect(meshtasticNobleBleConfigureBusy()).toBe(false);
+  });
+
+  it('detects MeshCore Noble BLE still configuring', () => {
+    useIdentityStore.setState({
+      identities: {
+        mc: {
+          id: 'mc',
+          protocol: meshcoreProtocol as never,
+          signature: '2',
+          transports: [],
+          createdAt: 0,
+          lastSeenAt: 0,
+        },
+      },
+      activeIdentityId: 'mc',
+    });
+    useConnectionStore.setState({
+      connections: {
+        mc: {
+          identityId: 'mc',
+          status: 'connecting',
+          connectionType: 'ble',
+          mqttStatus: 'disconnected',
+          reconnectAttempt: 0,
+          myNodeNum: 2,
+        },
+      },
+    });
+    expect(meshcoreNobleBleConfigureBusy()).toBe(true);
+    expect(nobleBleConfigureBusyForProtocol('meshcore')).toBe(true);
+    expect(nobleBleConfigureBusyForProtocol('meshtastic')).toBe(false);
+  });
+
+  it('awaitNobleBleProtocolSettle returns immediately when protocol BLE configure is idle', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    const start = Date.now();
+    await awaitNobleBleProtocolSettle('meshcore', 4000);
+    expect(Date.now() - start).toBeLessThan(100);
+  });
+
+  it('awaitNobleBleProtocolSettle waits until MeshCore BLE configure completes', async () => {
+    vi.useFakeTimers();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    useIdentityStore.setState({
+      identities: {
+        mc: {
+          id: 'mc',
+          protocol: meshcoreProtocol as never,
+          signature: '2',
+          transports: [],
+          createdAt: 0,
+          lastSeenAt: 0,
+        },
+      },
+      activeIdentityId: 'mc',
+    });
+    useConnectionStore.setState({
+      connections: {
+        mc: {
+          identityId: 'mc',
+          status: 'connecting',
+          connectionType: 'ble',
+          mqttStatus: 'disconnected',
+          reconnectAttempt: 0,
+          myNodeNum: 2,
+        },
+      },
+    });
+
+    const settlePromise = awaitNobleBleProtocolSettle('meshcore', 4000);
+    await vi.advanceTimersByTimeAsync(200);
+    useConnectionStore.setState({
+      connections: {
+        mc: {
+          identityId: 'mc',
+          status: 'configured',
+          connectionType: 'ble',
+          mqttStatus: 'disconnected',
+          reconnectAttempt: 0,
+          myNodeNum: 2,
+        },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await settlePromise;
+    vi.useRealTimers();
   });
 
   it('awaitDualNobleBleMeshtasticSettle returns immediately when no Meshtastic BLE configure is active', async () => {

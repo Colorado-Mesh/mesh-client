@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Di Linux, Anda dapat mengatur pemasangan melalui pengaturan Bluetooth sistem atau alat 'bluetoothctl'.",
         "meshcoreHandshakeHint": "Pastikan perangkat MeshCore Anda dalam mode Bluetooth Companion dan dipasangkan dengan komputer Anda menggunakan PIN. Hapus semua pasangan yang ada dan pasangkan kembali jika masalah koneksi terus berlanjut.",
         "meshcoreHandshakeWindowsExtra": "Di Windows, matikan/hidupkan Bluetooth dan perbarui driver adaptor di Pengelola Perangkat jika pemutusan sambungan masih terjadi.",
-        "macWakeRecoveryHint": "Setelah tidur, keluar dari mesh-client (Cmd+Q), matikan dan nyalakan Bluetooth di Pengaturan Sistem, tunggu beberapa detik, lalu Hubungkan lagi. Dengan dua radio, hubungkan MeshCore sebelum Meshtastic."
+        "macWakeRecoveryHint": "Setelah tidur, keluar dari mesh-client (Cmd+Q), matikan dan nyalakan Bluetooth di Pengaturan Sistem, tunggu beberapa detik, lalu Hubungkan lagi. Dengan dua radio, hubungkan MeshCore sebelum Meshtastic.",
+        "dualProtocolContentionHint": "Protokol lain mungkin masih terhubung melalui Bluetooth. Tunggu beberapa detik dan coba lagi, atau beralih ke tab protokol lain untuk memeriksa status koneksinya."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Base64 tidak valid pada saluran PSK.",
     "mqttTlsEnabled": "Aktifkan TLS (mqtts / wss)",
     "mqttTlsInsecure": "Izinkan TLS yang tidak aman (sertifikat yang ditandatangani sendiri). Tidak aktif secara default — hanya aktifkan jika broker Anda menggunakan CA non - publik.",
-    "channelPsksPrivateUplinkNote": "Saluran uplink dienkripsi AES - PSK pada /2/e/ (tidak ada cermin JSON untuk kunci pribadi). Monitor broker mungkin masih mencatat kegagalan dekripsi untuk lalu lintas PKI/DM di antara node lain — yang normal dan tidak terkait dengan saluran PSK di sini."
+    "channelPsksPrivateUplinkNote": "Saluran uplink dienkripsi AES - PSK pada /2/e/ (tidak ada cermin JSON untuk kunci pribadi). Monitor broker mungkin masih mencatat kegagalan dekripsi untuk lalu lintas PKI/DM di antara node lain — yang normal dan tidak terkait dengan saluran PSK di sini.",
+    "sharedBleWithMeshtastic": "Perangkat Bluetooth ini sudah terhubung melalui Meshtastic. Beralih ke tab Meshtastic untuk menggunakannya, atau pilih radio atau transport yang berbeda untuk MeshCore.",
+    "sharedBleWithMeshtasticHint": "Satu radio fisik tidak dapat mengadakan sesi Meshtastic dan MeshCore Bluetooth secara bersamaan."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

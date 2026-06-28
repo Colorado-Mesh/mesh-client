@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "V systému Linux můžete spravovat párování pomocí systémového nastavení Bluetooth nebo nástroje „bluetoothctl“.",
         "meshcoreHandshakeHint": "Ujistěte se, že je vaše zařízení MeshCore v režimu Bluetooth Companion a je spárováno s počítačem pomocí kódu PIN. Pokud problémy s připojením přetrvávají, odstraňte veškeré stávající párování a znovu spárujte.",
         "meshcoreHandshakeWindowsExtra": "V systému Windows vypněte/zapněte Bluetooth a aktualizujte ovladač adaptéru ve Správci zařízení, pokud odpojení přetrvávají.",
-        "macWakeRecoveryHint": "Po spánku ukončete klientskou síť (Cmd+Q), vypněte a zapněte Bluetooth v Nastavení systému, počkejte několik sekund a poté se znovu připojte. Se dvěma rádii připojte MeshCore před Meshtastic."
+        "macWakeRecoveryHint": "Po spánku ukončete klientskou síť (Cmd+Q), vypněte a zapněte Bluetooth v Nastavení systému, počkejte několik sekund a poté se znovu připojte. Se dvěma rádii připojte MeshCore před Meshtastic.",
+        "dualProtocolContentionHint": "Druhý protokol se může stále připojovat přes Bluetooth. Počkejte několik sekund a zkuste to znovu, nebo přepněte na kartu druhého protokolu a zkontrolujte jeho stav připojení."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Neplatná base64 na kanálu PSK linky.",
     "mqttTlsEnabled": "Povolit TLS (mqtts / wss)",
     "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA.",
-    "channelPsksPrivateUplinkNote": "Kanálový uplink je šifrován AES-PSK na /2/e/ (žádné zrcadlo JSON pro soukromé klíče). Monitory zprostředkovatelů mohou stále zaznamenávat chyby dešifrování pro provoz PKI/DM mezi jinými uzly — to je normální a nesouvisí s kanály PSK."
+    "channelPsksPrivateUplinkNote": "Kanálový uplink je šifrován AES-PSK na /2/e/ (žádné zrcadlo JSON pro soukromé klíče). Monitory zprostředkovatelů mohou stále zaznamenávat chyby dešifrování pro provoz PKI/DM mezi jinými uzly — to je normální a nesouvisí s kanály PSK.",
+    "sharedBleWithMeshtastic": "Toto zařízení Bluetooth je již připojeno přes Meshtastic. Chcete-li jej použít, přepněte na kartu Meshtastic, nebo si pro MeshCore vyberte jiné rádio nebo transport.",
+    "sharedBleWithMeshtasticHint": "Jedno fyzické rádio nemůže současně pořádat relace Meshtastic a MeshCore Bluetooth."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

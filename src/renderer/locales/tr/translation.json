@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Linux'ta eşleştirmeleri sistem Bluetooth ayarları veya 'bluetoothctl' aracı aracılığıyla yönetebilirsiniz.",
         "meshcoreHandshakeHint": "MeshCore cihazınızın Bluetooth Companion modunda olduğundan ve bir PIN kullanarak bilgisayarınızla eşleştirildiğinden emin olun. Bağlantı sorunları devam ederse mevcut tüm eşleştirmeleri kaldırın ve yeniden eşleştirin.",
         "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin.",
-        "macWakeRecoveryHint": "Uykudan sonra mesh istemcisini (Cmd+Q) kapatın, Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar Bağlanın. Meshtastic'ten önce iki telsizle MeshCore'u bağlayın."
+        "macWakeRecoveryHint": "Uykudan sonra mesh istemcisini (Cmd+Q) kapatın, Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar Bağlanın. Meshtastic'ten önce iki telsizle MeshCore'u bağlayın.",
+        "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Bir kanal PSK hattında geçersiz base64.",
     "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
     "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin.",
-    "channelPsksPrivateUplinkNote": "Kanal uplink/2/e/üzerinde şifrelenmiş AES - PSK'dır (özel anahtarlar için JSON aynası yoktur). Broker monitörleri, diğer düğümler arasındaki PKI/DM trafiği için hala şifre çözme hatalarını günlüğe kaydedebilir — bu normaldir ve buradaki kanal PSK'larıyla ilgisi yoktur."
+    "channelPsksPrivateUplinkNote": "Kanal uplink/2/e/üzerinde şifrelenmiş AES - PSK'dır (özel anahtarlar için JSON aynası yoktur). Broker monitörleri, diğer düğümler arasındaki PKI/DM trafiği için hala şifre çözme hatalarını günlüğe kaydedebilir — bu normaldir ve buradaki kanal PSK'larıyla ilgisi yoktur.",
+    "sharedBleWithMeshtastic": "Bu Bluetooth cihazı Meshtastic üzerinden zaten bağlı. Kullanmak için Meshtastic sekmesine geçin veya MeshCore için farklı bir radyo veya aktarım seçin.",
+    "sharedBleWithMeshtasticHint": "Bir fiziksel radyo, Meshtastic ve MeshCore Bluetooth oturumlarını aynı anda ayrı ayrı tutamaz."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Op Linux kunt u koppelingen beheren via de Bluetooth-instellingen van het systeem of de 'bluetoothctl'-tool.",
         "meshcoreHandshakeHint": "Zorg ervoor dat uw MeshCore-apparaat in de Bluetooth Companion-modus staat en met uw computer is gekoppeld met behulp van een pincode. Verwijder eventuele bestaande koppelingen en koppel opnieuw als de verbindingsproblemen aanhouden.",
         "meshcoreHandshakeWindowsExtra": "In Windows schakelt u Bluetooth uit/aan en werkt u het adapterstuurprogramma bij in Apparaatbeheer als de verbinding blijft bestaan.",
-        "macWakeRecoveryHint": "Sluit na de slaapstand de mesh-client (Cmd+Q), schakel Bluetooth uit en in in Systeeminstellingen, wacht een paar seconden en maak vervolgens opnieuw verbinding. Verbind MeshCore met twee radio's vóór Meshtastic."
+        "macWakeRecoveryHint": "Sluit na de slaapstand de mesh-client (Cmd+Q), schakel Bluetooth uit en in in Systeeminstellingen, wacht een paar seconden en maak vervolgens opnieuw verbinding. Verbind MeshCore met twee radio's vóór Meshtastic.",
+        "dualProtocolContentionHint": "Het andere protocol maakt mogelijk nog steeds verbinding via Bluetooth. Wacht een paar seconden en probeer het opnieuw, of schakel over naar het andere protocoltabblad om de verbindingsstatus te controleren."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Ongeldige base64 op een PSK-kanaalregel.",
     "mqttTlsEnabled": "TLS (mqtts/ wss) inschakelen",
     "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt.",
-    "channelPsksPrivateUplinkNote": "Kanaaluplink is AES-PSK-gecodeerd op /2/e/ (geen JSON-spiegel voor privésleutels). Broker-monitoren kunnen nog steeds ontsleutelingsfouten registreren voor PKI/DM-verkeer tussen andere knooppunten — dat is normaal en niet gerelateerd aan PSK's hier."
+    "channelPsksPrivateUplinkNote": "Kanaaluplink is AES-PSK-gecodeerd op /2/e/ (geen JSON-spiegel voor privésleutels). Broker-monitoren kunnen nog steeds ontsleutelingsfouten registreren voor PKI/DM-verkeer tussen andere knooppunten — dat is normaal en niet gerelateerd aan PSK's hier.",
+    "sharedBleWithMeshtastic": "Dit Bluetooth-apparaat is al verbonden via Meshtastic. Schakel over naar het tabblad Meshtastic om het te gebruiken, of kies een andere radio of transport voor MeshCore.",
+    "sharedBleWithMeshtasticHint": "Eén fysieke radio kan niet tegelijkertijd afzonderlijke Meshtastic- en MeshCore Bluetooth-sessies houden."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

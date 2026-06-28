@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Linux では、システムの Bluetooth 設定または「bluetoothctl」ツールを介してペアリングを管理できます。",
         "meshcoreHandshakeHint": "MeshCore デバイスが Bluetooth コンパニオン モードになっていて、PIN を使用してコンピュータとペアリングされていることを確認します。接続の問題が解決しない場合は、既存のペアリングを削除し、再度ペアリングします。",
         "meshcoreHandshakeWindowsExtra": "Windows では、切断が続く場合は、Bluetooth のオフ/オンを切り替え、デバイス マネージャーでアダプター ドライバーを更新します。",
-        "macWakeRecoveryHint": "スリープ後、メッシュクライアント（ Command + Q ）を終了し、システム設定でBluetoothのオフとオンを切り替え、数秒待ってから再度接続します。2つのラジオで、Meshtasticの前にMeshCoreを接続します。"
+        "macWakeRecoveryHint": "スリープ後、メッシュクライアント（ Command + Q ）を終了し、システム設定でBluetoothのオフとオンを切り替え、数秒待ってから再度接続します。2つのラジオで、Meshtasticの前にMeshCoreを接続します。",
+        "dualProtocolContentionHint": "他のプロトコルはまだBluetooth経由で接続している可能性があります。数秒待ってからもう一度お試しいただくか、他のプロトコルタブに切り替えて接続ステータスを確認してください。"
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "チャネルPSK回線上のbase 64が無効です。",
     "mqttTlsEnabled": "TLSを有効にする(mqtts/wss)",
     "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。",
-    "channelPsksPrivateUplinkNote": "チャネルアップリンクは/2/e/でAES - PSK暗号化されています（秘密鍵のJSONミラーはありません）。ブローカーモニターは、他のノード間のPKI/DMトラフィックの復号化失敗を記録することがあります。これは正常であり、ここではチャネルPSKとは無関係です。"
+    "channelPsksPrivateUplinkNote": "チャネルアップリンクは/2/e/でAES - PSK暗号化されています（秘密鍵のJSONミラーはありません）。ブローカーモニターは、他のノード間のPKI/DMトラフィックの復号化失敗を記録することがあります。これは正常であり、ここではチャネルPSKとは無関係です。",
+    "sharedBleWithMeshtastic": "このBluetoothデバイスはすでにMeshtastic経由で接続されています。Meshtasticタブに切り替えて使用するか、MeshCoreの別のラジオまたはトランスポートを選択します。",
+    "sharedBleWithMeshtasticHint": "1つの物理ラジオは、MeshtasticとMeshCore Bluetoothセッションを同時に開催することはできません。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
