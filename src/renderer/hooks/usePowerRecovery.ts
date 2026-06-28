@@ -6,6 +6,9 @@ import { setSystemSuspended } from '@/renderer/lib/systemPowerState';
 /** macOS BLE stack needs a few seconds after wake before connect/scan succeeds reliably. */
 export const POWER_RESUME_RECOVERY_DELAY_MS = 4_000;
 
+/** Stagger MeshCore RF reconnect after Meshtastic to avoid dual-protocol Noble scan contention. */
+export const POWER_RESUME_MESHCORE_STAGGER_MS = 8_000;
+
 export interface PowerRecoveryCallbacks {
   onPowerSuspend: () => void;
   onPowerResume: () => void;
@@ -20,6 +23,7 @@ export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptio
   const meshtasticRef = useRef(meshtastic);
   const meshcoreRef = useRef(meshcore);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const meshcoreResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     meshtasticRef.current = meshtastic;
@@ -32,6 +36,10 @@ export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptio
       if (resumeTimerRef.current != null) {
         clearTimeout(resumeTimerRef.current);
         resumeTimerRef.current = null;
+      }
+      if (meshcoreResumeTimerRef.current != null) {
+        clearTimeout(meshcoreResumeTimerRef.current);
+        meshcoreResumeTimerRef.current = null;
       }
       setSystemSuspended(true);
       meshtasticRef.current.onPowerSuspend();
@@ -47,6 +55,10 @@ export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptio
       if (resumeTimerRef.current != null) {
         clearTimeout(resumeTimerRef.current);
       }
+      if (meshcoreResumeTimerRef.current != null) {
+        clearTimeout(meshcoreResumeTimerRef.current);
+        meshcoreResumeTimerRef.current = null;
+      }
       resumeTimerRef.current = setTimeout(() => {
         resumeTimerRef.current = null;
         console.debug('[usePowerRecovery] resume recovery');
@@ -54,7 +66,11 @@ export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptio
           console.warn('[usePowerRecovery] mqtt.powerResume failed ' + errLikeToLogString(e));
         });
         meshtasticRef.current.onPowerResume();
-        meshcoreRef.current.onPowerResume();
+        meshcoreResumeTimerRef.current = setTimeout(() => {
+          meshcoreResumeTimerRef.current = null;
+          console.debug('[usePowerRecovery] meshcore resume recovery (staggered)');
+          meshcoreRef.current.onPowerResume();
+        }, POWER_RESUME_MESHCORE_STAGGER_MS);
       }, POWER_RESUME_RECOVERY_DELAY_MS);
     });
 
@@ -64,6 +80,10 @@ export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptio
       if (resumeTimerRef.current != null) {
         clearTimeout(resumeTimerRef.current);
         resumeTimerRef.current = null;
+      }
+      if (meshcoreResumeTimerRef.current != null) {
+        clearTimeout(meshcoreResumeTimerRef.current);
+        meshcoreResumeTimerRef.current = null;
       }
     };
   }, []);

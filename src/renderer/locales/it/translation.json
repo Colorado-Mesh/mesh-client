@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "Il dispositivo potrebbe non essere associato al computer. Rimuovi il dispositivo dalle impostazioni Bluetooth, quindi associalo nuovamente. Per Meshtastic utilizzare il PIN 123456. Per MeshCore il PIN viene generato in modo casuale e visualizzato sul dispositivo.",
         "connectionAttemptFailedLinuxHint": "Su Linux è possibile gestire gli accoppiamenti tramite le impostazioni Bluetooth del sistema o lo strumento \"bluetoothctl\".",
         "meshcoreHandshakeHint": "Assicurati che il tuo dispositivo MeshCore sia in modalità Bluetooth Companion e associato al computer utilizzando un PIN. Rimuovere qualsiasi accoppiamento esistente e rieseguirlo se i problemi di connessione persistono.",
-        "meshcoreHandshakeWindowsExtra": "Su Windows, attiva/disattiva il Bluetooth e aggiorna il driver dell'adattatore in Gestione dispositivi se le disconnessioni persistono."
+        "meshcoreHandshakeWindowsExtra": "Su Windows, attiva/disattiva il Bluetooth e aggiorna il driver dell'adattatore in Gestione dispositivi se le disconnessioni persistono.",
+        "macWakeRecoveryHint": "Dopo il sonno, uscire da mesh-client (Cmd+Q), attivare e disattivare il Bluetooth in Impostazioni di sistema, attendere alcuni secondi, quindi riconnettersi. Con due radio, collega MeshCore prima di Meshtastic."
       }
     },
     "error": {

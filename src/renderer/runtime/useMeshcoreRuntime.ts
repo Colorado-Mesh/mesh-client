@@ -85,7 +85,10 @@ import {
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSenderRepair';
-import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
+import {
+  rehydrateMeshcoreConnectionParamsFromStorage,
+  resolveLastBlePeripheralId,
+} from '../lib/lastConnectionStorage';
 import {
   meshcoreIdentityHasFullKeyPair,
   tryPersistMeshcorePublicKeyFromRadio,
@@ -143,6 +146,7 @@ import {
 import { setMeshcoreDmAckPendingImpl } from '../lib/meshcoreDmAckDelivery';
 import {
   awaitDualNobleBleMeshtasticSettle,
+  isRendererNobleBlePlatform,
   needsSequentialMeshcoreRadioInit,
 } from '../lib/meshcoreDualNobleBleInit';
 import { applyMeshcoreFloodScope } from '../lib/meshcoreFloodScope';
@@ -290,6 +294,7 @@ import {
   MESHCORE_STATS_POLL_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
+  POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
 } from '../lib/timeConstants';
 import type {
   ChatMessage,
@@ -423,6 +428,8 @@ export function useMeshcoreRuntime() {
     serialPortId?: string | null;
     serialPort?: SerialPort | null;
   } | null>(null);
+  /** Cleared on successful connect; set when user explicitly disconnects (blocks auto-reconnect). */
+  const meshcoreExplicitDisconnectRef = useRef(false);
   const meshcoreReconnectAttemptRef = useRef(0);
   const meshcoreReconnectGenerationRef = useRef(0);
   const meshcoreIsReconnectingRef = useRef(false);
@@ -1535,7 +1542,26 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
-      if (!meshcoreConnectionParamsRef.current) return;
+      if (!meshcoreConnectionParamsRef.current) {
+        if (meshcoreExplicitDisconnectRef.current) {
+          console.debug(
+            '[useMeshcoreRuntime] Noble BLE disconnected — skip reconnect (user disconnect)',
+          );
+          return;
+        }
+        const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
+        if (!rehydrated) {
+          console.debug(
+            '[useMeshcoreRuntime] Noble BLE disconnected — skip reconnect (no stored session)',
+          );
+          return;
+        }
+        meshcoreConnectionParamsRef.current = rehydrated;
+        console.debug(
+          '[useMeshcoreRuntime] Noble BLE disconnected — rehydrated reconnect params from storage',
+        );
+      }
+      console.warn('[useMeshcoreRuntime] Noble BLE disconnected');
       handleMeshcoreConnectionLostRef.current();
     });
   }, []);
@@ -2201,6 +2227,9 @@ export function useMeshcoreRuntime() {
     if (meshcoreReconnectAttemptRef.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS) {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
+      if (params.rfType === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
       stopMeshcoreSerialWatchdog();
       if (params.rfType === 'serial') {
         await escalateSerialReconnectExhaustion(params.serialPort ?? null);
@@ -2254,6 +2283,7 @@ export function useMeshcoreRuntime() {
     }
 
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
+    const isBleReconnect = params.rfType === 'ble';
     try {
       await prepareRfConnect(params.rfType);
       opened = await openMeshCoreTransport(params.rfType, {
@@ -2291,13 +2321,22 @@ export function useMeshcoreRuntime() {
           errLikeToLogString(err),
       );
       void attemptMeshcoreReconnectRef.current();
+    } finally {
+      if (isBleReconnect) {
+        bleConnectInProgressRef.current = false;
+      }
     }
   }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
 
   attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
 
   const handleMeshcoreConnectionLost = useCallback(() => {
-    if (!meshcoreConnectionParamsRef.current) return;
+    if (!meshcoreConnectionParamsRef.current) {
+      if (meshcoreExplicitDisconnectRef.current) return;
+      const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
+      if (!rehydrated) return;
+      meshcoreConnectionParamsRef.current = rehydrated;
+    }
     meshcoreReconnectGenerationRef.current += 1;
     if (!meshcoreIsReconnectingRef.current) {
       console.warn('[useMeshcoreRuntime] Connection lost — initiating reconnect');
@@ -2350,12 +2389,39 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const onPowerResume = useCallback(() => {
-    if (!meshcoreConnectionParamsRef.current) return;
+    if (!meshcoreConnectionParamsRef.current) {
+      if (meshcoreExplicitDisconnectRef.current) {
+        console.debug('[useMeshcoreRuntime] power resume — skip reconnect (user disconnect)');
+        return;
+      }
+      const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
+      if (!rehydrated) {
+        console.debug('[useMeshcoreRuntime] power resume — skip reconnect (no stored session)');
+        return;
+      }
+      meshcoreConnectionParamsRef.current = rehydrated;
+      console.debug('[useMeshcoreRuntime] power resume — rehydrated reconnect params from storage');
+    }
     console.debug('[useMeshcoreRuntime] power resume — resetting reconnect budget');
     meshcoreReconnectAttemptRef.current = 0;
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreIsReconnectingRef.current = false;
-    handleMeshcoreConnectionLostRef.current();
+    bleConnectInProgressRef.current = false;
+    void (async () => {
+      if (isRendererNobleBlePlatform() && meshcoreConnectionParamsRef.current?.rfType === 'ble') {
+        console.debug(
+          '[useMeshcoreRuntime] power resume — waiting for Meshtastic Noble BLE to settle',
+        );
+        await awaitDualNobleBleMeshtasticSettle(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+      }
+      if (meshcoreExplicitDisconnectRef.current) {
+        console.debug(
+          '[useMeshcoreRuntime] power resume — skip reconnect (user disconnect after settle wait)',
+        );
+        return;
+      }
+      handleMeshcoreConnectionLostRef.current();
+    })();
   }, []);
 
   const connect = useCallback(
@@ -2383,6 +2449,7 @@ export function useMeshcoreRuntime() {
           serialPortId: type === 'serial' ? localStorage.getItem(LAST_SERIAL_PORT_KEY) : undefined,
           serialPort: null,
         };
+        meshcoreExplicitDisconnectRef.current = false;
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
         meshcoreReconnectGenerationRef.current += 1;
@@ -2493,6 +2560,7 @@ export function useMeshcoreRuntime() {
             serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
             serialPort: null,
           };
+          meshcoreExplicitDisconnectRef.current = false;
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;
         } catch (err) {
@@ -2542,6 +2610,7 @@ export function useMeshcoreRuntime() {
   );
 
   const disconnect = useCallback(async () => {
+    meshcoreExplicitDisconnectRef.current = true;
     meshcoreConnectionParamsRef.current = null;
     meshcoreIsReconnectingRef.current = false;
     meshcoreReconnectAttemptRef.current = 0;

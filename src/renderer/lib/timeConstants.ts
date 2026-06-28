@@ -172,6 +172,9 @@ export const MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS = 15_000;
 /** Max wait before MeshCore `getContacts` when Meshtastic Noble BLE is still configuring. */
 export const MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS = 4_000;
 
+/** After macOS/Windows wake, wait for Meshtastic Noble configure before MeshCore BLE reconnect. */
+export const POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS = 30_000;
+
 /** Poll interval inside `awaitDualNobleBleMeshtasticSettle`. */
 export const MESHCORE_DUAL_NOBLE_BLE_POLL_MS = 200;
 

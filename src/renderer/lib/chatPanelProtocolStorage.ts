@@ -184,28 +184,81 @@ export function saveStarred(protocol: MeshProtocol, items: StarredMessage[]): vo
  */
 export function loadPersistedLastReadInitial(protocol: MeshProtocol): Record<string, number> {
   const key = lastReadStorageKey(protocol);
-  const specific = localStorage.getItem(key);
-  if (specific != null) {
-    const parsed = parseStoredJson<Record<string, number>>(specific, 'ChatPanel lastRead');
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+  const specificRaw = localStorage.getItem(key);
+  let specific: Record<string, number> | null = null;
+  if (specificRaw != null) {
+    const parsed = parseStoredJson<Record<string, number>>(specificRaw, 'ChatPanel lastRead');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      specific = parsed;
+    }
   }
+
   if (protocol === 'meshtastic') {
-    const legacy = localStorage.getItem(LEGACY_LAST_READ_KEY);
-    if (legacy != null) {
-      const parsed = parseStoredJson<Record<string, number>>(legacy, 'ChatPanel lastRead legacy');
+    const legacyRaw = localStorage.getItem(LEGACY_LAST_READ_KEY);
+    let legacy: Record<string, number> | null = null;
+    if (legacyRaw != null) {
+      const parsed = parseStoredJson<Record<string, number>>(
+        legacyRaw,
+        'ChatPanel lastRead legacy',
+      );
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        legacy = parsed;
+      }
+    }
+
+    if (specific == null && legacy != null) {
+      try {
+        localStorage.setItem(key, legacyRaw!);
+      } catch (e) {
+        console.debug(
+          '[chatPanelProtocolStorage] migrate lastRead to protocol key failed ' +
+            errLikeToLogString(e),
+        );
+      }
+      return legacy;
+    }
+
+    if (specific != null && legacy != null) {
+      let merged: Record<string, number> | null = null;
+      for (const legacyKey of new Set([...Object.keys(specific), ...Object.keys(legacy)])) {
+        const specificValue = specific[legacyKey];
+        const legacyValue = legacy[legacyKey];
+        const specificNum =
+          typeof specificValue === 'number' && Number.isFinite(specificValue) && specificValue > 0
+            ? specificValue
+            : 0;
+        const legacyNum =
+          typeof legacyValue === 'number' && Number.isFinite(legacyValue) && legacyValue > 0
+            ? legacyValue
+            : 0;
+        const mergedValue = Math.max(specificNum, legacyNum);
+        if (mergedValue <= 0) continue;
+        const current =
+          typeof specificValue === 'number' && Number.isFinite(specificValue) ? specificValue : 0;
+        if (mergedValue !== current) {
+          merged ??= { ...specific };
+          merged[legacyKey] = mergedValue;
+        }
+      }
+      if (merged != null) {
         try {
-          localStorage.setItem(key, legacy);
+          localStorage.setItem(key, JSON.stringify(merged));
         } catch (e) {
           console.debug(
-            '[chatPanelProtocolStorage] migrate lastRead to protocol key failed ' +
+            '[chatPanelProtocolStorage] merge legacy lastRead into protocol key failed ' +
               errLikeToLogString(e),
           );
         }
-        return parsed;
+        return merged;
       }
+      return specific;
     }
+
+    if (specific != null) return specific;
+    return {};
   }
+
+  if (specific != null) return specific;
   return {};
 }
 
@@ -354,6 +407,42 @@ export function sanitizeMeshcoreChatLastRead(
     }
   }
   return changed ? next : persisted;
+}
+
+/** Clamp Meshtastic chat last-read watermarks that exceed message times or client clock. */
+export function sanitizeMeshtasticChatLastRead(
+  persisted: Readonly<Record<string, number>>,
+  messages: readonly ChatLastReadSanitizeMessage[],
+  ownNodeIds: ReadonlySet<number> = new Set(),
+): Record<string, number> {
+  const maxByKey = maxMessageTimestampByViewKey(messages, 'meshtastic', ownNodeIds);
+  const now = Date.now();
+  let changed = false;
+  const next: Record<string, number> = { ...persisted };
+  for (const [key, watermark] of Object.entries(persisted)) {
+    if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
+    const maxMsg = maxByKey[key] ?? 0;
+    let clamped = clampReadWatermarkMs(watermark, now);
+    if (watermark > now) clamped = maxMsg;
+    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
+    if (clamped !== watermark) {
+      next[key] = clamped;
+      changed = true;
+    }
+  }
+  return changed ? next : persisted;
+}
+
+/** Ongoing sanitize for Meshtastic chat lastRead (sidebar/tray badges). */
+export function getSanitizedMeshtasticChatLastRead(
+  messages: readonly ChatLastReadSanitizeMessage[],
+  ownNodeIds: ReadonlySet<number>,
+): Record<string, number> {
+  return sanitizeMeshtasticChatLastRead(
+    loadPersistedLastReadInitial('meshtastic'),
+    messages,
+    ownNodeIds,
+  );
 }
 
 /** Ongoing sanitize for MeshCore chat lastRead (sidebar/tray badges). */

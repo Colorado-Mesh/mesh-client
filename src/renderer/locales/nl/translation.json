@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "Het apparaat is mogelijk niet gekoppeld aan uw computer. Verwijder het apparaat uit de Bluetooth-instellingen en koppel het opnieuw. Voor Meshtastic gebruikt u pincode 123456. Voor MeshCore wordt de pincode willekeurig gegenereerd en weergegeven op het apparaat.",
         "connectionAttemptFailedLinuxHint": "Op Linux kunt u koppelingen beheren via de Bluetooth-instellingen van het systeem of de 'bluetoothctl'-tool.",
         "meshcoreHandshakeHint": "Zorg ervoor dat uw MeshCore-apparaat in de Bluetooth Companion-modus staat en met uw computer is gekoppeld met behulp van een pincode. Verwijder eventuele bestaande koppelingen en koppel opnieuw als de verbindingsproblemen aanhouden.",
-        "meshcoreHandshakeWindowsExtra": "In Windows schakelt u Bluetooth uit/aan en werkt u het adapterstuurprogramma bij in Apparaatbeheer als de verbinding blijft bestaan."
+        "meshcoreHandshakeWindowsExtra": "In Windows schakelt u Bluetooth uit/aan en werkt u het adapterstuurprogramma bij in Apparaatbeheer als de verbinding blijft bestaan.",
+        "macWakeRecoveryHint": "Sluit na de slaapstand de mesh-client (Cmd+Q), schakel Bluetooth uit en in in Systeeminstellingen, wacht een paar seconden en maak vervolgens opnieuw verbinding. Verbind MeshCore met twee radio's vóór Meshtastic."
       }
     },
     "error": {

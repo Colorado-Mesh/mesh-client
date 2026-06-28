@@ -3,7 +3,11 @@ import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setSystemSuspended } from '../lib/systemPowerState';
-import { POWER_RESUME_RECOVERY_DELAY_MS, usePowerRecovery } from './usePowerRecovery';
+import {
+  POWER_RESUME_MESHCORE_STAGGER_MS,
+  POWER_RESUME_RECOVERY_DELAY_MS,
+  usePowerRecovery,
+} from './usePowerRecovery';
 
 describe('usePowerRecovery', () => {
   let suspendCb: (() => void) | null = null;
@@ -66,9 +70,12 @@ describe('usePowerRecovery', () => {
     suspendCb!();
     resumeCb!();
     expect(meshtastic.onPowerResume).not.toHaveBeenCalled();
+    expect(meshcore.onPowerResume).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(POWER_RESUME_RECOVERY_DELAY_MS);
     expect(window.electronAPI.mqtt.powerResume).toHaveBeenCalledTimes(1);
     expect(meshtastic.onPowerResume).toHaveBeenCalledTimes(1);
+    expect(meshcore.onPowerResume).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(POWER_RESUME_MESHCORE_STAGGER_MS);
     expect(meshcore.onPowerResume).toHaveBeenCalledTimes(1);
   });
 });

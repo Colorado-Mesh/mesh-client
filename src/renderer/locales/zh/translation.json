@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "该设备可能未与您的计算机配对。从蓝牙设置中删除设备，然后重新配对。对于 Meshtastic，请使用 PIN 123456。对于 MeshCore，PIN 是随机生成的并显示在设备上。",
         "connectionAttemptFailedLinuxHint": "在 Linux 上，您可以通过系统蓝牙设置或“bluetoothctl”工具管理配对。",
         "meshcoreHandshakeHint": "确保您的 MeshCore 设备处于蓝牙伴侣模式并使用 PIN 与您的计算机配对。如果连接问题仍然存在，请删除所有现有配对并重新配对。",
-        "meshcoreHandshakeWindowsExtra": "在 Windows 上，如果仍然断开连接，请关闭/打开蓝牙，并在设备管理器中更新适配器驱动程序。"
+        "meshcoreHandshakeWindowsExtra": "在 Windows 上，如果仍然断开连接，请关闭/打开蓝牙，并在设备管理器中更新适配器驱动程序。",
+        "macWakeRecoveryHint": "睡眠后，退出网状客户端（ Cmd + Q ） ，在“系统设置”中切换蓝牙开关，等待几秒钟，然后再次连接。使用两台收音机，在Meshtastic之前连接MeshCore。"
       }
     },
     "error": {

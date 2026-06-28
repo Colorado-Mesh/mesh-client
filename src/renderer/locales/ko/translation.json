@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "장치가 컴퓨터와 페어링되지 않았을 수 있습니다. Bluetooth 설정에서 장치를 제거한 다음 다시 페어링하십시오. Meshtastic의 경우 PIN 123456을 사용합니다. MeshCore의 경우 PIN은 무작위로 생성되어 장치에 표시됩니다.",
         "connectionAttemptFailedLinuxHint": "Linux에서는 시스템 Bluetooth 설정 또는 'bluetoothctl' 도구를 통해 페어링을 관리할 수 있습니다.",
         "meshcoreHandshakeHint": "MeshCore 장치가 Bluetooth Companion 모드에 있고 PIN을 사용하여 컴퓨터와 페어링되어 있는지 확인하세요. 연결 문제가 지속되면 기존 페어링을 제거하고 다시 페어링하세요.",
-        "meshcoreHandshakeWindowsExtra": "Windows에서 Bluetooth를 끄거나 켜고 연결이 계속 끊어지면 장치 관리자에서 어댑터 드라이버를 업데이트하세요."
+        "meshcoreHandshakeWindowsExtra": "Windows에서 Bluetooth를 끄거나 켜고 연결이 계속 끊어지면 장치 관리자에서 어댑터 드라이버를 업데이트하세요.",
+        "macWakeRecoveryHint": "절전 모드가 끝나면 mesh-client (Cmd + Q) 를 종료하고 시스템 설정에서 블루투스를 껐다 켜고 몇 초 기다린 다음 다시 연결하십시오. 두 개의 라디오를 사용하여 Meshtastic 전에 MeshCore를 연결합니다."
       }
     },
     "error": {

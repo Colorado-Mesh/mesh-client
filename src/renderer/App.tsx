@@ -25,8 +25,8 @@ import {
   ensureMeshcoreChatLastReadSanitized,
   getSanitizedMeshcoreChatLastRead,
   getSanitizedMeshcoreRoomsLastRead,
+  getSanitizedMeshtasticChatLastRead,
   loadMutedViews,
-  loadPersistedLastReadInitial,
   removePersistedLastReadForChannel,
   subscribeMutedViewsChanged,
   subscribePersistedLastRead,
@@ -39,6 +39,10 @@ import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityS
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import {
+  meshcoreConfiguredChannelIndexSet,
+  meshcoreConfiguredChatChannels,
+} from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
@@ -891,15 +895,31 @@ function AppContent({
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
 
+  const meshtasticConfiguredChannelIndices = useMemo(
+    () => new Set(meshtasticRuntime.channels.map((c) => c.index)),
+    [meshtasticRuntime.channels],
+  );
+
   const meshtasticChatUnread = useMemo(() => {
     void lastReadRevision.meshtastic;
+    const lastRead = getSanitizedMeshtasticChatLastRead(
+      meshtasticUiMessages,
+      meshtasticOwnNodeIdSet,
+    );
     return totalUnreadCount(
       meshtasticUiMessages,
-      loadPersistedLastReadInitial('meshtastic'),
+      lastRead,
       meshtasticOwnNodeIdSet,
       'meshtastic',
+      undefined,
+      { configuredChannelIndices: meshtasticConfiguredChannelIndices },
     );
-  }, [lastReadRevision.meshtastic, meshtasticOwnNodeIdSet, meshtasticUiMessages]);
+  }, [
+    lastReadRevision.meshtastic,
+    meshtasticConfiguredChannelIndices,
+    meshtasticOwnNodeIdSet,
+    meshtasticUiMessages,
+  ]);
 
   const meshcoreChatLastRead = useMemo(() => {
     void lastReadRevision.meshcore;
@@ -915,6 +935,11 @@ function AppContent({
   const meshcoreOwnNodeIdSetRef = useRef(meshcoreOwnNodeIdSet);
   const meshcoreChatUnreadDmOptionsRef = useRef<ChatUnreadDmOptions>(meshcoreChatUnreadDmOptions);
 
+  const meshcoreConfiguredChannelIndices = useMemo(
+    () => meshcoreConfiguredChannelIndexSet(meshcoreRuntime.channels),
+    [meshcoreRuntime.channels],
+  );
+
   const meshcoreChatUnread = useMemo(() => {
     return totalUnreadCount(
       meshcoreUiMessages,
@@ -922,8 +947,15 @@ function AppContent({
       meshcoreOwnNodeIdSet,
       'meshcore',
       meshcoreChatUnreadDmOptions,
+      { configuredChannelIndices: meshcoreConfiguredChannelIndices },
     );
-  }, [meshcoreChatLastRead, meshcoreChatUnreadDmOptions, meshcoreOwnNodeIdSet, meshcoreUiMessages]);
+  }, [
+    meshcoreChatLastRead,
+    meshcoreChatUnreadDmOptions,
+    meshcoreConfiguredChannelIndices,
+    meshcoreOwnNodeIdSet,
+    meshcoreUiMessages,
+  ]);
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
@@ -1396,19 +1428,7 @@ function AppContent({
   /** In meshcore mode, only show configured channels (key !== all zeros) in chat. */
   const chatChannels = useMemo(() => {
     if (capabilities.protocol !== 'meshcore') return activeRuntime.channels;
-    const chs = activeRuntime.channels as {
-      index: number;
-      name: string;
-      secret?: Uint8Array;
-    }[];
-    const toHex = (s: Uint8Array) =>
-      Array.from(s)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-    const unconfiguredKey = '00000000000000000000000000000000';
-    return chs
-      .filter((ch) => ch.secret?.length === 16 && toHex(ch.secret) !== unconfiguredKey)
-      .map((ch) => ({ index: ch.index, name: ch.name }));
+    return meshcoreConfiguredChatChannels(activeRuntime.channels);
   }, [capabilities.protocol, activeRuntime.channels]);
 
   const [chatTabVisited, setChatTabVisited] = useState(false);

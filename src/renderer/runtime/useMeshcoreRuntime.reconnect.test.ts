@@ -38,6 +38,20 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('onPowerResume');
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
     expect(RUNTIME_SOURCE).toContain('power resume — resetting reconnect budget');
+    expect(RUNTIME_SOURCE).toContain('rehydrateMeshcoreConnectionParamsFromStorage');
+    expect(RUNTIME_SOURCE).toContain('Noble BLE disconnected');
+    expect(RUNTIME_SOURCE).toContain('meshcoreExplicitDisconnectRef');
+    expect(RUNTIME_SOURCE).toContain('awaitDualNobleBleMeshtasticSettle');
+    expect(RUNTIME_SOURCE).toContain('POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS');
+  });
+
+  it('clears bleConnectInProgressRef after auto-reconnect attempts', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /attemptMeshcoreReconnect[\s\S]{0,4000}finally \{[\s\S]*?bleConnectInProgressRef\.current = false/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /meshcoreReconnectAttemptRef\.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}bleConnectInProgressRef\.current = false/,
+    );
   });
 
   it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {

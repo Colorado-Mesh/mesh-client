@@ -90,6 +90,20 @@ describe('NobleBleManager.connect — per-session UUID selection (regression)', 
   });
 });
 
+describe('NobleBleManager.connect — macOS wake zombie peripheral (regression)', () => {
+  it('forces disconnect when peripheral is stuck in connecting before reconnect', () => {
+    expect(SOURCE).toContain("peripheral.state === 'connecting'");
+    expect(SOURCE).toContain('stale state=connecting');
+    expect(SOURCE).toContain('knownPeripherals.delete(peripheralId)');
+  });
+
+  it('evicts peripheral from cache after connectAsync timeout', () => {
+    expect(SOURCE).toMatch(
+      /BLE connectAsync timed out[\s\S]{0,200}knownPeripherals\.delete\(peripheralId\)/,
+    );
+  });
+});
+
 /**
  * Regression guard: MeshCore NUS TX may advertise both read+notify on some stacks.
  * MeshCore uses notify-only (like Web Bluetooth); GATT read on NUS TX fails on Windows WinRT.

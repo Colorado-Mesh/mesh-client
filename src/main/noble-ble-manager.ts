@@ -913,7 +913,7 @@ export class NobleBleManager extends EventEmitter {
       session.fromRadioUsedReadPumpFallback = false;
       session.meshcoreLinuxEarlyReadPollAttempts = 0;
 
-      if (peripheral.state === 'connected') {
+      if (peripheral.state === 'connected' || peripheral.state === 'connecting') {
         let releasedOtherSession = false;
         for (const [otherSessionId, otherSession] of this.sessions.entries()) {
           if (
@@ -928,14 +928,22 @@ export class NobleBleManager extends EventEmitter {
             break;
           }
         }
-        // Peripheral is connected in noble's internal state but not claimed by any session
-        // (e.g. leftover from a previous crashed session). Disconnect before reconnecting.
-        // NOTE: register onDisconnected AFTER this cleanup so the pre-connect disconnectAsync()
+        // Peripheral is connected/connecting in noble but not usable (e.g. macOS wake zombie).
+        // NOTE: register onDisconnected AFTER this cleanup so pre-connect disconnectAsync()
         // does not prematurely trigger the handler and wipe the new session state.
-        if (peripheral.state === 'connected' && !releasedOtherSession) {
+        if (peripheral.state === 'connecting') {
+          console.warn(
+            `[BLE:${sessionId}] peripheral stale state=connecting — forcing disconnect before reconnect`,
+          );
+        } else if (peripheral.state === 'connected' && !releasedOtherSession) {
           console.warn(
             `[BLE:${sessionId}] peripheral already connected in noble — disconnecting before reconnect`,
           );
+        }
+        if (
+          (peripheral.state === 'connected' && !releasedOtherSession) ||
+          peripheral.state === 'connecting'
+        ) {
           try {
             await withTimeout(
               peripheral.disconnectAsync(),
@@ -948,6 +956,14 @@ export class NobleBleManager extends EventEmitter {
               sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
             );
           }
+        }
+        this.knownPeripherals.delete(peripheralId);
+        if (peripheral.state !== 'disconnected') {
+          peripheral = await this.waitForPeripheralDuringScan(
+            sessionId,
+            peripheralId,
+            NOBLE_PERIPHERAL_SCAN_WAIT_MS,
+          );
         }
       }
 
@@ -1005,12 +1021,29 @@ export class NobleBleManager extends EventEmitter {
         await withTimeout(peripheral.connectAsync(), BLE_CONNECT_TIMEOUT_MS, 'BLE connectAsync');
       } catch (err) {
         if (err instanceof Error && /BLE connectAsync timed out/i.test(err.message)) {
+          this.knownPeripherals.delete(peripheralId);
+          try {
+            await withTimeout(
+              peripheral.disconnectAsync(),
+              5000,
+              'BLE post-timeout disconnectAsync',
+            );
+          } catch (disconnectErr) {
+            console.debug(
+              `[BLE:${sessionId}] post-timeout disconnect error (ignored):`,
+              sanitizeLogMessage(
+                disconnectErr instanceof Error ? disconnectErr.message : String(disconnectErr),
+              ),
+            );
+          }
           const hint =
             process.platform === 'linux'
               ? ' On Linux/BlueZ: reset the adapter (bluetoothctl power off; power on) and ensure the device is not connected to another host.'
               : process.platform === 'win32'
                 ? ' On Windows: try pairing the device in Windows Bluetooth settings first, then retry.'
-                : '';
+                : process.platform === 'darwin'
+                  ? ' On macOS after sleep: quit mesh-client, toggle Bluetooth off/on, wait a few seconds, then retry.'
+                  : '';
           throw new Error(err.message + hint);
         }
         throw err;

@@ -84,4 +84,12 @@ describe('meshtasticTransportLossDetection', () => {
     await expect(writer.write(new Uint8Array([1]))).rejects.toBeInstanceOf(DOMException);
     expect(onLost).toHaveBeenCalledTimes(1);
   });
+
+  it('createSerializedWritableStream rejects writes when inner stream is missing', async () => {
+    const serialized = createSerializedWritableStream(undefined);
+    const writer = serialized.getWriter();
+    await expect(writer.write(new Uint8Array([1]))).rejects.toMatchObject({
+      name: 'InvalidStateError',
+    });
+  });
 });

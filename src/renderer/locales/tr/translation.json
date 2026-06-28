@@ -542,7 +542,8 @@
         "connectionAttemptFailedBase": "Cihaz bilgisayarınızla eşlenmemiş olabilir. Cihazı Bluetooth ayarlarından kaldırın ve yeniden eşleştirin. Meshtastic için 123456 PIN'ini kullanın. MeshCore için PIN rastgele oluşturulur ve cihazda görüntülenir.",
         "connectionAttemptFailedLinuxHint": "Linux'ta eşleştirmeleri sistem Bluetooth ayarları veya 'bluetoothctl' aracı aracılığıyla yönetebilirsiniz.",
         "meshcoreHandshakeHint": "MeshCore cihazınızın Bluetooth Companion modunda olduğundan ve bir PIN kullanarak bilgisayarınızla eşleştirildiğinden emin olun. Bağlantı sorunları devam ederse mevcut tüm eşleştirmeleri kaldırın ve yeniden eşleştirin.",
-        "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin."
+        "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin.",
+        "macWakeRecoveryHint": "Uykudan sonra mesh istemcisini (Cmd+Q) kapatın, Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar Bağlanın. Meshtastic'ten önce iki telsizle MeshCore'u bağlayın."
       }
     },
     "error": {
