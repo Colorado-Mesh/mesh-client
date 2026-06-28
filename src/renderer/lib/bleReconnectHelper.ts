@@ -8,8 +8,9 @@ export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 30_000;
 /** Noble wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
 export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
 
-const isLinuxPlatform = (): boolean =>
-  typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
+function isLinuxPlatform(): boolean {
+  return typeof window !== 'undefined' && window.electronAPI.getPlatform() === 'linux';
+}
 
 /**
  * Noble macOS/Windows: connect immediately (main process uses knownPeripherals cache),
@@ -41,12 +42,16 @@ export async function reconnectBleWithScan(
   const timeoutMs = opts?.scanTimeoutMs ?? BLE_RECONNECT_SCAN_TIMEOUT_MS;
 
   return new Promise<void>((resolve, reject) => {
-    let settled = false;
+    const abortController = new AbortController();
+    const { signal } = abortController;
     let scanTimeout: ReturnType<typeof setTimeout> | null = null;
     let offDiscovered: (() => void) | null = null;
 
     const cleanup = () => {
-      if (scanTimeout != null) clearTimeout(scanTimeout);
+      if (scanTimeout != null) {
+        clearTimeout(scanTimeout);
+        scanTimeout = null;
+      }
       offDiscovered?.();
       offDiscovered = null;
       void window.electronAPI.stopNobleBleScanning(sessionId).catch((e: unknown) => {
@@ -55,14 +60,15 @@ export async function reconnectBleWithScan(
     };
 
     const finish = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
+      if (signal.aborted) return;
+      abortController.abort();
       fn();
     };
 
+    signal.addEventListener('abort', cleanup, { once: true });
+
     offDiscovered = window.electronAPI.onNobleBleDeviceDiscovered((device) => {
-      if (device.deviceId !== peripheralId) return;
+      if (signal.aborted || device.deviceId !== peripheralId) return;
       finish(() => {
         void connect().then(resolve).catch(reject);
       });

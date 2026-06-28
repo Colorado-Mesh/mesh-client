@@ -56,4 +56,21 @@ describe('vitest.harness', () => {
       expect(VITEST_SERVER_INLINE_DEPS).toContain(dep);
     }
   });
+
+  it('MIN_VITEST_WORKERS is a positive integer', () => {
+    expect(Number.isInteger(MIN_VITEST_WORKERS)).toBe(true);
+    expect(MIN_VITEST_WORKERS).toBeGreaterThan(0);
+  });
+
+  it('computeVitestMaxWorkers with ratio exactly 1.0', () => {
+    expect(computeVitestMaxWorkers(8, 1)).toBe(8);
+    expect(computeVitestMaxWorkers(1, 1)).toBe(MIN_VITEST_WORKERS);
+  });
+
+  it('computeVitestMaxWorkers at exactly MAX_VITEST_CPU_COUNT boundary', () => {
+    expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT, 1)).toBe(MAX_VITEST_CPU_COUNT);
+    expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT, RENDERER_UI_CPU_RATIO)).toBe(
+      Math.floor(MAX_VITEST_CPU_COUNT * RENDERER_UI_CPU_RATIO),
+    );
+  });
 });

@@ -314,7 +314,9 @@ Not installed by pnpm (install separately when needed):
 | `renderer-logic` | node        | Pure renderer unit tests (no setup)     |
 | `main`           | node        | Main, shared, preload, and script tests |
 
-Worker counts are derived in [`vitest.harness.ts`](../vitest.harness.ts) via `computeVitestMaxWorkers(cpuCount, ratio)`: jsdom workers use `RENDERER_UI_CPU_RATIO` because they are memory-heavy; node workers use `NODE_WORKER_CPU_RATIO`. Both pools floor at `MIN_VITEST_WORKERS`. When tuning worker allocation, change those constants in the harness (not this doc). Shared Vite dependency inline lists (`VITEST_CORE_DEPS`, `VITEST_SERVER_INLINE_DEPS`) also live there — add new deps to the harness when tests need them inlined.
+Worker counts are derived in [`vitest.harness.ts`](../vitest.harness.ts) via `computeVitestMaxWorkers(cpuCount, ratio)`: jsdom workers use `RENDERER_UI_CPU_RATIO` because they are memory-heavy; node workers use `NODE_WORKER_CPU_RATIO`. Both pools floor at `MIN_VITEST_WORKERS` (currently 2) and cap effective CPU count at `MAX_VITEST_CPU_COUNT` (32). When tuning worker allocation, change those constants in the harness (not this doc). Shared Vite dependency inline lists (`VITEST_CORE_DEPS`, `VITEST_SERVER_INLINE_DEPS`) also live there — add new deps to the harness when tests need them inlined.
+
+Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes.
 
 Run these quality checks before opening a PR:
 

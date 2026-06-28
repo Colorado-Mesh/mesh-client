@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
-import type { TFunction } from 'i18next';
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,8 +23,13 @@ import {
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
-import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
 import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
+import {
+  humanizeBleError,
+  humanizeHttpError,
+  humanizeSerialError,
+} from '../lib/connectionPanelErrorHumanize';
+import { runConnectionPanelStorageMigrations } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import {
   letsMeshPresetConfigurationDeviation,
@@ -92,193 +96,6 @@ function lastBleDeviceKey(p: MeshProtocol) {
 
 function lastConnectionKey(p: MeshProtocol) {
   return `mesh-client:lastConnection:${p}`;
-}
-
-function humanizeSerialError(err: unknown, t: TFunction): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
-  if (/access denied|permission|not allowed/i.test(msg)) {
-    const hint = isWindows
-      ? t('connectionPanel.humanize.serial.accessDeniedWindowsHint')
-      : t('connectionPanel.humanize.serial.accessDeniedLinuxHint');
-    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
-  }
-  if (/no port|not found|disconnected|device not found/i.test(msg)) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.serial.disconnectedHint'),
-    });
-  }
-  if (/timed out/i.test(msg)) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.serial.timeoutHint'),
-    });
-  }
-  if (/already open|locked stream|cannot cancel a locked/i.test(msg)) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.serial.portStillOpenHint'),
-    });
-  }
-  return msg;
-}
-
-function hostFromAddressInput(address: string): string {
-  const raw = address.trim();
-  if (!raw) return '';
-  try {
-    return new URL(raw.includes('://') ? raw : `http://${raw}`).hostname.toLowerCase();
-  } catch {
-    // catch-no-log-ok user-typed host/IP without scheme
-    return raw.split('/')[0]?.split(':')[0]?.toLowerCase() ?? '';
-  }
-}
-
-function isMeshtasticLocalAddress(address: string): boolean {
-  const host = hostFromAddressInput(address);
-  return host === 'meshtastic.local' || host.endsWith('.meshtastic.local');
-}
-
-function humanizeHttpError(address: string, err: unknown, t: TFunction): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  const isMdns = isMeshtasticLocalAddress(address);
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
-  if (/timed out|timeout|aborted/i.test(msg)) {
-    const hint = isMdns
-      ? isWindows
-        ? t('connectionPanel.humanize.http.timeoutMdnsWindows')
-        : t('connectionPanel.humanize.http.timeoutMdnsNonWindows')
-      : t('connectionPanel.humanize.http.timeoutGeneric');
-    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
-  }
-  if (/401|403|unauthorized/i.test(msg)) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.http.unauthorizedHint'),
-    });
-  }
-  if (/econnrefused|connection refused|failed to fetch|network/i.test(msg)) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.http.econnrefusedHint'),
-    });
-  }
-  if (isMdns) {
-    const suffix = isWindows
-      ? t('connectionPanel.humanize.http.suffixMdnsWindows')
-      : t('connectionPanel.humanize.http.suffixMdnsNonWindows');
-    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint: suffix });
-  }
-  return msg;
-}
-
-function humanizeBleError(err: unknown, t: TFunction): string {
-  if (
-    err instanceof DOMException &&
-    err.name === 'AbortError' &&
-    err.message === MESHCORE_SETUP_ABORT_MESSAGE
-  ) {
-    return '';
-  }
-  const msg =
-    err instanceof Error
-      ? err.message
-      : typeof err === 'string'
-        ? err
-        : (() => {
-            try {
-              return JSON.stringify(err);
-            } catch {
-              // catch-no-log-ok stringify fallback for arbitrary renderer error shapes
-              return String(err);
-            }
-          })();
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
-  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
-  if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
-    const hint = isWindows
-      ? t('connectionPanel.humanize.ble.adapterWindowsHint')
-      : isLinux
-        ? t('connectionPanel.humanize.ble.adapterLinuxHint')
-        : t('connectionPanel.humanize.ble.adapterGenericHint');
-    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
-  }
-  if (msg.includes('SecurityError') || msg.includes('not allowed to access')) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.ble.securityPermissionHint'),
-    });
-  }
-  if (msg.includes('GATT Server is disconnected')) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.ble.gattDisconnectedHint'),
-    });
-  }
-  // Web Bluetooth on Linux: "GATT Error: Not supported" means the device requires pairing
-  // before GATT operations are allowed. This is common with Meshtastic devices.
-  if (msg.includes('GATT Error: Not supported')) {
-    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.gattNotSupportedBase')}`;
-    if (isLinux) {
-      enhanced += t('connectionPanel.humanize.ble.gattNotSupportedLinuxPin');
-    }
-    return enhanced;
-  }
-  // Check error.name directly for DOMException types that indicate pairing issues
-  if (err instanceof DOMException) {
-    if (err.name === 'SecurityError') {
-      let enhanced = t('connectionPanel.humanize.ble.authFailedBase', { message: err.message });
-      if (isLinux) {
-        enhanced += t('connectionPanel.humanize.ble.authFailedLinuxPin');
-      }
-      return enhanced;
-    }
-    if (err.name === 'NetworkError') {
-      let enhanced = t('connectionPanel.humanize.ble.networkFailedBase', { message: err.message });
-      if (isLinux) {
-        enhanced += t('connectionPanel.humanize.ble.networkFailedLinuxHint');
-      } else {
-        enhanced += t('connectionPanel.humanize.ble.networkFailedNonLinuxHint');
-      }
-      return enhanced;
-    }
-  }
-  // Web Bluetooth on Linux: connection failed often means device not paired properly
-  if (msg.includes('Connection Error: Connection attempt failed')) {
-    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.connectionAttemptFailedBase')}`;
-    if (isLinux) {
-      enhanced += t('connectionPanel.humanize.ble.connectionAttemptFailedLinuxHint');
-    }
-    return enhanced;
-  }
-  if (/Bluetooth connected but MeshCore protocol handshake did not complete/i.test(msg)) {
-    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.meshcoreHandshakeHint')}`;
-    if (isWindows) {
-      enhanced += t('connectionPanel.humanize.ble.meshcoreHandshakeWindowsExtra');
-    }
-    return enhanced;
-  }
-  if (/Bluetooth connection timed out while opening MeshCore over Noble IPC/i.test(msg)) {
-    let enhanced = `${msg} ${t('connectionPanel.humanize.ble.meshcoreHandshakeHint')}`;
-    if (isWindows) {
-      enhanced += t('connectionPanel.humanize.ble.meshcoreHandshakeWindowsExtra');
-    }
-    return enhanced;
-  }
-  const isDarwin = !isLinux && !isWindows;
-  if (
-    isDarwin &&
-    (/BLE connectAsync timed out/i.test(msg) ||
-      /BLE peripheral not found/i.test(msg) ||
-      /unknown peripheral/i.test(msg))
-  ) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.ble.macWakeRecoveryHint'),
-    });
-  }
-  return msg;
 }
 
 function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boolean {
@@ -430,38 +247,9 @@ function MqttGlobeStatusIcon({ status }: { status: MQTTStatus }) {
   return <MqttGlobeIcon className={`h-5 w-5 ${color}`} />;
 }
 
-function migrateMqttSettingsOnce(): void {
-  if (localStorage.getItem('mesh-client:mqttSettings:meshcore') !== null) return;
-  const raw = localStorage.getItem('mesh-client:mqttSettings');
-  if (!raw) return;
-  const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMqttSettingsOnce');
-  if (!parsed) return;
-  if (typeof parsed.topicPrefix === 'string' && parsed.topicPrefix.startsWith('meshcore')) {
-    localStorage.setItem('mesh-client:mqttSettings:meshcore', raw);
-    localStorage.removeItem('mesh-client:mqttSettings');
-  }
-}
-migrateMqttSettingsOnce();
-
-function migrateMeshcoreTopicIataOnce(): void {
-  const MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-iata-v1';
-  if (localStorage.getItem(MIGRATION_KEY) !== null) return;
-  const raw = localStorage.getItem('mesh-client:mqttSettings:meshcore');
-  if (raw) {
-    const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMeshcoreTopicIataOnce');
-    if (parsed?.topicPrefix === 'meshcore' && typeof parsed.server === 'string') {
-      const iata = parsed.server.trim() === COLORADO_MESH_HOST ? 'DEN' : 'test';
-      localStorage.setItem(
-        'mesh-client:mqttSettings:meshcore',
-        JSON.stringify({ ...parsed, topicPrefix: `meshcore/${iata}` }),
-      );
-    }
-  }
-  localStorage.setItem(MIGRATION_KEY, '1');
-}
-migrateMeshcoreTopicIataOnce();
-
 const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
+
+const LETS_MESH_USERNAME_SYNC_DEBOUNCE_MS = 100;
 
 function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings): void {
   const serialized = JSON.stringify(settings);
@@ -521,6 +309,12 @@ export default function ConnectionPanel({
 }: Props) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
+  const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    runConnectionPanelStorageMigrations();
+  }, []);
+
   const [connectionType, setConnectionType] = useState<ConnectionType>('ble');
   const [httpAddress, setHttpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
@@ -702,10 +496,23 @@ export default function ConnectionPanel({
       if (!u) return;
       setMeshcoreMqttSettings((prev) => (prev.username === u ? prev : { ...prev, username: u }));
     };
+    const scheduleSync = () => {
+      if (letsMeshUsernameSyncTimerRef.current) {
+        clearTimeout(letsMeshUsernameSyncTimerRef.current);
+      }
+      letsMeshUsernameSyncTimerRef.current = setTimeout(() => {
+        letsMeshUsernameSyncTimerRef.current = null;
+        syncLetsMeshUsername();
+      }, LETS_MESH_USERNAME_SYNC_DEBOUNCE_MS);
+    };
     syncLetsMeshUsername();
-    window.addEventListener('meshclient:meshcoreIdentityUpdated', syncLetsMeshUsername);
+    window.addEventListener('meshclient:meshcoreIdentityUpdated', scheduleSync);
     return () => {
-      window.removeEventListener('meshclient:meshcoreIdentityUpdated', syncLetsMeshUsername);
+      window.removeEventListener('meshclient:meshcoreIdentityUpdated', scheduleSync);
+      if (letsMeshUsernameSyncTimerRef.current) {
+        clearTimeout(letsMeshUsernameSyncTimerRef.current);
+        letsMeshUsernameSyncTimerRef.current = null;
+      }
     };
   }, [protocol, meshcorePreset]);
 

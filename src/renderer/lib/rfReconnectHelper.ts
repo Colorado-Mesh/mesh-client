@@ -9,7 +9,7 @@ import {
 import type { ConnectionType, MeshProtocol } from './types';
 
 const isLinuxPlatform = (): boolean =>
-  typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
+  typeof window !== 'undefined' && window.electronAPI.getPlatform() === 'linux';
 
 export interface RfReconnectHandlers {
   /** Noble scan + connectAutomatic, or Web Bluetooth connectAutomatic (Linux). */
