@@ -178,6 +178,9 @@ export const POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS = 30_000;
 /** Poll interval inside `awaitDualNobleBleMeshtasticSettle`. */
 export const MESHCORE_DUAL_NOBLE_BLE_POLL_MS = 200;
 
+/** Stagger MeshCore Noble BLE startup auto-connect after Meshtastic (dual-protocol adapter contention). */
+export const STARTUP_MESHCORE_BLE_AUTOCONNECT_STAGGER_MS = 8_000;
+
 /** BlueZ is slower than macOS CBCentralManager — requestDevice / reuse granted device. */
 export const MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS = 60_000;
 

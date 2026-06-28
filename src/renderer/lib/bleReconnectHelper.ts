@@ -5,6 +5,9 @@ import type { MeshProtocol } from './types';
 
 export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 30_000;
 
+/** Noble wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
+export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
+
 const isLinuxPlatform = (): boolean =>
   typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
 

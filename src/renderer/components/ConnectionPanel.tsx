@@ -8,7 +8,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
-import { meshcoreTargetsSharedMeshtasticBlePeripheral } from '@/renderer/lib/meshcoreDualNobleBleInit';
+import {
+  isRendererNobleBlePlatform,
+  meshcoreTargetsSharedMeshtasticBlePeripheral,
+} from '@/renderer/lib/meshcoreDualNobleBleInit';
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
@@ -61,6 +64,7 @@ import {
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
+import { STARTUP_MESHCORE_BLE_AUTOCONNECT_STAGGER_MS } from '../lib/timeConstants';
 import type {
   ConnectionType,
   DeviceState,
@@ -784,6 +788,7 @@ export default function ConnectionPanel({
   );
   const autoConnectFiredRef = useRef(false);
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const meshcoreBleAutoConnectStaggerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
@@ -1249,29 +1254,6 @@ export default function ConnectionPanel({
     setConnectionStage('connectionPanel.stagePleaseWait');
 
     if (connectionType === 'ble') {
-      if (!isLinux) {
-        const lastBleId = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
-        if (lastBleId) {
-          setConnectionType('ble');
-          setConnectionStage('connectionPanel.stageConnecting');
-          try {
-            await onConnect('ble', undefined, lastBleId);
-            setConnecting(false);
-            setConnectionStage('');
-            return;
-          } catch (err) {
-            console.warn(
-              '[ConnectionPanel] handleConnect last-device reconnect failed ' +
-                errLikeToLogString(err),
-            );
-            const bleErrMsg = humanizeBleError(err, t);
-            if (bleErrMsg) setError(bleErrMsg);
-            setConnecting(false);
-            setConnectionStage('');
-            return;
-          }
-        }
-      }
       if (isLinux) {
         console.debug('[ConnectionPanel] handleConnect Linux BLE path');
         setConnectionStage('connectionPanel.stageSelectBluetoothDots');
@@ -1315,7 +1297,8 @@ export default function ConnectionPanel({
           return;
         }
       }
-      // Noble: start scanning — actual connection triggered when user selects a device
+      // Noble (macOS/Windows): manual Connect always opens the scanner so the user can pick any device.
+      // Reconnect to the last device uses handleReconnect / startup auto-connect instead.
       setConnectionStage('connectionPanel.stageScanning');
       try {
         await window.electronAPI.startNobleBleScanning(protocol);
@@ -1350,7 +1333,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t, lastConnection]);
+  }, [connectionType, activeHostAddress, onConnect, protocol, isLinux, t]);
 
   const handleCancelConnection = useCallback(async () => {
     isAutoConnectingRef.current = false;
@@ -1515,16 +1498,11 @@ export default function ConnectionPanel({
       setIsAutoConnecting(true);
       setConnecting(true);
       setConnectionStage('connectionPanel.stageConnecting');
-      startAutoConnectTimeout();
-      // Try direct connect first (main process waitForPeripheralDuringScan); scan only on failure.
+      // reconnectBleWithScan owns failure timing (wait + scan); do not use the 30s serial timeout here.
       void reconnectBleWithScan(protocol, lastBleId, () =>
         onAutoConnectRef.current('ble', undefined, undefined, lastBleId),
       )
         .then(() => {
-          if (autoConnectTimeoutRef.current) {
-            clearTimeout(autoConnectTimeoutRef.current);
-            autoConnectTimeoutRef.current = null;
-          }
           isAutoConnectingRef.current = false;
           setIsAutoConnecting(false);
           setConnecting(false);
@@ -1583,10 +1561,23 @@ export default function ConnectionPanel({
       });
     } else if (lc.type === 'ble') {
       if (lastBleId && !isLinux) {
-        // Noble: direct connect with saved peripheral id (main process scans if needed).
-        // On Linux, Web Bluetooth requires a user gesture; skip auto-connect and let user click Connect.
-        if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
-        startBleNobleAutoConnect();
+        const runBleAutoConnect = () => {
+          if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
+          startBleNobleAutoConnect();
+        };
+        const meshtasticBlePending =
+          protocol === 'meshcore' &&
+          isRendererNobleBlePlatform() &&
+          loadLastConnection('meshtastic')?.type === 'ble' &&
+          Boolean(loadLastConnection('meshtastic')?.bleDeviceId);
+        if (meshtasticBlePending) {
+          meshcoreBleAutoConnectStaggerRef.current = setTimeout(() => {
+            meshcoreBleAutoConnectStaggerRef.current = null;
+            runBleAutoConnect();
+          }, STARTUP_MESHCORE_BLE_AUTOCONNECT_STAGGER_MS);
+        } else {
+          runBleAutoConnect();
+        }
       }
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
@@ -1596,6 +1587,9 @@ export default function ConnectionPanel({
   useEffect(
     () => () => {
       if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
+      if (meshcoreBleAutoConnectStaggerRef.current) {
+        clearTimeout(meshcoreBleAutoConnectStaggerRef.current);
+      }
     },
     [],
   );
@@ -1644,36 +1638,16 @@ export default function ConnectionPanel({
         } else {
           const bleDeviceId = lastConnection.bleDeviceId;
           setConnectionStage('connectionPanel.stageConnecting');
-          if (autoConnectTimeoutRef.current) {
-            clearTimeout(autoConnectTimeoutRef.current);
-            autoConnectTimeoutRef.current = null;
-          }
-          autoConnectTimeoutRef.current = setTimeout(() => {
-            console.warn('[ConnectionPanel] auto-connect timed out after 30s');
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            setError(t('connectionPanel.error.autoConnectTimeout'));
-            setConnecting(false);
-            setConnectionStage('');
-          }, 30_000);
           void reconnectBleWithScan(protocol, bleDeviceId, () =>
             onConnect('ble', undefined, bleDeviceId),
           )
             .then(() => {
-              if (autoConnectTimeoutRef.current) {
-                clearTimeout(autoConnectTimeoutRef.current);
-                autoConnectTimeoutRef.current = null;
-              }
               isAutoConnectingRef.current = false;
               setIsAutoConnecting(false);
               setConnecting(false);
               setConnectionStage('');
             })
             .catch((err: unknown) => {
-              if (autoConnectTimeoutRef.current) {
-                clearTimeout(autoConnectTimeoutRef.current);
-                autoConnectTimeoutRef.current = null;
-              }
               isAutoConnectingRef.current = false;
               setIsAutoConnecting(false);
               const bleErrMsg = humanizeBleError(err, t);

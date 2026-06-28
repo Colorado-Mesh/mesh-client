@@ -716,6 +716,66 @@ describe('ConnectionPanel exit actions', () => {
   });
 });
 
+describe('ConnectionPanel BLE noble manual connect', () => {
+  it('starts noble scan on manual Connect even when a last BLE device is saved', async () => {
+    const user = userEvent.setup();
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'previously-paired-radio' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith(
+          'ble',
+          undefined,
+          undefined,
+          'previously-paired-radio',
+        );
+      });
+      await waitFor(() => {
+        expect(screen.getByRole('radiogroup', { name: 'Connection Type' })).toBeInTheDocument();
+      });
+
+      vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+
+      const connectionField = screen
+        .getByRole('radiogroup', { name: 'Connection Type' })
+        .closest('fieldset')?.parentElement;
+      expect(connectionField).toBeTruthy();
+      await user.click(within(connectionField!).getByRole('radio', { name: /Bluetooth/i }));
+      await user.click(within(connectionField!).getByRole('button', { name: /^Connect$/i }));
+
+      await waitFor(() => {
+        expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalledWith('meshtastic');
+      });
+      expect(onConnect).not.toHaveBeenCalled();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+});
+
 describe('ConnectionPanel BLE noble auto-connect', () => {
   it('calls onAutoConnect with saved peripheral id without waiting for renderer discovery', async () => {
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
