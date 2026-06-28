@@ -822,9 +822,7 @@ export async function resolveMeshcoreNodePubKey(
 
   try {
     const contact = (await window.electronAPI.db.getMeshcoreContactById(nodeId)) as
-      | Pick<MeshcoreContactDbRow, 'public_key'>
-      | null
-      | undefined;
+      Pick<MeshcoreContactDbRow, 'public_key'> | null | undefined;
     if (contact?.public_key) {
       return meshcoreFullPubKeyBytesFromContactDbHex(contact.public_key);
     }

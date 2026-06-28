@@ -1126,8 +1126,7 @@ function openHelpExternalLink(rawUrl: string): void {
 }
 
 function buildHelpMenuExternalLinkItems(): (
-  | { type: 'separator' }
-  | { label: string; click: () => void }
+  { type: 'separator' } | { label: string; click: () => void }
 )[] {
   return [
     { type: 'separator' as const },
@@ -3515,8 +3514,7 @@ ipcMain.handle('db:getNodeNote', (_event, nodeId: number) => {
     const db = getDbForIpc('db:getNodeNote');
     if (!db) return null;
     const row = db.prepareOnce('SELECT notes FROM node_notes WHERE node_id = ?').get(id) as
-      | { notes: string }
-      | undefined;
+      { notes: string } | undefined;
     return row?.notes ?? null;
   } catch (err) {
     finishDbIpcHandler('db:getNodeNote', err);

@@ -149,13 +149,11 @@ export function neighborInfoEventsToRecordMap(
   for (const event of Object.values(byNode)) {
     map.set(event.nodeId, {
       nodeId: event.nodeId,
-      neighbors: event.neighbors.map(
-        (n): MeshNeighbor => ({
-          nodeId: n.nodeId,
-          snr: n.snr,
-          lastRxTime: n.lastRxTime,
-        }),
-      ),
+      neighbors: event.neighbors.map((n): MeshNeighbor => ({
+        nodeId: n.nodeId,
+        snr: n.snr,
+        lastRxTime: n.lastRxTime,
+      })),
       timestamp: event.timestamp,
     });
   }

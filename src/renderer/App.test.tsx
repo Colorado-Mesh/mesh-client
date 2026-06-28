@@ -741,8 +741,7 @@ describe('App accessibility', () => {
       expect(lastChatPanelProps.current).not.toBeNull();
     });
     const onNodeClick = lastChatPanelProps.current?.onNodeClick as
-      | ((nodeId: number) => void)
-      | null;
+      ((nodeId: number) => void) | null;
     expect(onNodeClick).toBeTruthy();
     onNodeClick?.(0x23456789);
 
@@ -803,8 +802,7 @@ describe('App accessibility', () => {
       expect(lastChatPanelProps.current).not.toBeNull();
     });
     const onNodeClick = lastChatPanelProps.current?.onNodeClick as
-      | ((nodeId: number) => void)
-      | null;
+      ((nodeId: number) => void) | null;
     onNodeClick?.(peerNodeId);
 
     await waitFor(() => {

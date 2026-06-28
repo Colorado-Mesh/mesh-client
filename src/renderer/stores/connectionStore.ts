@@ -4,12 +4,7 @@ import type { ConnectionType, IdentityId, MQTTStatus } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
 
 export type ConnectionStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'configured'
-  | 'stale'
-  | 'reconnecting';
+  'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
 
 export interface ConnectionRecord {
   identityId: IdentityId;
