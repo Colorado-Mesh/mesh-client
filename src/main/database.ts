@@ -586,8 +586,7 @@ export function saveMeshcoreHopHistory(
 export function getMeshcoreHopHistory(nodeId: number): MeshCoreHopHistoryRow | null {
   const d = getDatabase();
   const row = d.prepareOnce('SELECT * FROM meshcore_hop_history WHERE node_id = ?').get(nodeId) as
-    | MeshCoreHopHistoryRow
-    | undefined;
+    MeshCoreHopHistoryRow | undefined;
   return row ?? null;
 }
 

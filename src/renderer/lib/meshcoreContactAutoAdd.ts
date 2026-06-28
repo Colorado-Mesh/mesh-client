@@ -73,9 +73,7 @@ export function isMeshcoreAutoaddGetUnsupportedErrFrame(frame: Uint8Array): bool
 }
 
 export type MeshcoreAutoaddFetchOutcome =
-  | { kind: 'ok'; state: MeshcoreAutoaddWireState }
-  | { kind: 'unsupported' }
-  | { kind: 'timeout' };
+  { kind: 'ok'; state: MeshcoreAutoaddWireState } | { kind: 'unsupported' } | { kind: 'timeout' };
 
 export interface MeshcoreAutoaddQueryConn {
   on(event: string | number, cb: (...args: unknown[]) => void): void;

@@ -18,11 +18,7 @@ export type ConnectionType = 'ble' | 'serial' | 'http';
 export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
 
 export type TransportStatus =
-  | 'connecting'
-  | 'connected'
-  | 'disconnected'
-  | 'reconnecting'
-  | 'stale';
+  'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'stale';
 
 /** Transport-specific connect parameters. Open union — additional protocols add their own variants. */
 export type TransportParams =
@@ -54,12 +50,7 @@ export function isMeshProtocol(value: string): value is MeshProtocol {
 }
 
 export type AnomalyType =
-  | 'hop_goblin'
-  | 'bad_route'
-  | 'route_flapping'
-  | 'impossible_hop'
-  | 'noisy_node'
-  | 'weak_link';
+  'hop_goblin' | 'bad_route' | 'route_flapping' | 'impossible_hop' | 'noisy_node' | 'weak_link';
 
 /** How confident the detector is: proven uses distance/stats; heuristic is SNR/hops pattern only. */
 export type AnomalyConfidence = 'proven' | 'heuristic';

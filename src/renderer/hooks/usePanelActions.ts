@@ -8,8 +8,7 @@ import type { useMeshcorePanelActions } from './useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
 
 export type PanelActions =
-  | ReturnType<typeof useMeshtasticPanelActions>
-  | ReturnType<typeof useMeshcorePanelActions>;
+  ReturnType<typeof useMeshtasticPanelActions> | ReturnType<typeof useMeshcorePanelActions>;
 
 export interface PanelActionsBundle {
   actions: PanelActions;

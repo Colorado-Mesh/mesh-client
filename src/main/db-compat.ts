@@ -198,8 +198,7 @@ export class NodeSqliteDB {
       throw new Error(`db-compat: PRAGMA '${key}' is not on the allowed list`);
     }
     const row = new WrappedStatement(this.db.prepare(`PRAGMA ${key}`), `PRAGMA ${key}`).get() as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     return opts?.simple ? row?.[key] : row;
   }
 

@@ -1,9 +1,6 @@
 /** Sidebar room list marker glyph + Tailwind color for each auth state. */
 export type MeshcoreRoomSidebarMarkerKind =
-  | 'loggedIn'
-  | 'leaving'
-  | 'savedNotLoggedIn'
-  | 'notSaved';
+  'loggedIn' | 'leaving' | 'savedNotLoggedIn' | 'notSaved';
 
 export interface MeshcoreRoomSidebarMarker {
   kind: MeshcoreRoomSidebarMarkerKind;

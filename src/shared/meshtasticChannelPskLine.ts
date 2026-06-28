@@ -8,8 +8,7 @@ const NAMED_CHANNEL_PSK_LEFT = /^([A-Za-z0-9_-]+)(@[0-7])?$/;
 const NAMED_CHANNEL_LABEL_MAX_LEN = 20;
 
 export type SplitChannelPskLine =
-  | { kind: 'named'; name: string; index?: number; b64: string }
-  | { kind: 'bare'; b64: string };
+  { kind: 'named'; name: string; index?: number; b64: string } | { kind: 'bare'; b64: string };
 
 /**
  * Split a manual MQTT channel PSK line.

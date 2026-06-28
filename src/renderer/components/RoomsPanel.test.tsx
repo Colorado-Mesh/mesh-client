@@ -56,8 +56,7 @@ vi.mock('@tanstack/react-virtual', () => ({
       scrollToIndex: mockScrollToIndex,
       scrollDirection: 'forward' as const,
       shouldAdjustScrollPositionOnItemSizeChange: undefined as
-        | ((item: { index: number }) => boolean)
-        | undefined,
+        ((item: { index: number }) => boolean) | undefined,
     };
     return instance;
   },

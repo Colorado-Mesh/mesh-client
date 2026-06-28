@@ -38,9 +38,7 @@ function TriStateRow({
   specificCount: number;
   /** i18n key under meshcoreTelemetryPrivacy for the trailing permission phrase */
   specificPermissionPhraseKey:
-    | 'baseTelemetryPermission'
-    | 'locationPermission'
-    | 'environmentPermission';
+    'baseTelemetryPermission' | 'locationPermission' | 'environmentPermission';
   yesDescription: string;
   noDescription: string;
   yesLabel: string;
