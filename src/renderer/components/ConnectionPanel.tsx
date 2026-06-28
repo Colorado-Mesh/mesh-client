@@ -579,7 +579,7 @@ export default function ConnectionPanel({
   // ─── BLE device picker state ──────────────────────────────────
   const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
-  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+  const isLinux = window.electronAPI.getPlatform() === 'linux';
   const [webBluetoothDevice, setWebBluetoothDevice] = useState<{
     deviceId: string;
     deviceName: string;

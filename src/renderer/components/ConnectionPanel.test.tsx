@@ -20,15 +20,19 @@ const disconnectedState: DeviceState = {
   connectionType: null,
 };
 
-function mockMacNoblePlatform(): {
+const NOBLE_PLATFORM_USER_AGENT = {
+  darwin:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+  win32: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+} as const;
+
+function mockNobleBlePlatform(platform: 'darwin' | 'win32'): {
   userAgentSpy: ReturnType<typeof vi.spyOn>;
   restore: () => void;
 } {
-  vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+  vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
   const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
-  userAgentSpy.mockReturnValue(
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-  );
+  userAgentSpy.mockReturnValue(NOBLE_PLATFORM_USER_AGENT[platform]);
   return {
     userAgentSpy,
     restore: () => {
@@ -36,6 +40,10 @@ function mockMacNoblePlatform(): {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     },
   };
+}
+
+function mockMacNoblePlatform(): ReturnType<typeof mockNobleBlePlatform> {
+  return mockNobleBlePlatform('darwin');
 }
 
 describe('ConnectionPanel MQTT port clamping', () => {
@@ -185,10 +193,16 @@ describe('ConnectionPanel MQTT connect error', () => {
 });
 
 describe('ConnectionPanel BLE error humanization', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockReset();
+  });
+
   it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const { restore: restorePlatform } = mockNobleBlePlatform('win32');
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
       new Error(
         'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
@@ -217,15 +231,13 @@ describe('ConnectionPanel BLE error humanization', () => {
       ),
     );
     restore();
+    restorePlatform();
   });
 
   it('renders object-shaped BLE errors as JSON instead of [object Object]', async () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
-    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
-    userAgentSpy.mockReturnValue(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-    );
+    const { restore: restorePlatform } = mockNobleBlePlatform('win32');
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce({
       reason: 'adapter glitch',
       code: 'BLE_OBJECT_ERR',
@@ -252,13 +264,13 @@ describe('ConnectionPanel BLE error humanization', () => {
       expect.stringMatching(/\[ConnectionPanel\].*"reason":"adapter glitch"/s),
     );
     restore();
-    userAgentSpy.mockRestore();
+    restorePlatform();
   });
 
   it('shows Windows adapter guidance when BLE adapter is unavailable', async () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const { restore: restorePlatform } = mockNobleBlePlatform('win32');
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
       new Error('Bluetooth adapter is not available'),
     );
@@ -285,6 +297,7 @@ describe('ConnectionPanel BLE error humanization', () => {
       expect.stringMatching(/\[ConnectionPanel\].*Bluetooth adapter is not available/s),
     );
     restore();
+    restorePlatform();
   });
 });
 
