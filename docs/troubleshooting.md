@@ -102,7 +102,7 @@ See [development-environment.md](development-environment.md#windows) for Python 
 
 ### macOS sleep / wake and auto-reconnect
 
-After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before RF auto-reconnect runs (Meshtastic first, MeshCore about **2 seconds** later when both protocols use BLE).
+After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE).
 
 - **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
@@ -112,7 +112,7 @@ After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and
 
 ### Windows sleep / wake and auto-reconnect
 
-After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before RF auto-reconnect runs (Meshtastic first, MeshCore about **2 seconds** later when both protocols use BLE over Noble IPC).
+After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE over Noble IPC).
 
 - **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.

@@ -146,6 +146,7 @@ import {
 import { setMeshcoreDmAckPendingImpl } from '../lib/meshcoreDmAckDelivery';
 import {
   awaitDualNobleBleMeshtasticSettle,
+  isRendererNobleBlePlatform,
   needsSequentialMeshcoreRadioInit,
 } from '../lib/meshcoreDualNobleBleInit';
 import { applyMeshcoreFloodScope } from '../lib/meshcoreFloodScope';
@@ -293,6 +294,7 @@ import {
   MESHCORE_STATS_POLL_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
+  POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
 } from '../lib/timeConstants';
 import type {
   ChatMessage,
@@ -2225,6 +2227,9 @@ export function useMeshcoreRuntime() {
     if (meshcoreReconnectAttemptRef.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS) {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
+      if (params.rfType === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
       stopMeshcoreSerialWatchdog();
       if (params.rfType === 'serial') {
         await escalateSerialReconnectExhaustion(params.serialPort ?? null);
@@ -2278,6 +2283,7 @@ export function useMeshcoreRuntime() {
     }
 
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
+    const isBleReconnect = params.rfType === 'ble';
     try {
       await prepareRfConnect(params.rfType);
       opened = await openMeshCoreTransport(params.rfType, {
@@ -2315,6 +2321,10 @@ export function useMeshcoreRuntime() {
           errLikeToLogString(err),
       );
       void attemptMeshcoreReconnectRef.current();
+    } finally {
+      if (isBleReconnect) {
+        bleConnectInProgressRef.current = false;
+      }
     }
   }, [attachRfSession, prepareRfConnect, stopMeshcoreSerialWatchdog]);
 
@@ -2396,7 +2406,22 @@ export function useMeshcoreRuntime() {
     meshcoreReconnectAttemptRef.current = 0;
     meshcoreReconnectGenerationRef.current += 1;
     meshcoreIsReconnectingRef.current = false;
-    handleMeshcoreConnectionLostRef.current();
+    bleConnectInProgressRef.current = false;
+    void (async () => {
+      if (isRendererNobleBlePlatform() && meshcoreConnectionParamsRef.current?.rfType === 'ble') {
+        console.debug(
+          '[useMeshcoreRuntime] power resume — waiting for Meshtastic Noble BLE to settle',
+        );
+        await awaitDualNobleBleMeshtasticSettle(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+      }
+      if (meshcoreExplicitDisconnectRef.current) {
+        console.debug(
+          '[useMeshcoreRuntime] power resume — skip reconnect (user disconnect after settle wait)',
+        );
+        return;
+      }
+      handleMeshcoreConnectionLostRef.current();
+    })();
   }, []);
 
   const connect = useCallback(

@@ -7,7 +7,7 @@ import { setSystemSuspended } from '@/renderer/lib/systemPowerState';
 export const POWER_RESUME_RECOVERY_DELAY_MS = 4_000;
 
 /** Stagger MeshCore RF reconnect after Meshtastic to avoid dual-protocol Noble scan contention. */
-export const POWER_RESUME_MESHCORE_STAGGER_MS = 2_000;
+export const POWER_RESUME_MESHCORE_STAGGER_MS = 8_000;
 
 export interface PowerRecoveryCallbacks {
   onPowerSuspend: () => void;
