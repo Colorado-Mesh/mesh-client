@@ -47,6 +47,9 @@ describe('vitest.harness', () => {
     expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT + 64, NODE_WORKER_CPU_RATIO)).toBe(
       Math.floor(MAX_VITEST_CPU_COUNT * NODE_WORKER_CPU_RATIO),
     );
+    expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT + 10, 0.9)).toBe(
+      Math.floor(MAX_VITEST_CPU_COUNT * 0.9),
+    );
   });
 
   it('renderer-ui uses a lower CPU ratio than node workers', () => {
@@ -67,6 +70,7 @@ describe('vitest.harness', () => {
   it('computeVitestMaxWorkers with ratio exactly 1.0', () => {
     expect(computeVitestMaxWorkers(8, 1)).toBe(8);
     expect(computeVitestMaxWorkers(1, 1)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(MIN_VITEST_WORKERS, 1)).toBe(MIN_VITEST_WORKERS);
   });
 
   it('computeVitestMaxWorkers at exactly MAX_VITEST_CPU_COUNT boundary', () => {
