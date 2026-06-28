@@ -716,6 +716,41 @@ describe('ConnectionPanel exit actions', () => {
   });
 });
 
+describe('ConnectionPanel BLE noble auto-connect', () => {
+  it('calls onAutoConnect with saved peripheral id without waiting for renderer discovery', async () => {
+    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
+    userAgentSpy.mockReturnValue(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+    );
+    const bleId = 'ble-known-device';
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(lastConnKey, JSON.stringify({ type: 'ble', bleDeviceId: bleId }));
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockClear();
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith('ble', undefined, undefined, bleId);
+      });
+      expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      userAgentSpy.mockRestore();
+    }
+  });
+});
+
 describe('ConnectionPanel meshcore shared Meshtastic BLE auto-connect', () => {
   it('skips meshcore noble scan when last BLE device matches Meshtastic', async () => {
     const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');

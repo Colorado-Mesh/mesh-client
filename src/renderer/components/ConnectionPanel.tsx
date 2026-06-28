@@ -22,6 +22,7 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from '../lib/bleConnectErrors';
+import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import {
   letsMeshPresetConfigurationDeviation,
@@ -1513,9 +1514,23 @@ export default function ConnectionPanel({
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
       setConnecting(true);
-      setConnectionStage('connectionPanel.stageScanningLast');
+      setConnectionStage('connectionPanel.stageConnecting');
       startAutoConnectTimeout();
-      void window.electronAPI.startNobleBleScanning(protocol).catch(onAutoConnectFailed);
+      // Try direct connect first (main process waitForPeripheralDuringScan); scan only on failure.
+      void reconnectBleWithScan(protocol, lastBleId, () =>
+        onAutoConnectRef.current('ble', undefined, undefined, lastBleId),
+      )
+        .then(() => {
+          if (autoConnectTimeoutRef.current) {
+            clearTimeout(autoConnectTimeoutRef.current);
+            autoConnectTimeoutRef.current = null;
+          }
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setConnecting(false);
+          setConnectionStage('');
+        })
+        .catch(onAutoConnectFailed);
       return true;
     };
 
@@ -1568,9 +1583,8 @@ export default function ConnectionPanel({
       });
     } else if (lc.type === 'ble') {
       if (lastBleId && !isLinux) {
-        // Noble: auto-scan on startup — no user gesture required.
-        // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
-        // On Linux, Web Bluetooth requires a user gesture; skip auto-scan and let user click Connect.
+        // Noble: direct connect with saved peripheral id (main process scans if needed).
+        // On Linux, Web Bluetooth requires a user gesture; skip auto-connect and let user click Connect.
         if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
         startBleNobleAutoConnect();
       }
@@ -1628,9 +1642,8 @@ export default function ConnectionPanel({
             }
           });
         } else {
-          // Noble: start scanning — no user gesture required.
-          // onNobleBleDeviceDiscovered will auto-connect when the known device appears.
-          setConnectionStage('connectionPanel.stageScanningLast');
+          const bleDeviceId = lastConnection.bleDeviceId;
+          setConnectionStage('connectionPanel.stageConnecting');
           if (autoConnectTimeoutRef.current) {
             clearTimeout(autoConnectTimeoutRef.current);
             autoConnectTimeoutRef.current = null;
@@ -1643,18 +1656,31 @@ export default function ConnectionPanel({
             setConnecting(false);
             setConnectionStage('');
           }, 30_000);
-          void window.electronAPI.startNobleBleScanning(protocol).catch((err: unknown) => {
-            if (autoConnectTimeoutRef.current) {
-              clearTimeout(autoConnectTimeoutRef.current);
-              autoConnectTimeoutRef.current = null;
-            }
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            const bleErrMsg = humanizeBleError(err, t);
-            if (bleErrMsg) setError(bleErrMsg);
-            setConnecting(false);
-            setConnectionStage('');
-          });
+          void reconnectBleWithScan(protocol, bleDeviceId, () =>
+            onConnect('ble', undefined, bleDeviceId),
+          )
+            .then(() => {
+              if (autoConnectTimeoutRef.current) {
+                clearTimeout(autoConnectTimeoutRef.current);
+                autoConnectTimeoutRef.current = null;
+              }
+              isAutoConnectingRef.current = false;
+              setIsAutoConnecting(false);
+              setConnecting(false);
+              setConnectionStage('');
+            })
+            .catch((err: unknown) => {
+              if (autoConnectTimeoutRef.current) {
+                clearTimeout(autoConnectTimeoutRef.current);
+                autoConnectTimeoutRef.current = null;
+              }
+              isAutoConnectingRef.current = false;
+              setIsAutoConnecting(false);
+              const bleErrMsg = humanizeBleError(err, t);
+              if (bleErrMsg) setError(bleErrMsg);
+              setConnecting(false);
+              setConnectionStage('');
+            });
         }
       }
     } else if (lastConnection.type === 'http') {
