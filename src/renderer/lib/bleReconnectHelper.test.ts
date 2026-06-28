@@ -4,16 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BLE_RECONNECT_SCAN_TIMEOUT_MS, reconnectBleWithScan } from './bleReconnectHelper';
 
 describe('reconnectBleWithScan', () => {
-  const originalUa = navigator.userAgent;
   let discoveredCb: ((device: { deviceId: string; name: string }) => void) | null = null;
 
   beforeEach(() => {
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Macintosh',
-      configurable: true,
-    });
     discoveredCb = null;
     vi.useFakeTimers();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     window.electronAPI.startNobleBleScanning = vi.fn().mockResolvedValue(undefined);
     window.electronAPI.stopNobleBleScanning = vi.fn().mockResolvedValue(undefined);
     window.electronAPI.onNobleBleDeviceDiscovered = vi.fn((cb) => {
@@ -25,12 +21,11 @@ describe('reconnectBleWithScan', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(navigator, 'userAgent', { value: originalUa, configurable: true });
     vi.useRealTimers();
   });
 
   it('connects immediately on Linux without Noble scan', async () => {
-    Object.defineProperty(navigator, 'userAgent', { value: 'Linux', configurable: true });
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     const connect = vi.fn().mockResolvedValue(undefined);
     await reconnectBleWithScan('meshtastic', 'ble-1', connect);
     expect(connect).toHaveBeenCalledTimes(1);
@@ -60,6 +55,51 @@ describe('reconnectBleWithScan', () => {
     expect(window.electronAPI.stopNobleBleScanning).toHaveBeenCalledWith('meshtastic');
   });
 
+  it('ignores discovery events for other device ids until target appears', async () => {
+    const connect = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('peripheral not in cache'))
+      .mockResolvedValueOnce(undefined);
+    const promise = reconnectBleWithScan('meshtastic', 'ble-target', connect);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalled();
+    });
+    discoveredCb?.({ deviceId: 'ble-other', name: 'Other' });
+    expect(connect).toHaveBeenCalledTimes(1);
+    discoveredCb?.({ deviceId: 'ble-target', name: 'Radio' });
+    await promise;
+    expect(connect).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects when connect fails after discovery', async () => {
+    const connect = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('peripheral not in cache'))
+      .mockRejectedValueOnce(new Error('connect failed after discovery'));
+    const promise = reconnectBleWithScan('meshtastic', 'ble-1', connect);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalled();
+    });
+    discoveredCb?.({ deviceId: 'ble-1', name: 'Radio' });
+    await expect(promise).rejects.toThrow('connect failed after discovery');
+    expect(window.electronAPI.stopNobleBleScanning).toHaveBeenCalledWith('meshtastic');
+  });
+
+  it('ignores duplicate discovery after first match settles', async () => {
+    const connect = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('peripheral not in cache'))
+      .mockResolvedValueOnce(undefined);
+    const promise = reconnectBleWithScan('meshtastic', 'ble-1', connect);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalled();
+    });
+    discoveredCb?.({ deviceId: 'ble-1', name: 'Radio' });
+    discoveredCb?.({ deviceId: 'ble-1', name: 'Radio' });
+    await promise;
+    expect(connect).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects after scan timeout when peripheral never appears', async () => {
     const connect = vi.fn().mockRejectedValue(new Error('peripheral not in cache'));
     const promise = reconnectBleWithScan('meshtastic', 'ble-1', connect, {
@@ -83,15 +123,9 @@ describe('reconnectBleWithScan', () => {
 
   it('evaluates Linux vs Noble at call time (not module import)', async () => {
     vi.resetModules();
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (X11; Linux x86_64)',
-      configurable: true,
-    });
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     const { reconnectBleWithScan: reconnectAtCallTime } = await import('./bleReconnectHelper');
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Macintosh',
-      configurable: true,
-    });
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     const connect = vi
       .fn()
       .mockRejectedValueOnce(new Error('peripheral not in cache'))

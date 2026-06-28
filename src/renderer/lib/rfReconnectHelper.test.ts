@@ -50,17 +50,12 @@ describe('reconnectRfFromLastConnection', () => {
   });
 
   it('on Linux uses direct BLE connect (Web Bluetooth user gesture path)', async () => {
-    const ua = navigator.userAgent;
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Linux',
-      configurable: true,
-    });
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     localStorage.setItem(
       STORAGE_KEY('meshtastic'),
       JSON.stringify({ type: 'ble', bleDeviceId: 'ble-1' }),
     );
     await reconnectRfFromLastConnection('meshtastic', 'ble', handlers);
-    Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
     expect(handlers.connectBleDirect).toHaveBeenCalledWith('ble-1');
     expect(handlers.connectBleAutomatic).not.toHaveBeenCalled();
   });

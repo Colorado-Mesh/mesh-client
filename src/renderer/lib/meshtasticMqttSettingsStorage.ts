@@ -14,7 +14,7 @@ const PSK_RECOVERY_FLAG = 'mesh-client:migrated:meshtastic-psk-recovery-v1';
 type MqttSettingsWithPsks = Partial<MQTTSettings> & { channelPsks?: string[] };
 
 /**
- * Legacy `migrateMqttSettingsOnce` moved the entire JSON blob to the MeshCore key when
+ * Legacy `connectionPanelStorageMigrations` moved the entire JSON blob to the MeshCore key when
  * topicPrefix started with "meshcore", leaving Meshtastic manual PSK lines unreachable.
  */
 function recoverMeshtasticChannelPsksFromLegacyMigration(): void {
