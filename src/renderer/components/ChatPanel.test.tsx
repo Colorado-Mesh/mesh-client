@@ -1890,6 +1890,39 @@ describe('ChatPanel unread watermarks', () => {
     });
   });
 
+  it('does not count MeshCore unread on unconfigured zero-PSK channel slots', () => {
+    const ts = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="meshcore"
+          myNodeNum={0x12345678}
+          ownNodeIds={[0x12345678]}
+          channels={[{ index: 0, name: 'General' }]}
+          meshcoreChannelSources={[
+            { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },
+            { index: 1, name: 'Unset', secret: new Uint8Array(16) },
+          ]}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Stale channel 1',
+              channel: 1,
+              timestamp: ts,
+              status: 'acked' as const,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'General' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /General 1/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Unset/ })).not.toBeInTheDocument();
+  });
+
   it('clears a non-primary channel badge after that channel is viewed', async () => {
     const user = userEvent.setup();
     const ts = Date.now();

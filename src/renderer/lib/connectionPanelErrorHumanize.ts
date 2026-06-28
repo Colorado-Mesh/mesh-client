@@ -18,13 +18,33 @@ export function isMeshtasticLocalAddress(address: string): boolean {
   return host === 'meshtastic.local' || host.endsWith('.meshtastic.local');
 }
 
+type RuntimePlatform = 'linux' | 'darwin' | 'win32' | 'unknown';
+
+function runtimePlatform(): RuntimePlatform {
+  if (typeof window !== 'undefined' && window.electronAPI?.getPlatform) {
+    const platform = window.electronAPI.getPlatform();
+    if (platform === 'linux' || platform === 'darwin' || platform === 'win32') {
+      return platform;
+    }
+    return 'unknown';
+  }
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('windows')) return 'win32';
+  if (ua.includes('linux')) return 'linux';
+  if (ua.includes('mac')) return 'darwin';
+  return 'unknown';
+}
+
 export function humanizeSerialError(err: unknown, t: TFunction): string {
   const msg = err instanceof Error ? err.message : String(err);
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  const platform = runtimePlatform();
   if (/access denied|permission|not allowed/i.test(msg)) {
-    const hint = isWindows
-      ? t('connectionPanel.humanize.serial.accessDeniedWindowsHint')
-      : t('connectionPanel.humanize.serial.accessDeniedLinuxHint');
+    const hint =
+      platform === 'win32'
+        ? t('connectionPanel.humanize.serial.accessDeniedWindowsHint')
+        : platform === 'linux'
+          ? t('connectionPanel.humanize.serial.accessDeniedLinuxHint')
+          : t('connectionPanel.humanize.serial.disconnectedHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
   if (/no port|not found|disconnected|device not found/i.test(msg)) {
@@ -51,7 +71,8 @@ export function humanizeSerialError(err: unknown, t: TFunction): string {
 export function humanizeHttpError(address: string, err: unknown, t: TFunction): string {
   const msg = err instanceof Error ? err.message : String(err);
   const isMdns = isMeshtasticLocalAddress(address);
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  const platform = runtimePlatform();
+  const isWindows = platform === 'win32';
   if (/timed out|timeout|aborted/i.test(msg)) {
     const hint = isMdns
       ? isWindows
@@ -102,8 +123,10 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
               return String(err);
             }
           })();
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
-  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+  const platform = runtimePlatform();
+  const isWindows = platform === 'win32';
+  const isLinux = platform === 'linux';
+  const isDarwin = platform === 'darwin';
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     const hint = isWindows
       ? t('connectionPanel.humanize.ble.adapterWindowsHint')
@@ -170,7 +193,6 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
     }
     return enhanced;
   }
-  const isDarwin = !isLinux && !isWindows;
   if (
     isDarwin &&
     (/BLE connectAsync timed out/i.test(msg) ||

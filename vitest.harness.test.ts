@@ -30,12 +30,14 @@ describe('vitest.harness', () => {
 
   it('computeVitestMaxWorkers floors very small ratios to MIN_VITEST_WORKERS', () => {
     expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT, 0.01)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT + 64, 0.01)).toBe(MIN_VITEST_WORKERS);
     expect(computeVitestMaxWorkers(1, 0.01)).toBe(MIN_VITEST_WORKERS);
   });
 
   it('computeVitestMaxWorkers caps ratio above 1', () => {
     expect(computeVitestMaxWorkers(8, 2)).toBe(8);
     expect(computeVitestMaxWorkers(4, 1.5)).toBe(4);
+    expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT + 64, 2)).toBe(MAX_VITEST_CPU_COUNT);
   });
 
   it('computeVitestMaxWorkers caps cpuCount above MAX_VITEST_CPU_COUNT', () => {

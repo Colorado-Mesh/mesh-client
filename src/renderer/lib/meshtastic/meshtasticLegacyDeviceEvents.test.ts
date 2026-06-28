@@ -34,10 +34,10 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
       onTransportLost,
     );
 
-    expect(window.electronAPI.onNobleBleDisconnected).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
     expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(device, 'ble', onTransportLost);
     expect(device.setHeartbeatInterval).toHaveBeenCalledWith(60_000);
-    expect(unsubs).toHaveLength(2);
+    expect(unsubs).toHaveLength(1);
   });
 
   it('attaches serialized transport and heartbeat for serial', () => {

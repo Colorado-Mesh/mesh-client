@@ -2350,6 +2350,9 @@ function AppContent({
                             messages={chatMessagesForPanel}
                             messagesForUnread={activeUiMessages}
                             channels={chatChannelsForPanel}
+                            meshcoreChannelSources={
+                              protocol === 'meshcore' ? activeRuntime.channels : undefined
+                            }
                             myNodeNum={activeRuntime.selfNodeId}
                             ownNodeIds={
                               protocol === 'meshtastic'

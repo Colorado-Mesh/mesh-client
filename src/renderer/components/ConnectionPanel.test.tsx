@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 import { flushSync } from 'react-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { SerialPort } from '@/shared/electron-api.types';
@@ -20,15 +20,19 @@ const disconnectedState: DeviceState = {
   connectionType: null,
 };
 
-function mockMacNoblePlatform(): {
+const NOBLE_PLATFORM_USER_AGENT = {
+  darwin:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+  win32: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+} as const;
+
+function mockNobleBlePlatform(platform: 'darwin' | 'win32'): {
   userAgentSpy: ReturnType<typeof vi.spyOn>;
   restore: () => void;
 } {
-  vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+  vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
   const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
-  userAgentSpy.mockReturnValue(
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-  );
+  userAgentSpy.mockReturnValue(NOBLE_PLATFORM_USER_AGENT[platform]);
   return {
     userAgentSpy,
     restore: () => {
@@ -36,6 +40,10 @@ function mockMacNoblePlatform(): {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     },
   };
+}
+
+function mockMacNoblePlatform(): ReturnType<typeof mockNobleBlePlatform> {
+  return mockNobleBlePlatform('darwin');
 }
 
 describe('ConnectionPanel MQTT port clamping', () => {
@@ -185,13 +193,16 @@ describe('ConnectionPanel MQTT connect error', () => {
 });
 
 describe('ConnectionPanel BLE error humanization', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockReset();
+  });
+
   it('shows Windows handshake guidance for MeshCore BLE handshake timeout/disconnect', async () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
-    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
-    userAgentSpy.mockReturnValue(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-    );
+    const { restore: restorePlatform } = mockNobleBlePlatform('win32');
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
       new Error(
         'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
@@ -220,16 +231,13 @@ describe('ConnectionPanel BLE error humanization', () => {
       ),
     );
     restore();
-    userAgentSpy.mockRestore();
+    restorePlatform();
   });
 
   it('renders object-shaped BLE errors as JSON instead of [object Object]', async () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
-    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
-    userAgentSpy.mockReturnValue(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-    );
+    const { restore: restorePlatform } = mockNobleBlePlatform('win32');
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce({
       reason: 'adapter glitch',
       code: 'BLE_OBJECT_ERR',
@@ -256,16 +264,13 @@ describe('ConnectionPanel BLE error humanization', () => {
       expect.stringMatching(/\[ConnectionPanel\].*"reason":"adapter glitch"/s),
     );
     restore();
-    userAgentSpy.mockRestore();
+    restorePlatform();
   });
 
   it('shows Windows adapter guidance when BLE adapter is unavailable', async () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
-    const userAgentSpy = vi.spyOn(window.navigator, 'userAgent', 'get');
-    userAgentSpy.mockReturnValue(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-    );
+    const { restore: restorePlatform } = mockNobleBlePlatform('win32');
     vi.mocked(window.electronAPI.startNobleBleScanning).mockRejectedValueOnce(
       new Error('Bluetooth adapter is not available'),
     );
@@ -292,7 +297,7 @@ describe('ConnectionPanel BLE error humanization', () => {
       expect.stringMatching(/\[ConnectionPanel\].*Bluetooth adapter is not available/s),
     );
     restore();
-    userAgentSpy.mockRestore();
+    restorePlatform();
   });
 });
 
@@ -959,6 +964,99 @@ describe('ConnectionPanel meshcore shared Meshtastic BLE auto-connect', () => {
     } finally {
       localStorage.removeItem(mcConnKey);
       localStorage.removeItem(mtBleKey);
+      restore();
+    }
+  });
+});
+
+describe('ConnectionPanel meshcore BLE startup stagger', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('delays meshcore noble auto-connect when Meshtastic also has a saved BLE device', async () => {
+    vi.useFakeTimers();
+    const { restore } = mockMacNoblePlatform();
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      mcConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
+    );
+    localStorage.setItem(
+      mtConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await vi.advanceTimersByTimeAsync(7_999);
+      expect(onAutoConnect).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      await Promise.resolve();
+      expect(onAutoConnect).toHaveBeenCalledWith(
+        'ble',
+        undefined,
+        undefined,
+        'meshcore-ble-device',
+      );
+    } finally {
+      vi.useRealTimers();
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtConnKey);
+      restore();
+    }
+  });
+});
+
+describe('ConnectionPanel BLE auto-connect error humanization', () => {
+  it('shows macOS wake recovery hint when noble auto-connect fails', async () => {
+    const { restore } = mockMacNoblePlatform();
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'ble-known-device' }),
+    );
+    const reconnectModule = await import('../lib/bleReconnectHelper');
+    const reconnectSpy = vi
+      .spyOn(reconnectModule, 'reconnectBleWithScan')
+      .mockRejectedValue(new Error('BLE connectAsync timed out'));
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(reconnectSpy).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByText(/After sleep, quit mesh-client \(Cmd\+Q\), toggle Bluetooth/i),
+        ).toBeInTheDocument();
+      });
+    } finally {
+      reconnectSpy.mockRestore();
+      localStorage.removeItem(lastConnKey);
       restore();
     }
   });

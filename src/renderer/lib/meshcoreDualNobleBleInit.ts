@@ -8,6 +8,9 @@ import {
 
 /** True when the renderer uses Noble IPC for BLE (macOS / Windows), not Web Bluetooth. */
 export function isRendererNobleBlePlatform(): boolean {
+  if (typeof window !== 'undefined' && window.electronAPI?.getPlatform) {
+    return window.electronAPI.getPlatform() !== 'linux';
+  }
   try {
     if (typeof process !== 'undefined' && process.platform === 'linux') return false;
   } catch {

@@ -78,4 +78,18 @@ describe('usePowerRecovery', () => {
     await vi.advanceTimersByTimeAsync(POWER_RESUME_MESHCORE_STAGGER_MS);
     expect(meshcore.onPowerResume).toHaveBeenCalledTimes(1);
   });
+
+  it('cancels pending MeshCore stagger when suspend fires before stagger elapses', async () => {
+    renderHook(() => {
+      usePowerRecovery({ meshtastic, meshcore });
+    });
+    suspendCb!();
+    resumeCb!();
+    await vi.advanceTimersByTimeAsync(POWER_RESUME_RECOVERY_DELAY_MS);
+    expect(meshtastic.onPowerResume).toHaveBeenCalledTimes(1);
+    expect(meshcore.onPowerResume).not.toHaveBeenCalled();
+    suspendCb!();
+    await vi.advanceTimersByTimeAsync(POWER_RESUME_MESHCORE_STAGGER_MS);
+    expect(meshcore.onPowerResume).not.toHaveBeenCalled();
+  });
 });

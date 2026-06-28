@@ -2021,6 +2021,33 @@ export function useMeshtasticRuntime() {
     handleConnectionLostRef.current();
   }, []);
 
+  useEffect(() => {
+    return window.electronAPI.onNobleBleDisconnected((sessionId) => {
+      if (sessionId !== 'meshtastic') return;
+      if (!connectionParamsRef.current) {
+        if (meshtasticExplicitDisconnectRef.current) {
+          console.debug(
+            '[useMeshtasticRuntime] Noble BLE disconnected — skip reconnect (user disconnect)',
+          );
+          return;
+        }
+        const rehydrated = rehydrateMeshtasticConnectionParamsFromStorage();
+        if (!rehydrated) {
+          console.debug(
+            '[useMeshtasticRuntime] Noble BLE disconnected — skip reconnect (no stored session)',
+          );
+          return;
+        }
+        connectionParamsRef.current = rehydrated;
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE disconnected — rehydrated reconnect params from storage',
+        );
+      }
+      console.warn('[useMeshtasticRuntime] Noble BLE disconnected');
+      handleConnectionLostRef.current();
+    });
+  }, []);
+
   // Keep the ref in sync
   attemptReconnectRef.current = attemptReconnect;
 

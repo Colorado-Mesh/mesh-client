@@ -100,6 +100,10 @@ import {
   meshcoreChatMessagesForDisplay,
   meshcorePayloadIsTapbackEmojiOnly,
 } from '../lib/meshcoreChannelText';
+import {
+  type MeshcoreChatChannelSource,
+  meshcoreConfiguredChannelIndexSet,
+} from '../lib/meshcoreConfiguredChatChannels';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import {
@@ -338,6 +342,8 @@ export interface ChatPanelProps {
   /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
   messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
+  /** Full MeshCore channel list with PSK metadata for unread filtering (display uses `channels`). */
+  meshcoreChannelSources?: readonly MeshcoreChatChannelSource[];
   myNodeNum: number;
   ownNodeIds?: number[];
   onSend: (
@@ -378,6 +384,7 @@ function ChatPanel({
   messages,
   messagesForUnread,
   channels,
+  meshcoreChannelSources,
   myNodeNum,
   ownNodeIds,
   onSend,
@@ -718,10 +725,12 @@ function ChatPanel({
 
   // Meshtastic / MeshCore quoted replies use protocol-specific parent lookup (see quote render below).
 
-  const configuredChannelIndices = useMemo(
-    () => new Set(channels.map((ch) => ch.index)),
-    [channels],
-  );
+  const configuredChannelIndices = useMemo(() => {
+    if (protocol === 'meshcore') {
+      return meshcoreConfiguredChannelIndexSet(meshcoreChannelSources ?? channels);
+    }
+    return new Set(channels.map((ch) => ch.index));
+  }, [channels, meshcoreChannelSources, protocol]);
 
   const unreadCounts = useMemo(
     () =>

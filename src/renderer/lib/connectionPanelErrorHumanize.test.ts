@@ -23,15 +23,19 @@ function mockT(): TFunction {
   }) as TFunction;
 }
 
-function setUserAgent(ua: string): void {
-  vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(ua);
+function mockPlatform(platform: 'linux' | 'darwin' | 'win32'): void {
+  if (typeof window === 'undefined') {
+    vi.stubGlobal('window', {
+      electronAPI: { getPlatform: vi.fn(() => platform) },
+      navigator: { userAgent: '' },
+    });
+    return;
+  }
+  if (!window.electronAPI) {
+    window.electronAPI = { getPlatform: vi.fn(() => platform) } as typeof window.electronAPI;
+  }
+  vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
 }
-
-const UA = {
-  windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-  linux: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
-  darwin: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/537.36',
-};
 
 describe('hostFromAddressInput / isMeshtasticLocalAddress', () => {
   it('parses host from bare IP and mdns hostname', () => {
@@ -47,20 +51,21 @@ describe('humanizeSerialError', () => {
   const t = mockT();
 
   it.each([
-    ['windows', UA.windows, 'access denied', 'accessDeniedWindowsHint'],
-    ['linux', UA.linux, 'permission denied', 'accessDeniedLinuxHint'],
-    ['any', UA.linux, 'device not found', 'disconnectedHint'],
-    ['any', UA.linux, 'connection timed out', 'timeoutHint'],
-    ['any', UA.linux, 'port is already open', 'portStillOpenHint'],
-  ] as const)('maps %s serial error "%s"', (_label, ua, message, hintKey) => {
-    setUserAgent(ua);
+    ['win32', 'win32', 'access denied', 'accessDeniedWindowsHint'],
+    ['linux', 'linux', 'permission denied', 'accessDeniedLinuxHint'],
+    ['darwin', 'darwin', 'access denied', 'disconnectedHint'],
+    ['any', 'linux', 'device not found', 'disconnectedHint'],
+    ['any', 'linux', 'connection timed out', 'timeoutHint'],
+    ['any', 'linux', 'port is already open', 'portStillOpenHint'],
+  ] as const)('maps %s serial error "%s"', (_label, platform, message, hintKey) => {
+    mockPlatform(platform);
     const result = humanizeSerialError(new Error(message), t);
     expect(result).toContain(message);
     expect(result).toContain(`connectionPanel.humanize.serial.${hintKey}`);
   });
 
   it('returns raw message when no pattern matches', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     expect(humanizeSerialError(new Error('unknown serial fault'), t)).toBe('unknown serial fault');
   });
 });
@@ -71,30 +76,30 @@ describe('humanizeHttpError', () => {
   it.each([
     [
       'mdns windows timeout',
-      UA.windows,
+      'win32',
       'meshtastic.local',
       'request timed out',
       'timeoutMdnsWindows',
     ],
-    ['mdns non-windows timeout', UA.linux, 'meshtastic.local', 'timeout', 'timeoutMdnsNonWindows'],
-    ['ip timeout', UA.linux, '192.168.1.10', 'aborted', 'timeoutGeneric'],
-    ['unauthorized', UA.linux, '192.168.1.10', '401 unauthorized', 'unauthorizedHint'],
-    ['refused', UA.linux, '192.168.1.10', 'ECONNREFUSED', 'econnrefusedHint'],
-  ] as const)('%s', (_label, ua, address, message, hintKey) => {
-    setUserAgent(ua);
+    ['mdns non-windows timeout', 'linux', 'meshtastic.local', 'timeout', 'timeoutMdnsNonWindows'],
+    ['ip timeout', 'linux', '192.168.1.10', 'aborted', 'timeoutGeneric'],
+    ['unauthorized', 'linux', '192.168.1.10', '401 unauthorized', 'unauthorizedHint'],
+    ['refused', 'linux', '192.168.1.10', 'ECONNREFUSED', 'econnrefusedHint'],
+  ] as const)('%s', (_label, platform, address, message, hintKey) => {
+    mockPlatform(platform);
     const result = humanizeHttpError(address, new Error(message), t);
     expect(result).toContain(message);
     expect(result).toContain(`connectionPanel.humanize.http.${hintKey}`);
   });
 
   it('adds mdns suffix on non-timeout errors for mdns addresses', () => {
-    setUserAgent(UA.windows);
+    mockPlatform('win32');
     const result = humanizeHttpError('meshtastic.local', new Error('weird failure'), t);
     expect(result).toContain('suffixMdnsWindows');
   });
 
   it('returns raw message for generic IP errors', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     expect(humanizeHttpError('192.168.1.10', new Error('weird failure'), t)).toBe('weird failure');
   });
 });
@@ -102,50 +107,58 @@ describe('humanizeHttpError', () => {
 describe('humanizeBleError', () => {
   const t = mockT();
 
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('suppresses MeshCore setup AbortError', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const err = new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
     expect(humanizeBleError(err, t)).toBe('');
   });
 
   it('stringifies object errors', () => {
-    setUserAgent(UA.windows);
+    mockPlatform('win32');
     expect(humanizeBleError({ reason: 'adapter glitch' }, t)).toContain(
       '"reason":"adapter glitch"',
     );
   });
 
   it.each([
-    ['windows adapter', UA.windows, 'Bluetooth adapter is not available', 'adapterWindowsHint'],
-    ['linux adapter', UA.linux, 'Bluetooth adapter not found', 'adapterLinuxHint'],
-    ['darwin adapter', UA.darwin, 'adapter is not available', 'adapterGenericHint'],
-  ] as const)('%s', (_label, ua, message, hintKey) => {
-    setUserAgent(ua);
+    ['win32 adapter', 'win32', 'Bluetooth adapter is not available', 'adapterWindowsHint'],
+    ['linux adapter', 'linux', 'Bluetooth adapter not found', 'adapterLinuxHint'],
+    ['darwin adapter', 'darwin', 'adapter is not available', 'adapterGenericHint'],
+  ] as const)('%s', (_label, platform, message, hintKey) => {
+    mockPlatform(platform);
     const result = humanizeBleError(new Error(message), t);
     expect(result).toContain(`connectionPanel.humanize.ble.${hintKey}`);
   });
 
   it('handles SecurityError in message', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const result = humanizeBleError(new Error('SecurityError: not allowed to access'), t);
     expect(result).toContain('securityPermissionHint');
   });
 
   it('handles GATT disconnected', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const result = humanizeBleError(new Error('GATT Server is disconnected'), t);
     expect(result).toContain('gattDisconnectedHint');
   });
 
   it('handles GATT not supported with Linux PIN hint', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const result = humanizeBleError(new Error('GATT Error: Not supported'), t);
     expect(result).toContain('gattNotSupportedBase');
     expect(result).toContain('gattNotSupportedLinuxPin');
   });
 
   it('handles DOMException SecurityError with Linux PIN', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const err = new DOMException('pairing required', 'SecurityError');
     const result = humanizeBleError(err, t);
     expect(result).toContain('authFailedBase');
@@ -153,23 +166,23 @@ describe('humanizeBleError', () => {
   });
 
   it('handles DOMException NetworkError on Linux vs non-Linux', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const linuxResult = humanizeBleError(new DOMException('failed', 'NetworkError'), t);
     expect(linuxResult).toContain('networkFailedLinuxHint');
 
-    setUserAgent(UA.windows);
+    mockPlatform('win32');
     const winResult = humanizeBleError(new DOMException('failed', 'NetworkError'), t);
     expect(winResult).toContain('networkFailedNonLinuxHint');
   });
 
   it('handles connection attempt failed with Linux hint', () => {
-    setUserAgent(UA.linux);
+    mockPlatform('linux');
     const result = humanizeBleError(new Error('Connection Error: Connection attempt failed'), t);
     expect(result).toContain('connectionAttemptFailedLinuxHint');
   });
 
   it('handles MeshCore handshake with Windows extra', () => {
-    setUserAgent(UA.windows);
+    mockPlatform('win32');
     const result = humanizeBleError(
       new Error(
         'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout.',
@@ -181,7 +194,7 @@ describe('humanizeBleError', () => {
   });
 
   it('handles Noble IPC timeout with Windows extra', () => {
-    setUserAgent(UA.windows);
+    mockPlatform('win32');
     const result = humanizeBleError(
       new Error('Bluetooth connection timed out while opening MeshCore over Noble IPC'),
       t,
@@ -189,26 +202,22 @@ describe('humanizeBleError', () => {
     expect(result).toContain('meshcoreHandshakeWindowsExtra');
   });
 
-  it('handles Darwin wake recovery hints', () => {
-    setUserAgent(UA.darwin);
-    const result = humanizeBleError(new Error('BLE connectAsync timed out'), t);
+  it.each([
+    ['connectAsync timed out', 'BLE connectAsync timed out'],
+    ['unknown peripheral', 'unknown peripheral id in noble cache'],
+    ['peripheral not found', 'BLE peripheral not found after scan'],
+  ] as const)('handles Darwin wake recovery for %s', (_label, message) => {
+    mockPlatform('darwin');
+    const result = humanizeBleError(new Error(message), t);
+    expect(result).toContain(message);
     expect(result).toContain('macWakeRecoveryHint');
   });
-});
 
-describe('humanizeBleError userAgent cleanup', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('restores userAgent spy between tests', () => {
-    setUserAgent(UA.windows);
-    expect(humanizeBleError(new Error('Bluetooth adapter not found'), mockT())).toContain(
-      'adapterWindowsHint',
-    );
+  it('does not double-append macOS wake hint when message already includes guidance', () => {
+    mockPlatform('darwin');
+    const message = 'BLE connectAsync timed out — toggle Bluetooth off/on';
+    const result = humanizeBleError(new Error(message), t);
+    expect(result).toContain('macWakeRecoveryHint');
+    expect(result.split('macWakeRecoveryHint').length - 1).toBe(1);
   });
 });

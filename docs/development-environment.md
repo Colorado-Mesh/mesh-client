@@ -318,6 +318,10 @@ Worker counts are derived in [`vitest.harness.ts`](../vitest.harness.ts) via `co
 
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes.
 
+#### Browser dev without Electron
+
+When you open the Vite dev URL in a **plain browser tab** (not the Electron window), `installDevElectronApiStubIfNeeded()` in `src/renderer/main.tsx` installs a no-op `window.electronAPI` stub (`devElectronApiStub.ts`). UI shell and most panels render, but **RF connect, SQLite, MQTT IPC, and file dialogs require the Electron window**. The console logs `[dev] Installed browser electronAPI stub…` when the stub is active.
+
 Run these quality checks before opening a PR:
 
 ```bash

@@ -69,4 +69,11 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('handleConnectionLost safeDisconnect');
     expect(SOURCE).toContain('meshtasticExplicitDisconnectRef');
   });
+
+  it('rehydrates connection params from storage on Noble BLE disconnect when ref is empty', () => {
+    expect(SOURCE).toContain('onNobleBleDisconnected');
+    expect(SOURCE).toMatch(
+      /onNobleBleDisconnected[\s\S]*?rehydrateMeshtasticConnectionParamsFromStorage[\s\S]*?handleConnectionLostRef\.current\(\)/,
+    );
+  });
 });

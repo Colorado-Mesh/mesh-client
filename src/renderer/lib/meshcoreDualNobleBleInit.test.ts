@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
   awaitDualNobleBleMeshtasticSettle,
+  isRendererNobleBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   meshtasticNobleBleConfigureBusy,
   needsSequentialMeshcoreRadioInit,
@@ -16,6 +17,7 @@ describe('meshcoreDualNobleBleInit', () => {
   beforeEach(() => {
     useConnectionStore.setState({ connections: {} });
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
   });
 
   it('detects Meshtastic Noble BLE still configuring', () => {
@@ -98,12 +100,20 @@ describe('meshcoreDualNobleBleInit', () => {
     expect(Date.now() - start).toBeLessThan(100);
   });
 
+  it('isRendererNobleBlePlatform follows electronAPI.getPlatform over process.platform', () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    expect(isRendererNobleBlePlatform()).toBe(true);
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    expect(isRendererNobleBlePlatform()).toBe(false);
+  });
+
   it('needsSequentialMeshcoreRadioInit is true for serial and Linux Web Bluetooth only', () => {
     expect(needsSequentialMeshcoreRadioInit('serial')).toBe(true);
     expect(needsSequentialMeshcoreRadioInit('tcp')).toBe(false);
-    // jsdom reports non-Linux in CI; Noble path when platform is macOS/Windows.
-    const bleSequential = needsSequentialMeshcoreRadioInit('ble');
-    expect(typeof bleSequential).toBe('boolean');
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    expect(needsSequentialMeshcoreRadioInit('ble')).toBe(false);
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    expect(needsSequentialMeshcoreRadioInit('ble')).toBe(true);
   });
 
   it('meshcoreTargetsSharedMeshtasticBlePeripheral when both remember the same BLE id', () => {

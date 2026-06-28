@@ -579,7 +579,7 @@ export default function ConnectionPanel({
   // ─── BLE device picker state ──────────────────────────────────
   const [bleDevices, setBleDevices] = useState<NobleBleDevice[]>([]);
   const [showBlePicker, setShowBlePicker] = useState(false);
-  const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+  const isLinux = window.electronAPI.getPlatform() === 'linux';
   const [webBluetoothDevice, setWebBluetoothDevice] = useState<{
     deviceId: string;
     deviceName: string;
@@ -1286,14 +1286,20 @@ export default function ConnectionPanel({
       }, 30_000);
     };
 
-    const onAutoConnectFailed = (err: unknown) => {
+    const onAutoConnectFailed = (err: unknown, transport: 'serial' | 'ble' = 'ble') => {
       if (autoConnectTimeoutRef.current) {
         clearTimeout(autoConnectTimeoutRef.current);
         autoConnectTimeoutRef.current = null;
       }
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
-      setError(err instanceof Error ? err.message : t('connectionPanel.error.autoConnectFailed'));
+      const errMsg =
+        err instanceof Error
+          ? transport === 'serial'
+            ? humanizeSerialError(err, t)
+            : humanizeBleError(err, t)
+          : t('connectionPanel.error.autoConnectFailed');
+      setError(errMsg || t('connectionPanel.error.autoConnectFailed'));
       setConnecting(false);
       setConnectionStage('');
     };
@@ -1364,7 +1370,7 @@ export default function ConnectionPanel({
           if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
           if (startBleNobleAutoConnect()) return;
         }
-        onAutoConnectFailed(err);
+        onAutoConnectFailed(err, 'serial');
       });
     } else if (lc.type === 'ble') {
       if (lastBleId && !isLinux) {
