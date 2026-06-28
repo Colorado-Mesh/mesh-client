@@ -4,7 +4,42 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const SOURCE = readFileSync(join(__dirname, '../runtime/useMeshtasticRuntime.ts'), 'utf-8');
+const TEST_DIR = import.meta.dirname ?? __dirname;
+const SOURCE = readFileSync(join(TEST_DIR, 'useMeshtasticRuntime.ts'), 'utf-8');
+
+/** Returns the inner text of a `{ ... }` block starting at `openBraceIndex`. */
+function extractBalancedBlock(source: string, openBraceIndex: number): string {
+  let depth = 0;
+  for (let i = openBraceIndex; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return source.slice(openBraceIndex + 1, i);
+    }
+  }
+  throw new Error(`Unbalanced braces at index ${openBraceIndex}`);
+}
+
+function extractIfBlockBody(source: string, condition: string): string {
+  const marker = `if (${condition})`;
+  const ifIndex = source.indexOf(marker);
+  if (ifIndex === -1) return '';
+  const braceIndex = source.indexOf('{', ifIndex);
+  if (braceIndex === -1) return '';
+  return extractBalancedBlock(source, braceIndex);
+}
+
+function extractUseCallbackBody(source: string, name: string): string {
+  const marker = `const ${name} = useCallback(`;
+  const start = source.indexOf(marker);
+  if (start === -1) return '';
+  const arrowIndex = source.indexOf('=> {', start);
+  if (arrowIndex === -1) return '';
+  const braceIndex = source.indexOf('{', arrowIndex);
+  if (braceIndex === -1) return '';
+  return extractBalancedBlock(source, braceIndex);
+}
 
 describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   it('uses suspend-aware delayUnlessSuspended for reconnect backoff', () => {
@@ -31,25 +66,24 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('cleans up device and watchdog when reconnect budget is exhausted', () => {
-    expect(SOURCE).toMatch(
-      /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}cleanupSubscriptions/,
+    const exhaustionBlock = extractIfBlockBody(
+      SOURCE,
+      'reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS',
     );
-    expect(SOURCE).toMatch(
-      /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}stopWatchdog/,
-    );
-    expect(SOURCE).toMatch(
-      /reconnectAttemptRef\.current >= MAX_RECONNECT_ATTEMPTS[\s\S]{0,2000}deviceRef\.current = null/,
-    );
+    expect(exhaustionBlock.length).toBeGreaterThan(0);
+    expect(exhaustionBlock).toContain('cleanupSubscriptions()');
+    expect(exhaustionBlock).toContain('stopWatchdog()');
+    expect(exhaustionBlock).toContain('deviceRef.current = null');
     expect(SOURCE).toContain('escalateSerialReconnectExhaustion');
     expect(SOURCE).toContain('serialNeedsReselect');
     expect(SOURCE).toContain('registerMeshtasticSerialDisconnectTarget');
   });
 
   it('clears reconnect refs in handleRfConnectFailure', () => {
-    expect(SOURCE).toMatch(/handleRfConnectFailure[\s\S]{0,400}isReconnectingRef\.current = false/);
-    expect(SOURCE).toMatch(
-      /handleRfConnectFailure[\s\S]{0,400}reconnectGenerationRef\.current \+= 1/,
-    );
+    const failureBlock = extractUseCallbackBody(SOURCE, 'handleRfConnectFailure');
+    expect(failureBlock.length).toBeGreaterThan(0);
+    expect(failureBlock).toContain('isReconnectingRef.current = false');
+    expect(failureBlock).toContain('reconnectGenerationRef.current += 1');
   });
 
   it('exports power suspend/resume handlers for usePowerRecovery', () => {

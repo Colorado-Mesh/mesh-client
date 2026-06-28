@@ -23,7 +23,14 @@ describe('vitest.harness', () => {
     expect(computeVitestMaxWorkers(8, 0)).toBe(MIN_VITEST_WORKERS);
     expect(computeVitestMaxWorkers(8, -0.5)).toBe(MIN_VITEST_WORKERS);
     expect(computeVitestMaxWorkers(Number.NaN, RENDERER_UI_CPU_RATIO)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(8, Number.NaN)).toBe(MIN_VITEST_WORKERS);
     expect(computeVitestMaxWorkers(8, Number.POSITIVE_INFINITY)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(8, Number.NEGATIVE_INFINITY)).toBe(MIN_VITEST_WORKERS);
+  });
+
+  it('computeVitestMaxWorkers floors very small ratios to MIN_VITEST_WORKERS', () => {
+    expect(computeVitestMaxWorkers(MAX_VITEST_CPU_COUNT, 0.01)).toBe(MIN_VITEST_WORKERS);
+    expect(computeVitestMaxWorkers(1, 0.01)).toBe(MIN_VITEST_WORKERS);
   });
 
   it('computeVitestMaxWorkers caps ratio above 1', () => {
