@@ -58,7 +58,7 @@ class FakePeripheral extends EventEmitter {
   public readonly address = '20:6e:f1:b8:8d:99';
   public readonly addressType = 'public';
   public readonly rssi = -80;
-  public state: 'disconnected' | 'connected' = 'disconnected';
+  public state: 'disconnected' | 'connected' | 'connecting' = 'disconnected';
   public mtu = 172;
   private readonly characteristics: FakeCharacteristic[];
 
@@ -111,6 +111,9 @@ class FakeNoble extends EventEmitter {
 
 const MESHCORE_RX_UUID = '6e400002b5a3f393e0a9e50e24dcca9e';
 const MESHCORE_TX_UUID = '6e400003b5a3f393e0a9e50e24dcca9e';
+const MESHTASTIC_FROMRADIO_UUID = '2c55e69e499311edb8780242ac120002';
+const MESHTASTIC_TORADIO_UUID = 'f75c76d2129e4dada1dd7866124401e7';
+const MESHTASTIC_FROMNUM_UUID = 'ed9da18ca8004f66a670aa7547e34453';
 
 /** Matches `shouldUseFromRadioReadPump` for meshcore + notify-first: no parallel GATT reads on darwin or win32. */
 const MESHCORE_NOTIFY_FIRST_SKIPS_READ_PUMP =
@@ -283,5 +286,30 @@ describe('NobleBleManager behavior (notify-first + fallback)', () => {
     expect(toRadio.writtenChunks[1].length).toBe(47);
     expect(toRadio.writtenChunks[2].length).toBe(6);
     expect(Buffer.concat(toRadio.writtenChunks).equals(payload)).toBe(true);
+  });
+
+  it('forces disconnect when peripheral is in stale connecting state before reconnect', async () => {
+    const mod = await import('./noble-ble-manager');
+    const manager = new mod.NobleBleManager();
+    (manager as any).sessions.set('meshtastic', (manager as any).createSessionState());
+    (manager as any).sessions.set('meshcore', (manager as any).createSessionState());
+    (manager as any).adapterReady = true;
+    (manager as any).lastAdapterState = 'poweredOn';
+
+    const toRadio = new FakeCharacteristic(MESHTASTIC_TORADIO_UUID, { properties: ['write'] });
+    const fromRadio = new FakeCharacteristic(MESHTASTIC_FROMRADIO_UUID, {
+      properties: ['read', 'notify'],
+      readResults: [Buffer.alloc(0)],
+    });
+    const fromNum = new FakeCharacteristic(MESHTASTIC_FROMNUM_UUID, { properties: ['notify'] });
+    const peripheral = new FakePeripheral('wake-zombie-peripheral', [toRadio, fromRadio, fromNum]);
+    peripheral.state = 'connecting';
+    const disconnectSpy = vi.spyOn(peripheral, 'disconnectAsync');
+    (manager as any).knownPeripherals.set(peripheral.id, peripheral);
+
+    await manager.connect('meshtastic', peripheral.id);
+
+    expect(disconnectSpy).toHaveBeenCalledTimes(1);
+    expect(peripheral.state).toBe('connected');
   });
 });

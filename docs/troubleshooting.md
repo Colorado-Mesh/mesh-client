@@ -327,6 +327,24 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 
 Attach the JSON (redact `myNodeNum` if you prefer) alongside **Log → Export** when possible.
 
+### Phantom chat unread on channels not on the radio
+
+**Symptoms**
+
+- Sidebar **Chat** badge or channel pills show unread counts on MeshCore channels you did not configure (zero PSK / not on the radio).
+- Badge counts disagree between the sidebar and Chat channel pills after upgrade or protocol switch.
+- **Copy Debug Snapshot** shows messages on `ch:1` (or higher) while the radio only has channel 0 configured.
+
+**Cause**
+
+Stale `mesh-client:lastRead:<protocol>` watermarks (including legacy merged keys) or DB messages on channel indices the radio no longer uses. MeshCore unread badges intentionally ignore zero-PSK slots; poisoned last-read values can still inflate counts until sanitized.
+
+**Fix**
+
+1. Open **Chat**, visit each configured channel once (marks last-read), or use **App → Data Management → Copy Debug Snapshot** to confirm channel indices vs runtime channels.
+2. If counts persist after visiting channels, clear last-read for the protocol in browser devtools (`localStorage.removeItem('mesh-client:lastRead:meshcore')` or `meshtastic`) and reload — you will lose per-channel read state.
+3. For stuck sidebar totals with live traffic in logs, see [Chat stuck](#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) and attach a debug snapshot when filing an issue.
+
 ### Chat stuck: new traffic in logs/DB but messages do not appear
 
 **Symptoms**

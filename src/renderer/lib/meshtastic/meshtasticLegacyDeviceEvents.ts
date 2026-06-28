@@ -15,15 +15,7 @@ export function pushMeshtasticTransportSideEffectUnsubs(
   push: (unsub: () => void) => void,
   onTransportLost: () => void,
 ): void {
-  if (type === 'ble') {
-    push(
-      window.electronAPI.onNobleBleDisconnected((sessionId) => {
-        if (sessionId !== 'meshtastic') return;
-        console.warn('[meshtasticLegacyDeviceEvents] Noble BLE disconnected');
-        onTransportLost();
-      }),
-    );
-  }
+  // Noble BLE disconnect is handled at runtime mount (useMeshtasticRuntime) with storage rehydrate.
 
   if (type === 'serial' || type === 'ble') {
     push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));

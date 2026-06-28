@@ -1036,15 +1036,8 @@ export class NobleBleManager extends EventEmitter {
               ),
             );
           }
-          const hint =
-            process.platform === 'linux'
-              ? ' On Linux/BlueZ: reset the adapter (bluetoothctl power off; power on) and ensure the device is not connected to another host.'
-              : process.platform === 'win32'
-                ? ' On Windows: try pairing the device in Windows Bluetooth settings first, then retry.'
-                : process.platform === 'darwin'
-                  ? ' On macOS after sleep: quit mesh-client, toggle Bluetooth off/on, wait a few seconds, then retry.'
-                  : '';
-          throw new Error(err.message + hint);
+          // UI hints are applied in renderer via connectionPanelErrorHumanize (i18n).
+          throw err;
         }
         throw err;
       }

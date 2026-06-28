@@ -46,7 +46,7 @@ Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.ts
 | **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic.                                                                                                                                                                                                             |
 | **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                                                                                                                                                                                                                                    |
 
-**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use per-protocol `useProtocolConnectionActions('meshtastic' \| 'meshcore')` only when both protocol tabs need separate ConnectionPanel props. **`usePowerRecovery`** mounts once from `App.tsx` — coordinates macOS sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, and runtime `onPowerResume` (~4s delayed RF recovery).
+**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use per-protocol `useProtocolConnectionActions('meshtastic' \| 'meshcore')` only when both protocol tabs need separate ConnectionPanel props. **`usePowerRecovery`** mounts once from `App.tsx` — coordinates sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, and runtime `onPowerResume` (Meshtastic ~4s after wake, MeshCore ~8s stagger after Meshtastic, plus up to 30s dual-Noble BLE settle when both protocols use BLE).
 
 ### Dual protocol
 
@@ -89,6 +89,8 @@ Adding a cross-boundary feature:
 
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
 - Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
+- Prefer `mockConsoleWarn` / `withMockedConsoleWarn` from `src/renderer/lib/vitestConsoleMock.ts` over ad-hoc `vi.spyOn(console, 'warn')` in renderer tests.
+- Monolithic runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`, `noble-ble-manager`) may use **source contract tests** (`sourceContractTestHelpers.ts`, `*.reconnect*.test.ts`) when full integration mocking is impractical — see [development-environment.md](docs/development-environment.md#vitest-projects-and-worker-allocation).
 - Mock console before spying logged errors: `vi.spyOn(console, 'warn').mockImplementation(() => {})` in `beforeEach` when shared.
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 
@@ -235,6 +237,13 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Scheduler:** `meshcoreRoomSyncScheduler.ts` + `useMeshcoreRuntime.ts` — periodic re-login (Auto-sync, RF-only); single-flight ticks; background route resolve uses `skipTrace` / `MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS`. Auth failure disables auto-sync and auto-login via `disableMeshcoreRoomLoginAfterAuthFailure`. Connect auto-login skips rooms with `getMeshcoreRoomAutoLoginFailure`. Timeouts in `timeConstants.ts` (shorter for TCP / 0-hop).
 - **Wire text:** `meshcoreChannelText.ts` — channel/DM/room payloads, SignedPlain inbound strip, tapback/reply lines; `meshcoreGifWire.ts` — Open `g:GIFID`; `meshcoreOpenReaction.ts` — Open `r:HASH:INDEX`. Default companion keyless outbound; opt-in Open wire via App `meshcoreOpenWireCompatEnabled`.
 
+### Connection panel helpers
+
+- **Error humanization:** `connectionPanelErrorHumanize.ts` — serial/HTTP/BLE user-facing hints (i18n); uses `electronAPI.getPlatform()`.
+- **Last connection / reconnect rehydrate:** `lastConnectionStorage.ts` — `mesh-client:lastConnection:<protocol>` and BLE fallback keys; rebuild RF params after wake or Noble disconnect.
+- **Storage migrations:** `connectionPanelStorageMigrations.ts` — idempotent localStorage fixes on ConnectionPanel mount.
+- **MeshCore chat channel filter:** `meshcoreConfiguredChatChannels.ts` — zero-PSK slots excluded from unread badges and chat channel pills.
+
 ### Common issues
 
 | Symptom                               | Where to check                                                                                                                                                                                         |
@@ -263,7 +272,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 | Garbled TEXT_MESSAGE                  | `meshtasticBacklogUtils.ts` readable-text filter                                                                                                                                                       |
 | Channel URL apply                     | `meshtasticChannelApply.ts`, `meshtasticUrlEncoder.ts`                                                                                                                                                 |
 | Header red on loss                    | `connectionHeaderStatus.ts`, `mqttDisconnectIntent.ts`                                                                                                                                                 |
-| Sleep/wake reconnect                  | `usePowerRecovery`, `systemPowerState`, `bleReconnectHelper`, `rfReconnectHelper`, runtimes; ~4s post-wake delay                                                                                       |
+| Sleep/wake reconnect                  | `usePowerRecovery`, `systemPowerState`, `bleReconnectHelper`, `rfReconnectHelper`, runtimes; Meshtastic ~4s + MeshCore ~8s stagger + up to 30s dual-Noble settle                                       |
 | MeshCore contact prune                | `meshcoreContactAgeCutoff.ts`, `database.ts` (`last_advert` seconds); favorited exempt                                                                                                                 |
 | MQTT transient after wake             | `networkTransientErrors.ts`, `mqtt:powerSuspend` / `mqtt:powerResume` IPC                                                                                                                              |
 
