@@ -193,6 +193,12 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
     }
     return enhanced;
   }
+  if (/already in progress/i.test(msg)) {
+    return t('connectionPanel.humanize.prefixedHint', {
+      message: msg,
+      hint: t('connectionPanel.humanize.ble.dualProtocolContentionHint'),
+    });
+  }
   if (
     isDarwin &&
     (/BLE connectAsync timed out/i.test(msg) ||

@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Unter Linux können Sie Kopplungen über die Bluetooth-Einstellungen des Systems oder das Tool „bluetoothctl“ verwalten.",
         "meshcoreHandshakeHint": "Stellen Sie sicher, dass sich Ihr MeshCore-Gerät im Bluetooth Companion-Modus befindet und über eine PIN mit Ihrem Computer gekoppelt ist. Entfernen Sie alle vorhandenen Kopplungen und koppeln Sie sie erneut, wenn die Verbindungsprobleme weiterhin bestehen.",
         "meshcoreHandshakeWindowsExtra": "Schalten Sie unter Windows Bluetooth aus/ein und aktualisieren Sie den Adaptertreiber im Geräte-Manager, wenn weiterhin Verbindungsabbrüche bestehen.",
-        "macWakeRecoveryHint": "Beenden Sie nach dem Schlafengehen den Mesh-Client (Cmd+Q), schalten Sie Bluetooth in den Systemeinstellungen aus und ein, warten Sie einige Sekunden und stellen Sie dann erneut eine Verbindung her. Verbinden Sie MeshCore mit zwei Funkgeräten vor Meshtastic."
+        "macWakeRecoveryHint": "Beenden Sie nach dem Schlafengehen den Mesh-Client (Cmd+Q), schalten Sie Bluetooth in den Systemeinstellungen aus und ein, warten Sie einige Sekunden und stellen Sie dann erneut eine Verbindung her. Verbinden Sie MeshCore mit zwei Funkgeräten vor Meshtastic.",
+        "dualProtocolContentionHint": "Das andere Protokoll verbindet sich möglicherweise immer noch über Bluetooth. Warten Sie ein paar Sekunden und versuchen Sie es erneut, oder wechseln Sie zur anderen Protokollregisterkarte, um den Verbindungsstatus zu überprüfen."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "Ungültiges base64 auf einer Kanal-PSK-Leitung.",
     "mqttTlsEnabled": "TLS aktivieren (mqtts / wss)",
     "mqttTlsInsecure": "Unsichere TLS (selbstsigniertes Zertifikat) zulassen. Standardmäßig deaktiviert — nur aktivieren, wenn Ihr Broker eine nicht öffentliche CA verwendet.",
-    "channelPsksPrivateUplinkNote": "Kanal-Uplink ist AES-PSK-verschlüsselt auf /2/e/ (kein JSON-Spiegel für private Schlüssel). Broker-Monitore können immer noch Fehler bei der Entschlüsselung des PKI/DM-Verkehrs zwischen anderen Knoten protokollieren — das ist normal und hat nichts mit Kanal-PSKs zu tun."
+    "channelPsksPrivateUplinkNote": "Kanal-Uplink ist AES-PSK-verschlüsselt auf /2/e/ (kein JSON-Spiegel für private Schlüssel). Broker-Monitore können immer noch Fehler bei der Entschlüsselung des PKI/DM-Verkehrs zwischen anderen Knoten protokollieren — das ist normal und hat nichts mit Kanal-PSKs zu tun.",
+    "sharedBleWithMeshtastic": "Dieses Bluetooth-Gerät ist bereits über Meshtastic verbunden. Wechseln Sie zur Registerkarte Meshtastic, um sie zu verwenden, oder wählen Sie ein anderes Radio oder einen anderen Transport für MeshCore.",
+    "sharedBleWithMeshtasticHint": "Ein physisches Funkgerät kann keine separaten Meshtastic- und MeshCore-Bluetooth-Sitzungen gleichzeitig durchführen."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

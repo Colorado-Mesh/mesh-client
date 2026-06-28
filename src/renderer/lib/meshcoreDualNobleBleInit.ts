@@ -5,6 +5,7 @@ import {
   MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS,
   MESHCORE_DUAL_NOBLE_BLE_POLL_MS,
 } from './timeConstants';
+import type { MeshProtocol } from './types';
 
 /** True when the renderer uses Noble IPC for BLE (macOS / Windows), not Web Bluetooth. */
 export function isRendererNobleBlePlatform(): boolean {
@@ -35,16 +36,30 @@ export function needsSequentialMeshcoreRadioInit(transport: 'ble' | 'serial' | '
   return transport === 'serial' || (transport === 'ble' && !isRendererNobleBlePlatform());
 }
 
-/** Meshtastic identity on Noble BLE that has not reached `configured` yet. */
-export function meshtasticNobleBleConfigureBusy(): boolean {
+function nobleBleConfigureBusyForProtocolType(protocolType: MeshProtocol): boolean {
   const { identities } = useIdentityStore.getState();
   for (const identity of Object.values(identities)) {
-    if (identity.protocol.type !== 'meshtastic') continue;
+    if (identity.protocol.type !== protocolType) continue;
     const conn = getConnection(identity.id);
     if (conn?.connectionType !== 'ble') continue;
     if (conn.status === 'connecting' || conn.status === 'connected') return true;
   }
   return false;
+}
+
+/** Meshtastic identity on Noble BLE that has not reached `configured` yet. */
+export function meshtasticNobleBleConfigureBusy(): boolean {
+  return nobleBleConfigureBusyForProtocolType('meshtastic');
+}
+
+/** MeshCore identity on Noble BLE that has not reached `configured` yet. */
+export function meshcoreNobleBleConfigureBusy(): boolean {
+  return nobleBleConfigureBusyForProtocolType('meshcore');
+}
+
+/** True when the given protocol has a Noble BLE session still configuring. */
+export function nobleBleConfigureBusyForProtocol(protocol: MeshProtocol): boolean {
+  return nobleBleConfigureBusyForProtocolType(protocol);
 }
 
 /**
@@ -60,16 +75,27 @@ export function meshcoreTargetsSharedMeshtasticBlePeripheral(
 }
 
 /**
+ * Poll until the given protocol's Noble BLE session finishes configure (or timeout).
+ * Failure point: protocol never configures — proceed after cap.
+ */
+export async function awaitNobleBleProtocolSettle(
+  protocol: MeshProtocol,
+  maxWaitMs: number,
+): Promise<void> {
+  if (!isRendererNobleBlePlatform()) return;
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    if (!nobleBleConfigureBusyForProtocol(protocol)) return;
+    await new Promise<void>((resolve) => setTimeout(resolve, MESHCORE_DUAL_NOBLE_BLE_POLL_MS));
+  }
+}
+
+/**
  * When both stacks share the Noble adapter, defer MeshCore contact dump until Meshtastic
  * finishes configure (or timeout). Failure point: Meshtastic never configures — proceed after cap.
  */
 export async function awaitDualNobleBleMeshtasticSettle(
   maxWaitMs = MESHCORE_DUAL_NOBLE_BLE_GET_CONTACTS_DEFER_MS,
 ): Promise<void> {
-  if (!isRendererNobleBlePlatform()) return;
-  const deadline = Date.now() + maxWaitMs;
-  while (Date.now() < deadline) {
-    if (!meshtasticNobleBleConfigureBusy()) return;
-    await new Promise<void>((resolve) => setTimeout(resolve, MESHCORE_DUAL_NOBLE_BLE_POLL_MS));
-  }
+  await awaitNobleBleProtocolSettle('meshtastic', maxWaitMs);
 }

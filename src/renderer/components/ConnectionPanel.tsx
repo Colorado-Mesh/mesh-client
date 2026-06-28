@@ -8,6 +8,7 @@ import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIc
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
 import {
+  awaitNobleBleProtocolSettle,
   isRendererNobleBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
@@ -31,6 +32,7 @@ import {
 } from '../lib/connectionPanelErrorHumanize';
 import { runConnectionPanelStorageMigrations } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
+import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -68,7 +70,8 @@ import {
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
-import { STARTUP_MESHCORE_BLE_AUTOCONNECT_STAGGER_MS } from '../lib/timeConstants';
+import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
+import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '../lib/timeConstants';
 import type {
   ConnectionType,
   DeviceState,
@@ -595,9 +598,9 @@ export default function ConnectionPanel({
   );
   const autoConnectFiredRef = useRef(false);
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const meshcoreBleAutoConnectStaggerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
+  const [sharedBleNotice, setSharedBleNotice] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
   // Tracks BLE device MAC for potential re-pairing on Linux
@@ -1340,7 +1343,27 @@ export default function ConnectionPanel({
       setIsAutoConnecting(false);
       setConnecting(false);
       setConnectionStage('');
+      if (getStoredMeshProtocol() === 'meshcore') {
+        setSharedBleNotice(true);
+      }
       return true;
+    };
+
+    const runBleAutoConnectWithDefer = async () => {
+      if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
+      const activeProtocol = getStoredMeshProtocol();
+      const otherProtocol = protocol === 'meshtastic' ? 'meshcore' : 'meshtastic';
+      const otherHasNobleBle =
+        isRendererNobleBlePlatform() &&
+        loadLastConnection(otherProtocol)?.type === 'ble' &&
+        Boolean(resolveLastBlePeripheralId(otherProtocol));
+      if (protocol !== activeProtocol && otherHasNobleBle) {
+        await awaitNobleBleProtocolSettle(
+          activeProtocol,
+          POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
+        );
+      }
+      startBleNobleAutoConnect();
     };
 
     const migrateLastConnectionToBle = (bleDeviceId: string) => {
@@ -1367,30 +1390,14 @@ export default function ConnectionPanel({
             `[ConnectionPanel] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(err)}`,
           );
           migrateLastConnectionToBle(lastBleId);
-          if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
-          if (startBleNobleAutoConnect()) return;
+          void runBleAutoConnectWithDefer();
+          return;
         }
         onAutoConnectFailed(err, 'serial');
       });
     } else if (lc.type === 'ble') {
       if (lastBleId && !isLinux) {
-        const runBleAutoConnect = () => {
-          if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
-          startBleNobleAutoConnect();
-        };
-        const meshtasticBlePending =
-          protocol === 'meshcore' &&
-          isRendererNobleBlePlatform() &&
-          loadLastConnection('meshtastic')?.type === 'ble' &&
-          Boolean(loadLastConnection('meshtastic')?.bleDeviceId);
-        if (meshtasticBlePending) {
-          meshcoreBleAutoConnectStaggerRef.current = setTimeout(() => {
-            meshcoreBleAutoConnectStaggerRef.current = null;
-            runBleAutoConnect();
-          }, STARTUP_MESHCORE_BLE_AUTOCONNECT_STAGGER_MS);
-        } else {
-          runBleAutoConnect();
-        }
+        void runBleAutoConnectWithDefer();
       }
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
@@ -1400,9 +1407,6 @@ export default function ConnectionPanel({
   useEffect(
     () => () => {
       if (autoConnectTimeoutRef.current) clearTimeout(autoConnectTimeoutRef.current);
-      if (meshcoreBleAutoConnectStaggerRef.current) {
-        clearTimeout(meshcoreBleAutoConnectStaggerRef.current);
-      }
     },
     [],
   );
@@ -2684,6 +2688,15 @@ export default function ConnectionPanel({
         </div>
 
         {/* Inline error */}
+        {sharedBleNotice && (
+          <div
+            className="border-b border-amber-700 bg-amber-900/30 px-4 py-2 text-xs text-amber-200"
+            role="status"
+          >
+            <p>{t('connectionPanel.sharedBleWithMeshtastic')}</p>
+            <p className="text-muted/80 mt-1">{t('connectionPanel.sharedBleWithMeshtasticHint')}</p>
+          </div>
+        )}
         {error && (
           <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
             {error}

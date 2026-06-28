@@ -969,16 +969,19 @@ describe('ConnectionPanel meshcore shared Meshtastic BLE auto-connect', () => {
   });
 });
 
-describe('ConnectionPanel meshcore BLE startup stagger', () => {
+describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
+  const protocolKey = 'mesh-client:protocol';
+
   afterEach(() => {
-    vi.useRealTimers();
+    localStorage.removeItem(protocolKey);
+    vi.restoreAllMocks();
   });
 
-  it('delays meshcore noble auto-connect when Meshtastic also has a saved BLE device', async () => {
-    vi.useFakeTimers();
+  it('connects meshcore immediately when meshcore is the stored active protocol', async () => {
     const { restore } = mockMacNoblePlatform();
     const mcConnKey = 'mesh-client:lastConnection:meshcore';
     const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(protocolKey, 'meshcore');
     localStorage.setItem(
       mcConnKey,
       JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
@@ -988,6 +991,8 @@ describe('ConnectionPanel meshcore BLE startup stagger', () => {
       JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
     );
     const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBleProtocolSettle');
 
     try {
       render(
@@ -1001,21 +1006,160 @@ describe('ConnectionPanel meshcore BLE startup stagger', () => {
         />,
       );
 
-      await vi.advanceTimersByTimeAsync(7_999);
-      expect(onAutoConnect).not.toHaveBeenCalled();
-
-      await vi.advanceTimersByTimeAsync(1);
-      await Promise.resolve();
-      expect(onAutoConnect).toHaveBeenCalledWith(
-        'ble',
-        undefined,
-        undefined,
-        'meshcore-ble-device',
-      );
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith(
+          'ble',
+          undefined,
+          undefined,
+          'meshcore-ble-device',
+        );
+      });
+      expect(settleSpy).not.toHaveBeenCalled();
     } finally {
-      vi.useRealTimers();
       localStorage.removeItem(mcConnKey);
       localStorage.removeItem(mtConnKey);
+      restore();
+    }
+  });
+
+  it('defers inactive meshtastic auto-connect until active meshcore settles', async () => {
+    const { restore } = mockMacNoblePlatform();
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(protocolKey, 'meshcore');
+    localStorage.setItem(
+      mcConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
+    );
+    localStorage.setItem(
+      mtConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    let releaseSettle!: () => void;
+    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBleProtocolSettle').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseSettle = resolve;
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await Promise.resolve();
+      expect(settleSpy).toHaveBeenCalledWith('meshcore', expect.any(Number));
+      expect(onAutoConnect).not.toHaveBeenCalled();
+
+      releaseSettle();
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith(
+          'ble',
+          undefined,
+          undefined,
+          'meshtastic-ble-device',
+        );
+      });
+    } finally {
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtConnKey);
+      restore();
+    }
+  });
+
+  it('defers inactive meshcore auto-connect until active meshtastic settles', async () => {
+    const { restore } = mockMacNoblePlatform();
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(protocolKey, 'meshtastic');
+    localStorage.setItem(
+      mcConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
+    );
+    localStorage.setItem(
+      mtConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble-device' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    let releaseSettle!: () => void;
+    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBleProtocolSettle').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseSettle = resolve;
+        }),
+    );
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await Promise.resolve();
+      expect(settleSpy).toHaveBeenCalledWith('meshtastic', expect.any(Number));
+      expect(onAutoConnect).not.toHaveBeenCalled();
+
+      releaseSettle();
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalledWith(
+          'ble',
+          undefined,
+          undefined,
+          'meshcore-ble-device',
+        );
+      });
+    } finally {
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtConnKey);
+      restore();
+    }
+  });
+
+  it('shows shared-peripheral notice when meshcore is active and targets the same BLE device as meshtastic', async () => {
+    const { restore } = mockMacNoblePlatform();
+    const sharedId = 'shared-ble-peripheral';
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtBleKey = 'mesh-client:lastBleDevice:meshtastic';
+    localStorage.setItem(protocolKey, 'meshcore');
+    localStorage.setItem(mcConnKey, JSON.stringify({ type: 'ble', bleDeviceId: sharedId }));
+    localStorage.setItem(mtBleKey, sharedId);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/already connected via Meshtastic/i)).toBeInTheDocument();
+      });
+    } finally {
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtBleKey);
+      localStorage.removeItem(protocolKey);
       restore();
     }
   });

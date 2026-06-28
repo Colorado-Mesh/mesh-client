@@ -471,6 +471,8 @@
     "serialDevice": "Serial device",
     "wifiDevice": "WiFi device",
     "reconnect": "Reconnect",
+    "sharedBleWithMeshtastic": "This Bluetooth device is already connected via Meshtastic. Switch to the Meshtastic tab to use it, or choose a different radio or transport for MeshCore.",
+    "sharedBleWithMeshtasticHint": "One physical radio cannot hold separate Meshtastic and MeshCore Bluetooth sessions at the same time.",
     "forgetDevice": "Forget this device",
     "bluetooth": "Bluetooth",
     "usbSerial": "USB Serial",
@@ -553,7 +555,8 @@
         "connectionAttemptFailedLinuxHint": " On Linux, you can manage pairings via the system Bluetooth settings or 'bluetoothctl' tool.",
         "meshcoreHandshakeHint": "Ensure your MeshCore device is in Bluetooth Companion mode and paired with your computer using a PIN. Remove any existing pairing and re-pair if connection issues persist.",
         "meshcoreHandshakeWindowsExtra": " On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.",
-        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic."
+        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
+        "dualProtocolContentionHint": "The other protocol may still be connecting over Bluetooth. Wait a few seconds and try again, or switch to the other protocol tab to check its connection status."
       }
     },
     "error": {

@@ -543,7 +543,8 @@
         "connectionAttemptFailedLinuxHint": "Linux에서는 시스템 Bluetooth 설정 또는 'bluetoothctl' 도구를 통해 페어링을 관리할 수 있습니다.",
         "meshcoreHandshakeHint": "MeshCore 장치가 Bluetooth Companion 모드에 있고 PIN을 사용하여 컴퓨터와 페어링되어 있는지 확인하세요. 연결 문제가 지속되면 기존 페어링을 제거하고 다시 페어링하세요.",
         "meshcoreHandshakeWindowsExtra": "Windows에서 Bluetooth를 끄거나 켜고 연결이 계속 끊어지면 장치 관리자에서 어댑터 드라이버를 업데이트하세요.",
-        "macWakeRecoveryHint": "절전 모드가 끝나면 mesh-client (Cmd + Q) 를 종료하고 시스템 설정에서 블루투스를 껐다 켜고 몇 초 기다린 다음 다시 연결하십시오. 두 개의 라디오를 사용하여 Meshtastic 전에 MeshCore를 연결합니다."
+        "macWakeRecoveryHint": "절전 모드가 끝나면 mesh-client (Cmd + Q) 를 종료하고 시스템 설정에서 블루투스를 껐다 켜고 몇 초 기다린 다음 다시 연결하십시오. 두 개의 라디오를 사용하여 Meshtastic 전에 MeshCore를 연결합니다.",
+        "dualProtocolContentionHint": "다른 프로토콜은 여전히 블루투스를 통해 연결될 수 있습니다. 몇 초 후 다시 시도하거나 다른 프로토콜 탭으로 전환하여 연결 상태를 확인하세요."
       }
     },
     "error": {
@@ -565,7 +566,9 @@
     "channelPsksInvalidBase64": "채널 PSK 라인에서 유효하지 않은 base64.",
     "mqttTlsEnabled": "TLS 활성화 (mqtts/wss)",
     "mqttTlsInsecure": "안전하지 않은 TLS (자체 서명된 인증서) 를 허용합니다. 기본적으로 사용 안 함 — 브로커가 비공개 CA를 사용하는 경우에만 사용하도록 설정합니다.",
-    "channelPsksPrivateUplinkNote": "채널 업링크는/2/e/(개인 키용 JSON 미러 없음) 에서 AES-PSK로 암호화됩니다. 브로커 모니터는 여전히 다른 노드 간의 PKI/DM 트래픽에 대한 암호 해독 실패를 기록할 수 있습니다. 이는 정상이며 여기서는 채널 PSK와 관련이 없습니다."
+    "channelPsksPrivateUplinkNote": "채널 업링크는/2/e/(개인 키용 JSON 미러 없음) 에서 AES-PSK로 암호화됩니다. 브로커 모니터는 여전히 다른 노드 간의 PKI/DM 트래픽에 대한 암호 해독 실패를 기록할 수 있습니다. 이는 정상이며 여기서는 채널 PSK와 관련이 없습니다.",
+    "sharedBleWithMeshtastic": "이 블루투스 장치는 이미 Meshtastic을 통해 연결되어 있습니다. Meshtastic 탭으로 전환하여 사용하거나 MeshCore에 대해 다른 라디오 또는 전송을 선택하십시오.",
+    "sharedBleWithMeshtasticHint": "하나의 물리적 라디오는 별도의 Meshtastic 및 MeshCore Bluetooth 세션을 동시에 보유할 수 없습니다."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
