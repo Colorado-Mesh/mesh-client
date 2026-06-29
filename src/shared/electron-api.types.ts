@@ -1,8 +1,11 @@
 // Single source of truth for the Electron context bridge API surface.
-import type { MeshNode } from '../renderer/lib/types';
+import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import type { MeshProtocol } from './meshProtocol';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 
-export type { MeshNode };
+export type { MeshProtocol };
+
+export type { MeshNode, MQTTSettings, MQTTStatus };
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -76,7 +79,7 @@ export interface NobleBleDevice {
   deviceName: string;
 }
 
-export type NobleBleSessionId = 'meshtastic' | 'meshcore';
+export type NobleBleSessionId = MeshProtocol;
 export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
 
 export interface SerialPort {
@@ -149,36 +152,19 @@ export interface ElectronAPI {
       channel: number;
       timestamp: number;
       to?: number;
+      packetId?: number;
+      status?: string;
+      error?: string;
+      mqttStatus?: string;
+      emoji?: number;
+      replyId?: number;
+      receivedVia?: string;
+      viaStoreForward?: boolean;
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
 
-    saveNode: (node: {
-      node_id: number;
-      long_name: string | null;
-      short_name: string | null;
-      hw_model: string | null;
-      snr: number | null;
-      rssi?: number | null;
-      battery: number | null;
-      last_heard: number | null;
-      latitude: number | null;
-      longitude: number | null;
-      role?: number | string | null;
-      hops_away?: number | null;
-      via_mqtt?: boolean | number | null;
-      voltage?: number | null;
-      channel_utilization?: number | null;
-      air_util_tx?: number | null;
-      altitude?: number | null;
-      source?: string | null;
-      num_packets_rx_bad?: number | null;
-      num_rx_dupe?: number | null;
-      num_packets_rx?: number | null;
-      num_packets_tx?: number | null;
-      heard_via_mqtt_only?: boolean;
-      [key: string]: unknown;
-    }) => Promise<void>;
+    saveNode: (node: MeshNode) => Promise<void>;
 
     saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) => Promise<void>;
 
@@ -324,7 +310,11 @@ export interface ElectronAPI {
       excludedStubCount: number;
     }>;
     offloadAllMeshcoreContacts: () => Promise<number>;
-    getMeshcoreContactById: (nodeId: number) => Promise<unknown>;
+    getMeshcoreContactById: (nodeId: number) => Promise<{
+      node_id: number;
+      public_key: string;
+      on_radio: number;
+    } | null>;
     updateMeshcoreContactNickname: (nodeId: number, nickname: string | null) => Promise<void>;
     updateMeshcoreContactFavorited: (
       nodeId: number,
@@ -452,23 +442,15 @@ export interface ElectronAPI {
 
   // ─── MQTT ────────────────────────────────────────────────────────────────────
   mqtt: {
-    connect: (settings: unknown) => Promise<void>;
-    disconnect: (protocol?: 'meshtastic' | 'meshcore') => Promise<void>;
+    connect: (settings: MQTTSettings) => Promise<void>;
+    disconnect: (protocol?: MeshProtocol) => Promise<void>;
     powerResume: () => Promise<void>;
     powerSuspend: () => Promise<void>;
-    onStatus: (
-      cb: (payload: { status: string; protocol: 'meshtastic' | 'meshcore' }) => void,
-    ) => () => void;
-    onError: (
-      cb: (payload: { error: string; protocol: 'meshtastic' | 'meshcore' }) => void,
-    ) => () => void;
-    onWarning: (
-      cb: (payload: { warning: string; protocol: 'meshtastic' | 'meshcore' }) => void,
-    ) => () => void;
+    onStatus: (cb: (payload: { status: MQTTStatus; protocol: MeshProtocol }) => void) => () => void;
+    onError: (cb: (payload: { error: string; protocol: MeshProtocol }) => void) => () => void;
+    onWarning: (cb: (payload: { warning: string; protocol: MeshProtocol }) => void) => () => void;
     onNodeUpdate: (
-      cb: (
-        node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
-      ) => void,
+      cb: (node: Partial<MeshNode> & { node_id: number; protocol?: MeshProtocol }) => void,
     ) => () => void;
     onMessage: (cb: (msg: unknown) => void) => () => void;
     onBrokerRaw: (
@@ -482,10 +464,8 @@ export interface ElectronAPI {
         protocol: 'meshtastic';
       }) => void,
     ) => () => void;
-    onClientId: (
-      cb: (payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' }) => void,
-    ) => () => void;
-    getClientId: (protocol?: 'meshtastic' | 'meshcore') => Promise<string>;
+    onClientId: (cb: (payload: { clientId: string; protocol: MeshProtocol }) => void) => () => void;
+    getClientId: (protocol?: MeshProtocol) => Promise<string>;
     getCachedNodes: () => Promise<unknown>;
     updateChannelKeys: (args: {
       entries: { name: string; pskBase64: string; index?: number }[];
@@ -613,7 +593,7 @@ export interface ElectronAPI {
   onBluetoothPinRequired: (callback: (data: { deviceId: string }) => void) => () => void;
   provideBluetoothPin: (pin: string) => void;
   cancelBluetoothPairing: () => void;
-  resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => void;
+  resetBlePairingRetryCount: (sessionKind?: MeshProtocol) => void;
 
   // ─── Session management ──────────────────────────────────────────────────────
   clearSessionData: () => Promise<void>;

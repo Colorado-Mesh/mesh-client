@@ -32,6 +32,8 @@ import {
   sanitizeMeshcoreLastAdvertForDb,
 } from '../shared/meshcoreContactSanitize';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
+import type { MeshProtocol } from '../shared/meshProtocol';
+import { MESH_PROTOCOL_SET } from '../shared/meshProtocol';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
@@ -374,7 +376,7 @@ interface BluetoothPairingResponse {
 let pendingPairingCallback: ((response: BluetoothPairingResponse) => void) | null = null;
 let pendingPairingRetryCount = 0;
 /** Which BLE stack is connecting; MeshCore must not auto-use Meshtastic default PIN on first pairing. */
-let blePairingSessionKind: 'meshtastic' | 'meshcore' = 'meshtastic';
+let blePairingSessionKind: MeshProtocol = 'meshtastic';
 
 // Noble BLE pairing state (Win32 — no Chromium pairing handler available)
 
@@ -2703,7 +2705,7 @@ ipcMain.handle('mqtt:connect', (_event, settings) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:disconnect', (_event, protocol?: 'meshtastic' | 'meshcore') => {
+ipcMain.handle('mqtt:disconnect', (_event, protocol?: MeshProtocol) => {
   try {
     console.debug('[IPC] mqtt:disconnect', protocol ?? 'both');
     if (!protocol || protocol === 'meshtastic') mqttManager.disconnect();
@@ -2742,7 +2744,7 @@ ipcMain.handle('mqtt:powerSuspend', () => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:getClientId', (_event, protocol?: 'meshtastic' | 'meshcore') => {
+ipcMain.handle('mqtt:getClientId', (_event, protocol?: MeshProtocol) => {
   try {
     console.debug('[IPC] mqtt:getClientId', protocol);
     if (protocol === 'meshcore') return meshcoreMqttAdapter.getClientId();
@@ -4227,7 +4229,7 @@ ipcMain.handle('chat:fetchLinkPreview', async (event, url: unknown) => {
 });
 
 // ─── IPC: Chat outbox ─────────────────────────────────────────────────
-const OUTBOX_VALID_PROTOCOLS = new Set(['meshtastic', 'meshcore']);
+const OUTBOX_VALID_PROTOCOLS = MESH_PROTOCOL_SET;
 const OUTBOX_VALID_STATUSES = new Set(['queued', 'sending', 'blocked', 'failed']);
 
 ipcMain.handle('chat:outbox:list', (_event, protocol: unknown) => {

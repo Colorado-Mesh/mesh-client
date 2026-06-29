@@ -45,7 +45,6 @@ import {
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
   meshcorePingNoRouteErrorExpiryUpdate,
-  type MeshcoreSavedNodeHopRow,
   meshcoreTraceRouteRejectReason,
   messageToDbRow,
   normalizeMeshCoreError,
@@ -1732,11 +1731,7 @@ export function useMeshcoreRuntime() {
             meshcoreRoomServerIdsFromContacts(contactRows),
             myNodeNumRef.current,
           );
-          const cachedNodes = buildMeshcoreNodeMapFromDb(
-            contactRows,
-            savedNodes as MeshcoreSavedNodeHopRow[],
-            mapped,
-          );
+          const cachedNodes = buildMeshcoreNodeMapFromDb(contactRows, savedNodes, mapped);
           dbCacheNodeCount = cachedNodes.size;
           meshcoreLastPersistedNodesRef.current = new Map(cachedNodes);
           applyMeshcoreNodesToUi(cachedNodes);

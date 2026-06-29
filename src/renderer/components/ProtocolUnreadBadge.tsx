@@ -4,7 +4,7 @@ export function ProtocolUnreadBadge({
   fillClass,
 }: {
   count: number | string;
-  fillClass: 'bg-readable-green' | 'bg-cyan-600';
+  fillClass: string;
 }) {
   const label = typeof count === 'number' && count > 99 ? '99+' : count;
   return (

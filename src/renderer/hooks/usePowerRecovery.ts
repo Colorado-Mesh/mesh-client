@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { setSystemSuspended } from '@/renderer/lib/systemPowerState';
+import type { MeshProtocol } from '@/renderer/lib/types';
 
 /** macOS BLE stack needs a few seconds after wake before connect/scan succeeds reliably. */
 export const POWER_RESUME_RECOVERY_DELAY_MS = 4_000;
@@ -14,36 +15,62 @@ export interface PowerRecoveryCallbacks {
   onPowerResume: () => void;
 }
 
+/** Default wake resume order preserves historical Meshtastic-then-MeshCore stagger. */
+export const DEFAULT_POWER_RESUME_SCHEDULE: readonly {
+  protocol: MeshProtocol;
+  delayMs: number;
+}[] = [
+  { protocol: 'meshtastic', delayMs: POWER_RESUME_RECOVERY_DELAY_MS },
+  {
+    protocol: 'meshcore',
+    delayMs: POWER_RESUME_RECOVERY_DELAY_MS + POWER_RESUME_MESHCORE_STAGGER_MS,
+  },
+];
+
 export interface UsePowerRecoveryOptions {
+  callbacksByProtocol: Record<MeshProtocol, PowerRecoveryCallbacks>;
+  resumeSchedule?: readonly { protocol: MeshProtocol; delayMs: number }[];
+}
+
+interface LegacyPowerRecoveryOptions {
   meshtastic: PowerRecoveryCallbacks;
   meshcore: PowerRecoveryCallbacks;
 }
 
-export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptions): void {
-  const meshtasticRef = useRef(meshtastic);
-  const meshcoreRef = useRef(meshcore);
-  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const meshcoreResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export function usePowerRecovery(
+  options: UsePowerRecoveryOptions | LegacyPowerRecoveryOptions,
+): void {
+  const callbacksByProtocol =
+    'callbacksByProtocol' in options
+      ? options.callbacksByProtocol
+      : { meshtastic: options.meshtastic, meshcore: options.meshcore };
+  const resumeSchedule =
+    'resumeSchedule' in options && options.resumeSchedule
+      ? options.resumeSchedule
+      : DEFAULT_POWER_RESUME_SCHEDULE;
+
+  const callbacksRef = useRef(callbacksByProtocol);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    meshtasticRef.current = meshtastic;
-    meshcoreRef.current = meshcore;
+    callbacksRef.current = callbacksByProtocol;
   });
 
   useEffect(() => {
+    const clearTimers = () => {
+      for (const t of timersRef.current) {
+        clearTimeout(t);
+      }
+      timersRef.current = [];
+    };
+
     const offSuspend = window.electronAPI.onPowerSuspend(() => {
       console.debug('[usePowerRecovery] system suspend');
-      if (resumeTimerRef.current != null) {
-        clearTimeout(resumeTimerRef.current);
-        resumeTimerRef.current = null;
-      }
-      if (meshcoreResumeTimerRef.current != null) {
-        clearTimeout(meshcoreResumeTimerRef.current);
-        meshcoreResumeTimerRef.current = null;
-      }
+      clearTimers();
       setSystemSuspended(true);
-      meshtasticRef.current.onPowerSuspend();
-      meshcoreRef.current.onPowerSuspend();
+      for (const cb of Object.values(callbacksRef.current)) {
+        cb.onPowerSuspend();
+      }
       void window.electronAPI.mqtt.powerSuspend().catch((e: unknown) => {
         console.debug('[usePowerRecovery] mqtt.powerSuspend ' + errLikeToLogString(e));
       });
@@ -52,39 +79,26 @@ export function usePowerRecovery({ meshtastic, meshcore }: UsePowerRecoveryOptio
     const offResume = window.electronAPI.onPowerResume(() => {
       console.debug('[usePowerRecovery] system resume — scheduling recovery');
       setSystemSuspended(false);
-      if (resumeTimerRef.current != null) {
-        clearTimeout(resumeTimerRef.current);
+      clearTimers();
+      void window.electronAPI.mqtt.powerResume().catch((e: unknown) => {
+        console.warn('[usePowerRecovery] mqtt.powerResume failed ' + errLikeToLogString(e));
+      });
+
+      for (const { protocol, delayMs } of resumeSchedule) {
+        const cb = callbacksRef.current[protocol];
+        if (!cb) continue;
+        const timer = setTimeout(() => {
+          console.debug(`[usePowerRecovery] resume recovery (${protocol})`);
+          cb.onPowerResume();
+        }, delayMs);
+        timersRef.current.push(timer);
       }
-      if (meshcoreResumeTimerRef.current != null) {
-        clearTimeout(meshcoreResumeTimerRef.current);
-        meshcoreResumeTimerRef.current = null;
-      }
-      resumeTimerRef.current = setTimeout(() => {
-        resumeTimerRef.current = null;
-        console.debug('[usePowerRecovery] resume recovery');
-        void window.electronAPI.mqtt.powerResume().catch((e: unknown) => {
-          console.warn('[usePowerRecovery] mqtt.powerResume failed ' + errLikeToLogString(e));
-        });
-        meshtasticRef.current.onPowerResume();
-        meshcoreResumeTimerRef.current = setTimeout(() => {
-          meshcoreResumeTimerRef.current = null;
-          console.debug('[usePowerRecovery] meshcore resume recovery (staggered)');
-          meshcoreRef.current.onPowerResume();
-        }, POWER_RESUME_MESHCORE_STAGGER_MS);
-      }, POWER_RESUME_RECOVERY_DELAY_MS);
     });
 
     return () => {
       offSuspend();
       offResume();
-      if (resumeTimerRef.current != null) {
-        clearTimeout(resumeTimerRef.current);
-        resumeTimerRef.current = null;
-      }
-      if (meshcoreResumeTimerRef.current != null) {
-        clearTimeout(meshcoreResumeTimerRef.current);
-        meshcoreResumeTimerRef.current = null;
-      }
+      clearTimers();
     };
-  }, []);
+  }, [resumeSchedule]);
 }

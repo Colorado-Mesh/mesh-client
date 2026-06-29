@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import type { MeshProtocol } from '../shared/meshProtocol';
 import { getDatabase } from './database';
 
 export const MESHTASTIC_MQTT_CLIENT_ID_SETTING_KEY = 'meshtasticMqttClientId';
@@ -52,10 +53,7 @@ function isValidMeshcoreClientId(id: string): boolean {
  * Resolve a stable MQTT broker clientId for this install.
  * MeshCore LetsMesh v1 usernames double as clientId (unchanged).
  */
-export function resolveMqttBrokerClientId(
-  protocol: 'meshtastic' | 'meshcore',
-  settings: MQTTSettings,
-): string {
+export function resolveMqttBrokerClientId(protocol: MeshProtocol, settings: MQTTSettings): string {
   if (protocol === 'meshcore' && V1_USERNAME_PATTERN.test(settings.username ?? '')) {
     return settings.username;
   }

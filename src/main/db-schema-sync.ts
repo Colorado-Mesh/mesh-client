@@ -12,6 +12,7 @@ import {
   MESHCORE_ROOM_STALE_SENDING_MS,
 } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLastAdvertPlausible';
+import { meshProtocolSqlInList } from '../shared/meshProtocol';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
@@ -200,7 +201,7 @@ export const CANONICAL_TABLES_DDL = `
 
       CREATE TABLE IF NOT EXISTS chat_outbox (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        protocol TEXT NOT NULL CHECK(protocol IN ('meshtastic','meshcore')),
+        protocol TEXT NOT NULL CHECK(protocol IN (${meshProtocolSqlInList()})),
         view_key TEXT NOT NULL,
         channel INTEGER NOT NULL,
         to_node INTEGER,

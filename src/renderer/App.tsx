@@ -58,20 +58,22 @@ import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpTooltip } from './components/HelpTooltip';
 import LanguageSelector from './components/LanguageSelector';
-import { ProtocolUnreadBadge } from './components/ProtocolUnreadBadge';
+import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
+import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
 import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
-import { useDualProtocolPanelActions } from './hooks/useDualProtocolPanelActions';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
+import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
+import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
@@ -144,6 +146,7 @@ import { tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
+import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
@@ -162,8 +165,14 @@ import type {
   MeshNode,
   MeshProtocol,
 } from './lib/types';
-import { MeshcoreRuntimeProvider } from './runtime/MeshcoreRuntimeContext';
-import { MeshtasticRuntimeProvider } from './runtime/MeshtasticRuntimeContext';
+import { REGISTERED_MESH_PROTOCOLS } from './lib/types';
+import {
+  ProtocolRuntimeProvider,
+  type RuntimeMap,
+  useAllRuntimes,
+  useRuntime,
+} from './runtime/ProtocolRuntimeContext';
+import type { MeshcoreRuntime, MeshtasticRuntime } from './runtime/runtimeTypes';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
@@ -433,23 +442,26 @@ function ColoradoMeshWatermarkMark() {
 export default function App() {
   const meshtasticRuntime = useMeshtasticRuntime();
   const meshcoreRuntime = useMeshcoreRuntime();
+  const runtimeMap = useMemo<RuntimeMap>(
+    () =>
+      ({
+        meshtastic: meshtasticRuntime,
+        meshcore: meshcoreRuntime,
+      }) as unknown as RuntimeMap,
+    [meshtasticRuntime, meshcoreRuntime],
+  );
   return (
-    <MeshtasticRuntimeProvider value={meshtasticRuntime}>
-      <MeshcoreRuntimeProvider value={meshcoreRuntime}>
-        <AppContent meshtasticRuntime={meshtasticRuntime} meshcoreRuntime={meshcoreRuntime} />
-      </MeshcoreRuntimeProvider>
-    </MeshtasticRuntimeProvider>
+    <ProtocolRuntimeProvider value={runtimeMap}>
+      <AppContent />
+    </ProtocolRuntimeProvider>
   );
 }
 
-function AppContent({
-  meshtasticRuntime,
-  meshcoreRuntime,
-}: {
-  meshtasticRuntime: ReturnType<typeof useMeshtasticRuntime>;
-  meshcoreRuntime: ReturnType<typeof useMeshcoreRuntime>;
-}) {
+function AppContent() {
   const { t } = useTranslation();
+  const runtimes = useAllRuntimes();
+  const meshtasticRuntime = runtimes.meshtastic as unknown as MeshtasticRuntime;
+  const meshcoreRuntime = runtimes.meshcore as unknown as MeshcoreRuntime;
   const [activeTab, setActiveTab] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('mesh-client:sidebarCollapsed') === 'true';
@@ -670,31 +682,42 @@ function AppContent({
   const meshcoreConnection = useProtocolConnectionActions('meshcore');
 
   usePowerRecovery({
-    meshtastic: {
-      onPowerSuspend: meshtasticRuntime.onPowerSuspend,
-      onPowerResume: meshtasticRuntime.onPowerResume,
-    },
-    meshcore: {
-      onPowerSuspend: meshcoreRuntime.onPowerSuspend,
-      onPowerResume: meshcoreRuntime.onPowerResume,
+    callbacksByProtocol: {
+      meshtastic: {
+        onPowerSuspend: meshtasticRuntime.onPowerSuspend,
+        onPowerResume: meshtasticRuntime.onPowerResume,
+      },
+      meshcore: {
+        onPowerSuspend: meshcoreRuntime.onPowerSuspend,
+        onPowerResume: meshcoreRuntime.onPowerResume,
+      },
     },
   });
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
 
-  const { meshtastic: meshtasticPanelActions, meshcore: meshcorePanelActions } =
-    useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime);
+  const allPanelActions = useAllProtocolPanelActions({
+    meshtastic: meshtasticRuntime,
+    meshcore: meshcoreRuntime,
+  });
+  const meshtasticPanelActions = allPanelActions.meshtastic as ReturnType<
+    typeof useMeshtasticPanelActions
+  >;
+  const meshcorePanelActions = allPanelActions.meshcore as ReturnType<
+    typeof useMeshcorePanelActions
+  >;
   const activeFacade = useProtocolFacade(protocol, {
     meshtastic: meshtasticPanelActions,
     meshcore: meshcorePanelActions,
   });
-  const panelActions = activeFacade.panel.actions;
+  const panelActions = allPanelActions[protocol];
   const {
-    meshtasticIdentityId,
-    meshcoreIdentityId,
+    identityIdByProtocol,
     focusedIdentityId,
     capabilities: activeProtocolCapabilities,
   } = useActiveMeshIdentity(protocol);
+  const meshtasticIdentityId = identityIdByProtocol.meshtastic;
+  const meshcoreIdentityId = identityIdByProtocol.meshcore;
   const meshtasticNodesById = useNodeStore((s) =>
     meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
   );
@@ -802,26 +825,16 @@ function AppContent({
     [sendMessage],
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
+  const activeRuntime = useRuntime(protocol) as unknown as MeshtasticRuntime;
   const contactGroupsSelfId =
-    protocol === 'meshcore'
-      ? meshcoreRuntime.selfNodeId
-      : protocol === 'meshtastic'
-        ? meshtasticRuntime.selfNodeId
-        : null;
+    typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
   const contactGroups = useContactGroups(contactGroupsSelfId);
   const [showGroupsModal, setShowGroupsModal] = useState(false);
-  /** Shared panel fields; Meshtastic-only access uses {@link meshtasticRuntime} directly. */
-  const activeRuntime =
-    protocol === 'meshcore'
-      ? (meshcoreRuntime as unknown as typeof meshtasticRuntime)
-      : meshtasticRuntime;
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);
   const activeTabRef = useRef(activeTab);
   const protocolRef = useRef(protocol);
-  const lastMeshtasticTab = useRef(0);
-  const lastMeshcoreTab = useRef(0);
-  const lastMeshtasticPanel = useRef<number | null>(null);
-  const lastMeshcorePanel = useRef<number | null>(null);
+  const lastTabByProtocol = useRef(new Map<MeshProtocol, number>());
+  const lastPanelByProtocol = useRef(new Map<MeshProtocol, number | null>());
   const meshtasticMsgsRef = useRef(meshtasticUiMessages);
   const meshcoreMsgsRef = useRef(meshcoreUiMessages);
   const meshtasticMyNodeNumRef = useRef(meshtasticRuntime.state.myNodeNum);
@@ -1052,12 +1065,8 @@ function AppContent({
     meshcoreSelfIdRef.current = meshcoreRuntime.selfNodeId;
     meshcoreOwnNodeIdSetRef.current = meshcoreOwnNodeIdSet;
     meshcoreChatUnreadDmOptionsRef.current = meshcoreChatUnreadDmOptions;
-    lastMeshtasticTab.current = protocol === 'meshtastic' ? activeTab : lastMeshtasticTab.current;
-    lastMeshcoreTab.current = protocol === 'meshcore' ? activeTab : lastMeshcoreTab.current;
-    lastMeshtasticPanel.current =
-      protocol === 'meshtastic' ? activePanelIndex : lastMeshtasticPanel.current;
-    lastMeshcorePanel.current =
-      protocol === 'meshcore' ? activePanelIndex : lastMeshcorePanel.current;
+    lastTabByProtocol.current.set(protocol, activeTab);
+    lastPanelByProtocol.current.set(protocol, activePanelIndex);
     activePanelIndexRef.current = activePanelIndex;
   }, [
     activeTab,
@@ -1075,8 +1084,7 @@ function AppContent({
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
   useEffect(() => {
     if (activeTab >= displayTabLabels.length) {
-      const savedPanel =
-        protocol === 'meshcore' ? lastMeshcorePanel.current : lastMeshtasticPanel.current;
+      const savedPanel = lastPanelByProtocol.current.get(protocol) ?? null;
       let next = 0;
       const targetTabs = protocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
 
@@ -1088,8 +1096,7 @@ function AppContent({
           next = foundFilteredIndex;
         }
       } else {
-        const savedTab =
-          protocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
+        const savedTab = lastTabByProtocol.current.get(protocol) ?? 0;
         next = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
       }
 
@@ -1136,8 +1143,7 @@ function AppContent({
     (newProtocol: MeshProtocol) => {
       if (newProtocol === protocol) return;
 
-      const savedPanel =
-        newProtocol === 'meshcore' ? lastMeshcorePanel.current : lastMeshtasticPanel.current;
+      const savedPanel = lastPanelByProtocol.current.get(newProtocol) ?? null;
       let targetTab = 0;
 
       if (savedPanel != null) {
@@ -1149,21 +1155,14 @@ function AppContent({
           targetTab = foundFilteredIndex;
         }
       } else {
-        const savedTab =
-          newProtocol === 'meshcore' ? lastMeshcoreTab.current : lastMeshtasticTab.current;
+        const savedTab = lastTabByProtocol.current.get(newProtocol) ?? 0;
         const targetTabs = newProtocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
         targetTab = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
       }
 
-      if (newProtocol === 'meshtastic') {
-        lastMeshcoreTab.current = activeTab;
-        lastMeshcorePanel.current = activePanelIndex;
-        setActiveTab(targetTab);
-      } else {
-        lastMeshtasticTab.current = activeTab;
-        lastMeshtasticPanel.current = activePanelIndex;
-        setActiveTab(targetTab);
-      }
+      lastTabByProtocol.current.set(protocol, activeTab);
+      lastPanelByProtocol.current.set(protocol, activePanelIndex);
+      setActiveTab(targetTab);
 
       useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
@@ -1626,7 +1625,7 @@ function AppContent({
   // Launch MQTT for each protocol when autoLaunch is enabled. Meshtastic MQTT skips
   // startup when MeshCore is the stored tab unless auto-connect is enabled.
   useEffect(() => {
-    for (const prot of ['meshtastic', 'meshcore'] as MeshProtocol[]) {
+    for (const prot of REGISTERED_MESH_PROTOCOLS) {
       if (prot === 'meshtastic' && !shouldAutoLaunchMeshtasticMqtt(getStoredMeshProtocol())) {
         if (getStoredMeshProtocol() === 'meshcore') {
           console.debug('[App] Meshtastic MQTT auto-launch skipped: stored protocol is meshcore');
@@ -1991,13 +1990,7 @@ function AppContent({
         {/* Header - full width; sidebar + main start below */}
         <div
           role="banner"
-          className={`bg-deep-black relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-center border-b py-2 pr-4 ${
-            isConfigured
-              ? protocol === 'meshcore'
-                ? 'border-cyan-500/20'
-                : 'border-brand-green/20'
-              : 'border-gray-700'
-          }`}
+          className={`bg-deep-black relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-center border-b py-2 pr-4 ${protocolHeaderBorderClass(protocol, isConfigured)}`}
         >
           <h1 className="sr-only">Mesh Client</h1>
           {/* Sidebar-area branding — top-left cell, matches sidebar width */}
@@ -2046,52 +2039,14 @@ function AppContent({
           </div>
           <div className="flex min-w-0 items-center overflow-hidden">
             <div className="flex shrink-0 items-center pl-8">
-              <div
-                role="group"
-                aria-label={t('aria.protocolSwitcher')}
-                className="flex shrink-0 items-center overflow-hidden rounded-full border border-gray-600 font-mono text-xs"
-              >
-                <button
-                  type="button"
-                  aria-pressed={protocol === 'meshtastic'}
-                  aria-label={t('aria.switchToMeshtastic')}
-                  onClick={() => {
-                    handleProtocolChange('meshtastic');
-                  }}
-                  className={`px-3 py-0.5 transition-colors ${
-                    protocol === 'meshtastic'
-                      ? 'bg-brand-green/20 text-brand-green'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                  }`}
-                >
-                  Meshtastic
-                  {meshtasticChatUnread > 0 && protocol !== 'meshtastic' && (
-                    <ProtocolUnreadBadge
-                      count={meshtasticChatUnread}
-                      fillClass="bg-readable-green"
-                    />
-                  )}
-                </button>
-                <div className="h-4 w-px bg-gray-600" aria-hidden="true" />
-                <button
-                  type="button"
-                  aria-pressed={protocol === 'meshcore'}
-                  aria-label={t('aria.switchToMeshCore')}
-                  onClick={() => {
-                    handleProtocolChange('meshcore');
-                  }}
-                  className={`px-3 py-0.5 transition-colors ${
-                    protocol === 'meshcore'
-                      ? 'bg-cyan-600/20 text-cyan-400'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                  }`}
-                >
-                  MeshCore
-                  {meshcoreChatUnread > 0 && protocol !== 'meshcore' && (
-                    <ProtocolUnreadBadge count={meshcoreChatUnread} fillClass="bg-cyan-600" />
-                  )}
-                </button>
-              </div>
+              <ProtocolSwitcher
+                protocol={protocol}
+                chatUnreadByProtocol={{
+                  meshtastic: meshtasticChatUnread,
+                  meshcore: meshcoreChatUnread,
+                }}
+                onProtocolChange={handleProtocolChange}
+              />
             </div>
 
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">

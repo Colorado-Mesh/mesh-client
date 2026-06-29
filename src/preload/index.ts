@@ -3,6 +3,9 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type {
   ElectronAPI,
   MeshNode,
+  MeshProtocol,
+  MQTTSettings,
+  MQTTStatus,
   NobleBleConnectResult,
   NobleBleDevice,
   NobleBleSessionId,
@@ -32,32 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getMessages: (channel?: number, limit?: number) =>
       ipcRenderer.invoke('db:getMessages', channel, limit),
 
-    saveNode: (node: {
-      node_id: number;
-      long_name: string | null;
-      short_name: string | null;
-      hw_model: string | null;
-      snr: number | null;
-      rssi?: number | null;
-      battery: number | null;
-      last_heard: number | null;
-      latitude: number | null;
-      longitude: number | null;
-      role?: number | string | null;
-      hops_away?: number | null;
-      via_mqtt?: boolean | number | null;
-      voltage?: number | null;
-      channel_utilization?: number | null;
-      air_util_tx?: number | null;
-      altitude?: number | null;
-      source?: string | null;
-      num_packets_rx_bad?: number | null;
-      num_rx_dupe?: number | null;
-      num_packets_rx?: number | null;
-      num_packets_tx?: number | null;
-      heard_via_mqtt_only?: boolean;
-      [key: string]: unknown;
-    }) => ipcRenderer.invoke('db:saveNode', node),
+    saveNode: (node: MeshNode) => ipcRenderer.invoke('db:saveNode', node),
 
     saveNodePath: (nodeId: number, lastHeard: number, buffer: Buffer) =>
       ipcRenderer.invoke('db:saveNodePath', nodeId, lastHeard, buffer),
@@ -333,50 +311,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ─── MQTT ──────────────────────────────────────────────────────
   mqtt: {
-    connect: (settings: unknown) => ipcRenderer.invoke('mqtt:connect', settings),
-    disconnect: (protocol?: 'meshtastic' | 'meshcore') =>
-      ipcRenderer.invoke('mqtt:disconnect', protocol),
+    connect: (settings: MQTTSettings) => ipcRenderer.invoke('mqtt:connect', settings),
+    disconnect: (protocol?: MeshProtocol) => ipcRenderer.invoke('mqtt:disconnect', protocol),
     powerResume: () => ipcRenderer.invoke('mqtt:powerResume'),
     powerSuspend: () => ipcRenderer.invoke('mqtt:powerSuspend'),
-    onStatus: (cb: (payload: { status: string; protocol: 'meshtastic' | 'meshcore' }) => void) => {
-      const handler = (
-        _: unknown,
-        payload: { status: string; protocol: 'meshtastic' | 'meshcore' },
-      ) => {
+    onStatus: (cb: (payload: { status: MQTTStatus; protocol: MeshProtocol }) => void) => {
+      const handler = (_: unknown, payload: { status: MQTTStatus; protocol: MeshProtocol }) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:status', handler);
       return () => ipcRenderer.off('mqtt:status', handler);
     },
-    onError: (cb: (payload: { error: string; protocol: 'meshtastic' | 'meshcore' }) => void) => {
-      const handler = (
-        _: unknown,
-        payload: { error: string; protocol: 'meshtastic' | 'meshcore' },
-      ) => {
+    onError: (cb: (payload: { error: string; protocol: MeshProtocol }) => void) => {
+      const handler = (_: unknown, payload: { error: string; protocol: MeshProtocol }) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:error', handler);
       return () => ipcRenderer.off('mqtt:error', handler);
     },
-    onWarning: (
-      cb: (payload: { warning: string; protocol: 'meshtastic' | 'meshcore' }) => void,
-    ) => {
-      const handler = (
-        _: unknown,
-        payload: { warning: string; protocol: 'meshtastic' | 'meshcore' },
-      ) => {
+    onWarning: (cb: (payload: { warning: string; protocol: MeshProtocol }) => void) => {
+      const handler = (_: unknown, payload: { warning: string; protocol: MeshProtocol }) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:warning', handler);
       return () => ipcRenderer.off('mqtt:warning', handler);
     },
     onNodeUpdate: (
-      cb: (
-        node: Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' },
-      ) => void,
+      cb: (node: Partial<MeshNode> & { node_id: number; protocol?: MeshProtocol }) => void,
     ) => {
       const handler = (_: unknown, n: unknown) => {
-        cb(n as Partial<MeshNode> & { node_id: number; protocol?: 'meshtastic' | 'meshcore' });
+        cb(n as Partial<MeshNode> & { node_id: number; protocol?: MeshProtocol });
       };
       ipcRenderer.on('mqtt:node-update', handler);
       return () => ipcRenderer.off('mqtt:node-update', handler);
@@ -418,19 +382,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('mqtt:trace-route-reply', handler);
       return () => ipcRenderer.off('mqtt:trace-route-reply', handler);
     },
-    onClientId: (
-      cb: (payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' }) => void,
-    ) => {
-      const handler = (
-        _: unknown,
-        payload: { clientId: string; protocol: 'meshtastic' | 'meshcore' },
-      ) => {
+    onClientId: (cb: (payload: { clientId: string; protocol: MeshProtocol }) => void) => {
+      const handler = (_: unknown, payload: { clientId: string; protocol: MeshProtocol }) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:clientId', handler);
       return () => ipcRenderer.off('mqtt:clientId', handler);
     },
-    getClientId: (protocol?: 'meshtastic' | 'meshcore'): Promise<string> =>
+    getClientId: (protocol?: MeshProtocol): Promise<string> =>
       ipcRenderer.invoke('mqtt:getClientId', protocol),
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
     updateChannelKeys: (args: { entries: { name: string; pskBase64: string; index?: number }[] }) =>
@@ -679,7 +638,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Reset pairing retry count (call before starting a new BLE connection)
-  resetBlePairingRetryCount: (sessionKind?: 'meshtastic' | 'meshcore') => {
+  resetBlePairingRetryCount: (sessionKind?: MeshProtocol) => {
     ipcRenderer.send('ble-reset-pairing-retry-count', sessionKind ?? 'meshtastic');
   },
 

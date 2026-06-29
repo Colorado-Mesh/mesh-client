@@ -1,3 +1,5 @@
+import type { SavedMessage } from '@/shared/electron-api.types';
+
 import { meshtasticShortNameAfterClearingDefault } from '../../shared/nodeNameUtils';
 import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
@@ -66,16 +68,32 @@ export function buildMeshtasticNodeMapFromDbRows(
         ? meshtasticHwModelName(parseInt(rawHw, 10))
         : (rawHw ?? '');
     nodeMap.set(n.node_id, {
-      ...n,
+      node_id: n.node_id,
       long_name,
       hw_model,
       short_name: meshtasticShortNameAfterClearingDefault(long_name, n.short_name ?? '', n.node_id),
+      snr: n.snr ?? 0,
+      rssi: n.rssi ?? undefined,
+      battery: n.battery ?? 0,
+      last_heard: n.last_heard ?? 0,
+      latitude: n.latitude,
+      longitude: n.longitude,
       role: parseNodeRole(n.role),
+      hops_away: n.hops ?? n.hops_away ?? undefined,
+      via_mqtt: n.via_mqtt ?? undefined,
+      voltage: n.voltage ?? undefined,
+      channel_utilization: n.channel_utilization ?? undefined,
+      air_util_tx: n.air_util_tx ?? undefined,
+      altitude: n.altitude ?? undefined,
       favorited: Boolean(n.favorited),
+      source: n.source === 'mqtt' ? 'mqtt' : n.source === 'rf' ? 'rf' : undefined,
+      num_packets_rx_bad: n.num_packets_rx_bad ?? undefined,
+      num_rx_dupe: n.num_rx_dupe ?? undefined,
+      num_packets_rx: n.num_packets_rx ?? undefined,
+      num_packets_tx: n.num_packets_tx ?? undefined,
       heard_via_mqtt_only: n.source === 'mqtt',
       hops: n.hops ?? undefined,
       path: parseNodePath(n.path),
-      hops_away: n.hops ?? n.hops_away ?? undefined,
     });
   }
   for (const mc of meshcoreContacts) {
@@ -170,12 +188,29 @@ export function mergeMeshtasticDbHydrationWithLive(
   return trimChatMessagesToMax(merged, MAX_IN_MEMORY_CHAT_MESSAGES);
 }
 
+export function savedMessageToChatMessage(m: SavedMessage): ChatMessage {
+  return {
+    id: m.id,
+    sender_id: m.sender_id,
+    sender_name: m.sender_name,
+    payload: m.payload,
+    channel: m.channel,
+    timestamp: m.timestamp,
+    packetId: m.packetId ?? undefined,
+    status: m.status as ChatMessage['status'],
+    error: m.error ?? undefined,
+    mqttStatus: (m.mqttStatus as ChatMessage['mqttStatus']) ?? undefined,
+    emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
+    replyId: m.replyId ?? undefined,
+    to: m.to,
+    receivedVia: (m.receivedVia as ChatMessage['receivedVia']) ?? undefined,
+    viaStoreForward: m.viaStoreForward,
+  };
+}
+
 /** Sanitized Meshtastic messages from SQLite (newest-first, same order as legacy hydration). */
 export async function loadMeshtasticMessagesFromDb(): Promise<ChatMessage[]> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
-  const sanitized = msgs.map((m) => ({
-    ...m,
-    emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
-  }));
+  const sanitized = msgs.map(savedMessageToChatMessage);
   return dedupeMeshtasticHydrationOrphanSends(sanitized).reverse();
 }

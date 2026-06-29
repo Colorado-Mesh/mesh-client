@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 
 import type { MeshProtocol } from '../lib/types';
 import { useActiveMeshIdentity } from './useActiveMeshIdentity';
+import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
 import { useConnectionQueue } from './useConnectionStatus';
 import { useConnectionView } from './useConnectionView';
-import type { DualProtocolPanelActions } from './useDualProtocolPanelActions';
 import { useMessages } from './useMessages';
 import { useNodes } from './useNodes';
 import { type PanelActionsBundle, usePanelActions } from './usePanelActions';
@@ -29,10 +29,11 @@ export interface ProtocolFacade {
  */
 export function useProtocolFacade(
   protocol: MeshProtocol,
-  panelPrebuilt: DualProtocolPanelActions,
+  panelPrebuilt: PanelActionsByProtocol,
 ): ProtocolFacade {
-  const { meshtasticIdentityId, meshcoreIdentityId, focusedIdentityId } =
-    useActiveMeshIdentity(protocol);
+  const { identityIdByProtocol, focusedIdentityId } = useActiveMeshIdentity(protocol);
+  const meshtasticIdentityId = identityIdByProtocol.meshtastic;
+  const meshcoreIdentityId = identityIdByProtocol.meshcore;
   const connection = useProtocolConnectionActions(protocol);
   const connectionView = useConnectionView(focusedIdentityId);
   const queue = useConnectionQueue(focusedIdentityId);

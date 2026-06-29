@@ -30,7 +30,6 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
-import type { ElectronAPI } from '@/shared/electron-api.types';
 
 import type { LocationFilter } from '../App';
 import {
@@ -525,7 +524,7 @@ function LocateMeControl({
         }
         return;
       }
-      const result = await (window.electronAPI as unknown as ElectronAPI).getGpsFix();
+      const result = await window.electronAPI.getGpsFix();
       if ('status' in result && result.status === 'error') {
         addToast(result.message, 'error');
         return;

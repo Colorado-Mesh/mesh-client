@@ -36,8 +36,10 @@ export function computeMqttExponentialReconnectDelayMs(attempt: number): number 
   return applyPositiveJitterMs(raw);
 }
 
+import type { MeshProtocol } from './meshProtocol';
+
 export interface ComputeMqttReconnectDelayParams {
-  protocol: 'meshtastic' | 'meshcore';
+  protocol: MeshProtocol;
   /** 1-based reconnect attempt (same as logged "attempt X"). */
   attempt: number;
   /** Meshtastic only: attempt 1 after `connack timeout` teardown. */

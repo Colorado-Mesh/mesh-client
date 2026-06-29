@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import type { IdentityId, MeshProtocol } from '../lib/types';
-import type { DualProtocolPanelActions } from './useDualProtocolPanelActions';
+import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
 import type { useMeshcorePanelActions } from './useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
 
@@ -24,19 +24,11 @@ export interface PanelActionsBundle {
 export function usePanelActions(
   protocol: MeshProtocol,
   identityId: IdentityId | null,
-  prebuilt: DualProtocolPanelActions,
+  prebuilt: PanelActionsByProtocol,
 ): PanelActionsBundle {
   const capabilities = useRadioProvider(protocol);
 
-  const actionsByProtocol = useMemo(
-    (): Record<MeshProtocol, PanelActions> => ({
-      meshtastic: prebuilt.meshtastic,
-      meshcore: prebuilt.meshcore,
-    }),
-    [prebuilt],
-  );
-
-  const actions = actionsByProtocol[protocol];
+  const actions = prebuilt[protocol];
 
   return useMemo(
     () => ({ actions, capabilities, protocol, identityId }),

@@ -23,6 +23,7 @@ import { getProtocolForType } from '../protocols/protocolRegistry';
 import type {
   ConnectionType,
   IdentityId,
+  MeshProtocol,
   TransportParams,
   TransportRef,
   TransportType,
@@ -114,9 +115,7 @@ export class ConnectionDriver {
     let createdProvisional = false;
 
     if (!identityId || !getIdentity(identityId)) {
-      const reusableOffline = tryReuseOfflineProtocolIdentity(
-        protocol.type as 'meshtastic' | 'meshcore',
-      );
+      const reusableOffline = tryReuseOfflineProtocolIdentity(protocol.type as MeshProtocol);
       if (reusableOffline && getIdentity(reusableOffline)) {
         identityId = reusableOffline;
         updateIdentity(reusableOffline, {
@@ -215,7 +214,7 @@ export class ConnectionDriver {
       connectionType: transportTypeToConnectionType(params.type),
     });
     setActiveIdentity(identityId);
-    mergeOfflineStoreIntoIdentity(protocol.type as 'meshtastic' | 'meshcore', identityId);
+    mergeOfflineStoreIntoIdentity(protocol.type as MeshProtocol, identityId);
 
     return identityId;
   }
