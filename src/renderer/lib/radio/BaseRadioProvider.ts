@@ -105,6 +105,12 @@ export interface ProtocolCapabilities {
   nodeStaleThresholdMs: number;
   /** Node offline threshold in milliseconds (for node status UI) */
   nodeOfflineThresholdMs: number;
+  /** Whether Connection panel shows firmware update check on connect */
+  hasFirmwareUpdateCheck: boolean;
+  /** Meshtastic: hide queue badge count of 1 while a local message is still sending */
+  dedupeQueueBadgeForLocalSending: boolean;
+  /** Header self-node label prefers deviceOwner.longName over picker label */
+  prefersDeviceOwnerLongNameInHeader: boolean;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -158,6 +164,9 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasJsonRadioConfigImport: false,
   nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
   nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
+  hasFirmwareUpdateCheck: true,
+  dedupeQueueBadgeForLocalSending: true,
+  prefersDeviceOwnerLongNameInHeader: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -212,4 +221,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasJsonRadioConfigImport: true,
   nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
   nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours
+  hasFirmwareUpdateCheck: true,
+  dedupeQueueBadgeForLocalSending: false,
+  prefersDeviceOwnerLongNameInHeader: true,
 };

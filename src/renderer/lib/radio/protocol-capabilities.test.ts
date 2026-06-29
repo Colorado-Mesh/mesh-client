@@ -63,6 +63,9 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'nodeListTabUsesContactsLabel',
   'modulesTabUsesRepeatersLabel',
   'hasJsonRadioConfigImport',
+  'hasFirmwareUpdateCheck',
+  'dedupeQueueBadgeForLocalSending',
+  'prefersDeviceOwnerLongNameInHeader',
   'nodeStaleThresholdMs',
   'nodeOfflineThresholdMs',
 ];
@@ -92,6 +95,7 @@ describe('ProtocolCapabilities contract', () => {
   it('MESHTASTIC_CAPABILITIES exact values are stable', () => {
     expect(MESHTASTIC_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "dedupeQueueBadgeForLocalSending": true,
         "hasAtakPlugin": true,
         "hasAudio": true,
         "hasBatteryTelemetry": true,
@@ -106,6 +110,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasDisplayConfig": true,
         "hasEnvironmentTelemetry": true,
         "hasFactoryReset": true,
+        "hasFirmwareUpdateCheck": true,
         "hasFullPositionConfig": true,
         "hasHopCount": true,
         "hasIpTunnel": true,
@@ -144,6 +149,7 @@ describe('ProtocolCapabilities contract', () => {
         "nodeListTabUsesContactsLabel": false,
         "nodeOfflineThresholdMs": 604800000,
         "nodeStaleThresholdMs": 7200000,
+        "prefersDeviceOwnerLongNameInHeader": false,
         "protocol": "meshtastic",
       }
     `);
@@ -152,6 +158,7 @@ describe('ProtocolCapabilities contract', () => {
   it('MESHCORE_CAPABILITIES exact values are stable', () => {
     expect(MESHCORE_CAPABILITIES).toMatchInlineSnapshot(`
       {
+        "dedupeQueueBadgeForLocalSending": false,
         "hasAtakPlugin": false,
         "hasAudio": false,
         "hasBatteryTelemetry": true,
@@ -166,6 +173,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasDisplayConfig": false,
         "hasEnvironmentTelemetry": true,
         "hasFactoryReset": false,
+        "hasFirmwareUpdateCheck": true,
         "hasFullPositionConfig": false,
         "hasHopCount": true,
         "hasIpTunnel": false,
@@ -204,6 +212,7 @@ describe('ProtocolCapabilities contract', () => {
         "nodeListTabUsesContactsLabel": true,
         "nodeOfflineThresholdMs": 345600000,
         "nodeStaleThresholdMs": 172800000,
+        "prefersDeviceOwnerLongNameInHeader": true,
         "protocol": "meshcore",
       }
     `);

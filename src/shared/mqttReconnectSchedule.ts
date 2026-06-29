@@ -1,7 +1,7 @@
 /**
  * Shared MQTT reconnect delay policy for Meshtastic and MeshCore main-process clients.
  * Capped exponential backoff with light jitter so long broker outages (e.g. overnight reboots)
- * are covered without fixed 10-minute steps or JWT "machine-gun" retries.
+ * are covered without fixed long-interval steps (cap 45 minutes) or JWT "machine-gun" retries.
  */
 
 /** First long-wait step: 60s → 120s → … capped. */
@@ -27,7 +27,7 @@ function applyPositiveJitterMs(delayMs: number): number {
 /** Exponential delay for attempt ≥ 1 (post-increment counter). */
 export function computeMqttExponentialReconnectDelayMs(attempt: number): number {
   if (!Number.isInteger(attempt) || attempt < 1) {
-    throw new Error('attempt must be a positive integer');
+    throw new RangeError('attempt must be a positive integer');
   }
   const raw = Math.min(
     MQTT_RECONNECT_EXPONENTIAL_CAP_MS,
