@@ -30,6 +30,7 @@ import {
 } from '../shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '../shared/reactionEmoji';
 import { sanitizeLogMessage } from './log-service';
+import { forceEndMqttClient } from './mqtt-client-teardown';
 
 const { ServiceEnvelopeSchema } = MqttProto;
 const {
@@ -438,12 +439,7 @@ export class MQTTManager extends EventEmitter {
     this.clearConnectAckTimer();
     this.setStatus('connecting');
     if (this.client) {
-      try {
-        this.client.removeAllListeners();
-        this.client.end(true);
-      } catch {
-        // catch-no-log-ok tear down stale client before new connect
-      }
+      forceEndMqttClient(this.client);
       this.client = null;
     }
     const clientId =
@@ -512,6 +508,33 @@ export class MQTTManager extends EventEmitter {
       this.client = mqtt.connect(connectOpts);
     }
 
+    this.client.on('error', (err: Error & { code?: string | number }) => {
+      // Transient network errors will trigger 'close' → our backoff handler; don't
+      // flip status to "error" for them — that would hide the "connecting" state.
+      const isTransient = isTransientNetworkError(err);
+      if (err.message === 'connack timeout') {
+        this.preferFastMqttReconnect = true;
+      }
+      if (isTransient) {
+        const isMsgTransient =
+          err.message === 'Keepalive timeout' || err.message === 'connack timeout';
+        if (isMsgTransient) {
+          console.warn(
+            '[Meshtastic MQTT] Connection timeout (will reconnect):',
+            sanitizeLogMessage(err.message),
+          );
+        } else {
+          console.warn(
+            '[Meshtastic MQTT] Network error (will reconnect):',
+            sanitizeLogMessage(err.message),
+          ); // log-filter-ok Meshtastic MQTT logs → App log panel
+        }
+      } else {
+        console.error('[Meshtastic MQTT] Fatal connection error:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
+        this.setError(err.message);
+      }
+    });
+
     this.connectAckTimer = setTimeout(() => {
       this.connectAckTimer = null;
       if (this.status !== 'connecting' || !this.client) return;
@@ -519,11 +542,8 @@ export class MQTTManager extends EventEmitter {
       console.error('[Meshtastic MQTT]', sanitizeLogMessage(msg)); // log-filter-ok Meshtastic MQTT logs → App log panel
       this.emit('error', msg);
       this.preferFastMqttReconnect = true;
-      try {
-        // Do not removeAllListeners — `close` must run so reconnect backoff still schedules.
-        this.client.end(true);
-      } catch {
-        // catch-no-log-ok forced end during stuck connect
+      if (this.client) {
+        forceEndMqttClient(this.client);
       }
     }, MESHTASTIC_MQTT_CONNECT_ACK_MS);
 
@@ -583,33 +603,6 @@ export class MQTTManager extends EventEmitter {
 
     this.client.on('message', (topic: string, payload: Buffer | string, packet) => {
       this.onMessage(topic, payload, packet);
-    });
-
-    this.client.on('error', (err: Error & { code?: string | number }) => {
-      // Transient network errors will trigger 'close' → our backoff handler; don't
-      // flip status to "error" for them — that would hide the "connecting" state.
-      const isTransient = isTransientNetworkError(err);
-      if (err.message === 'connack timeout') {
-        this.preferFastMqttReconnect = true;
-      }
-      if (isTransient) {
-        const isMsgTransient =
-          err.message === 'Keepalive timeout' || err.message === 'connack timeout';
-        if (isMsgTransient) {
-          console.warn(
-            '[Meshtastic MQTT] Connection timeout (will reconnect):',
-            sanitizeLogMessage(err.message),
-          );
-        } else {
-          console.warn(
-            '[Meshtastic MQTT] Network error (will reconnect):',
-            sanitizeLogMessage(err.message),
-          ); // log-filter-ok Meshtastic MQTT logs → App log panel
-        }
-      } else {
-        console.error('[Meshtastic MQTT] Fatal connection error:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
-        this.setError(err.message);
-      }
     });
 
     this.client.on('close', () => {
@@ -1082,8 +1075,7 @@ export class MQTTManager extends EventEmitter {
     this.currentSettings = null;
     this.retryCount = 0;
     if (this.client) {
-      this.client.removeAllListeners();
-      this.client.end(true);
+      forceEndMqttClient(this.client);
       this.client = null;
     }
     this.setStatus('disconnected');
@@ -1114,8 +1106,7 @@ export class MQTTManager extends EventEmitter {
       this.status = 'disconnected';
     }
     if (this.client) {
-      this.client.removeAllListeners();
-      this.client.end(true);
+      forceEndMqttClient(this.client);
       this.client = null;
     }
     if (this.status === 'connected' || this.status === 'connecting') {

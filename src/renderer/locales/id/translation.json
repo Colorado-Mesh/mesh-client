@@ -609,7 +609,10 @@
       "hashLabel": "Hash LXMF:",
       "nameLabel": "Name: Gerald Abram Foeh Junior",
       "failed": "Penyiapan identitas gagal",
-      "export": "Ekspor cadangan"
+      "export": "Ekspor cadangan",
+      "exportPassphrase": "Frasa sandi cadangan",
+      "exportPassphraseHint": "Mengenkripsi JSON cadangan yang diekspor. Simpan frasa sandi secara terpisah dari file cadangan.",
+      "exportPassphraseRequired": "Masukkan frasa sandi cadangan sebelum mengekspor."
     },
     "reticulumInterfaces": {
       "title": "Interface",

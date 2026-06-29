@@ -609,7 +609,10 @@
       "hashLabel": "LXMF hash:",
       "nameLabel": "Jméno:",
       "failed": "Nastavení identity selhalo",
-      "export": "Exportovat zálohu"
+      "export": "Exportovat zálohu",
+      "exportPassphrase": "Záložní přístupová fráze",
+      "exportPassphraseHint": "Šifruje exportovanou zálohu JSON. Heslo uložte odděleně od záložního souboru.",
+      "exportPassphraseRequired": "Před exportem zadejte záložní přístupovou frázi."
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",

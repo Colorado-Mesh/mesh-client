@@ -498,7 +498,10 @@
       "hashLabel": "LXMF hash:",
       "nameLabel": "Name:",
       "failed": "Identity setup failed",
-      "export": "Export backup"
+      "export": "Export backup",
+      "exportPassphrase": "Backup passphrase",
+      "exportPassphraseHint": "Encrypts the exported backup JSON. Store the passphrase separately from the backup file.",
+      "exportPassphraseRequired": "Enter a backup passphrase before exporting."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

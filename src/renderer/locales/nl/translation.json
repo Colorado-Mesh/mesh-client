@@ -609,7 +609,10 @@
       "hashLabel": "LXMF-hash:",
       "nameLabel": "Naam:",
       "failed": "Identiteitsinstelling mislukt",
-      "export": "Back-up exporteren"
+      "export": "Back-up exporteren",
+      "exportPassphrase": "Back-up wachtwoordzin",
+      "exportPassphraseHint": "Versleutelt de geëxporteerde back-up JSON. Sla de wachtwoordzin apart op van het back-upbestand.",
+      "exportPassphraseRequired": "Voer een back-upwachtzin in voordat u exporteert."
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",

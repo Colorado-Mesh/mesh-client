@@ -609,7 +609,10 @@
       "hashLabel": "Skrót LXMF:",
       "nameLabel": "Imię i nazwisko:",
       "failed": "Konfiguracja tożsamości nie powiodła się",
-      "export": "Kopia zapasowa eksportu"
+      "export": "Kopia zapasowa eksportu",
+      "exportPassphrase": "Hasło zapasowe",
+      "exportPassphraseHint": "Szyfruje wyeksportowaną kopię zapasową JSON. Przechowuj hasło oddzielnie od pliku kopii zapasowej.",
+      "exportPassphraseRequired": "Wprowadź hasło zapasowe przed eksportem."
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",

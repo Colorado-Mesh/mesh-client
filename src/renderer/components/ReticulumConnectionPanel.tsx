@@ -82,6 +82,7 @@ export function ReticulumConnectionPanel({
   const [selectedPreset, setSelectedPreset] = useState('');
   const [bleAvailable, setBleAvailable] = useState(false);
   const [exportJson, setExportJson] = useState<string | null>(null);
+  const [exportPassphrase, setExportPassphrase] = useState('');
 
   /** UI: Start/Stop, connecting badge — includes in-flight connect before getStatus catches up. */
   const sidecarUiRunning = stackRunningProp || sidecarStatus.running;
@@ -125,18 +126,32 @@ export function ReticulumConnectionPanel({
   };
 
   const handleExportIdentity = async () => {
+    const passphrase = exportPassphrase.trim();
+    if (!passphrase) {
+      setIdentityError(t('connectionPanel.reticulumIdentity.exportPassphraseRequired'));
+      return;
+    }
     setIdentityError(null);
     try {
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/export', {})) as {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/export', {
+        passphrase,
+      })) as {
         ok?: boolean;
-        backup?: string;
+        backup?: unknown;
         error?: string;
       };
       if (!res.ok) {
         setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
         return;
       }
-      setExportJson(res.backup ?? null);
+      const backup = res.backup;
+      setExportJson(
+        typeof backup === 'string'
+          ? backup
+          : backup != null
+            ? JSON.stringify(backup, null, 2)
+            : null,
+      );
     } catch (e) {
       console.warn('[ReticulumConnectionPanel] export identity ' + errLikeToLogString(e));
       setIdentityError(errLikeToLogString(e));
@@ -318,7 +333,7 @@ export function ReticulumConnectionPanel({
               sidecarUiRunning
                 ? 'text-brand-green'
                 : connecting
-                  ? 'animate-pulse text-orange-400'
+                  ? 'animate-pulse text-yellow-400'
                   : 'text-gray-400'
             }`}
           >
@@ -412,13 +427,30 @@ export function ReticulumConnectionPanel({
                 {identity.display_name}
               </div>
             ) : null}
+            <label className="mt-2 block text-xs text-gray-400">
+              {t('connectionPanel.reticulumIdentity.exportPassphrase')}
+              <input
+                type="password"
+                value={exportPassphrase}
+                onChange={(e) => {
+                  setExportPassphrase(e.target.value);
+                }}
+                autoComplete="new-password"
+                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+                aria-label={t('connectionPanel.reticulumIdentity.exportPassphrase')}
+              />
+            </label>
+            <p className="text-muted text-xs">
+              {t('connectionPanel.reticulumIdentity.exportPassphraseHint')}
+            </p>
             <button
               type="button"
               aria-label={t('connectionPanel.reticulumIdentity.export')}
+              disabled={identityActionsDisabled || !exportPassphrase.trim()}
               onClick={() => {
                 void handleExportIdentity();
               }}
-              className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
+              className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
             >
               {t('connectionPanel.reticulumIdentity.export')}
             </button>

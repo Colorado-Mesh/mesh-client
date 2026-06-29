@@ -609,7 +609,10 @@
       "hashLabel": "LXMFハッシュ：",
       "nameLabel": "名前:",
       "failed": "IDの設定に失敗しました",
-      "export": "バックアップをエクスポート"
+      "export": "バックアップをエクスポート",
+      "exportPassphrase": "バックアップパスフレーズ",
+      "exportPassphraseHint": "エクスポートされたバックアップJSONを暗号化します。パスフレーズをバックアップファイルとは別に保存します。",
+      "exportPassphraseRequired": "エクスポートする前にバックアップパスフレーズを入力してください。"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",

@@ -609,7 +609,10 @@
       "hashLabel": "Hash LXMF:",
       "nameLabel": "Nome:",
       "failed": "Falha na configuração de identidade",
-      "export": "Exportar backup"
+      "export": "Exportar backup",
+      "exportPassphrase": "Senha de backup",
+      "exportPassphraseHint": "Criptografa o JSON de backup exportado. Armazene a senha separadamente do arquivo de backup.",
+      "exportPassphraseRequired": "Insira uma senha de backup antes de exportar."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

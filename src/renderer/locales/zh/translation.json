@@ -609,7 +609,10 @@
       "hashLabel": "LXMF哈希：",
       "nameLabel": "姓名：",
       "failed": "身份设置失败",
-      "export": "导出备份"
+      "export": "导出备份",
+      "exportPassphrase": "备份密码",
+      "exportPassphraseHint": "加密导出的备份JSON。将密码短语与备份文件分开存储。",
+      "exportPassphraseRequired": "在导出前输入备用密码。"
     },
     "reticulumInterfaces": {
       "title": "接口",

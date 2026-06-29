@@ -609,7 +609,10 @@
       "hashLabel": "LXMF-Hash:",
       "nameLabel": "Name:",
       "failed": "Identitätseinstellung fehlgeschlagen",
-      "export": "Sicherungskopie"
+      "export": "Sicherungskopie",
+      "exportPassphrase": "Backup-Passphrase",
+      "exportPassphraseHint": "Verschlüsselt das exportierte Backup-json. Speichern Sie die Passphrase getrennt von der Sicherungsdatei.",
+      "exportPassphraseRequired": "Geben Sie vor dem Exportieren eine Backup-Passphrase ein."
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",

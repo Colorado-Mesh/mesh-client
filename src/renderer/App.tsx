@@ -2205,7 +2205,7 @@ function AppContent() {
                 {activeConnectionView.state.status === 'connecting' && (
                   <ConnectIcon
                     animated
-                    className="h-4 w-4 text-orange-400"
+                    className={`h-4 w-4 ${headerIconClass('warn')}`}
                     size={16}
                     aria-hidden="true"
                   />

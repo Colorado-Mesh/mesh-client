@@ -209,8 +209,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       unsubEventRef.current?.();
       unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
       await refreshContactsFromSidecar();
-      setState({ status: 'connected', myNodeNum: 0, connectionType: null });
-      syncConnectionStore({ status: 'connected', connectionType: null, myNodeNum: 0 });
+      setState({ status: 'configured', myNodeNum: 0, connectionType: null });
+      syncConnectionStore({ status: 'configured', connectionType: null, myNodeNum: 0 });
     } catch (e) {
       console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
       setState(INITIAL_STATE);

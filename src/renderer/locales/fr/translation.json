@@ -609,7 +609,10 @@
       "hashLabel": "Hachage LXMF :",
       "nameLabel": "Nom :&#10;",
       "failed": "Échec de la configuration de l'identité",
-      "export": "Exporter les sauvegardes"
+      "export": "Exporter les sauvegardes",
+      "exportPassphrase": "Phrase de passe de sauvegarde",
+      "exportPassphraseHint": "Chiffre le JSON de sauvegarde exporté. Stockez la phrase secrète séparément du fichier de sauvegarde.",
+      "exportPassphraseRequired": "Saisissez une phrase de passe de sauvegarde avant l'exportation."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

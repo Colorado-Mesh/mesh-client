@@ -69,6 +69,21 @@ describe('connectionHeaderStatus', () => {
       expect(headerTextClass('warn')).toContain('text-yellow-400');
     });
 
+    it('device connecting uses yellow pulse', () => {
+      expect(deviceHeaderVariant('connecting', false)).toBe('warn');
+      expect(headerTextClass('warn')).toContain('text-yellow-400');
+    });
+
+    it('device configured uses green', () => {
+      expect(deviceHeaderVariant('configured', false)).toBe('ok');
+      expect(headerDotClass('ok')).toContain('bg-green-500');
+    });
+
+    it('device connected without configure uses muted connected variant', () => {
+      expect(deviceHeaderVariant('connected', false)).toBe('connected');
+      expect(headerTextClass('connected')).toContain('text-muted');
+    });
+
     it('device error uses pulsing red dot', () => {
       expect(deviceHeaderVariant('reconnecting', false)).toBe('error');
       expect(headerDotClass('error')).toBe(CONNECTION_HEADER_PULSE_RED_DOT);

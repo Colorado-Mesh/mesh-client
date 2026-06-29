@@ -609,7 +609,10 @@
       "hashLabel": "LXMF 해시:",
       "nameLabel": "이름:",
       "failed": "신원 설정 실패",
-      "export": "내보내기 백업"
+      "export": "내보내기 백업",
+      "exportPassphrase": "암호 백업",
+      "exportPassphraseHint": "내보낸 백업 JSON을 암호화합니다. 백업 파일과 별도로 암호를 저장하십시오.",
+      "exportPassphraseRequired": "내보내기 전에 백업 암호를 입력하십시오."
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
