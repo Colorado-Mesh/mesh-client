@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe';
 
 import type { SerialPort } from '@/shared/electron-api.types';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import { MESHCORE_IDENTITY_STORAGE_KEY } from '../lib/letsMeshJwt';
 import type { DeviceState } from '../lib/types';
@@ -124,6 +125,23 @@ describe('ConnectionPanel accessibility', () => {
         protocol="meshtastic"
       />,
     );
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('has no axe violations for MeshCore disconnected state', async () => {
+    const { container } = render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+    hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -551,6 +569,7 @@ describe('ConnectionPanel firmware status indicator', () => {
       { phase: 'update-available', latestVersion: '2.5.4' },
       vi.fn(),
     );
+    hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

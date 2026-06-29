@@ -16,6 +16,8 @@ import type { MeshProtocol, MQTTSettings } from './types';
 
 /** Connect MQTT for `prot` when `autoLaunch` is enabled in persisted settings. */
 export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
+  if (prot === 'reticulum') return;
+
   const settings =
     prot === 'meshcore'
       ? readMeshcoreMqttSettingsFromStorage()

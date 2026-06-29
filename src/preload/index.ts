@@ -16,6 +16,11 @@ import type {
   SpellcheckReplacePayload,
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
+import type {
+  ReticulumSidecarEvent,
+  ReticulumSidecarStartOptions,
+  ReticulumSidecarStatus,
+} from '../shared/reticulum-types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
 
 export type { NobleBleDevice, NobleBleSessionId, SerialPort };
@@ -853,6 +858,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('tak:clientDisconnected', handler);
       return () => ipcRenderer.off('tak:clientDisconnected', handler);
+    },
+  },
+
+  // ─── Reticulum sidecar ───────────────────────────────────────────
+  reticulum: {
+    start: (opts?: ReticulumSidecarStartOptions): Promise<ReticulumSidecarStatus> =>
+      ipcRenderer.invoke('reticulum:start', opts),
+    stop: (): Promise<void> => ipcRenderer.invoke('reticulum:stop'),
+    getStatus: (): Promise<ReticulumSidecarStatus> => ipcRenderer.invoke('reticulum:getStatus'),
+    proxyGet: (apiPath: string): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyGet', apiPath),
+    proxyPost: (apiPath: string, body: unknown): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyPost', apiPath, body),
+    onEvent: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
+      const handler = (_: unknown, event: ReticulumSidecarEvent) => {
+        cb(event);
+      };
+      ipcRenderer.on('reticulum:event', handler);
+      return () => ipcRenderer.off('reticulum:event', handler);
+    },
+    onStatus: (cb: (status: ReticulumSidecarStatus) => void): (() => void) => {
+      const handler = (_: unknown, status: ReticulumSidecarStatus) => {
+        cb(status);
+      };
+      ipcRenderer.on('reticulum:status', handler);
+      return () => ipcRenderer.off('reticulum:status', handler);
     },
   },
 

@@ -15,6 +15,7 @@ import {
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
+import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
@@ -28,6 +29,7 @@ import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
   humanizeHttpError,
+  humanizeReticulumSidecarError,
   humanizeSerialError,
 } from '../lib/connectionPanelErrorHumanize';
 import { runConnectionPanelStorageMigrations } from '../lib/connectionPanelStorageMigrations';
@@ -294,6 +296,8 @@ interface Props {
   onOpenFirmwareReleases?: () => void;
   /** MeshCore: export private key from connected radio when MQTT identity cache is incomplete. */
   ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
+  /** Reticulum: start or restart the AGPL sidecar stack. */
+  onStartReticulumStack?: () => Promise<void>;
 }
 
 export default function ConnectionPanel({
@@ -309,10 +313,39 @@ export default function ConnectionPanel({
   firmwareCheckState,
   onOpenFirmwareReleases,
   ensureMeshcoreMqttIdentity,
+  onStartReticulumStack,
 }: Props) {
   const { t } = useTranslation();
+  const capabilities = useRadioProvider(protocol);
   const parentIconTrigger = useParentIconTrigger();
   const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [reticulumInterfaces, setReticulumInterfaces] = useState<
+    { name?: string; type?: string; enabled?: boolean }[]
+  >([]);
+  const [reticulumStackError, setReticulumStackError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!capabilities.hasReticulumInterfaceConfig || state.status !== 'connected') {
+      setReticulumInterfaces([]);
+      return;
+    }
+    let cancelled = false;
+    void window.electronAPI.reticulum
+      .proxyGet('/api/v1/interfaces')
+      .then((body) => {
+        if (cancelled) return;
+        const parsed = body as {
+          interfaces?: { name?: string; type?: string; enabled?: boolean }[];
+        };
+        setReticulumInterfaces(parsed.interfaces ?? []);
+      })
+      .catch((e: unknown) => {
+        console.debug('[ConnectionPanel] reticulum interfaces ' + errLikeToLogString(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [capabilities.hasReticulumInterfaceConfig, state.status]);
 
   useEffect(() => {
     runConnectionPanelStorageMigrations();
@@ -1806,7 +1839,7 @@ export default function ConnectionPanel({
               ? 'animate-pulse text-yellow-400'
               : mqttStatus === 'error'
                 ? 'text-red-400'
-                : 'text-gray-500'
+                : 'text-gray-300'
         }`}
         aria-live="polite"
       >
@@ -1964,7 +1997,7 @@ export default function ConnectionPanel({
                     className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
                       meshtasticPreset === id
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
                     {label}
@@ -2058,7 +2091,7 @@ export default function ConnectionPanel({
                     className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
                       meshcorePreset === id
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
                     {label}
@@ -2088,7 +2121,7 @@ export default function ConnectionPanel({
                     className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
                       meshcoreMqttSettings.server === LETSMESH_HOST_US
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
                     US
@@ -2109,7 +2142,7 @@ export default function ConnectionPanel({
                     className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
                       meshcoreMqttSettings.server === LETSMESH_HOST_EU
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
                     EU
@@ -2487,7 +2520,7 @@ export default function ConnectionPanel({
                 });
               }}
               disabled={mqttStatus === 'connecting'}
-              className={`rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:opacity-40 ${mqttStatus === 'connecting' ? 'flex-1' : 'w-full'}`}
+              className={`bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-40 ${mqttStatus === 'connecting' ? 'flex-1' : 'w-full'}`}
             >
               {t('connectionPanel.connectMqtt')}
             </button>
@@ -2495,6 +2528,82 @@ export default function ConnectionPanel({
         </div>
       </div>
     );
+
+  if (capabilities.hasReticulumInterfaceConfig) {
+    const stackRunning =
+      state.status === 'connected' ||
+      state.status === 'configured' ||
+      state.status === 'stale' ||
+      state.status === 'reconnecting';
+    return (
+      <div className="w-full space-y-4 p-4">
+        <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
+          <h2 className="text-sm font-medium text-gray-200">
+            {t('connectionPanel.reticulumStackTitle')}
+          </h2>
+          <p className="text-muted mt-1 text-xs">{t('connectionPanel.reticulumStackHint')}</p>
+          {reticulumStackError ? (
+            <p className="mt-2 text-sm text-red-400" role="alert">
+              {reticulumStackError}
+            </p>
+          ) : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              aria-label={t('connectionPanel.reticulumStartStack')}
+              disabled={state.status === 'connecting'}
+              onClick={() => {
+                setReticulumStackError(null);
+                void onStartReticulumStack?.().catch((err: unknown) => {
+                  setReticulumStackError(humanizeReticulumSidecarError(err, t));
+                });
+              }}
+              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-40"
+            >
+              {stackRunning
+                ? t('connectionPanel.reticulumRestartStack')
+                : t('connectionPanel.reticulumStartStack')}
+            </button>
+            {stackRunning && (
+              <button
+                type="button"
+                aria-label={t('connectionPanel.disconnect')}
+                onClick={() => {
+                  void onDisconnect();
+                }}
+                className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+              >
+                {t('connectionPanel.disconnect')}
+              </button>
+            )}
+          </div>
+        </div>
+        {capabilities.hasReticulumNetworkPanel && stackRunning && (
+          <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
+            <h3 className="text-sm font-medium text-gray-200">
+              {t('connectionPanel.reticulumNetworkTitle')}
+            </h3>
+            {reticulumInterfaces.length === 0 ? (
+              <p className="text-muted mt-2 text-xs">
+                {t('connectionPanel.reticulumNetworkEmpty')}
+              </p>
+            ) : (
+              <ul className="mt-2 space-y-1 text-xs text-gray-300">
+                {reticulumInterfaces.map((iface, idx) => (
+                  <li key={`${iface.name ?? iface.type ?? 'iface'}-${idx}`}>
+                    {iface.name ?? iface.type ?? t('connectionPanel.reticulumNetworkUnknown')}
+                    {iface.enabled === false
+                      ? ` (${t('connectionPanel.reticulumNetworkDisabled')})`
+                      : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // ─── Connected View ────────────────────────────────────────────
   if (isConnected) {
@@ -2515,7 +2624,7 @@ export default function ConnectionPanel({
                 href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
                 target="_blank"
                 rel="noreferrer"
-                className="text-muted hover:text-brand-green text-xs transition-colors"
+                className="hover:text-brand-green text-xs text-gray-300 transition-colors"
               >
                 Docs ↗
               </a>
@@ -2644,7 +2753,7 @@ export default function ConnectionPanel({
             <button
               type="button"
               onClick={handleReconnect}
-              className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400"
+              className="bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
             >
               {t('connectionPanel.reconnect')}
             </button>
@@ -2655,7 +2764,7 @@ export default function ConnectionPanel({
               clearLastConnection(protocol);
               setLastConnection(null);
             }}
-            className="text-xs text-gray-600 transition-colors hover:text-gray-400"
+            className="text-xs text-gray-400 transition-colors hover:text-gray-200"
           >
             {t('connectionPanel.forgetDevice')}
           </button>
@@ -2677,11 +2786,11 @@ export default function ConnectionPanel({
               href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
               target="_blank"
               rel="noreferrer"
-              className="text-muted hover:text-brand-green text-xs transition-colors"
+              className="hover:text-brand-green text-xs text-gray-300 transition-colors"
             >
               Docs ↗
             </a>
-            <span className="text-xs font-medium text-gray-500">
+            <span className="text-xs font-medium text-gray-400">
               {t('connectionPanel.disconnected')}
             </span>
           </div>
@@ -2785,7 +2894,7 @@ export default function ConnectionPanel({
                     }}
                     className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                       connectionType === type
-                        ? 'ring-bright-green bg-green-500 text-white ring-2'
+                        ? 'ring-bright-green bg-readable-green text-white ring-2'
                         : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
                     }`}
                   >
@@ -2894,7 +3003,7 @@ export default function ConnectionPanel({
           )}
 
           {/* Connection hints */}
-          <div className="text-muted bg-secondary-dark space-y-1 rounded-lg p-3 text-xs">
+          <div className="bg-secondary-dark space-y-1 rounded-lg p-3 text-xs text-gray-300">
             {connectionType === 'ble' && protocol === 'meshtastic' && (
               <>
                 <p>{t('connectionPanel.hintMeshtasticBle1')}</p>
@@ -2940,7 +3049,7 @@ export default function ConnectionPanel({
                 state.status === 'connecting' ||
                 (connectionType === 'http' && !activeHostAddress.trim())
               }
-              className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('connectionPanel.connectButton')}
             </button>

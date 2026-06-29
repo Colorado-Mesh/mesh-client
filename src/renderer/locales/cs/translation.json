@@ -212,7 +212,8 @@
     "protocolSwitcher": "Přepínač protokolů",
     "switchToMeshtastic": "Přepněte na Meshtastic",
     "switchToMeshCore": "Přepněte na MeshCore",
-    "backToTop": "Zpět nahoru"
+    "backToTop": "Zpět nahoru",
+    "switchToReticulum": "Přepnout na Reticulum"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA.",
     "channelPsksPrivateUplinkNote": "Kanálový uplink je šifrován AES-PSK na /2/e/ (žádné zrcadlo JSON pro soukromé klíče). Monitory zprostředkovatelů mohou stále zaznamenávat chyby dešifrování pro provoz PKI/DM mezi jinými uzly — to je normální a nesouvisí s kanály PSK.",
     "sharedBleWithMeshtastic": "Toto zařízení Bluetooth je již připojeno přes Meshtastic. Chcete-li jej použít, přepněte na kartu Meshtastic, nebo si pro MeshCore vyberte jiné rádio nebo transport.",
-    "sharedBleWithMeshtasticHint": "Jedno fyzické rádio nemůže současně pořádat relace Meshtastic a MeshCore Bluetooth."
+    "sharedBleWithMeshtasticHint": "Jedno fyzické rádio nemůže současně pořádat relace Meshtastic a MeshCore Bluetooth.",
+    "reticulumStackTitle": "Zásobník Reticulum",
+    "reticulumStackHint": "Spustí lokální sidecar Reticulum/LXMF (rozhraní TCP a Auto).",
+    "reticulumStartStack": "Spustit zásobník",
+    "reticulumRestartStack": "Restartovat zásobník",
+    "reticulumNetworkTitle": "Síťová rozhraní",
+    "reticulumNetworkEmpty": "Zatím nebyla nahlášena žádná rozhraní.",
+    "reticulumNetworkUnknown": "Rozhraní",
+    "reticulumNetworkDisabled": "vypnuto",
+    "reticulumSidecarMissing": "Sidecar Reticulum není sestaven. V repozitáři mesh-client spusťte `pnpm run reticulum:sidecar:build` (vyžaduje Rust).",
+    "reticulumSidecarCargoMissing": "Nástrojová sada Rust (cargo) nebyla nalezena. Nainstalujte z https://rustup.rs a spusťte `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Nelze spustit zásobník Reticulum: {{message}}",
+    "disconnect": "Odpojit"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

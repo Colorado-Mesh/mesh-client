@@ -212,7 +212,8 @@
     "protocolSwitcher": "Переключатель протоколов",
     "switchToMeshtastic": "Переключиться на Meshtastic",
     "switchToMeshCore": "Переключиться на MeshCore",
-    "backToTop": "Вернуться наверх"
+    "backToTop": "Вернуться наверх",
+    "switchToReticulum": "Переключиться на Reticulum"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Разрешить небезопасный TLS (самозаверяющий сертификат). По умолчанию выключено — включено только в том случае, если ваш брокер использует непубличный центр сертификации.",
     "channelPsksPrivateUplinkNote": "Канал восходящей связи зашифрован AES-PSK на /2/e/ (нет зеркала JSON для закрытых ключей). Мониторы брокеров все еще могут регистрировать сбои расшифровки для трафика PKI/DM между другими узлами — это нормально и не связано с канальными PSK здесь.",
     "sharedBleWithMeshtastic": "Это устройство Bluetooth уже подключено через Meshtastic. Переключитесь на вкладку Meshtastic, чтобы использовать ее, или выберите другое радио или транспорт для MeshCore.",
-    "sharedBleWithMeshtasticHint": "Одно физическое радио не может одновременно проводить отдельные сеансы Bluetooth Meshtastic и MeshCore."
+    "sharedBleWithMeshtasticHint": "Одно физическое радио не может одновременно проводить отдельные сеансы Bluetooth Meshtastic и MeshCore.",
+    "reticulumStackTitle": "Стек Reticulum",
+    "reticulumStackHint": "Запускает локальный sidecar Reticulum/LXMF (интерфейсы TCP и Auto).",
+    "reticulumStartStack": "Запустить стек",
+    "reticulumRestartStack": "Перезапустить стек",
+    "reticulumNetworkTitle": "Сетевые интерфейсы",
+    "reticulumNetworkEmpty": "Интерфейсы пока не сообщались.",
+    "reticulumNetworkUnknown": "Интерфейс",
+    "reticulumNetworkDisabled": "отключено",
+    "reticulumSidecarMissing": "Sidecar Reticulum не собран. В репозитории mesh-client выполните `pnpm run reticulum:sidecar:build` (требуется Rust).",
+    "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) не найден. Установите с https://rustup.rs, затем выполните `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Не удалось запустить стек Reticulum: {{message}}",
+    "disconnect": "Отключить"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

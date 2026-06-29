@@ -15,7 +15,7 @@ describe('ProtocolSwitcher', () => {
     render(
       <ProtocolSwitcher
         protocol="meshtastic"
-        chatUnreadByProtocol={{ meshtastic: 0, meshcore: 3 }}
+        chatUnreadByProtocol={{ meshtastic: 0, meshcore: 3, reticulum: 1 }}
         onProtocolChange={onProtocolChange}
       />,
     );
@@ -28,16 +28,20 @@ describe('ProtocolSwitcher', () => {
       'aria-pressed',
       'false',
     );
+    expect(screen.getByRole('button', { name: /Reticulum/i })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
 
     await user.click(screen.getByRole('button', { name: /MeshCore/i }));
     expect(onProtocolChange).toHaveBeenCalledWith('meshcore');
   });
 
-  it('has no serious axe violations', async () => {
+  it('has no serious axe violations with three protocol pills', async () => {
     const { container } = render(
       <ProtocolSwitcher
         protocol="meshcore"
-        chatUnreadByProtocol={{ meshtastic: 2, meshcore: 0 }}
+        chatUnreadByProtocol={{ meshtastic: 2, meshcore: 0, reticulum: 4 }}
         onProtocolChange={() => {}}
       />,
     );

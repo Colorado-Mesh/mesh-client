@@ -30,6 +30,7 @@ export function useAppTrayUnreadSync(
   meshtasticChatUnread: number,
   meshcoreChatUnread: number,
   meshcoreRoomsUnread: number,
+  reticulumChatUnread = 0,
 ): void {
   useEffect(() => {
     persistUnread('meshtastic', meshtasticChatUnread);
@@ -45,7 +46,7 @@ export function useAppTrayUnreadSync(
 
   useEffect(() => {
     window.electronAPI.setTrayUnread(
-      meshtasticChatUnread + meshcoreChatUnread + meshcoreRoomsUnread,
+      meshtasticChatUnread + meshcoreChatUnread + meshcoreRoomsUnread + reticulumChatUnread,
     );
-  }, [meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread]);
+  }, [meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread, reticulumChatUnread]);
 }

@@ -452,6 +452,13 @@ export function getSanitizedMeshcoreChatLastRead(
   return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('meshcore'), messages);
 }
 
+/** Ongoing sanitize for Reticulum LXMF chat lastRead (sidebar/tray badges). */
+export function getSanitizedReticulumChatLastRead(
+  messages: readonly ChatLastReadSanitizeMessage[],
+): Record<string, number> {
+  return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('reticulum'), messages);
+}
+
 /** Persist MeshCore chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
 export function ensureMeshcoreChatLastReadSanitized(
   messages: readonly ChatLastReadSanitizeMessage[],

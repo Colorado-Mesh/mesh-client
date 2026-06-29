@@ -212,7 +212,8 @@
     "protocolSwitcher": "Sélecteur de protocole",
     "switchToMeshtastic": "Passer à Meshtastic",
     "switchToMeshCore": "Passer à MeshCore",
-    "backToTop": "Retour en haut"
+    "backToTop": "Retour en haut",
+    "switchToReticulum": "Passer à Reticulum"
   },
   "battery": {
     "percentCharging": "Batterie {{percent}} pour cent, en charge",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Autoriser les TLS non sécurisés (certificat auto-signé). Désactivé par défaut — activer uniquement si votre courtier utilise une autorité de certification non publique.",
     "channelPsksPrivateUplinkNote": "La liaison montante du canal est chiffrée AES-PSK sur /2/e/ (pas de miroir JSON pour les clés privées). Les moniteurs de courtier peuvent toujours enregistrer les échecs de décryptage du trafic PKI/DM entre d'autres nœuds — c'est normal et sans rapport avec les PSK de canal ici.",
     "sharedBleWithMeshtastic": "Cet appareil Bluetooth est déjà connecté via Meshtastic. Passez à l'onglet Meshtastic pour l'utiliser, ou choisissez une radio ou un transport différent pour MeshCore.",
-    "sharedBleWithMeshtasticHint": "Une radio physique ne peut pas tenir des sessions Bluetooth Meshtastic et MeshCore séparées en même temps."
+    "sharedBleWithMeshtasticHint": "Une radio physique ne peut pas tenir des sessions Bluetooth Meshtastic et MeshCore séparées en même temps.",
+    "reticulumStackTitle": "Pile Reticulum",
+    "reticulumStackHint": "Démarre le sidecar local Reticulum/LXMF (interfaces TCP et Auto).",
+    "reticulumStartStack": "Démarrer la pile",
+    "reticulumRestartStack": "Redémarrer la pile",
+    "reticulumNetworkTitle": "Interfaces réseau",
+    "reticulumNetworkEmpty": "Aucune interface n'a encore été signalée.",
+    "reticulumNetworkUnknown": "Interface",
+    "reticulumNetworkDisabled": "désactivé",
+    "reticulumSidecarMissing": "Sidecar Reticulum non compilé. Depuis le dépôt mesh-client, exécutez `pnpm run reticulum:sidecar:build` (nécessite Rust).",
+    "reticulumSidecarCargoMissing": "Chaîne d'outils Rust (cargo) introuvable. Installez depuis https://rustup.rs puis exécutez `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Impossible de démarrer la pile Reticulum : {{message}}",
+    "disconnect": "Déconnecter"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

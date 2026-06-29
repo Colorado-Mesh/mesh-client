@@ -12,7 +12,11 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ProtocolCapabilities } from './BaseRadioProvider';
-import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './BaseRadioProvider';
+import {
+  MESHCORE_CAPABILITIES,
+  MESHTASTIC_CAPABILITIES,
+  RETICULUM_CAPABILITIES,
+} from './BaseRadioProvider';
 
 const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'protocol',
@@ -66,6 +70,8 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasFirmwareUpdateCheck',
   'dedupeQueueBadgeForLocalSending',
   'prefersDeviceOwnerLongNameInHeader',
+  'hasReticulumInterfaceConfig',
+  'hasReticulumNetworkPanel',
   'nodeStaleThresholdMs',
   'nodeOfflineThresholdMs',
 ];
@@ -129,6 +135,8 @@ describe('ProtocolCapabilities contract', () => {
         "hasRemoteAdmin": true,
         "hasRemoteHardware": true,
         "hasRepeaterStatus": false,
+        "hasReticulumInterfaceConfig": false,
+        "hasReticulumNetworkPanel": false,
         "hasRfStats": true,
         "hasRoomServersPanel": false,
         "hasSecurityPanel": true,
@@ -192,6 +200,8 @@ describe('ProtocolCapabilities contract', () => {
         "hasRemoteAdmin": false,
         "hasRemoteHardware": false,
         "hasRepeaterStatus": true,
+        "hasReticulumInterfaceConfig": false,
+        "hasReticulumNetworkPanel": false,
         "hasRfStats": true,
         "hasRoomServersPanel": true,
         "hasSecurityPanel": true,
@@ -214,6 +224,77 @@ describe('ProtocolCapabilities contract', () => {
         "nodeStaleThresholdMs": 172800000,
         "prefersDeviceOwnerLongNameInHeader": true,
         "protocol": "meshcore",
+      }
+    `);
+  });
+
+  it('RETICULUM_CAPABILITIES has all required keys', () => {
+    for (const key of REQUIRED_CAPABILITY_KEYS) {
+      expect(RETICULUM_CAPABILITIES).toHaveProperty(key);
+    }
+  });
+
+  it('RETICULUM_CAPABILITIES exact values are stable', () => {
+    expect(RETICULUM_CAPABILITIES).toMatchInlineSnapshot(`
+      {
+        "dedupeQueueBadgeForLocalSending": false,
+        "hasAtakPlugin": false,
+        "hasAudio": false,
+        "hasBatteryTelemetry": false,
+        "hasBluetoothConfig": false,
+        "hasChannelConfig": false,
+        "hasCompanionContactManagementConfig": false,
+        "hasCompanionTelemetryPrivacyConfig": false,
+        "hasContactImportExport": false,
+        "hasCryptoOperations": false,
+        "hasDetectionSensor": false,
+        "hasDeviceRoleConfig": false,
+        "hasDisplayConfig": false,
+        "hasEnvironmentTelemetry": false,
+        "hasFactoryReset": false,
+        "hasFirmwareUpdateCheck": false,
+        "hasFullPositionConfig": false,
+        "hasHopCount": false,
+        "hasIpTunnel": false,
+        "hasJsonRadioConfigImport": false,
+        "hasMapReport": false,
+        "hasModemPresets": false,
+        "hasMqttHybrid": false,
+        "hasNeighborInfo": false,
+        "hasNodeDbReset": false,
+        "hasOnDemandNodeStatus": false,
+        "hasPaxCounter": false,
+        "hasPerHopSnr": false,
+        "hasPowerConfig": false,
+        "hasRangeTest": false,
+        "hasRawPacketLog": false,
+        "hasRemoteAdmin": false,
+        "hasRemoteHardware": false,
+        "hasRepeaterStatus": false,
+        "hasReticulumInterfaceConfig": true,
+        "hasReticulumNetworkPanel": true,
+        "hasRfStats": false,
+        "hasRoomServersPanel": false,
+        "hasSecurityPanel": false,
+        "hasSerial": false,
+        "hasShutdown": false,
+        "hasStoreForward": false,
+        "hasTakPanel": false,
+        "hasTelemetryIntervalConfig": false,
+        "hasTraceRoute": false,
+        "hasUserManagedContactGroups": true,
+        "hasWifiConfig": false,
+        "hasXmodem": false,
+        "hopLimitRange": [
+          1,
+          128,
+        ],
+        "modulesTabUsesRepeatersLabel": false,
+        "nodeListTabUsesContactsLabel": true,
+        "nodeOfflineThresholdMs": 2592000000,
+        "nodeStaleThresholdMs": 604800000,
+        "prefersDeviceOwnerLongNameInHeader": false,
+        "protocol": "reticulum",
       }
     `);
   });

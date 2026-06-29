@@ -109,7 +109,7 @@ Adding a cross-boundary feature:
 
 **Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`.
 
-> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency.
+> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency. `pnpm run update` also runs `rustup update` (or Homebrew `rust` on macOS without rustup) and `cargo build` in `reticulum-sidecar/` when `cargo` is on `PATH`.
 
 **Pre-commit hook order:**
 
@@ -131,6 +131,13 @@ Before PR: `pnpm run lint`, `typecheck`, `test:run`, plus any relevant `check:*`
 Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/mesh-client`. Pre-PR: refresh `README`/version metadata as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
 
 ## 8. Subsystem Quick Reference
+
+### Reticulum
+
+- **Sidecar:** `reticulum-sidecar/` (AGPL Rust binary `mesh-client-reticulum`); dev: `pnpm run reticulum:sidecar:dev`
+- **IPC:** `reticulum:*` main handlers; renderer uses `electronAPI.reticulum` proxy (no direct localhost from sandbox)
+- **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`; connect starts sidecar, not `ConnectionDriver` RF
+- **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel`
 
 ### Diagnostics
 
@@ -254,6 +261,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 | Empty chat/nodes offline              | `hydrateIdentityStoresFromDb`, connect-time cache in runtimes, `useDbRefresh`; identity split — [troubleshooting](docs/troubleshooting.md#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) |
 | Chat stuck / badge moves, no new rows | `identityByProtocol`, `useActiveMeshIdentity`, `mergeOfflineIdentityStore`; **Copy Debug Snapshot** — [troubleshooting](docs/troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)            |
 | BLE timeout                           | `noble-ble-manager.ts`, `bleConnectErrors`                                                                                                                                                             |
+| Reticulum sidecar won't start         | `reticulum-sidecar-manager.ts`, `ipc/reticulum-handlers.ts`, [troubleshooting](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)                                          |
 | Serial missing                        | `serialPortSignature.ts`                                                                                                                                                                               |
 | MQTT loop                             | `mqtt-manager.ts`                                                                                                                                                                                      |
 | DB errors                             | `database.ts` migrations                                                                                                                                                                               |

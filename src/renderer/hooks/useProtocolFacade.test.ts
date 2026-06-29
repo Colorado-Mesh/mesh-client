@@ -67,9 +67,12 @@ describe('useProtocolFacade', () => {
   });
 
   it('exposes store-backed connection view and panel actions for the active protocol', () => {
+    const reticulumActions = panelActionsStub();
+
     const panelPrebuilt: PanelActionsByProtocol = {
-      meshtastic: meshtasticActions as unknown as PanelActionsByProtocol['meshtastic'],
-      meshcore: meshcoreActions as unknown as PanelActionsByProtocol['meshcore'],
+      meshtastic: meshtasticActions,
+      meshcore: meshcoreActions,
+      reticulum: reticulumActions,
     };
     const { result } = renderHook(() => useProtocolFacade('meshtastic', panelPrebuilt));
 
@@ -80,6 +83,8 @@ describe('useProtocolFacade', () => {
     expect(result.current.connectionView.mqttStatus).toBe('connected');
     expect(result.current.connectionView.state.connectionLoss).toBe(true);
     expect(result.current.queue).toEqual({ free: 2, maxlen: 16 });
-    expect(result.current.panel.actions.setConfig).toBe(meshtasticActions.setConfig);
+    expect((result.current.panel.actions as typeof meshtasticActions).setConfig).toBe(
+      meshtasticActions.setConfig,
+    );
   });
 });

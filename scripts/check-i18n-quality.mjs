@@ -339,7 +339,162 @@ export const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
 /** Lowercase mesh-client product name with CAT spaces around the hyphen. */
 export const MESH_CLIENT_LOWERCASE_SPACED_RE = /mesh\s+-\s+client/i;
 
-/** App → MeshCore Open wire (experimental) toggle copy. */
+/** Reticulum connection panel strings added with Phase B sidecar scaffold. */
+export const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
+  'reticulumStackTitle',
+  'reticulumStackHint',
+  'reticulumStartStack',
+  'reticulumRestartStack',
+  'reticulumNetworkTitle',
+  'reticulumNetworkEmpty',
+  'reticulumNetworkUnknown',
+  'reticulumNetworkDisabled',
+  'reticulumSidecarMissing',
+  'reticulumSidecarCargoMissing',
+  'reticulumSidecarStartFailed',
+]);
+
+export const RETICULUM_SIDECAR_BUILD_CMD = 'pnpm run reticulum:sidecar:build';
+
+/** MyMemory often breaks npm script colons or translates Rust/cargo as common nouns. */
+export const RETICULUM_SIDECAR_BUILD_SPACED_RE = /reticulum\s*:\s*sidecar\s*:\s*build/i;
+
+const RETICULUM_STACK_HINT_PROTOCOL_TOKENS = ['LXMF', 'TCP', 'Auto'];
+
+/** Programming-language Rust mistranslated as corrosion, karat, cargo freight, etc. */
+const RUST_PROGRAMMING_FALSE_FRIEND_RES = [
+  { re: /óxido/i, hint: 'use programming language "Rust", not Spanish "óxido" (oxide)' },
+  { re: /\bKarat\b/i, hint: 'use programming language "Rust", not Indonesian "Karat"' },
+  { re: /\bPas\b/i, hint: 'use programming language "Rust", not Turkish "Pas" (rust corrosion)' },
+  { re: /\brez\b/i, hint: 'use programming language "Rust", not Czech "rez" (corrosion)' },
+  { re: /[Rr]dzy\b/, hint: 'use programming language "Rust", not Polish "rdzy" (corrosion)' },
+  { re: /rouille/i, hint: 'use programming language "Rust", not French "rouille" (corrosion)' },
+  { re: /roest/i, hint: 'use programming language "Rust", not Dutch/German corrosion wording' },
+  { re: /ferrugem/i, hint: 'use programming language "Rust", not Portuguese "ferrugem"' },
+  { re: /ржав/i, hint: 'use programming language "Rust", not Russian rust-corrosion wording' },
+  { re: /іржав/i, hint: 'use programming language "Rust", not Ukrainian rust-corrosion wording' },
+  { re: /antiruggine/i, hint: 'use programming language "Rust", not Italian "antiruggine"' },
+  { re: /錆/, hint: 'use programming language "Rust", not Japanese 錆 (corrosion)' },
+  {
+    re: /러스트/,
+    hint: 'use Latin "Rust" for the programming language, not Korean transliteration',
+  },
+];
+
+/** cargo package manager mistranslated as freight/load. */
+const CARGO_TOOLCHAIN_FALSE_FRIEND_RES = [
+  { re: /\bFracht\b/i, hint: 'use Rust package manager "cargo", not German "Fracht" (freight)' },
+  {
+    re: /\bcarga\b/i,
+    hint: 'use Rust package manager "cargo", not Spanish/Portuguese "carga" (load)',
+  },
+  { re: /\bladunku\b/i, hint: 'use Rust package manager "cargo", not Polish "ładunku" (load)' },
+  { re: /\bnáklad\b/i, hint: 'use Rust package manager "cargo", not Czech "náklad" (load)' },
+  {
+    re: /\bвантаж\b/i,
+    hint: 'use Rust package manager "cargo", not Ukrainian "вантаж" (cargo freight)',
+  },
+  { re: /\bгруз\b/i, hint: 'use Rust package manager "cargo", not Russian "груз" (freight)' },
+  {
+    re: /\bkargo\b/i,
+    hint: 'use Rust package manager "cargo", not Turkish/Indonesian freight "kargo"',
+  },
+  { re: /\blading\b/i, hint: 'use Rust package manager "cargo", not Dutch "lading" (freight)' },
+  { re: /\bcarico\b/i, hint: 'use Rust package manager "cargo", not Italian "carico" (load)' },
+  { re: /\b화물\b/, hint: 'use Rust package manager "cargo", not Korean 化물 (freight)' },
+  { re: /\b货物\b/, hint: 'use Rust package manager "cargo", not Chinese 货物 (freight)' },
+  { re: /\bカーゴ\b/, hint: 'use Rust package manager "cargo", not Japanese katakana freight' },
+];
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @returns {string[]}
+ */
+export function reticulumConnectionPanelLiteralIssues(enVal, val) {
+  const issues = [];
+  if (enVal.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
+    if (!val.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
+      issues.push(
+        `reticulum sidecar build command must appear exactly as \`${RETICULUM_SIDECAR_BUILD_CMD}\``,
+      );
+    }
+    if (RETICULUM_SIDECAR_BUILD_SPACED_RE.test(val) && !val.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
+      issues.push('reticulum:sidecar:build command must not insert spaces around colons');
+    }
+  }
+  if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {
+    issues.push('use "mesh-client" without spaces around the hyphen (not "mesh - client")');
+  }
+  if (/\bRust\b/.test(enVal) && !/\bRust\b/.test(val)) {
+    issues.push('keep programming language name "Rust" untranslated');
+  }
+  if (enVal.includes('(cargo)') && !/\bcargo\b/.test(val)) {
+    issues.push('keep Rust package manager name "cargo" untranslated');
+  }
+  if (enVal.includes('https://rustup.rs') && !val.includes('https://rustup.rs')) {
+    issues.push('keep rustup install URL https://rustup.rs verbatim');
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumConnectionPanelIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
+  if (
+    !flatKey.startsWith('connectionPanel.') ||
+    !RETICULUM_CONNECTION_PANEL_LEAF_KEYS.has(leafKey)
+  ) {
+    return issues;
+  }
+
+  if (locale !== 'en' && val === enVal && leafKey !== 'reticulumNetworkUnknown') {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (leafKey === 'reticulumNetworkDisabled' && locale !== 'en' && /^disabled$/i.test(val)) {
+    issues.push('translate reticulumNetworkDisabled — do not leave English "disabled"');
+  }
+
+  if (leafKey === 'reticulumStackHint' && locale !== 'en') {
+    for (const token of RETICULUM_STACK_HINT_PROTOCOL_TOKENS) {
+      if (enVal.includes(token) && !val.includes(token)) {
+        issues.push(`reticulumStackHint must preserve protocol token "${token}"`);
+      }
+    }
+  }
+
+  for (const issue of reticulumConnectionPanelLiteralIssues(enVal, val)) {
+    issues.push(issue);
+  }
+
+  if (leafKey === 'reticulumSidecarMissing' || leafKey === 'reticulumSidecarCargoMissing') {
+    for (const { re, hint } of RUST_PROGRAMMING_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum sidecar Rust false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumSidecarCargoMissing') {
+    for (const { re, hint } of CARGO_TOOLCHAIN_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum sidecar cargo false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumSidecarStartFailed' && locale === 'ja' && /網膜/.test(val)) {
+    issues.push('reticulumSidecarStartFailed uses 網膜 (retina) — use Reticulum stack wording');
+  }
+
+  return issues;
+}
+
 export const MESHCORE_OPEN_WIRE_APP_LEAF_KEYS = new Set([
   'meshcoreOpenWireExperimentalTitle',
   'meshcoreOpenWireCompatLabel',
@@ -955,7 +1110,15 @@ export const LOCALE_ARTIFACT_RES = [
 
 /** Brand / product names preserved verbatim when present in English. */
 // GPIO is a hardware acronym that must not be translated or expanded in UI strings.
-export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT', 'GPIO'];
+export const PROTECTED_BRANDS = [
+  'TAK',
+  'Discord',
+  'Meshtastic',
+  'MeshCore',
+  'MQTT',
+  'GPIO',
+  'Reticulum',
+];
 
 const BRAND_WORD_RES = new Map([
   ['TAK', /\bTAK\b/g],
@@ -964,6 +1127,7 @@ const BRAND_WORD_RES = new Map([
   ['MeshCore', /\bMeshCore\b/g],
   ['MQTT', /\bMQTT\b/g],
   ['GPIO', /\bGPIO\b/g],
+  ['Reticulum', /\bReticulum\b/g],
 ]);
 
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.
@@ -1985,6 +2149,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkRoomsPanelMembersIssues,
   checkAppPanelReduceMotionAndBrandIssues,
   checkMeshcoreOpenWireIssues,
+  checkReticulumConnectionPanelIssues,
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,

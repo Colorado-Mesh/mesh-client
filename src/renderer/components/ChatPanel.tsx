@@ -378,6 +378,8 @@ export interface ChatPanelProps {
   /** MeshCore MsgWaiting drain — messages queued on device. */
   waitingMessagesCount?: number;
   onSyncWaitingMessages?: () => void;
+  /** Reticulum LXMF: DM-only chat (no channel pills). */
+  dmOnlyChat?: boolean;
 }
 
 function ChatPanel({
@@ -405,6 +407,7 @@ function ChatPanel({
   onFetchStoreForwardHistory,
   waitingMessagesCount = 0,
   onSyncWaitingMessages,
+  dmOnlyChat = false,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -535,7 +538,9 @@ function ChatPanel({
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
-  const [viewMode, setViewMode] = useState<'channels' | 'dm' | 'starred'>('channels');
+  const [viewMode, setViewMode] = useState<'channels' | 'dm' | 'starred'>(() =>
+    dmOnlyChat ? 'dm' : 'channels',
+  );
   const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => loadOpenDmTabsInitial(protocol));
   const openDmTabsRef = useRef(openDmTabs);
   openDmTabsRef.current = openDmTabs;
@@ -1478,41 +1483,45 @@ function ChatPanel({
     <div className="flex h-full min-h-0 min-w-0 flex-col">
       {/* Row 1 — Channel selector + toolbar utilities */}
       <div
-        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}
+        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-50' : ''}`}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-            {t('chatPanel.channels')}
-          </span>
-          {channels.map((ch) => {
-            const unread = unreadCounts.get(ch.index) ?? 0;
-            const channelUnreadSuffix =
-              unread > 0 && !(viewMode === 'channels' && channel === ch.index)
-                ? ` ${unread > 99 ? '99+' : unread}`
-                : '';
-            return (
-              <button
-                key={ch.index}
-                aria-label={`${ch.name}${channelUnreadSuffix}`}
-                onClick={() => {
-                  setChannel(ch.index);
-                  setViewMode('channels');
-                }}
-                className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  viewMode === 'channels' && channel === ch.index
-                    ? 'bg-readable-green text-white'
-                    : 'bg-secondary-dark text-muted hover:text-gray-200'
-                }`}
-              >
-                {ch.name}
-                {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                    {unread > 99 ? '99+' : unread}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {!dmOnlyChat && (
+            <>
+              <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
+                {t('chatPanel.channels')}
+              </span>
+              {channels.map((ch) => {
+                const unread = unreadCounts.get(ch.index) ?? 0;
+                const channelUnreadSuffix =
+                  unread > 0 && !(viewMode === 'channels' && channel === ch.index)
+                    ? ` ${unread > 99 ? '99+' : unread}`
+                    : '';
+                return (
+                  <button
+                    key={ch.index}
+                    aria-label={`${ch.name}${channelUnreadSuffix}`}
+                    onClick={() => {
+                      setChannel(ch.index);
+                      setViewMode('channels');
+                    }}
+                    className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      viewMode === 'channels' && channel === ch.index
+                        ? 'bg-readable-green text-white'
+                        : 'bg-secondary-dark text-muted hover:text-gray-200'
+                    }`}
+                  >
+                    {ch.name}
+                    {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                        {unread > 99 ? '99+' : unread}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
 
         <div className="flex shrink-0 items-start gap-2 self-start">
@@ -1639,7 +1648,7 @@ function ChatPanel({
                 : 'text-muted hover:text-gray-300'
             }`}
             onClick={() => {
-              setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
+              setViewMode((v) => (v === 'starred' ? (dmOnlyChat ? 'dm' : 'channels') : 'starred'));
             }}
           >
             <Star
@@ -1670,7 +1679,7 @@ function ChatPanel({
 
       {/* Row 2 — DM tabs */}
       <div
-        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${!dmOnlyChat && viewMode === 'channels' ? 'opacity-50' : ''}`}
       >
         <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
           DMs

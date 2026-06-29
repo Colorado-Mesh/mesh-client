@@ -2,12 +2,17 @@
 name = "mesh-client-reticulum-sidecar"
 version = "0.1.0"
 edition = "2021"
-description = "Headless Reticulum/LXMF daemon for mesh-client (rsReticulum integration pending)"
+description = "Headless Reticulum/LXMF daemon for mesh-client"
 license = "AGPL-3.0-or-later"
 
 [[bin]]
 name = "mesh-client-reticulum"
 path = "src/main.rs"
+
+[features]
+default = []
+# Enable rsReticulum + rsLXMF git deps (dev / release full stack).
+rns-stack = []
 
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
@@ -20,6 +25,15 @@ tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# Phase B: wire rsReticulum + rsLXMF path deps (sibling checkout per Ratspeak build docs):
-# rns-runtime = { path = "../../rsReticulum/crates/rns-runtime" }
-# lxmf-core = { path = "../../rsLXMF/crates/lxmf-core" }
+# Phase B: pin git revs when enabling rns-stack (coordinate with Ratspeak releases):
+# [dependencies.rns-runtime]
+# package = "rns-runtime"
+# git = "https://github.com/ratspeak/rsReticulum"
+# rev = "..."
+# optional = true
+#
+# [dependencies.lxmf-core]
+# package = "lxmf-core"
+# git = "https://github.com/ratspeak/rsLXMF"
+# rev = "..."
+# optional = true

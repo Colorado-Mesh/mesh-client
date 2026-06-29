@@ -212,7 +212,8 @@
     "protocolSwitcher": "Pengalih protokol",
     "switchToMeshtastic": "Beralih ke Meshtastic",
     "switchToMeshCore": "Beralih ke MeshCore",
-    "backToTop": "Kembali ke atas"
+    "backToTop": "Kembali ke atas",
+    "switchToReticulum": "Beralih ke Reticulum"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Izinkan TLS yang tidak aman (sertifikat yang ditandatangani sendiri). Tidak aktif secara default — hanya aktifkan jika broker Anda menggunakan CA non - publik.",
     "channelPsksPrivateUplinkNote": "Saluran uplink dienkripsi AES - PSK pada /2/e/ (tidak ada cermin JSON untuk kunci pribadi). Monitor broker mungkin masih mencatat kegagalan dekripsi untuk lalu lintas PKI/DM di antara node lain — yang normal dan tidak terkait dengan saluran PSK di sini.",
     "sharedBleWithMeshtastic": "Perangkat Bluetooth ini sudah terhubung melalui Meshtastic. Beralih ke tab Meshtastic untuk menggunakannya, atau pilih radio atau transport yang berbeda untuk MeshCore.",
-    "sharedBleWithMeshtasticHint": "Satu radio fisik tidak dapat mengadakan sesi Meshtastic dan MeshCore Bluetooth secara bersamaan."
+    "sharedBleWithMeshtasticHint": "Satu radio fisik tidak dapat mengadakan sesi Meshtastic dan MeshCore Bluetooth secara bersamaan.",
+    "reticulumStackTitle": "Stack Reticulum",
+    "reticulumStackHint": "Memulai sidecar Reticulum/LXMF lokal (antarmuka TCP dan Auto).",
+    "reticulumStartStack": "Mulai stack",
+    "reticulumRestartStack": "Mulai ulang stack",
+    "reticulumNetworkTitle": "Antarmuka jaringan",
+    "reticulumNetworkEmpty": "Belum ada antarmuka yang dilaporkan.",
+    "reticulumNetworkUnknown": "Antarmuka",
+    "reticulumNetworkDisabled": "dinonaktifkan",
+    "reticulumSidecarMissing": "Sidecar Reticulum belum dibangun. Dari repo mesh-client jalankan `pnpm run reticulum:sidecar:build` (memerlukan Rust).",
+    "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) tidak ditemukan. Instal dari https://rustup.rs lalu jalankan `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Tidak dapat memulai stack Reticulum: {{message}}",
+    "disconnect": "Memutuskan"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

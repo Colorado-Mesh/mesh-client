@@ -1463,6 +1463,41 @@ describe('roomsPanel saved passwords per-key quality', () => {
     });
     expectIssue(issues, 'Ukrainian apostrophe words must not have a space');
   });
+
+  it('flags spaced reticulum sidecar build command', () => {
+    const enVal =
+      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).';
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'connectionPanel.reticulumSidecarMissing',
+      val: 'Sidecar missing. Run `pnpm run reticulum: sidecar: build` (Rust).',
+      enVal,
+    });
+    expectIssue(issues, 'reticulum sidecar build command must appear exactly');
+  });
+
+  it('flags Rust translated as corrosion in reticulumSidecarMissing', () => {
+    const enVal =
+      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).';
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'connectionPanel.reticulumSidecarMissing',
+      val: 'Sidecar no construido. Ejecute `pnpm run reticulum:sidecar:build` (requiere óxido).',
+      enVal,
+    });
+    expectIssue(issues, 'reticulum sidecar Rust false friend');
+  });
+
+  it('allows Interface cognate for reticulumNetworkUnknown', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'fr',
+        flatKey: 'connectionPanel.reticulumNetworkUnknown',
+        val: 'Interface',
+        enVal: 'Interface',
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedBrandIssues', () => {

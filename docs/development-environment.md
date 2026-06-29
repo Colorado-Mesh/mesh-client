@@ -62,6 +62,75 @@ pnpm install
 - Dev mode (hot reload): `pnpm run dev`
 - Production-like local start: `pnpm start`
 
+### Reticulum sidecar (optional)
+
+Reticulum/LXMF runs in a separate Rust binary (`mesh-client-reticulum`) spawned by the Electron main process. The MIT TypeScript layers talk to it over localhost HTTP/WS only. You only need this when working on the **Reticulum** protocol tab.
+
+#### Installing Rust
+
+**Recommended: [rustup](https://rustup.rs/)** — matches [CI](.github/workflows/reticulum-sidecar.yaml) and `pnpm run update`:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env" # or open a new terminal
+rustc --version
+cargo --version
+```
+
+**macOS Homebrew alternative:** `brew install rust` works for local `cargo build`, but CI uses rustup. **Do not install both** rustup and Homebrew `rust` on the same machine — they can fight over `rustc`/`cargo` on your `PATH`. Pick one:
+
+| Approach               | Install                         | Update                                          |
+| ---------------------- | ------------------------------- | ----------------------------------------------- |
+| **rustup (preferred)** | [rustup.rs](https://rustup.rs/) | `rustup update` (also run by `pnpm run update`) |
+| **Homebrew**           | `brew install rust`             | `brew upgrade rust`                             |
+
+If you use Homebrew only, `pnpm run update` will try `brew upgrade rust` when rustup is absent. For cross-target builds (WoA, Linux glibc) and toolchain pins, prefer rustup.
+
+Linux and Windows: use rustup; on Windows you may also need [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the C++ workload (same as native Node modules).
+
+#### Build the sidecar
+
+From the repo root:
+
+```bash
+pnpm run reticulum:sidecar:build
+```
+
+This writes `reticulum-sidecar/target/debug/mesh-client-reticulum` (macOS/Linux) or `.exe` on Windows.
+
+**First run in Electron dev:** **Reticulum** → **Connection** → **Start stack** will run `cargo build` automatically if that binary is missing (first compile can take a few minutes). Pre-build with the command above to avoid waiting on the first click.
+
+#### Run and verify
+
+```bash
+# Optional: run sidecar standalone (port 19437)
+pnpm run reticulum:sidecar:dev
+
+# Health check (standalone or after Start stack in the app)
+curl -s http://127.0.0.1:19437/api/v1/status
+# → {"status":"ok",...}
+```
+
+In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection** → **Start stack**. Dev builds resolve the binary from `reticulum-sidecar/target/debug/mesh-client-reticulum`.
+
+#### Keep Rust and the sidecar current
+
+`pnpm run update` updates Node dependencies **and**, when `cargo` is available:
+
+1. Runs `rustup update` (or `brew upgrade rust` if you use Homebrew rust without rustup)
+2. Rebuilds the sidecar with `cargo build` in `reticulum-sidecar/`
+
+**Scope:** `pnpm update` / `pnpm-lock.yaml` changes are **repo-local** (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored `reticulum-sidecar/target/`. **Rust toolchain updates are not repo-scoped** — `rustup update` refreshes the toolchain in your user profile (`~/.rustup`, `~/.cargo/bin`), shared by any Rust project on the machine. It does not modify committed files unless you later add a `rust-toolchain.toml` pin.
+
+#### Further reading
+
+- Optional full RNS stack: [`reticulum-sidecar/README.md`](../reticulum-sidecar/README.md) (`rns-stack` Cargo feature)
+- Architecture: [docs/reticulum.md](reticulum.md)
+- HTTP contract: [docs/reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md)
+- Won't start / health timeout: [troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
+
+Windows ARM64 release builds use a dedicated `aarch64-pc-windows-msvc` CI job (see `.github/workflows/reticulum-sidecar.yaml`).
+
 ### Common pnpm commands
 
 Use these from the repository root:
@@ -82,6 +151,10 @@ pnpm run test:run
 pnpm run lint
 pnpm run typecheck
 pnpm run format:check
+
+# Reticulum sidecar (optional; requires Rust)
+pnpm run reticulum:sidecar:build
+pnpm run reticulum:sidecar:dev
 
 # Docs
 pnpm run docs:install
@@ -246,13 +319,16 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Setup / Helpers
 
-| Script                | Description                                              |
-| --------------------- | -------------------------------------------------------- |
-| `setup:actionlint`    | Install actionlint for GitHub workflow linting           |
-| `setup:build-deps`    | Install native build dependencies                        |
-| `setup:dialout`       | Add user to dialout group for serial port access (Linux) |
-| `i18n:auto-translate` | Machine-translate missing keys via MyMemory              |
-| `rebuild`             | Rebuild native Node modules for Electron                 |
+| Script                    | Description                                                |
+| ------------------------- | ---------------------------------------------------------- |
+| `setup:actionlint`        | Install actionlint for GitHub workflow linting             |
+| `setup:build-deps`        | Install native build dependencies                          |
+| `setup:dialout`           | Add user to dialout group for serial port access (Linux)   |
+| `i18n:auto-translate`     | Machine-translate missing keys via MyMemory                |
+| `rebuild`                 | Rebuild native Node modules for Electron                   |
+| `reticulum:sidecar:build` | Build debug `mesh-client-reticulum` (requires `cargo`)     |
+| `reticulum:sidecar:dev`   | Run sidecar standalone on `127.0.0.1:19437`                |
+| `update`                  | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar |
 
 #### Lifecycle (automatic)
 
@@ -301,6 +377,7 @@ Not installed by pnpm (install separately when needed):
 
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
+- **Rust / `cargo`** (optional; only for Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/), or `brew install rust` on macOS without rustup)
 - `docker` and `act` (only if you run GitHub Actions locally)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
@@ -463,6 +540,10 @@ On first BLE connection, macOS prompts for Bluetooth access. If denied accidenta
 
 - Go to **System Settings > Privacy & Security > Bluetooth**
 - Enable access for Mesh-Client
+
+### Reticulum sidecar (optional)
+
+If you work on the Reticulum protocol tab, install Rust and build the sidecar — see [Reticulum sidecar (optional)](#reticulum-sidecar-optional) above. On macOS, **rustup is preferred** over `brew install rust` (CI parity); do not install both.
 
 ### macOS release-download note (not required for source development)
 

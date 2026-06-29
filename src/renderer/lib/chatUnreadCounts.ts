@@ -155,7 +155,10 @@ export function totalUnreadCount(
     nowMs,
   );
   let total = 0;
-  for (const n of channel.values()) total += n;
+  // Reticulum chat is DM-only; channel-indexed rows must not inflate the badge.
+  if (protocol !== 'reticulum') {
+    for (const n of channel.values()) total += n;
+  }
   for (const n of dm.values()) total += n;
   return total;
 }

@@ -111,6 +111,10 @@ export interface ProtocolCapabilities {
   dedupeQueueBadgeForLocalSending: boolean;
   /** Header self-node label prefers deviceOwner.longName over picker label */
   prefersDeviceOwnerLongNameInHeader: boolean;
+  /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
+  hasReticulumInterfaceConfig: boolean;
+  /** Reticulum: network / peers visibility panel */
+  hasReticulumNetworkPanel: boolean;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -167,6 +171,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
+  hasReticulumInterfaceConfig: false,
+  hasReticulumNetworkPanel: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -224,4 +230,64 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
+  hasReticulumInterfaceConfig: false,
+  hasReticulumNetworkPanel: false,
+};
+
+export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
+  protocol: 'reticulum',
+  hasHopCount: false,
+  hopLimitRange: [1, 128],
+  hasMqttHybrid: false,
+  hasEnvironmentTelemetry: false,
+  hasRfStats: false,
+  hasNeighborInfo: false,
+  hasChannelConfig: false,
+  hasModemPresets: false,
+  hasTraceRoute: false,
+  hasPerHopSnr: false,
+  hasBatteryTelemetry: false,
+  hasRepeaterStatus: false,
+  hasOnDemandNodeStatus: false,
+  hasBluetoothConfig: false,
+  hasDeviceRoleConfig: false,
+  hasDisplayConfig: false,
+  hasPowerConfig: false,
+  hasWifiConfig: false,
+  hasTelemetryIntervalConfig: false,
+  hasUserManagedContactGroups: true,
+  hasCompanionContactManagementConfig: false,
+  hasCompanionTelemetryPrivacyConfig: false,
+  hasShutdown: false,
+  hasNodeDbReset: false,
+  hasFactoryReset: false,
+  hasFullPositionConfig: false,
+  hasSecurityPanel: false,
+  hasRemoteAdmin: false,
+  hasTakPanel: false,
+  hasRemoteHardware: false,
+  hasSerial: false,
+  hasRangeTest: false,
+  hasPaxCounter: false,
+  hasAudio: false,
+  hasIpTunnel: false,
+  hasDetectionSensor: false,
+  hasStoreForward: false,
+  hasAtakPlugin: false,
+  hasMapReport: false,
+  hasXmodem: false,
+  hasContactImportExport: false,
+  hasCryptoOperations: false,
+  hasRawPacketLog: false,
+  nodeListTabUsesContactsLabel: true,
+  modulesTabUsesRepeatersLabel: false,
+  hasRoomServersPanel: false,
+  hasJsonRadioConfigImport: false,
+  nodeStaleThresholdMs: 7 * 24 * 60 * 60 * 1000,
+  nodeOfflineThresholdMs: 30 * 24 * 60 * 60 * 1000,
+  hasFirmwareUpdateCheck: false,
+  dedupeQueueBadgeForLocalSending: false,
+  prefersDeviceOwnerLongNameInHeader: false,
+  hasReticulumInterfaceConfig: true,
+  hasReticulumNetworkPanel: true,
 };

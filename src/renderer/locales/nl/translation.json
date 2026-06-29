@@ -212,7 +212,8 @@
     "protocolSwitcher": "Protocolwisselaar",
     "switchToMeshtastic": "Schakel over naar Meshtastic",
     "switchToMeshCore": "Schakel over naar MeshCore",
-    "backToTop": "Terug naar boven"
+    "backToTop": "Terug naar boven",
+    "switchToReticulum": "Overschakelen naar Reticulum"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt.",
     "channelPsksPrivateUplinkNote": "Kanaaluplink is AES-PSK-gecodeerd op /2/e/ (geen JSON-spiegel voor privésleutels). Broker-monitoren kunnen nog steeds ontsleutelingsfouten registreren voor PKI/DM-verkeer tussen andere knooppunten — dat is normaal en niet gerelateerd aan PSK's hier.",
     "sharedBleWithMeshtastic": "Dit Bluetooth-apparaat is al verbonden via Meshtastic. Schakel over naar het tabblad Meshtastic om het te gebruiken, of kies een andere radio of transport voor MeshCore.",
-    "sharedBleWithMeshtasticHint": "Eén fysieke radio kan niet tegelijkertijd afzonderlijke Meshtastic- en MeshCore Bluetooth-sessies houden."
+    "sharedBleWithMeshtasticHint": "Eén fysieke radio kan niet tegelijkertijd afzonderlijke Meshtastic- en MeshCore Bluetooth-sessies houden.",
+    "reticulumStackTitle": "Reticulum-stack",
+    "reticulumStackHint": "Start de lokale Reticulum/LXMF-sidecar (TCP- en Auto-interfaces).",
+    "reticulumStartStack": "Stack starten",
+    "reticulumRestartStack": "Stack opnieuw starten",
+    "reticulumNetworkTitle": "Netwerkinterfaces",
+    "reticulumNetworkEmpty": "Nog geen interfaces gemeld.",
+    "reticulumNetworkUnknown": "Interface",
+    "reticulumNetworkDisabled": "uitgeschakeld",
+    "reticulumSidecarMissing": "Reticulum-sidecar niet gebouwd. Voer in de mesh-client-repo `pnpm run reticulum:sidecar:build` uit (vereist Rust).",
+    "reticulumSidecarCargoMissing": "Rust-toolchain (cargo) niet gevonden. Installeer via https://rustup.rs en voer daarna `pnpm run reticulum:sidecar:build` uit.",
+    "reticulumSidecarStartFailed": "Kon Reticulum-stack niet starten: {{message}}",
+    "disconnect": "Verbreek de verbinding"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

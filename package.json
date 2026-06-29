@@ -76,6 +76,8 @@
     "prepare": "git config core.hooksPath .githooks",
     "rebuild": "node scripts/rebuild-native.mjs",
     "release": "bash scripts/release.sh",
+    "reticulum:sidecar:build": "cd reticulum-sidecar && cargo build",
+    "reticulum:sidecar:dev": "cd reticulum-sidecar && cargo run -- --headless --port 19437",
     "setup:actionlint": "node scripts/install-actionlint.mjs",
     "setup:build-deps": "node scripts/setup-build-deps.mjs",
     "setup:dialout": "node scripts/setup-dialout.mjs",

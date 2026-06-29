@@ -350,6 +350,8 @@ export interface CachedNode {
 export interface ChatMessage {
   id?: number;
   sender_id: number;
+  /** Reticulum LXMF destination hash when `sender_id` is a synthetic node id mapping. */
+  reticulum_sender_hash?: string;
   sender_name: string;
   payload: string;
   channel: number;

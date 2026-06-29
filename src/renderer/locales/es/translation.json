@@ -212,7 +212,8 @@
     "protocolSwitcher": "Conmutador de protocolo",
     "switchToMeshtastic": "Cambiar a Meshtastic",
     "switchToMeshCore": "Cambiar a MeshCore",
-    "backToTop": "Volver al inicio"
+    "backToTop": "Volver al inicio",
+    "switchToReticulum": "Cambiar a Reticulum"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Permitir TLS (certificado autofirmado) inseguro. Desactivado de forma predeterminada: solo habilítalo si tu bróker utiliza una CA no pública.",
     "channelPsksPrivateUplinkNote": "El enlace ascendente del canal está cifrado AES-PSK en/2/e/ (sin espejo JSON para claves privadas). Los monitores de bróker aún pueden registrar fallas de descifrado para el tráfico PKI/DM entre otros nodos, lo que es normal y no está relacionado con los PSK de canal aquí.",
     "sharedBleWithMeshtastic": "Este dispositivo Bluetooth ya está conectado a través de Meshtastic. Cambia a la pestaña Meshtastic para usarla, o elige una radio o transporte diferente para MeshCore.",
-    "sharedBleWithMeshtasticHint": "Una radio física no puede mantener sesiones separadas de Meshtastic y MeshCore Bluetooth al mismo tiempo."
+    "sharedBleWithMeshtasticHint": "Una radio física no puede mantener sesiones separadas de Meshtastic y MeshCore Bluetooth al mismo tiempo.",
+    "reticulumStackTitle": "Pila Reticulum",
+    "reticulumStackHint": "Inicia el sidecar local Reticulum/LXMF (interfaces TCP y Auto).",
+    "reticulumStartStack": "Iniciar pila",
+    "reticulumRestartStack": "Reiniciar pila",
+    "reticulumNetworkTitle": "Interfaces de red",
+    "reticulumNetworkEmpty": "Aún no se ha informado de ninguna interfaz.",
+    "reticulumNetworkUnknown": "Interfaz",
+    "reticulumNetworkDisabled": "desactivado",
+    "reticulumSidecarMissing": "Sidecar de Reticulum no compilado. Desde el repositorio mesh-client ejecute `pnpm run reticulum:sidecar:build` (requiere Rust).",
+    "reticulumSidecarCargoMissing": "No se encontró la cadena de herramientas de Rust (cargo). Instale desde https://rustup.rs y luego ejecute `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "No se pudo iniciar la pila Reticulum: {{message}}",
+    "disconnect": "Desconectar"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

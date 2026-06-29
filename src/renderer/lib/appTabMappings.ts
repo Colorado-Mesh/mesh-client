@@ -12,18 +12,20 @@ const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = 
   undefined, // Connection
   undefined, // Chat
   undefined, // Nodes/Contacts
-  undefined, // Map
-  undefined, // Radio
+  'hasFullPositionConfig', // Map
+  'hasChannelConfig', // Radio
   'modulesTabUsesRepeatersLabel', // Modules or Repeaters
-  'hasSecurityPanel', // Security
+  'hasSecurityPanel', // Admin
   'hasRoomServersPanel', // Rooms
+  'hasEnvironmentTelemetry', // Telemetry
+  'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
   undefined, // App
   undefined, // Diagnostics
-  'hasRawPacketLog', // Distribution
+  'hasRawPacketLog', // Stats
   'hasRawPacketLog', // Sniffer
-  undefined, // RF
-  undefined, // Graph
+  'hasRfStats', // RF
+  'hasNeighborInfo', // Graph
 ];
 
 function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `tabs.${string}` {

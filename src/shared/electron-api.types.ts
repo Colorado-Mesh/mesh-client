@@ -1,6 +1,11 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import type { MeshProtocol } from './meshProtocol';
+import type {
+  ReticulumSidecarEvent,
+  ReticulumSidecarStartOptions,
+  ReticulumSidecarStatus,
+} from './reticulum-types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 
 export type { MeshProtocol };
@@ -732,6 +737,17 @@ export interface ElectronAPI {
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;
+  };
+
+  // ─── Reticulum sidecar ───────────────────────────────────────────────────────
+  reticulum: {
+    start: (opts?: ReticulumSidecarStartOptions) => Promise<ReticulumSidecarStatus>;
+    stop: () => Promise<void>;
+    getStatus: () => Promise<ReticulumSidecarStatus>;
+    proxyGet: (apiPath: string) => Promise<unknown>;
+    proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
+    onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
+    onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
   };
 
   // ─── Log panel ───────────────────────────────────────────────────────────────

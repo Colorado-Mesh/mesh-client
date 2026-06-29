@@ -264,9 +264,20 @@ async function hydrateMeshcoreIdentity(
   }
 }
 
+function hydrateReticulumIdentity(
+  identityId: IdentityId,
+  opts: HydrateIdentityStoresOptions,
+): Promise<void> {
+  void identityId;
+  void opts;
+  // Contacts/messages hydrate via sidecar on connect; SQLite IPC lands with reticulum DB migrations.
+  return Promise.resolve();
+}
+
 const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {
   meshtastic: hydrateMeshtasticIdentity,
   meshcore: hydrateMeshcoreIdentity,
+  reticulum: hydrateReticulumIdentity,
 };
 
 /**

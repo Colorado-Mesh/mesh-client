@@ -17,7 +17,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 36;
+export const CURRENT_SCHEMA_VERSION = 37;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -188,6 +188,23 @@ export const CANONICAL_TABLES_DDL = `
         UNIQUE(node_id, path_hash)
       );
 
+      CREATE TABLE IF NOT EXISTS reticulum_destinations (
+        destination_hash TEXT PRIMARY KEY,
+        display_name     TEXT,
+        last_heard       INTEGER,
+        favorited        INTEGER DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_messages (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        identity_id  TEXT NOT NULL,
+        sender_id    TEXT NOT NULL,
+        sender_name  TEXT,
+        payload      TEXT NOT NULL,
+        timestamp    INTEGER NOT NULL,
+        to_hash      TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -234,7 +251,8 @@ export const INDEX_DDLS: readonly string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_packet_dedup
         ON messages(sender_id, packet_id)
         WHERE packet_id IS NOT NULL`,
-  'CREATE INDEX IF NOT EXISTS idx_nodes_last_heard ON nodes(last_heard)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_ts ON reticulum_messages(timestamp)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_identity ON reticulum_messages(identity_id, timestamp DESC)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup

@@ -241,6 +241,22 @@ describe('MQTT IPC handlers (source contract)', () => {
   });
 });
 
+describe('Reticulum sidecar IPC handlers (source contract)', () => {
+  const RETICULUM_HANDLERS_SOURCE = readFileSync(
+    join(__dirname, 'ipc/reticulum-handlers.ts'),
+    'utf8',
+  );
+
+  it('registers reticulum lifecycle and proxy handlers', () => {
+    expect(INDEX_SOURCE).toContain('registerReticulumIpcHandlers');
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:start'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:stop'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPost'");
+  });
+});
+
 describe('HTTP bridge IPC handlers (source contract)', () => {
   it('registers all four HTTP bridge handlers', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('http:preflight'");

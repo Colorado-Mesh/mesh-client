@@ -212,7 +212,8 @@
     "protocolSwitcher": "Protokol değiştirici",
     "switchToMeshtastic": "Meshtastic'e geç",
     "switchToMeshCore": "MeshCore'a geç",
-    "backToTop": "Başa dön"
+    "backToTop": "Başa dön",
+    "switchToReticulum": "Reticulum'a geç"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Güvensiz TLS'ye (kendinden imzalı sertifika) izin verin. Varsayılan olarak kapalı — yalnızca brokeriniz halka açık olmayan bir CA kullanıyorsa etkinleştirin.",
     "channelPsksPrivateUplinkNote": "Kanal uplink/2/e/üzerinde şifrelenmiş AES - PSK'dır (özel anahtarlar için JSON aynası yoktur). Broker monitörleri, diğer düğümler arasındaki PKI/DM trafiği için hala şifre çözme hatalarını günlüğe kaydedebilir — bu normaldir ve buradaki kanal PSK'larıyla ilgisi yoktur.",
     "sharedBleWithMeshtastic": "Bu Bluetooth cihazı Meshtastic üzerinden zaten bağlı. Kullanmak için Meshtastic sekmesine geçin veya MeshCore için farklı bir radyo veya aktarım seçin.",
-    "sharedBleWithMeshtasticHint": "Bir fiziksel radyo, Meshtastic ve MeshCore Bluetooth oturumlarını aynı anda ayrı ayrı tutamaz."
+    "sharedBleWithMeshtasticHint": "Bir fiziksel radyo, Meshtastic ve MeshCore Bluetooth oturumlarını aynı anda ayrı ayrı tutamaz.",
+    "reticulumStackTitle": "Reticulum yığını",
+    "reticulumStackHint": "Yerel Reticulum/LXMF sidecarını başlatır (TCP ve Auto arayüzleri).",
+    "reticulumStartStack": "Yığını başlat",
+    "reticulumRestartStack": "Yığını yeniden başlat",
+    "reticulumNetworkTitle": "Ağ arayüzleri",
+    "reticulumNetworkEmpty": "Henüz arayüz bildirilmedi.",
+    "reticulumNetworkUnknown": "Arayüz",
+    "reticulumNetworkDisabled": "devre dışı",
+    "reticulumSidecarMissing": "Reticulum sidecar derlenmedi. mesh-client deposunda `pnpm run reticulum:sidecar:build` çalıştırın (Rust gerekir).",
+    "reticulumSidecarCargoMissing": "Rust toolchain (cargo) bulunamadı. https://rustup.rs adresinden yükleyin ve ardından `pnpm run reticulum:sidecar:build` çalıştırın.",
+    "reticulumSidecarStartFailed": "Reticulum yığını başlatılamadı: {{message}}",
+    "disconnect": "Bağlantıyı kes"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

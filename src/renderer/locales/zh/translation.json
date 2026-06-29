@@ -212,7 +212,8 @@
     "protocolSwitcher": "协议切换器",
     "switchToMeshtastic": "切换到Meshtastic",
     "switchToMeshCore": "切换到MeshCore",
-    "backToTop": "返回顶部"
+    "backToTop": "返回顶部",
+    "switchToReticulum": "切换到 Reticulum"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "允许不安全的TLS （自签名证书）。默认情况下关闭—仅当您的经纪人使用非公开CA时才启用。",
     "channelPsksPrivateUplinkNote": "频道上行链路是在/2/e/上加密的AES-PSK （私钥没有JSON镜像）。Broker监视器仍可能记录其他节点之间PKI/DM流量的解密失败—这是正常的，与此处的通道PSK无关。",
     "sharedBleWithMeshtastic": "此蓝牙设备已通过Meshtastic连接。切换到Meshtastic选项卡以使用它，或为MeshCore选择其他无线电或传输方式。",
-    "sharedBleWithMeshtasticHint": "一个物理收音机不能同时举行单独的Meshtastic和MeshCore蓝牙会话。"
+    "sharedBleWithMeshtasticHint": "一个物理收音机不能同时举行单独的Meshtastic和MeshCore蓝牙会话。",
+    "reticulumStackTitle": "Reticulum 堆栈",
+    "reticulumStackHint": "启动本地 Reticulum/LXMF 侧车进程（TCP 和 Auto 接口）。",
+    "reticulumStartStack": "启动堆栈",
+    "reticulumRestartStack": "重启堆栈",
+    "reticulumNetworkTitle": "网络接口",
+    "reticulumNetworkEmpty": "尚未报告任何接口。",
+    "reticulumNetworkUnknown": "接口",
+    "reticulumNetworkDisabled": "已禁用",
+    "reticulumSidecarMissing": "Reticulum 侧车未构建。请在 mesh-client 仓库中运行 `pnpm run reticulum:sidecar:build`（需要 Rust）。",
+    "reticulumSidecarCargoMissing": "未找到 Rust 工具链（cargo）。请从 https://rustup.rs 安装，然后运行 `pnpm run reticulum:sidecar:build`。",
+    "reticulumSidecarStartFailed": "无法启动 Reticulum 堆栈：{{message}}",
+    "disconnect": "断开"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

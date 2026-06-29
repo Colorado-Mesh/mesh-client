@@ -27,6 +27,51 @@ get_version() {
     || echo ""
 }
 
+# Get resolved rustc version (empty if not installed)
+get_rustc_version() {
+  if command -v rustc > /dev/null 2>&1; then
+    rustc --version 2> /dev/null | awk '{print $2}'
+  else
+    echo ''
+  fi
+}
+
+# Update Rust toolchain when rustup or Homebrew rust is available
+update_rust_toolchain() {
+  if command -v rustup > /dev/null 2>&1; then
+    echo 'Updating Rust toolchain (rustup update)...'
+    rustup update
+    return 0
+  fi
+  if [ "$(uname -s 2> /dev/null || true)" = 'Darwin' ] && command -v brew > /dev/null 2>&1; then
+    if brew list rust > /dev/null 2>&1; then
+      echo 'rustup not found; upgrading Homebrew rust...'
+      brew upgrade rust
+      return 0
+    fi
+  fi
+  if command -v cargo > /dev/null 2>&1; then
+    echo 'cargo found without rustup — skipping automatic Rust update.'
+    echo '  Prefer https://rustup.rs for CI parity, or upgrade via your package manager.'
+    return 0
+  fi
+  echo 'Rust not installed — skipping toolchain update and sidecar rebuild (optional; see docs/development-environment.md#reticulum-sidecar-optional).'
+  return 0
+}
+
+# Rebuild Reticulum sidecar after dependency/toolchain updates
+rebuild_reticulum_sidecar() {
+  if [ ! -f 'reticulum-sidecar/Cargo.toml' ]; then
+    return 0
+  fi
+  if ! command -v cargo > /dev/null 2>&1; then
+    echo 'cargo not on PATH — skipping Reticulum sidecar rebuild.'
+    return 0
+  fi
+  echo 'Rebuilding Reticulum sidecar (cargo build)...'
+  (cd reticulum-sidecar && cargo build)
+}
+
 # Print a highlighted warning box for an updated package
 warn_box() {
   local pkg="$1" old_ver="$2" new_ver="$3" url="$4"
@@ -88,6 +133,11 @@ for entry in "${WATCH_ENTRIES[@]}"; do
   idx=$((idx + 1))
 done
 
+OLD_RUSTC="$(get_rustc_version)"
+if [ -n "${OLD_RUSTC}" ]; then
+  echo "  rustc = ${OLD_RUSTC}"
+fi
+
 # --- Run updates ---
 echo ''
 echo 'Running pnpm update...'
@@ -105,8 +155,20 @@ echo ''
 echo 'Running pnpm prune...'
 pnpm prune
 
-# --- Detect and warn on updates ---
 HAS_WARNING=0
+
+echo ''
+update_rust_toolchain
+NEW_RUSTC="$(get_rustc_version)"
+if [ -n "${OLD_RUSTC}" ] && [ -n "${NEW_RUSTC}" ] && [ "${OLD_RUSTC}" != "${NEW_RUSTC}" ]; then
+  warn_box 'rustc (rustup/brew)' "${OLD_RUSTC}" "${NEW_RUSTC}" 'https://rustup.rs/'
+  echo '  Reason tracked: Reticulum sidecar toolchain — run pnpm run reticulum:sidecar:build if rebuild failed'
+  HAS_WARNING=1
+fi
+
+rebuild_reticulum_sidecar
+
+# --- Detect and warn on watched pnpm packages ---
 for i in "${!KEYS[@]}"; do
   key="${KEYS[$i]}"
   display="${DISPLAYS[$i]}"

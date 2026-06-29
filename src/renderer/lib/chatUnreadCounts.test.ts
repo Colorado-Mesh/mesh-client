@@ -128,6 +128,23 @@ describe('chatUnreadCounts', () => {
     expect(total).toBe(2);
   });
 
+  it('totalUnreadCount for reticulum ignores channel-indexed rows (DM-only chat)', () => {
+    const channelOnly = totalUnreadCount(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 0, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'reticulum',
+    );
+    const meshtasticSame = totalUnreadCount(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 0, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'meshtastic',
+    );
+    expect(channelOnly).toBe(0);
+    expect(meshtasticSame).toBe(2);
+  });
+
   it('does not count future poison rows toward channel unread (RTC skew)', () => {
     vi.useFakeTimers();
     const nowMs = 1_700_000_000_000;

@@ -1,0 +1,55 @@
+name: Reticulum sidecar
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'reticulum-sidecar/**'
+      - '.github/workflows/reticulum-sidecar.yaml'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: mesh-client-reticulum-linux-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: mesh-client-reticulum-macos-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: mesh-client-reticulum-win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build sidecar
+        working-directory: reticulum-sidecar
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            reticulum-sidecar/target/${{ matrix.target }}/release/mesh-client-reticulum*
+          retention-days: 14
+
+  build-windows-arm64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-pc-windows-msvc
+      - name: Build WoA sidecar
+        working-directory: reticulum-sidecar
+        run: cargo build --release --target aarch64-pc-windows-msvc
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-reticulum-win-arm64
+          path: reticulum-sidecar/target/aarch64-pc-windows-msvc/release/mesh-client-reticulum.exe
+          retention-days: 14

@@ -24,7 +24,15 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     headerBorderConfigured: 'border-cyan-500/20',
     pillActiveClass: 'bg-cyan-600/20 text-cyan-400',
     pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
-    unreadBadgeFillClass: 'bg-cyan-600',
+    unreadBadgeFillClass: 'bg-cyan-800 text-white',
+  },
+  reticulum: {
+    displayName: 'Reticulum',
+    ariaSwitchKey: 'aria.switchToReticulum',
+    headerBorderConfigured: 'border-amber-500/20',
+    pillActiveClass: 'bg-amber-600/20 text-amber-400',
+    pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
+    unreadBadgeFillClass: 'bg-amber-800 text-white',
   },
 };
 

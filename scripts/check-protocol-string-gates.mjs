@@ -17,7 +17,6 @@ const PATTERN = /protocol\s*===\s*['"]meshcore['"]/;
 
 /** Files still allowed to compare protocol strings directly (migrate incrementally). */
 const ALLOWLIST = new Set([
-  'src/renderer/App.tsx',
   'src/renderer/components/AppPanel.tsx',
   'src/renderer/components/ChatComposer.tsx',
   'src/renderer/components/ChatPanel.tsx',

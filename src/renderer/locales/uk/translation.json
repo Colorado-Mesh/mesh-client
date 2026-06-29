@@ -212,7 +212,8 @@
     "protocolSwitcher": "Перемикач протоколів",
     "switchToMeshtastic": "Перейти на Meshtastic",
     "switchToMeshCore": "Перемкнутися на MeshCore",
-    "backToTop": "Догори"
+    "backToTop": "Догори",
+    "switchToReticulum": "Перемкнутися на Reticulum"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Дозволити незахищений TLS (самопідписаний сертифікат). Вимкнено за замовчуванням — ввімкніть, лише якщо ваш брокер використовує непублічний ЦС.",
     "channelPsksPrivateUplinkNote": "Канал висхідного зв'язку зашифрований AES-PSK на /2/e/ (немає дзеркала JSON для закритих ключів). Монітори брокерів все ще можуть реєструвати збої розшифрування трафіку PKI/DM між іншими вузлами — це нормально і не пов'язано з канальними PSK тут.",
     "sharedBleWithMeshtastic": "Цей пристрій Bluetooth вже підключено через Meshtastic. Перейдіть на вкладку Meshtastic, щоб використовувати її, або виберіть інше радіо або транспорт для MeshCore.",
-    "sharedBleWithMeshtasticHint": "Одне фізичне радіо не може одночасно проводити окремі сеанси Meshtastic та MeshCore Bluetooth."
+    "sharedBleWithMeshtasticHint": "Одне фізичне радіо не може одночасно проводити окремі сеанси Meshtastic та MeshCore Bluetooth.",
+    "reticulumStackTitle": "Стек Reticulum",
+    "reticulumStackHint": "Запускає локальний sidecar Reticulum/LXMF (інтерфейси TCP та Auto).",
+    "reticulumStartStack": "Запустити стек",
+    "reticulumRestartStack": "Перезапустити стек",
+    "reticulumNetworkTitle": "Мережеві інтерфейси",
+    "reticulumNetworkEmpty": "Інтерфейси ще не повідомлялися.",
+    "reticulumNetworkUnknown": "Інтерфейс",
+    "reticulumNetworkDisabled": "вимкнено",
+    "reticulumSidecarMissing": "Sidecar Reticulum не зібрано. У репозиторії mesh-client виконайте `pnpm run reticulum:sidecar:build` (потрібен Rust).",
+    "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) не знайдено. Встановіть з https://rustup.rs, потім виконайте `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Не вдалося запустити стек Reticulum: {{message}}",
+    "disconnect": "Відключити"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

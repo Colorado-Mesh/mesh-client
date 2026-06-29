@@ -212,7 +212,8 @@
     "protocolSwitcher": "Comutador de protocolo",
     "switchToMeshtastic": "Mudar para Meshtastic",
     "switchToMeshCore": "Mudar para MeshCore",
-    "backToTop": "Voltar ao topo"
+    "backToTop": "Voltar ao topo",
+    "switchToReticulum": "Mudar para Reticulum"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} por cento, carregando",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Permitir TLS (certificado autoassinado) inseguro. Desativado por padrão — ative apenas se a sua corretora usar uma autoridade de certificação não pública.",
     "channelPsksPrivateUplinkNote": "O uplink do canal é AES-PSK criptografado em /2/e/ (sem espelho JSON para chaves privadas). Os monitores do corretor ainda podem registrar falhas de descriptografia para tráfego PKI/DM entre outros nós — isso é normal e não está relacionado aos PSKs do canal aqui.",
     "sharedBleWithMeshtastic": "Este dispositivo Bluetooth já está conectado via Meshtastic. Mude para a guia Meshtastic para usá-lo ou escolha um rádio ou transporte diferente para o MeshCore.",
-    "sharedBleWithMeshtasticHint": "Um rádio físico não pode conter sessões separadas de Meshtastic e MeshCore Bluetooth ao mesmo tempo."
+    "sharedBleWithMeshtasticHint": "Um rádio físico não pode conter sessões separadas de Meshtastic e MeshCore Bluetooth ao mesmo tempo.",
+    "reticulumStackTitle": "Pilha Reticulum",
+    "reticulumStackHint": "Inicia o sidecar local Reticulum/LXMF (interfaces TCP e Auto).",
+    "reticulumStartStack": "Iniciar pilha",
+    "reticulumRestartStack": "Reiniciar pilha",
+    "reticulumNetworkTitle": "Interfaces de rede",
+    "reticulumNetworkEmpty": "Nenhuma interface relatada ainda.",
+    "reticulumNetworkUnknown": "Interface",
+    "reticulumNetworkDisabled": "desativado",
+    "reticulumSidecarMissing": "Sidecar Reticulum não compilado. No repositório mesh-client execute `pnpm run reticulum:sidecar:build` (requer Rust).",
+    "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) não encontrada. Instale em https://rustup.rs e execute `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Não foi possível iniciar a pilha Reticulum: {{message}}",
+    "disconnect": "Desconectar"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

@@ -36,6 +36,7 @@ import type { MeshProtocol } from '../shared/meshProtocol';
 import { MESH_PROTOCOL_SET } from '../shared/meshProtocol';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
+import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { formatChatExportLines } from './chatExportFormat';
 import {
@@ -83,6 +84,7 @@ import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fata
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
   clearLogFile,
@@ -104,6 +106,7 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import type { TakServerManager } from './tak-server-manager';
 import { getCheckNowFromMenu, initUpdater } from './updater';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
@@ -205,6 +208,12 @@ const nobleBleManager = new NobleBleManager();
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
 
+const IDLE_RETICULUM_STATUS: ReticulumSidecarStatus = {
+  running: false,
+  port: 0,
+  pid: null,
+};
+
 /** MAC address format: XX:XX:XX:XX:XX:XX */
 function isMacAddress(value: string): boolean {
   const parts = value.split(':');
@@ -214,6 +223,16 @@ function isMacAddress(value: string): boolean {
 
 let takServerManager: TakServerManager | null = null;
 let takServerManagerLoadPromise: Promise<TakServerManager> | null = null;
+
+let reticulumSidecarManager: ReticulumSidecarManager | null = null;
+
+function ensureReticulumSidecarManager(): ReticulumSidecarManager {
+  if (!reticulumSidecarManager) {
+    reticulumSidecarManager = new ReticulumSidecarManager();
+    wireReticulumSidecarBridge(reticulumSidecarManager, () => mainWindow);
+  }
+  return reticulumSidecarManager;
+}
 
 function attachTakForwarders(manager: TakServerManager): void {
   manager.on('status', (status) => {
@@ -275,6 +294,14 @@ async function shutdownAppResources(): Promise<void> {
   } catch (err) {
     console.debug(
       '[main] TAK server stop during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
+  try {
+    void reticulumSidecarManager?.stop();
+  } catch (err) {
+    console.debug(
+      '[main] Reticulum sidecar stop during shutdown (ignored):',
       err instanceof Error ? err.message : err,
     ); // log-injection-ok internal cleanup
   }
@@ -1071,9 +1098,13 @@ function applyAboutPanelOptions(): void {
   const credits = [
     `Version ${version}`,
     '',
-    'Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, and routing diagnostics.',
+    'Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, and routing diagnostics.',
     '',
-    'License: MIT',
+    'Reticulum support uses a bundled AGPL-3.0 sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
+    '',
+    'Reticulum stack inspiration: Ratspeak (https://github.com/ratspeak/Ratspeak)',
+    '',
+    'License: MIT (application code). AGPL-3.0 applies to the bundled Reticulum sidecar binary.',
     'Author: Colorado Mesh',
     '',
     `Website:  ${HELP_URL_WEBSITE}`,
@@ -5483,6 +5514,13 @@ registerTakIpcHandlers({
   validateTakSettings,
 });
 
+registerReticulumIpcHandlers({
+  idleStatus: IDLE_RETICULUM_STATUS,
+  ensureManager: ensureReticulumSidecarManager,
+  getManager: () => reticulumSidecarManager,
+  getMainWindow: () => mainWindow,
+});
+
 // ─── App lifecycle ─────────────────────────────────────────────────
 // ─── Second-instance handler ────────────────────────────────────────
 // Registered here (before whenReady) so it's ready before any second
@@ -5652,6 +5690,14 @@ app.on('will-quit', () => {
   } catch (err) {
     console.debug(
       '[main] TAK server stop during will-quit (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
+  try {
+    void reticulumSidecarManager?.stop();
+  } catch (err) {
+    console.debug(
+      '[main] Reticulum sidecar stop during will-quit (ignored):',
       err instanceof Error ? err.message : err,
     ); // log-injection-ok internal cleanup
   }

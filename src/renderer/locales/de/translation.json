@@ -212,7 +212,8 @@
     "protocolSwitcher": "Protokollumschalter",
     "switchToMeshtastic": "Zu Meshtastic wechseln",
     "switchToMeshCore": "Zu MeshCore wechseln",
-    "backToTop": "Zum Seitenanfang"
+    "backToTop": "Zum Seitenanfang",
+    "switchToReticulum": "Zu Reticulum wechseln"
   },
   "battery": {
     "percentCharging": "Akku {{percent}} Prozent, Laden",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "Unsichere TLS (selbstsigniertes Zertifikat) zulassen. Standardmäßig deaktiviert — nur aktivieren, wenn Ihr Broker eine nicht öffentliche CA verwendet.",
     "channelPsksPrivateUplinkNote": "Kanal-Uplink ist AES-PSK-verschlüsselt auf /2/e/ (kein JSON-Spiegel für private Schlüssel). Broker-Monitore können immer noch Fehler bei der Entschlüsselung des PKI/DM-Verkehrs zwischen anderen Knoten protokollieren — das ist normal und hat nichts mit Kanal-PSKs zu tun.",
     "sharedBleWithMeshtastic": "Dieses Bluetooth-Gerät ist bereits über Meshtastic verbunden. Wechseln Sie zur Registerkarte Meshtastic, um sie zu verwenden, oder wählen Sie ein anderes Radio oder einen anderen Transport für MeshCore.",
-    "sharedBleWithMeshtasticHint": "Ein physisches Funkgerät kann keine separaten Meshtastic- und MeshCore-Bluetooth-Sitzungen gleichzeitig durchführen."
+    "sharedBleWithMeshtasticHint": "Ein physisches Funkgerät kann keine separaten Meshtastic- und MeshCore-Bluetooth-Sitzungen gleichzeitig durchführen.",
+    "reticulumStackTitle": "Reticulum-Stack",
+    "reticulumStackHint": "Startet den lokalen Reticulum/LXMF-Sidecar (TCP- und Auto-Schnittstellen).",
+    "reticulumStartStack": "Stack starten",
+    "reticulumRestartStack": "Stack neu starten",
+    "reticulumNetworkTitle": "Netzwerkschnittstellen",
+    "reticulumNetworkEmpty": "Noch keine Schnittstellen gemeldet.",
+    "reticulumNetworkUnknown": "Schnittstelle",
+    "reticulumNetworkDisabled": "deaktiviert",
+    "reticulumSidecarMissing": "Reticulum-Sidecar nicht gebaut. Im mesh-client-Repository `pnpm run reticulum:sidecar:build` ausführen (erfordert Rust).",
+    "reticulumSidecarCargoMissing": "Rust-Toolchain (cargo) nicht gefunden. Von https://rustup.rs installieren und dann `pnpm run reticulum:sidecar:build` ausführen.",
+    "reticulumSidecarStartFailed": "Reticulum-Stack konnte nicht gestartet werden: {{message}}",
+    "disconnect": "Trennen"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

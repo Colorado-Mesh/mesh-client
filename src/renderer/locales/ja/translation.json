@@ -212,7 +212,8 @@
     "protocolSwitcher": "プロトコルスイッチャー",
     "switchToMeshtastic": "Meshtasticに切り替える",
     "switchToMeshCore": "MeshCore に切り替える",
-    "backToTop": "トップに戻る"
+    "backToTop": "トップに戻る",
+    "switchToReticulum": "Reticulumに切り替える"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -579,7 +580,19 @@
     "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。",
     "channelPsksPrivateUplinkNote": "チャネルアップリンクは/2/e/でAES - PSK暗号化されています（秘密鍵のJSONミラーはありません）。ブローカーモニターは、他のノード間のPKI/DMトラフィックの復号化失敗を記録することがあります。これは正常であり、ここではチャネルPSKとは無関係です。",
     "sharedBleWithMeshtastic": "このBluetoothデバイスはすでにMeshtastic経由で接続されています。Meshtasticタブに切り替えて使用するか、MeshCoreの別のラジオまたはトランスポートを選択します。",
-    "sharedBleWithMeshtasticHint": "1つの物理ラジオは、MeshtasticとMeshCore Bluetoothセッションを同時に開催することはできません。"
+    "sharedBleWithMeshtasticHint": "1つの物理ラジオは、MeshtasticとMeshCore Bluetoothセッションを同時に開催することはできません。",
+    "reticulumStackTitle": "Reticulumスタック",
+    "reticulumStackHint": "ローカルのReticulum/LXMFサイドカー（TCPおよびAutoインターフェース）を起動します。",
+    "reticulumStartStack": "スタックを開始",
+    "reticulumRestartStack": "スタックを再起動",
+    "reticulumNetworkTitle": "ネットワークインターフェース",
+    "reticulumNetworkEmpty": "まだインターフェースが報告されていません。",
+    "reticulumNetworkUnknown": "インターフェース",
+    "reticulumNetworkDisabled": "無効",
+    "reticulumSidecarMissing": "Reticulumサイドカーがビルドされていません。mesh-clientリポジトリで `pnpm run reticulum:sidecar:build` を実行してください（Rustが必要です）。",
+    "reticulumSidecarCargoMissing": "Rustツールチェーン（cargo）が見つかりません。https://rustup.rs からインストールし、`pnpm run reticulum:sidecar:build` を実行してください。",
+    "reticulumSidecarStartFailed": "Reticulumスタックを開始できませんでした: {{message}}",
+    "disconnect": "切断する"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

@@ -9,6 +9,7 @@ import { useToast } from './Toast';
 const PROTOCOL_DISPLAY_NAME: Record<MeshProtocol, string> = {
   meshtastic: 'Meshtastic',
   meshcore: 'MeshCore',
+  reticulum: 'Reticulum',
 };
 
 export interface InactiveProtocolNotifierProps {

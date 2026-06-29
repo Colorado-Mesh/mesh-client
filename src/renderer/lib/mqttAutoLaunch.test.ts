@@ -50,4 +50,19 @@ describe('tryAutoLaunchMqtt', () => {
 
     expect(connect).not.toHaveBeenCalled();
   });
+
+  it('skips Reticulum (no MQTT transport)', async () => {
+    localStorage.setItem(
+      MESHTASTIC_MQTT_SETTINGS_KEY,
+      JSON.stringify({ autoLaunch: true, server: 'mqtt.meshtastic.org' }),
+    );
+    const connect = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('window', {
+      electronAPI: { mqtt: { connect } },
+    });
+
+    await tryAutoLaunchMqtt('reticulum');
+
+    expect(connect).not.toHaveBeenCalled();
+  });
 });
