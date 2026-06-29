@@ -361,6 +361,24 @@ export const RETICULUM_SIDECAR_BUILD_SPACED_RE = /reticulum\s*:\s*sidecar\s*:\s*
 
 const RETICULUM_STACK_HINT_PROTOCOL_TOKENS = ['LXMF', 'TCP', 'Auto'];
 
+const RUSTUP_INSTALL_URL_HOST = 'rustup.rs';
+
+/** @param {string} text */
+function containsRustupInstallUrl(text) {
+  const urlRe = /https?:\/\/[a-z0-9.-]+/gi;
+  let match;
+  while ((match = urlRe.exec(text)) !== null) {
+    try {
+      const candidate = match[0];
+      const parsed = new URL(candidate.endsWith('/') ? candidate : `${candidate}/`);
+      if (parsed.hostname === RUSTUP_INSTALL_URL_HOST) return true;
+    } catch {
+      // ignore malformed URL-like fragments in locale strings
+    }
+  }
+  return false;
+}
+
 /** Programming-language Rust mistranslated as corrosion, karat, cargo freight, etc. */
 const RUST_PROGRAMMING_FALSE_FRIEND_RES = [
   { re: /óxido/i, hint: 'use programming language "Rust", not Spanish "óxido" (oxide)' },
@@ -432,7 +450,7 @@ export function reticulumConnectionPanelLiteralIssues(enVal, val) {
   if (enVal.includes('(cargo)') && !/\bcargo\b/.test(val)) {
     issues.push('keep Rust package manager name "cargo" untranslated');
   }
-  if (enVal.includes('https://rustup.rs') && !val.includes('https://rustup.rs')) {
+  if (containsRustupInstallUrl(enVal) && !containsRustupInstallUrl(val)) {
     issues.push('keep rustup install URL https://rustup.rs verbatim');
   }
   return issues;
