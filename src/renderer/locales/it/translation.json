@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Impossibile copiare l'istantanea di debug",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (sperimentale)",
     "meshcoreOpenWireCompatLabel": "Abilita compatibilità MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Se abilitato, mesh-client invia risposte testo con chiave (@[Name#key]), reazioni compatte r: e GIF Giphy g:. Potrebbe non corrispondere al formato wire ufficiale del companion; i destinatari devono usare client compatibili con MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Se abilitato, mesh-client invia risposte testo con chiave (@[Name#key]), reazioni compatte r: e GIF Giphy g:. Potrebbe non corrispondere al formato wire ufficiale del companion; i destinatari devono usare client compatibili con MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Dimensione hash percorso MeshCore (sperimentale)",
+    "meshcorePathHashModeLabel": "Dimensione hash percorso predefinito",
+    "meshcorePathHashMode1Byte": "1 byte (legacy, fino a 64 hop)",
+    "meshcorePathHashMode2Byte": "2 byte (fino a 32 hop)",
+    "meshcorePathHashMode3Byte": "3 byte (fino a 21 hop)",
+    "meshcorePathHashModeShort0": "1 byte",
+    "meshcorePathHashModeShort1": "2 byte",
+    "meshcorePathHashModeShort2": "3 byte",
+    "meshcorePathHashDeviceReported": "Rapporti radio collegati: {{mode}}",
+    "meshcorePathHashModeHint": "Richiede il firmware companion v1.14.0+ e i ripetitori su v1.14+ lungo il percorso. I ripetitori pre-1.14 rilasciano silenziosamente pacchetti multibyte. I server ripetitori e room possono anche utilizzare l'interfaccia CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Modalità hash percorso non riuscita: {{message}}"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI dallo stato del ripetitore",
     "rssiContactTooltip": "Contatta RSSI: utilizza Status per la lettura dal vivo",
     "pingLastFailedTooltip": "Ultimo ping non riuscito: {{error}}",
-    "neighborsHeading": "Vicini ({{count}} totale):"
+    "neighborsHeading": "Vicini ({{count}} totale):",
+    "pathHashCliGet": "Ottieni la modalità hash del percorso",
+    "pathHashCliSet0": "Imposta la modalità hash del percorso a 1 byte",
+    "pathHashCliSet1": "Imposta la modalità hash del percorso a 2 byte",
+    "pathHashCliSet2": "Imposta la modalità hash del percorso a 3 byte"
   },
   "rfHistograms": {
     "title": "Distribuzione del segnale RF",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Salva prima una password della stanza per utilizzare l'accesso a tutti",
     "membersHeadingWithCount": "Membri ({{count}})",
     "collapseRoomList": "Comprimi l'elenco delle sale",
-    "expandRoomList": "Espandi l'elenco delle sale"
+    "expandRoomList": "Espandi l'elenco delle sale",
+    "pathHashCliGet": "Ottieni la modalità hash del percorso",
+    "pathHashCliSet0": "Imposta la modalità hash del percorso a 1 byte",
+    "pathHashCliSet1": "Imposta la modalità hash del percorso a 2 byte",
+    "pathHashCliSet2": "Imposta la modalità hash del percorso a 3 byte"
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",

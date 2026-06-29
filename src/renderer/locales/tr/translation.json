@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Hata ayıklama anlık görüntüsü kopyalanamadı",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (deneysel)",
     "meshcoreOpenWireCompatLabel": "MeshCore Open uyumluluğunu etkinleştir",
-    "meshcoreOpenWireCompatHint": "Etkinleştirildiğinde mesh-client, anahtarlı metin yanıtları (@[Name#key]), kompakt r: tepkileri ve g: Giphy GIF'leri gönderir. Bu, resmi companion wire biçimiyle uyuşmayabilir; alıcıların MeshCore Open uyumlu istemcilere ihtiyacı vardır."
+    "meshcoreOpenWireCompatHint": "Etkinleştirildiğinde mesh-client, anahtarlı metin yanıtları (@[Name#key]), kompakt r: tepkileri ve g: Giphy GIF'leri gönderir. Bu, resmi companion wire biçimiyle uyuşmayabilir; alıcıların MeshCore Open uyumlu istemcilere ihtiyacı vardır.",
+    "meshcorePathHashExperimentalTitle": "MeshCore yol karma boyutu (deneysel)",
+    "meshcorePathHashModeLabel": "Varsayılan yol karma boyutu",
+    "meshcorePathHashMode1Byte": "1 bayt (eski, 64 atlamaya kadar)",
+    "meshcorePathHashMode2Byte": "2 bayt (32 atlamaya kadar)",
+    "meshcorePathHashMode3Byte": "3 bayt (21 atlamaya kadar)",
+    "meshcorePathHashModeShort0": "1 Bayt",
+    "meshcorePathHashModeShort1": "2 bayt",
+    "meshcorePathHashModeShort2": "3 bayt",
+    "meshcorePathHashDeviceReported": "Bağlı radyo raporları: {{mode}}",
+    "meshcorePathHashModeHint": "Yol boyunca v1.14+ üzerinde tamamlayıcı ürün yazılımı v1.14.0+ ve tekrarlayıcılar gerektirir. Ön 1.14 tekrarlayıcılar çok baytlı paketleri sessizce düşürür. Tekrarlayıcı ve oda sunucuları da CLI: set path.hash.mode {0|1|2} kullanabilir.",
+    "meshcorePathHashApplyFailed": "Yol karma modu başarısız oldu: {{message}}"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "Tekrarlayıcı durumundan RSSI",
     "rssiContactTooltip": "RSSI ile iletişime geçin — canlı okuma için Durumu kullanın",
     "pingLastFailedTooltip": "Son ping başarısız oldu: {{error}}",
-    "neighborsHeading": "Komşular ({{count}} toplam):"
+    "neighborsHeading": "Komşular ({{count}} toplam):",
+    "pathHashCliGet": "Yol karma modunu al",
+    "pathHashCliSet0": "Yol karma modunu 1 bayt olarak ayarla",
+    "pathHashCliSet1": "Yol karma modunu 2 bayt olarak ayarla",
+    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt"
   },
   "rfHistograms": {
     "title": "RF Sinyal Dağılımı",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Tüm oturum açma bilgilerini kullanmak için önce bir oda parolasını kaydedin",
     "membersHeadingWithCount": "Üyeler ({{count}})",
     "collapseRoomList": "Oda listesini daralt",
-    "expandRoomList": "Oda listesini genişlet"
+    "expandRoomList": "Oda listesini genişlet",
+    "pathHashCliGet": "Yol karma modunu al",
+    "pathHashCliSet0": "Yol karma modunu 1 bayt olarak ayarla",
+    "pathHashCliSet1": "Yol karma modunu 2 bayt olarak ayarla",
+    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",

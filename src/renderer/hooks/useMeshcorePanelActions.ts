@@ -28,6 +28,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       sendAdvert: runtime.sendAdvert,
       sendZeroHopAdvert: runtime.sendZeroHopAdvert,
       applyMeshcoreFloodScopeHashtag: runtime.applyMeshcoreFloodScopeHashtag,
+      applyMeshcorePathHashMode: runtime.applyMeshcorePathHashMode,
       syncClock: runtime.syncClock,
       meshcoreSetChannel: runtime.setMeshcoreChannel,
       meshcoreDeleteChannel: runtime.deleteMeshcoreChannel,

@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "디버그 스냅샷을 복사할 수 없습니다",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (실험용)",
     "meshcoreOpenWireCompatLabel": "MeshCore Open 호환성 활성화",
-    "meshcoreOpenWireCompatHint": "활성화하면 mesh-client가 키가 있는 텍스트 답장(@[Name#key]), 컴팩트 r: 반응, g: Giphy GIF를 보냅니다. 공식 companion wire 형식과 다를 수 있으며, 수신자는 MeshCore Open 호환 클라이언트가 필요합니다."
+    "meshcoreOpenWireCompatHint": "활성화하면 mesh-client가 키가 있는 텍스트 답장(@[Name#key]), 컴팩트 r: 반응, g: Giphy GIF를 보냅니다. 공식 companion wire 형식과 다를 수 있으며, 수신자는 MeshCore Open 호환 클라이언트가 필요합니다.",
+    "meshcorePathHashExperimentalTitle": "MeshCore 경로 해시 크기 (실험용)",
+    "meshcorePathHashModeLabel": "기본 경로 해시 크기",
+    "meshcorePathHashMode1Byte": "1바이트 (레거시, 최대 64홉)",
+    "meshcorePathHashMode2Byte": "2바이트 (최대 32홉)",
+    "meshcorePathHashMode3Byte": "3바이트 (최대 21홉)",
+    "meshcorePathHashModeShort0": "1 바이트",
+    "meshcorePathHashModeShort1": "2바이트",
+    "meshcorePathHashModeShort2": "3바이트",
+    "meshcorePathHashDeviceReported": "연결된 라디오 보고서: {{mode}}",
+    "meshcorePathHashModeHint": "경로상 v1.14.0+ 동반 펌웨어와 v1.14+ 리피터가 필요합니다. v1.14 이전 리피터는 멀티바이트 패킷을 조용히 드롭합니다. 리피터 및 룸 서버는 CLI에서 set path.hash.mode {0|1|2}를 사용할 수도 있습니다.",
+    "meshcorePathHashApplyFailed": "경로 해시 모드 실패: {{message}}"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "리피터 상태의 RSSI",
     "rssiContactTooltip": "RSSI에 문의 — 실시간 읽기에 상태 사용",
     "pingLastFailedTooltip": "마지막 핑 실패: {{error}}",
-    "neighborsHeading": "이웃(총 {{count}}):"
+    "neighborsHeading": "이웃(총 {{count}}):",
+    "pathHashCliGet": "경로 해시 모드 가져오기",
+    "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
+    "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
+    "pathHashCliSet2": "경로 해시 모드 3바이트 설정"
   },
   "rfHistograms": {
     "title": "RF 신호 분포",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
     "membersHeadingWithCount": "회원 ({{count}})",
     "collapseRoomList": "방 목록 접기",
-    "expandRoomList": "방 목록 펼치기"
+    "expandRoomList": "방 목록 펼치기",
+    "pathHashCliGet": "경로 해시 모드 가져오기",
+    "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
+    "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
+    "pathHashCliSet2": "경로 해시 모드 3바이트 설정"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",

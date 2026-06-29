@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "デバッグスナップショットをコピーできませんでした",
     "meshcoreOpenWireExperimentalTitle": "MeshCoreオープンワイヤー（実験用）",
     "meshcoreOpenWireCompatLabel": "MeshCore Openの互換性を有効にする",
-    "meshcoreOpenWireCompatHint": "有効にすると、mesh-clientはキー付きテキスト返信（@[Name#key]）、コンパクトなr:リアクション、g: Giphy GIFを送信します。公式のcompanion wire形式と一致しない場合があります。受信側はMeshCore Open対応クライアントが必要です。"
+    "meshcoreOpenWireCompatHint": "有効にすると、mesh-clientはキー付きテキスト返信（@[Name#key]）、コンパクトなr:リアクション、g: Giphy GIFを送信します。公式のcompanion wire形式と一致しない場合があります。受信側はMeshCore Open対応クライアントが必要です。",
+    "meshcorePathHashExperimentalTitle": "MeshCoreパスハッシュサイズ（試験的）",
+    "meshcorePathHashModeLabel": "デフォルトパスハッシュサイズ",
+    "meshcorePathHashMode1Byte": "1バイト（レガシー、最大64ホップ）",
+    "meshcorePathHashMode2Byte": "2バイト（最大32ホップ）",
+    "meshcorePathHashMode3Byte": "3バイト（最大21ホップ）",
+    "meshcorePathHashModeShort0": "1 バイト",
+    "meshcorePathHashModeShort1": "2バイト",
+    "meshcorePathHashModeShort2": "3 Byte",
+    "meshcorePathHashDeviceReported": "接続された無線レポート： {{mode}}",
+    "meshcorePathHashModeHint": "パス上にv1.14.0以降のコンパニオンファームウェアとv1.14以降のリピーターが必要です。v1.14未満のリピーターはマルチバイトパケットを黙って破棄します。リピーターとルームサーバーはCLIでも利用できます: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "パスハッシュモードに失敗しました： {{message}}"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "リピーターステータスからのRSSI",
     "rssiContactTooltip": "RSSI に連絡する — ライブ読み取りにステータスを使用する",
     "pingLastFailedTooltip": "最後の ping が失敗しました: {{error}}",
-    "neighborsHeading": "近隣住民 (合計 {{count}}):"
+    "neighborsHeading": "近隣住民 (合計 {{count}}):",
+    "pathHashCliGet": "パスハッシュモードの取得",
+    "pathHashCliSet0": "パスハッシュモード1バイトを設定",
+    "pathHashCliSet1": "パスハッシュモード2バイトを設定",
+    "pathHashCliSet2": "パスハッシュモード3バイトを設定"
   },
   "rfHistograms": {
     "title": "RF信号分布",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "すべてログインするには、まずルームパスワードを保存してください",
     "membersHeadingWithCount": "メンバー（ {{count}} ）",
     "collapseRoomList": "ルームリストを折りたたむ",
-    "expandRoomList": "ルームリストを展開"
+    "expandRoomList": "ルームリストを展開",
+    "pathHashCliGet": "パスハッシュモードの取得",
+    "pathHashCliSet0": "パスハッシュモード1バイトを設定",
+    "pathHashCliSet1": "パスハッシュモード2バイトを設定",
+    "pathHashCliSet2": "パスハッシュモード3バイトを設定"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",

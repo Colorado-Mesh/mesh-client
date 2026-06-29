@@ -200,6 +200,7 @@ declare module '@liamcottle/meshcore.js' {
     importPrivateKey(privateKey: Uint8Array): Promise<void>;
     // Other
     setOtherParams(manualAddContacts: boolean): Promise<void>;
+    setPathHashMode(mode: 0 | 1 | 2): Promise<void>;
     setAutoAddContacts(): Promise<void>;
     setManualAddContacts(): Promise<void>;
     login(pubKey: Uint8Array, password: string, extraTimeoutMillis?: number): Promise<unknown>;

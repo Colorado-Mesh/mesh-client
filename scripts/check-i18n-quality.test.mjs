@@ -630,6 +630,48 @@ describe('localeStringQualityIssues', () => {
     });
     expectIssue(issues, 'queueButton" is still identical to English');
   });
+
+  it('flags CAT plural-form residue in meshcorePathHashModeShort0', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'nl',
+      flatKey: 'appPanel.meshcorePathHashModeShort0',
+      val: '1 Byteplural form: &apos;%1 Bytes&apos;',
+      enVal: '1-byte',
+    });
+    expectIssue(issues, 'CAT/Qt plural-form placeholder residue');
+  });
+
+  it('flags brewing-hop false friend on meshcorePathHashMode1Byte', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'appPanel.meshcorePathHashMode1Byte',
+      val: '1 bajt (dědictví, až 64 chmelů)',
+      enVal: '1-byte (legacy, up to 64 hops)',
+    });
+    expectIssue(issues, 'brewing-hop false friend');
+  });
+
+  it('flags missing CLI literal in meshcorePathHashModeHint', () => {
+    const enHint =
+      'Requires companion firmware v1.14.0+ and repeaters on v1.14+ along the path. Pre-1.14 repeaters silently drop multibyte packets. Repeater and room servers can also use CLI: set path.hash.mode {0|1|2}.';
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'appPanel.meshcorePathHashModeHint',
+      val: '경로를 따라 v1.14.0+ 펌웨어가 필요합니다. CLI: path.hash.mode {0 | 1 | 2} 설정.',
+      enVal: enHint,
+    });
+    expectIssue(issues, 'meshcorePathHashModeHint must preserve CLI literal');
+  });
+
+  it('flags parenthesis-only meshcorePathHashModeShort1', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'appPanel.meshcorePathHashModeShort1',
+      val: '(2 byte)',
+      enVal: '2-byte',
+    });
+    expectIssue(issues, 'parenthesis-only MT garbage');
+  });
 });
 
 describe('interpolationPlaceholderIssues', () => {

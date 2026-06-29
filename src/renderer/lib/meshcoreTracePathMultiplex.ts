@@ -1,8 +1,14 @@
+import { meshcoreTraceDataHashLayout } from '@/shared/meshcorePathHash';
+
 import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
 
 /** Same shape as meshcore.js `tracePath` resolve value. */
 export interface MeshcoreTracePathResult {
+  /** Hop/segment count along the traced route (for {@link meshcoreTracePathLenToHops}). */
   pathLen: number;
+  /** Raw TraceData pathLen byte (total hash bytes on wire). */
+  pathLenByte: number;
+  flags: number;
   pathHashes: number[];
   pathSnrs: number[];
   lastSnr: number;
@@ -78,8 +84,13 @@ function getMuxState(conn: object): MuxState {
   return s;
 }
 
-function traceDataPayloadToResult(response: Record<string, unknown>): MeshcoreTracePathResult {
-  const pathLen = Math.max(0, Math.floor(Number(response.pathLen ?? 0)));
+/** @internal Exported for unit tests decoding TraceData payloads. */
+export function traceDataPayloadToResult(
+  response: Record<string, unknown>,
+): MeshcoreTracePathResult {
+  const pathLenByte = Math.max(0, Math.floor(Number(response.pathLen ?? 0)));
+  const flags = Math.floor(Number(response.flags ?? 0));
+  const layout = meshcoreTraceDataHashLayout(pathLenByte, flags);
 
   const getArray = (val: unknown): number[] => {
     if (Array.isArray(val)) return val.map((x) => Number(x) || 0);
@@ -94,20 +105,25 @@ function traceDataPayloadToResult(response: Record<string, unknown>): MeshcoreTr
   let pathHashes = getArray(response.pathHashes);
   let pathSnrsWire = getArray(response.pathSnrs);
 
-  if (pathHashes.length > pathLen) pathHashes = pathHashes.slice(0, pathLen);
-  if (pathSnrsWire.length > pathLen + 1) pathSnrsWire = pathSnrsWire.slice(0, pathLen + 1);
+  if (pathHashes.length > layout.hashByteLength) {
+    pathHashes = pathHashes.slice(0, layout.hashByteLength);
+  }
+  const snrHopCount = Math.max(0, layout.snrByteLength - 1);
+  if (pathSnrsWire.length > layout.snrByteLength) {
+    pathSnrsWire = pathSnrsWire.slice(0, layout.snrByteLength);
+  }
 
-  while (pathHashes.length < pathLen) pathHashes.push(0);
-  while (pathSnrsWire.length < pathLen + 1) pathSnrsWire.push(0);
+  while (pathHashes.length < layout.hashByteLength) pathHashes.push(0);
+  while (pathSnrsWire.length < layout.snrByteLength) pathSnrsWire.push(0);
 
-  const pathSnrs = pathLen > 0 ? pathSnrsWire.slice(0, pathLen) : [];
+  const pathSnrs = snrHopCount > 0 ? pathSnrsWire.slice(0, snrHopCount) : [];
 
   const lastFromResponse = response.lastSnr;
   let lastSnr: number;
   if (typeof lastFromResponse === 'number' && Number.isFinite(lastFromResponse)) {
     lastSnr = lastFromResponse;
-  } else if (pathLen > 0 && pathSnrsWire.length > pathLen) {
-    lastSnr = (pathSnrsWire[pathLen] & 0xff) / 4;
+  } else if (snrHopCount > 0 && pathSnrsWire.length > snrHopCount) {
+    lastSnr = (pathSnrsWire[snrHopCount] & 0xff) / 4;
   } else if (pathSnrsWire.length > 0) {
     lastSnr = (pathSnrsWire[pathSnrsWire.length - 1] & 0xff) / 4;
   } else {
@@ -115,7 +131,9 @@ function traceDataPayloadToResult(response: Record<string, unknown>): MeshcoreTr
   }
 
   return {
-    pathLen,
+    pathLen: layout.hopCount,
+    pathLenByte,
+    flags,
     pathHashes,
     pathSnrs,
     lastSnr,

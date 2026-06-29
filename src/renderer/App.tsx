@@ -2948,6 +2948,21 @@ function AppContent() {
                               onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
                               onAutoFloodAdvertTypeChange={setAutoFloodAdvertType}
                               onChatCompactModeChange={handleChatCompactModeChange}
+                              deviceReportedPathHashMode={
+                                protocol === 'meshcore'
+                                  ? (meshcoreRuntime.state.pathHashMode ?? null)
+                                  : null
+                              }
+                              isMeshcoreRadioConnected={
+                                protocol === 'meshcore' &&
+                                (meshcoreRuntime.state.status === 'connected' ||
+                                  meshcoreRuntime.state.status === 'configured')
+                              }
+                              onApplyMeshcorePathHashMode={
+                                protocol === 'meshcore'
+                                  ? meshcorePanelActions.applyMeshcorePathHashMode
+                                  : undefined
+                              }
                             />
                           </Suspense>
                         </ErrorBoundary>

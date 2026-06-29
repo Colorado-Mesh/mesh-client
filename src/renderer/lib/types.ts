@@ -427,6 +427,8 @@ export interface DeviceState {
   deviceHasEthernet?: boolean;
   /** MeshCore: manufacturer/model string from local `deviceQuery` (connected radio only). */
   manufacturerModel?: string;
+  /** MeshCore: companion path hash mode from deviceQuery or last apply (0/1/2). */
+  pathHashMode?: 0 | 1 | 2 | null;
   /** 0–100 from device metrics; omit until first reading */
   batteryPercent?: number;
   batteryCharging?: boolean;

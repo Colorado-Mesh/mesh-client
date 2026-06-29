@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Не удалось скопировать снимок отладки",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (экспериментально)",
     "meshcoreOpenWireCompatLabel": "Включить совместимость MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Если включено, mesh-client отправляет текстовые ответы с ключом (@[Name#key]), компактные реакции r: и GIF Giphy g:. Это может не соответствовать официальному формату wire companion; получателям нужны клиенты с поддержкой MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Если включено, mesh-client отправляет текстовые ответы с ключом (@[Name#key]), компактные реакции r: и GIF Giphy g:. Это может не соответствовать официальному формату wire companion; получателям нужны клиенты с поддержкой MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Размер хэша пути MeshCore (экспериментальный)",
+    "meshcorePathHashModeLabel": "Размер хэша пути по умолчанию",
+    "meshcorePathHashMode1Byte": "1 байт (устаревший, до 64 прыжков)",
+    "meshcorePathHashMode2Byte": "2 байта (до 32 переходов)",
+    "meshcorePathHashMode3Byte": "3 байта (до 21 прыжка)",
+    "meshcorePathHashModeShort0": "1 байт",
+    "meshcorePathHashModeShort1": "2-й байт",
+    "meshcorePathHashModeShort2": "3 байта",
+    "meshcorePathHashDeviceReported": "Подключенные радиоотчеты: {{mode}}",
+    "meshcorePathHashModeHint": "Требуется сопутствующая прошивка v1.14.0+ и повторители на v1.14+ вдоль пути. Повторители Pre-1.14 бесшумно сбрасывают многобайтовые пакеты. Серверы повторителей и комнат также могут использовать CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Сбой режима хеширования пути: {{message}}"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI от статуса репитера",
     "rssiContactTooltip": "Свяжитесь с RSSI — используйте Статус для чтения в реальном времени",
     "pingLastFailedTooltip": "Последний пинг не удался: {{error}}",
-    "neighborsHeading": "Соседи (всего {{count}}):"
+    "neighborsHeading": "Соседи (всего {{count}}):",
+    "pathHashCliGet": "Получить режим хеширования пути",
+    "pathHashCliSet0": "Установить режим хеширования пути 1 байт",
+    "pathHashCliSet1": "Установить хеш-режим пути 2 байта",
+    "pathHashCliSet2": "Установить режим хеширования пути 3 байта"
   },
   "rfHistograms": {
     "title": "Распределение радиочастотных сигналов",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Сначала сохраните пароль комнаты, чтобы использовать вход во все",
     "membersHeadingWithCount": "Участники ({{count}})",
     "collapseRoomList": "Свернуть список комнат",
-    "expandRoomList": "Развернуть список комнат"
+    "expandRoomList": "Развернуть список комнат",
+    "pathHashCliGet": "Получить режим хеширования пути",
+    "pathHashCliSet0": "Установить режим хеширования пути 1 байт",
+    "pathHashCliSet1": "Установить хеш-режим пути 2 байта",
+    "pathHashCliSet2": "Установить режим хеширования пути 3 байта"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",

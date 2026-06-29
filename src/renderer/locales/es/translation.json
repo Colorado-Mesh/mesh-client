@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "No se ha podido copiar la instantánea de depuración",
     "meshcoreOpenWireExperimentalTitle": "Formato wire MeshCore Open (experimental)",
     "meshcoreOpenWireCompatLabel": "Habilitar compatibilidad con MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Si está activado, mesh-client envía respuestas de texto con clave (@[Name#key]), reacciones compactas r: y GIFs Giphy g:. Puede no coincidir con el formato wire oficial del companion; los receptores necesitan clientes compatibles con MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Si está activado, mesh-client envía respuestas de texto con clave (@[Name#key]), reacciones compactas r: y GIFs Giphy g:. Puede no coincidir con el formato wire oficial del companion; los receptores necesitan clientes compatibles con MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Tamaño de hash de ruta de MeshCore (experimental)",
+    "meshcorePathHashModeLabel": "Tamaño de hash de ruta predeterminado",
+    "meshcorePathHashMode1Byte": "1 byte (heredado, hasta 64 saltos)",
+    "meshcorePathHashMode2Byte": "2 bytes (hasta 32 saltos)",
+    "meshcorePathHashMode3Byte": "3 bytes (hasta 21 saltos)",
+    "meshcorePathHashModeShort0": "1 byte",
+    "meshcorePathHashModeShort1": "2 Byte",
+    "meshcorePathHashModeShort2": "3 byte",
+    "meshcorePathHashDeviceReported": "Informes de radio conectados: {{mode}}",
+    "meshcorePathHashModeHint": "Requiere firmware complementario v1.14.0+ y repetidores en v1.14+ a lo largo de la ruta. Los repetidores pre-1.14 dejan caer silenciosamente paquetes multibyte. Los servidores de sala y repetidores también pueden usar CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Error en el modo hash de ruta: {{message}}"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI desde el estado del repetidor",
     "rssiContactTooltip": "Póngase en contacto con RSSI: use el estado para la lectura en vivo",
     "pingLastFailedTooltip": "Error en el último ping: {{error}}",
-    "neighborsHeading": "Vecinos ({{count}} total):"
+    "neighborsHeading": "Vecinos ({{count}} total):",
+    "pathHashCliGet": "Obtener modo hash de ruta",
+    "pathHashCliSet0": "Establecer modo hash de ruta de 1 byte",
+    "pathHashCliSet1": "Establecer modo hash de ruta de 2 bytes",
+    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes"
   },
   "rfHistograms": {
     "title": "Distribución de señal de RF",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Guarde primero una contraseña de sala para usar el inicio de sesión en todo",
     "membersHeadingWithCount": "Miembros ({{count}})",
     "collapseRoomList": "Contraer lista de salas",
-    "expandRoomList": "Expandir lista de salas"
+    "expandRoomList": "Expandir lista de salas",
+    "pathHashCliGet": "Obtener modo hash de ruta",
+    "pathHashCliSet0": "Establecer modo hash de ruta de 1 byte",
+    "pathHashCliSet1": "Establecer modo hash de ruta de 2 bytes",
+    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",

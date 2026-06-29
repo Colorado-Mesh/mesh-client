@@ -137,6 +137,7 @@ interface AppSettings {
   storeForwardAutoFetchHistory: boolean;
   reduceMotion: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
+  meshcorePathHashMode: 0 | 1 | 2;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -174,6 +175,9 @@ interface Props {
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
   onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
   onChatCompactModeChange?: (compact: boolean) => void;
+  deviceReportedPathHashMode?: 0 | 1 | 2 | null;
+  isMeshcoreRadioConnected?: boolean;
+  onApplyMeshcorePathHashMode?: (mode: 0 | 1 | 2) => Promise<void>;
 }
 
 interface PendingAction {
@@ -205,6 +209,9 @@ export default function AppPanel({
   onAutoFloodAdvertIntervalChange,
   onAutoFloodAdvertTypeChange,
   onChatCompactModeChange,
+  deviceReportedPathHashMode,
+  isMeshcoreRadioConnected = false,
+  onApplyMeshcorePathHashMode,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') !== '1',
@@ -1181,6 +1188,59 @@ export default function AppPanel({
               </div>
               <p className="text-xs leading-relaxed text-yellow-300/90">
                 {t('appPanel.meshcoreOpenWireCompatHint')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {protocol === 'meshcore' && (
+          <div className="space-y-2">
+            <h3 className="text-muted text-sm font-medium">
+              {t('appPanel.meshcorePathHashExperimentalTitle')}
+            </h3>
+            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
+              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-yellow-100">
+                {t('appPanel.meshcorePathHashModeLabel')}
+              </label>
+              <select
+                id="meshcore-path-hash-mode"
+                value={settings.meshcorePathHashMode}
+                onChange={(e) => {
+                  const raw = Number.parseInt(e.target.value, 10);
+                  if (raw !== 0 && raw !== 1 && raw !== 2) return;
+                  updateSetting('meshcorePathHashMode', raw);
+                  if (isMeshcoreRadioConnected && onApplyMeshcorePathHashMode) {
+                    void onApplyMeshcorePathHashMode(raw).catch((err: unknown) => {
+                      addToast(
+                        t('appPanel.meshcorePathHashApplyFailed', {
+                          message: err instanceof Error ? err.message : t('common.unknown'),
+                        }),
+                        'error',
+                      );
+                    });
+                  }
+                }}
+                aria-label={t('appPanel.meshcorePathHashModeLabel')}
+                className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+              >
+                <option value={0}>{t('appPanel.meshcorePathHashMode1Byte')}</option>
+                <option value={1}>{t('appPanel.meshcorePathHashMode2Byte')}</option>
+                <option value={2}>{t('appPanel.meshcorePathHashMode3Byte')}</option>
+              </select>
+              {deviceReportedPathHashMode != null && isMeshcoreRadioConnected ? (
+                <p className="text-xs text-yellow-200/90">
+                  {t('appPanel.meshcorePathHashDeviceReported', {
+                    mode:
+                      deviceReportedPathHashMode === 0
+                        ? t('appPanel.meshcorePathHashModeShort0')
+                        : deviceReportedPathHashMode === 1
+                          ? t('appPanel.meshcorePathHashModeShort1')
+                          : t('appPanel.meshcorePathHashModeShort2'),
+                  })}
+                </p>
+              ) : null}
+              <p className="text-xs leading-relaxed text-yellow-300/90">
+                {t('appPanel.meshcorePathHashModeHint')}
               </p>
             </div>
           </div>

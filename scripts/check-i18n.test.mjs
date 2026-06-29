@@ -43,6 +43,20 @@ describe('check-i18n locale fixtures', () => {
   it('reports unreadable locale files as failures in the checker contract', () => {
     expect(() => JSON.parse('{not json')).toThrow();
   });
+
+  it('branch mode runs quality checks only on keys new vs HEAD en', async () => {
+    const { spawnSync } = await import('node:child_process');
+    const { join, dirname } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const scriptDir = dirname(fileURLToPath(import.meta.url));
+    const result = spawnSync(process.execPath, ['scripts/check-i18n.mjs', '--branch'], {
+      cwd: join(scriptDir, '..'),
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(0);
+    const output = `${result.stderr}\n${result.stdout}`;
+    expect(output).toContain('check:i18n:branch');
+  });
 });
 
 describe('check-i18n locales directory access', () => {

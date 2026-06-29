@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Nelze zkopírovat snímek ladění",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (experimentální)",
     "meshcoreOpenWireCompatLabel": "Povolit kompatibilitu MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Je-li povoleno, mesh-client odešle textové odpovědi s klíčem (@[Name#key]), kompaktní reakce r: a Giphy GIFy g:. To nemusí odpovídat oficiálnímu formátu wire companiona; příjemci potřebují klienty kompatibilní s MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Je-li povoleno, mesh-client odešle textové odpovědi s klíčem (@[Name#key]), kompaktní reakce r: a Giphy GIFy g:. To nemusí odpovídat oficiálnímu formátu wire companiona; příjemci potřebují klienty kompatibilní s MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Velikost hash cesty MeshCore (experimentální)",
+    "meshcorePathHashModeLabel": "Výchozí velikost cesty hash",
+    "meshcorePathHashMode1Byte": "1 bajt (dědictví, až 64 skoků)",
+    "meshcorePathHashMode2Byte": "2 bajty (až 32 skoků)",
+    "meshcorePathHashMode3Byte": "3 bajty (až 21 skoků)",
+    "meshcorePathHashModeShort0": "1 byte",
+    "meshcorePathHashModeShort1": "2 bajty",
+    "meshcorePathHashModeShort2": "3 bajty",
+    "meshcorePathHashDeviceReported": "Připojené rádiové zprávy: {{mode}}",
+    "meshcorePathHashModeHint": "Vyžaduje doprovodný firmware v1.14.0+ a opakovače na v1.14+ podél cesty. Pre-1.14 opakovače tiše upouštějí vícebajtové pakety. Servery opakovače a místnosti mohou také používat CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Režim hash cesty se nezdařil: {{message}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI ze stavu opakovače",
     "rssiContactTooltip": "Kontaktujte RSSI — použijte Status pro živé čtení",
     "pingLastFailedTooltip": "Poslední ping selhal: {{error}}",
-    "neighborsHeading": "Sousedé (celkem {{count}}):"
+    "neighborsHeading": "Sousedé (celkem {{count}}):",
+    "pathHashCliGet": "Získat režim hash cesty",
+    "pathHashCliSet0": "Nastavit režim hash cesty 1 bajt",
+    "pathHashCliSet1": "Nastavit režim hash cesty 2bajtový",
+    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Pro použití všech přihlašovacích údajů si nejprve uložte heslo místnosti",
     "membersHeadingWithCount": "Členové ({{count}})",
     "collapseRoomList": "Sbalit seznam místností",
-    "expandRoomList": "Rozbalit seznam místností"
+    "expandRoomList": "Rozbalit seznam místností",
+    "pathHashCliGet": "Získat režim hash cesty",
+    "pathHashCliSet0": "Nastavit režim hash cesty 1 bajt",
+    "pathHashCliSet1": "Nastavit režim hash cesty 2bajtový",
+    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",

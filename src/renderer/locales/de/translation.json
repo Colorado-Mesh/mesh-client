@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Debug-Snapshot konnte nicht kopiert werden",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open Wire (experimentell)",
     "meshcoreOpenWireCompatLabel": "MeshCore Open-Kompatibilität aktivieren",
-    "meshcoreOpenWireCompatHint": "Wenn aktiviert, sendet mesh-client Schlüssel-Textantworten (@[Name#key]), kompakte r:-Reaktionen und g:-Giphy-GIFs. Das entspricht möglicherweise nicht dem offiziellen Companion-Wire-Format; Empfänger benötigen MeshCore-Open-kompatible Clients."
+    "meshcoreOpenWireCompatHint": "Wenn aktiviert, sendet mesh-client Schlüssel-Textantworten (@[Name#key]), kompakte r:-Reaktionen und g:-Giphy-GIFs. Das entspricht möglicherweise nicht dem offiziellen Companion-Wire-Format; Empfänger benötigen MeshCore-Open-kompatible Clients.",
+    "meshcorePathHashExperimentalTitle": "MeshCore-Pfad-Hashgröße (experimentell)",
+    "meshcorePathHashModeLabel": "Standard-Pfad-Hash-Größe",
+    "meshcorePathHashMode1Byte": "1 Byte (Legacy, bis zu 64 Hops)",
+    "meshcorePathHashMode2Byte": "2 Byte (bis zu 32 Hops)",
+    "meshcorePathHashMode3Byte": "3 Byte (bis zu 21 Hops)",
+    "meshcorePathHashModeShort0": "1 Byte",
+    "meshcorePathHashModeShort1": "2 Byte",
+    "meshcorePathHashModeShort2": "3 Byte",
+    "meshcorePathHashDeviceReported": "Angeschlossene Funkberichte: {{mode}}",
+    "meshcorePathHashModeHint": "Benötigt Begleit-Firmware v1.14.0+ und Repeater auf v1.14+ entlang des Pfades. Pre-1.14 Repeater legen Multibyte-Pakete stillschweigend ab. Repeater- und Raumserver können auch CLI: set path.hash.mode {0|1|2} verwenden.",
+    "meshcorePathHashApplyFailed": "Pfad-Hash-Modus fehlgeschlagen: {{message}}"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI vom Repeater-Status",
     "rssiContactTooltip": "Kontakt RSSI — Status für Live-Lesung verwenden",
     "pingLastFailedTooltip": "Letzter Ping fehlgeschlagen: {{error}}",
-    "neighborsHeading": "Nachbarn ({{count}} total):"
+    "neighborsHeading": "Nachbarn ({{count}} total):",
+    "pathHashCliGet": "Pfad-Hash-Modus abrufen",
+    "pathHashCliSet0": "Setze Pfad-Hash-Modus 1-Byte",
+    "pathHashCliSet1": "Setze Pfad-Hash-Modus 2-Byte",
+    "pathHashCliSet2": "Setze Pfad-Hash-Modus 3-Byte"
   },
   "rfHistograms": {
     "title": "Signalverteilung",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Speichern Sie zuerst ein Raumpasswort, um alle Anmeldedaten zu verwenden",
     "membersHeadingWithCount": "Mitglieder ({{count}})",
     "collapseRoomList": "Raumliste ausblenden",
-    "expandRoomList": "Raumliste einblenden"
+    "expandRoomList": "Raumliste einblenden",
+    "pathHashCliGet": "Pfad-Hash-Modus abrufen",
+    "pathHashCliSet0": "Setze Pfad-Hash-Modus 1-Byte",
+    "pathHashCliSet1": "Setze Pfad-Hash-Modus 2-Byte",
+    "pathHashCliSet2": "Setze Pfad-Hash-Modus 3-Byte"
   },
   "searchModal": {
     "closeSearch": "Suche schließen",

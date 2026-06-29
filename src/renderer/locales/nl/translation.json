@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Kon debug-snapshot niet kopiëren",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (experimenteel)",
     "meshcoreOpenWireCompatLabel": "MeshCore Open-compatibiliteit inschakelen",
-    "meshcoreOpenWireCompatHint": "Indien ingeschakeld, verzendt mesh-client tekstantwoorden met sleutel (@[Name#key]), compacte r:-reacties en g:-Giphy-GIF's. Dit komt mogelijk niet overeen met het officiële companion-wireformaat; ontvangers hebben MeshCore-Open-compatibele clients nodig."
+    "meshcoreOpenWireCompatHint": "Indien ingeschakeld, verzendt mesh-client tekstantwoorden met sleutel (@[Name#key]), compacte r:-reacties en g:-Giphy-GIF's. Dit komt mogelijk niet overeen met het officiële companion-wireformaat; ontvangers hebben MeshCore-Open-compatibele clients nodig.",
+    "meshcorePathHashExperimentalTitle": "Hashgrootte MeshCore-pad (experimenteel)",
+    "meshcorePathHashModeLabel": "Standaard pad hash-grootte",
+    "meshcorePathHashMode1Byte": "1 byte (legacy, tot 64 hops)",
+    "meshcorePathHashMode2Byte": "2 bytes (tot 32 hops)",
+    "meshcorePathHashMode3Byte": "3 byte (tot 21 hops)",
+    "meshcorePathHashModeShort0": "1 byte",
+    "meshcorePathHashModeShort1": "2 byte",
+    "meshcorePathHashModeShort2": "3 bytes",
+    "meshcorePathHashDeviceReported": "Verbonden radioreportages: {{mode}}",
+    "meshcorePathHashModeHint": "Vereist begeleidende firmware v1.14.0+ en repeaters op v1.14+ langs het pad. Pre-1.14 repeaters laten geruisloos multibyte-pakketten vallen. Repeater- en roomservers kunnen ook CLI: set path.hash.mode {0|1|2} gebruiken.",
+    "meshcorePathHashApplyFailed": "Pad hash-modus mislukt: {{message}}"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI van repeaterstatus",
     "rssiContactTooltip": "Neem contact op met RSSI - gebruik Status voor live lezen",
     "pingLastFailedTooltip": "Laatste ping mislukt: {{error}}",
-    "neighborsHeading": "Buren ({{count}} totaal):"
+    "neighborsHeading": "Buren ({{count}} totaal):",
+    "pathHashCliGet": "Hash-modus voor pad ophalen",
+    "pathHashCliSet0": "Stel pad hash-modus 1-byte in",
+    "pathHashCliSet1": "Stel pad hash-modus 2-byte in",
+    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes"
   },
   "rfHistograms": {
     "title": "RF-signaalverdeling",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Sla eerst een ruimtewachtwoord op om alles in te loggen",
     "membersHeadingWithCount": "Leden ({{count}})",
     "collapseRoomList": "Ruimtelijst samenvouwen",
-    "expandRoomList": "Ruimtelijst uitbreiden"
+    "expandRoomList": "Ruimtelijst uitbreiden",
+    "pathHashCliGet": "Hash-modus voor pad ophalen",
+    "pathHashCliSet0": "Stel pad hash-modus 1-byte in",
+    "pathHashCliSet1": "Stel pad hash-modus 2-byte in",
+    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",

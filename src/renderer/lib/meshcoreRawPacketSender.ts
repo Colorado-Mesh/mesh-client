@@ -1,4 +1,5 @@
 import { type NodeHashCandidate, resolveNodeId } from '../../shared/meshcoreNodeHash';
+import { meshcoreResolvePathSenderFromBytes } from '../../shared/meshcorePathHash';
 import { type MeshCoreRfParseOk, parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import {
   decodeMeshCorePathPrefix,
@@ -97,27 +98,39 @@ export function meshcoreRfNodeHashCandidates(
 }
 
 /**
- * Resolve flood-path originator from routing hashes (tries every hop byte; prefers freshest contact).
+ * Resolve flood-path originator from routing hashes (tries every hop segment; prefers freshest contact).
  */
 export function meshcoreRfResolvePathSender(
   pathBytes: number[],
   candidates: NodeHashCandidate[],
+  options?: {
+    hashSizeBytes?: 1 | 2 | 3;
+    pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
+  },
 ): number | null {
   if (pathBytes.length === 0 || candidates.length === 0) return null;
-  const byId = new Map(candidates.map((c) => [c.node_id, c]));
-  let bestId: number | null = null;
-  let bestHeard = 0;
-  for (const byte of pathBytes) {
-    const id = resolveNodeId(byte, candidates);
-    if (id == null) continue;
-    const cand = byId.get(id);
-    const heard = cand?.last_heard ?? 0;
-    if (bestId == null || heard >= bestHeard) {
-      bestId = id;
-      bestHeard = heard;
+  const hashSizeBytes = options?.hashSizeBytes ?? 1;
+  if (hashSizeBytes === 1 && !options?.pubKeyByNodeId) {
+    const byId = new Map(candidates.map((c) => [c.node_id, c]));
+    let bestId: number | null = null;
+    let bestHeard = 0;
+    for (const byte of pathBytes) {
+      const id = resolveNodeId(byte, candidates);
+      if (id == null) continue;
+      const heard = byId.get(id)?.last_heard ?? 0;
+      if (bestId == null || heard >= bestHeard) {
+        bestId = id;
+        bestHeard = heard;
+      }
     }
+    return bestId;
   }
-  return bestId;
+  return meshcoreResolvePathSenderFromBytes(
+    pathBytes,
+    hashSizeBytes,
+    candidates,
+    options?.pubKeyByNodeId,
+  );
 }
 
 /** Resolve sender node id from a full in-house RF parse (preferred for raw log). */

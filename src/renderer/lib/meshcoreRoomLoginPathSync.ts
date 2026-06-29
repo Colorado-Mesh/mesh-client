@@ -1,3 +1,4 @@
+import { meshcoreUnpackPathLenByte } from '@/shared/meshcorePathHash';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
@@ -39,15 +40,25 @@ async function pushRouteToRadioContact(
   contact: MeshCoreContactRaw,
   pubKey: Uint8Array,
   path: Uint8Array,
+  packedPathLen?: number,
 ): Promise<void> {
   // Runtime evidence: setContactPath can hang 25s+ on BLE; addOrUpdateContact is reliable.
   if (conn.addOrUpdateContact) {
-    const outPathLen = path.length > 0 ? Math.max(0, path.length - 1) : 0;
+    let outPathLen = packedPathLen;
+    if (outPathLen == null && path.length > 0) {
+      if (contact.outPathLen != null && contact.outPathLen > 0 && contact.outPathLen <= 0xbf) {
+        const unpacked = meshcoreUnpackPathLenByte(contact.outPathLen);
+        if (unpacked.hashSizeBytes > 1) {
+          outPathLen = contact.outPathLen;
+        }
+      }
+      outPathLen ??= Math.max(0, path.length - 1);
+    }
     await conn.addOrUpdateContact(
       pubKey,
       contact.type,
       contact.flags ?? 0,
-      outPathLen,
+      outPathLen ?? 0,
       packContactOutPath(path),
       contact.advName ?? '',
       contact.lastAdvert ?? 0,
@@ -129,8 +140,9 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
     contact: MeshCoreContactRaw,
     path: Uint8Array,
     label: string,
+    packedPathLen?: number,
   ): Promise<void> => {
-    const op = () => pushRouteToRadioContact(conn, contact, pubKey, path);
+    const op = () => pushRouteToRadioContact(conn, contact, pubKey, path, packedPathLen);
     if (runSerialized) {
       await withTimeout(runSerialized(op), MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS, label);
     } else {

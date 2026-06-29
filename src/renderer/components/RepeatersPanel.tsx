@@ -1113,17 +1113,40 @@ export default function RepeatersPanel({
                                   'status',
                                   'config',
                                   'help',
-                                ].map((cmd) => (
-                                  <button
-                                    key={cmd}
-                                    type="button"
-                                    onClick={() => void handleCliQuickCommand(node.node_id, cmd)}
-                                    disabled={!isConnected || isCliLoading}
-                                    className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
-                                  >
-                                    {cmd}
-                                  </button>
-                                ))}
+                                  'get path.hash.mode',
+                                  'set path.hash.mode 0',
+                                  'set path.hash.mode 1',
+                                  'set path.hash.mode 2',
+                                ].map((cmd) => {
+                                  const pathHashLabelKey =
+                                    cmd === 'get path.hash.mode'
+                                      ? 'repeatersPanel.pathHashCliGet'
+                                      : cmd === 'set path.hash.mode 0'
+                                        ? 'repeatersPanel.pathHashCliSet0'
+                                        : cmd === 'set path.hash.mode 1'
+                                          ? 'repeatersPanel.pathHashCliSet1'
+                                          : cmd === 'set path.hash.mode 2'
+                                            ? 'repeatersPanel.pathHashCliSet2'
+                                            : null;
+                                  const ariaLabel = pathHashLabelKey ? t(pathHashLabelKey) : cmd;
+                                  return (
+                                    <button
+                                      key={cmd}
+                                      type="button"
+                                      onClick={() => void handleCliQuickCommand(node.node_id, cmd)}
+                                      disabled={!isConnected || isCliLoading}
+                                      title={ariaLabel}
+                                      aria-label={ariaLabel}
+                                      className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
+                                    >
+                                      {cmd === 'get path.hash.mode'
+                                        ? 'path.hash'
+                                        : cmd.startsWith('set path.hash.mode')
+                                          ? cmd.replace('set path.hash.mode ', 'hash ')
+                                          : cmd}
+                                    </button>
+                                  );
+                                })}
                               </div>
                               <div className="flex items-center gap-3">
                                 <label className="flex items-center gap-1 text-xs text-gray-400">

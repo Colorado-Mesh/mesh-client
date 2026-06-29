@@ -15,9 +15,14 @@
  *    wire / g: GIF composer strings (protocol tokens, companion-wire false friends, Open-aware),
  *    connectionBanner serialReselectAction MT garbage, meshcoreGifHint bare-id false friends,
  *    meshcoreReactionEmojiOption contact/fabric false friends, Ukrainian broken apostrophe spacing,
- *    and roomsPanel collapse/expand hotel-room wording.
+ *    and roomsPanel collapse/expand hotel-room wording; MeshCore path-hash hop-count brewing false
+ *    friends, CAT/Qt plural-form residue (&apos;, "plural form:"), short label parenthesis garbage,
+ *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
+ *
+ * Branch-only quality pass (keys new/changed in en vs git HEAD):
+ *   pnpm run check:i18n:branch
  *
  * Add a comment  // i18n-ok <reason>  on the same line to suppress a dynamic-key warning.
  */
@@ -25,6 +30,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 import {
   interpolationPlaceholderIssues,
@@ -74,6 +80,30 @@ function formatLocaleQualityIssueForLog(issue) {
 }
 const SRC_DIR = join(__dirname, '../src/renderer');
 const EN_FILE = join(LOCALES_DIR, 'en/translation.json');
+const BRANCH_ONLY = process.argv.includes('--branch') || process.env.I18N_CHECK_BRANCH === '1';
+const EN_AT_HEAD_REF = 'HEAD:src/renderer/locales/en/translation.json';
+
+function readJsonFromGit(ref) {
+  const result = spawnSync('git', ['show', ref], { encoding: 'utf8' });
+  if (result.status !== 0) return null;
+  try {
+    return JSON.parse(result.stdout);
+  } catch {
+    return null;
+  }
+}
+
+/** Keys added or changed in working-tree English vs git HEAD (null when unavailable). */
+function resolveBranchEnglishKeys(enFlat) {
+  const headEn = readJsonFromGit(EN_AT_HEAD_REF);
+  if (!headEn) return null;
+  const headFlat = flatten(headEn);
+  const keys = new Set();
+  for (const [key, val] of Object.entries(enFlat)) {
+    if (!(key in headFlat) || headFlat[key] !== val) keys.add(key);
+  }
+  return keys;
+}
 
 function failLocalesDirAccess(err) {
   const reason = err instanceof Error ? err.message : String(err);
@@ -150,6 +180,23 @@ const DYNAMIC_T_PREFIXES = [
 
 const en = flatten(readJson(EN_FILE));
 const enKeys = new Set(Object.keys(en));
+const branchEnglishKeys = BRANCH_ONLY ? resolveBranchEnglishKeys(en) : null;
+
+if (BRANCH_ONLY) {
+  if (!branchEnglishKeys) {
+    console.error(
+      'Error: --branch requires git HEAD en/translation.json baseline. Commit or stage English keys first.',
+    );
+    process.exit(1);
+  }
+  if (branchEnglishKeys.size === 0) {
+    console.log('check:i18n:branch passed — no new/changed English keys vs HEAD.');
+    process.exit(0);
+  }
+  console.log(
+    `check:i18n:branch — quality pass on ${branchEnglishKeys.size} key(s) new/changed vs HEAD`,
+  );
+}
 
 let errors = 0;
 
@@ -330,6 +377,7 @@ for (const dir of localeDirs) {
   }
   for (const [key, val] of Object.entries(localeFlat)) {
     if (typeof val !== 'string') continue;
+    if (branchEnglishKeys && !branchEnglishKeys.has(key)) continue;
     const enVal = en[key];
     if (typeof enVal !== 'string') continue;
     for (const issue of interpolationPlaceholderIssues(enVal, val)) {
@@ -402,16 +450,19 @@ for (const dir of localeDirs) {
   }
 
   for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {
+    if (branchEnglishKeys) continue;
     console.error(`Locale quality in "${dir}" (roomsPanel saved passwords): ${issue}.`);
     errors++;
   }
 
   for (const issue of roomsSidebarMarkerCrossKeyIssues(localeFlat, en)) {
+    if (branchEnglishKeys) continue;
     console.error(`Locale quality in "${dir}" (roomsPanel sidebar markers): ${issue}.`);
     errors++;
   }
 
   for (const issue of nodeListPanelConnectionCrossKeyIssues(dir, localeFlat)) {
+    if (branchEnglishKeys) continue;
     console.error(`Locale quality in "${dir}" (nodeListPanel connection tooltips): ${issue}.`);
     errors++;
   }
@@ -424,6 +475,7 @@ if (errors > 0) {
 
 const localeStatus =
   warnings > 0 ? ` (${warnings} locale(s) incomplete — run i18n:auto-translate)` : '';
+const branchStatus = branchEnglishKeys ? `, branch keys: ${branchEnglishKeys.size}` : '';
 console.log(
-  `check:i18n passed — ${enKeys.size} keys, ${localeDirs.length} locale(s) verified${localeStatus}.`,
+  `check:i18n${BRANCH_ONLY ? ':branch' : ''} passed — ${enKeys.size} keys, ${localeDirs.length} locale(s) verified${branchStatus}${localeStatus}.`,
 );

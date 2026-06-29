@@ -102,6 +102,9 @@ export interface MeshCoreConnection {
     firmwareVer: number;
     firmware_build_date: string;
     manufacturerModel: string;
+    firmwareVersion?: string;
+    pathHashMode?: 0 | 1 | 2 | null;
+    clientRepeat?: number;
   }>;
   tracePath(
     pubKey: Uint8Array,
@@ -163,6 +166,7 @@ export interface MeshCoreConnection {
   setOtherParams(manualAddContacts: boolean): Promise<void>;
   setAutoAddContacts(): Promise<void>;
   setManualAddContacts(): Promise<void>;
+  setPathHashMode?(mode: 0 | 1 | 2): Promise<void>;
   sendToRadioFrame(data: Uint8Array): Promise<void>;
   // Contact import/export
   importContact(advertBytes: Uint8Array): Promise<void>;

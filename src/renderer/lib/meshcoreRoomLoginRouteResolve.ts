@@ -70,7 +70,12 @@ async function traceRouteForRoomLogin(
       traceCapMs,
       'meshcoreRoomLoginTrace',
     );
-    const bytes = meshcoreTraceResultToOutPathBytes(result.pathLen, result.pathHashes, pubKey);
+    const bytes = meshcoreTraceResultToOutPathBytes(
+      result.pathLenByte,
+      result.pathHashes,
+      pubKey,
+      result.flags,
+    );
     return bytes.length > 1 ? bytes : undefined;
   } catch (e: unknown) {
     console.debug(

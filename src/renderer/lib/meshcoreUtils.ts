@@ -1,4 +1,10 @@
 import { isValidLatLon } from '../../shared/geoCoords';
+import {
+  meshcorePackPathLenByte,
+  meshcorePubkeyPathPrefix,
+  meshcoreTraceDataHashLayout,
+  meshcoreUnpackPathLenByte,
+} from '../../shared/meshcorePathHash';
 import { isPlaceholderLongName } from '../../shared/nodeNameUtils';
 import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
@@ -92,19 +98,26 @@ export function meshcoreTracePathLenToHops(pathLen: number): number {
 
 /** Build companion `outPath` bytes from a successful `tracePath` / TraceData response. */
 export function meshcoreTraceResultToOutPathBytes(
-  pathLen: number,
+  pathLenByte: number,
   pathHashes: number[],
   destPubKey: Uint8Array,
+  traceFlags = 0,
 ): Uint8Array {
-  const len = Math.max(0, Math.trunc(pathLen));
-  if (len <= 0 || pathHashes.length === 0) {
-    return new Uint8Array([destPubKey[0] & 0xff]);
+  const layout = meshcoreTraceDataHashLayout(pathLenByte, traceFlags);
+  if (layout.hashByteLength <= 0 || pathHashes.length === 0) {
+    return meshcorePubkeyPathPrefix(destPubKey, 1);
   }
-  const take = Math.min(len, pathHashes.length);
+  const take = Math.min(layout.hashByteLength, pathHashes.length);
   const bytes = Uint8Array.from(pathHashes.slice(0, take).map((h) => h & 0xff));
-  if (bytes.length > 1) return bytes;
-  if (bytes.length === 1) return bytes;
-  return new Uint8Array([destPubKey[0] & 0xff]);
+  if (bytes.length > 0) return bytes;
+  return meshcorePubkeyPathPrefix(destPubKey, 1);
+}
+
+/** Packed contact `out_path_len` byte from TraceData pathLen + flags. */
+export function meshcoreTraceResultPackedPathLen(pathLenByte: number, traceFlags: number): number {
+  const layout = meshcoreTraceDataHashLayout(pathLenByte, traceFlags);
+  if (layout.hopCount <= 0) return 0;
+  return meshcorePackPathLenByte(layout.hopCount, layout.hashSizeBytes);
 }
 
 /** MeshCore companion lines that are transport metadata, not user channel chat (splitting on `:` would mispick `SNR:`). */
@@ -449,6 +462,20 @@ export function meshcoreSliceContactOutPathForTrace(
     Number.isFinite(outPathLen) &&
     outPathLen > MESHCORE_OUT_PATH_LEN_MAX
   ) {
+    const { hopCount, hashSizeBytes } = meshcoreUnpackPathLenByte(outPathLen);
+    const byteLen = hopCount * hashSizeBytes;
+    if (byteLen > 0) return outPath.slice(0, byteLen);
+    return meshcoreTrimTrailingZerosOutPath(outPath);
+  }
+  if (
+    typeof outPathLen === 'number' &&
+    Number.isFinite(outPathLen) &&
+    outPathLen >= 0 &&
+    ((outPathLen >> 6) & 0x03) > 0
+  ) {
+    const { hopCount, hashSizeBytes } = meshcoreUnpackPathLenByte(outPathLen);
+    const byteLen = hopCount * hashSizeBytes;
+    if (byteLen > 0) return outPath.slice(0, byteLen);
     return meshcoreTrimTrailingZerosOutPath(outPath);
   }
   const n =
