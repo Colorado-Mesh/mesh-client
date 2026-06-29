@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Не вдалося скопіювати знімок налагодження",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (експериментально)",
     "meshcoreOpenWireCompatLabel": "Увімкнути сумісність MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Якщо ввімкнено, mesh-client надсилає текстові відповіді з ключем (@[Name#key]), компактні реакції r: і GIF Giphy g:. Це може не відповідати офіційному формату wire companion; одержувачам потрібні клієнти з підтримкою MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Якщо ввімкнено, mesh-client надсилає текстові відповіді з ключем (@[Name#key]), компактні реакції r: і GIF Giphy g:. Це може не відповідати офіційному формату wire companion; одержувачам потрібні клієнти з підтримкою MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Розмір хешу шляху MeshCore (експериментальний)",
+    "meshcorePathHashModeLabel": "Типовий розмір хешу шляху",
+    "meshcorePathHashMode1Byte": "1 байт (застарілий, до 64 хопів)",
+    "meshcorePathHashMode2Byte": "2-байт (до 32 хопів)",
+    "meshcorePathHashMode3Byte": "3-байт (до 21 стрибка)",
+    "meshcorePathHashModeShort0": "1 байт",
+    "meshcorePathHashModeShort1": "2-байт",
+    "meshcorePathHashModeShort2": "3-байт",
+    "meshcorePathHashDeviceReported": "Звіти про підключені радіоприймачі: {{mode}}",
+    "meshcorePathHashModeHint": "Потрібна супровідна прошивка v1.14.0+ та повторювачі на v1.14+ вздовж шляху. Повторювачі з прошивкою до v1.14 мовчки скидають багатобайтові пакети. Сервери ретрансляторів і кімнат також можуть використовувати інтерфейс командного рядка: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Помилка режиму хешування шляху: {{message}}"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI зі статусу повторювача",
     "rssiContactTooltip": "RSSI контакту — для читання в реальному часі використовуйте Статус",
     "pingLastFailedTooltip": "Не вдалося виконати останній пінг: {{error}}",
-    "neighborsHeading": "Сусіди ({{count}} всього):"
+    "neighborsHeading": "Сусіди ({{count}} всього):",
+    "pathHashCliGet": "Отримати хеш-режим шляху",
+    "pathHashCliSet0": "Встановити хеш-режим шляху 1 байт",
+    "pathHashCliSet1": "Встановити 2-байтовий режим хешування шляху",
+    "pathHashCliSet2": "Встановити 3-байтовий режим хешування шляху"
   },
   "rfHistograms": {
     "title": "Розподіл радіочастотних сигналів",
@@ -2349,7 +2364,7 @@
     "adminPasswordRequired": "Для керування цією кімнатою потрібен пароль адміністратора.",
     "postFailed": "Не вдалося опублікувати до кімнати",
     "leaveRoom": "Вийти з кімнати",
-    "rememberPassword": "Запам&apos; ятати пароль",
+    "rememberPassword": "Запам'ятати пароль",
     "autoSync": "Автоматична синхронізація",
     "autoSyncTooltip": "Періодично повторюйте вхід, щоб отримувати нові дописи, коли радіо підключено",
     "syncIntervalLabel": "Інтервал синхронізації",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Спочатку збережіть пароль кімнати, щоб увійти в усі",
     "membersHeadingWithCount": "Учасники ({{count}})",
     "collapseRoomList": "Згорнути список кімнат",
-    "expandRoomList": "Розгорнути список кімнат"
+    "expandRoomList": "Розгорнути список кімнат",
+    "pathHashCliGet": "Отримати хеш-режим шляху",
+    "pathHashCliSet0": "Встановити хеш-режим шляху 1 байт",
+    "pathHashCliSet1": "Встановити 2-байтовий режим хешування шляху",
+    "pathHashCliSet2": "Встановити 3-байтовий режим хешування шляху"
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",

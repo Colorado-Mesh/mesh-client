@@ -177,6 +177,16 @@ describe('RepeatersPanel', () => {
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', false);
   });
 
+  it('calls onSendCliCommand for set path.hash.mode quick command', async () => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Set path hash mode 2-byte' }));
+
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'set path.hash.mode 1', false);
+  });
+
   it('pins favorited repeaters above non-favorites', () => {
     const now = Math.floor(Date.now() / 1000);
     const older = mockRepeaterNodeWithFavorited(0x100, false);

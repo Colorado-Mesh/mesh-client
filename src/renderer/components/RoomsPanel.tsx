@@ -2804,6 +2804,32 @@ export default function RoomsPanel({
                       </button>
                     )}
                   </div>
+                  <div className="mb-2 flex flex-wrap gap-1">
+                    {(
+                      [
+                        ['get path.hash.mode', 'roomsPanel.pathHashCliGet'],
+                        ['set path.hash.mode 0', 'roomsPanel.pathHashCliSet0'],
+                        ['set path.hash.mode 1', 'roomsPanel.pathHashCliSet1'],
+                        ['set path.hash.mode 2', 'roomsPanel.pathHashCliSet2'],
+                      ] as const
+                    ).map(([cmd, labelKey]) => (
+                      <button
+                        key={cmd}
+                        type="button"
+                        onClick={() => {
+                          void onSendRoomAdminCli(selectedRoomId, cmd);
+                        }}
+                        disabled={!isConnected || cliPending}
+                        title={t(labelKey)}
+                        aria-label={t(labelKey)}
+                        className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
+                      >
+                        {cmd === 'get path.hash.mode'
+                          ? 'path.hash'
+                          : cmd.replace('set path.hash.mode ', 'hash ')}
+                      </button>
+                    ))}
+                  </div>
                   {cliError && <p className="mb-2 text-xs text-red-400">{cliError}</p>}
                   <form className="mb-2 flex flex-wrap items-end gap-2" onSubmit={handleAclSubmit}>
                     <label className="min-w-[12rem] flex-1 space-y-1">

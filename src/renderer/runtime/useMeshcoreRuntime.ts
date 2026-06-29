@@ -11,6 +11,11 @@ import {
   throwIfMeshcoreOffloadAborted,
 } from '@/renderer/lib/meshcoreOffload';
 
+import {
+  isMeshcorePathHashMode,
+  meshcoreFirmwareSupportsMultibytePathHash,
+  type MeshcorePathHashMode,
+} from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
 import {
   buildMeshcoreNodeMapFromDb,
@@ -45,7 +50,6 @@ import {
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
   meshcorePingNoRouteErrorExpiryUpdate,
-  type MeshcoreSavedNodeHopRow,
   meshcoreTraceRouteRejectReason,
   messageToDbRow,
   normalizeMeshCoreError,
@@ -158,6 +162,10 @@ import { persistMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
+import {
+  parsePathHashModeFromDeviceQuery,
+  setMeshcorePathHashModeOnRadio,
+} from '../lib/meshcorePathHashMode';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomAutoLoginFailure,
@@ -1732,11 +1740,7 @@ export function useMeshcoreRuntime() {
             meshcoreRoomServerIdsFromContacts(contactRows),
             myNodeNumRef.current,
           );
-          const cachedNodes = buildMeshcoreNodeMapFromDb(
-            contactRows,
-            savedNodes as MeshcoreSavedNodeHopRow[],
-            mapped,
-          );
+          const cachedNodes = buildMeshcoreNodeMapFromDb(contactRows, savedNodes, mapped);
           dbCacheNodeCount = cachedNodes.size;
           meshcoreLastPersistedNodesRef.current = new Map(cachedNodes);
           applyMeshcoreNodesToUi(cachedNodes);
@@ -1968,17 +1972,58 @@ export function useMeshcoreRuntime() {
           setupGen,
           conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
         );
+        const pathFields = parsePathHashModeFromDeviceQuery(deviceInfo);
         setState((prev) => {
           const next = { ...prev };
           if (deviceInfo?.firmware_build_date) {
             next.firmwareVersion = deviceInfo.firmware_build_date;
           }
-          const mm = meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
+          if (pathFields.firmwareVersion) {
+            next.firmwareVersion = pathFields.firmwareVersion;
+          }
+          const mm =
+            pathFields.manufacturerModel ?? meshcoreManufacturerModelFromDeviceQuery(deviceInfo);
           if (mm) {
             next.manufacturerModel = mm;
           }
+          if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
+            next.pathHashMode = pathFields.pathHashMode;
+          }
           return next;
         });
+
+        try {
+          const settingsRaw = getAppSettingsRaw();
+          const settings = parseStoredJson<{ meshcorePathHashMode?: number }>(
+            settingsRaw,
+            'initConn meshcorePathHashMode',
+          );
+          const savedMode = settings?.meshcorePathHashMode;
+          if (isMeshcorePathHashMode(savedMode)) {
+            const fw =
+              pathFields.firmwareVersion ??
+              (typeof deviceInfo?.firmwareVersion === 'string'
+                ? deviceInfo.firmwareVersion
+                : undefined) ??
+              (typeof deviceInfo?.firmware_build_date === 'string'
+                ? deviceInfo.firmware_build_date
+                : undefined);
+            const canApply = savedMode === 0 || meshcoreFirmwareSupportsMultibytePathHash(fw ?? '');
+            if (canApply && savedMode !== pathFields.pathHashMode) {
+              const setMode =
+                typeof conn.setPathHashMode === 'function'
+                  ? (m: MeshcorePathHashMode) => conn.setPathHashMode!(m)
+                  : (m: MeshcorePathHashMode) => setMeshcorePathHashModeOnRadio(conn, m);
+              await awaitUnlessMeshcoreSetupCancelled(setupGen, setMode(savedMode));
+              setState((prev) => ({ ...prev, pathHashMode: savedMode }));
+            }
+          }
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          console.warn(
+            '[useMeshcoreRuntime] initConn reapply path hash mode failed ' + errLikeToLogString(e),
+          );
+        }
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') throw e;
         // catch-no-log-ok deviceQuery optional for firmware string
@@ -2965,6 +3010,27 @@ export function useMeshcoreRuntime() {
     if (!conn) throw new Error('Not connected to radio');
     await applyMeshcoreFloodScope(conn, hashtag);
   }, []);
+
+  const applyMeshcorePathHashMode = useCallback(
+    async (mode: MeshcorePathHashMode) => {
+      const conn = connRef.current;
+      if (!conn) throw new Error('Not connected to radio');
+      if (!isMeshcorePathHashMode(mode)) {
+        throw new Error('Invalid path hash mode');
+      }
+      const fw = state.firmwareVersion;
+      if (mode !== 0 && !meshcoreFirmwareSupportsMultibytePathHash(fw)) {
+        throw new Error('Path hash mode requires companion firmware v1.14.0 or newer');
+      }
+      if (typeof conn.setPathHashMode === 'function') {
+        await conn.setPathHashMode(mode);
+      } else {
+        await setMeshcorePathHashModeOnRadio(conn, mode);
+      }
+      setState((prev) => ({ ...prev, pathHashMode: mode }));
+    },
+    [state.firmwareVersion],
+  );
 
   const syncClock = useCallback(async () => {
     if (!connRef.current) return;
@@ -5861,6 +5927,7 @@ export function useMeshcoreRuntime() {
       sendAdvert,
       sendZeroHopAdvert,
       applyMeshcoreFloodScopeHashtag,
+      applyMeshcorePathHashMode,
       syncClock,
       refreshContacts,
       reboot,
@@ -6004,6 +6071,7 @@ export function useMeshcoreRuntime() {
       sendAdvert,
       sendZeroHopAdvert,
       applyMeshcoreFloodScopeHashtag,
+      applyMeshcorePathHashMode,
       syncClock,
       refreshContacts,
       reboot,

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { addIdentity } from '../stores/identityStore';
-import type { DualProtocolPanelActions } from './useDualProtocolPanelActions';
+import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
 import { useProtocolFacade } from './useProtocolFacade';
 
 vi.mock('./useConnect', () => ({
@@ -13,24 +13,8 @@ vi.mock('./useConnect', () => ({
 
 const IDENTITY = 'id-facade-mt';
 
-function runtimeStub() {
+function panelActionsStub() {
   return {
-    state: {
-      status: 'disconnected' as const,
-      myNodeNum: 0,
-      connectionType: null,
-      connectionLoss: true,
-      reconnectAttempt: 0,
-      lastDataReceived: 0,
-    },
-    mqttStatus: 'disconnected' as const,
-    prepareRfConnect: vi.fn(),
-    attachRfSession: vi.fn(),
-    handleRfConnectFailure: vi.fn(),
-    finalizeDriverDisconnect: vi.fn(),
-    connect: vi.fn(),
-    connectAutomatic: vi.fn(),
-    disconnect: vi.fn(),
     setConfig: vi.fn(),
     commitConfig: vi.fn(),
     setDeviceChannel: vi.fn(),
@@ -57,16 +41,8 @@ function runtimeStub() {
   };
 }
 
-const meshtasticRuntime = runtimeStub();
-const meshcoreRuntime = runtimeStub();
-
-vi.mock('../runtime/MeshtasticRuntimeContext', () => ({
-  useMeshtasticRuntimeContext: () => meshtasticRuntime,
-}));
-
-vi.mock('../runtime/MeshcoreRuntimeContext', () => ({
-  useMeshcoreRuntimeContext: () => meshcoreRuntime,
-}));
+const meshtasticActions = panelActionsStub();
+const meshcoreActions = panelActionsStub();
 
 describe('useProtocolFacade', () => {
   beforeEach(() => {
@@ -91,10 +67,10 @@ describe('useProtocolFacade', () => {
   });
 
   it('exposes store-backed connection view and panel actions for the active protocol', () => {
-    const panelPrebuilt = {
-      meshtastic: meshtasticRuntime,
-      meshcore: meshcoreRuntime,
-    } as unknown as DualProtocolPanelActions;
+    const panelPrebuilt: PanelActionsByProtocol = {
+      meshtastic: meshtasticActions as unknown as PanelActionsByProtocol['meshtastic'],
+      meshcore: meshcoreActions as unknown as PanelActionsByProtocol['meshcore'],
+    };
     const { result } = renderHook(() => useProtocolFacade('meshtastic', panelPrebuilt));
 
     expect(result.current.focusedIdentityId).toBe(IDENTITY);
@@ -104,6 +80,6 @@ describe('useProtocolFacade', () => {
     expect(result.current.connectionView.mqttStatus).toBe('connected');
     expect(result.current.connectionView.state.connectionLoss).toBe(true);
     expect(result.current.queue).toEqual({ free: 2, maxlen: 16 });
-    expect(result.current.panel.actions.setConfig).toBe(meshtasticRuntime.setConfig);
+    expect(result.current.panel.actions.setConfig).toBe(meshtasticActions.setConfig);
   });
 });

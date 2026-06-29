@@ -32,4 +32,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   storeForwardAutoFetchHistory: true,
   /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
   meshcoreOpenWireCompatEnabled: false,
+  /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */
+  meshcorePathHashMode: 0 as 0 | 1 | 2,
 };

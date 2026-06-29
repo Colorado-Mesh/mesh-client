@@ -14,7 +14,22 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          await this.sendToRadioFrame(data.toBytes());
      }
  
-@@ -400,6 +403,8 @@
+@@ -338,6 +341,14 @@
+         data.writeByte(manualAddContacts); // 0 or 1
+         await this.sendToRadioFrame(data.toBytes());
+     }
++
++    async sendCommandSetPathHashMode(mode) {
++        const data = new BufferWriter();
++        data.writeByte(61); // CMD_SET_PATH_HASH_MODE (companion_radio v1.14+)
++        data.writeByte(0);
++        data.writeByte(mode);
++        await this.sendToRadioFrame(data.toBytes());
++    }
+ 
+     onFrameReceived(frame) {
+ 
+@@ -400,6 +411,8 @@
              this.onRawDataPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LoginSuccess){
              this.onLoginSuccessPush(bufferReader);
@@ -23,7 +38,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          } else if(responseCode === Constants.PushCodes.StatusResponse){
              this.onStatusResponsePush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LogRxData){
-@@ -459,6 +464,13 @@
+@@ -459,6 +472,13 @@
          });
      }
  
@@ -37,19 +52,20 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
      onStatusResponsePush(bufferReader) {
          this.emit(Constants.PushCodes.StatusResponse, {
              reserved: bufferReader.readByte(), // reserved
-@@ -494,15 +506,24 @@
+@@ -494,15 +514,25 @@
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
 +        const flags = bufferReader.readUInt8();
 +        const tag = bufferReader.readUInt32LE();
 +        const authCode = bufferReader.readUInt32LE();
++        const path_sz = flags & 0x03;
 +        const pathHashes = bufferReader.readBytes(pathLen);
-+        // Companion protocol: path_snrs is exactly (path_len + 1) bytes (SNR x4 each); last byte is dest SNR.
-+        const snrBytes = bufferReader.readBytes(pathLen + 1);
-+        const pathSnrs = snrBytes.subarray(0, pathLen);
++        const snrCount = pathLen >> path_sz;
++        const snrBytes = bufferReader.readBytes(snrCount + 1);
++        const pathSnrs = snrBytes.subarray(0, snrCount);
 +        const lastSnr =
-+            snrBytes.length > pathLen ? (snrBytes[pathLen] & 0xff) / 4 : 0;
++            snrBytes.length > snrCount ? (snrBytes[snrCount] & 0xff) / 4 : 0;
          this.emit(Constants.PushCodes.TraceData, {
              reserved: reserved,
              pathLen: pathLen,
@@ -68,11 +84,80 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          });
      }
  
+@@ -582,11 +612,30 @@
+     }
+ 
+     onDeviceInfoResponse(bufferReader) {
++        const firmwareVer = bufferReader.readInt8();
++        bufferReader.readBytes(6); // max contacts / channels (v3+)
++        const firmware_build_date = bufferReader.readCString(12);
++        const manufacturerModel = bufferReader.readCString(40);
++        const remaining = bufferReader.getRemainingBytesCount();
++        let firmwareVersion = null;
++        let clientRepeat = null;
++        let pathHashMode = null;
++        if (remaining >= 20) {
++            firmwareVersion = bufferReader.readCString(20);
++        }
++        if (bufferReader.getRemainingBytesCount() >= 1) {
++            clientRepeat = bufferReader.readByte();
++        }
++        if (bufferReader.getRemainingBytesCount() >= 1) {
++            pathHashMode = bufferReader.readByte();
++        }
+         this.emit(Constants.ResponseCodes.DeviceInfo, {
+-            firmwareVer: bufferReader.readInt8(),
+-            reserved: bufferReader.readBytes(6), // reserved
+-            firmware_build_date: bufferReader.readCString(12), // eg. "19 Feb 2025"
+-            manufacturerModel: bufferReader.readString(), // remainder of frame
++            firmwareVer: firmwareVer,
++            firmware_build_date: firmware_build_date,
++            manufacturerModel: manufacturerModel,
++            firmwareVersion: firmwareVersion,
++            clientRepeat: clientRepeat,
++            pathHashMode: pathHashMode,
+         });
+     }
+ 
+@@ -2375,6 +2424,33 @@
+         });
+     }
+ 
++    setPathHashMode(mode) {
++        return new Promise(async (resolve, reject) => {
++            try {
++
++                const onOk = () => {
++                    this.off(Constants.ResponseCodes.Ok, onOk);
++                    this.off(Constants.ResponseCodes.Err, onErr);
++                    resolve();
++                }
++
++                const onErr = () => {
++                    this.off(Constants.ResponseCodes.Ok, onOk);
++                    this.off(Constants.ResponseCodes.Err, onErr);
++                    reject();
++                }
++
++                this.once(Constants.ResponseCodes.Ok, onOk);
++                this.once(Constants.ResponseCodes.Err, onErr);
++
++                await this.sendCommandSetPathHashMode(mode);
++
++            } catch(e) {
++                reject(e);
++            }
++        });
++    }
++
+     async setAutoAddContacts() {
+         return await this.setOtherParams(false);
+     }
 diff --git a/src/buffer_reader.js b/src/buffer_reader.js
 index 9142fbc9fda24c07082d63ced24117a35b29dc93..0000000000000000000000000000000000000000 100644
 --- a/src/buffer_reader.js
 +++ b/src/buffer_reader.js
-@@ -23,7 +23,10 @@ class BufferReader {
+@@ -24,7 +24,10 @@
      }
  
      readString() {

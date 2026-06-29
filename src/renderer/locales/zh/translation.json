@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "无法复制调试快照",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (实验)",
     "meshcoreOpenWireCompatLabel": "启用 MeshCore Open 兼容性",
-    "meshcoreOpenWireCompatHint": "启用后，mesh-client 会发送带密钥的文本回复（@[Name#key]）、紧凑型 r: 反应和 g: Giphy GIF。这可能与官方 companion wire 格式不一致；接收方需要支持 MeshCore Open 的客户端。"
+    "meshcoreOpenWireCompatHint": "启用后，mesh-client 会发送带密钥的文本回复（@[Name#key]）、紧凑型 r: 反应和 g: Giphy GIF。这可能与官方 companion wire 格式不一致；接收方需要支持 MeshCore Open 的客户端。",
+    "meshcorePathHashExperimentalTitle": "MeshCore路径哈希大小（实验）",
+    "meshcorePathHashModeLabel": "默认路径哈希大小",
+    "meshcorePathHashMode1Byte": "1字节（传统，高达64跳）",
+    "meshcorePathHashMode2Byte": "2字节（最多32跳）",
+    "meshcorePathHashMode3Byte": "3字节（最多21跳）",
+    "meshcorePathHashModeShort0": "1 字节",
+    "meshcorePathHashModeShort1": "双字节",
+    "meshcorePathHashModeShort2": "3字节",
+    "meshcorePathHashDeviceReported": "已连接的无线电报告： {{mode}}",
+    "meshcorePathHashModeHint": "需要配套固件v1.14.0+和路径上v1.14+的中继器。v1.14之前的中继器会静默丢弃多字节数据包。中继器和房间服务器也可以使用CLI：set path.hash.mode {0|1|2}。",
+    "meshcorePathHashApplyFailed": "路径哈希模式失败： {{message}}"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "来自中继器状态的RSSI",
     "rssiContactTooltip": "联系RSSI —使用状态进行实时阅读",
     "pingLastFailedTooltip": "上次ping失败： {{error}}",
-    "neighborsHeading": "邻居（总计{{count}} ） ："
+    "neighborsHeading": "邻居（总计{{count}} ） ：",
+    "pathHashCliGet": "获取路径哈希模式",
+    "pathHashCliSet0": "设置路径哈希模式1字节",
+    "pathHashCliSet1": "设置路径哈希模式2字节",
+    "pathHashCliSet2": "设置路径哈希模式3字节"
   },
   "rfHistograms": {
     "title": "射频信号分布",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
     "membersHeadingWithCount": "成员({{count}})",
     "collapseRoomList": "折叠房间列表",
-    "expandRoomList": "展开房间列表"
+    "expandRoomList": "展开房间列表",
+    "pathHashCliGet": "获取路径哈希模式",
+    "pathHashCliSet0": "设置路径哈希模式1字节",
+    "pathHashCliSet1": "设置路径哈希模式2字节",
+    "pathHashCliSet2": "设置路径哈希模式3字节"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",

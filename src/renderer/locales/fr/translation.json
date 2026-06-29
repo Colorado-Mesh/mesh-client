@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Impossible de copier l'instantané de débogage",
     "meshcoreOpenWireExperimentalTitle": "Format wire MeshCore Open (expérimental)",
     "meshcoreOpenWireCompatLabel": "Activer la compatibilité MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Si activé, mesh-client envoie des réponses texte avec clé (@[Name#key]), des réactions compactes r: et des GIF Giphy g:. Cela peut ne pas correspondre au format wire officiel du companion ; les destinataires doivent utiliser des clients compatibles MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Si activé, mesh-client envoie des réponses texte avec clé (@[Name#key]), des réactions compactes r: et des GIF Giphy g:. Cela peut ne pas correspondre au format wire officiel du companion ; les destinataires doivent utiliser des clients compatibles MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Taille de hachage du chemin MeshCore (expérimental)",
+    "meshcorePathHashModeLabel": "Taille de hachage du chemin par défaut",
+    "meshcorePathHashMode1Byte": "1 octet (hérité, jusqu'à 64 sauts)",
+    "meshcorePathHashMode2Byte": "2 octets (jusqu'à 32 sauts)",
+    "meshcorePathHashMode3Byte": "3 octets (jusqu'à 21 sauts)",
+    "meshcorePathHashModeShort0": "1 octet",
+    "meshcorePathHashModeShort1": "2 octets",
+    "meshcorePathHashModeShort2": "3 octets",
+    "meshcorePathHashDeviceReported": "Rapports radio connectés : {{mode}}",
+    "meshcorePathHashModeHint": "Nécessite un microprogramme compagnon v1.14.0+ et des répéteurs sur v1.14+ le long du chemin. Les répéteurs pré-1,14 déposent silencieusement des paquets de plusieurs octets. Les serveurs de répéteur et de salle peuvent également utiliser CLI : set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Échec du mode de hachage du chemin : {{message}}"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI à partir de l'état du répéteur",
     "rssiContactTooltip": "Contacter RSSI — utiliser l'état pour la lecture en direct",
     "pingLastFailedTooltip": "Échec du dernier ping : {{error}}",
-    "neighborsHeading": "Voisins ({{count}} total) :"
+    "neighborsHeading": "Voisins ({{count}} total) :",
+    "pathHashCliGet": "Obtenir le mode de hachage du chemin",
+    "pathHashCliSet0": "Définir le mode de hachage du chemin 1 octet",
+    "pathHashCliSet1": "Définir le mode de hachage du chemin sur 2 octets",
+    "pathHashCliSet2": "Définir le mode de hachage du chemin sur 3 octets"
   },
   "rfHistograms": {
     "title": "REPARTITION DE SIGNAUX",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Enregistrez d'abord un mot de passe de pièce pour utiliser la connexion tout",
     "membersHeadingWithCount": "Membres ({{count}})",
     "collapseRoomList": "Réduire la liste des salles",
-    "expandRoomList": "Développer la liste des salles"
+    "expandRoomList": "Développer la liste des salles",
+    "pathHashCliGet": "Obtenir le mode de hachage du chemin",
+    "pathHashCliSet0": "Définir le mode de hachage du chemin 1 octet",
+    "pathHashCliSet1": "Définir le mode de hachage du chemin sur 2 octets",
+    "pathHashCliSet2": "Définir le mode de hachage du chemin sur 3 octets"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",

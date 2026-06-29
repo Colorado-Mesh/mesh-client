@@ -203,9 +203,7 @@ describe('useMeshcoreRuntime offloadContactsFromRadio', () => {
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.db.markAllMeshcoreContactsOffRadio).mockResolvedValue({
-      changes: 0,
-    });
+    vi.mocked(window.electronAPI.db.markAllMeshcoreContactsOffRadio).mockResolvedValue(undefined);
   });
 
   it('awaits saveMeshcoreContactsBatch before removeContact', async () => {

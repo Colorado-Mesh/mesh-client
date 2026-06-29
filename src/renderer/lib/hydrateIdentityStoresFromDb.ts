@@ -1,4 +1,3 @@
-import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
 import {
   buildMeshcoreNodeMapFromDb,
   isMeshcoreRoomChatMessage,
@@ -28,6 +27,7 @@ import {
   buildMeshtasticNodeMapFromDbRows,
   dedupeMeshtasticHydrationOrphanSends,
   loadMeshtasticNodeMapFromDb,
+  savedMessageToChatMessage,
 } from './meshtasticDbCacheHydration';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
@@ -105,12 +105,7 @@ export async function hydrateMeshtasticMessagesFromDb(
   messagesMode: 'upsert' | 'replace' = 'upsert',
 ): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
-  const sanitized = dedupeMeshtasticHydrationOrphanSends(
-    msgs.map((m) => ({
-      ...m,
-      emoji: m.emoji != null ? sanitizeUnicodeReactionScalar(m.emoji) : undefined,
-    })),
-  );
+  const sanitized = dedupeMeshtasticHydrationOrphanSends(msgs.map(savedMessageToChatMessage));
   const reversed = sanitized.reverse();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
   const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
@@ -226,6 +221,54 @@ export async function hydrateMeshcoreMessagesFromDb(
   }
 }
 
+type IdentityHydratorFn = (
+  identityId: IdentityId,
+  opts: HydrateIdentityStoresOptions,
+) => Promise<void>;
+
+async function hydrateMeshtasticIdentity(
+  identityId: IdentityId,
+  opts: HydrateIdentityStoresOptions,
+): Promise<void> {
+  const loadNodes = opts.nodes !== false;
+  const loadMessages = opts.messages !== false;
+  const messagesMode = opts.messagesMode ?? 'upsert';
+  if (loadNodes && loadMessages) {
+    await Promise.all([
+      hydrateMeshtasticNodesFromDb(identityId),
+      hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
+    ]);
+  } else if (loadNodes) {
+    await hydrateMeshtasticNodesFromDb(identityId);
+  } else if (loadMessages) {
+    await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
+  }
+}
+
+async function hydrateMeshcoreIdentity(
+  identityId: IdentityId,
+  opts: HydrateIdentityStoresOptions,
+): Promise<void> {
+  const loadNodes = opts.nodes !== false;
+  const loadMessages = opts.messages !== false;
+  const messagesMode = opts.messagesMode ?? 'upsert';
+  if (loadNodes && loadMessages) {
+    await Promise.all([
+      hydrateMeshcoreNodesFromDb(identityId),
+      hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
+    ]);
+  } else if (loadNodes) {
+    await hydrateMeshcoreNodesFromDb(identityId);
+  } else if (loadMessages) {
+    await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
+  }
+}
+
+const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {
+  meshtastic: hydrateMeshtasticIdentity,
+  meshcore: hydrateMeshcoreIdentity,
+};
+
 /**
  * Loads SQLite history into identity-scoped Zustand stores for UI ([#375] / hook deconstruction).
  * No-ops are avoided by callers checking `identityId` before invoke.
@@ -237,35 +280,14 @@ export async function hydrateIdentityStoresFromDb(
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
-  const messagesMode = opts.messagesMode ?? 'upsert';
   if (!loadNodes && !loadMessages) return;
+
+  const hydrator = IDENTITY_STORE_HYDRATORS[protocol];
+  if (!hydrator) return;
 
   const isCurrent = beginIdentityHydration(protocol, identityId);
   try {
-    if (protocol === 'meshtastic') {
-      if (loadNodes && loadMessages) {
-        await Promise.all([
-          hydrateMeshtasticNodesFromDb(identityId),
-          hydrateMeshtasticMessagesFromDb(identityId, messagesMode),
-        ]);
-      } else if (loadNodes) {
-        await hydrateMeshtasticNodesFromDb(identityId);
-      } else if (loadMessages) {
-        await hydrateMeshtasticMessagesFromDb(identityId, messagesMode);
-      }
-      if (!isCurrent()) return;
-      return;
-    }
-    if (loadNodes && loadMessages) {
-      await Promise.all([
-        hydrateMeshcoreNodesFromDb(identityId),
-        hydrateMeshcoreMessagesFromDb(identityId, messagesMode),
-      ]);
-    } else if (loadNodes) {
-      await hydrateMeshcoreNodesFromDb(identityId);
-    } else if (loadMessages) {
-      await hydrateMeshcoreMessagesFromDb(identityId, messagesMode);
-    }
+    await hydrator(identityId, opts);
     if (!isCurrent()) return;
   } catch (e) {
     if (!isCurrent()) return;

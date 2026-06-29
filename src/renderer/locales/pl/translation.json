@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Nie można skopiować migawki debugowania",
     "meshcoreOpenWireExperimentalTitle": "Format wire MeshCore Open (eksperymentalnie)",
     "meshcoreOpenWireCompatLabel": "Włącz kompatybilność MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Po włączeniu mesh-client wysyła odpowiedzi tekstowe z kluczem (@[Name#key]), kompaktowe reakcje r: oraz GIF-y Giphy g:. Może to nie odpowiadać oficjalnemu formatowi wire companiona; odbiorcy potrzebują klientów obsługujących MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Po włączeniu mesh-client wysyła odpowiedzi tekstowe z kluczem (@[Name#key]), kompaktowe reakcje r: oraz GIF-y Giphy g:. Może to nie odpowiadać oficjalnemu formatowi wire companiona; odbiorcy potrzebują klientów obsługujących MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Rozmiar skrótu ścieżki MeshCore (eksperymentalny)",
+    "meshcorePathHashModeLabel": "Domyślny rozmiar skrótu ścieżki",
+    "meshcorePathHashMode1Byte": "1 bajt (starsza wersja, do 64 przeskoków)",
+    "meshcorePathHashMode2Byte": "2 bajty (do 32 przeskoków)",
+    "meshcorePathHashMode3Byte": "3 bajty (do 21 przeskoków)",
+    "meshcorePathHashModeShort0": "1 bajt",
+    "meshcorePathHashModeShort1": "2 bajty",
+    "meshcorePathHashModeShort2": "3-bajtowy",
+    "meshcorePathHashDeviceReported": "Połączone raporty radiowe: {{mode}}",
+    "meshcorePathHashModeHint": "Wymaga towarzyszącego oprogramowania sprzętowego v1.14.0+ i wtórników w v1.14+ wzdłuż ścieżki. Wzmacniacze Pre-1.14 cicho upuszczają pakiety wielobajtowe. Serwery repeater i room mogą również używać CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Tryb skrótu ścieżki nie powiódł się: {{message}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI ze statusu przemiennika",
     "rssiContactTooltip": "Skontaktuj się z RSSI — użyj statusu do odczytu na żywo",
     "pingLastFailedTooltip": "Ostatni ping nie powiódł się: {{error}}",
-    "neighborsHeading": "Sąsiedzi (łącznie {{count}}):"
+    "neighborsHeading": "Sąsiedzi (łącznie {{count}}):",
+    "pathHashCliGet": "Uzyskaj tryb skrótu ścieżki",
+    "pathHashCliSet0": "Ustaw tryb skrótu ścieżki 1 bajt",
+    "pathHashCliSet1": "Ustaw tryb skrótu ścieżki 2-bajtowy",
+    "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy"
   },
   "rfHistograms": {
     "title": "Dystrybucja sygnału RF",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Najpierw zapisz hasło do pokoju, aby użyć log in all",
     "membersHeadingWithCount": "Członkowie ({{count}})",
     "collapseRoomList": "Zwiń listę pokoi",
-    "expandRoomList": "Rozwiń listę pokoi"
+    "expandRoomList": "Rozwiń listę pokoi",
+    "pathHashCliGet": "Uzyskaj tryb skrótu ścieżki",
+    "pathHashCliSet0": "Ustaw tryb skrótu ścieżki 1 bajt",
+    "pathHashCliSet1": "Ustaw tryb skrótu ścieżki 2-bajtowy",
+    "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",

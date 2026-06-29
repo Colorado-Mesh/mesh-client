@@ -977,6 +977,30 @@ const MESHTASTIC_CYRILLIC_TRANSLIT_RE = /мештаст/i;
 
 const ZH_CAT_GARBAGE_RE = /%\s*\d+.*文件夹|文件夹.*%\s*\d+/;
 
+/** MyMemory/CAT often leaks Qt plural-form notes into short labels. */
+export const CAT_PLURAL_FORM_RESIDUE_RE = /plural form:|&apos;/i;
+
+/** MeshCore path-hash UI — CLI token in meshcorePathHashModeHint must stay verbatim. */
+export const MESHCORE_PATH_HASH_HINT_KEY = 'appPanel.meshcorePathHashModeHint';
+export const MESHCORE_PATH_HASH_CLI_LITERAL = 'set path.hash.mode {0|1|2}';
+
+const MESHCORE_PATH_HASH_MODE_BYTE_LEAF_KEYS = new Set([
+  'meshcorePathHashMode1Byte',
+  'meshcorePathHashMode2Byte',
+  'meshcorePathHashMode3Byte',
+]);
+
+const MESHCORE_PATH_HASH_MODE_SHORT_LEAF_KEYS = new Set([
+  'meshcorePathHashModeShort0',
+  'meshcorePathHashModeShort1',
+  'meshcorePathHashModeShort2',
+]);
+
+/** Brewing-ingredient hop false friends on path-hash hop-count strings only. */
+const PATH_HASH_BREWING_HOP_FALSE_FRIEND_RES = [/chmel/i, /хмел/i];
+
+const MESHCORE_PATH_HASH_SHORT_PAREN_ONLY_RE = /^\([^)]+\)$/;
+
 const FR_CHANNEL_FALSE_FRIEND_RE = /\bchaînes?\b/i;
 
 const UNTRANSLATED_COPY_MESHTASTIC_RE = /^Copy meshtastic/i;
@@ -1083,6 +1107,10 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
 
   if (locale === 'zh' && ZH_CAT_GARBAGE_RE.test(val)) {
     issues.push('Chinese CAT/Qt placeholder garbage (e.g. "% 1 个文件夹")');
+  }
+
+  if (CAT_PLURAL_FORM_RESIDUE_RE.test(val)) {
+    issues.push('CAT/Qt plural-form placeholder residue is not allowed');
   }
 
   if (
@@ -1903,6 +1931,47 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   return issues;
 }
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkMeshcorePathHashIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
+
+  if (MESHCORE_PATH_HASH_MODE_BYTE_LEAF_KEYS.has(leafKey)) {
+    for (const re of PATH_HASH_BREWING_HOP_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(
+          'meshcore path-hash hop count uses brewing-hop false friend — use routing hop/skok/хоп term',
+        );
+        break;
+      }
+    }
+  }
+
+  if (MESHCORE_PATH_HASH_MODE_SHORT_LEAF_KEYS.has(leafKey)) {
+    if (MESHCORE_PATH_HASH_SHORT_PAREN_ONLY_RE.test(val)) {
+      issues.push('meshcorePathHashModeShort label must not be parenthesis-only MT garbage');
+    }
+    if (locale !== 'en' && val === enVal) {
+      issues.push(
+        `"${leafKey}" is still identical to English — translate the short byte-size label`,
+      );
+    }
+  }
+
+  if (flatKey === MESHCORE_PATH_HASH_HINT_KEY && enVal.includes(MESHCORE_PATH_HASH_CLI_LITERAL)) {
+    if (!val.includes(MESHCORE_PATH_HASH_CLI_LITERAL)) {
+      issues.push(
+        `meshcorePathHashModeHint must preserve CLI literal ${JSON.stringify(MESHCORE_PATH_HASH_CLI_LITERAL)} verbatim`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -1918,6 +1987,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkMeshcoreOpenWireIssues,
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,
+  checkMeshcorePathHashIssues,
 ];
 
 /**

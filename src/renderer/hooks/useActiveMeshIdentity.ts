@@ -7,15 +7,18 @@ import {
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '../lib/radio/providerFactory';
-import type { IdentityId, MeshProtocol } from '../lib/types';
+import { type IdentityId, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import { useIdentityStore } from '../stores/identityStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 
 export interface ActiveMeshIdentity {
   protocol: MeshProtocol;
+  /** @deprecated Prefer identityIdByProtocol */
   meshtasticIdentityId: IdentityId | null;
+  /** @deprecated Prefer identityIdByProtocol */
   meshcoreIdentityId: IdentityId | null;
+  identityIdByProtocol: Record<MeshProtocol, IdentityId | null>;
   focusedIdentityId: IdentityId | null;
   capabilities: ProtocolCapabilities;
 }
@@ -51,16 +54,33 @@ export function useActiveMeshIdentity(protocol: MeshProtocol): ActiveMeshIdentit
   const meshtasticIdentityId = useResolvedIdentityId('meshtastic');
   const meshcoreIdentityId = useResolvedIdentityId('meshcore');
   const capabilities = useRadioProvider(protocol);
-  const focusedIdentityId = protocol === 'meshtastic' ? meshtasticIdentityId : meshcoreIdentityId;
+
+  const identityIdByProtocol = useMemo((): Record<MeshProtocol, IdentityId | null> => {
+    const map = {} as Record<MeshProtocol, IdentityId | null>;
+    for (const p of REGISTERED_MESH_PROTOCOLS) {
+      map[p] = p === 'meshtastic' ? meshtasticIdentityId : meshcoreIdentityId;
+    }
+    return map;
+  }, [meshtasticIdentityId, meshcoreIdentityId]);
+
+  const focusedIdentityId = identityIdByProtocol[protocol];
 
   return useMemo(
     () => ({
       protocol,
       meshtasticIdentityId,
       meshcoreIdentityId,
+      identityIdByProtocol,
       focusedIdentityId,
       capabilities,
     }),
-    [protocol, meshtasticIdentityId, meshcoreIdentityId, focusedIdentityId, capabilities],
+    [
+      protocol,
+      meshtasticIdentityId,
+      meshcoreIdentityId,
+      identityIdByProtocol,
+      focusedIdentityId,
+      capabilities,
+    ],
   );
 }

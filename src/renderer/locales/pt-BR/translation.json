@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Não foi possível copiar o instantâneo de depuração",
     "meshcoreOpenWireExperimentalTitle": "Formato wire MeshCore Open (experimental)",
     "meshcoreOpenWireCompatLabel": "Ativar compatibilidade com MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Quando ativado, o mesh-client envia respostas de texto com chave (@[Name#key]), reações compactas r: e GIFs Giphy g:. Isso pode não corresponder ao formato wire oficial do companion; os receptores precisam de clientes compatíveis com MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Quando ativado, o mesh-client envia respostas de texto com chave (@[Name#key]), reações compactas r: e GIFs Giphy g:. Isso pode não corresponder ao formato wire oficial do companion; os receptores precisam de clientes compatíveis com MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Tamanho do hash do caminho MeshCore (experimental)",
+    "meshcorePathHashModeLabel": "Tamanho de hash do caminho padrão",
+    "meshcorePathHashMode1Byte": "1 byte (legado, até 64 saltos)",
+    "meshcorePathHashMode2Byte": "2 bytes (até 32 saltos)",
+    "meshcorePathHashMode3Byte": "3 bytes (até 21 saltos)",
+    "meshcorePathHashModeShort0": "1 byte",
+    "meshcorePathHashModeShort1": "2 bytes",
+    "meshcorePathHashModeShort2": "3 bytes",
+    "meshcorePathHashDeviceReported": "Relatórios de rádio conectados: {{mode}}",
+    "meshcorePathHashModeHint": "Requer firmware complementar v1.14.0+ e repetidores no v1.14+ ao longo do caminho. Os repetidores pré-1.14 descartam silenciosamente os pacotes de vários bytes. Servidores repetidores e de sala também podem usar CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Falha no modo de hash do caminho: {{message}}"
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI do status do repetidor",
     "rssiContactTooltip": "Entre em contato com RSSI — use Status para leitura ao vivo",
     "pingLastFailedTooltip": "Falha no último ping: {{error}}",
-    "neighborsHeading": "Vizinhos ({{count}} total):"
+    "neighborsHeading": "Vizinhos ({{count}} total):",
+    "pathHashCliGet": "Obter modo hash do caminho",
+    "pathHashCliSet0": "Definir o modo de hash do caminho de 1 byte",
+    "pathHashCliSet1": "Definir o modo de hash do caminho de 2 bytes",
+    "pathHashCliSet2": "Definir o modo de hash do caminho de 3 bytes"
   },
   "rfHistograms": {
     "title": "Distribuição de sinal de RF",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Salve uma senha de sala primeiro para usar o login em todos",
     "membersHeadingWithCount": "Membros ({{count}})",
     "collapseRoomList": "Recolher lista de salas",
-    "expandRoomList": "Expandir lista de salas"
+    "expandRoomList": "Expandir lista de salas",
+    "pathHashCliGet": "Obter modo hash do caminho",
+    "pathHashCliSet0": "Definir o modo de hash do caminho de 1 byte",
+    "pathHashCliSet1": "Definir o modo de hash do caminho de 2 bytes",
+    "pathHashCliSet2": "Definir o modo de hash do caminho de 3 bytes"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",

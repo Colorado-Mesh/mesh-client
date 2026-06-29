@@ -38,7 +38,7 @@ describe('useActiveMeshIdentity', () => {
     upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 1, longName: 'Offline node' });
 
     const { result, rerender } = renderHook(() => useActiveMeshIdentity('meshcore'));
-    expect(result.current.meshcoreIdentityId).toBe(connectedId);
+    expect(result.current.identityIdByProtocol.meshcore).toBe(connectedId);
 
     act(() => {
       upsertMessage(connectedId, {
@@ -52,7 +52,7 @@ describe('useActiveMeshIdentity', () => {
     });
     rerender();
 
-    expect(result.current.meshcoreIdentityId).toBe(connectedId);
+    expect(result.current.identityIdByProtocol.meshcore).toBe(connectedId);
     expect(result.current.focusedIdentityId).toBe(connectedId);
   });
 
@@ -61,7 +61,7 @@ describe('useActiveMeshIdentity', () => {
     upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 1, longName: 'DB node' });
 
     const { result, rerender } = renderHook(() => useActiveMeshIdentity('meshcore'));
-    expect(result.current.meshcoreIdentityId).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
+    expect(result.current.identityIdByProtocol.meshcore).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
 
     const connectedId = 'id-mc-after-connect';
     act(() => {
@@ -84,6 +84,6 @@ describe('useActiveMeshIdentity', () => {
     });
     rerender();
 
-    expect(result.current.meshcoreIdentityId).toBe(connectedId);
+    expect(result.current.identityIdByProtocol.meshcore).toBe(connectedId);
   });
 });

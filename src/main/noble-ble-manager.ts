@@ -106,7 +106,9 @@ export interface NobleBleDevice {
   deviceName: string;
 }
 
-export type NobleSessionId = 'meshtastic' | 'meshcore';
+import type { MeshProtocol } from '../shared/meshProtocol';
+
+export type NobleSessionId = MeshProtocol;
 
 interface NobleBleSession {
   // Noble GATT objects from @stoprocent/noble — typed as any (no stable TS surface); avoid `any | null` (redundant union).

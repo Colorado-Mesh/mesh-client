@@ -1,10 +1,12 @@
+import type { MeshProtocol } from '@/shared/meshProtocol';
+
 /**
  * Protocol-agnostic capability descriptor. Each radio protocol adapter exposes
  * one of these so UI and diagnostic engines can branch on features rather than
  * on protocol name strings.
  */
 export interface ProtocolCapabilities {
-  protocol: 'meshtastic' | 'meshcore';
+  protocol: MeshProtocol;
   /** Whether hops_away is populated for peers (Meshtastic: true; MeshCore: false) */
   hasHopCount: boolean;
   /** [min, max] valid hop limit for this protocol */

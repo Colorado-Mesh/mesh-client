@@ -188,7 +188,18 @@
     "debugSnapshotFailed": "Tidak dapat menyalin snapshot debug",
     "meshcoreOpenWireExperimentalTitle": "MeshCore Open wire (eksperimental)",
     "meshcoreOpenWireCompatLabel": "Aktifkan kompatibilitas MeshCore Open",
-    "meshcoreOpenWireCompatHint": "Saat diaktifkan, mesh-client mengirim balasan teks berkunci (@[Name#key]), reaksi ringkas r:, dan GIF Giphy g:. Ini mungkin tidak sesuai format wire companion resmi; penerima membutuhkan klien yang mendukung MeshCore Open."
+    "meshcoreOpenWireCompatHint": "Saat diaktifkan, mesh-client mengirim balasan teks berkunci (@[Name#key]), reaksi ringkas r:, dan GIF Giphy g:. Ini mungkin tidak sesuai format wire companion resmi; penerima membutuhkan klien yang mendukung MeshCore Open.",
+    "meshcorePathHashExperimentalTitle": "Ukuran hash jalur MeshCore (eksperimental)",
+    "meshcorePathHashModeLabel": "Ukuran hash jalur default",
+    "meshcorePathHashMode1Byte": "1 - byte (warisan, hingga 64 hop)",
+    "meshcorePathHashMode2Byte": "2 - byte (hingga 32 hop)",
+    "meshcorePathHashMode3Byte": "3 - byte (hingga 21 hop)",
+    "meshcorePathHashModeShort0": "1 - byte",
+    "meshcorePathHashModeShort1": "2 - byte",
+    "meshcorePathHashModeShort2": "3 - byte",
+    "meshcorePathHashDeviceReported": "Laporan radio yang terhubung: {{mode}}",
+    "meshcorePathHashModeHint": "Membutuhkan firmware pendamping v1.14.0+ dan repeater pada v1.14+ di sepanjang jalur. Repeater pra-1.14 secara diam-diam menjatuhkan paket multibyte. Repeater dan server kamar juga dapat menggunakan CLI: set path.hash.mode {0|1|2}.",
+    "meshcorePathHashApplyFailed": "Mode hash jalur gagal: {{message}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -2276,7 +2287,11 @@
     "rssiFromStatusTooltip": "RSSI dari status pengulang",
     "rssiContactTooltip": "Hubungi RSSI — gunakan Status untuk membaca langsung",
     "pingLastFailedTooltip": "Ping terakhir gagal: {{error}}",
-    "neighborsHeading": "Tetangga (total{{count}}):"
+    "neighborsHeading": "Tetangga (total{{count}}):",
+    "pathHashCliGet": "Dapatkan mode hash jalur",
+    "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
+    "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
+    "pathHashCliSet2": "Atur mode hash jalur 3 - byte"
   },
   "rfHistograms": {
     "title": "Distribusi Sinyal RF",
@@ -2424,7 +2439,11 @@
     "loginAllSavedDisabledNoSavedPasswords": "Simpan kata sandi ruangan terlebih dahulu untuk menggunakan log masuk semua",
     "membersHeadingWithCount": "Anggota ({{count}})",
     "collapseRoomList": "Ciutkan daftar ruangan",
-    "expandRoomList": "Perluas daftar ruangan"
+    "expandRoomList": "Perluas daftar ruangan",
+    "pathHashCliGet": "Dapatkan mode hash jalur",
+    "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
+    "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
+    "pathHashCliSet2": "Atur mode hash jalur 3 - byte"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",
