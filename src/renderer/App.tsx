@@ -56,13 +56,15 @@ import BootSequence from './components/BootSequence';
 import ChannelUtilizationChart from './components/ChannelUtilizationChart';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
+import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
 import { HelpTooltip } from './components/HelpTooltip';
+import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
-import { ToastProvider, useToast } from './components/Toast';
+import { ToastProvider } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
@@ -107,7 +109,16 @@ import {
   TakServerPanel,
   TelemetryPanel,
 } from './lazyTabPanels';
+import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
+import {
+  computeTabMappings,
+  findFilteredTabIndexForPanel,
+  MAP_TAB_PANEL_INDEX,
+  RADIO_TAB_PANEL_INDEX,
+  resolveSavedTabOnProtocolSwitch,
+  ROOMS_PANEL_INDEX,
+} from './lib/appTabMappings';
 import { playMessageNotification } from './lib/chatNotifications';
 import {
   deviceHeaderVariant,
@@ -120,13 +131,9 @@ import {
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
 import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
-  fetchLatestMeshCoreRelease,
-  fetchLatestMeshtasticRelease,
   type FirmwareCheckResult,
   MESHCORE_FIRMWARE_RELEASES_URL,
-  meshCoreFirmwareUpdateAvailable,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
-  semverGt,
 } from './lib/firmwareCheck';
 import { loadLastConnection } from './lib/lastConnectionStorage';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
@@ -147,7 +154,6 @@ import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { protocolHeaderBorderClass } from './lib/protocolTheme';
-import type { ProtocolCapabilities } from './lib/radio/BaseRadioProvider';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
@@ -183,28 +189,7 @@ import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
 
-// Tabs (0-indexed) that are disabled in MeshCore mode
-// Security tab (index 7) is hidden for MeshCore since PKI config is not supported
-// These map tab index → required capability (undefined = always shown)
-const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = [
-  undefined, // Connection
-  undefined, // Chat
-  undefined, // Nodes
-  undefined, // Map
-  undefined, // Radio
-  undefined, // Modules
-  undefined, // Admin
-  'hasRoomServersPanel', // Rooms
-  undefined, // Telemetry
-  'hasSecurityPanel', // Security
-  'hasTakPanel', // TAK
-  undefined, // App
-  undefined, // Diagnostics
-  'hasRawPacketLog', // Distribution
-  'hasRawPacketLog', // Sniffer (keyboard help: Packet Sniffer)
-  undefined, // RF
-  undefined, // Graph
-];
+// Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
 function deviceConnectionStatusLabel(
   t: ReturnType<typeof useTranslation>['t'],
@@ -228,45 +213,6 @@ function deviceConnectionStatusLabel(
       return _x;
     }
   }
-}
-
-import { TAB_SLOT_IDS, type TabIconSlotId } from '@/renderer/lib/tabSlotIds';
-
-const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
-const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
-
-function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `tabs.${string}` {
-  if (panelIndex === 2 && capabilities.nodeListTabUsesContactsLabel) return 'tabs.contacts';
-  if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'tabs.repeaters';
-  if (panelIndex === 7 && capabilities.hasRoomServersPanel) return 'tabs.rooms';
-  return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
-}
-
-function tabIconSlotId(capabilities: ProtocolCapabilities, panelIndex: number): TabIconSlotId {
-  if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'Repeaters';
-  return TAB_SLOT_IDS[panelIndex];
-}
-
-function computeTabMappings(
-  translate: ReturnType<typeof useTranslation>['t'],
-  targetProtocol: MeshProtocol,
-  targetCapabilities: ProtocolCapabilities,
-) {
-  const filtered: { label: string; slotId: TabIconSlotId; panelIndex: number }[] = [];
-  TAB_SLOT_IDS.forEach((_slot, panelIndex) => {
-    const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
-    if (requiredCap !== undefined && !targetCapabilities[requiredCap]) return;
-    filtered.push({
-      label: translate(tabLabelKey(targetCapabilities, panelIndex)),
-      slotId: tabIconSlotId(targetCapabilities, panelIndex),
-      panelIndex,
-    });
-  });
-  return {
-    displayTabLabels: filtered.map((row) => row.label),
-    tabSlotIds: filtered.map((row) => row.slotId),
-    tabIndexToPanelIndex: filtered.map((row) => row.panelIndex),
-  };
 }
 
 export interface LocationFilter {
@@ -789,6 +735,51 @@ function AppContent() {
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
 
+  const meshtasticCapabilities = useRadioProvider('meshtastic');
+  const meshcoreCapabilities = useRadioProvider('meshcore');
+  const capabilitiesByProtocol = useMemo(
+    () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities),
+    [meshtasticCapabilities, meshcoreCapabilities],
+  );
+  const tabsByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
+        computeTabMappings(t, 'meshcore', meshcoreCapabilities),
+      ),
+    [t, meshtasticCapabilities, meshcoreCapabilities],
+  );
+  const uiNodesByProtocol = useMemo(
+    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes),
+    [meshtasticUiNodes, meshcoreUiNodes],
+  );
+  const uiMessagesByProtocol = useMemo(
+    () => protocolRecord(meshtasticUiMessages, meshcoreUiMessages),
+    [meshtasticUiMessages, meshcoreUiMessages],
+  );
+  const connectionViewByProtocol = useMemo(
+    () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView),
+    [meshtasticConnectionView, meshcoreConnectionView],
+  );
+  const connectionActionsByProtocol = useMemo(
+    () => protocolRecord(meshtasticConnection, meshcoreConnection),
+    [meshtasticConnection, meshcoreConnection],
+  );
+  const panelActionsByProtocol = useMemo(
+    () => protocolRecord(meshtasticPanelActions, meshcorePanelActions),
+    [meshtasticPanelActions, meshcorePanelActions],
+  );
+  const deviceStateByProtocol = useMemo(
+    () => protocolRecord(meshtasticRuntime.state, meshcoreRuntime.state),
+    [meshtasticRuntime.state, meshcoreRuntime.state],
+  );
+  const nodesForUi = selectByProtocol(uiNodesByProtocol, protocol);
+  const activeUiMessages = selectByProtocol(uiMessagesByProtocol, protocol);
+  const { displayTabLabels, tabSlotIds, tabIndexToPanelIndex } = selectByProtocol(
+    tabsByProtocol,
+    protocol,
+  );
+
   useMeshcoreDistanceFilterHint(
     protocol,
     meshcoreUiNodes,
@@ -802,11 +793,15 @@ function AppContent() {
   const sendingWindowMs = 30_000;
   const hasMeshtasticSendingRow = useMemo(
     () =>
-      protocol === 'meshtastic' &&
+      activeProtocolCapabilities.dedupeQueueBadgeForLocalSending &&
       activeFacade.messages.some(
         (m) => m.status === 'sending' && (myNodeNumForQueue <= 0 || m.from === myNodeNumForQueue),
       ),
-    [protocol, activeFacade.messages, myNodeNumForQueue],
+    [
+      activeProtocolCapabilities.dedupeQueueBadgeForLocalSending,
+      activeFacade.messages,
+      myNodeNumForQueue,
+    ],
   );
   const nowMs = useNowMs(hasMeshtasticSendingRow, 5_000);
   const hasLocalSendingMessage = useMemo(() => {
@@ -839,8 +834,6 @@ function AppContent() {
   const meshcoreMsgsRef = useRef(meshcoreUiMessages);
   const meshtasticMyNodeNumRef = useRef(meshtasticRuntime.state.myNodeNum);
   const meshcoreSelfIdRef = useRef(meshcoreRuntime.selfNodeId);
-  const nodesForUi = protocol === 'meshcore' ? meshcoreUiNodes : meshtasticUiNodes;
-  const activeUiMessages = protocol === 'meshcore' ? meshcoreUiMessages : meshtasticUiMessages;
 
   useEffect(() => {
     return subscribePersistedLastRead((changedProtocol) => {
@@ -858,12 +851,12 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    return subscribeMutedViewsChanged((protocol) => {
-      if (protocol === 'meshcore') {
+    return subscribeMutedViewsChanged((changedProtocol) => {
+      if (selectByProtocol(capabilitiesByProtocol, changedProtocol).hasRoomServersPanel) {
         setMeshcoreMutedViewsRevision((n) => n + 1);
       }
     });
-  }, []);
+  }, [capabilitiesByProtocol]);
 
   const meshcoreLastReadSanitizedRef = useRef(false);
   useEffect(() => {
@@ -1005,7 +998,7 @@ function AppContent() {
   );
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
     const m = new Map<number, string>();
-    if (protocol !== 'meshcore') return m;
+    if (!meshcoreCapabilities.hasContactImportExport) return m;
     const self = meshcoreRuntime.selfInfo;
     if (self?.publicKey?.length === 32) {
       m.set(
@@ -1024,29 +1017,50 @@ function AppContent() {
       );
     }
     return m;
-  }, [protocol, meshcoreRuntime.selfInfo, meshcoreRuntime.meshcoreContactsForTelemetry]);
+  }, [
+    meshcoreCapabilities.hasContactImportExport,
+    meshcoreRuntime.selfInfo,
+    meshcoreRuntime.meshcoreContactsForTelemetry,
+  ]);
 
   const capabilities = activeProtocolCapabilities;
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
     : t('common.nodes');
-  const meshtasticCapabilities = useRadioProvider('meshtastic');
-  const meshcoreCapabilities = useRadioProvider('meshcore');
 
   useNodeStatusNotifier(nodesForUi, capabilities);
 
-  const meshtasticTabs = useMemo(
-    () => computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
-    [t, meshtasticCapabilities],
+  const chatUnreadByProtocol = useMemo(
+    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread),
+    [meshtasticChatUnread, meshcoreChatUnread],
   );
-  const meshcoreTabs = useMemo(
-    () => computeTabMappings(t, 'meshcore', meshcoreCapabilities),
-    [t, meshcoreCapabilities],
+  const roomsUnreadByProtocol = useMemo(
+    () => protocolRecord(0, meshcoreRoomsUnread),
+    [meshcoreRoomsUnread],
   );
-
-  const { displayTabLabels, tabSlotIds, tabIndexToPanelIndex } = useMemo(() => {
-    return protocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
-  }, [protocol, meshtasticTabs, meshcoreTabs]);
+  const chatUnread = selectByProtocol(chatUnreadByProtocol, protocol);
+  const roomsUnread = selectByProtocol(roomsUnreadByProtocol, protocol);
+  const storeMessageCountByProtocol = useMemo(
+    () => protocolRecord(meshtasticStoreMessages.length, meshcoreStoreMessages.length),
+    [meshtasticStoreMessages.length, meshcoreStoreMessages.length],
+  );
+  const meshtasticOwnNodeIdsForChat = useMemo(
+    () =>
+      meshtasticMqttOwnNodeIds(
+        activeRuntime.selfNodeId,
+        meshtasticRuntime.virtualNodeId,
+        meshtasticRuntime.lastRfSelfNodeId,
+      ),
+    [activeRuntime.selfNodeId, meshtasticRuntime.virtualNodeId, meshtasticRuntime.lastRfSelfNodeId],
+  );
+  const headerSelfNodeLabel = capabilities.prefersDeviceOwnerLongNameInHeader
+    ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
+      panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
+    : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
+  const sendReactionByProtocol = useMemo(
+    () => protocolRecord(meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction),
+    [meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction],
+  );
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
   const prevPanelIndexForChatFreezeRef = useRef(activePanelIndex);
@@ -1085,24 +1099,11 @@ function AppContent() {
   useEffect(() => {
     if (activeTab >= displayTabLabels.length) {
       const savedPanel = lastPanelByProtocol.current.get(protocol) ?? null;
-      let next = 0;
-      const targetTabs = protocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
-
-      if (savedPanel != null) {
-        const foundFilteredIndex = targetTabs.tabIndexToPanelIndex.findIndex(
-          (p) => p === savedPanel,
-        );
-        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabLabels.length) {
-          next = foundFilteredIndex;
-        }
-      } else {
-        const savedTab = lastTabByProtocol.current.get(protocol) ?? 0;
-        next = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
-      }
-
-      setActiveTab(next);
+      const savedTab = lastTabByProtocol.current.get(protocol) ?? 0;
+      const targetTabs = selectByProtocol(tabsByProtocol, protocol);
+      setActiveTab(resolveSavedTabOnProtocolSwitch(targetTabs, savedPanel, savedTab));
     }
-  }, [activeTab, displayTabLabels.length, protocol, meshtasticTabs, meshcoreTabs]);
+  }, [activeTab, displayTabLabels.length, protocol, tabsByProtocol]);
 
   // Reset scroll position when switching tabs
   useEffect(() => {
@@ -1144,21 +1145,9 @@ function AppContent() {
       if (newProtocol === protocol) return;
 
       const savedPanel = lastPanelByProtocol.current.get(newProtocol) ?? null;
-      let targetTab = 0;
-
-      if (savedPanel != null) {
-        const targetTabs = newProtocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
-        const foundFilteredIndex = targetTabs.tabIndexToPanelIndex.findIndex(
-          (p) => p === savedPanel,
-        );
-        if (foundFilteredIndex !== -1 && foundFilteredIndex < targetTabs.displayTabLabels.length) {
-          targetTab = foundFilteredIndex;
-        }
-      } else {
-        const savedTab = lastTabByProtocol.current.get(newProtocol) ?? 0;
-        const targetTabs = newProtocol === 'meshcore' ? meshcoreTabs : meshtasticTabs;
-        targetTab = savedTab < targetTabs.displayTabLabels.length ? savedTab : 0;
-      }
+      const savedTab = lastTabByProtocol.current.get(newProtocol) ?? 0;
+      const targetTabs = selectByProtocol(tabsByProtocol, newProtocol);
+      const targetTab = resolveSavedTabOnProtocolSwitch(targetTabs, savedPanel, savedTab);
 
       lastTabByProtocol.current.set(protocol, activeTab);
       lastPanelByProtocol.current.set(protocol, activePanelIndex);
@@ -1168,20 +1157,22 @@ function AppContent() {
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
       setProtocol(newProtocol);
     },
-    [protocol, activeTab, activePanelIndex, meshtasticTabs, meshcoreTabs],
+    [protocol, activeTab, activePanelIndex, tabsByProtocol],
   );
 
   const handleShowOnMap = useCallback(
     (nodeId: number, lat: number, lon: number) => {
       useMapViewportStore.getState().requestFocus({ nodeId, lat, lon });
       setSelectedNodeId(null);
-      const tabs = protocol === 'meshtastic' ? meshtasticTabs : meshcoreTabs;
-      const mapTabIndex = tabs.tabIndexToPanelIndex.findIndex((idx) => idx === MAP_TAB_PANEL_INDEX);
+      const mapTabIndex = findFilteredTabIndexForPanel(
+        selectByProtocol(tabsByProtocol, protocol),
+        MAP_TAB_PANEL_INDEX,
+      );
       if (mapTabIndex >= 0) {
         setActiveTab(mapTabIndex);
       }
     },
-    [protocol, meshtasticTabs, meshcoreTabs],
+    [protocol, tabsByProtocol],
   );
 
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
@@ -1218,12 +1209,12 @@ function AppContent() {
   const isConnectedOrOperational =
     isOperational || activeConnectionView.state.status === 'connected';
   const hasLocalMeshtasticRadio =
-    protocol === 'meshtastic' &&
+    capabilities.hasRemoteAdmin &&
     meshtasticConnectionView.state.myNodeNum > 0 &&
     meshtasticConnectionView.state.connectionType != null &&
     meshtasticConnectionView.state.status !== 'disconnected';
   const isRemoteConfigureTarget =
-    protocol === 'meshtastic' && meshtasticRuntime.configureTargetNodeNum != null;
+    capabilities.hasRemoteAdmin && meshtasticRuntime.configureTargetNodeNum != null;
   const configTarget = useMemo((): ConfigTargetContext => {
     const remote = isRemoteConfigureTarget;
     return {
@@ -1335,18 +1326,14 @@ function AppContent() {
   ]);
 
   const detailModalProtocol = useMemo((): MeshProtocol => {
-    if (selectedNodeId == null) return protocol;
-    if (meshcoreUiNodes.has(selectedNodeId)) return 'meshcore';
+    if (selectedNodeId != null && meshcoreUiNodes.has(selectedNodeId)) return 'meshcore';
     return protocol;
   }, [selectedNodeId, protocol, meshcoreUiNodes]);
 
-  const detailModalPanelActions =
-    detailModalProtocol === 'meshcore' ? meshcorePanelActions : meshtasticPanelActions;
+  const detailModalCapabilities = selectByProtocol(capabilitiesByProtocol, detailModalProtocol);
+  const detailModalPanelActions = selectByProtocol(panelActionsByProtocol, detailModalProtocol);
 
-  const detailConnectionView = useMemo(
-    () => (detailModalProtocol === 'meshcore' ? meshcoreConnectionView : meshtasticConnectionView),
-    [detailModalProtocol, meshcoreConnectionView, meshtasticConnectionView],
-  );
+  const detailConnectionView = selectByProtocol(connectionViewByProtocol, detailModalProtocol);
   const detailIsOperational = useMemo(
     () =>
       detailConnectionView.state.status === 'configured' ||
@@ -1358,15 +1345,14 @@ function AppContent() {
     [detailIsOperational, detailConnectionView.state.status],
   );
 
-  const detailModalNodes = detailModalProtocol === 'meshcore' ? meshcoreUiNodes : nodesForUi;
-  const detailHomeNode =
-    detailModalProtocol === 'meshcore'
-      ? (meshcoreUiNodes.get(meshcoreRuntime.selfNodeId) ?? null)
-      : (nodesForUi.get(meshtasticConnectionView.state.myNodeNum) ?? null);
-  const detailMyNodeNum =
-    detailModalProtocol === 'meshcore'
-      ? meshcoreRuntime.selfNodeId
-      : meshtasticConnectionView.state.myNodeNum;
+  const detailModalNodes =
+    selectedNodeId != null && meshcoreUiNodes.has(selectedNodeId) ? meshcoreUiNodes : nodesForUi;
+  const detailHomeNode = detailModalCapabilities.prefersDeviceOwnerLongNameInHeader
+    ? (meshcoreUiNodes.get(meshcoreRuntime.selfNodeId) ?? null)
+    : (nodesForUi.get(meshtasticConnectionView.state.myNodeNum) ?? null);
+  const detailMyNodeNum = detailModalCapabilities.prefersDeviceOwnerLongNameInHeader
+    ? meshcoreRuntime.selfNodeId
+    : meshtasticConnectionView.state.myNodeNum;
 
   const selectedNode = useMemo(() => {
     if (selectedNodeId == null) return null;
@@ -1408,7 +1394,7 @@ function AppContent() {
 
   const traceRouteHops = useMemo(() => {
     if (!selectedNode) return undefined;
-    if (capabilities.protocol !== 'meshtastic') return undefined;
+    if (!capabilities.hasNeighborInfo) return undefined;
     const result = activeRuntime.traceRouteResults.get(selectedNode.node_id);
     if (!result) return undefined;
     return [
@@ -1420,15 +1406,15 @@ function AppContent() {
     selectedNode,
     panelActions,
     activeConnectionView.state.myNodeNum,
-    capabilities.protocol,
+    capabilities.hasNeighborInfo,
     activeRuntime.traceRouteResults,
   ]);
 
-  /** In meshcore mode, only show configured channels (key !== all zeros) in chat. */
+  /** MeshCore chat: only show configured channels (key !== all zeros). */
   const chatChannels = useMemo(() => {
-    if (capabilities.protocol !== 'meshcore') return activeRuntime.channels;
+    if (!capabilities.nodeListTabUsesContactsLabel) return activeRuntime.channels;
     return meshcoreConfiguredChatChannels(activeRuntime.channels);
-  }, [capabilities.protocol, activeRuntime.channels]);
+  }, [capabilities.nodeListTabUsesContactsLabel, activeRuntime.channels]);
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
@@ -1484,8 +1470,7 @@ function AppContent() {
   const chatChannelsForPanel = isChatPanelFrozen && freeze ? freeze.channels : chatChannels;
 
   useEffect(() => {
-    const liveResolvedMessageCount =
-      protocol === 'meshcore' ? meshcoreStoreMessages.length : meshtasticStoreMessages.length;
+    const liveResolvedMessageCount = selectByProtocol(storeMessageCountByProtocol, protocol);
     setDebugSnapshotUiContext({
       activePanelIndex,
       chatTabVisited,
@@ -1500,8 +1485,7 @@ function AppContent() {
     isChatPanelFrozen,
     freeze,
     protocol,
-    meshcoreStoreMessages.length,
-    meshtasticStoreMessages.length,
+    storeMessageCountByProtocol,
   ]);
 
   const handleDmTargetConsumed = useCallback(() => {
@@ -1518,17 +1502,18 @@ function AppContent() {
   } = meshcoreDbRefresh;
 
   const refreshNodesFromDb = useCallback(() => {
-    if (protocol === 'meshtastic') {
-      meshtasticPanelActions.refreshNodesFromDb();
+    const actions = selectByProtocol(panelActionsByProtocol, protocol);
+    if (capabilities.hasRemoteAdmin) {
+      void actions.refreshNodesFromDb();
       void refreshMeshtasticNodesInStore();
     } else {
-      void meshcorePanelActions.refreshNodesFromDb();
+      void actions.refreshNodesFromDb();
       void refreshMeshcoreNodesInStore();
     }
   }, [
     protocol,
-    meshtasticPanelActions,
-    meshcorePanelActions,
+    capabilities.hasRemoteAdmin,
+    panelActionsByProtocol,
     refreshMeshtasticNodesInStore,
     refreshMeshcoreNodesInStore,
   ]);
@@ -1542,31 +1527,36 @@ function AppContent() {
         opts?.clearedChannel != null;
       const messagesMode = replace ? 'replace' : 'upsert';
       const replaceFromDb = replace;
+      const actions = selectByProtocol(panelActionsByProtocol, protocol);
+      const activeCaps = selectByProtocol(capabilitiesByProtocol, protocol);
 
-      if (protocol === 'meshtastic') {
-        meshtasticPanelActions.refreshMessagesFromDb({ replaceFromDb });
+      if (activeCaps.hasRemoteAdmin) {
+        void actions.refreshMessagesFromDb({ replaceFromDb });
         void refreshMeshtasticMessagesInStore({ messagesMode });
       } else {
-        void meshcorePanelActions.refreshMessagesFromDb({ replaceFromDb });
+        void actions.refreshMessagesFromDb({ replaceFromDb });
         void refreshMeshcoreMessagesInStore({ messagesMode });
       }
 
       if (opts?.clearedAll) {
         clearPersistedLastReadForProtocol(protocol);
-        if (protocol === 'meshcore') {
+        if (activeCaps.hasRoomServersPanel) {
           clearPersistedRoomsLastRead();
         }
       } else if (opts?.clearedChannel != null) {
         removePersistedLastReadForChannel(protocol, opts.clearedChannel);
-        if (protocol === 'meshcore' && opts.clearedChannel === MESHCORE_ROOM_MESSAGE_CHANNEL) {
+        if (
+          activeCaps.hasRoomServersPanel &&
+          opts.clearedChannel === MESHCORE_ROOM_MESSAGE_CHANNEL
+        ) {
           clearPersistedRoomsLastRead();
         }
       }
     },
     [
       protocol,
-      meshtasticPanelActions,
-      meshcorePanelActions,
+      panelActionsByProtocol,
+      capabilitiesByProtocol,
       refreshMeshtasticMessagesInStore,
       refreshMeshcoreMessagesInStore,
     ],
@@ -1613,13 +1603,14 @@ function AppContent() {
   useEffect(() => {
     const prev = prevProtocolForMqttAutostartRef.current;
     prevProtocolForMqttAutostartRef.current = protocol;
-    if (protocol !== 'meshtastic') return;
-    if (prev === 'meshtastic') return;
+    const activeCaps = selectByProtocol(capabilitiesByProtocol, protocol);
+    if (!activeCaps.hasMqttHybrid) return;
+    if (selectByProtocol(capabilitiesByProtocol, prev).hasMqttHybrid) return;
     if (meshtasticConnectionView.mqttStatus !== 'disconnected') return;
     void tryAutoLaunchMqtt('meshtastic').catch((e: unknown) => {
       console.warn('[App] MQTT auto-launch on tab switch failed ' + errLikeToLogString(e));
     });
-  }, [protocol, meshtasticConnectionView.mqttStatus]);
+  }, [protocol, meshtasticConnectionView.mqttStatus, capabilitiesByProtocol]);
 
   // ─── MQTT auto-launch on startup ─────────────────────────────────
   // Launch MQTT for each protocol when autoLaunch is enabled. Meshtastic MQTT skips
@@ -1760,7 +1751,10 @@ function AppContent() {
       return;
     }
     const isActiveAndChatOpen =
-      protocolRef.current === 'meshcore' && activePanelIndexRef.current === 1 && !document.hidden;
+      selectByProtocol(capabilitiesByProtocol, protocolRef.current)
+        .prefersDeviceOwnerLongNameInHeader &&
+      activePanelIndexRef.current === 1 &&
+      !document.hidden;
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
       const type = resolveInactiveChatNotificationType({
@@ -1776,7 +1770,7 @@ function AppContent() {
       if (type) playMessageNotification(type);
     }
     prevMeshcoreMsgCountRef.current = count;
-  }, [meshcoreUiMessages.length]);
+  }, [meshcoreUiMessages.length, capabilitiesByProtocol]);
 
   useAppTrayUnreadSync(meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread);
 
@@ -1784,7 +1778,9 @@ function AppContent() {
   const advertSentRef = useRef(false);
 
   useEffect(() => {
-    if (protocol !== 'meshcore' || !isOperational || autoFloodAdvertIntervalHours <= 0) return;
+    if (!capabilities.hasRoomServersPanel || !isOperational || autoFloodAdvertIntervalHours <= 0) {
+      return;
+    }
     if (!meshcoreIdentityId || !connectionDriver.getHandle(meshcoreIdentityId)) return;
 
     const sendScheduledAdvert = () => {
@@ -1809,7 +1805,7 @@ function AppContent() {
       clearInterval(id);
     };
   }, [
-    protocol,
+    capabilities.hasRoomServersPanel,
     isOperational,
     autoFloodAdvertIntervalHours,
     autoFloodAdvertType,
@@ -1846,15 +1842,20 @@ function AppContent() {
 
           void reconnectRfFromLastConnection(protocol, lastType, {
             connectBleAutomatic: (bleDeviceId) =>
-              protocol === 'meshtastic'
-                ? meshtasticConnection.connectAutomatic('ble', undefined, undefined, bleDeviceId)
-                : meshcoreConnection.connectAutomatic('ble', undefined, undefined, bleDeviceId),
+              selectByProtocol(connectionActionsByProtocol, protocol).connectAutomatic(
+                'ble',
+                undefined,
+                undefined,
+                bleDeviceId,
+              ),
             connectBleDirect: (bleDeviceId) =>
               protocolConnect(protocol, 'ble', undefined, bleDeviceId),
             connectSerialAutomatic: (serialPortId) =>
-              protocol === 'meshtastic'
-                ? meshtasticConnection.connectAutomatic('serial', undefined, serialPortId)
-                : meshcoreConnection.connectAutomatic('serial', undefined, serialPortId),
+              selectByProtocol(connectionActionsByProtocol, protocol).connectAutomatic(
+                'serial',
+                undefined,
+                serialPortId,
+              ),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
           })
             .catch((err: unknown) => {
@@ -1870,8 +1871,7 @@ function AppContent() {
   }, [
     activeConnectionView.state.connectionType,
     activeConnectionView.state.serialNeedsReselect,
-    meshcoreConnection,
-    meshtasticConnection,
+    connectionActionsByProtocol,
     protocol,
     protocolConnect,
     protocolDisconnect,
@@ -1885,15 +1885,15 @@ function AppContent() {
   const handleOpenRoom = useCallback(
     (nodeNum: number) => {
       setPendingRoomTarget(nodeNum);
-      const roomsSlotIndex = TAB_SLOT_IDS.indexOf('Rooms');
-      const filteredIndex = meshcoreTabs.tabIndexToPanelIndex.findIndex(
-        (panelIndex) => panelIndex === roomsSlotIndex,
+      const filteredIndex = findFilteredTabIndexForPanel(
+        tabsByProtocol.meshcore,
+        ROOMS_PANEL_INDEX,
       );
       if (filteredIndex >= 0) {
         setActiveTab(filteredIndex);
       }
     },
-    [meshcoreTabs.tabIndexToPanelIndex],
+    [tabsByProtocol.meshcore],
   );
 
   const handleRoomTargetConsumed = useCallback(() => {
@@ -1923,7 +1923,9 @@ function AppContent() {
     (legacyQueue != null ? { free: legacyQueue.free, maxlen: legacyQueue.maxlen } : null);
   const rawQueueUsed = activeQueue ? activeQueue.maxlen - activeQueue.free : 0;
   const queueUsed =
-    protocol === 'meshtastic' && rawQueueUsed === 1 && !hasLocalSendingMessage ? 0 : rawQueueUsed;
+    capabilities.dedupeQueueBadgeForLocalSending && rawQueueUsed === 1 && !hasLocalSendingMessage
+      ? 0
+      : rawQueueUsed;
   const queueShowBadge = activeQueue != null;
   const queueColorClass =
     queueUsed <= 10
@@ -1960,21 +1962,19 @@ function AppContent() {
       <div aria-live="assertive" aria-atomic="true" className="sr-only" id="app-announcer" />
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
-        protocol={protocol}
-        meshtasticMessages={meshtasticUiMessages}
-        meshcoreMessages={meshcoreUiMessages}
+        activeProtocol={protocol}
+        messagesByProtocol={uiMessagesByProtocol}
       />
-      {protocol === 'meshtastic' && (
+      {capabilities.hasRemoteAdmin && (
         <RemoteAdminErrorNotifier
           status={meshtasticRuntime.remoteAdminStatus}
           errorKey={meshtasticRuntime.remoteAdminError}
         />
       )}
-      {/* Firmware update check on connect */}
       <FirmwareUpdateNotifier
-        meshtasticState={meshtasticRuntime.state}
-        meshcoreState={meshcoreRuntime.state}
-        protocol={protocol}
+        deviceStateByProtocol={deviceStateByProtocol}
+        capabilitiesByProtocol={capabilitiesByProtocol}
+        activeProtocol={protocol}
         onResult={handleFirmwareResult}
       />
       {signalPulseKey !== null && (
@@ -2104,31 +2104,16 @@ function AppContent() {
                 </div>
               </div>
               {activeConnectionView.state.myNodeNum > 0 &&
-                (protocol !== 'meshcore' || activeConnectionView.state.status === 'configured') && (
+                (!capabilities.prefersDeviceOwnerLongNameInHeader ||
+                  activeConnectionView.state.status === 'configured') && (
                   <span
                     aria-label={t('app.nodeLabel', {
-                      name:
-                        protocol === 'meshcore'
-                          ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
-                            panelActions.getPickerStyleNodeLabel(
-                              activeConnectionView.state.myNodeNum,
-                            )
-                          : panelActions.getPickerStyleNodeLabel(
-                              activeConnectionView.state.myNodeNum,
-                            ),
+                      name: headerSelfNodeLabel,
                     })}
                     className="text-muted hidden shrink-0 text-xs xl:inline"
                   >
                     {t('app.nodeLabel', {
-                      name:
-                        protocol === 'meshcore'
-                          ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
-                            panelActions.getPickerStyleNodeLabel(
-                              activeConnectionView.state.myNodeNum,
-                            )
-                          : panelActions.getPickerStyleNodeLabel(
-                              activeConnectionView.state.myNodeNum,
-                            ),
+                      name: headerSelfNodeLabel,
                     })}
                   </span>
                 )}
@@ -2136,7 +2121,7 @@ function AppContent() {
               {queueShowBadge && activeQueue && (
                 <HelpTooltip
                   text={
-                    protocol === 'meshcore'
+                    capabilities.modulesTabUsesRepeatersLabel
                       ? t('app.meshcoreQueueTooltip')
                       : t('app.meshtasticQueueTooltip')
                   }
@@ -2203,8 +2188,8 @@ function AppContent() {
               tabSlotIds={tabSlotIds}
               active={activeTab}
               onChange={setActiveTab}
-              chatUnread={protocol === 'meshtastic' ? meshtasticChatUnread : meshcoreChatUnread}
-              roomsUnread={protocol === 'meshcore' ? meshcoreRoomsUnread : 0}
+              chatUnread={chatUnread}
+              roomsUnread={roomsUnread}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
@@ -2228,7 +2213,7 @@ function AppContent() {
                     >
                       {/* Both panels are always mounted so each protocol auto-connects at startup */}
                       <Suspense fallback={<PanelSkeleton />}>
-                        <div hidden={protocol !== 'meshtastic'}>
+                        <div hidden={capabilities.prefersDeviceOwnerLongNameInHeader}>
                           <ConnectionPanel
                             state={meshtasticConnection.state}
                             onConnect={meshtasticConnection.connect}
@@ -2244,10 +2229,14 @@ function AppContent() {
                             }
                             protocol="meshtastic"
                             firmwareCheckState={
-                              protocol === 'meshtastic' ? firmwareCheckState : undefined
+                              meshtasticCapabilities.hasFirmwareUpdateCheck &&
+                              !capabilities.prefersDeviceOwnerLongNameInHeader
+                                ? firmwareCheckState
+                                : undefined
                             }
                             onOpenFirmwareReleases={
-                              protocol === 'meshtastic'
+                              meshtasticCapabilities.hasFirmwareUpdateCheck &&
+                              !capabilities.prefersDeviceOwnerLongNameInHeader
                                 ? () => {
                                     void window.electronAPI.update.openReleases(
                                       firmwareCheckState.releaseUrl ??
@@ -2258,7 +2247,7 @@ function AppContent() {
                             }
                           />
                         </div>
-                        <div hidden={protocol !== 'meshcore'}>
+                        <div hidden={!capabilities.prefersDeviceOwnerLongNameInHeader}>
                           <ConnectionPanel
                             state={meshcoreConnection.state}
                             onConnect={meshcoreConnection.connect}
@@ -2275,10 +2264,14 @@ function AppContent() {
                             protocol="meshcore"
                             ensureMeshcoreMqttIdentity={meshcoreRuntime.ensureMeshcoreMqttIdentity}
                             firmwareCheckState={
-                              protocol === 'meshcore' ? firmwareCheckState : undefined
+                              meshcoreCapabilities.hasFirmwareUpdateCheck &&
+                              capabilities.prefersDeviceOwnerLongNameInHeader
+                                ? firmwareCheckState
+                                : undefined
                             }
                             onOpenFirmwareReleases={
-                              protocol === 'meshcore'
+                              meshcoreCapabilities.hasFirmwareUpdateCheck &&
+                              capabilities.prefersDeviceOwnerLongNameInHeader
                                 ? () => {
                                     void window.electronAPI.update.openReleases(
                                       firmwareCheckState.releaseUrl ??
@@ -2306,24 +2299,18 @@ function AppContent() {
                             messagesForUnread={activeUiMessages}
                             channels={chatChannelsForPanel}
                             meshcoreChannelSources={
-                              protocol === 'meshcore' ? activeRuntime.channels : undefined
+                              capabilities.hasCompanionContactManagementConfig
+                                ? activeRuntime.channels
+                                : undefined
                             }
                             myNodeNum={activeRuntime.selfNodeId}
                             ownNodeIds={
-                              protocol === 'meshtastic'
-                                ? meshtasticMqttOwnNodeIds(
-                                    activeRuntime.selfNodeId,
-                                    meshtasticRuntime.virtualNodeId,
-                                    meshtasticRuntime.lastRfSelfNodeId,
-                                  )
+                              capabilities.hasMqttHybrid
+                                ? meshtasticOwnNodeIdsForChat
                                 : Array.from(meshcoreOwnNodeIdSet)
                             }
                             onSend={handleSend}
-                            onReact={
-                              protocol === 'meshtastic'
-                                ? meshtasticPanelActions.sendReaction
-                                : meshcoreRuntime.sendReaction
-                            }
+                            onReact={selectByProtocol(sendReactionByProtocol, protocol)}
                             onResend={handleResend}
                             onNodeClick={setSelectedNodeId}
                             isConnected={
@@ -2342,7 +2329,7 @@ function AppContent() {
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
                             onFetchStoreForwardHistory={
-                              protocol === 'meshtastic'
+                              capabilities.hasStoreForward
                                 ? () =>
                                     meshtasticPanelActions.requestStoreForwardHistory({
                                       manual: true,
@@ -2350,10 +2337,12 @@ function AppContent() {
                                 : undefined
                             }
                             waitingMessagesCount={
-                              protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesCount : 0
+                              capabilities.hasCompanionContactManagementConfig
+                                ? meshcoreRuntime.waitingMessagesCount
+                                : 0
                             }
                             onSyncWaitingMessages={
-                              protocol === 'meshcore'
+                              capabilities.hasCompanionContactManagementConfig
                                 ? () => void meshcoreRuntime.getWaitingMessages()
                                 : undefined
                             }
@@ -2492,10 +2481,10 @@ function AppContent() {
                                 isRemoteConfigureTarget ? handleRetryRemoteChannelsTail : undefined
                               }
                               meshtasticLoraConfig={
-                                protocol === 'meshtastic' ? effectiveLoraConfig : undefined
+                                capabilities.hasChannelConfig ? effectiveLoraConfig : undefined
                               }
                               meshtasticConfigSlices={
-                                protocol === 'meshtastic'
+                                capabilities.hasChannelConfig
                                   ? effectiveMeshtasticConfigSlices
                                   : undefined
                               }
@@ -2512,7 +2501,9 @@ function AppContent() {
                               onSetOwner={panelActions.setOwner}
                               capabilities={capabilities}
                               meshcoreChannels={
-                                protocol === 'meshcore' ? meshcoreRuntime.channels : undefined
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? meshcoreRuntime.channels
+                                  : undefined
                               }
                               onMeshcoreSetChannel={
                                 capabilities.hasCompanionContactManagementConfig
@@ -2525,12 +2516,13 @@ function AppContent() {
                                   : undefined
                               }
                               onApplyLoraParams={
-                                protocol === 'meshcore'
+                                capabilities.hasCompanionContactManagementConfig
                                   ? meshcorePanelActions.setRadioParams
                                   : undefined
                               }
                               loraConfig={
-                                protocol === 'meshcore' && meshcoreRuntime.selfInfo
+                                capabilities.hasCompanionContactManagementConfig &&
+                                meshcoreRuntime.selfInfo
                                   ? {
                                       freq: meshcoreRuntime.selfInfo.radioFreq,
                                       bw: meshcoreRuntime.selfInfo.radioBw,
@@ -2541,99 +2533,101 @@ function AppContent() {
                                   : undefined
                               }
                               meshcoreSelfInfo={
-                                protocol === 'meshcore' ? meshcoreRuntime.selfInfo : undefined
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? meshcoreRuntime.selfInfo
+                                  : undefined
                               }
                               meshcoreContactsForTelemetry={
-                                protocol === 'meshcore'
+                                capabilities.hasCompanionContactManagementConfig
                                   ? meshcoreRuntime.meshcoreContactsForTelemetry
                                   : undefined
                               }
                               onApplyMeshcoreTelemetryPrivacy={
-                                protocol === 'meshcore'
+                                capabilities.hasCompanionTelemetryPrivacyConfig
                                   ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
                                   : undefined
                               }
                               meshcoreAutoadd={
-                                protocol === 'meshcore'
+                                capabilities.hasCompanionContactManagementConfig
                                   ? meshcoreRuntime.meshcoreAutoadd
                                   : undefined
                               }
                               onApplyMeshcoreContactAutoAdd={
-                                protocol === 'meshcore'
+                                capabilities.hasCompanionContactManagementConfig
                                   ? meshcorePanelActions.applyMeshcoreContactAutoAdd
                                   : undefined
                               }
                               onRefreshMeshcoreAutoaddFromDevice={
-                                protocol === 'meshcore'
+                                capabilities.hasCompanionContactManagementConfig
                                   ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
                                   : undefined
                               }
                               meshcoreContactsShowPublicKeys={
-                                protocol === 'meshcore' ? meshcoreContactsShowPublicKeys : undefined
+                                capabilities.hasContactImportExport
+                                  ? meshcoreContactsShowPublicKeys
+                                  : undefined
                               }
                               onMeshcoreContactsShowPublicKeysChange={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? onMeshcoreContactsShowPublicKeysChange
                                   : undefined
                               }
                               meshcoreContactsShowRefreshControl={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcoreContactsShowRefreshControl
                                   : undefined
                               }
                               onMeshcoreContactsShowRefreshControlChange={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? onMeshcoreContactsShowRefreshControlChange
                                   : undefined
                               }
                               onClearAllMeshcoreContacts={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcorePanelActions.clearAllMeshcoreContacts
                                   : undefined
                               }
                               onSendAdvert={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcorePanelActions.sendAdvert
                                   : undefined
                               }
                               onSendZeroHopAdvert={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcorePanelActions.sendZeroHopAdvert
                                   : undefined
                               }
                               onApplyMeshcoreFloodScopeHashtag={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
                                   : undefined
                               }
                               meshcoreFloodScopeHashtag={
-                                protocol === 'meshcore' ? meshcoreFloodScopeHashtag : ''
+                                capabilities.hasContactImportExport ? meshcoreFloodScopeHashtag : ''
                               }
                               onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
                               onXmodemUpload={
-                                protocol === 'meshtastic' &&
-                                isOperational &&
-                                !isRemoteConfigureTarget
+                                capabilities.hasXmodem && isOperational && !isRemoteConfigureTarget
                                   ? meshtasticPanelActions.xmodemUpload
                                   : undefined
                               }
                               onXmodemDownload={
-                                protocol === 'meshtastic' &&
-                                isOperational &&
-                                !isRemoteConfigureTarget
+                                capabilities.hasXmodem && isOperational && !isRemoteConfigureTarget
                                   ? meshtasticPanelActions.xmodemDownload
                                   : undefined
                               }
                               onSyncClock={
-                                protocol === 'meshcore' ? meshcorePanelActions.syncClock : undefined
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? meshcorePanelActions.syncClock
+                                  : undefined
                               }
                               onRefreshContacts={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcorePanelActions.refreshContacts
                                   : undefined
                               }
                               onOffloadContactsFromRadio={
-                                protocol === 'meshcore'
+                                capabilities.hasContactImportExport
                                   ? meshcorePanelActions.offloadContactsFromRadio
                                   : undefined
                               }
@@ -2681,7 +2675,7 @@ function AppContent() {
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
-                      {activePanelIndex === 5 && protocol !== 'meshcore' ? (
+                      {activePanelIndex === 5 && !capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -2742,17 +2736,17 @@ function AppContent() {
                               onFactoryReset={panelActions.factoryReset}
                               onResetNodeDb={panelActions.resetNodeDb}
                               onRebootOta={
-                                protocol === 'meshtastic'
+                                capabilities.hasNodeDbReset
                                   ? meshtasticPanelActions.rebootOta
                                   : undefined
                               }
                               onEnterDfu={
-                                protocol === 'meshtastic'
+                                capabilities.hasNodeDbReset
                                   ? meshtasticPanelActions.enterDfuMode
                                   : undefined
                               }
                               onFactoryResetConfig={
-                                protocol === 'meshtastic'
+                                capabilities.hasNodeDbReset
                                   ? meshtasticPanelActions.factoryResetConfig
                                   : undefined
                               }
@@ -2769,7 +2763,7 @@ function AppContent() {
                       className="h-full w-full min-w-0"
                     >
                       {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
-                      protocol === 'meshcore' ? (
+                      capabilities.hasRoomServersPanel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div
@@ -2825,7 +2819,9 @@ function AppContent() {
                               isConnected={isOperational}
                               capabilities={capabilities}
                               meshcorePacketStats={
-                                protocol === 'meshcore' ? meshcoreRuntime.meshcoreLocalStats : null
+                                capabilities.hasRepeaterStatus
+                                  ? meshcoreRuntime.meshcoreLocalStats
+                                  : null
                               }
                             />
                           </Suspense>
@@ -3294,8 +3290,9 @@ function AppContent() {
                 ? (nodeNum) => {
                     meshtasticPanelActions.setConfigureTargetNodeNum(nodeNum);
                     setSelectedNodeId(null);
-                    const radioTabIndex = meshtasticTabs.tabIndexToPanelIndex.findIndex(
-                      (panelIndex) => panelIndex === TAB_SLOT_IDS.indexOf('Radio'),
+                    const radioTabIndex = findFilteredTabIndexForPanel(
+                      tabsByProtocol.meshtastic,
+                      RADIO_TAB_PANEL_INDEX,
                     );
                     if (radioTabIndex >= 0) {
                       setActiveTab(radioTabIndex);
@@ -3392,162 +3389,6 @@ function AppContent() {
       )}
     </ToastProvider>
   );
-}
-
-// ─── Passive notification monitor for the inactive protocol ──────
-function InactiveProtocolNotifier({
-  protocol,
-  meshtasticMessages,
-  meshcoreMessages,
-}: {
-  protocol: MeshProtocol;
-  meshtasticMessages: ChatMessage[];
-  meshcoreMessages: ChatMessage[];
-}) {
-  const { t } = useTranslation();
-  const { addToast } = useToast();
-  const prevMeshtasticRef = useRef(0);
-  const prevMeshcoreRef = useRef(0);
-  const isInitMeshtasticRef = useRef(true);
-  const isInitMeshcoreRef = useRef(true);
-
-  // Notify when Meshtastic (inactive) gets new messages
-  useEffect(() => {
-    if (protocol === 'meshtastic') {
-      // Now active — reset tracking so we don't toast on switch-back
-      isInitMeshtasticRef.current = true;
-      prevMeshtasticRef.current = meshtasticMessages.length;
-      return;
-    }
-    const count = meshtasticMessages.length;
-    if (isInitMeshtasticRef.current) {
-      prevMeshtasticRef.current = count;
-      if (count > 0) isInitMeshtasticRef.current = false;
-      return;
-    }
-    if (count > prevMeshtasticRef.current) {
-      const newMsgs = meshtasticMessages.slice(prevMeshtasticRef.current);
-      const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
-      if (realNew.length > 0) {
-        addToast(
-          t('toasts.newMessages', { protocol: 'Meshtastic', count: realNew.length }),
-          'info',
-          6000,
-        );
-      }
-    }
-    prevMeshtasticRef.current = count;
-  }, [meshtasticMessages, protocol, addToast, t]);
-
-  // Notify when MeshCore (inactive) gets new messages
-  useEffect(() => {
-    if (protocol === 'meshcore') {
-      // Now active — reset tracking
-      isInitMeshcoreRef.current = true;
-      prevMeshcoreRef.current = meshcoreMessages.length;
-      return;
-    }
-    const count = meshcoreMessages.length;
-    if (isInitMeshcoreRef.current) {
-      prevMeshcoreRef.current = count;
-      if (count > 0) isInitMeshcoreRef.current = false;
-      return;
-    }
-    if (count > prevMeshcoreRef.current) {
-      const newMsgs = meshcoreMessages.slice(prevMeshcoreRef.current);
-      const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
-      if (realNew.length > 0) {
-        addToast(
-          t('toasts.newMessages', { protocol: 'MeshCore', count: realNew.length }),
-          'info',
-          6000,
-        );
-      }
-    }
-    prevMeshcoreRef.current = count;
-  }, [meshcoreMessages, protocol, addToast, t]);
-
-  return null;
-}
-
-// ─── Firmware update check on device connect ──────────────────────
-function FirmwareUpdateNotifier({
-  meshtasticState,
-  meshcoreState,
-  protocol,
-  onResult,
-}: {
-  meshtasticState: DeviceState;
-  meshcoreState: DeviceState;
-  protocol: MeshProtocol;
-  onResult: (r: FirmwareCheckResult) => void;
-}) {
-  const { t } = useTranslation();
-  const { addToast } = useToast();
-  const toastShownRef = useRef(false);
-  const activeState = protocol === 'meshcore' ? meshcoreState : meshtasticState;
-
-  useEffect(() => {
-    const { status, firmwareVersion } = activeState;
-    if (status !== 'configured' || !firmwareVersion) return;
-
-    onResult({ phase: 'checking' });
-    let cancelled = false;
-
-    const doCheck =
-      protocol === 'meshcore'
-        ? fetchLatestMeshCoreRelease().then((release) => {
-            const updateAvailable = meshCoreFirmwareUpdateAvailable(firmwareVersion, release);
-            return { updateAvailable, release };
-          })
-        : fetchLatestMeshtasticRelease().then((release) => {
-            const updateAvailable = semverGt(release.version, firmwareVersion);
-            return { updateAvailable, release };
-          });
-
-    doCheck
-      .then(({ updateAvailable, release }) => {
-        if (cancelled) return;
-        onResult(
-          updateAvailable
-            ? {
-                phase: 'update-available',
-                latestVersion: release.version,
-                releaseUrl: release.releaseUrl,
-              }
-            : {
-                phase: 'up-to-date',
-                latestVersion: release.version,
-                releaseUrl: release.releaseUrl,
-              },
-        );
-        if (updateAvailable && !toastShownRef.current) {
-          toastShownRef.current = true;
-          addToast(t('toasts.firmwareAvailable', { version: release.version }), 'warning', 8000);
-        }
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        console.warn(
-          '[FirmwareUpdateNotifier] check failed:',
-          err instanceof Error ? err.message : String(err),
-        );
-        onResult({ phase: 'error' });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeState, protocol, onResult, addToast, t]);
-
-  useEffect(() => {
-    if (activeState.status === 'disconnected') {
-      onResult({ phase: 'idle' });
-      toastShownRef.current = false;
-    }
-  }, [activeState.status, onResult, toastShownRef]);
-
-  return null;
 }
 
 // ─── Connection Status Banner ─────────────────────────────────────
