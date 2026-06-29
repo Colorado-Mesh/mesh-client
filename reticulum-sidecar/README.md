@@ -8,7 +8,7 @@ Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See
 
 ## Build
 
-**Default (stub stack)** — no sibling repos; file-backed API for UI/dev/CI:
+**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum` and `rsLXMF` directories on disk (CI checkouts them automatically; locally clone both next to `mesh-client`):
 
 ```bash
 pnpm run reticulum:sidecar:build

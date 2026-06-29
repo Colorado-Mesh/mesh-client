@@ -27,6 +27,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+      # Optional rns-stack path deps must exist on disk even for the default stub build.
+      - uses: actions/checkout@v6
+        with:
+          repository: ratspeak/rsReticulum
+          path: ../rsReticulum
+          fetch-depth: 1
+      - uses: actions/checkout@v6
+        with:
+          repository: ratspeak/rsLXMF
+          path: ../rsLXMF
+          fetch-depth: 1
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: ${{ matrix.target }}
@@ -45,6 +56,17 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
+      # Optional rns-stack path deps must exist on disk even for the default stub build.
+      - uses: actions/checkout@v6
+        with:
+          repository: ratspeak/rsReticulum
+          path: ../rsReticulum
+          fetch-depth: 1
+      - uses: actions/checkout@v6
+        with:
+          repository: ratspeak/rsLXMF
+          path: ../rsLXMF
+          fetch-depth: 1
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: aarch64-pc-windows-msvc
