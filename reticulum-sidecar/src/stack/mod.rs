@@ -60,7 +60,7 @@ impl StackHandle {
             #[cfg(feature = "rns-stack")]
             live,
         };
-        handle.emit_stats();
+        handle.emit_stats().await;
         handle
     }
 
@@ -73,8 +73,8 @@ impl StackHandle {
         self.event_tx.subscribe()
     }
 
-    pub fn emit_stats(&self) {
-        let inner = self.inner.blocking_read();
+    pub async fn emit_stats(&self) {
+        let inner = self.inner.read().await;
         self.emit_event(
             "stats_update",
             serde_json::json!({
@@ -265,12 +265,12 @@ impl StackHandle {
         })
     }
 
-    pub fn rns_ready(&self) -> bool {
-        self.inner.blocking_read().rns_ready
+    pub async fn rns_ready(&self) -> bool {
+        self.inner.read().await.rns_ready
     }
 
-    pub fn lxmf_ready(&self) -> bool {
-        self.inner.blocking_read().lxmf_ready
+    pub async fn lxmf_ready(&self) -> bool {
+        self.inner.read().await.lxmf_ready
     }
 
     pub fn rns_version(&self) -> Option<String> {

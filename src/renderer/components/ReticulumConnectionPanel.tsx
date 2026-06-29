@@ -83,7 +83,10 @@ export function ReticulumConnectionPanel({
   const [bleAvailable, setBleAvailable] = useState(false);
   const [exportJson, setExportJson] = useState<string | null>(null);
 
-  const sidecarRunning = stackRunningProp || sidecarStatus.running;
+  /** UI: Start/Stop, connecting badge — includes in-flight connect before getStatus catches up. */
+  const sidecarUiRunning = stackRunningProp || sidecarStatus.running;
+  /** API: proxyGet/Post only after main-process confirms the sidecar process is up. */
+  const sidecarApiReady = sidecarStatus.running;
 
   const refreshSidecarStatus = useCallback(async () => {
     try {
@@ -141,7 +144,7 @@ export function ReticulumConnectionPanel({
   };
 
   const refreshIdentity = useCallback(async () => {
-    if (!sidecarRunning) {
+    if (!sidecarApiReady) {
       setIdentity(null);
       return;
     }
@@ -153,10 +156,10 @@ export function ReticulumConnectionPanel({
     } catch (e) {
       console.debug('[ReticulumConnectionPanel] identity status ' + errLikeToLogString(e));
     }
-  }, [sidecarRunning]);
+  }, [sidecarApiReady]);
 
   const refreshInterfaces = useCallback(async () => {
-    if (!sidecarRunning) return;
+    if (!sidecarApiReady) return;
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
         interfaces?: ReticulumInterfaceRow[];
@@ -165,10 +168,10 @@ export function ReticulumConnectionPanel({
     } catch (e) {
       console.debug('[ReticulumConnectionPanel] interfaces ' + errLikeToLogString(e));
     }
-  }, [sidecarRunning]);
+  }, [sidecarApiReady]);
 
   const refreshPeers = useCallback(async () => {
-    if (!sidecarRunning) return;
+    if (!sidecarApiReady) return;
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/peers')) as {
         peers?: ReticulumPeerRow[];
@@ -177,10 +180,10 @@ export function ReticulumConnectionPanel({
     } catch (e) {
       console.debug('[ReticulumConnectionPanel] peers ' + errLikeToLogString(e));
     }
-  }, [sidecarRunning]);
+  }, [sidecarApiReady]);
 
   const refreshPropagation = useCallback(async () => {
-    if (!sidecarRunning) return;
+    if (!sidecarApiReady) return;
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/propagation')) as {
         propagation?: PropagationRow[];
@@ -189,14 +192,14 @@ export function ReticulumConnectionPanel({
     } catch (e) {
       console.debug('[ReticulumConnectionPanel] propagation ' + errLikeToLogString(e));
     }
-  }, [sidecarRunning]);
+  }, [sidecarApiReady]);
 
   useEffect(() => {
     void refreshIdentity();
   }, [refreshIdentity]);
 
   useEffect(() => {
-    if (!sidecarRunning) {
+    if (!sidecarApiReady) {
       setInterfaces([]);
       setPeers([]);
       setPropagation([]);
@@ -217,22 +220,32 @@ export function ReticulumConnectionPanel({
       }
     });
     return unsub;
-  }, [sidecarRunning, refreshInterfaces, refreshPeers, refreshPropagation]);
+  }, [sidecarApiReady, refreshInterfaces, refreshPeers, refreshPropagation]);
 
   useEffect(() => {
-    if (!sidecarRunning) return;
-    void window.electronAPI.reticulum.proxyGet('/api/v1/rnode/presets').then((body) => {
-      const presetsBody = body as { presets?: { id: string; label: string }[] };
-      setPresets(presetsBody.presets ?? []);
-    });
-    void window.electronAPI.reticulum.proxyGet('/api/v1/ble/availability').then((body) => {
-      const ble = body as { available?: boolean };
-      setBleAvailable(Boolean(ble.available));
-    });
-  }, [sidecarRunning]);
+    if (!sidecarApiReady) return;
+    void window.electronAPI.reticulum
+      .proxyGet('/api/v1/rnode/presets')
+      .then((body) => {
+        const presetsBody = body as { presets?: { id: string; label: string }[] };
+        setPresets(presetsBody.presets ?? []);
+      })
+      .catch((e: unknown) => {
+        console.debug('[ReticulumConnectionPanel] rnode presets ' + errLikeToLogString(e));
+      });
+    void window.electronAPI.reticulum
+      .proxyGet('/api/v1/ble/availability')
+      .then((body) => {
+        const ble = body as { available?: boolean };
+        setBleAvailable(Boolean(ble.available));
+      })
+      .catch((e: unknown) => {
+        console.debug('[ReticulumConnectionPanel] ble availability ' + errLikeToLogString(e));
+      });
+  }, [sidecarApiReady]);
 
   const handleGenerate = async () => {
-    if (!sidecarRunning) return;
+    if (!sidecarApiReady) return;
     setIdentityError(null);
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/generate', {
@@ -252,7 +265,7 @@ export function ReticulumConnectionPanel({
   };
 
   const handleImport = async () => {
-    if (!sidecarRunning) return;
+    if (!sidecarApiReady) return;
     setIdentityError(null);
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/import', {
@@ -293,18 +306,16 @@ export function ReticulumConnectionPanel({
   };
 
   const identityReady = identity?.configured === true;
-  const identityActionsDisabled = !sidecarRunning || connecting;
+  const identityActionsDisabled = !sidecarApiReady || connecting;
 
   return (
     <div className="space-y-4">
       <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
         <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
-          <span className="font-medium text-gray-200">
-            {t('connectionPanel.reticulumStackTitle')}
-          </span>
+          <h2 className="font-medium text-gray-200">{t('connectionPanel.reticulumStackTitle')}</h2>
           <span
             className={`text-xs font-medium ${
-              sidecarRunning
+              sidecarUiRunning
                 ? 'text-brand-green'
                 : connecting
                   ? 'animate-pulse text-orange-400'
@@ -312,7 +323,7 @@ export function ReticulumConnectionPanel({
             }`}
           >
             ●{' '}
-            {sidecarRunning
+            {sidecarUiRunning
               ? t('connectionPanel.reticulumStackRunning')
               : connecting
                 ? t('connectionPanel.connecting')
@@ -326,12 +337,12 @@ export function ReticulumConnectionPanel({
               {stackError}
             </p>
           ) : null}
-          {sidecarRunning && sidecarStatus.port > 0 ? (
+          {sidecarUiRunning && sidecarStatus.port > 0 ? (
             <p className="text-muted text-xs" role="status">
               127.0.0.1:{sidecarStatus.port}
             </p>
           ) : null}
-          {sidecarRunning ? (
+          {sidecarUiRunning ? (
             <button
               type="button"
               aria-label={t('connectionPanel.reticulumStopStack')}
@@ -377,7 +388,7 @@ export function ReticulumConnectionPanel({
           {t('connectionPanel.reticulumIdentity.title')}
         </h3>
         <p className="text-muted mt-1 text-xs">{t('connectionPanel.reticulumIdentity.hint')}</p>
-        {!sidecarRunning ? (
+        {!sidecarApiReady ? (
           <p className="mt-2 text-sm text-amber-300/90">
             {t('connectionPanel.reticulumIdentity.startStackFirst')}
           </p>
@@ -491,7 +502,7 @@ export function ReticulumConnectionPanel({
         )}
       </div>
 
-      {sidecarRunning ? (
+      {sidecarApiReady ? (
         <>
           <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
             <h3 className="text-sm font-medium text-gray-200">

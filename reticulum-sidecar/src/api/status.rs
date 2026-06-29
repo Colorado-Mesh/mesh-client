@@ -25,8 +25,8 @@ pub async fn status(State(stack): State<Arc<StackHandle>>) -> Json<StatusRespons
     Json(StatusResponse {
         status: "ok",
         version: env!("CARGO_PKG_VERSION").to_string(),
-        rns_ready: stack.rns_ready(),
-        lxmf_ready: stack.lxmf_ready(),
+        rns_ready: stack.rns_ready().await,
+        lxmf_ready: stack.lxmf_ready().await,
     })
 }
 

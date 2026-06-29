@@ -37,6 +37,7 @@ import { type ChatUnreadDmOptions, totalUnreadCount } from '@/renderer/lib/chatU
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
+import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -2201,6 +2202,14 @@ function AppContent() {
                 </div>
               )}
               <div className="flex shrink-0 items-center gap-2" title={deviceStatusText}>
+                {activeConnectionView.state.status === 'connecting' && (
+                  <ConnectIcon
+                    animated
+                    className="h-4 w-4 text-orange-400"
+                    size={16}
+                    aria-hidden="true"
+                  />
+                )}
                 {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
                 <div
                   className={`h-2.5 w-2.5 rounded-full ${headerDotClass(deviceVariant)}`}
