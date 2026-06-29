@@ -28,10 +28,9 @@ export function semverGt(remote: string, local: string): boolean {
 /** Extract semver from MeshCore tags like companion-v1.16.0 or v1.16.0-07a3ca9. */
 export function normalizeMeshCoreVersionTag(tag: string): string {
   const trimmed = tag.trim();
-  const semverInTag = /v(\d+\.\d+\.\d+|\d+\.\d+)/i.exec(trimmed);
-  if (semverInTag) return semverInTag[1];
-  const bareSemver = /^(\d+\.\d+\.\d+|\d+\.\d+)/.exec(trimmed);
-  if (bareSemver) return bareSemver[1];
+  // Match semver at string start or after a v prefix (companion-v1.16.0, v1.16.0-07a3ca9, 1.16.0).
+  const semverMatch = /(?:^|v)(\d+\.\d+\.\d+|\d+\.\d+)/i.exec(trimmed);
+  if (semverMatch) return semverMatch[1];
   return trimmed.replace(/^v/i, '');
 }
 
@@ -116,5 +115,5 @@ export function parseMeshCoreBuildDate(buildDate: string): Date | null {
   if (looksLikeMeshCoreSemverVersion(trimmed)) return null;
   const parsed = new Date(`${trimmed} UTC`);
   if (isNaN(parsed.getTime())) return null;
-  return parsed;
+  return new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
 }
