@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum не собран. В репозитории mesh-client выполните `pnpm run reticulum:sidecar:build` (требуется Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) не найден. Установите с https://rustup.rs, затем выполните `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Не удалось запустить стек Reticulum: {{message}}",
-    "disconnect": "Отключить"
+    "disconnect": "Отключить",
+    "reticulumStopStack": "Стоп стек",
+    "reticulumAutostart": "Автоматический запуск стека при открытии соединения",
+    "reticulumStackRunning": "Работает дымовая труба",
+    "reticulumIdentity": {
+      "title": "Идентичность Reticulum",
+      "hint": "Запустите стек выше, а затем создайте или импортируйте мнемонический идентификатор.",
+      "startStackFirst": "Запустите стек Reticulum для настройки идентичности.",
+      "displayName": "Показать имя",
+      "generate": "Создать удостоверение",
+      "import": "Импортировать фразу",
+      "importLabel": "Фраза восстановления из 12 слов",
+      "mnemonic": "Запишите эту фразу и храните ее безопасно.",
+      "confirmSaved": "Я сохранил свою фразу восстановления",
+      "hashLabel": "Хеш LXMF:",
+      "nameLabel": "Имя:",
+      "failed": "Не удалось настроить удостоверение",
+      "export": "Экспортировать резервную копи"
+    },
+    "reticulumInterfaces": {
+      "title": "Интерфейсы",
+      "type": "Тип",
+      "add": "Добавить базовый интерфейс",
+      "enable": "Редактировать",
+      "disable": "выключить",
+      "serialPort": "Последовательный порт",
+      "preset": "Предустановка",
+      "bleAvailable": "На этой платформе доступен пиринг BLE (добавление через коляску при настройке)."
+    },
+    "reticulumPeers": {
+      "name": "Равны",
+      "hops": "Hops",
+      "actions": "Действия",
+      "path": "Маршрут",
+      "probe": "Преобразователь"
+    },
+    "reticulumPropagation": {
+      "title": "Узлы распространения",
+      "enable": "Редактировать",
+      "disable": "выключить"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

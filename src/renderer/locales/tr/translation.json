@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Reticulum sidecar derlenmedi. mesh-client deposunda `pnpm run reticulum:sidecar:build` çalıştırın (Rust gerekir).",
     "reticulumSidecarCargoMissing": "Rust toolchain (cargo) bulunamadı. https://rustup.rs adresinden yükleyin ve ardından `pnpm run reticulum:sidecar:build` çalıştırın.",
     "reticulumSidecarStartFailed": "Reticulum yığını başlatılamadı: {{message}}",
-    "disconnect": "Bağlantıyı kes"
+    "disconnect": "Bağlantıyı kes",
+    "reticulumStopStack": "Yığını durdur",
+    "reticulumAutostart": "Bağlantı açılırken yığını otomatik olarak başlat",
+    "reticulumStackRunning": "Yığın çalışıyor",
+    "reticulumIdentity": {
+      "title": "Reticulum kimliği",
+      "hint": "Yukarıdaki yığını başlatın, ardından anımsatıcı bir kimlik oluşturun veya içe aktarın.",
+      "startStackFirst": "Kimliği yapılandırmak için Reticulum yığınını başlatın.",
+      "displayName": "Herkes tarafından görülecek ad",
+      "generate": "Kimlik oluştur",
+      "import": "İfadeyi içe aktar",
+      "importLabel": "12 kelimelik kurtarma ifadesi",
+      "mnemonic": "Bu ifadeyi yazın ve güvenli bir şekilde saklayın.",
+      "confirmSaved": "Kurtarma cümlemi kaydettim",
+      "hashLabel": "LXMF hash:",
+      "nameLabel": "Ad Soyad:",
+      "failed": "Kimlik kurulumu başarısız oldu",
+      "export": "Yedeklemeyi dışa aktar"
+    },
+    "reticulumInterfaces": {
+      "title": "Ara birimler",
+      "type": "Tür",
+      "add": "Temel Arayüz Ekle",
+      "enable": "Etkinleştir",
+      "disable": "Devre dışı bırak",
+      "serialPort": "Serial port",
+      "preset": "Ön Ayar",
+      "bleAvailable": "BLE eşleştirme bu platformda mevcuttur (yapılandırıldığında sepet aracılığıyla ekleyin)."
+    },
+    "reticulumPeers": {
+      "name": "Kişi",
+      "hops": "Hops",
+      "actions": "Eylemler",
+      "path": "Yol",
+      "probe": "Deşmeyin"
+    },
+    "reticulumPropagation": {
+      "title": "Yayılma düğümleri",
+      "enable": "Etkinleştir",
+      "disable": "Devre dışı bırak"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -898,8 +898,10 @@ function AppContent() {
     );
   }, [hasMeshtasticSendingRow, nowMs, activeFacade.messages, myNodeNumForQueue, sendingWindowMs]);
   const handleSend = useCallback(
-    (text: string, channel: number, destination?: number, replyId?: number) => {
-      sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);
+    (text: string, channel: number, destination?: number, replyRef?: number | string) => {
+      const replyTo =
+        replyRef == null ? undefined : typeof replyRef === 'string' ? replyRef : String(replyRef);
+      sendMessage(text, channel, destination, replyTo);
     },
     [sendMessage],
   );

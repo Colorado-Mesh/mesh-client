@@ -40,6 +40,8 @@ declare global {
 
 export interface ChatComposerSendOpts {
   replyId?: number;
+  /** Reticulum ratspeak.chat.v2 reply target (LXMF message hash). */
+  replyHash?: string;
   chunkIndex?: number;
 }
 
@@ -139,7 +141,13 @@ export function ChatComposer({
       ? undefined
       : protocol === 'meshtastic'
         ? replyTo.packetId
-        : (replyTo.packetId ?? replyTo.timestamp);
+        : protocol === 'reticulum'
+          ? undefined
+          : (replyTo.packetId ?? replyTo.timestamp);
+  const reticulumReplyHash =
+    protocol === 'reticulum' && replyTo?.reticulum_message_hash
+      ? replyTo.reticulum_message_hash
+      : undefined;
 
   const limitStatus = useMemo(
     () =>
@@ -294,7 +302,7 @@ export function ChatComposer({
           channel: outboxChannel,
           toNode: outboxDestination ?? null,
           payload: textsToSend[i],
-          replyId: i === 0 ? (replyKey ?? null) : null,
+          replyId: i === 0 && typeof replyKey === 'number' ? replyKey : null,
           status: 'queued',
           error: null,
           nextRetryAt: null,
@@ -323,7 +331,8 @@ export function ChatComposer({
     try {
       for (let i = 0; i < textsToSend.length; i++) {
         await onSendChunk(textsToSend[i], {
-          replyId: i === 0 ? replyKey : undefined,
+          replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
+          replyHash: i === 0 ? reticulumReplyHash : undefined,
           chunkIndex: i,
         });
       }
@@ -359,6 +368,7 @@ export function ChatComposer({
     queueOutbox,
     replyTo,
     replyKey,
+    reticulumReplyHash,
     sending,
     t,
     variant,

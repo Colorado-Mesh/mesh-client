@@ -4,7 +4,7 @@ use axum::extract::State;
 use axum::Json;
 use serde::Serialize;
 
-use crate::state::AppState;
+use crate::stack::StackHandle;
 
 #[derive(Serialize)]
 pub struct StatusResponse {
@@ -21,19 +21,19 @@ pub struct AppInfoResponse {
     pub lxmf_version: Option<String>,
 }
 
-pub async fn status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> {
+pub async fn status(State(stack): State<Arc<StackHandle>>) -> Json<StatusResponse> {
     Json(StatusResponse {
         status: "ok",
-        version: state.version.clone(),
-        rns_ready: state.rns_ready(),
-        lxmf_ready: state.lxmf_ready(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        rns_ready: stack.rns_ready(),
+        lxmf_ready: stack.lxmf_ready(),
     })
 }
 
-pub async fn app_info(State(state): State<Arc<AppState>>) -> Json<AppInfoResponse> {
+pub async fn app_info(State(stack): State<Arc<StackHandle>>) -> Json<AppInfoResponse> {
     Json(AppInfoResponse {
-        sidecar_version: state.version.clone(),
-        rns_version: state.rns_version(),
-        lxmf_version: state.lxmf_version(),
+        sidecar_version: env!("CARGO_PKG_VERSION").to_string(),
+        rns_version: stack.rns_version(),
+        lxmf_version: stack.lxmf_version(),
     })
 }

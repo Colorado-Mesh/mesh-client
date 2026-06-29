@@ -84,6 +84,7 @@ import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fata
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
@@ -3201,6 +3202,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
   'reduceMotion',
+  'reticulumAutostart',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);
@@ -5520,6 +5522,7 @@ registerReticulumIpcHandlers({
   getManager: () => reticulumSidecarManager,
   getMainWindow: () => mainWindow,
 });
+registerReticulumDbIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
 // ─── Second-instance handler ────────────────────────────────────────

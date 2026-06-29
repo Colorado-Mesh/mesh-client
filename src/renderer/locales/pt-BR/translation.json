@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum não compilado. No repositório mesh-client execute `pnpm run reticulum:sidecar:build` (requer Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) não encontrada. Instale em https://rustup.rs e execute `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Não foi possível iniciar a pilha Reticulum: {{message}}",
-    "disconnect": "Desconectar"
+    "disconnect": "Desconectar",
+    "reticulumStopStack": "Parar pilha",
+    "reticulumAutostart": "Iniciar pilha automaticamente ao abrir a Conexão",
+    "reticulumStackRunning": "Empilhamento EM execução",
+    "reticulumIdentity": {
+      "title": "Identidade Reticulum",
+      "hint": "Inicie a pilha acima e, em seguida, crie ou importe uma identidade mnemônica.",
+      "startStackFirst": "Inicie a pilha Reticulum para configurar a identidade.",
+      "displayName": "Nome de exibição",
+      "generate": "Gerar identidade",
+      "import": "Importar frase semente",
+      "importLabel": "Frase de recuperação de 12 palavras",
+      "mnemonic": "Anote esta frase e guarde-a em segurança.",
+      "confirmSaved": "Salvei minha frase de recuperação",
+      "hashLabel": "Hash LXMF:",
+      "nameLabel": "Nome:",
+      "failed": "Falha na configuração de identidade",
+      "export": "Exportar backup"
+    },
+    "reticulumInterfaces": {
+      "title": "Interfaces",
+      "type": "Tipo",
+      "add": "Adicionar interface",
+      "enable": "Ativar",
+      "disable": "Desativar",
+      "serialPort": "Porte Serial",
+      "preset": "Predefinição",
+      "bleAvailable": "O peering BLE está disponível nesta plataforma (adicionar via sidecar quando configurado)."
+    },
+    "reticulumPeers": {
+      "name": "Ponto",
+      "hops": "Hops",
+      "actions": "Ações",
+      "path": "Caminho",
+      "probe": "Sonda"
+    },
+    "reticulumPropagation": {
+      "title": "Nódulos de propagação",
+      "enable": "Ativar",
+      "disable": "Desativar"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

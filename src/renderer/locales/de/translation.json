@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Reticulum-Sidecar nicht gebaut. Im mesh-client-Repository `pnpm run reticulum:sidecar:build` ausführen (erfordert Rust).",
     "reticulumSidecarCargoMissing": "Rust-Toolchain (cargo) nicht gefunden. Von https://rustup.rs installieren und dann `pnpm run reticulum:sidecar:build` ausführen.",
     "reticulumSidecarStartFailed": "Reticulum-Stack konnte nicht gestartet werden: {{message}}",
-    "disconnect": "Trennen"
+    "disconnect": "Trennen",
+    "reticulumStopStack": "Stapel stoppen",
+    "reticulumAutostart": "Auto-Start-Stack beim Öffnen der Verbindung",
+    "reticulumStackRunning": "Stapel läuft",
+    "reticulumIdentity": {
+      "title": "Reticulum-Identität",
+      "hint": "Starten Sie den obigen Stack und erstellen oder importieren Sie dann eine mnemonische Identität.",
+      "startStackFirst": "Starten Sie den Reticulum-Stack, um die Identität zu konfigurieren.",
+      "displayName": "Anzeigename",
+      "generate": "Identität generieren",
+      "import": "Phrase importieren",
+      "importLabel": "12-Wörter-Wiederherstellungssatz",
+      "mnemonic": "Notieren Sie sich diesen Satz und bewahren Sie ihn sicher auf.",
+      "confirmSaved": "Ich habe meine Genesungsphrase gespeichert",
+      "hashLabel": "LXMF-Hash:",
+      "nameLabel": "Name:",
+      "failed": "Identitätseinstellung fehlgeschlagen",
+      "export": "Sicherungskopie"
+    },
+    "reticulumInterfaces": {
+      "title": "Schnittstellen",
+      "type": "Art",
+      "add": "Neue Schnittstelle hinzufügen",
+      "enable": "Aktivieren",
+      "disable": "Horizontaler Parallaxeffekt",
+      "serialPort": "Serielle Schnittstelle",
+      "preset": "Vorwahlen",
+      "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen)."
+    },
+    "reticulumPeers": {
+      "name": "Gleichrangige",
+      "hops": "Hops",
+      "actions": "Maßnahmen",
+      "path": "Weg",
+      "probe": "Sonde"
+    },
+    "reticulumPropagation": {
+      "title": "Ausbreitungsknoten",
+      "enable": "Aktivieren",
+      "disable": "Horizontaler Parallaxeffekt"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

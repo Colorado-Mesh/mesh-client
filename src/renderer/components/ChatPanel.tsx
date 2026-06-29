@@ -115,7 +115,7 @@ import {
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
-import { ChatComposer } from './ChatComposer';
+import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
@@ -350,7 +350,7 @@ export interface ChatPanelProps {
     text: string,
     channel: number,
     destination?: number,
-    replyId?: number,
+    replyRef?: number | string,
   ) => void | Promise<void>;
   onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
@@ -1229,7 +1229,7 @@ function ChatPanel({
   }, [showSearch]);
 
   const handleSendChunk = useCallback(
-    async (text: string, opts?: { replyId?: number }) => {
+    async (text: string, opts?: ChatComposerSendOpts) => {
       const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
       if (
@@ -1240,7 +1240,12 @@ function ChatPanel({
         await onReact(text, opts.replyId, sendChannel);
         return;
       }
-      const sendOutcome = onSend(text, sendChannel, destination, opts?.replyId);
+      const sendOutcome = onSend(
+        text,
+        sendChannel,
+        destination,
+        opts?.replyHash ?? opts?.replyId ?? undefined,
+      );
       await Promise.resolve(sendOutcome);
     },
     [activeDmNode, channel, onReact, onSend, protocol, viewMode],

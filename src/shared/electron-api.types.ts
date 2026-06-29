@@ -219,6 +219,23 @@ export interface ElectronAPI {
       senderId: number,
       senderName: string,
     ) => Promise<void>;
+    getReticulumMessages: (identityId: string, limit?: number) => Promise<unknown[]>;
+    saveReticulumMessage: (message: {
+      identity_id: string;
+      sender_id: string;
+      sender_name?: string | null;
+      payload: string;
+      timestamp: number;
+      to_hash?: string | null;
+      reply_to_hash?: string | null;
+    }) => Promise<void>;
+    getReticulumDestinations: () => Promise<unknown[]>;
+    upsertReticulumDestination: (row: {
+      destination_hash: string;
+      display_name?: string | null;
+      last_heard?: number | null;
+      favorited?: boolean | number | null;
+    }) => Promise<void>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;

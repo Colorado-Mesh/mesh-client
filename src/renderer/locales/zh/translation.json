@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Reticulum 侧车未构建。请在 mesh-client 仓库中运行 `pnpm run reticulum:sidecar:build`（需要 Rust）。",
     "reticulumSidecarCargoMissing": "未找到 Rust 工具链（cargo）。请从 https://rustup.rs 安装，然后运行 `pnpm run reticulum:sidecar:build`。",
     "reticulumSidecarStartFailed": "无法启动 Reticulum 堆栈：{{message}}",
-    "disconnect": "断开"
+    "disconnect": "断开",
+    "reticulumStopStack": "停止堆栈",
+    "reticulumAutostart": "打开连接时自动启动堆栈",
+    "reticulumStackRunning": "堆栈运行",
+    "reticulumIdentity": {
+      "title": "Reticulum 身份",
+      "hint": "启动上面的堆栈，然后创建或导入助记符标识。",
+      "startStackFirst": "启动Reticulum堆栈以配置标识。",
+      "displayName": "显示名称",
+      "generate": "生成标识",
+      "import": "导入短语",
+      "importLabel": "12字恢复短语",
+      "mnemonic": "写下这句话，并妥善保存。",
+      "confirmSaved": "我已经保存了我的恢复短语",
+      "hashLabel": "LXMF哈希：",
+      "nameLabel": "姓名：",
+      "failed": "身份设置失败",
+      "export": "导出备份"
+    },
+    "reticulumInterfaces": {
+      "title": "接口",
+      "type": "类型",
+      "add": "添加接口",
+      "enable": "启用",
+      "disable": "禁用",
+      "serialPort": "串口",
+      "preset": "预置",
+      "bleAvailable": "BLE对等可在此平台上使用（配置后通过sidecar添加）。"
+    },
+    "reticulumPeers": {
+      "name": "同事",
+      "hops": "Hops",
+      "actions": "动作",
+      "path": "路径",
+      "probe": "探头"
+    },
+    "reticulumPropagation": {
+      "title": "传播节点",
+      "enable": "启用",
+      "disable": "禁用"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

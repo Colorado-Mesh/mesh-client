@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Reticulum-sidecar niet gebouwd. Voer in de mesh-client-repo `pnpm run reticulum:sidecar:build` uit (vereist Rust).",
     "reticulumSidecarCargoMissing": "Rust-toolchain (cargo) niet gevonden. Installeer via https://rustup.rs en voer daarna `pnpm run reticulum:sidecar:build` uit.",
     "reticulumSidecarStartFailed": "Kon Reticulum-stack niet starten: {{message}}",
-    "disconnect": "Verbreek de verbinding"
+    "disconnect": "Verbreek de verbinding",
+    "reticulumStopStack": "Stop stack",
+    "reticulumAutostart": "Stapel automatisch starten bij het openen van de verbinding",
+    "reticulumStackRunning": "Stapel loopt",
+    "reticulumIdentity": {
+      "title": "Reticulum-identiteit",
+      "hint": "Start de stapel hierboven en maak of importeer vervolgens een mnemonische identiteit.",
+      "startStackFirst": "Start de Reticulum-stack om de identiteit te configureren.",
+      "displayName": "Weergavenaam",
+      "generate": "Identiteit genereren",
+      "import": "Zin importeren",
+      "importLabel": "Herstelzin van 12 woorden",
+      "mnemonic": "Noteer deze zin en bewaar deze veilig.",
+      "confirmSaved": "IK HEB MIJN HERSTELZIN OPGESLAGEN",
+      "hashLabel": "LXMF-hash:",
+      "nameLabel": "Naam:",
+      "failed": "Identiteitsinstelling mislukt",
+      "export": "Back-up exporteren"
+    },
+    "reticulumInterfaces": {
+      "title": "Raakvlakken",
+      "type": "Type",
+      "add": "Interface toevoegen",
+      "enable": "Activeer",
+      "disable": "Onbruikbaar maken",
+      "serialPort": "Seriële poort",
+      "preset": "Vooraf ingesteld",
+      "bleAvailable": "BLE peering is beschikbaar op dit platform (toevoegen via zijspan indien geconfigureerd)."
+    },
+    "reticulumPeers": {
+      "name": "Peer",
+      "hops": "Hops",
+      "actions": "Acties",
+      "path": "Pad",
+      "probe": "Taster"
+    },
+    "reticulumPropagation": {
+      "title": "Voortplantingsknooppunten",
+      "enable": "Activeer",
+      "disable": "Onbruikbaar maken"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

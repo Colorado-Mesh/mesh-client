@@ -53,6 +53,20 @@ export function isMeshcoreOpenWireCompatEnabled(): boolean {
   );
 }
 
+/** Whether the Reticulum sidecar should start when the Reticulum connection panel mounts. */
+export function isReticulumAutostartEnabled(): boolean {
+  const parsed = parseStoredJson<{ reticulumAutostart?: boolean }>(
+    getAppSettingsRaw(),
+    'isReticulumAutostartEnabled',
+  );
+  return parsed?.reticulumAutostart ?? DEFAULT_APP_SETTINGS_SHARED.reticulumAutostart;
+}
+
+export function setReticulumAutostartEnabled(enabled: boolean): void {
+  mergeAppSetting('reticulumAutostart', enabled, 'setReticulumAutostartEnabled');
+  void window.electronAPI.appSettings.set('reticulumAutostart', enabled ? '1' : '0');
+}
+
 /** Merge keys into existing app settings without dropping unrelated persisted fields. */
 export function mergeAppSettingsPartial(
   partial: Record<string, unknown>,

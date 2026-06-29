@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum non compilé. Depuis le dépôt mesh-client, exécutez `pnpm run reticulum:sidecar:build` (nécessite Rust).",
     "reticulumSidecarCargoMissing": "Chaîne d'outils Rust (cargo) introuvable. Installez depuis https://rustup.rs puis exécutez `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Impossible de démarrer la pile Reticulum : {{message}}",
-    "disconnect": "Déconnecter"
+    "disconnect": "Déconnecter",
+    "reticulumStopStack": "Arrêt de la pile",
+    "reticulumAutostart": "Pile de démarrage automatique lors de l'ouverture de la connexion",
+    "reticulumStackRunning": "Pile en cours d'exécution",
+    "reticulumIdentity": {
+      "title": "Identité Reticulum",
+      "hint": "Commencez la pile ci-dessus, puis créez ou importez une identité mnémonique.",
+      "startStackFirst": "Démarrez la pile Reticulum pour configurer l'identité.",
+      "displayName": "Afficher le nom",
+      "generate": "Générer une identité",
+      "import": "Importer la phrase",
+      "importLabel": "Phrase de récupération de 12 mots",
+      "mnemonic": "Notez cette phrase et rangez-la en toute sécurité.",
+      "confirmSaved": "J'ai enregistré ma phrase de récupération",
+      "hashLabel": "Hachage LXMF :",
+      "nameLabel": "Nom :&#10;",
+      "failed": "Échec de la configuration de l'identité",
+      "export": "Exporter les sauvegardes"
+    },
+    "reticulumInterfaces": {
+      "title": "Interfaces",
+      "type": "Type",
+      "add": "Ajouter une interface",
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "serialPort": "Port série",
+      "preset": "Préréglage",
+      "bleAvailable": "Le peering ble est disponible sur cette plateforme (ajouter via sidecar lorsque configuré)."
+    },
+    "reticulumPeers": {
+      "name": "Pair",
+      "hops": "Hops",
+      "actions": "Interventions",
+      "path": "Chemin",
+      "probe": "Sonde"
+    },
+    "reticulumPropagation": {
+      "title": "Nœuds de propagation",
+      "enable": "Activer",
+      "disable": "Désactiver"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

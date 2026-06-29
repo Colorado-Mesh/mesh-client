@@ -6,8 +6,10 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
+import { resolveReticulumDestinationHash } from '../lib/reticulum/destHash';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
+import { getReticulumSendMessage, tryGetReticulumSession } from '../lib/sessions/reticulumSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
@@ -48,6 +50,25 @@ export function useSendMessage(
         console.warn('[useSendMessage] no identity for', identityId);
         return;
       }
+      // Reticulum: sidecar LXMF send (no ConnectionDriver handle).
+      if (identity.protocol.type === 'reticulum') {
+        const session = tryGetReticulumSession();
+        const send = getReticulumSendMessage(session);
+        if (!send) {
+          console.warn('[useSendMessage] Reticulum runtime not mounted');
+          return;
+        }
+        const destHash = resolveReticulumDestinationHash(destination);
+        if (!destHash) {
+          console.warn('[useSendMessage] no Reticulum destination hash for', destination);
+          return;
+        }
+        void send(text, destHash, replyTo ?? undefined).catch((e: unknown) => {
+          console.warn('[useSendMessage] reticulum send failed ' + errLikeToLogString(e));
+        });
+        return;
+      }
+
       const handle = connectionDriver.getHandle(identityId);
 
       // Meshtastic: runtime TransportManager sends RF + MQTT concurrently (hybrid or MQTT-only).

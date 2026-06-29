@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum non compilato. Dal repository mesh-client eseguire `pnpm run reticulum:sidecar:build` (richiede Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) non trovata. Installare da https://rustup.rs poi eseguire `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Impossibile avviare lo stack Reticulum: {{message}}",
-    "disconnect": "Disconnetti"
+    "disconnect": "Disconnetti",
+    "reticulumStopStack": "Arresta stack",
+    "reticulumAutostart": "Avvio automatico della pila all'apertura della connessione",
+    "reticulumStackRunning": "Stack running",
+    "reticulumIdentity": {
+      "title": "Identità Reticulum",
+      "hint": "Avvia lo stack sopra, quindi crea o importa un'identità mnemonica.",
+      "startStackFirst": "Avviare lo stack Reticulum per configurare l'identità.",
+      "displayName": "Nome visualizzato",
+      "generate": "Genera identità",
+      "import": "Importa la Seed Phrase",
+      "importLabel": "Frase di recupero di 12 parole",
+      "mnemonic": "Scrivi questa frase e conservala in modo sicuro.",
+      "confirmSaved": "Ho salvato la mia frase di recupero",
+      "hashLabel": "Hash LXMF:",
+      "nameLabel": "Nome:",
+      "failed": "Configurazione dell'identità non riuscita",
+      "export": "Esporta backup"
+    },
+    "reticulumInterfaces": {
+      "title": "interfacce",
+      "type": "Type",
+      "add": "Aggiunge un'interfaccia",
+      "enable": "Abilita",
+      "disable": "Disabilita",
+      "serialPort": "Porta seriale",
+      "preset": "Preimpostazione",
+      "bleAvailable": "Il peering BLE è disponibile su questa piattaforma (aggiungere tramite sidecar quando configurato)."
+    },
+    "reticulumPeers": {
+      "name": "Pressione",
+      "hops": "Hops",
+      "actions": "Azioni",
+      "path": "Percorso",
+      "probe": "del tronco"
+    },
+    "reticulumPropagation": {
+      "title": "Nodi di propagazione",
+      "enable": "Abilita",
+      "disable": "Disabilita"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

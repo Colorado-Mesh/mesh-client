@@ -17,7 +17,7 @@ import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 37;
+export const CURRENT_SCHEMA_VERSION = 38;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -202,7 +202,8 @@ export const CANONICAL_TABLES_DDL = `
         sender_name  TEXT,
         payload      TEXT NOT NULL,
         timestamp    INTEGER NOT NULL,
-        to_hash      TEXT
+        to_hash      TEXT,
+        reply_to_hash TEXT
       );
 
       CREATE TABLE IF NOT EXISTS app_settings (
@@ -358,6 +359,15 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     reply_preview_sender: 'TEXT',
     rx_hops: 'INTEGER',
     room_server_id: 'INTEGER',
+  },
+  reticulum_messages: {
+    identity_id: 'TEXT NOT NULL',
+    sender_id: 'TEXT NOT NULL',
+    sender_name: 'TEXT',
+    payload: 'TEXT NOT NULL',
+    timestamp: 'INTEGER NOT NULL',
+    to_hash: 'TEXT',
+    reply_to_hash: 'TEXT',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',

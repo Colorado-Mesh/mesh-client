@@ -21,7 +21,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = 
   'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
   undefined, // App
-  undefined, // Diagnostics
+  'hasDiagnosticsPanel', // Diagnostics
   'hasRawPacketLog', // Stats
   'hasRawPacketLog', // Sniffer
   'hasRfStats', // RF

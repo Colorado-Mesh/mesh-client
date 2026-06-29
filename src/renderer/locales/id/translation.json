@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum belum dibangun. Dari repo mesh-client jalankan `pnpm run reticulum:sidecar:build` (memerlukan Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) tidak ditemukan. Instal dari https://rustup.rs lalu jalankan `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Tidak dapat memulai stack Reticulum: {{message}}",
-    "disconnect": "Memutuskan"
+    "disconnect": "Memutuskan",
+    "reticulumStopStack": "Hentikan tumpukan",
+    "reticulumAutostart": "Mulai otomatis tumpukan saat membuka Koneksi",
+    "reticulumStackRunning": "Stack running",
+    "reticulumIdentity": {
+      "title": "Identitas Reticulum",
+      "hint": "Mulai tumpukan di atas, lalu buat atau impor identitas mnemonik.",
+      "startStackFirst": "Mulai tumpukan Reticulum untuk mengonfigurasi identitas.",
+      "displayName": "Nama tampil",
+      "generate": "Buat identitas",
+      "import": "Impor frasa",
+      "importLabel": "Frasa pemulihan 12 kata",
+      "mnemonic": "Tuliskan frasa ini dan simpan dengan aman.",
+      "confirmSaved": "Saya telah menyimpan frasa pemulihan saya",
+      "hashLabel": "Hash LXMF:",
+      "nameLabel": "Name: Gerald Abram Foeh Junior",
+      "failed": "Penyiapan identitas gagal",
+      "export": "Ekspor cadangan"
+    },
+    "reticulumInterfaces": {
+      "title": "Interface",
+      "type": "Tipe",
+      "add": "Tambahkan antarmuka baru",
+      "enable": "Fungsikan",
+      "disable": "Nonaktifkan",
+      "serialPort": "Port Serial",
+      "preset": "Preset",
+      "bleAvailable": "Pengintipan BLE tersedia di platform ini (tambahkan melalui sidecar saat dikonfigurasi)."
+    },
+    "reticulumPeers": {
+      "name": "Sesama Rekan Kerja",
+      "hops": "Hops",
+      "actions": "Aksi",
+      "path": "Path",
+      "probe": "Probe untuk Anemometer"
+    },
+    "reticulumPropagation": {
+      "title": "Node propagasi",
+      "enable": "Fungsikan",
+      "disable": "Nonaktifkan"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

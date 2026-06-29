@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Reticulumサイドカーがビルドされていません。mesh-clientリポジトリで `pnpm run reticulum:sidecar:build` を実行してください（Rustが必要です）。",
     "reticulumSidecarCargoMissing": "Rustツールチェーン（cargo）が見つかりません。https://rustup.rs からインストールし、`pnpm run reticulum:sidecar:build` を実行してください。",
     "reticulumSidecarStartFailed": "Reticulumスタックを開始できませんでした: {{message}}",
-    "disconnect": "切断する"
+    "disconnect": "切断する",
+    "reticulumStopStack": "スタックを停止",
+    "reticulumAutostart": "接続を開いたときにスタックを自動的に開始する",
+    "reticulumStackRunning": "スタック実行中",
+    "reticulumIdentity": {
+      "title": "Reticulum identity",
+      "hint": "上記のスタックを開始し、ニーモニックIDを作成またはインポートします。",
+      "startStackFirst": "Reticulumスタックを起動して、アイデンティティを設定します。",
+      "displayName": "表示名",
+      "generate": "アイデンティティを生成する",
+      "import": "フレーズをインポート",
+      "importLabel": "12ワードのリカバリフレーズ",
+      "mnemonic": "このフレーズを書き留めて、安全に保管してください。",
+      "confirmSaved": "回復フレーズを保存しました",
+      "hashLabel": "LXMFハッシュ：",
+      "nameLabel": "名前:",
+      "failed": "IDの設定に失敗しました",
+      "export": "バックアップをエクスポート"
+    },
+    "reticulumInterfaces": {
+      "title": "インターフェース",
+      "type": "タイプ",
+      "add": "VLAN インタフェースを追加",
+      "enable": "有効にする",
+      "disable": "無効にする",
+      "serialPort": "シリアルポート",
+      "preset": "プリセット",
+      "bleAvailable": "BLEピアリングはこのプラットフォームで利用できます（設定時にサイドカー経由で追加）。"
+    },
+    "reticulumPeers": {
+      "name": "ピア",
+      "hops": "Hops",
+      "actions": "アクション",
+      "path": "パス",
+      "probe": "プローブ"
+    },
+    "reticulumPropagation": {
+      "title": "伝播ノード",
+      "enable": "有効にする",
+      "disable": "無効にする"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

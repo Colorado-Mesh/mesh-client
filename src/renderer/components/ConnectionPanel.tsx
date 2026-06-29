@@ -86,6 +86,7 @@ import type {
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
+import { ReticulumConnectionPanel } from './ReticulumConnectionPanel';
 // ─── Last Connection (localStorage) ───────────────────────────────
 interface LastConnection {
   type: ConnectionType;
@@ -319,33 +320,7 @@ export default function ConnectionPanel({
   const capabilities = useRadioProvider(protocol);
   const parentIconTrigger = useParentIconTrigger();
   const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [reticulumInterfaces, setReticulumInterfaces] = useState<
-    { name?: string; type?: string; enabled?: boolean }[]
-  >([]);
   const [reticulumStackError, setReticulumStackError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!capabilities.hasReticulumInterfaceConfig || state.status !== 'connected') {
-      setReticulumInterfaces([]);
-      return;
-    }
-    let cancelled = false;
-    void window.electronAPI.reticulum
-      .proxyGet('/api/v1/interfaces')
-      .then((body) => {
-        if (cancelled) return;
-        const parsed = body as {
-          interfaces?: { name?: string; type?: string; enabled?: boolean }[];
-        };
-        setReticulumInterfaces(parsed.interfaces ?? []);
-      })
-      .catch((e: unknown) => {
-        console.debug('[ConnectionPanel] reticulum interfaces ' + errLikeToLogString(e));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [capabilities.hasReticulumInterfaceConfig, state.status]);
 
   useEffect(() => {
     runConnectionPanelStorageMigrations();
@@ -2530,77 +2505,28 @@ export default function ConnectionPanel({
     );
 
   if (capabilities.hasReticulumInterfaceConfig) {
-    const stackRunning =
-      state.status === 'connected' ||
-      state.status === 'configured' ||
-      state.status === 'stale' ||
-      state.status === 'reconnecting';
     return (
-      <div className="w-full space-y-4 p-4">
-        <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-          <h2 className="text-sm font-medium text-gray-200">
-            {t('connectionPanel.reticulumStackTitle')}
-          </h2>
-          <p className="text-muted mt-1 text-xs">{t('connectionPanel.reticulumStackHint')}</p>
-          {reticulumStackError ? (
-            <p className="mt-2 text-sm text-red-400" role="alert">
-              {reticulumStackError}
-            </p>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              aria-label={t('connectionPanel.reticulumStartStack')}
-              disabled={state.status === 'connecting'}
-              onClick={() => {
-                setReticulumStackError(null);
-                void onStartReticulumStack?.().catch((err: unknown) => {
-                  setReticulumStackError(humanizeReticulumSidecarError(err, t));
-                });
-              }}
-              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-40"
-            >
-              {stackRunning
-                ? t('connectionPanel.reticulumRestartStack')
-                : t('connectionPanel.reticulumStartStack')}
-            </button>
-            {stackRunning && (
-              <button
-                type="button"
-                aria-label={t('connectionPanel.disconnect')}
-                onClick={() => {
-                  void onDisconnect();
-                }}
-                className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
-              >
-                {t('connectionPanel.disconnect')}
-              </button>
-            )}
-          </div>
-        </div>
-        {capabilities.hasReticulumNetworkPanel && stackRunning && (
-          <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-            <h3 className="text-sm font-medium text-gray-200">
-              {t('connectionPanel.reticulumNetworkTitle')}
-            </h3>
-            {reticulumInterfaces.length === 0 ? (
-              <p className="text-muted mt-2 text-xs">
-                {t('connectionPanel.reticulumNetworkEmpty')}
-              </p>
-            ) : (
-              <ul className="mt-2 space-y-1 text-xs text-gray-300">
-                {reticulumInterfaces.map((iface, idx) => (
-                  <li key={`${iface.name ?? iface.type ?? 'iface'}-${idx}`}>
-                    {iface.name ?? iface.type ?? t('connectionPanel.reticulumNetworkUnknown')}
-                    {iface.enabled === false
-                      ? ` (${t('connectionPanel.reticulumNetworkDisabled')})`
-                      : ''}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+      <div className="w-full p-4">
+        <ReticulumConnectionPanel
+          connecting={state.status === 'connecting'}
+          stackError={reticulumStackError}
+          onStartStack={async () => {
+            setReticulumStackError(null);
+            try {
+              await onStartReticulumStack?.();
+            } catch (err: unknown) {
+              setReticulumStackError(humanizeReticulumSidecarError(err, t));
+              throw err;
+            }
+          }}
+          onStopStack={async () => {
+            setReticulumStackError(null);
+            await onDisconnect();
+          }}
+          onDisconnectAndQuit={async () => {
+            await handleExitApp(isConnected ? 'connected' : 'idle');
+          }}
+        />
       </div>
     );
   }

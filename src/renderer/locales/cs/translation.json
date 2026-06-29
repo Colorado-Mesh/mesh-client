@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum není sestaven. V repozitáři mesh-client spusťte `pnpm run reticulum:sidecar:build` (vyžaduje Rust).",
     "reticulumSidecarCargoMissing": "Nástrojová sada Rust (cargo) nebyla nalezena. Nainstalujte z https://rustup.rs a spusťte `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Nelze spustit zásobník Reticulum: {{message}}",
-    "disconnect": "Odpojit"
+    "disconnect": "Odpojit",
+    "reticulumStopStack": "Zastavit zásobník",
+    "reticulumAutostart": "Automatické spuštění zásobníku při otevření připojení",
+    "reticulumStackRunning": "Zásobník spuštěn",
+    "reticulumIdentity": {
+      "title": "Reticulum identita",
+      "hint": "Spusťte výše uvedený zásobník a poté vytvořte nebo importujte mnemotechnickou identitu.",
+      "startStackFirst": "Spusťte zásobník Reticulum pro konfiguraci identity.",
+      "displayName": "Zobrazované jméno",
+      "generate": "Vygenerovat identitu",
+      "import": "Importovat frázi",
+      "importLabel": "12-slovná obnovovací fráze",
+      "mnemonic": "Zapište si tuto větu a bezpečně ji uložte.",
+      "confirmSaved": "Uložil (a) jsem svou obnovovací frázi",
+      "hashLabel": "LXMF hash:",
+      "nameLabel": "Jméno:",
+      "failed": "Nastavení identity selhalo",
+      "export": "Exportovat zálohu"
+    },
+    "reticulumInterfaces": {
+      "title": "Rozhraní",
+      "type": "/Typ",
+      "add": "Přidat rozhraní",
+      "enable": "Povolit",
+      "disable": "Zakázat",
+      "serialPort": "Serial port",
+      "preset": "Předvolby",
+      "bleAvailable": "Na této platformě je k dispozici peering ble (při konfiguraci přidejte pomocí postranního vozíku)."
+    },
+    "reticulumPeers": {
+      "name": "Rovesníci",
+      "hops": "Hops",
+      "actions": "Opatření",
+      "path": "Cesty",
+      "probe": "Sonda"
+    },
+    "reticulumPropagation": {
+      "title": "Propagační uzly",
+      "enable": "Povolit",
+      "disable": "Zakázat"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

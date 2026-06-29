@@ -246,6 +246,10 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     join(__dirname, 'ipc/reticulum-handlers.ts'),
     'utf8',
   );
+  const RETICULUM_DB_HANDLERS_SOURCE = readFileSync(
+    join(__dirname, 'ipc/reticulum-db-handlers.ts'),
+    'utf8',
+  );
 
   it('registers reticulum lifecycle and proxy handlers', () => {
     expect(INDEX_SOURCE).toContain('registerReticulumIpcHandlers');
@@ -254,6 +258,9 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPost'");
+    expect(INDEX_SOURCE).toContain('registerReticulumDbIpcHandlers');
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
   });
 });
 

@@ -109,6 +109,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
       rx_hops?: number | null;
       room_server_id?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
+    getReticulumMessages: (identityId: string, limit?: number) =>
+      ipcRenderer.invoke('db:getReticulumMessages', identityId, limit),
+    saveReticulumMessage: (message: {
+      identity_id: string;
+      sender_id: string;
+      sender_name?: string | null;
+      payload: string;
+      timestamp: number;
+      to_hash?: string | null;
+      reply_to_hash?: string | null;
+    }) => ipcRenderer.invoke('db:saveReticulumMessage', message),
+    getReticulumDestinations: () => ipcRenderer.invoke('db:getReticulumDestinations'),
+    upsertReticulumDestination: (row: {
+      destination_hash: string;
+      display_name?: string | null;
+      last_heard?: number | null;
+      favorited?: boolean | number | null;
+    }) => ipcRenderer.invoke('db:upsertReticulumDestination', row),
     saveMeshcoreContact: (contact: {
       node_id: number;
       public_key: string;

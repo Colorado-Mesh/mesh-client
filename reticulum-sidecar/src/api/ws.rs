@@ -4,19 +4,18 @@ use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::State;
 use axum::response::IntoResponse;
 use futures_util::StreamExt;
-use tokio::sync::broadcast;
 
-use crate::state::AppState;
+use crate::stack::StackHandle;
 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
+    State(stack): State<Arc<StackHandle>>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_ws(socket, state))
+    ws.on_upgrade(move |socket| handle_ws(socket, stack))
 }
 
-async fn handle_ws(mut socket: WebSocket, state: Arc<AppState>) {
-    let mut rx = state.event_tx.subscribe();
+async fn handle_ws(mut socket: WebSocket, stack: Arc<StackHandle>) {
+    let mut rx = stack.subscribe_events();
     loop {
         tokio::select! {
             evt = rx.recv() => {
@@ -26,8 +25,8 @@ async fn handle_ws(mut socket: WebSocket, state: Arc<AppState>) {
                             break;
                         }
                     }
-                    Err(broadcast::error::RecvError::Lagged(_)) => continue,
-                    Err(broadcast::error::RecvError::Closed) => break,
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
                 }
             }
             incoming = socket.next() => {

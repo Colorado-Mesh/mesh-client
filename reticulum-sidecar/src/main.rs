@@ -1,22 +1,19 @@
 //! Headless Reticulum sidecar for mesh-client.
 //!
 //! IPC contract aligns with Ratspeak `ratspeak-tauri` commands (see docs/reticulum-sidecar-ipc.md).
-//! rsReticulum/rsLXMF stack wiring lands behind the `rns-stack` Cargo feature.
 
 mod api;
-mod lxmf_stack;
-mod rns_stack;
-mod state;
+mod stack;
 
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use clap::Parser;
+use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::lxmf_stack::LxmfStack;
-use crate::rns_stack::RnsStack;
-use crate::state::AppState;
+use crate::stack::StackHandle;
 
 #[derive(Parser, Debug)]
 #[command(name = "mesh-client-reticulum")]
@@ -46,25 +43,22 @@ async fn main() {
     if args.headless {
         info!("mesh-client-reticulum headless mode");
     }
-    if let Some(ref dir) = args.reticulum_config_dir {
-        info!(config_dir = %dir, "reticulum config dir");
-    }
-    if let Some(ref dir) = args.storage_dir {
-        info!(storage_dir = %dir, "lxmf storage dir");
-    }
 
-    let rns = RnsStack::init(args.reticulum_config_dir.as_deref());
-    let lxmf = LxmfStack::init(args.storage_dir.as_deref());
+    let config_dir = PathBuf::from(
+        args.reticulum_config_dir
+            .unwrap_or_else(|| "./reticulum-config".into()),
+    );
+    let storage_dir = PathBuf::from(args.storage_dir.unwrap_or_else(|| "./reticulum-storage".into()));
 
-    let (event_tx, _) = tokio::sync::broadcast::channel::<String>(256);
-    let state = Arc::new(AppState::new(
-        env!("CARGO_PKG_VERSION").to_string(),
-        event_tx,
-        rns,
-        lxmf,
-    ));
+    info!(config_dir = %config_dir.display(), storage_dir = %storage_dir.display(), "data dirs");
 
-    let app = api::router(state);
+    let (event_tx, _) = broadcast::channel::<String>(256);
+    let stack = Arc::new(
+        StackHandle::bootstrap(config_dir, storage_dir, event_tx)
+            .await,
+    );
+
+    let app = api::router(stack);
 
     let addr: SocketAddr = format!("{}:{}", args.host, args.port)
         .parse()

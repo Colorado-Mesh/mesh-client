@@ -10,7 +10,7 @@ import {
   replaceMessageRecordsForIdentity,
   upsertMessageRecordsForIdentity,
 } from '../stores/messageStore';
-import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import { type NodeRecord, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
 import { beginIdentityHydration } from './identityHydrationCoordinator';
@@ -268,10 +268,67 @@ function hydrateReticulumIdentity(
   identityId: IdentityId,
   opts: HydrateIdentityStoresOptions,
 ): Promise<void> {
-  void identityId;
-  void opts;
-  // Contacts/messages hydrate via sidecar on connect; SQLite IPC lands with reticulum DB migrations.
-  return Promise.resolve();
+  const loadNodes = opts.nodes !== false;
+  const loadMessages = opts.messages !== false;
+  return (async () => {
+    if (loadNodes) {
+      try {
+        const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
+          destination_hash: string;
+          display_name?: string | null;
+          last_heard?: number | null;
+          favorited?: number | null;
+        }[];
+        const { reticulumHashToNodeId, registerReticulumDestinationHash } =
+          await import('./reticulum/destHash');
+        const records: NodeRecord[] = rows.map((row) => {
+          const nodeId = reticulumHashToNodeId(row.destination_hash);
+          registerReticulumDestinationHash(nodeId, row.destination_hash);
+          return {
+            nodeId,
+            longName: row.display_name ?? row.destination_hash.slice(0, 16),
+            shortName: row.display_name?.slice(0, 4) ?? 'RT',
+            lastHeardAt: row.last_heard ?? undefined,
+          };
+        });
+        upsertNodeRecordsForIdentity(identityId, records);
+      } catch (e) {
+        console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
+      }
+    }
+    if (loadMessages) {
+      try {
+        const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
+          sender_id: string;
+          sender_name?: string;
+          payload: string;
+          timestamp: number;
+          to_hash?: string;
+        }[];
+        const { reticulumHashToNodeId, registerReticulumDestinationHash } =
+          await import('./reticulum/destHash');
+        replaceMessageRecordsForIdentity(
+          identityId,
+          rows.map((row) => {
+            const from = reticulumHashToNodeId(row.sender_id);
+            registerReticulumDestinationHash(from, row.sender_id);
+            return {
+              id: `rt:${row.timestamp}:${from}`,
+              from,
+              senderName: row.sender_name ?? row.sender_id.slice(0, 12),
+              to: row.to_hash ? reticulumHashToNodeId(row.to_hash) : 0,
+              payload: row.payload,
+              channelIndex: 0,
+              timestamp: row.timestamp,
+              status: 'acked' as const,
+            };
+          }),
+        );
+      } catch (e) {
+        console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
+      }
+    }
+  })();
 }
 
 const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {

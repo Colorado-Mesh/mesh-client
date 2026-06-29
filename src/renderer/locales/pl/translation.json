@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum nie został zbudowany. W repozytorium mesh-client uruchom `pnpm run reticulum:sidecar:build` (wymaga Rust).",
     "reticulumSidecarCargoMissing": "Nie znaleziono toolchain Rust (cargo). Zainstaluj z https://rustup.rs, a następnie uruchom `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Nie można uruchomić stosu Reticulum: {{message}}",
-    "disconnect": "Odłącz"
+    "disconnect": "Odłącz",
+    "reticulumStopStack": "Stos ograniczników",
+    "reticulumAutostart": "Automatyczny start stosu po otwarciu połączenia",
+    "reticulumStackRunning": "Bieżący stos",
+    "reticulumIdentity": {
+      "title": "Tożsamość Reticulum",
+      "hint": "Uruchom powyższy stos, a następnie utwórz lub zaimportuj tożsamość mnemoniczną.",
+      "startStackFirst": "Uruchom stos Reticulum, aby skonfigurować tożsamość.",
+      "displayName": "Wyświetlana nazwa",
+      "generate": "Wygeneruj tożsamość",
+      "import": "Importuj frazę",
+      "importLabel": "12-wyrazowa fraza odzyskiwania",
+      "mnemonic": "Zapisz to wyrażenie i przechowuj je w bezpieczny sposób.",
+      "confirmSaved": "Zapisałem moją frazę odzyskiwania",
+      "hashLabel": "Skrót LXMF:",
+      "nameLabel": "Imię i nazwisko:",
+      "failed": "Konfiguracja tożsamości nie powiodła się",
+      "export": "Kopia zapasowa eksportu"
+    },
+    "reticulumInterfaces": {
+      "title": "Interfejsy",
+      "type": "Typ",
+      "add": "Dodanie interfejsu bazowego",
+      "enable": "Włącz",
+      "disable": "Wyłącz",
+      "serialPort": "Port szeregowy",
+      "preset": "Ustawienie wstępne",
+      "bleAvailable": "Na tej platformie dostępne jest peering BLE (po skonfigurowaniu dodaj za pośrednictwem wózka bocznego)."
+    },
+    "reticulumPeers": {
+      "name": "Kolega",
+      "hops": "Hops",
+      "actions": "Działania",
+      "path": "Ścieżka",
+      "probe": "Sonda"
+    },
+    "reticulumPropagation": {
+      "title": "Węzły propagacji",
+      "enable": "Włącz",
+      "disable": "Wyłącz"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

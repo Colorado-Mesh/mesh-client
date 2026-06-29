@@ -111,6 +111,8 @@ export interface ProtocolCapabilities {
   dedupeQueueBadgeForLocalSending: boolean;
   /** Header self-node label prefers deviceOwner.longName over picker label */
   prefersDeviceOwnerLongNameInHeader: boolean;
+  /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
+  hasDiagnosticsPanel: boolean;
   /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
   hasReticulumInterfaceConfig: boolean;
   /** Reticulum: network / peers visibility panel */
@@ -171,6 +173,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
+  hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
 };
@@ -230,6 +233,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
+  hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
 };
@@ -288,6 +292,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: false,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: false,
+  hasDiagnosticsPanel: false,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
 };

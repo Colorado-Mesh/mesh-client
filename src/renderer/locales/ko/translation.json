@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Reticulum 사이드카가 빌드되지 않았습니다. mesh-client 저장소에서 `pnpm run reticulum:sidecar:build`을(를) 실행하세요(Rust 필요).",
     "reticulumSidecarCargoMissing": "Rust 툴체인(cargo)을 찾을 수 없습니다. https://rustup.rs에서 설치한 다음 `pnpm run reticulum:sidecar:build`을(를) 실행하세요.",
     "reticulumSidecarStartFailed": "Reticulum 스택을 시작할 수 없습니다: {{message}}",
-    "disconnect": "연결 끊기"
+    "disconnect": "연결 끊기",
+    "reticulumStopStack": "스택 중지",
+    "reticulumAutostart": "연결을 열 때 스택 자동 시작",
+    "reticulumStackRunning": "스택 실행 중",
+    "reticulumIdentity": {
+      "title": "Reticulum 정체성",
+      "hint": "위의 스택을 시작한 다음 니모닉 아이덴티티를 생성하거나 가져옵니다.",
+      "startStackFirst": "아이덴티티를 구성하려면 Reticulum 스택을 시작합니다.",
+      "displayName": "닉네임",
+      "generate": "ID 생성",
+      "import": "문구 가져오기",
+      "importLabel": "12단어 복구 문구",
+      "mnemonic": "이 문구를 적어 안전하게 보관하십시오.",
+      "confirmSaved": "복구 문구를 저장했습니다",
+      "hashLabel": "LXMF 해시:",
+      "nameLabel": "이름:",
+      "failed": "신원 설정 실패",
+      "export": "내보내기 백업"
+    },
+    "reticulumInterfaces": {
+      "title": "연계 문서",
+      "type": "유형",
+      "add": "인터페이스 추가",
+      "enable": "활성화",
+      "disable": "비활성화",
+      "serialPort": "직렬 포트",
+      "preset": "기본값 설정",
+      "bleAvailable": "BLE 피어링은 이 플랫폼에서 사용할 수 있습니다 (구성 시 사이드카를 통해 추가)."
+    },
+    "reticulumPeers": {
+      "name": "동료",
+      "hops": "Hops",
+      "actions": "작업",
+      "path": "경로",
+      "probe": "프로브"
+    },
+    "reticulumPropagation": {
+      "title": "전파 노드",
+      "enable": "활성화",
+      "disable": "비활성화"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

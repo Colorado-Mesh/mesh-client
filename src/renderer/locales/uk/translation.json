@@ -592,7 +592,47 @@
     "reticulumSidecarMissing": "Sidecar Reticulum не зібрано. У репозиторії mesh-client виконайте `pnpm run reticulum:sidecar:build` (потрібен Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) не знайдено. Встановіть з https://rustup.rs, потім виконайте `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Не вдалося запустити стек Reticulum: {{message}}",
-    "disconnect": "Відключити"
+    "disconnect": "Відключити",
+    "reticulumStopStack": "Зупинити стек",
+    "reticulumAutostart": "Автозапуск стека при відкритті з'єднання",
+    "reticulumStackRunning": "Запуск стека",
+    "reticulumIdentity": {
+      "title": "Ідентичність Reticulum",
+      "hint": "Запустіть стек вище, а потім створіть або імпортуйте мнемонічну ідентифікацію.",
+      "startStackFirst": "Запустіть стек Reticulum, щоб налаштувати ідентичність.",
+      "displayName": "Відображаєме на сайті ім'я",
+      "generate": "Створити ідентичність",
+      "import": "Імпортувати фразу",
+      "importLabel": "Фраза відновлення з 12 слів",
+      "mnemonic": "Запишіть цю фразу та зберігайте її безпечно.",
+      "confirmSaved": "Я зберіг фразу для відновлення",
+      "hashLabel": "Хеш LXMF:",
+      "nameLabel": "Прізвище та ім'я:",
+      "failed": "Не вдалося встановити ідентичність",
+      "export": "Експортувати резервну ко"
+    },
+    "reticulumInterfaces": {
+      "title": "Інтерфейси",
+      "type": "Тип",
+      "add": "Додати базовий інтерфейс",
+      "enable": "Увімкнути",
+      "disable": "Вимкнути",
+      "serialPort": "послідовний порт",
+      "preset": "Пресет",
+      "bleAvailable": "Пірінг BLE доступний на цій платформі (додайте через коляску, якщо налаштовано)."
+    },
+    "reticulumPeers": {
+      "name": "Колега",
+      "hops": "Hops",
+      "actions": "Дії",
+      "path": "Маршрутом",
+      "probe": "Зонд"
+    },
+    "reticulumPropagation": {
+      "title": "Вузли розповсюдження",
+      "enable": "Увімкнути",
+      "disable": "Вимкнути"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
