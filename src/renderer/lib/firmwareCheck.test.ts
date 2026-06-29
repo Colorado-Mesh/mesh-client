@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchLatestMeshCoreRelease,
   fetchLatestMeshtasticRelease,
+  meshCoreFirmwareUpdateAvailable,
+  normalizeMeshCoreVersionTag,
   parseMeshCoreBuildDate,
   semverGt,
 } from './firmwareCheck';
@@ -136,6 +138,8 @@ describe('fetchLatestMeshCoreRelease', () => {
     );
 
     const result = await fetchLatestMeshCoreRelease();
+    // companion-v prefix stripped to semver for display and comparison
+    expect(result.version).toBe('1.14.1');
     // published_at time component must be stripped so same-day device firmware
     // ("20 Mar 2026" → 2026-03-20T00:00:00Z) is not falsely flagged as outdated
     expect(result.publishedAt.toISOString()).toBe('2026-03-20T00:00:00.000Z');
@@ -177,5 +181,69 @@ describe('parseMeshCoreBuildDate', () => {
 
   it('returns null for unrecognized format', () => {
     expect(parseMeshCoreBuildDate('not a date')).toBeNull();
+  });
+
+  it('parses "06-Jun-2026" build date format', () => {
+    const d = parseMeshCoreBuildDate('06-Jun-2026');
+    expect(d).not.toBeNull();
+    expect(d!.toISOString()).toBe('2026-06-06T00:00:00.000Z');
+  });
+
+  it('returns null for semver firmware strings', () => {
+    expect(parseMeshCoreBuildDate('v1.16.0-07a3ca9')).toBeNull();
+    expect(parseMeshCoreBuildDate('1.16')).toBeNull();
+  });
+});
+
+// ─── normalizeMeshCoreVersionTag ──────────────────────────────────
+
+describe('normalizeMeshCoreVersionTag', () => {
+  it('extracts semver from companion release tags', () => {
+    expect(normalizeMeshCoreVersionTag('companion-v1.16.0')).toBe('1.16.0');
+  });
+
+  it('extracts semver from device tags with git suffix', () => {
+    expect(normalizeMeshCoreVersionTag('v1.16.0-07a3ca9')).toBe('1.16.0');
+  });
+});
+
+// ─── meshCoreFirmwareUpdateAvailable ──────────────────────────────
+
+describe('meshCoreFirmwareUpdateAvailable', () => {
+  const release = {
+    version: 'companion-v1.16.0',
+    publishedAt: new Date('2026-06-06T00:00:00.000Z'),
+  };
+
+  it('returns false when device semver matches latest release', () => {
+    expect(meshCoreFirmwareUpdateAvailable('v1.16.0-07a3ca9', release)).toBe(false);
+  });
+
+  it('returns true when release semver is newer', () => {
+    expect(meshCoreFirmwareUpdateAvailable('v1.15.0-abc', release)).toBe(true);
+  });
+
+  it('uses build date comparison for legacy firmware strings', () => {
+    expect(
+      meshCoreFirmwareUpdateAvailable('05 Jun 2026', {
+        version: 'companion-v1.16.0',
+        publishedAt: new Date('2026-06-06T00:00:00.000Z'),
+      }),
+    ).toBe(true);
+    expect(
+      meshCoreFirmwareUpdateAvailable('06 Jun 2026', {
+        version: 'companion-v1.16.0',
+        publishedAt: new Date('2026-06-06T00:00:00.000Z'),
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false for unparseable device version (no false positive)', () => {
+    expect(
+      meshCoreFirmwareUpdateAvailable('not a version', {
+        version: 'companion-v1.16.0',
+        publishedAt: new Date('2026-06-06T00:00:00.000Z'),
+      }),
+    ).toBe(false);
   });
 });
