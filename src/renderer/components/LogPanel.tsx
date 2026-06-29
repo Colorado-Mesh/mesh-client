@@ -101,16 +101,32 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[IpcNobleConnection:meshcore]')
     );
   }
+  if (protocol === 'reticulum') {
+    return (
+      entry.source.includes('reticulum') ||
+      entry.message.includes('[ReticulumSidecar]') ||
+      entry.message.includes('[ReticulumConnectionPanel]') ||
+      entry.message.includes('[useReticulumRuntime]') ||
+      entry.message.includes('[ReticulumIPC]') ||
+      entry.message.includes('[IPC] reticulum')
+    );
+  }
   // No protocol: show all device entries (fallback)
   return (
     entry.source === 'sdk' ||
     entry.source.includes('meshtastic') ||
     entry.source.includes('meshcore') ||
+    entry.source.includes('reticulum') ||
     entry.message.includes('[useMeshtasticRuntime]') ||
     entry.message.includes('[iMeshDevice]') ||
     entry.message.includes('[useMeshcoreRuntime]') ||
+    entry.message.includes('[useReticulumRuntime]') ||
     entry.message.includes('[TransportNobleIpc]') ||
     entry.message.includes('[MeshCore MQTT]') ||
+    entry.message.includes('[ReticulumSidecar]') ||
+    entry.message.includes('[ReticulumConnectionPanel]') ||
+    entry.message.includes('[ReticulumIPC]') ||
+    entry.message.includes('[IPC] reticulum') ||
     entry.message.includes('[NobleBleManager]') ||
     entry.message.includes('[BLE:') ||
     entry.message.includes('[BLE:meshcore]') ||
@@ -166,6 +182,12 @@ export default function LogPanel({
   const atBottomRef = useRef(true);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
+
+  useEffect(() => {
+    if (protocol === 'reticulum') {
+      setLogSource('device');
+    }
+  }, [protocol]);
 
   useEffect(() => {
     let off: (() => void) | null = null;
@@ -242,9 +264,15 @@ export default function LogPanel({
     () => entries.filter((e) => isDeviceEntry(e, protocol)),
     [entries, protocol],
   );
-  // Dual-mode: exclude device entries from BOTH protocols so neither leaks into the app view.
+  // Dual-mode: exclude device entries from all protocols so they do not leak into App view.
   const appEntries = useMemo(
-    () => entries.filter((e) => !isDeviceEntry(e, 'meshtastic') && !isDeviceEntry(e, 'meshcore')),
+    () =>
+      entries.filter(
+        (e) =>
+          !isDeviceEntry(e, 'meshtastic') &&
+          !isDeviceEntry(e, 'meshcore') &&
+          !isDeviceEntry(e, 'reticulum'),
+      ),
     [entries],
   );
   const allDeviceLogs: LogEntry[] = useMemo(

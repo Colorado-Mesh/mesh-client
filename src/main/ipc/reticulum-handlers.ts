@@ -18,12 +18,12 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:start', async (_event, opts) => {
     try {
-      console.debug('[IPC] reticulum:start');
+      console.debug('[ReticulumIPC] start');
       const m = ensureManager();
       return await m.start(opts ?? {});
     } catch (err) {
       console.error(
-        '[IPC] reticulum:start failed:',
+        '[ReticulumIPC] start failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -31,7 +31,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   });
 
   ipcMain.handle('reticulum:stop', async () => {
-    console.debug('[IPC] reticulum:stop');
+    console.debug('[ReticulumIPC] stop');
     await getManager()?.stop();
   });
 
@@ -45,7 +45,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await m.proxyGet(apiPath);
     } catch (err) {
       console.error(
-        '[IPC] reticulum:proxyGet failed:',
+        '[ReticulumIPC] proxyGet failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -58,7 +58,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await m.proxyPost(apiPath, body);
     } catch (err) {
       console.error(
-        '[IPC] reticulum:proxyPost failed:',
+        '[ReticulumIPC] proxyPost failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;

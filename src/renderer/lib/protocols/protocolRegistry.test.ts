@@ -24,7 +24,7 @@ describe('protocolRegistry', () => {
     const reticulum = getProtocolRegistration('reticulum');
     expect(reticulum?.capabilities.hasReticulumInterfaceConfig).toBe(true);
     expect(reticulum?.capabilities.hasReticulumNetworkPanel).toBe(true);
-    expect(reticulum?.capabilities.nodeListTabUsesContactsLabel).toBe(true);
+    expect(reticulum?.capabilities.nodeListTabUsesContactsLabel).toBe(false);
   });
 
   it('sets MeshCore-specific UI capability flags', () => {

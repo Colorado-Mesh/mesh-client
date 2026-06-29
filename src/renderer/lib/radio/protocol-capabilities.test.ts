@@ -294,7 +294,7 @@ describe('ProtocolCapabilities contract', () => {
           128,
         ],
         "modulesTabUsesRepeatersLabel": false,
-        "nodeListTabUsesContactsLabel": true,
+        "nodeListTabUsesContactsLabel": false,
         "nodeOfflineThresholdMs": 2592000000,
         "nodeStaleThresholdMs": 604800000,
         "prefersDeviceOwnerLongNameInHeader": false,

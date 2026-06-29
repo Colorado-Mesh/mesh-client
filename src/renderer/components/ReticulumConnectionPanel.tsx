@@ -86,8 +86,8 @@ export function ReticulumConnectionPanel({
 
   /** UI: Start/Stop, connecting badge — includes in-flight connect before getStatus catches up. */
   const sidecarUiRunning = stackRunningProp || sidecarStatus.running;
-  /** API: proxyGet/Post only after main-process confirms the sidecar process is up. */
-  const sidecarApiReady = sidecarStatus.running;
+  /** API: proxyGet/Post when sidecar IPC confirms running, or parent stack is operational. */
+  const sidecarApiReady = sidecarStatus.running || (stackRunningProp && !connecting);
 
   const refreshSidecarStatus = useCallback(async () => {
     try {
@@ -265,13 +265,28 @@ export function ReticulumConnectionPanel({
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/generate', {
         display_name: displayName.trim() || null,
-      })) as { ok?: boolean; mnemonic?: string; error?: string };
+      })) as {
+        ok?: boolean;
+        mnemonic?: string;
+        identity_hash?: string;
+        lxmf_hash?: string;
+        display_name?: string | null;
+        error?: string;
+      };
       if (!res.ok) {
         setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
         return;
       }
       setMnemonic(res.mnemonic ?? null);
       setConfirmSaved(false);
+      if (res.identity_hash && res.lxmf_hash) {
+        setIdentity({
+          configured: true,
+          identity_hash: res.identity_hash,
+          lxmf_hash: res.lxmf_hash,
+          display_name: res.display_name ?? (displayName.trim() || null),
+        });
+      }
       await refreshIdentity();
     } catch (e) {
       console.warn('[ReticulumConnectionPanel] generate identity ' + errLikeToLogString(e));
@@ -286,13 +301,27 @@ export function ReticulumConnectionPanel({
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/import', {
         mnemonic: importPhrase.trim(),
         display_name: displayName.trim() || null,
-      })) as { ok?: boolean; error?: string };
+      })) as {
+        ok?: boolean;
+        identity_hash?: string;
+        lxmf_hash?: string;
+        display_name?: string | null;
+        error?: string;
+      };
       if (!res.ok) {
         setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
         return;
       }
       setImportPhrase('');
       setMnemonic(null);
+      if (res.identity_hash && res.lxmf_hash) {
+        setIdentity({
+          configured: true,
+          identity_hash: res.identity_hash,
+          lxmf_hash: res.lxmf_hash,
+          display_name: res.display_name ?? (displayName.trim() || null),
+        });
+      }
       await refreshIdentity();
     } catch (e) {
       console.warn('[ReticulumConnectionPanel] import identity ' + errLikeToLogString(e));
@@ -322,6 +351,7 @@ export function ReticulumConnectionPanel({
 
   const identityReady = identity?.configured === true;
   const identityActionsDisabled = !sidecarApiReady || connecting;
+  const exportDisabled = !sidecarApiReady;
 
   return (
     <div className="space-y-4">
@@ -446,11 +476,11 @@ export function ReticulumConnectionPanel({
             <button
               type="button"
               aria-label={t('connectionPanel.reticulumIdentity.export')}
-              disabled={identityActionsDisabled || !exportPassphrase.trim()}
+              disabled={exportDisabled}
               onClick={() => {
                 void handleExportIdentity();
               }}
-              className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+              className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t('connectionPanel.reticulumIdentity.export')}
             </button>

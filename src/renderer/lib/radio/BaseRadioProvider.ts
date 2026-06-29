@@ -283,7 +283,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasContactImportExport: false,
   hasCryptoOperations: false,
   hasRawPacketLog: false,
-  nodeListTabUsesContactsLabel: true,
+  nodeListTabUsesContactsLabel: false,
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
   hasJsonRadioConfigImport: false,

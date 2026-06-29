@@ -182,6 +182,44 @@ describe('isDeviceEntry — MeshCore protocol', () => {
   });
 });
 
+describe('isDeviceEntry — Reticulum protocol', () => {
+  it('classifies [ReticulumSidecar] message as Reticulum device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[ReticulumSidecar] sidecar listening on 127.0.0.1:19437'),
+        'reticulum',
+      ),
+    ).toBe(true);
+  });
+
+  it('classifies [useReticulumRuntime] message as Reticulum device entry', () => {
+    expect(
+      isDeviceEntry(entry('main', '[useReticulumRuntime] connect failed timeout'), 'reticulum'),
+    ).toBe(true);
+  });
+
+  it('classifies [ReticulumConnectionPanel] message as Reticulum device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[ReticulumConnectionPanel] identity status network error'),
+        'reticulum',
+      ),
+    ).toBe(true);
+  });
+
+  it('classifies [ReticulumIPC] message as Reticulum device entry', () => {
+    expect(isDeviceEntry(entry('main', '[ReticulumIPC] start'), 'reticulum')).toBe(true);
+  });
+
+  it('does NOT classify Meshtastic SDK source as Reticulum device entry', () => {
+    expect(isDeviceEntry(entry('meshtastic-sdk', 'packet decoded'), 'reticulum')).toBe(false);
+  });
+
+  it('does NOT classify [useMeshcoreRuntime] message as Reticulum device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] connected'), 'reticulum')).toBe(false);
+  });
+});
+
 describe('isDeviceEntry — no protocol (fallback)', () => {
   it('classifies meshtastic source as device entry', () => {
     expect(isDeviceEntry(entry('meshtastic', 'msg'))).toBe(true);
@@ -211,6 +249,14 @@ describe('isDeviceEntry — no protocol (fallback)', () => {
     expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] something'))).toBe(true);
   });
 
+  it('classifies [useReticulumRuntime] message as device entry', () => {
+    expect(isDeviceEntry(entry('main', '[useReticulumRuntime] something'))).toBe(true);
+  });
+
+  it('classifies [ReticulumSidecar] message as device entry', () => {
+    expect(isDeviceEntry(entry('main', '[ReticulumSidecar] stack ready'))).toBe(true);
+  });
+
   it('does NOT classify generic app-only message as device entry', () => {
     expect(isDeviceEntry(entry('main', 'App started successfully'))).toBe(false);
     expect(isDeviceEntry(entry('renderer', 'React mounted'))).toBe(false);
@@ -218,40 +264,46 @@ describe('isDeviceEntry — no protocol (fallback)', () => {
 });
 
 describe('dual-mode appEntries guard', () => {
+  function isAppEntry(log: ReturnType<typeof entry>) {
+    return (
+      !isDeviceEntry(log, 'meshtastic') &&
+      !isDeviceEntry(log, 'meshcore') &&
+      !isDeviceEntry(log, 'reticulum')
+    );
+  }
+
   it('Meshtastic [Meshtastic MQTT] entry appears in app view (not treated as device log)', () => {
     const mqttEntry = entry('main', '[Meshtastic MQTT] ServiceEnvelope decode failed');
-    const isApp = !isDeviceEntry(mqttEntry, 'meshtastic') && !isDeviceEntry(mqttEntry, 'meshcore');
-    expect(isApp).toBe(true);
+    expect(isAppEntry(mqttEntry)).toBe(true);
   });
 
   it('MeshCore [MeshCore MQTT] entry is excluded from app view when Meshtastic is active', () => {
     const mqttEntry = entry('main', '[MeshCore MQTT] status: connected');
-    const isApp = !isDeviceEntry(mqttEntry, 'meshtastic') && !isDeviceEntry(mqttEntry, 'meshcore');
-    expect(isApp).toBe(false);
+    expect(isAppEntry(mqttEntry)).toBe(false);
+  });
+
+  it('Reticulum sidecar entry is excluded from app view', () => {
+    const rtEntry = entry('main', '[ReticulumSidecar] listening on 127.0.0.1:19437');
+    expect(isAppEntry(rtEntry)).toBe(false);
   });
 
   it('Meshtastic SDK entry is excluded from app view', () => {
     const sdkEntry = entry('meshtastic-sdk', 'packet decoded');
-    const isApp = !isDeviceEntry(sdkEntry, 'meshtastic') && !isDeviceEntry(sdkEntry, 'meshcore');
-    expect(isApp).toBe(false);
+    expect(isAppEntry(sdkEntry)).toBe(false);
   });
 
   it('MeshCore source entry is excluded from app view', () => {
     const meshcoreEntry = entry('meshcore', 'rx rssi=-90');
-    const isApp =
-      !isDeviceEntry(meshcoreEntry, 'meshtastic') && !isDeviceEntry(meshcoreEntry, 'meshcore');
-    expect(isApp).toBe(false);
+    expect(isAppEntry(meshcoreEntry)).toBe(false);
   });
 
   it('[NobleBleManager] entry is excluded from app view', () => {
     const bleEntry = entry('main', '[NobleBleManager] startScanning error: peripheral lost');
-    const isApp = !isDeviceEntry(bleEntry, 'meshtastic') && !isDeviceEntry(bleEntry, 'meshcore');
-    expect(isApp).toBe(false);
+    expect(isAppEntry(bleEntry)).toBe(false);
   });
 
   it('generic app entry passes through to app view', () => {
     const appEntry = entry('main', 'Window created');
-    const isApp = !isDeviceEntry(appEntry, 'meshtastic') && !isDeviceEntry(appEntry, 'meshcore');
-    expect(isApp).toBe(true);
+    expect(isAppEntry(appEntry)).toBe(true);
   });
 });

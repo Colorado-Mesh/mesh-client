@@ -43,6 +43,13 @@ const DEVICE_FILES = {
     path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshcoreRuntime.ts'),
     path.join(ROOT, 'src', 'renderer', 'hooks', 'meshcore', 'meshcoreLegacyConnEvents.ts'),
   ],
+  reticulum: [
+    path.join(ROOT, 'src', 'main', 'reticulum-sidecar-manager.ts'),
+    path.join(ROOT, 'src', 'main', 'reticulum-sidecar-path.ts'),
+    path.join(ROOT, 'src', 'main', 'ipc', 'reticulum-handlers.ts'),
+    path.join(ROOT, 'src', 'renderer', 'runtime', 'useReticulumRuntime.ts'),
+    path.join(ROOT, 'src', 'renderer', 'components', 'ReticulumConnectionPanel.tsx'),
+  ],
 };
 
 const SUPPRESSED = /\/\/\s*log-filter-ok\b/;
