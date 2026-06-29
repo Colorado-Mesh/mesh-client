@@ -1,0 +1,3280 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../diagnostics/">
+      
+      
+        <link rel="next" href="../license/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Troubleshooting - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-install-fails-on-native-module-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm install fails on native module compilation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-installed-files-present-but-mesh-clientexe-is-missing-windows-11-arm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: installed files present but Mesh-client.exe is missing (Windows 11 ARM)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Python installation to use" (e.g. when building @serialport/bindings-cpp)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-connection-fails-with-connection-attempt-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE connection fails with "Connection attempt failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE known issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="BLE known issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ble-debug-mtunull-and-mtu-updated-in-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE debug: mtu=null and MTU updated: … in logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-sleep-wake-and-auto-reconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS sleep / wake and auto-reconnect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-sleep-wake-and-auto-reconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows sleep / wake and auto-reconnect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-contact-age-prune-and-favorites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore contact age prune and favorites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-reply-misquote-duplicate-chat-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore reply misquote / duplicate chat messages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-modules-tab-waiting-for-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic Modules tab: “waiting for settings”
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serial-port-not-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial port not detected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-serial-port-access-denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux: serial port access denied
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flatpak-vmwgfx-driver-missing-vmware-on-macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flatpak: vmwgfx: driver missing (VMware on macOS)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-development-sigill-during-pnpm-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGILL during pnpm install
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-development-sigsegv-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGSEGV on startup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-file-is-damaged-and-cannot-be-opened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: File is damaged and cannot be opened
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-crashes-on-launch-macos-distributable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App crashes on launch (macOS distributable)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-shows-disconnected-but-device-is-still-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App shows "disconnected" but device is still on
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-usb-serial-reconnect-fails-with-port-is-already-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic USB serial: reconnect fails with "port is already open"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-meshtastic-usb-serial-app-frozen-or-stuck-on-reconnecting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore / Meshtastic USB serial: app frozen or stuck on "Reconnecting…"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-or-transport-issues-use-log-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection or transport issues: use Log Analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting-bugs-copy-debug-snapshot-app-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting bugs: Copy Debug Snapshot (App tab)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phantom-chat-unread-on-channels-not-on-the-radio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phantom chat unread on channels not on the radio
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat stuck: new traffic in logs/DB but messages do not appear
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-or-rooms-scroll-jumps-when-switching-tabs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat or Rooms: scroll jumps when switching tabs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodes-list-shows-wrong-protocol-labels-or-mixed-meshtasticmeshcore-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nodes list shows wrong protocol labels or mixed Meshtastic/MeshCore rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-notification-sounds-when-the-window-is-minimized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat notification sounds when the window is minimized
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-messages-in-the-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission messages in the console
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-run-distmac-fails-with-gh_token-cannot-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm run dist:mac fails with GH_TOKEN / "Cannot cleanup"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0190-when-running-electron-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0190] when running electron-builder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duplicate-dependency-references-during-dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicate dependency references during dist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-packaged-app-cannot-find-module-readable-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux packaged app: Cannot find module 'readable-stream'
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0169-urlparse-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0169] / url.parse() deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-native-module-failed-to-load-dialog-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "A native module failed to load" dialog on startup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with "space in the path" or EPERM on native modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-0x80010135-path-too-long-eg-bluetooth_hci_socketlastbuildstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: 0x80010135 / "Path too long" (e.g. bluetooth_hci_socket.lastbuildstate)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-schema-newer-than-this-app-downgrade-blocked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database schema newer than this app (downgrade blocked)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-directory-is-not-writable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database directory is not writable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#language-and-translations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language and Translations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-wifi-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP / WiFi connection issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-lost-after-n-reconnect-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Connection lost after N reconnect attempts"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-subscribe-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Subscribe failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-keeps-disconnecting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT keeps disconnecting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connected-but-no-messages-from-other-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT connected but no messages from other nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-expired-on-letsmeshcolorado-mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Token expired" on LetsMesh/Colorado Mesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-refused-or-broker-unreachable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT "Connection refused" or broker unreachable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-private-broker-no-decrypt-or-no-uplink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: private broker — no decrypt or no uplink
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-configure-node-remotely-does-nothing-or-is-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic: Configure node remotely does nothing or is disabled
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-remote-admin-one-or-more-channel-settings-could-not-be-loaded-longfast-load-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic remote admin: "One or more channel settings could not be loaded" / "LongFast load failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-mqtt-decrypt-works-on-other-clients-but-not-mesh-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic MQTT: decrypt works on other clients but not mesh-client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-auto-reconnect-no-previously-connected-ble-device-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE auto-reconnect: "No previously connected BLE device found"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gps-location-unavailable-or-stuck-on-the-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPS "Location unavailable" or stuck on the map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#something-went-wrong-blank-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Something went wrong" blank screen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-representedobject-is-not-a-weakptrtoelectronmenumodelasnsobject-when-typing-in-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-check-fails-footer-update-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update check fails / footer update status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-tab-without-internet-offline-no-wan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map tab without internet (offline / no WAN)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-offline-behavior-manual-qa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying offline behavior (manual QA)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-panel-restored-from-last-session-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics panel: "restored from last session" banner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-look-stale-or-overcrowded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics look stale or overcrowded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-signal-bars-on-some-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No signal bars on some nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-telemetry-returns-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Telemetry" returns timeout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-neighbors-button-not-visible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Neighbors" button not visible
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-cannot-connect-via-bluetooth-usb-or-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Cannot connect via Bluetooth, USB, or HTTP
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-room-server-login-posts-and-windows-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Room server login, posts, and Windows 10
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-trace-route-or-ping-trace-times-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Trace Route or Ping trace times out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cant-see-rf-packets-on-custom-mqtt-broker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can't see RF packets on custom MQTT broker
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-install-fails-on-native-module-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm install fails on native module compilation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-installed-files-present-but-mesh-clientexe-is-missing-windows-11-arm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: installed files present but Mesh-client.exe is missing (Windows 11 ARM)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Python installation to use" (e.g. when building @serialport/bindings-cpp)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-connection-fails-with-connection-attempt-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE connection fails with "Connection attempt failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE known issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="BLE known issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ble-debug-mtunull-and-mtu-updated-in-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE debug: mtu=null and MTU updated: … in logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-sleep-wake-and-auto-reconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS sleep / wake and auto-reconnect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-sleep-wake-and-auto-reconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows sleep / wake and auto-reconnect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-contact-age-prune-and-favorites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore contact age prune and favorites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-reply-misquote-duplicate-chat-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore reply misquote / duplicate chat messages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-modules-tab-waiting-for-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic Modules tab: “waiting for settings”
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serial-port-not-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serial port not detected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-serial-port-access-denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux: serial port access denied
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flatpak-vmwgfx-driver-missing-vmware-on-macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flatpak: vmwgfx: driver missing (VMware on macOS)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-development-sigill-during-pnpm-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGILL during pnpm install
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-development-sigsegv-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGSEGV on startup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-file-is-damaged-and-cannot-be-opened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: File is damaged and cannot be opened
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-crashes-on-launch-macos-distributable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App crashes on launch (macOS distributable)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-shows-disconnected-but-device-is-still-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App shows "disconnected" but device is still on
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-usb-serial-reconnect-fails-with-port-is-already-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic USB serial: reconnect fails with "port is already open"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-meshtastic-usb-serial-app-frozen-or-stuck-on-reconnecting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore / Meshtastic USB serial: app frozen or stuck on "Reconnecting…"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-or-transport-issues-use-log-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection or transport issues: use Log Analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting-bugs-copy-debug-snapshot-app-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting bugs: Copy Debug Snapshot (App tab)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phantom-chat-unread-on-channels-not-on-the-radio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phantom chat unread on channels not on the radio
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat stuck: new traffic in logs/DB but messages do not appear
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-or-rooms-scroll-jumps-when-switching-tabs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat or Rooms: scroll jumps when switching tabs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodes-list-shows-wrong-protocol-labels-or-mixed-meshtasticmeshcore-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nodes list shows wrong protocol labels or mixed Meshtastic/MeshCore rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat-notification-sounds-when-the-window-is-minimized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat notification sounds when the window is minimized
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-messages-in-the-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission messages in the console
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-run-distmac-fails-with-gh_token-cannot-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm run dist:mac fails with GH_TOKEN / "Cannot cleanup"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0190-when-running-electron-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0190] when running electron-builder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duplicate-dependency-references-during-dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicate dependency references during dist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-packaged-app-cannot-find-module-readable-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux packaged app: Cannot find module 'readable-stream'
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dep0169-urlparse-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0169] / url.parse() deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-native-module-failed-to-load-dialog-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "A native module failed to load" dialog on startup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with "space in the path" or EPERM on native modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-0x80010135-path-too-long-eg-bluetooth_hci_socketlastbuildstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: 0x80010135 / "Path too long" (e.g. bluetooth_hci_socket.lastbuildstate)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-schema-newer-than-this-app-downgrade-blocked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database schema newer than this app (downgrade blocked)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-directory-is-not-writable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database directory is not writable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#language-and-translations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language and Translations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-wifi-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP / WiFi connection issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-lost-after-n-reconnect-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Connection lost after N reconnect attempts"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-subscribe-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: "Subscribe failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-keeps-disconnecting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT keeps disconnecting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connected-but-no-messages-from-other-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT connected but no messages from other nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-expired-on-letsmeshcolorado-mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Token expired" on LetsMesh/Colorado Mesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-connection-refused-or-broker-unreachable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT "Connection refused" or broker unreachable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mqtt-private-broker-no-decrypt-or-no-uplink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT: private broker — no decrypt or no uplink
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-configure-node-remotely-does-nothing-or-is-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic: Configure node remotely does nothing or is disabled
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-remote-admin-one-or-more-channel-settings-could-not-be-loaded-longfast-load-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic remote admin: "One or more channel settings could not be loaded" / "LongFast load failed"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshtastic-mqtt-decrypt-works-on-other-clients-but-not-mesh-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Meshtastic MQTT: decrypt works on other clients but not mesh-client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ble-auto-reconnect-no-previously-connected-ble-device-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BLE auto-reconnect: "No previously connected BLE device found"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gps-location-unavailable-or-stuck-on-the-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPS "Location unavailable" or stuck on the map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#something-went-wrong-blank-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Something went wrong" blank screen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#macos-representedobject-is-not-a-weakptrtoelectronmenumodelasnsobject-when-typing-in-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-check-fails-footer-update-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update check fails / footer update status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-tab-without-internet-offline-no-wan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map tab without internet (offline / no WAN)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-offline-behavior-manual-qa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying offline behavior (manual QA)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-panel-restored-from-last-session-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics panel: "restored from last session" banner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-look-stale-or-overcrowded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics look stale or overcrowded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-signal-bars-on-some-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No signal bars on some nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-telemetry-returns-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Telemetry" returns timeout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-get-neighbors-button-not-visible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: "Get Neighbors" button not visible
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-cannot-connect-via-bluetooth-usb-or-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Cannot connect via Bluetooth, USB, or HTTP
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-room-server-login-posts-and-windows-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Room server login, posts, and Windows 10
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-trace-route-or-ping-trace-times-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore: Trace Route or Ping trace times out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cant-see-rf-packets-on-custom-mqtt-broker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can't see RF packets on custom MQTT broker
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="troubleshooting">Troubleshooting</h1>
+<p>Setup (clone, prerequisites, Flatpak build steps) is in <a href="../development-environment/">development-environment.md</a>. This page covers runtime failures, connections, and packaged installs.</p>
+<h3 id="pnpm-install-fails-on-native-module-compilation"><code>pnpm install</code> fails on native module compilation</h3>
+<p>See <a href="../development-environment/">development-environment.md</a> for OS-specific prerequisite installation.</p>
+<h3 id="windows-installed-files-present-but-mesh-clientexe-is-missing-windows-11-arm">Windows: installed files present but <code>Mesh-client.exe</code> is missing (Windows 11 ARM)</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>After running the NSIS installer, <code>%LOCALAPPDATA%\Programs\Mesh-client\</code> contains <code>resources\</code>, <code>locales\</code>, DLLs, and a Start Menu shortcut, but <strong><code>Mesh-client.exe</code> is absent</strong>.</li>
+<li>The app does not appear under <strong>Settings → Apps → Installed apps</strong>, so there is no uninstall entry (registry <code>DisplayIcon</code> points at the missing exe).</li>
+<li>Windows Security <strong>Protection history</strong> shows no quarantine.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<p>On <strong>native Windows 11 ARM</strong>, older arm64 NSIS installers used <code>Nsis7z</code> on <code>app-arm64.7z</code> archives compressed with ARM64 LZMA. That path can partially extract support files while dropping the main executable. CI builds the exe correctly (it is inside the installer payload); the failure happens at <strong>install time</strong>, not during packaging. Current releases use zip-compressed NSIS payloads (<code>useZip</code>) to avoid this extractor path.</p>
+<p>Older releases also shipped a <strong>universal</strong> NSIS installer (x64 + arm64 in one <code>.exe</code>), which made arch selection worse — use the split <strong><code>-arm64.exe</code></strong> installer on WoA hardware.</p>
+<p><strong>Fix</strong></p>
+<ol>
+<li>Delete the broken install folder: <code>%LOCALAPPDATA%\Programs\Mesh-client\</code></li>
+<li>Download the <strong>arm64</strong> installer from <a href="https://github.com/Colorado-Mesh/mesh-client/releases">GitHub Releases</a>: <code>Mesh-client Setup {version}-arm64.exe</code> (not the x64-only <code>Mesh-client Setup {version}.exe</code>).</li>
+<li>Re-run the installer. Confirm <code>Mesh-client.exe</code> exists in the install folder and the app appears in <strong>Installed apps</strong>.</li>
+</ol>
+<p><strong>Diagnostic checklist (if the exe is still missing)</strong></p>
+<p>Capture this before opening a GitHub issue — it helps isolate NSIS extract vs copy vs policy blocks:</p>
+<ol>
+<li><strong>NSIS install log</strong> — run the installer from Command Prompt or PowerShell with logging:
+   <code>bat
+   "Mesh-client Setup {version}-arm64.exe" /LOG=%USERPROFILE%\Desktop\mesh-install.log</code>
+   After failure, open <code>mesh-install.log</code> and search for <code>Mesh-client.exe</code>, <code>CopyFiles</code>, or <code>error</code>.</li>
+<li><strong>Event Viewer</strong> — <strong>Windows Logs → Application</strong> during the install window; note any errors from <code>MsiInstaller</code>, <code>Application Error</code>, or antivirus agents.</li>
+<li><strong>Controlled folder access</strong> — <strong>Windows Security → Virus &amp; threat protection → Ransomware protection</strong>; if enabled, try temporarily allowing the installer or install to a short path such as <code>C:\mc-test</code> (see step 5).</li>
+<li><strong>Install path</strong> — confirm <code>%LOCALAPPDATA%</code> is on a local NTFS volume, not OneDrive-redirected or sync-rooted.</li>
+<li><strong>Custom install directory</strong> — test a short path:
+   <code>bat
+   "Mesh-client Setup {version}-arm64.exe" /D=C:\mc-test /LOG=%USERPROFILE%\Desktop\mesh-install.log</code></li>
+<li><strong>Clean tree</strong> — ensure no leftover <code>Mesh-client</code> folder or running <code>Mesh-client.exe</code> from a prior partial install before re-running the installer.</li>
+</ol>
+<p><strong>Workaround before a fixed release</strong></p>
+<p>Download a CI or release artifact's <code>win-arm64-unpacked</code> folder and run <code>Mesh-client.exe</code> directly (portable, no installer).</p>
+<h3 id="windows-could-not-find-any-visual-studio-installation-to-use">Windows: "Could not find any Visual Studio installation to use"</h3>
+<p>See <a href="../development-environment/#windows">development-environment.md</a> for required build tools and the full recovery steps.</p>
+<h3 id="windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp">Windows: "Could not find any Python installation to use" (e.g. when building <code>@serialport/bindings-cpp</code>)</h3>
+<p>See <a href="../development-environment/#windows">development-environment.md</a> for Python setup and npm/node-gyp troubleshooting.</p>
+<h3 id="ble-connection-fails-with-connection-attempt-failed">BLE connection fails with "Connection attempt failed"</h3>
+<ul>
+<li>Make sure your device has Bluetooth enabled and is in pairing mode</li>
+<li>On macOS: check <strong>System Settings &gt; Privacy &amp; Security &gt; Bluetooth</strong></li>
+<li>Try disconnecting fully first, then reconnecting</li>
+<li>If the device picker never appears, restart the app</li>
+</ul>
+<h3 id="ble-known-issues">BLE known issues</h3>
+<ul>
+<li><strong>Bluetooth adapter not found</strong>: ensure Bluetooth is enabled at the OS level. On Linux: <code>systemctl status bluetooth</code> and <code>rfkill list</code>. On macOS: check <strong>System Settings &gt; Bluetooth</strong>. On Windows: <strong>Settings → Bluetooth &amp; devices</strong>.</li>
+<li><strong>Device not discovered</strong>: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.</li>
+<li>If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.</li>
+</ul>
+<h4 id="ble-debug-mtunull-and-mtu-updated-in-logs">BLE debug: <code>mtu=null</code> and <code>MTU updated: …</code> in logs</h4>
+<ul>
+<li>After <strong>Noble</strong> <code>connectAsync</code>, <strong><code>mtu=null</code></strong> is common until the stack finishes ATT MTU negotiation.</li>
+<li>A line like <strong><code>MTU updated: 20</code></strong> comes from the Noble <code>mtu</code> event. ATT_MTU must be <strong>≥ 23</strong> per spec; the client <strong>coerces reported values below 23 to 23</strong> for write sizing (treating odd values such as <strong>20</strong> as a Noble/binding quirk, not a literal 20-octet ATT MTU). A <strong>one-time debug</strong> line may note the raw value when that happens (not a warning).</li>
+<li><strong>Slow NodeDB / large config sync over BLE</strong> can still be limited by <strong><code>@meshtastic/core</code></strong> queue timing (hundreds of ms between queued packets), not only GATT MTU. Use <strong>Log → Analyze</strong> for hints, or try <strong>USB serial</strong> / <strong>TCP</strong> if throughput matters.</li>
+</ul>
+<p><strong>Windows-specific:</strong></p>
+<ul>
+<li>Before connecting to a MeshCore device over BLE, pair it first in <strong>Settings → Bluetooth &amp; devices → Add device</strong>. Without pairing, the connection appears to succeed but no data is exchanged.</li>
+</ul>
+<p><strong>Linux-specific:</strong></p>
+<ul>
+<li>The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (<code>systemctl status bluetooth</code>).</li>
+<li>Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.</li>
+<li>If the Bluetooth adapter isn't detected, check: <code>systemctl status bluetooth</code> and <code>rfkill list</code>.</li>
+<li><strong>MeshCore:</strong> After you pick a radio, the app checks <code>bluetoothctl info &lt;MAC&gt;</code>. If the device is <strong>not</strong> paired at the OS level, you are prompted for the <strong>PIN shown on the device</strong> and pairing runs via <strong><code>bluetooth-pair</code></strong> before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN <code>123456</code> on the first pairing prompt from Chromium).</li>
+<li>If device pairing fails with "Connection attempt failed", try the <strong>"Remove &amp; Re-pair Device"</strong> button in the app, or manually remove via <code>bluetoothctl</code>:
+  <code>bash
+  bluetoothctl
+  # Inside bluetoothctl:
+  remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
+  # Then re-pair from the app</code></li>
+<li>For <strong>Meshtastic</strong> devices, the first Chromium pairing attempt may use PIN <code>123456</code>. For <strong>MeshCore</strong>, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).</li>
+<li>If devices won't pair or connect, power-cycle Bluetooth:
+  <code>bash
+  bluetoothctl power off
+  bluetoothctl power on</code></li>
+<li>MeshCore devices must be in Bluetooth Companion mode. If you still see bonds without a PIN, remove the device in <code>bluetoothctl</code> or use <strong>Remove &amp; Re-pair Device</strong>, then connect again.</li>
+</ul>
+<h3 id="macos-sleep-wake-and-auto-reconnect">macOS sleep / wake and auto-reconnect</h3>
+<p>After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly <strong>4 seconds</strong> after wake before Meshtastic RF auto-reconnect runs, then MeshCore about <strong>8 seconds</strong> later (plus up to <strong>30 seconds</strong> while MeshCore waits for Meshtastic Noble configure to finish when both use BLE).</p>
+<ul>
+<li><strong>Noble BLE:</strong> The client tries an immediate connect (main-process peripheral cache) before scanning up to <strong>30 seconds</strong> for a new advertisement.</li>
+<li><strong>Stuck “reconnecting” banner:</strong> During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use <strong>Disconnect &amp; Quit</strong> from the Connection tab or quit the app and reconnect manually.</li>
+<li><strong>Dual-protocol BLE (Meshtastic + MeshCore):</strong> After wake, connect <strong>MeshCore first</strong>, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.</li>
+<li><strong>BLE stack stuck after wake</strong> (<code>unknown peripheral</code>, <code>connectAsync timed out</code>, <code>peripheral not found</code> in the app log): <strong>Quit mesh-client fully</strong> (Cmd+Q), toggle <strong>Bluetooth off → on</strong> in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use <strong>Connect</strong> on the Connection tab.</li>
+<li><strong>MQTT-only:</strong> Transient errors such as <code>ENETDOWN</code> or <code>ENETUNREACH</code> after wake should recover automatically.</li>
+</ul>
+<h3 id="windows-sleep-wake-and-auto-reconnect">Windows sleep / wake and auto-reconnect</h3>
+<p>After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly <strong>4 seconds</strong> after wake before Meshtastic RF auto-reconnect runs, then MeshCore about <strong>8 seconds</strong> later (plus up to <strong>30 seconds</strong> while MeshCore waits for Meshtastic Noble configure to finish when both use BLE over Noble IPC).</p>
+<ul>
+<li><strong>Noble BLE:</strong> Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to <strong>30 seconds</strong> scanning for a new advertisement).</li>
+<li><strong>Stuck “reconnecting” banner:</strong> During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use <strong>Disconnect &amp; Quit</strong> from the Connection tab or exit the app fully and reconnect manually.</li>
+<li><strong>Dual-protocol BLE (Meshtastic + MeshCore):</strong> After wake, connect <strong>MeshCore first</strong>, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.</li>
+<li><strong>MeshCore pairing after wake:</strong> If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is <strong>paired in Settings → Bluetooth &amp; devices</strong> before using <strong>Connect</strong> in mesh-client (MeshCore requires OS-level pairing on Windows).</li>
+<li><strong>BLE stuck after wake</strong> (<code>connectAsync timed out</code>, <code>peripheral not found</code>, or GATT notify watchdog messages in the app log): <strong>Exit mesh-client fully</strong>, toggle <strong>Bluetooth off → on</strong> in <strong>Settings → Bluetooth &amp; devices</strong> (or disable/enable the adapter in <strong>Device Manager</strong>), wait a few seconds, reopen the app, then use <strong>Connect</strong>. If disconnects persist, update the Bluetooth driver in Device Manager.</li>
+<li><strong>MQTT-only:</strong> Transient errors such as <code>ENETDOWN</code> or <code>ENETUNREACH</code> after wake should recover automatically.</li>
+</ul>
+<p><strong>Linux Web Bluetooth:</strong> Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see <strong>Linux-specific</strong> under <a href="#ble-known-issues">BLE known issues</a> above for pairing and adapter reset steps.</p>
+<h3 id="meshcore-contact-age-prune-and-favorites">MeshCore contact age prune and favorites</h3>
+<p>Startup maintenance can delete stale MeshCore contacts by age. Important details:</p>
+<ul>
+<li><strong><code>last_advert</code> is Unix seconds</strong>, not milliseconds. Invalid retention day counts are ignored (they previously caused mass deletes).</li>
+<li><strong>Favorited contacts are exempt</strong> from age-based deletion.</li>
+<li>Contacts with <strong><code>NULL last_advert</code></strong> are never age-pruned (only count-based limits apply).</li>
+<li>If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (<code>patchNodeFavorited</code> on the active connection identity).</li>
+</ul>
+<h3 id="meshcore-reply-misquote-duplicate-chat-messages">MeshCore reply misquote / duplicate chat messages</h3>
+<p><strong>Reply misquote cause:</strong> The official MeshCore companion firmware sends unkeyed replies — <code>@[Display Name] body</code> — without identifying the parent message. The receiving client makes a best-guess match using the most recent message from that sender, which is wrong when the user replies to an older message. This is a wire protocol limitation, not a bug in any single client.</p>
+<p>The client deduplicates overlapping RF and MQTT hears within <strong>5 minutes</strong> (cross-transport and channel RF replay). Room posts and tapbacks use a <strong>60 second</strong> window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.</p>
+<p><strong>Reactions on other clients:</strong> By default mesh-client sends tapbacks and text replies as keyless <code>@[Display Name] …</code> (official companion wire). Inbound keyed <code>@[Name#key]</code> and emoji-only replies render locally as tapback badges via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>meshcorePromoteEmojiOnlyReplyToTapback</code></a>. Inbound MeshCore Open wire (<code>r:HASH:INDEX</code>, <code>g:GIFID</code>) is always parsed for display.</p>
+<p><strong>MeshCore Open compatibility (optional):</strong> In <strong>App → MeshCore Open wire (experimental)</strong>, enable <strong>MeshCore Open compatibility</strong> to send keyed text replies (<code>@[Name#key] body</code>), compact <code>r:</code> reactions (fallback to keyless tapback when the emoji is not in the Open index), and <code>g:</code> Giphy GIFs (paste URL/ID or use the <strong>GIF</strong> button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: <a href="../meshcore-meshtastic-parity/#meshcore-emoji-reactions-tapbacks">meshcore-meshtastic-parity.md — MeshCore emoji reactions</a> and <a href="../meshcore-meshtastic-parity/#meshcore-open-gif-wire-ggifid">GIF wire</a>.</p>
+<h3 id="meshtastic-modules-tab-waiting-for-settings">Meshtastic Modules tab: “waiting for settings”</h3>
+<p>If a module section stays on <strong>Waiting for … settings from the device</strong> with Apply disabled:</p>
+<ul>
+<li>The connected firmware may not expose that module key.</li>
+<li><strong>Remote configure</strong> may still be loading module slices; retry the configure load or check the local radio link.</li>
+<li><strong>Apply stays disabled</strong> until the device slice hydrates — this prevents overwriting device config with form defaults.</li>
+</ul>
+<h3 id="serial-port-not-detected">Serial port not detected</h3>
+<p>See <a href="../development-environment/">development-environment.md</a> for OS-specific serial setup and driver guidance.</p>
+<h3 id="linux-serial-port-access-denied">Linux: serial port access denied</h3>
+<p><strong>Symptom</strong>: <code>Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED</code></p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Ensure your user is in the <code>dialout</code> group (see <a href="../development-environment/#serial-permissions">development-environment.md — Linux serial permissions</a>).</li>
+<li>Log out and back in after changing groups.</li>
+<li>Verify with <code>groups</code>.</li>
+<li>If the group is missing:
+   <code>bash
+   sudo groupadd dialout
+   sudo usermod -a -G dialout $USER
+   newgrp dialout</code></li>
+</ol>
+<h3 id="flatpak-vmwgfx-driver-missing-vmware-on-macos">Flatpak: <code>vmwgfx: driver missing</code> (VMware on macOS)</h3>
+<p><strong>Symptom</strong>: <code>flatpak run org.coloradomesh.MeshClient</code> fails or exits after Mesa logs <code>vmwgfx: driver missing</code> (use <code>flatpak -v run ...</code> to see it). Common on <strong>Linux guests in VMware Fusion or Workstation with a macOS host</strong>, including <strong>aarch64</strong> Ubuntu/ARM VMs.</p>
+<p><strong>Cause</strong>: The Flatpak uses the same GPU stack as the x86_64 bundle (<code>--device=all</code>, Wayland/X11). It expects a working virtual GPU in the guest. On macOS-hosted VMware, <strong>3D acceleration / <code>vmwgfx</code> is often off or unsupported</strong> unless you enable it in the VM settings — without that, Mesa cannot open the VMware DRI driver and Electron’s GPU process fails.</p>
+<p><strong>Fix</strong> (preferred — hardware acceleration):</p>
+<ol>
+<li>Shut down the Linux VM.</li>
+<li>In <strong>VMware Fusion</strong> or <strong>Workstation</strong> (on the Mac host): turn on <strong>Accelerate 3D graphics</strong> / <strong>3D acceleration</strong> for this VM (exact label varies by VMware version).</li>
+<li>Boot the guest and confirm the driver is present, for example:
+   <code>bash
+   grep DRIVER=vmwgfx /sys/class/drm/card*/device/uevent</code></li>
+<li>Reinstall or rerun the Flatpak:
+   <code>bash
+   flatpak run org.coloradomesh.MeshClient</code></li>
+</ol>
+<p><strong>Workaround</strong> (software rendering when the host cannot expose <code>vmwgfx</code>):</p>
+<pre><code class="language-bash">MESH_CLIENT_DISABLE_GPU=1 flatpak run org.coloradomesh.MeshClient
+</code></pre>
+<p>When <code>/sys/class/drm</code> is visible inside the sandbox, the wrapper may auto-detect <code>vmwgfx</code> and set <code>MESH_CLIENT_DISABLE_GPU=1</code> if DRI is unreliable there. Opt out of auto-detection: <code>MESH_CLIENT_DISABLE_GPU=0 flatpak run ...</code>. Force GPU despite detection: <code>MESH_CLIENT_ENABLE_GPU=1 flatpak run ...</code>.</p>
+<p><strong>Reinstall a release bundle</strong> after downloading a new <code>.flatpak</code> from <a href="https://github.com/Colorado-Mesh/mesh-client/releases">GitHub Releases</a>:</p>
+<pre><code class="language-bash">flatpak uninstall --user org.coloradomesh.MeshClient
+flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak # or -x86_64
+flatpak run org.coloradomesh.MeshClient
+</code></pre>
+<h3 id="linux-development-sigill-during-pnpm-install">Linux development: SIGILL during <code>pnpm install</code></h3>
+<p><strong>Symptom</strong>: <code>electron exited with signal SIGILL</code> during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
+pnpm run rebuild
+</code></pre>
+<p>Run <code>pnpm run rebuild</code> on a host where the bundled Electron binary executes correctly.</p>
+<h3 id="linux-development-sigsegv-on-startup">Linux development: SIGSEGV on startup</h3>
+<p><strong>Symptom</strong>: <code>electron exited with signal SIGSEGV</code> when running from source (GPU process; see <a href="https://github.com/electron/electron/issues/41980">electron#41980</a>).</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">pnpm run build &amp;&amp; pnpm dlx electron . --disable-gpu
+</code></pre>
+<p>Or:</p>
+<pre><code class="language-bash">pnpm run electron:open -- --disable-gpu
+</code></pre>
+<p>Optional persistent mitigation:</p>
+<ul>
+<li><code>export MESH_CLIENT_DISABLE_GPU=1</code></li>
+<li><code>ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open</code></li>
+</ul>
+<h3 id="macos-file-is-damaged-and-cannot-be-opened">macOS: File is damaged and cannot be opened</h3>
+<p><strong>Cause:</strong> macOS tags downloads with the <strong><code>com.apple.quarantine</code></strong> extended attribute. For apps that are <strong>not signed with a Developer ID</strong> and <strong>not notarized</strong>, Gatekeeper may show <strong>"File is damaged and cannot be opened"</strong> (or <strong>"Mesh-client" is damaged and can't be opened</strong>) instead of the usual unidentified-developer prompt. This is a <strong>security / quarantine</strong> behavior and is <strong>common on Apple silicon</strong> for community-built Electron binaries.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Open <strong>System Settings → Privacy &amp; Security</strong> and scroll to the bottom. If you see "Mesh-client was blocked from use", click <strong>Allow</strong> to run the app.</li>
+<li>If you don't see the Mesh-client entry in Privacy &amp; Security, or the app still won't open after clicking Allow, strip the quarantine attribute; adjust the path if the app is still under <strong>Downloads</strong> or another folder:</li>
+</ol>
+<pre><code class="language-bash">xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
+</code></pre>
+<p>After running xattr, check Privacy &amp; Security again (scroll to the bottom); the entry should now appear with an <strong>Allow</strong> button.</p>
+<p><strong>Right-click → Open</strong> on first launch can also help in some cases. Background and discussion: <a href="https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730">jeffvli/feishin#104 (comment)</a>.</p>
+<h3 id="app-crashes-on-launch-macos-distributable">App crashes on launch (macOS distributable)</h3>
+<ul>
+<li><strong>macOS 26 (Tahoe) + EXC_BREAKPOINT at launch</strong>: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets <code>mac.identity: null</code> in <code>electron-builder.yml</code> so the packaged app is unsigned and avoids that re-sign path; first open may require <strong>Right-click → Open</strong> or clearing quarantine (<a href="#macos-file-is-damaged-and-cannot-be-opened">macOS: File is damaged…</a> above). For notarized releases, set a real Developer ID in <code>mac.identity</code> and retest on macOS 26. See <a href="https://github.com/electron/electron/issues/49522">electron#49522</a> and <a href="https://github.com/electron-userland/electron-builder/issues/9396">electron-builder#9396</a>.</li>
+<li>This may also be a native module signing issue; try rebuilding: <code>pnpm run dist:mac</code></li>
+<li>If building from source: make sure <code>pnpm install</code> completed without errors</li>
+</ul>
+<h3 id="app-shows-disconnected-but-device-is-still-on">App shows "disconnected" but device is still on</h3>
+<ul>
+<li>The Bluetooth connection can drop silently; click Disconnect, then Connect again</li>
+<li>For serial: the USB cable may have been bumped; reconnect</li>
+</ul>
+<h3 id="meshtastic-usb-serial-reconnect-fails-with-port-is-already-open">Meshtastic USB serial: reconnect fails with "port is already open"</h3>
+<p>After <strong>Disconnect</strong> then <strong>Connect</strong> (or auto-reconnect), the connection panel may show:</p>
+<p><code>Failed to execute 'open' on 'SerialPort': The port is already open.</code></p>
+<p>This means Chromium still holds the previous Web Serial session (locked streams). mesh-client ships patched <code>@meshtastic/core</code> and <code>@meshtastic/transport-web-serial</code> to tear down pipes on disconnect; if you still see this on an older build:</p>
+<ol>
+<li><strong>Quit mesh-client completely</strong> (not only Disconnect) and reopen the app, then connect again.</li>
+<li>Or <strong>unplug and replug</strong> the USB cable, then connect.</li>
+<li>Open the <strong>Log</strong> panel, enable <strong>debug</strong>, reproduce once, and click <strong>Analyze</strong> — look for <strong>USB Serial Reconnect</strong> recommendations.</li>
+</ol>
+<p>BLE or Wi‑Fi/HTTP avoids this USB serial path when you need a reliable reconnect loop.</p>
+<h3 id="meshcore-meshtastic-usb-serial-app-frozen-or-stuck-on-reconnecting">MeshCore / Meshtastic USB serial: app frozen or stuck on "Reconnecting…"</h3>
+<p>If the UI stops updating but the radio is still powered, Chromium may be holding a <strong>zombie Web Serial session</strong> (streams stalled with no error). mesh-client now:</p>
+<ol>
+<li>Times out serial <code>open</code> / reconnect after <strong>15 seconds</strong> instead of hanging forever.</li>
+<li>Treats <strong>3 minutes</strong> without inbound traffic as a dead link (serial watchdog) and starts auto-reconnect.</li>
+<li>After <strong>5 failed</strong> auto-reconnect attempts, revokes the stale port permission (<code>SerialPort.forget()</code> when supported), clears saved port identity, and shows <strong>Select serial port</strong> in the connection banner (opens the normal port picker).</li>
+</ol>
+<p>If auto-recovery does not help:</p>
+<ol>
+<li><strong>Quit mesh-client completely</strong> (not only Disconnect), unplug/replug USB if needed, reopen, and use <strong>Select serial port</strong>.</li>
+<li>Open <strong>Log → Analyze</strong> after enabling <strong>debug</strong> — look for <strong>USB Serial Reconnect</strong> patterns.</li>
+</ol>
+<p>This applies on <strong>Windows, macOS, and Linux</strong> (same Web Serial stack). Linux <strong>permission denied</strong> before the first connect is a separate issue — see <a href="#linux-serial-port-access-denied">Linux: serial port access denied</a>.</p>
+<h3 id="connection-or-transport-issues-use-log-analyze">Connection or transport issues: use Log <strong>Analyze</strong></h3>
+<p>Open the <strong>Log</strong> panel (right rail), enable <strong>debug</strong> if needed, reproduce the problem, then click <strong>Analyze</strong>. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists <strong>suggested next steps</strong>. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is <strong>heuristic</strong>; treat recommendations as hints, not guarantees.</p>
+<h3 id="reporting-bugs-copy-debug-snapshot-app-tab">Reporting bugs: <strong>Copy Debug Snapshot</strong> (App tab)</h3>
+<p>For Chat, unread badges, or “connected but UI looks stale” reports, use <strong>App → Data Management → Copy Debug Snapshot</strong> before opening a GitHub issue. The button copies a JSON support bundle to the clipboard (via Electron clipboard IPC, not the browser API).</p>
+<p><strong>What to read first (ignore misleading <code>offline-*</code> ids):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Healthy connected example</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sessionSummary.&lt;protocol&gt;.liveSession</code></td>
+<td><code>true</code></td>
+<td>RF/MQTT session is live</td>
+</tr>
+<tr>
+<td><code>sessionSummary.&lt;protocol&gt;.sessionState</code></td>
+<td><code>"live"</code></td>
+<td>Not DB-hydrated-only</td>
+</tr>
+<tr>
+<td><code>activeTab.liveSession</code></td>
+<td><code>true</code></td>
+<td>Active protocol tab is connected</td>
+</tr>
+<tr>
+<td><code>warnings</code></td>
+<td><code>[]</code></td>
+<td>No stuck-chat signatures detected</td>
+</tr>
+</tbody>
+</table>
+<p>The top-level <strong><code>legend</code></strong> explains that ids like <code>offline-meshcore</code> are <strong>internal hydration-slot store keys</strong>, not “disconnected.” When connect reuses that slot (<code>hydrationSlotIsLiveSession: true</code>), the id still contains <code>offline-</code> while BLE/MQTT are up — that is <strong>expected</strong>.</p>
+<p><strong>Per-protocol bucket fields</strong> (under <code>meshtastic</code> / <code>meshcore</code>):</p>
+<ul>
+<li><code>hydrationSlotId</code> — pre-connect DB hydration bucket (<code>offline-meshtastic</code> / <code>offline-meshcore</code>).</li>
+<li><code>connectIdentityId</code> — connected radio/MQTT identity.</li>
+<li><code>uiStoreIdentityId</code> — bucket Chat and Nodes read from.</li>
+<li><code>identitySplit: true</code> while transport is connected — <strong>suspicious</strong> (live ingress and UI may disagree).</li>
+<li><code>ui.chatPanelFrozen</code> + <code>frozenMessageCount</code> lagging <code>liveResolvedMessageCount</code> — Chat list may be frozen while messages still arrive.</li>
+</ul>
+<p><strong>Automatic warning codes</strong> in <code>warnings[]</code>: <code>identitySplit</code>, <code>staleResolvedBucket</code>, <code>chatPanelFrozen</code>, <code>connectedNoPrimaryMessages</code>, <code>windowHiddenOnChat</code>.</p>
+<p>Attach the JSON (redact <code>myNodeNum</code> if you prefer) alongside <strong>Log → Export</strong> when possible.</p>
+<h3 id="phantom-chat-unread-on-channels-not-on-the-radio">Phantom chat unread on channels not on the radio</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>Sidebar <strong>Chat</strong> badge or channel pills show unread counts on MeshCore channels you did not configure (zero PSK / not on the radio).</li>
+<li>Badge counts disagree between the sidebar and Chat channel pills after upgrade or protocol switch.</li>
+<li><strong>Copy Debug Snapshot</strong> shows messages on <code>ch:1</code> (or higher) while the radio only has channel 0 configured.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<p>Stale <code>mesh-client:lastRead:&lt;protocol&gt;</code> watermarks (including legacy merged keys) or DB messages on channel indices the radio no longer uses. MeshCore unread badges intentionally ignore zero-PSK slots; poisoned last-read values can still inflate counts until sanitized.</p>
+<p><strong>Fix</strong></p>
+<ol>
+<li>Open <strong>Chat</strong>, visit each configured channel once (marks last-read), or use <strong>App → Data Management → Copy Debug Snapshot</strong> to confirm channel indices vs runtime channels.</li>
+<li>If counts persist after visiting channels, clear last-read for the protocol in browser devtools (<code>localStorage.removeItem('mesh-client:lastRead:meshcore')</code> or <code>meshtastic</code>) and reload — you will lose per-channel read state.</li>
+<li>For stuck sidebar totals with live traffic in logs, see <a href="#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear">Chat stuck</a> and attach a debug snapshot when filing an issue.</li>
+</ol>
+<h3 id="chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear">Chat stuck: new traffic in logs/DB but messages do not appear</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>BLE/MQTT show connected; <strong>Log</strong> or SQLite still records new messages.</li>
+<li>Chat scroll area jumps or unread badges move, but <strong>message list stops updating</strong> (often after reconnect or protocol switch).</li>
+<li>A <strong>Copy Debug Snapshot</strong> may show <code>identitySplit: true</code>, <code>staleResolvedBucket</code>, or <code>connectMessageCount</code> newer than <code>uiStoreMessageCount</code>.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<p>Live packets were written to the <strong>connected identity</strong> store bucket while Chat read the <strong>offline hydration</strong> bucket (<code>offline-meshcore</code> / <code>offline-meshtastic</code>). This could happen when the connected identity was empty on reconnect and the UI fell back to the hydration slot even though ingress had resumed on the live id.</p>
+<p><strong>Fix</strong></p>
+<ol>
+<li>Update to a build that includes the identity-bucket fix (merge on connect, stricter offline fallback, reactive identity resolution).</li>
+<li><strong>Disconnect and reconnect</strong>, or quit and reopen the app so offline slices merge into the connected identity.</li>
+<li>If Chat is still stale: <strong>App → Copy Debug Snapshot</strong> and attach to your issue; check <code>warnings</code> and <code>sessionSummary</code>.</li>
+<li>As a last resort before clearing data: <strong>App → Export Database</strong>, then try <strong>Import (merge)</strong> after updating — do not downgrade the app after migrations.</li>
+</ol>
+<p>This is <strong>not</strong> SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.</p>
+<h3 id="chat-or-rooms-scroll-jumps-when-switching-tabs">Chat or Rooms: scroll jumps when switching tabs</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>Leaving <strong>Chat</strong> or <strong>Rooms</strong> and returning jumps to the bottom, or scroll position is lost, even when you were reading older messages.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<p>Older builds remounted panel content on tab switch. Recent fixes restore scroll position on re-entry and only auto-scroll to latest when you were already pinned to the bottom.</p>
+<p><strong>Fix</strong></p>
+<ul>
+<li>Update to the latest release.</li>
+<li>If you were scrolled up reading history, the panel should return to the same position after tab switch.</li>
+<li>If you were at the bottom, new messages should still scroll into view on return.</li>
+</ul>
+<h3 id="nodes-list-shows-wrong-protocol-labels-or-mixed-meshtasticmeshcore-rows">Nodes list shows wrong protocol labels or mixed Meshtastic/MeshCore rows</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>Meshtastic <strong>Nodes</strong> includes MeshCore-only contacts (or vice versa) after upgrading from an older database.</li>
+<li>Room-server rows appear under the wrong protocol tab.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<p>Legacy SQLite rows could cross-contaminate the shared <code>nodes</code> table before protocol-scoped identity stores. Startup maintenance now repairs and guards ingest on current builds.</p>
+<p><strong>Fix</strong></p>
+<ul>
+<li>Update to the latest release and <strong>restart once</strong> so idempotent startup repairs run (<code>db-schema-sync</code>).</li>
+<li>If the list is still wrong, export the DB, note your app version, and file an issue with <strong>Copy Debug Snapshot</strong> + <strong>Log → Export</strong>.</li>
+</ul>
+<h3 id="chat-notification-sounds-when-the-window-is-minimized">Chat notification sounds when the window is minimized</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>No sound for DMs/replies when the app is in the background, or only a single tone for all message types.</li>
+</ul>
+<p><strong>Fix</strong></p>
+<ul>
+<li>Check <strong>App</strong> notification mute and per-channel/DM mute in Chat.</li>
+<li>Recent builds use distinct Web Audio tones (channel vs DM/reply) and resume audio when the window is hidden or minimized. Ensure the app is not globally muted (<code>mesh-client:notifMuted</code> in localStorage clears when you re-enable sounds in UI).</li>
+</ul>
+<p><strong>Meshtastic desktop notifications</strong> remain visual-only (<code>silent: true</code>); typed sounds come from the app’s Web Audio path.</p>
+<h3 id="permission-messages-in-the-console">Permission messages in the console</h3>
+<p><code>[permissions] checkHandler: media → denied</code> and <code>web-app-installation → denied</code> are expected. The app only uses <strong>serial</strong> and <strong>geolocation</strong>; media and web-app-installation are intentionally denied.</p>
+<h3 id="pnpm-run-distmac-fails-with-gh_token-cannot-cleanup"><code>pnpm run dist:mac</code> fails with <code>GH_TOKEN</code> / "Cannot cleanup"</h3>
+<p>electron-builder publishes to GitHub when it thinks it's in CI. Local builds use <code>--publish never</code> so artifacts land in <code>release/</code> without a token. Tag releases use <code>pnpm run dist:mac:publish</code> (and <code>:linux:publish</code> / <code>:win:publish</code>) with <code>GH_TOKEN</code> set; see <code>.github/workflows/release.yaml</code>.</p>
+<h3 id="dep0190-when-running-electron-builder"><code>[DEP0190]</code> when running electron-builder</h3>
+<p>Node deprecates <code>spawn(..., { shell: true })</code> with an args array. This project carries the packaging workaround via pnpm <code>patchedDependencies</code> on transitive packages used by the Electron build path. Re-run <code>pnpm install</code> if you upgrade <code>electron-builder</code> or its transitive packaging deps and the warning returns.</p>
+<h3 id="duplicate-dependency-references-during-dist"><code>duplicate dependency references</code> during dist</h3>
+<p>npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at <strong>debug</strong> only so normal <code>dist:*</code> runs stay quiet. To see it: <code>DEBUG=electron-builder pnpm dlx electron-builder --mac</code> (or your usual dist command).</p>
+<h3 id="linux-packaged-app-cannot-find-module-readable-stream">Linux packaged app: <code>Cannot find module 'readable-stream'</code></h3>
+<p><strong>Symptom</strong>: On Linux, the installed or AppImage build shows a main-process error when loading MQTT (<code>bl</code> → <code>mqtt-packet</code> → <code>mqtt</code> require stack).</p>
+<p><strong>Cause</strong>: pnpm 10.29.3+ marks some <code>pnpm list --json</code> nodes as deduped; electron-builder can omit those transitive packages from <code>app.asar</code> unless a full copy exists at a predictable path. <code>mqtt</code> is loaded from <code>node_modules</code> at runtime (not bundled into the main esbuild output).</p>
+<p><strong>Fix in this repo</strong>: <code>readable-stream@^4.7.0</code> is a <strong>direct</strong> production dependency (with the existing <code>patches/readable-stream@4.7.0.patch</code> for Windows <code>process/</code> resolution). Do not remove it when bumping <code>mqtt</code> or pnpm. After <code>pnpm run dist:linux</code>, verify the asar contains <code>node_modules/readable-stream</code>, <code>node_modules/bl</code>, and <code>node_modules/mqtt</code>. See <a href="https://github.com/electron-userland/electron-builder/issues/9603">electron-builder#9603</a> and <a href="https://github.com/pnpm/pnpm/issues/10601">pnpm#10601</a>.</p>
+<h3 id="dep0169-urlparse-deprecation-warning"><code>[DEP0169]</code> / <code>url.parse()</code> deprecation warning</h3>
+<p>The app uses npm package overrides to force <code>follow-redirects</code> and <code>cacheable-request</code> onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:</p>
+<pre><code class="language-bash">pnpm run trace-deprecation
+</code></pre>
+<h3 id="a-native-module-failed-to-load-dialog-on-startup">"A native module failed to load" dialog on startup</h3>
+<p><strong>Cause</strong>: <code>@stoprocent/noble</code> (or <code>@serialport/bindings-cpp</code>) was compiled for a different Electron ABI; common after an Electron or Node version change.</p>
+<p><strong>Fix</strong>: Run <code>pnpm install</code> (the postinstall script rebuilds native modules for the correct ABI automatically).</p>
+<ul>
+<li>If you still see dlopen errors after switching machines or OSes, delete <code>node_modules</code> and run a clean <code>pnpm install</code>.</li>
+<li><strong>Windows</strong>: Also ensure the <a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Visual C++ Redistributable</a> is installed.</li>
+</ul>
+<h3 id="distwin-fails-with-space-in-the-path-or-eperm-on-native-modules"><code>dist:win</code> fails with "space in the path" or <code>EPERM</code> on native modules</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li><code>Attempting to build a module with a space in the path</code> during <code>pnpm run dist:win</code> (or <code>pnpm run rebuild</code>).</li>
+<li><code>EPERM: operation not permitted</code> when the rebuild tries to replace a locked <code>.node</code> file.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<ol>
+<li><strong>Spaces in the project path</strong>: node-gyp is unreliable when the repo lives under a path with spaces (e.g. <code>C:\Users\Joey Stanford\mesh-client</code>). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See <a href="https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565">node-gyp#65</a>.</li>
+<li><strong>EPERM on unlink</strong>: Something on Windows still has the <code>.node</code> file open (another <code>node</code>/<code>electron</code> process, antivirus/Windows Defender scanning the file, or a stuck handle).</li>
+</ol>
+<p><strong>Fix</strong></p>
+<ol>
+<li><strong>Use a path without spaces</strong> (strongly recommended): clone or copy the repo to e.g. <code>C:\dev\mesh-client</code>, then <code>pnpm install</code> and <code>pnpm run dist:win</code> from there.</li>
+<li><strong>Clear the lock before rebuild</strong>: quit any running Mesh-Client/Electron dev instances, then delete the affected <code>build</code> folder under <code>node_modules</code> and retry.</li>
+<li><strong>Rebuild then dist</strong>: <code>pnpm run rebuild</code>; if that succeeds, run <code>pnpm run dist:win</code>.</li>
+</ol>
+<p>CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.</p>
+<h3 id="windows-0x80010135-path-too-long-eg-bluetooth_hci_socketlastbuildstate">Windows: <code>0x80010135</code> / "Path too long" (e.g. <code>bluetooth_hci_socket.lastbuildstate</code>)</h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>Explorer or the compiler shows <strong>error 0x80010135</strong> with <strong>Path too long</strong>, often on a <strong><code>*.lastbuildstate</code></strong> file under <code>node_modules</code>.</li>
+<li><strong><code>bluetooth_hci_socket</code></strong> in the name points at <strong><code>@stoprocent/bluetooth-hci-socket</code></strong> (a native dependency of <strong><code>@stoprocent/noble</code></strong>). MSBuild writes build state under very deep paths; together with a long clone directory, the full path can exceed the legacy <strong>~260 character</strong> Win32 limit.</li>
+</ul>
+<p><strong>Fix</strong> (use one or more)</p>
+<ol>
+<li><strong>Shorten the repo path</strong> (most reliable): clone or copy the project to a shallow path such as <code>C:\dev\mesh-client</code> instead of e.g. <code>C:\Users\…\Documents\GitHub\org\mesh-client</code>.</li>
+<li><strong>Enable long paths in Git</strong> (helps clones/checkouts): <code>git config --global core.longpaths true</code>, then re-clone or ensure no stuck long paths in the worktree.</li>
+<li><strong>Enable Win32 long paths in Windows</strong> (Windows 10 1607+): this option is <strong>not</strong> available as a normal toggle in <strong>Settings</strong>; enable it via <strong>Local Group Policy</strong> → <em>Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths</em>, or set the registry DWORD <strong><code>LongPathsEnabled = 1</code></strong> under <code>HKLM\SYSTEM\CurrentControlSet\Control\FileSystem</code> (admin rights; reboot may be required). See <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation">Microsoft: Maximum Path Length Limitation</a>.</li>
+<li><strong><code>pnpm run dist:win</code></strong> already runs a <strong>hoisted</strong> <code>pnpm install</code> to shorten <code>node_modules</code> depth before packaging; if <strong><code>pnpm install</code></strong> / <strong><code>pnpm run rebuild</code></strong> fails earlier with this error, try the short path and long-path OS settings first, or temporarily: <code>pnpm install --config.node-linker=hoisted</code> from a short root path.</li>
+</ol>
+<h3 id="database-schema-newer-than-this-app-downgrade-blocked">Database schema newer than this app (downgrade blocked)</h3>
+<p><strong>Symptom</strong>: On launch, a <strong>Startup Error</strong> dialog says the database was upgraded by a newer Mesh-Client, or <strong>Import blocked</strong> when merging a <code>.db</code> file.</p>
+<p><strong>Cause</strong>: The local SQLite database <code>user_version</code> is higher than this build supports — usually after installing a <strong>newer</strong> release, then opening an <strong>older</strong> build against the same profile.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Install the <strong>latest</strong> Mesh-Client release from <a href="https://github.com/Colorado-Mesh/mesh-client/releases">GitHub Releases</a> (do not downgrade the app after your database has been migrated).</li>
+<li>If you must use an older build, restore a <code>.db</code> backup exported <strong>before</strong> the upgrade, or start with a fresh profile (export first if you need data from the newer schema).</li>
+</ol>
+<p><strong>Log</strong>: Details are in <code>mesh-client.log</code> under the app <code>userData</code> folder (macOS <code>~/Library/Application Support/mesh-client/</code>, Windows <code>%APPDATA%\mesh-client\</code>, Linux <code>~/.config/mesh-client/</code>).</p>
+<h3 id="database-directory-is-not-writable">Database directory is not writable</h3>
+<p><strong>Error</strong>: <code>"Database directory is not writable: &lt;path&gt;"</code></p>
+<p><strong>Cause</strong>: File permissions on the app's <code>userData</code> directory are too restrictive.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li><strong>Mac/Linux</strong>: <code>chmod 755 ~/Library/Application\ Support/mesh-client</code> (or <code>~/.config/mesh-client</code> on Linux)</li>
+<li><strong>Windows</strong>: Right-click <code>%APPDATA%\mesh-client</code> → Properties → Security → grant your user Full Control</li>
+</ul>
+<h3 id="language-and-translations">Language and Translations</h3>
+<p><strong>How do I change the language?</strong></p>
+<p>Click the <strong>globe icon</strong> in the header to select from the 16 supported languages. Your preference is saved across restarts.</p>
+<p><strong>A translation is incorrect or missing.</strong></p>
+<p>Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a <a href="https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&amp;labels=translation&amp;template=translation-error.md&amp;title=Translation+Error">Translation Error issue</a> on GitHub with the correct text.</p>
+<p><strong>Why are some strings still in English?</strong></p>
+<p>The app falls back to English for any key that hasn't been translated into your selected language yet. Translations are bundled statically at build time; new translations will appear in the next app update.</p>
+<h3 id="http-wifi-connection-issues">HTTP / WiFi connection issues</h3>
+<p><strong><code>meshtastic.local</code> (or any <code>.local</code> hostname) not found on Windows:</strong></p>
+<p>Windows does not have built-in mDNS resolution. <code>.local</code> hostnames require <strong>Bonjour</strong> (installed with iTunes or Apple Devices). Install either:</p>
+<ul>
+<li><a href="https://www.apple.com/itunes/">iTunes</a>: includes Bonjour automatically</li>
+<li><a href="https://support.apple.com/en-us/search?query=Bonjour%20Print%20Services%20for%20Windows">Bonjour Print Services for Windows</a>: standalone Bonjour installer</li>
+</ul>
+<p>Alternatively, enter the device's <strong>IP address</strong> directly instead of its <code>.local</code> hostname.</p>
+<blockquote>
+<p>A yellow warning is shown below the address input on Windows as a reminder.</p>
+</blockquote>
+<p><strong>IPv6 address format:</strong></p>
+<p>Bare IPv6 addresses (e.g. <code>fe80::1</code>) must be wrapped in brackets when entered in the HTTP address field: <code>[fe80::1]</code>. The app normalises bare addresses automatically, but entering <code>[fe80::1]:443</code> (with port) is the most reliable form.</p>
+<h3 id="mqtt-connection-lost-after-n-reconnect-attempts">MQTT: "Connection lost after N reconnect attempts"</h3>
+<p><strong>Cause</strong>: Broker unreachable, bad credentials, or wrong port.</p>
+<p><strong>Fix</strong>: Verify the broker URL, port (default 1883, or 8883 for TLS), and username/password. Check that your firewall allows outbound connections on the broker port.</p>
+<h3 id="mqtt-subscribe-failed">MQTT: "Subscribe failed"</h3>
+<p><strong>Cause</strong>: Topic permission denied on the broker, or wildcards not allowed by the broker ACL.</p>
+<p><strong>Fix</strong>: Confirm the broker's ACL allows your client to subscribe to the configured topic prefix.</p>
+<h3 id="mqtt-keeps-disconnecting">MQTT keeps disconnecting</h3>
+<p><strong>Cause</strong>: Wireless interference, broker downtime, or token issues (LetsMesh/Colorado Mesh).</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Check your WiFi/signal strength</li>
+<li>Verify the broker is online</li>
+<li>For LetsMesh/Colorado Mesh: mesh-client refreshes JWT automatically when MeshCore identity is already cached (including after a successful MeshCore radio session). If you never imported identity and have not connected a MeshCore radio yet, import under <strong>Radio</strong> or use <strong>Custom</strong> credentials; if refresh still fails, try re-importing MeshCore config JSON to replace a corrupt cache</li>
+<li>Enable debug logs to see the disconnect reason</li>
+</ul>
+<h3 id="mqtt-connected-but-no-messages-from-other-nodes">MQTT connected but no messages from other nodes</h3>
+<p><strong>Cause</strong>: LetsMesh and Colorado Mesh are publish-only brokers; you can send packets to the mesh but won't receive other users' traffic over MQTT. The connection is real, but incoming messages are limited.</p>
+<p><strong>Fix</strong>: Expected behavior for public brokers. For two-way MQTT, use a different broker or connect via BLE/Serial.</p>
+<h3 id="token-expired-on-letsmeshcolorado-mesh">"Token expired" on LetsMesh/Colorado Mesh</h3>
+<p><strong>Cause</strong>: JWT tokens expire after 1 hour.</p>
+<p><strong>Fix</strong>: The client refreshes tokens proactively before expiry when identity is present. If you still see expiry errors, connect or re-import MeshCore so <code>public_key</code> / <code>private_key</code> are cached (Radio-tab JSON import, or automatic persistence after a successful MeshCore radio session). As a fallback, paste your <code>v1_&lt;public key&gt;</code> MQTT username and a manually generated token under <strong>Custom</strong> if your broker expects a different workflow.</p>
+<h3 id="mqtt-connection-refused-or-broker-unreachable">MQTT "Connection refused" or broker unreachable</h3>
+<p><strong>Cause</strong>: Wrong broker URL, port, or firewall blocking the connection.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Verify the server URL and port match your broker's settings</li>
+<li>Check that port 1883 (or 8883/443 for TLS/WebSocket) is allowed through your firewall</li>
+<li>For WebSocket brokers (port 443), ensure "Use WebSocket" is enabled in the MQTT settings</li>
+</ul>
+<h3 id="mqtt-private-broker-no-decrypt-or-no-uplink">MQTT: private broker — no decrypt or no uplink</h3>
+<p><strong>Cause</strong>: Wrong channel PSK, missing AES-256 key, or TLS not enabled when the broker expects <code>mqtts</code>/<code>wss</code> on a non-standard port.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>In the Connection tab <strong>Channel PSKs</strong> field, enter base64 keys (16 bytes for AES-128, 32 bytes for AES-256), one per line; use <code>ChannelName=base64</code> for MQTT-only channel names. LongFast default is always tried; connect your radio so Radio-tab keys sync automatically.</li>
+<li>Enable <strong>Enable TLS (mqtts / wss)</strong> when the broker requires TLS but you are not on port 8883/443. Use <strong>Allow insecure TLS</strong> only for self-signed or private CA certificates.</li>
+</ul>
+<h3 id="meshtastic-configure-node-remotely-does-nothing-or-is-disabled">Meshtastic: Configure node remotely does nothing or is disabled</h3>
+<p><strong>Cause</strong>: PKC remote administration (firmware 2.5+) requires a <strong>connected local Meshtastic radio</strong> as the admin path. MQTT-only connections cannot administer remote nodes. The target node must be reachable through your radio, and trust may require a one-time public-key exchange. <code>ADMIN_PUBLIC_KEY_UNAUTHORIZED</code> means the client has no trusted public key for that node (NodeDB and saved admin key both missing or wrong).</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Connect via BLE, Serial, or HTTP/WiFi (not MQTT-only).</li>
+<li>Use <strong>Configure node</strong> on Radio, Modules, or Security, or <strong>Configure node remotely</strong> from node detail after saving the node's admin public key.</li>
+<li>In <strong>node detail</strong>, paste the remote admin public key (base64, <code>base64:…</code>, or 64-character hex) and save; the client uses NodeDB keys when present and falls back to this stored key for PKI admin packets.</li>
+<li>For first-time trust, use <strong>Copy</strong> public key on the Security tab and complete setup on the remote node per Meshtastic PKC docs.</li>
+<li>See <a href="../README.md#key-features">README — Security (PKI)</a> for the full feature list.</li>
+</ul>
+<h3 id="meshtastic-remote-admin-one-or-more-channel-settings-could-not-be-loaded-longfast-load-failed">Meshtastic remote admin: "One or more channel settings could not be loaded" / "LongFast load failed"</h3>
+<p><strong>Cause</strong>: Multi-hop PKI admin reads for channel 0 can be delayed, reordered, or interleaved with stale <code>ADMIN_APP</code> traffic. A fast <code>ADMIN_APP</code> shortly after <code>getChannelRequest</code> is not always the channel response. Firmware expects <code>get_channel_request</code> as a 1-based value on wire (channel 0 is sent as <code>1</code>). Channel 0 reads use the long-tail policy (up to 3 attempts, 120s each), while LoRa reads use a shorter essential timeout.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Keep a local Meshtastic radio connected (BLE/Serial/HTTP). Remote admin does not run over MQTT-only paths.</li>
+<li>Open <strong>Log</strong> and reproduce the load. Filter for <code>MeshtasticRemoteAdmin</code> debug lines to inspect correlation decisions (<code>resolve</code>, <code>ignore-stale</code>, <code>ignore-uncorrelated</code>, <code>pending-timeout</code>, <code>pending-reset</code>).</li>
+<li>If channel 0 still fails, capture the log and verify whether the pending request was cleared by timeout/reset or by an unexpected routing/admin response.</li>
+<li>Retry from the Radio tab once path quality improves (multi-hop latency and retries can be significant on congested links).</li>
+</ul>
+<h3 id="meshtastic-mqtt-decrypt-works-on-other-clients-but-not-mesh-client">Meshtastic MQTT: decrypt works on other clients but not mesh-client</h3>
+<p><strong>Cause</strong>: Older builds used an incorrect AES-CTR nonce layout for Meshtastic MQTT channel crypto. Private brokers with AES-128 or AES-256 channel PSKs need the Meshtastic packet-id nonce (fixed in recent releases).</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Update to the latest mesh-client release.</li>
+<li>Confirm <strong>Channel PSKs</strong> on the Connection tab match the channel (16- or 32-byte base64 per line; <code>ChannelName=base64</code> for MQTT-only names).</li>
+<li>Enable <strong>Enable TLS (mqtts / wss)</strong> when the broker requires TLS on a non-standard port.</li>
+</ul>
+<h3 id="ble-auto-reconnect-no-previously-connected-ble-device-found">BLE auto-reconnect: "No previously connected BLE device found"</h3>
+<p><strong>Cause</strong>: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.</p>
+<p><strong>Fix</strong>: Click <strong>Forget this device</strong> on the reconnect card and pair fresh using the Bluetooth picker.</p>
+<h3 id="gps-location-unavailable-or-stuck-on-the-map">GPS "Location unavailable" or stuck on the map</h3>
+<p><strong>Cause</strong>: Browser geolocation was denied, or the device has no GPS fix yet.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>Grant location permission when prompted by the app.</li>
+<li>Or set coordinates manually via the <strong>Radio</strong> tab → Fixed Position.</li>
+<li>Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only; not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.</li>
+</ul>
+<h3 id="something-went-wrong-blank-screen">"Something went wrong" blank screen</h3>
+<p><strong>Cause</strong>: An unhandled React render error, usually from a corrupt or unexpected database value.</p>
+<p><strong>Fix</strong>: Open the <strong>App</strong> tab → <strong>Clear Database</strong>, then restart. If the window never loads at all, delete the SQLite file manually:</p>
+<ul>
+<li><strong>Mac</strong>: <code>~/Library/Application Support/mesh-client/</code></li>
+<li><strong>Windows</strong>: <code>%APPDATA%\mesh-client\</code></li>
+<li><strong>Linux</strong>: <code>~/.config/mesh-client/</code></li>
+</ul>
+<h3 id="macos-representedobject-is-not-a-weakptrtoelectronmenumodelasnsobject-when-typing-in-chat">macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat</h3>
+<p><strong>Cause</strong>: Known Electron/Chromium quirk on macOS when the first responder is a text field (e.g. the chat input). The native menu bridge logs this; it does not affect behavior.</p>
+<p><strong>Fix</strong>: None required; safe to ignore. Copy/paste and other edit actions still work.</p>
+<h3 id="update-check-fails-footer-update-status">Update check fails / footer update status</h3>
+<p>The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows <strong>Update error</strong> when a check fails; use <strong>Check for updates</strong> in the app menu or retry from the footer when applicable.</p>
+<h3 id="map-tab-without-internet-offline-no-wan">Map tab without internet (offline / no WAN)</h3>
+<p><strong>Basemap tiles:</strong> The map background uses <strong>OpenStreetMap</strong> by default (or <strong>Carto Dark</strong> if selected). On the Map tab, use the <strong>Layers</strong> control under the <strong>online/stale/offline</strong> status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The <code>TileLayer</code> is defined in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx"><code>MapPanel.tsx</code></a>. <strong>Without internet access, new tiles cannot be fetched</strong>, so the basemap may look <strong>blank, gray, or incomplete</strong>, or show only <strong>tiles previously cached</strong> by the embedded browser (caching is best-effort and not guaranteed).</p>
+<p><strong>Overlays:</strong> <strong>Node markers, polylines, position trails, and other vector layers</strong> are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still <strong>render on top of a missing or partial basemap</strong>.</p>
+<p><strong>Your position offline:</strong> Use <strong>device GPS</strong> when available, <strong>Fixed Position</strong> on the <strong>Radio</strong> tab, or <strong>static coordinates</strong> in app/GPS settings. See <strong>GPS "Location unavailable" or stuck on the map</strong> above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.</p>
+<h3 id="verifying-offline-behavior-manual-qa">Verifying offline behavior (manual QA)</h3>
+<p>With <strong>Wi‑Fi off</strong> or <strong>airplane mode</strong> on, using a <strong>packaged</strong> build if possible:</p>
+<ol>
+<li>Confirm the app <strong>window loads</strong> and core tabs work; connect via <strong>USB serial</strong> or <strong>BLE</strong> to a local radio if you need RF features.</li>
+<li>Open the <strong>Map</strong> tab: expect <strong>missing or stale basemap tiles</strong> as described above; <strong>markers and trails</strong> may still appear when position data exists.</li>
+<li>A non-fatal <strong>update check</strong> message in the console is expected without WAN; see <strong>Update check fails / footer update status</strong> above.</li>
+</ol>
+<h3 id="diagnostics-panel-restored-from-last-session-banner">Diagnostics panel: "restored from last session" banner</h3>
+<p><strong>Cause</strong>: Diagnostic rows (routing + RF) are snapshotted to <code>localStorage</code> so a restart doesn't wipe the table.</p>
+<p><strong>Fix</strong>: This is expected; rows refresh as new packets arrive. Use <strong>Stop restoring on next launch</strong> on the banner to clear the snapshot, or use <strong>App</strong> tab → <strong>Reset Diagnostics</strong> to clear in-memory rows and related state.</p>
+<h3 id="diagnostics-look-stale-or-overcrowded">Diagnostics look stale or overcrowded</h3>
+<p><strong>Cause</strong>: RF rows age out faster (default 1 h) than routing rows (default 24 h); very old rows are pruned by timestamp.</p>
+<p><strong>Fix</strong>: In <strong>Network Diagnostics</strong> → Display Settings, adjust <strong>diagnostic row max age</strong> (hours). Or reset diagnostics from the App tab and let the mesh repopulate.</p>
+<h3 id="no-signal-bars-on-some-nodes">No signal bars on some nodes</h3>
+<p><strong>Cause</strong>: Signal strength is only available for <strong>direct (0-hop) RF</strong> neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.</p>
+<p><strong>Fix</strong>: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.</p>
+<h3 id="meshcore-get-telemetry-returns-timeout">MeshCore: "Get Telemetry" returns timeout</h3>
+<p><strong>Cause</strong>: The remote node has no environment sensors, or the request timed out before the node responded.</p>
+<p><strong>Fix</strong>: Not all nodes support environment telemetry. The error is shown inline in the node detail modal and is safe to ignore.</p>
+<h3 id="meshcore-get-neighbors-button-not-visible">MeshCore: "Get Neighbors" button not visible</h3>
+<p><strong>Cause</strong>: The button is only shown for <strong>Repeater</strong>-type contacts (contact type 2). Chat and Room contacts do not support the neighbor query command.</p>
+<p><strong>Fix</strong>: Open the node detail modal for a Repeater node (shown as "Repeater" in the hardware model field).</p>
+<h3 id="meshcore-cannot-connect-via-bluetooth-usb-or-http">MeshCore: Cannot connect via Bluetooth, USB, or HTTP</h3>
+<p><strong>Bluetooth:</strong></p>
+<ul>
+<li>The device must be <strong>flashed as Companion Bluetooth</strong> (the default BLE flashing mode).</li>
+<li>The device must be <strong>paired</strong> with your computer before connecting:</li>
+<li><strong>Windows</strong>: Pair first in <strong>Settings → Bluetooth &amp; devices → Add device</strong>, then connect from the app.</li>
+<li><strong>Linux</strong>: Use <strong><code>bluetoothctl pair &lt;MAC&gt;</code></strong> first, or let the app handle the pairing prompt. See <a href="#ble-known-issues">BLE known issues</a> for detailed steps.</li>
+<li><strong>Try in the official MeshCore app first</strong>: if the device connects there, it will work in Mesh-Client.</li>
+<li>If Bluetooth fails, try serial (USB) or HTTP as alternatives.</li>
+</ul>
+<p><strong>USB (Serial):</strong></p>
+<ul>
+<li>The device must be <strong>flashed as Companion USB</strong> (not BLE-only firmware).</li>
+<li>If the serial port is not detected, see <a href="#serial-port-not-detected">Serial port not detected</a>.</li>
+</ul>
+<p><strong>HTTP (WiFi):</strong></p>
+<ul>
+<li>The device must be <strong>flashed as Companion HTTP</strong> (not BLE-only firmware).</li>
+<li>If <code>meshtastic.local</code> is not resolved, see <a href="#http--wifi-connection-issues">HTTP / WiFi connection issues</a>.</li>
+</ul>
+<h3 id="meshcore-room-server-login-posts-and-windows-10">MeshCore: Room server login, posts, and Windows 10</h3>
+<p><strong>Minimum Windows</strong>: Mesh-Client (Electron 41) supports <strong>Windows 10 version 1809+</strong> and Windows 11. Windows 10 22H2 is supported; issues reported only on Win10 are usually MeshCore protocol or app regressions, not an unsupported OS.</p>
+<p><strong>Rooms vs Chat</strong>: Official MeshCore room clients use the <strong>Rooms</strong> tab BBS login path. Room-server posts appear there (<code>SignedPlain</code> / channel <code>-2</code>), <strong>not</strong> in Chat channel pills. Admin traffic sent as normal <strong>channel text</strong> shows in <strong>Chat</strong> only.</p>
+<p><strong>Guest / read-only login fails with timeout or "rejected"</strong>:</p>
+<ul>
+<li>When the room server <strong>guest password is empty</strong>, use <strong>Continue read-only</strong> on the Rooms login overlay. That sends <strong>zero password bytes</strong> (same as the official Android app). <strong>Login</strong> with an empty guest field is disabled; it would send the default <strong><code>hello</code></strong> password instead.</li>
+<li>When the server <strong>does</strong> configure a guest password, enter that value in the guest field and click <strong>Login</strong> (some communities use <strong><code>hello</code></strong>).</li>
+<li>Logs showing push <strong><code>0x86</code></strong> (frame 134) mean <strong>LoginFail</strong> (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.</li>
+<li><strong>Admin password</strong> working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.</li>
+<li>If the room <strong>changed its password</strong> and mesh-client keeps trying to log in, open the <strong>Rooms</strong> tab: expand <strong>Saved passwords</strong> in the sidebar (or use the login overlay for the selected room). Use <strong>Stop auto-login</strong> to stop connect-time retries while keeping the old password stored, or <strong>Forget saved password</strong> to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with <strong>Remember password</strong> or re-enable it.</li>
+</ul>
+<p><strong>Room post fails with "unsupported on this firmware"</strong>:</p>
+<ul>
+<li>The <strong>companion radio</strong> only accepts <strong><code>TXT_TYPE_PLAIN</code> (0)</strong> for outbound <code>CMD_SEND_TXT_MSG</code>. mesh-client sends plain UTF-8 post text after a successful room login. <strong><code>TXT_TYPE_SIGNED_PLAIN</code> (2)</strong> is for <strong>inbound</strong> room-server pushes (author prefix in the wire body); using it for outbound posts returns <code>ERR_CODE_UNSUPPORTED_CMD</code> (1). Log out and log in again, then post from the <strong>Rooms</strong> tab while connected over BLE/serial/TCP.</li>
+</ul>
+<p><strong>Garbled prefix (e.g. <code>ÑÇÕ0</code>) on inbound room posts</strong>:</p>
+<ul>
+<li>Inbound <strong>SignedPlain</strong> pushes include the <strong>first four bytes of the author public key</strong> before the message body. mesh-client strips that prefix in the <strong>Rooms</strong> UI. If another client shows those characters, it is displaying the raw wire body from the room server.</li>
+</ul>
+<p><strong>Room unread badges</strong>:</p>
+<ul>
+<li>New room BBS posts increment the <strong>Rooms</strong> sidebar badge and per-room counts on the room list. They do <strong>not</strong> increment the <strong>Chat</strong> tab badge (by design). Stay logged in to receive firmware-pushed posts after login.</li>
+</ul>
+<p><strong>No room history after login</strong>:</p>
+<ul>
+<li>Firmware only <strong>pushes new posts</strong> after a successful login; it does not backfill old BBS messages. Enable <strong>Auto-sync</strong> on the Rooms tab to periodic re-login while connected.</li>
+<li>mesh-client stores posts received while you are logged in on <strong>this device</strong>. Quitting the app or staying logged out for days means posts from that period will not appear later unless they were persisted locally. See the <strong>Rooms</strong> tab history note under Auto-sync.</li>
+</ul>
+<p><strong>pyMC / server console shows posts but Rooms tab does not (cross-client)</strong>:</p>
+<ul>
+<li>The room <strong>server log</strong> (e.g. pyMC) lists everything the BBS stored. mesh-client and the official app only show posts <strong>pushed to your radio while you are logged in</strong> to that room (see above). Posts made before your login, or while you were logged out, will not appear until someone posts again after you re-login (or use <strong>Auto-sync</strong> to periodic re-login).</li>
+<li>For a fair test: keep <strong>both</strong> clients logged into the <strong>same room</strong> while connected, then post from one side and confirm the other receives it within ~30 seconds on RF.</li>
+<li>mesh-client sends outbound room posts as <strong><code>TXT_TYPE_PLAIN</code></strong>; inbound BBS pushes use <strong><code>TXT_TYPE_SIGNED_PLAIN</code></strong> (author prefix stripped in the Rooms UI).</li>
+</ul>
+<p><strong>Room bot stats or system lines in Chat as a DM like <code>!ac200e59</code></strong>:</p>
+<ul>
+<li>That tab label is the room server node id (<code>!</code> + 8-digit hex), not a person. Room-server <strong>PLAIN</strong> lines (e.g. <code>Bot Stats (24h):</code>) belong in the <strong>Rooms</strong> tab, not <strong>Chat → DMs</strong>. Current builds route <code>hw_model === 'Room'</code> traffic to Rooms; reload or refresh messages after upgrading if old rows were stored as DMs.</li>
+</ul>
+<p><strong>Read-only → write upgrade does nothing</strong>:</p>
+<ul>
+<li>After <strong>Continue read-only</strong>, use <strong>Upgrade access</strong> (or <strong>Login</strong> with the guest password) so the client sends a fresh <strong>SendLogin</strong> with <code>forceRelogin</code>. Enter the real guest password (often <strong><code>hello</code></strong>); empty field Login is disabled on the main overlay to avoid sending <code>hello</code> when the server expects blank read-only login.</li>
+</ul>
+<p><strong>Long room posts show as <code>[1/2]</code>, <code>[2/2]</code>…</strong>:</p>
+<ul>
+<li>MeshCore room wire limit is ~160 bytes per post. mesh-client splits longer text into multiple posts with <code>[i/N]</code> prefixes. The <strong>Rooms</strong> tab merges consecutive chunks from the same sender for display; other clients may show separate lines.</li>
+</ul>
+<p><strong>Queue badge stuck at <code>Q: 255/256</code></strong>:</p>
+<ul>
+<li>Usually means the companion radio outbound queue is nearly full, or (on older builds) CORE stats were mis-parsed. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for <code>[useMeshcoreRuntime] high queue depth=</code>.</li>
+</ul>
+<p><strong>Windows packaged updater: <code>Cannot find module 'semver'</code></strong>:</p>
+<ul>
+<li>Fixed by declaring <code>semver</code> as a direct production dependency (same class of issue as <code>builder-util-runtime</code> on hoisted <code>dist:win</code> builds). Updater falls back to GitHub Releases API until you install a build with the fix.</li>
+</ul>
+<p><strong>Retest checklist (after upgrading from a known-good build)</strong>:</p>
+<ol>
+<li>Connect MeshCore over TCP or BLE; confirm nodes load.</li>
+<li>Open <strong>Rooms</strong> → with <strong>empty guest password</strong> on the server, click <strong>Continue read-only</strong> (not <strong>Login</strong> with an empty field). With a configured guest password, enter it and click <strong>Login</strong>.</li>
+<li>Post as admin; confirm the post appears in the <strong>official Android app</strong> on the same room (SignedPlain BBS path).</li>
+<li>Confirm room posts appear in <strong>Rooms</strong> with unread badges (not Chat channel pills).</li>
+<li>On <strong>Connection</strong> tab, receive a <strong>channel</strong> message on a channel you are not viewing → sidebar <strong>Chat</strong> badge and red pill on that channel when you open Chat.</li>
+<li>Export logs (<strong>Log → Export</strong>) if login still fails; include <code>[meshcoreRoomLoginRpc]</code> and <code>[useMeshcoreRuntime] sendRoomPost</code> lines.</li>
+</ol>
+<h3 id="meshcore-trace-route-or-ping-trace-times-out">MeshCore: Trace Route or Ping trace times out</h3>
+<p><strong>Cause</strong>: Nodes you only <strong>hear</strong> on the mesh; but that do <strong>not</strong> have <strong>your</strong> node in <strong>their</strong> contact list; are sometimes called foreign or one-way contacts. MeshCore firmware may not answer <strong>Trace Route</strong> (node detail) or <strong>Ping trace</strong> (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see <strong>Trace route timed out</strong> in the node detail modal or an error toast from <strong>Ping trace</strong>.</p>
+<p><strong>Fix</strong>: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.</p>
+<h3 id="cant-see-rf-packets-on-custom-mqtt-broker">Can't see RF packets on custom MQTT broker</h3>
+<p><strong>Cause</strong>: The packet logger publishes to <code>{prefix}/{pubKey}/packets</code>, but you're viewing the packets somewhere that doesn't receive published MQTT messages.</p>
+<p><strong>Fix</strong>:</p>
+<ul>
+<li>The app publishes to <code>meshcore/{IATA}/{pubKey}/packets</code> (e.g., <code>meshcore/DEN/AABBCCDDEEFF001122/packets</code>)</li>
+<li>Use an external MQTT client (like MQTT Explorer, mosquitto_sub, or your broker's dashboard) to subscribe and view the packets</li>
+<li>For Colorado Mesh, subscribe to <code>meshcore/DEN/+/packets/#</code></li>
+<li>For LetsMesh/MeshMapper, subscribe to <code>meshcore/test/+/packets/#</code></li>
+<li>Verify your broker ACL allows publishing to <code>packets/</code> topics</li>
+<li>Check the Log panel for "Published RF packet" entries to confirm packets are being sent</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
