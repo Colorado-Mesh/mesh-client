@@ -124,8 +124,8 @@ import {
   fetchLatestMeshtasticRelease,
   type FirmwareCheckResult,
   MESHCORE_FIRMWARE_RELEASES_URL,
+  meshCoreFirmwareUpdateAvailable,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
-  parseMeshCoreBuildDate,
   semverGt,
 } from './lib/firmwareCheck';
 import { loadLastConnection } from './lib/lastConnectionStorage';
@@ -3497,8 +3497,7 @@ function FirmwareUpdateNotifier({
     const doCheck =
       protocol === 'meshcore'
         ? fetchLatestMeshCoreRelease().then((release) => {
-            const deviceDate = parseMeshCoreBuildDate(firmwareVersion);
-            const updateAvailable = deviceDate === null || deviceDate < release.publishedAt;
+            const updateAvailable = meshCoreFirmwareUpdateAvailable(firmwareVersion, release);
             return { updateAvailable, release };
           })
         : fetchLatestMeshtasticRelease().then((release) => {

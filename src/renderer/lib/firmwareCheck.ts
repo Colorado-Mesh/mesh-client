@@ -25,6 +25,42 @@ export function semverGt(remote: string, local: string): boolean {
   return rPat > lPat;
 }
 
+/** Extract semver from MeshCore tags like companion-v1.16.0 or v1.16.0-07a3ca9. */
+export function normalizeMeshCoreVersionTag(tag: string): string {
+  const trimmed = tag.trim();
+  const semverInTag = /v(\d+\.\d+\.\d+|\d+\.\d+)/i.exec(trimmed);
+  if (semverInTag) return semverInTag[1];
+  const bareSemver = /^(\d+\.\d+\.\d+|\d+\.\d+)/.exec(trimmed);
+  if (bareSemver) return bareSemver[1];
+  return trimmed.replace(/^v/i, '');
+}
+
+export function looksLikeMeshCoreSemverVersion(version: string): boolean {
+  const normalized = normalizeMeshCoreVersionTag(version);
+  const parts = normalized.split('.');
+  if (parts.length < 2 || parts.length > 3) return false;
+  return parts.every((part) => /^\d+$/.test(part));
+}
+
+export function meshCoreFirmwareUpdateAvailable(
+  deviceFirmware: string,
+  release: { version: string; publishedAt: Date },
+): boolean {
+  if (
+    looksLikeMeshCoreSemverVersion(deviceFirmware) &&
+    looksLikeMeshCoreSemverVersion(release.version)
+  ) {
+    const deviceSemver = normalizeMeshCoreVersionTag(deviceFirmware);
+    const releaseSemver = normalizeMeshCoreVersionTag(release.version);
+    return semverGt(releaseSemver, deviceSemver);
+  }
+
+  const deviceDate = parseMeshCoreBuildDate(deviceFirmware);
+  if (deviceDate === null) return false;
+
+  return deviceDate < release.publishedAt;
+}
+
 async function fetchWithAbortTimeout(url: string): Promise<Response> {
   const ac = new AbortController();
   const timer = setTimeout(() => {
@@ -68,15 +104,16 @@ export async function fetchLatestMeshCoreRelease(): Promise<{
   const raw = new Date(data.published_at);
   return {
     publishedAt: new Date(Date.UTC(raw.getUTCFullYear(), raw.getUTCMonth(), raw.getUTCDate())),
-    version: data.tag_name.replace(/^v/, ''),
+    version: normalizeMeshCoreVersionTag(data.tag_name),
     releaseUrl: data.html_url,
   };
 }
 
-/** Parses a MeshCore build date string like "19 Feb 2025" into a Date (UTC midnight). */
+/** Parses a MeshCore build date string like "19 Feb 2025" or "06-Jun-2026" into a Date (UTC midnight). */
 export function parseMeshCoreBuildDate(buildDate: string): Date | null {
   const trimmed = buildDate.trim();
   if (!trimmed) return null;
+  if (looksLikeMeshCoreSemverVersion(trimmed)) return null;
   const parsed = new Date(`${trimmed} UTC`);
   if (isNaN(parsed.getTime())) return null;
   return parsed;
