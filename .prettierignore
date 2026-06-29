@@ -24,6 +24,9 @@ resources/win/*.xml
 # CodeQL MaD — Prettier line-wrap breaks yamllint indentation for barrier tuples
 .github/codeql/extensions/**/*.yml
 
+# Rust sidecar (no Prettier TOML parser)
+reticulum-sidecar/
+
 # Images
 *.png
 *.jpg

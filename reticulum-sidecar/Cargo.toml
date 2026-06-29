@@ -1,0 +1,25 @@
+[package]
+name = "mesh-client-reticulum-sidecar"
+version = "0.1.0"
+edition = "2021"
+description = "Headless Reticulum/LXMF daemon for mesh-client (rsReticulum integration pending)"
+license = "AGPL-3.0-or-later"
+
+[[bin]]
+name = "mesh-client-reticulum"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8", features = ["ws"] }
+clap = { version = "4", features = ["derive"] }
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Phase B: wire rsReticulum + rsLXMF path deps (sibling checkout per Ratspeak build docs):
+# rns-runtime = { path = "../../rsReticulum/crates/rns-runtime" }
+# lxmf-core = { path = "../../rsLXMF/crates/lxmf-core" }
