@@ -42,19 +42,20 @@ interface PropagationRow {
 }
 
 export interface ReticulumConnectionPanelProps {
+  /** True when runtime reports connected/connecting (authoritative for Start/Stop UI). */
+  stackRunning: boolean;
   connecting: boolean;
   stackError?: string | null;
   onStartStack: () => Promise<void>;
   onStopStack: () => Promise<void>;
-  onDisconnectAndQuit: () => Promise<void>;
 }
 
 export function ReticulumConnectionPanel({
+  stackRunning: stackRunningProp,
   connecting,
   stackError,
   onStartStack,
   onStopStack,
-  onDisconnectAndQuit,
 }: ReticulumConnectionPanelProps) {
   const { t } = useTranslation();
   const [sidecarStatus, setSidecarStatus] = useState<ReticulumSidecarStatus>({
@@ -82,7 +83,7 @@ export function ReticulumConnectionPanel({
   const [bleAvailable, setBleAvailable] = useState(false);
   const [exportJson, setExportJson] = useState<string | null>(null);
 
-  const sidecarRunning = sidecarStatus.running;
+  const sidecarRunning = stackRunningProp || sidecarStatus.running;
 
   const refreshSidecarStatus = useCallback(async () => {
     try {
@@ -293,23 +294,43 @@ export function ReticulumConnectionPanel({
 
   const identityReady = identity?.configured === true;
   const identityActionsDisabled = !sidecarRunning || connecting;
-  const exitLabelKey = sidecarRunning
-    ? 'connectionPanel.disconnectAndQuit'
-    : 'connectionPanel.quit';
 
   return (
     <div className="space-y-4">
-      <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-        <h2 className="text-sm font-medium text-gray-200">
-          {t('connectionPanel.reticulumStackTitle')}
-        </h2>
-        <p className="text-muted mt-1 text-xs">{t('connectionPanel.reticulumStackHint')}</p>
-        {stackError ? (
-          <p className="mt-2 text-sm text-red-400" role="alert">
-            {stackError}
-          </p>
-        ) : null}
-        <div className="mt-3 flex flex-wrap gap-2">
+      <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
+        <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
+          <span className="font-medium text-gray-200">
+            {t('connectionPanel.reticulumStackTitle')}
+          </span>
+          <span
+            className={`text-xs font-medium ${
+              sidecarRunning
+                ? 'text-brand-green'
+                : connecting
+                  ? 'animate-pulse text-orange-400'
+                  : 'text-gray-400'
+            }`}
+          >
+            ●{' '}
+            {sidecarRunning
+              ? t('connectionPanel.reticulumStackRunning')
+              : connecting
+                ? t('connectionPanel.connecting')
+                : t('connectionPanel.disconnected')}
+          </span>
+        </div>
+        <div className="space-y-3 p-4">
+          <p className="text-muted text-xs">{t('connectionPanel.reticulumStackHint')}</p>
+          {stackError ? (
+            <p className="text-sm text-red-400" role="alert">
+              {stackError}
+            </p>
+          ) : null}
+          {sidecarRunning && sidecarStatus.port > 0 ? (
+            <p className="text-muted text-xs" role="status">
+              127.0.0.1:{sidecarStatus.port}
+            </p>
+          ) : null}
           {sidecarRunning ? (
             <button
               type="button"
@@ -318,7 +339,7 @@ export function ReticulumConnectionPanel({
               onClick={() => {
                 void onStopStack();
               }}
-              className="rounded-lg border border-amber-600 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-950/40 disabled:opacity-40"
+              className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-40"
             >
               {t('connectionPanel.reticulumStopStack')}
             </button>
@@ -330,41 +351,26 @@ export function ReticulumConnectionPanel({
               onClick={() => {
                 void onStartStack();
               }}
-              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-40"
+              className="w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-500 disabled:opacity-40"
             >
-              {t('connectionPanel.reticulumStartStack')}
+              {connecting
+                ? t('connectionPanel.connecting')
+                : t('connectionPanel.reticulumStartStack')}
             </button>
           )}
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={autoStart}
+              onChange={(e) => {
+                handleAutoStartChange(e.target.checked);
+              }}
+              aria-label={t('connectionPanel.reticulumAutostart')}
+            />
+            {t('connectionPanel.reticulumAutostart')}
+          </label>
         </div>
-        <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-          <input
-            type="checkbox"
-            checked={autoStart}
-            onChange={(e) => {
-              handleAutoStartChange(e.target.checked);
-            }}
-            aria-label={t('connectionPanel.reticulumAutostart')}
-          />
-          {t('connectionPanel.reticulumAutostart')}
-        </label>
-        {sidecarRunning ? (
-          <p className="text-muted mt-2 text-xs" role="status">
-            {t('connectionPanel.reticulumStackRunning')}
-            {sidecarStatus.port > 0 ? ` · 127.0.0.1:${sidecarStatus.port}` : ''}
-          </p>
-        ) : null}
       </div>
-
-      <button
-        type="button"
-        onClick={() => {
-          void onDisconnectAndQuit();
-        }}
-        className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
-        aria-label={t(exitLabelKey)}
-      >
-        {t(exitLabelKey)}
-      </button>
 
       <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
         <h3 className="text-sm font-medium text-gray-200">
