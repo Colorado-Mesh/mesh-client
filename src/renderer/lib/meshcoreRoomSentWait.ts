@@ -19,6 +19,9 @@ export function meshcoreRoomPostSendErrorMessage(e: unknown): string {
   if (msg === 'timeout') {
     return 'Room post timed out waiting for the radio. Check range or try again.';
   }
+  if (msg.includes('sendRoomPost timed out')) {
+    return 'Room post timed out waiting for the radio. Check range or try again.';
+  }
   return msg;
 }
 

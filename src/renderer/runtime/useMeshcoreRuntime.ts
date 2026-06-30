@@ -179,6 +179,7 @@ import {
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
 import { syncMeshcoreRoomContactPathBeforeLogin } from '../lib/meshcoreRoomLoginPathSync';
+import { meshcoreIsRoomLoginQueued } from '../lib/meshcoreRoomLoginQueue';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
 import { applyMeshcoreRoomLoginFailure } from '../lib/meshcoreRoomSavedSecrets';
 import {
@@ -292,6 +293,7 @@ import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
+  computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
   MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
   MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
@@ -4218,64 +4220,74 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] loginRoom node=0x${nodeId.toString(16)} hopsAway=${hopsAway} uiHops=${String(uiHops ?? 'n/a')} outPathLen=${outPathLen}`,
       );
-      await withTimeout(
-        (async (): Promise<void> => {
-          const activeConn = connRef.current;
-          if (!activeConn) {
-            throw new Error('Not connected to device');
-          }
-          // Route prime can take 10s+ — do not hold repeaterRemoteRpc (SendLogin) mutex during flood/path wait.
-          const storedPath = await resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey);
-          if (hopsAway > 0 && (!storedPath || storedPath.length <= 1)) {
-            throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
-          }
-          const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
-            activeConn,
-            nodeId,
-            pubKey,
-            nodesRef.current.get(nodeId),
-            storedPath,
-            hopsAway,
-            (fn) => repeaterRemoteRpcRef.current(fn),
-          );
-          if (hopsAway > 0 && !pathSync.synced) {
-            const detail = pathSync.error ? ` (${pathSync.error})` : '';
-            throw new Error(
-              pathSync.reason === 'no_path'
-                ? MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE
-                : `${MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE}${detail}`,
-            );
-          }
-          console.debug(
-            `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
-          );
-          await repeaterRemoteRpcRef.current(async () => {
-            const rpcConn = connRef.current;
-            if (!rpcConn) {
+      const loginAbort = new AbortController();
+      try {
+        await withTimeout(
+          (async (): Promise<void> => {
+            const activeConn = connRef.current;
+            if (!activeConn) {
               throw new Error('Not connected to device');
             }
-            await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
-              adminPassword,
-              guestPassword,
+            // Route prime can take 10s+ — do not hold repeaterRemoteRpc (SendLogin) mutex during flood/path wait.
+            const storedPath = await resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey);
+            if (hopsAway > 0 && (!storedPath || storedPath.length <= 1)) {
+              throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
+            }
+            const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
+              activeConn,
+              nodeId,
+              pubKey,
+              nodesRef.current.get(nodeId),
+              storedPath,
               hopsAway,
-              companionTransport: meshcoreConnectTypeRef.current,
-              forceRelogin: opts?.forceRelogin,
+              (fn) => repeaterRemoteRpcRef.current(fn),
+            );
+            if (hopsAway > 0 && !pathSync.synced) {
+              const detail = pathSync.error ? ` (${pathSync.error})` : '';
+              throw new Error(
+                pathSync.reason === 'no_path'
+                  ? MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE
+                  : `${MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE}${detail}`,
+              );
+            }
+            console.debug(
+              `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
+            );
+            await repeaterRemoteRpcRef.current(async () => {
+              const rpcConn = connRef.current;
+              if (!rpcConn) {
+                throw new Error('Not connected to device');
+              }
+              await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
+                adminPassword,
+                guestPassword,
+                hopsAway,
+                companionTransport: meshcoreConnectTypeRef.current,
+                forceRelogin: opts?.forceRelogin,
+                signal: loginAbort.signal,
+              });
             });
-          });
-          if (opts?.rememberPassword) {
-            await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
-            const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
-            await setMeshcoreRoomSyncConfig(nodeId, {
-              enabled: syncCfg.enabled,
-              intervalMinutes: syncCfg.intervalMinutes,
-              autoLoginOnConnect: true,
-            });
-          }
-          clearMeshcoreRoomAutoLoginFailure(nodeId);
-        })(),
-        MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
-        'loginRoom',
-      );
+            if (opts?.rememberPassword) {
+              await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
+              const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
+              await setMeshcoreRoomSyncConfig(nodeId, {
+                enabled: syncCfg.enabled,
+                intervalMinutes: syncCfg.intervalMinutes,
+                autoLoginOnConnect: true,
+              });
+            }
+            clearMeshcoreRoomAutoLoginFailure(nodeId);
+          })(),
+          MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
+          'loginRoom',
+        );
+      } catch (e: unknown) {
+        if (errLikeToLogString(e).includes('loginRoom timed out')) {
+          loginAbort.abort();
+          meshcoreCancelRoomLogin(nodeId);
+        }
+        throw e;
+      }
     },
     [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath],
   );
@@ -4638,6 +4650,9 @@ export function useMeshcoreRuntime() {
       if (!conn) {
         throw new Error('Not connected to device');
       }
+      if (meshcoreIsRoomLoginQueued(nodeId)) {
+        meshcoreCancelRoomLogin(nodeId);
+      }
       if (!meshcoreRoomCanPost(nodeId)) {
         const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'post', {
           hopsAway: resolveRoomLoginHopsForNode(nodeId),
@@ -4671,6 +4686,12 @@ export function useMeshcoreRuntime() {
           hopsAway,
           companionTransport: meshcoreConnectTypeRef.current,
         };
+        const postTimeoutMs = computeRoomPostTotalTimeoutMs(
+          hopsAway,
+          meshcoreConnectTypeRef.current,
+        );
+        const runPostRpc = <T>(fn: () => Promise<T>): Promise<T> =>
+          withTimeout(repeaterRemoteRpcRef.current(fn), postTimeoutMs, 'sendRoomPost');
         const sendOnce = async (): Promise<{ expectedAckCrc?: number; estTimeout?: number }> => {
           const activeConn = connRef.current;
           if (!activeConn) {
@@ -4680,7 +4701,7 @@ export function useMeshcoreRuntime() {
         };
         let result: { expectedAckCrc?: number; estTimeout?: number };
         try {
-          result = await repeaterRemoteRpcRef.current(sendOnce);
+          result = await runPostRpc(sendOnce);
         } catch (first: unknown) {
           const msg = meshcoreRoomPostSendErrorMessage(first);
           const adminPassword = session?.adminPassword?.trim() ?? '';
@@ -4692,7 +4713,7 @@ export function useMeshcoreRuntime() {
             console.debug(
               `[useMeshcoreRuntime] sendRoomPost mode=admin-retry txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
             );
-            await repeaterRemoteRpcRef.current(async () => {
+            await runPostRpc(async () => {
               const activeConn = connRef.current;
               if (!activeConn) return;
               await meshcoreRoomLogin(activeConn, nodeId, pubKey, adminPassword, {
@@ -4703,7 +4724,7 @@ export function useMeshcoreRuntime() {
                 forceRelogin: true,
               });
             });
-            result = await repeaterRemoteRpcRef.current(sendOnce);
+            result = await runPostRpc(sendOnce);
           } else {
             throw first;
           }

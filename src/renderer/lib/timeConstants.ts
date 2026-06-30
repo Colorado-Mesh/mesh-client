@@ -108,6 +108,16 @@ export function computeRoomLoginSentWaitMs(
 /** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
 export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
 
+/** Wall clock for room post including repeater RPC queue wait behind a stuck login. */
+export function computeRoomPostTotalTimeoutMs(
+  hopsAway?: number | null,
+  companionTransport: MeshcoreCompanionTransport = 'ble',
+): number {
+  const sentWait =
+    computeRoomLoginSentWaitMs(companionTransport) + computeRoomLoginExtraTimeoutMs(hopsAway);
+  return sentWait + MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS;
+}
+
 /** RF vs MQTT duplicate merge for channel/DM text (delayed dual ingress). */
 export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 
