@@ -2882,13 +2882,28 @@
       "blockedByStack": "Reticulum スタックが RNode シリアル ポートを保持している間はフラッシュできません。",
       "esp32SyncFailed": "ESP 32ブートローダーと同期できませんでした。USBケーブルとポートを確認し、シリアルポートを使用して他のアプリを停止して、もう一度やり直してください。",
       "flashTransferTooSmall": "ファームウェア転送が完了しませんでした—ほとんどデータが書き込まれませんでした。正しいUSBポートを選択し、ボードがブートローダーモードに入ったことを確認します。",
-      "flashMd5Mismatch": "書き込み後、ファームウェアの検証に失敗しました。別のUSBケーブルまたはポートでもう一度お試しください。問題が解決しない場合は、ファームウェアZIPを再ダウンロードしてください。"
+      "flashMd5Mismatch": "書き込み後、ファームウェアの検証に失敗しました。別のUSBケーブルまたはポートでもう一度お試しください。問題が解決しない場合は、ファームウェアZIPを再ダウンロードしてください。",
+      "portSelectionTimedOut": "シリアルポートの選択がタイムアウトしました。2分以内にリストからポートを選択するか、フラッシュを再試行して最後のポートを再利用します。",
+      "noSerialPorts": "USB シリアル ポートが見つかりません。 USB 経由でボードを接続し、再試行してください。"
     },
     "selectSerialPort": "シリアルポートを選択",
     "noSerialPorts": "USBシリアルポートが見つかりません。",
     "noSerialPortsHint": "USB経由でボードを接続します。ログ内のBluetoothデバイスは無視されます。点滅に使用できるのはUSBシリアルポートのみです。",
     "stackStoppedHint": "Reticulumスタックが停止しています—シリアルポートは点滅のために空いています。完了したら、[接続]タブでスタックを再起動します。",
-    "lastUsedPort": "前回使用"
+    "lastUsedPort": "前回使用",
+    "downloadFirmware": "ファームウェアをダウンロード",
+    "downloadLatestFirmware": "{{filename}} （最新リリース）",
+    "officialFirmware": "公式ファームウェア",
+    "ceFirmware": "CEファームウェア",
+    "transportNodeFirmware": "トランスポートノードのファームウェア",
+    "esp32BootHint": "データUSBケーブルを使用してください（充電のみではありません）。点滅する前に、同じシリアルポートを使用して他のアプリを停止してください。",
+    "flashSectionTitle": "フラッシュファームウェア",
+    "esp32Syncing": "ESP 32ブートローダーに接続しています…",
+    "provisionRequiresFlash": "この手順を使用する前に、ファームウェアを正常にフラッシュしてください。",
+    "provisionDone": "プロビジョニング済み",
+    "firmwareHashRequiresProvision": "ファームウェアハッシュを設定する前に、EEPROMをプロビジョニングします。",
+    "firmwareHashDone": "ファームウェアハッシュセット",
+    "flashDone": "ファームウェアがフラッシュされました"
   },
   "peerListPanel": {
     "heading": "ピア",

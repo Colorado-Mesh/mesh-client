@@ -29,6 +29,15 @@ export function unpackUInt32BE(byteArray: number[] | Uint8Array): number {
   return view.getUint32(0, false);
 }
 
+/** Parse flash map keys from firmware configs (`0x10000` hex or decimal). */
+export function parseFlashAddress(address: string): number {
+  const trimmed = address.trim();
+  if (trimmed.startsWith('0x') || trimmed.startsWith('0X')) {
+    return parseInt(trimmed, 16);
+  }
+  return parseInt(trimmed, 10);
+}
+
 export async function blobToBinaryString(blob: Blob): Promise<string> {
   const buffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(buffer);

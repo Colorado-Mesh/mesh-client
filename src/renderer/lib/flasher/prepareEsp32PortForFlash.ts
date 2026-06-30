@@ -9,7 +9,8 @@ export async function prepareEsp32PortForFlash(port: SerialPort): Promise<void> 
   await closeSerialPortIfOpen(port);
   try {
     const rnode = await RNode.fromSerialPort(port);
-    if (await rnode.detect()) {
+    const detected = await rnode.detect();
+    if (detected) {
       await rnode.reset();
       await rnode.close();
       await new Promise((resolve) => setTimeout(resolve, BOOTLOADER_SETTLE_MS));

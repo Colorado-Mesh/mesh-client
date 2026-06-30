@@ -2882,13 +2882,28 @@
       "blockedByStack": "No se puede flashear mientras la pila Reticulum contiene el puerto serie RNode.",
       "esp32SyncFailed": "No se ha podido sincronizar con el gestor de arranque ESP32. Compruebe el cable y el puerto USB, detenga otras aplicaciones que utilicen el puerto serie e inténtelo de nuevo.",
       "flashTransferTooSmall": "La transferencia de firmware no se completó: casi no se escribieron datos. Confirme que ha seleccionado el puerto USB correcto y que la placa ha entrado en el modo de gestor de arranque.",
-      "flashMd5Mismatch": "La verificación del firmware falló después de escribir. Inténtelo de nuevo con un cable o puerto USB diferente; si persiste, vuelva a descargar el zip del firmware."
+      "flashMd5Mismatch": "La verificación del firmware falló después de escribir. Inténtelo de nuevo con un cable o puerto USB diferente; si persiste, vuelva a descargar el zip del firmware.",
+      "portSelectionTimedOut": "Se ha agotado el tiempo de espera de la selección del puerto serie. Elige un puerto de la lista en dos minutos o vuelve a intentar Flash para reutilizar el último puerto.",
+      "noSerialPorts": "No se encontraron puertos serie USB. Conecte su placa a través de USB e inténtelo nuevamente."
     },
     "selectSerialPort": "Seleccionar porto serie",
     "noSerialPorts": "No se han encontrado puertos serie USB.",
     "noSerialPortsHint": "Conecte su placa a través de USB. Los dispositivos Bluetooth en el registro se ignoran; solo se pueden usar puertos serie USB para parpadear.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Usado por última vez"
+    "lastUsedPort": "Usado por última vez",
+    "downloadFirmware": "Descargar firmware",
+    "downloadLatestFirmware": "{{filename}} (última versión)",
+    "officialFirmware": "Firmware oficial",
+    "ceFirmware": "firmware o microprograma",
+    "transportNodeFirmware": "Firmware del nodo de transporte",
+    "esp32BootHint": "Utilice un cable USB de datos (no solo de carga). Detenga otras aplicaciones que utilicen el mismo puerto serie antes de parpadear.",
+    "flashSectionTitle": "Firmware flash",
+    "esp32Syncing": "Conectando al gestor de arranque ESP32...",
+    "provisionRequiresFlash": "Firmeware de Flash correctamente antes de usar este paso.",
+    "provisionDone": "Provisionado",
+    "firmwareHashRequiresProvision": "Proporcione la EEPROM antes de configurar el hash del firmware.",
+    "firmwareHashDone": "Conjunto de hash de firmware",
+    "flashDone": "firmware flasheado"
   },
   "peerListPanel": {
     "heading": "Pares",

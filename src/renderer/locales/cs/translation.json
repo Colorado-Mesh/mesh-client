@@ -2882,13 +2882,28 @@
       "blockedByStack": "Nelze blikat, když zásobník Reticulum obsahuje sériový port RNode.",
       "esp32SyncFailed": "Nelze synchronizovat se zavaděčem ESP32. Zkontrolujte kabel a port USB, zastavte ostatní aplikace používající sériový port a zkuste to znovu.",
       "flashTransferTooSmall": "Přenos firmwaru nebyl dokončen — téměř žádná data nebyla zapsána. Potvrďte, že jste vybrali správný port USB a že deska vstoupila do režimu zavaděče.",
-      "flashMd5Mismatch": "Ověření firmwaru se po zápisu nezdařilo. Zkuste to znovu s jiným USB kabelem nebo portem; pokud přetrvává, znovu stáhněte firmware zip."
+      "flashMd5Mismatch": "Ověření firmwaru se po zápisu nezdařilo. Zkuste to znovu s jiným USB kabelem nebo portem; pokud přetrvává, znovu stáhněte firmware zip.",
+      "portSelectionTimedOut": "Časový limit výběru sériového portu vypršel. Vyberte port ze seznamu do dvou minut nebo opakujte flash pro opětovné použití posledního portu.",
+      "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB. Připojte desku přes USB a zkuste to znovu."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
     "noSerialPortsHint": "Připojte desku přes USB. Zařízení Bluetooth v protokolu jsou ignorována; pro blikání lze použít pouze sériové porty USB.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Naposledy použité"
+    "lastUsedPort": "Naposledy použité",
+    "downloadFirmware": "Stáhnout firmware",
+    "downloadLatestFirmware": "{{filename}} (poslední verze)",
+    "officialFirmware": "Oficiální firmware",
+    "ceFirmware": "CE firmware",
+    "transportNodeFirmware": "Firmware dopravního uzlu",
+    "esp32BootHint": "Použijte datový kabel USB (ne pouze pro nabíjení). Před blikáním zastavte ostatní aplikace používající stejný sériový port.",
+    "flashSectionTitle": "Flash firmware",
+    "esp32Syncing": "Připojování k zavaděči ESP32...",
+    "provisionRequiresFlash": "Před použitím tohoto kroku úspěšně nainstalujte firmware Flash.",
+    "provisionDone": "Poskytnuté",
+    "firmwareHashRequiresProvision": "Před nastavením hash firmwaru zajistěte EEPROM.",
+    "firmwareHashDone": "Sada hash firmwaru",
+    "flashDone": "Firmware blikal"
   },
   "peerListPanel": {
     "heading": "Vazby",

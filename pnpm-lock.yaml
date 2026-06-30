@@ -68,8 +68,8 @@ importers:
         specifier: ^1.29.1
         version: 1.29.1
       esptool-js:
-        specifier: ^0.4.7
-        version: 0.4.7
+        specifier: 0.4.5
+        version: 0.4.5
       i18next:
         specifier: ^26.3.4
         version: 26.3.4(typescript@6.0.3)
@@ -2282,8 +2282,8 @@ packages:
     resolution: {integrity: sha512-7p3DrVEIopW1B1avAGLuCSh1jubc01H2JHc8B4qqGblmg5gI9yumBgACjWo4JlIc04ufug4xJ3SQI8HkS/Rgzw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  esptool-js@0.4.7:
-    resolution: {integrity: sha512-xVwtSVDRsvjXSEvNFrorgJfB71RFFkZkL+hs7O7gW5hgPrKGywZxo2U5LJddzkJ6eE31QinNVyywc0OaSntZCw==}
+  esptool-js@0.4.5:
+    resolution: {integrity: sha512-ueydZt9LIsVCYtPt5q+y0ATnJJA3OflKMPDLUrIG95O5Vi3ZBt80lPh2hghGgSpMv+Whd79zcu4Ty67xFdzAyQ==}
 
   esquery@1.7.0:
     resolution: {integrity: sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==}
@@ -6828,7 +6828,7 @@ snapshots:
       acorn-jsx: 5.3.2(acorn@8.17.0)
       eslint-visitor-keys: 5.0.1
 
-  esptool-js@0.4.7:
+  esptool-js@0.4.5:
     dependencies:
       atob-lite: 2.0.0
       pako: 2.2.0

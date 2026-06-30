@@ -2882,13 +2882,28 @@
       "blockedByStack": "Não é possível piscar enquanto a pilha Reticulum contém a porta serial RNode.",
       "esp32SyncFailed": "Não foi possível sincronizar com o carregador de inicialização ESP32. Verifique o cabo USB e a porta, pare outros aplicativos usando a porta serial e tente novamente.",
       "flashTransferTooSmall": "A transferência de firmware não foi concluída — quase nenhum dado foi gravado. Confirme se selecionou a porta USB correta e se a placa entrou no modo de carregador de arranque.",
-      "flashMd5Mismatch": "A verificação do firmware falhou após a gravação. Tente novamente com um cabo ou porta USB diferente; se persistir, baixe novamente o zip do firmware."
+      "flashMd5Mismatch": "A verificação do firmware falhou após a gravação. Tente novamente com um cabo ou porta USB diferente; se persistir, baixe novamente o zip do firmware.",
+      "portSelectionTimedOut": "A seleção da porta serial expirou. Escolha uma porta da lista dentro de dois minutos ou tente piscar novamente para reutilizar a última porta.",
+      "noSerialPorts": "Nenhuma porta serial USB encontrada. Conecte sua placa via USB e tente novamente."
     },
     "selectSerialPort": "Selecionar porta serial",
     "noSerialPorts": "Nenhuma porta serial USB encontrada.",
     "noSerialPortsHint": "Conecte sua placa via USB. Os dispositivos Bluetooth no registro são ignorados; apenas as portas seriais USB podem ser usadas para piscar.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Última utilização"
+    "lastUsedPort": "Última utilização",
+    "downloadFirmware": "Baixar Firmware",
+    "downloadLatestFirmware": "{{filename}} (última versão)",
+    "officialFirmware": "Firmware oficial",
+    "ceFirmware": "Firmware CE",
+    "transportNodeFirmware": "Firmware do nó de transporte",
+    "esp32BootHint": "Use um cabo USB de dados (não apenas de carga). Pare outros aplicativos usando a mesma porta serial antes de piscar.",
+    "flashSectionTitle": "Firmware flash",
+    "esp32Syncing": "Conectando-se ao carregador de inicialização ESP32…",
+    "provisionRequiresFlash": "Firmware flash com sucesso antes de usar esta etapa.",
+    "provisionDone": "Previsto",
+    "firmwareHashRequiresProvision": "Provisione a EEPROM antes de definir o hash do firmware.",
+    "firmwareHashDone": "Conjunto de hash de firmware",
+    "flashDone": "Firmware atualizado"
   },
   "peerListPanel": {
     "heading": "Pares",

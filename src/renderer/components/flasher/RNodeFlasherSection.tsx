@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useElectronSerialPortPicker } from '@/renderer/hooks/useElectronSerialPortPicker';
@@ -8,11 +9,18 @@ import { flashEsp32Firmware } from '@/renderer/lib/flasher/esp32Flasher';
 import { humanizeFlasherError } from '@/renderer/lib/flasher/flasherErrorHumanize';
 import {
   connectRNode,
+  requestFlasherRNodePort,
   requestFlasherSerialPort,
   safeCloseSerialPort,
 } from '@/renderer/lib/flasher/flasherSerial';
+import {
+  clearFlasherFlashSession,
+  hasFlasherSessionPort,
+  markFlasherFlashCompleted,
+  setFlasherSessionPortId,
+  setFlasherSessionSerialPort,
+} from '@/renderer/lib/flasher/flasherSessionPort';
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
-import { prepareEsp32PortForFlash } from '@/renderer/lib/flasher/prepareEsp32PortForFlash';
 import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
@@ -24,9 +32,11 @@ import { BluetoothConfig } from './BluetoothConfig';
 import { DeviceSelector } from './DeviceSelector';
 import { DfuModeTrigger } from './DfuModeTrigger';
 import { DisplayCanvas } from './DisplayCanvas';
+import { FirmwareDownloadLinks } from './FirmwareDownloadLinks';
 import { FirmwareHashStep } from './FirmwareHashStep';
 import { FirmwarePicker } from './FirmwarePicker';
 import { FlasherSerialPortPicker } from './FlasherSerialPortPicker';
+import { flasherStepButtonClass } from './flasherStepButtonStyles';
 import { FlashProgress } from './FlashProgress';
 import { ProvisionStep } from './ProvisionStep';
 import { TncConfig } from './TncConfig';
@@ -39,11 +49,23 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const { t } = useTranslation();
   const { serialPorts, showSerialPicker, requestSerialPort, selectSerialPort, cancelSerialPicker } =
     useElectronSerialPortPicker();
+
+  const selectFlasherSerialPort = useCallback(
+    (portId: string) => {
+      setFlasherSessionPortId(portId);
+      selectSerialPort(portId);
+    },
+    [selectSerialPort],
+  );
   const [selectedProduct, setSelectedProduct] = useState<RNodeProduct | null>(null);
   const [selectedModel, setSelectedModel] = useState<RNodeModel | null>(null);
   const [firmwareFile, setFirmwareFile] = useState<File | null>(null);
   const [flashing, setFlashing] = useState(false);
   const [flashProgress, setFlashProgress] = useState(0);
+  const [esp32Syncing, setEsp32Syncing] = useState(false);
+  const [flashSucceeded, setFlashSucceeded] = useState(false);
+  const [provisionSucceeded, setProvisionSucceeded] = useState(false);
+  const [hashSetSucceeded, setHashSetSucceeded] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [settingHash, setSettingHash] = useState(false);
   const [pairingPin, setPairingPin] = useState<number | null>(null);
@@ -58,30 +80,81 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     setStatusIsError(isError);
   }, []);
 
+  const clearStatus = useCallback(() => {
+    setStatusMessage(null);
+    setStatusIsError(false);
+  }, []);
+
   const actionsDisabled = portBlocked || busy || flashing || provisioning || settingHash;
+  const canFlash =
+    !portBlocked &&
+    !busy &&
+    !provisioning &&
+    !settingHash &&
+    !flashing &&
+    selectedProduct != null &&
+    firmwareFile != null;
+
+  const flashButtonState = flashing
+    ? 'busy'
+    : flashSucceeded
+      ? 'done'
+      : canFlash
+        ? 'ready'
+        : 'disabled';
+
+  const provisionButtonState = provisioning
+    ? 'busy'
+    : provisionSucceeded
+      ? 'done'
+      : flashSucceeded && !actionsDisabled
+        ? 'ready'
+        : 'disabled';
+
+  const hashButtonState = settingHash
+    ? 'busy'
+    : hashSetSucceeded
+      ? 'done'
+      : provisionSucceeded && !actionsDisabled
+        ? 'ready'
+        : 'disabled';
+
+  useEffect(() => {
+    setFlashSucceeded(false);
+    setProvisionSucceeded(false);
+    setHashSetSucceeded(false);
+    clearFlasherFlashSession();
+  }, [firmwareFile, selectedProduct, selectedModel]);
 
   const runWithRNode = useCallback(
-    async (fn: (rnode: Awaited<ReturnType<typeof connectRNode>>) => Promise<void>) => {
+    async (
+      fn: (rnode: Awaited<ReturnType<typeof connectRNode>>) => Promise<void>,
+    ): Promise<boolean> => {
       if (portBlocked) {
         showStatus(t('flasher.errors.blockedByStack'), true);
-        return;
+        return false;
       }
       setBusy(true);
+      clearStatus();
       let port: SerialPort | null = null;
       try {
-        port = await requestFlasherSerialPort(requestSerialPort);
+        port = await requestFlasherRNodePort(requestSerialPort);
+        setFlasherSessionSerialPort(port);
         const rnode = await connectRNode(port);
         await fn(rnode);
         await rnode.close();
+        return true;
       } catch (e) {
         // catch-no-log-ok error humanized and surfaced via flasher status UI
-        showStatus(humanizeFlasherError(e), true);
+        const statusText = humanizeFlasherError(e);
+        showStatus(statusText, true);
         await safeCloseSerialPort(port);
+        return false;
       } finally {
         setBusy(false);
       }
     },
-    [portBlocked, t, showStatus, requestSerialPort],
+    [portBlocked, t, showStatus, requestSerialPort, clearStatus],
   );
 
   const handleEnterDfu = useCallback(async () => {
@@ -94,6 +167,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       return;
     }
     setBusy(true);
+    clearStatus();
     let port: SerialPort | null = null;
     try {
       port = await requestFlasherSerialPort(requestSerialPort);
@@ -107,7 +181,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       await safeCloseSerialPort(port);
       setBusy(false);
     }
-  }, [portBlocked, selectedProduct, t, showStatus, requestSerialPort]);
+  }, [portBlocked, selectedProduct, t, showStatus, requestSerialPort, clearStatus]);
 
   const handleFlash = useCallback(async () => {
     if (portBlocked) {
@@ -123,12 +197,20 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       return;
     }
 
+    clearStatus();
+    setFlashSucceeded(false);
+    setProvisionSucceeded(false);
+    setHashSetSucceeded(false);
     setFlashing(true);
     setFlashProgress(0);
+    setEsp32Syncing(selectedProduct.platform === ROM.PLATFORM_ESP32);
     let port: SerialPort | null = null;
 
     try {
-      port = await requestFlasherSerialPort(requestSerialPort);
+      port = await requestFlasherSerialPort(requestSerialPort, {
+        preferSessionReuse: hasFlasherSessionPort(),
+      });
+      setFlasherSessionSerialPort(port);
       persistSerialPortIdentity(port);
 
       if (selectedProduct.platform === ROM.PLATFORM_NRF52) {
@@ -140,24 +222,46 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           showStatus(t('flasher.errors.flashConfigMissing'), true);
           return;
         }
-        await prepareEsp32PortForFlash(port);
-        await flashEsp32Firmware(port, firmwareFile, flashConfig, setFlashProgress);
+        await flashEsp32Firmware(port, firmwareFile, flashConfig, (progress) => {
+          if (progress > 0) {
+            setEsp32Syncing(false);
+          }
+          setFlashProgress(progress);
+        });
       } else {
         showStatus(t('flasher.errors.selectProduct'), true);
         return;
       }
 
+      markFlasherFlashCompleted();
+      setFlashSucceeded(true);
       showStatus(t('flasher.flashSuccess'));
     } catch (e) {
+      setFlashSucceeded(false);
       // catch-no-log-ok error humanized and surfaced via flasher status UI
       showStatus(humanizeFlasherError(e), true);
     } finally {
       await safeCloseSerialPort(port);
+      setEsp32Syncing(false);
       setFlashing(false);
+      setFlasherSessionSerialPort(null);
     }
-  }, [firmwareFile, portBlocked, requestSerialPort, selectedModel, selectedProduct, showStatus, t]);
+  }, [
+    firmwareFile,
+    portBlocked,
+    requestSerialPort,
+    selectedModel,
+    selectedProduct,
+    showStatus,
+    t,
+    clearStatus,
+  ]);
 
   const handleProvision = useCallback(async () => {
+    if (!flashSucceeded) {
+      showStatus(t('flasher.provisionRequiresFlash'), true);
+      return;
+    }
     if (!selectedProduct || !selectedModel) {
       showStatus(
         !selectedProduct ? t('flasher.errors.selectProduct') : t('flasher.errors.selectModel'),
@@ -166,24 +270,35 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       return;
     }
 
+    clearStatus();
     setProvisioning(true);
+    showStatus(t('flasher.provisioning'));
     await runWithRNode(async (rnode) => {
       const rom = await rnode.getRomAsObject();
       const details = rom.parse();
       if (details?.is_provisioned) {
-        showStatus(t('flasher.provisionAlreadyDone'), true);
+        setProvisionSucceeded(true);
+        showStatus(t('flasher.provisionAlreadyDone'));
         return;
       }
       await provisionEeprom(rnode, { product: selectedProduct, model: selectedModel });
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await rnode.reset();
+      setProvisionSucceeded(true);
       showStatus(t('flasher.provisionSuccess'));
     });
     setProvisioning(false);
-  }, [runWithRNode, selectedModel, selectedProduct, showStatus, t]);
+  }, [flashSucceeded, runWithRNode, selectedModel, selectedProduct, showStatus, t, clearStatus]);
 
   const handleSetFirmwareHash = useCallback(async () => {
+    if (!provisionSucceeded) {
+      showStatus(t('flasher.firmwareHashNotProvisioned'), true);
+      return;
+    }
+
+    clearStatus();
     setSettingHash(true);
+    showStatus(t('flasher.settingFirmwareHash'));
     await runWithRNode(async (rnode) => {
       const rom = await rnode.getRomAsObject();
       const details = rom.parse();
@@ -194,21 +309,28 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       await setFirmwareHashFromDevice(rnode);
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await rnode.reset();
+      setHashSetSucceeded(true);
       showStatus(t('flasher.firmwareHashSuccess'));
     });
     setSettingHash(false);
-  }, [runWithRNode, showStatus, t]);
+  }, [provisionSucceeded, runWithRNode, showStatus, t, clearStatus]);
 
   const handleWipeEeprom = useCallback(async () => {
     setShowWipeConfirm(false);
+    clearStatus();
     await runWithRNode(async (rnode) => {
       await rnode.wipeRom();
       await rnode.reset();
+      setProvisionSucceeded(false);
+      setHashSetSucceeded(false);
       showStatus(t('flasher.wipeEepromSuccess'));
     });
-  }, [runWithRNode, showStatus, t]);
+  }, [runWithRNode, showStatus, t, clearStatus]);
 
   const isNrf52 = selectedProduct?.platform === ROM.PLATFORM_NRF52;
+  const isEsp32 = selectedProduct?.platform === ROM.PLATFORM_ESP32;
+  const recommendedFirmwareFilename =
+    selectedModel?.firmware_filename ?? selectedProduct?.firmware_filename ?? null;
 
   return (
     <>
@@ -222,7 +344,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
         {showSerialPicker ? (
           <FlasherSerialPortPicker
             ports={serialPorts}
-            onSelect={selectSerialPort}
+            onSelect={selectFlasherSerialPort}
             onCancel={cancelSerialPicker}
           />
         ) : null}
@@ -240,51 +362,60 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           </p>
         ) : null}
 
-        <DeviceSelector
-          selectedProduct={selectedProduct}
-          selectedModel={selectedModel}
-          disabled={actionsDisabled}
-          onProductChange={setSelectedProduct}
-          onModelChange={setSelectedModel}
-        />
+        <div className="space-y-4 rounded border border-gray-700 bg-slate-900/40 p-3">
+          <h4 className="text-sm font-medium text-gray-200">{t('flasher.flashSectionTitle')}</h4>
 
-        <FirmwarePicker
-          file={firmwareFile}
-          disabled={actionsDisabled}
-          onFileChange={setFirmwareFile}
-        />
+          <DeviceSelector
+            selectedProduct={selectedProduct}
+            selectedModel={selectedModel}
+            disabled={actionsDisabled}
+            onProductChange={setSelectedProduct}
+            onModelChange={setSelectedModel}
+          />
 
-        {isNrf52 ? (
-          <DfuModeTrigger disabled={actionsDisabled} busy={busy} onEnterDfu={handleEnterDfu} />
-        ) : null}
+          <FirmwarePicker
+            file={firmwareFile}
+            disabled={actionsDisabled}
+            onFileChange={setFirmwareFile}
+          />
 
-        <button
-          type="button"
-          disabled={actionsDisabled}
-          aria-label={t('flasher.flashFirmware')}
-          onClick={() => {
-            void handleFlash();
-          }}
-          className="bg-readable-green hover:bg-readable-green/90 rounded px-3 py-2 text-sm font-medium text-white disabled:bg-gray-600 disabled:opacity-60"
-        >
-          {flashing
-            ? t('flasher.flashing', { progress: flashProgress })
-            : t('flasher.flashFirmware')}
-        </button>
+          <FirmwareDownloadLinks recommendedFilename={recommendedFirmwareFilename} />
 
-        <FlashProgress active={flashing} progress={flashProgress} />
+          {isEsp32 ? <p className="text-xs text-gray-400">{t('flasher.esp32BootHint')}</p> : null}
+
+          {isNrf52 ? (
+            <DfuModeTrigger disabled={actionsDisabled} busy={busy} onEnterDfu={handleEnterDfu} />
+          ) : null}
+
+          <button
+            type="button"
+            disabled={flashButtonState === 'disabled'}
+            aria-label={t('flasher.flashFirmware')}
+            aria-busy={flashing}
+            onClick={() => {
+              void handleFlash();
+            }}
+            className={`${flasherStepButtonClass(flashButtonState)} py-2 text-sm`}
+          >
+            {flashing
+              ? t('flasher.flashing', { progress: flashProgress })
+              : flashSucceeded
+                ? t('flasher.flashDone')
+                : t('flasher.flashFirmware')}
+          </button>
+
+          <FlashProgress active={flashing} progress={flashProgress} syncing={esp32Syncing} />
+        </div>
 
         <ProvisionStep
-          disabled={actionsDisabled}
-          busy={provisioning}
+          state={provisionButtonState}
           onProvision={() => {
             void handleProvision();
           }}
         />
 
         <FirmwareHashStep
-          disabled={actionsDisabled}
-          busy={settingHash}
+          state={hashButtonState}
           onSetHash={() => {
             void handleSetFirmwareHash();
           }}

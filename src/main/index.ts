@@ -387,6 +387,15 @@ function buildBadgePng(): Buffer {
 
 // Pending Serial callback
 let pendingSerialCallback: ((portId: string) => void) | null = null;
+let pendingSerialSelectionTimer: ReturnType<typeof setTimeout> | null = null;
+const SERIAL_PORT_SELECTION_TIMEOUT_MS = 120_000;
+
+function clearPendingSerialSelectionTimer(): void {
+  if (pendingSerialSelectionTimer) {
+    clearTimeout(pendingSerialSelectionTimer);
+    pendingSerialSelectionTimer = null;
+  }
+}
 // Last serial port discovery set: only allow selection IPC to resolve with ids from this set
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
@@ -1660,18 +1669,22 @@ function createWindow() {
 
       // Store callback so we can resolve it when the user picks a port
       pendingSerialCallback = callback;
+      clearPendingSerialSelectionTimer();
 
       console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
 
-      // Auto-cancel after 60s to prevent indefinite block if renderer unmounts mid-flow
-      setTimeout(() => {
+      // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
+      pendingSerialSelectionTimer = setTimeout(() => {
         if (pendingSerialCallback === callback) {
-          console.warn('[IPC] Serial port selection callback stale after 60s — auto-cancelling');
+          console.warn(
+            '[IPC] Serial port selection callback stale after timeout — auto-cancelling',
+          );
           pendingSerialCallback('');
           pendingSerialCallback = null;
           lastSerialPortIds.clear();
         }
-      }, 60_000);
+        pendingSerialSelectionTimer = null;
+      }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
 
       lastSerialPortIds = new Set(portList.map((p) => p.portId));
       // Send port list to renderer for selection
@@ -2012,6 +2025,7 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
     return;
   }
   console.debug('[IPC] serial-port-selected:', sanitizeLogMessage(id || '(cancelled)'));
+  clearPendingSerialSelectionTimer();
   pendingSerialCallback(id);
   pendingSerialCallback = null;
   lastSerialPortIds.clear();
@@ -2019,6 +2033,7 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
 
 // ─── IPC: Cancel Serial selection ───────────────────────────────────
 ipcMain.on('serial-port-cancelled', () => {
+  clearPendingSerialSelectionTimer();
   if (pendingSerialCallback) {
     pendingSerialCallback(''); // Empty string cancels the request
     pendingSerialCallback = null;

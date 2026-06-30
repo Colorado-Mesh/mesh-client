@@ -65,10 +65,50 @@ export class RNode {
     void this.readLoop();
   }
 
-  static async fromSerialPort(serialPort: SerialPort): Promise<RNode> {
+  static async fromSerialPort(
+    serialPort: SerialPort,
+    options?: { bootDrainMs?: number },
+  ): Promise<RNode> {
     await serialPort.open({ baudRate: 115200 });
+    if (options?.bootDrainMs && options.bootDrainMs > 0) {
+      await RNode.drainBootOutput(serialPort, options.bootDrainMs);
+    }
     const reader = serialPort.readable!.getReader();
     return new RNode(serialPort, reader, serialPort.writable!);
+  }
+
+  /** Discard ESP32 boot console bytes before KISS detect (meshchat: user delay; Reticulum: ~2s). */
+  static async drainBootOutput(serialPort: SerialPort, drainMs: number): Promise<number> {
+    if (!serialPort.readable) {
+      return 0;
+    }
+    const reader = serialPort.readable.getReader();
+    let bytesDiscarded = 0;
+    const startedAt = Date.now();
+    try {
+      while (Date.now() - startedAt < drainMs) {
+        const remaining = drainMs - (Date.now() - startedAt);
+        const chunk = await Promise.race([
+          reader.read(),
+          sleepMillis(Math.min(100, remaining)).then(() => ({ done: false, value: undefined })),
+        ]);
+        if (chunk.done) {
+          break;
+        }
+        if (chunk.value) {
+          bytesDiscarded += chunk.value.length;
+        }
+      }
+    } catch {
+      // catch-no-log-ok boot drain is best-effort before detect
+    } finally {
+      try {
+        reader.releaseLock();
+      } catch {
+        // catch-no-log-ok reader may already be released
+      }
+    }
+    return bytesDiscarded;
   }
 
   async close(): Promise<void> {
@@ -201,22 +241,29 @@ export class RNode {
     await this.sendKissCommand([RNode.CMD_RESET, RNode.CMD_RESET_BYTE]);
   }
 
-  async detect(): Promise<boolean> {
-    try {
-      const timeout = new Promise<boolean>((resolve) => {
-        setTimeout(() => {
-          resolve(false);
-        }, 2000);
-      });
-      const detect = this.sendCommand(RNode.CMD_DETECT, [RNode.DETECT_REQ]).then((response) => {
-        const [responseByte] = response;
-        return responseByte === RNode.DETECT_RESP;
-      });
-      return await Promise.race([detect, timeout]);
-    } catch {
-      // catch-no-log-ok detect failure returns false to caller
-      return false;
-    }
+  async detect(timeoutMs = 2000): Promise<boolean> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        resolve(result);
+      };
+
+      const timeoutId = setTimeout(() => {
+        finish(false);
+      }, timeoutMs);
+
+      void this.sendCommand(RNode.CMD_DETECT, [RNode.DETECT_REQ])
+        .then((response) => {
+          const [responseByte] = response;
+          finish(responseByte === RNode.DETECT_RESP);
+        })
+        .catch(() => {
+          finish(false);
+        });
+    });
   }
 
   async getFirmwareVersion(): Promise<string> {

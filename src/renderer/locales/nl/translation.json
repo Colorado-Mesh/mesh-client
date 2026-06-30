@@ -2882,13 +2882,28 @@
       "blockedByStack": "Kan niet flitsen terwijl de Reticulum-stack de seriële RNode-poort bevat.",
       "esp32SyncFailed": "Kan niet synchroniseren met de ESP32-opstartlader. Controleer de USB-kabel en poort, stop andere apps met behulp van de seriële poort en probeer het opnieuw.",
       "flashTransferTooSmall": "Firmware-overdracht is niet voltooid — er zijn bijna geen gegevens geschreven. Bevestig dat u de juiste USB-poort hebt geselecteerd en dat het bord in de bootloader-modus is gegaan.",
-      "flashMd5Mismatch": "Firmwareverificatie mislukt na schrijven. Probeer het opnieuw met een andere USB-kabel of poort; als het aanhoudt, download dan de ZIP-firmware opnieuw."
+      "flashMd5Mismatch": "Firmwareverificatie mislukt na schrijven. Probeer het opnieuw met een andere USB-kabel of poort; als het aanhoudt, download dan de ZIP-firmware opnieuw.",
+      "portSelectionTimedOut": "Er is een time-out opgetreden bij de selectie van de seriële poort. Kies binnen twee minuten een poort uit de lijst of probeer opnieuw te knipperen om de laatste poort opnieuw te gebruiken.",
+      "noSerialPorts": "Geen seriële USB-poorten gevonden. Sluit uw bord aan via USB en probeer het opnieuw."
     },
     "selectSerialPort": "Seriële poort selecteren",
     "noSerialPorts": "Geen USB seriële poorten gevonden.",
     "noSerialPortsHint": "Sluit uw bord aan via USB. Bluetooth-apparaten in het logboek worden genegeerd; alleen USB-seriële poorten kunnen worden gebruikt om te knipperen.",
     "stackStoppedHint": "Reticulum stack is gestopt — de seriële poort is vrij om te knipperen. Start de stapel opnieuw op het tabblad Verbinding wanneer u klaar bent.",
-    "lastUsedPort": "Laatst gebruikt"
+    "lastUsedPort": "Laatst gebruikt",
+    "downloadFirmware": "Firmware downloaden",
+    "downloadLatestFirmware": "{{filename}} (laatste versie)",
+    "officialFirmware": "Officiële firmware",
+    "ceFirmware": "CE-firmware",
+    "transportNodeFirmware": "Firmware transportknooppunt",
+    "esp32BootHint": "Gebruik een data-USB-kabel (niet alleen opladen). Stop andere apps die dezelfde seriële poort gebruiken voordat ze knipperen.",
+    "flashSectionTitle": "Flash-firmware",
+    "esp32Syncing": "Verbinding maken met ESP32-opstartlader...",
+    "provisionRequiresFlash": "Flash-firmware succesvol voordat u deze stap gebruikt.",
+    "provisionDone": "Voorzien",
+    "firmwareHashRequiresProvision": "Bepaal de EEPROM voordat u de firmware-hash instelt.",
+    "firmwareHashDone": "Firmware-hashset",
+    "flashDone": "Firmware geflasht"
   },
   "peerListPanel": {
     "heading": "Collega's",

@@ -2882,13 +2882,28 @@
       "blockedByStack": "Reticulum yığını RNode seri bağlantı noktasını tutarken yanıp sönemez.",
       "esp32SyncFailed": "ESP32 önyükleyici ile senkronize edilemedi. USB kablosunu ve bağlantı noktasını kontrol edin, seri bağlantı noktasını kullanarak diğer uygulamaları durdurun ve tekrar deneyin.",
       "flashTransferTooSmall": "Yazılım aktarımı tamamlanmadı — neredeyse hiç veri yazılmadı. Doğru USB bağlantı noktasını seçtiğinizden ve kartın önyükleyici moduna girdiğinden emin olun.",
-      "flashMd5Mismatch": "Yazılım doğrulaması yazıldıktan sonra başarısız oldu. Farklı bir USB kablosu veya bağlantı noktası ile tekrar deneyin; devam ederse, ürün yazılımı zip dosyasını yeniden indirin."
+      "flashMd5Mismatch": "Yazılım doğrulaması yazıldıktan sonra başarısız oldu. Farklı bir USB kablosu veya bağlantı noktası ile tekrar deneyin; devam ederse, ürün yazılımı zip dosyasını yeniden indirin.",
+      "portSelectionTimedOut": "Seri bağlantı noktası seçimi zaman aşımına uğradı. İki dakika içinde listeden bir bağlantı noktası seçin veya son bağlantı noktasını yeniden kullanmak için flash'ı yeniden deneyin.",
+      "noSerialPorts": "Hiçbir USB seri bağlantı noktası bulunamadı. Anakartınızı USB üzerinden bağlayın ve tekrar deneyin."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
     "noSerialPortsHint": "Kartınızı USB üzerinden bağlayın. Günlükteki Bluetooth cihazları yok sayılır; yanıp sönmek için yalnızca USB seri bağlantı noktaları kullanılabilir.",
     "stackStoppedHint": "Reticulum yığını durdurulur — seri bağlantı noktası yanıp sönmek için serbesttir. İşiniz bittiğinde Bağlantı sekmesinde yığını tekrar başlatın.",
-    "lastUsedPort": "Son kullanılan"
+    "lastUsedPort": "Son kullanılan",
+    "downloadFirmware": "Aygıt yazılımını indir",
+    "downloadLatestFirmware": "{{filename}} (en son sürüm)",
+    "officialFirmware": "Resmi ürün yazılımı",
+    "ceFirmware": "CE ürün yazılımı",
+    "transportNodeFirmware": "Taşıma Düğümü ürün yazılımı",
+    "esp32BootHint": "Veri USB kablosu kullanın (yalnızca şarj etmeyin). Yanıp sönmeden önce aynı seri bağlantı noktasını kullanan diğer uygulamaları durdurun.",
+    "flashSectionTitle": "Flash ürün yazılımı",
+    "esp32Syncing": "ESP32 önyükleyiciye bağlanıyor…",
+    "provisionRequiresFlash": "Bu adımı kullanmadan önce ürün yazılımını başarıyla flaşlayın.",
+    "provisionDone": "Provizyonlu",
+    "firmwareHashRequiresProvision": "Ürün yazılımı karmasını ayarlamadan önce EEPROM'u sağlayın.",
+    "firmwareHashDone": "Aygıt yazılımı karma kümesi",
+    "flashDone": "Aygıt yazılımı yanıp söndü"
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",

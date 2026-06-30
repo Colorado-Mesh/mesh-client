@@ -23,7 +23,8 @@
  *    probe toasts and reticulumPing.failed connection false friends; CAT HTML entities, bracket
  *    [Data] placeholders, bare PH N / <ph> / HTML tag residue, and sample-name garbage on nameLabel;
  *    rawPacketLog.reticulum RX/TX verbatim tokens and destination punctuation garbage;
- *    reticulumTopology.self pronoun and hopBadge {{count}} placeholder.
+ *    reticulumTopology.self pronoun and hopBadge {{count}} placeholder;
+ *    flasher.noSerialPorts French inverted "trouvé(s):" empty-state wording.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

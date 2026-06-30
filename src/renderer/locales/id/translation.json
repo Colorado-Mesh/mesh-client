@@ -2882,13 +2882,28 @@
       "blockedByStack": "Tidak dapat mem-flash saat tumpukan Reticulum menahan port serial RNode.",
       "esp32SyncFailed": "Tidak dapat menyinkronkan dengan bootloader ESP32. Periksa kabel USB dan port, hentikan aplikasi lain menggunakan port serial, dan coba lagi.",
       "flashTransferTooSmall": "Transfer firmware tidak selesai — hampir tidak ada data yang ditulis. Pastikan Anda memilih port USB yang benar dan papan masuk ke mode bootloader.",
-      "flashMd5Mismatch": "Verifikasi firmware gagal setelah ditulis. Coba lagi dengan kabel atau port USB yang berbeda; jika terus berlanjut, unduh ulang zip firmware."
+      "flashMd5Mismatch": "Verifikasi firmware gagal setelah ditulis. Coba lagi dengan kabel atau port USB yang berbeda; jika terus berlanjut, unduh ulang zip firmware.",
+      "portSelectionTimedOut": "Waktu pemilihan port serial habis. Pilih port dari daftar dalam waktu dua menit, atau coba lagi flash untuk menggunakan kembali port terakhir.",
+      "noSerialPorts": "Tidak ditemukan port serial USB. Hubungkan papan Anda melalui USB dan coba lagi."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",
     "noSerialPortsHint": "Hubungkan papan Anda melalui USB. Perangkat Bluetooth di log diabaikan; hanya port serial USB yang dapat digunakan untuk berkedip.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Terakhir digunakan"
+    "lastUsedPort": "Terakhir digunakan",
+    "downloadFirmware": "Unduh firmware",
+    "downloadLatestFirmware": "{{filename}} (rilis terbaru)",
+    "officialFirmware": "Firmware resmi",
+    "ceFirmware": "Firmware CE",
+    "transportNodeFirmware": "Firmware Transport Node",
+    "esp32BootHint": "Gunakan kabel USB data (tidak hanya untuk pengisian daya). Hentikan aplikasi lain menggunakan port serial yang sama sebelum berkedip.",
+    "flashSectionTitle": "Firmware flash",
+    "esp32Syncing": "Menghubungkan ke bootloader ESP32…",
+    "provisionRequiresFlash": "Flash firmware berhasil sebelum menggunakan langkah ini.",
+    "provisionDone": "Disediakan",
+    "firmwareHashRequiresProvision": "Sediakan EEPROM sebelum mengatur hash firmware.",
+    "firmwareHashDone": "Kumpulan hash firmware",
+    "flashDone": "Firmware di-flash"
   },
   "peerListPanel": {
     "heading": "Peer",

@@ -2882,13 +2882,28 @@
       "blockedByStack": "Impossibile eseguire il flashing mentre lo stack Reticulum contiene la porta seriale RNode.",
       "esp32SyncFailed": "Impossibile sincronizzare con il bootloader ESP32. Controllare il cavo e la porta USB, interrompere altre app utilizzando la porta seriale e riprovare.",
       "flashTransferTooSmall": "Il trasferimento del firmware non è stato completato — quasi nessun dato è stato scritto. Confermare di aver selezionato la porta USB corretta e che la scheda sia entrata in modalità bootloader.",
-      "flashMd5Mismatch": "Verifica del firmware non riuscita dopo la scrittura. Riprovare con un altro cavo o porta USB; se persiste, scaricare nuovamente lo zip del firmware."
+      "flashMd5Mismatch": "Verifica del firmware non riuscita dopo la scrittura. Riprovare con un altro cavo o porta USB; se persiste, scaricare nuovamente lo zip del firmware.",
+      "portSelectionTimedOut": "Timeout della selezione della porta seriale. Scegli una porta dall'elenco entro due minuti o riprova il flash per riutilizzare l'ultima porta.",
+      "noSerialPorts": "Nessuna porta seriale USB trovata. Collega la scheda tramite USB e riprova."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",
     "noSerialPortsHint": "Collega la scheda tramite USB. I dispositivi Bluetooth nel registro vengono ignorati; solo le porte seriali USB possono essere utilizzate per il lampeggio.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Ultimo usato"
+    "lastUsedPort": "Ultimo usato",
+    "downloadFirmware": "Scarica il firmware",
+    "downloadLatestFirmware": "{{filename}} (ultima versione)",
+    "officialFirmware": "Firmware ufficiale",
+    "ceFirmware": "Firmware CE",
+    "transportNodeFirmware": "Firmware del nodo di trasporto",
+    "esp32BootHint": "Utilizzare un cavo USB dati (non solo di ricarica). Arrestare altre app che utilizzano la stessa porta seriale prima di lampeggiare.",
+    "flashSectionTitle": "Firmware flash",
+    "esp32Syncing": "Connessione al bootloader ESP32 in corso...",
+    "provisionRequiresFlash": "Firmware Flash riuscito prima di utilizzare questo passaggio.",
+    "provisionDone": "Accantonato",
+    "firmwareHashRequiresProvision": "Eseguire il provisioning della EEPROM prima di impostare l'hash del firmware.",
+    "firmwareHashDone": "Set di hash del firmware",
+    "flashDone": "Il firmware è lampeggiato"
   },
   "peerListPanel": {
     "heading": "Compagni",

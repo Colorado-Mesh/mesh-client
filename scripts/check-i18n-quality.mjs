@@ -257,6 +257,16 @@ export const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set([
   'transportHeading',
 ]);
 
+/** Flasher UI when no USB serial ports are enumerated. */
+export const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
+  'flasher.noSerialPorts',
+  'flasher.errors.noSerialPorts',
+]);
+
+/** French MT inverts "No … found" into affirmative "trouvé(s):" labels. */
+export const FR_NO_SERIAL_PORTS_INVERTED_RE = /\btrouvés?\s*:/i;
+export const FR_NO_SERIAL_PORTS_NEGATION_RE = /\b(aucun|pas de|non trouv|introuvable)/i;
+
 /** MyMemory/CAT padding with dot runs in short UI labels. */
 export const CAT_DOT_PADDING_RE = /\.{4,}/;
 
@@ -1514,6 +1524,7 @@ export const LOCALE_ARTIFACT_RES = [
   /<g\s+id=/i,
   /<\/g>/i,
   /<ph\s+/i,
+  /<x\s+id=/i,
   /<bpt\b/i,
   /<ept\b/i,
   /equiv-text=/i,
@@ -1966,6 +1977,27 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
         issues.push(`de device role false friend: ${hint}`);
       }
     }
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkFlasherIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (
+    FLASHER_NO_SERIAL_PORTS_KEYS.has(flatKey) &&
+    /^No .* found/i.test(enVal) &&
+    locale === 'fr' &&
+    FR_NO_SERIAL_PORTS_INVERTED_RE.test(val) &&
+    !FR_NO_SERIAL_PORTS_NEGATION_RE.test(val)
+  ) {
+    issues.push(
+      'flasher noSerialPorts must express absence (aucun/pas de), not affirmative "trouvé(s):"',
+    );
   }
   return issues;
 }
@@ -2677,6 +2709,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkRadioPanelChannelIssues,
   checkRoomsPanelFalseFriendIssues,
   checkMeshAdvertAndRawPacketLogIssues,
+  checkFlasherIssues,
   checkRoomsGuestPasswordAndNlMeshIssues,
   checkMqttWifiAndScriptIssues,
   checkRoomsPanelTranslationIssues,

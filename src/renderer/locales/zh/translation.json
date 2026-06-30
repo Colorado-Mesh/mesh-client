@@ -2882,13 +2882,28 @@
       "blockedByStack": "当 Reticulum 堆栈保留 RNode 串行端口时无法闪烁。",
       "esp32SyncFailed": "无法与ESP32引导加载程序同步。检查USB电缆和端口，停止使用串行端口的其他应用程序，然后重试。",
       "flashTransferTooSmall": "固件传输未完成—几乎未写入任何数据。确认您选择了正确的USB端口，并且主板已进入引导加载程序模式。",
-      "flashMd5Mismatch": "写入后固件验证失败。请使用其他USB电缆或端口重试；如果问题仍然存在，请重新下载固件ZIP。"
+      "flashMd5Mismatch": "写入后固件验证失败。请使用其他USB电缆或端口重试；如果问题仍然存在，请重新下载固件ZIP。",
+      "portSelectionTimedOut": "串行端口选择超时。在两分钟内从列表中选择一个端口，或重试闪存以重用最后一个端口。",
+      "noSerialPorts": "未找到 USB 串行端口。通过 USB 连接您的开发板并重试。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",
     "noSerialPortsHint": "通过USB连接您的主板。日志中的蓝牙设备将被忽略；只有USB串行端口可用于闪烁。",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "最后使用"
+    "lastUsedPort": "最后使用",
+    "downloadFirmware": "下载固件",
+    "downloadLatestFirmware": "{{filename}} （最新版本）",
+    "officialFirmware": "官方固件",
+    "ceFirmware": "CE固件",
+    "transportNodeFirmware": "传输节点固件",
+    "esp32BootHint": "使用数据USB电缆（仅限充电）。在闪烁之前，请停止使用相同串行端口的其他应用程序。",
+    "flashSectionTitle": "Flash固件",
+    "esp32Syncing": "正在连接到ESP32引导加载程序…",
+    "provisionRequiresFlash": "在使用此步骤之前，请成功闪存固件。",
+    "provisionDone": "已佈建",
+    "firmwareHashRequiresProvision": "在设置固件哈希之前预配EEPROM。",
+    "firmwareHashDone": "固件哈希集",
+    "flashDone": "固件刷写"
   },
   "peerListPanel": {
     "heading": "Pee对端",

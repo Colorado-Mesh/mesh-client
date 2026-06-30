@@ -2882,13 +2882,28 @@
       "blockedByStack": "Impossible de flasher pendant que la pile Reticulum contient le port série RNode.",
       "esp32SyncFailed": "Impossible de synchroniser avec le chargeur d'amorçage ESP32. Vérifiez le câble et le port USB, arrêtez les autres applications à l'aide du port série et réessayez.",
       "flashTransferTooSmall": "Le transfert du micrologiciel n'a pas été terminé — presque aucune donnée n'a été écrite. Confirmez que vous avez sélectionné le bon port USB et que la carte est entrée en mode bootloader.",
-      "flashMd5Mismatch": "La vérification du micrologiciel a échoué après l'écriture. Réessayez avec un câble ou un port USB différent ; si cela persiste, téléchargez à nouveau le code postal du micrologiciel."
+      "flashMd5Mismatch": "La vérification du micrologiciel a échoué après l'écriture. Réessayez avec un câble ou un port USB différent ; si cela persiste, téléchargez à nouveau le code postal du micrologiciel.",
+      "portSelectionTimedOut": "La sélection du port série a expiré. Choisissez un port dans la liste dans les deux minutes, ou réessayez de clignoter pour réutiliser le dernier port.",
+      "noSerialPorts": "Aucun port série USB trouvé. Connectez votre carte via USB et réessayez."
     },
     "selectSerialPort": "Sélectionner le port série",
-    "noSerialPorts": "Ports USB-série trouvés :",
+    "noSerialPorts": "Aucun port série USB trouvé.",
     "noSerialPortsHint": "Connectez votre carte via USB. Les périphériques Bluetooth dans le journal sont ignorés ; seuls les ports série USB peuvent être utilisés pour clignoter.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Dernières utilisées"
+    "lastUsedPort": "Dernières utilisées",
+    "downloadFirmware": "Télécharger le micrologiciel",
+    "downloadLatestFirmware": "{{filename}} (dernière version)",
+    "officialFirmware": "Firmware officiel",
+    "ceFirmware": "Firmware CE",
+    "transportNodeFirmware": "Firmware du nœud de transport",
+    "esp32BootHint": "Utilisez un câble USB de données (non chargé uniquement). Arrêtez les autres applications utilisant le même port série avant de clignoter.",
+    "flashSectionTitle": "Flasher le firmware",
+    "esp32Syncing": "Connexion au chargeur de démarrage ESP32…",
+    "provisionRequiresFlash": "Flash du micrologiciel avec succès avant d'utiliser cette étape.",
+    "provisionDone": "Provisionné",
+    "firmwareHashRequiresProvision": "Provisionnez l'EEPROM avant de définir le hachage du micrologiciel.",
+    "firmwareHashDone": "Ensemble de hachage du micrologiciel",
+    "flashDone": "Le micrologiciel a flashé"
   },
   "peerListPanel": {
     "heading": "Pairs",

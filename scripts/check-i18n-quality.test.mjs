@@ -1390,6 +1390,16 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'HTML tag residue');
   });
 
+  it('flags inverted French flasher.noSerialPorts', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'flasher.noSerialPorts',
+      val: 'Ports USB-série trouvés :',
+      enVal: 'No USB serial ports found.',
+    });
+    expectIssue(issues, 'must express absence');
+  });
+
   const enMeshcoreOpenWireCompatHint =
     'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
 

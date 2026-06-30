@@ -99,7 +99,7 @@
     "builder-util-runtime": "9.7.0",
     "electron-updater": "^6.8.9",
     "emoji-picker-element": "^1.29.1",
-    "esptool-js": "^0.4.7",
+    "esptool-js": "0.4.5",
     "i18next": "^26.3.4",
     "js-md5": "^0.8.3",
     "jszip": "^3.10.1",

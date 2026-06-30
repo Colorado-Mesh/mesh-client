@@ -2882,13 +2882,28 @@
       "blockedByStack": "Es kann nicht geflasht werden, während der Reticulum-Stack den seriellen RNode-Port enthält.",
       "esp32SyncFailed": "Konnte nicht mit dem ESP32-Bootloader synchronisiert werden. Überprüfen Sie das USB-Kabel und den Anschluss, stoppen Sie andere Apps über den seriellen Anschluss und versuchen Sie es erneut.",
       "flashTransferTooSmall": "Die Firmware-Übertragung wurde nicht abgeschlossen — es wurden fast keine Daten geschrieben. Bestätigen Sie, dass Sie den richtigen USB-Anschluss ausgewählt haben und dass die Platine in den Bootloader-Modus gewechselt ist.",
-      "flashMd5Mismatch": "Die Firmware-Überprüfung ist nach dem Schreiben fehlgeschlagen. Versuchen Sie es erneut mit einem anderen USB-Kabel oder -Anschluss. Wenn dies weiterhin der Fall ist, laden Sie die Firmware-ZIP-Datei erneut herunter."
+      "flashMd5Mismatch": "Die Firmware-Überprüfung ist nach dem Schreiben fehlgeschlagen. Versuchen Sie es erneut mit einem anderen USB-Kabel oder -Anschluss. Wenn dies weiterhin der Fall ist, laden Sie die Firmware-ZIP-Datei erneut herunter.",
+      "portSelectionTimedOut": "Zeitüberschreitung bei der Auswahl des seriellen Ports. Wählen Sie innerhalb von zwei Minuten einen Port aus der Liste aus oder versuchen Sie es erneut, um den letzten Port wiederzuverwenden.",
+      "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden. Schließen Sie Ihr Board über USB an und versuchen Sie es erneut."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",
     "noSerialPortsHint": "Schließen Sie Ihr Board über USB an. Bluetooth-Geräte im Protokoll werden ignoriert; nur serielle USB-Anschlüsse können zum Blinken verwendet werden.",
     "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
-    "lastUsedPort": "Zuletzt verwendet"
+    "lastUsedPort": "Zuletzt verwendet",
+    "downloadFirmware": "Firmware-Download",
+    "downloadLatestFirmware": "{{filename}} (neueste Version)",
+    "officialFirmware": "Offizielle Firmware",
+    "ceFirmware": "CE-Firmware",
+    "transportNodeFirmware": "Transportknoten-Firmware",
+    "esp32BootHint": "Verwenden Sie ein Daten-USB-Kabel (nicht nur zum Aufladen). Beenden Sie andere Apps, die denselben seriellen Port verwenden, bevor Sie blinken.",
+    "flashSectionTitle": "Flash-Firmware",
+    "esp32Syncing": "Verbindung zum ESP32-Bootloader wird hergestellt...",
+    "provisionRequiresFlash": "Flashen Sie die Firmware erfolgreich, bevor Sie diesen Schritt ausführen.",
+    "provisionDone": "Bereitgestellt",
+    "firmwareHashRequiresProvision": "Stellen Sie den EEPROM bereit, bevor Sie den Firmware-Hash setzen.",
+    "firmwareHashDone": "Firmware-Hash-Set",
+    "flashDone": "Firmware geflasht"
   },
   "peerListPanel": {
     "heading": "Kollegen",
