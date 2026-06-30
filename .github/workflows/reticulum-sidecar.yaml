@@ -28,16 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsReticulum
-          path: ../rsReticulum
-          fetch-depth: 1
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsLXMF
-          path: ../rsLXMF
-          fetch-depth: 1
+      # checkout@v6 only allows paths under GITHUB_WORKSPACE; Cargo expects Ratspeak siblings.
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: ${{ matrix.target }}
@@ -69,16 +65,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsReticulum
-          path: ../rsReticulum
-          fetch-depth: 1
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsLXMF
-          path: ../rsLXMF
-          fetch-depth: 1
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: ${{ matrix.target }}
@@ -98,16 +89,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsReticulum
-          path: ../rsReticulum
-          fetch-depth: 1
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsLXMF
-          path: ../rsLXMF
-          fetch-depth: 1
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: aarch64-pc-windows-msvc
@@ -124,16 +110,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsReticulum
-          path: ../rsReticulum
-          fetch-depth: 1
-      - uses: actions/checkout@v6
-        with:
-          repository: ratspeak/rsLXMF
-          path: ../rsLXMF
-          fetch-depth: 1
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: aarch64-pc-windows-msvc
