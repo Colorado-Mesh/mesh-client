@@ -340,7 +340,8 @@
     "selectDmFirst": "Перед отправкой выберите получателя DM.",
     "emptySelectDm": "Чат Reticulum предназначен только для личных сообщений. Выберите контакт выше или откройте его на вкладке Узлы.",
     "noDmConversations": "Пока нет разговоров.",
-    "noDmConversationsReticulum": "Пока нет разговоров — откройте контакт на вкладке Узлы."
+    "noDmConversationsReticulum": "Пока нет разговоров — откройте контакт на вкладке Узлы.",
+    "dms": "ЛС"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -590,7 +591,7 @@
     "sharedBleWithMeshtastic": "Это устройство Bluetooth уже подключено через Meshtastic. Переключитесь на вкладку Meshtastic, чтобы использовать ее, или выберите другое радио или транспорт для MeshCore.",
     "sharedBleWithMeshtasticHint": "Одно физическое радио не может одновременно проводить отдельные сеансы Bluetooth Meshtastic и MeshCore.",
     "reticulumStackTitle": "Стек Reticulum",
-    "reticulumStackHint": "Запускает локальный sidecar Reticulum/LXMF (интерфейсы TCP и Auto).",
+    "reticulumStackHint": "Запустите локальный sidecar Reticulum/LXMF перед созданием идентичности или добавлением интерфейсов.",
     "reticulumStartStack": "Запустить стек",
     "reticulumRestartStack": "Перезапустить стек",
     "reticulumNetworkTitle": "Сетевые интерфейсы",
@@ -601,9 +602,9 @@
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) не найден. Установите с https://rustup.rs, затем выполните `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Не удалось запустить стек Reticulum: {{message}}",
     "disconnect": "Отключить",
-    "reticulumStopStack": "Стоп стек",
+    "reticulumStopStack": "Остановить стек",
     "reticulumAutostart": "Автоматический запуск стека при открытии соединения",
-    "reticulumStackRunning": "Работает дымовая труба",
+    "reticulumStackRunning": "Стек работает",
     "reticulumIdentity": {
       "title": "Идентичность Reticulum",
       "hint": "Запустите стек выше, а затем создайте или импортируйте мнемонический идентификатор.",
@@ -625,12 +626,12 @@
     "reticulumInterfaces": {
       "title": "Интерфейсы",
       "type": "Тип",
-      "add": "Добавить базовый интерфейс",
-      "enable": "Редактировать",
-      "disable": "выключить",
+      "add": "Добавить интерфейс",
+      "enable": "Включить",
+      "disable": "Отключить",
       "serialPort": "Последовательный порт",
       "preset": "Предустановка",
-      "bleAvailable": "На этой платформе доступен пиринг BLE (добавление через коляску при настройке).",
+      "bleAvailable": "BLE-пиринг доступен на этой платформе (добавьте через sidecar при настройке).",
       "host": "Хост",
       "port": "Порт",
       "delete": "Удалить",
@@ -639,7 +640,7 @@
       "deleteConfirm": "Удалить",
       "deleteFailed": "Не удалось удалить интерфейс.",
       "edit": "Правка",
-      "editTitle": "Редактирование нового интерфейса",
+      "editTitle": "Редактирование интерфейса",
       "saveEdit": "Сохранить настройки",
       "cancelEdit": "Отмена",
       "name": "Имя",
@@ -655,8 +656,8 @@
     },
     "reticulumPropagation": {
       "title": "Узлы распространения",
-      "enable": "Редактировать",
-      "disable": "выключить"
+      "enable": "Включить",
+      "disable": "Отключить"
     }
   },
   "contactGroupsModal": {
@@ -2267,11 +2268,11 @@
     "reticulumConfigNotFound": "Системная конфигурация Reticulum не найдена по путям по умолчанию.",
     "reticulumFactoryReset": {
       "title": "Сброс к заводским настройкам",
-      "hint": "Очищает идентификатор, контакты и сообщения из стека коляски. Конфигурация интерфейса сохранена.",
+      "hint": "Очищает идентичность, контакты и сообщения из sidecar-стека. Конфигурация интерфейсов сохранена.",
       "button": "Сбросить данные стека",
       "confirmTitle": "Сбросить стек Reticulum?",
-      "confirmBody": "Это удалит удостоверения, контакты и локальные сообщения из коляски. Файл конфигурации интерфейса сохранен.",
-      "confirm": "Reset (сброс - уст 0)"
+      "confirmBody": "Это удалит идентичность, контакты и локальные сообщения из sidecar. Файл конфигурации интерфейсов сохранится.",
+      "confirm": "Сбросить"
     },
     "reticulumVoiceGames": {
       "title": "Голос и игры",

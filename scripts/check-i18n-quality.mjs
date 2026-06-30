@@ -421,6 +421,114 @@ export const RETICULUM_PEER_NAME_FALSE_FRIEND_RES = [
     re: /^Sesama Rekan Kerja$/i,
     hint: 'reticulumPeers.name must be peer wording, not Indonesian coworker phrase',
   },
+  {
+    re: /^Колега$/i,
+    hint: 'reticulumPeers.name must be "Вузол/Peer", not Ukrainian office colleague "Колега"',
+  },
+  { re: /^동료$/, hint: 'reticulumPeers.name must be "피어", not office colleague "동료"' },
+  {
+    re: /^Compañeros$/i,
+    hint: 'reticulumPeers.name must be "Par/Peer", not Spanish companions "Compañeros"',
+  },
+  {
+    re: /^Gleichrangige$/i,
+    hint: 'reticulumPeers.name must be "Peer", not truncated German adjective "Gleichrangige"',
+  },
+];
+
+/** MT confuses software stack running with chimney/pallet stacks or starting. */
+export const RETICULUM_STACK_RUNNING_FALSE_FRIENDS = {
+  ru: [
+    {
+      re: /дымов/i,
+      hint: 'reticulumStackRunning must be "Стек работает", not chimney stack "дымовая труба"',
+    },
+  ],
+  pl: [
+    {
+      re: /^Bieżący stos$/i,
+      hint: 'reticulumStackRunning must mean running, not "current stack" (Bieżący stos)',
+    },
+  ],
+  uk: [
+    {
+      re: /^Запуск стека$/i,
+      hint: 'reticulumStackRunning must be "Стек працює", not "Запуск стека" (starting)',
+    },
+  ],
+  de: [
+    {
+      re: /^Stapel läuft$/i,
+      hint: 'use software "Stack läuft", not physical pallet "Stapel läuft"',
+    },
+  ],
+  nl: [
+    {
+      re: /^Stapel loopt$/i,
+      hint: 'use "Stack actief/draait", not physical pallet "Stapel loopt"',
+    },
+  ],
+  'pt-BR': [
+    {
+      re: /Empilhamento EM/i,
+      hint: 'use "Pilha em execução", not garbled "Empilhamento EM execução"',
+    },
+  ],
+};
+
+/** MT mistranslates Stop stack as road barriers or physical pallet stacks. */
+export const RETICULUM_STOP_STACK_FALSE_FRIENDS = {
+  pl: [
+    {
+      re: /ogranicznik/i,
+      hint: 'reticulumStopStack must be "Zatrzymaj stos", not road barrier "ograniczników"',
+    },
+  ],
+  de: [
+    {
+      re: /^Stapel stoppen$/i,
+      hint: 'match "Stack stoppen", not physical pallet "Stapel stoppen"',
+    },
+  ],
+};
+
+/** Enable toggle mistranslated as Edit. */
+export const RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES = [
+  {
+    re: /^Редактировать$/i,
+    hint: 'reticulum enable must be "Включить", not "Редактировать" (Edit)',
+  },
+];
+
+/** Russian sidecar mistranslated as baby stroller (коляска). */
+export const RETICULUM_SIDECAR_STROLLER_RE = /коляск/i;
+
+/** Extra probe column false friends beyond anemometer/transducer checks. */
+export const RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES = [
+  { re: /^Taster$/i, hint: 'reticulumPeers.probe is probe action, not button "Taster"' },
+  {
+    re: /^Deşmeyin$/i,
+    hint: 'reticulumPeers.probe must be noun "Sonda", not imperative "Deşmeyin"',
+  },
+];
+
+/** Propagation nodes title mistranslated as reproduction or anatomical nodules. */
+export const RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES = [
+  {
+    re: /Voortplanting/i,
+    hint: 'use "Propagatie", not biological reproduction "Voortplanting"',
+  },
+  {
+    re: /Nódulos/i,
+    hint: 'use "Nós de propagação", not anatomical "Nódulos"',
+  },
+];
+
+/** Peer table Actions column mistranslated as interventions/measures. */
+export const RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES = [
+  { re: /^Maßnahmen$/i, hint: 'use "Aktionen" for table Actions column' },
+  { re: /^Opatření$/i, hint: 'use "Akce" for table Actions column' },
+  { re: /^Interventions$/i, hint: 'use "Actions" equivalent, not "Interventions"' },
 ];
 
 /** MT mistranslates mesh Probe as weather/anemometer/transducer wording. */
@@ -654,6 +762,68 @@ function checkReticulumConnectionPanelIssues(ctx) {
         issues.push(`reticulum probe false friend: ${hint}`);
       }
     }
+    for (const { re, hint } of RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum probe false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey.endsWith('reticulumPeers.actions') && enVal === 'Actions') {
+    for (const { re, hint } of RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum peers actions false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey.endsWith('reticulumPropagation.title') &&
+    enVal === 'Propagation nodes' &&
+    locale !== 'en'
+  ) {
+    for (const { re, hint } of RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum propagation title false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumStackRunning' && locale !== 'en') {
+    for (const { re, hint } of RETICULUM_STACK_RUNNING_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reticulum stack running false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumStopStack' && locale !== 'en') {
+    for (const { re, hint } of RETICULUM_STOP_STACK_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reticulum stop stack false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    (flatKey.endsWith('.enable') || flatKey.endsWith('reticulumPropagation.enable')) &&
+    enVal === 'Enable'
+  ) {
+    for (const { re, hint } of RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum enable false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey.endsWith('reticulumInterfaces.bleAvailable') &&
+    enVal.includes('sidecar') &&
+    RETICULUM_SIDECAR_STROLLER_RE.test(val)
+  ) {
+    issues.push(
+      'reticulum sidecar false friend: use sidecar process wording, not stroller "коляска"',
+    );
   }
 
   if (flatKey.endsWith('reticulumStackSettings.enableTransport') && enVal.includes('other peers')) {
@@ -1044,7 +1214,20 @@ export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'emptyNoDmMessages',
   'emptyNoMessagesYet',
   'emptyConnectFirst',
+  'attachFile',
+  'attachFileHint',
+  'attachDmOnly',
+  'composePlaceholderSelectDm',
+  'selectDmFirst',
+  'emptySelectDm',
+  'noDmConversations',
+  'noDmConversationsReticulum',
 ]);
+
+/** Reticulum DM-only chat copy — contact must not become customer inquiry (문의). */
+export const CHAT_RETICULUM_CONTACT_FALSE_FRIENDS = {
+  ko: [{ re: /문의/, hint: 'use 연락처 (contact), not customer inquiry "문의"' }],
+};
 
 /** chatPanel outbox / date divider keys checked for known auto-translate false friends. */
 export const CHAT_PANEL_OUTBOX_UI_LEAF_KEYS = new Set([
@@ -1826,6 +2009,17 @@ function checkChatPanelIssues(ctx) {
           'replyRequiresPacketId still has English "send ack", "refresh chat", or "RF packet id" — translate',
         );
         break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    (flatKey === 'chatPanel.emptySelectDm' || flatKey === 'chatPanel.noDmConversationsReticulum')
+  ) {
+    for (const { re, hint } of CHAT_RETICULUM_CONTACT_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`chatPanel reticulum contact false friend: ${hint}`);
       }
     }
   }

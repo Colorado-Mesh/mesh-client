@@ -340,7 +340,8 @@
     "selectDmFirst": "Wählen Sie vor dem Senden einen DM-Empfänger aus.",
     "emptySelectDm": "Reticulum-Chat ist nur für Direktnachrichten. Wählen Sie oben einen Kontakt aus oder öffnen Sie einen auf der Registerkarte Knoten.",
     "noDmConversations": "Noch keine Unterhaltungen.",
-    "noDmConversationsReticulum": "Noch keine Unterhaltungen — öffnen Sie einen Kontakt über die Registerkarte Knoten."
+    "noDmConversationsReticulum": "Noch keine Unterhaltungen — öffnen Sie einen Kontakt über die Registerkarte Knoten.",
+    "dms": "DMs"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -601,9 +602,9 @@
     "reticulumSidecarCargoMissing": "Rust-Toolchain (cargo) nicht gefunden. Von https://rustup.rs installieren und dann `pnpm run reticulum:sidecar:build` ausführen.",
     "reticulumSidecarStartFailed": "Reticulum-Stack konnte nicht gestartet werden: {{message}}",
     "disconnect": "Trennen",
-    "reticulumStopStack": "Stapel stoppen",
-    "reticulumAutostart": "Auto-Start-Stack beim Öffnen der Verbindung",
-    "reticulumStackRunning": "Stapel läuft",
+    "reticulumStopStack": "Stack stoppen",
+    "reticulumAutostart": "Stack beim Öffnen der Verbindung automatisch starten",
+    "reticulumStackRunning": "Stack läuft",
     "reticulumIdentity": {
       "title": "Reticulum-Identität",
       "hint": "Starten Sie den obigen Stack und erstellen oder importieren Sie dann eine mnemonische Identität.",
@@ -647,9 +648,9 @@
       "editFailed": "Die Benutzeroberfläche konnte nicht gespeichert werden."
     },
     "reticulumPeers": {
-      "name": "Gleichrangige",
+      "name": "Peer",
       "hops": "Hops",
-      "actions": "Maßnahmen",
+      "actions": "Aktionen",
       "path": "Weg",
       "probe": "Sonde"
     },

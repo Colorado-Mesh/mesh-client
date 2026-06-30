@@ -340,7 +340,8 @@
     "selectDmFirst": "Selezionare un destinatario DM prima dell'invio.",
     "emptySelectDm": "La chat di Reticulum è solo un messaggio diretto. Scegli un contatto sopra o aprilo dalla scheda Nodi.",
     "noDmConversations": "Ancora nessuna conversazione.",
-    "noDmConversationsReticulum": "Ancora nessuna conversazione: apri un contatto dalla scheda Nodi."
+    "noDmConversationsReticulum": "Ancora nessuna conversazione: apri un contatto dalla scheda Nodi.",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

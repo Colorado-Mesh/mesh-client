@@ -340,7 +340,8 @@
     "selectDmFirst": "Sélectionnez un destinataire DM avant de l'envoyer.",
     "emptySelectDm": "Le chat Reticulum est réservé aux messages directs. Choisissez un contact ci-dessus ou ouvrez-en un dans l'onglet Nœuds.",
     "noDmConversations": "Aucune conversation pour le moment.",
-    "noDmConversationsReticulum": "Aucune conversation pour le moment — ouvrez un contact à partir de l'onglet Nœuds."
+    "noDmConversationsReticulum": "Aucune conversation pour le moment — ouvrez un contact à partir de l'onglet Nœuds.",
+    "dms": "MP"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -649,7 +650,7 @@
     "reticulumPeers": {
       "name": "Pair",
       "hops": "Hops",
-      "actions": "Interventions",
+      "actions": "Actions",
       "path": "Chemin",
       "probe": "Sonde"
     },
@@ -2246,7 +2247,7 @@
     "reticulumStackSettings": {
       "title": "Paramètres de la pile",
       "enableTransport": "Activer le transport (itinéraire pour les autres pairs)",
-      "shareInstance": "Instance de partage du Reticulum",
+      "shareInstance": "Partager l’instance Reticulum",
       "logLevel": "Niveau du journal",
       "save": "Enregistrer les paramètres de la pile"
     },

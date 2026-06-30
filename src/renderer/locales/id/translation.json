@@ -340,7 +340,8 @@
     "selectDmFirst": "Pilih penerima DM sebelum mengirim.",
     "emptySelectDm": "Obrolan Reticulum hanya untuk pesan langsung. Pilih kontak di atas atau buka kontak dari tab Node.",
     "noDmConversations": "Belum ada percakapan.",
-    "noDmConversationsReticulum": "Belum ada percakapan — buka kontak dari tab Node."
+    "noDmConversationsReticulum": "Belum ada percakapan — buka kontak dari tab Node.",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2245,8 +2246,8 @@
     "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong",
     "reticulumStackSettings": {
       "title": "Pengaturan tumpukan",
-      "enableTransport": "Aktifkan transportasi (rute untuk rekan - rekan lain)",
-      "shareInstance": "Bagikan contoh Reticulum",
+      "enableTransport": "Aktifkan transport (rute untuk peer lain)",
+      "shareInstance": "Bagikan instansi Reticulum",
       "logLevel": "Level log",
       "save": "Simpan pengaturan tumpukan"
     },

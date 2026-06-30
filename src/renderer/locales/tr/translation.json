@@ -340,7 +340,8 @@
     "selectDmFirst": "Göndermeden önce bir DM alıcısı seçin.",
     "emptySelectDm": "Reticulum sohbeti yalnızca doğrudan mesajdır. Yukarıdan bir kişi seçin veya Düğümler sekmesinden bir kişi açın.",
     "noDmConversations": "Henüz görüşme yok.",
-    "noDmConversationsReticulum": "Henüz görüşme yok — Düğümler sekmesinden bir kişi açın."
+    "noDmConversationsReticulum": "Henüz görüşme yok — Düğümler sekmesinden bir kişi açın.",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -651,7 +652,7 @@
       "hops": "Hops",
       "actions": "Eylemler",
       "path": "Yol",
-      "probe": "Deşmeyin"
+      "probe": "Sonda"
     },
     "reticulumPropagation": {
       "title": "Yayılma düğümleri",

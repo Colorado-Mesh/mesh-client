@@ -340,7 +340,8 @@
     "selectDmFirst": "Seleccione un destinatario de DM antes de enviar.",
     "emptySelectDm": "El chat de Reticulum es solo un mensaje directo. Elija un contacto arriba o abra uno en la pestaña Nodos.",
     "noDmConversations": "Aún no hay conversaciones.",
-    "noDmConversationsReticulum": "Aún no hay conversaciones: abre un contacto desde la pestaña Nodos."
+    "noDmConversationsReticulum": "Aún no hay conversaciones: abre un contacto desde la pestaña Nodos.",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -647,7 +648,7 @@
       "editFailed": "Error al guardar la interfaz."
     },
     "reticulumPeers": {
-      "name": "Compañeros",
+      "name": "Par",
       "hops": "Hops",
       "actions": "Acciones",
       "path": "Ruta",
@@ -2245,7 +2246,7 @@
     "meshcoreChannelNameRequired": "El nombre no debe estar vacío",
     "reticulumStackSettings": {
       "title": "Configuración de la pila",
-      "enableTransport": "Habilitar transporte (ruta para otros compañeros)",
+      "enableTransport": "Habilitar transporte (ruta para otros pares)",
       "shareInstance": "Compartir instancia de Reticulum",
       "logLevel": "Nivel de registro",
       "save": "Configuración de la pila"

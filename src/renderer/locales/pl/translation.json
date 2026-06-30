@@ -340,7 +340,8 @@
     "selectDmFirst": "Wybierz odbiorcę wiadomości DM przed wysłaniem.",
     "emptySelectDm": "Czat Reticulum służy wyłącznie do wiadomości bezpośrednich. Wybierz kontakt powyżej lub otwórz go w zakładce Węzły.",
     "noDmConversations": "Brak rozmów.",
-    "noDmConversationsReticulum": "Brak rozmów — otwórz kontakt z zakładki Węzły."
+    "noDmConversationsReticulum": "Brak rozmów — otwórz kontakt z zakładki Węzły.",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -601,9 +602,9 @@
     "reticulumSidecarCargoMissing": "Nie znaleziono toolchain Rust (cargo). Zainstaluj z https://rustup.rs, a następnie uruchom `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Nie można uruchomić stosu Reticulum: {{message}}",
     "disconnect": "Odłącz",
-    "reticulumStopStack": "Stos ograniczników",
+    "reticulumStopStack": "Zatrzymaj stos",
     "reticulumAutostart": "Automatyczny start stosu po otwarciu połączenia",
-    "reticulumStackRunning": "Bieżący stos",
+    "reticulumStackRunning": "Stos działa",
     "reticulumIdentity": {
       "title": "Tożsamość Reticulum",
       "hint": "Uruchom powyższy stos, a następnie utwórz lub zaimportuj tożsamość mnemoniczną.",
@@ -2245,7 +2246,7 @@
     "meshcoreChannelNameRequired": "Nazwa nie może być pusta",
     "reticulumStackSettings": {
       "title": "Ustawienia stosu",
-      "enableTransport": "Włącz transport (trasa dla innych rówieśników)",
+      "enableTransport": "Włącz transport (trasa dla innych peerów)",
       "shareInstance": "Udostępnij instancję Reticulum",
       "logLevel": "Poziom dziennika",
       "save": "Zapisz ustawienia stosu"

@@ -340,7 +340,8 @@
     "selectDmFirst": "Selecione um destinatário DM antes de enviar.",
     "emptySelectDm": "O chat Reticulum é apenas para mensagens diretas. Escolha um contato acima ou abra um na guia Nós.",
     "noDmConversations": "Ainda não há conversas.",
-    "noDmConversationsReticulum": "Ainda não há conversas — abra um contato na guia Nós."
+    "noDmConversationsReticulum": "Ainda não há conversas — abra um contato na guia Nós.",
+    "dms": "DMs"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -603,7 +604,7 @@
     "disconnect": "Desconectar",
     "reticulumStopStack": "Parar pilha",
     "reticulumAutostart": "Iniciar pilha automaticamente ao abrir a Conexão",
-    "reticulumStackRunning": "Empilhamento EM execução",
+    "reticulumStackRunning": "Pilha em execução",
     "reticulumIdentity": {
       "title": "Identidade Reticulum",
       "hint": "Inicie a pilha acima e, em seguida, crie ou importe uma identidade mnemônica.",
@@ -654,7 +655,7 @@
       "probe": "Sonda"
     },
     "reticulumPropagation": {
-      "title": "Nódulos de propagação",
+      "title": "Nós de propagação",
       "enable": "Ativar",
       "disable": "Desativar"
     }

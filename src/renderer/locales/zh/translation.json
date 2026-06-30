@@ -340,7 +340,8 @@
     "selectDmFirst": "发送前选择DM收件人。",
     "emptySelectDm": "Reticulum聊天仅为直接消息。选择上面的联系人或从“节点”选项卡中打开一个联系人。",
     "noDmConversations": "还没有对话。",
-    "noDmConversationsReticulum": "还没有对话—从“节点”选项卡打开联系人。"
+    "noDmConversationsReticulum": "还没有对话—从“节点”选项卡打开联系人。",
+    "dms": "私信"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2245,7 +2246,7 @@
     "meshcoreChannelNameRequired": "频道名称不能为空",
     "reticulumStackSettings": {
       "title": "堆栈设置",
-      "enableTransport": "启用传输（为其他同行路由）",
+      "enableTransport": "启用传输（为其他节点路由）",
       "shareInstance": "分享Reticulum实例",
       "logLevel": "日志级别",
       "save": "保存堆栈设置"

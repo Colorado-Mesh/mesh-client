@@ -340,7 +340,8 @@
     "selectDmFirst": "送信する前にDM受信者を選択してください。",
     "emptySelectDm": "Reticulumチャットはダイレクトメッセージのみです。上記の連絡先を選択するか、[ノード]タブから連絡先を開きます。",
     "noDmConversations": "会話はまだありません。",
-    "noDmConversationsReticulum": "会話はまだありません。[ノード]タブから連絡先を開きます。"
+    "noDmConversationsReticulum": "会話はまだありません。[ノード]タブから連絡先を開きます。",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

@@ -340,7 +340,8 @@
     "selectDmFirst": "Selecteer een DM-ontvanger voordat u deze verzendt.",
     "emptySelectDm": "Reticulum-chat is alleen een direct bericht. Kies hierboven een contact of open er een op het tabblad Knooppunten.",
     "noDmConversations": "Nog geen gesprekken.",
-    "noDmConversationsReticulum": "Nog geen gesprekken — open een contactpersoon op het tabblad Knooppunten."
+    "noDmConversationsReticulum": "Nog geen gesprekken — open een contactpersoon op het tabblad Knooppunten.",
+    "dms": "DMs"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -602,8 +603,8 @@
     "reticulumSidecarStartFailed": "Kon Reticulum-stack niet starten: {{message}}",
     "disconnect": "Verbreek de verbinding",
     "reticulumStopStack": "Stack stoppen",
-    "reticulumAutostart": "Stapel automatisch starten bij het openen van de verbinding",
-    "reticulumStackRunning": "Stapel loopt",
+    "reticulumAutostart": "Stack automatisch starten bij het openen van Verbinding",
+    "reticulumStackRunning": "Stack actief",
     "reticulumIdentity": {
       "title": "Reticulum-identiteit",
       "hint": "Start de stapel hierboven en maak of importeer vervolgens een mnemonische identiteit.",
@@ -651,10 +652,10 @@
       "hops": "Hops",
       "actions": "Acties",
       "path": "Pad",
-      "probe": "Taster"
+      "probe": "Sonde"
     },
     "reticulumPropagation": {
-      "title": "Voortplantingsknooppunten",
+      "title": "Propagatieknooppunten",
       "enable": "Activeer",
       "disable": "Onbruikbaar maken"
     }
@@ -2244,11 +2245,11 @@
     "validationInvalidPsk": "Ongeldige base64 PSK — controleer de sleutel en probeer het opnieuw",
     "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn",
     "reticulumStackSettings": {
-      "title": "Stapelinstellingen",
+      "title": "Stackinstellingen",
       "enableTransport": "Transport inschakelen (route voor andere peers)",
       "shareInstance": "Reticulum-instantie delen",
       "logLevel": "Logniveau",
-      "save": "Stapelinstellingen opslaan"
+      "save": "Stackinstellingen opslaan"
     },
     "reticulumConfigImport": {
       "title": "Reticulum-configuratie importeren",
@@ -2268,7 +2269,7 @@
     "reticulumFactoryReset": {
       "title": "Reset naar fabrieksinstellingen",
       "hint": "Wist identiteit, contacten en berichten van de zijspanstapel. Interfaceconfiguratie blijft behouden.",
-      "button": "Stapelgegevens resetten",
+      "button": "Stackgegevens resetten",
       "confirmTitle": "Reticulum-stack resetten?",
       "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
       "confirm": "Resetten"

@@ -340,7 +340,8 @@
     "selectDmFirst": "Před odesláním vyberte příjemce DM.",
     "emptySelectDm": "Reticulum chat je pouze přímá zpráva. Vyberte kontakt výše nebo jej otevřete na kartě Uzly.",
     "noDmConversations": "Zatím žádné konverzace.",
-    "noDmConversationsReticulum": "Zatím žádné konverzace — otevřete kontakt na kartě Uzly."
+    "noDmConversationsReticulum": "Zatím žádné konverzace — otevřete kontakt na kartě Uzly.",
+    "dms": "DM"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -649,8 +650,8 @@
     "reticulumPeers": {
       "name": "Rovesníci",
       "hops": "Hops",
-      "actions": "Opatření",
-      "path": "Cesty",
+      "actions": "Akce",
+      "path": "Cesta",
       "probe": "Sonda"
     },
     "reticulumPropagation": {

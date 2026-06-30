@@ -1528,6 +1528,47 @@ describe('roomsPanel saved passwords per-key quality', () => {
     });
     expectIssue(issues, 'reticulum peer name false friend');
   });
+
+  it('flags Russian chimney stack false friend on reticulumStackRunning', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'connectionPanel.reticulumStackRunning',
+      val: 'Работает дымовая труба',
+      enVal: 'Stack running',
+    });
+    expectIssue(issues, 'reticulum stack running false friend');
+  });
+
+  it('flags Polish road-barrier false friend on reticulumStopStack', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'connectionPanel.reticulumStopStack',
+      val: 'Stos ograniczników',
+      enVal: 'Stop stack',
+    });
+    expectIssue(issues, 'reticulum stop stack false friend');
+  });
+
+  it('flags Russian Edit false friend on reticulum enable', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'connectionPanel.reticulumInterfaces.enable',
+      val: 'Редактировать',
+      enVal: 'Enable',
+    });
+    expectIssue(issues, 'reticulum enable false friend');
+  });
+
+  it('flags Korean inquiry false friend on emptySelectDm', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'chatPanel.emptySelectDm',
+      val: '위의 문의를 선택하세요.',
+      enVal:
+        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+    });
+    expectIssue(issues, 'chatPanel reticulum contact false friend');
+  });
 });
 
 describe('protectedBrandIssues', () => {

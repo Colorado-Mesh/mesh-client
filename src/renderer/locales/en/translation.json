@@ -227,6 +227,7 @@
   },
   "chatPanel": {
     "channels": "Channels",
+    "dms": "DMs",
     "searchMessages": "Search messages",
     "searchAllChannels": "Search all channels",
     "closeDmTab": "Close DM tab",

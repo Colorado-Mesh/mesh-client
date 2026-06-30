@@ -1720,7 +1720,7 @@ function ChatPanel({
         className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${!dmOnlyChat && viewMode === 'channels' ? 'opacity-50' : ''}`}
       >
         <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-          DMs
+          {t('chatPanel.dms')}
         </span>
         {visibleDmTabs.length === 0 ? (
           <span className="text-[10px] text-gray-600 italic">
