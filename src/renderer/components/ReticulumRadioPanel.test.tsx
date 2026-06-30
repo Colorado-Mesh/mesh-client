@@ -5,12 +5,6 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock('@/renderer/lib/radio/providerFactory', () => ({
-  useRadioProvider: () => ({
-    hasRNodeFlasher: true,
-  }),
-}));
-
 vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
   useReticulumSidecarApi: () => ({
     sidecarApiReady: false,
@@ -21,17 +15,13 @@ vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
   }),
 }));
 
-vi.mock('./flasher/RNodeFlasherSection', () => ({
-  RNodeFlasherSection: () => <div data-testid="flasher-mock" />,
-}));
-
 import { ReticulumRadioPanel } from './ReticulumRadioPanel';
 
 describe('ReticulumRadioPanel', () => {
-  it('renders collapsible flasher section title', () => {
+  it('does not render flasher or factory reset sections', () => {
     render(<ReticulumRadioPanel connecting={false} onStartStack={async () => {}} />);
 
-    expect(screen.getByText('flasher.title')).toBeInTheDocument();
-    expect(screen.queryByText('nomadNetwork.title')).not.toBeInTheDocument();
+    expect(screen.queryByText('flasher.title')).not.toBeInTheDocument();
+    expect(screen.queryByText('radioPanel.reticulumFactoryReset.title')).not.toBeInTheDocument();
   });
 });

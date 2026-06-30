@@ -4,16 +4,17 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
-import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
-import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import {
+  refreshReticulumPeersFromSidecar,
+  useReticulumPeerStore,
+} from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
-import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import ReticulumCallPanel from './ReticulumCallPanel';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
@@ -83,7 +84,6 @@ export function ReticulumRadioPanel({
   onOpenPeersTab,
 }: ReticulumRadioPanelProps) {
   const { t } = useTranslation();
-  const capabilities = useRadioProvider('reticulum');
   const { sidecarApiReady, identity, statsSummary, appInfo, refreshIdentity } =
     useReticulumSidecarApi({
       connecting,
@@ -112,7 +112,6 @@ export function ReticulumRadioPanel({
   const [configPaste, setConfigPaste] = useState('');
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
-  const [showFactoryResetConfirm, setShowFactoryResetConfirm] = useState(false);
   const [pendingDeleteInterface, setPendingDeleteInterface] = useState<{
     id: string;
     name: string;
@@ -153,6 +152,15 @@ export function ReticulumRadioPanel({
     }
   }, [sidecarApiReady]);
 
+  const refreshPeers = useCallback(async () => {
+    if (!sidecarApiReady) return;
+    try {
+      await refreshReticulumPeersFromSidecar();
+    } catch (e) {
+      console.debug('[ReticulumRadioPanel] peers ' + errLikeToLogString(e));
+    }
+  }, [sidecarApiReady]);
+
   useEffect(() => {
     if (!sidecarApiReady) {
       setInterfaces([]);
@@ -160,13 +168,21 @@ export function ReticulumRadioPanel({
     }
     void refreshInterfaces();
     void refreshStackSettings();
+    void refreshPeers();
     const unsub = window.electronAPI.reticulum.onEvent((evt: ReticulumSidecarEvent) => {
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         void refreshInterfaces();
       }
+      if (
+        evt.type === 'peers_updated' ||
+        evt.type === 'stats_update' ||
+        evt.type === 'announce.received'
+      ) {
+        void refreshPeers();
+      }
     });
     return unsub;
-  }, [sidecarApiReady, refreshInterfaces, refreshStackSettings]);
+  }, [sidecarApiReady, refreshInterfaces, refreshStackSettings, refreshPeers]);
 
   useEffect(() => {
     if (!sidecarApiReady) return;
@@ -192,17 +208,6 @@ export function ReticulumRadioPanel({
       })
       .catch(() => {});
   }, [sidecarApiReady]);
-
-  const handleFactoryReset = async () => {
-    try {
-      await window.electronAPI.reticulum.proxyPost('/api/v1/system/factory-reset', {});
-      setShowFactoryResetConfirm(false);
-      await refreshIdentity();
-      void refreshInterfaces();
-    } catch (e) {
-      console.warn('[ReticulumRadioPanel] factory reset ' + errLikeToLogString(e));
-    }
-  };
 
   const handleExportIdentity = async () => {
     const passphrase = exportPassphrase.trim();
@@ -397,19 +402,9 @@ export function ReticulumRadioPanel({
 
   const identityReady = identity?.configured === true;
   const identityActionsDisabled = !sidecarApiReady || connecting;
-  const rnodeInterfaceActive =
-    sidecarApiReady &&
-    interfaces.some((iface) => iface.enabled && iface.type.toLowerCase().includes('rnode'));
-  const flasherPortBlocked = rnodeInterfaceActive;
 
   return (
     <div className="space-y-4">
-      {capabilities.hasRNodeFlasher ? (
-        <ReticulumCollapsibleSection title={t('flasher.title')}>
-          <RNodeFlasherSection portBlocked={flasherPortBlocked} />
-        </ReticulumCollapsibleSection>
-      ) : null}
-
       {!sidecarApiReady ? (
         <p className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
@@ -507,7 +502,7 @@ export function ReticulumRadioPanel({
           />
         )}
         {identityReady && sidecarApiReady ? (
-          <ReticulumAnnounceControls disabled={identityActionsDisabled} />
+          <ReticulumAnnounceControls disabled={!sidecarApiReady} />
         ) : null}
       </ReticulumCollapsibleSection>
 
@@ -622,19 +617,6 @@ export function ReticulumRadioPanel({
           <ReticulumCollapsibleSection title={t('reticulumCall.title')}>
             <ReticulumCallPanel embedded />
           </ReticulumCollapsibleSection>
-
-          <ReticulumCollapsibleSection title={t('radioPanel.reticulumFactoryReset.title')} danger>
-            <p className="text-muted text-xs">{t('radioPanel.reticulumFactoryReset.hint')}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setShowFactoryResetConfirm(true);
-              }}
-              className="rounded border border-red-700 px-2 py-1 text-xs text-red-300 hover:bg-red-950/40"
-            >
-              {t('radioPanel.reticulumFactoryReset.button')}
-            </button>
-          </ReticulumCollapsibleSection>
         </>
       ) : null}
 
@@ -658,20 +640,6 @@ export function ReticulumRadioPanel({
           }}
           onCancel={() => {
             setPendingDeleteInterface(null);
-          }}
-        />
-      ) : null}
-
-      {showFactoryResetConfirm ? (
-        <ConfirmModal
-          title={t('radioPanel.reticulumFactoryReset.confirmTitle')}
-          message={t('radioPanel.reticulumFactoryReset.confirmBody')}
-          confirmLabel={t('radioPanel.reticulumFactoryReset.confirm')}
-          onConfirm={() => {
-            void handleFactoryReset();
-          }}
-          onCancel={() => {
-            setShowFactoryResetConfirm(false);
           }}
         />
       ) : null}

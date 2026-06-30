@@ -24,11 +24,12 @@ import type { ContactGroup } from '../../shared/electron-api.types';
 import type { MeshNode } from '../lib/types';
 import {
   refreshReticulumPeersFromSidecar,
+  RETICULUM_PEER_REFRESH_MS,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
 import { useToast } from './Toast';
 
-const PEER_REFRESH_MS = 30_000;
+const PEER_REFRESH_MS = RETICULUM_PEER_REFRESH_MS;
 
 type PeerListTab = 'peers' | 'contacts';
 type SortKey = 'name' | 'hops' | 'lastSeen' | 'interface' | 'favorite';

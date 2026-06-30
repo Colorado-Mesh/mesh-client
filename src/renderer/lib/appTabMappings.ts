@@ -23,7 +23,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   'hasFullPositionConfig', // Map
   { or: ['hasChannelConfig', 'hasReticulumRadioPanel'] }, // Radio
   'modulesTabUsesRepeatersLabel', // Modules or Repeaters
-  'hasSecurityPanel', // Admin
+  { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
   'hasRoomServersPanel', // Rooms
   'hasEnvironmentTelemetry', // Telemetry
   'hasSecurityPanel', // Security

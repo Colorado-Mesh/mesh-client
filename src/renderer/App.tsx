@@ -112,6 +112,7 @@ import {
   RadioPanel,
   RawPacketLogPanel,
   RepeatersPanel,
+  ReticulumAdminPanel,
   ReticulumPeerListPanel,
   ReticulumRadioPanel,
   ReticulumTopologyPanel,
@@ -2462,6 +2463,7 @@ function AppContent() {
                             onStartReticulumStack={() =>
                               reticulumConnection.connectAutomatic('http')
                             }
+                            onReticulumSidecarEvent={reticulumPanelActions.handleSidecarEvent}
                           />
                         </div>
                       </Suspense>
@@ -3011,46 +3013,54 @@ function AppContent() {
                       {activePanelIndex === 7 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <AdminPanel
-                              configTarget={configTarget}
-                              capabilities={capabilities}
-                              isConnected={isOperational}
-                              onReboot={
-                                capabilities.hasShutdown
-                                  ? meshtasticPanelActions.reboot
-                                  : async () => {}
-                              }
-                              onShutdown={
-                                capabilities.hasShutdown
-                                  ? meshtasticPanelActions.shutdown
-                                  : async () => {}
-                              }
-                              onFactoryReset={
-                                capabilities.hasFactoryReset
-                                  ? meshtasticPanelActions.factoryReset
-                                  : async () => {}
-                              }
-                              onResetNodeDb={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.resetNodeDb
-                                  : async () => {}
-                              }
-                              onRebootOta={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.rebootOta
-                                  : undefined
-                              }
-                              onEnterDfu={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.enterDfuMode
-                                  : undefined
-                              }
-                              onFactoryResetConfig={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.factoryResetConfig
-                                  : undefined
-                              }
-                            />
+                            {capabilities.hasReticulumAdminPanel ? (
+                              <ReticulumAdminPanel
+                                connecting={reticulumConnectionView.state.status === 'connecting'}
+                                onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                onSidecarEvent={reticulumPanelActions.handleSidecarEvent}
+                              />
+                            ) : (
+                              <AdminPanel
+                                configTarget={configTarget}
+                                capabilities={capabilities}
+                                isConnected={isOperational}
+                                onReboot={
+                                  capabilities.hasShutdown
+                                    ? meshtasticPanelActions.reboot
+                                    : async () => {}
+                                }
+                                onShutdown={
+                                  capabilities.hasShutdown
+                                    ? meshtasticPanelActions.shutdown
+                                    : async () => {}
+                                }
+                                onFactoryReset={
+                                  capabilities.hasFactoryReset
+                                    ? meshtasticPanelActions.factoryReset
+                                    : async () => {}
+                                }
+                                onResetNodeDb={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.resetNodeDb
+                                    : async () => {}
+                                }
+                                onRebootOta={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.rebootOta
+                                    : undefined
+                                }
+                                onEnterDfu={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.enterDfuMode
+                                    : undefined
+                                }
+                                onFactoryResetConfig={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.factoryResetConfig
+                                    : undefined
+                                }
+                              />
+                            )}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

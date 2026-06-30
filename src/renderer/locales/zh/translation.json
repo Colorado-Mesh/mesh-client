@@ -2921,7 +2921,12 @@
     "title": "标识",
     "activeIdentity": "有效身份",
     "announceIntervalSec": "公告间隔（秒）",
-    "clearAnnounces": "清除公告"
+    "clearAnnounces": "清除公告",
+    "announceSaved": "通告间隔已保存。",
+    "announceSaveFailed": "无法保存公告间隔： {{error}}",
+    "announceSaveSidecarStopped": "在保存公告设置之前启动Reticulum堆栈。",
+    "clearAnnouncesDone": "宣布已清除。",
+    "clearAnnouncesFailed": "清除公告失败。"
   },
   "nomadNetwork": {
     "title": "游牧网络",

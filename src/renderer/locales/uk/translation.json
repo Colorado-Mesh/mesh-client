@@ -2921,7 +2921,12 @@
     "title": "Профілі",
     "activeIdentity": "Активна ідентифікація",
     "announceIntervalSec": "Інтервал оголошення (секунди)",
-    "clearAnnounces": "Очистити оголошення"
+    "clearAnnounces": "Очистити оголошення",
+    "announceSaved": "Оголосити про збережений інтервал.",
+    "announceSaveFailed": "Не вдалося зберегти інтервал оголошення: {{error}}",
+    "announceSaveSidecarStopped": "Запустіть стек Reticulum перед збереженням налаштувань оголошення.",
+    "clearAnnouncesDone": "Оголошення очищено.",
+    "clearAnnouncesFailed": "Не вдалося очистити оголошення."
   },
   "nomadNetwork": {
     "title": "Мережа кочівників",

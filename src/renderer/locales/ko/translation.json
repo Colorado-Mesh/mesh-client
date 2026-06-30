@@ -2921,7 +2921,12 @@
     "title": "ìê¸° ì ë³´",
     "activeIdentity": "활성 신원",
     "announceIntervalSec": "발표 간격 (초)",
-    "clearAnnounces": "공지 지우기"
+    "clearAnnounces": "공지 지우기",
+    "announceSaved": "공지 간격이 저장되었습니다.",
+    "announceSaveFailed": "공지 간격을 저장하지 못했습니다: {{error}}",
+    "announceSaveSidecarStopped": "공지 설정을 저장하기 전에 Reticulum 스택을 시작합니다.",
+    "clearAnnouncesDone": "공지가 지워졌습니다.",
+    "clearAnnouncesFailed": "공지 지우기에 실패했습니다."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

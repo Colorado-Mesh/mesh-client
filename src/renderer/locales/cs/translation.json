@@ -2921,7 +2921,12 @@
     "title": "Identita",
     "activeIdentity": "Aktivní identita",
     "announceIntervalSec": "Interval oznamování (sekundy)",
-    "clearAnnounces": "Vymazat oznámení"
+    "clearAnnounces": "Vymazat oznámení",
+    "announceSaved": "Interval oznámení uložen.",
+    "announceSaveFailed": "Interval oznámení se nepodařilo uložit: {{error}}",
+    "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
+    "clearAnnouncesDone": "Oznámení vymazána.",
+    "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

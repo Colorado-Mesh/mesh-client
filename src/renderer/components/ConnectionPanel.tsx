@@ -23,6 +23,7 @@ import {
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
@@ -299,6 +300,8 @@ interface Props {
   ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
   /** Reticulum: start or restart the AGPL sidecar stack. */
   onStartReticulumStack?: () => Promise<void>;
+  /** Reticulum: forward sidecar events to the protocol runtime. */
+  onReticulumSidecarEvent?: (evt: ReticulumSidecarEvent) => void;
 }
 
 export default function ConnectionPanel({
@@ -315,6 +318,7 @@ export default function ConnectionPanel({
   onOpenFirmwareReleases,
   ensureMeshcoreMqttIdentity,
   onStartReticulumStack,
+  onReticulumSidecarEvent,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -2516,6 +2520,7 @@ export default function ConnectionPanel({
         <ReticulumStackPanel
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
+          onSidecarEvent={onReticulumSidecarEvent}
           onStartStack={async () => {
             setReticulumStackError(null);
             try {

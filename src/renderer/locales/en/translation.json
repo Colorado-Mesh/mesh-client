@@ -1701,7 +1701,12 @@
     "title": "Identities",
     "activeIdentity": "Active identity",
     "announceIntervalSec": "Announce interval (seconds)",
-    "clearAnnounces": "Clear announces"
+    "announceSaved": "Announce interval saved.",
+    "announceSaveFailed": "Failed to save announce interval: {{error}}",
+    "announceSaveSidecarStopped": "Start the Reticulum stack before saving announce settings.",
+    "clearAnnounces": "Clear announces",
+    "clearAnnouncesDone": "Announces cleared.",
+    "clearAnnouncesFailed": "Failed to clear announces."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

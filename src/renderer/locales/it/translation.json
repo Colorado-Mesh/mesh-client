@@ -2921,7 +2921,12 @@
     "title": "Identità",
     "activeIdentity": "Identità attiva",
     "announceIntervalSec": "Intervallo annunci (secondi)",
-    "clearAnnounces": "Annunci chiari"
+    "clearAnnounces": "Annunci chiari",
+    "announceSaved": "Intervallo di annuncio salvato.",
+    "announceSaveFailed": "Impossibile salvare l'intervallo di annuncio: {{error}}",
+    "announceSaveSidecarStopped": "Avviare lo stack Reticulum prima di salvare le impostazioni di annuncio.",
+    "clearAnnouncesDone": "Annunci liquidati.",
+    "clearAnnouncesFailed": "Impossibile cancellare gli annunci."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

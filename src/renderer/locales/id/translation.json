@@ -2921,7 +2921,12 @@
     "title": "Identitas",
     "activeIdentity": "Identitas aktif",
     "announceIntervalSec": "Interval pengumuman (detik)",
-    "clearAnnounces": "Hapus pengumuman"
+    "clearAnnounces": "Hapus pengumuman",
+    "announceSaved": "Interval pengumuman disimpan.",
+    "announceSaveFailed": "Gagal menyimpan interval pengumuman: {{error}}",
+    "announceSaveSidecarStopped": "Mulai tumpukan Reticulum sebelum menyimpan pengaturan pengumuman.",
+    "clearAnnouncesDone": "Pengumuman dihapus.",
+    "clearAnnouncesFailed": "Gagal menghapus pengumuman."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

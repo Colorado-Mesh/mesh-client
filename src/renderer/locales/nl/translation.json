@@ -2921,7 +2921,12 @@
     "title": "Identiteiten",
     "activeIdentity": "huidige identiteit",
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
-    "clearAnnounces": "Duidelijke aankondigingen"
+    "clearAnnounces": "Duidelijke aankondigingen",
+    "announceSaved": "Aankondigingsinterval opgeslagen.",
+    "announceSaveFailed": "Kan aankondigingsinterval niet opslaan: {{error}}",
+    "announceSaveSidecarStopped": "Start de Reticulum-stack voordat u de aankondigingsinstellingen opslaat.",
+    "clearAnnouncesDone": "Aankondigingen gewist.",
+    "clearAnnouncesFailed": "Kan aankondigingen niet wissen."
   },
   "nomadNetwork": {
     "title": "Nomad-netwerk",

@@ -2921,7 +2921,12 @@
     "title": "Móveis",
     "activeIdentity": "identidade ativa",
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
-    "clearAnnounces": "Anúncios claros"
+    "clearAnnounces": "Anúncios claros",
+    "announceSaved": "Intervalo de anúncio salvo.",
+    "announceSaveFailed": "Falha ao guardar intervalo de anúncio: {{error}}",
+    "announceSaveSidecarStopped": "Inicie a pilha Reticulum antes de salvar as configurações de anúncio.",
+    "clearAnnouncesDone": "Anúncios liberados.",
+    "clearAnnouncesFailed": "Falha ao limpar anúncios."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

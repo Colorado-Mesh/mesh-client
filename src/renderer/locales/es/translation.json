@@ -2921,7 +2921,12 @@
     "title": "Identidades",
     "activeIdentity": "Identidad del activo:",
     "announceIntervalSec": "Intervalo de anuncio (segundos)",
-    "clearAnnounces": "Borrar anuncios"
+    "clearAnnounces": "Borrar anuncios",
+    "announceSaved": "Intervalo de anuncio guardado.",
+    "announceSaveFailed": "Error al guardar el intervalo de anuncio: {{error}}",
+    "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
+    "clearAnnouncesDone": "Anuncios borrados.",
+    "clearAnnouncesFailed": "No se han podido borrar los anuncios."
   },
   "nomadNetwork": {
     "title": "Nomad Network",

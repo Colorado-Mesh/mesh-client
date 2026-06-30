@@ -43,6 +43,7 @@ import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '..
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import {
   refreshReticulumPeersFromSidecar,
+  RETICULUM_PEER_REFRESH_MS,
   reticulumContactToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
@@ -299,6 +300,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     connectRef.current = connect;
   }, [connect]);
+
+  useEffect(() => {
+    if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
+      return;
+    }
+    void refreshContactsFromSidecar();
+    const intervalId = window.setInterval(() => {
+      void refreshContactsFromSidecar();
+    }, RETICULUM_PEER_REFRESH_MS);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [state.status, refreshContactsFromSidecar]);
 
   const connectAutomatic = useCallback(async () => {
     await connect();

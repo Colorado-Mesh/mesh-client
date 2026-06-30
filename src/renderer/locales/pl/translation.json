@@ -2921,7 +2921,12 @@
     "title": "Tożsamość",
     "activeIdentity": "Tożsamość aktywna",
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
-    "clearAnnounces": "Wyczyść ogłoszenia"
+    "clearAnnounces": "Wyczyść ogłoszenia",
+    "announceSaved": "Interwał zapowiedzi zapisany.",
+    "announceSaveFailed": "Nie udało się zapisać interwału powiadomień: {{error}}",
+    "announceSaveSidecarStopped": "Uruchom stos Reticulum przed zapisaniem ustawień zapowiedzi.",
+    "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
+    "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń."
   },
   "nomadNetwork": {
     "title": "Sieć Nomad",

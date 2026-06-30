@@ -2921,7 +2921,12 @@
     "title": "Identitäten",
     "activeIdentity": "Aktive Identität",
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
-    "clearAnnounces": "Ansagen löschen"
+    "clearAnnounces": "Ansagen löschen",
+    "announceSaved": "Ankündigungsintervall gespeichert.",
+    "announceSaveFailed": "Fehler beim Speichern des Ankündigungsintervalls: {{error}}",
+    "announceSaveSidecarStopped": "Starten Sie den Reticulum-Stapel, bevor Sie die Ankündigungseinstellungen speichern.",
+    "clearAnnouncesDone": "Ansagen gelöscht.",
+    "clearAnnouncesFailed": "Ansagen konnten nicht gelöscht werden."
   },
   "nomadNetwork": {
     "title": "Nomadennetzwerk",

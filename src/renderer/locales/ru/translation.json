@@ -2921,7 +2921,12 @@
     "title": "Профили",
     "activeIdentity": "активное удостоверение",
     "announceIntervalSec": "Объявить интервал (секунды)",
-    "clearAnnounces": "Очистить объявления"
+    "clearAnnounces": "Очистить объявления",
+    "announceSaved": "Объявить интервал сохранен.",
+    "announceSaveFailed": "Не удалось сохранить интервал объявления: {{error}}",
+    "announceSaveSidecarStopped": "Запустите стек Reticulum перед сохранением настроек объявления.",
+    "clearAnnouncesDone": "Объявления очищены.",
+    "clearAnnouncesFailed": "Не удалось очистить объявления."
   },
   "nomadNetwork": {
     "title": "Сеть кочевников",

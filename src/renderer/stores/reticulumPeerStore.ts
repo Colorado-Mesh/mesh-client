@@ -243,6 +243,8 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
   isContact: (hash) => get().contacts.has(normalizeHash(hash)),
 }));
 
+export const RETICULUM_PEER_REFRESH_MS = 30_000;
+
 /** Fetch sidecar peers/contacts, overlay SQLite meta, update store; returns contacts for nodeStore sync. */
 export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumContact[]> {
   try {

@@ -25,6 +25,13 @@ describe('computeTabMappings', () => {
     expect(tabs.tabIndexToPanelIndex).toContain(diagnosticsPanelIndex);
   });
 
+  it('shows Admin tab for Reticulum', () => {
+    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const adminPanelIndex = TAB_SLOT_IDS.indexOf('Admin');
+    expect(RETICULUM_CAPABILITIES.hasReticulumAdminPanel).toBe(true);
+    expect(tabs.tabIndexToPanelIndex).toContain(adminPanelIndex);
+  });
+
   it('uses Peers tab label for Reticulum nodes slot', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const nodesPanelIndex = TAB_SLOT_IDS.indexOf('Nodes');

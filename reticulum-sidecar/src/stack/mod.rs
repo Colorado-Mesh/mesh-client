@@ -269,9 +269,16 @@ impl StackHandle {
     pub async fn list_peers(&self) -> Vec<PeerRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            if let Ok(peers) = live.fetch_peers().await {
-                if !peers.is_empty() {
+            match live.fetch_peers().await {
+                Ok(peers) => {
+                    if !peers.is_empty() {
+                        let mut inner = self.inner.write().await;
+                        inner.peers = peers.clone();
+                    }
                     return peers;
+                }
+                Err(e) => {
+                    tracing::debug!("live fetch_peers failed: {e}");
                 }
             }
         }

@@ -2921,7 +2921,12 @@
     "title": "アイデンティティー",
     "activeIdentity": "アクティブなアイデンティティ",
     "announceIntervalSec": "アナウンス間隔(秒)",
-    "clearAnnounces": "アナウンスをクリア"
+    "clearAnnounces": "アナウンスをクリア",
+    "announceSaved": "アナウンス間隔が保存されました。",
+    "announceSaveFailed": "アナウンス間隔の保存に失敗しました： {{error}}",
+    "announceSaveSidecarStopped": "アナウンス設定を保存する前に、Reticulumスタックを起動します。",
+    "clearAnnouncesDone": "クリアをお知らせします。",
+    "clearAnnouncesFailed": "アナウンスをクリアできませんでした。"
   },
   "nomadNetwork": {
     "title": "ノマドネットワーク",

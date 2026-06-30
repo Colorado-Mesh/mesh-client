@@ -2921,7 +2921,12 @@
     "title": "Kimlikler",
     "activeIdentity": "Aktif kimlik",
     "announceIntervalSec": "Anons aralığı (saniye)",
-    "clearAnnounces": "Duyuruları temizle"
+    "clearAnnounces": "Duyuruları temizle",
+    "announceSaved": "Duyuru aralığı kaydedildi.",
+    "announceSaveFailed": "Duyuru aralığı kaydedilemedi: {{error}}",
+    "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
+    "clearAnnouncesDone": "Anonslar temizlendi.",
+    "clearAnnouncesFailed": "Duyurular temizlenemedi."
   },
   "nomadNetwork": {
     "title": "Göçebe Ağı",

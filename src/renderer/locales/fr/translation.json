@@ -2921,7 +2921,12 @@
     "title": "digitales",
     "activeIdentity": "identité actuelle",
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
-    "clearAnnounces": "Annonces claires"
+    "clearAnnounces": "Annonces claires",
+    "announceSaved": "Intervalle d'annonce enregistré.",
+    "announceSaveFailed": "Échec de l'enregistrement de l'intervalle d'annonce : {{error}}",
+    "announceSaveSidecarStopped": "Démarrez la pile Reticulum avant d'enregistrer les paramètres d'annonce.",
+    "clearAnnouncesDone": "Annonces effacées.",
+    "clearAnnouncesFailed": "Échec de l'effacement des annonces."
   },
   "nomadNetwork": {
     "title": "Nomad Network",
