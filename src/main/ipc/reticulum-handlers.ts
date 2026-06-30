@@ -16,6 +16,17 @@ export interface ReticulumIpcDeps {
   getMainWindow: () => BrowserWindow | null;
 }
 
+function isExpectedReticulumProxyError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return lower.includes('not running') || message.includes('404');
+}
+
+function logReticulumProxyFailure(method: string, err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  const log = isExpectedReticulumProxyError(message) ? console.debug : console.error;
+  log(`[ReticulumIPC] ${method} failed:`, sanitizeLogMessage(message));
+}
+
 /** Register Reticulum sidecar IPC handlers (`reticulum:*`). */
 export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   const { idleStatus, ensureManager, getManager } = deps;
@@ -48,10 +59,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyGet(apiPath);
     } catch (err) {
-      console.error(
-        '[ReticulumIPC] proxyGet failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
+      logReticulumProxyFailure('proxyGet', err);
       throw err;
     }
   });
@@ -61,10 +69,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPost(apiPath, body);
     } catch (err) {
-      console.error(
-        '[ReticulumIPC] proxyPost failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
+      logReticulumProxyFailure('proxyPost', err);
       throw err;
     }
   });
@@ -74,10 +79,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPut(apiPath, body);
     } catch (err) {
-      console.error(
-        '[ReticulumIPC] proxyPut failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
+      logReticulumProxyFailure('proxyPut', err);
       throw err;
     }
   });
@@ -87,10 +89,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyDelete(apiPath);
     } catch (err) {
-      console.error(
-        '[ReticulumIPC] proxyDelete failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
+      logReticulumProxyFailure('proxyDelete', err);
       throw err;
     }
   });

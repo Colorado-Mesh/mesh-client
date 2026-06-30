@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 interface TopologyNode {
   destination_hash: string;
@@ -34,6 +35,7 @@ export default function ReticulumTopologyPanel() {
 
   const refresh = useCallback(async () => {
     setError(null);
+    if (!(await isReticulumSidecarRunning())) return;
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/topology')) as {
         nodes?: TopologyNode[];

@@ -2706,7 +2706,8 @@
     "tak": "TAK",
     "rooms": "Räume",
     "admin": "Verwaltung",
-    "peers": "Kollegen"
+    "peers": "Kollegen",
+    "nomadnetwork": "Nomadennetzwerk"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Nomadennetzwerk",
     "empty": "Noch keine Nomad-Netzwerkknoten entdeckt.",
-    "toggleFavorite": "Ihren Favoriten hinzufügen"
+    "toggleFavorite": "Ihren Favoriten hinzufügen",
+    "favourites": "Favoriten",
+    "announces": "Ankündigungen",
+    "searchFavourites": "{{count}} Favoriten suchen…",
+    "searchAnnounces": "Suche {{count}} Ankündigungen…",
+    "emptyFavourites": "Noch keine bevorzugten Nomad-Netzwerkknoten.",
+    "emptyAnnounces": "Noch keine angekündigten Nomad-Netzwerkknoten.",
+    "unavailable": "Die Nomad-Netzwerk-API ist nicht verfügbar. Bauen Sie den Reticulum-Seitenwagen wieder auf und starten Sie den Stapel neu."
   },
   "reticulumPing": {
     "title": "Ping",

@@ -5,10 +5,12 @@ import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropaga
 
 export interface ReticulumPropagationSectionProps {
   onRefresh?: () => void;
+  embedded?: boolean;
 }
 
 export default function ReticulumPropagationSection({
   onRefresh,
+  embedded = false,
 }: ReticulumPropagationSectionProps) {
   const { t } = useTranslation();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
@@ -28,12 +30,22 @@ export default function ReticulumPropagationSection({
     void refreshFromSidecar().then(() => onRefresh?.());
   };
 
-  return (
-    <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-gray-200">
-          {t('connectionPanel.reticulumPropagation.title')}
-        </h3>
+  const body = (
+    <>
+      {!embedded ? (
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-gray-200">
+            {t('connectionPanel.reticulumPropagation.title')}
+          </h3>
+          <button
+            type="button"
+            className="text-xs text-amber-400 hover:underline"
+            onClick={handleRefresh}
+          >
+            {t('common.refresh')}
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
           className="text-xs text-amber-400 hover:underline"
@@ -41,7 +53,7 @@ export default function ReticulumPropagationSection({
         >
           {t('common.refresh')}
         </button>
-      </div>
+      )}
       {sync.active ? (
         <div className="mt-2">
           <div className="h-2 overflow-hidden rounded bg-gray-800">
@@ -123,6 +135,10 @@ export default function ReticulumPropagationSection({
           </span>
         ) : null}
       </div>
-    </div>
+    </>
   );
+
+  if (embedded) return body;
+
+  return <div className="bg-deep-black rounded-lg border border-gray-700 p-4">{body}</div>;
 }

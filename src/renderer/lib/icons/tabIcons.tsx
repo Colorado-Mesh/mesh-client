@@ -6,6 +6,7 @@ import {
   Crosshair,
   FileChartColumn,
   GitBranch,
+  Globe,
   House,
   Link2,
   Lock,
@@ -34,6 +35,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'NomadNetwork':
+      return <Globe {...p} />;
     case 'Nodes':
     case 'Contacts':
       return <Users {...p} />;

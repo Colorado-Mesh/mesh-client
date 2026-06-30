@@ -106,6 +106,7 @@ import {
   DiagnosticsPanel,
   MapPanel,
   ModulePanel,
+  NomadNetworkPanel,
   PacketDistributionPanel,
   PeerGraphPanel,
   RadioPanel,
@@ -125,9 +126,13 @@ import {
   computeTabMappings,
   findFilteredTabIndexForPanel,
   MAP_TAB_PANEL_INDEX,
+  MODULES_PANEL_INDEX,
+  NODES_PANEL_INDEX,
+  NOMAD_NETWORK_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
   ROOMS_PANEL_INDEX,
+  SECURITY_PANEL_INDEX,
 } from './lib/appTabMappings';
 import { playMessageNotification } from './lib/chatNotifications';
 import {
@@ -1447,9 +1452,9 @@ function AppContent() {
   useEffect(() => {
     if (!isRemoteConfigureTarget || configureTargetNodeNum == null) return;
     if (!hasLocalMeshtasticRadio) return;
-    if (activePanelIndex === 5) {
+    if (activePanelIndex === MODULES_PANEL_INDEX) {
       void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'modules');
-    } else if (activePanelIndex === 9) {
+    } else if (activePanelIndex === SECURITY_PANEL_INDEX) {
       void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'security');
     }
   }, [
@@ -2543,11 +2548,27 @@ function AppContent() {
                     <div
                       id="panel-2"
                       role="tabpanel"
-                      aria-labelledby="tab-2"
-                      hidden={activePanelIndex !== 2}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NOMAD_NETWORK_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
+                      capabilities.hasNomadNetworkPanel ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <NomadNetworkPanel />
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id="panel-3"
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NODES_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== NODES_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 2 ? (
+                      {activePanelIndex === NODES_PANEL_INDEX ? (
                         <Suspense fallback={<PanelSkeleton />}>
                           {capabilities.hasReticulumPeersList ? (
                             <ReticulumPeerListPanel
@@ -2636,13 +2657,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-3"
+                      id="panel-4"
                       role="tabpanel"
                       aria-labelledby="tab-3"
-                      hidden={activePanelIndex !== 3}
+                      hidden={activePanelIndex !== 4}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 3 ? (
+                      {activePanelIndex === 4 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <MapPanel
@@ -2677,13 +2698,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-4"
+                      id="panel-5"
                       role="tabpanel"
                       aria-labelledby="tab-4"
-                      hidden={activePanelIndex !== 4}
+                      hidden={activePanelIndex !== 5}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 4 ? (
+                      {activePanelIndex === 5 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {capabilities.hasReticulumRadioPanel ? (
@@ -2892,13 +2913,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-5"
+                      id="panel-6"
                       role="tabpanel"
                       aria-labelledby="tab-5"
-                      hidden={activePanelIndex !== 5}
+                      hidden={activePanelIndex !== 6}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel ? (
+                      {activePanelIndex === 6 && capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RepeatersPanel
@@ -2930,7 +2951,7 @@ function AppContent() {
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
-                      {activePanelIndex === 5 && !capabilities.modulesTabUsesRepeatersLabel ? (
+                      {activePanelIndex === 6 && !capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -2983,13 +3004,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-6"
+                      id="panel-7"
                       role="tabpanel"
                       aria-labelledby="tab-6"
-                      hidden={activePanelIndex !== 6}
+                      hidden={activePanelIndex !== 7}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 6 ? (
+                      {activePanelIndex === 7 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <AdminPanel
@@ -3037,10 +3058,10 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-7"
+                      id="panel-8"
                       role="tabpanel"
                       aria-labelledby="tab-7"
-                      hidden={activePanelIndex !== 7}
+                      hidden={activePanelIndex !== 8}
                       className="h-full w-full min-w-0"
                     >
                       {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
@@ -3081,13 +3102,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-8"
+                      id="panel-9"
                       role="tabpanel"
                       aria-labelledby="tab-8"
-                      hidden={activePanelIndex !== 8}
+                      hidden={activePanelIndex !== 9}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 8 ? (
+                      {activePanelIndex === 9 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TelemetryPanel
@@ -3110,13 +3131,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-9"
+                      id="panel-10"
                       role="tabpanel"
                       aria-labelledby="tab-9"
-                      hidden={activePanelIndex !== 9}
+                      hidden={activePanelIndex !== 10}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 9 ? (
+                      {activePanelIndex === 10 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -3169,13 +3190,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-10"
+                      id="panel-11"
                       role="tabpanel"
                       aria-labelledby="tab-10"
-                      hidden={activePanelIndex !== 10}
+                      hidden={activePanelIndex !== 11}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 10 ? (
+                      {activePanelIndex === 11 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TakServerPanel
@@ -3187,13 +3208,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-11"
+                      id="panel-12"
                       role="tabpanel"
                       aria-labelledby="tab-11"
-                      hidden={activePanelIndex !== 11}
+                      hidden={activePanelIndex !== 12}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 11 ? (
+                      {activePanelIndex === 12 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <AppPanel
@@ -3256,13 +3277,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-12"
+                      id="panel-13"
                       role="tabpanel"
                       aria-labelledby="tab-12"
-                      hidden={activePanelIndex !== 12}
+                      hidden={activePanelIndex !== 13}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 12 ? (
+                      {activePanelIndex === 13 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <DiagnosticsPanel
@@ -3300,13 +3321,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-13"
+                      id="panel-14"
                       role="tabpanel"
                       aria-labelledby="tab-13"
-                      hidden={activePanelIndex !== 13}
+                      hidden={activePanelIndex !== 14}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 13 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === 14 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="p-4">
@@ -3333,13 +3354,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-14"
+                      id="panel-15"
                       role="tabpanel"
                       aria-labelledby="tab-14"
-                      hidden={activePanelIndex !== 14}
+                      hidden={activePanelIndex !== 15}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 14 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === 15 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {capabilities.modulesTabUsesRepeatersLabel ? (
@@ -3365,13 +3386,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-15"
+                      id="panel-16"
                       role="tabpanel"
                       aria-labelledby="tab-15"
-                      hidden={activePanelIndex !== 15}
+                      hidden={activePanelIndex !== 16}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 15 ? (
+                      {activePanelIndex === 16 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RFHistogramsPanel nodes={nodesForUi} />
@@ -3380,14 +3401,14 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-16"
+                      id="panel-17"
                       role="tabpanel"
                       aria-labelledby="tab-16"
-                      hidden={activePanelIndex !== 16}
+                      hidden={activePanelIndex !== 17}
                       className="w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 16 ? (
+                      {activePanelIndex === 17 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <PeerGraphPanel

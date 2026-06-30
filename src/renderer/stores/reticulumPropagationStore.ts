@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  isReticulumSidecarExpectedProxyError,
+  isReticulumSidecarRunning,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 export interface PropagationNodeRow {
   id: string;
@@ -55,6 +59,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   },
 
   refreshFromSidecar: async () => {
+    if (!(await isReticulumSidecarRunning())) return;
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/propagation')) as {
         propagation?: PropagationNodeRow[];
@@ -68,7 +73,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         autoSyncIntervalSec: body.auto_sync_interval_sec ?? 0,
       });
     } catch (e) {
-      console.warn('[reticulumPropagationStore] refresh ' + errLikeToLogString(e));
+      if (!isReticulumSidecarExpectedProxyError(e)) {
+        console.warn('[reticulumPropagationStore] refresh ' + errLikeToLogString(e));
+      }
     }
   },
 

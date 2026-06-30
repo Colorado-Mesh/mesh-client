@@ -135,6 +135,8 @@ export interface ProtocolCapabilities {
   hasLxmfDeliveryStatus: boolean;
   /** Reticulum: dedicated peer detail modal (hash-based peers) */
   hasReticulumPeerDetailModal: boolean;
+  /** Reticulum: Nomad Network sidebar tab */
+  hasNomadNetworkPanel: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
   lxmfPayloadLimit?: number;
 }
@@ -204,6 +206,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumNativeDiagnostics: false,
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
+  hasNomadNetworkPanel: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -272,6 +275,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumNativeDiagnostics: false,
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
+  hasNomadNetworkPanel: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -339,5 +343,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumNativeDiagnostics: true,
   hasLxmfDeliveryStatus: true,
   hasReticulumPeerDetailModal: true,
+  hasNomadNetworkPanel: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

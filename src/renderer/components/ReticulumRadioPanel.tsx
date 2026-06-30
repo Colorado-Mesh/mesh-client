@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import {
   type ReticulumIdentityStatus,
@@ -13,7 +14,6 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
-import NomadNetworkPanel from './NomadNetworkPanel';
 import ReticulumCallPanel from './ReticulumCallPanel';
 import ReticulumIdentitySection from './ReticulumIdentitySection';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
@@ -38,6 +38,35 @@ interface ReticulumInterfaceRow {
 
 type ReticulumIfaceUiType =
   'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi';
+
+function ReticulumCollapsibleSection({
+  title,
+  children,
+  defaultOpen = false,
+  danger = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <details
+      className={`group bg-deep-black/50 rounded-lg border ${danger ? 'border-red-900/50' : 'border-gray-700'}`}
+      open={defaultOpen || undefined}
+    >
+      <summary
+        className={`flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors hover:bg-gray-800 ${
+          danger ? 'text-red-300' : 'text-gray-200'
+        }`}
+      >
+        <span>{title}</span>
+        <DetailsChevron />
+      </summary>
+      <div className="space-y-4 px-4 pb-4">{children}</div>
+    </details>
+  );
+}
 
 export interface ReticulumRadioPanelProps {
   stackRunning: boolean;
@@ -379,7 +408,9 @@ export function ReticulumRadioPanel({
   return (
     <div className="space-y-4">
       {capabilities.hasRNodeFlasher ? (
-        <RNodeFlasherSection portBlocked={flasherPortBlocked} />
+        <ReticulumCollapsibleSection title={t('flasher.title')}>
+          <RNodeFlasherSection portBlocked={flasherPortBlocked} />
+        </ReticulumCollapsibleSection>
       ) : null}
 
       {!sidecarApiReady ? (
@@ -388,11 +419,8 @@ export function ReticulumRadioPanel({
         </p>
       ) : null}
 
-      <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-200">
-          {t('radioPanel.reticulumStackSettings.title')}
-        </h3>
-        <div className="mt-3 space-y-2 text-sm">
+      <ReticulumCollapsibleSection title={t('radioPanel.reticulumStackSettings.title')} defaultOpen>
+        <div className="space-y-2 text-sm">
           <label className="flex items-center gap-2 text-gray-300">
             <input
               type="checkbox"
@@ -443,13 +471,10 @@ export function ReticulumRadioPanel({
             {t('radioPanel.reticulumStackSettings.save')}
           </button>
         </div>
-      </div>
+      </ReticulumCollapsibleSection>
 
-      <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-200">
-          {t('connectionPanel.reticulumIdentity.title')}
-        </h3>
-        <p className="text-muted mt-1 text-xs">{t('connectionPanel.reticulumIdentity.hint')}</p>
+      <ReticulumCollapsibleSection title={t('connectionPanel.reticulumIdentity.title')} defaultOpen>
+        <p className="text-muted text-xs">{t('connectionPanel.reticulumIdentity.hint')}</p>
         {identityError ? (
           <p className="mt-2 text-sm text-red-400" role="alert">
             {identityError}
@@ -484,15 +509,12 @@ export function ReticulumRadioPanel({
             }}
           />
         )}
-      </div>
+      </ReticulumCollapsibleSection>
 
       {sidecarApiReady ? (
         <>
-          <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-            <h3 className="text-sm font-medium text-gray-200">
-              {t('radioPanel.reticulumConfigImport.title')}
-            </h3>
-            <p className="text-muted mt-1 text-xs">{t('radioPanel.reticulumConfigImport.hint')}</p>
+          <ReticulumCollapsibleSection title={t('radioPanel.reticulumConfigImport.title')}>
+            <p className="text-muted text-xs">{t('radioPanel.reticulumConfigImport.hint')}</p>
             <textarea
               value={configPaste}
               onChange={(e) => {
@@ -549,64 +571,74 @@ export function ReticulumRadioPanel({
                 ))}
               </ul>
             ) : null}
-          </div>
+          </ReticulumCollapsibleSection>
 
-          <InterfacesSection
-            interfaces={interfaces}
-            ifaceType={ifaceType}
-            ifaceHost={ifaceHost}
-            ifacePort={ifacePort}
-            serialPort={serialPort}
-            pipeCommand={pipeCommand}
-            selectedPreset={selectedPreset}
-            presets={presets}
-            serialPorts={serialPorts}
-            bleAvailable={bleAvailable}
-            onIfaceTypeChange={setIfaceType}
-            onIfaceHostChange={setIfaceHost}
-            onIfacePortChange={setIfacePort}
-            onSerialPortChange={setSerialPort}
-            onPipeCommandChange={setPipeCommand}
-            onSelectedPresetChange={setSelectedPreset}
-            onAdd={() => {
-              void handleAddInterface();
-            }}
-            onToggle={(id, enabled) => {
-              void toggleInterface(id, enabled);
-            }}
-            onDelete={(id, name) => {
-              setPendingDeleteInterface({ id, name });
-            }}
-            editingInterface={editingInterface}
-            onStartEdit={setEditingInterface}
-            onCancelEdit={() => {
-              setEditingInterface(null);
-            }}
-            onSaveEdit={(id, patch) => {
-              void saveEditInterface(id, patch);
-            }}
-          />
+          <ReticulumCollapsibleSection title={t('connectionPanel.reticulumInterfaces.title')}>
+            <InterfacesSection
+              interfaces={interfaces}
+              ifaceType={ifaceType}
+              ifaceHost={ifaceHost}
+              ifacePort={ifacePort}
+              serialPort={serialPort}
+              pipeCommand={pipeCommand}
+              selectedPreset={selectedPreset}
+              presets={presets}
+              serialPorts={serialPorts}
+              bleAvailable={bleAvailable}
+              onIfaceTypeChange={setIfaceType}
+              onIfaceHostChange={setIfaceHost}
+              onIfacePortChange={setIfacePort}
+              onSerialPortChange={setSerialPort}
+              onPipeCommandChange={setPipeCommand}
+              onSelectedPresetChange={setSelectedPreset}
+              onAdd={() => {
+                void handleAddInterface();
+              }}
+              onToggle={(id, enabled) => {
+                void toggleInterface(id, enabled);
+              }}
+              onDelete={(id, name) => {
+                setPendingDeleteInterface({ id, name });
+              }}
+              editingInterface={editingInterface}
+              onStartEdit={setEditingInterface}
+              onCancelEdit={() => {
+                setEditingInterface(null);
+              }}
+              onSaveEdit={(id, patch) => {
+                void saveEditInterface(id, patch);
+              }}
+            />
+          </ReticulumCollapsibleSection>
 
-          <PeersSummarySection peerCount={peerCount} onOpenPeersTab={onOpenPeersTab} />
-          <ReticulumIdentitySection />
-          <ReticulumPropagationSection />
-          <NomadNetworkPanel />
-          <ReticulumCallPanel />
-          <div className="bg-deep-black rounded-lg border border-red-900/50 p-4">
-            <h3 className="text-sm font-medium text-red-300">
-              {t('radioPanel.reticulumFactoryReset.title')}
-            </h3>
-            <p className="text-muted mt-1 text-xs">{t('radioPanel.reticulumFactoryReset.hint')}</p>
+          <ReticulumCollapsibleSection title={t('connectionPanel.reticulumNetworkTitle')}>
+            <PeersSummarySection embedded peerCount={peerCount} onOpenPeersTab={onOpenPeersTab} />
+          </ReticulumCollapsibleSection>
+
+          <ReticulumCollapsibleSection title={t('reticulumIdentity.title')}>
+            <ReticulumIdentitySection embedded />
+          </ReticulumCollapsibleSection>
+
+          <ReticulumCollapsibleSection title={t('connectionPanel.reticulumPropagation.title')}>
+            <ReticulumPropagationSection embedded />
+          </ReticulumCollapsibleSection>
+
+          <ReticulumCollapsibleSection title={t('reticulumCall.title')}>
+            <ReticulumCallPanel embedded />
+          </ReticulumCollapsibleSection>
+
+          <ReticulumCollapsibleSection title={t('radioPanel.reticulumFactoryReset.title')} danger>
+            <p className="text-muted text-xs">{t('radioPanel.reticulumFactoryReset.hint')}</p>
             <button
               type="button"
               onClick={() => {
                 setShowFactoryResetConfirm(true);
               }}
-              className="mt-2 rounded border border-red-700 px-2 py-1 text-xs text-red-300 hover:bg-red-950/40"
+              className="rounded border border-red-700 px-2 py-1 text-xs text-red-300 hover:bg-red-950/40"
             >
               {t('radioPanel.reticulumFactoryReset.button')}
             </button>
-          </div>
+          </ReticulumCollapsibleSection>
         </>
       ) : null}
 
@@ -1255,16 +1287,20 @@ function InterfacesSection({
 function PeersSummarySection({
   peerCount,
   onOpenPeersTab,
+  embedded = false,
 }: {
   peerCount: number;
   onOpenPeersTab?: () => void;
+  embedded?: boolean;
 }) {
   const { t } = useTranslation();
-  return (
-    <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-      <h3 className="text-sm font-medium text-gray-200">
-        {t('connectionPanel.reticulumNetworkTitle')}
-      </h3>
+  const body = (
+    <>
+      {!embedded ? (
+        <h3 className="text-sm font-medium text-gray-200">
+          {t('connectionPanel.reticulumNetworkTitle')}
+        </h3>
+      ) : null}
       <p className="text-muted mt-2 text-xs">
         {peerCount > 0
           ? t('peerListPanel.radioPeerCount', { count: peerCount })
@@ -1279,8 +1315,12 @@ function PeersSummarySection({
           {t('peerListPanel.viewAllPeers')}
         </button>
       ) : null}
-    </div>
+    </>
   );
+
+  if (embedded) return body;
+
+  return <div className="bg-deep-black rounded-lg border border-gray-700 p-4">{body}</div>;
 }
 
 export default ReticulumRadioPanel;

@@ -3,8 +3,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
-export default function ReticulumIdentitySection() {
+export interface ReticulumIdentitySectionProps {
+  embedded?: boolean;
+}
+
+export default function ReticulumIdentitySection({
+  embedded = false,
+}: ReticulumIdentitySectionProps) {
   const { t } = useTranslation();
   const [identities, setIdentities] = useState<{ id: string; label?: string }[]>([]);
   const [activeId, setActiveId] = useState<string>('default');
@@ -12,6 +19,7 @@ export default function ReticulumIdentitySection() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
+    if (!(await isReticulumSidecarRunning())) return;
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/identities')) as {
         identities?: { id: string; label?: string }[];
@@ -74,9 +82,11 @@ export default function ReticulumIdentitySection() {
     }
   };
 
-  return (
-    <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-      <h3 className="text-sm font-medium text-gray-200">{t('reticulumIdentity.title')}</h3>
+  const content = (
+    <>
+      {!embedded ? (
+        <h3 className="text-sm font-medium text-gray-200">{t('reticulumIdentity.title')}</h3>
+      ) : null}
       <label className="mt-2 block text-xs text-gray-400" htmlFor="reticulum-identity-select">
         {t('reticulumIdentity.activeIdentity')}
       </label>
@@ -132,6 +142,10 @@ export default function ReticulumIdentitySection() {
           {t('reticulumIdentity.clearAnnounces')}
         </button>
       </div>
-    </div>
+    </>
   );
+
+  if (embedded) return content;
+
+  return <div className="bg-deep-black rounded-lg border border-gray-700 p-4">{content}</div>;
 }

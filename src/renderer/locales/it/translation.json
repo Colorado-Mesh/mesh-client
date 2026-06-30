@@ -2706,7 +2706,8 @@
     "graph": "Graph",
     "rooms": "Camere",
     "admin": "Amministrazione",
-    "peers": "Compagni"
+    "peers": "Compagni",
+    "nomadnetwork": "Nomad Network"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Nomad Network",
     "empty": "Nessun nodo Nomad Network ancora scoperto.",
-    "toggleFavorite": "Attiva/disattiva preferiti"
+    "toggleFavorite": "Attiva/disattiva preferiti",
+    "favourites": "Preferiti",
+    "announces": "Annunci",
+    "searchFavourites": "Cerca {{count}} Preferiti...",
+    "searchAnnounces": "Search {{count}} annuncia...",
+    "emptyFavourites": "Ancora nessun nodo Nomad Network preferito.",
+    "emptyAnnounces": "Ancora nessun nodo Nomad Network annunciato.",
+    "unavailable": "L'API Nomad Network non è disponibile. Ricostruisci il sidecar Reticulum e riavvia la pila."
   },
   "reticulumPing": {
     "title": "Ping",

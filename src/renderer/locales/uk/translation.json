@@ -2706,7 +2706,8 @@
     "graph": "Графік",
     "rooms": "Кімнати",
     "admin": "Адміністрування",
-    "peers": "Однолітки"
+    "peers": "Однолітки",
+    "nomadnetwork": "Мережа кочівників"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Мережа кочівників",
     "empty": "Вузлів мережі Nomad ще не виявлено.",
-    "toggleFavorite": "Увімкнути або вимкнути вибране"
+    "toggleFavorite": "Увімкнути або вимкнути вибране",
+    "favourites": "Вибране",
+    "announces": "Анонси",
+    "searchFavourites": "Пошук у вибраному {{count}} …",
+    "searchAnnounces": "Пошук {{count}} оголошень…",
+    "emptyFavourites": "Улюблених вузлів Nomad Network поки немає.",
+    "emptyAnnounces": "Ще немає анонсованих вузлів Nomad Network.",
+    "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack."
   },
   "reticulumPing": {
     "title": "Пінґ",

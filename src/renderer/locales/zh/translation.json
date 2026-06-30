@@ -2706,7 +2706,8 @@
     "tak": "TAK",
     "rooms": "房间数",
     "admin": "管理",
-    "peers": "Pee对端"
+    "peers": "Pee对端",
+    "nomadnetwork": "游牧网络"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "游牧网络",
     "empty": "尚未发现游牧网络节点。",
-    "toggleFavorite": "切换收藏夹"
+    "toggleFavorite": "切换收藏夹",
+    "favourites": "收藏夹",
+    "announces": "宣布",
+    "searchFavourites": "搜索{{count}}收藏夹…",
+    "searchAnnounces": "搜索{{count}}宣布……",
+    "emptyFavourites": "还没有最喜欢的Nomad Network节点。",
+    "emptyAnnounces": "尚未宣布Nomad Network节点。",
+    "unavailable": "Nomad Network API不可用。重建Reticulum侧车并重新启动堆栈。"
   },
   "reticulumPing": {
     "title": "Ping",

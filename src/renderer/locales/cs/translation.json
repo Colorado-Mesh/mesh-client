@@ -2706,7 +2706,8 @@
     "graph": "Graf",
     "rooms": "Pokoje",
     "admin": "Správa",
-    "peers": "Vazby"
+    "peers": "Vazby",
+    "nomadnetwork": "Nomad Network"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Nomad Network",
     "empty": "Zatím nebyly nalezeny žádné uzly Nomad Network.",
-    "toggleFavorite": "Přepnout oblíbené"
+    "toggleFavorite": "Přepnout oblíbené",
+    "favourites": "Oblíbené",
+    "announces": "Oznámení",
+    "searchFavourites": "Hledat {{count}} Oblíbené…",
+    "searchAnnounces": "Hledat {{count}} oznamuje...",
+    "emptyFavourites": "Zatím žádné oblíbené uzly Nomad Network.",
+    "emptyAnnounces": "Zatím nebyly oznámeny žádné uzly Nomad Network.",
+    "unavailable": "Nomad Network API není k dispozici. Znovu sestavte postranní vozík Reticulum a restartujte zásobník."
   },
   "reticulumPing": {
     "title": "Ping",

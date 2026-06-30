@@ -2706,7 +2706,8 @@
     "graph": "Grafik",
     "rooms": "Oda",
     "admin": "Yönetim",
-    "peers": "Meslektaşlar"
+    "peers": "Meslektaşlar",
+    "nomadnetwork": "Göçebe Ağı"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Göçebe Ağı",
     "empty": "Henüz hiçbir Göçebe Ağı düğümü keşfedilmedi.",
-    "toggleFavorite": "Favorileri aç/kapat"
+    "toggleFavorite": "Favorileri aç/kapat",
+    "favourites": "Favoriler",
+    "announces": "Duyurular",
+    "searchFavourites": "{{count}} Favorileri Ara…",
+    "searchAnnounces": "Ara {{count}} Duyurular…",
+    "emptyFavourites": "Henüz favori Nomad Network düğümü yok.",
+    "emptyAnnounces": "Henüz duyurulmuş Nomad Network düğümü yok.",
+    "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat."
   },
   "reticulumPing": {
     "title": "Ping",

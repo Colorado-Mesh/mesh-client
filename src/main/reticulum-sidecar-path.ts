@@ -93,9 +93,49 @@ function runCargoBuild(projectDir: string): Promise<void> {
   });
 }
 
-/** Dev-only: compile the sidecar when the debug binary is missing. */
+/** Newest mtime among Cargo.toml and reticulum-sidecar/src Rust sources. */
+export function newestReticulumSidecarSourceMtimeMs(projectDir: string): number {
+  let newest = 0;
+  const cargoToml = path.join(projectDir, 'Cargo.toml');
+  if (fs.existsSync(cargoToml)) {
+    newest = Math.max(newest, fs.statSync(cargoToml).mtimeMs);
+  }
+  const srcDir = path.join(projectDir, 'src');
+  if (!fs.existsSync(srcDir)) return newest;
+
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.rs')) {
+        newest = Math.max(newest, fs.statSync(full).mtimeMs);
+      }
+    }
+  };
+  walk(srcDir);
+  return newest;
+}
+
+/** True when Rust sources are newer than the built sidecar binary. */
+export function sidecarBinaryIsStale(binaryPath: string, projectDir: string): boolean {
+  if (!fs.existsSync(binaryPath)) return true;
+  const binaryMtime = fs.statSync(binaryPath).mtimeMs;
+  return newestReticulumSidecarSourceMtimeMs(projectDir) > binaryMtime;
+}
+
+async function runDevSidecarCargoBuild(projectDir: string, reason: string): Promise<void> {
+  if (!devBuildInFlight) {
+    console.debug(`[ReticulumSidecar] ${reason}; running cargo build…`);
+    devBuildInFlight = runCargoBuild(projectDir).finally(() => {
+      devBuildInFlight = null;
+    });
+  }
+  await devBuildInFlight;
+}
+
+/** Dev-only: compile the sidecar when the debug binary is missing or stale. */
 export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> {
-  if (fs.existsSync(binaryPath)) return;
   if (app.isPackaged) return;
 
   const projectDir = findReticulumSidecarProjectDir();
@@ -105,13 +145,15 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
     );
   }
 
-  if (!devBuildInFlight) {
-    console.debug('[ReticulumSidecar] debug binary missing; running cargo build…');
-    devBuildInFlight = runCargoBuild(projectDir).finally(() => {
-      devBuildInFlight = null;
-    });
+  const missing = !fs.existsSync(binaryPath);
+  const stale = !missing && sidecarBinaryIsStale(binaryPath, projectDir);
+  if (missing) {
+    await runDevSidecarCargoBuild(projectDir, 'debug binary missing');
+  } else if (stale) {
+    await runDevSidecarCargoBuild(projectDir, 'sidecar sources newer than binary');
+  } else {
+    return;
   }
-  await devBuildInFlight;
 
   if (!fs.existsSync(binaryPath)) {
     throw new Error(

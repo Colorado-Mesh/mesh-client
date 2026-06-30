@@ -43,11 +43,12 @@ flowchart TB
 
 ## Panels
 
-| Tab (sidebar) | Component                | Purpose                                                                                                     |
-| ------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Connection    | `ReticulumStackPanel`    | Stack start/stop, auto-start, disconnect & quit, connection status                                          |
-| Peers         | `ReticulumPeerListPanel` | Network path-table peers and LXMF contacts (sub-tabs); path/probe; opens `ReticulumPeerDetailModal`         |
-| Radio         | `ReticulumRadioPanel`    | Identity wizard, interfaces, peer summary, propagation, config import/export, stack settings, factory reset |
+| Tab (sidebar) | Component                | Purpose                                                                                                      |
+| ------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Connection    | `ReticulumStackPanel`    | Stack start/stop, auto-start, disconnect & quit, connection status                                           |
+| Nomad Network | `NomadNetworkPanel`      | Favourites / Announces list, search, favourite toggle (MeshChat-style)                                       |
+| Peers         | `ReticulumPeerListPanel` | Network path-table peers and LXMF contacts (sub-tabs); path/probe; opens `ReticulumPeerDetailModal`          |
+| Radio         | `ReticulumRadioPanel`    | Collapsible sections: flasher, identity, interfaces, peer summary, propagation, config import, factory reset |
 
 ## Interface management (Radio tab)
 
@@ -59,7 +60,7 @@ Interfaces are stored in the sidecar rnsd config under Electron `userData/reticu
 
 ## RNode firmware flasher
 
-The **Reticulum → Radio** tab includes a collapsible **RNode Firmware Flasher** section (visible before the stack starts). It uses the renderer **Web Serial API** to:
+The **Reticulum → Radio** tab lists **RNode Firmware Flasher** as the first collapsible section (visible before the stack starts). It uses the renderer **Web Serial API** to:
 
 1. Flash nRF52 devices (DFU touch + zip manifest) or ESP32 devices (`esptool-js`).
 2. **Provision** EEPROM on new hardware (device info, MD5 checksum, lock byte).

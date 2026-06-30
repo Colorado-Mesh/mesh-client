@@ -10,6 +10,12 @@ import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import {
+  formatReticulumPeerPathToast,
+  formatReticulumPeerProbeToast,
+  probeReticulumPeer,
+  requestReticulumPeerPath,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 
@@ -83,15 +89,9 @@ export default function ReticulumPeerDetailModal({
     setBusy(true);
     setPathStatus(null);
     try {
-      const res = (await window.electronAPI.reticulum.proxyPost(
-        `/api/v1/peers/${peerHash}/path`,
-        {},
-      )) as { ok?: boolean; error?: string };
-      setPathStatus(
-        res.ok
-          ? t('peerDetailModal.pathOk')
-          : t('peerDetailModal.pathFailed', { error: res.error ?? '' }),
-      );
+      const result = await requestReticulumPeerPath(peerHash);
+      const toast = formatReticulumPeerPathToast(t, result);
+      setPathStatus(toast.message);
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] path ' + errLikeToLogString(e));
       setPathStatus(t('peerDetailModal.pathFailed', { error: errLikeToLogString(e) }));
@@ -104,17 +104,9 @@ export default function ReticulumPeerDetailModal({
     setBusy(true);
     setProbeStatus(null);
     try {
-      const res = (await window.electronAPI.reticulum.proxyPost(
-        `/api/v1/peers/${peerHash}/probe`,
-        {},
-      )) as { ok?: boolean; hops?: number; error?: string; mode?: string };
-      if (res.ok && res.hops != null) {
-        setProbeStatus(t('peerDetailModal.probeHops', { hops: res.hops }));
-      } else if (res.ok && res.mode) {
-        setProbeStatus(t('peerDetailModal.probeLocal', { mode: res.mode }));
-      } else {
-        setProbeStatus(t('peerDetailModal.probeFailed', { error: res.error ?? t('common.error') }));
-      }
+      const result = await probeReticulumPeer(peerHash);
+      const toast = formatReticulumPeerProbeToast(t, result);
+      setProbeStatus(toast.message);
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] probe ' + errLikeToLogString(e));
       setProbeStatus(t('peerDetailModal.probeFailed', { error: errLikeToLogString(e) }));

@@ -3,6 +3,7 @@ import { CayenneLpp } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
+import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -1713,7 +1714,9 @@ export function useMeshcoreRuntime() {
           try {
             const rawChannels = await channelsPromise;
             setChannels(
-              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+              dedupeChannelPillsByIndex(
+                rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+              ),
             );
           } catch (e) {
             if (e instanceof DOMException && e.name === 'AbortError') return;
@@ -1880,7 +1883,9 @@ export function useMeshcoreRuntime() {
             withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
           );
           setChannels(
-            rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+            dedupeChannelPillsByIndex(
+              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+            ),
           );
           const getChannelsMs = Math.round(performance.now() - getChannelsStart);
           console.debug(

@@ -14,7 +14,6 @@ import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
 import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { AdvancedTools } from './AdvancedTools';
@@ -205,169 +204,163 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
 
   return (
     <>
-      <details className="group bg-deep-black rounded-lg border border-gray-700">
-        <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
-          <span>{t('flasher.title')}</span>
-          <DetailsChevron />
-        </summary>
-        <div className="space-y-4 px-4 pb-4">
-          {portBlocked ? (
-            <p className="rounded border border-amber-600/40 bg-amber-950/20 p-2 text-xs text-amber-200">
-              {t('flasher.portContentionWarning')}
-            </p>
-          ) : null}
+      <div className="space-y-4">
+        {portBlocked ? (
+          <p className="rounded border border-amber-600/40 bg-amber-950/20 p-2 text-xs text-amber-200">
+            {t('flasher.portContentionWarning')}
+          </p>
+        ) : null}
 
-          {statusMessage ? (
-            <p
-              className={
-                statusIsError
-                  ? 'rounded border border-red-700/50 bg-red-950/30 p-2 text-xs text-red-200'
-                  : 'rounded border border-green-700/50 bg-green-950/30 p-2 text-xs text-green-200'
-              }
-              role="status"
-            >
-              {statusMessage}
-            </p>
-          ) : null}
-
-          <DeviceSelector
-            selectedProduct={selectedProduct}
-            selectedModel={selectedModel}
-            disabled={actionsDisabled}
-            onProductChange={setSelectedProduct}
-            onModelChange={setSelectedModel}
-          />
-
-          <FirmwarePicker
-            file={firmwareFile}
-            disabled={actionsDisabled}
-            onFileChange={setFirmwareFile}
-          />
-
-          {isNrf52 ? (
-            <DfuModeTrigger disabled={actionsDisabled} busy={busy} onEnterDfu={handleEnterDfu} />
-          ) : null}
-
-          <button
-            type="button"
-            disabled={actionsDisabled}
-            aria-label={t('flasher.flashFirmware')}
-            onClick={() => {
-              void handleFlash();
-            }}
-            className="bg-readable-green hover:bg-readable-green/90 rounded px-3 py-2 text-sm font-medium text-white disabled:bg-gray-600 disabled:opacity-60"
+        {statusMessage ? (
+          <p
+            className={
+              statusIsError
+                ? 'rounded border border-red-700/50 bg-red-950/30 p-2 text-xs text-red-200'
+                : 'rounded border border-green-700/50 bg-green-950/30 p-2 text-xs text-green-200'
+            }
+            role="status"
           >
-            {flashing
-              ? t('flasher.flashing', { progress: flashProgress })
-              : t('flasher.flashFirmware')}
-          </button>
+            {statusMessage}
+          </p>
+        ) : null}
 
-          <FlashProgress active={flashing} progress={flashProgress} />
+        <DeviceSelector
+          selectedProduct={selectedProduct}
+          selectedModel={selectedModel}
+          disabled={actionsDisabled}
+          onProductChange={setSelectedProduct}
+          onModelChange={setSelectedModel}
+        />
 
-          <ProvisionStep
-            disabled={actionsDisabled}
-            busy={provisioning}
-            onProvision={() => {
-              void handleProvision();
-            }}
-          />
+        <FirmwarePicker
+          file={firmwareFile}
+          disabled={actionsDisabled}
+          onFileChange={setFirmwareFile}
+        />
 
-          <FirmwareHashStep
-            disabled={actionsDisabled}
-            busy={settingHash}
-            onSetHash={() => {
-              void handleSetFirmwareHash();
-            }}
-          />
+        {isNrf52 ? (
+          <DfuModeTrigger disabled={actionsDisabled} busy={busy} onEnterDfu={handleEnterDfu} />
+        ) : null}
 
-          <AdvancedTools
-            disabled={actionsDisabled}
-            onDetect={() => {
-              void runWithRNode(async (rnode) => {
-                const version = await rnode.getFirmwareVersion();
-                console.debug('[RNodeFlasher] detect', {
-                  firmware_version: version,
-                  platform: await rnode.getPlatform(),
-                });
-                showStatus(`${t('flasher.detectDevice')}: v${version}`);
-              });
-            }}
-            onReboot={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.reset();
-                showStatus(t('flasher.rebootSuccess'));
-              });
-            }}
-            onWipeEeprom={() => {
-              setShowWipeConfirm(true);
-            }}
-            onDumpEeprom={() => {
-              void runWithRNode(async (rnode) => {
-                const eeprom = await rnode.getRom();
-                console.debug('[RNodeFlasher] EEPROM', bytesToHex(eeprom));
-              });
-            }}
-          />
+        <button
+          type="button"
+          disabled={actionsDisabled}
+          aria-label={t('flasher.flashFirmware')}
+          onClick={() => {
+            void handleFlash();
+          }}
+          className="bg-readable-green hover:bg-readable-green/90 rounded px-3 py-2 text-sm font-medium text-white disabled:bg-gray-600 disabled:opacity-60"
+        >
+          {flashing
+            ? t('flasher.flashing', { progress: flashProgress })
+            : t('flasher.flashFirmware')}
+        </button>
 
-          <BluetoothConfig
-            disabled={actionsDisabled}
-            pairingPin={pairingPin}
-            onEnable={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.enableBluetooth();
-              });
-            }}
-            onDisable={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.disableBluetooth();
-                setPairingPin(null);
-              });
-            }}
-            onStartPairing={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.startBluetoothPairing((pin) => {
-                  setPairingPin(pin);
-                });
-              });
-            }}
-          />
+        <FlashProgress active={flashing} progress={flashProgress} />
 
-          <TncConfig
-            disabled={actionsDisabled}
-            onEnable={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.saveConfig();
-              });
-            }}
-            onDisable={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.deleteConfig();
-              });
-            }}
-          />
+        <ProvisionStep
+          disabled={actionsDisabled}
+          busy={provisioning}
+          onProvision={() => {
+            void handleProvision();
+          }}
+        />
 
-          <DisplayCanvas
-            disabled={actionsDisabled}
-            imageDataUrl={displayImage}
-            onReadDisplay={() => {
-              void runWithRNode(async (rnode) => {
-                const buffer = await rnode.readDisplay();
-                setDisplayImage(rnodeDisplayBufferToPng(buffer));
+        <FirmwareHashStep
+          disabled={actionsDisabled}
+          busy={settingHash}
+          onSetHash={() => {
+            void handleSetFirmwareHash();
+          }}
+        />
+
+        <AdvancedTools
+          disabled={actionsDisabled}
+          onDetect={() => {
+            void runWithRNode(async (rnode) => {
+              const version = await rnode.getFirmwareVersion();
+              console.debug('[RNodeFlasher] detect', {
+                firmware_version: version,
+                platform: await rnode.getPlatform(),
               });
-            }}
-            onSetRotation={(rotation) => {
-              void runWithRNode(async (rnode) => {
-                await rnode.setDisplayRotation(rotation);
+              showStatus(`${t('flasher.detectDevice')}: v${version}`);
+            });
+          }}
+          onReboot={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.reset();
+              showStatus(t('flasher.rebootSuccess'));
+            });
+          }}
+          onWipeEeprom={() => {
+            setShowWipeConfirm(true);
+          }}
+          onDumpEeprom={() => {
+            void runWithRNode(async (rnode) => {
+              const eeprom = await rnode.getRom();
+              console.debug('[RNodeFlasher] EEPROM', bytesToHex(eeprom));
+            });
+          }}
+        />
+
+        <BluetoothConfig
+          disabled={actionsDisabled}
+          pairingPin={pairingPin}
+          onEnable={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.enableBluetooth();
+            });
+          }}
+          onDisable={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.disableBluetooth();
+              setPairingPin(null);
+            });
+          }}
+          onStartPairing={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.startBluetoothPairing((pin) => {
+                setPairingPin(pin);
               });
-            }}
-            onRecondition={() => {
-              void runWithRNode(async (rnode) => {
-                await rnode.startDisplayReconditioning();
-              });
-            }}
-          />
-        </div>
-      </details>
+            });
+          }}
+        />
+
+        <TncConfig
+          disabled={actionsDisabled}
+          onEnable={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.saveConfig();
+            });
+          }}
+          onDisable={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.deleteConfig();
+            });
+          }}
+        />
+
+        <DisplayCanvas
+          disabled={actionsDisabled}
+          imageDataUrl={displayImage}
+          onReadDisplay={() => {
+            void runWithRNode(async (rnode) => {
+              const buffer = await rnode.readDisplay();
+              setDisplayImage(rnodeDisplayBufferToPng(buffer));
+            });
+          }}
+          onSetRotation={(rotation) => {
+            void runWithRNode(async (rnode) => {
+              await rnode.setDisplayRotation(rotation);
+            });
+          }}
+          onRecondition={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.startDisplayReconditioning();
+            });
+          }}
+        />
+      </div>
 
       {showWipeConfirm ? (
         <ConfirmModal

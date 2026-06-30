@@ -818,6 +818,28 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
 
+### Reticulum Nomad Network or topology API returns 404
+
+**Symptoms**: Device log shows `sidecar GET /api/v1/nomadnetwork/nodes failed: 404` or `/api/v1/topology` **404** while the sidecar process is running. Nomad Network tab may show **API unavailable**.
+
+**Cause**: The running `mesh-client-reticulum` binary is **older than** the Rust sources in `reticulum-sidecar/` (routes were added after the binary was built). Dev auto-build only ran when the binary was missing, or you have not rebuilt since pulling.
+
+**Fix**:
+
+1. From repo root: `pnpm run reticulum:sidecar:build`
+2. Quit mesh-client fully, reopen, **Connection → Start stack**
+3. Confirm with `curl` against the sidecar port from logs: `/api/v1/nomadnetwork/nodes` and `/api/v1/topology` return JSON 200
+
+In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the debug binary.
+
+### Reticulum sidecar stops during dev (Vite HMR)
+
+**Symptoms**: After saving a file in `pnpm run dev`, many `[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running` lines appear; Nomad/Propagation/Radio panels fail until you restart the stack.
+
+**Cause**: Hot module reload remounted the Reticulum runtime, which previously called `reticulum:stop` on every unmount.
+
+**Fix**: Current dev builds **preserve** the sidecar across HMR remounts. If you still see this on an older build, click **Start stack** again on Connection. Explicit **Disconnect** / app quit still stops the sidecar.
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Radio tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.

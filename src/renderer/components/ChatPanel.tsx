@@ -1573,7 +1573,7 @@ function ChatPanel({
                     : '';
                 return (
                   <button
-                    key={ch.index}
+                    key={`ch-${ch.index}-${ch.name}`}
                     aria-label={`${ch.name}${channelUnreadSuffix}`}
                     onClick={() => {
                       setChannel(ch.index);

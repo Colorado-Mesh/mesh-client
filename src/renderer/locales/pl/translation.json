@@ -2706,7 +2706,8 @@
     "graph": "Wykres",
     "rooms": "Pokoje",
     "admin": "Administracja",
-    "peers": "Partnerzy"
+    "peers": "Partnerzy",
+    "nomadnetwork": "Sieć Nomad"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Sieć Nomad",
     "empty": "Nie wykryto jeszcze węzłów sieci Nomad.",
-    "toggleFavorite": "Przełącz ulubione"
+    "toggleFavorite": "Przełącz ulubione",
+    "favourites": "Ulubione",
+    "announces": "Ogłoszenia",
+    "searchFavourites": "Szukaj w ulubionych {{count}} …",
+    "searchAnnounces": "Wyszukaj {{count}} Ogłoszenia…",
+    "emptyFavourites": "Nie ma jeszcze ulubionych węzłów sieci Nomad.",
+    "emptyAnnounces": "Nie ogłoszono jeszcze węzłów sieci Nomad.",
+    "unavailable": "Interfejs API sieci Nomad jest niedostępny. Odbuduj wózek boczny Reticulum i uruchom ponownie stos."
   },
   "reticulumPing": {
     "title": "Ping",

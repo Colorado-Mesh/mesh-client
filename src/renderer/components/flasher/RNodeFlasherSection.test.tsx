@@ -7,17 +7,16 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { RNodeFlasherSection } from './RNodeFlasherSection';
 
 describe('RNodeFlasherSection', () => {
-  it('has no axe violations when collapsed', async () => {
+  it('has no axe violations', async () => {
     hydrateAxeThemeColors(document.documentElement);
     const { container } = render(<RNodeFlasherSection portBlocked={false} />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
-  it('renders collapsible details with chevron', () => {
+  it('renders flasher content without outer details wrapper', () => {
     const { container } = render(<RNodeFlasherSection portBlocked={false} />);
-    const details = container.querySelector('details.group');
-    expect(details).not.toBeNull();
-    expect(details?.querySelector('summary svg')).not.toBeNull();
+    expect(container.querySelector('details')).toBeNull();
+    expect(container.querySelector('input[type="file"]')).not.toBeNull();
   });
 });

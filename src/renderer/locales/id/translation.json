@@ -2706,7 +2706,8 @@
     "graph": "Grafik",
     "rooms": "Ruang",
     "admin": "Administrasi",
-    "peers": "Peer"
+    "peers": "Peer",
+    "nomadnetwork": "Nomad Network"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Nomad Network",
     "empty": "Belum ada node Nomad Network yang ditemukan.",
-    "toggleFavorite": "Alihkan favorit"
+    "toggleFavorite": "Alihkan favorit",
+    "favourites": "Favorit",
+    "announces": "Mengumumkan",
+    "searchFavourites": "Cari {{count}} Favorit…",
+    "searchAnnounces": "Cari {{count}} Mengumumkan…",
+    "emptyFavourites": "Belum ada node Nomad Network favorit.",
+    "emptyAnnounces": "Belum ada node Nomad Network yang diumumkan.",
+    "unavailable": "Api Nomad Network tidak tersedia. Bangun kembali sidecar Reticulum dan mulai ulang tumpukan."
   },
   "reticulumPing": {
     "title": "Ping",

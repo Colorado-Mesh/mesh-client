@@ -196,7 +196,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
     return () => {
       unsubEventRef.current?.();
       unsubEventRef.current = null;
-      void window.electronAPI.reticulum.stop();
+      // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
+      if (!import.meta.env.DEV) {
+        void window.electronAPI.reticulum.stop();
+      }
     };
   }, []);
 

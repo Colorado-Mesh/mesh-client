@@ -11,6 +11,13 @@ import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import {
+  formatReticulumPeerPathToast,
+  formatReticulumPeerProbeToast,
+  isReticulumSidecarRunning,
+  probeReticulumPeer,
+  requestReticulumPeerPath,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumContact, ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
@@ -19,6 +26,7 @@ import {
   refreshReticulumPeersFromSidecar,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useToast } from './Toast';
 
 const PEER_REFRESH_MS = 30_000;
 
@@ -101,6 +109,7 @@ export default function ReticulumPeerListPanel({
   contactGroupsEnabled = false,
 }: ReticulumPeerListPanelProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const peers = useReticulumPeerStore((s) => s.peers);
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const getDisplayName = useReticulumPeerStore((s) => s.getDisplayName);
@@ -224,8 +233,13 @@ export default function ReticulumPeerListPanel({
   const requestPath = async (hash: string) => {
     setActionBusyHash(hash);
     try {
-      await window.electronAPI.reticulum.proxyPost(`/api/v1/peers/${hash}/path`, {});
-      await refreshReticulumPeersFromSidecar();
+      if (!(await isReticulumSidecarRunning())) return;
+      const result = await requestReticulumPeerPath(hash);
+      const toast = formatReticulumPeerPathToast(t, result);
+      addToast(toast.message, toast.variant);
+      if (result.ok) {
+        await refreshReticulumPeersFromSidecar();
+      }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] path ' + errLikeToLogString(e));
     } finally {
@@ -236,8 +250,16 @@ export default function ReticulumPeerListPanel({
   const probePeer = async (hash: string) => {
     setActionBusyHash(hash);
     try {
-      await window.electronAPI.reticulum.proxyPost(`/api/v1/peers/${hash}/probe`, {});
-      await refreshReticulumPeersFromSidecar();
+      if (!(await isReticulumSidecarRunning())) return;
+      const result = await probeReticulumPeer(hash);
+      const toast = formatReticulumPeerProbeToast(t, result);
+      addToast(toast.message, toast.variant);
+      if (result.ok && result.hops != null) {
+        useReticulumPeerStore.getState().updatePeer(hash, { hops: result.hops });
+      }
+      if (result.ok) {
+        await refreshReticulumPeersFromSidecar();
+      }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
     } finally {

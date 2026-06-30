@@ -2706,7 +2706,8 @@
     "graph": "グラフ",
     "rooms": "客室数",
     "admin": "管理",
-    "peers": "ピア"
+    "peers": "ピア",
+    "nomadnetwork": "ノマドネットワーク"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "ノマドネットワーク",
     "empty": "ノマドネットワークのノードはまだ見つかりませんでした。",
-    "toggleFavorite": "お気に入りを切り替える"
+    "toggleFavorite": "お気に入りを切り替える",
+    "favourites": "お気に入り",
+    "announces": "お知らせ",
+    "searchFavourites": "{{count}}のお気に入りを検索…",
+    "searchAnnounces": "検索{{count}}が発表します…",
+    "emptyFavourites": "お気に入りのノーマッドネットワークノードはまだありません。",
+    "emptyAnnounces": "Nomad Networkノードはまだ発表されていません。",
+    "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。"
   },
   "reticulumPing": {
     "title": "Ping",

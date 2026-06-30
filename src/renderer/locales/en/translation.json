@@ -1705,7 +1705,14 @@
   },
   "nomadNetwork": {
     "title": "Nomad Network",
+    "favourites": "Favourites",
+    "announces": "Announces",
+    "searchFavourites": "Search {{count}} Favourites…",
+    "searchAnnounces": "Search {{count}} Announces…",
     "empty": "No Nomad Network nodes discovered yet.",
+    "emptyFavourites": "No favourite Nomad Network nodes yet.",
+    "emptyAnnounces": "No announced Nomad Network nodes yet.",
+    "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
     "toggleFavorite": "Toggle favourite"
   },
   "reticulumPing": {
@@ -2766,6 +2773,7 @@
   "tabs": {
     "connection": "Connection",
     "chat": "Chat",
+    "nomadnetwork": "Nomad Network",
     "contacts": "Contacts",
     "nodes": "Nodes",
     "peers": "Peers",

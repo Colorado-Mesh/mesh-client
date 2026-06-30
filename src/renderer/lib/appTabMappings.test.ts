@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
 import { computeTabMappings } from './appTabMappings';
-import { RETICULUM_CAPABILITIES } from './radio/BaseRadioProvider';
+import { MESHTASTIC_CAPABILITIES, RETICULUM_CAPABILITIES } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS } from './tabSlotIds';
 
 const identityT = ((key: string) => key) as TFunction;
@@ -31,5 +31,18 @@ describe('computeTabMappings', () => {
     const nodesTabIndex = tabs.tabIndexToPanelIndex.indexOf(nodesPanelIndex);
     expect(nodesTabIndex).toBeGreaterThanOrEqual(0);
     expect(tabs.displayTabLabels[nodesTabIndex]).toBe('tabs.peers');
+  });
+
+  it('shows Nomad Network tab after Chat for Reticulum only', () => {
+    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const nomadIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(
+      TAB_SLOT_IDS.indexOf('NomadNetwork'),
+    );
+    const chatIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Chat'));
+    expect(nomadIndex).toBeGreaterThan(chatIndex);
+    expect(reticulumTabs.displayTabLabels[nomadIndex]).toBe('tabs.nomadnetwork');
+
+    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
+    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('NomadNetwork'));
   });
 });

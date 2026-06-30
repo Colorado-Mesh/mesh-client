@@ -2706,7 +2706,8 @@
     "graph": "Diagram",
     "rooms": "Ruimtes",
     "admin": "Beheer",
-    "peers": "Collega's"
+    "peers": "Collega's",
+    "nomadnetwork": "Nomad-netwerk"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Nomad-netwerk",
     "empty": "Er zijn nog geen Nomad-netwerkknooppunten ontdekt.",
-    "toggleFavorite": "Favoriet in-/uitschakelen"
+    "toggleFavorite": "Favoriet in-/uitschakelen",
+    "favourites": "Favorieten",
+    "announces": "Kondigt aan",
+    "searchFavourites": "Zoek {{count}} Favorieten...",
+    "searchAnnounces": "Search {{count}} kondigt aan...",
+    "emptyFavourites": "Nog geen favoriete Nomad-netwerkknooppunten.",
+    "emptyAnnounces": "Nog geen aangekondigde Nomad-netwerkknooppunten.",
+    "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw."
   },
   "reticulumPing": {
     "title": "Ping",

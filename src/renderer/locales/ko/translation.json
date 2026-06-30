@@ -2706,7 +2706,8 @@
     "graph": "그래프",
     "rooms": "방",
     "admin": "관리",
-    "peers": "통신자"
+    "peers": "통신자",
+    "nomadnetwork": "Nomad Network"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Nomad Network",
     "empty": "아직 발견된 Nomad Network 노드가 없습니다.",
-    "toggleFavorite": "즐겨찾기 전환"
+    "toggleFavorite": "즐겨찾기 전환",
+    "favourites": "즐겨찾기",
+    "announces": "발표",
+    "searchFavourites": "{{count}} 즐겨찾기 검색...",
+    "searchAnnounces": "검색 {{count}} 발표...",
+    "emptyFavourites": "아직 즐겨찾는 Nomad Network 노드가 없습니다.",
+    "emptyAnnounces": "아직 발표된 Nomad Network 노드가 없습니다.",
+    "unavailable": "Nomad Network API를 사용할 수 없습니다. Reticulum 사이드카를 재구축하고 스택을 다시 시작하십시오."
   },
   "reticulumPing": {
     "title": "핑",

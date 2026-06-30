@@ -1,11 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
-import ReticulumPeerListPanel from './ReticulumPeerListPanel';
+const reticulumSidecarMocks = vi.hoisted(() => ({
+  isReticulumSidecarRunning: vi.fn(),
+  requestReticulumPeerPath: vi.fn(),
+  probeReticulumPeer: vi.fn(),
+  refreshReticulumPeersFromSidecar: vi.fn(),
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -18,8 +21,51 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
+  isReticulumSidecarRunning: reticulumSidecarMocks.isReticulumSidecarRunning,
+  requestReticulumPeerPath: reticulumSidecarMocks.requestReticulumPeerPath,
+  probeReticulumPeer: reticulumSidecarMocks.probeReticulumPeer,
+  formatReticulumPeerPathToast: (
+    _t: (key: string) => string,
+    result: { ok: boolean; error?: string },
+  ) =>
+    result.ok
+      ? { message: 'peerDetailModal.pathOk', variant: 'success' as const }
+      : { message: `peerDetailModal.pathFailed:${result.error ?? ''}`, variant: 'error' as const },
+  formatReticulumPeerProbeToast: (
+    _t: (key: string) => string,
+    result: { ok: boolean; hops?: number; error?: string },
+  ) => {
+    if (result.ok && result.hops != null) {
+      return { message: `peerDetailModal.probeHops:${result.hops}`, variant: 'success' as const };
+    }
+    return {
+      message: `peerDetailModal.probeFailed:${result.error ?? ''}`,
+      variant: 'error' as const,
+    };
+  },
+}));
+
+vi.mock('../stores/reticulumPeerStore', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('../stores/reticulumPeerStore')>();
+  return {
+    ...actual,
+    refreshReticulumPeersFromSidecar: reticulumSidecarMocks.refreshReticulumPeersFromSidecar,
+  };
+});
+
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import ReticulumPeerListPanel from './ReticulumPeerListPanel';
+import { ToastProvider } from './Toast';
+
 describe('ReticulumPeerListPanel', () => {
   beforeEach(() => {
+    reticulumSidecarMocks.isReticulumSidecarRunning.mockResolvedValue(true);
+    reticulumSidecarMocks.requestReticulumPeerPath.mockReset();
+    reticulumSidecarMocks.probeReticulumPeer.mockReset();
+    reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockResolvedValue([]);
     useReticulumPeerStore.setState({
       peers: new Map([
         [
@@ -95,9 +141,39 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.queryByText('Alpha Peer')).not.toBeInTheDocument();
   });
 
+  it('shows toast after path and probe actions', async () => {
+    const user = userEvent.setup();
+    reticulumSidecarMocks.requestReticulumPeerPath.mockResolvedValue({ ok: true });
+    reticulumSidecarMocks.probeReticulumPeer.mockResolvedValue({ ok: true, hops: 2 });
+
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    await user.click(
+      screen.getAllByRole('button', { name: 'connectionPanel.reticulumPeers.path' })[0],
+    );
+    await waitFor(() => {
+      expect(reticulumSidecarMocks.requestReticulumPeerPath).toHaveBeenCalledWith('abc');
+    });
+    expect(await screen.findByText('peerDetailModal.pathOk')).toBeInTheDocument();
+
+    await user.click(
+      screen.getAllByRole('button', { name: 'connectionPanel.reticulumPeers.probe' })[0],
+    );
+    await waitFor(() => {
+      expect(reticulumSidecarMocks.probeReticulumPeer).toHaveBeenCalledWith('abc');
+    });
+    expect(await screen.findByText('peerDetailModal.probeHops:2')).toBeInTheDocument();
+  });
+
   it('has no serious axe violations', async () => {
     const { container } = render(
-      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />
+      </ToastProvider>,
     );
     hydrateAxeThemeColors(container);
     const results = await axe(container);

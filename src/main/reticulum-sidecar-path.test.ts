@@ -15,9 +15,17 @@ vi.mock('./log-service', () => ({
   sanitizeLogMessage: (s: string) => s,
 }));
 
+const spawnMock = vi.fn();
+
+vi.mock('child_process', () => ({
+  spawn: (...args: unknown[]) => spawnMock(...args),
+}));
+
 import {
   findReticulumSidecarProjectDir,
+  newestReticulumSidecarSourceMtimeMs,
   resolveSidecarBinaryPath,
+  sidecarBinaryIsStale,
   sidecarBinaryName,
 } from './reticulum-sidecar-path';
 
@@ -25,6 +33,7 @@ describe('reticulum-sidecar-path', () => {
   let tmpDir: string;
 
   afterEach(() => {
+    spawnMock.mockReset();
     if (tmpDir) {
       fs.rmSync(tmpDir, { recursive: true, force: true });
       tmpDir = '';
@@ -49,5 +58,27 @@ describe('reticulum-sidecar-path', () => {
     fs.writeFileSync(binary, '');
 
     expect(resolveSidecarBinaryPath([tmpDir])).toBe(binary);
+  });
+
+  it('sidecarBinaryIsStale returns true when Rust source is newer than binary', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-stale-'));
+    const projectDir = path.join(tmpDir, 'reticulum-sidecar');
+    const srcDir = path.join(projectDir, 'src');
+    const binary = path.join(projectDir, 'target', 'debug', sidecarBinaryName());
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.mkdirSync(path.dirname(binary), { recursive: true });
+    fs.writeFileSync(path.join(projectDir, 'Cargo.toml'), '[package]\nname = "test"\n');
+    fs.writeFileSync(binary, '');
+    fs.writeFileSync(path.join(srcDir, 'main.rs'), 'fn main() {}');
+
+    const past = Date.now() - 60_000;
+    fs.utimesSync(binary, past / 1000, past / 1000);
+    const future = Date.now() + 60_000;
+    fs.utimesSync(path.join(srcDir, 'main.rs'), future / 1000, future / 1000);
+
+    expect(sidecarBinaryIsStale(binary, projectDir)).toBe(true);
+    expect(newestReticulumSidecarSourceMtimeMs(projectDir)).toBeGreaterThan(
+      fs.statSync(binary).mtimeMs,
+    );
   });
 });

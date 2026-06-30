@@ -2706,7 +2706,8 @@
     "graph": "График",
     "rooms": "Комнаты",
     "admin": "Администрирование",
-    "peers": "Равные наставники"
+    "peers": "Равные наставники",
+    "nomadnetwork": "Сеть кочевников"
   },
   "takServerPanel": {
     "title": "TAK Сервер",
@@ -2924,7 +2925,14 @@
   "nomadNetwork": {
     "title": "Сеть кочевников",
     "empty": "Узлы Nomad Network пока не обнаружены.",
-    "toggleFavorite": "Переключить избранное"
+    "toggleFavorite": "Переключить избранное",
+    "favourites": "Избранные",
+    "announces": "Объявления",
+    "searchFavourites": "Поиск {{count}} Избранного…",
+    "searchAnnounces": "Поиск {{count}} Объявления…",
+    "emptyFavourites": "Избранных узлов Nomad Network пока нет.",
+    "emptyAnnounces": "Анонсированных узлов Nomad Network пока нет.",
+    "unavailable": "Nomad Network API недоступен. Восстановите коляску Reticulum и перезапустите стек."
   },
   "reticulumPing": {
     "title": "Проверка связи",
