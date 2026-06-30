@@ -235,6 +235,8 @@ flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 
 `flatpak/generated-sources.json` is generated automatically in the `flatpak.yaml` CI workflow and does not need to be committed. For local builds you generate it manually as shown above; the file is only required locally and in a Flathub submission repo.
 
+Offline install inside the Flatpak sandbox uses `scripts/flatpak-pnpm-install.mjs`, which retries transient `@jsr/_tmp_*` rename races (same root cause as Windows `dist:win` hoisted installs).
+
 **4. Build and install locally**
 
 ```bash

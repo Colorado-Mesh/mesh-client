@@ -7,32 +7,12 @@
  * already runs frozen-lockfile install with workspace nodeLinker: hoisted.
  */
 import { spawnSync } from 'child_process';
-import { existsSync, readdirSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { cleanJsrTempDirs } from './clean-jsr-temp-dirs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-
-/** @param {string} rootDir */
-function cleanJsrTempDirs(rootDir) {
-  if (!existsSync(rootDir)) return;
-
-  for (const ent of readdirSync(rootDir, { withFileTypes: true })) {
-    if (!ent.isDirectory()) continue;
-    const full = path.join(rootDir, ent.name);
-    if (ent.name === '@jsr') {
-      for (const child of readdirSync(full, { withFileTypes: true })) {
-        if (child.isDirectory() && child.name.startsWith('_tmp_')) {
-          rmSync(path.join(full, child.name), { recursive: true, force: true });
-        }
-      }
-    }
-    if (ent.name === 'node_modules' || ent.name.startsWith('@')) {
-      cleanJsrTempDirs(full);
-    }
-  }
-}
 
 if (process.env.CI === 'true') {
   console.log('[dist-win-hoist] CI environment — skipping redundant hoisted install.');
