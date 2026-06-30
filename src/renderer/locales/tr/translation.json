@@ -623,7 +623,7 @@
       "add": "Temel Arayüz Ekle",
       "enable": "Etkinleştir",
       "disable": "Devre dışı bırak",
-      "serialPort": "Serial port",
+      "serialPort": "Seri port",
       "preset": "Ön Ayar",
       "bleAvailable": "BLE eşleştirme bu platformda mevcuttur (yapılandırıldığında sepet aracılığıyla ekleyin).",
       "host": "Ev sahibi",
@@ -642,7 +642,7 @@
       "editFailed": "Arabirim kaydedilemedi."
     },
     "reticulumPeers": {
-      "name": "Kişi",
+      "name": "Eş",
       "hops": "Hops",
       "actions": "Eylemler",
       "path": "Yol",

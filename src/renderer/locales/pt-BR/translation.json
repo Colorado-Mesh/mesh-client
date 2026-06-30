@@ -642,7 +642,7 @@
       "editFailed": "Falha ao salvar a interface."
     },
     "reticulumPeers": {
-      "name": "Ponto",
+      "name": "Par",
       "hops": "Hops",
       "actions": "Ações",
       "path": "Caminho",
@@ -2241,30 +2241,30 @@
     "reticulumStackSettings": {
       "title": "Configurações de pilha",
       "enableTransport": "Ativar transporte (rota para outros pares)",
-      "shareInstance": "Share Reticulum instance",
+      "shareInstance": "Compartilhar instância Reticulum",
       "logLevel": "Registro de Nível",
       "save": "Salvar configurações de pilha"
     },
     "reticulumConfigImport": {
-      "title": "Import Reticulum config",
+      "title": "Importar configuração Reticulum",
       "hint": "Cole um arquivo de configuração no estilo rnsd ou importe do disco. Mesclar blocos de interface de adição/atualização por nome; substituir substitui todas as interfaces.",
       "pasteLabel": "Configurar conteúdo do arquivo",
       "fromFile": "Importar do arquivo",
       "fromSystem": "Importar padrão do sistema",
       "merge": "Mesclar importação",
       "replace": "Substituir interfaces",
-      "confirmTitle": "Import Reticulum config",
+      "confirmTitle": "Importar configuração Reticulum",
       "confirmMerge": "Mesclar interfaces importadas na configuração atual?",
       "confirmReplace": "Substituir todas as interfaces pela configuração importada? Isso não pode ser desfeito.",
       "confirm": "Importação"
     },
     "reticulumConfigImportFailed": "Falha na importação da configuração.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigNotFound": "Nenhuma configuração Reticulum do sistema encontrada nos caminhos padrão.",
     "reticulumFactoryReset": {
       "title": "Reinicialização de fábrica",
       "hint": "Limpa a identidade, os contatos e as mensagens da pilha de sidecar. A configuração da interface é preservada.",
       "button": "Redefinir dados da pilha",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Redefinir stack Reticulum?",
       "confirmBody": "Isso remove a identidade, os contatos e as mensagens locais do sidecar. Seu arquivo de configuração de interface é mantido.",
       "confirm": "Redefinir"
     },

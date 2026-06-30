@@ -642,7 +642,7 @@
       "editFailed": "保存接口失败。"
     },
     "reticulumPeers": {
-      "name": "同事",
+      "name": "节点",
       "hops": "Hops",
       "actions": "动作",
       "path": "路径",
@@ -2264,7 +2264,7 @@
       "title": "恢复出厂设置",
       "hint": "清除Sidecar堆栈中的身份、联系人和消息。接口配置被保留。",
       "button": "重置堆栈数据",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "重置 Reticulum 堆栈？",
       "confirmBody": "这将从Sidecar中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
       "confirm": "一键复原"
     },

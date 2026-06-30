@@ -622,11 +622,11 @@
       "type": "Art",
       "add": "Neue Schnittstelle hinzufügen",
       "enable": "Aktivieren",
-      "disable": "Horizontaler Parallaxeffekt",
+      "disable": "Deaktivieren",
       "serialPort": "Serielle Schnittstelle",
       "preset": "Vorwahlen",
       "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen).",
-      "host": "Aufnehmende Einrichtung",
+      "host": "Host",
       "port": "Port",
       "delete": "Löschen",
       "deleteConfirmTitle": "Schnittstelle löschen",
@@ -651,7 +651,7 @@
     "reticulumPropagation": {
       "title": "Ausbreitungsknoten",
       "enable": "Aktivieren",
-      "disable": "Horizontaler Parallaxeffekt"
+      "disable": "Deaktivieren"
     }
   },
   "contactGroupsModal": {
@@ -2240,7 +2240,7 @@
     "meshcoreChannelNameRequired": "Kanalname darf nicht leer sein",
     "reticulumStackSettings": {
       "title": "Stack-Einstellungen",
-      "enableTransport": "Transport aktivieren (Route für andere Kollegen)",
+      "enableTransport": "Transport aktivieren (Route für andere Peers)",
       "shareInstance": "Reticulum-Instanz teilen",
       "logLevel": "Log-Level",
       "save": "Stack-Einstellungen speichern"
@@ -2256,7 +2256,7 @@
       "confirmTitle": "Reticulum-Konfiguration importieren",
       "confirmMerge": "Importierte Schnittstellen in die aktuelle Konfiguration zusammenführen?",
       "confirmReplace": "Alle Schnittstellen mit der importierten Konfiguration ersetzen? Dies kann nicht rückgängig gemacht werden.",
-      "confirm": "Import"
+      "confirm": "Importieren"
     },
     "reticulumConfigImportFailed": "Config Import fehlgeschlagen:",
     "reticulumConfigNotFound": "Bei den Standardpfaden wurde keine System-Reticulum-Konfiguration gefunden.",
@@ -2264,7 +2264,7 @@
       "title": "Zurücksetzen auf Werkseinstellungen",
       "hint": "Löscht Identität, Kontakte und Nachrichten aus dem Sidecar-Stapel. Die Schnittstellenkonfiguration bleibt erhalten.",
       "button": "Stack-Daten zurücksetzen",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Reticulum-Stack zurücksetzen?",
       "confirmBody": "Dadurch werden Identität, Kontakte und lokale Nachrichten aus dem Beiwagen entfernt. Ihre Schnittstellenkonfigurationsdatei wird aufbewahrt.",
       "confirm": "Zurücksetzen"
     },

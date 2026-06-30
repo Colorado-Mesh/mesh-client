@@ -818,6 +818,19 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
 
+### Reticulum interface add/edit/delete fails
+
+**Symptoms**: Radio tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.
+
+**Checks**:
+
+1. **Stack running**: start the sidecar from **Connection → Start stack** before using the Radio tab. Identity and interface routes require a live sidecar (`reticulum:proxyGet` / `proxyPut` / `proxyDelete`).
+2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging).
+3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
+4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
+
+For bulk fixes, use Radio **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-radio-tab).
+
 ### Can't see RF packets on custom MQTT broker
 
 **Cause**: The packet logger publishes to `{prefix}/{pubKey}/packets`, but you're viewing the packets somewhere that doesn't receive published MQTT messages.

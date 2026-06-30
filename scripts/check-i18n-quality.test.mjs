@@ -1498,6 +1498,36 @@ describe('roomsPanel saved passwords per-key quality', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags German parallax false friend on reticulum disable', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'connectionPanel.reticulumInterfaces.disable',
+      val: 'Horizontaler Parallaxeffekt',
+      enVal: 'Disable',
+    });
+    expectIssue(issues, 'parallax');
+  });
+
+  it('flags untranslated reticulumStackRunning', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'connectionPanel.reticulumStackRunning',
+      val: 'Stack running',
+      enVal: 'Stack running',
+    });
+    expectIssue(issues, 'still identical to English');
+  });
+
+  it('flags Italian pressure false friend on reticulumPeers.name', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'connectionPanel.reticulumPeers.name',
+      val: 'Pressione',
+      enVal: 'Peer',
+    });
+    expectIssue(issues, 'reticulum peer name false friend');
+  });
 });
 
 describe('protectedBrandIssues', () => {

@@ -598,7 +598,7 @@
     "disconnect": "Disconnetti",
     "reticulumStopStack": "Arresta stack",
     "reticulumAutostart": "Avvio automatico della pila all'apertura della connessione",
-    "reticulumStackRunning": "Stack running",
+    "reticulumStackRunning": "Stack in esecuzione",
     "reticulumIdentity": {
       "title": "Identità Reticulum",
       "hint": "Avvia lo stack sopra, quindi crea o importa un'identità mnemonica.",
@@ -642,11 +642,11 @@
       "editFailed": "Impossibile salvare l'interfaccia."
     },
     "reticulumPeers": {
-      "name": "Pressione",
+      "name": "Peer",
       "hops": "Hops",
       "actions": "Azioni",
       "path": "Percorso",
-      "probe": "del tronco"
+      "probe": "Sonda"
     },
     "reticulumPropagation": {
       "title": "Nodi di propagazione",
@@ -2241,32 +2241,32 @@
     "reticulumStackSettings": {
       "title": "Settaggi Stack",
       "enableTransport": "Abilita trasporto (percorso per altri peer)",
-      "shareInstance": "Share Reticulum instance",
+      "shareInstance": "Condividi istanza Reticulum",
       "logLevel": "Livello del registro",
       "save": "Settaggi Stack"
     },
     "reticulumConfigImport": {
-      "title": "Import Reticulum config",
+      "title": "Importa configurazione Reticulum",
       "hint": "Incolla un file di configurazione in stile rnsd o importa da disco. Unisci aggiunge/aggiorna i blocchi di interfaccia per nome; Sostituisci sovrascrive tutte le interfacce.",
       "pasteLabel": "Contenuto del file di configurazione",
       "fromFile": "Importa da file…",
       "fromSystem": "Importa sistema predefinito",
       "merge": "Unisci importazione",
       "replace": "Sostituire le interfacce",
-      "confirmTitle": "Import Reticulum config",
+      "confirmTitle": "Importa configurazione Reticulum",
       "confirmMerge": "Unire le interfacce importate nella configurazione corrente?",
       "confirmReplace": "Sostituire tutte le interfacce con la configurazione importata? Questa operazione non può essere annullata.",
       "confirm": "Importa"
     },
     "reticulumConfigImportFailed": "Importazione della configurazione non riuscita.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigNotFound": "Nessuna configurazione Reticulum di sistema trovata nei percorsi predefiniti.",
     "reticulumFactoryReset": {
       "title": "Reset di fabbrica",
       "hint": "Cancella identità, contatti e messaggi dallo stack del sidecar. La configurazione dell'interfaccia viene preservata.",
       "button": "Reimposta i dati dello stack",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Reimpostare lo stack Reticulum?",
       "confirmBody": "Ciò rimuove identità, contatti e messaggi locali dal sidecar. Il file di configurazione dell'interfaccia viene conservato.",
-      "confirm": "Reset"
+      "confirm": "Reimposta"
     },
     "reticulumVoiceGames": {
       "title": "Voce e giochi",

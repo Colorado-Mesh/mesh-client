@@ -598,7 +598,7 @@
     "disconnect": "Memutuskan",
     "reticulumStopStack": "Hentikan tumpukan",
     "reticulumAutostart": "Mulai otomatis tumpukan saat membuka Koneksi",
-    "reticulumStackRunning": "Stack running",
+    "reticulumStackRunning": "Stack berjalan",
     "reticulumIdentity": {
       "title": "Identitas Reticulum",
       "hint": "Mulai tumpukan di atas, lalu buat atau impor identitas mnemonik.",
@@ -642,11 +642,11 @@
       "editFailed": "Gagal menyimpan antarmuka."
     },
     "reticulumPeers": {
-      "name": "Sesama Rekan Kerja",
+      "name": "Peer",
       "hops": "Hops",
       "actions": "Aksi",
       "path": "Path",
-      "probe": "Probe untuk Anemometer"
+      "probe": "Probe"
     },
     "reticulumPropagation": {
       "title": "Node propagasi",

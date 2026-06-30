@@ -600,7 +600,7 @@
     "reticulumAutostart": "接続を開いたときにスタックを自動的に開始する",
     "reticulumStackRunning": "スタック実行中",
     "reticulumIdentity": {
-      "title": "Reticulum identity",
+      "title": "Reticulum ID",
       "hint": "上記のスタックを開始し、ニーモニックIDを作成またはインポートします。",
       "startStackFirst": "Reticulumスタックを起動して、アイデンティティを設定します。",
       "displayName": "表示名",
@@ -2264,7 +2264,7 @@
       "title": "工場出荷時のリセット",
       "hint": "サイドカースタックからID、連絡先、およびメッセージをクリアします。インターフェース構成は保持されます。",
       "button": "スタックデータをリセット",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Reticulum スタックをリセットしますか？",
       "confirmBody": "これにより、サイドカーからID、連絡先、ローカルメッセージが削除されます。インターフェース設定ファイルが保持されます。",
       "confirm": "リセット"
     },

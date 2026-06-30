@@ -642,11 +642,11 @@
       "editFailed": "Не удалось сохранить интерфейс."
     },
     "reticulumPeers": {
-      "name": "Равны",
+      "name": "Узел",
       "hops": "Hops",
       "actions": "Действия",
       "path": "Маршрут",
-      "probe": "Преобразователь"
+      "probe": "Зонд"
     },
     "reticulumPropagation": {
       "title": "Узлы распространения",
@@ -2241,30 +2241,30 @@
     "reticulumStackSettings": {
       "title": "Настройки стека",
       "enableTransport": "Включить транспорт (маршрут для других одноранговых узлов)",
-      "shareInstance": "Share Reticulum instance",
+      "shareInstance": "Общий экземпляр Reticulum",
       "logLevel": "Уровень журналирования",
       "save": "Настройки стека"
     },
     "reticulumConfigImport": {
-      "title": "Import Reticulum config",
+      "title": "Импорт конфигурации Reticulum",
       "hint": "Вставьте конфигурационный файл в стиле rnsd или импортируйте его с диска. Merge добавляет/обновляет блоки интерфейса по имени; Replace перезаписывает все интерфейсы.",
       "pasteLabel": "Содержимое файла конфигурации",
       "fromFile": "Импортировать из файла…",
       "fromSystem": "Импорт системы по умолчанию",
       "merge": "Объединить импорт",
       "replace": "Заменить интерфейсы",
-      "confirmTitle": "Import Reticulum config",
+      "confirmTitle": "Импорт конфигурации Reticulum",
       "confirmMerge": "Объединить импортированные интерфейсы в текущую конфигурацию?",
       "confirmReplace": "Заменить все интерфейсы импортированной конфигурацией? Это действие нельзя отменить.",
       "confirm": "Импорт"
     },
     "reticulumConfigImportFailed": "Ошибка импорта конфигурации:",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigNotFound": "Системная конфигурация Reticulum не найдена по путям по умолчанию.",
     "reticulumFactoryReset": {
       "title": "Сброс к заводским настройкам",
       "hint": "Очищает идентификатор, контакты и сообщения из стека коляски. Конфигурация интерфейса сохранена.",
       "button": "Сбросить данные стека",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Сбросить стек Reticulum?",
       "confirmBody": "Это удалит удостоверения, контакты и локальные сообщения из коляски. Файл конфигурации интерфейса сохранен.",
       "confirm": "Reset (сброс - уст 0)"
     },

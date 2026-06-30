@@ -623,7 +623,7 @@
       "add": "Přidat rozhraní",
       "enable": "Povolit",
       "disable": "Zakázat",
-      "serialPort": "Serial port",
+      "serialPort": "Sériový port",
       "preset": "Předvolby",
       "bleAvailable": "Na této platformě je k dispozici peering ble (při konfiguraci přidejte pomocí postranního vozíku).",
       "host": "Hostitel",
@@ -2256,7 +2256,7 @@
       "confirmTitle": "Importovat konfiguraci Reticulum",
       "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
       "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Tuto akci nelze vrátit zpět.",
-      "confirm": "Import"
+      "confirm": "Importovat"
     },
     "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
     "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systémového Reticulum.",

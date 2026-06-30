@@ -596,7 +596,7 @@
     "reticulumSidecarCargoMissing": "Rust-toolchain (cargo) niet gevonden. Installeer via https://rustup.rs en voer daarna `pnpm run reticulum:sidecar:build` uit.",
     "reticulumSidecarStartFailed": "Kon Reticulum-stack niet starten: {{message}}",
     "disconnect": "Verbreek de verbinding",
-    "reticulumStopStack": "Stop stack",
+    "reticulumStopStack": "Stack stoppen",
     "reticulumAutostart": "Stapel automatisch starten bij het openen van de verbinding",
     "reticulumStackRunning": "Stapel loopt",
     "reticulumIdentity": {
@@ -2259,14 +2259,14 @@
       "confirm": "Importeren"
     },
     "reticulumConfigImportFailed": "Configuratie-import mislukt.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden.",
     "reticulumFactoryReset": {
       "title": "Reset naar fabrieksinstellingen",
       "hint": "Wist identiteit, contacten en berichten van de zijspanstapel. Interfaceconfiguratie blijft behouden.",
       "button": "Stapelgegevens resetten",
       "confirmTitle": "Reticulum-stack resetten?",
       "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
-      "confirm": "Reset"
+      "confirm": "Resetten"
     },
     "reticulumVoiceGames": {
       "title": "Spraak en games",

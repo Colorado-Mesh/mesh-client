@@ -35,13 +35,38 @@ flowchart TB
 
 ## User flow
 
-1. **Reticulum → Connection:** click **Start stack** (or enable **Auto-start** for next visit).
-2. **Reticulum → Radio:** create or import identity; configure interfaces; import rnsd-style config; manage peers and propagation.
-3. **Chat:** DM-only LXMF text, reactions, and file attachments; use **Stop stack** on Connection to shut down the sidecar without quitting the app.
+1. **Reticulum → Connection** (`ReticulumStackPanel`): click **Start stack** (or enable **Auto-start** for next visit). **Stop stack** shuts down the sidecar without quitting the app; **Disconnect & quit** stops the sidecar (when running) and exits mesh-client.
+2. **Reticulum → Radio** (`ReticulumRadioPanel`): create or import identity; add/edit/delete/enable interfaces; import or export rnsd-style config; adjust stack settings; manage peers and propagation; factory reset (danger zone).
+3. **Chat:** DM-only LXMF text, reactions, and file attachments.
 
-**Disconnect & quit** stops the sidecar (when running) and exits mesh-client, matching other protocol connection panels.
+**Diagnostics tab** shows Reticulum-native interface/path/LXMF health (not Meshtastic Hop Goblins). **Graph tab** shows peer topology when hop data is available. Sidebar uses **Nodes** (not MeshCore “Contacts”).
 
-**Diagnostics tab** shows Reticulum-native interface/path/LXMF health (not Meshtastic Hop Goblins). **Graph tab** shows peer topology when hop data is available.
+## Panels
+
+| Tab (sidebar) | Component             | Purpose                                                                                              |
+| ------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
+| Connection    | `ReticulumStackPanel` | Stack start/stop, auto-start, disconnect & quit, connection status                                   |
+| Radio         | `ReticulumRadioPanel` | Identity wizard, interfaces, peers, propagation, config import/export, stack settings, factory reset |
+
+## Interface management (Radio tab)
+
+Interfaces are stored in the sidecar rnsd config under Electron `userData/reticulum/config/`. The Radio tab **Interfaces** section supports:
+
+| Action           | UI                                                            | Sidecar API                      |
+| ---------------- | ------------------------------------------------------------- | -------------------------------- |
+| Add              | Type selector (TCP / Auto / RNode) + form + **Add interface** | `POST /api/v1/interfaces`        |
+| Edit             | **Edit** on a row → inline form                               | `PUT /api/v1/interfaces/{id}`    |
+| Enable / disable | Per-row toggle                                                | `POST …/enable` or `…/disable`   |
+| Delete           | **Delete** + confirmation modal                               | `DELETE /api/v1/interfaces/{id}` |
+
+**Edit fields by type:**
+
+- **All:** display name
+- **TCP:** host, port
+- **RNode:** serial port (enumerated when available), LoRa preset, callsign
+- **Auto:** name only (minimal discovery interface)
+
+For bulk changes or migrating from Ratspeak/rsReticulum, use **Config import** (merge or replace) on the Radio tab, or paste from a file picked via the system config paths below.
 
 ## Building the sidecar
 

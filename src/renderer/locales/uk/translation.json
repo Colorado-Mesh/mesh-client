@@ -2241,30 +2241,30 @@
     "reticulumStackSettings": {
       "title": "Налаштування стека",
       "enableTransport": "Увімкнути транспорт (маршрут для інших однорангових вузлів)",
-      "shareInstance": "Share Reticulum instance",
+      "shareInstance": "Спільний екземпляр Reticulum",
       "logLevel": "Рівень журналювання",
       "save": "Зберегти налаштування стека"
     },
     "reticulumConfigImport": {
-      "title": "Import Reticulum config",
+      "title": "Імпорт конфігурації Reticulum",
       "hint": "Вставте конфігураційний файл у стилі rnsd або імпортуйте з диска. Об'єднання додає/оновлює блоки інтерфейсу за назвою; Replace перезаписує всі інтерфейси.",
       "pasteLabel": "Вміст файлу конфігурації",
       "fromFile": "Імпортувати з файлу…",
       "fromSystem": "Імпортувати систему за замовчуванням",
       "merge": "Об'єднати імпорт",
       "replace": "Заміна інтерфейсів",
-      "confirmTitle": "Import Reticulum config",
+      "confirmTitle": "Імпорт конфігурації Reticulum",
       "confirmMerge": "Об'єднати імпортовані інтерфейси з поточним конфігурацією?",
       "confirmReplace": "Замінити всі інтерфейси імпортованим конфігурацією? Цю дію неможливо скасувати.",
       "confirm": "Імпортувати"
     },
     "reticulumConfigImportFailed": "Не вдалося імпортувати налаштування.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigNotFound": "Системну конфігурацію Reticulum не знайдено за шляхами за замовчуванням.",
     "reticulumFactoryReset": {
       "title": "Скидання на заводські налаштування",
       "hint": "Очищення ідентичності, контактів та повідомлень зі стека коляски. Конфігурація інтерфейсу збережена.",
       "button": "Скинути дані стека",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Скинути стек Reticulum?",
       "confirmBody": "Це видалить особистість, контакти та локальні повідомлення з коляски. Файл конфігурації інтерфейсу зберігається.",
       "confirm": "Reset (Скид)"
     },

@@ -17,7 +17,9 @@
  *    meshcoreReactionEmojiOption contact/fabric false friends, Ukrainian broken apostrophe spacing,
  *    and roomsPanel collapse/expand hotel-room wording; MeshCore path-hash hop-count brewing false
  *    friends, CAT/Qt plural-form residue (&apos;, "plural form:"), short label parenthesis garbage,
- *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}.
+ *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}; Reticulum identity/interface/
+ *    peer/propagation UI (must-translate stack/config strings, disable parallax false friends, peer/
+ *    probe/host/transport colleague false friends, sidecar build/Rust/cargo literals).
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

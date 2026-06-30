@@ -628,10 +628,10 @@
       "bleAvailable": "Na tej platformie dostępne jest peering BLE (po skonfigurowaniu dodaj za pośrednictwem wózka bocznego).",
       "host": "Prowadząca",
       "port": "Port",
-      "delete": "Delete",
+      "delete": "Usuń",
       "deleteConfirmTitle": "Usunąć interfejs?",
       "deleteConfirmBody": "Usunąć \"{{name}}\" z konfiguracji stosu? Tej czynności nie można cofnąć.",
-      "deleteConfirm": "Delete",
+      "deleteConfirm": "Usuń",
       "deleteFailed": "Nie udało się usunąć interfejsu.",
       "edit": "Edytuj",
       "editTitle": "Edytuj interfejs",
@@ -642,7 +642,7 @@
       "editFailed": "Nie udało się zapisać interfejsu."
     },
     "reticulumPeers": {
-      "name": "Kolega",
+      "name": "Peer",
       "hops": "Hops",
       "actions": "Działania",
       "path": "Ścieżka",
@@ -2241,30 +2241,30 @@
     "reticulumStackSettings": {
       "title": "Ustawienia stosu",
       "enableTransport": "Włącz transport (trasa dla innych rówieśników)",
-      "shareInstance": "Share Reticulum instance",
+      "shareInstance": "Udostępnij instancję Reticulum",
       "logLevel": "Poziom dziennika",
       "save": "Zapisz ustawienia stosu"
     },
     "reticulumConfigImport": {
-      "title": "Import Reticulum config",
+      "title": "Importuj konfigurację Reticulum",
       "hint": "Wklej plik konfiguracyjny w stylu rnsd lub zaimportuj z dysku. Scal dodaje/aktualizuje bloki interfejsu według nazwy; zastępuje nadpisuje wszystkie interfejsy.",
       "pasteLabel": "Zawartość pliku konfiguracyjnego",
       "fromFile": "Importuj z pliku",
       "fromSystem": "Importuj domyślne ustawienia systemowe",
       "merge": "Scal import",
       "replace": "Wymień interfejsy",
-      "confirmTitle": "Import Reticulum config",
+      "confirmTitle": "Importuj konfigurację Reticulum",
       "confirmMerge": "Czy scalić zaimportowane interfejsy z bieżącą konfiguracją?",
       "confirmReplace": "Zastąpić wszystkie interfejsy zaimportowaną konfiguracją? Tej czynności nie można cofnąć.",
-      "confirm": "Import"
+      "confirm": "Importuj"
     },
     "reticulumConfigImportFailed": "Import konfiguracji nie powiódł się.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigNotFound": "Nie znaleziono systemowej konfiguracji Reticulum w domyślnych ścieżkach.",
     "reticulumFactoryReset": {
       "title": "Przywracanie ustawień fabrycznych",
       "hint": "Usuwa tożsamość, kontakty i wiadomości ze stosu wózków bocznych. Konfiguracja interfejsu jest zachowana.",
       "button": "Resetuj dane stosu",
-      "confirmTitle": "Reset Reticulum stack?",
+      "confirmTitle": "Zresetować stos Reticulum?",
       "confirmBody": "Usuwa to tożsamość, kontakty i lokalne wiadomości z wózka bocznego. Twój plik konfiguracyjny interfejsu jest przechowywany.",
       "confirm": "Zresetuj"
     },

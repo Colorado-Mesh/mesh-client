@@ -135,9 +135,12 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 ### Reticulum
 
 - **Sidecar:** `reticulum-sidecar/` (AGPL Rust binary `mesh-client-reticulum`); dev: `pnpm run reticulum:sidecar:dev`
-- **IPC:** `reticulum:*` main handlers; renderer uses `electronAPI.reticulum` proxy (no direct localhost from sandbox)
-- **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`; connect starts sidecar, not `ConnectionDriver` RF
-- **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel`
+- **IPC:** `reticulum:*` main handlers (`proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`, config file read/import dialog); renderer uses `electronAPI.reticulum` proxy (no direct localhost from sandbox)
+- **Panels:** `ReticulumStackPanel` (Connection — stack lifecycle) and `ReticulumRadioPanel` (Radio — identity, interface CRUD, config import/export, peers, propagation)
+- **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
+- **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
+- **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
+- **Docs:** [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md)
 
 ### Diagnostics
 
@@ -262,6 +265,7 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 | Chat stuck / badge moves, no new rows | `identityByProtocol`, `useActiveMeshIdentity`, `mergeOfflineIdentityStore`; **Copy Debug Snapshot** — [troubleshooting](docs/troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)            |
 | BLE timeout                           | `noble-ble-manager.ts`, `bleConnectErrors`                                                                                                                                                             |
 | Reticulum sidecar won't start         | `reticulum-sidecar-manager.ts`, `ipc/reticulum-handlers.ts`, [troubleshooting](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)                                          |
+| Reticulum interface CRUD fails        | `ReticulumRadioPanel.tsx`, `proxyPut`/`proxyDelete` — [troubleshooting](docs/troubleshooting.md#reticulum-interface-addeditdelete-fails)                                                               |
 | Serial missing                        | `serialPortSignature.ts`                                                                                                                                                                               |
 | MQTT loop                             | `mqtt-manager.ts`                                                                                                                                                                                      |
 | DB errors                             | `database.ts` migrations                                                                                                                                                                               |
