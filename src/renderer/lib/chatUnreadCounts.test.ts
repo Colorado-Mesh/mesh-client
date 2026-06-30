@@ -6,6 +6,7 @@ import {
   computeDmUnreadCounts,
   hasAudibleBackgroundMessages,
   pickAudibleNotificationType,
+  resolveChatDmPeer,
   resolveChatNotificationType,
   totalUnreadCount,
 } from './chatUnreadCounts';
@@ -266,6 +267,43 @@ describe('chatUnreadCounts', () => {
       'meshcore',
     );
     expect(total).toBe(1);
+  });
+
+  it('Reticulum inbound with to:0 infers peer from reticulum_sender_hash', () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const peer = resolveChatDmPeer(
+      msg({
+        channel: 0,
+        to: 0,
+        sender_id: peerId,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+      }),
+      ownNodes,
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum inbound with to:0 infers peer from sender_id when hash absent', () => {
+    const peerId = 2838895306;
+    const peer = resolveChatDmPeer(
+      msg({ channel: 0, to: 0, sender_id: peerId }),
+      ownNodes,
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum outbound self→peer resolves peer when ownNodeIds populated', () => {
+    const selfId = 1;
+    const peerId = 2838895306;
+    const own = new Set([selfId]);
+    const peer = resolveChatDmPeer(
+      msg({ channel: 0, sender_id: selfId, to: peerId }),
+      own,
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
   });
 });
 

@@ -19,9 +19,13 @@ use tokio::sync::broadcast;
 use super::StackHandle;
 use super::persistence::PersistedState;
 use super::types::{InterfaceRow, LxmfSendRequest, PeerRow};
-use super::via::{classify_interface, resolve_outbound_sent_via, resolve_peer_sent_via};
+use super::via::{
+    classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via,
+    resolve_peer_sent_via,
+};
 
 pub struct LiveBridge {
+    config_dir: PathBuf,
     handle: reticulum::ReticulumHandle,
     _shutdown: ShutdownSignal,
     router: Arc<tokio::sync::Mutex<LxmRouter>>,
@@ -112,6 +116,7 @@ impl LiveBridge {
         });
 
         let bridge = Self {
+            config_dir,
             handle: handle.clone(),
             _shutdown: shutdown,
             router: Arc::new(tokio::sync::Mutex::new(router)),
@@ -156,6 +161,7 @@ impl LiveBridge {
     }
 
     pub async fn fetch_interfaces(&self) -> Result<Vec<InterfaceRow>, String> {
+        let config_rows = super::config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
         let resp = self
             .handle
             .query_control(TransportQuery::GetInterfaceStats)
@@ -163,7 +169,7 @@ impl LiveBridge {
         let Some(TransportQueryResponse::InterfaceStats(stats)) = resp else {
             return Ok(vec![]);
         };
-        Ok(stats
+        let live_rows: Vec<InterfaceRow> = stats
             .iter()
             .enumerate()
             .map(|(i, s)| InterfaceRow {
@@ -185,7 +191,8 @@ impl LiveBridge {
                 id_interval: None,
                 mode: None,
             })
-            .collect())
+            .collect();
+        Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
     }
 
     pub async fn fetch_peers(&self) -> Result<Vec<PeerRow>, String> {

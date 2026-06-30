@@ -60,7 +60,7 @@ export function mergeReticulumIngestRecord(
     merged.senderName = existing.senderName;
     merged.reticulumSenderHash = existing.reticulumSenderHash ?? merged.reticulumSenderHash;
   } else if (existingFromSelf && incomingFromSelf && payload.direction === 'outbound') {
-    merged.receivedVia = existing.receivedVia ?? record.receivedVia;
+    merged.receivedVia = record.receivedVia ?? existing.receivedVia;
   }
 
   return merged;

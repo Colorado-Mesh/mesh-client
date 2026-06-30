@@ -3481,7 +3481,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
     });
   });
 
-  it('does not list contacts until opened from Nodes or message history', () => {
+  it('does not list node-map contacts without message history', () => {
     const peerId = 0xabc123;
     const nodes = new Map<number, MeshNode>([
       [
@@ -3508,6 +3508,30 @@ describe('ChatPanel reticulum dm-only chat', () => {
       </ToastProvider>,
     );
     expect(screen.queryByRole('button', { name: 'Peer One' })).not.toBeInTheDocument();
+  });
+
+  it('shows DM tab from message history and auto-focuses conversation', async () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'History Peer',
+        payload: 'prior hello',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('prior hello')).toBeInTheDocument();
+    const input = await waitForComposer();
+    expect(input).not.toBeDisabled();
   });
 
   it('prompts to select a DM when no contacts are known', async () => {

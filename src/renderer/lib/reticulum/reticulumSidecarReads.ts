@@ -46,6 +46,32 @@ export function isReticulumSidecarExpectedProxyError(err: unknown): boolean {
   return isReticulumSidecarNotRunningError(err) || isReticulumSidecar404Error(err);
 }
 
+export interface ReticulumSidecarInterfaceRow {
+  id: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  status: string;
+}
+
+/** Fetch configured sidecar interfaces (shared by runtime and radio panel). */
+export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterfaceRow[]> {
+  if (!(await isReticulumSidecarRunning())) {
+    return [];
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
+      interfaces?: ReticulumSidecarInterfaceRow[];
+    };
+    return body.interfaces ?? [];
+  } catch (e) {
+    if (!isReticulumSidecarExpectedProxyError(e)) {
+      console.debug('[reticulumSidecarReads] interfaces ' + errLikeToLogString(e));
+    }
+    return [];
+  }
+}
+
 /** Fetch sidecar identity status (shared by runtime and connection/radio panels). */
 export async function fetchReticulumIdentityStatus(): Promise<ReticulumIdentityStatus> {
   if (!(await isReticulumSidecarRunning())) {

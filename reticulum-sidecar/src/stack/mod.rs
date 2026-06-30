@@ -157,6 +157,11 @@ impl StackHandle {
     }
 
     pub async fn list_interfaces(&self) -> Vec<InterfaceRow> {
+        let config_rows = match config::interfaces_from_config_dir(&self.config_dir) {
+            Ok(rows) => rows,
+            Err(_) => self.inner.read().await.interfaces.clone(),
+        };
+
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             if let Ok(rows) = live.fetch_interfaces().await {
@@ -165,10 +170,7 @@ impl StackHandle {
                 }
             }
         }
-        match config::interfaces_from_config_dir(&self.config_dir) {
-            Ok(rows) => rows,
-            Err(_) => self.inner.read().await.interfaces.clone(),
-        }
+        config_rows
     }
 
     pub async fn add_interface(&self, req: AddInterfaceRequest) -> Result<InterfaceRow, String> {

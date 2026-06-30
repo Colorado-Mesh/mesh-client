@@ -10,7 +10,7 @@ import {
   ingestReticulumLxmfPayloadWithSideEffects,
   type ReticulumLxmfPayload,
 } from '@/renderer/lib/ingest/reticulumIngest';
-import { classifyReticulumVia } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
@@ -20,7 +20,11 @@ import {
   markStaleReticulumOutboundInStore,
   markStaleReticulumOutboundMessages,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
-import { fetchReticulumIdentityStatus } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  fetchReticulumIdentityStatus,
+  fetchReticulumInterfaces,
+  type ReticulumSidecarInterfaceRow,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
   nodeRecordsToMeshNodeMap,
@@ -71,7 +75,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const connectInFlightRef = useRef(false);
   const suppressReconnectRef = useRef(false);
   const stateRef = useRef(state);
-  const peerInterfaceByHashRef = useRef<Map<string, string>>(new Map());
+  const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
   useEffect(() => {
@@ -124,12 +128,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const refreshContactsFromSidecar = useCallback(async () => {
     const contacts = await refreshReticulumPeersFromSidecar();
     applyContactNodes(contacts);
-    const ifaceByHash = new Map<string, string>();
-    for (const peer of useReticulumPeerStore.getState().peers.values()) {
-      if (peer.interface) ifaceByHash.set(peer.destination_hash, peer.interface);
-    }
-    peerInterfaceByHashRef.current = ifaceByHash;
   }, [applyContactNodes]);
+
+  const refreshLocalInterfacesFromSidecar = useCallback(async () => {
+    localInterfacesRef.current = await fetchReticulumInterfaces();
+  }, []);
 
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
@@ -206,15 +209,22 @@ export function useReticulumRuntime(): ProtocolRuntime {
         evt.type === 'stats_update'
       ) {
         void refreshContactsFromSidecar();
+        void refreshLocalInterfacesFromSidecar();
         void syncDiagnosticsFromSidecar();
       }
     },
-    [ingestLxmfPayload, refreshContactsFromSidecar, syncDiagnosticsFromSidecar],
+    [
+      ingestLxmfPayload,
+      refreshContactsFromSidecar,
+      refreshLocalInterfacesFromSidecar,
+      syncDiagnosticsFromSidecar,
+    ],
   );
 
   const tearDownFromSidecarStop = useCallback(() => {
     unsubEventRef.current?.();
     unsubEventRef.current = null;
+    localInterfacesRef.current = [];
     setSelfLxmfHash(null);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -266,6 +276,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
+      await refreshLocalInterfacesFromSidecar();
       await syncDiagnosticsFromSidecar();
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, 5 * MS_PER_MINUTE);
@@ -290,6 +301,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     handleSidecarEvent,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
+    refreshLocalInterfacesFromSidecar,
     refreshMessagesFromDb,
     syncDiagnosticsFromSidecar,
     identityId,
@@ -301,6 +313,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubEventRef.current?.();
     unsubEventRef.current = null;
     await window.electronAPI.reticulum.stop();
+    localInterfacesRef.current = [];
     setSelfLxmfHash(null);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -327,9 +340,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     await connect();
   }, [connect]);
 
-  const resolveOutboundVia = useCallback((destinationHash: string) => {
-    const iface = peerInterfaceByHashRef.current.get(destinationHash);
-    return iface ? classifyReticulumVia(iface) : 'network';
+  const resolveOutboundVia = useCallback(() => {
+    return resolveReticulumOutboundViaFromInterfaces(localInterfacesRef.current);
   }, []);
 
   const sendMessage = useCallback(

@@ -66,4 +66,36 @@ describe('mergeReticulumIngestRecord', () => {
     );
     expect(merged.from).toBe(selfId);
   });
+
+  it('prefers sidecar sent_via over stale optimistic receivedVia on outbound ack', () => {
+    const existing: MessageRecord = {
+      id: 'msg3',
+      from: selfId,
+      senderName: 'Me',
+      to: peerId,
+      payload: 'hello',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'sending',
+      receivedVia: 'network',
+    };
+    const incoming: MessageRecord = {
+      id: 'msg3',
+      from: selfId,
+      senderName: 'Me',
+      to: peerId,
+      payload: 'hello',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'acked',
+      receivedVia: 'rf',
+    };
+    const merged = mergeReticulumIngestRecord(
+      existing,
+      incoming,
+      { direction: 'outbound' },
+      { selfLxmfHash: selfHash },
+    );
+    expect(merged.receivedVia).toBe('rf');
+  });
 });

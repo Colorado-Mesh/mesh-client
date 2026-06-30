@@ -4,6 +4,7 @@ import {
   classifyReticulumVia,
   isReticulumVia,
   messageTransportFromWire,
+  resolveReticulumOutboundViaFromInterfaces,
 } from './classifyReticulumVia';
 
 describe('classifyReticulumVia', () => {
@@ -29,5 +30,29 @@ describe('classifyReticulumVia', () => {
     expect(messageTransportFromWire(null, 'tcp', 'outbound')).toBe('tcp');
     expect(isReticulumVia('network')).toBe(true);
     expect(isReticulumVia('mqtt')).toBe(false);
+  });
+
+  it('resolveReticulumOutboundViaFromInterfaces prefers enabled RNode over TCP', () => {
+    expect(
+      resolveReticulumOutboundViaFromInterfaces([
+        { type: 'tcp', enabled: true },
+        { type: 'rnode', enabled: true },
+      ]),
+    ).toBe('rf');
+  });
+
+  it('resolveReticulumOutboundViaFromInterfaces skips disabled interfaces', () => {
+    expect(
+      resolveReticulumOutboundViaFromInterfaces([
+        { type: 'rnode', enabled: false },
+        { type: 'tcp', enabled: true },
+      ]),
+    ).toBe('tcp');
+  });
+
+  it('resolveReticulumOutboundViaFromInterfaces falls back to network', () => {
+    expect(resolveReticulumOutboundViaFromInterfaces([{ type: 'auto', enabled: true }])).toBe(
+      'network',
+    );
   });
 });

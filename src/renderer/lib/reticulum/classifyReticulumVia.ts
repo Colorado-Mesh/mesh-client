@@ -11,6 +11,26 @@ export function classifyReticulumVia(nameOrType: string): ReticulumVia {
   return 'network';
 }
 
+/** Minimal sidecar interface row for outbound transport resolution. */
+export interface ReticulumSidecarInterfaceRow {
+  type: string;
+  enabled: boolean;
+}
+
+/** Outbound LXMF transport from local enabled egress interfaces (matches sidecar via.rs). */
+export function resolveReticulumOutboundViaFromInterfaces(
+  interfaces: readonly Pick<ReticulumSidecarInterfaceRow, 'type' | 'enabled'>[],
+): ReticulumVia {
+  let fallback: ReticulumVia = 'network';
+  for (const iface of interfaces) {
+    if (!iface.enabled) continue;
+    const via = classifyReticulumVia(iface.type);
+    if (via === 'rf') return 'rf';
+    if (via === 'tcp') fallback = 'tcp';
+  }
+  return fallback;
+}
+
 export function isReticulumVia(value: string | undefined | null): value is ReticulumVia {
   return value != null && (RETICULUM_VIA_VALUES as readonly string[]).includes(value);
 }

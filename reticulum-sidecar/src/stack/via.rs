@@ -32,6 +32,24 @@ pub fn resolve_outbound_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
     resolve_stub_sent_via(interfaces)
 }
 
+/// Preserve config `iface_type` when live RNS stats report generic modes (e.g. LoRa).
+pub fn merge_live_interfaces_with_config(
+    config: &[InterfaceRow],
+    live: Vec<InterfaceRow>,
+) -> Vec<InterfaceRow> {
+    live.into_iter()
+        .map(|mut live_row| {
+            if let Some(cfg) = config
+                .iter()
+                .find(|c| c.id == live_row.id || c.name == live_row.name)
+            {
+                live_row.iface_type = cfg.iface_type.clone();
+            }
+            live_row
+        })
+        .collect()
+}
+
 /// Resolve transport for a peer destination hash from a path-table interface name.
 pub fn resolve_peer_sent_via(peer_interface: Option<&str>) -> &'static str {
     match peer_interface {
@@ -88,5 +106,49 @@ mod tests {
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
+    }
+
+    #[test]
+    fn merge_live_interfaces_uses_config_rnode_over_live_lora_mode() {
+        let config = vec![InterfaceRow {
+            id: "usb0".into(),
+            name: "LoRa".into(),
+            iface_type: "rnode".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: Some("/dev/ttyUSB0".into()),
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+        }];
+        let live = vec![InterfaceRow {
+            id: "rns-0".into(),
+            name: "LoRa".into(),
+            iface_type: "LoRa".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+        }];
+        let merged = merge_live_interfaces_with_config(&config, live);
+        assert_eq!(resolve_outbound_sent_via(&merged), "rf");
     }
 }
