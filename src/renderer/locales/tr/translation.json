@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Arabirim silinsin mi?",
       "deleteConfirmBody": "\"{{name}}\" yığın yapılandırmasından kaldırılsın mı? Bu işlem geri alınamaz.",
       "deleteConfirm": "Sil",
-      "deleteFailed": "Arayüz silinemedi."
+      "deleteFailed": "Arayüz silinemedi.",
+      "edit": "Düzenle",
+      "editTitle": "Arabirimi düzenle",
+      "saveEdit": "Değişiklikleri Kaydet",
+      "cancelEdit": "İptal",
+      "name": "Ad",
+      "callsign": "Çağrı kodu",
+      "editFailed": "Arabirim kaydedilemedi."
     },
     "reticulumPeers": {
       "name": "Kişi",

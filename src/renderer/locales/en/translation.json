@@ -521,7 +521,14 @@
       "deleteConfirmTitle": "Delete interface?",
       "deleteConfirmBody": "Remove \"{{name}}\" from the stack config? This cannot be undone.",
       "deleteConfirm": "Delete",
-      "deleteFailed": "Failed to delete interface."
+      "deleteFailed": "Failed to delete interface.",
+      "edit": "Edit",
+      "editTitle": "Edit interface",
+      "saveEdit": "Save changes",
+      "cancelEdit": "Cancel",
+      "name": "Name",
+      "callsign": "Callsign",
+      "editFailed": "Failed to save interface."
     },
     "reticulumPeers": {
       "name": "Peer",

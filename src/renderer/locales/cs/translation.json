@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Smazat rozhraní",
       "deleteConfirmBody": "Odebrat „{{name}}“ z konfigurace zásobníku? Tuto akci nelze vrátit zpět.",
       "deleteConfirm": "Odstranit",
-      "deleteFailed": "Odstranění rozhraní se nezdařilo."
+      "deleteFailed": "Odstranění rozhraní se nezdařilo.",
+      "edit": "Upravit",
+      "editTitle": "Upravit rozhraní",
+      "saveEdit": "Uložit změny",
+      "cancelEdit": "Zrušit",
+      "name": "Název",
+      "callsign": "Volací značka",
+      "editFailed": "Uložení rozhraní se nezdařilo."
     },
     "reticulumPeers": {
       "name": "Rovesníci",

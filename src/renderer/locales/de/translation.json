@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Schnittstelle löschen",
       "deleteConfirmBody": "\"{{name}}\" aus der Stack-Konfiguration entfernen? Dies kann nicht rückgängig gemacht werden.",
       "deleteConfirm": "Löschen",
-      "deleteFailed": "Schnittstelle konnte nicht gelöscht werden."
+      "deleteFailed": "Schnittstelle konnte nicht gelöscht werden.",
+      "edit": "Bearbeiten",
+      "editTitle": "Schnittstelle bearbeiten",
+      "saveEdit": "Änderungen speichern",
+      "cancelEdit": "Abbrechen",
+      "name": "Name",
+      "callsign": "Rufzeichen",
+      "editFailed": "Die Benutzeroberfläche konnte nicht gespeichert werden."
     },
     "reticulumPeers": {
       "name": "Gleichrangige",

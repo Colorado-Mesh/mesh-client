@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "¿Eliminar interfaz?",
       "deleteConfirmBody": "¿Eliminar \"{{name}}\" de la configuración de la pila? Esto no se puede deshacer.",
       "deleteConfirm": "Eliminar",
-      "deleteFailed": "Error al eliminar la interfaz."
+      "deleteFailed": "Error al eliminar la interfaz.",
+      "edit": "Editar",
+      "editTitle": "Editar Interfaz",
+      "saveEdit": "Guardar cambios",
+      "cancelEdit": "Cancelar",
+      "name": "Nombre",
+      "callsign": "Señal de llamada",
+      "editFailed": "Error al guardar la interfaz."
     },
     "reticulumPeers": {
       "name": "Compañeros",

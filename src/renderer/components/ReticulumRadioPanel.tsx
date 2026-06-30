@@ -26,6 +26,7 @@ interface ReticulumInterfaceRow {
   spreading_factor?: number | null;
   coding_rate?: number | null;
   callsign?: string | null;
+  preset?: string | null;
 }
 
 interface ReticulumPeerRow {
@@ -92,6 +93,7 @@ export function ReticulumRadioPanel({
     id: string;
     name: string;
   } | null>(null);
+  const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
   const [gamesStatus, setGamesStatus] = useState<string | null>(null);
   const [pendingImportMode, setPendingImportMode] = useState<'merge' | 'replace'>('merge');
@@ -333,9 +335,30 @@ export function ReticulumRadioPanel({
         return;
       }
       setPendingDeleteInterface(null);
+      if (editingInterface?.id === id) {
+        setEditingInterface(null);
+      }
       await refreshInterfaces();
     } catch (e) {
       // catch-no-log-ok: delete failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const saveEditInterface = async (id: string, patch: Record<string, unknown>) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPut(
+        `/api/v1/interfaces/${id}`,
+        patch,
+      )) as { ok?: boolean; error?: string };
+      if (res?.ok === false) {
+        setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.editFailed'));
+        return;
+      }
+      setEditingInterface(null);
+      await refreshInterfaces();
+    } catch (e) {
+      // catch-no-log-ok: edit failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -594,6 +617,14 @@ export function ReticulumRadioPanel({
             onDelete={(id, name) => {
               setPendingDeleteInterface({ id, name });
             }}
+            editingInterface={editingInterface}
+            onStartEdit={setEditingInterface}
+            onCancelEdit={() => {
+              setEditingInterface(null);
+            }}
+            onSaveEdit={(id, patch) => {
+              void saveEditInterface(id, patch);
+            }}
           />
 
           <PeersSection peers={peers} />
@@ -837,6 +868,189 @@ function IdentitySetupView({
   );
 }
 
+function uiTypeFromRow(type: string): 'tcp' | 'auto' | 'rnode' {
+  const normalized = type.toLowerCase();
+  if (normalized.includes('tcp') || normalized === 'tcpclient') return 'tcp';
+  if (normalized.includes('rnode')) return 'rnode';
+  return 'auto';
+}
+
+function buildInterfaceEditPatch(draft: {
+  name: string;
+  type: 'tcp' | 'auto' | 'rnode';
+  host: string;
+  port: string;
+  serialPort: string;
+  preset: string;
+  callsign: string;
+}): Record<string, unknown> {
+  const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
+  if (draft.type === 'tcp') {
+    body.host = draft.host.trim();
+    body.port = Number.parseInt(draft.port, 10) || 4242;
+  }
+  if (draft.type === 'rnode') {
+    body.serial_port = draft.serialPort.trim() || null;
+    body.preset = draft.preset || null;
+    body.callsign = draft.callsign.trim() || null;
+  }
+  return body;
+}
+
+function InterfaceEditPanel({
+  iface,
+  presets,
+  serialPorts,
+  onSave,
+  onCancel,
+}: {
+  iface: ReticulumInterfaceRow;
+  presets: { id: string; label: string }[];
+  serialPorts: { path: string; label?: string }[];
+  onSave: (patch: Record<string, unknown>) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const uiType = uiTypeFromRow(iface.type);
+  const [name, setName] = useState(iface.name);
+  const [host, setHost] = useState(iface.host ?? '');
+  const [port, setPort] = useState(iface.port != null ? String(iface.port) : '4242');
+  const [serialPort, setSerialPort] = useState(iface.serial_port ?? '');
+  const [preset, setPreset] = useState(iface.preset ?? '');
+  const [callsign, setCallsign] = useState(iface.callsign ?? '');
+
+  return (
+    <div className="mt-3 rounded border border-amber-700/50 bg-amber-950/10 p-3">
+      <h4 className="text-sm font-medium text-amber-200">
+        {t('connectionPanel.reticulumInterfaces.editTitle')}: {iface.name}
+      </h4>
+      <div className="mt-2 flex flex-wrap items-end gap-2">
+        <label className="text-xs text-gray-400">
+          {t('connectionPanel.reticulumInterfaces.name')}
+          <input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
+            className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+          />
+        </label>
+        {uiType === 'tcp' ? (
+          <>
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.host')}
+              <input
+                value={host}
+                onChange={(e) => {
+                  setHost(e.target.value);
+                }}
+                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              />
+            </label>
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.port')}
+              <input
+                value={port}
+                onChange={(e) => {
+                  setPort(e.target.value);
+                }}
+                className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              />
+            </label>
+          </>
+        ) : null}
+        {uiType === 'rnode' ? (
+          <>
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.serialPort')}
+              {serialPorts.length > 0 ? (
+                <select
+                  value={serialPort}
+                  onChange={(e) => {
+                    setSerialPort(e.target.value);
+                  }}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                >
+                  <option value="">—</option>
+                  {serialPorts.map((p) => (
+                    <option key={p.path} value={p.path}>
+                      {p.label ?? p.path}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={serialPort}
+                  onChange={(e) => {
+                    setSerialPort(e.target.value);
+                  }}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                />
+              )}
+            </label>
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.preset')}
+              <select
+                value={preset}
+                onChange={(e) => {
+                  setPreset(e.target.value);
+                }}
+                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              >
+                <option value="">—</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.callsign')}
+              <input
+                value={callsign}
+                onChange={(e) => {
+                  setCallsign(e.target.value);
+                }}
+                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              />
+            </label>
+          </>
+        ) : null}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          disabled={!name.trim()}
+          onClick={() => {
+            onSave(
+              buildInterfaceEditPatch({
+                name,
+                type: uiType,
+                host,
+                port,
+                serialPort,
+                preset,
+                callsign,
+              }),
+            );
+          }}
+          className="rounded bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumInterfaces.saveEdit')}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-300 hover:bg-slate-800"
+        >
+          {t('connectionPanel.reticulumInterfaces.cancelEdit')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function InterfacesSection({
   interfaces,
   ifaceType,
@@ -855,6 +1069,10 @@ function InterfacesSection({
   onAdd,
   onToggle,
   onDelete,
+  editingInterface,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
 }: {
   interfaces: ReticulumInterfaceRow[];
   ifaceType: 'tcp' | 'auto' | 'rnode';
@@ -873,6 +1091,10 @@ function InterfacesSection({
   onAdd: () => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string, name: string) => void;
+  editingInterface: ReticulumInterfaceRow | null;
+  onStartEdit: (iface: ReticulumInterfaceRow) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: (id: string, patch: Record<string, unknown>) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -996,6 +1218,16 @@ function InterfacesSection({
                 <button
                   type="button"
                   onClick={() => {
+                    onStartEdit(iface);
+                  }}
+                  className="text-xs text-sky-400 hover:underline"
+                  aria-label={t('connectionPanel.reticulumInterfaces.edit', { name: iface.name })}
+                >
+                  {t('connectionPanel.reticulumInterfaces.edit')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     onToggle(iface.id, !iface.enabled);
                   }}
                   className="text-xs text-amber-400 hover:underline"
@@ -1019,6 +1251,18 @@ function InterfacesSection({
           ))
         )}
       </ul>
+      {editingInterface ? (
+        <InterfaceEditPanel
+          key={editingInterface.id}
+          iface={editingInterface}
+          presets={presets}
+          serialPorts={serialPorts}
+          onSave={(patch) => {
+            onSaveEdit(editingInterface.id, patch);
+          }}
+          onCancel={onCancelEdit}
+        />
+      ) : null}
     </div>
   );
 }

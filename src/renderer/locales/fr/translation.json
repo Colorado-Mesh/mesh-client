@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Supprimer l'interface ?",
       "deleteConfirmBody": "Supprimer « {{name}} » de la configuration de la pile ? Cela ne peut pas être annulé.",
       "deleteConfirm": "Effacer",
-      "deleteFailed": "Échec de la suppression de l'interface."
+      "deleteFailed": "Échec de la suppression de l'interface.",
+      "edit": "editer",
+      "editTitle": "Modifier l’interface",
+      "saveEdit": "Enregistrer les changements",
+      "cancelEdit": "Annuler",
+      "name": "Nom",
+      "callsign": "Indicatif d’appel",
+      "editFailed": "Échec de l'enregistrement de l'interface."
     },
     "reticulumPeers": {
       "name": "Pair",

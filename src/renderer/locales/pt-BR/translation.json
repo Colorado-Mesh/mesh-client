@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Excluir interface?",
       "deleteConfirmBody": "Remover \"{{name}}\" da configuração da pilha? Isso não pode ser desfeito.",
       "deleteConfirm": "Excluir",
-      "deleteFailed": "Falha ao excluir a interface."
+      "deleteFailed": "Falha ao excluir a interface.",
+      "edit": "Editar",
+      "editTitle": "Editar interface",
+      "saveEdit": "Salve alterações",
+      "cancelEdit": "Cancelar",
+      "name": "Nome",
+      "callsign": "Indicativo de chamada",
+      "editFailed": "Falha ao salvar a interface."
     },
     "reticulumPeers": {
       "name": "Ponto",

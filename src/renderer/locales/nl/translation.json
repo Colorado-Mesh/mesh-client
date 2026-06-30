@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Interface verwijderen",
       "deleteConfirmBody": "\"{{name}}\" verwijderen uit de stapelconfiguratie? Dit kan niet ongedaan worden gemaakt.",
       "deleteConfirm": "Verwijderen",
-      "deleteFailed": "Interface verwijderen mislukt."
+      "deleteFailed": "Interface verwijderen mislukt.",
+      "edit": "Bewerken",
+      "editTitle": "Interface bewerken",
+      "saveEdit": "Wijzigingen opslaan",
+      "cancelEdit": "Annuleren",
+      "name": "Naam",
+      "callsign": "Roepletters",
+      "editFailed": "Kan interface niet opslaan."
     },
     "reticulumPeers": {
       "name": "Peer",

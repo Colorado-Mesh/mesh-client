@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Hapus antarmuka?",
       "deleteConfirmBody": "Hapus \"{{name}}\" dari konfigurasi tumpukan? Ini tidak dapat diurungkan.",
       "deleteConfirm": "Hapus",
-      "deleteFailed": "Gagal menghapus antarmuka."
+      "deleteFailed": "Gagal menghapus antarmuka.",
+      "edit": "Edit",
+      "editTitle": "Edit antarmuka",
+      "saveEdit": "Simpan perubahan",
+      "cancelEdit": "Batal",
+      "name": "Nama",
+      "callsign": "Callsign",
+      "editFailed": "Gagal menyimpan antarmuka."
     },
     "reticulumPeers": {
       "name": "Sesama Rekan Kerja",

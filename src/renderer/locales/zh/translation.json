@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "刪除介面",
       "deleteConfirmBody": "从堆栈配置中删除“{{name}}” ？此操作无法撤消。",
       "deleteConfirm": "删除",
-      "deleteFailed": "删除接口失败。"
+      "deleteFailed": "删除接口失败。",
+      "edit": "修改",
+      "editTitle": "编辑接口",
+      "saveEdit": "保存修改",
+      "cancelEdit": "取消推荐",
+      "name": "姓名",
+      "callsign": "呼号",
+      "editFailed": "保存接口失败。"
     },
     "reticulumPeers": {
       "name": "同事",

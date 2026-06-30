@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Eliminare l'interfaccia?",
       "deleteConfirmBody": "Rimuovere \"{{name}}\" dalla configurazione dello stack? Questa operazione non può essere annullata.",
       "deleteConfirm": "Elimina",
-      "deleteFailed": "Impossibile eliminare l'interfaccia."
+      "deleteFailed": "Impossibile eliminare l'interfaccia.",
+      "edit": "Modificare",
+      "editTitle": "Modifica interfaccia utente",
+      "saveEdit": "Salva modifiche",
+      "cancelEdit": "Annulla",
+      "name": "Nome",
+      "callsign": "Nome in codice",
+      "editFailed": "Impossibile salvare l'interfaccia."
     },
     "reticulumPeers": {
       "name": "Pressione",

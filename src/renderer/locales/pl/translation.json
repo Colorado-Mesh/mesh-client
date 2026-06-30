@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "Usunąć interfejs?",
       "deleteConfirmBody": "Usunąć \"{{name}}\" z konfiguracji stosu? Tej czynności nie można cofnąć.",
       "deleteConfirm": "Delete",
-      "deleteFailed": "Nie udało się usunąć interfejsu."
+      "deleteFailed": "Nie udało się usunąć interfejsu.",
+      "edit": "Edytuj",
+      "editTitle": "Edytuj interfejs",
+      "saveEdit": "Zapisz zmiany",
+      "cancelEdit": "Anuluj",
+      "name": "Nazwa",
+      "callsign": "Znak wywoławczy",
+      "editFailed": "Nie udało się zapisać interfejsu."
     },
     "reticulumPeers": {
       "name": "Kolega",

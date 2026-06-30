@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "인터페이스를 삭제하시겠습니까?",
       "deleteConfirmBody": "스택 구성에서 \"{{name}}\" 을 (를) 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
       "deleteConfirm": "삭제",
-      "deleteFailed": "인터페이스를 삭제하지 못했습니다."
+      "deleteFailed": "인터페이스를 삭제하지 못했습니다.",
+      "edit": "편집",
+      "editTitle": "인터페이스 편집",
+      "saveEdit": "변경 사항 저장",
+      "cancelEdit": "취소",
+      "name": "이름",
+      "callsign": "콜사인",
+      "editFailed": "인터페이스를 저장하지 못했습니다."
     },
     "reticulumPeers": {
       "name": "동료",

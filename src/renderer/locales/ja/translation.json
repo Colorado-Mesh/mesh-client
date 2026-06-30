@@ -632,7 +632,14 @@
       "deleteConfirmTitle": "インタフェースを削除",
       "deleteConfirmBody": "スタック設定から「{{name}}」を削除しますか？これは元に戻せません。",
       "deleteConfirm": "削除",
-      "deleteFailed": "インターフェースの削除に失敗しました。"
+      "deleteFailed": "インターフェースの削除に失敗しました。",
+      "edit": "編集",
+      "editTitle": "インターフェースを編集",
+      "saveEdit": "変更を保存する",
+      "cancelEdit": "取り消す",
+      "name": "名前",
+      "callsign": "識別信号",
+      "editFailed": "インターフェースの保存に失敗しました。"
     },
     "reticulumPeers": {
       "name": "ピア",
