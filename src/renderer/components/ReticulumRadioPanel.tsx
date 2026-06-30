@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -84,11 +84,15 @@ export function ReticulumRadioPanel({
   onOpenPeersTab,
 }: ReticulumRadioPanelProps) {
   const { t } = useTranslation();
+  const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
+
   const { sidecarApiReady, identity, statsSummary, appInfo, refreshIdentity } =
     useReticulumSidecarApi({
       connecting,
       onStartStack,
-      onEvent: onSidecarEvent,
+      onEvent: (evt) => {
+        sidecarEventRef.current(evt);
+      },
     });
 
   const [mnemonic, setMnemonic] = useState<string | null>(null);
@@ -162,14 +166,8 @@ export function ReticulumRadioPanel({
   }, [sidecarApiReady]);
 
   useEffect(() => {
-    if (!sidecarApiReady) {
-      setInterfaces([]);
-      return;
-    }
-    void refreshInterfaces();
-    void refreshStackSettings();
-    void refreshPeers();
-    const unsub = window.electronAPI.reticulum.onEvent((evt: ReticulumSidecarEvent) => {
+    sidecarEventRef.current = (evt: ReticulumSidecarEvent) => {
+      onSidecarEvent?.(evt);
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         void refreshInterfaces();
       }
@@ -180,8 +178,17 @@ export function ReticulumRadioPanel({
       ) {
         void refreshPeers();
       }
-    });
-    return unsub;
+    };
+  }, [onSidecarEvent, refreshInterfaces, refreshPeers]);
+
+  useEffect(() => {
+    if (!sidecarApiReady) {
+      setInterfaces([]);
+      return;
+    }
+    void refreshInterfaces();
+    void refreshStackSettings();
+    void refreshPeers();
   }, [sidecarApiReady, refreshInterfaces, refreshStackSettings, refreshPeers]);
 
   useEffect(() => {
@@ -279,30 +286,54 @@ export function ReticulumRadioPanel({
   };
 
   const handleAddInterface = async () => {
-    const body: Record<string, unknown> = { type: ifaceType };
-    if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
-      body.host = ifaceHost.trim();
-      if (ifaceType !== 'i2p') {
-        body.port = Number.parseInt(ifacePort, 10) || 4242;
+    try {
+      const body: Record<string, unknown> = { type: ifaceType };
+      if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
+        body.host = ifaceHost.trim();
+        if (ifaceType !== 'i2p') {
+          body.port = Number.parseInt(ifacePort, 10) || 4242;
+        }
       }
+      if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
+        body.serial_port = serialPort.trim();
+      }
+      if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
+        body.preset = selectedPreset || null;
+      }
+      if (ifaceType === 'pipe') {
+        body.command = pipeCommand.trim();
+      }
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body)) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (res?.ok === false) {
+        setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.addFailed'));
+        return;
+      }
+      await refreshInterfaces();
+    } catch (e) {
+      // catch-no-log-ok: interface add failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
     }
-    if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
-      body.serial_port = serialPort.trim();
-    }
-    if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
-      body.preset = selectedPreset || null;
-    }
-    if (ifaceType === 'pipe') {
-      body.command = pipeCommand.trim();
-    }
-    await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body);
-    await refreshInterfaces();
   };
 
   const toggleInterface = async (id: string, enabled: boolean) => {
-    const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
-    await window.electronAPI.reticulum.proxyPost(path, {});
-    await refreshInterfaces();
+    try {
+      const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
+      const res = (await window.electronAPI.reticulum.proxyPost(path, {})) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (res?.ok === false) {
+        setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.toggleFailed'));
+        return;
+      }
+      await refreshInterfaces();
+    } catch (e) {
+      // catch-no-log-ok: interface toggle failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
   };
 
   const deleteInterface = async (id: string) => {
@@ -396,8 +427,27 @@ export function ReticulumRadioPanel({
   };
 
   const saveStackSettings = async () => {
-    await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', stackSettings);
-    await refreshStackSettings();
+    try {
+      const current = (await window.electronAPI.reticulum.proxyGet(
+        '/api/v1/stack/settings',
+      )) as Record<string, unknown>;
+      const announceInterval =
+        typeof current.announce_interval_sec === 'number'
+          ? current.announce_interval_sec
+          : Number(current.announce_interval_sec) || 0;
+      const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
+        ...stackSettings,
+        announce_interval_sec: announceInterval,
+      })) as { ok?: boolean; error?: string };
+      if (res?.ok === false) {
+        setIdentityError(res.error ?? t('radioPanel.reticulumStackSettings.saveFailed'));
+        return;
+      }
+      await refreshStackSettings();
+    } catch (e) {
+      // catch-no-log-ok: stack settings save failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
   };
 
   const identityReady = identity?.configured === true;

@@ -840,6 +840,30 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Fix**: Current dev builds **preserve** the sidecar across HMR remounts. If you still see this on an older build, click **Start stack** again on Connection. Explicit **Disconnect** / app quit still stops the sidecar.
 
+### Reticulum announce interval resets after saving stack settings
+
+**Symptoms**: You set an announce interval on the Radio tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.
+
+**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**.
+
+**Fix**: Current Radio UI merge-reads settings before PUT. If you hit this on an older build, re-save the announce interval after stack settings changes.
+
+### Clear announces does not empty the Peers tab under rns-stack
+
+**Symptoms**: **Clear announces** on Radio succeeds but peers reappear after refresh.
+
+**Cause**: With the full **`rns-stack`** build, `DELETE /api/v1/announces` clears the stub cache only; the live RNS path table repopulates on the next `GET /api/v1/peers`.
+
+**Workaround**: Expect peers to return while connected to a live network; use the stub sidecar for offline UI testing of an empty peer list.
+
+### Reticulum identity hash mismatch (stub vs live stack)
+
+**Symptoms**: UI shows a configured identity hash that does not match Ratspeak/rsReticulum on disk, or LXMF peers cannot reach you.
+
+**Cause**: The stub stack can mark identity configured in `mesh_client_stack.json` before `config/identity` exists; the live bridge may spawn a fresh RNS identity until the identity file is written.
+
+**Fix**: Generate or import identity with the stack running; restart the stack after identity changes. Compare `GET /api/v1/identity/status` with your Ratspeak identity file.
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Radio tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.

@@ -663,7 +663,9 @@
       "name": "姓名",
       "callsign": "呼号",
       "editFailed": "保存接口失败。",
-      "pipeCommand": "管道命令"
+      "pipeCommand": "管道命令",
+      "addFailed": "添加接口失败。",
+      "toggleFailed": "更改接口状态失败。"
     },
     "reticulumPeers": {
       "name": "节点",
@@ -2267,7 +2269,8 @@
       "enableTransport": "启用传输（为其他节点路由）",
       "shareInstance": "分享Reticulum实例",
       "logLevel": "日志级别",
-      "save": "保存堆栈设置"
+      "save": "保存堆栈设置",
+      "saveFailed": "無法儲存設定值。"
     },
     "reticulumConfigImport": {
       "title": "导入Reticulum配置",

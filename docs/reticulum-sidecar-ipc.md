@@ -4,6 +4,8 @@ HTTP + WebSocket on `127.0.0.1` (ephemeral port in production; default dev port 
 
 Aligned with [Ratspeak](https://github.com/ratspeak/Ratspeak) `ratspeak-tauri` commands — not meshchat aiohttp.
 
+Electron main validates proxy paths: must start with `/api/v1/` (no `..` segments).
+
 ## REST
 
 ### Status and app
@@ -43,15 +45,16 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 
 ### Config and stack settings
 
-| Method | Path                     | Body / notes                       | Response                                              |
-| ------ | ------------------------ | ---------------------------------- | ----------------------------------------------------- |
-| GET    | `/api/v1/config`         |                                    | `{ content }`                                         |
-| PUT    | `/api/v1/config`         | `{ content }` (full rnsd INI text) | `{ ok }`                                              |
-| GET    | `/api/v1/config/export`  |                                    | `{ content }`                                         |
-| POST   | `/api/v1/config/import`  | `{ content, mode: merge\           | replace }`                                            |
-| GET    | `/api/v1/stack/settings` |                                    | `{ enable_transport, share_instance, loglevel, ... }` |
-| PUT    | `/api/v1/stack/settings` | `StackSettings` JSON               | `{ ok }`                                              |
-| POST   | `/api/v1/stack/restart`  |                                    | `{ ok }`                                              |
+| Method | Path                     | Body / notes                                            | Response                                                                                 |
+| ------ | ------------------------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/config`         |                                                         | `{ content }`                                                                            |
+| PUT    | `/api/v1/config`         | `{ content }` (full rnsd INI text)                      | `{ ok }`                                                                                 |
+| GET    | `/api/v1/config/export`  |                                                         | `{ content }`                                                                            |
+| POST   | `/api/v1/config/import`  | `{ content, mode: merge\|replace }`                     | `{ ok, warnings? }`                                                                      |
+| GET    | `/api/v1/stack/settings` |                                                         | `{ enable_transport, share_instance, loglevel, announce_interval_sec }`                  |
+| PUT    | `/api/v1/stack/settings` | Full `StackSettings` JSON (all four fields recommended) | `{ ok }` — missing `announce_interval_sec` deserializes as **0**                         |
+| POST   | `/api/v1/stack/restart`  |                                                         | `{ ok }`                                                                                 |
+| DELETE | `/api/v1/announces`      |                                                         | `{ ok }` — clears stub persisted peers; live path table may repopulate under `rns-stack` |
 
 ### LXMF and contacts
 
@@ -63,27 +66,41 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 | DELETE | `/api/v1/lxmf/messages/{hash}` |                                                            | `{ ok }`                      |
 | GET    | `/api/v1/contacts`             |                                                            | `{ contacts: [] }`            |
 
-### Peers and propagation
+### Peers, topology, and propagation
 
-| Method | Path                               | Body / notes | Response                                                                           |
-| ------ | ---------------------------------- | ------------ | ---------------------------------------------------------------------------------- |
-| GET    | `/api/v1/peers`                    |              | `{ peers: [] }`                                                                    |
-| POST   | `/api/v1/peers/{hash}/path`        |              | `{ ok }` — emits `peers_updated` WS on success                                     |
-| POST   | `/api/v1/peers/{hash}/probe`       |              | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success |
-| GET    | `/api/v1/propagation`              |              | `{ propagation: [] }`                                                              |
-| POST   | `/api/v1/propagation/{id}/enable`  |              | `{ ok }`                                                                           |
-| POST   | `/api/v1/propagation/{id}/disable` |              | `{ ok }`                                                                           |
+| Method | Path                                 | Body / notes           | Response                                                                           |
+| ------ | ------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`                      |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                         |
+| POST   | `/api/v1/peers/{hash}/path`          |                        | `{ ok }` — emits `peers_updated` WS on success                                     |
+| POST   | `/api/v1/peers/{hash}/probe`         |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success |
+| POST   | `/api/v1/ping`                       | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                  |
+| GET    | `/api/v1/topology`                   |                        | `{ nodes, edges }`                                                                 |
+| GET    | `/api/v1/propagation`                |                        | `{ propagation, preferred_id, auto_sync_interval_sec }`                            |
+| POST   | `/api/v1/propagation/{id}/enable`    |                        | `{ ok }`                                                                           |
+| POST   | `/api/v1/propagation/{id}/disable`   |                        | `{ ok }`                                                                           |
+| POST   | `/api/v1/propagation/{id}/preferred` |                        | `{ ok }`                                                                           |
+| POST   | `/api/v1/propagation/sync`           |                        | `{ ok }`                                                                           |
+| POST   | `/api/v1/propagation/sync/cancel`    |                        | `{ ok }`                                                                           |
+
+### Nomad Network
+
+| Method | Path                                      | Body / notes          | Response        |
+| ------ | ----------------------------------------- | --------------------- | --------------- |
+| GET    | `/api/v1/nomadnetwork/nodes`              |                       | `{ nodes: [] }` |
+| POST   | `/api/v1/nomadnetwork/nodes/favorite`     | `{ hash, favorited }` | `{ ok }`        |
+| GET    | `/api/v1/nomadnetwork/page/{hash}/{path}` |                       | page payload    |
+| GET    | `/api/v1/nomadnetwork/file/{hash}`        |                       | file payload    |
 
 ### System
 
-| Method | Path                           | Body / notes | Response                         |
-| ------ | ------------------------------ | ------------ | -------------------------------- |
-| GET    | `/api/v1/diagnostics`          |              | Reticulum-native health snapshot |
-| POST   | `/api/v1/system/factory-reset` |              | `{ ok }`                         |
-| GET    | `/api/v1/voice/status`         |              | LXST stub status                 |
-| GET    | `/api/v1/games/status`         |              | LRGP stub status                 |
-| GET    | `/api/v1/identities`           |              | `{ identities: [] }`             |
-| POST   | `/api/v1/identities/switch`    | `{ id }`     | `{ ok }`                         |
+| Method | Path                           | Body / notes      | Response                         |
+| ------ | ------------------------------ | ----------------- | -------------------------------- |
+| GET    | `/api/v1/diagnostics`          |                   | Reticulum-native health snapshot |
+| POST   | `/api/v1/system/factory-reset` |                   | `{ ok }`                         |
+| GET    | `/api/v1/voice/status`         |                   | LXST stub status                 |
+| GET    | `/api/v1/games/status`         |                   | LRGP stub status                 |
+| GET    | `/api/v1/identities`           |                   | `{ identities: [] }`             |
+| POST   | `/api/v1/identities/switch`    | `{ identity_id }` | `{ ok }`                         |
 
 ## WebSocket
 
@@ -93,7 +110,7 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`.
+Event types: `lxmf_message`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`.
 
 `lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
 

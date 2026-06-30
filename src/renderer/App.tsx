@@ -2039,7 +2039,7 @@ function AppContent() {
   }, []);
 
   const handleOpenPeersTab = useCallback(() => {
-    const peersTabIndex = findFilteredTabIndexForPanel(tabsByProtocol.reticulum, 2);
+    const peersTabIndex = findFilteredTabIndexForPanel(tabsByProtocol.reticulum, NODES_PANEL_INDEX);
     if (peersTabIndex >= 0) {
       setActiveTab(peersTabIndex);
     }
@@ -2582,6 +2582,7 @@ function AppContent() {
                               onPeerClick={setSelectedPeerHash}
                               onSendMessage={handleMessageNode}
                               onRefresh={reticulumPanelActions.requestRefresh}
+                              onToggleFavorite={reticulumPanelActions.setNodeFavorited}
                               groups={contactGroups.groups}
                               selectedGroupId={contactGroups.selectedGroupId}
                               onGroupChange={contactGroups.setSelectedGroupId}

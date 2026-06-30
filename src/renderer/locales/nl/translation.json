@@ -663,7 +663,9 @@
       "name": "Naam",
       "callsign": "Roepletters",
       "editFailed": "Kan interface niet opslaan.",
-      "pipeCommand": "Pijpopdracht"
+      "pipeCommand": "Pijpopdracht",
+      "addFailed": "Kan interface niet toevoegen.",
+      "toggleFailed": "Status wijzigen mislukt"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Transport inschakelen (route voor andere peers)",
       "shareInstance": "Reticulum-instantie delen",
       "logLevel": "Logniveau",
-      "save": "Stackinstellingen opslaan"
+      "save": "Stackinstellingen opslaan",
+      "saveFailed": "Kan instellingen niet opslaan."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-configuratie importeren",

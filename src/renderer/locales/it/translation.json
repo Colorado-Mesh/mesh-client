@@ -663,7 +663,9 @@
       "name": "Nome",
       "callsign": "Nome in codice",
       "editFailed": "Impossibile salvare l'interfaccia.",
-      "pipeCommand": "Comando tubo"
+      "pipeCommand": "Comando tubo",
+      "addFailed": "Impossibile aggiungere l'interfaccia.",
+      "toggleFailed": "Impossibile modificare lo stato dell'interfaccia."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Abilita trasporto (percorso per altri peer)",
       "shareInstance": "Condividi istanza Reticulum",
       "logLevel": "Livello del registro",
-      "save": "Settaggi Stack"
+      "save": "Settaggi Stack",
+      "saveFailed": "Impossibile salvare le impostazioni."
     },
     "reticulumConfigImport": {
       "title": "Importa configurazione Reticulum",

@@ -663,7 +663,9 @@
       "name": "이름",
       "callsign": "콜사인",
       "editFailed": "인터페이스를 저장하지 못했습니다.",
-      "pipeCommand": "파이프 명령"
+      "pipeCommand": "파이프 명령",
+      "addFailed": "인터페이스를 추가하지 못했습니다.",
+      "toggleFailed": "인터페이스 상태를 변경하지 못했습니다."
     },
     "reticulumPeers": {
       "name": "피어",
@@ -2267,7 +2269,8 @@
       "enableTransport": "전송 활성화 (다른 피어에 대한 라우팅)",
       "shareInstance": "Reticulum 인스턴스 공유",
       "logLevel": "로그 레벨",
-      "save": "스택 설정 저장"
+      "save": "스택 설정 저장",
+      "saveFailed": "설정을 저장하지 못했습니다."
     },
     "reticulumConfigImport": {
       "title": "Reticulum 구성 가져오기",

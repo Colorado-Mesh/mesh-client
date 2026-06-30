@@ -24,12 +24,9 @@ import type { ContactGroup } from '../../shared/electron-api.types';
 import type { MeshNode } from '../lib/types';
 import {
   refreshReticulumPeersFromSidecar,
-  RETICULUM_PEER_REFRESH_MS,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
 import { useToast } from './Toast';
-
-const PEER_REFRESH_MS = RETICULUM_PEER_REFRESH_MS;
 
 type PeerListTab = 'peers' | 'contacts';
 type SortKey = 'name' | 'hops' | 'lastSeen' | 'interface' | 'favorite';
@@ -40,6 +37,7 @@ export interface ReticulumPeerListPanelProps {
   onPeerClick: (hash: string) => void;
   onSendMessage: (nodeNum: number) => void;
   onRefresh?: () => Promise<void>;
+  onToggleFavorite?: (nodeId: number, favorited: boolean) => Promise<void>;
   /** Canonical LXMF contacts from identity-scoped nodeStore (NodeListPanel adapter). */
   contactNodes?: Map<number, MeshNode>;
   groups?: ContactGroup[];
@@ -101,6 +99,7 @@ export default function ReticulumPeerListPanel({
   onPeerClick,
   onSendMessage,
   onRefresh,
+  onToggleFavorite,
   contactNodes,
   groups = [],
   selectedGroupId = null,
@@ -115,7 +114,19 @@ export default function ReticulumPeerListPanel({
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const getDisplayName = useReticulumPeerStore((s) => s.getDisplayName);
   const isContact = useReticulumPeerStore((s) => s.isContact);
-  const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
+
+  const handleToggleFavorite = useCallback(
+    async (peer: ReticulumPeer) => {
+      const nodeId = peerHashToNodeNum(peer.destination_hash);
+      const nextFavorited = !peer.favorited;
+      if (onToggleFavorite) {
+        await onToggleFavorite(nodeId, nextFavorited);
+        return;
+      }
+      await useReticulumPeerStore.getState().toggleFavorite(peer.destination_hash, nextFavorited);
+    },
+    [onToggleFavorite],
+  );
 
   const [activeTab, setActiveTab] = useState<PeerListTab>('peers');
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,12 +155,6 @@ export default function ReticulumPeerListPanel({
   useEffect(() => {
     if (!isConnected) return;
     void runRefresh();
-    const id = window.setInterval(() => {
-      void runRefresh();
-    }, PEER_REFRESH_MS);
-    return () => {
-      window.clearInterval(id);
-    };
   }, [isConnected, runRefresh]);
 
   const sourceRows = useMemo(() => {
@@ -231,10 +236,16 @@ export default function ReticulumPeerListPanel({
   const sortIndicator = (key: SortKey) =>
     sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
+  const ariaSortValue = (key: SortKey): 'ascending' | 'descending' | 'none' =>
+    sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
+
   const requestPath = async (hash: string) => {
     setActionBusyHash(hash);
     try {
-      if (!(await isReticulumSidecarRunning())) return;
+      if (!(await isReticulumSidecarRunning())) {
+        addToast(t('connectionPanel.reticulumIdentity.startStackFirst'), 'error');
+        return;
+      }
       const result = await requestReticulumPeerPath(hash);
       const toast = formatReticulumPeerPathToast(t, result);
       addToast(toast.message, toast.variant);
@@ -251,7 +262,10 @@ export default function ReticulumPeerListPanel({
   const probePeer = async (hash: string) => {
     setActionBusyHash(hash);
     try {
-      if (!(await isReticulumSidecarRunning())) return;
+      if (!(await isReticulumSidecarRunning())) {
+        addToast(t('connectionPanel.reticulumIdentity.startStackFirst'), 'error');
+        return;
+      }
       const result = await probeReticulumPeer(hash);
       const toast = formatReticulumPeerProbeToast(t, result);
       addToast(toast.message, toast.variant);
@@ -354,9 +368,15 @@ export default function ReticulumPeerListPanel({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div
+        className="flex flex-wrap items-center gap-2"
+        role="tablist"
+        aria-label={t('peerListPanel.heading')}
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'peers'}
           className={`rounded px-3 py-1 text-sm ${activeTab === 'peers' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
           onClick={() => {
             setActiveTab('peers');
@@ -366,6 +386,8 @@ export default function ReticulumPeerListPanel({
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'contacts'}
           className={`rounded px-3 py-1 text-sm ${activeTab === 'contacts' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
           onClick={() => {
             setActiveTab('contacts');
@@ -411,10 +433,11 @@ export default function ReticulumPeerListPanel({
         <table className="w-full min-w-[640px] text-left text-xs">
           <thead className="bg-deep-black sticky top-0 z-10">
             <tr className="text-muted border-b border-gray-700">
-              <th className="py-2 pr-2 pl-2">
+              <th className="py-2 pr-2 pl-2" aria-sort={ariaSortValue('name')}>
                 <button
                   type="button"
                   className="hover:text-gray-200"
+                  aria-label={t('peerListPanel.colName')}
                   onClick={() => {
                     toggleSort('name');
                   }}
@@ -426,10 +449,11 @@ export default function ReticulumPeerListPanel({
               {activeTab === 'peers' ? (
                 <>
                   <th className="py-2 pr-2">{t('peerListPanel.colContact')}</th>
-                  <th className="py-2 pr-2">
+                  <th className="py-2 pr-2" aria-sort={ariaSortValue('hops')}>
                     <button
                       type="button"
                       className="hover:text-gray-200"
+                      aria-label={t('connectionPanel.reticulumPeers.hops')}
                       onClick={() => {
                         toggleSort('hops');
                       }}
@@ -438,10 +462,11 @@ export default function ReticulumPeerListPanel({
                       {sortIndicator('hops')}
                     </button>
                   </th>
-                  <th className="py-2 pr-2">
+                  <th className="py-2 pr-2" aria-sort={ariaSortValue('lastSeen')}>
                     <button
                       type="button"
                       className="hover:text-gray-200"
+                      aria-label={t('peerListPanel.colLastSeen')}
                       onClick={() => {
                         toggleSort('lastSeen');
                       }}
@@ -450,10 +475,14 @@ export default function ReticulumPeerListPanel({
                       {sortIndicator('lastSeen')}
                     </button>
                   </th>
-                  <th className="hidden py-2 pr-2 sm:table-cell">
+                  <th
+                    className="hidden py-2 pr-2 sm:table-cell"
+                    aria-sort={ariaSortValue('interface')}
+                  >
                     <button
                       type="button"
                       className="hover:text-gray-200"
+                      aria-label={t('peerListPanel.colInterface')}
                       onClick={() => {
                         toggleSort('interface');
                       }}
@@ -465,10 +494,11 @@ export default function ReticulumPeerListPanel({
                 </>
               ) : (
                 <>
-                  <th className="py-2 pr-2">
+                  <th className="py-2 pr-2" aria-sort={ariaSortValue('lastSeen')}>
                     <button
                       type="button"
                       className="hover:text-gray-200"
+                      aria-label={t('peerListPanel.colLastHeard')}
                       onClick={() => {
                         toggleSort('lastSeen');
                       }}
@@ -477,10 +507,11 @@ export default function ReticulumPeerListPanel({
                       {sortIndicator('lastSeen')}
                     </button>
                   </th>
-                  <th className="py-2 pr-2">
+                  <th className="py-2 pr-2" aria-sort={ariaSortValue('hops')}>
                     <button
                       type="button"
                       className="hover:text-gray-200"
+                      aria-label={t('connectionPanel.reticulumPeers.hops')}
                       onClick={() => {
                         toggleSort('hops');
                       }}
@@ -489,7 +520,7 @@ export default function ReticulumPeerListPanel({
                       {sortIndicator('hops')}
                     </button>
                   </th>
-                  <th className="py-2 pr-2">
+                  <th className="py-2 pr-2" aria-sort={ariaSortValue('favorite')}>
                     <button
                       type="button"
                       className="hover:text-gray-200"
@@ -584,7 +615,7 @@ export default function ReticulumPeerListPanel({
                             aria-label={t('peerListPanel.toggleFavorite')}
                             onClick={(e) => {
                               e.stopPropagation();
-                              void toggleFavorite(peer.destination_hash, !peer.favorited);
+                              void handleToggleFavorite(peer);
                             }}
                           >
                             <Star

@@ -663,7 +663,9 @@
       "name": "Nazwa",
       "callsign": "Znak wywoławczy",
       "editFailed": "Nie udało się zapisać interfejsu.",
-      "pipeCommand": "Polecenie rury"
+      "pipeCommand": "Polecenie rury",
+      "addFailed": "Nie udało się dodać interfejsu.",
+      "toggleFailed": "Nie udało się zmienić stanu interfejsu."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Włącz transport (trasa dla innych peerów)",
       "shareInstance": "Udostępnij instancję Reticulum",
       "logLevel": "Poziom dziennika",
-      "save": "Zapisz ustawienia stosu"
+      "save": "Zapisz ustawienia stosu",
+      "saveFailed": "Zapisywanie ustawień nie powiodło się."
     },
     "reticulumConfigImport": {
       "title": "Importuj konfigurację Reticulum",

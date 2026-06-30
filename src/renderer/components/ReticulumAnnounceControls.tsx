@@ -30,6 +30,10 @@ function parseStackSettings(raw: Record<string, unknown>): StackSettingsPayload 
   };
 }
 
+function clampAnnounceIntervalSec(value: number): number {
+  return Math.min(86400, Math.max(0, Math.trunc(value) || 0));
+}
+
 /** Announce interval and clear-announces controls for the Reticulum stack. */
 export function ReticulumAnnounceControls({ disabled = false }: ReticulumAnnounceControlsProps) {
   const { t } = useTranslation();
@@ -71,7 +75,7 @@ export function ReticulumAnnounceControls({ disabled = false }: ReticulumAnnounc
       );
       const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
         ...current,
-        announce_interval_sec: announceInterval,
+        announce_interval_sec: clampAnnounceIntervalSec(announceInterval),
       })) as { ok?: boolean; error?: string };
       if (res?.ok === false) {
         const message = t('reticulumIdentity.announceSaveFailed', {
@@ -133,7 +137,7 @@ export function ReticulumAnnounceControls({ disabled = false }: ReticulumAnnounc
           aria-label={t('reticulumIdentity.announceIntervalSec')}
           className="bg-deep-black w-24 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
           onChange={(e) => {
-            setAnnounceInterval(Number(e.target.value) || 0);
+            setAnnounceInterval(clampAnnounceIntervalSec(Number(e.target.value)));
             setStatusMessage(null);
           }}
         />

@@ -663,7 +663,9 @@
       "name": "名前",
       "callsign": "識別信号",
       "editFailed": "インターフェースの保存に失敗しました。",
-      "pipeCommand": "パイプコマンド"
+      "pipeCommand": "パイプコマンド",
+      "addFailed": "インターフェースの追加に失敗しました。",
+      "toggleFailed": "インターフェースの状態を変更できませんでした。"
     },
     "reticulumPeers": {
       "name": "ピア",
@@ -2267,7 +2269,8 @@
       "enableTransport": "トランスポートを有効にする（他のピアのルート）",
       "shareInstance": "Reticulumインスタンスを共有",
       "logLevel": "ログレベル",
-      "save": "スタック設定を保存"
+      "save": "スタック設定を保存",
+      "saveFailed": "スタック設定の保存に失敗しました。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum設定のインポート",

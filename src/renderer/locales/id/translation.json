@@ -663,7 +663,9 @@
       "name": "Nama",
       "callsign": "Callsign",
       "editFailed": "Gagal menyimpan antarmuka.",
-      "pipeCommand": "Perintah pipa"
+      "pipeCommand": "Perintah pipa",
+      "addFailed": "Gagal menambahkan antarmuka.",
+      "toggleFailed": "Gagal mengubah status antarmuka."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Aktifkan transport (rute untuk peer lain)",
       "shareInstance": "Bagikan instansi Reticulum",
       "logLevel": "Level log",
-      "save": "Simpan pengaturan tumpukan"
+      "save": "Simpan pengaturan tumpukan",
+      "saveFailed": "Gagal menyimpan pengaturan."
     },
     "reticulumConfigImport": {
       "title": "Impor konfigurasi Reticulum",

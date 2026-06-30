@@ -663,7 +663,9 @@
       "name": "Name",
       "callsign": "Rufzeichen",
       "editFailed": "Die Benutzeroberfläche konnte nicht gespeichert werden.",
-      "pipeCommand": "Rohrbefehl"
+      "pipeCommand": "Rohrbefehl",
+      "addFailed": "Schnittstelle konnte nicht hinzugefügt werden.",
+      "toggleFailed": "Fehler beim Ändern des Schnittstellenstatus."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Transport aktivieren (Route für andere Peers)",
       "shareInstance": "Reticulum-Instanz teilen",
       "logLevel": "Log-Level",
-      "save": "Stack-Einstellungen speichern"
+      "save": "Stack-Einstellungen speichern",
+      "saveFailed": "Einstellungen nicht gespeichert."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",

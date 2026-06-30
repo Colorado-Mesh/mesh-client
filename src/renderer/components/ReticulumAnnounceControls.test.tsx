@@ -30,6 +30,7 @@ describe('ReticulumAnnounceControls', () => {
       announce_interval_sec: 0,
     });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
   });
 
   it('saves announce interval and shows status when sidecar is running', async () => {
@@ -54,6 +55,72 @@ describe('ReticulumAnnounceControls', () => {
       });
     });
     expect(await screen.findByRole('status')).toHaveTextContent('reticulumIdentity.announceSaved');
+  });
+
+  it('clamps announce interval to 86400 on save', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
+    await user.clear(input);
+    await user.type(input, '999999');
+    await user.click(screen.getByRole('button', { name: 'common.save' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        '/api/v1/stack/settings',
+        expect.objectContaining({ announce_interval_sec: 86400 }),
+      );
+    });
+  });
+
+  it('shows error when sidecar is stopped on save', async () => {
+    isReticulumSidecarRunning.mockResolvedValue(false);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'common.save' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'reticulumIdentity.announceSaveSidecarStopped',
+    );
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
+  });
+
+  it('clears announces when sidecar is running', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'reticulumIdentity.clearAnnounces' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyDelete).toHaveBeenCalledWith('/api/v1/announces');
+    });
+  });
+
+  it('surfaces proxyPut failure', async () => {
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: false, error: 'nope' });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'common.save' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'reticulumIdentity.announceSaveFailed:nope',
+    );
   });
 
   it('remains clickable when parent only gates on sidecar readiness (not connecting)', () => {

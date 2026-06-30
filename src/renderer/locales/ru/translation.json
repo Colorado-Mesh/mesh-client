@@ -663,7 +663,9 @@
       "name": "Имя",
       "callsign": "Позывной",
       "editFailed": "Не удалось сохранить интерфейс.",
-      "pipeCommand": "Команда Pipe (Труба)"
+      "pipeCommand": "Команда Pipe (Труба)",
+      "addFailed": "Не удалось добавить интерфейс.",
+      "toggleFailed": "Не удалось изменить состояние интерфейса."
     },
     "reticulumPeers": {
       "name": "Узел",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Включить транспорт (маршрут для других одноранговых узлов)",
       "shareInstance": "Общий экземпляр Reticulum",
       "logLevel": "Уровень журналирования",
-      "save": "Настройки стека"
+      "save": "Настройки стека",
+      "saveFailed": "Не удалось сохранить настройки."
     },
     "reticulumConfigImport": {
       "title": "Импорт конфигурации Reticulum",

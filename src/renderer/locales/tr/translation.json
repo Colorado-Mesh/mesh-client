@@ -663,7 +663,9 @@
       "name": "Ad",
       "callsign": "Çağrı kodu",
       "editFailed": "Arabirim kaydedilemedi.",
-      "pipeCommand": "Boru komutu"
+      "pipeCommand": "Boru komutu",
+      "addFailed": "Arabirim eklenemedi.",
+      "toggleFailed": "Arabirim durumu değiştirilemedi."
     },
     "reticulumPeers": {
       "name": "Eş",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Taşımayı etkinleştir (diğer akranlar için rota)",
       "shareInstance": "Reticulum örneğini paylaş",
       "logLevel": "Kayıt seviyesi",
-      "save": "Yığın ayarlarını kaydet"
+      "save": "Yığın ayarlarını kaydet",
+      "saveFailed": "Ayarlar kaydedilemedi."
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",

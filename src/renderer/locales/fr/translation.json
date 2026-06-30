@@ -663,7 +663,9 @@
       "name": "Nom",
       "callsign": "Indicatif d’appel",
       "editFailed": "Échec de l'enregistrement de l'interface.",
-      "pipeCommand": "Commande de tuyau"
+      "pipeCommand": "Commande de tuyau",
+      "addFailed": "Échec de l'ajout de l'interface.",
+      "toggleFailed": "Impossible de modifier l'état de l'interface."
     },
     "reticulumPeers": {
       "name": "Pair",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Activer le transport (itinéraire pour les autres pairs)",
       "shareInstance": "Partager l’instance Reticulum",
       "logLevel": "Niveau du journal",
-      "save": "Enregistrer les paramètres de la pile"
+      "save": "Enregistrer les paramètres de la pile",
+      "saveFailed": "Échec de l'enregistrement des paramètres."
     },
     "reticulumConfigImport": {
       "title": "Importer la configuration du Reticulum",

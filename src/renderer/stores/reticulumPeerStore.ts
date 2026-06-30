@@ -203,6 +203,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
   toggleFavorite: async (hash, favorited) => {
     const key = normalizeHash(hash);
     const peer = get().peers.get(key);
+    const previousFavorited = peer?.favorited;
     get().updatePeer(key, { favorited });
     try {
       await window.electronAPI.db.upsertReticulumDestination({
@@ -211,7 +212,13 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         favorited,
       });
     } catch (e) {
+      if (previousFavorited !== undefined) {
+        get().updatePeer(key, { favorited: previousFavorited });
+      } else {
+        get().updatePeer(key, { favorited: !favorited });
+      }
       console.warn('[reticulumPeerStore] toggleFavorite ' + errLikeToLogString(e));
+      throw e;
     }
   },
 

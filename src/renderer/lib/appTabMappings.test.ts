@@ -1,7 +1,11 @@
 import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
-import { computeTabMappings } from './appTabMappings';
+import {
+  computeTabMappings,
+  findFilteredTabIndexForPanel,
+  NODES_PANEL_INDEX,
+} from './appTabMappings';
 import { MESHTASTIC_CAPABILITIES, RETICULUM_CAPABILITIES } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS } from './tabSlotIds';
 
@@ -47,6 +51,17 @@ describe('computeTabMappings', () => {
     expect(RETICULUM_CAPABILITIES.hasReticulumTopologyPanel).toBe(true);
     expect(reticulumTabs.tabIndexToPanelIndex).toContain(topologyPanelIndex);
     expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(topologyPanelIndex);
+  });
+
+  it('maps Nodes panel to Peers tab index, not Nomad Network', () => {
+    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const peersTabIndex = findFilteredTabIndexForPanel(tabs, NODES_PANEL_INDEX);
+    const nomadPanelIndex = TAB_SLOT_IDS.indexOf('NomadNetwork');
+    const nomadTabIndex = findFilteredTabIndexForPanel(tabs, nomadPanelIndex);
+    expect(peersTabIndex).toBeGreaterThanOrEqual(0);
+    expect(nomadTabIndex).toBeGreaterThanOrEqual(0);
+    expect(peersTabIndex).not.toBe(nomadTabIndex);
+    expect(tabs.tabIndexToPanelIndex[peersTabIndex]).toBe(NODES_PANEL_INDEX);
   });
 
   it('shows Nomad Network tab after Chat for Reticulum only', () => {

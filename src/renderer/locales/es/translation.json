@@ -663,7 +663,9 @@
       "name": "Nombre",
       "callsign": "Señal de llamada",
       "editFailed": "Error al guardar la interfaz.",
-      "pipeCommand": "Comando de tubería"
+      "pipeCommand": "Comando de tubería",
+      "addFailed": "Error al añadir la interfaz.",
+      "toggleFailed": "Error al cambiar el estado de la interfaz."
     },
     "reticulumPeers": {
       "name": "Par",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Habilitar transporte (ruta para otros pares)",
       "shareInstance": "Compartir instancia de Reticulum",
       "logLevel": "Nivel de registro",
-      "save": "Configuración de la pila"
+      "save": "Configuración de la pila",
+      "saveFailed": "Fallo al guardar la configuración."
     },
     "reticulumConfigImport": {
       "title": "Importar configuración de Reticulum",

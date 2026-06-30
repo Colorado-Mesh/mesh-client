@@ -83,6 +83,24 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().isContact('CONTACT1')).toBe(true);
   });
 
+  it('toggleFavorite rolls back when SQLite upsert fails', async () => {
+    const upsert = vi.fn().mockRejectedValue(new Error('db down'));
+    vi.stubGlobal('window', {
+      electronAPI: {
+        db: { upsertReticulumDestination: upsert },
+      },
+    });
+
+    useReticulumPeerStore
+      .getState()
+      .replacePeers([{ destination_hash: 'deadbeef', display_name: 'Test', favorited: false }]);
+
+    await expect(useReticulumPeerStore.getState().toggleFavorite('deadbeef', true)).rejects.toThrow(
+      'db down',
+    );
+    expect(useReticulumPeerStore.getState().peers.get('deadbeef')?.favorited).toBe(false);
+  });
+
   it('refreshReticulumPeersFromSidecar loads sidecar and db rows', async () => {
     vi.stubGlobal('window', {
       electronAPI: {

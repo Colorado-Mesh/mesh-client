@@ -271,11 +271,8 @@ impl StackHandle {
         if let Some(live) = &self.live {
             match live.fetch_peers().await {
                 Ok(peers) => {
-                    if !peers.is_empty() {
-                        let mut inner = self.inner.write().await;
-                        inner.peers = peers.clone();
-                    }
-                    return peers;
+                    let mut inner = self.inner.write().await;
+                    return sync_live_peer_cache(&mut inner.peers, peers);
                 }
                 Err(e) => {
                     tracing::debug!("live fetch_peers failed: {e}");
@@ -647,4 +644,69 @@ fn enumerate_serial_ports() -> Vec<serde_json::Value> {
             .cmp(b.get("path").and_then(|v| v.as_str()).unwrap_or(""))
     });
     ports
+}
+
+/// Replaces the in-memory peer cache with a live path-table fetch result.
+fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<PeerRow> {
+    *cache = fetched.clone();
+    fetched
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::sync::broadcast;
+    use uuid::Uuid;
+
+    fn temp_stack_dirs() -> (PathBuf, PathBuf) {
+        let id = Uuid::new_v4();
+        let config = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{id}"));
+        let storage = std::env::temp_dir().join(format!("mesh_reticulum_store_{id}"));
+        std::fs::create_dir_all(&config).expect("config dir");
+        std::fs::create_dir_all(&storage).expect("storage dir");
+        (config, storage)
+    }
+
+    #[test]
+    fn sync_live_peer_cache_replaces_including_empty() {
+        let mut cache = vec![PeerRow {
+            destination_hash: "abc".into(),
+            display_name: None,
+            hops: Some(1),
+            last_seen: None,
+            interface: None,
+            path_hash: None,
+        }];
+        let fetched = sync_live_peer_cache(&mut cache, vec![]);
+        assert!(fetched.is_empty());
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn sync_live_peer_cache_updates_non_empty() {
+        let mut cache = Vec::new();
+        let row = PeerRow {
+            destination_hash: "deadbeef".into(),
+            display_name: Some("peer".into()),
+            hops: Some(2),
+            last_seen: Some(1),
+            interface: Some("tcp".into()),
+            path_hash: None,
+        };
+        let fetched = sync_live_peer_cache(&mut cache, vec![row.clone()]);
+        assert_eq!(fetched.len(), 1);
+        assert_eq!(cache.len(), 1);
+        assert_eq!(cache[0].destination_hash, row.destination_hash);
+    }
+
+    #[tokio::test]
+    async fn list_peers_stub_empty_after_clear_announces() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
+        handle.clear_announces().await.expect("clear announces");
+        assert!(handle.list_peers().await.is_empty());
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
 }

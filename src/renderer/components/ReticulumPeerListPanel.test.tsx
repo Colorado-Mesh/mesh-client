@@ -116,7 +116,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('button', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.colLastHeard')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
   });
@@ -127,7 +127,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('button', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
   });
 

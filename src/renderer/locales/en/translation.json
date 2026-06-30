@@ -545,6 +545,8 @@
       "deleteConfirmBody": "Remove \"{{name}}\" from the stack config? This cannot be undone.",
       "deleteConfirm": "Delete",
       "deleteFailed": "Failed to delete interface.",
+      "addFailed": "Failed to add interface.",
+      "toggleFailed": "Failed to change interface state.",
       "edit": "Edit",
       "editTitle": "Edit interface",
       "saveEdit": "Save changes",
@@ -1989,7 +1991,8 @@
       "enableTransport": "Enable transport (route for other peers)",
       "shareInstance": "Share Reticulum instance",
       "logLevel": "Log level",
-      "save": "Save stack settings"
+      "save": "Save stack settings",
+      "saveFailed": "Failed to save stack settings."
     },
     "reticulumConfigImport": {
       "title": "Import Reticulum config",

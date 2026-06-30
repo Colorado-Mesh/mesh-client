@@ -39,7 +39,9 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Build sidecar (stub)
         working-directory: reticulum-sidecar
-        run: cargo build --release --target ${{ matrix.target }}
+        run: |
+          cargo test
+          cargo build --release --target ${{ matrix.target }}
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -75,7 +77,9 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Build sidecar (rns-stack)
         working-directory: reticulum-sidecar
-        run: cargo build --release --target ${{ matrix.target }} --features rns-stack
+        run: |
+          cargo test --features rns-stack
+          cargo build --release --target ${{ matrix.target }} --features rns-stack
       - name: Upload rns-stack artifact
         uses: actions/upload-artifact@v7
         with:
@@ -99,7 +103,9 @@ jobs:
           targets: aarch64-pc-windows-msvc
       - name: Build WoA sidecar (stub)
         working-directory: reticulum-sidecar
-        run: cargo build --release --target aarch64-pc-windows-msvc
+        run: |
+          cargo test
+          cargo build --release --target aarch64-pc-windows-msvc
       - uses: actions/upload-artifact@v7
         with:
           name: mesh-client-reticulum-win-arm64
@@ -120,7 +126,9 @@ jobs:
           targets: aarch64-pc-windows-msvc
       - name: Build WoA sidecar (rns-stack)
         working-directory: reticulum-sidecar
-        run: cargo build --release --target aarch64-pc-windows-msvc --features rns-stack
+        run: |
+          cargo test --features rns-stack
+          cargo build --release --target aarch64-pc-windows-msvc --features rns-stack
       - uses: actions/upload-artifact@v7
         with:
           name: mesh-client-reticulum-rns-win-arm64

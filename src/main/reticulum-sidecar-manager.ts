@@ -13,6 +13,7 @@ import type {
 } from '../shared/reticulum-types';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import { sanitizeLogMessage } from './log-service';
+import { assertReticulumProxyPath } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
@@ -213,7 +214,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+    const normalized = assertReticulumProxyPath(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       signal: AbortSignal.timeout(10_000),
     });
@@ -228,7 +229,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+    const normalized = assertReticulumProxyPath(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -246,7 +247,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+    const normalized = assertReticulumProxyPath(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -264,7 +265,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+    const normalized = assertReticulumProxyPath(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'DELETE',
       signal: AbortSignal.timeout(30_000),

@@ -663,7 +663,9 @@
       "name": "Název",
       "callsign": "Volací značka",
       "editFailed": "Uložení rozhraní se nezdařilo.",
-      "pipeCommand": "Příkaz potrubí"
+      "pipeCommand": "Příkaz potrubí",
+      "addFailed": "Přidání rozhraní se nezdařilo.",
+      "toggleFailed": "Nepodařilo se změnit stav rozhraní."
     },
     "reticulumPeers": {
       "name": "Rovesníci",
@@ -2267,7 +2269,8 @@
       "enableTransport": "Povolit přepravu (trasa pro ostatní protějšky)",
       "shareInstance": "Sdílet instanci Reticulum",
       "logLevel": "Úroveň záznamu",
-      "save": "Uložit nastavení zásobníku"
+      "save": "Uložit nastavení zásobníku",
+      "saveFailed": "Uložení nastavení zásobníku se nezdařilo."
     },
     "reticulumConfigImport": {
       "title": "Importovat konfiguraci Reticulum",

@@ -136,7 +136,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 - **Sidecar:** `reticulum-sidecar/` (AGPL Rust binary `mesh-client-reticulum`); dev: `pnpm run reticulum:sidecar:dev`
 - **IPC:** `reticulum:*` main handlers (`proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`, config file read/import dialog); renderer uses `electronAPI.reticulum` proxy (no direct localhost from sandbox)
-- **Panels:** `ReticulumStackPanel` (Connection — stack lifecycle) and `ReticulumRadioPanel` (Radio — identity, interface CRUD, config import/export, peers, propagation)
+- **Panels:** `ReticulumStackPanel` (Connection — stack lifecycle), `ReticulumRadioPanel` (Radio — identity, interfaces, stack/announce settings, propagation, config import), `ReticulumAdminPanel` (Admin — RNode flasher, factory reset), `ReticulumPeerListPanel` (Peers), `NomadNetworkPanel` (Nomad Network)
 - **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
 - **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
 - **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
