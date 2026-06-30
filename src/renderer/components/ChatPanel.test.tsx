@@ -474,6 +474,7 @@ describe('ChatPanel accessibility', () => {
           protocol="reticulum"
           dmOnlyChat
           isConnected
+          showLxmfDeliveryStatus
           myNodeNum={42}
           messages={[
             {

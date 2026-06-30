@@ -14,6 +14,7 @@ import {
 import type { ReticulumContact, ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
+import type { MeshNode } from '../lib/types';
 import {
   refreshReticulumPeersFromSidecar,
   useReticulumPeerStore,
@@ -30,6 +31,8 @@ export interface ReticulumPeerListPanelProps {
   onPeerClick: (hash: string) => void;
   onSendMessage: (nodeNum: number) => void;
   onRefresh?: () => Promise<void>;
+  /** Canonical LXMF contacts from identity-scoped nodeStore (NodeListPanel adapter). */
+  contactNodes?: Map<number, MeshNode>;
   groups?: ContactGroup[];
   selectedGroupId?: number | null;
   onGroupChange?: (groupId: number | null) => void;
@@ -42,14 +45,6 @@ function peerHashToNodeNum(hash: string): number {
   const nodeId = reticulumHashToNodeId(hash);
   registerReticulumDestinationHash(nodeId, hash);
   return nodeId;
-}
-
-function displayName(peer: ReticulumPeer): string {
-  return (
-    peer.custom_display_name?.trim() ||
-    peer.display_name?.trim() ||
-    peer.destination_hash.slice(0, 12)
-  );
 }
 
 function peerLastSeenMs(peer: ReticulumPeer): number {
@@ -68,11 +63,17 @@ function lastActivityMs(peer: ReticulumPeer): number {
   return peerLastSeenMs(peer);
 }
 
-function comparePeers(a: ReticulumPeer, b: ReticulumPeer, key: SortKey, dir: SortDir): number {
+function comparePeers(
+  a: ReticulumPeer,
+  b: ReticulumPeer,
+  key: SortKey,
+  dir: SortDir,
+  labelFor: (peer: ReticulumPeer) => string,
+): number {
   const sign = dir === 'asc' ? 1 : -1;
   switch (key) {
     case 'name':
-      return sign * displayName(a).localeCompare(displayName(b));
+      return sign * labelFor(a).localeCompare(labelFor(b));
     case 'hops':
       return sign * ((a.hops ?? -1) - (b.hops ?? -1));
     case 'lastSeen':
@@ -91,6 +92,7 @@ export default function ReticulumPeerListPanel({
   onPeerClick,
   onSendMessage,
   onRefresh,
+  contactNodes,
   groups = [],
   selectedGroupId = null,
   onGroupChange,
@@ -142,30 +144,49 @@ export default function ReticulumPeerListPanel({
 
   const sourceRows = useMemo(() => {
     if (activeTab === 'contacts') {
-      let rows = [...contacts.values()];
+      let rows: ReticulumPeer[];
+      if (contactNodes && contactNodes.size > 0) {
+        rows = [];
+        for (const node of contactNodes.values()) {
+          const hash = node.reticulum_destination_hash;
+          if (!hash) continue;
+          const fromStore = contacts.get(hash) ?? peers.get(hash);
+          rows.push(
+            fromStore ?? {
+              destination_hash: hash,
+              display_name: node.long_name ?? null,
+              favorited: node.favorited,
+              hops: node.hops_away ?? null,
+              last_seen: node.last_heard ?? null,
+            },
+          );
+        }
+      } else {
+        rows = [...contacts.values()];
+      }
       if (selectedGroupId != null && groupMemberIds?.size) {
         rows = rows.filter((c) => groupMemberIds.has(reticulumHashToNodeId(c.destination_hash)));
       }
       return rows;
     }
     return [...peers.values()];
-  }, [activeTab, contacts, peers, selectedGroupId, groupMemberIds]);
+  }, [activeTab, contactNodes, contacts, peers, selectedGroupId, groupMemberIds]);
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return sourceRows;
     return sourceRows.filter((peer) => {
-      const name = displayName(peer).toLowerCase();
+      const name = getDisplayName(peer).toLowerCase();
       const hash = peer.destination_hash.toLowerCase();
       return name.includes(q) || hash.includes(q);
     });
-  }, [searchQuery, sourceRows]);
+  }, [searchQuery, sourceRows, getDisplayName]);
 
   const sortedRows = useMemo(() => {
     const rows = [...filteredRows];
-    rows.sort((a, b) => comparePeers(a, b, sortKey, sortDir));
+    rows.sort((a, b) => comparePeers(a, b, sortKey, sortDir, getDisplayName));
     return rows;
-  }, [filteredRows, sortKey, sortDir]);
+  }, [filteredRows, sortKey, sortDir, getDisplayName]);
 
   const shouldVirtualize = sortedRows.length > 100;
   const rowVirtualizer = useVirtualizer({

@@ -7,6 +7,10 @@ import {
   type MeshtasticSessionApi,
   registerMeshtasticSession,
 } from '../lib/sessions/meshtasticSession';
+import {
+  registerReticulumSession,
+  type ReticulumSessionApi,
+} from '../lib/sessions/reticulumSession';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import {
@@ -200,5 +204,50 @@ describe('useProtocolConnectionActions', () => {
 
     expect(result.current.state.myNodeNum).toBe(42);
     expect(result.current.state.status).toBe('configured');
+  });
+});
+
+function createReticulumSessionStub(): ReticulumSessionApi {
+  return {
+    connect: vi.fn().mockResolvedValue(undefined),
+    connectAutomatic: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+    finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+    selfNodeId: 1,
+    getFullNodeLabel: () => 'Self',
+    sendMessage: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+describe('useProtocolConnect (reticulum)', () => {
+  beforeEach(() => {
+    registerReticulumSession(null);
+  });
+
+  it('connects via reticulum session without ConnectionDriver', async () => {
+    const reticulum = createReticulumSessionStub();
+    registerReticulumSession(reticulum);
+    const { result } = renderHook(() => useProtocolConnect());
+
+    await result.current('reticulum', 'http', undefined, undefined);
+
+    expect(reticulum.connect).toHaveBeenCalled();
+    expect(mockDriverConnect).not.toHaveBeenCalled();
+  });
+});
+
+describe('useProtocolDisconnect (reticulum)', () => {
+  beforeEach(() => {
+    registerReticulumSession(null);
+  });
+
+  it('finalizes reticulum session on disconnect', async () => {
+    const reticulum = createReticulumSessionStub();
+    registerReticulumSession(reticulum);
+    const { result } = renderHook(() => useProtocolDisconnect());
+
+    await result.current('reticulum');
+
+    expect(reticulum.finalizeDriverDisconnect).toHaveBeenCalled();
   });
 });

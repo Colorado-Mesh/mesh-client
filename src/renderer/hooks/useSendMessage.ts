@@ -4,6 +4,10 @@ import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import {
+  persistReticulumOutboundRecord,
+  resolveReticulumOutboundSenderHash,
+} from '../lib/ingest/reticulumIngest';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
 import { resolveReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
@@ -76,7 +80,8 @@ export function useSendMessage(
         const receivedVia = resolveReticulumOutboundVia(destHash);
         const toNodeId = destination ?? reticulumHashToNodeId(destHash);
         const senderName = session.getFullNodeLabel(selfNodeId);
-        addMessage(identityId, {
+        const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
+        const record: MessageRecord = {
           id: pendingId,
           from: selfNodeId,
           senderName,
@@ -87,7 +92,18 @@ export function useSendMessage(
           status: 'sending',
           receivedVia,
           ...(replyTo ? { reticulumReplyToHash: replyTo } : {}),
-        });
+        };
+        addMessage(identityId, record);
+        if (senderHash) {
+          persistReticulumOutboundRecord(
+            identityId,
+            record,
+            senderHash,
+            senderName,
+            destHash,
+            'sending',
+          );
+        }
         void send(text, destHash, replyTo ?? undefined, pendingId).catch((e: unknown) => {
           console.warn('[useSendMessage] reticulum send failed ' + errLikeToLogString(e));
         });

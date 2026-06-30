@@ -163,6 +163,19 @@ export function totalUnreadCount(
   return total;
 }
 
+const RETICULUM_OPERATIONAL_STATUSES = new Set(['connected', 'configured', 'stale']);
+
+/** Reticulum LXMF chat unread for sidebar/tray badges. */
+export function computeReticulumChatUnread(
+  messages: readonly ChatMessage[],
+  connectionStatus: string | undefined,
+  persistedLastRead: Readonly<Record<string, number>>,
+): number {
+  if (!connectionStatus || !RETICULUM_OPERATIONAL_STATUSES.has(connectionStatus)) return 0;
+  if (messages.length === 0) return 0;
+  return totalUnreadCount(messages, persistedLastRead, new Set(), 'reticulum');
+}
+
 /** True when at least one message maps to a view that is not per-conversation muted. */
 export function hasAudibleBackgroundMessages(
   messages: readonly ChatMessage[],

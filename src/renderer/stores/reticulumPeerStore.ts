@@ -48,6 +48,11 @@ function peerDisplayName(peer: ReticulumPeer): string {
   );
 }
 
+/** Canonical display label for a Reticulum peer/contact row. */
+export function reticulumPeerDisplayName(peer: ReticulumPeer): string {
+  return peerDisplayName(peer);
+}
+
 function overlayDbMeta(
   peer: ReticulumPeer,
   dbByHash: Map<string, ReticulumDestinationDbRow>,

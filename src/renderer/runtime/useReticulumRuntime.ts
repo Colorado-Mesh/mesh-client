@@ -11,7 +11,6 @@ import {
 } from '@/renderer/lib/ingest/reticulumIngest';
 import { classifyReticulumVia } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
-  registerReticulumDestinationHash,
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
@@ -19,11 +18,16 @@ import {
   markStaleReticulumOutboundInStore,
   markStaleReticulumOutboundMessages,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import { fetchReticulumIdentityStatus } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
+import {
+  nodeRecordsToMeshNodeMap,
+  reticulumDbRowToMessageRecord,
+} from '@/renderer/lib/storeRecordAdapters';
 import type { ReticulumContact, ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
-import { reticulumDbRowToMessageRecord } from '../lib/storeRecordAdapters';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -34,11 +38,10 @@ import {
   updateMessageStatus,
   useMessageStore,
 } from '../stores/messageStore';
-import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import {
   refreshReticulumPeersFromSidecar,
-  reticulumContactToMeshNode,
   reticulumContactToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
@@ -58,15 +61,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
     useIdentityStore(() => getIdentityIdForProtocol('reticulum')) ??
     getOfflineIdentityIdForProtocol('reticulum');
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
-  const [nodes, setNodes] = useState<Map<number, MeshNode>>(() => new Map());
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const unsubEventRef = useRef<(() => void) | null>(null);
   const peerInterfaceByHashRef = useRef<Map<string, string>>(new Map());
+  const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
   const selfNodeId = useMemo(
     () => (selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : null),
     [selfLxmfHash],
   );
+
+  const nodes = useMemo(() => {
+    if (!nodeStoreSlice) return new Map<number, MeshNode>();
+    return nodeRecordsToMeshNodeMap(Object.values(nodeStoreSlice));
+  }, [nodeStoreSlice]);
 
   const syncConnectionStore = useCallback(
     (patch: Partial<DeviceState>) => {
@@ -82,12 +90,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const applyContactNodes = useCallback(
     (contacts: ReticulumContact[]) => {
-      const map = new Map<number, MeshNode>();
-      for (const contact of contacts) {
-        const node = reticulumContactToMeshNode(contact);
-        map.set(node.node_id, node);
-      }
-      setNodes(new Map(map));
       if (!identityId) return;
       upsertNodeRecordsForIdentity(identityId, contacts.map(reticulumContactToNodeRecord));
     },
@@ -95,17 +97,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
   );
 
   const refreshIdentityFromSidecar = useCallback(async () => {
-    try {
-      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/identity/status')) as {
-        configured?: boolean;
-        lxmf_hash?: string;
-      };
-      if (body.configured && body.lxmf_hash) {
-        setSelfLxmfHash(body.lxmf_hash);
-        registerReticulumDestinationHash(reticulumHashToNodeId(body.lxmf_hash), body.lxmf_hash);
-      }
-    } catch (e) {
-      console.debug('[useReticulumRuntime] identity status ' + errLikeToLogString(e));
+    const status = await fetchReticulumIdentityStatus();
+    if (status.lxmfHash) {
+      setSelfLxmfHash(status.lxmfHash);
     }
   }, []);
 
@@ -354,9 +348,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const getFullNodeLabel = useCallback(
     (nodeId: number) => {
-      return nodes.get(nodeId)?.long_name ?? String(nodeId);
+      if (!identityId) return String(nodeId);
+      return useNodeStore.getState().nodes[identityId]?.[nodeId]?.longName ?? String(nodeId);
     },
-    [nodes],
+    [identityId],
   );
 
   const getPickerStyleNodeLabel = getFullNodeLabel;
@@ -369,21 +364,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
-      const node = nodes.get(nodeId);
-      const hash = node?.reticulum_destination_hash ?? resolveReticulumDestinationHash(nodeId);
+      if (!identityId) return;
+      const hash = resolveReticulumDestinationHash(nodeId);
       if (!hash) return;
-      setNodes((prev) => {
-        const next = new Map(prev);
-        const n = next.get(nodeId);
-        if (n) next.set(nodeId, { ...n, favorited });
-        return next;
-      });
+      const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
+      if (existing) {
+        upsertNodeRecord(identityId, { ...existing, favorited });
+      }
       await useReticulumPeerStore.getState().toggleFavorite(hash, favorited);
     },
-    [nodes],
+    [identityId],
   );
 
-  return useMemo(
+  const runtime = useMemo(
     () => ({
       state,
       identityId: identityId,
@@ -457,4 +450,36 @@ export function useReticulumRuntime(): ProtocolRuntime {
       handleSidecarEvent,
     ],
   );
+
+  useEffect(() => {
+    registerReticulumSession({
+      connect,
+      connectAutomatic,
+      disconnect,
+      finalizeDriverDisconnect: disconnect,
+      selfNodeId,
+      getFullNodeLabel,
+      sendMessage,
+      sendAttachment,
+      sendReaction,
+      handleSidecarEvent,
+      resolveOutboundVia,
+    });
+    return () => {
+      registerReticulumSession(null);
+    };
+  }, [
+    connect,
+    connectAutomatic,
+    disconnect,
+    selfNodeId,
+    getFullNodeLabel,
+    sendMessage,
+    sendAttachment,
+    sendReaction,
+    handleSidecarEvent,
+    resolveOutboundVia,
+  ]);
+
+  return runtime;
 }

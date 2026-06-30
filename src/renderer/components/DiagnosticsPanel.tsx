@@ -814,7 +814,7 @@ export default function DiagnosticsPanel({
         </a>
       </div>
 
-      {protocol === 'reticulum' ? (
+      {capabilities?.hasReticulumNativeDiagnostics ? (
         <div className="space-y-4">
           <ReticulumPingPanel />
           <ReticulumTopologyPanel />

@@ -1,20 +1,36 @@
-import type { ReticulumRuntime } from '../../runtime/useReticulumRuntime';
+import type { MessageTransport } from '@/renderer/stores/messageStore';
+import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
-const session: { runtime: ReticulumRuntime | null } = { runtime: null };
-
-export function bindReticulumSession(runtime: ReticulumRuntime): void {
-  session.runtime = runtime;
+/** Sidecar session lifecycle API registered by the Reticulum runtime mount. */
+export interface ReticulumSessionApi {
+  connect: () => Promise<void>;
+  connectAutomatic: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  finalizeDriverDisconnect: () => Promise<void>;
+  selfNodeId: string | number | null;
+  getFullNodeLabel: (nodeId: number) => string;
+  sendMessage: ReticulumSendMessageFn;
+  sendAttachment?: (file: File, to: number | string) => Promise<void>;
+  sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
+  handleSidecarEvent?: (event: ReticulumSidecarEvent) => void;
+  resolveOutboundVia?: (destinationHash: string) => MessageTransport;
 }
 
-export function tryGetReticulumSession(): ReticulumRuntime | null {
-  return session.runtime;
+let activeSession: ReticulumSessionApi | null = null;
+
+export function registerReticulumSession(api: ReticulumSessionApi | null): void {
+  activeSession = api;
 }
 
-export function getReticulumSession(): ReticulumRuntime {
-  if (!session.runtime) {
-    throw new Error('getReticulumSession: runtime not bound — mount useReticulumRuntime from App');
+export function getReticulumSession(): ReticulumSessionApi {
+  if (!activeSession) {
+    throw new Error('[reticulumSession] Reticulum runtime is not mounted');
   }
-  return session.runtime;
+  return activeSession;
+}
+
+export function tryGetReticulumSession(): ReticulumSessionApi | null {
+  return activeSession;
 }
 
 /** Typed send helper — ProtocolRuntime declares sendMessage as `never[]` for cross-protocol surface. */
@@ -26,12 +42,32 @@ export type ReticulumSendMessageFn = (
 ) => Promise<void>;
 
 export function getReticulumSendMessage(
-  runtime: ReticulumRuntime | null,
+  session: ReticulumSessionApi | null,
 ): ReticulumSendMessageFn | null {
-  if (!runtime) return null;
-  return runtime.sendMessage as ReticulumSendMessageFn;
+  if (!session) return null;
+  return session.sendMessage;
 }
 
-export function resolveReticulumOutboundVia(destinationHash: string) {
-  return session.runtime?.resolveOutboundVia?.(destinationHash) ?? 'network';
+export function resolveReticulumOutboundVia(destinationHash: string): MessageTransport {
+  return activeSession?.resolveOutboundVia?.(destinationHash) ?? 'network';
+}
+
+/** @deprecated Use registerReticulumSession from useReticulumRuntime mount */
+export function bindReticulumSession(runtime: {
+  sendMessage: ReticulumSendMessageFn;
+  selfNodeId: string | number | null;
+  getFullNodeLabel: (nodeId: number) => string;
+  connect: () => Promise<void>;
+  connectAutomatic: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  finalizeDriverDisconnect?: () => Promise<void>;
+  sendAttachment?: (file: File, to: number | string) => Promise<void>;
+  sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
+  handleSidecarEvent?: ReticulumSessionApi['handleSidecarEvent'];
+  resolveOutboundVia?: (destinationHash: string) => MessageTransport;
+}): void {
+  registerReticulumSession({
+    ...runtime,
+    finalizeDriverDisconnect: runtime.finalizeDriverDisconnect ?? runtime.disconnect,
+  });
 }

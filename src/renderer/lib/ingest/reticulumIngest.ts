@@ -2,6 +2,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { messageTransportFromWire } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   registerReticulumDestinationHash,
+  resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
 import { computeReticulumMessageHash } from '@/renderer/lib/reticulum/messageHash';
@@ -150,4 +151,42 @@ export function ingestReticulumDbRows(
   for (const row of rows) {
     addMessage(identityId, reticulumDbRowToMessageRecord(row));
   }
+}
+
+function mapMessageStatusToDeliveryStatus(status: MessageStatus): string {
+  if (status === 'failed') return 'failed';
+  if (status === 'sending') return 'sending';
+  return 'delivered';
+}
+
+/** Persist optimistic or final outbound LXMF row (mirrors MeshCore chat DB persist). */
+export function persistReticulumOutboundRecord(
+  identityId: IdentityId,
+  record: MessageRecord,
+  senderHash: string,
+  senderName: string,
+  toHash: string | null,
+  status: MessageStatus,
+): void {
+  const deliveryStatus = mapMessageStatusToDeliveryStatus(status);
+  void window.electronAPI.db
+    .saveReticulumMessage({
+      identity_id: identityId,
+      sender_id: senderHash,
+      sender_name: senderName,
+      payload: record.payload,
+      timestamp: record.timestamp,
+      to_hash: toHash,
+      reply_to_hash: record.reticulumReplyToHash ?? null,
+      message_hash: record.reticulumMessageHash ?? record.id,
+      received_via: record.receivedVia ?? null,
+      delivery_status: deliveryStatus,
+    })
+    .catch((e: unknown) => {
+      console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));
+    });
+}
+
+export function resolveReticulumOutboundSenderHash(selfNodeId: number): string | null {
+  return resolveReticulumDestinationHash(selfNodeId);
 }

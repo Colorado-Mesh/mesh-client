@@ -404,6 +404,14 @@ export interface ChatPanelProps {
   onSyncWaitingMessages?: () => void;
   /** Reticulum LXMF: DM-only chat (no channel pills). */
   dmOnlyChat?: boolean;
+  /** Reticulum LXMF delivery status badge on outbound/inbound messages. */
+  showLxmfDeliveryStatus?: boolean;
+  /** Reticulum LXMF attachment line in message bubbles. */
+  showLxmfAttachmentLine?: boolean;
+  /** Composer single-message payload limit override (LXMF). */
+  composerPayloadLimit?: number;
+  /** Use LXMF message hash for threaded replies (ratspeak.chat.v2). */
+  lxmfReplyHashReplies?: boolean;
   /** Reticulum LXMF file/image attachments in DM composer. */
   onSendAttachment?: (file: File, destination: number) => Promise<void>;
 }
@@ -434,6 +442,10 @@ function ChatPanel({
   waitingMessagesCount = 0,
   onSyncWaitingMessages,
   dmOnlyChat = false,
+  showLxmfDeliveryStatus = false,
+  showLxmfAttachmentLine = false,
+  composerPayloadLimit,
+  lxmfReplyHashReplies = false,
   onSendAttachment,
 }: ChatPanelProps) {
   const { t } = useTranslation();
@@ -2315,7 +2327,7 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              {protocol === 'reticulum' &&
+                              {showLxmfAttachmentLine &&
                               parseReticulumAttachmentPayload(msg.payload) ? (
                                 <ReticulumAttachmentLine
                                   payload={msg.payload}
@@ -2375,7 +2387,7 @@ function ChatPanel({
                                     />
                                   </button>
                                 )}
-                                {protocol === 'reticulum' && msg.status ? (
+                                {showLxmfDeliveryStatus && msg.status ? (
                                   <ReticulumMessageStatusBadge
                                     status={
                                       msg.status === 'sending' ||
@@ -2661,6 +2673,8 @@ function ChatPanel({
         queueOutbox={queueOutbox}
         onSendChunk={handleSendChunk}
         onSendAttachment={onSendAttachment}
+        payloadLimit={composerPayloadLimit}
+        lxmfReplyHashReplies={lxmfReplyHashReplies}
         onSendSuccess={() => {
           setUnreadDividerTimestamp(0);
         }}

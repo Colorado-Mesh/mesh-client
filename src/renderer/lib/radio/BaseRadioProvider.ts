@@ -1,5 +1,7 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
+import { RETICULUM_LXMF_PAYLOAD_LIMIT } from '../chatComposerLimits';
+
 /**
  * Protocol-agnostic capability descriptor. Each radio protocol adapter exposes
  * one of these so UI and diagnostic engines can branch on features rather than
@@ -127,6 +129,14 @@ export interface ProtocolCapabilities {
   hasRNodeFlasher: boolean;
   /** Reticulum: dedicated Peers list panel on tab 2 */
   hasReticulumPeersList: boolean;
+  /** Reticulum: ping + topology panels on Diagnostics tab */
+  hasReticulumNativeDiagnostics: boolean;
+  /** Reticulum: LXMF delivery status badge on chat messages */
+  hasLxmfDeliveryStatus: boolean;
+  /** Reticulum: dedicated peer detail modal (hash-based peers) */
+  hasReticulumPeerDetailModal: boolean;
+  /** DM composer payload limit (Reticulum LXMF only) */
+  lxmfPayloadLimit?: number;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -191,6 +201,9 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
+  hasReticulumNativeDiagnostics: false,
+  hasLxmfDeliveryStatus: false,
+  hasReticulumPeerDetailModal: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -256,6 +269,9 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
+  hasReticulumNativeDiagnostics: false,
+  hasLxmfDeliveryStatus: false,
+  hasReticulumPeerDetailModal: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -320,4 +336,8 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfAttachments: true,
   hasRNodeFlasher: true,
   hasReticulumPeersList: true,
+  hasReticulumNativeDiagnostics: true,
+  hasLxmfDeliveryStatus: true,
+  hasReticulumPeerDetailModal: true,
+  lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

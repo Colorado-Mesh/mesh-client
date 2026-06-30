@@ -23,6 +23,7 @@ import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
   ensureMeshcoreChatLastReadSanitized,
+  ensureReticulumChatLastReadSanitized,
   getSanitizedMeshcoreChatLastRead,
   getSanitizedMeshcoreRoomsLastRead,
   getSanitizedMeshtasticChatLastRead,
@@ -33,7 +34,11 @@ import {
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import { type ChatUnreadDmOptions, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
+import {
+  type ChatUnreadDmOptions,
+  computeReticulumChatUnread,
+  totalUnreadCount,
+} from '@/renderer/lib/chatUnreadCounts';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -88,6 +93,7 @@ import {
   useProtocolDisconnect,
 } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
+import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
@@ -161,7 +167,6 @@ import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
-import { bindReticulumSession } from './lib/sessions/reticulumSession';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
   messageRecordsToChatMessages,
@@ -395,9 +400,6 @@ export default function App() {
   const meshtasticRuntime = useMeshtasticRuntime();
   const meshcoreRuntime = useMeshcoreRuntime();
   const reticulumRuntime = useReticulumRuntime();
-  useEffect(() => {
-    bindReticulumSession(reticulumRuntime);
-  }, [reticulumRuntime]);
   const runtimeMap = useMemo<RuntimeMap>(
     () =>
       ({
@@ -675,7 +677,9 @@ function AppContent() {
   const meshcorePanelActions = allPanelActions.meshcore as ReturnType<
     typeof useMeshcorePanelActions
   >;
-  const reticulumPanelActions = allPanelActions.reticulum;
+  const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
+    typeof useReticulumPanelActions
+  >;
   const activeFacade = useProtocolFacade(protocol, allPanelActions);
   const panelActions = allPanelActions[protocol];
   const {
@@ -739,11 +743,9 @@ function AppContent() {
     reticulumIdentityId ? s.nodes[reticulumIdentityId] : undefined,
   );
   const reticulumUiNodes = useMemo(() => {
-    if (reticulumNodesById && Object.keys(reticulumNodesById).length > 0) {
-      return nodeRecordsToMeshNodeMap(Object.values(reticulumNodesById));
-    }
-    return new Map(reticulumRuntime.getNodes().map((n) => [n.node_id, n]));
-  }, [reticulumNodesById, reticulumRuntime]);
+    if (!reticulumNodesById) return new Map<number, MeshNode>();
+    return nodeRecordsToMeshNodeMap(Object.values(reticulumNodesById));
+  }, [reticulumNodesById]);
 
   const meshtasticDbRefresh = useProtocolDbRefresh('meshtastic', meshtasticIdentityId);
   const meshcoreDbRefresh = useProtocolDbRefresh('meshcore', meshcoreIdentityId);
@@ -912,13 +914,7 @@ function AppContent() {
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const activeRuntime = useRuntime(protocol) as unknown as MeshtasticRuntime;
   const contactGroupsSelfId =
-    protocol === 'reticulum'
-      ? typeof reticulumRuntime.selfNodeId === 'number'
-        ? reticulumRuntime.selfNodeId
-        : null
-      : typeof activeRuntime.selfNodeId === 'number'
-        ? activeRuntime.selfNodeId
-        : null;
+    typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
   const contactGroups = useContactGroups(contactGroupsSelfId);
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);
@@ -967,6 +963,20 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
     setLastReadRevision((prev) => ({ ...prev, meshcore: prev.meshcore + 1 }));
   }, [meshcoreIdentityId, meshcoreUiMessages]);
+
+  const reticulumLastReadSanitizedRef = useRef(false);
+  useEffect(() => {
+    if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
+    if (localStorage.getItem('mesh-client:lastReadSanitized:reticulum') === '1') {
+      reticulumLastReadSanitizedRef.current = true;
+      return;
+    }
+    if (reticulumUiMessages.length === 0) return;
+    ensureReticulumChatLastReadSanitized(reticulumUiMessages);
+    reticulumLastReadSanitizedRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
+    setLastReadRevision((prev) => ({ ...prev, reticulum: prev.reticulum + 1 }));
+  }, [reticulumIdentityId, reticulumUiMessages]);
 
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
@@ -1061,13 +1071,12 @@ function AppContent() {
 
   const reticulumChatUnread = useMemo(() => {
     void lastReadRevision.reticulum;
-    const reticulumConnected =
-      reticulumConnectionView.state.status === 'connected' ||
-      reticulumConnectionView.state.status === 'configured' ||
-      reticulumConnectionView.state.status === 'stale';
-    if (!reticulumConnected || reticulumUiMessages.length === 0) return 0;
     const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages);
-    return totalUnreadCount(reticulumUiMessages, lastRead, new Set(), 'reticulum');
+    return computeReticulumChatUnread(
+      reticulumUiMessages,
+      reticulumConnectionView.state.status,
+      lastRead,
+    );
   }, [lastReadRevision.reticulum, reticulumUiMessages, reticulumConnectionView.state.status]);
 
   const meshcoreRoomsUnread = useMemo(() => {
@@ -1179,12 +1188,12 @@ function AppContent() {
       protocolRecord(
         meshtasticPanelActions.sendReaction,
         meshcoreRuntime.sendReaction,
-        reticulumRuntime.sendReaction,
+        reticulumPanelActions.sendReaction,
       ),
     [
       meshtasticPanelActions.sendReaction,
       meshcoreRuntime.sendReaction,
-      reticulumRuntime.sendReaction,
+      reticulumPanelActions.sendReaction,
     ],
   );
 
@@ -1363,28 +1372,28 @@ function AppContent() {
     };
   }, [isRemoteConfigureTarget, meshtasticRuntime, meshtasticPanelActions]);
   const effectiveChannelConfigs = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.channelConfigs ?? [])
-    : activeRuntime.channelConfigs;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.channelConfigs ?? [])
+    : meshtasticRuntime.channelConfigs;
   const effectiveLoraConfig = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.loraConfig ?? null)
-    : activeRuntime.loraConfig;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.loraConfig ?? null)
+    : meshtasticRuntime.loraConfig;
   const effectiveModuleConfigs = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
-    : activeRuntime.moduleConfigs;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
+    : meshtasticRuntime.moduleConfigs;
   const effectiveMeshtasticConfigSlices = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.configSlices ?? {})
-    : activeRuntime.meshtasticConfigSlices;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.configSlices ?? {})
+    : meshtasticRuntime.meshtasticConfigSlices;
   const effectiveSecurityConfig = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.securityConfig ?? null)
-    : activeRuntime.securityConfig;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.securityConfig ?? null)
+    : meshtasticRuntime.securityConfig;
   const effectiveDeviceOwner = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
-    : activeRuntime.deviceOwner;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
+    : meshtasticRuntime.deviceOwner;
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
-    : activeRuntime.deviceFixedPosition;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
+    : meshtasticRuntime.deviceFixedPosition;
   const effectiveRemoteChannelFailedIndices = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.failedChannelIndices ?? [])
+    ? (meshtasticRuntime.remoteConfigSnapshot?.failedChannelIndices ?? [])
     : undefined;
   const handleRetryRemoteChannelsTail = useCallback(() => {
     if (meshtasticRuntime.configureTargetNodeNum == null) return;
@@ -2465,10 +2474,14 @@ function AppContent() {
                             channels={chatChannelsForPanel}
                             meshcoreChannelSources={
                               capabilities.hasCompanionContactManagementConfig
-                                ? activeRuntime.channels
+                                ? meshcoreRuntime.channels
                                 : undefined
                             }
-                            myNodeNum={activeRuntime.selfNodeId}
+                            myNodeNum={
+                              typeof activeRuntime.selfNodeId === 'number'
+                                ? activeRuntime.selfNodeId
+                                : activeRuntime.state.myNodeNum
+                            }
                             ownNodeIds={
                               capabilities.hasMqttHybrid
                                 ? meshtasticOwnNodeIdsForChat
@@ -2491,10 +2504,14 @@ function AppContent() {
                             isActive={activePanelIndex === 1}
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
+                            showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
+                            showLxmfAttachmentLine={capabilities.hasLxmfAttachments}
+                            composerPayloadLimit={capabilities.lxmfPayloadLimit}
+                            lxmfReplyHashReplies={capabilities.hasLxmfDeliveryStatus}
                             onSendAttachment={
-                              capabilities.hasLxmfAttachments && protocol === 'reticulum'
+                              capabilities.hasLxmfAttachments
                                 ? (file, destination) =>
-                                    reticulumRuntime.sendAttachment?.(file, destination) ??
+                                    reticulumPanelActions.sendAttachment?.(file, destination) ??
                                     Promise.resolve()
                                 : undefined
                             }
@@ -2535,9 +2552,10 @@ function AppContent() {
                           {capabilities.hasReticulumPeersList ? (
                             <ReticulumPeerListPanel
                               isConnected={isConnectedOrOperational}
+                              contactNodes={reticulumUiNodes}
                               onPeerClick={setSelectedPeerHash}
                               onSendMessage={handleMessageNode}
-                              onRefresh={reticulumRuntime.requestRefresh}
+                              onRefresh={reticulumPanelActions.requestRefresh}
                               groups={contactGroups.groups}
                               selectedGroupId={contactGroups.selectedGroupId}
                               onGroupChange={contactGroups.setSelectedGroupId}
@@ -2677,7 +2695,7 @@ function AppContent() {
                                 }
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
-                                onSidecarEvent={reticulumRuntime.handleSidecarEvent}
+                                onSidecarEvent={reticulumPanelActions.handleSidecarEvent}
                                 onOpenPeersTab={handleOpenPeersTab}
                               />
                             ) : (
@@ -2693,7 +2711,7 @@ function AppContent() {
                                   remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
                                   remoteChannelsTailStatus={
                                     isRemoteConfigureTarget
-                                      ? activeRuntime.remoteConfigChannelsTailStatus
+                                      ? meshtasticRuntime.remoteConfigChannelsTailStatus
                                       : undefined
                                   }
                                   onRetryRemoteChannelsTail={
@@ -2922,31 +2940,41 @@ function AppContent() {
                               onSetModuleConfig={meshtasticPanelActions.setModuleConfig}
                               onSetCannedMessages={meshtasticPanelActions.setCannedMessages}
                               onSetRingtone={meshtasticPanelActions.setRingtone}
-                              ringtone={activeRuntime.ringtone}
+                              ringtone={meshtasticRuntime.ringtone}
                               onCommit={meshtasticPanelActions.commitConfig}
                               isConnected={isOperational}
                               deviceNetwork={{
                                 hasWifi: meshtasticConnectionView.state.deviceHasWifi,
                                 hasEthernet: meshtasticConnectionView.state.deviceHasEthernet,
                               }}
-                              storeForwardMessages={activeRuntime.storeForwardMessages}
-                              rangeTestPackets={activeRuntime.rangeTestPackets}
-                              serialMessages={activeRuntime.serialMessages}
-                              remoteHardwareMessages={activeRuntime.remoteHardwareMessages}
+                              storeForwardMessages={meshtasticRuntime.storeForwardMessages}
+                              rangeTestPackets={meshtasticRuntime.rangeTestPackets}
+                              serialMessages={meshtasticRuntime.serialMessages}
+                              remoteHardwareMessages={meshtasticRuntime.remoteHardwareMessages}
                               ipTunnelMessages={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.ipTunnelMessages
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.ipTunnelMessages
                               }
                               audioMessages={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.audioMessages
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.audioMessages
                               }
                               simulatorPackets={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.simulatorPackets
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.simulatorPackets
                               }
                               privateMessages={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.privateMessages
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.privateMessages
                               }
                               pingResponses={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.pingResponses
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.pingResponses
                               }
                               hasAudio={capabilities.hasAudio}
                             />
@@ -3151,7 +3179,7 @@ function AppContent() {
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TakServerPanel
-                              atakMessages={activeRuntime.atakMessages}
+                              atakMessages={meshtasticRuntime.atakMessages}
                               capabilities={capabilities}
                             />
                           </Suspense>
@@ -3629,12 +3657,16 @@ function AppContent() {
                 : undefined
             }
             paxCounterData={
-              detailModalProtocol === 'meshtastic' ? activeRuntime.paxCounterData : undefined
+              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.paxCounterData : undefined
             }
             detectionSensorEvents={
-              detailModalProtocol === 'meshtastic' ? activeRuntime.detectionSensorEvents : undefined
+              detailModalProtocol === 'meshtastic'
+                ? meshtasticRuntime.detectionSensorEvents
+                : undefined
             }
-            mapReports={detailModalProtocol === 'meshtastic' ? activeRuntime.mapReports : undefined}
+            mapReports={
+              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.mapReports : undefined
+            }
             onExportContact={
               detailModalProtocol === 'meshcore' ? meshcoreRuntime.exportContact : undefined
             }
@@ -3658,7 +3690,7 @@ function AppContent() {
         </Suspense>
       )}
 
-      {protocol === 'reticulum' && selectedPeerHash !== null && (
+      {capabilities.hasReticulumPeerDetailModal && selectedPeerHash !== null && (
         <Suspense fallback={<DialogLazyFallback />}>
           <ReticulumPeerDetailModal
             peerHash={selectedPeerHash}

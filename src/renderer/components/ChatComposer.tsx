@@ -79,6 +79,8 @@ export interface ChatComposerProps {
   onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Called after a successful send (e.g. clear unread divider). */
   onSendSuccess?: () => void;
+  /** Use LXMF message hash for reply threading (Reticulum). */
+  lxmfReplyHashReplies?: boolean;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   className?: string;
 }
@@ -107,6 +109,7 @@ export function ChatComposer({
   onSendChunk,
   onSendAttachment,
   onSendSuccess,
+  lxmfReplyHashReplies = false,
   textareaRef,
   className,
 }: ChatComposerProps) {
@@ -145,11 +148,11 @@ export function ChatComposer({
       ? undefined
       : protocol === 'meshtastic'
         ? replyTo.packetId
-        : protocol === 'reticulum'
+        : lxmfReplyHashReplies
           ? undefined
           : (replyTo.packetId ?? replyTo.timestamp);
   const reticulumReplyHash =
-    protocol === 'reticulum' && replyTo?.reticulum_message_hash
+    lxmfReplyHashReplies && replyTo?.reticulum_message_hash
       ? replyTo.reticulum_message_hash
       : undefined;
 
