@@ -349,7 +349,10 @@
     "sentViaNetwork": "Через сеть",
     "reticulumSendSending": "отправка…",
     "reticulumSendDelivered": "Доставлено",
-    "reticulumSendFailed": "Не удалось отправить"
+    "reticulumSendFailed": "Не удалось отправить",
+    "reticulumImageAttachment": "Изображение: {{name}}",
+    "reticulumFileAttachment": "Файл: {{name}}",
+    "reticulumShowInFolder": "Показать в папке"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -407,7 +410,12 @@
     "days": "дни",
     "emDash": "—",
     "saving": "Сохранение...",
-    "peers": "Равные наставники"
+    "peers": "Равные наставники",
+    "colorGreen": "Зеленый",
+    "colorCyan": "Голубой",
+    "colorAmber": "Желтый",
+    "colorRed": "Красный",
+    "colorPurple": "Пурпурный"
   },
   "configApplyNotice": {
     "persistNote": "Примененные настройки сохраняются во флэш-памяти устройства и сохраняются при перезагрузке.",
@@ -654,7 +662,8 @@
       "cancelEdit": "Отмена",
       "name": "Имя",
       "callsign": "Позывной",
-      "editFailed": "Не удалось сохранить интерфейс."
+      "editFailed": "Не удалось сохранить интерфейс.",
+      "pipeCommand": "Команда Pipe (Труба)"
     },
     "reticulumPeers": {
       "name": "Узел",
@@ -2876,7 +2885,11 @@
     "allGroups": "Все группы",
     "manageGroups": "Управление группами",
     "radioPeerCount": "{{count}} одноранговых узлов в таблице путей",
-    "viewAllPeers": "Посмотреть все на вкладке «Коллеги»"
+    "viewAllPeers": "Посмотреть все на вкладке «Коллеги»",
+    "colLastHeard": "В последний раз слышали:",
+    "colContact": "Связаться",
+    "contactYes": "Да",
+    "contactNo": "Нет"
   },
   "peerDetailModal": {
     "networkSection": "Сеть",
@@ -2886,8 +2899,49 @@
     "sendMessage": "Сообщение \"Отправить\"",
     "pathOk": "Запрос направлен.",
     "pathFailed": "Ошибка запроса пути: {{error}}",
-    "probeHops": "Датчик OK — {{hops}} Hop(s).",
-    "probeLocal": "Датчик в порядке (режим {{mode}}).",
-    "probeFailed": "Сбой датчика: {{error}}"
+    "probeHops": "Зонд OK — {{hops}} Hop(s).",
+    "probeLocal": "Зонд OK (режим {{mode}}).",
+    "probeFailed": "Сбой зонда: {{error}}",
+    "isContact": "Связаться",
+    "call": "Голосовое общение",
+    "callComingSoon": "Голосовые вызовы появятся в будущем обновлении",
+    "iconColor": "Цвет иконы Аватара",
+    "iconColorAria": "Цвет однорангового аватара"
+  },
+  "reticulumPropagation": {
+    "preferred": "Предпочтительно",
+    "setPreferred": "Установить предпочтительный",
+    "syncNow": "Отправка сообщений синхронизации",
+    "cancelSync": "Отменить синхр-ю",
+    "autoSyncInterval": "Автоматическая синхронизация каждые {{sec}}с"
+  },
+  "reticulumIdentity": {
+    "title": "Профили",
+    "activeIdentity": "активное удостоверение",
+    "announceIntervalSec": "Объявить интервал (секунды)",
+    "clearAnnounces": "Очистить объявления"
+  },
+  "nomadNetwork": {
+    "title": "Сеть кочевников",
+    "empty": "Узлы Nomad Network пока не обнаружены.",
+    "toggleFavorite": "Переключить избранное"
+  },
+  "reticulumPing": {
+    "title": "Проверка связи",
+    "hashPlaceholder": "Целевой хэш...",
+    "hashAria": "Хеш назначения для пинга",
+    "run": "Проверка связи",
+    "result": "RTT {{ms}} мс",
+    "failed": "Ошибка эхо-запроса: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Все голосовые вызовы",
+    "comingSoon": "Голосовые вызовы кодека 2 пока не включены.",
+    "ready": "Голосовой конвейер готов.",
+    "startCall": "Начать Звонок"
+  },
+  "reticulumTopology": {
+    "title": "Топология сети",
+    "self": "Вы"
   }
 }

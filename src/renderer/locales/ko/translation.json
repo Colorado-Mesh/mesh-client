@@ -349,7 +349,10 @@
     "sentViaNetwork": "네트워크를 통해 전송됨",
     "reticulumSendSending": "전송 중…",
     "reticulumSendDelivered": "배달 완료",
-    "reticulumSendFailed": "보내지 못했습니다"
+    "reticulumSendFailed": "보내지 못했습니다",
+    "reticulumImageAttachment": "이미지: {{name}}",
+    "reticulumFileAttachment": "파일: {{name}}",
+    "reticulumShowInFolder": "폴더에 표시"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -407,7 +410,12 @@
     "days": "날",
     "emDash": "—",
     "saving": "저장 중...",
-    "peers": "통신자"
+    "peers": "통신자",
+    "colorGreen": "그린",
+    "colorCyan": "시안",
+    "colorAmber": "애쉬틴",
+    "colorRed": "빨간색",
+    "colorPurple": "자색"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
@@ -654,7 +662,8 @@
       "cancelEdit": "취소",
       "name": "이름",
       "callsign": "콜사인",
-      "editFailed": "인터페이스를 저장하지 못했습니다."
+      "editFailed": "인터페이스를 저장하지 못했습니다.",
+      "pipeCommand": "파이프 명령"
     },
     "reticulumPeers": {
       "name": "피어",
@@ -2876,7 +2885,11 @@
     "allGroups": "전체 그룹",
     "manageGroups": "그룹 관리",
     "radioPeerCount": "{{count}} PATH 테이블의 피어",
-    "viewAllPeers": "Peers 탭에서 모두 보기"
+    "viewAllPeers": "Peers 탭에서 모두 보기",
+    "colLastHeard": "마지막 청취",
+    "colContact": "연락하기",
+    "contactYes": "예",
+    "contactNo": "아니오"
   },
   "peerDetailModal": {
     "networkSection": "네트워크",
@@ -2888,6 +2901,47 @@
     "pathFailed": "경로 요청 실패: {{error}}",
     "probeHops": "프로브 확인 — {{hops}} 홉.",
     "probeLocal": "프로브 OK ({{mode}} 모드).",
-    "probeFailed": "프로브 실패: {{error}}"
+    "probeFailed": "프로브 실패: {{error}}",
+    "isContact": "연락하기",
+    "call": "음성 통화",
+    "callComingSoon": "음성 통화는 향후 업데이트될 예정입니다.",
+    "iconColor": "아바타 색상",
+    "iconColorAria": "피어 아바타 색상"
+  },
+  "reticulumPropagation": {
+    "preferred": "선호",
+    "setPreferred": "선호 사항 설정",
+    "syncNow": "메시지 동기화",
+    "cancelSync": "동기화 취소",
+    "autoSyncInterval": "{{sec}} 초마다 자동 동기화"
+  },
+  "reticulumIdentity": {
+    "title": "ìê¸° ì ë³´",
+    "activeIdentity": "활성 신원",
+    "announceIntervalSec": "발표 간격 (초)",
+    "clearAnnounces": "공지 지우기"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "아직 발견된 Nomad Network 노드가 없습니다.",
+    "toggleFavorite": "즐겨찾기 전환"
+  },
+  "reticulumPing": {
+    "title": "핑",
+    "hashPlaceholder": "대상 해시...",
+    "hashAria": "대상 해시에서 핑까지",
+    "run": "핑",
+    "result": "RTT {{ms}} ms",
+    "failed": "핑 실패: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "음성 통화",
+    "comingSoon": "코덱 2 음성 통화는 아직 활성화되지 않았습니다.",
+    "ready": "음성 파이프라인이 준비되었습니다.",
+    "startCall": "통화 시작"
+  },
+  "reticulumTopology": {
+    "title": "네트워크 토폴로지",
+    "self": "나"
   }
 }

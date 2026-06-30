@@ -39,14 +39,15 @@ flowchart TB
 2. **Reticulum → Radio** (`ReticulumRadioPanel`): create or import identity; add/edit/delete/enable interfaces; import or export rnsd-style config; adjust stack settings; manage peers and propagation; factory reset (danger zone).
 3. **Chat:** DM-only LXMF text, reactions, and file attachments.
 
-**Diagnostics tab** shows Reticulum-native interface/path/LXMF health (not Meshtastic Hop Goblins). **Graph tab** shows peer topology when hop data is available. Sidebar uses **Nodes** (not MeshCore “Contacts”).
+**Diagnostics tab** shows Reticulum-native interface/path/LXMF health (not Meshtastic Hop Goblins). **Graph tab** shows peer topology when hop data is available. Sidebar **Peers** tab ([`ReticulumPeerListPanel`](src/renderer/components/ReticulumPeerListPanel.tsx)) lists network peers and LXMF contacts in separate sub-tabs.
 
 ## Panels
 
-| Tab (sidebar) | Component             | Purpose                                                                                              |
-| ------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
-| Connection    | `ReticulumStackPanel` | Stack start/stop, auto-start, disconnect & quit, connection status                                   |
-| Radio         | `ReticulumRadioPanel` | Identity wizard, interfaces, peers, propagation, config import/export, stack settings, factory reset |
+| Tab (sidebar) | Component                | Purpose                                                                                                     |
+| ------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Connection    | `ReticulumStackPanel`    | Stack start/stop, auto-start, disconnect & quit, connection status                                          |
+| Peers         | `ReticulumPeerListPanel` | Network path-table peers and LXMF contacts (sub-tabs); path/probe; opens `ReticulumPeerDetailModal`         |
+| Radio         | `ReticulumRadioPanel`    | Identity wizard, interfaces, peer summary, propagation, config import/export, stack settings, factory reset |
 
 ## Interface management (Radio tab)
 

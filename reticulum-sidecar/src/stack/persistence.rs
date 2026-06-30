@@ -20,6 +20,10 @@ pub struct PersistedState {
     pub messages: Vec<serde_json::Value>,
     pub rns_ready: bool,
     pub lxmf_ready: bool,
+    pub preferred_propagation_id: Option<String>,
+    pub propagation_sync: serde_json::Value,
+    pub auto_sync_interval_sec: u32,
+    pub nomad_nodes: Vec<NomadNodeRow>,
 }
 
 impl PersistedState {
@@ -47,6 +51,10 @@ impl PersistedState {
             messages: Vec::new(),
             rns_ready: false,
             lxmf_ready: false,
+            preferred_propagation_id: None,
+            propagation_sync: serde_json::Value::Null,
+            auto_sync_interval_sec: 0,
+            nomad_nodes: Vec::new(),
         }
     }
 
@@ -225,6 +233,58 @@ impl PersistedState {
         Ok(())
     }
 
+    pub fn set_preferred_propagation(&mut self, id: &str) -> Result<(), String> {
+        if !self.propagation.iter().any(|p| p.id == id) {
+            return Err(format!("propagation node not found: {id}"));
+        }
+        self.preferred_propagation_id = Some(id.to_string());
+        Ok(())
+    }
+
+    pub fn start_propagation_sync(&mut self, propagation_id: &str) -> Result<(), String> {
+        if !self.propagation.iter().any(|p| p.id == propagation_id) {
+            return Err(format!("propagation node not found: {propagation_id}"));
+        }
+        self.propagation_sync = serde_json::json!({
+            "active": true,
+            "progress": 0,
+            "message": null,
+            "propagation_id": propagation_id,
+        });
+        Ok(())
+    }
+
+    pub fn cancel_propagation_sync(&mut self) {
+        self.propagation_sync = serde_json::json!({
+            "active": false,
+            "progress": 0,
+            "message": null,
+        });
+    }
+
+    pub fn set_nomad_favorite(&mut self, hash: &str, favorited: bool) {
+        let key = hash.to_lowercase();
+        if let Some(node) = self
+            .nomad_nodes
+            .iter_mut()
+            .find(|n| n.destination_hash.to_lowercase() == key)
+        {
+            node.favorited = favorited;
+            return;
+        }
+        self.nomad_nodes.push(NomadNodeRow {
+            destination_hash: hash.to_string(),
+            display_name: None,
+            last_seen: Some(Self::now_secs()),
+            favorited,
+            status: Some("unknown".into()),
+        });
+    }
+
+    pub fn clear_peers(&mut self) {
+        self.peers.clear();
+    }
+
     pub fn upsert_contact(&mut self, hash: &str, name: Option<String>) {
         if let Some(c) = self
             .contacts
@@ -400,7 +460,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 8)?;
+        let mut s = serializer.serialize_struct("PersistedState", 12)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -409,6 +469,10 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("messages", &self.messages)?;
         s.serialize_field("rns_ready", &self.rns_ready)?;
         s.serialize_field("lxmf_ready", &self.lxmf_ready)?;
+        s.serialize_field("preferred_propagation_id", &self.preferred_propagation_id)?;
+        s.serialize_field("propagation_sync", &self.propagation_sync)?;
+        s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
+        s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.end()
     }
 }
@@ -428,6 +492,14 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             messages: Vec<serde_json::Value>,
             rns_ready: bool,
             lxmf_ready: bool,
+            #[serde(default)]
+            preferred_propagation_id: Option<String>,
+            #[serde(default)]
+            propagation_sync: serde_json::Value,
+            #[serde(default)]
+            auto_sync_interval_sec: u32,
+            #[serde(default)]
+            nomad_nodes: Vec<NomadNodeRow>,
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
@@ -439,6 +511,14 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             messages: raw.messages,
             rns_ready: raw.rns_ready,
             lxmf_ready: raw.lxmf_ready,
+            preferred_propagation_id: raw.preferred_propagation_id,
+            propagation_sync: if raw.propagation_sync.is_null() {
+                serde_json::Value::Null
+            } else {
+                raw.propagation_sync
+            },
+            auto_sync_interval_sec: raw.auto_sync_interval_sec,
+            nomad_nodes: raw.nomad_nodes,
         })
     }
 }

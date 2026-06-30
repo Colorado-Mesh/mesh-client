@@ -4,6 +4,8 @@ mod config;
 mod identity;
 mod interfaces;
 mod lxmf;
+mod nomad;
+mod propagation;
 mod status;
 mod system;
 mod ws;
@@ -11,7 +13,7 @@ mod ws;
 use std::sync::Arc;
 
 use axum::Router;
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 use tower_http::cors::CorsLayer;
 
 use crate::stack::StackHandle;
@@ -72,14 +74,45 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/peers", get(lxmf::list_peers))
         .route("/api/v1/peers/{hash}/path", post(lxmf::peer_path))
         .route("/api/v1/peers/{hash}/probe", post(lxmf::peer_probe))
-        .route("/api/v1/propagation", get(lxmf::list_propagation))
+        .route("/api/v1/ping", post(lxmf::ping))
+        .route("/api/v1/topology", get(system::topology))
+        .route("/api/v1/announces", delete(system::clear_announces))
+        .route("/api/v1/propagation", get(propagation::list_propagation))
+        .route(
+            "/api/v1/propagation/{id}/preferred",
+            post(propagation::set_preferred_propagation),
+        )
+        .route(
+            "/api/v1/propagation/sync",
+            post(propagation::start_propagation_sync),
+        )
+        .route(
+            "/api/v1/propagation/sync/cancel",
+            post(propagation::cancel_propagation_sync),
+        )
         .route(
             "/api/v1/propagation/{id}/enable",
-            post(lxmf::enable_propagation),
+            post(propagation::enable_propagation),
         )
         .route(
             "/api/v1/propagation/{id}/disable",
-            post(lxmf::disable_propagation),
+            post(propagation::disable_propagation),
+        )
+        .route(
+            "/api/v1/nomadnetwork/nodes",
+            get(nomad::list_nomad_nodes),
+        )
+        .route(
+            "/api/v1/nomadnetwork/nodes/favorite",
+            post(nomad::favorite_nomad_node),
+        )
+        .route(
+            "/api/v1/nomadnetwork/page/{hash}/{path}",
+            get(nomad::get_nomad_page),
+        )
+        .route(
+            "/api/v1/nomadnetwork/file/{hash}",
+            get(nomad::get_nomad_file),
         )
         .route("/api/v1/stack/restart", post(system::stack_restart))
         .route("/api/v1/system/factory-reset", post(system::factory_reset))

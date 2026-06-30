@@ -349,7 +349,10 @@
     "sentViaNetwork": "Dikirim melalui jaringan",
     "reticulumSendSending": "Mengirim...",
     "reticulumSendDelivered": "Terkirim",
-    "reticulumSendFailed": "Gagal mengirim"
+    "reticulumSendFailed": "Gagal mengirim",
+    "reticulumImageAttachment": "Gambar: {{name}}",
+    "reticulumFileAttachment": "File: {{name}}",
+    "reticulumShowInFolder": "Tampilkan dalam Folder"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -407,7 +410,12 @@
     "days": "hari",
     "emDash": "—",
     "saving": "Menyimpan...",
-    "peers": "Peer"
+    "peers": "Peer",
+    "colorGreen": "Hijau",
+    "colorCyan": "Cyan",
+    "colorAmber": "Kuning sawo",
+    "colorRed": "Merah",
+    "colorPurple": "Ungu"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
@@ -625,7 +633,7 @@
       "mnemonic": "Tuliskan frasa ini dan simpan dengan aman.",
       "confirmSaved": "Saya telah menyimpan frasa pemulihan saya",
       "hashLabel": "Hash LXMF:",
-      "nameLabel": "Name: Gerald Abram Foeh Junior",
+      "nameLabel": "Nama:",
       "failed": "Penyiapan identitas gagal",
       "export": "Ekspor cadangan",
       "exportPassphrase": "Frasa sandi cadangan",
@@ -654,7 +662,8 @@
       "cancelEdit": "Batal",
       "name": "Nama",
       "callsign": "Callsign",
-      "editFailed": "Gagal menyimpan antarmuka."
+      "editFailed": "Gagal menyimpan antarmuka.",
+      "pipeCommand": "Perintah pipa"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2876,7 +2885,11 @@
     "allGroups": "Semua groups",
     "manageGroups": "Kelola Grup",
     "radioPeerCount": "{{count}} rekan di tabel jalur",
-    "viewAllPeers": "Lihat semua di tab Rekan"
+    "viewAllPeers": "Lihat semua di tab Rekan",
+    "colLastHeard": "Terakhir didengar",
+    "colContact": "Kontak",
+    "contactYes": "Ya",
+    "contactNo": "Tidak"
   },
   "peerDetailModal": {
     "networkSection": "Jaringan",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Permohonan jalur gagal: {{error}}",
     "probeHops": "Selidiki OK — {{hops}} hop.",
     "probeLocal": "Selidiki OK (mode {{mode}}).",
-    "probeFailed": "Probe gagal: {{error}}"
+    "probeFailed": "Probe gagal: {{error}}",
+    "isContact": "Kontak",
+    "call": "Voice Call",
+    "callComingSoon": "Panggilan suara akan datang dalam pembaruan mendatang",
+    "iconColor": "Warna avatar",
+    "iconColorAria": "Warna avatar sejawat"
+  },
+  "reticulumPropagation": {
+    "preferred": "Disukai",
+    "setPreferred": "Atur pilihan",
+    "syncNow": "Sinkronkan pesan",
+    "cancelSync": "Batalkan sinkronisasi",
+    "autoSyncInterval": "Sinkronkan otomatis setiap {{sec}}detik"
+  },
+  "reticulumIdentity": {
+    "title": "Identitas",
+    "activeIdentity": "Identitas aktif",
+    "announceIntervalSec": "Interval pengumuman (detik)",
+    "clearAnnounces": "Hapus pengumuman"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "Belum ada node Nomad Network yang ditemukan.",
+    "toggleFavorite": "Alihkan favorit"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Hash tujuan…",
+    "hashAria": "Hash tujuan ke ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping gagal: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Panggilan suara",
+    "comingSoon": "Panggilan suara Codec2 belum diaktifkan.",
+    "ready": "Pipa suara siap.",
+    "startCall": "Mulai panggilan"
+  },
+  "reticulumTopology": {
+    "title": "Topologi jaringan",
+    "self": "Kau"
   }
 }

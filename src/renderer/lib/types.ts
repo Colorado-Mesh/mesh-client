@@ -358,6 +358,8 @@ export interface ChatMessage {
   reticulum_message_hash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulum_reply_to_hash?: string;
+  /** Local path when a Reticulum attachment was saved to disk. */
+  reticulumAttachmentPath?: string;
   sender_name: string;
   payload: string;
   channel: number;

@@ -33,6 +33,7 @@ interface ReticulumPeerStoreState {
   setCustomDisplayName: (hash: string, name: string | null) => Promise<void>;
   getPeer: (hash: string) => ReticulumPeer | ReticulumContact | undefined;
   getDisplayName: (peer: ReticulumPeer) => string;
+  isContact: (hash: string) => boolean;
 }
 
 function normalizeHash(hash: string): string {
@@ -233,6 +234,8 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
   },
 
   getDisplayName: (peer) => peerDisplayName(peer),
+
+  isContact: (hash) => get().contacts.has(normalizeHash(hash)),
 }));
 
 /** Fetch sidecar peers/contacts, overlay SQLite meta, update store; returns contacts for nodeStore sync. */

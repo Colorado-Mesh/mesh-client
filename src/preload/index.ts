@@ -124,13 +124,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
       to_hash?: string | null;
       reply_to_hash?: string | null;
       message_hash?: string | null;
+      received_via?: string | null;
+      delivery_status?: string | null;
+      delivery_attempts?: number | null;
+      next_delivery_attempt_at?: number | null;
+      attachment_path?: string | null;
     }) => ipcRenderer.invoke('db:saveReticulumMessage', message),
+    markStaleReticulumOutbound: (identityId: string, staleAfterMs?: number) =>
+      ipcRenderer.invoke('db:markStaleReticulumOutbound', identityId, staleAfterMs),
+    vacuumReticulumTables: () => ipcRenderer.invoke('db:vacuumReticulumTables'),
     getReticulumDestinations: () => ipcRenderer.invoke('db:getReticulumDestinations'),
     upsertReticulumDestination: (row: {
       destination_hash: string;
       display_name?: string | null;
       last_heard?: number | null;
       favorited?: boolean | number | null;
+      icon_name?: string | null;
+      icon_color?: string | null;
     }) => ipcRenderer.invoke('db:upsertReticulumDestination', row),
     saveMeshcoreContact: (contact: {
       node_id: number;
@@ -922,6 +932,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chat: {
     export: (messages: unknown[]) =>
       ipcRenderer.invoke('chat:export', messages) as Promise<{ success: boolean; path?: string }>,
+    saveReticulumAttachment: (opts: { fileName: string; mimeType?: string; dataBase64: string }) =>
+      ipcRenderer.invoke('chat:saveReticulumAttachment', opts) as Promise<{
+        success: boolean;
+        path?: string;
+      }>,
+    showItemInFolder: (filePath: string) =>
+      ipcRenderer.invoke('chat:showItemInFolder', filePath) as Promise<{ ok: boolean }>,
     linkPreview: {
       fetch: (url: string) =>
         ipcRenderer.invoke('chat:fetchLinkPreview', url) as Promise<{

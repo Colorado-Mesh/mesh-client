@@ -348,8 +348,11 @@
     "sentViaTcp": "Wysłano przez TCP",
     "sentViaNetwork": "Wysłane przez sieć",
     "reticulumSendSending": "Wysyłanie…",
-    "reticulumSendDelivered": "[Data] dostarczenia",
-    "reticulumSendFailed": "Nie udało się wysłać"
+    "reticulumSendDelivered": "Dostarczono",
+    "reticulumSendFailed": "Nie udało się wysłać",
+    "reticulumImageAttachment": "Zdjęcie: {{name}}",
+    "reticulumFileAttachment": "Plik: {{name}}",
+    "reticulumShowInFolder": "Pokaż w folderze"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -407,7 +410,12 @@
     "days": "dni",
     "emDash": "—",
     "saving": "Zapisywanie...",
-    "peers": "Partnerzy"
+    "peers": "Partnerzy",
+    "colorGreen": "Zielony",
+    "colorCyan": "Cyjan",
+    "colorAmber": "Bursztynowy",
+    "colorRed": "Czerwony",
+    "colorPurple": "Fioletowy/a/e"
   },
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",
@@ -654,7 +662,8 @@
       "cancelEdit": "Anuluj",
       "name": "Nazwa",
       "callsign": "Znak wywoławczy",
-      "editFailed": "Nie udało się zapisać interfejsu."
+      "editFailed": "Nie udało się zapisać interfejsu.",
+      "pipeCommand": "Polecenie rury"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2876,7 +2885,11 @@
     "allGroups": "Wszystkie grupy",
     "manageGroups": "Zarządzaj grupami",
     "radioPeerCount": "{{count}} rówieśnicy w tabeli ścieżek",
-    "viewAllPeers": "Wyświetl wszystko w zakładce Współpracownicy"
+    "viewAllPeers": "Wyświetl wszystko w zakładce Współpracownicy",
+    "colLastHeard": "Ostatnio słyszane",
+    "colContact": "Kontakt",
+    "contactYes": "Tak",
+    "contactNo": "Nr"
   },
   "peerDetailModal": {
     "networkSection": "Sieć",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Żądanie trasy nie powiodło się: {{error}}",
     "probeHops": "Sonda OK — {{hops}} hop(s).",
     "probeLocal": "Sonda OK (tryb {{mode}}).",
-    "probeFailed": "Sonda nie powiodła się: {{error}}"
+    "probeFailed": "Sonda nie powiodła się: {{error}}",
+    "isContact": "Kontakt",
+    "call": "Połączenie głosowe",
+    "callComingSoon": "Połączenia głosowe będą w przyszłości aktualizowane",
+    "iconColor": "Kolor awatara",
+    "iconColorAria": "Kolor awatara rówieśniczego"
+  },
+  "reticulumPropagation": {
+    "preferred": "Preferowane",
+    "setPreferred": "Ustaw jako preferowany",
+    "syncNow": "Synchronizuj wiadomości",
+    "cancelSync": "\"Anuluj synchronizację\"",
+    "autoSyncInterval": "Automatyczna synchronizacja co {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "Tożsamość",
+    "activeIdentity": "Tożsamość aktywna",
+    "announceIntervalSec": "Interwał ogłaszania (sekundy)",
+    "clearAnnounces": "Wyczyść ogłoszenia"
+  },
+  "nomadNetwork": {
+    "title": "Sieć Nomad",
+    "empty": "Nie wykryto jeszcze węzłów sieci Nomad.",
+    "toggleFavorite": "Przełącz ulubione"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Skrót miejsca docelowego…",
+    "hashAria": "Skrót miejsca docelowego do polecenia ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping nie powiódł się: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Połączenia głosowe",
+    "comingSoon": "Połączenia głosowe Codec2 nie są jeszcze włączone.",
+    "ready": "Rurociąg głosowy gotowy.",
+    "startCall": "Rozpocznij połączenie"
+  },
+  "reticulumTopology": {
+    "title": "Topologia sieci",
+    "self": "Możesz pobrać"
   }
 }

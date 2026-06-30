@@ -7,7 +7,7 @@ import {
 import { computeReticulumMessageHash } from '@/renderer/lib/reticulum/messageHash';
 import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
 import type { IdentityId } from '@/renderer/lib/types';
-import type { MessageRecord } from '@/renderer/stores/messageStore';
+import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage } from '@/renderer/stores/messageStore';
 
 export interface ReticulumLxmfPayload {
@@ -22,6 +22,24 @@ export interface ReticulumLxmfPayload {
   reaction_target?: string;
   received_via?: string;
   sent_via?: string;
+  delivery_status?: string;
+  attachment?: { file_name?: string; mime_type?: string; data_base64?: string };
+}
+
+function mapDeliveryStatusToMessageStatus(
+  deliveryStatus: string | null | undefined,
+  direction?: string,
+): MessageStatus {
+  if (deliveryStatus === 'failed') return 'failed';
+  if (deliveryStatus === 'sending' || deliveryStatus === 'pending') return 'sending';
+  if (direction === 'inbound' || direction === 'outbound') return 'acked';
+  return 'acked';
+}
+
+function resolvePersistedDeliveryStatus(p: ReticulumLxmfPayload): string | null {
+  if (p.delivery_status) return p.delivery_status;
+  if (p.direction === 'inbound' || p.direction === 'outbound') return 'delivered';
+  return null;
 }
 
 function resolvePayloadTransport(p: ReticulumLxmfPayload) {
@@ -39,6 +57,7 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
 
   const isReaction = Boolean(p.reaction_target);
   const receivedVia = resolvePayloadTransport(p);
+  const status = mapDeliveryStatusToMessageStatus(p.delivery_status, p.direction);
 
   return {
     id: messageHash,
@@ -48,7 +67,7 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
     payload: p.text,
     channelIndex: 0,
     timestamp,
-    status: 'acked',
+    status,
     ...(receivedVia ? { receivedVia } : {}),
     reticulumMessageHash: messageHash,
     reticulumSenderHash: p.sender_hash,
@@ -84,6 +103,7 @@ export async function persistReticulumMessageToDb(
       reply_to_hash: p.reply_to_hash ?? p.reaction_target ?? null,
       message_hash: p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text),
       received_via: resolvePayloadTransport(p) ?? null,
+      delivery_status: resolvePersistedDeliveryStatus(p),
     });
   } catch (e) {
     console.warn('[reticulumIngest] save message ' + errLikeToLogString(e));

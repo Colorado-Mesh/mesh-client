@@ -70,6 +70,16 @@ pub struct PropagationRow {
     pub status: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NomadNodeRow {
+    pub destination_hash: String,
+    pub display_name: Option<String>,
+    pub last_seen: Option<u64>,
+    #[serde(default)]
+    pub favorited: bool,
+    pub status: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AddInterfaceRequest {
     #[serde(rename = "type")]

@@ -52,10 +52,20 @@ function displayName(peer: ReticulumPeer): string {
   );
 }
 
+function peerLastSeenMs(peer: ReticulumPeer): number {
+  return normalizeLastHeardMs(peer.last_seen ?? 0);
+}
+
+function contactLastHeardMs(contact: ReticulumContact): number {
+  return normalizeLastHeardMs(contact.last_heard ?? 0);
+}
+
 function lastActivityMs(peer: ReticulumPeer): number {
   const contact = peer as ReticulumContact;
-  const ts = contact.last_heard ?? peer.last_seen ?? 0;
-  return normalizeLastHeardMs(ts);
+  if (contact.last_heard != null && contact.last_heard > 0) {
+    return contactLastHeardMs(contact);
+  }
+  return peerLastSeenMs(peer);
 }
 
 function comparePeers(a: ReticulumPeer, b: ReticulumPeer, key: SortKey, dir: SortDir): number {
@@ -92,6 +102,7 @@ export default function ReticulumPeerListPanel({
   const peers = useReticulumPeerStore((s) => s.peers);
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const getDisplayName = useReticulumPeerStore((s) => s.getDisplayName);
+  const isContact = useReticulumPeerStore((s) => s.isContact);
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
 
   const [activeTab, setActiveTab] = useState<PeerListTab>('peers');
@@ -193,6 +204,7 @@ export default function ReticulumPeerListPanel({
     setActionBusyHash(hash);
     try {
       await window.electronAPI.reticulum.proxyPost(`/api/v1/peers/${hash}/path`, {});
+      await refreshReticulumPeersFromSidecar();
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] path ' + errLikeToLogString(e));
     } finally {
@@ -204,6 +216,7 @@ export default function ReticulumPeerListPanel({
     setActionBusyHash(hash);
     try {
       await window.electronAPI.reticulum.proxyPost(`/api/v1/peers/${hash}/probe`, {});
+      await refreshReticulumPeersFromSidecar();
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
     } finally {
@@ -211,14 +224,61 @@ export default function ReticulumPeerListPanel({
     }
   };
 
-  const formatTime = (peer: ReticulumPeer) => {
-    const ms = lastActivityMs(peer);
+  const formatPeerLastSeen = (peer: ReticulumPeer) => {
+    const ms = peerLastSeenMs(peer);
+    if (!ms) return '—';
+    return formatRelativeOrIsoDate(ms, t, normalizeLastHeardMs);
+  };
+
+  const formatContactLastHeard = (contact: ReticulumContact) => {
+    const ms = contactLastHeardMs(contact);
     if (!ms) return '—';
     return formatRelativeOrIsoDate(ms, t, normalizeLastHeardMs);
   };
 
   const emptyKey =
     activeTab === 'contacts' ? 'peerListPanel.emptyContacts' : 'peerListPanel.emptyPeers';
+
+  const tableColSpan = activeTab === 'peers' ? 6 : 5;
+
+  const renderActionButtons = (peer: ReticulumPeer, busy: boolean) => (
+    <>
+      <button
+        type="button"
+        className="text-amber-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSendMessage(peerHashToNodeNum(peer.destination_hash));
+        }}
+        aria-label={t('peerListPanel.openChat')}
+      >
+        <MessageCircle className="inline h-3.5 w-3.5" aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          void requestPath(peer.destination_hash);
+        }}
+      >
+        {t('connectionPanel.reticulumPeers.path')}
+      </button>
+      <button
+        type="button"
+        className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          void probePeer(peer.destination_hash);
+        }}
+      >
+        {t('connectionPanel.reticulumPeers.probe')}
+      </button>
+    </>
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
@@ -319,66 +379,98 @@ export default function ReticulumPeerListPanel({
                   {sortIndicator('name')}
                 </button>
               </th>
-              <th className="py-2 pr-2">
-                <button
-                  type="button"
-                  className="hover:text-gray-200"
-                  onClick={() => {
-                    toggleSort('hops');
-                  }}
-                >
-                  {t('connectionPanel.reticulumPeers.hops')}
-                  {sortIndicator('hops')}
-                </button>
-              </th>
-              <th className="py-2 pr-2">
-                <button
-                  type="button"
-                  className="hover:text-gray-200"
-                  onClick={() => {
-                    toggleSort('lastSeen');
-                  }}
-                >
-                  {t('peerListPanel.colLastSeen')}
-                  {sortIndicator('lastSeen')}
-                </button>
-              </th>
-              <th className="hidden py-2 pr-2 sm:table-cell">
-                <button
-                  type="button"
-                  className="hover:text-gray-200"
-                  onClick={() => {
-                    toggleSort('interface');
-                  }}
-                >
-                  {t('peerListPanel.colInterface')}
-                  {sortIndicator('interface')}
-                </button>
-              </th>
-              <th className="py-2 pr-2">
-                <button
-                  type="button"
-                  className="hover:text-gray-200"
-                  onClick={() => {
-                    toggleSort('favorite');
-                  }}
-                  aria-label={t('peerListPanel.colFavorite')}
-                >
-                  ★{sortIndicator('favorite')}
-                </button>
-              </th>
+              {activeTab === 'peers' ? (
+                <>
+                  <th className="py-2 pr-2">{t('peerListPanel.colContact')}</th>
+                  <th className="py-2 pr-2">
+                    <button
+                      type="button"
+                      className="hover:text-gray-200"
+                      onClick={() => {
+                        toggleSort('hops');
+                      }}
+                    >
+                      {t('connectionPanel.reticulumPeers.hops')}
+                      {sortIndicator('hops')}
+                    </button>
+                  </th>
+                  <th className="py-2 pr-2">
+                    <button
+                      type="button"
+                      className="hover:text-gray-200"
+                      onClick={() => {
+                        toggleSort('lastSeen');
+                      }}
+                    >
+                      {t('peerListPanel.colLastSeen')}
+                      {sortIndicator('lastSeen')}
+                    </button>
+                  </th>
+                  <th className="hidden py-2 pr-2 sm:table-cell">
+                    <button
+                      type="button"
+                      className="hover:text-gray-200"
+                      onClick={() => {
+                        toggleSort('interface');
+                      }}
+                    >
+                      {t('peerListPanel.colInterface')}
+                      {sortIndicator('interface')}
+                    </button>
+                  </th>
+                </>
+              ) : (
+                <>
+                  <th className="py-2 pr-2">
+                    <button
+                      type="button"
+                      className="hover:text-gray-200"
+                      onClick={() => {
+                        toggleSort('lastSeen');
+                      }}
+                    >
+                      {t('peerListPanel.colLastHeard')}
+                      {sortIndicator('lastSeen')}
+                    </button>
+                  </th>
+                  <th className="py-2 pr-2">
+                    <button
+                      type="button"
+                      className="hover:text-gray-200"
+                      onClick={() => {
+                        toggleSort('hops');
+                      }}
+                    >
+                      {t('connectionPanel.reticulumPeers.hops')}
+                      {sortIndicator('hops')}
+                    </button>
+                  </th>
+                  <th className="py-2 pr-2">
+                    <button
+                      type="button"
+                      className="hover:text-gray-200"
+                      onClick={() => {
+                        toggleSort('favorite');
+                      }}
+                      aria-label={t('peerListPanel.colFavorite')}
+                    >
+                      ★{sortIndicator('favorite')}
+                    </button>
+                  </th>
+                </>
+              )}
               <th className="py-2 pr-2">{t('connectionPanel.reticulumPeers.actions')}</th>
             </tr>
           </thead>
           <tbody>
             {shouldVirtualize && virtualRows.length > 0 ? (
               <tr>
-                <td colSpan={6} style={{ height: virtualRows[0]?.start ?? 0 }} />
+                <td colSpan={tableColSpan} style={{ height: virtualRows[0]?.start ?? 0 }} />
               </tr>
             ) : null}
             {sortedRows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-muted px-2 py-8 text-center text-sm">
+                <td colSpan={tableColSpan} className="text-muted px-2 py-8 text-center text-sm">
                   {t(emptyKey)}
                 </td>
               </tr>
@@ -388,6 +480,8 @@ export default function ReticulumPeerListPanel({
                 if (!peer) return null;
                 const busy = actionBusyHash === peer.destination_hash;
                 const label = getDisplayName(peer);
+                const hashTitle = peer.destination_hash;
+                const contacted = isContact(peer.destination_hash);
                 return (
                   <tr
                     key={peer.destination_hash}
@@ -398,64 +492,67 @@ export default function ReticulumPeerListPanel({
                       onPeerClick(peer.destination_hash);
                     }}
                   >
-                    <td className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono" title={label}>
+                    <td
+                      className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono"
+                      title={hashTitle}
+                    >
                       {label}
                     </td>
-                    <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
-                    <td className="py-2 pr-2 whitespace-nowrap" title={formatTime(peer)}>
-                      {formatTime(peer)}
-                    </td>
-                    <td className="hidden max-w-[8rem] truncate py-2 pr-2 sm:table-cell">
-                      {peer.interface ?? '—'}
-                    </td>
-                    <td className="py-2 pr-2">
-                      <button
-                        type="button"
-                        className={peer.favorited ? 'text-yellow-400' : 'text-gray-500'}
-                        aria-label={t('peerListPanel.toggleFavorite')}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void toggleFavorite(peer.destination_hash, !peer.favorited);
-                        }}
-                      >
-                        <Star className="h-4 w-4" fill={peer.favorited ? 'currentColor' : 'none'} />
-                      </button>
-                    </td>
+                    {activeTab === 'peers' ? (
+                      <>
+                        <td className="py-2 pr-2">
+                          <span
+                            className={
+                              contacted
+                                ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 text-[10px] font-medium'
+                                : 'text-muted text-[10px]'
+                            }
+                          >
+                            {contacted
+                              ? t('peerListPanel.contactYes')
+                              : t('peerListPanel.contactNo')}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
+                        <td
+                          className="py-2 pr-2 whitespace-nowrap"
+                          title={formatPeerLastSeen(peer)}
+                        >
+                          {formatPeerLastSeen(peer)}
+                        </td>
+                        <td className="hidden max-w-[8rem] truncate py-2 pr-2 sm:table-cell">
+                          {peer.interface ?? '—'}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td
+                          className="py-2 pr-2 whitespace-nowrap"
+                          title={formatContactLastHeard(peer as ReticulumContact)}
+                        >
+                          {formatContactLastHeard(peer as ReticulumContact)}
+                        </td>
+                        <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
+                        <td className="py-2 pr-2">
+                          <button
+                            type="button"
+                            className={peer.favorited ? 'text-yellow-400' : 'text-gray-500'}
+                            aria-label={t('peerListPanel.toggleFavorite')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void toggleFavorite(peer.destination_hash, !peer.favorited);
+                            }}
+                          >
+                            <Star
+                              className="h-4 w-4"
+                              fill={peer.favorited ? 'currentColor' : 'none'}
+                            />
+                          </button>
+                        </td>
+                      </>
+                    )}
                     <td className="py-2 pr-2 whitespace-nowrap">
-                      <button
-                        type="button"
-                        className="text-amber-400 hover:underline disabled:opacity-40"
-                        disabled={busy}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSendMessage(peerHashToNodeNum(peer.destination_hash));
-                        }}
-                        aria-label={t('peerListPanel.openChat')}
-                      >
-                        <MessageCircle className="inline h-3.5 w-3.5" aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
-                        disabled={busy}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void requestPath(peer.destination_hash);
-                        }}
-                      >
-                        {t('connectionPanel.reticulumPeers.path')}
-                      </button>
-                      <button
-                        type="button"
-                        className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
-                        disabled={busy}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void probePeer(peer.destination_hash);
-                        }}
-                      >
-                        {t('connectionPanel.reticulumPeers.probe')}
-                      </button>
+                      {renderActionButtons(peer, busy)}
                     </td>
                   </tr>
                 );
@@ -464,7 +561,7 @@ export default function ReticulumPeerListPanel({
             {shouldVirtualize && virtualRows.length > 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={tableColSpan}
                   style={{
                     height:
                       rowVirtualizer.getTotalSize() -

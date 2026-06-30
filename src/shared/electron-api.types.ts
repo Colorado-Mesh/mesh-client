@@ -239,13 +239,24 @@ export interface ElectronAPI {
       reply_to_hash?: string | null;
       message_hash?: string | null;
       received_via?: string | null;
+      delivery_status?: string | null;
+      delivery_attempts?: number | null;
+      next_delivery_attempt_at?: number | null;
+      attachment_path?: string | null;
     }) => Promise<void>;
+    markStaleReticulumOutbound: (
+      identityId: string,
+      staleAfterMs?: number,
+    ) => Promise<{ changes?: number }>;
+    vacuumReticulumTables: () => Promise<{ ok?: boolean }>;
     getReticulumDestinations: () => Promise<unknown[]>;
     upsertReticulumDestination: (row: {
       destination_hash: string;
       display_name?: string | null;
       last_heard?: number | null;
       favorited?: boolean | number | null;
+      icon_name?: string | null;
+      icon_color?: string | null;
     }) => Promise<void>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
@@ -735,6 +746,12 @@ export interface ElectronAPI {
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;
+    saveReticulumAttachment: (opts: {
+      fileName: string;
+      mimeType?: string;
+      dataBase64: string;
+    }) => Promise<{ success: boolean; path?: string }>;
+    showItemInFolder: (filePath: string) => Promise<{ ok: boolean }>;
     linkPreview: {
       fetch: (
         url: string,

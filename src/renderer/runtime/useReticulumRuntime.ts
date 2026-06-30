@@ -15,6 +15,10 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import {
+  markStaleReticulumOutboundInStore,
+  markStaleReticulumOutboundMessages,
+} from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
 import type { ReticulumContact, ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -31,12 +35,14 @@ import {
   useMessageStore,
 } from '../stores/messageStore';
 import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import {
   refreshReticulumPeersFromSidecar,
   reticulumContactToMeshNode,
   reticulumContactToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useReticulumPropagationStore } from '../stores/reticulumPropagationStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 const INITIAL_STATE: DeviceState = {
@@ -135,10 +141,49 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId],
   );
 
+  const refreshMessagesFromDb = useCallback(async () => {
+    if (!identityId) return;
+    try {
+      const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
+        sender_id: string;
+        sender_name?: string;
+        payload: string;
+        timestamp: number;
+        to_hash?: string | null;
+        reply_to_hash?: string | null;
+        message_hash?: string | null;
+        received_via?: string | null;
+        delivery_status?: string | null;
+        attachment_path?: string | null;
+      }[];
+      replaceMessageRecordsForIdentity(
+        identityId,
+        rows.map((row) => reticulumDbRowToMessageRecord(row)),
+      );
+    } catch (e) {
+      console.warn('[useReticulumRuntime] refresh messages ' + errLikeToLogString(e));
+    }
+  }, [identityId]);
+
   const handleSidecarEvent = useCallback(
     (evt: ReticulumSidecarEvent) => {
       if (evt.type === 'lxmf_message' && evt.payload && typeof evt.payload === 'object') {
         ingestLxmfPayload(evt.payload);
+      }
+      if (
+        evt.type === 'propagation.sync_progress' &&
+        evt.payload &&
+        typeof evt.payload === 'object'
+      ) {
+        const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
+        useReticulumPropagationStore.getState().setSyncState({
+          active: p.active ?? true,
+          progress: typeof p.progress === 'number' ? p.progress : 0,
+          message: p.message ?? null,
+        });
+      }
+      if (evt.type === 'nomadnetwork.node') {
+        void useNomadNetworkStore.getState().refreshFromSidecar();
       }
       if (
         evt.type === 'announce.received' ||
@@ -171,6 +216,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await refreshIdentityFromSidecar();
       await refreshContactsFromSidecar();
       await syncDiagnosticsFromSidecar();
+      if (identityId) {
+        await markStaleReticulumOutboundMessages(identityId);
+        markStaleReticulumOutboundInStore(identityId);
+        await refreshMessagesFromDb();
+      }
       setState({ status: 'configured', myNodeNum: selfNodeId ?? 0, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -187,7 +237,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     handleSidecarEvent,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
+    refreshMessagesFromDb,
     syncDiagnosticsFromSidecar,
+    identityId,
     selfNodeId,
     syncConnectionStore,
   ]);
@@ -314,28 +366,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const refreshNodesFromDb = useCallback(async () => {
     await refreshContactsFromSidecar();
   }, [refreshContactsFromSidecar]);
-
-  const refreshMessagesFromDb = useCallback(async () => {
-    if (!identityId) return;
-    try {
-      const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
-        sender_id: string;
-        sender_name?: string;
-        payload: string;
-        timestamp: number;
-        to_hash?: string | null;
-        reply_to_hash?: string | null;
-        message_hash?: string | null;
-        received_via?: string | null;
-      }[];
-      replaceMessageRecordsForIdentity(
-        identityId,
-        rows.map((row) => reticulumDbRowToMessageRecord(row)),
-      );
-    } catch (e) {
-      console.warn('[useReticulumRuntime] refresh messages ' + errLikeToLogString(e));
-    }
-  }, [identityId]);
 
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {

@@ -349,7 +349,10 @@
     "sentViaNetwork": "Odesláno prostřednictvím sítě",
     "reticulumSendSending": "Odesílání...",
     "reticulumSendDelivered": "Dodané",
-    "reticulumSendFailed": "Odeslání se nezdařilo"
+    "reticulumSendFailed": "Odeslání se nezdařilo",
+    "reticulumImageAttachment": "Obrázek: {{name}}",
+    "reticulumFileAttachment": "Soubor: {{name}}",
+    "reticulumShowInFolder": "Zobrazit ve složce"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -407,7 +410,12 @@
     "days": "dní",
     "emDash": "—",
     "saving": "Ukládání…",
-    "peers": "Vazby"
+    "peers": "Vazby",
+    "colorGreen": "Zelené",
+    "colorCyan": "Azurová",
+    "colorAmber": "Žlutá",
+    "colorRed": "Červené",
+    "colorPurple": "Fialová"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
@@ -654,7 +662,8 @@
       "cancelEdit": "Zrušit",
       "name": "Název",
       "callsign": "Volací značka",
-      "editFailed": "Uložení rozhraní se nezdařilo."
+      "editFailed": "Uložení rozhraní se nezdařilo.",
+      "pipeCommand": "Příkaz potrubí"
     },
     "reticulumPeers": {
       "name": "Rovesníci",
@@ -2876,7 +2885,11 @@
     "allGroups": "Všechny skupiny",
     "manageGroups": "Spravovat skupiny",
     "radioPeerCount": "{{count}} kolegů v tabulce cest",
-    "viewAllPeers": "Zobrazit vše na kartě Kolegové"
+    "viewAllPeers": "Zobrazit vše na kartě Kolegové",
+    "colLastHeard": "Naposledy slyšeno",
+    "colContact": "Kontakt",
+    "contactYes": "Ano",
+    "contactNo": "Ne"
   },
   "peerDetailModal": {
     "networkSection": "Síť",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Žádost o trasu se nezdařila: {{error}}",
     "probeHops": "Sonda OK — {{hops}} hop(y).",
     "probeLocal": "Sonda je v pořádku (režim {{mode}}).",
-    "probeFailed": "Sonda selhala: {{error}}"
+    "probeFailed": "Sonda selhala: {{error}}",
+    "isContact": "Kontakt",
+    "call": "Hlasové volání",
+    "callComingSoon": "Hlasové hovory přicházející v budoucí aktualizaci",
+    "iconColor": "Barva avatara",
+    "iconColorAria": "Barva avatara vrstevníka"
+  },
+  "reticulumPropagation": {
+    "preferred": "Preference",
+    "setPreferred": "Nastavit preferované",
+    "syncNow": "Synchronizovat zprávy",
+    "cancelSync": "\"Zrušit synchronizaci\"",
+    "autoSyncInterval": "Automatická synchronizace každých {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "Identita",
+    "activeIdentity": "Aktivní identita",
+    "announceIntervalSec": "Interval oznamování (sekundy)",
+    "clearAnnounces": "Vymazat oznámení"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "Zatím nebyly nalezeny žádné uzly Nomad Network.",
+    "toggleFavorite": "Přepnout oblíbené"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Cílový hash…",
+    "hashAria": "Cílový hash na ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping se nezdařil: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Hlasová volání",
+    "comingSoon": "Hlasové hovory Codec2 zatím nejsou povoleny.",
+    "ready": "Hlasový kanál připraven.",
+    "startCall": "Zahájit hovor"
+  },
+  "reticulumTopology": {
+    "title": "topologie sítě",
+    "self": "Vy"
   }
 }

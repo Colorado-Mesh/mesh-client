@@ -349,7 +349,10 @@
     "sentViaNetwork": "Ağ üzerinden gönderildi",
     "reticulumSendSending": "Gönderiliyor...",
     "reticulumSendDelivered": "Teslim Edildi",
-    "reticulumSendFailed": "Gönderilemedi"
+    "reticulumSendFailed": "Gönderilemedi",
+    "reticulumImageAttachment": "Resim: {{name}}",
+    "reticulumFileAttachment": "Dosya: {{name}}",
+    "reticulumShowInFolder": "Dizinde"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -407,7 +410,12 @@
     "days": "günler",
     "emDash": "—",
     "saving": "Kaydediliyor...",
-    "peers": "Meslektaşlar"
+    "peers": "Meslektaşlar",
+    "colorGreen": "Yeşil",
+    "colorCyan": "Açık mavi",
+    "colorAmber": "Sarı",
+    "colorRed": "Kırmızı",
+    "colorPurple": "Mor"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
@@ -654,7 +662,8 @@
       "cancelEdit": "İptal",
       "name": "Ad",
       "callsign": "Çağrı kodu",
-      "editFailed": "Arabirim kaydedilemedi."
+      "editFailed": "Arabirim kaydedilemedi.",
+      "pipeCommand": "Boru komutu"
     },
     "reticulumPeers": {
       "name": "Eş",
@@ -2876,7 +2885,11 @@
     "allGroups": "Tüm gruplar",
     "manageGroups": "Grup Yönetimi",
     "radioPeerCount": "{{count}} yol tablosundaki eş(ler)",
-    "viewAllPeers": "Akranlar sekmesinde tümünü görüntüle"
+    "viewAllPeers": "Akranlar sekmesinde tümünü görüntüle",
+    "colLastHeard": "Son duyma",
+    "colContact": "İletişim",
+    "contactYes": "Evet",
+    "contactNo": "Hayır"
   },
   "peerDetailModal": {
     "networkSection": "Ağ",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Yol isteği başarısız oldu: {{error}}",
     "probeHops": "Prob tamam — {{hops}} hop(lar).",
     "probeLocal": "Prob OK ({{mode}} modu).",
-    "probeFailed": "Prob başarısız oldu: {{error}}"
+    "probeFailed": "Prob başarısız oldu: {{error}}",
+    "isContact": "İletişim",
+    "call": "Sesli arama",
+    "callComingSoon": "Gelecekteki bir güncellemede gelen sesli aramalar",
+    "iconColor": "Avatar rengi",
+    "iconColorAria": "Akran avatarı rengi"
+  },
+  "reticulumPropagation": {
+    "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",
+    "setPreferred": "Tercih edilenleri belirleyin",
+    "syncNow": "Mesajları senkronize et",
+    "cancelSync": "Senkronizasyonu iptal et",
+    "autoSyncInterval": "Her {{sec}}sn'de bir otomatik senkronize et"
+  },
+  "reticulumIdentity": {
+    "title": "Kimlikler",
+    "activeIdentity": "Aktif kimlik",
+    "announceIntervalSec": "Anons aralığı (saniye)",
+    "clearAnnounces": "Duyuruları temizle"
+  },
+  "nomadNetwork": {
+    "title": "Göçebe Ağı",
+    "empty": "Henüz hiçbir Göçebe Ağı düğümü keşfedilmedi.",
+    "toggleFavorite": "Favorileri aç/kapat"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Hedef hash…",
+    "hashAria": "Hedef hash'ten ping'e",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping başarısız oldu: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Sesli Aramalar",
+    "comingSoon": "Codec2 sesli aramaları henüz etkinleştirilmedi.",
+    "ready": "Ses hattı hazır.",
+    "startCall": "Çağrı başlat"
+  },
+  "reticulumTopology": {
+    "title": "Ağ topolojisi",
+    "self": "Sen"
   }
 }

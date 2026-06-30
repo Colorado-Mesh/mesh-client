@@ -349,7 +349,10 @@
     "sentViaNetwork": "Inviato tramite rete",
     "reticulumSendSending": "Invio in corso…",
     "reticulumSendDelivered": "Consegnato",
-    "reticulumSendFailed": "Impossibile inviare"
+    "reticulumSendFailed": "Impossibile inviare",
+    "reticulumImageAttachment": "Immagine: {{name}}",
+    "reticulumFileAttachment": "File: {{name}}",
+    "reticulumShowInFolder": "Nella cartella"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -407,7 +410,12 @@
     "days": "giorni",
     "emDash": "—^",
     "saving": "Salvataggio in corso...",
-    "peers": "Compagni"
+    "peers": "Compagni",
+    "colorGreen": "Verde",
+    "colorCyan": "Ciano",
+    "colorAmber": "Ambra",
+    "colorRed": "Rosso",
+    "colorPurple": "Viola"
   },
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
@@ -654,7 +662,8 @@
       "cancelEdit": "Annulla",
       "name": "Nome",
       "callsign": "Nome in codice",
-      "editFailed": "Impossibile salvare l'interfaccia."
+      "editFailed": "Impossibile salvare l'interfaccia.",
+      "pipeCommand": "Comando tubo"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2876,7 +2885,11 @@
     "allGroups": "Tutti i gruppi",
     "manageGroups": "Gestisci gruppi",
     "radioPeerCount": "{{count}} peer nella tabella dei percorsi",
-    "viewAllPeers": "Visualizza tutto nella scheda Colleghi"
+    "viewAllPeers": "Visualizza tutto nella scheda Colleghi",
+    "colLastHeard": "Ultimo sentito:",
+    "colContact": "Contatti",
+    "contactYes": "Si",
+    "contactNo": "No"
   },
   "peerDetailModal": {
     "networkSection": "Network",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Richiesta percorso non riuscita: {{error}}",
     "probeHops": "Sonda OK — {{hops}} hop(s).",
     "probeLocal": "Sonda OK (modalità {{mode}}).",
-    "probeFailed": "Sonda guasta: {{error}}"
+    "probeFailed": "Sonda guasta: {{error}}",
+    "isContact": "Contatti",
+    "call": "Voice cali",
+    "callComingSoon": "Chiamate vocali in arrivo con un aggiornamento futuro",
+    "iconColor": "Colore avatar",
+    "iconColorAria": "Colore avatar peer"
+  },
+  "reticulumPropagation": {
+    "preferred": "Preferito",
+    "setPreferred": "Imposta formato preferito",
+    "syncNow": "Sincronizza messaggi",
+    "cancelSync": "Annulla sincronizzazione",
+    "autoSyncInterval": "Sincronizzazione automatica ogni {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "Identità",
+    "activeIdentity": "Identità attiva",
+    "announceIntervalSec": "Intervallo annunci (secondi)",
+    "clearAnnounces": "Annunci chiari"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "Nessun nodo Nomad Network ancora scoperto.",
+    "toggleFavorite": "Attiva/disattiva preferiti"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Hash di destinazione...",
+    "hashAria": "Hash di destinazione per il ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping non riuscito: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Chiamate vocali",
+    "comingSoon": "Le chiamate vocali Codec2 non sono ancora abilitate.",
+    "ready": "Pipeline vocale pronta.",
+    "startCall": "Inizio chiamata"
+  },
+  "reticulumTopology": {
+    "title": "Topologia di rete.",
+    "self": "Tu"
   }
 }

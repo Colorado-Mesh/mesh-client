@@ -349,7 +349,10 @@
     "sentViaNetwork": "a traves de la red",
     "reticulumSendSending": "Enviando",
     "reticulumSendDelivered": "Entregado",
-    "reticulumSendFailed": "Error al enviar"
+    "reticulumSendFailed": "Error al enviar",
+    "reticulumImageAttachment": "Imagen: {{name}}",
+    "reticulumFileAttachment": "Archivo: {{name}}",
+    "reticulumShowInFolder": "Mostrar en la carpeta"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -407,7 +410,12 @@
     "days": "días",
     "emDash": "—",
     "saving": "Guardando...",
-    "peers": "Pares"
+    "peers": "Pares",
+    "colorGreen": "Verde",
+    "colorCyan": "Cian",
+    "colorAmber": "Ámbar",
+    "colorRed": "Rojo",
+    "colorPurple": "Morado"
   },
   "configApplyNotice": {
     "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
@@ -654,7 +662,8 @@
       "cancelEdit": "Cancelar",
       "name": "Nombre",
       "callsign": "Señal de llamada",
-      "editFailed": "Error al guardar la interfaz."
+      "editFailed": "Error al guardar la interfaz.",
+      "pipeCommand": "Comando de tubería"
     },
     "reticulumPeers": {
       "name": "Par",
@@ -2876,7 +2885,11 @@
     "allGroups": "Todos los grupos",
     "manageGroups": "Gestionar grupos",
     "radioPeerCount": "{{count}} pares en la tabla de rutas",
-    "viewAllPeers": "Ver todo en la pestaña Peers"
+    "viewAllPeers": "Ver todo en la pestaña Peers",
+    "colLastHeard": "Escuchado la Última Vez",
+    "colContact": "Contacto",
+    "contactYes": "Sí",
+    "contactNo": "No"
   },
   "peerDetailModal": {
     "networkSection": "Red",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Error en la solicitud de ruta: {{error}}",
     "probeHops": "Sonda OK — {{hops}} hop(s).",
     "probeLocal": "Sonda OK (modo {{mode}}).",
-    "probeFailed": "Sonda fallida: {{error}}"
+    "probeFailed": "Sonda fallida: {{error}}",
+    "isContact": "Contacto",
+    "call": "Llamada de Voz",
+    "callComingSoon": "Llamadas de voz que llegarán en una actualización futura",
+    "iconColor": "Color del avatar",
+    "iconColorAria": "Color del avatar"
+  },
+  "reticulumPropagation": {
+    "preferred": "Preferido",
+    "setPreferred": "Establecer preferido",
+    "syncNow": "Sincronizar mensajes",
+    "cancelSync": "Cancelar sincronización",
+    "autoSyncInterval": "Sincronización automática cada {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "Identidades",
+    "activeIdentity": "Identidad del activo:",
+    "announceIntervalSec": "Intervalo de anuncio (segundos)",
+    "clearAnnounces": "Borrar anuncios"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "Aún no se han descubierto nodos de Nomad Network.",
+    "toggleFavorite": "Añadir a favoritos"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Hash de destino...",
+    "hashAria": "Hash de destino para hacer ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Error de ping: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Llamadas de voz",
+    "comingSoon": "Las llamadas de voz de Codec2 aún no están habilitadas.",
+    "ready": "Tubería de voz lista.",
+    "startCall": "Empezar llamada"
+  },
+  "reticulumTopology": {
+    "title": "Topología de red",
+    "self": "Tú"
   }
 }

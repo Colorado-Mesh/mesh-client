@@ -55,8 +55,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:saveReticulumMessage');
       if (!db) return { changes: 0 };
       db.prepareOnce(
-        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         identityId,
         senderId,
@@ -67,6 +67,14 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         typeof m.reply_to_hash === 'string' ? m.reply_to_hash.slice(0, 128) : null,
         typeof m.message_hash === 'string' ? m.message_hash.slice(0, 128) : null,
         receivedVia,
+        typeof m.delivery_status === 'string' ? m.delivery_status.slice(0, 32) : null,
+        m.delivery_attempts != null && Number.isFinite(Number(m.delivery_attempts))
+          ? Math.trunc(Number(m.delivery_attempts))
+          : 0,
+        m.next_delivery_attempt_at != null && Number.isFinite(Number(m.next_delivery_attempt_at))
+          ? Math.trunc(Number(m.next_delivery_attempt_at))
+          : null,
+        typeof m.attachment_path === 'string' ? m.attachment_path.slice(0, 512) : null,
       );
       return { changes: 1 };
     } catch (err) {
@@ -137,12 +145,14 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:upsertReticulumDestination');
       if (!db) return { changes: 0 };
       db.prepareOnce(
-        `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited)
-         VALUES (?, ?, ?, ?)
+        `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
+         VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(destination_hash) DO UPDATE SET
            display_name = COALESCE(excluded.display_name, reticulum_destinations.display_name),
            last_heard = COALESCE(excluded.last_heard, reticulum_destinations.last_heard),
-           favorited = excluded.favorited`,
+           favorited = excluded.favorited,
+           icon_name = COALESCE(excluded.icon_name, reticulum_destinations.icon_name),
+           icon_color = COALESCE(excluded.icon_color, reticulum_destinations.icon_color)`,
       ).run(
         hash,
         typeof r.display_name === 'string' ? r.display_name.slice(0, 128) : null,
@@ -150,10 +160,52 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           ? Math.trunc(Number(r.last_heard))
           : null,
         r.favorited ? 1 : 0,
+        typeof r.icon_name === 'string' ? r.icon_name.slice(0, 64) : null,
+        typeof r.icon_color === 'string' ? r.icon_color.slice(0, 32) : null,
       );
       return { changes: 1 };
     } catch (err) {
       finishDbIpcHandler('db:upsertReticulumDestination', err);
+    }
+  });
+
+  ipcMain.handle(
+    'db:markStaleReticulumOutbound',
+    (_event, identityId: string, staleAfterMs: number) => {
+      try {
+        if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
+        const rawStale =
+          typeof staleAfterMs === 'number' && Number.isFinite(staleAfterMs)
+            ? staleAfterMs
+            : 86_400_000;
+        const staleMs = Math.min(Math.max(60_000, rawStale), 30 * 86_400_000);
+        const cutoff = Date.now() - staleMs;
+        const db = getDbForIpc('db:markStaleReticulumOutbound');
+        if (!db) return { changes: 0 };
+        const result = db
+          .prepareOnce(
+            `UPDATE reticulum_messages
+           SET delivery_status = 'failed'
+           WHERE identity_id = ?
+             AND delivery_status IN ('sending', 'pending')
+             AND timestamp < ?`,
+          )
+          .run(identityId, cutoff);
+        return { changes: result.changes ?? 0 };
+      } catch (err) {
+        finishDbIpcHandler('db:markStaleReticulumOutbound', err);
+      }
+    },
+  );
+
+  ipcMain.handle('db:vacuumReticulumTables', () => {
+    try {
+      const db = getDbForIpc('db:vacuumReticulumTables');
+      if (!db) return { ok: false };
+      db.execScript('VACUUM');
+      return { ok: true };
+    } catch (err) {
+      finishDbIpcHandler('db:vacuumReticulumTables', err);
     }
   });
 }

@@ -13,6 +13,10 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
+import NomadNetworkPanel from './NomadNetworkPanel';
+import ReticulumCallPanel from './ReticulumCallPanel';
+import ReticulumIdentitySection from './ReticulumIdentitySection';
+import ReticulumPropagationSection from './ReticulumPropagationSection';
 
 interface ReticulumInterfaceRow {
   id: string;
@@ -32,12 +36,8 @@ interface ReticulumInterfaceRow {
   preset?: string | null;
 }
 
-interface PropagationRow {
-  id: string;
-  name: string;
-  enabled: boolean;
-  status: string;
-}
+type ReticulumIfaceUiType =
+  'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi';
 
 export interface ReticulumRadioPanelProps {
   stackRunning: boolean;
@@ -72,11 +72,11 @@ export function ReticulumRadioPanel({
   const [confirmSaved, setConfirmSaved] = useState(false);
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
   const peerCount = useReticulumPeerStore((s) => s.peers.size);
-  const [propagation, setPropagation] = useState<PropagationRow[]>([]);
-  const [ifaceType, setIfaceType] = useState<'tcp' | 'auto' | 'rnode'>('tcp');
+  const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
   const [ifaceHost, setIfaceHost] = useState('');
   const [ifacePort, setIfacePort] = useState('4242');
   const [serialPort, setSerialPort] = useState('');
+  const [pipeCommand, setPipeCommand] = useState('');
   const [presets, setPresets] = useState<{ id: string; label: string }[]>([]);
   const [selectedPreset, setSelectedPreset] = useState('');
   const [serialPorts, setSerialPorts] = useState<{ path: string; label?: string }[]>([]);
@@ -92,8 +92,6 @@ export function ReticulumRadioPanel({
     name: string;
   } | null>(null);
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
-  const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
-  const [gamesStatus, setGamesStatus] = useState<string | null>(null);
   const [pendingImportMode, setPendingImportMode] = useState<'merge' | 'replace'>('merge');
   const [stackSettings, setStackSettings] = useState({
     enable_transport: false,
@@ -110,18 +108,6 @@ export function ReticulumRadioPanel({
       setInterfaces(body.interfaces ?? []);
     } catch (e) {
       console.debug('[ReticulumRadioPanel] interfaces ' + errLikeToLogString(e));
-    }
-  }, [sidecarApiReady]);
-
-  const refreshPropagation = useCallback(async () => {
-    if (!sidecarApiReady) return;
-    try {
-      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/propagation')) as {
-        propagation?: PropagationRow[];
-      };
-      setPropagation(body.propagation ?? []);
-    } catch (e) {
-      console.debug('[ReticulumRadioPanel] propagation ' + errLikeToLogString(e));
     }
   }, [sidecarApiReady]);
 
@@ -144,20 +130,17 @@ export function ReticulumRadioPanel({
   useEffect(() => {
     if (!sidecarApiReady) {
       setInterfaces([]);
-      setPropagation([]);
       return;
     }
     void refreshInterfaces();
-    void refreshPropagation();
     void refreshStackSettings();
     const unsub = window.electronAPI.reticulum.onEvent((evt: ReticulumSidecarEvent) => {
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         void refreshInterfaces();
-        void refreshPropagation();
       }
     });
     return unsub;
-  }, [sidecarApiReady, refreshInterfaces, refreshPropagation, refreshStackSettings]);
+  }, [sidecarApiReady, refreshInterfaces, refreshStackSettings]);
 
   useEffect(() => {
     if (!sidecarApiReady) return;
@@ -182,24 +165,6 @@ export function ReticulumRadioPanel({
         setBleAvailable(Boolean(ble.available));
       })
       .catch(() => {});
-    void window.electronAPI.reticulum
-      .proxyGet('/api/v1/voice/status')
-      .then((body) => {
-        const status = body as { enabled?: boolean; reason?: string };
-        setVoiceStatus(status.enabled ? 'enabled' : (status.reason ?? 'disabled'));
-      })
-      .catch(() => {
-        setVoiceStatus(null);
-      });
-    void window.electronAPI.reticulum
-      .proxyGet('/api/v1/games/status')
-      .then((body) => {
-        const status = body as { enabled?: boolean; reason?: string };
-        setGamesStatus(status.enabled ? 'enabled' : (status.reason ?? 'disabled'));
-      })
-      .catch(() => {
-        setGamesStatus(null);
-      });
   }, [sidecarApiReady]);
 
   const handleFactoryReset = async () => {
@@ -284,13 +249,20 @@ export function ReticulumRadioPanel({
 
   const handleAddInterface = async () => {
     const body: Record<string, unknown> = { type: ifaceType };
-    if (ifaceType === 'tcp') {
+    if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
       body.host = ifaceHost.trim();
-      body.port = Number.parseInt(ifacePort, 10) || 4242;
+      if (ifaceType !== 'i2p') {
+        body.port = Number.parseInt(ifacePort, 10) || 4242;
+      }
     }
-    if (ifaceType === 'rnode') {
+    if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
       body.serial_port = serialPort.trim();
+    }
+    if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
       body.preset = selectedPreset || null;
+    }
+    if (ifaceType === 'pipe') {
+      body.command = pipeCommand.trim();
     }
     await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body);
     await refreshInterfaces();
@@ -585,6 +557,7 @@ export function ReticulumRadioPanel({
             ifaceHost={ifaceHost}
             ifacePort={ifacePort}
             serialPort={serialPort}
+            pipeCommand={pipeCommand}
             selectedPreset={selectedPreset}
             presets={presets}
             serialPorts={serialPorts}
@@ -593,6 +566,7 @@ export function ReticulumRadioPanel({
             onIfaceHostChange={setIfaceHost}
             onIfacePortChange={setIfacePort}
             onSerialPortChange={setSerialPort}
+            onPipeCommandChange={setPipeCommand}
             onSelectedPresetChange={setSelectedPreset}
             onAdd={() => {
               void handleAddInterface();
@@ -614,27 +588,10 @@ export function ReticulumRadioPanel({
           />
 
           <PeersSummarySection peerCount={peerCount} onOpenPeersTab={onOpenPeersTab} />
-          <PropagationSection
-            propagation={propagation}
-            onRefresh={() => {
-              void refreshPropagation();
-            }}
-          />
-          <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-            <h3 className="text-sm font-medium text-gray-200">
-              {t('radioPanel.reticulumVoiceGames.title')}
-            </h3>
-            <p className="text-muted mt-1 text-xs">
-              {t('radioPanel.reticulumVoiceGames.voiceStatus', {
-                status: voiceStatus ?? t('radioPanel.reticulumVoiceGames.unavailable'),
-              })}
-            </p>
-            <p className="text-muted text-xs">
-              {t('radioPanel.reticulumVoiceGames.gamesStatus', {
-                status: gamesStatus ?? t('radioPanel.reticulumVoiceGames.unavailable'),
-              })}
-            </p>
-          </div>
+          <ReticulumIdentitySection />
+          <ReticulumPropagationSection />
+          <NomadNetworkPanel />
+          <ReticulumCallPanel />
           <div className="bg-deep-black rounded-lg border border-red-900/50 p-4">
             <h3 className="text-sm font-medium text-red-300">
               {t('radioPanel.reticulumFactoryReset.title')}
@@ -854,8 +811,13 @@ function IdentitySetupView({
   );
 }
 
-function uiTypeFromRow(type: string): 'tcp' | 'auto' | 'rnode' {
+function uiTypeFromRow(type: string): ReticulumIfaceUiType {
   const normalized = type.toLowerCase();
+  if (normalized === 'udp' || normalized.includes('udpinterface')) return 'udp';
+  if (normalized === 'kiss' || normalized.includes('kiss')) return 'kiss';
+  if (normalized === 'pipe' || normalized.includes('pipe')) return 'pipe';
+  if (normalized === 'i2p' || normalized.includes('i2p')) return 'i2p';
+  if (normalized === 'rnode_multi' || normalized.includes('rnodemulti')) return 'rnode_multi';
   if (normalized.includes('tcp') || normalized === 'tcpclient') return 'tcp';
   if (normalized.includes('rnode')) return 'rnode';
   return 'auto';
@@ -863,22 +825,30 @@ function uiTypeFromRow(type: string): 'tcp' | 'auto' | 'rnode' {
 
 function buildInterfaceEditPatch(draft: {
   name: string;
-  type: 'tcp' | 'auto' | 'rnode';
+  type: ReticulumIfaceUiType;
   host: string;
   port: string;
   serialPort: string;
   preset: string;
   callsign: string;
+  pipeCommand: string;
 }): Record<string, unknown> {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
-  if (draft.type === 'tcp') {
+  if (draft.type === 'tcp' || draft.type === 'udp' || draft.type === 'i2p') {
     body.host = draft.host.trim();
-    body.port = Number.parseInt(draft.port, 10) || 4242;
+    if (draft.type !== 'i2p') {
+      body.port = Number.parseInt(draft.port, 10) || 4242;
+    }
   }
-  if (draft.type === 'rnode') {
+  if (draft.type === 'rnode' || draft.type === 'rnode_multi' || draft.type === 'kiss') {
     body.serial_port = draft.serialPort.trim() || null;
+  }
+  if (draft.type === 'rnode' || draft.type === 'rnode_multi') {
     body.preset = draft.preset || null;
     body.callsign = draft.callsign.trim() || null;
+  }
+  if (draft.type === 'pipe') {
+    body.command = draft.pipeCommand.trim() || null;
   }
   return body;
 }
@@ -921,7 +891,7 @@ function InterfaceEditPanel({
             className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
           />
         </label>
-        {uiType === 'tcp' ? (
+        {uiType === 'tcp' || uiType === 'udp' ? (
           <>
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.host')}
@@ -945,7 +915,7 @@ function InterfaceEditPanel({
             </label>
           </>
         ) : null}
-        {uiType === 'rnode' ? (
+        {uiType === 'rnode' || uiType === 'rnode_multi' || uiType === 'kiss' ? (
           <>
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.serialPort')}
@@ -1018,6 +988,7 @@ function InterfaceEditPanel({
                 serialPort,
                 preset,
                 callsign,
+                pipeCommand: '',
               }),
             );
           }}
@@ -1043,6 +1014,7 @@ function InterfacesSection({
   ifaceHost,
   ifacePort,
   serialPort,
+  pipeCommand,
   selectedPreset,
   presets,
   serialPorts,
@@ -1051,6 +1023,7 @@ function InterfacesSection({
   onIfaceHostChange,
   onIfacePortChange,
   onSerialPortChange,
+  onPipeCommandChange,
   onSelectedPresetChange,
   onAdd,
   onToggle,
@@ -1061,18 +1034,20 @@ function InterfacesSection({
   onSaveEdit,
 }: {
   interfaces: ReticulumInterfaceRow[];
-  ifaceType: 'tcp' | 'auto' | 'rnode';
+  ifaceType: ReticulumIfaceUiType;
   ifaceHost: string;
   ifacePort: string;
   serialPort: string;
+  pipeCommand: string;
   selectedPreset: string;
   presets: { id: string; label: string }[];
   serialPorts: { path: string; label?: string }[];
   bleAvailable: boolean;
-  onIfaceTypeChange: (v: 'tcp' | 'auto' | 'rnode') => void;
+  onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
   onIfaceHostChange: (v: string) => void;
   onIfacePortChange: (v: string) => void;
   onSerialPortChange: (v: string) => void;
+  onPipeCommandChange: (v: string) => void;
   onSelectedPresetChange: (v: string) => void;
   onAdd: () => void;
   onToggle: (id: string, enabled: boolean) => void;
@@ -1083,6 +1058,9 @@ function InterfacesSection({
   onSaveEdit: (id: string, patch: Record<string, unknown>) => void;
 }) {
   const { t } = useTranslation();
+  const showHostPort = ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p';
+  const showSerial = ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss';
+  const showRnodePreset = ifaceType === 'rnode' || ifaceType === 'rnode_multi';
   return (
     <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
       <h3 className="text-sm font-medium text-gray-200">
@@ -1094,16 +1072,21 @@ function InterfacesSection({
           <select
             value={ifaceType}
             onChange={(e) => {
-              onIfaceTypeChange(e.target.value as 'tcp' | 'auto' | 'rnode');
+              onIfaceTypeChange(e.target.value as ReticulumIfaceUiType);
             }}
             className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
           >
             <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
             <option value="auto">Auto</option>
             <option value="rnode">RNode</option>
+            <option value="rnode_multi">RNode Multi</option>
+            <option value="kiss">KISS</option>
+            <option value="pipe">Pipe</option>
+            <option value="i2p">I2P</option>
           </select>
         </label>
-        {ifaceType === 'tcp' ? (
+        {showHostPort ? (
           <>
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.host')}
@@ -1115,19 +1098,33 @@ function InterfacesSection({
                 className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
               />
             </label>
-            <label className="text-xs text-gray-400">
-              {t('connectionPanel.reticulumInterfaces.port')}
-              <input
-                value={ifacePort}
-                onChange={(e) => {
-                  onIfacePortChange(e.target.value);
-                }}
-                className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
-              />
-            </label>
+            {ifaceType !== 'i2p' ? (
+              <label className="text-xs text-gray-400">
+                {t('connectionPanel.reticulumInterfaces.port')}
+                <input
+                  value={ifacePort}
+                  onChange={(e) => {
+                    onIfacePortChange(e.target.value);
+                  }}
+                  className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                />
+              </label>
+            ) : null}
           </>
         ) : null}
-        {ifaceType === 'rnode' ? (
+        {ifaceType === 'pipe' ? (
+          <label className="text-xs text-gray-400">
+            {t('connectionPanel.reticulumInterfaces.pipeCommand')}
+            <input
+              value={pipeCommand}
+              onChange={(e) => {
+                onPipeCommandChange(e.target.value);
+              }}
+              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+            />
+          </label>
+        ) : null}
+        {showSerial ? (
           <>
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.serialPort')}
@@ -1156,23 +1153,25 @@ function InterfacesSection({
                 />
               )}
             </label>
-            <label className="text-xs text-gray-400">
-              {t('connectionPanel.reticulumInterfaces.preset')}
-              <select
-                value={selectedPreset}
-                onChange={(e) => {
-                  onSelectedPresetChange(e.target.value);
-                }}
-                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
-              >
-                <option value="">—</option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {showRnodePreset ? (
+              <label className="text-xs text-gray-400">
+                {t('connectionPanel.reticulumInterfaces.preset')}
+                <select
+                  value={selectedPreset}
+                  onChange={(e) => {
+                    onSelectedPresetChange(e.target.value);
+                  }}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                >
+                  <option value="">—</option>
+                  {presets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
           </>
         ) : null}
         <button
@@ -1280,51 +1279,6 @@ function PeersSummarySection({
           {t('peerListPanel.viewAllPeers')}
         </button>
       ) : null}
-    </div>
-  );
-}
-
-function PropagationSection({
-  propagation,
-  onRefresh,
-}: {
-  propagation: PropagationRow[];
-  onRefresh: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-      <h3 className="text-sm font-medium text-gray-200">
-        {t('connectionPanel.reticulumPropagation.title')}
-      </h3>
-      <ul className="mt-2 space-y-2 text-sm">
-        {propagation.map((node) => (
-          <li
-            key={node.id}
-            className="flex items-center justify-between rounded border border-gray-700/60 px-2 py-1.5"
-          >
-            <span>
-              {node.name} ({node.status})
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                void window.electronAPI.reticulum
-                  .proxyPost(
-                    `/api/v1/propagation/${node.id}/${node.enabled ? 'disable' : 'enable'}`,
-                    {},
-                  )
-                  .then(onRefresh)
-              }
-              className="text-xs text-amber-400 hover:underline"
-            >
-              {node.enabled
-                ? t('connectionPanel.reticulumPropagation.disable')
-                : t('connectionPanel.reticulumPropagation.enable')}
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

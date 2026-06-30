@@ -53,6 +53,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       getMeshcoreMessages: async () => [],
       getReticulumMessages: async () => [],
       saveReticulumMessage: noopAsync,
+      markStaleReticulumOutbound: async () => ({ changes: 0 }),
+      vacuumReticulumTables: async () => ({ ok: true }),
       getReticulumDestinations: async () => [],
       upsertReticulumDestination: noopAsync,
       searchMessages: async () => [],
@@ -228,6 +230,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     },
     chat: {
       export: async () => ({ success: false }),
+      saveReticulumAttachment: async () => ({ success: false }),
+      showItemInFolder: async () => ({ ok: true }),
       linkPreview: {
         fetch: async () => null,
       },

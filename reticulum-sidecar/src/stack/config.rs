@@ -10,7 +10,16 @@ use super::types::{AddInterfaceRequest, InterfaceRow};
 
 pub const CONFIG_FILENAME: &str = "config";
 
-const SUPPORTED_TYPES: &[&str] = &["AutoInterface", "TCPClientInterface", "RNodeInterface"];
+const SUPPORTED_TYPES: &[&str] = &[
+    "AutoInterface",
+    "TCPClientInterface",
+    "RNodeInterface",
+    "UDPInterface",
+    "KISSInterface",
+    "PipeInterface",
+    "I2PInterface",
+    "RNodeMultiInterface",
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
@@ -33,6 +42,8 @@ pub struct StackSettings {
     pub enable_transport: bool,
     pub share_instance: bool,
     pub loglevel: i32,
+    #[serde(default)]
+    pub announce_interval_sec: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +103,9 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
     parsed
         .logging
         .set("loglevel", &settings.loglevel.to_string());
+    parsed
+        .reticulum
+        .set("announce_interval_sec", &settings.announce_interval_sec.to_string());
     write_config(config_dir, &serialize_config(&parsed))
 }
 
@@ -184,6 +198,11 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .get("loglevel")
             .and_then(|v| v.parse().ok())
             .unwrap_or(4),
+        announce_interval_sec: parsed
+            .reticulum
+            .get("announce_interval_sec")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0),
     }
 }
 
@@ -498,6 +517,11 @@ fn config_type_to_ui(raw: &str) -> Option<&'static str> {
         "AutoInterface" => Some("auto"),
         "TCPClientInterface" => Some("tcp"),
         "RNodeInterface" => Some("rnode"),
+        "UDPInterface" => Some("udp"),
+        "KISSInterface" => Some("kiss"),
+        "PipeInterface" => Some("pipe"),
+        "I2PInterface" => Some("i2p"),
+        "RNodeMultiInterface" => Some("rnode_multi"),
         _ => None,
     }
 }
@@ -507,6 +531,11 @@ fn ui_type_to_config(ui: &str) -> String {
         "auto" => "AutoInterface".into(),
         "tcp" => "TCPClientInterface".into(),
         "rnode" => "RNodeInterface".into(),
+        "udp" => "UDPInterface".into(),
+        "kiss" => "KISSInterface".into(),
+        "pipe" => "PipeInterface".into(),
+        "i2p" => "I2PInterface".into(),
+        "rnode_multi" => "RNodeMultiInterface".into(),
         other => other.to_string(),
     }
 }

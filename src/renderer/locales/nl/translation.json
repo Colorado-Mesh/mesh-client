@@ -349,7 +349,10 @@
     "sentViaNetwork": "via Netwerk",
     "reticulumSendSending": "Versturen...",
     "reticulumSendDelivered": "Geleverd",
-    "reticulumSendFailed": "Versturen mislukt"
+    "reticulumSendFailed": "Versturen mislukt",
+    "reticulumImageAttachment": "Afbeelding: {{name}}",
+    "reticulumFileAttachment": "Bestand: {{name}}",
+    "reticulumShowInFolder": "Tonen in map"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -407,7 +410,12 @@
     "days": "dagen",
     "emDash": "—",
     "saving": "Opslaan...",
-    "peers": "Collega's"
+    "peers": "Collega's",
+    "colorGreen": "Groen",
+    "colorCyan": "Cyaan",
+    "colorAmber": "Amber",
+    "colorRed": "Rood",
+    "colorPurple": "Paars"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
@@ -654,7 +662,8 @@
       "cancelEdit": "Annuleren",
       "name": "Naam",
       "callsign": "Roepletters",
-      "editFailed": "Kan interface niet opslaan."
+      "editFailed": "Kan interface niet opslaan.",
+      "pipeCommand": "Pijpopdracht"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2876,7 +2885,11 @@
     "allGroups": "Alle groepen",
     "manageGroups": "Groepen beheren",
     "radioPeerCount": "{{count}} peer(s) in padtabel",
-    "viewAllPeers": "Alles weergeven op het tabblad Collega's"
+    "viewAllPeers": "Alles weergeven op het tabblad Collega's",
+    "colLastHeard": "Laatst gehoord",
+    "colContact": "Contact",
+    "contactYes": "Ja",
+    "contactNo": "Nee"
   },
   "peerDetailModal": {
     "networkSection": "Netwerk",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Padverzoek mislukt: {{error}}",
     "probeHops": "Sonde OK — {{hops}} hop(s).",
     "probeLocal": "Sonde OK ({{mode}} modus).",
-    "probeFailed": "Sonde mislukt: {{error}}"
+    "probeFailed": "Sonde mislukt: {{error}}",
+    "isContact": "Contact",
+    "call": "Telefoonoproep",
+    "callComingSoon": "Spraakoproepen komen in een toekomstige update",
+    "iconColor": "Avatar kleur",
+    "iconColorAria": "Kleur peer-avatar"
+  },
+  "reticulumPropagation": {
+    "preferred": "Voorkeur",
+    "setPreferred": "Voorkeur instellen",
+    "syncNow": "Berichten synchroniseren",
+    "cancelSync": "Sync annuleren",
+    "autoSyncInterval": "Automatisch synchroniseren elke {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "Identiteiten",
+    "activeIdentity": "huidige identiteit",
+    "announceIntervalSec": "Aankondigingsinterval (seconden)",
+    "clearAnnounces": "Duidelijke aankondigingen"
+  },
+  "nomadNetwork": {
+    "title": "Nomad-netwerk",
+    "empty": "Er zijn nog geen Nomad-netwerkknooppunten ontdekt.",
+    "toggleFavorite": "Favoriet in-/uitschakelen"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Bestemmingshash...",
+    "hashAria": "Bestemmingshash naar ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping mislukt: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "telefoongesprekken",
+    "comingSoon": "Codec2 spraakoproepen zijn nog niet ingeschakeld.",
+    "ready": "Spraakpijplijn klaar.",
+    "startCall": "Start gesprek"
+  },
+  "reticulumTopology": {
+    "title": "Netwerktopologie",
+    "self": "Jij"
   }
 }

@@ -220,6 +220,8 @@ export function reticulumDbRowToMessageRecord(row: {
   reply_to_hash?: string | null;
   message_hash?: string | null;
   received_via?: string | null;
+  delivery_status?: string | null;
+  attachment_path?: string | null;
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
   registerReticulumDestinationHash(from, row.sender_id);
@@ -233,6 +235,12 @@ export function reticulumDbRowToMessageRecord(row: {
     row.received_via === 'both'
       ? row.received_via
       : undefined;
+  const status: MessageRecord['status'] =
+    row.delivery_status === 'failed'
+      ? 'failed'
+      : row.delivery_status === 'sending' || row.delivery_status === 'pending'
+        ? 'sending'
+        : 'acked';
   return {
     id: messageHash,
     from,
@@ -241,10 +249,11 @@ export function reticulumDbRowToMessageRecord(row: {
     payload: row.payload,
     channelIndex: 0,
     timestamp: row.timestamp,
-    status: 'acked',
+    status,
     reticulumMessageHash: messageHash,
     reticulumSenderHash: row.sender_id,
     ...(row.reply_to_hash ? { reticulumReplyToHash: row.reply_to_hash } : {}),
     ...(receivedVia ? { receivedVia } : {}),
+    ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
   };
 }

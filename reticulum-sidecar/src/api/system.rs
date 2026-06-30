@@ -47,3 +47,14 @@ pub async fn switch_identity(
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }
+
+pub async fn topology(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    Json(stack.topology_snapshot().await)
+}
+
+pub async fn clear_announces(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.clear_announces().await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}

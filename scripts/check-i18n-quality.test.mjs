@@ -1569,6 +1569,79 @@ describe('roomsPanel saved passwords per-key quality', () => {
     });
     expectIssue(issues, 'chatPanel reticulum contact false friend');
   });
+
+  it('flags Ukrainian sensor false friend on peerDetailModal probeHops', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'peerDetailModal.probeHops',
+      val: 'Датчик OK — {{hops}} стрибок(и).',
+      enVal: 'Probe OK — {{hops}} hop(s).',
+    });
+    expectIssue(issues, 'peerDetailModal probe false friend');
+  });
+
+  it('flags Ukrainian connection false friend on reticulumPing.failed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'reticulumPing.failed',
+      val: "Помилка зв 'язку: {{error}}",
+      enVal: 'Ping failed: {{error}}',
+    });
+    expectIssue(issues, 'reticulumPing.failed must mention ping');
+  });
+
+  it('flags HTML entity residue on nameLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'connectionPanel.reticulumIdentity.nameLabel',
+      val: 'Nom :&#10;',
+      enVal: 'Name:',
+    });
+    expectIssue(issues, 'HTML numeric entity residue');
+  });
+
+  it('flags CAT sample name on nameLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'connectionPanel.reticulumIdentity.nameLabel',
+      val: 'Name: Gerald Abram Foeh Junior',
+      enVal: 'Name:',
+    });
+    expectIssue(issues, 'nameLabel must be a short');
+  });
+
+  it('flags CAT XML residue on reticulumPing.run', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'reticulumPing.run',
+      val: '<primary><command>ping</command></primary>',
+      enVal: 'Ping',
+    });
+    expectIssue(issues, 'CAT/XLIFF/Memsource XML residue');
+  });
+
+  it('flags bracket [Data] placeholder on reticulumSendDelivered', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'chatPanel.reticulumSendDelivered',
+      val: '[Data] dostarczenia',
+      enVal: 'Delivered',
+    });
+    expectIssue(issues, 'CAT bracket placeholder residue');
+  });
+
+  it('flags untranslated reticulumSendDelivered', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'chatPanel.reticulumSendDelivered',
+      val: 'Delivered',
+      enVal: 'Delivered',
+    });
+    expectIssue(
+      issues,
+      'reticulumSendDelivered" is still identical to English — translate the UI text',
+    );
+  });
 });
 
 describe('protectedBrandIssues', () => {

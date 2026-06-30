@@ -1,4 +1,4 @@
-import { Copy, MessageCircle, Star, X } from 'lucide-react-motion';
+import { Copy, MessageCircle, Phone, Star, X } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -27,6 +27,7 @@ export default function ReticulumPeerDetailModal({
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const peer = useReticulumPeerStore((s) => s.getPeer(peerHash));
+  const isContact = useReticulumPeerStore((s) => s.isContact(peerHash));
   const getDisplayName = useReticulumPeerStore((s) => s.getDisplayName);
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
   const setCustomDisplayName = useReticulumPeerStore((s) => s.setCustomDisplayName);
@@ -36,6 +37,27 @@ export default function ReticulumPeerDetailModal({
   const [pathStatus, setPathStatus] = useState<string | null>(null);
   const [probeStatus, setProbeStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [iconColor, setIconColor] = useState('green');
+
+  useEffect(() => {
+    void window.electronAPI.db.getReticulumDestinations().then((rows) => {
+      const list = rows as { destination_hash?: string; icon_color?: string | null }[];
+      const row = list.find((r) => r.destination_hash === peerHash);
+      if (row?.icon_color) setIconColor(row.icon_color);
+    });
+  }, [peerHash]);
+
+  const saveIconColor = async (color: string) => {
+    setIconColor(color);
+    try {
+      await window.electronAPI.db.upsertReticulumDestination({
+        destination_hash: peerHash,
+        icon_color: color,
+      });
+    } catch (e) {
+      console.warn('[ReticulumPeerDetailModal] icon color ' + errLikeToLogString(e));
+    }
+  };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -199,9 +221,18 @@ export default function ReticulumPeerDetailModal({
                 </button>
               </div>
             )}
-            <div className="mt-1 flex items-center gap-2 font-mono text-xs text-gray-400">
+            <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-gray-400">
               <span className="truncate" title={peerHash}>
                 {peerHash}
+              </span>
+              <span
+                className={
+                  isContact
+                    ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 font-sans text-[10px] font-medium'
+                    : 'text-muted rounded px-1.5 py-0.5 font-sans text-[10px]'
+                }
+              >
+                {isContact ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
               </span>
               <button
                 type="button"
@@ -214,6 +245,24 @@ export default function ReticulumPeerDetailModal({
                 <Copy className="h-3.5 w-3.5" />
               </button>
             </div>
+            <label className="mt-2 block text-xs text-gray-400" htmlFor="peer-icon-color">
+              {t('peerDetailModal.iconColor')}
+              <select
+                id="peer-icon-color"
+                value={iconColor}
+                className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+                aria-label={t('peerDetailModal.iconColorAria')}
+                onChange={(e) => {
+                  void saveIconColor(e.target.value);
+                }}
+              >
+                <option value="green">{t('common.colorGreen')}</option>
+                <option value="cyan">{t('common.colorCyan')}</option>
+                <option value="amber">{t('common.colorAmber')}</option>
+                <option value="red">{t('common.colorRed')}</option>
+                <option value="purple">{t('common.colorPurple')}</option>
+              </select>
+            </label>
           </div>
           <button
             type="button"
@@ -271,6 +320,16 @@ export default function ReticulumPeerDetailModal({
           >
             <MessageCircle className="h-4 w-4" aria-hidden />
             {t('peerDetailModal.sendMessage')}
+          </button>
+          <button
+            type="button"
+            disabled
+            title={t('peerDetailModal.callComingSoon')}
+            className="flex cursor-not-allowed items-center gap-1 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-500 opacity-50"
+            aria-label={t('peerDetailModal.callComingSoon')}
+          >
+            <Phone className="h-4 w-4" aria-hidden />
+            {t('peerDetailModal.call')}
           </button>
         </section>
 

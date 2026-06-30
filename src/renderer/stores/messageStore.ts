@@ -35,6 +35,8 @@ export interface MessageRecord {
   reticulumSenderHash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulumReplyToHash?: string;
+  /** Saved attachment path on disk (local saves). */
+  reticulumAttachmentPath?: string;
 }
 
 interface MessageStoreState {
@@ -71,6 +73,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumMessageHash',
   'reticulumSenderHash',
   'reticulumReplyToHash',
+  'reticulumAttachmentPath',
 ];
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {

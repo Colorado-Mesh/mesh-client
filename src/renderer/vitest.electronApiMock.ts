@@ -41,6 +41,8 @@ export function createElectronAPIMock(): ElectronAPI {
       searchReticulumMessages: vi.fn().mockResolvedValue([]),
       deleteReticulumMessage: vi.fn().mockResolvedValue({ changes: 1 }),
       saveReticulumMessage: vi.fn().mockResolvedValue(undefined),
+      markStaleReticulumOutbound: vi.fn().mockResolvedValue({ changes: 0 }),
+      vacuumReticulumTables: vi.fn().mockResolvedValue({ ok: true }),
       getReticulumDestinations: vi.fn().mockResolvedValue([]),
       upsertReticulumDestination: vi.fn().mockResolvedValue(undefined),
       searchMessages: vi.fn().mockResolvedValue([]),
@@ -213,6 +215,8 @@ export function createElectronAPIMock(): ElectronAPI {
     },
     chat: {
       export: vi.fn().mockResolvedValue({ success: false }),
+      saveReticulumAttachment: vi.fn().mockResolvedValue({ success: false }),
+      showItemInFolder: vi.fn().mockResolvedValue({ ok: true }),
       linkPreview: {
         fetch: vi.fn().mockResolvedValue(null),
       },

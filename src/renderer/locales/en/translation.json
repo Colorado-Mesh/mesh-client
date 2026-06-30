@@ -255,6 +255,9 @@
     "reticulumSendSending": "Sending…",
     "reticulumSendDelivered": "Delivered",
     "reticulumSendFailed": "Failed to send",
+    "reticulumImageAttachment": "Image: {{name}}",
+    "reticulumFileAttachment": "File: {{name}}",
+    "reticulumShowInFolder": "Show in folder",
     "closeDm": "Close DM",
     "resendMessage": "Resend message",
     "replyButton": "Reply",
@@ -407,6 +410,11 @@
     "hoursAgo": "{{count}}h ago",
     "daysAgo": "{{count}}d ago",
     "days": "days",
+    "colorGreen": "Green",
+    "colorCyan": "Cyan",
+    "colorAmber": "Amber",
+    "colorRed": "Red",
+    "colorPurple": "Purple",
     "emDash": "—"
   },
   "configApplyNotice": {
@@ -543,6 +551,7 @@
       "cancelEdit": "Cancel",
       "name": "Name",
       "callsign": "Callsign",
+      "pipeCommand": "Pipe command",
       "editFailed": "Failed to save interface."
     },
     "reticulumPeers": {
@@ -1648,6 +1657,10 @@
     "searchAria": "Search peers",
     "colName": "Name / Hash",
     "colLastSeen": "Last seen",
+    "colLastHeard": "Last heard",
+    "colContact": "Contact",
+    "contactYes": "Yes",
+    "contactNo": "No",
     "colInterface": "Interface",
     "colFavorite": "Favourite",
     "toggleFavorite": "Toggle favourite",
@@ -1666,11 +1679,52 @@
     "copyHash": "Copy destination hash",
     "editNameAria": "Custom display name",
     "sendMessage": "Send message",
+    "isContact": "Contact",
+    "call": "Voice call",
+    "callComingSoon": "Voice calls coming in a future update",
+    "iconColor": "Avatar color",
+    "iconColorAria": "Peer avatar color",
     "pathOk": "Path request sent.",
     "pathFailed": "Path request failed: {{error}}",
     "probeHops": "Probe OK — {{hops}} hop(s).",
     "probeLocal": "Probe OK ({{mode}} mode).",
     "probeFailed": "Probe failed: {{error}}"
+  },
+  "reticulumPropagation": {
+    "preferred": "Preferred",
+    "setPreferred": "Set preferred",
+    "syncNow": "Sync messages",
+    "cancelSync": "Cancel sync",
+    "autoSyncInterval": "Auto-sync every {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "Identities",
+    "activeIdentity": "Active identity",
+    "announceIntervalSec": "Announce interval (seconds)",
+    "clearAnnounces": "Clear announces"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "No Nomad Network nodes discovered yet.",
+    "toggleFavorite": "Toggle favourite"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Destination hash…",
+    "hashAria": "Destination hash to ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Ping failed: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Voice calls",
+    "comingSoon": "Codec2 voice calls are not enabled yet.",
+    "ready": "Voice pipeline ready.",
+    "startCall": "Start call"
+  },
+  "reticulumTopology": {
+    "title": "Network topology",
+    "self": "You"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",

@@ -348,8 +348,11 @@
     "sentViaTcp": "Надіслано через TCP",
     "sentViaNetwork": "Надіслано через мережу",
     "reticulumSendSending": "Заклад,",
-    "reticulumSendDelivered": "Delivered",
-    "reticulumSendFailed": "Не вдалося надіслати."
+    "reticulumSendDelivered": "Доставлено",
+    "reticulumSendFailed": "Не вдалося надіслати.",
+    "reticulumImageAttachment": "Зображення: {{name}}",
+    "reticulumFileAttachment": "Файл: {{name}}",
+    "reticulumShowInFolder": "У теці"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -407,7 +410,12 @@
     "days": "днів",
     "emDash": "-",
     "saving": "Триває збереження…",
-    "peers": "Однолітки"
+    "peers": "Однолітки",
+    "colorGreen": "Зелений",
+    "colorCyan": "Блакитний",
+    "colorAmber": "Жовтий",
+    "colorRed": "Червоний",
+    "colorPurple": "Фіолетовий"
   },
   "configApplyNotice": {
     "persistNote": "Застосовані налаштування зберігаються у флеш-пам'яті пристрою та зберігаються під час перезавантаження.",
@@ -625,7 +633,7 @@
       "mnemonic": "Запишіть цю фразу та зберігайте її безпечно.",
       "confirmSaved": "Я зберіг фразу для відновлення",
       "hashLabel": "Хеш LXMF:",
-      "nameLabel": "Прізвище та ім'я:",
+      "nameLabel": "Ім'я:",
       "failed": "Не вдалося встановити ідентичність",
       "export": "Експортувати резервну ко",
       "exportPassphrase": "Резервна парольна фраза",
@@ -654,7 +662,8 @@
       "cancelEdit": "Скасувати",
       "name": "Найменування",
       "callsign": "Позивний",
-      "editFailed": "Не вдалося зберегти інтерфейс."
+      "editFailed": "Не вдалося зберегти інтерфейс.",
+      "pipeCommand": "Команда Pipe (Труба)"
     },
     "reticulumPeers": {
       "name": "Вузол",
@@ -2876,7 +2885,11 @@
     "allGroups": "Усі групи",
     "manageGroups": "Керування групами",
     "radioPeerCount": "{{count}} вузол(вузли) у таблиці шляхів",
-    "viewAllPeers": "Переглянути все на вкладці \"Колеги\""
+    "viewAllPeers": "Переглянути все на вкладці \"Колеги\"",
+    "colLastHeard": "Останнє прослуховування",
+    "colContact": "Контакти",
+    "contactYes": "Так",
+    "contactNo": "Ні"
   },
   "peerDetailModal": {
     "networkSection": "Засоби зв'язку",
@@ -2886,8 +2899,49 @@
     "sendMessage": "Надіслати повідомлення",
     "pathOk": "Запит шляху надіслано.",
     "pathFailed": "Помилка запиту шляху: {{error}}",
-    "probeHops": "Датчик OK — {{hops}} стрибок(и).",
-    "probeLocal": "Датчик OK (режим {{mode}}).",
-    "probeFailed": "Збій датчика: {{error}}"
+    "probeHops": "Зонд OK — {{hops}} стрибок(и).",
+    "probeLocal": "Зонд OK (режим {{mode}}).",
+    "probeFailed": "Збій зонда: {{error}}",
+    "isContact": "Контакти",
+    "call": "Голосовий виклик",
+    "callComingSoon": "Голосові дзвінки з'являться в майбутньому оновленні",
+    "iconColor": "Колір аватара",
+    "iconColorAria": "Колір однорангового аватара"
+  },
+  "reticulumPropagation": {
+    "preferred": "Улюблене",
+    "setPreferred": "Встановити бажане",
+    "syncNow": "Синхронізувати повідомлення",
+    "cancelSync": "Скасувати синхронізацію",
+    "autoSyncInterval": "Автоматична синхронізація кожні {{sec}}с"
+  },
+  "reticulumIdentity": {
+    "title": "Профілі",
+    "activeIdentity": "Активна ідентифікація",
+    "announceIntervalSec": "Інтервал оголошення (секунди)",
+    "clearAnnounces": "Очистити оголошення"
+  },
+  "nomadNetwork": {
+    "title": "Мережа кочівників",
+    "empty": "Вузлів мережі Nomad ще не виявлено.",
+    "toggleFavorite": "Увімкнути або вимкнути вибране"
+  },
+  "reticulumPing": {
+    "title": "Пінґ",
+    "hashPlaceholder": "Хеш пункту призначення…",
+    "hashAria": "Хеш призначення для ping",
+    "run": "Пінґ",
+    "result": "RTT {{ms}} мс",
+    "failed": "Помилка пінгу: {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Голосові виклики",
+    "comingSoon": "Голосові виклики кодека 2 ще не ввімкнено.",
+    "ready": "Голосовий конвеєр готовий.",
+    "startCall": "Почати дзвінок"
+  },
+  "reticulumTopology": {
+    "title": "Топологія мережі",
+    "self": "Ви"
   }
 }

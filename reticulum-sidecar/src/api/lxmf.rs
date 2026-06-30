@@ -35,6 +35,21 @@ pub async fn list_peers(State(stack): State<Arc<StackHandle>>) -> Json<serde_jso
     Json(serde_json::json!({ "peers": peers }))
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct PingBody {
+    pub destination_hash: String,
+}
+
+pub async fn ping(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<PingBody>,
+) -> Json<serde_json::Value> {
+    match stack.ping_destination(&body.destination_hash).await {
+        Ok(res) => Json(res),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn peer_path(
     State(stack): State<Arc<StackHandle>>,
     Path(hash): Path<String>,
@@ -51,31 +66,6 @@ pub async fn peer_probe(
 ) -> Json<serde_json::Value> {
     match stack.probe_peer(&hash).await {
         Ok(res) => Json(res),
-        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
-    }
-}
-
-pub async fn list_propagation(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    let nodes = stack.list_propagation().await;
-    Json(serde_json::json!({ "propagation": nodes }))
-}
-
-pub async fn enable_propagation(
-    State(stack): State<Arc<StackHandle>>,
-    Path(id): Path<String>,
-) -> Json<serde_json::Value> {
-    match stack.set_propagation_enabled(&id, true).await {
-        Ok(()) => Json(serde_json::json!({ "ok": true })),
-        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
-    }
-}
-
-pub async fn disable_propagation(
-    State(stack): State<Arc<StackHandle>>,
-    Path(id): Path<String>,
-) -> Json<serde_json::Value> {
-    match stack.set_propagation_enabled(&id, false).await {
-        Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

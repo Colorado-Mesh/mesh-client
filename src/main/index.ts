@@ -4206,6 +4206,54 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   }
 });
 
+ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
+  const o = opts as Record<string, unknown>;
+  const fileName = typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment';
+  const dataBase64 = typeof o.dataBase64 === 'string' ? o.dataBase64 : '';
+  if (!dataBase64 || dataBase64.length > 16 * 1024 * 1024) {
+    throw new Error('dataBase64 invalid or too large');
+  }
+  if (!mainWindow) return { success: false };
+  try {
+    const ext = path.extname(fileName) || '';
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save attachment',
+      defaultPath: fileName,
+      filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
+    });
+    if (result.canceled || !result.filePath) return { success: false };
+    const buf = Buffer.from(dataBase64, 'base64');
+    if (buf.length > 16 * 1024 * 1024) throw new Error('decoded attachment too large');
+    await fs.promises.writeFile(result.filePath, buf);
+    return { success: true, path: result.filePath };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:saveReticulumAttachment failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (typeof filePath !== 'string' || !filePath.trim()) {
+    throw new Error('filePath must be a non-empty string');
+  }
+  try {
+    shell.showItemInFolder(path.resolve(filePath));
+    return { ok: true };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:showItemInFolder failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   if (!mainWindow) return null;

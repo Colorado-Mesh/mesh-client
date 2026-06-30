@@ -16,7 +16,7 @@ use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, PeerRow, PropagationRow, StackIdentity,
+    LxmfSendRequest, NomadNodeRow, PeerRow, PropagationRow, StackIdentity,
 };
 
 pub struct StackHandle {
@@ -307,8 +307,59 @@ impl StackHandle {
         res
     }
 
-    pub async fn list_propagation(&self) -> Vec<PropagationRow> {
-        self.inner.read().await.propagation.clone()
+    pub async fn list_propagation(&self) -> serde_json::Value {
+        let inner = self.inner.read().await;
+        let preferred_id = inner.preferred_propagation_id.clone();
+        let auto_sync_interval_sec = inner.auto_sync_interval_sec;
+        let propagation: Vec<serde_json::Value> = inner
+            .propagation
+            .iter()
+            .map(|p| {
+                let preferred = preferred_id.as_deref() == Some(p.id.as_str());
+                serde_json::json!({
+                    "id": p.id,
+                    "name": p.name,
+                    "hops": p.hops,
+                    "enabled": p.enabled,
+                    "status": p.status,
+                    "preferred": preferred,
+                })
+            })
+            .collect();
+        serde_json::json!({
+            "propagation": propagation,
+            "preferred_id": preferred_id,
+            "auto_sync_interval_sec": auto_sync_interval_sec,
+        })
+    }
+
+    pub async fn set_preferred_propagation(&self, id: &str) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.set_preferred_propagation(id)?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
+    pub async fn start_propagation_sync(&self, propagation_id: &str) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.start_propagation_sync(propagation_id)?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        self.emit_event(
+            "propagation_sync",
+            inner.propagation_sync.clone(),
+        );
+        Ok(())
+    }
+
+    pub async fn cancel_propagation_sync(&self) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.cancel_propagation_sync();
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        self.emit_event(
+            "propagation_sync",
+            inner.propagation_sync.clone(),
+        );
+        Ok(())
     }
 
     pub async fn set_propagation_enabled(&self, id: &str, enabled: bool) -> Result<(), String> {
@@ -316,6 +367,52 @@ impl StackHandle {
         inner.set_propagation_enabled(id, enabled)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(())
+    }
+
+    pub async fn ping_destination(&self, destination_hash: &str) -> Result<serde_json::Value, String> {
+        let started = std::time::Instant::now();
+        let probe = self.probe_peer(destination_hash).await?;
+        let rtt_ms = started.elapsed().as_millis() as u64;
+        let ok = probe.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
+        Ok(serde_json::json!({ "ok": ok, "rtt_ms": rtt_ms }))
+    }
+
+    pub async fn topology_snapshot(&self) -> serde_json::Value {
+        let peers = self.list_peers().await;
+        serde_json::json!({ "nodes": peers, "edges": [] })
+    }
+
+    pub async fn clear_announces(&self) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.clear_peers();
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        self.emit_event("peers_updated", serde_json::json!({ "cleared": true }));
+        Ok(())
+    }
+
+    pub async fn list_nomad_nodes(&self) -> Vec<NomadNodeRow> {
+        self.inner.read().await.nomad_nodes.clone()
+    }
+
+    pub async fn set_nomad_favorite(&self, hash: &str, favorited: bool) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.set_nomad_favorite(hash, favorited);
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
+    pub async fn nomad_page(&self, _hash: &str, _path: &str) -> serde_json::Value {
+        serde_json::json!({
+            "ok": false,
+            "error": "nomad page fetch not implemented in stub stack"
+        })
+    }
+
+    pub async fn nomad_file(&self, _hash: &str) -> serde_json::Value {
+        serde_json::json!({
+            "ok": false,
+            "error": "nomad file fetch not implemented in stub stack"
+        })
     }
 
     pub async fn lxmf_send(&self, req: LxmfSendRequest) -> Result<serde_json::Value, String> {

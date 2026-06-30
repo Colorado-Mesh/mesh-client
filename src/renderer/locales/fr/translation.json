@@ -349,7 +349,10 @@
     "sentViaNetwork": "via un réseau",
     "reticulumSendSending": "Envoi en cours...",
     "reticulumSendDelivered": "Livré",
-    "reticulumSendFailed": "Échec d'envoi"
+    "reticulumSendFailed": "Échec d'envoi",
+    "reticulumImageAttachment": "Image : {{name}}",
+    "reticulumFileAttachment": "Dossier : {{name}}",
+    "reticulumShowInFolder": "Montrer dans son dossier"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -407,7 +410,12 @@
     "days": "jours",
     "emDash": "—",
     "saving": "Enregistrement en cours...",
-    "peers": "Pairs"
+    "peers": "Pairs",
+    "colorGreen": "Vert",
+    "colorCyan": "Cyan",
+    "colorAmber": "Ambre",
+    "colorRed": "Red",
+    "colorPurple": "Violet"
   },
   "configApplyNotice": {
     "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
@@ -625,7 +633,7 @@
       "mnemonic": "Notez cette phrase et rangez-la en toute sécurité.",
       "confirmSaved": "J'ai enregistré ma phrase de récupération",
       "hashLabel": "Hachage LXMF :",
-      "nameLabel": "Nom :&#10;",
+      "nameLabel": "Nom :",
       "failed": "Échec de la configuration de l'identité",
       "export": "Exporter les sauvegardes",
       "exportPassphrase": "Phrase de passe de sauvegarde",
@@ -654,7 +662,8 @@
       "cancelEdit": "Annuler",
       "name": "Nom",
       "callsign": "Indicatif d’appel",
-      "editFailed": "Échec de l'enregistrement de l'interface."
+      "editFailed": "Échec de l'enregistrement de l'interface.",
+      "pipeCommand": "Commande de tuyau"
     },
     "reticulumPeers": {
       "name": "Pair",
@@ -1350,7 +1359,7 @@
       "serialRxdDesc": "Numéro de code PIN GPIO pour le RX série. 0 = utiliser par défaut.",
       "serialTxd": "Broche TX",
       "serialTxdDesc": "Numéro de broche GPIO pour le TX série. 0 = utiliser par défaut.",
-      "serialTimeout": "D&#233;lai",
+      "serialTimeout": "Délai",
       "serialTimeoutDesc": "Millisecondes à attendre avant d'envoyer un paquet. 0 = utiliser par défaut.",
       "serialMode": "Mode série",
       "serialModeDesc": "Mode de fonctionnement pour le module série.",
@@ -2876,7 +2885,11 @@
     "allGroups": "Tous les groupes",
     "manageGroups": "Gestion des groupes",
     "radioPeerCount": "{{count}} pair(s) dans la table des chemins",
-    "viewAllPeers": "Tout afficher dans l'onglet Peers"
+    "viewAllPeers": "Tout afficher dans l'onglet Peers",
+    "colLastHeard": "Dernière entendu:",
+    "colContact": "Contact",
+    "contactYes": "Oui",
+    "contactNo": "Non"
   },
   "peerDetailModal": {
     "networkSection": "Réseau",
@@ -2888,6 +2901,47 @@
     "pathFailed": "Échec de la demande de chemin : {{error}}",
     "probeHops": "Sonde OK — {{hops}} hop(s).",
     "probeLocal": "Sonde OK (mode {{mode}}).",
-    "probeFailed": "Échec de la sonde : {{error}}"
+    "probeFailed": "Échec de la sonde : {{error}}",
+    "isContact": "Contact",
+    "call": "Appel vocal",
+    "callComingSoon": "Appels vocaux à venir dans une prochaine mise à jour",
+    "iconColor": "Couleur de l’avatar",
+    "iconColorAria": "Couleur de l’avatar"
+  },
+  "reticulumPropagation": {
+    "preferred": "Préféré",
+    "setPreferred": "Définir comme principal",
+    "syncNow": "Synchroniser les messages",
+    "cancelSync": "Annuler la synchronisation",
+    "autoSyncInterval": "Synchronisation automatique toutes les {{sec}}s"
+  },
+  "reticulumIdentity": {
+    "title": "digitales",
+    "activeIdentity": "identité actuelle",
+    "announceIntervalSec": "Intervalle d'annonce (secondes)",
+    "clearAnnounces": "Annonces claires"
+  },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "empty": "Aucun nœud de réseau nomade n'a encore été découvert.",
+    "toggleFavorite": "Basculer en favori"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "Hash de Destination",
+    "hashAria": "Hachage de destination vers ping",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Échec du ping : {{error}}"
+  },
+  "reticulumCall": {
+    "title": "Appels vocaux",
+    "comingSoon": "Les appels vocaux Codec2 ne sont pas encore activés.",
+    "ready": "Pipeline vocal prêt.",
+    "startCall": "Initier l'appel"
+  },
+  "reticulumTopology": {
+    "title": "Topologie de réseau",
+    "self": "pour vous"
   }
 }

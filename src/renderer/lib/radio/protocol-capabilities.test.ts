@@ -263,7 +263,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasChannelConfig": false,
         "hasCompanionContactManagementConfig": false,
         "hasCompanionTelemetryPrivacyConfig": false,
-        "hasContactImportExport": true,
+        "hasContactImportExport": false,
         "hasCryptoOperations": false,
         "hasDetectionSensor": false,
         "hasDeviceRoleConfig": false,

@@ -19,7 +19,9 @@
  *    friends, CAT/Qt plural-form residue (&apos;, "plural form:"), short label parenthesis garbage,
  *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}; Reticulum identity/interface/
  *    peer/propagation UI (must-translate stack/config strings, disable parallax false friends, peer/
- *    probe/host/transport colleague false friends, sidecar build/Rust/cargo literals).
+ *    probe/host/transport colleague false friends, sidecar build/Rust/cargo literals); peerDetailModal
+ *    probe toasts and reticulumPing.failed connection false friends; CAT HTML entities, bracket
+ *    [Data] placeholders, and sample-name garbage on nameLabel.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

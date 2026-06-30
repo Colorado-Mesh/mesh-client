@@ -300,7 +300,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasAtakPlugin: false,
   hasMapReport: false,
   hasXmodem: false,
-  hasContactImportExport: true,
+  hasContactImportExport: false,
   hasCryptoOperations: false,
   hasRawPacketLog: false,
   nodeListTabUsesContactsLabel: false,

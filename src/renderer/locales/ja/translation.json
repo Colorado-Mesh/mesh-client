@@ -349,7 +349,10 @@
     "sentViaNetwork": "ネットワーク経由で送信",
     "reticulumSendSending": "送信中・・・",
     "reticulumSendDelivered": "配達済み",
-    "reticulumSendFailed": "送信に失敗しました。"
+    "reticulumSendFailed": "送信に失敗しました。",
+    "reticulumImageAttachment": "画像： {{name}}",
+    "reticulumFileAttachment": "ファイル： {{name}}",
+    "reticulumShowInFolder": "フォルダを表示"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -407,7 +410,12 @@
     "days": "日",
     "emDash": "—",
     "saving": "保存中…",
-    "peers": "ピア"
+    "peers": "ピア",
+    "colorGreen": "グリーン",
+    "colorCyan": "シアン",
+    "colorAmber": "アンバー",
+    "colorRed": "レッド",
+    "colorPurple": "紫"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
@@ -654,7 +662,8 @@
       "cancelEdit": "取り消す",
       "name": "名前",
       "callsign": "識別信号",
-      "editFailed": "インターフェースの保存に失敗しました。"
+      "editFailed": "インターフェースの保存に失敗しました。",
+      "pipeCommand": "パイプコマンド"
     },
     "reticulumPeers": {
       "name": "ピア",
@@ -2876,7 +2885,11 @@
     "allGroups": "すべてのグループ",
     "manageGroups": "グループを管理",
     "radioPeerCount": "パステーブルの{{count}}ピア",
-    "viewAllPeers": "[ピア]タブですべてを表示"
+    "viewAllPeers": "[ピア]タブですべてを表示",
+    "colLastHeard": "最後のヒアリング",
+    "colContact": "お問い合わせ",
+    "contactYes": "あり",
+    "contactNo": "なし"
   },
   "peerDetailModal": {
     "networkSection": "ネットワーク",
@@ -2888,6 +2901,47 @@
     "pathFailed": "パスリクエストに失敗しました： {{error}}",
     "probeHops": "プローブOK — {{hops}}ホップ。",
     "probeLocal": "プローブOK （ {{mode}}モード）。",
-    "probeFailed": "プローブが失敗しました： {{error}}"
+    "probeFailed": "プローブが失敗しました： {{error}}",
+    "isContact": "お問い合わせ",
+    "call": "音声通話",
+    "callComingSoon": "今後のアップデートで予定されている音声通話",
+    "iconColor": "アバターの色",
+    "iconColorAria": "ピアアバターの色"
+  },
+  "reticulumPropagation": {
+    "preferred": "推奨",
+    "setPreferred": "優先を設定",
+    "syncNow": "メッセージを同期",
+    "cancelSync": "同期をキャンセル",
+    "autoSyncInterval": "{{sec}}秒ごとに自動同期"
+  },
+  "reticulumIdentity": {
+    "title": "アイデンティティー",
+    "activeIdentity": "アクティブなアイデンティティ",
+    "announceIntervalSec": "アナウンス間隔(秒)",
+    "clearAnnounces": "アナウンスをクリア"
+  },
+  "nomadNetwork": {
+    "title": "ノマドネットワーク",
+    "empty": "ノマドネットワークのノードはまだ見つかりませんでした。",
+    "toggleFavorite": "お気に入りを切り替える"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "宛先ハッシュ...",
+    "hashAria": "Pingする宛先ハッシュ",
+    "run": "Ping",
+    "result": "RTT {{ms}} ms",
+    "failed": "Pingに失敗しました： {{error}}"
+  },
+  "reticulumCall": {
+    "title": "音声通話",
+    "comingSoon": "Codec 2音声通話はまだ有効になっていません。",
+    "ready": "音声パイプラインの準備ができました。",
+    "startCall": "通話開始"
+  },
+  "reticulumTopology": {
+    "title": "ネットワーク・トポロジー",
+    "self": "あなたは"
   }
 }

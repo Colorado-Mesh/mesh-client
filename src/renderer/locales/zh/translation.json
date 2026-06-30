@@ -349,7 +349,10 @@
     "sentViaNetwork": "通过网络发送",
     "reticulumSendSending": "发送中…",
     "reticulumSendDelivered": "已交付",
-    "reticulumSendFailed": "发送失败"
+    "reticulumSendFailed": "发送失败",
+    "reticulumImageAttachment": "图片： {{name}}",
+    "reticulumFileAttachment": "文件： {{name}}",
+    "reticulumShowInFolder": "在文件夹中"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -407,7 +410,12 @@
     "days": "天",
     "emDash": "—",
     "saving": "正在保存…",
-    "peers": "Pee对端"
+    "peers": "Pee对端",
+    "colorGreen": "绿色",
+    "colorCyan": "青",
+    "colorAmber": "琥珀色",
+    "colorRed": "红色",
+    "colorPurple": "紫色"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
@@ -654,7 +662,8 @@
       "cancelEdit": "取消推荐",
       "name": "姓名",
       "callsign": "呼号",
-      "editFailed": "保存接口失败。"
+      "editFailed": "保存接口失败。",
+      "pipeCommand": "管道命令"
     },
     "reticulumPeers": {
       "name": "节点",
@@ -2876,7 +2885,11 @@
     "allGroups": "所有群组",
     "manageGroups": "管理组",
     "radioPeerCount": "路径表中的{{count}}个对等点",
-    "viewAllPeers": "在同行选项卡中查看全部"
+    "viewAllPeers": "在同行选项卡中查看全部",
+    "colLastHeard": "最后一次听到",
+    "colContact": "联系方式",
+    "contactYes": "是",
+    "contactNo": "否"
   },
   "peerDetailModal": {
     "networkSection": "网络",
@@ -2888,6 +2901,47 @@
     "pathFailed": "路径请求失败： {{error}}",
     "probeHops": "探头正常— {{hops}}跃点。",
     "probeLocal": "探头正常（ {{mode}}模式）。",
-    "probeFailed": "探头失败： {{error}}"
+    "probeFailed": "探头失败： {{error}}",
+    "isContact": "联系方式",
+    "call": "音频呼叫",
+    "callComingSoon": "语音通话将在未来的更新中推出",
+    "iconColor": "头像颜色",
+    "iconColorAria": "头像颜色"
+  },
+  "reticulumPropagation": {
+    "preferred": "首选",
+    "setPreferred": "设置首选图",
+    "syncNow": "同步消息",
+    "cancelSync": "取消同步",
+    "autoSyncInterval": "每{{sec}}秒自动同步"
+  },
+  "reticulumIdentity": {
+    "title": "标识",
+    "activeIdentity": "有效身份",
+    "announceIntervalSec": "公告间隔（秒）",
+    "clearAnnounces": "清除公告"
+  },
+  "nomadNetwork": {
+    "title": "游牧网络",
+    "empty": "尚未发现游牧网络节点。",
+    "toggleFavorite": "切换收藏夹"
+  },
+  "reticulumPing": {
+    "title": "Ping",
+    "hashPlaceholder": "目标哈希…",
+    "hashAria": "要ping的目标哈希",
+    "run": "Ping",
+    "result": "RTT {{ms}}毫秒",
+    "failed": "Ping失败： {{error}}"
+  },
+  "reticulumCall": {
+    "title": "语音通话",
+    "comingSoon": "Codec2语音呼叫尚未启用。",
+    "ready": "语音管道就绪。",
+    "startCall": "开始通话"
+  },
+  "reticulumTopology": {
+    "title": "网络拓扑图",
+    "self": "你"
   }
 }

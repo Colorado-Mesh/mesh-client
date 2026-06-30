@@ -545,6 +545,14 @@ export const RETICULUM_PROBE_FALSE_FRIEND_RES = [
     re: /del tronco/i,
     hint: 'reticulumPeers.probe must be "Sonda/Probe", not "del tronco" garbage',
   },
+  {
+    re: /Датчик/i,
+    hint: 'mesh probe must be "Зонд", not physical sensor "Датчик"',
+  },
+  {
+    re: /датчик/i,
+    hint: 'mesh probe must be "зонд", not physical sensor "датчик"',
+  },
 ];
 
 /** MT turns "other peers" into office colleagues on stack transport toggle. */
@@ -1222,6 +1230,9 @@ export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'emptySelectDm',
   'noDmConversations',
   'noDmConversationsReticulum',
+  'reticulumSendDelivered',
+  'reticulumSendSending',
+  'reticulumSendFailed',
 ]);
 
 /** Reticulum DM-only chat copy — contact must not become customer inquiry (문의). */
@@ -1485,7 +1496,18 @@ export const LOCALE_ARTIFACT_RES = [
   /<bpt\b/i,
   /<ept\b/i,
   /equiv-text=/i,
+  /<primary>/i,
+  /<command>/i,
 ];
+
+/** HTML numeric entities leaked from CAT export (e.g. &#10; line feed). */
+export const HTML_ENTITY_RESIDUE_RE = /&#\d+;/;
+
+/** Bracket placeholders from CAT/MyMemory (e.g. [Data] dostarczenia). */
+export const BRACKET_CAT_PLACEHOLDER_RE = /\[(?:Data|Date|Time)\]/i;
+
+/** peerDetailModal probe toast keys — same probe wording rules as reticulumPeers.probe. */
+export const PEER_DETAIL_PROBE_LEAF_KEYS = new Set(['probeHops', 'probeLocal', 'probeFailed']);
 
 /** Brand / product names preserved verbatim when present in English. */
 // GPIO is a hardware acronym that must not be translated or expanded in UI strings.
@@ -1607,7 +1629,7 @@ export function protectedBrandIssues(enVal, val, brands = PROTECTED_BRANDS) {
  * @returns {string[]}
  */
 function checkCatEncodingAndMeshtasticIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (CAT_PH_PLACEHOLDER_RE.test(val)) {
     issues.push('CAT/XLIFF __ PH __ placeholder residue is not allowed');
@@ -1656,6 +1678,25 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
     issues.push('CAT/Qt plural-form placeholder residue is not allowed');
   }
 
+  if (HTML_ENTITY_RESIDUE_RE.test(val)) {
+    issues.push('HTML numeric entity residue (e.g. &#10;) is not allowed');
+  }
+
+  if (BRACKET_CAT_PLACEHOLDER_RE.test(val)) {
+    issues.push('CAT bracket placeholder residue (e.g. [Data]) is not allowed');
+  }
+
+  if (
+    leafKey === 'nameLabel' &&
+    enVal === 'Name:' &&
+    locale !== 'en' &&
+    /Gerald|Junior|&#/i.test(val)
+  ) {
+    issues.push(
+      'nameLabel must be a short "Name:" label — remove CAT sample-name or entity garbage',
+    );
+  }
+
   if (
     locale === 'fr' &&
     (flatKey.startsWith(CHANNEL_URL_PREFIX) || FR_MESH_CHANNEL_KEYS.has(flatKey)) &&
@@ -1663,6 +1704,39 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
   ) {
     issues.push('French "chaîne(s)" means broadcast channel; use "canal/canaux" for mesh channels');
   }
+  return issues;
+}
+
+/**
+ * Reticulum peer detail, ping, and related UI outside connectionPanel.* nesting.
+ *
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumPeerAndPingIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
+
+  if (
+    flatKey.startsWith('peerDetailModal.') &&
+    PEER_DETAIL_PROBE_LEAF_KEYS.has(leafKey) &&
+    enVal.includes('Probe')
+  ) {
+    for (const { re, hint } of RETICULUM_PROBE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`peerDetailModal probe false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === 'reticulumPing.failed' && enVal.includes('Ping failed') && locale !== 'en') {
+    if (/зв['\s]*язк|связ(и|ь)/i.test(val) && !/пінг|ping|эхо|sond|prob/i.test(val)) {
+      issues.push(
+        'reticulumPing.failed must mention ping/probe, not generic connection "зв\'язку/связи"',
+      );
+    }
+  }
+
   return issues;
 }
 
@@ -2540,6 +2614,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkAppPanelReduceMotionAndBrandIssues,
   checkMeshcoreOpenWireIssues,
   checkReticulumConnectionPanelIssues,
+  checkReticulumPeerAndPingIssues,
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,

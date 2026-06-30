@@ -45,6 +45,7 @@ import {
   MeshtasticMqttPathIcon,
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
+import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -119,6 +120,7 @@ import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
 import { useToast } from './Toast';
 
@@ -2313,14 +2315,22 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              <ChatPayloadText
-                                text={msg.payload}
-                                query={searchQuery}
-                                loadLinkPreviews={!showScrollButton}
-                                onContentResize={() => {
-                                  scheduleMessageRowRemeasure(i);
-                                }}
-                              />
+                              {protocol === 'reticulum' &&
+                              parseReticulumAttachmentPayload(msg.payload) ? (
+                                <ReticulumAttachmentLine
+                                  payload={msg.payload}
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                />
+                              ) : (
+                                <ChatPayloadText
+                                  text={msg.payload}
+                                  query={searchQuery}
+                                  loadLinkPreviews={!showScrollButton}
+                                  onContentResize={() => {
+                                    scheduleMessageRowRemeasure(i);
+                                  }}
+                                />
+                              )}
                             </div>
 
                             {/* Transport + RF hop count (incoming) */}

@@ -3658,7 +3658,7 @@ function AppContent() {
         </Suspense>
       )}
 
-      {selectedPeerHash !== null && (
+      {protocol === 'reticulum' && selectedPeerHash !== null && (
         <Suspense fallback={<DialogLazyFallback />}>
           <ReticulumPeerDetailModal
             peerHash={selectedPeerHash}

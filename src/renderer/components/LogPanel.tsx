@@ -105,7 +105,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     return (
       entry.source.includes('reticulum') ||
       entry.message.includes('[ReticulumSidecar]') ||
-      entry.message.includes('[ReticulumConnectionPanel]') ||
+      entry.message.includes('[ReticulumRadioPanel]') ||
       entry.message.includes('[useReticulumRuntime]') ||
       entry.message.includes('[ReticulumIPC]') ||
       entry.message.includes('[IPC] reticulum')
@@ -124,7 +124,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[TransportNobleIpc]') ||
     entry.message.includes('[MeshCore MQTT]') ||
     entry.message.includes('[ReticulumSidecar]') ||
-    entry.message.includes('[ReticulumConnectionPanel]') ||
+    entry.message.includes('[ReticulumRadioPanel]') ||
     entry.message.includes('[ReticulumIPC]') ||
     entry.message.includes('[IPC] reticulum') ||
     entry.message.includes('[NobleBleManager]') ||

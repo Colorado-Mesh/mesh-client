@@ -192,7 +192,9 @@ export const CANONICAL_TABLES_DDL = `
         destination_hash TEXT PRIMARY KEY,
         display_name     TEXT,
         last_heard       INTEGER,
-        favorited        INTEGER DEFAULT 0
+        favorited        INTEGER DEFAULT 0,
+        icon_name        TEXT,
+        icon_color       TEXT
       );
 
       CREATE TABLE IF NOT EXISTS reticulum_messages (
@@ -372,6 +374,10 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     reply_to_hash: 'TEXT',
     message_hash: 'TEXT',
     received_via: 'TEXT',
+    delivery_status: 'TEXT',
+    delivery_attempts: 'INTEGER DEFAULT 0',
+    next_delivery_attempt_at: 'INTEGER',
+    attachment_path: 'TEXT',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',
@@ -416,9 +422,12 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     created_at: 'INTEGER NOT NULL',
     updated_at: 'INTEGER NOT NULL',
   },
-  node_notes: {
-    notes: "TEXT NOT NULL DEFAULT ''",
-    updated_at: 'INTEGER',
+  reticulum_destinations: {
+    display_name: 'TEXT',
+    last_heard: 'INTEGER',
+    favorited: 'INTEGER DEFAULT 0',
+    icon_name: 'TEXT',
+    icon_color: 'TEXT',
   },
 };
 

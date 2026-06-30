@@ -72,6 +72,17 @@ describe('reticulumPeerStore', () => {
     });
   });
 
+  it('isContact returns true only for LXMF contacts map', () => {
+    useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'peeronly' }]);
+    useReticulumPeerStore
+      .getState()
+      .replaceContacts([{ destination_hash: 'contact1', last_heard: 100 }]);
+
+    expect(useReticulumPeerStore.getState().isContact('contact1')).toBe(true);
+    expect(useReticulumPeerStore.getState().isContact('peeronly')).toBe(false);
+    expect(useReticulumPeerStore.getState().isContact('CONTACT1')).toBe(true);
+  });
+
   it('refreshReticulumPeersFromSidecar loads sidecar and db rows', async () => {
     vi.stubGlobal('window', {
       electronAPI: {
