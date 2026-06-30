@@ -88,6 +88,10 @@ export function ReticulumRadioPanel({
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [showFactoryResetConfirm, setShowFactoryResetConfirm] = useState(false);
+  const [pendingDeleteInterface, setPendingDeleteInterface] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
   const [gamesStatus, setGamesStatus] = useState<string | null>(null);
   const [pendingImportMode, setPendingImportMode] = useState<'merge' | 'replace'>('merge');
@@ -316,6 +320,24 @@ export function ReticulumRadioPanel({
     const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
     await window.electronAPI.reticulum.proxyPost(path, {});
     await refreshInterfaces();
+  };
+
+  const deleteInterface = async (id: string) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyDelete(`/api/v1/interfaces/${id}`)) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (res?.ok === false) {
+        setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.deleteFailed'));
+        return;
+      }
+      setPendingDeleteInterface(null);
+      await refreshInterfaces();
+    } catch (e) {
+      // catch-no-log-ok: delete failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
   };
 
   const runConfigImport = async (mode: 'merge' | 'replace', content: string) => {
@@ -569,6 +591,9 @@ export function ReticulumRadioPanel({
             onToggle={(id, enabled) => {
               void toggleInterface(id, enabled);
             }}
+            onDelete={(id, name) => {
+              setPendingDeleteInterface({ id, name });
+            }}
           />
 
           <PeersSection peers={peers} />
@@ -617,6 +642,22 @@ export function ReticulumRadioPanel({
           {appInfo?.rns_version ? ` · RNS ${appInfo.rns_version}` : null}
           {statsSummary ? ` · ${statsSummary}` : null}
         </p>
+      ) : null}
+
+      {pendingDeleteInterface ? (
+        <ConfirmModal
+          title={t('connectionPanel.reticulumInterfaces.deleteConfirmTitle')}
+          message={t('connectionPanel.reticulumInterfaces.deleteConfirmBody', {
+            name: pendingDeleteInterface.name,
+          })}
+          confirmLabel={t('connectionPanel.reticulumInterfaces.deleteConfirm')}
+          onConfirm={() => {
+            void deleteInterface(pendingDeleteInterface.id);
+          }}
+          onCancel={() => {
+            setPendingDeleteInterface(null);
+          }}
+        />
       ) : null}
 
       {showFactoryResetConfirm ? (
@@ -813,6 +854,7 @@ function InterfacesSection({
   onSelectedPresetChange,
   onAdd,
   onToggle,
+  onDelete,
 }: {
   interfaces: ReticulumInterfaceRow[];
   ifaceType: 'tcp' | 'auto' | 'rnode';
@@ -830,6 +872,7 @@ function InterfacesSection({
   onSelectedPresetChange: (v: string) => void;
   onAdd: () => void;
   onToggle: (id: string, enabled: boolean) => void;
+  onDelete: (id: string, name: string) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -949,17 +992,29 @@ function InterfacesSection({
               <span>
                 {iface.name} ({iface.type}) — {iface.status}
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  onToggle(iface.id, !iface.enabled);
-                }}
-                className="text-xs text-amber-400 hover:underline"
-              >
-                {iface.enabled
-                  ? t('connectionPanel.reticulumInterfaces.disable')
-                  : t('connectionPanel.reticulumInterfaces.enable')}
-              </button>
+              <span className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggle(iface.id, !iface.enabled);
+                  }}
+                  className="text-xs text-amber-400 hover:underline"
+                >
+                  {iface.enabled
+                    ? t('connectionPanel.reticulumInterfaces.disable')
+                    : t('connectionPanel.reticulumInterfaces.enable')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDelete(iface.id, iface.name);
+                  }}
+                  className="text-xs text-red-400 hover:underline"
+                  aria-label={t('connectionPanel.reticulumInterfaces.delete', { name: iface.name })}
+                >
+                  {t('connectionPanel.reticulumInterfaces.delete')}
+                </button>
+              </span>
             </li>
           ))
         )}

@@ -627,7 +627,12 @@
       "preset": "Předvolby",
       "bleAvailable": "Na této platformě je k dispozici peering ble (při konfiguraci přidejte pomocí postranního vozíku).",
       "host": "Hostitel",
-      "port": "Port"
+      "port": "Port",
+      "delete": "Odstranit",
+      "deleteConfirmTitle": "Smazat rozhraní",
+      "deleteConfirmBody": "Odebrat „{{name}}“ z konfigurace zásobníku? Tuto akci nelze vrátit zpět.",
+      "deleteConfirm": "Odstranit",
+      "deleteFailed": "Odstranění rozhraní se nezdařilo."
     },
     "reticulumPeers": {
       "name": "Rovesníci",

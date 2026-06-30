@@ -516,7 +516,12 @@
       "preset": "Preset",
       "bleAvailable": "BLE peering is available on this platform (add via sidecar when configured).",
       "host": "Host",
-      "port": "Port"
+      "port": "Port",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete interface?",
+      "deleteConfirmBody": "Remove \"{{name}}\" from the stack config? This cannot be undone.",
+      "deleteConfirm": "Delete",
+      "deleteFailed": "Failed to delete interface."
     },
     "reticulumPeers": {
       "name": "Peer",

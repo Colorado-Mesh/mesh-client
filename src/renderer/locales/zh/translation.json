@@ -627,7 +627,12 @@
       "preset": "预置",
       "bleAvailable": "BLE对等可在此平台上使用（配置后通过sidecar添加）。",
       "host": "Host",
-      "port": "端口"
+      "port": "端口",
+      "delete": "删除",
+      "deleteConfirmTitle": "刪除介面",
+      "deleteConfirmBody": "从堆栈配置中删除“{{name}}” ？此操作无法撤消。",
+      "deleteConfirm": "删除",
+      "deleteFailed": "删除接口失败。"
     },
     "reticulumPeers": {
       "name": "同事",

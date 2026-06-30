@@ -627,7 +627,12 @@
       "preset": "Ustawienie wstępne",
       "bleAvailable": "Na tej platformie dostępne jest peering BLE (po skonfigurowaniu dodaj za pośrednictwem wózka bocznego).",
       "host": "Prowadząca",
-      "port": "Port"
+      "port": "Port",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Usunąć interfejs?",
+      "deleteConfirmBody": "Usunąć \"{{name}}\" z konfiguracji stosu? Tej czynności nie można cofnąć.",
+      "deleteConfirm": "Delete",
+      "deleteFailed": "Nie udało się usunąć interfejsu."
     },
     "reticulumPeers": {
       "name": "Kolega",

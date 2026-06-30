@@ -627,7 +627,12 @@
       "preset": "Vorwahlen",
       "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen).",
       "host": "Aufnehmende Einrichtung",
-      "port": "Port"
+      "port": "Port",
+      "delete": "Löschen",
+      "deleteConfirmTitle": "Schnittstelle löschen",
+      "deleteConfirmBody": "\"{{name}}\" aus der Stack-Konfiguration entfernen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteConfirm": "Löschen",
+      "deleteFailed": "Schnittstelle konnte nicht gelöscht werden."
     },
     "reticulumPeers": {
       "name": "Gleichrangige",

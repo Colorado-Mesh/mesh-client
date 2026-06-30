@@ -258,6 +258,29 @@ export class ReticulumSidecarManager extends EventEmitter {
     return res.json();
   }
 
+  async proxyDelete(apiPath: string): Promise<unknown> {
+    const status = this.getStatus();
+    if (!status.running || status.port <= 0) {
+      throw new Error('Reticulum sidecar is not running');
+    }
+    const normalized = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+    const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
+      method: 'DELETE',
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      throw new Error(`sidecar DELETE ${normalized} failed: ${res.status}`);
+    }
+    const text = await res.text();
+    if (!text) return { ok: true };
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      // catch-no-log-ok: empty or non-JSON DELETE body is treated as success
+      return { ok: true };
+    }
+  }
+
   private connectWs(port: number): void {
     this.teardownWs();
     try {

@@ -82,6 +82,19 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
   });
 
+  ipcMain.handle('reticulum:proxyDelete', async (_event, apiPath: string) => {
+    try {
+      const m = ensureManager();
+      return await m.proxyDelete(apiPath);
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] proxyDelete failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  });
+
   ipcMain.handle('reticulum:readDefaultConfigFile', () => readFirstExistingConfig());
 
   ipcMain.handle('reticulum:showConfigImportDialog', async () => showReticulumConfigImportDialog());

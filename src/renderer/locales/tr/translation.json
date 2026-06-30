@@ -627,7 +627,12 @@
       "preset": "Ön Ayar",
       "bleAvailable": "BLE eşleştirme bu platformda mevcuttur (yapılandırıldığında sepet aracılığıyla ekleyin).",
       "host": "Ev sahibi",
-      "port": "Liman"
+      "port": "Liman",
+      "delete": "Sil",
+      "deleteConfirmTitle": "Arabirim silinsin mi?",
+      "deleteConfirmBody": "\"{{name}}\" yığın yapılandırmasından kaldırılsın mı? Bu işlem geri alınamaz.",
+      "deleteConfirm": "Sil",
+      "deleteFailed": "Arayüz silinemedi."
     },
     "reticulumPeers": {
       "name": "Kişi",

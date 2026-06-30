@@ -896,6 +896,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:proxyPost', apiPath, body),
     proxyPut: (apiPath: string, body: unknown): Promise<unknown> =>
       ipcRenderer.invoke('reticulum:proxyPut', apiPath, body),
+    proxyDelete: (apiPath: string): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyDelete', apiPath),
     readDefaultConfigFile: (): Promise<{ path: string | null; content: string | null }> =>
       ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
     showConfigImportDialog: (): Promise<{ path: string | null; content: string | null }> =>

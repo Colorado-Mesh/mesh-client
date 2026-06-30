@@ -627,7 +627,12 @@
       "preset": "Preimpostazione",
       "bleAvailable": "Il peering BLE è disponibile su questa piattaforma (aggiungere tramite sidecar quando configurato).",
       "host": "Ospite",
-      "port": "Porta"
+      "port": "Porta",
+      "delete": "Elimina",
+      "deleteConfirmTitle": "Eliminare l'interfaccia?",
+      "deleteConfirmBody": "Rimuovere \"{{name}}\" dalla configurazione dello stack? Questa operazione non può essere annullata.",
+      "deleteConfirm": "Elimina",
+      "deleteFailed": "Impossibile eliminare l'interfaccia."
     },
     "reticulumPeers": {
       "name": "Pressione",

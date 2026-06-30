@@ -254,6 +254,7 @@ export function createElectronAPIMock(): ElectronAPI {
       proxyGet: vi.fn().mockResolvedValue({ status: 'ok' }),
       proxyPost: vi.fn().mockResolvedValue({ ok: true }),
       proxyPut: vi.fn().mockResolvedValue({ ok: true }),
+      proxyDelete: vi.fn().mockResolvedValue({ ok: true }),
       readDefaultConfigFile: vi.fn().mockResolvedValue({ path: null, content: null }),
       showConfigImportDialog: vi.fn().mockResolvedValue({ path: null, content: null }),
       onEvent: vi.fn().mockReturnValue(() => {}),

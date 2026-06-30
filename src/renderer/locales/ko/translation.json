@@ -627,7 +627,12 @@
       "preset": "기본값 설정",
       "bleAvailable": "BLE 피어링은 이 플랫폼에서 사용할 수 있습니다 (구성 시 사이드카를 통해 추가).",
       "host": "호스트",
-      "port": "포팅하기"
+      "port": "포팅하기",
+      "delete": "삭제",
+      "deleteConfirmTitle": "인터페이스를 삭제하시겠습니까?",
+      "deleteConfirmBody": "스택 구성에서 \"{{name}}\" 을 (를) 제거하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "deleteConfirm": "삭제",
+      "deleteFailed": "인터페이스를 삭제하지 못했습니다."
     },
     "reticulumPeers": {
       "name": "동료",

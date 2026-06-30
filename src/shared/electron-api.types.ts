@@ -774,6 +774,7 @@ export interface ElectronAPI {
     proxyGet: (apiPath: string) => Promise<unknown>;
     proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
     proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;
+    proxyDelete: (apiPath: string) => Promise<unknown>;
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;

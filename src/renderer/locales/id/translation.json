@@ -627,7 +627,12 @@
       "preset": "Preset",
       "bleAvailable": "Pengintipan BLE tersedia di platform ini (tambahkan melalui sidecar saat dikonfigurasi).",
       "host": "Pemandu Acara",
-      "port": "Port"
+      "port": "Port",
+      "delete": "Hapus",
+      "deleteConfirmTitle": "Hapus antarmuka?",
+      "deleteConfirmBody": "Hapus \"{{name}}\" dari konfigurasi tumpukan? Ini tidak dapat diurungkan.",
+      "deleteConfirm": "Hapus",
+      "deleteFailed": "Gagal menghapus antarmuka."
     },
     "reticulumPeers": {
       "name": "Sesama Rekan Kerja",

@@ -627,7 +627,12 @@
       "preset": "プリセット",
       "bleAvailable": "BLEピアリングはこのプラットフォームで利用できます（設定時にサイドカー経由で追加）。",
       "host": "サーバ",
-      "port": "ポート"
+      "port": "ポート",
+      "delete": "削除",
+      "deleteConfirmTitle": "インタフェースを削除",
+      "deleteConfirmBody": "スタック設定から「{{name}}」を削除しますか？これは元に戻せません。",
+      "deleteConfirm": "削除",
+      "deleteFailed": "インターフェースの削除に失敗しました。"
     },
     "reticulumPeers": {
       "name": "ピア",

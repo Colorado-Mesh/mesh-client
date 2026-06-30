@@ -627,7 +627,12 @@
       "preset": "Predefinição",
       "bleAvailable": "O peering BLE está disponível nesta plataforma (adicionar via sidecar quando configurado).",
       "host": "Host",
-      "port": "Porta"
+      "port": "Porta",
+      "delete": "Excluir",
+      "deleteConfirmTitle": "Excluir interface?",
+      "deleteConfirmBody": "Remover \"{{name}}\" da configuração da pilha? Isso não pode ser desfeito.",
+      "deleteConfirm": "Excluir",
+      "deleteFailed": "Falha ao excluir a interface."
     },
     "reticulumPeers": {
       "name": "Ponto",

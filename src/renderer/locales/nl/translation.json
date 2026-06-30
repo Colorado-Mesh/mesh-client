@@ -627,7 +627,12 @@
       "preset": "Vooraf ingesteld",
       "bleAvailable": "BLE peering is beschikbaar op dit platform (toevoegen via zijspan indien geconfigureerd).",
       "host": "Ontvanger",
-      "port": "Poort"
+      "port": "Poort",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Interface verwijderen",
+      "deleteConfirmBody": "\"{{name}}\" verwijderen uit de stapelconfiguratie? Dit kan niet ongedaan worden gemaakt.",
+      "deleteConfirm": "Verwijderen",
+      "deleteFailed": "Interface verwijderen mislukt."
     },
     "reticulumPeers": {
       "name": "Peer",

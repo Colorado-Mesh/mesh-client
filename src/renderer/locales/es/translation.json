@@ -627,7 +627,12 @@
       "preset": "Preajuste",
       "bleAvailable": "El peering ble está disponible en esta plataforma (añadir a través de sidecar cuando esté configurado).",
       "host": "Acogida",
-      "port": "Puerto"
+      "port": "Puerto",
+      "delete": "Eliminar",
+      "deleteConfirmTitle": "¿Eliminar interfaz?",
+      "deleteConfirmBody": "¿Eliminar \"{{name}}\" de la configuración de la pila? Esto no se puede deshacer.",
+      "deleteConfirm": "Eliminar",
+      "deleteFailed": "Error al eliminar la interfaz."
     },
     "reticulumPeers": {
       "name": "Compañeros",
