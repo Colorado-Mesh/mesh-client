@@ -406,7 +406,8 @@
     "daysAgo": "Vor {{count}}d",
     "days": "-Tage",
     "emDash": "—",
-    "saving": "Speichern…"
+    "saving": "Speichern…",
+    "peers": "Kollegen"
   },
   "configApplyNotice": {
     "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",
@@ -2695,7 +2696,8 @@
     "graph": "Grafik",
     "tak": "TAK",
     "rooms": "Räume",
-    "admin": "Verwaltung"
+    "admin": "Verwaltung",
+    "peers": "Kollegen"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Für dieses Gerät ist keine Flash-Konfiguration verfügbar.",
       "blockedByStack": "Es kann nicht geflasht werden, während der Reticulum-Stack den seriellen RNode-Port enthält."
     }
+  },
+  "peerListPanel": {
+    "heading": "Kollegen",
+    "tabPeers": "Kollegen",
+    "tabContacts": "Kontakte",
+    "searchPlaceholder": "Nach Namen oder Hash suchen...",
+    "searchAria": "Kollegen suchen",
+    "colName": "Name / Hash",
+    "colLastSeen": "Zuletzt gesehen",
+    "colInterface": "Schnittstelle (Interface)",
+    "colFavorite": "Favorit",
+    "toggleFavorite": "Ihren Favoriten hinzufügen",
+    "openChat": "Chat öffnen",
+    "emptyPeers": "Noch keine Kollegen entdeckt. Senden Sie eine Ansage oder warten Sie auf den Netzwerkverkehr.",
+    "emptyContacts": "Noch keine Kontakte — senden Sie eine Nachricht an einen Kollegen, um ihn hier hinzuzufügen.",
+    "groupFilterAria": "Kontakte nach Gruppe filtern",
+    "allGroups": "Alle Gruppen",
+    "manageGroups": "Gruppen verwalten",
+    "radioPeerCount": "{{count}} Peer(s) in der Pfad-Tabelle",
+    "viewAllPeers": "Alle auf der Registerkarte \"Kollegen\" anzeigen"
+  },
+  "peerDetailModal": {
+    "networkSection": "Netzwerk-",
+    "pathHash": "Pfad-Hash",
+    "copyHash": "Ziel-Hash kopieren",
+    "editNameAria": "Ben.def. Display",
+    "sendMessage": "Nachricht senden",
+    "pathOk": "Die Anfrage wurde gesendet.",
+    "pathFailed": "Pfadanforderung fehlgeschlagen: {{error}}",
+    "probeHops": "Sonde OK — {{hops}} Hop(s).",
+    "probeLocal": "Sonde OK (Modus {{mode}}).",
+    "probeFailed": "Sonde fehlgeschlagen: {{error}}"
   }
 }

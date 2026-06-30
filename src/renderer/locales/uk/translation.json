@@ -406,7 +406,8 @@
     "daysAgo": "{{count}} дн. тому",
     "days": "днів",
     "emDash": "-",
-    "saving": "Триває збереження…"
+    "saving": "Триває збереження…",
+    "peers": "Однолітки"
   },
   "configApplyNotice": {
     "persistNote": "Застосовані налаштування зберігаються у флеш-пам'яті пристрою та зберігаються під час перезавантаження.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Графік",
     "rooms": "Кімнати",
-    "admin": "Адміністрування"
+    "admin": "Адміністрування",
+    "peers": "Однолітки"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Конфігурація Flash недоступна для цього пристрою.",
       "blockedByStack": "Неможливо прошити, поки стек Reticulum містить послідовний порт RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Однолітки",
+    "tabPeers": "Однолітки",
+    "tabContacts": "Contacts",
+    "searchPlaceholder": "Пошук за іменем або хешем…",
+    "searchAria": "Пошук колег",
+    "colName": "Ім'я / Хеш",
+    "colLastSeen": "Останній раз бачили",
+    "colInterface": "Інтерфейс",
+    "colFavorite": "Вибране",
+    "toggleFavorite": "Увімкнути або вимкнути вибране",
+    "openChat": "Відкрити чат",
+    "emptyPeers": "Поки що не виявлено жодного колеги. Надішліть оголошення або дочекайтеся мережевого трафіку.",
+    "emptyContacts": "Ще немає контактів — надішліть повідомлення однолітку, щоб додати їх сюди.",
+    "groupFilterAria": "Фільтрувати контакти за групою",
+    "allGroups": "Усі групи",
+    "manageGroups": "Керування групами",
+    "radioPeerCount": "{{count}} вузол(вузли) у таблиці шляхів",
+    "viewAllPeers": "Переглянути все на вкладці \"Колеги\""
+  },
+  "peerDetailModal": {
+    "networkSection": "Засоби зв'язку",
+    "pathHash": "Хеш шляху",
+    "copyHash": "Скопіювати хеш призначення",
+    "editNameAria": "Custom Display (Відображення користувача)",
+    "sendMessage": "Надіслати повідомлення",
+    "pathOk": "Запит шляху надіслано.",
+    "pathFailed": "Помилка запиту шляху: {{error}}",
+    "probeHops": "Датчик OK — {{hops}} стрибок(и).",
+    "probeLocal": "Датчик OK (режим {{mode}}).",
+    "probeFailed": "Збій датчика: {{error}}"
   }
 }

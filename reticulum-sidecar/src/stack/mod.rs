@@ -281,7 +281,11 @@ impl StackHandle {
     pub async fn request_peer_path(&self, hash: &str) -> Result<(), String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.request_path(hash).await;
+            let res = live.request_path(hash).await;
+            if res.is_ok() {
+                self.emit_event("peers_updated", serde_json::json!({ "hash": hash }));
+            }
+            return res;
         }
         let _ = hash;
         Ok(())
@@ -290,9 +294,17 @@ impl StackHandle {
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.probe_peer(hash).await;
+            let res = live.probe_peer(hash).await;
+            if res.is_ok() {
+                self.emit_event("peers_updated", serde_json::json!({ "hash": hash }));
+            }
+            return res;
         }
-        Ok(serde_json::json!({ "ok": true, "mode": "local", "hash": hash }))
+        let res = Ok(serde_json::json!({ "ok": true, "mode": "local", "hash": hash }));
+        if res.is_ok() {
+            self.emit_event("peers_updated", serde_json::json!({ "hash": hash }));
+        }
+        res
     }
 
     pub async fn list_propagation(&self) -> Vec<PropagationRow> {

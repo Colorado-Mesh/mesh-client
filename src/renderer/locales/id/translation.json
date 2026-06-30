@@ -406,7 +406,8 @@
     "daysAgo": "{{count}} hari yang lalu",
     "days": "hari",
     "emDash": "—",
-    "saving": "Menyimpan..."
+    "saving": "Menyimpan...",
+    "peers": "Peer"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Grafik",
     "rooms": "Ruang",
-    "admin": "Administrasi"
+    "admin": "Administrasi",
+    "peers": "Peer"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Konfigurasi flash tidak tersedia untuk perangkat ini.",
       "blockedByStack": "Tidak dapat mem-flash saat tumpukan Reticulum menahan port serial RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Peer",
+    "tabPeers": "Peer",
+    "tabContacts": "Kontak",
+    "searchPlaceholder": "Cari berdasarkan nama atau hash…",
+    "searchAria": "Cari rekan",
+    "colName": "Nama / Hash",
+    "colLastSeen": "Terakhir Terlihat",
+    "colInterface": "Antarmuka",
+    "colFavorite": "Favorit",
+    "toggleFavorite": "Alihkan favorit",
+    "openChat": "Buka obrolan",
+    "emptyPeers": "Belum ada teman sebaya yang ditemukan. Kirim pengumuman atau tunggu lalu lintas jaringan.",
+    "emptyContacts": "Belum ada kontak — kirimkan pesan kepada rekan untuk menambahkannya di sini.",
+    "groupFilterAria": "Filter kontak menurut grup",
+    "allGroups": "Semua groups",
+    "manageGroups": "Kelola Grup",
+    "radioPeerCount": "{{count}} rekan di tabel jalur",
+    "viewAllPeers": "Lihat semua di tab Rekan"
+  },
+  "peerDetailModal": {
+    "networkSection": "Jaringan",
+    "pathHash": "Hash jalur",
+    "copyHash": "Salin hash tujuan",
+    "editNameAria": "Nama tampilan khusus",
+    "sendMessage": "Kirim pesan",
+    "pathOk": "Permintaan jalur terkirim.",
+    "pathFailed": "Permohonan jalur gagal: {{error}}",
+    "probeHops": "Selidiki OK — {{hops}} hop.",
+    "probeLocal": "Selidiki OK (mode {{mode}}).",
+    "probeFailed": "Probe gagal: {{error}}"
   }
 }

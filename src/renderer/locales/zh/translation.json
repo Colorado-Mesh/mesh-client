@@ -406,7 +406,8 @@
     "daysAgo": "{{count}} 天前",
     "days": "天",
     "emDash": "—",
-    "saving": "正在保存…"
+    "saving": "正在保存…",
+    "peers": "Pee对端"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
@@ -2695,7 +2696,8 @@
     "graph": "图",
     "tak": "TAK",
     "rooms": "房间数",
-    "admin": "管理"
+    "admin": "管理",
+    "peers": "Pee对端"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "闪存配置不适用于该设备。",
       "blockedByStack": "当 Reticulum 堆栈保留 RNode 串行端口时无法闪烁。"
     }
+  },
+  "peerListPanel": {
+    "heading": "Pee对端",
+    "tabPeers": "Pee对端",
+    "tabContacts": "联系方式",
+    "searchPlaceholder": "按名称或哈希搜索……",
+    "searchAria": "搜索同行",
+    "colName": "名称/哈希",
+    "colLastSeen": "上一次查看时间",
+    "colInterface": "接口",
+    "colFavorite": "收藏夹",
+    "toggleFavorite": "切换收藏夹",
+    "openChat": "打开聊天",
+    "emptyPeers": "尚未发现同行。发送公告或等待网络流量。",
+    "emptyContacts": "还没有联系人—向同行发送消息以在此处添加他们。",
+    "groupFilterAria": "按组筛选联系人",
+    "allGroups": "所有群组",
+    "manageGroups": "管理组",
+    "radioPeerCount": "路径表中的{{count}}个对等点",
+    "viewAllPeers": "在同行选项卡中查看全部"
+  },
+  "peerDetailModal": {
+    "networkSection": "网络",
+    "pathHash": "哈希路径",
+    "copyHash": "复制目标哈希",
+    "editNameAria": "自定义显示名称",
+    "sendMessage": "发讯",
+    "pathOk": "请求已发送。",
+    "pathFailed": "路径请求失败： {{error}}",
+    "probeHops": "探头正常— {{hops}}跃点。",
+    "probeLocal": "探头正常（ {{mode}}模式）。",
+    "probeFailed": "探头失败： {{error}}"
   }
 }

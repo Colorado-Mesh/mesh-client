@@ -25,6 +25,8 @@ describe('protocolRegistry', () => {
     expect(reticulum?.capabilities.hasReticulumInterfaceConfig).toBe(true);
     expect(reticulum?.capabilities.hasReticulumNetworkPanel).toBe(true);
     expect(reticulum?.capabilities.nodeListTabUsesContactsLabel).toBe(false);
+    expect(reticulum?.capabilities.nodeListTabUsesPeersLabel).toBe(true);
+    expect(reticulum?.capabilities.hasReticulumPeersList).toBe(true);
   });
 
   it('sets MeshCore-specific UI capability flags', () => {

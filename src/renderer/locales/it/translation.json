@@ -406,7 +406,8 @@
     "daysAgo": "{{count}}d fa",
     "days": "giorni",
     "emDash": "—^",
-    "saving": "Salvataggio in corso..."
+    "saving": "Salvataggio in corso...",
+    "peers": "Compagni"
   },
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Graph",
     "rooms": "Camere",
-    "admin": "Amministrazione"
+    "admin": "Amministrazione",
+    "peers": "Compagni"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "La configurazione Flash non è disponibile per questo dispositivo.",
       "blockedByStack": "Impossibile eseguire il flashing mentre lo stack Reticulum contiene la porta seriale RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Compagni",
+    "tabPeers": "Compagni",
+    "tabContacts": "Contatti",
+    "searchPlaceholder": "Cerca per nome o hash...",
+    "searchAria": "Cerca colleghi",
+    "colName": "Nome / Hash",
+    "colLastSeen": "Ultima Visualizzazione",
+    "colInterface": "Interfaccia",
+    "colFavorite": "Preferiti",
+    "toggleFavorite": "Attiva/disattiva preferiti",
+    "openChat": "Apri chat",
+    "emptyPeers": "Nessun coetaneo ancora scoperto. Invia un annuncio o attendi il traffico di rete.",
+    "emptyContacts": "Ancora nessun contatto — invia un messaggio a un collega per aggiungerli qui.",
+    "groupFilterAria": "Filtra contatti per gruppo",
+    "allGroups": "Tutti i gruppi",
+    "manageGroups": "Gestisci gruppi",
+    "radioPeerCount": "{{count}} peer nella tabella dei percorsi",
+    "viewAllPeers": "Visualizza tutto nella scheda Colleghi"
+  },
+  "peerDetailModal": {
+    "networkSection": "Network",
+    "pathHash": "Hash percorso",
+    "copyHash": "Copia hash di destinazione",
+    "editNameAria": "Nome visualizzato personalizzato",
+    "sendMessage": "Invia messaggio",
+    "pathOk": "Richiesta di traccia oraria",
+    "pathFailed": "Richiesta percorso non riuscita: {{error}}",
+    "probeHops": "Sonda OK — {{hops}} hop(s).",
+    "probeLocal": "Sonda OK (modalità {{mode}}).",
+    "probeFailed": "Sonda guasta: {{error}}"
   }
 }

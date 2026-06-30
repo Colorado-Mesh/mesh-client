@@ -406,7 +406,8 @@
     "daysAgo": "{{count}}日前",
     "days": "日",
     "emDash": "—",
-    "saving": "保存中…"
+    "saving": "保存中…",
+    "peers": "ピア"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "グラフ",
     "rooms": "客室数",
-    "admin": "管理"
+    "admin": "管理",
+    "peers": "ピア"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "このデバイスではフラッシュ構成を使用できません。",
       "blockedByStack": "Reticulum スタックが RNode シリアル ポートを保持している間はフラッシュできません。"
     }
+  },
+  "peerListPanel": {
+    "heading": "ピア",
+    "tabPeers": "ピア",
+    "tabContacts": "連絡先",
+    "searchPlaceholder": "名前またはハッシュで検索…",
+    "searchAria": "ピアを検索",
+    "colName": "名前/ハッシュ",
+    "colLastSeen": "最終表示",
+    "colInterface": "インターフェイス",
+    "colFavorite": "お気に入り",
+    "toggleFavorite": "お気に入りを切り替える",
+    "openChat": "チャットを開始",
+    "emptyPeers": "まだピアが見つかりません。アナウンスを送信するか、ネットワークトラフィックを待ちます。",
+    "emptyContacts": "連絡先はまだありません。ここに追加するには、同僚にメッセージを送信してください。",
+    "groupFilterAria": "グループで連絡先を絞り込む",
+    "allGroups": "すべてのグループ",
+    "manageGroups": "グループを管理",
+    "radioPeerCount": "パステーブルの{{count}}ピア",
+    "viewAllPeers": "[ピア]タブですべてを表示"
+  },
+  "peerDetailModal": {
+    "networkSection": "ネットワーク",
+    "pathHash": "パスハッシュ",
+    "copyHash": "コピー先ハッシュ",
+    "editNameAria": "手動インストール",
+    "sendMessage": "メッセージを送信",
+    "pathOk": "パスリクエストが送信されました。",
+    "pathFailed": "パスリクエストに失敗しました： {{error}}",
+    "probeHops": "プローブOK — {{hops}}ホップ。",
+    "probeLocal": "プローブOK （ {{mode}}モード）。",
+    "probeFailed": "プローブが失敗しました： {{error}}"
   }
 }

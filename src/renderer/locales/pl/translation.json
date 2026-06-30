@@ -406,7 +406,8 @@
     "daysAgo": "{{count}}d temu",
     "days": "dni",
     "emDash": "—",
-    "saving": "Zapisywanie..."
+    "saving": "Zapisywanie...",
+    "peers": "Partnerzy"
   },
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Wykres",
     "rooms": "Pokoje",
-    "admin": "Administracja"
+    "admin": "Administracja",
+    "peers": "Partnerzy"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Konfiguracja Flash nie jest dostępna dla tego urządzenia.",
       "blockedByStack": "Nie można wykonać flashowania, gdy stos Reticulum zawiera port szeregowy RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Partnerzy",
+    "tabPeers": "Partnerzy",
+    "tabContacts": "Kontakty",
+    "searchPlaceholder": "Szukaj według nazwy lub skrótu…",
+    "searchAria": "Szukaj współpracowników",
+    "colName": "Imię / skrót",
+    "colLastSeen": "Ostatnio oglądane",
+    "colInterface": "Interfejs",
+    "colFavorite": "Ulubione",
+    "toggleFavorite": "Przełącz ulubione",
+    "openChat": "Otwórz czat",
+    "emptyPeers": "Nie odkryto jeszcze żadnych rówieśników. Wyślij ogłoszenie lub poczekaj na ruch sieciowy.",
+    "emptyContacts": "Brak kontaktów — wyślij wiadomość do współpracownika, aby dodać je tutaj.",
+    "groupFilterAria": "Filtruj kontakty według grupy",
+    "allGroups": "Wszystkie grupy",
+    "manageGroups": "Zarządzaj grupami",
+    "radioPeerCount": "{{count}} rówieśnicy w tabeli ścieżek",
+    "viewAllPeers": "Wyświetl wszystko w zakładce Współpracownicy"
+  },
+  "peerDetailModal": {
+    "networkSection": "Sieć",
+    "pathHash": "Skrót ścieżki",
+    "copyHash": "Skopiuj skrót miejsca docelowego",
+    "editNameAria": "Niestandardowa nazwa wyświetlana",
+    "sendMessage": "Wyślij wiadomość",
+    "pathOk": "Wysłano żądanie trasy.",
+    "pathFailed": "Żądanie trasy nie powiodło się: {{error}}",
+    "probeHops": "Sonda OK — {{hops}} hop(s).",
+    "probeLocal": "Sonda OK (tryb {{mode}}).",
+    "probeFailed": "Sonda nie powiodła się: {{error}}"
   }
 }

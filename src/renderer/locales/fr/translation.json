@@ -406,7 +406,8 @@
     "daysAgo": "Il y a {{count}}j",
     "days": "jours",
     "emDash": "—",
-    "saving": "Enregistrement en cours..."
+    "saving": "Enregistrement en cours...",
+    "peers": "Pairs"
   },
   "configApplyNotice": {
     "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Graphique",
     "rooms": "Salles",
-    "admin": "Administration"
+    "admin": "Administration",
+    "peers": "Pairs"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "La configuration Flash n'est pas disponible pour cet appareil.",
       "blockedByStack": "Impossible de flasher pendant que la pile Reticulum contient le port série RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Pairs",
+    "tabPeers": "Pairs",
+    "tabContacts": "Contacts",
+    "searchPlaceholder": "Recherche par nom ou hachage…",
+    "searchAria": "Rechercher des pairs",
+    "colName": "Nom / hachage",
+    "colLastSeen": "Dernière vue",
+    "colInterface": "Interface",
+    "colFavorite": "Favori",
+    "toggleFavorite": "Basculer en favori",
+    "openChat": "Ouvrir le Chat",
+    "emptyPeers": "Aucun pair n'a encore été découvert. Envoyez une annonce ou attendez le trafic réseau.",
+    "emptyContacts": "Aucun contact pour le moment — envoyez un message à un pair pour l'ajouter ici.",
+    "groupFilterAria": "Filtrer les contacts par groupe",
+    "allGroups": "Tous les groupes",
+    "manageGroups": "Gestion des groupes",
+    "radioPeerCount": "{{count}} pair(s) dans la table des chemins",
+    "viewAllPeers": "Tout afficher dans l'onglet Peers"
+  },
+  "peerDetailModal": {
+    "networkSection": "Réseau",
+    "pathHash": "Hachage du chemin",
+    "copyHash": "Hash de Destination",
+    "editNameAria": "Affichage Personnalisé",
+    "sendMessage": "Envoyer un message",
+    "pathOk": "Demande envoyée.",
+    "pathFailed": "Échec de la demande de chemin : {{error}}",
+    "probeHops": "Sonde OK — {{hops}} hop(s).",
+    "probeLocal": "Sonde OK (mode {{mode}}).",
+    "probeFailed": "Échec de la sonde : {{error}}"
   }
 }

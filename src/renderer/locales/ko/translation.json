@@ -406,7 +406,8 @@
     "daysAgo": "{{count}}d 전",
     "days": "날",
     "emDash": "—",
-    "saving": "저장 중..."
+    "saving": "저장 중...",
+    "peers": "통신자"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "그래프",
     "rooms": "방",
-    "admin": "관리"
+    "admin": "관리",
+    "peers": "통신자"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "이 장치에서는 플래시 구성을 사용할 수 없습니다.",
       "blockedByStack": "Reticulum 스택이 Rnode 직렬 포트를 보유하고 있는 동안에는 플래시할 수 없습니다."
     }
+  },
+  "peerListPanel": {
+    "heading": "통신자",
+    "tabPeers": "통신자",
+    "tabContacts": "연락처",
+    "searchPlaceholder": "이름 또는 해시로 검색...",
+    "searchAria": "동료 검색",
+    "colName": "이름/해시",
+    "colLastSeen": "마지막으로 본",
+    "colInterface": "인터페이스",
+    "colFavorite": "즐겨찾기",
+    "toggleFavorite": "즐겨찾기 전환",
+    "openChat": "채팅창 열기",
+    "emptyPeers": "아직 동료가 발견되지 않았습니다. 공지 사항을 보내거나 네트워크 트래픽을 기다립니다.",
+    "emptyContacts": "아직 연락처가 없습니다. 동료에게 메시지를 보내 여기에 추가하세요.",
+    "groupFilterAria": "그룹별로 연락처 필터링",
+    "allGroups": "전체 그룹",
+    "manageGroups": "그룹 관리",
+    "radioPeerCount": "{{count}} PATH 테이블의 피어",
+    "viewAllPeers": "Peers 탭에서 모두 보기"
+  },
+  "peerDetailModal": {
+    "networkSection": "네트워크",
+    "pathHash": "경로 해시",
+    "copyHash": "대상 해시 복사",
+    "editNameAria": "사용자 지정 표시 이름을 사용?.",
+    "sendMessage": "메시지 전송",
+    "pathOk": "경로 요청이 전송되었습니다.",
+    "pathFailed": "경로 요청 실패: {{error}}",
+    "probeHops": "프로브 확인 — {{hops}} 홉.",
+    "probeLocal": "프로브 OK ({{mode}} 모드).",
+    "probeFailed": "프로브 실패: {{error}}"
   }
 }

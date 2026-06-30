@@ -24,4 +24,12 @@ describe('computeTabMappings', () => {
     expect(RETICULUM_CAPABILITIES.hasDiagnosticsPanel).toBe(true);
     expect(tabs.tabIndexToPanelIndex).toContain(diagnosticsPanelIndex);
   });
+
+  it('uses Peers tab label for Reticulum nodes slot', () => {
+    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const nodesPanelIndex = TAB_SLOT_IDS.indexOf('Nodes');
+    const nodesTabIndex = tabs.tabIndexToPanelIndex.indexOf(nodesPanelIndex);
+    expect(nodesTabIndex).toBeGreaterThanOrEqual(0);
+    expect(tabs.displayTabLabels[nodesTabIndex]).toBe('tabs.peers');
+  });
 });

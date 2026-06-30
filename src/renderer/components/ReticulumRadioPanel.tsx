@@ -10,6 +10,7 @@ import {
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
+import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
 
@@ -31,14 +32,6 @@ interface ReticulumInterfaceRow {
   preset?: string | null;
 }
 
-interface ReticulumPeerRow {
-  destination_hash: string;
-  display_name?: string | null;
-  hops?: number | null;
-  last_seen?: number | null;
-  interface?: string | null;
-}
-
 interface PropagationRow {
   id: string;
   name: string;
@@ -51,6 +44,7 @@ export interface ReticulumRadioPanelProps {
   connecting: boolean;
   onSidecarEvent?: (evt: ReticulumSidecarEvent) => void;
   onStartStack: () => Promise<void>;
+  onOpenPeersTab?: () => void;
 }
 
 /** Radio tab: identity, interfaces, network peers, propagation, config import. */
@@ -59,6 +53,7 @@ export function ReticulumRadioPanel({
   connecting,
   onSidecarEvent,
   onStartStack,
+  onOpenPeersTab,
 }: ReticulumRadioPanelProps) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider('reticulum');
@@ -76,7 +71,7 @@ export function ReticulumRadioPanel({
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [confirmSaved, setConfirmSaved] = useState(false);
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
-  const [peers, setPeers] = useState<ReticulumPeerRow[]>([]);
+  const peerCount = useReticulumPeerStore((s) => s.peers.size);
   const [propagation, setPropagation] = useState<PropagationRow[]>([]);
   const [ifaceType, setIfaceType] = useState<'tcp' | 'auto' | 'rnode'>('tcp');
   const [ifaceHost, setIfaceHost] = useState('');
@@ -118,18 +113,6 @@ export function ReticulumRadioPanel({
     }
   }, [sidecarApiReady]);
 
-  const refreshPeers = useCallback(async () => {
-    if (!sidecarApiReady) return;
-    try {
-      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/peers')) as {
-        peers?: ReticulumPeerRow[];
-      };
-      setPeers(body.peers ?? []);
-    } catch (e) {
-      console.debug('[ReticulumRadioPanel] peers ' + errLikeToLogString(e));
-    }
-  }, [sidecarApiReady]);
-
   const refreshPropagation = useCallback(async () => {
     if (!sidecarApiReady) return;
     try {
@@ -161,27 +144,20 @@ export function ReticulumRadioPanel({
   useEffect(() => {
     if (!sidecarApiReady) {
       setInterfaces([]);
-      setPeers([]);
       setPropagation([]);
       return;
     }
     void refreshInterfaces();
-    void refreshPeers();
     void refreshPropagation();
     void refreshStackSettings();
     const unsub = window.electronAPI.reticulum.onEvent((evt: ReticulumSidecarEvent) => {
-      if (
-        evt.type === 'interface.state' ||
-        evt.type === 'peers_updated' ||
-        evt.type === 'stats_update'
-      ) {
+      if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         void refreshInterfaces();
-        void refreshPeers();
         void refreshPropagation();
       }
     });
     return unsub;
-  }, [sidecarApiReady, refreshInterfaces, refreshPeers, refreshPropagation, refreshStackSettings]);
+  }, [sidecarApiReady, refreshInterfaces, refreshPropagation, refreshStackSettings]);
 
   useEffect(() => {
     if (!sidecarApiReady) return;
@@ -232,7 +208,6 @@ export function ReticulumRadioPanel({
       setShowFactoryResetConfirm(false);
       await refreshIdentity();
       void refreshInterfaces();
-      void refreshPeers();
     } catch (e) {
       console.warn('[ReticulumRadioPanel] factory reset ' + errLikeToLogString(e));
     }
@@ -638,7 +613,7 @@ export function ReticulumRadioPanel({
             }}
           />
 
-          <PeersSection peers={peers} />
+          <PeersSummarySection peerCount={peerCount} onOpenPeersTab={onOpenPeersTab} />
           <PropagationSection
             propagation={propagation}
             onRefresh={() => {
@@ -1278,63 +1253,33 @@ function InterfacesSection({
   );
 }
 
-function PeersSection({ peers }: { peers: ReticulumPeerRow[] }) {
+function PeersSummarySection({
+  peerCount,
+  onOpenPeersTab,
+}: {
+  peerCount: number;
+  onOpenPeersTab?: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
       <h3 className="text-sm font-medium text-gray-200">
         {t('connectionPanel.reticulumNetworkTitle')}
       </h3>
-      <div className="mt-2 max-h-48 overflow-y-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="text-muted border-b border-gray-700">
-              <th className="py-1 pr-2">{t('connectionPanel.reticulumPeers.name')}</th>
-              <th className="py-1 pr-2">{t('connectionPanel.reticulumPeers.hops')}</th>
-              <th className="py-1">{t('connectionPanel.reticulumPeers.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {peers.map((peer) => (
-              <tr key={peer.destination_hash} className="border-b border-gray-800">
-                <td className="py-1 pr-2 font-mono">
-                  {peer.display_name ?? peer.destination_hash.slice(0, 12)}
-                </td>
-                <td className="py-1 pr-2">{peer.hops ?? '—'}</td>
-                <td className="py-1">
-                  <button
-                    type="button"
-                    className="text-amber-400 hover:underline"
-                    onClick={() =>
-                      void window.electronAPI.reticulum.proxyPost(
-                        `/api/v1/peers/${peer.destination_hash}/path`,
-                        {},
-                      )
-                    }
-                  >
-                    {t('connectionPanel.reticulumPeers.path')}
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-2 text-amber-400 hover:underline"
-                    onClick={() =>
-                      void window.electronAPI.reticulum.proxyPost(
-                        `/api/v1/peers/${peer.destination_hash}/probe`,
-                        {},
-                      )
-                    }
-                  >
-                    {t('connectionPanel.reticulumPeers.probe')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {peers.length === 0 ? (
-          <p className="text-muted py-2 text-xs">{t('connectionPanel.reticulumNetworkEmpty')}</p>
-        ) : null}
-      </div>
+      <p className="text-muted mt-2 text-xs">
+        {peerCount > 0
+          ? t('peerListPanel.radioPeerCount', { count: peerCount })
+          : t('connectionPanel.reticulumNetworkEmpty')}
+      </p>
+      {onOpenPeersTab ? (
+        <button
+          type="button"
+          className="mt-2 text-sm text-amber-400 hover:underline"
+          onClick={onOpenPeersTab}
+        >
+          {t('peerListPanel.viewAllPeers')}
+        </button>
+      ) : null}
     </div>
   );
 }

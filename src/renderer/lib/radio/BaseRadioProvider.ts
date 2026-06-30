@@ -95,6 +95,8 @@ export interface ProtocolCapabilities {
   hasRawPacketLog: boolean;
   /** Node list tab label uses "Contacts" instead of "Nodes" */
   nodeListTabUsesContactsLabel: boolean;
+  /** Node list tab label uses "Peers" instead of "Nodes" (Reticulum) */
+  nodeListTabUsesPeersLabel: boolean;
   /** Modules tab shows repeater tooling (MeshCore "Repeaters" tab slot) */
   modulesTabUsesRepeatersLabel: boolean;
   /** Dedicated Rooms tab for MeshCore room server BBS */
@@ -123,6 +125,8 @@ export interface ProtocolCapabilities {
   hasLxmfAttachments: boolean;
   /** Reticulum: RNode firmware flasher on Radio tab */
   hasRNodeFlasher: boolean;
+  /** Reticulum: dedicated Peers list panel on tab 2 */
+  hasReticulumPeersList: boolean;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -171,6 +175,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasCryptoOperations: true,
   hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: false,
+  nodeListTabUsesPeersLabel: false,
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
   hasJsonRadioConfigImport: false,
@@ -185,6 +190,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRadioPanel: false,
   hasLxmfAttachments: false,
   hasRNodeFlasher: false,
+  hasReticulumPeersList: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -234,6 +240,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasCryptoOperations: true,
   hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: true,
+  nodeListTabUsesPeersLabel: false,
   modulesTabUsesRepeatersLabel: true,
   hasRoomServersPanel: true,
   hasJsonRadioConfigImport: true,
@@ -248,6 +255,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRadioPanel: false,
   hasLxmfAttachments: false,
   hasRNodeFlasher: false,
+  hasReticulumPeersList: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -296,6 +304,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasCryptoOperations: false,
   hasRawPacketLog: false,
   nodeListTabUsesContactsLabel: false,
+  nodeListTabUsesPeersLabel: true,
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
   hasJsonRadioConfigImport: true,
@@ -310,4 +319,5 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumRadioPanel: true,
   hasLxmfAttachments: true,
   hasRNodeFlasher: true,
+  hasReticulumPeersList: true,
 };

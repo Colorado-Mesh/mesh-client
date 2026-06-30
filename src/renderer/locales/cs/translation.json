@@ -406,7 +406,8 @@
     "daysAgo": "před {{count}}d",
     "days": "dní",
     "emDash": "—",
-    "saving": "Ukládání…"
+    "saving": "Ukládání…",
+    "peers": "Vazby"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
@@ -2695,7 +2696,8 @@
     "rf": "regionální facilitátor",
     "graph": "Graf",
     "rooms": "Pokoje",
-    "admin": "Správa"
+    "admin": "Správa",
+    "peers": "Vazby"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Konfigurace Flash není pro toto zařízení k dispozici.",
       "blockedByStack": "Nelze blikat, když zásobník Reticulum obsahuje sériový port RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Vazby",
+    "tabPeers": "Vazby",
+    "tabContacts": "Kontakty",
+    "searchPlaceholder": "Hledat podle jména nebo hashe…",
+    "searchAria": "Hledat kolegy",
+    "colName": "Jméno / hash",
+    "colLastSeen": "Naposledy zobrazeno",
+    "colInterface": "Rozhraní",
+    "colFavorite": "Oblíbený",
+    "toggleFavorite": "Přepnout oblíbené",
+    "openChat": "Otevřít chat",
+    "emptyPeers": "Zatím nebyly objeveny žádné protějšky. Odešlete oznámení nebo počkejte na síťový provoz.",
+    "emptyContacts": "Zatím žádné kontakty — pošlete zprávu kolegovi, aby je sem přidal.",
+    "groupFilterAria": "Filtrovat kontakty podle skupiny",
+    "allGroups": "Všechny skupiny",
+    "manageGroups": "Spravovat skupiny",
+    "radioPeerCount": "{{count}} kolegů v tabulce cest",
+    "viewAllPeers": "Zobrazit vše na kartě Kolegové"
+  },
+  "peerDetailModal": {
+    "networkSection": "Síť",
+    "pathHash": "Hash cesty",
+    "copyHash": "Kopírovat cílový hash",
+    "editNameAria": "Vlastní zobrazované jméno",
+    "sendMessage": "Odeslat zprávu",
+    "pathOk": "Žádost o trasu odeslána.",
+    "pathFailed": "Žádost o trasu se nezdařila: {{error}}",
+    "probeHops": "Sonda OK — {{hops}} hop(y).",
+    "probeLocal": "Sonda je v pořádku (režim {{mode}}).",
+    "probeFailed": "Sonda selhala: {{error}}"
   }
 }

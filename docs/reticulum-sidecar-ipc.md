@@ -65,14 +65,14 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 
 ### Peers and propagation
 
-| Method | Path                               | Body / notes | Response              |
-| ------ | ---------------------------------- | ------------ | --------------------- |
-| GET    | `/api/v1/peers`                    |              | `{ peers: [] }`       |
-| POST   | `/api/v1/peers/{hash}/path`        |              | `{ ok }`              |
-| POST   | `/api/v1/peers/{hash}/probe`       |              | `{ ok, hops? }`       |
-| GET    | `/api/v1/propagation`              |              | `{ propagation: [] }` |
-| POST   | `/api/v1/propagation/{id}/enable`  |              | `{ ok }`              |
-| POST   | `/api/v1/propagation/{id}/disable` |              | `{ ok }`              |
+| Method | Path                               | Body / notes | Response                                                                           |
+| ------ | ---------------------------------- | ------------ | ---------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`                    |              | `{ peers: [] }`                                                                    |
+| POST   | `/api/v1/peers/{hash}/path`        |              | `{ ok }` — emits `peers_updated` WS on success                                     |
+| POST   | `/api/v1/peers/{hash}/probe`       |              | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success |
+| GET    | `/api/v1/propagation`              |              | `{ propagation: [] }`                                                              |
+| POST   | `/api/v1/propagation/{id}/enable`  |              | `{ ok }`                                                                           |
+| POST   | `/api/v1/propagation/{id}/disable` |              | `{ ok }`                                                                           |
 
 ### System
 

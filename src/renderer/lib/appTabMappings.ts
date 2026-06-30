@@ -42,6 +42,7 @@ function tabVisible(
 
 function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `tabs.${string}` {
   if (panelIndex === 2 && capabilities.nodeListTabUsesContactsLabel) return 'tabs.contacts';
+  if (panelIndex === 2 && capabilities.nodeListTabUsesPeersLabel) return 'tabs.peers';
   if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'tabs.repeaters';
   if (panelIndex === 7 && capabilities.hasRoomServersPanel) return 'tabs.rooms';
   return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;

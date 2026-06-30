@@ -406,7 +406,8 @@
     "daysAgo": "{{count}} gün önce",
     "days": "günler",
     "emDash": "—",
-    "saving": "Kaydediliyor..."
+    "saving": "Kaydediliyor...",
+    "peers": "Meslektaşlar"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Grafik",
     "rooms": "Oda",
-    "admin": "Yönetim"
+    "admin": "Yönetim",
+    "peers": "Meslektaşlar"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Bu cihaz için Flash yapılandırması mevcut değil.",
       "blockedByStack": "Reticulum yığını RNode seri bağlantı noktasını tutarken yanıp sönemez."
     }
+  },
+  "peerListPanel": {
+    "heading": "Meslektaşlar",
+    "tabPeers": "Meslektaşlar",
+    "tabContacts": "Kişiler",
+    "searchPlaceholder": "Ada veya hash'e göre ara…",
+    "searchAria": "Akran ara",
+    "colName": "Adı / Karma",
+    "colLastSeen": "Son görülme",
+    "colInterface": "Arayüz",
+    "colFavorite": "Favori",
+    "toggleFavorite": "Favorileri aç/kapat",
+    "openChat": "Sohbeti Açın",
+    "emptyPeers": "Henüz hiçbir akran keşfedilmedi. Bir duyuru gönderin veya ağ trafiğini bekleyin.",
+    "emptyContacts": "Henüz kişi yok — buraya eklemek için bir arkadaşınıza mesaj gönderin.",
+    "groupFilterAria": "Kişileri gruba göre filtrele",
+    "allGroups": "Tüm gruplar",
+    "manageGroups": "Grup Yönetimi",
+    "radioPeerCount": "{{count}} yol tablosundaki eş(ler)",
+    "viewAllPeers": "Akranlar sekmesinde tümünü görüntüle"
+  },
+  "peerDetailModal": {
+    "networkSection": "Ağ",
+    "pathHash": "Yol karması",
+    "copyHash": "Hedef karmasını kopyala",
+    "editNameAria": "Özel görüntü adı",
+    "sendMessage": "Mesaj gönder",
+    "pathOk": "Talep gönderildi.",
+    "pathFailed": "Yol isteği başarısız oldu: {{error}}",
+    "probeHops": "Prob tamam — {{hops}} hop(lar).",
+    "probeLocal": "Prob OK ({{mode}} modu).",
+    "probeFailed": "Prob başarısız oldu: {{error}}"
   }
 }

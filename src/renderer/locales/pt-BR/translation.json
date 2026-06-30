@@ -406,7 +406,8 @@
     "daysAgo": "{{count}}d atrás",
     "days": "dias",
     "emDash": "—",
-    "saving": "Salvando..."
+    "saving": "Salvando...",
+    "peers": "Pares"
   },
   "configApplyNotice": {
     "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",
@@ -2695,7 +2696,8 @@
     "rf": "Frequência de rádio (RF)",
     "graph": "Gráfico",
     "rooms": "Salas",
-    "admin": "Administração"
+    "admin": "Administração",
+    "peers": "Pares"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "A configuração Flash não está disponível para este dispositivo.",
       "blockedByStack": "Não é possível piscar enquanto a pilha Reticulum contém a porta serial RNode."
     }
+  },
+  "peerListPanel": {
+    "heading": "Pares",
+    "tabPeers": "Pares",
+    "tabContacts": "Contatos",
+    "searchPlaceholder": "Pesquisar por nome ou hash...",
+    "searchAria": "Buscar colegas",
+    "colName": "Nome / Hash",
+    "colLastSeen": "Visto pela última vez",
+    "colInterface": "Interface",
+    "colFavorite": "Favorito",
+    "toggleFavorite": "Alternar favorito",
+    "openChat": "Abrir bate-papo",
+    "emptyPeers": "Nenhum colega descoberto ainda. Envie um anúncio ou aguarde o tráfego da rede.",
+    "emptyContacts": "Ainda não há contatos — envie uma mensagem a um colega para adicioná-los aqui.",
+    "groupFilterAria": "Filtrar contatos por grupo",
+    "allGroups": "Todos os grupos",
+    "manageGroups": "Gerenciar grupos",
+    "radioPeerCount": "{{count}} par(es) na tabela de caminhos",
+    "viewAllPeers": "Ver tudo no separador Pares"
+  },
+  "peerDetailModal": {
+    "networkSection": "Rede",
+    "pathHash": "Hash do caminho",
+    "copyHash": "Hash de destino",
+    "editNameAria": "Exibição de nome personalizado",
+    "sendMessage": "Enviar Mensagem",
+    "pathOk": "Solicitação de caminho enviada.",
+    "pathFailed": "Falha na solicitação do caminho: {{error}}",
+    "probeHops": "Sonda OK — {{hops}} salto(s).",
+    "probeLocal": "Sonda OK (modo {{mode}}).",
+    "probeFailed": "Falha na sonda: {{error}}"
   }
 }

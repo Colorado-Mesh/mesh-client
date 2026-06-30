@@ -406,7 +406,8 @@
     "daysAgo": "{{count}}d geleden",
     "days": "dagen",
     "emDash": "—",
-    "saving": "Opslaan..."
+    "saving": "Opslaan...",
+    "peers": "Collega's"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
@@ -2695,7 +2696,8 @@
     "rf": "RF",
     "graph": "Diagram",
     "rooms": "Ruimtes",
-    "admin": "Beheer"
+    "admin": "Beheer",
+    "peers": "Collega's"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -2855,5 +2857,37 @@
       "flashConfigMissing": "Flash-configuratie is niet beschikbaar voor dit apparaat.",
       "blockedByStack": "Kan niet flitsen terwijl de Reticulum-stack de seriële RNode-poort bevat."
     }
+  },
+  "peerListPanel": {
+    "heading": "Collega's",
+    "tabPeers": "Collega's",
+    "tabContacts": "Contact",
+    "searchPlaceholder": "Zoeken op naam of hash...",
+    "searchAria": "Collega's zoeken",
+    "colName": "Naam / hash",
+    "colLastSeen": "Laatst bekeken",
+    "colInterface": "Interface",
+    "colFavorite": "Favoriet",
+    "toggleFavorite": "Favoriet in-/uitschakelen",
+    "openChat": "Open chat",
+    "emptyPeers": "Nog geen collega's ontdekt. Stuur een aankondiging of wacht op netwerkverkeer.",
+    "emptyContacts": "Nog geen contacten — stuur een bericht naar een collega om ze hier toe te voegen.",
+    "groupFilterAria": "Contacten filteren op groep",
+    "allGroups": "Alle groepen",
+    "manageGroups": "Groepen beheren",
+    "radioPeerCount": "{{count}} peer(s) in padtabel",
+    "viewAllPeers": "Alles weergeven op het tabblad Collega's"
+  },
+  "peerDetailModal": {
+    "networkSection": "Netwerk",
+    "pathHash": "Pad hash",
+    "copyHash": "Bestemmingshash kopiëren",
+    "editNameAria": "Aangepaste weergavenaam",
+    "sendMessage": "Verstuur bericht",
+    "pathOk": "Padverzoek verzonden.",
+    "pathFailed": "Padverzoek mislukt: {{error}}",
+    "probeHops": "Sonde OK — {{hops}} hop(s).",
+    "probeLocal": "Sonde OK ({{mode}} modus).",
+    "probeFailed": "Sonde mislukt: {{error}}"
   }
 }

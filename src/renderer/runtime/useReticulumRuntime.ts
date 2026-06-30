@@ -15,7 +15,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
-import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+import type { ReticulumContact, ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -30,7 +30,13 @@ import {
   updateMessageStatus,
   useMessageStore,
 } from '../stores/messageStore';
-import { type NodeRecord, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import { upsertNodeRecordsForIdentity } from '../stores/nodeStore';
+import {
+  refreshReticulumPeersFromSidecar,
+  reticulumContactToMeshNode,
+  reticulumContactToNodeRecord,
+  useReticulumPeerStore,
+} from '../stores/reticulumPeerStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 const INITIAL_STATE: DeviceState = {
@@ -38,42 +44,6 @@ const INITIAL_STATE: DeviceState = {
   myNodeNum: 0,
   connectionType: null,
 };
-
-function contactRowToNode(row: {
-  destination_hash: string;
-  display_name?: string | null;
-  last_heard?: number | null;
-  favorited?: number | null;
-  hops?: number | null;
-}): MeshNode {
-  const nodeId = reticulumHashToNodeId(row.destination_hash);
-  registerReticulumDestinationHash(nodeId, row.destination_hash);
-  return {
-    node_id: nodeId,
-    reticulum_destination_hash: row.destination_hash,
-    long_name: row.display_name ?? row.destination_hash.slice(0, 16),
-    short_name: row.display_name?.slice(0, 4) ?? 'RT',
-    hw_model: 'Reticulum',
-    snr: 0,
-    battery: 0,
-    last_heard: row.last_heard ?? 0,
-    latitude: null,
-    longitude: null,
-    favorited: Boolean(row.favorited),
-    hops_away: row.hops ?? undefined,
-    source: 'rf',
-  };
-}
-
-function meshNodeToRecord(node: MeshNode): NodeRecord {
-  return {
-    nodeId: node.node_id,
-    longName: node.long_name ?? undefined,
-    shortName: node.short_name ?? undefined,
-    lastHeardAt: node.last_heard ?? undefined,
-    hopsAway: node.hops_away,
-  };
-}
 
 export type ReticulumRuntime = ReturnType<typeof useReticulumRuntime>;
 
@@ -104,11 +74,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, selfNodeId],
   );
 
-  const applyNodes = useCallback(
-    (map: Map<number, MeshNode>) => {
+  const applyContactNodes = useCallback(
+    (contacts: ReticulumContact[]) => {
+      const map = new Map<number, MeshNode>();
+      for (const contact of contacts) {
+        const node = reticulumContactToMeshNode(contact);
+        map.set(node.node_id, node);
+      }
       setNodes(new Map(map));
       if (!identityId) return;
-      upsertNodeRecordsForIdentity(identityId, [...map.values()].map(meshNodeToRecord));
+      upsertNodeRecordsForIdentity(identityId, contacts.map(reticulumContactToNodeRecord));
     },
     [identityId],
   );
@@ -128,6 +103,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
   }, []);
 
+  const refreshContactsFromSidecar = useCallback(async () => {
+    const contacts = await refreshReticulumPeersFromSidecar();
+    applyContactNodes(contacts);
+    const ifaceByHash = new Map<string, string>();
+    for (const peer of useReticulumPeerStore.getState().peers.values()) {
+      if (peer.interface) ifaceByHash.set(peer.destination_hash, peer.interface);
+    }
+    peerInterfaceByHashRef.current = ifaceByHash;
+  }, [applyContactNodes]);
+
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
       const snapshot = (await window.electronAPI.reticulum.proxyGet(
@@ -141,58 +126,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.debug('[useReticulumRuntime] diagnostics ' + errLikeToLogString(e));
     }
   }, []);
-
-  const refreshContactsFromSidecar = useCallback(async () => {
-    try {
-      const [contactsBody, peersBody] = await Promise.all([
-        window.electronAPI.reticulum.proxyGet('/api/v1/contacts') as Promise<{
-          contacts?: {
-            destination_hash: string;
-            display_name?: string;
-            last_heard?: number;
-          }[];
-        }>,
-        window.electronAPI.reticulum.proxyGet('/api/v1/peers') as Promise<{
-          peers?: {
-            destination_hash: string;
-            display_name?: string;
-            hops?: number;
-            interface?: string;
-          }[];
-        }>,
-      ]);
-      const hopsByHash = new Map<string, number>();
-      const ifaceByHash = new Map<string, string>();
-      for (const peer of peersBody.peers ?? []) {
-        if (peer.hops != null) hopsByHash.set(peer.destination_hash, peer.hops);
-        if (peer.interface) ifaceByHash.set(peer.destination_hash, peer.interface);
-      }
-      peerInterfaceByHashRef.current = ifaceByHash;
-      const map = new Map<number, MeshNode>();
-      for (const row of contactsBody.contacts ?? []) {
-        const node = contactRowToNode({
-          destination_hash: row.destination_hash,
-          display_name: row.display_name ?? null,
-          last_heard: row.last_heard ?? null,
-          hops: hopsByHash.get(row.destination_hash) ?? null,
-        });
-        map.set(node.node_id, node);
-      }
-      for (const peer of peersBody.peers ?? []) {
-        if (map.has(reticulumHashToNodeId(peer.destination_hash))) continue;
-        const node = contactRowToNode({
-          destination_hash: peer.destination_hash,
-          display_name: peer.display_name ?? null,
-          last_heard: null,
-          hops: peer.hops ?? null,
-        });
-        map.set(node.node_id, node);
-      }
-      applyNodes(map);
-    } catch (e) {
-      console.warn('[useReticulumRuntime] refresh contacts ' + errLikeToLogString(e));
-    }
-  }, [applyNodes]);
 
   const ingestLxmfPayload = useCallback(
     (p: ReticulumLxmfPayload) => {
@@ -415,15 +348,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (n) next.set(nodeId, { ...n, favorited });
         return next;
       });
-      try {
-        await window.electronAPI.db.upsertReticulumDestination({
-          destination_hash: hash,
-          display_name: node?.long_name ?? null,
-          favorited,
-        });
-      } catch (e) {
-        console.warn('[useReticulumRuntime] favorite ' + errLikeToLogString(e));
-      }
+      await useReticulumPeerStore.getState().toggleFavorite(hash, favorited);
     },
     [nodes],
   );

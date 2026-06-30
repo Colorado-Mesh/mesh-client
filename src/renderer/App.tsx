@@ -93,7 +93,7 @@ import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
-import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
+import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
 import {
   AdminPanel,
   AppPanel,
@@ -105,6 +105,7 @@ import {
   RadioPanel,
   RawPacketLogPanel,
   RepeatersPanel,
+  ReticulumPeerListPanel,
   ReticulumRadioPanel,
   RFHistogramsPanel,
   RoomsPanel,
@@ -487,6 +488,7 @@ function AppContent() {
   }, [sidebarCollapsed]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  const [selectedPeerHash, setSelectedPeerHash] = useState<string | null>(null);
   // Stable array ref from Map.get — safe for React 19 useSyncExternalStore (not latestPositionHistoryPoint).
   const selectedNodeHistoryPoints = usePositionHistoryStore(
     useCallback(
@@ -1134,7 +1136,9 @@ function AppContent() {
   const capabilities = activeProtocolCapabilities;
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
-    : t('common.nodes');
+    : capabilities.nodeListTabUsesPeersLabel
+      ? t('common.peers')
+      : t('common.nodes');
 
   useNodeStatusNotifier(nodesForUi, capabilities);
 
@@ -2016,6 +2020,13 @@ function AppContent() {
     setActiveTab(1); // Switch to Chat tab
   }, []);
 
+  const handleOpenPeersTab = useCallback(() => {
+    const peersTabIndex = findFilteredTabIndexForPanel(tabsByProtocol.reticulum, 2);
+    if (peersTabIndex >= 0) {
+      setActiveTab(peersTabIndex);
+    }
+  }, [tabsByProtocol.reticulum]);
+
   const handleOpenRoom = useCallback(
     (nodeNum: number) => {
       setPendingRoomTarget(nodeNum);
@@ -2521,67 +2532,88 @@ function AppContent() {
                     >
                       {activePanelIndex === 2 ? (
                         <Suspense fallback={<PanelSkeleton />}>
-                          <NodeListPanel
-                            nodes={nodesForUi}
-                            myNodeNum={activeRuntime.selfNodeId}
-                            onNodeClick={(node) => {
-                              setSelectedNodeId(node.node_id);
-                            }}
-                            mqttConnected={activeConnectionView.mqttStatus === 'connected'}
-                            radioConnected={isConnectedOrOperational}
-                            locationFilter={locationFilter}
-                            onToggleFavorite={panelActions.setNodeFavorited}
-                            mode={protocol}
-                            groups={contactGroups.groups}
-                            selectedGroupId={contactGroups.selectedGroupId}
-                            onGroupChange={contactGroups.setSelectedGroupId}
-                            onManageGroups={
-                              capabilities.hasUserManagedContactGroups
-                                ? () => {
-                                    setShowGroupsModal(true);
-                                  }
-                                : undefined
-                            }
-                            groupMemberIds={contactGroups.groupMemberIds}
-                            contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
-                            onImportContacts={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.importContacts
-                                : undefined
-                            }
-                            meshcoreShowRefreshControl={
-                              capabilities.hasContactImportExport
-                                ? meshcoreContactsShowRefreshControl
-                                : false
-                            }
-                            onRefreshContacts={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.refreshContacts
-                                : undefined
-                            }
-                            meshcoreShowPublicKeys={
-                              capabilities.hasContactImportExport
-                                ? meshcoreContactsShowPublicKeys
-                                : false
-                            }
-                            meshcorePublicKeyHexByNodeId={
-                              capabilities.hasContactImportExport
-                                ? meshcorePublicKeyHexByNodeId
-                                : undefined
-                            }
-                            onSendAdvert={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.sendAdvert
-                                : undefined
-                            }
-                            onOffloadContactsFromRadio={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.offloadContactsFromRadio
-                                : undefined
-                            }
-                            meshcoreRadioOperational={isOperational}
-                            onShowOnMap={handleShowOnMap}
-                          />
+                          {capabilities.hasReticulumPeersList ? (
+                            <ReticulumPeerListPanel
+                              isConnected={isConnectedOrOperational}
+                              onPeerClick={setSelectedPeerHash}
+                              onSendMessage={handleMessageNode}
+                              onRefresh={reticulumRuntime.requestRefresh}
+                              groups={contactGroups.groups}
+                              selectedGroupId={contactGroups.selectedGroupId}
+                              onGroupChange={contactGroups.setSelectedGroupId}
+                              onManageGroups={
+                                capabilities.hasUserManagedContactGroups
+                                  ? () => {
+                                      setShowGroupsModal(true);
+                                    }
+                                  : undefined
+                              }
+                              groupMemberIds={contactGroups.groupMemberIds}
+                              contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                            />
+                          ) : (
+                            <NodeListPanel
+                              nodes={nodesForUi}
+                              myNodeNum={activeRuntime.selfNodeId}
+                              onNodeClick={(node) => {
+                                setSelectedNodeId(node.node_id);
+                              }}
+                              mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+                              radioConnected={isConnectedOrOperational}
+                              locationFilter={locationFilter}
+                              onToggleFavorite={panelActions.setNodeFavorited}
+                              mode={protocol}
+                              groups={contactGroups.groups}
+                              selectedGroupId={contactGroups.selectedGroupId}
+                              onGroupChange={contactGroups.setSelectedGroupId}
+                              onManageGroups={
+                                capabilities.hasUserManagedContactGroups
+                                  ? () => {
+                                      setShowGroupsModal(true);
+                                    }
+                                  : undefined
+                              }
+                              groupMemberIds={contactGroups.groupMemberIds}
+                              contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                              onImportContacts={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.importContacts
+                                  : undefined
+                              }
+                              meshcoreShowRefreshControl={
+                                capabilities.hasContactImportExport
+                                  ? meshcoreContactsShowRefreshControl
+                                  : false
+                              }
+                              onRefreshContacts={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.refreshContacts
+                                  : undefined
+                              }
+                              meshcoreShowPublicKeys={
+                                capabilities.hasContactImportExport
+                                  ? meshcoreContactsShowPublicKeys
+                                  : false
+                              }
+                              meshcorePublicKeyHexByNodeId={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePublicKeyHexByNodeId
+                                  : undefined
+                              }
+                              onSendAdvert={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.sendAdvert
+                                  : undefined
+                              }
+                              onOffloadContactsFromRadio={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.offloadContactsFromRadio
+                                  : undefined
+                              }
+                              meshcoreRadioOperational={isOperational}
+                              onShowOnMap={handleShowOnMap}
+                            />
+                          )}
                         </Suspense>
                       ) : null}
                     </div>
@@ -2646,6 +2678,7 @@ function AppContent() {
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
                                 onSidecarEvent={reticulumRuntime.handleSidecarEvent}
+                                onOpenPeersTab={handleOpenPeersTab}
                               />
                             ) : (
                               <>
@@ -3621,6 +3654,18 @@ function AppContent() {
             }
             positionHistory={selectedNodeHistory}
             onShowOnMap={handleShowOnMap}
+          />
+        </Suspense>
+      )}
+
+      {selectedPeerHash !== null && (
+        <Suspense fallback={<DialogLazyFallback />}>
+          <ReticulumPeerDetailModal
+            peerHash={selectedPeerHash}
+            onClose={() => {
+              setSelectedPeerHash(null);
+            }}
+            onSendMessage={handleMessageNode}
           />
         </Suspense>
       )}
