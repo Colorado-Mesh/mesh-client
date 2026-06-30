@@ -1,8 +1,10 @@
-//! Live rsReticulum bridge (optional runtime queries + LXMF send).
+//! Live rsReticulum bridge (optional runtime queries + LXMF send/receive).
 
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
+use std::time::Duration;
 
 use lxmf_core::constants::DeliveryMethod;
 use lxmf_core::message::LxMessage;
@@ -17,13 +19,16 @@ use tokio::sync::broadcast;
 use super::StackHandle;
 use super::persistence::PersistedState;
 use super::types::{InterfaceRow, LxmfSendRequest, PeerRow};
+use super::via::{classify_interface, resolve_peer_sent_via};
 
 pub struct LiveBridge {
     handle: reticulum::ReticulumHandle,
     _shutdown: ShutdownSignal,
-    router: tokio::sync::Mutex<LxmRouter>,
+    router: Arc<tokio::sync::Mutex<LxmRouter>>,
     identity: Identity,
-    lxmf_dest_hash: [u8; 16],
+    lxmf_hash_hex: String,
+    display_name: String,
+    peer_via_cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl LiveBridge {
@@ -67,23 +72,87 @@ impl LiveBridge {
         const LXMF_APP: &str = "lxmf.delivery";
         let lxmf_dest_hash =
             Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+        let lxmf_hash_hex = hex::encode(lxmf_dest_hash);
+        let display_name = persisted
+            .identity
+            .display_name
+            .clone()
+            .unwrap_or_else(|| "Self".into());
+
+        let peer_via_cache: Arc<Mutex<HashMap<String, String>>> =
+            Arc::new(Mutex::new(HashMap::new()));
 
         let mut router = LxmRouter::new(lxmf_core::router::RouterConfig::default());
         router.set_transport(handle.transport_tx.clone());
 
+        let cache_for_cb = peer_via_cache.clone();
+        let event_tx_cb = event_tx.clone();
+        let self_hash_cb = lxmf_hash_hex.clone();
+        let self_name_cb = display_name.clone();
+        router.register_delivery_callback(move |msg| {
+            if !msg.incoming {
+                return;
+            }
+            let sender_hex = hex::encode(msg.source_hash);
+            let received_via = cache_for_cb
+                .lock()
+                .ok()
+                .and_then(|cache| cache.get(&sender_hex).cloned())
+                .map(|iface| classify_interface(&iface).to_string())
+                .unwrap_or_else(|| "network".into());
+            let payload = lxmf_payload_from_message(
+                msg,
+                &self_hash_cb,
+                &self_name_cb,
+                Some(&received_via),
+                None,
+                "inbound",
+            );
+            emit_lxmf_event(&event_tx_cb, payload);
+        });
+
+        let bridge = Self {
+            handle: handle.clone(),
+            _shutdown: shutdown,
+            router: Arc::new(tokio::sync::Mutex::new(router)),
+            identity,
+            lxmf_hash_hex,
+            display_name,
+            peer_via_cache,
+        };
+
+        bridge.spawn_maintenance(event_tx);
+
         persisted.rns_ready = true;
         persisted.lxmf_ready = true;
 
-        let bridge = Self {
-            handle,
-            _shutdown: shutdown,
-            router: tokio::sync::Mutex::new(router),
-            identity,
-            lxmf_dest_hash,
-        };
-
-        let _ = event_tx;
         Ok(bridge)
+    }
+
+    fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {
+        let handle = self.handle.clone();
+        let router = self.router.clone();
+        let peer_via_cache = self.peer_via_cache.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(2));
+            loop {
+                interval.tick().await;
+                if let Some(TransportQueryResponse::PathTable(entries)) = handle
+                    .query_control(TransportQuery::GetPathTable)
+                    .await
+                {
+                    if let Ok(mut cache) = peer_via_cache.lock() {
+                        cache.clear();
+                        for entry in entries {
+                            let key = hex::encode(entry.hash);
+                            cache.insert(key, entry.interface);
+                        }
+                    }
+                }
+                let mut router = router.lock().await;
+                router.tick();
+            }
+        });
     }
 
     pub async fn fetch_interfaces(&self) -> Result<Vec<InterfaceRow>, String> {
@@ -127,6 +196,13 @@ impl LiveBridge {
         let Some(TransportQueryResponse::PathTable(entries)) = resp else {
             return Ok(vec![]);
         };
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.clear();
+            for entry in &entries {
+                let key = hex::encode(entry.hash);
+                cache.insert(key, entry.interface.clone());
+            }
+        }
         Ok(entries
             .iter()
             .map(|e| PeerRow {
@@ -165,9 +241,16 @@ impl LiveBridge {
 
     pub async fn send_lxmf(&self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(&req.destination_hash)?;
+        let peer_iface = self
+            .peer_via_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.get(&req.destination_hash).cloned());
+        let sent_via = resolve_peer_sent_via(peer_iface.as_deref());
+
         let msg = LxMessage::new(
             dest,
-            self.lxmf_dest_hash,
+            parse_hash16(&self.lxmf_hash_hex)?,
             "",
             &req.text,
             DeliveryMethod::Direct,
@@ -177,10 +260,45 @@ impl LiveBridge {
             .try_send(msg)
             .map_err(|e| format!("lxmf send: {e:?}"))?;
         router.tick();
+
+        let ts_ms = (std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+            * 1000) as i64;
+        let mut payload = serde_json::json!({
+            "sender_hash": self.lxmf_hash_hex,
+            "sender_name": self.display_name,
+            "text": req.text,
+            "timestamp": ts_ms,
+            "to_hash": req.destination_hash,
+            "reply_to_hash": req.reply_to_hash,
+            "reply_to_id": req.reply_to_id,
+            "direction": "outbound",
+            "sent_via": sent_via,
+            "received_via": sent_via
+        });
+        let hash_input = format!(
+            "{}:{}:{}",
+            payload["sender_hash"].as_str().unwrap_or_default(),
+            payload["timestamp"].as_i64().unwrap_or(0),
+            payload["text"].as_str().unwrap_or_default()
+        );
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert(
+                "message_hash".into(),
+                serde_json::Value::String(format!("{:032x}", super::persistence::stable_hash(
+                    &hash_input
+                ))),
+            );
+        }
+
         Ok(serde_json::json!({
             "ok": true,
             "destination_hash": req.destination_hash,
-            "text": req.text
+            "text": req.text,
+            "sent_via": sent_via,
+            "message": payload
         }))
     }
 
@@ -221,6 +339,63 @@ impl LiveBridge {
 
         Ok(())
     }
+}
+
+fn lxmf_payload_from_message(
+    msg: &LxMessage,
+    self_lxmf_hash: &str,
+    self_name: &str,
+    received_via: Option<&str>,
+    sent_via: Option<&str>,
+    direction: &str,
+) -> serde_json::Value {
+    let sender_hex = hex::encode(msg.source_hash);
+    let to_hex = hex::encode(msg.destination_hash);
+    let is_outbound = direction == "outbound";
+    let sender_hash = if is_outbound {
+        self_lxmf_hash
+    } else {
+        sender_hex.as_str()
+    };
+    let sender_name = if is_outbound {
+        self_name
+    } else {
+        sender_hex.get(..12).unwrap_or(&sender_hex)
+    };
+    let message_hash = msg
+        .hash
+        .map(hex::encode)
+        .or_else(|| msg.message_id.map(hex::encode))
+        .unwrap_or_default();
+    let ts_ms = (msg.timestamp * 1000.0) as i64;
+    let mut payload = serde_json::json!({
+        "sender_hash": sender_hash,
+        "sender_name": sender_name,
+        "text": msg.content,
+        "timestamp": ts_ms,
+        "to_hash": to_hex,
+        "direction": direction,
+        "message_hash": message_hash
+    });
+    if let Some(via) = received_via {
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert("received_via".into(), serde_json::Value::String(via.into()));
+        }
+    }
+    if let Some(via) = sent_via {
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert("sent_via".into(), serde_json::Value::String(via.into()));
+        }
+    }
+    payload
+}
+
+fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: serde_json::Value) {
+    let frame = serde_json::json!({
+        "type": "lxmf_message",
+        "payload": payload
+    });
+    let _ = event_tx.send(frame.to_string());
 }
 
 fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {

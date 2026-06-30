@@ -341,7 +341,15 @@
     "emptySelectDm": "Чат Reticulum - це лише пряме повідомлення. Виберіть контакт вище або відкрийте його на вкладці Вузли.",
     "noDmConversations": "Ще немає розмов.",
     "noDmConversationsReticulum": "Ще немає розмов — відкрийте контакт на вкладці Вузли.",
-    "dms": "ОП"
+    "dms": "ОП",
+    "receivedViaTcp": "Отримано через TCP",
+    "receivedViaNetwork": "Отримано через мережу",
+    "sentViaRf": "Надіслано через RF",
+    "sentViaTcp": "Надіслано через TCP",
+    "sentViaNetwork": "Надіслано через мережу",
+    "reticulumSendSending": "Заклад,",
+    "reticulumSendDelivered": "Delivered",
+    "reticulumSendFailed": "Не вдалося надіслати."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

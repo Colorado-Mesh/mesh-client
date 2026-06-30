@@ -341,7 +341,15 @@
     "emptySelectDm": "Чат Reticulum предназначен только для личных сообщений. Выберите контакт выше или откройте его на вкладке Узлы.",
     "noDmConversations": "Пока нет разговоров.",
     "noDmConversationsReticulum": "Пока нет разговоров — откройте контакт на вкладке Узлы.",
-    "dms": "ЛС"
+    "dms": "ЛС",
+    "receivedViaTcp": "Получено от",
+    "receivedViaNetwork": "Получено по сети",
+    "sentViaRf": "Отправлено через RF",
+    "sentViaTcp": "Отправлено через TCP",
+    "sentViaNetwork": "Через сеть",
+    "reticulumSendSending": "отправка…",
+    "reticulumSendDelivered": "Доставлено",
+    "reticulumSendFailed": "Не удалось отправить"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

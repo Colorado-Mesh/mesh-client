@@ -341,7 +341,15 @@
     "emptySelectDm": "Le chat Reticulum est réservé aux messages directs. Choisissez un contact ci-dessus ou ouvrez-en un dans l'onglet Nœuds.",
     "noDmConversations": "Aucune conversation pour le moment.",
     "noDmConversationsReticulum": "Aucune conversation pour le moment — ouvrez un contact à partir de l'onglet Nœuds.",
-    "dms": "MP"
+    "dms": "MP",
+    "receivedViaTcp": "Reçu(e) par",
+    "receivedViaNetwork": "Reçu via le réseau",
+    "sentViaRf": "Envoyé via RF",
+    "sentViaTcp": "Envoyé via TCP",
+    "sentViaNetwork": "via un réseau",
+    "reticulumSendSending": "Envoi en cours...",
+    "reticulumSendDelivered": "Livré",
+    "reticulumSendFailed": "Échec d'envoi"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

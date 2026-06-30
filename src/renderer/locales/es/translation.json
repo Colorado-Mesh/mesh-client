@@ -341,7 +341,15 @@
     "emptySelectDm": "El chat de Reticulum es solo un mensaje directo. Elija un contacto arriba o abra uno en la pestaña Nodos.",
     "noDmConversations": "Aún no hay conversaciones.",
     "noDmConversationsReticulum": "Aún no hay conversaciones: abre un contacto desde la pestaña Nodos.",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "Recibido a través de",
+    "receivedViaNetwork": "Recibido a través de la red",
+    "sentViaRf": "Enviado a través de RF",
+    "sentViaTcp": "Enviado a través de TCP",
+    "sentViaNetwork": "a traves de la red",
+    "reticulumSendSending": "Enviando",
+    "reticulumSendDelivered": "Entregado",
+    "reticulumSendFailed": "Error al enviar"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

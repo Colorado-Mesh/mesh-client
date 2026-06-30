@@ -9,21 +9,27 @@ import {
   ingestReticulumLxmfPayloadWithSideEffects,
   type ReticulumLxmfPayload,
 } from '@/renderer/lib/ingest/reticulumIngest';
-import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
-
-import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
-import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { classifyReticulumVia } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   registerReticulumDestinationHash,
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
-} from '../lib/reticulum/destHash';
+} from '@/renderer/lib/reticulum/destHash';
+import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { reticulumDbRowToMessageRecord } from '../lib/storeRecordAdapters';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useIdentityStore } from '../stores/identityStore';
-import { replaceMessageRecordsForIdentity, useMessageStore } from '../stores/messageStore';
+import {
+  renameMessageId,
+  replaceMessageRecordsForIdentity,
+  updateMessageStatus,
+  useMessageStore,
+} from '../stores/messageStore';
 import { type NodeRecord, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
@@ -79,6 +85,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const [nodes, setNodes] = useState<Map<number, MeshNode>>(() => new Map());
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const unsubEventRef = useRef<(() => void) | null>(null);
+  const peerInterfaceByHashRef = useRef<Map<string, string>>(new Map());
 
   const selfNodeId = useMemo(
     () => (selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : null),
@@ -146,13 +153,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
           }[];
         }>,
         window.electronAPI.reticulum.proxyGet('/api/v1/peers') as Promise<{
-          peers?: { destination_hash: string; display_name?: string; hops?: number }[];
+          peers?: {
+            destination_hash: string;
+            display_name?: string;
+            hops?: number;
+            interface?: string;
+          }[];
         }>,
       ]);
       const hopsByHash = new Map<string, number>();
+      const ifaceByHash = new Map<string, string>();
       for (const peer of peersBody.peers ?? []) {
         if (peer.hops != null) hopsByHash.set(peer.destination_hash, peer.hops);
+        if (peer.interface) ifaceByHash.set(peer.destination_hash, peer.interface);
       }
+      peerInterfaceByHashRef.current = ifaceByHash;
       const map = new Map<number, MeshNode>();
       for (const row of contactsBody.contacts ?? []) {
         const node = contactRowToNode({
@@ -257,8 +272,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     await connect();
   }, [connect]);
 
+  const resolveOutboundVia = useCallback((destinationHash: string) => {
+    const iface = peerInterfaceByHashRef.current.get(destinationHash);
+    return iface ? classifyReticulumVia(iface) : 'network';
+  }, []);
+
   const sendMessage = useCallback(
-    async (text: string, to: number | string, replyToHash?: string) => {
+    async (text: string, to: number | string, replyToHash?: string, pendingId?: string) => {
+      if (!identityId) return;
       const destination =
         typeof to === 'string' ? to : (resolveReticulumDestinationHash(to) ?? String(to));
       const body: Record<string, unknown> = {
@@ -269,15 +290,33 @@ export function useReticulumRuntime(): ProtocolRuntime {
         body.reply_to_hash = replyToHash;
         body.reply_to_id = replyToHash;
       }
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body)) as {
-        ok?: boolean;
-        message?: ReticulumLxmfPayload;
-      };
-      if (res?.message) {
-        ingestLxmfPayload(res.message);
+      try {
+        const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body)) as {
+          ok?: boolean;
+          message?: ReticulumLxmfPayload;
+          sent_via?: string;
+        };
+        if (res?.message) {
+          const hash = res.message.message_hash;
+          if (pendingId && hash) {
+            renameMessageId(identityId, pendingId, hash);
+            ingestLxmfPayload(res.message);
+            updateMessageStatus(identityId, hash, 'acked');
+          } else {
+            ingestLxmfPayload(res.message);
+            if (pendingId) updateMessageStatus(identityId, pendingId, 'acked');
+          }
+        } else if (pendingId) {
+          updateMessageStatus(identityId, pendingId, 'acked');
+        }
+      } catch (e) {
+        if (pendingId) {
+          updateMessageStatus(identityId, pendingId, 'failed', errLikeToLogString(e));
+        }
+        throw e;
       }
     },
-    [ingestLxmfPayload],
+    [identityId, ingestLxmfPayload],
   );
 
   const sendAttachment = useCallback(
@@ -354,6 +393,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         to_hash?: string | null;
         reply_to_hash?: string | null;
         message_hash?: string | null;
+        received_via?: string | null;
       }[];
       replaceMessageRecordsForIdentity(
         identityId,
@@ -430,6 +470,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       sendMessage,
       sendReaction,
       sendAttachment,
+      resolveOutboundVia,
       setNodeFavorited,
       refreshNodesFromDb,
       refreshMessagesFromDb,
@@ -450,6 +491,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       sendMessage,
       sendReaction,
       sendAttachment,
+      resolveOutboundVia,
       setNodeFavorited,
       refreshNodesFromDb,
       refreshMessagesFromDb,

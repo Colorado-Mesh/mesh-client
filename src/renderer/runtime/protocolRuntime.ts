@@ -7,6 +7,7 @@ import type {
   MeshWaypoint,
   NeighborInfoRecord,
 } from '../lib/types';
+import type { MessageTransport } from '../stores/messageStore';
 
 /** Device queue depth from radio/SDK when available. */
 export interface ProtocolRuntimeQueueStatus {
@@ -91,6 +92,9 @@ export interface ProtocolRuntime {
 
   /** Reticulum sidecar WebSocket events (optional — Reticulum runtime only). */
   handleSidecarEvent?: (event: ReticulumSidecarEvent) => void;
+
+  /** Reticulum LXMF outbound path for a peer destination hash. */
+  resolveOutboundVia?: (destinationHash: string) => MessageTransport;
 
   setConfig?: (...args: never[]) => Promise<void>;
   commitConfig?: (...args: never[]) => Promise<void>;

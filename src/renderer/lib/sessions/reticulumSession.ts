@@ -22,6 +22,7 @@ export type ReticulumSendMessageFn = (
   text: string,
   to: number | string,
   replyToHash?: string,
+  pendingId?: string,
 ) => Promise<void>;
 
 export function getReticulumSendMessage(
@@ -29,4 +30,8 @@ export function getReticulumSendMessage(
 ): ReticulumSendMessageFn | null {
   if (!runtime) return null;
   return runtime.sendMessage as ReticulumSendMessageFn;
+}
+
+export function resolveReticulumOutboundVia(destinationHash: string) {
+  return session.runtime?.resolveOutboundVia?.(destinationHash) ?? 'network';
 }

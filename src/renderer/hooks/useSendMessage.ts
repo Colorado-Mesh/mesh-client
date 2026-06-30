@@ -6,10 +6,14 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
-import { resolveReticulumDestinationHash } from '../lib/reticulum/destHash';
+import { resolveReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
-import { getReticulumSendMessage, tryGetReticulumSession } from '../lib/sessions/reticulumSession';
+import {
+  getReticulumSendMessage,
+  resolveReticulumOutboundVia,
+  tryGetReticulumSession,
+} from '../lib/sessions/reticulumSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
@@ -54,7 +58,7 @@ export function useSendMessage(
       if (identity.protocol.type === 'reticulum') {
         const session = tryGetReticulumSession();
         const send = getReticulumSendMessage(session);
-        if (!send) {
+        if (!send || !session) {
           console.warn('[useSendMessage] Reticulum runtime not mounted');
           return;
         }
@@ -63,7 +67,28 @@ export function useSendMessage(
           console.warn('[useSendMessage] no Reticulum destination hash for', destination);
           return;
         }
-        void send(text, destHash, replyTo ?? undefined).catch((e: unknown) => {
+        const selfNodeId = session.selfNodeId;
+        if (typeof selfNodeId !== 'number') {
+          console.warn('[useSendMessage] Reticulum self node id not ready');
+          return;
+        }
+        const pendingId = `reticulum-pending-${Date.now()}`;
+        const receivedVia = resolveReticulumOutboundVia(destHash);
+        const toNodeId = destination ?? reticulumHashToNodeId(destHash);
+        const senderName = session.getFullNodeLabel(selfNodeId);
+        addMessage(identityId, {
+          id: pendingId,
+          from: selfNodeId,
+          senderName,
+          to: toNodeId,
+          payload: text,
+          channelIndex: channelIndex,
+          timestamp: Date.now(),
+          status: 'sending',
+          receivedVia,
+          ...(replyTo ? { reticulumReplyToHash: replyTo } : {}),
+        });
+        void send(text, destHash, replyTo ?? undefined, pendingId).catch((e: unknown) => {
           console.warn('[useSendMessage] reticulum send failed ' + errLikeToLogString(e));
         });
         return;

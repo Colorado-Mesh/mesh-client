@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulum sohbeti yalnızca doğrudan mesajdır. Yukarıdan bir kişi seçin veya Düğümler sekmesinden bir kişi açın.",
     "noDmConversations": "Henüz görüşme yok.",
     "noDmConversationsReticulum": "Henüz görüşme yok — Düğümler sekmesinden bir kişi açın.",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "Şununla alındı",
+    "receivedViaNetwork": "Ağ üzerinden alındı",
+    "sentViaRf": "RF ile gönderilir",
+    "sentViaTcp": "TCP ile gönderilir",
+    "sentViaNetwork": "Ağ üzerinden gönderildi",
+    "reticulumSendSending": "Gönderiliyor...",
+    "reticulumSendDelivered": "Teslim Edildi",
+    "reticulumSendFailed": "Gönderilemedi"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

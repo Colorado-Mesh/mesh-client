@@ -119,6 +119,7 @@ import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
 import { useToast } from './Toast';
 
 function chatPanelIsLinux(): boolean {
@@ -252,10 +253,12 @@ function OutboxBubble({
   );
 }
 
-function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
+function TransportBadge({ via }: { via: NonNullable<ChatMessage['receivedVia']> }) {
   const { t } = useTranslation();
   const rfLabel = t('chatPanel.receivedViaRf');
   const mqttLabel = t('chatPanel.receivedViaMqtt');
+  const tcpLabel = t('chatPanel.receivedViaTcp');
+  const networkLabel = t('chatPanel.receivedViaNetwork');
   const rfIcon = (
     <span role="img" title={rfLabel} aria-label={rfLabel}>
       <MeshtasticRfPathIcon />
@@ -271,7 +274,26 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
     const bothLabel = t('chatPanel.receivedViaRfAndMqtt');
     return <MeshtasticHybridPathIcons title={bothLabel} ariaLabel={bothLabel} />;
   }
+  if (via === 'tcp') {
+    return (
+      <span className="text-[10px] text-sky-400" title={tcpLabel} aria-label={tcpLabel}>
+        TCP
+      </span>
+    );
+  }
+  if (via === 'network') {
+    return (
+      <span role="img" title={networkLabel} aria-label={networkLabel}>
+        <MeshtasticMqttPathIcon />
+      </span>
+    );
+  }
   return via === 'rf' ? rfIcon : mqttIcon;
+}
+
+function reticulumOutboundVia(via: ChatMessage['receivedVia']): 'rf' | 'tcp' | 'network' {
+  if (via === 'rf' || via === 'tcp' || via === 'network') return via;
+  return 'network';
 }
 
 function StoreForwardBadge() {
@@ -2343,7 +2365,19 @@ function ChatPanel({
                                     />
                                   </button>
                                 )}
-                                {msg.mqttStatus ? (
+                                {protocol === 'reticulum' && msg.status ? (
+                                  <ReticulumMessageStatusBadge
+                                    status={
+                                      msg.status === 'sending' ||
+                                      msg.status === 'acked' ||
+                                      msg.status === 'failed'
+                                        ? msg.status
+                                        : 'failed'
+                                    }
+                                    via={reticulumOutboundVia(msg.receivedVia)}
+                                    error={msg.error}
+                                  />
+                                ) : msg.mqttStatus ? (
                                   <>
                                     <MessageStatusBadge status={msg.mqttStatus} transport="mqtt" />
                                     {msg.status && (

@@ -373,7 +373,7 @@ export interface ChatMessage {
   // Direct message destination (undefined = broadcast)
   to?: number;
   // Which transport(s) delivered this incoming message
-  receivedVia?: 'rf' | 'mqtt' | 'both';
+  receivedVia?: 'rf' | 'mqtt' | 'both' | 'tcp' | 'network';
   // true for backlog messages (e.g. MeshCore MsgWaiting catch-up); excluded from unread counter
   isHistory?: boolean;
   /** Full raw line from device/MQTT for dedupe only (not persisted); avoids collapsing same-second identical payloads. */

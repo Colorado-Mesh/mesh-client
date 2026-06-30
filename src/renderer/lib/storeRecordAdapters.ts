@@ -219,11 +219,20 @@ export function reticulumDbRowToMessageRecord(row: {
   to_hash?: string | null;
   reply_to_hash?: string | null;
   message_hash?: string | null;
+  received_via?: string | null;
 }): MessageRecord {
   const from = reticulumHashToNodeId(row.sender_id);
   registerReticulumDestinationHash(from, row.sender_id);
   const messageHash =
     row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
+  const receivedVia =
+    row.received_via === 'rf' ||
+    row.received_via === 'tcp' ||
+    row.received_via === 'network' ||
+    row.received_via === 'mqtt' ||
+    row.received_via === 'both'
+      ? row.received_via
+      : undefined;
   return {
     id: messageHash,
     from,
@@ -236,5 +245,6 @@ export function reticulumDbRowToMessageRecord(row: {
     reticulumMessageHash: messageHash,
     reticulumSenderHash: row.sender_id,
     ...(row.reply_to_hash ? { reticulumReplyToHash: row.reply_to_hash } : {}),
+    ...(receivedVia ? { receivedVia } : {}),
   };
 }

@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulum-Chat ist nur für Direktnachrichten. Wählen Sie oben einen Kontakt aus oder öffnen Sie einen auf der Registerkarte Knoten.",
     "noDmConversations": "Noch keine Unterhaltungen.",
     "noDmConversationsReticulum": "Noch keine Unterhaltungen — öffnen Sie einen Kontakt über die Registerkarte Knoten.",
-    "dms": "DMs"
+    "dms": "DMs",
+    "receivedViaTcp": "Eingegangen über",
+    "receivedViaNetwork": "Über Netzwerk empfangen",
+    "sentViaRf": "Gesendet über RF",
+    "sentViaTcp": "Gesendet über TCP",
+    "sentViaNetwork": "Gesendet über Netzwerk",
+    "reticulumSendSending": "Senden…",
+    "reticulumSendDelivered": "Übermittelt",
+    "reticulumSendFailed": "Senden fehlgeschlagen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

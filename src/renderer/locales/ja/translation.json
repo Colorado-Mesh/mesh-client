@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulumチャットはダイレクトメッセージのみです。上記の連絡先を選択するか、[ノード]タブから連絡先を開きます。",
     "noDmConversations": "会話はまだありません。",
     "noDmConversationsReticulum": "会話はまだありません。[ノード]タブから連絡先を開きます。",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "TCP経由で受信",
+    "receivedViaNetwork": "ネットワーク経由で受信",
+    "sentViaRf": "RF経由で送信",
+    "sentViaTcp": "TCP経由で送信",
+    "sentViaNetwork": "ネットワーク経由で送信",
+    "reticulumSendSending": "送信中・・・",
+    "reticulumSendDelivered": "配達済み",
+    "reticulumSendFailed": "送信に失敗しました。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

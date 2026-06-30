@@ -47,11 +47,16 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       if (!Number.isFinite(timestamp)) {
         throw new Error('db:saveReticulumMessage: timestamp invalid');
       }
+      const receivedVia =
+        typeof m.received_via === 'string' &&
+        ['rf', 'tcp', 'network', 'mqtt', 'both'].includes(m.received_via)
+          ? m.received_via
+          : null;
       const db = getDbForIpc('db:saveReticulumMessage');
       if (!db) return { changes: 0 };
       db.prepareOnce(
-        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         identityId,
         senderId,
@@ -61,6 +66,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null,
         typeof m.reply_to_hash === 'string' ? m.reply_to_hash.slice(0, 128) : null,
         typeof m.message_hash === 'string' ? m.message_hash.slice(0, 128) : null,
+        receivedVia,
       );
       return { changes: 1 };
     } catch (err) {

@@ -3,6 +3,7 @@
 pub mod config;
 mod persistence;
 mod types;
+mod via;
 
 #[cfg(feature = "rns-stack")]
 mod live;
@@ -308,9 +309,11 @@ impl StackHandle {
     pub async fn lxmf_send(&self, req: LxmfSendRequest) -> Result<serde_json::Value, String> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            if let Ok(res) = live.send_lxmf(&req).await {
-                return Ok(res);
+            let res = live.send_lxmf(&req).await?;
+            if let Some(msg) = res.get("message") {
+                self.emit_event("lxmf_message", msg.clone());
             }
+            return Ok(res);
         }
         let mut inner = self.inner.write().await;
         let res = inner.send_lxmf_local(&req)?;

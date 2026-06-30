@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulum-chat is alleen een direct bericht. Kies hierboven een contact of open er een op het tabblad Knooppunten.",
     "noDmConversations": "Nog geen gesprekken.",
     "noDmConversationsReticulum": "Nog geen gesprekken — open een contactpersoon op het tabblad Knooppunten.",
-    "dms": "DMs"
+    "dms": "DMs",
+    "receivedViaTcp": "Ontvangen via",
+    "receivedViaNetwork": "Ontvangen via netwerk",
+    "sentViaRf": "Verzonden via RF",
+    "sentViaTcp": "Verzonden via TCP",
+    "sentViaNetwork": "via Netwerk",
+    "reticulumSendSending": "Versturen...",
+    "reticulumSendDelivered": "Geleverd",
+    "reticulumSendFailed": "Versturen mislukt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

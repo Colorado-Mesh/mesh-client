@@ -238,6 +238,7 @@ export interface ElectronAPI {
       to_hash?: string | null;
       reply_to_hash?: string | null;
       message_hash?: string | null;
+      received_via?: string | null;
     }) => Promise<void>;
     getReticulumDestinations: () => Promise<unknown[]>;
     upsertReticulumDestination: (row: {

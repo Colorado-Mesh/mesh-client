@@ -5,7 +5,7 @@ import { omitRecordKey } from './storeUtils';
 
 export type MessageStatus = 'sending' | 'acked' | 'failed';
 
-export type MessageTransport = 'rf' | 'mqtt' | 'both';
+export type MessageTransport = 'rf' | 'mqtt' | 'both' | 'tcp' | 'network';
 
 export interface MessageRecord {
   id: string;

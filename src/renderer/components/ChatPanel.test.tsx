@@ -395,6 +395,104 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByRole('img', { name: 'Received via MQTT' })).toBeInTheDocument();
   });
 
+  it('shows Reticulum RF/TCP/network transport badges for incoming messages', () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Peer',
+              payload: 'RF hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'rf',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Peer',
+              payload: 'TCP hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'tcp',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByLabelText('Received via TCP')).toHaveTextContent('TCP');
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Peer',
+              payload: 'Network hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'network',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByTitle('Received via network')).toBeInTheDocument();
+  });
+
+  it('shows Reticulum outbound transport status for own messages', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          isConnected
+          myNodeNum={42}
+          messages={[
+            {
+              sender_id: 42,
+              sender_name: 'Self',
+              payload: 'Outbound',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'tcp',
+              to: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText(/TCP/)).toBeInTheDocument();
+  });
+
   it('surfaces incoming DM conversations and renders them in DM view', async () => {
     const user = userEvent.setup();
     render(

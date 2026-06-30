@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulum聊天仅为直接消息。选择上面的联系人或从“节点”选项卡中打开一个联系人。",
     "noDmConversations": "还没有对话。",
     "noDmConversationsReticulum": "还没有对话—从“节点”选项卡打开联系人。",
-    "dms": "私信"
+    "dms": "私信",
+    "receivedViaTcp": "通过以下方式接收",
+    "receivedViaNetwork": "通过网络接收",
+    "sentViaRf": "通过射频发送",
+    "sentViaTcp": "通过TCP发送",
+    "sentViaNetwork": "通过网络发送",
+    "reticulumSendSending": "发送中…",
+    "reticulumSendDelivered": "已交付",
+    "reticulumSendFailed": "发送失败"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

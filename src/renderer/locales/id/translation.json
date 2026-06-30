@@ -341,7 +341,15 @@
     "emptySelectDm": "Obrolan Reticulum hanya untuk pesan langsung. Pilih kontak di atas atau buka kontak dari tab Node.",
     "noDmConversations": "Belum ada percakapan.",
     "noDmConversationsReticulum": "Belum ada percakapan — buka kontak dari tab Node.",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "Diterima melalui TCP",
+    "receivedViaNetwork": "Diterima melalui jaringan",
+    "sentViaRf": "Dikirim melalui RF",
+    "sentViaTcp": "Dikirim melalui TCP",
+    "sentViaNetwork": "Dikirim melalui jaringan",
+    "reticulumSendSending": "Mengirim...",
+    "reticulumSendDelivered": "Terkirim",
+    "reticulumSendFailed": "Gagal mengirim"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

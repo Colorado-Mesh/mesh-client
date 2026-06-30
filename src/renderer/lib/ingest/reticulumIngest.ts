@@ -1,4 +1,5 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { messageTransportFromWire } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
@@ -19,6 +20,12 @@ export interface ReticulumLxmfPayload {
   message_hash?: string;
   direction?: string;
   reaction_target?: string;
+  received_via?: string;
+  sent_via?: string;
+}
+
+function resolvePayloadTransport(p: ReticulumLxmfPayload) {
+  return messageTransportFromWire(p.received_via, p.sent_via, p.direction);
 }
 
 function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
@@ -31,6 +38,7 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
     p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text);
 
   const isReaction = Boolean(p.reaction_target);
+  const receivedVia = resolvePayloadTransport(p);
 
   return {
     id: messageHash,
@@ -41,6 +49,7 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
     channelIndex: 0,
     timestamp,
     status: 'acked',
+    ...(receivedVia ? { receivedVia } : {}),
     reticulumMessageHash: messageHash,
     reticulumSenderHash: p.sender_hash,
     ...(p.reply_to_hash ? { reticulumReplyToHash: p.reply_to_hash } : {}),
@@ -74,6 +83,7 @@ export async function persistReticulumMessageToDb(
       to_hash: p.to_hash ?? null,
       reply_to_hash: p.reply_to_hash ?? p.reaction_target ?? null,
       message_hash: p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text),
+      received_via: resolvePayloadTransport(p) ?? null,
     });
   } catch (e) {
     console.warn('[reticulumIngest] save message ' + errLikeToLogString(e));
@@ -114,6 +124,7 @@ export function ingestReticulumDbRows(
     to_hash?: string | null;
     reply_to_hash?: string | null;
     message_hash?: string | null;
+    received_via?: string | null;
   }[],
 ): void {
   for (const row of rows) {

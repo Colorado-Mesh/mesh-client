@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulum chat je pouze přímá zpráva. Vyberte kontakt výše nebo jej otevřete na kartě Uzly.",
     "noDmConversations": "Zatím žádné konverzace.",
     "noDmConversationsReticulum": "Zatím žádné konverzace — otevřete kontakt na kartě Uzly.",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "Přijato prostřednictvím TCP",
+    "receivedViaNetwork": "Přijato prostřednictvím sítě",
+    "sentViaRf": "Odesláno přes RF",
+    "sentViaTcp": "Odesláno prostřednictvím TCP",
+    "sentViaNetwork": "Odesláno prostřednictvím sítě",
+    "reticulumSendSending": "Odesílání...",
+    "reticulumSendDelivered": "Dodané",
+    "reticulumSendFailed": "Odeslání se nezdařilo"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

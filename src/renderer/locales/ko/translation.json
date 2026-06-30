@@ -341,7 +341,15 @@
     "emptySelectDm": "Reticulum 채팅은 DM 전용입니다. 위에서 연락처를 선택하거나 노드 탭에서 연락처를 여세요.",
     "noDmConversations": "아직 대화가 없습니다.",
     "noDmConversationsReticulum": "아직 대화가 없습니다. 노드 탭에서 연락처를 여세요.",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "TCP를 통해 수신됨",
+    "receivedViaNetwork": "네트워크를 통해 수신됨",
+    "sentViaRf": "RF를 통해 전송됨",
+    "sentViaTcp": "TCP를 통해 전송됨",
+    "sentViaNetwork": "네트워크를 통해 전송됨",
+    "reticulumSendSending": "전송 중…",
+    "reticulumSendDelivered": "배달 완료",
+    "reticulumSendFailed": "보내지 못했습니다"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

@@ -341,7 +341,15 @@
     "emptySelectDm": "Czat Reticulum służy wyłącznie do wiadomości bezpośrednich. Wybierz kontakt powyżej lub otwórz go w zakładce Węzły.",
     "noDmConversations": "Brak rozmów.",
     "noDmConversationsReticulum": "Brak rozmów — otwórz kontakt z zakładki Węzły.",
-    "dms": "DM"
+    "dms": "DM",
+    "receivedViaTcp": "Otrzymano poprzez",
+    "receivedViaNetwork": "Odebrano przez sieć",
+    "sentViaRf": "Wysłane przez RF",
+    "sentViaTcp": "Wysłano przez TCP",
+    "sentViaNetwork": "Wysłane przez sieć",
+    "reticulumSendSending": "Wysyłanie…",
+    "reticulumSendDelivered": "[Data] dostarczenia",
+    "reticulumSendFailed": "Nie udało się wysłać"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

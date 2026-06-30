@@ -55,13 +55,13 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 
 ### LXMF and contacts
 
-| Method | Path                           | Body / notes                                               | Response           |
-| ------ | ------------------------------ | ---------------------------------------------------------- | ------------------ |
-| POST   | `/api/v1/lxmf/send`            | `{ destination_hash, text, reply_to_hash?, reply_to_id? }` | `{ ok, message? }` |
-| POST   | `/api/v1/lxmf/reaction`        | `{ destination_hash, target_hash, emoji }`                 | `{ ok, message? }` |
-| POST   | `/api/v1/lxmf/resource`        | LXMF file attachment payload                               | `{ ok, message? }` |
-| DELETE | `/api/v1/lxmf/messages/{hash}` |                                                            | `{ ok }`           |
-| GET    | `/api/v1/contacts`             |                                                            | `{ contacts: [] }` |
+| Method | Path                           | Body / notes                                               | Response                      |
+| ------ | ------------------------------ | ---------------------------------------------------------- | ----------------------------- |
+| POST   | `/api/v1/lxmf/send`            | `{ destination_hash, text, reply_to_hash?, reply_to_id? }` | `{ ok, sent_via?, message? }` |
+| POST   | `/api/v1/lxmf/reaction`        | `{ destination_hash, target_hash, emoji }`                 | `{ ok, message? }`            |
+| POST   | `/api/v1/lxmf/resource`        | LXMF file attachment payload                               | `{ ok, message? }`            |
+| DELETE | `/api/v1/lxmf/messages/{hash}` |                                                            | `{ ok }`                      |
+| GET    | `/api/v1/contacts`             |                                                            | `{ contacts: [] }`            |
 
 ### Peers and propagation
 
@@ -94,6 +94,8 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 ```
 
 Event types: `lxmf_message`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`.
+
+`lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
 
 ## Electron bridge
 
