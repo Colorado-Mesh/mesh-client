@@ -2,7 +2,7 @@ import { execFileSync } from 'child_process';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { isDeviceEntry } from './LogPanel';
+import { isAppLogEntry, isDeviceEntry, isOwnedByOtherProtocol } from './LogPanel';
 
 function entry(source: string, message: string, level = 'log') {
   return { ts: Date.now(), level, source, message };
@@ -264,46 +264,81 @@ describe('isDeviceEntry — no protocol (fallback)', () => {
 });
 
 describe('dual-mode appEntries guard', () => {
-  function isAppEntry(log: ReturnType<typeof entry>) {
-    return (
-      !isDeviceEntry(log, 'meshtastic') &&
-      !isDeviceEntry(log, 'meshcore') &&
-      !isDeviceEntry(log, 'reticulum')
-    );
-  }
-
   it('Meshtastic [Meshtastic MQTT] entry appears in app view (not treated as device log)', () => {
     const mqttEntry = entry('main', '[Meshtastic MQTT] ServiceEnvelope decode failed');
-    expect(isAppEntry(mqttEntry)).toBe(true);
+    expect(isAppLogEntry(mqttEntry, 'meshtastic')).toBe(true);
   });
 
   it('MeshCore [MeshCore MQTT] entry is excluded from app view when Meshtastic is active', () => {
     const mqttEntry = entry('main', '[MeshCore MQTT] status: connected');
-    expect(isAppEntry(mqttEntry)).toBe(false);
+    expect(isAppLogEntry(mqttEntry, 'meshtastic')).toBe(false);
   });
 
   it('Reticulum sidecar entry is excluded from app view', () => {
     const rtEntry = entry('main', '[ReticulumSidecar] listening on 127.0.0.1:19437');
-    expect(isAppEntry(rtEntry)).toBe(false);
+    expect(isAppLogEntry(rtEntry, 'meshtastic')).toBe(false);
+    expect(isAppLogEntry(rtEntry, 'meshcore')).toBe(false);
   });
 
   it('Meshtastic SDK entry is excluded from app view', () => {
     const sdkEntry = entry('meshtastic-sdk', 'packet decoded');
-    expect(isAppEntry(sdkEntry)).toBe(false);
+    expect(isAppLogEntry(sdkEntry, 'meshtastic')).toBe(false);
   });
 
   it('MeshCore source entry is excluded from app view', () => {
     const meshcoreEntry = entry('meshcore', 'rx rssi=-90');
-    expect(isAppEntry(meshcoreEntry)).toBe(false);
+    expect(isAppLogEntry(meshcoreEntry, 'meshtastic')).toBe(false);
   });
 
   it('[NobleBleManager] entry is excluded from app view', () => {
     const bleEntry = entry('main', '[NobleBleManager] startScanning error: peripheral lost');
-    expect(isAppEntry(bleEntry)).toBe(false);
+    expect(isAppLogEntry(bleEntry, 'meshtastic')).toBe(false);
   });
 
   it('generic app entry passes through to app view', () => {
     const appEntry = entry('main', 'Window created');
-    expect(isAppEntry(appEntry)).toBe(true);
+    expect(isAppLogEntry(appEntry, 'meshtastic')).toBe(true);
+  });
+});
+
+describe('protocol-scoped appEntries — Reticulum tab', () => {
+  it('excludes Meshtastic MQTT from Reticulum app view', () => {
+    const mqttEntry = entry('main', '[Meshtastic MQTT] CONNACK received');
+    expect(isAppLogEntry(mqttEntry, 'reticulum')).toBe(false);
+    expect(isOwnedByOtherProtocol(mqttEntry, 'reticulum')).toBe(true);
+  });
+
+  it('excludes MeshCore MQTT from Reticulum app view', () => {
+    const mqttEntry = entry('main', '[MeshCore MQTT] connect start');
+    expect(isAppLogEntry(mqttEntry, 'reticulum')).toBe(false);
+  });
+
+  it('excludes MeshCore runtime from Reticulum device view', () => {
+    const mcEntry = entry('main', '[useMeshcoreRuntime] connected');
+    expect(isDeviceEntry(mcEntry, 'reticulum')).toBe(false);
+    expect(isAppLogEntry(mcEntry, 'reticulum')).toBe(false);
+  });
+
+  it('includes generic app lines in Reticulum app view', () => {
+    expect(isAppLogEntry(entry('main', 'Window created'), 'reticulum')).toBe(true);
+  });
+
+  it('includes Reticulum sidecar lines in Reticulum device view only', () => {
+    const rtEntry = entry('main', '[ReticulumSidecar] stack ready');
+    expect(isDeviceEntry(rtEntry, 'reticulum')).toBe(true);
+    expect(isAppLogEntry(rtEntry, 'reticulum')).toBe(false);
+  });
+});
+
+describe('protocol-scoped appEntries — MeshCore tab', () => {
+  it('excludes Meshtastic MQTT from MeshCore app view', () => {
+    const mqttEntry = entry('main', '[Meshtastic MQTT] subscribe callback OK');
+    expect(isAppLogEntry(mqttEntry, 'meshcore')).toBe(false);
+  });
+
+  it('routes MeshCore MQTT to device view', () => {
+    const mqttEntry = entry('main', '[MeshCore MQTT] PINGRESP received');
+    expect(isDeviceEntry(mqttEntry, 'meshcore')).toBe(true);
+    expect(isAppLogEntry(mqttEntry, 'meshcore')).toBe(false);
   });
 });

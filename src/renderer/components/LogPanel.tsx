@@ -134,6 +134,33 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
   );
 }
 
+/** App-panel MQTT/infrastructure tags scoped to one protocol tab (not device/SDK traffic). */
+export function isProtocolExclusiveAppEntry(entry: LogEntry, protocol: MeshProtocol): boolean {
+  return protocol === 'meshtastic' && entry.message.includes('[Meshtastic MQTT]');
+}
+
+/** True when the line belongs to a protocol other than the active tab. */
+export function isOwnedByOtherProtocol(entry: LogEntry, activeProtocol: MeshProtocol): boolean {
+  for (const p of ['meshtastic', 'meshcore', 'reticulum'] as MeshProtocol[]) {
+    if (p === activeProtocol) continue;
+    if (isDeviceEntry(entry, p)) return true;
+    if (isProtocolExclusiveAppEntry(entry, p)) return true;
+  }
+  return false;
+}
+
+/** App log lines for the active protocol tab (or dual/triple fallback when unset). */
+export function isAppLogEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
+  if (protocol) {
+    return !isDeviceEntry(entry, protocol) && !isOwnedByOtherProtocol(entry, protocol);
+  }
+  return (
+    !isDeviceEntry(entry, 'meshtastic') &&
+    !isDeviceEntry(entry, 'meshcore') &&
+    !isDeviceEntry(entry, 'reticulum')
+  );
+}
+
 function formatEntry(entry: LogEntry): string {
   const ts = formatLogTimeOfDay(entry.ts);
   return `${ts} [${entry.level}] ${entry.message}`;
@@ -264,20 +291,17 @@ export default function LogPanel({
     () => entries.filter((e) => isDeviceEntry(e, protocol)),
     [entries, protocol],
   );
-  // Dual-mode: exclude device entries from all protocols so they do not leak into App view.
   const appEntries = useMemo(
-    () =>
-      entries.filter(
-        (e) =>
-          !isDeviceEntry(e, 'meshtastic') &&
-          !isDeviceEntry(e, 'meshcore') &&
-          !isDeviceEntry(e, 'reticulum'),
-      ),
-    [entries],
+    () => entries.filter((e) => isAppLogEntry(e, protocol)),
+    [entries, protocol],
+  );
+  const scopedDeviceLogs = useMemo(
+    () => (deviceLogs ?? []).filter((e) => !protocol || isDeviceEntry(e, protocol)),
+    [deviceLogs, protocol],
   );
   const allDeviceLogs: LogEntry[] = useMemo(
-    () => [...(deviceLogs ?? []), ...libraryEntries].sort((a, b) => a.ts - b.ts),
-    [deviceLogs, libraryEntries],
+    () => [...scopedDeviceLogs, ...libraryEntries].sort((a, b) => a.ts - b.ts),
+    [scopedDeviceLogs, libraryEntries],
   );
 
   const visibleLines: LogEntry[] = useMemo(

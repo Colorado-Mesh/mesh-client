@@ -855,7 +855,7 @@ function AppContent() {
     [meshtasticRuntime.deviceLogs],
   );
   const deviceLogsByProtocol = useMemo(
-    () => protocolRecord(normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs),
+    () => protocolRecord(normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs, []),
     [normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs],
   );
   const nodesForUi = selectByProtocol(uiNodesByProtocol, protocol);
