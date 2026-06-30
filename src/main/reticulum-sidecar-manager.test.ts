@@ -44,4 +44,35 @@ describe('ReticulumSidecarManager', () => {
     const resolved = manager.resolveBinaryPath();
     expect(resolved).toContain('mesh-client-reticulum');
   });
+
+  it('stop emits status when proc already null', async () => {
+    const manager = new ReticulumSidecarManager();
+    const statusListener = vi.fn();
+    manager.on('status', statusListener);
+
+    // Simulate stale running state after process exited without coordinated stop().
+    (
+      manager as unknown as { _status: { running: boolean; port: number; pid: number | null } }
+    )._status = {
+      running: true,
+      port: 59477,
+      pid: null,
+    };
+
+    await manager.stop();
+
+    expect(manager.getStatus()).toEqual({ running: false, port: 0, pid: null });
+    expect(statusListener).toHaveBeenCalledWith({ running: false, port: 0, pid: null });
+  });
+
+  it('stop emits idle status even when already idle', async () => {
+    const manager = new ReticulumSidecarManager();
+    const statusListener = vi.fn();
+    manager.on('status', statusListener);
+
+    await manager.stop();
+
+    expect(manager.getStatus()).toEqual({ running: false, port: 0, pid: null });
+    expect(statusListener).toHaveBeenCalledWith({ running: false, port: 0, pid: null });
+  });
 });

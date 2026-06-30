@@ -29,9 +29,7 @@ import { ReticulumRadioPanel } from './ReticulumRadioPanel';
 
 describe('ReticulumRadioPanel', () => {
   it('renders collapsible flasher section title', () => {
-    render(
-      <ReticulumRadioPanel stackRunning={false} connecting={false} onStartStack={async () => {}} />,
-    );
+    render(<ReticulumRadioPanel connecting={false} onStartStack={async () => {}} />);
 
     expect(screen.getByText('flasher.title')).toBeInTheDocument();
     expect(screen.queryByText('nomadNetwork.title')).not.toBeInTheDocument();

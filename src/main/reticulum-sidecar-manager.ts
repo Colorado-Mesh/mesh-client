@@ -176,6 +176,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.proc = null;
     if (!proc) {
       this._status = { running: false, port: 0, pid: null };
+      this.emit('status', this.getStatus());
       return;
     }
 

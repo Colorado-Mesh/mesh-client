@@ -4,7 +4,6 @@ import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSid
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 export interface ReticulumStackPanelProps {
-  stackRunning: boolean;
   connecting: boolean;
   stackError?: string | null;
   onStartStack: () => Promise<void>;
@@ -14,7 +13,6 @@ export interface ReticulumStackPanelProps {
 
 /** Connection tab: sidecar lifecycle only (start/stop, autostart, status). */
 export function ReticulumStackPanel({
-  stackRunning,
   connecting,
   stackError,
   onStartStack,
@@ -24,7 +22,6 @@ export function ReticulumStackPanel({
   const { t } = useTranslation();
   const { sidecarStatus, sidecarUiRunning, autoStart, handleAutoStartChange } =
     useReticulumSidecarApi({
-      stackRunning,
       connecting,
       onStartStack,
       onEvent: onSidecarEvent,

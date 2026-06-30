@@ -2712,11 +2712,6 @@ function AppContent() {
                           <Suspense fallback={<PanelSkeleton />}>
                             {capabilities.hasReticulumRadioPanel ? (
                               <ReticulumRadioPanel
-                                stackRunning={
-                                  reticulumConnectionView.state.status === 'connected' ||
-                                  reticulumConnectionView.state.status === 'configured' ||
-                                  reticulumConnectionView.state.status === 'connecting'
-                                }
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
                                 onSidecarEvent={reticulumPanelActions.handleSidecarEvent}

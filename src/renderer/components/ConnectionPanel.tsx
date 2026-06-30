@@ -2505,7 +2505,6 @@ export default function ConnectionPanel({
     );
 
   if (capabilities.hasReticulumInterfaceConfig) {
-    const stackRunning = isConnected || state.status === 'connecting';
     const exitVariant = isConnected
       ? 'connected'
       : state.status === 'connecting'
@@ -2515,7 +2514,6 @@ export default function ConnectionPanel({
       <div className="w-full space-y-6">
         {renderExitActions(exitVariant)}
         <ReticulumStackPanel
-          stackRunning={stackRunning}
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
           onStartStack={async () => {

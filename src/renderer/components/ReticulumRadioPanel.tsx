@@ -14,8 +14,8 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
+import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import ReticulumCallPanel from './ReticulumCallPanel';
-import ReticulumIdentitySection from './ReticulumIdentitySection';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 
 interface ReticulumInterfaceRow {
@@ -69,7 +69,6 @@ function ReticulumCollapsibleSection({
 }
 
 export interface ReticulumRadioPanelProps {
-  stackRunning: boolean;
   connecting: boolean;
   onSidecarEvent?: (evt: ReticulumSidecarEvent) => void;
   onStartStack: () => Promise<void>;
@@ -78,7 +77,6 @@ export interface ReticulumRadioPanelProps {
 
 /** Radio tab: identity, interfaces, network peers, propagation, config import. */
 export function ReticulumRadioPanel({
-  stackRunning,
   connecting,
   onSidecarEvent,
   onStartStack,
@@ -88,7 +86,6 @@ export function ReticulumRadioPanel({
   const capabilities = useRadioProvider('reticulum');
   const { sidecarApiReady, identity, statsSummary, appInfo, refreshIdentity } =
     useReticulumSidecarApi({
-      stackRunning,
       connecting,
       onStartStack,
       onEvent: onSidecarEvent,
@@ -401,7 +398,7 @@ export function ReticulumRadioPanel({
   const identityReady = identity?.configured === true;
   const identityActionsDisabled = !sidecarApiReady || connecting;
   const rnodeInterfaceActive =
-    stackRunning &&
+    sidecarApiReady &&
     interfaces.some((iface) => iface.enabled && iface.type.toLowerCase().includes('rnode'));
   const flasherPortBlocked = rnodeInterfaceActive;
 
@@ -509,6 +506,9 @@ export function ReticulumRadioPanel({
             }}
           />
         )}
+        {identityReady && sidecarApiReady ? (
+          <ReticulumAnnounceControls disabled={identityActionsDisabled} />
+        ) : null}
       </ReticulumCollapsibleSection>
 
       {sidecarApiReady ? (
@@ -613,10 +613,6 @@ export function ReticulumRadioPanel({
 
           <ReticulumCollapsibleSection title={t('connectionPanel.reticulumNetworkTitle')}>
             <PeersSummarySection embedded peerCount={peerCount} onOpenPeersTab={onOpenPeersTab} />
-          </ReticulumCollapsibleSection>
-
-          <ReticulumCollapsibleSection title={t('reticulumIdentity.title')}>
-            <ReticulumIdentitySection embedded />
           </ReticulumCollapsibleSection>
 
           <ReticulumCollapsibleSection title={t('connectionPanel.reticulumPropagation.title')}>

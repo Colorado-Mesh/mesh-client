@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
@@ -63,8 +64,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const unsubEventRef = useRef<(() => void) | null>(null);
+  const connectInFlightRef = useRef(false);
+  const suppressReconnectRef = useRef(false);
+  const stateRef = useRef(state);
   const peerInterfaceByHashRef = useRef<Map<string, string>>(new Map());
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const selfNodeId = useMemo(
     () => (selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : null),
@@ -194,6 +202,37 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [ingestLxmfPayload, refreshContactsFromSidecar, syncDiagnosticsFromSidecar],
   );
 
+  const tearDownFromSidecarStop = useCallback(() => {
+    unsubEventRef.current?.();
+    unsubEventRef.current = null;
+    setSelfLxmfHash(null);
+    setState(INITIAL_STATE);
+    syncConnectionStore(INITIAL_STATE);
+  }, [syncConnectionStore]);
+
+  const connectRef = useRef<(() => Promise<void>) | null>(null);
+
+  useEffect(() => {
+    const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
+      if (status.running) return;
+      const wasActive = stateRef.current.status !== 'disconnected';
+      if (wasActive) {
+        tearDownFromSidecarStop();
+        if (isReticulumAutostartEnabled() && !suppressReconnectRef.current) {
+          void connectRef.current?.().catch((e: unknown) => {
+            console.warn(
+              '[useReticulumRuntime] autostart reconnect failed ' + errLikeToLogString(e),
+            );
+          });
+        }
+      }
+      suppressReconnectRef.current = false;
+    });
+    return () => {
+      unsubStatus();
+    };
+  }, [tearDownFromSidecarStop]);
+
   useEffect(() => {
     return () => {
       unsubEventRef.current?.();
@@ -206,6 +245,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, []);
 
   const connect = useCallback(async () => {
+    if (connectInFlightRef.current) return;
+    connectInFlightRef.current = true;
     setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
     syncConnectionStore({ status: 'connecting', connectionType: null });
     try {
@@ -232,6 +273,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       setState(INITIAL_STATE);
       syncConnectionStore(INITIAL_STATE);
       throw e instanceof Error ? e : new Error(String(e));
+    } finally {
+      connectInFlightRef.current = false;
     }
   }, [
     handleSidecarEvent,
@@ -244,6 +287,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   ]);
 
   const disconnect = useCallback(async () => {
+    suppressReconnectRef.current = true;
     unsubEventRef.current?.();
     unsubEventRef.current = null;
     await window.electronAPI.reticulum.stop();
@@ -251,6 +295,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   const connectAutomatic = useCallback(async () => {
     await connect();

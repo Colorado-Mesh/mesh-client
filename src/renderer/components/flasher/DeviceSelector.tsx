@@ -25,12 +25,12 @@ export function DeviceSelector({
       <label className="block text-xs text-gray-400">
         {t('flasher.selectProduct')}
         <select
-          value={selectedProduct?.id ?? ''}
+          value={selectedProduct?.catalogKey ?? ''}
           disabled={disabled}
           aria-label={t('flasher.selectProduct')}
           onChange={(e) => {
-            const id = Number(e.target.value);
-            const product = FIRMWARE_PRODUCTS.find((p) => p.id === id) ?? null;
+            const catalogKey = e.target.value;
+            const product = FIRMWARE_PRODUCTS.find((p) => p.catalogKey === catalogKey) ?? null;
             onProductChange(product);
             onModelChange(null);
           }}
@@ -38,7 +38,7 @@ export function DeviceSelector({
         >
           <option value="">{t('flasher.selectProductPlaceholder')}</option>
           {FIRMWARE_PRODUCTS.map((product) => (
-            <option key={product.id} value={product.id}>
+            <option key={product.catalogKey} value={product.catalogKey}>
               {product.name}
             </option>
           ))}

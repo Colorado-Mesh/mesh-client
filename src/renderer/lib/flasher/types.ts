@@ -17,6 +17,8 @@ export interface RNodeModel {
 
 export interface RNodeProduct {
   name: string;
+  /** UI-unique key for React lists and select values (may differ from EEPROM product id). */
+  catalogKey: string;
   id: number;
   platform: RNodePlatform;
   models: RNodeModel[];

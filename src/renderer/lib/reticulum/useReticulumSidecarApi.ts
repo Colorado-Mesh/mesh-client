@@ -16,7 +16,6 @@ export interface ReticulumIdentityStatus {
 }
 
 export interface UseReticulumSidecarApiOptions {
-  stackRunning: boolean;
   connecting: boolean;
   onStartStack: () => Promise<void>;
   onEvent?: (evt: ReticulumSidecarEvent) => void;
@@ -25,7 +24,6 @@ export interface UseReticulumSidecarApiOptions {
 }
 
 export function useReticulumSidecarApi({
-  stackRunning,
   connecting,
   onStartStack,
   onEvent,
@@ -44,8 +42,8 @@ export function useReticulumSidecarApi({
     null,
   );
 
-  const sidecarUiRunning = stackRunning || sidecarStatus.running;
-  const sidecarApiReady = sidecarStatus.running || (stackRunning && !connecting);
+  const sidecarUiRunning = sidecarStatus.running;
+  const sidecarApiReady = sidecarStatus.running && !connecting;
 
   const refreshSidecarStatus = useCallback(async () => {
     try {
@@ -94,21 +92,22 @@ export function useReticulumSidecarApi({
     void refreshSidecarStatus();
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       setSidecarStatus(status);
+      if (!status.running) {
+        autostartAttemptedRef.current = false;
+      }
     });
     return unsubStatus;
   }, [refreshSidecarStatus]);
 
   useEffect(() => {
     if (!enableAutostart || !autoStart || autostartAttemptedRef.current) return;
+    if (sidecarStatus.running || connecting) return;
     autostartAttemptedRef.current = true;
-    void refreshSidecarStatus().then((status) => {
-      if (!status.running && !connecting) {
-        void onStartStack().catch((e: unknown) => {
-          console.warn('[useReticulumSidecarApi] autostart failed ' + errLikeToLogString(e));
-        });
-      }
+    void onStartStack().catch((e: unknown) => {
+      console.warn('[useReticulumSidecarApi] autostart failed ' + errLikeToLogString(e));
+      autostartAttemptedRef.current = false;
     });
-  }, [enableAutostart, autoStart, connecting, onStartStack, refreshSidecarStatus]);
+  }, [enableAutostart, autoStart, connecting, onStartStack, sidecarStatus.running]);
 
   useEffect(() => {
     void refreshIdentity();

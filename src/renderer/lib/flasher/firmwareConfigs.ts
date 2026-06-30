@@ -4,6 +4,7 @@ import type { RNodeProduct } from './types';
 export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   {
     name: 'Heltec LoRa32 v2',
+    catalogKey: 'heltec-lora32-v2',
     id: 0xc0,
     platform: 0x80,
     models: [
@@ -30,6 +31,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'Heltec LoRa32 v3',
+    catalogKey: 'heltec-lora32-v3',
     id: 0xc1,
     platform: 0x80,
     models: [
@@ -56,6 +58,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'Heltec LoRa32 v4',
+    catalogKey: 'heltec-lora32-v4',
     id: 0xc3,
     platform: 0x80,
     models: [
@@ -78,6 +81,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'Heltec T114',
+    catalogKey: 'heltec-t114',
     id: 0xc2,
     platform: 0x70,
     models: [
@@ -94,6 +98,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO LoRa32 v1.0',
+    catalogKey: 'lilygo-lora32-v1',
     id: 0xb2,
     platform: 0x80,
     models: [
@@ -120,6 +125,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO LoRa32 v2.0',
+    catalogKey: 'lilygo-lora32-v2',
     id: 0xb0,
     platform: 0x80,
     models: [
@@ -146,6 +152,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO LoRa32 v2.1',
+    catalogKey: 'lilygo-lora32-v2-1',
     id: 0xb1,
     platform: 0x80,
     models: [
@@ -215,6 +222,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO LoRa T3S3',
+    catalogKey: 'lilygo-lora-t3s3',
     id: 0x03,
     platform: 0x80,
     models: [
@@ -297,6 +305,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO T-Beam',
+    catalogKey: 'lilygo-t-beam',
     id: 0xe0,
     platform: 0x80,
     models: [
@@ -364,6 +373,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO T-Beam Supreme',
+    catalogKey: 'lilygo-t-beam-supreme',
     id: 0xea,
     platform: 0x80,
     models: [
@@ -390,6 +400,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO T-Deck',
+    catalogKey: 'lilygo-t-deck',
     id: 0xd0,
     platform: 0x80,
     models: [
@@ -416,6 +427,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'LilyGO T-Echo',
+    catalogKey: 'lilygo-t-echo',
     id: 0x15,
     platform: 0x70,
     models: [
@@ -432,6 +444,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'RAK4631',
+    catalogKey: 'rak4631',
     id: 0x10,
     platform: 0x70,
     models: [
@@ -448,6 +461,7 @@ export const FIRMWARE_PRODUCTS: RNodeProduct[] = [
   },
   {
     name: 'RNode',
+    catalogKey: 'rnode',
     id: 0x03,
     platform: 0x80,
     models: [
