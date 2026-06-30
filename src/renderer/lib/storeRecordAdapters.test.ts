@@ -11,6 +11,7 @@ import {
   messageRecordToChatMessage,
   nodeRecordsToMeshNodeMap,
   nodeRecordToMeshNode,
+  reticulumDbRowToMessageRecord,
 } from './storeRecordAdapters';
 import type { ChatMessage, MeshNode } from './types';
 
@@ -147,5 +148,21 @@ describe('store record adapters (merge precedence)', () => {
     const fromStore = messageRecordsToChatMessages([]);
     expect(fromStore).not.toContainEqual(expect.objectContaining({ payload: 'legacy only' }));
     expect([...fromStore, legacyOnly]).toHaveLength(1);
+  });
+
+  it('round-trips Reticulum LXMF hash and reply fields from DB rows', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      sender_name: 'Peer',
+      payload: 'hello',
+      timestamp: 1_700_000_000_000,
+      to_hash: 'bb'.repeat(16),
+      reply_to_hash: 'cc'.repeat(16),
+      message_hash: 'dd'.repeat(16),
+    });
+    expect(record.reticulumMessageHash).toBe('dd'.repeat(16));
+    expect(record.reticulumReplyToHash).toBe('cc'.repeat(16));
+    const chat = messageRecordToChatMessage(record);
+    expect(chat.reticulum_reply_to_hash).toBe('cc'.repeat(16));
   });
 });

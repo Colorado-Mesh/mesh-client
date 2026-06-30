@@ -8,10 +8,20 @@ import { TAB_SLOT_IDS } from './tabSlotIds';
 const identityT = ((key: string) => key) as TFunction;
 
 describe('computeTabMappings', () => {
-  it('hides Diagnostics for Reticulum', () => {
+  it('shows Radio and Graph tabs for Reticulum', () => {
+    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const radioPanelIndex = TAB_SLOT_IDS.indexOf('Radio');
+    const graphPanelIndex = TAB_SLOT_IDS.indexOf('Graph');
+    expect(RETICULUM_CAPABILITIES.hasReticulumRadioPanel).toBe(true);
+    expect(RETICULUM_CAPABILITIES.hasNeighborInfo).toBe(true);
+    expect(tabs.tabIndexToPanelIndex).toContain(radioPanelIndex);
+    expect(tabs.tabIndexToPanelIndex).toContain(graphPanelIndex);
+  });
+
+  it('shows Diagnostics for Reticulum when native engine is enabled', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const diagnosticsPanelIndex = TAB_SLOT_IDS.indexOf('Diagnostics');
-    expect(RETICULUM_CAPABILITIES.hasDiagnosticsPanel).toBe(false);
-    expect(tabs.tabIndexToPanelIndex).not.toContain(diagnosticsPanelIndex);
+    expect(RETICULUM_CAPABILITIES.hasDiagnosticsPanel).toBe(true);
+    expect(tabs.tabIndexToPanelIndex).toContain(diagnosticsPanelIndex);
   });
 });

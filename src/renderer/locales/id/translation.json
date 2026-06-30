@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Tempel URL halaman Giphy, URL media, g:ID, atau ID GIF tanpa awalan.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… atau g:ID",
     "meshcoreGifSend": "Kirim GIF",
-    "meshcoreGifInvalid": "Masukkan URL Giphy atau id GIF yang valid."
+    "meshcoreGifInvalid": "Masukkan URL Giphy atau id GIF yang valid.",
+    "attachFile": "Lampirkan file",
+    "attachFileHint": "Kirim lampiran file LXMF (khusus DM)",
+    "attachDmOnly": "Buka pesan langsung sebelum melampirkan file."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Nonaktifkan",
       "serialPort": "Port Serial",
       "preset": "Preset",
-      "bleAvailable": "Pengintipan BLE tersedia di platform ini (tambahkan melalui sidecar saat dikonfigurasi)."
+      "bleAvailable": "Pengintipan BLE tersedia di platform ini (tambahkan melalui sidecar saat dikonfigurasi).",
+      "host": "Pemandu Acara",
+      "port": "Port"
     },
     "reticulumPeers": {
       "name": "Sesama Rekan Kerja",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "Daya TX diterapkan",
     "xmodemInvalidFilename": "Nama file berisi karakter yang tidak valid",
     "validationInvalidPsk": "Base64 PSK tidak valid — periksa kuncinya dan coba lagi",
-    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong"
+    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong",
+    "reticulumStackSettings": {
+      "title": "Pengaturan tumpukan",
+      "enableTransport": "Aktifkan transportasi (rute untuk rekan - rekan lain)",
+      "shareInstance": "Bagikan contoh Reticulum",
+      "logLevel": "Level log",
+      "save": "Simpan pengaturan tumpukan"
+    },
+    "reticulumConfigImport": {
+      "title": "Impor konfigurasi Reticulum",
+      "hint": "Tempel file konfigurasi bergaya rnsd atau impor dari disk. Gabungkan menambahkan/memperbarui blok antarmuka berdasarkan nama; ganti menimpa semua antarmuka.",
+      "pasteLabel": "Isi file konfigurasi",
+      "fromFile": "Impor dari file…",
+      "fromSystem": "Impor sistem default",
+      "merge": "Gabungkan impor",
+      "replace": "Ganti antarmuka",
+      "confirmTitle": "Impor konfigurasi Reticulum",
+      "confirmMerge": "Gabungkan antarmuka yang diimpor ke dalam konfigurasi saat ini?",
+      "confirmReplace": "Ganti semua antarmuka dengan konfigurasi yang diimpor? Ini tidak dapat diurungkan.",
+      "confirm": "Impor"
+    },
+    "reticulumConfigImportFailed": "Impor konfigurasi gagal.",
+    "reticulumConfigNotFound": "Tidak ada konfigurasi Reticulum sistem yang ditemukan di jalur default.",
+    "reticulumFactoryReset": {
+      "title": "Atur Ulang Pabrik",
+      "hint": "Menghapus identitas, kontak, dan pesan dari tumpukan sidecar. Konfigurasi antarmuka dipertahankan.",
+      "button": "Atur ulang data tumpukan",
+      "confirmTitle": "Atur ulang tumpukan Reticulum?",
+      "confirmBody": "Tindakan ini akan menghapus identitas, kontak, dan pesan lokal dari sidecar. File konfigurasi antarmuka Anda disimpan.",
+      "confirm": "Atur ulang"
+    },
+    "reticulumVoiceGames": {
+      "title": "Suara dan permainan",
+      "voiceStatus": "Suara (LXST): {{status}}",
+      "gamesStatus": "Permainan (LRGP): {{status}}",
+      "unavailable": "Tidak tersedia di build ini"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

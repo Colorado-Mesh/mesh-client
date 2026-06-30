@@ -356,6 +356,8 @@ export interface ChatMessage {
   reticulum_sender_hash?: string;
   /** Stable LXMF message hash for ratspeak.chat.v2 threaded replies. */
   reticulum_message_hash?: string;
+  /** Reticulum reply target message hash (hex). */
+  reticulum_reply_to_hash?: string;
   sender_name: string;
   payload: string;
   channel: number;

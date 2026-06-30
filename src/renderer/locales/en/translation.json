@@ -257,6 +257,9 @@
     "cancelReply": "Cancel reply",
     "replyRequiresPacketId": "Reply requires the message RF packet id (wait for send ack or refresh chat).",
     "insertEmoji": "Insert emoji",
+    "attachFile": "Attach file",
+    "attachFileHint": "Send an LXMF file attachment (DM only)",
+    "attachDmOnly": "Open a direct message before attaching a file.",
     "meshcoreGifButton": "Insert Giphy GIF",
     "meshcoreGifButtonHint": "Send a Giphy GIF as MeshCore Open g: wire",
     "meshcoreGifTitle": "Send Giphy GIF",
@@ -488,7 +491,7 @@
     "reticulumIdentity": {
       "title": "Reticulum identity",
       "hint": "Start the stack above, then create or import a mnemonic identity.",
-      "startStackFirst": "Start the Reticulum stack to configure identity.",
+      "startStackFirst": "Start the stack on the Connection tab first.",
       "displayName": "Display name",
       "generate": "Generate identity",
       "import": "Import phrase",
@@ -511,7 +514,9 @@
       "disable": "Disable",
       "serialPort": "Serial port",
       "preset": "Preset",
-      "bleAvailable": "BLE peering is available on this platform (add via sidecar when configured)."
+      "bleAvailable": "BLE peering is available on this platform (add via sidecar when configured).",
+      "host": "Host",
+      "port": "Port"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -1854,6 +1859,42 @@
     "applyUserSuccess": "User identity applied successfully!",
     "applyLoraSuccess": "LoRa settings applied successfully!",
     "importConfigJson": "Import Config JSON",
+    "reticulumStackSettings": {
+      "title": "Stack settings",
+      "enableTransport": "Enable transport (route for other peers)",
+      "shareInstance": "Share Reticulum instance",
+      "logLevel": "Log level",
+      "save": "Save stack settings"
+    },
+    "reticulumConfigImport": {
+      "title": "Import Reticulum config",
+      "hint": "Paste an rnsd-style config file or import from disk. Merge adds/updates interface blocks by name; replace overwrites all interfaces.",
+      "pasteLabel": "Config file contents",
+      "fromFile": "Import from file…",
+      "fromSystem": "Import system default",
+      "merge": "Merge import",
+      "replace": "Replace interfaces",
+      "confirmTitle": "Import Reticulum config",
+      "confirmMerge": "Merge imported interfaces into the current config?",
+      "confirmReplace": "Replace all interfaces with the imported config? This cannot be undone.",
+      "confirm": "Import"
+    },
+    "reticulumConfigImportFailed": "Config import failed.",
+    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumFactoryReset": {
+      "title": "Factory reset",
+      "hint": "Clears identity, contacts, and messages from the sidecar stack. Interface config is preserved.",
+      "button": "Reset stack data",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "This removes identity, contacts, and local messages from the sidecar. Your interface config file is kept.",
+      "confirm": "Reset"
+    },
+    "reticulumVoiceGames": {
+      "title": "Voice and games",
+      "voiceStatus": "Voice (LXST): {{status}}",
+      "gamesStatus": "Games (LRGP): {{status}}",
+      "unavailable": "Not available in this build"
+    },
     "offloadContacts": "Offload",
     "offloading": "Offloading…",
     "offloadingProgress": "Removing {{current}} of {{total}}…",

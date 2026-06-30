@@ -220,6 +220,15 @@ export interface ElectronAPI {
       senderName: string,
     ) => Promise<void>;
     getReticulumMessages: (identityId: string, limit?: number) => Promise<unknown[]>;
+    searchReticulumMessages: (
+      identityId: string,
+      query: string,
+      limit?: number,
+    ) => Promise<unknown[]>;
+    deleteReticulumMessage: (
+      identityId: string,
+      messageHash: string,
+    ) => Promise<{ changes: number }>;
     saveReticulumMessage: (message: {
       identity_id: string;
       sender_id: string;
@@ -228,6 +237,7 @@ export interface ElectronAPI {
       timestamp: number;
       to_hash?: string | null;
       reply_to_hash?: string | null;
+      message_hash?: string | null;
     }) => Promise<void>;
     getReticulumDestinations: () => Promise<unknown[]>;
     upsertReticulumDestination: (row: {
@@ -763,6 +773,9 @@ export interface ElectronAPI {
     getStatus: () => Promise<ReticulumSidecarStatus>;
     proxyGet: (apiPath: string) => Promise<unknown>;
     proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
+    proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;
+    readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
+    showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
   };

@@ -78,7 +78,10 @@ impl PersistedState {
         format!("{:032x}", Uuid::new_v4().as_u128())
     }
 
-    pub fn generate_identity(&mut self, display_name: Option<String>) -> Result<StackIdentity, String> {
+    pub fn generate_identity(
+        &mut self,
+        display_name: Option<String>,
+    ) -> Result<StackIdentity, String> {
         let identity_hash = Self::random_hash();
         let lxmf_hash = Self::random_hash();
         let mnemonic = generate_mnemonic_12();
@@ -137,10 +140,7 @@ impl PersistedState {
         passphrase: &str,
     ) -> Result<StackIdentity, String> {
         let _ = passphrase;
-        let format = backup
-            .get("format")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let format = backup.get("format").and_then(|v| v.as_str()).unwrap_or("");
         if format != "mesh-client.identity.v1" && format != "ratspeak.identity.v2" {
             return Err("unsupported backup format".into());
         }
@@ -188,6 +188,14 @@ impl PersistedState {
             port: req.port,
             preset: req.preset,
             serial_port: req.serial_port,
+            frequency: req.frequency,
+            bandwidth: req.bandwidth,
+            txpower: req.txpower,
+            spreading_factor: req.spreading_factor,
+            coding_rate: req.coding_rate,
+            callsign: req.callsign,
+            id_interval: req.id_interval,
+            mode: req.mode,
         };
         self.interfaces.push(row.clone());
         self.rns_ready = true;
@@ -217,7 +225,11 @@ impl PersistedState {
     }
 
     pub fn upsert_contact(&mut self, hash: &str, name: Option<String>) {
-        if let Some(c) = self.contacts.iter_mut().find(|c| c.destination_hash == hash) {
+        if let Some(c) = self
+            .contacts
+            .iter_mut()
+            .find(|c| c.destination_hash == hash)
+        {
             if name.is_some() {
                 c.display_name = name;
             }
@@ -264,7 +276,10 @@ impl PersistedState {
         Ok(payload)
     }
 
-    pub fn send_reaction(&mut self, req: &LxmfReactionRequest) -> Result<serde_json::Value, String> {
+    pub fn send_reaction(
+        &mut self,
+        req: &LxmfReactionRequest,
+    ) -> Result<serde_json::Value, String> {
         let ts = Self::now_secs();
         Ok(serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,
@@ -275,6 +290,61 @@ impl PersistedState {
             "reaction_target": req.target_hash,
             "direction": "outbound"
         }))
+    }
+
+    pub fn factory_reset_state(&mut self) -> Result<(), String> {
+        let interfaces = self.interfaces.clone();
+        *self = Self::default_empty();
+        self.interfaces = interfaces;
+        self.ensure_defaults();
+        Ok(())
+    }
+
+    pub fn send_resource_local(
+        &mut self,
+        req: &LxmfResourceRequest,
+    ) -> Result<serde_json::Value, String> {
+        if !self.identity.configured {
+            return Err("identity not configured".into());
+        }
+        let ts = Self::now_secs();
+        self.upsert_contact(&req.destination_hash, None);
+        let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
+        let mut payload = serde_json::json!({
+            "sender_hash": self.identity.lxmf_hash,
+            "sender_name": self.identity.display_name.clone().unwrap_or_else(|| "Self".into()),
+            "text": text,
+            "timestamp": ts * 1000,
+            "to_hash": req.destination_hash,
+            "reply_to_hash": req.reply_to_hash,
+            "direction": "outbound",
+            "attachment": {
+                "file_name": req.file_name,
+                "mime_type": req.mime_type,
+                "size_bytes": req.data_base64.len(),
+            }
+        });
+        let hash_input = format!(
+            "{}:{}:{}",
+            payload["sender_hash"].as_str().unwrap_or_default(),
+            payload["timestamp"].as_i64().unwrap_or(0),
+            payload["text"].as_str().unwrap_or_default()
+        );
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert(
+                "message_hash".into(),
+                serde_json::Value::String(format!("{:032x}", stable_hash(&hash_input))),
+            );
+        }
+        self.messages.push(payload.clone());
+        Ok(payload)
+    }
+
+    pub fn delete_message_by_hash(&mut self, message_hash: &str) -> Result<bool, String> {
+        let before = self.messages.len();
+        self.messages
+            .retain(|m| m.get("message_hash").and_then(|v| v.as_str()) != Some(message_hash));
+        Ok(self.messages.len() < before)
     }
 }
 
@@ -290,8 +360,8 @@ fn stable_hash(s: &str) -> u128 {
 fn generate_mnemonic_12() -> String {
     const WORDS: &[&str] = &[
         "alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india",
-        "juliet", "kilo", "lima", "mike", "november", "oscar", "papa", "quebec", "romeo",
-        "sierra", "tango", "uniform", "victor", "whiskey", "xray", "yankee", "zulu",
+        "juliet", "kilo", "lima", "mike", "november", "oscar", "papa", "quebec", "romeo", "sierra",
+        "tango", "uniform", "victor", "whiskey", "xray", "yankee", "zulu",
     ];
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};

@@ -50,8 +50,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:saveReticulumMessage');
       if (!db) return { changes: 0 };
       db.prepareOnce(
-        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         identityId,
         senderId,
@@ -60,6 +60,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         Math.trunc(timestamp),
         typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null,
         typeof m.reply_to_hash === 'string' ? m.reply_to_hash.slice(0, 128) : null,
+        typeof m.message_hash === 'string' ? m.message_hash.slice(0, 128) : null,
       );
       return { changes: 1 };
     } catch (err) {
@@ -76,6 +77,44 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         .all() as Record<string, unknown>[];
     } catch (err) {
       finishDbIpcHandler('db:getReticulumDestinations', err);
+    }
+  });
+
+  ipcMain.handle(
+    'db:searchReticulumMessages',
+    (_event, identityId: string, query: string, limit = 200) => {
+      try {
+        if (typeof identityId !== 'string' || identityId.length > 128) return [];
+        if (typeof query !== 'string' || query.length > 256) return [];
+        const safeLimit = Math.min(Math.max(1, Number(limit) || 200), 5000);
+        const db = getDbForIpc('db:searchReticulumMessages');
+        if (!db) return [];
+        const pattern = `%${query.replace(/[%_]/g, '')}%`;
+        return db
+          .prepareOnce(
+            `SELECT * FROM reticulum_messages
+           WHERE identity_id = ? AND payload LIKE ? COLLATE NOCASE
+           ORDER BY timestamp DESC LIMIT ?`,
+          )
+          .all(identityId, pattern, safeLimit) as Record<string, unknown>[];
+      } catch (err) {
+        finishDbIpcHandler('db:searchReticulumMessages', err);
+      }
+    },
+  );
+
+  ipcMain.handle('db:deleteReticulumMessage', (_event, identityId: string, messageHash: string) => {
+    try {
+      if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
+      if (typeof messageHash !== 'string' || messageHash.length > 128) return { changes: 0 };
+      const db = getDbForIpc('db:deleteReticulumMessage');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce('DELETE FROM reticulum_messages WHERE identity_id = ? AND message_hash = ?')
+        .run(identityId, messageHash);
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteReticulumMessage', err);
     }
   });
 

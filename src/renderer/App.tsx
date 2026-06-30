@@ -105,6 +105,7 @@ import {
   RadioPanel,
   RawPacketLogPanel,
   RepeatersPanel,
+  ReticulumRadioPanel,
   RFHistogramsPanel,
   RoomsPanel,
   SecurityPanel,
@@ -728,10 +729,10 @@ function AppContent() {
     if (!meshcoreNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
   }, [meshcoreNodesById]);
-  const reticulumUiMessages = useMemo(() => {
-    const fromStore = messageRecordsToChatMessages(reticulumStoreMessages);
-    return fromStore.length > 0 ? fromStore : reticulumRuntime.messages;
-  }, [reticulumStoreMessages, reticulumRuntime.messages]);
+  const reticulumUiMessages = useMemo(
+    () => messageRecordsToChatMessages(reticulumStoreMessages),
+    [reticulumStoreMessages],
+  );
   const reticulumNodesById = useNodeStore((s) =>
     reticulumIdentityId ? s.nodes[reticulumIdentityId] : undefined,
   );
@@ -909,7 +910,13 @@ function AppContent() {
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const activeRuntime = useRuntime(protocol) as unknown as MeshtasticRuntime;
   const contactGroupsSelfId =
-    typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
+    protocol === 'reticulum'
+      ? typeof reticulumRuntime.selfNodeId === 'number'
+        ? reticulumRuntime.selfNodeId
+        : null
+      : typeof activeRuntime.selfNodeId === 'number'
+        ? activeRuntime.selfNodeId
+        : null;
   const contactGroups = useContactGroups(contactGroupsSelfId);
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const previousDeviceStatusRef = useRef(activeConnectionView.state.status);
@@ -1146,13 +1153,9 @@ function AppContent() {
       protocolRecord(
         meshtasticStoreMessages.length,
         meshcoreStoreMessages.length,
-        reticulumRuntime.messages.length,
+        reticulumStoreMessages.length,
       ),
-    [
-      meshtasticStoreMessages.length,
-      meshcoreStoreMessages.length,
-      reticulumRuntime.messages.length,
-    ],
+    [meshtasticStoreMessages.length, meshcoreStoreMessages.length, reticulumStoreMessages.length],
   );
   const meshtasticOwnNodeIdsForChat = useMemo(
     () =>
@@ -1168,8 +1171,17 @@ function AppContent() {
       panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
     : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
   const sendReactionByProtocol = useMemo(
-    () => protocolRecord(meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction),
-    [meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction],
+    () =>
+      protocolRecord(
+        meshtasticPanelActions.sendReaction,
+        meshcoreRuntime.sendReaction,
+        reticulumRuntime.sendReaction,
+      ),
+    [
+      meshtasticPanelActions.sendReaction,
+      meshcoreRuntime.sendReaction,
+      reticulumRuntime.sendReaction,
+    ],
   );
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
@@ -2468,6 +2480,13 @@ function AppContent() {
                             isActive={activePanelIndex === 1}
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
+                            onSendAttachment={
+                              capabilities.hasLxmfAttachments && protocol === 'reticulum'
+                                ? (file, destination) =>
+                                    reticulumRuntime.sendAttachment?.(file, destination) ??
+                                    Promise.resolve()
+                                : undefined
+                            }
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
@@ -2617,183 +2636,206 @@ function AppContent() {
                       {activePanelIndex === 4 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            {configureNodeSelector}
-                            <RadioPanel
-                              configTarget={configTarget}
-                              onSetConfig={meshtasticPanelActions.setConfig}
-                              onCommit={meshtasticPanelActions.commitConfig}
-                              onSetChannel={meshtasticPanelActions.setDeviceChannel}
-                              onClearChannel={meshtasticPanelActions.clearChannel}
-                              channelConfigs={effectiveChannelConfigs}
-                              remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
-                              remoteChannelsTailStatus={
-                                isRemoteConfigureTarget
-                                  ? activeRuntime.remoteConfigChannelsTailStatus
-                                  : undefined
-                              }
-                              onRetryRemoteChannelsTail={
-                                isRemoteConfigureTarget ? handleRetryRemoteChannelsTail : undefined
-                              }
-                              meshtasticLoraConfig={
-                                capabilities.hasChannelConfig ? effectiveLoraConfig : undefined
-                              }
-                              meshtasticConfigSlices={
-                                capabilities.hasChannelConfig
-                                  ? effectiveMeshtasticConfigSlices
-                                  : undefined
-                              }
-                              onApplyChannelSet={
-                                capabilities.hasChannelConfig
-                                  ? meshtasticPanelActions.applyChannelSet
-                                  : undefined
-                              }
-                              isConnected={isOperational}
-                              deviceFixedPosition={effectiveDeviceFixedPosition}
-                              ourPosition={activeRuntime.ourPosition}
-                              onSendPositionToDevice={
-                                capabilities.hasFullPositionConfig
-                                  ? meshtasticPanelActions.sendPositionToDevice
-                                  : undefined
-                              }
-                              deviceOwner={effectiveDeviceOwner}
-                              onSetOwner={
-                                capabilities.hasChannelConfig
-                                  ? meshtasticPanelActions.setOwner
-                                  : undefined
-                              }
-                              capabilities={capabilities}
-                              meshcoreChannels={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.channels
-                                  : undefined
-                              }
-                              onMeshcoreSetChannel={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.meshcoreSetChannel
-                                  : undefined
-                              }
-                              onMeshcoreDeleteChannel={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.meshcoreDeleteChannel
-                                  : undefined
-                              }
-                              onApplyLoraParams={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.setRadioParams
-                                  : undefined
-                              }
-                              loraConfig={
-                                capabilities.hasCompanionContactManagementConfig &&
-                                meshcoreRuntime.selfInfo
-                                  ? {
-                                      freq: meshcoreRuntime.selfInfo.radioFreq,
-                                      bw: meshcoreRuntime.selfInfo.radioBw,
-                                      sf: meshcoreRuntime.selfInfo.radioSf,
-                                      cr: meshcoreRuntime.selfInfo.radioCr,
-                                      txPower: meshcoreRuntime.selfInfo.txPower,
-                                    }
-                                  : undefined
-                              }
-                              meshcoreSelfInfo={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.selfInfo
-                                  : undefined
-                              }
-                              meshcoreContactsForTelemetry={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.meshcoreContactsForTelemetry
-                                  : undefined
-                              }
-                              onApplyMeshcoreTelemetryPrivacy={
-                                capabilities.hasCompanionTelemetryPrivacyConfig
-                                  ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
-                                  : undefined
-                              }
-                              meshcoreAutoadd={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.meshcoreAutoadd
-                                  : undefined
-                              }
-                              onApplyMeshcoreContactAutoAdd={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.applyMeshcoreContactAutoAdd
-                                  : undefined
-                              }
-                              onRefreshMeshcoreAutoaddFromDevice={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
-                                  : undefined
-                              }
-                              meshcoreContactsShowPublicKeys={
-                                capabilities.hasContactImportExport
-                                  ? meshcoreContactsShowPublicKeys
-                                  : undefined
-                              }
-                              onMeshcoreContactsShowPublicKeysChange={
-                                capabilities.hasContactImportExport
-                                  ? onMeshcoreContactsShowPublicKeysChange
-                                  : undefined
-                              }
-                              meshcoreContactsShowRefreshControl={
-                                capabilities.hasContactImportExport
-                                  ? meshcoreContactsShowRefreshControl
-                                  : undefined
-                              }
-                              onMeshcoreContactsShowRefreshControlChange={
-                                capabilities.hasContactImportExport
-                                  ? onMeshcoreContactsShowRefreshControlChange
-                                  : undefined
-                              }
-                              onClearAllMeshcoreContacts={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.clearAllMeshcoreContacts
-                                  : undefined
-                              }
-                              onSendAdvert={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.sendAdvert
-                                  : undefined
-                              }
-                              onSendZeroHopAdvert={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.sendZeroHopAdvert
-                                  : undefined
-                              }
-                              onApplyMeshcoreFloodScopeHashtag={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
-                                  : undefined
-                              }
-                              meshcoreFloodScopeHashtag={
-                                capabilities.hasContactImportExport ? meshcoreFloodScopeHashtag : ''
-                              }
-                              onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
-                              onXmodemUpload={
-                                capabilities.hasXmodem && isOperational && !isRemoteConfigureTarget
-                                  ? meshtasticPanelActions.xmodemUpload
-                                  : undefined
-                              }
-                              onXmodemDownload={
-                                capabilities.hasXmodem && isOperational && !isRemoteConfigureTarget
-                                  ? meshtasticPanelActions.xmodemDownload
-                                  : undefined
-                              }
-                              onSyncClock={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.syncClock
-                                  : undefined
-                              }
-                              onRefreshContacts={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.refreshContacts
-                                  : undefined
-                              }
-                              onOffloadContactsFromRadio={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.offloadContactsFromRadio
-                                  : undefined
-                              }
-                            />
+                            {capabilities.hasReticulumRadioPanel ? (
+                              <ReticulumRadioPanel
+                                stackRunning={
+                                  reticulumConnectionView.state.status === 'connected' ||
+                                  reticulumConnectionView.state.status === 'configured' ||
+                                  reticulumConnectionView.state.status === 'connecting'
+                                }
+                                connecting={reticulumConnectionView.state.status === 'connecting'}
+                                onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                onSidecarEvent={reticulumRuntime.handleSidecarEvent}
+                              />
+                            ) : (
+                              <>
+                                {configureNodeSelector}
+                                <RadioPanel
+                                  configTarget={configTarget}
+                                  onSetConfig={meshtasticPanelActions.setConfig}
+                                  onCommit={meshtasticPanelActions.commitConfig}
+                                  onSetChannel={meshtasticPanelActions.setDeviceChannel}
+                                  onClearChannel={meshtasticPanelActions.clearChannel}
+                                  channelConfigs={effectiveChannelConfigs}
+                                  remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
+                                  remoteChannelsTailStatus={
+                                    isRemoteConfigureTarget
+                                      ? activeRuntime.remoteConfigChannelsTailStatus
+                                      : undefined
+                                  }
+                                  onRetryRemoteChannelsTail={
+                                    isRemoteConfigureTarget
+                                      ? handleRetryRemoteChannelsTail
+                                      : undefined
+                                  }
+                                  meshtasticLoraConfig={
+                                    capabilities.hasChannelConfig ? effectiveLoraConfig : undefined
+                                  }
+                                  meshtasticConfigSlices={
+                                    capabilities.hasChannelConfig
+                                      ? effectiveMeshtasticConfigSlices
+                                      : undefined
+                                  }
+                                  onApplyChannelSet={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.applyChannelSet
+                                      : undefined
+                                  }
+                                  isConnected={isOperational}
+                                  deviceFixedPosition={effectiveDeviceFixedPosition}
+                                  ourPosition={activeRuntime.ourPosition}
+                                  onSendPositionToDevice={
+                                    capabilities.hasFullPositionConfig
+                                      ? meshtasticPanelActions.sendPositionToDevice
+                                      : undefined
+                                  }
+                                  deviceOwner={effectiveDeviceOwner}
+                                  onSetOwner={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.setOwner
+                                      : undefined
+                                  }
+                                  capabilities={capabilities}
+                                  meshcoreChannels={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.channels
+                                      : undefined
+                                  }
+                                  onMeshcoreSetChannel={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.meshcoreSetChannel
+                                      : undefined
+                                  }
+                                  onMeshcoreDeleteChannel={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.meshcoreDeleteChannel
+                                      : undefined
+                                  }
+                                  onApplyLoraParams={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.setRadioParams
+                                      : undefined
+                                  }
+                                  loraConfig={
+                                    capabilities.hasCompanionContactManagementConfig &&
+                                    meshcoreRuntime.selfInfo
+                                      ? {
+                                          freq: meshcoreRuntime.selfInfo.radioFreq,
+                                          bw: meshcoreRuntime.selfInfo.radioBw,
+                                          sf: meshcoreRuntime.selfInfo.radioSf,
+                                          cr: meshcoreRuntime.selfInfo.radioCr,
+                                          txPower: meshcoreRuntime.selfInfo.txPower,
+                                        }
+                                      : undefined
+                                  }
+                                  meshcoreSelfInfo={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.selfInfo
+                                      : undefined
+                                  }
+                                  meshcoreContactsForTelemetry={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.meshcoreContactsForTelemetry
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreTelemetryPrivacy={
+                                    capabilities.hasCompanionTelemetryPrivacyConfig
+                                      ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
+                                      : undefined
+                                  }
+                                  meshcoreAutoadd={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.meshcoreAutoadd
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreContactAutoAdd={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcoreContactAutoAdd
+                                      : undefined
+                                  }
+                                  onRefreshMeshcoreAutoaddFromDevice={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
+                                      : undefined
+                                  }
+                                  meshcoreContactsShowPublicKeys={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreContactsShowPublicKeys
+                                      : undefined
+                                  }
+                                  onMeshcoreContactsShowPublicKeysChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreContactsShowPublicKeysChange
+                                      : undefined
+                                  }
+                                  meshcoreContactsShowRefreshControl={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreContactsShowRefreshControl
+                                      : undefined
+                                  }
+                                  onMeshcoreContactsShowRefreshControlChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreContactsShowRefreshControlChange
+                                      : undefined
+                                  }
+                                  onClearAllMeshcoreContacts={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.clearAllMeshcoreContacts
+                                      : undefined
+                                  }
+                                  onSendAdvert={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.sendAdvert
+                                      : undefined
+                                  }
+                                  onSendZeroHopAdvert={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.sendZeroHopAdvert
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreFloodScopeHashtag={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
+                                      : undefined
+                                  }
+                                  meshcoreFloodScopeHashtag={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreFloodScopeHashtag
+                                      : ''
+                                  }
+                                  onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
+                                  onXmodemUpload={
+                                    capabilities.hasXmodem &&
+                                    isOperational &&
+                                    !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.xmodemUpload
+                                      : undefined
+                                  }
+                                  onXmodemDownload={
+                                    capabilities.hasXmodem &&
+                                    isOperational &&
+                                    !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.xmodemDownload
+                                      : undefined
+                                  }
+                                  onSyncClock={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.syncClock
+                                      : undefined
+                                  }
+                                  onRefreshContacts={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.refreshContacts
+                                      : undefined
+                                  }
+                                  onOffloadContactsFromRadio={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.offloadContactsFromRadio
+                                      : undefined
+                                  }
+                                />
+                              </>
+                            )}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

@@ -41,6 +41,18 @@ function panelActionsStub() {
   };
 }
 
+function reticulumPanelActionsStub() {
+  return {
+    getFullNodeLabel: vi.fn(),
+    getPickerStyleNodeLabel: vi.fn(),
+    refreshNodesFromDb: vi.fn(),
+    refreshMessagesFromDb: vi.fn(),
+    requestRefresh: vi.fn(),
+    setNodeFavorited: vi.fn(),
+    sendReaction: vi.fn(),
+  };
+}
+
 const meshtasticActions = panelActionsStub();
 const meshcoreActions = panelActionsStub();
 
@@ -67,13 +79,11 @@ describe('useProtocolFacade', () => {
   });
 
   it('exposes store-backed connection view and panel actions for the active protocol', () => {
-    const reticulumActions = panelActionsStub();
-
-    const panelPrebuilt: PanelActionsByProtocol = {
+    const panelPrebuilt = {
       meshtastic: meshtasticActions,
       meshcore: meshcoreActions,
-      reticulum: reticulumActions,
-    };
+      reticulum: reticulumPanelActionsStub(),
+    } as unknown as PanelActionsByProtocol;
     const { result } = renderHook(() => useProtocolFacade('meshtastic', panelPrebuilt));
 
     expect(result.current.focusedIdentityId).toBe(IDENTITY);
@@ -83,8 +93,10 @@ describe('useProtocolFacade', () => {
     expect(result.current.connectionView.mqttStatus).toBe('connected');
     expect(result.current.connectionView.state.connectionLoss).toBe(true);
     expect(result.current.queue).toEqual({ free: 2, maxlen: 16 });
-    expect((result.current.panel.actions as typeof meshtasticActions).setConfig).toBe(
-      meshtasticActions.setConfig,
-    );
+    expect(
+      'setConfig' in result.current.panel.actions
+        ? result.current.panel.actions.setConfig
+        : undefined,
+    ).toBe(meshtasticActions.setConfig);
   });
 });

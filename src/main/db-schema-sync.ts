@@ -203,7 +203,8 @@ export const CANONICAL_TABLES_DDL = `
         payload      TEXT NOT NULL,
         timestamp    INTEGER NOT NULL,
         to_hash      TEXT,
-        reply_to_hash TEXT
+        reply_to_hash TEXT,
+        message_hash TEXT
       );
 
       CREATE TABLE IF NOT EXISTS app_settings (
@@ -368,6 +369,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     timestamp: 'INTEGER NOT NULL',
     to_hash: 'TEXT',
     reply_to_hash: 'TEXT',
+    message_hash: 'TEXT',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',

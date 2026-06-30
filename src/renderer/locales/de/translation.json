@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Fügen Sie eine Giphy-Seiten-URL, Medien-URL, g:ID oder bloße GIF-ID ein.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… oder g:ID",
     "meshcoreGifSend": "GIF senden",
-    "meshcoreGifInvalid": "Geben Sie eine gültige Giphy-URL oder GIF-ID ein."
+    "meshcoreGifInvalid": "Geben Sie eine gültige Giphy-URL oder GIF-ID ein.",
+    "attachFile": "Datei anhängen",
+    "attachFileHint": "Senden Sie einen LXMF-Dateianhang (nur DM)",
+    "attachDmOnly": "Öffnen Sie eine Direktnachricht, bevor Sie eine Datei anhängen."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Horizontaler Parallaxeffekt",
       "serialPort": "Serielle Schnittstelle",
       "preset": "Vorwahlen",
-      "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen)."
+      "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen).",
+      "host": "Aufnehmende Einrichtung",
+      "port": "Port"
     },
     "reticulumPeers": {
       "name": "Gleichrangige",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "TX-Leistung angelegt",
     "xmodemInvalidFilename": "Dateiname enthält unzulässige Zeichen.",
     "validationInvalidPsk": "Ungültiges base64 PSK — überprüfen Sie den Schlüssel und versuchen Sie es erneut",
-    "meshcoreChannelNameRequired": "Kanalname darf nicht leer sein"
+    "meshcoreChannelNameRequired": "Kanalname darf nicht leer sein",
+    "reticulumStackSettings": {
+      "title": "Stack-Einstellungen",
+      "enableTransport": "Transport aktivieren (Route für andere Kollegen)",
+      "shareInstance": "Reticulum-Instanz teilen",
+      "logLevel": "Log-Level",
+      "save": "Stack-Einstellungen speichern"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum-Konfiguration importieren",
+      "hint": "Fügen Sie eine Konfigurationsdatei im rnsd-Stil ein oder importieren Sie sie von der Festplatte. Merge fügt Schnittstellenblöcke namentlich hinzu/aktualisiert sie; replace überschreibt alle Schnittstellen.",
+      "pasteLabel": "Inhalt der Konfigurationsdatei",
+      "fromFile": "Aus Datei importieren …",
+      "fromSystem": "Systemstandard importieren",
+      "merge": "Import zusammenführen",
+      "replace": "Schnittstellen ersetzen",
+      "confirmTitle": "Reticulum-Konfiguration importieren",
+      "confirmMerge": "Importierte Schnittstellen in die aktuelle Konfiguration zusammenführen?",
+      "confirmReplace": "Alle Schnittstellen mit der importierten Konfiguration ersetzen? Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Import"
+    },
+    "reticulumConfigImportFailed": "Config Import fehlgeschlagen:",
+    "reticulumConfigNotFound": "Bei den Standardpfaden wurde keine System-Reticulum-Konfiguration gefunden.",
+    "reticulumFactoryReset": {
+      "title": "Zurücksetzen auf Werkseinstellungen",
+      "hint": "Löscht Identität, Kontakte und Nachrichten aus dem Sidecar-Stapel. Die Schnittstellenkonfiguration bleibt erhalten.",
+      "button": "Stack-Daten zurücksetzen",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "Dadurch werden Identität, Kontakte und lokale Nachrichten aus dem Beiwagen entfernt. Ihre Schnittstellenkonfigurationsdatei wird aufbewahrt.",
+      "confirm": "Zurücksetzen"
+    },
+    "reticulumVoiceGames": {
+      "title": "Stimme und Spiele",
+      "voiceStatus": "Stimme (LXST): {{status}}",
+      "gamesStatus": "Spiele (LRGP): {{status}}",
+      "unavailable": "In diesem Build nicht verfügbar"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",

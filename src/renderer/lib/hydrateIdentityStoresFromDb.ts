@@ -30,7 +30,11 @@ import {
   savedMessageToChatMessage,
 } from './meshtasticDbCacheHydration';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
-import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
+import {
+  chatMessageToMessageRecord,
+  meshNodeToNodeRecord,
+  reticulumDbRowToMessageRecord,
+} from './storeRecordAdapters';
 import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
 /** MeshCore SQLite message load cap (matches runtime mount hydration). */
@@ -305,24 +309,9 @@ function hydrateReticulumIdentity(
           timestamp: number;
           to_hash?: string;
         }[];
-        const { reticulumHashToNodeId, registerReticulumDestinationHash } =
-          await import('./reticulum/destHash');
         replaceMessageRecordsForIdentity(
           identityId,
-          rows.map((row) => {
-            const from = reticulumHashToNodeId(row.sender_id);
-            registerReticulumDestinationHash(from, row.sender_id);
-            return {
-              id: `rt:${row.timestamp}:${from}`,
-              from,
-              senderName: row.sender_name ?? row.sender_id.slice(0, 12),
-              to: row.to_hash ? reticulumHashToNodeId(row.to_hash) : 0,
-              payload: row.payload,
-              channelIndex: 0,
-              timestamp: row.timestamp,
-              status: 'acked' as const,
-            };
-          }),
+          rows.map((row) => reticulumDbRowToMessageRecord(row)),
         );
       } catch (e) {
         console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));

@@ -380,6 +380,8 @@ export interface ChatPanelProps {
   onSyncWaitingMessages?: () => void;
   /** Reticulum LXMF: DM-only chat (no channel pills). */
   dmOnlyChat?: boolean;
+  /** Reticulum LXMF file/image attachments in DM composer. */
+  onSendAttachment?: (file: File, destination: number) => Promise<void>;
 }
 
 function ChatPanel({
@@ -408,6 +410,7 @@ function ChatPanel({
   waitingMessagesCount = 0,
   onSyncWaitingMessages,
   dmOnlyChat = false,
+  onSendAttachment,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -2578,6 +2581,7 @@ function ChatPanel({
         outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
         queueOutbox={queueOutbox}
         onSendChunk={handleSendChunk}
+        onSendAttachment={onSendAttachment}
         onSendSuccess={() => {
           setUnreadDividerTimestamp(0);
         }}

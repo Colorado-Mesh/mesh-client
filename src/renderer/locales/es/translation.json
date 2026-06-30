@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Pega una URL de página de Giphy, una URL de medios, g:ID o un id de GIF sin prefijo.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/... o g:ID",
     "meshcoreGifSend": "Enviar Gif",
-    "meshcoreGifInvalid": "Introduce una URL de Giphy o un ID de GIF válidos."
+    "meshcoreGifInvalid": "Introduce una URL de Giphy o un ID de GIF válidos.",
+    "attachFile": "Adjuntar archivo",
+    "attachFileHint": "Enviar un archivo adjunto LXMF (solo DM)",
+    "attachDmOnly": "Abra un mensaje directo antes de adjuntar un archivo."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Desactivar",
       "serialPort": "Puerto serie",
       "preset": "Preajuste",
-      "bleAvailable": "El peering ble está disponible en esta plataforma (añadir a través de sidecar cuando esté configurado)."
+      "bleAvailable": "El peering ble está disponible en esta plataforma (añadir a través de sidecar cuando esté configurado).",
+      "host": "Acogida",
+      "port": "Puerto"
     },
     "reticulumPeers": {
       "name": "Compañeros",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "Potencia TX aplicada",
     "xmodemInvalidFilename": "Contiene caracteres no válidos",
     "validationInvalidPsk": "PSK de base64 no válido: comprueba la clave e inténtalo de nuevo",
-    "meshcoreChannelNameRequired": "El nombre no debe estar vacío"
+    "meshcoreChannelNameRequired": "El nombre no debe estar vacío",
+    "reticulumStackSettings": {
+      "title": "Configuración de la pila",
+      "enableTransport": "Habilitar transporte (ruta para otros compañeros)",
+      "shareInstance": "Compartir instancia de Reticulum",
+      "logLevel": "Nivel de registro",
+      "save": "Configuración de la pila"
+    },
+    "reticulumConfigImport": {
+      "title": "Importar configuración de Reticulum",
+      "hint": "Pegue un archivo de configuración de estilo rnsd o importe desde el disco. Combinar añade/actualiza bloques de interfaz por nombre; replace sobrescribe todas las interfaces.",
+      "pasteLabel": "Configurar el contenido del archivo",
+      "fromFile": "Importar desde archivo…",
+      "fromSystem": "Importar sistema predeterminado",
+      "merge": "Combinar importación",
+      "replace": "Reemplazar interfaces",
+      "confirmTitle": "Importar configuración de Reticulum",
+      "confirmMerge": "¿Combinar interfaces importadas en la configuración actual?",
+      "confirmReplace": "¿Reemplazar todas las interfaces con la configuración importada? Esto no se puede deshacer.",
+      "confirm": "Importar"
+    },
+    "reticulumConfigImportFailed": "Error en la importación de la configuración.",
+    "reticulumConfigNotFound": "No se ha encontrado ninguna configuración de Reticulum del sistema en las rutas predeterminadas.",
+    "reticulumFactoryReset": {
+      "title": "Reinicio de fábrica",
+      "hint": "Borra la identidad, los contactos y los mensajes de la pila del sidecar. Se conserva la configuración de la interfaz.",
+      "button": "Restablecer datos de pila",
+      "confirmTitle": "¿Restablecer pila de Reticulum?",
+      "confirmBody": "Esto elimina la identidad, los contactos y los mensajes locales del sidecar. Se mantiene el archivo de configuración de la interfaz.",
+      "confirm": "Restablecimiento"
+    },
+    "reticulumVoiceGames": {
+      "title": "Voz y juegos",
+      "voiceStatus": "Voz (LXST): {{status}}",
+      "gamesStatus": "Juegos (LRGP): {{status}}",
+      "unavailable": "No disponible en esta compilación"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",

@@ -111,6 +111,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
     getReticulumMessages: (identityId: string, limit?: number) =>
       ipcRenderer.invoke('db:getReticulumMessages', identityId, limit),
+    searchReticulumMessages: (identityId: string, query: string, limit?: number) =>
+      ipcRenderer.invoke('db:searchReticulumMessages', identityId, query, limit),
+    deleteReticulumMessage: (identityId: string, messageHash: string) =>
+      ipcRenderer.invoke('db:deleteReticulumMessage', identityId, messageHash),
     saveReticulumMessage: (message: {
       identity_id: string;
       sender_id: string;
@@ -119,6 +123,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       timestamp: number;
       to_hash?: string | null;
       reply_to_hash?: string | null;
+      message_hash?: string | null;
     }) => ipcRenderer.invoke('db:saveReticulumMessage', message),
     getReticulumDestinations: () => ipcRenderer.invoke('db:getReticulumDestinations'),
     upsertReticulumDestination: (row: {
@@ -889,6 +894,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:proxyGet', apiPath),
     proxyPost: (apiPath: string, body: unknown): Promise<unknown> =>
       ipcRenderer.invoke('reticulum:proxyPost', apiPath, body),
+    proxyPut: (apiPath: string, body: unknown): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyPut', apiPath, body),
+    readDefaultConfigFile: (): Promise<{ path: string | null; content: string | null }> =>
+      ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
+    showConfigImportDialog: (): Promise<{ path: string | null; content: string | null }> =>
+      ipcRenderer.invoke('reticulum:showConfigImportDialog'),
     onEvent: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
       const handler = (_: unknown, event: ReticulumSidecarEvent) => {
         cb(event);

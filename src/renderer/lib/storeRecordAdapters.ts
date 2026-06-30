@@ -9,6 +9,8 @@ import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
 import { normalizeReactionEmoji } from './reactions';
+import { registerReticulumDestinationHash, reticulumHashToNodeId } from './reticulum/destHash';
+import { computeReticulumMessageHash } from './reticulum/messageHash';
 import type {
   ChatMessage,
   MeshNeighbor,
@@ -23,6 +25,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const reactionScalar = record.tapback
     ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)
     : undefined;
+  const reticulumReplyHash = record.reticulumReplyToHash;
   return {
     ...(packetId != null ? { id: packetId } : {}),
     sender_id: record.from,
@@ -38,8 +41,12 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     isHistory: record.isHistory,
     error: record.error,
     to,
+    ...(record.reticulumSenderHash ? { reticulum_sender_hash: record.reticulumSenderHash } : {}),
+    ...(record.reticulumMessageHash ? { reticulum_message_hash: record.reticulumMessageHash } : {}),
+    ...(reticulumReplyHash ? { reticulum_reply_to_hash: reticulumReplyHash } : {}),
     ...(reactionScalar != null ? { emoji: reactionScalar } : {}),
-    replyId: record.replyTo != null ? Number(record.replyTo) : undefined,
+    replyId:
+      reticulumReplyHash == null && record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
@@ -172,9 +179,10 @@ export function traceRouteEventsToResultsMap(
 
 export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
   const id =
-    msg.packetId != null
+    msg.reticulum_message_hash ??
+    (msg.packetId != null
       ? String(msg.packetId)
-      : `${msg.sender_id}-${msg.timestamp}-${msg.channel}`;
+      : `${msg.sender_id}-${msg.timestamp}-${msg.channel}`);
   const to =
     msg.to != null && !isMeshtasticBroadcastNodeNum(msg.to)
       ? msg.to
@@ -193,9 +201,40 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     isHistory: msg.isHistory,
     error: msg.error,
     tapback: msg.emoji != null ? true : undefined,
-    replyTo: msg.replyId != null ? String(msg.replyId) : undefined,
+    replyTo: msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined),
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
+    ...(msg.reticulum_message_hash ? { reticulumMessageHash: msg.reticulum_message_hash } : {}),
+    ...(msg.reticulum_sender_hash ? { reticulumSenderHash: msg.reticulum_sender_hash } : {}),
+    ...(msg.reticulum_reply_to_hash ? { reticulumReplyToHash: msg.reticulum_reply_to_hash } : {}),
     ...(msg.roomServerId != null ? { roomServerId: msg.roomServerId } : {}),
+  };
+}
+
+export function reticulumDbRowToMessageRecord(row: {
+  sender_id: string;
+  sender_name?: string | null;
+  payload: string;
+  timestamp: number;
+  to_hash?: string | null;
+  reply_to_hash?: string | null;
+  message_hash?: string | null;
+}): MessageRecord {
+  const from = reticulumHashToNodeId(row.sender_id);
+  registerReticulumDestinationHash(from, row.sender_id);
+  const messageHash =
+    row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
+  return {
+    id: messageHash,
+    from,
+    senderName: row.sender_name ?? row.sender_id.slice(0, 12),
+    to: row.to_hash ? reticulumHashToNodeId(row.to_hash) : 0,
+    payload: row.payload,
+    channelIndex: 0,
+    timestamp: row.timestamp,
+    status: 'acked',
+    reticulumMessageHash: messageHash,
+    reticulumSenderHash: row.sender_id,
+    ...(row.reply_to_hash ? { reticulumReplyToHash: row.reply_to_hash } : {}),
   };
 }

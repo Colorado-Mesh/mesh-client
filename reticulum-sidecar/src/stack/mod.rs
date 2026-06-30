@@ -1,5 +1,6 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
+pub mod config;
 mod persistence;
 mod types;
 
@@ -9,12 +10,12 @@ mod live;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
 use persistence::PersistedState;
-use tokio::sync::{broadcast, RwLock};
-
+use tokio::sync::{RwLock, broadcast};
 pub use types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest, PeerRow,
-    PropagationRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
+    LxmfSendRequest, PeerRow, PropagationRow, StackIdentity,
 };
 
 pub struct StackHandle {
@@ -32,8 +33,17 @@ impl StackHandle {
         storage_dir: PathBuf,
         event_tx: broadcast::Sender<String>,
     ) -> Self {
+        if !config::config_path(&config_dir).exists() {
+            if let Ok(content) = config::read_config(&config_dir) {
+                let _ = config::write_config(&config_dir, &content);
+            }
+        }
+
         let mut persisted = PersistedState::load(&config_dir, &storage_dir);
         persisted.ensure_defaults();
+        if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {
+            persisted.interfaces = ifaces;
+        }
 
         #[cfg(feature = "rns-stack")]
         let live = match live::LiveBridge::spawn(
@@ -73,6 +83,13 @@ impl StackHandle {
         self.event_tx.subscribe()
     }
 
+    async fn sync_interfaces_from_config(&self) {
+        if let Ok(ifaces) = config::interfaces_from_config_dir(&self.config_dir) {
+            let mut inner = self.inner.write().await;
+            inner.interfaces = ifaces;
+        }
+    }
+
     pub async fn emit_stats(&self) {
         let inner = self.inner.read().await;
         self.emit_event(
@@ -91,7 +108,10 @@ impl StackHandle {
         self.inner.read().await.identity.clone()
     }
 
-    pub async fn identity_generate(&self, display_name: Option<String>) -> Result<StackIdentity, String> {
+    pub async fn identity_generate(
+        &self,
+        display_name: Option<String>,
+    ) -> Result<StackIdentity, String> {
         let mut inner = self.inner.write().await;
         let identity = inner.generate_identity(display_name)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
@@ -109,7 +129,10 @@ impl StackHandle {
         Ok(identity)
     }
 
-    pub async fn identity_export_backup(&self, passphrase: &str) -> Result<serde_json::Value, String> {
+    pub async fn identity_export_backup(
+        &self,
+        passphrase: &str,
+    ) -> Result<serde_json::Value, String> {
         let inner = self.inner.read().await;
         inner.export_identity_backup(passphrase)
     }
@@ -141,14 +164,21 @@ impl StackHandle {
                 }
             }
         }
-        self.inner.read().await.interfaces.clone()
+        match config::interfaces_from_config_dir(&self.config_dir) {
+            Ok(rows) => rows,
+            Err(_) => self.inner.read().await.interfaces.clone(),
+        }
     }
 
     pub async fn add_interface(&self, req: AddInterfaceRequest) -> Result<InterfaceRow, String> {
-        let mut inner = self.inner.write().await;
-        let row = inner.add_interface(req)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        drop(inner);
+        {
+            let inner = self.inner.read().await;
+            if !inner.identity.configured {
+                return Err("identity not configured".into());
+            }
+        }
+        let row = config::add_interface_to_config(&self.config_dir, &req)?;
+        self.sync_interfaces_from_config().await;
         self.emit_event("interface.state", serde_json::json!({ "action": "added" }));
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
@@ -157,11 +187,41 @@ impl StackHandle {
         Ok(row)
     }
 
+    pub async fn update_interface(
+        &self,
+        id: &str,
+        patch: UpdateInterfacePatch,
+    ) -> Result<InterfaceRow, String> {
+        let row = config::update_interface_in_config(&self.config_dir, id, &patch)?;
+        self.sync_interfaces_from_config().await;
+        self.emit_event(
+            "interface.state",
+            serde_json::json!({ "id": id, "action": "updated" }),
+        );
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let _ = live.apply_interfaces(self).await;
+        }
+        Ok(row)
+    }
+
+    pub async fn delete_interface(&self, id: &str) -> Result<(), String> {
+        config::delete_interface_from_config(&self.config_dir, id)?;
+        self.sync_interfaces_from_config().await;
+        self.emit_event(
+            "interface.state",
+            serde_json::json!({ "id": id, "action": "deleted" }),
+        );
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let _ = live.apply_interfaces(self).await;
+        }
+        Ok(())
+    }
+
     pub async fn set_interface_enabled(&self, id: &str, enabled: bool) -> Result<(), String> {
-        let mut inner = self.inner.write().await;
-        inner.set_interface_enabled(id, enabled)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        drop(inner);
+        config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
+        self.sync_interfaces_from_config().await;
         self.emit_event(
             "interface.state",
             serde_json::json!({ "id": id, "enabled": enabled }),
@@ -171,6 +231,34 @@ impl StackHandle {
             let _ = live.apply_interfaces(self).await;
         }
         Ok(())
+    }
+
+    pub async fn put_config_content(&self, content: &str) -> Result<(), String> {
+        config::write_config(&self.config_dir, content)?;
+        self.sync_interfaces_from_config().await;
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let _ = live.apply_interfaces(self).await;
+        }
+        Ok(())
+    }
+
+    pub async fn import_config(
+        &self,
+        content: &str,
+        mode: ImportMode,
+    ) -> Result<ImportResult, String> {
+        let result = config::import_config(&self.config_dir, content, mode)?;
+        self.sync_interfaces_from_config().await;
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let _ = live.apply_interfaces(self).await;
+        }
+        Ok(result)
+    }
+
+    pub async fn set_stack_settings(&self, settings: &StackSettings) -> Result<(), String> {
+        config::set_stack_settings(&self.config_dir, settings)
     }
 
     pub async fn list_contacts(&self) -> Vec<ContactRow> {
@@ -233,7 +321,10 @@ impl StackHandle {
         Ok(res)
     }
 
-    pub async fn lxmf_reaction(&self, req: LxmfReactionRequest) -> Result<serde_json::Value, String> {
+    pub async fn lxmf_reaction(
+        &self,
+        req: LxmfReactionRequest,
+    ) -> Result<serde_json::Value, String> {
         let mut inner = self.inner.write().await;
         let res = inner.send_reaction(&req)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
@@ -253,7 +344,7 @@ impl StackHandle {
     }
 
     pub async fn serial_ports(&self) -> serde_json::Value {
-        serde_json::json!({ "ports": [] })
+        serde_json::json!({ "ports": enumerate_serial_ports() })
     }
 
     pub async fn ble_availability(&self) -> serde_json::Value {
@@ -263,6 +354,104 @@ impl StackHandle {
             "permissions_granted": true,
             "probe_failed": false
         })
+    }
+
+    pub async fn lxmf_send_resource(
+        &self,
+        req: LxmfResourceRequest,
+    ) -> Result<serde_json::Value, String> {
+        let mut inner = self.inner.write().await;
+        let res = inner.send_resource_local(&req)?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        let payload = res.clone();
+        drop(inner);
+        self.emit_event("resource.received", payload.clone());
+        self.emit_event("lxmf_message", payload.clone());
+        Ok(payload)
+    }
+
+    pub async fn lxmf_delete_message(&self, message_hash: &str) -> Result<bool, String> {
+        let mut inner = self.inner.write().await;
+        let removed = inner.delete_message_by_hash(message_hash)?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(removed)
+    }
+
+    pub async fn request_stack_restart(&self) -> Result<(), String> {
+        self.emit_event("stack_restart_requested", serde_json::json!({ "ok": true }));
+        Ok(())
+    }
+
+    pub async fn factory_reset(&self) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.factory_reset_state()?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        self.emit_stats().await;
+        Ok(())
+    }
+
+    pub async fn diagnostics_snapshot(&self) -> serde_json::Value {
+        let inner = self.inner.read().await;
+        let interfaces: Vec<serde_json::Value> = inner
+            .interfaces
+            .iter()
+            .map(|i| {
+                serde_json::json!({
+                    "id": i.id,
+                    "name": i.name,
+                    "type": i.iface_type,
+                    "enabled": i.enabled,
+                    "status": i.status,
+                })
+            })
+            .collect();
+        serde_json::json!({
+            "rns_ready": inner.rns_ready,
+            "lxmf_ready": inner.lxmf_ready,
+            "interface_count": inner.interfaces.len(),
+            "contact_count": inner.contacts.len(),
+            "peer_count": inner.peers.len(),
+            "message_count": inner.messages.len(),
+            "interfaces": interfaces,
+        })
+    }
+
+    pub async fn voice_status(&self) -> serde_json::Value {
+        serde_json::json!({
+            "available": cfg!(feature = "rns-stack"),
+            "enabled": false,
+            "codec": "opus",
+            "reason": "LXST voice pipeline pending rsLXST integration"
+        })
+    }
+
+    pub async fn games_status(&self) -> serde_json::Value {
+        serde_json::json!({
+            "available": true,
+            "enabled": false,
+            "reason": "LRGP games pending lrgp-rs integration"
+        })
+    }
+
+    pub async fn list_identities(&self) -> serde_json::Value {
+        let identity = self.inner.read().await.identity.clone();
+        serde_json::json!({
+            "identities": [{
+                "id": "default",
+                "display_name": identity.display_name,
+                "identity_hash": identity.identity_hash,
+                "lxmf_hash": identity.lxmf_hash,
+                "active": true,
+                "configured": identity.configured,
+            }]
+        })
+    }
+
+    pub async fn switch_identity(&self, identity_id: &str) -> Result<(), String> {
+        if identity_id != "default" {
+            return Err("only default identity is available in this build".into());
+        }
+        Ok(())
     }
 
     pub async fn rns_ready(&self) -> bool {
@@ -294,4 +483,49 @@ impl StackHandle {
             None
         }
     }
+}
+
+fn enumerate_serial_ports() -> Vec<serde_json::Value> {
+    let mut ports = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(entries) = std::fs::read_dir("/dev") {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if name.starts_with("cu.") {
+                    let path = format!("/dev/{name}");
+                    ports.push(serde_json::json!({ "path": path, "label": name }));
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(entries) = std::fs::read_dir("/dev") {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if name.starts_with("ttyUSB") || name.starts_with("ttyACM") {
+                    let path = format!("/dev/{name}");
+                    ports.push(serde_json::json!({ "path": path, "label": name }));
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // No std library serial enumeration; users enter COM ports manually.
+    }
+
+    ports.sort_by(|a, b| {
+        a.get("path")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .cmp(b.get("path").and_then(|v| v.as_str()).unwrap_or(""))
+    });
+    ports
 }

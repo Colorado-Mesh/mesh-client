@@ -33,6 +33,14 @@ pub struct InterfaceRow {
     pub port: Option<u16>,
     pub preset: Option<String>,
     pub serial_port: Option<String>,
+    pub frequency: Option<u64>,
+    pub bandwidth: Option<u32>,
+    pub txpower: Option<i32>,
+    pub spreading_factor: Option<u8>,
+    pub coding_rate: Option<u8>,
+    pub callsign: Option<String>,
+    pub id_interval: Option<u32>,
+    pub mode: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,6 +79,14 @@ pub struct AddInterfaceRequest {
     pub port: Option<u16>,
     pub preset: Option<String>,
     pub serial_port: Option<String>,
+    pub frequency: Option<u64>,
+    pub bandwidth: Option<u32>,
+    pub txpower: Option<i32>,
+    pub spreading_factor: Option<u8>,
+    pub coding_rate: Option<u8>,
+    pub callsign: Option<String>,
+    pub id_interval: Option<u32>,
+    pub mode: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -86,4 +102,13 @@ pub struct LxmfReactionRequest {
     pub destination_hash: String,
     pub target_hash: String,
     pub emoji: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfResourceRequest {
+    pub destination_hash: String,
+    pub file_name: String,
+    pub mime_type: String,
+    pub data_base64: String,
+    pub reply_to_hash: Option<String>,
 }

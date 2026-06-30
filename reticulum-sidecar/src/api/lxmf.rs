@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use axum::extract::{Path, State};
 use axum::Json;
+use axum::extract::{Path, State};
 
-use crate::stack::{LxmfReactionRequest, LxmfSendRequest, StackHandle};
+use crate::stack::{LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, StackHandle};
 
 pub async fn lxmf_send(
     State(stack): State<Arc<StackHandle>>,
@@ -76,6 +76,26 @@ pub async fn disable_propagation(
 ) -> Json<serde_json::Value> {
     match stack.set_propagation_enabled(&id, false).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn lxmf_send_resource(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<LxmfResourceRequest>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_send_resource(body).await {
+        Ok(payload) => Json(serde_json::json!({ "ok": true, "message": payload })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn lxmf_delete_message(
+    State(stack): State<Arc<StackHandle>>,
+    Path(hash): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_delete_message(&hash).await {
+        Ok(removed) => Json(serde_json::json!({ "ok": true, "removed": removed })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

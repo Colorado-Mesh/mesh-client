@@ -332,7 +332,10 @@
     "meshcoreGifHint": "GiphyページURL、メディアURL、g:ID、またはGIF IDのみを貼り付け。",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… または g:ID",
     "meshcoreGifSend": "GIFを送信",
-    "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。"
+    "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。",
+    "attachFile": "ファイルの添付",
+    "attachFileHint": "LXMFファイルの添付ファイルを送信する（ DMのみ）",
+    "attachDmOnly": "ファイルを添付する前にダイレクトメッセージを開きます。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -622,7 +625,9 @@
       "disable": "無効にする",
       "serialPort": "シリアルポート",
       "preset": "プリセット",
-      "bleAvailable": "BLEピアリングはこのプラットフォームで利用できます（設定時にサイドカー経由で追加）。"
+      "bleAvailable": "BLEピアリングはこのプラットフォームで利用できます（設定時にサイドカー経由で追加）。",
+      "host": "サーバ",
+      "port": "ポート"
     },
     "reticulumPeers": {
       "name": "ピア",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "TX電力が適用されました",
     "xmodemInvalidFilename": "％filename に無効な文字が含まれています。",
     "validationInvalidPsk": "無効なbase 64 PSK —キーを確認してもう一度やり直してください",
-    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません"
+    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません",
+    "reticulumStackSettings": {
+      "title": "スタック設定",
+      "enableTransport": "トランスポートを有効にする（他のピアのルート）",
+      "shareInstance": "Reticulumインスタンスを共有",
+      "logLevel": "ログレベル",
+      "save": "スタック設定を保存"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum設定のインポート",
+      "hint": "Rnsdスタイルの設定ファイルを貼り付けるか、ディスクからインポートします。マージはインターフェースブロックを名前で追加/更新します。置き換えるとすべてのインターフェースが上書きされます。",
+      "pasteLabel": "設定ファイルの内容",
+      "fromFile": "ファイルから読み込む…",
+      "fromSystem": "システムのデフォルトをインポート",
+      "merge": "マージインポート",
+      "replace": "インターフェースを置き換える",
+      "confirmTitle": "Reticulum設定のインポート",
+      "confirmMerge": "インポートしたインターフェイスを現在の設定にマージしますか？",
+      "confirmReplace": "すべてのインターフェイスをインポートされた設定に置き換えますか？これは元に戻せません。",
+      "confirm": "インポート"
+    },
+    "reticulumConfigImportFailed": "設定のインポートに失敗しました。",
+    "reticulumConfigNotFound": "デフォルトパスにシステムReticulum設定が見つかりません。",
+    "reticulumFactoryReset": {
+      "title": "工場出荷時のリセット",
+      "hint": "サイドカースタックからID、連絡先、およびメッセージをクリアします。インターフェース構成は保持されます。",
+      "button": "スタックデータをリセット",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "これにより、サイドカーからID、連絡先、ローカルメッセージが削除されます。インターフェース設定ファイルが保持されます。",
+      "confirm": "リセット"
+    },
+    "reticulumVoiceGames": {
+      "title": "ボイスとゲーム",
+      "voiceStatus": "音声（ LXST ） ： {{status}}",
+      "gamesStatus": "ゲーム（ LRGP ） ： {{status}}",
+      "unavailable": "このビルドでは利用できません"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

@@ -3,6 +3,10 @@ import { ipcMain } from 'electron';
 
 import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
 import { sanitizeLogMessage } from '../log-service';
+import {
+  readFirstExistingConfig,
+  showReticulumConfigImportDialog,
+} from '../reticulum-config-paths';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
 
 export interface ReticulumIpcDeps {
@@ -64,6 +68,23 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       throw err;
     }
   });
+
+  ipcMain.handle('reticulum:proxyPut', async (_event, apiPath: string, body: unknown) => {
+    try {
+      const m = ensureManager();
+      return await m.proxyPut(apiPath, body);
+    } catch (err) {
+      console.error(
+        '[ReticulumIPC] proxyPut failed:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      throw err;
+    }
+  });
+
+  ipcMain.handle('reticulum:readDefaultConfigFile', () => readFirstExistingConfig());
+
+  ipcMain.handle('reticulum:showConfigImportDialog', async () => showReticulumConfigImportDialog());
 }
 
 export function wireReticulumSidecarBridge(

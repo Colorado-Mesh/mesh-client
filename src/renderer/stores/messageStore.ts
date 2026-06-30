@@ -29,6 +29,12 @@ export interface MessageRecord {
   error?: string;
   /** MeshCore room server posts (BBS); filters Rooms panel stream. */
   roomServerId?: number;
+  /** Reticulum LXMF message hash (hex) for reply/reaction threading. */
+  reticulumMessageHash?: string;
+  /** Reticulum sender destination hash (hex). */
+  reticulumSenderHash?: string;
+  /** Reticulum reply target message hash (hex). */
+  reticulumReplyToHash?: string;
 }
 
 interface MessageStoreState {
@@ -62,6 +68,9 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'isHistory',
   'error',
   'roomServerId',
+  'reticulumMessageHash',
+  'reticulumSenderHash',
+  'reticulumReplyToHash',
 ];
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {

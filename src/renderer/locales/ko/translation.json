@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Giphy 페이지 URL, 미디어 URL, g:ID 또는 GIF ID만 붙여넣으세요.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… 또는 g:ID",
     "meshcoreGifSend": "GIF 보내기",
-    "meshcoreGifInvalid": "유효한 Giphy URL 또는 GIF ID를 입력하세요."
+    "meshcoreGifInvalid": "유효한 Giphy URL 또는 GIF ID를 입력하세요.",
+    "attachFile": "파일 첨부",
+    "attachFileHint": "LXMF 파일 첨부 파일 전송 (DM만 해당)",
+    "attachDmOnly": "파일을 첨부하기 전에 다이렉트 메시지를 엽니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -622,7 +625,9 @@
       "disable": "비활성화",
       "serialPort": "직렬 포트",
       "preset": "기본값 설정",
-      "bleAvailable": "BLE 피어링은 이 플랫폼에서 사용할 수 있습니다 (구성 시 사이드카를 통해 추가)."
+      "bleAvailable": "BLE 피어링은 이 플랫폼에서 사용할 수 있습니다 (구성 시 사이드카를 통해 추가).",
+      "host": "호스트",
+      "port": "포팅하기"
     },
     "reticulumPeers": {
       "name": "동료",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "TX 전원 적용됨",
     "xmodemInvalidFilename": "파일 이름에 유효하지 않은 문자가 포함되어 있습니다",
     "validationInvalidPsk": "유효하지 않은 base64 PSK — 키를 확인하고 다시 시도하십시오",
-    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다"
+    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다",
+    "reticulumStackSettings": {
+      "title": "스택 설정",
+      "enableTransport": "전송 활성화 (다른 피어에 대한 라우팅)",
+      "shareInstance": "Reticulum 인스턴스 공유",
+      "logLevel": "로그 레벨",
+      "save": "스택 설정 저장"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum 구성 가져오기",
+      "hint": "Rnsd 스타일의 구성 파일을 붙여 넣거나 디스크에서 가져옵니다. 병합은 이름별로 인터페이스 블록을 추가/업데이트합니다. 바꾸기는 모든 인터페이스를 덮어씁니다.",
+      "pasteLabel": "파일 내용 구성",
+      "fromFile": "파일에서 가져오기",
+      "fromSystem": "시스템 기본값 가져오기",
+      "merge": "가져오기 병합",
+      "replace": "인터페이스 교체",
+      "confirmTitle": "Reticulum 구성 가져오기",
+      "confirmMerge": "가져온 인터페이스를 현재 구성으로 병합하시겠습니까?",
+      "confirmReplace": "모든 인터페이스를 가져온 구성으로 교체하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "confirm": "가져오기"
+    },
+    "reticulumConfigImportFailed": "구성 가져오기에 실패했습니다.",
+    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다.",
+    "reticulumFactoryReset": {
+      "title": "공장 초기화",
+      "hint": "사이드카 스택에서 ID, 연락처 및 메시지를 지웁니다. 인터페이스 구성이 유지됩니다.",
+      "button": "스택 데이터 재설정",
+      "confirmTitle": "Reticulum 스택을 재설정하시겠습니까?",
+      "confirmBody": "이렇게 하면 사이드카에서 ID, 연락처 및 로컬 메시지가 제거됩니다. 인터페이스 설정 파일이 보관됩니다.",
+      "confirm": "초기화"
+    },
+    "reticulumVoiceGames": {
+      "title": "음성 및 게임",
+      "voiceStatus": "음성 (LXST): {{status}}",
+      "gamesStatus": "게임 (LRGP): {{status}}",
+      "unavailable": "이 빌드에서는 사용할 수 없음"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

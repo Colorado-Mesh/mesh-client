@@ -1,8 +1,8 @@
 //! Live rsReticulum bridge (optional runtime queries + LXMF send).
 
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 use lxmf_core::constants::DeliveryMethod;
 use lxmf_core::message::LxMessage;
@@ -14,9 +14,9 @@ use rns_runtime::reticulum;
 use rns_transport::messages::{TransportMessage, TransportQuery, TransportQueryResponse};
 use tokio::sync::broadcast;
 
+use super::StackHandle;
 use super::persistence::PersistedState;
 use super::types::{InterfaceRow, LxmfSendRequest, PeerRow};
-use super::StackHandle;
 
 pub struct LiveBridge {
     handle: reticulum::ReticulumHandle,
@@ -39,14 +39,9 @@ impl LiveBridge {
             .to_string();
         let shutdown = ShutdownSignal::new();
         let is_foreground = Arc::new(AtomicBool::new(true));
-        let handle = reticulum::init(
-            Some(&config_str),
-            None,
-            shutdown.clone(),
-            is_foreground,
-        )
-        .await
-        .map_err(|e| format!("RNS init failed: {e:?}"))?;
+        let handle = reticulum::init(Some(&config_str), None, shutdown.clone(), is_foreground)
+            .await
+            .map_err(|e| format!("RNS init failed: {e:?}"))?;
 
         handle
             .enable_on_network_discovery(Arc::new(
@@ -112,12 +107,23 @@ impl LiveBridge {
                 port: None,
                 preset: None,
                 serial_port: None,
+                frequency: None,
+                bandwidth: None,
+                txpower: None,
+                spreading_factor: None,
+                coding_rate: None,
+                callsign: None,
+                id_interval: None,
+                mode: None,
             })
             .collect())
     }
 
     pub async fn fetch_peers(&self) -> Result<Vec<PeerRow>, String> {
-        let resp = self.handle.query_control(TransportQuery::GetPathTable).await;
+        let resp = self
+            .handle
+            .query_control(TransportQuery::GetPathTable)
+            .await;
         let Some(TransportQueryResponse::PathTable(entries)) = resp else {
             return Ok(vec![]);
         };
@@ -147,7 +153,11 @@ impl LiveBridge {
 
     pub async fn probe_peer(&self, hash: &str) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(hash)?;
-        match self.handle.await_path(dest, std::time::Duration::from_secs(8)).await {
+        match self
+            .handle
+            .await_path(dest, std::time::Duration::from_secs(8))
+            .await
+        {
             Ok(hops) => Ok(serde_json::json!({ "ok": true, "hops": hops })),
             Err(e) => Ok(serde_json::json!({ "ok": false, "error": format!("{e:?}") })),
         }
@@ -174,7 +184,41 @@ impl LiveBridge {
         }))
     }
 
-    pub async fn apply_interfaces(&self, _stack: &StackHandle) -> Result<(), String> {
+    pub async fn apply_interfaces(&self, stack: &StackHandle) -> Result<(), String> {
+        let interfaces = stack.list_interfaces().await;
+        tracing::info!(
+            count = interfaces.len(),
+            "apply_interfaces: syncing {} interface(s) from config",
+            interfaces.len()
+        );
+        for iface in &interfaces {
+            tracing::debug!(
+                id = %iface.id,
+                name = %iface.name,
+                iface_type = %iface.iface_type,
+                enabled = iface.enabled,
+                "interface config entry"
+            );
+        }
+
+        let config_path = stack.config_dir.join("config");
+        match std::fs::read_to_string(&config_path) {
+            Ok(content) => {
+                tracing::info!(
+                    path = %config_path.display(),
+                    bytes = content.len(),
+                    "apply_interfaces: config reload read OK (live rns-stack hot-reload not yet wired)"
+                );
+            }
+            Err(e) => {
+                tracing::warn!(
+                    path = %config_path.display(),
+                    error = %e,
+                    "apply_interfaces: config reload read failed"
+                );
+            }
+        }
+
         Ok(())
     }
 }

@@ -1,3 +1,4 @@
+import type { ReticulumSidecarEvent } from '../../shared/reticulum-types';
 import type {
   ChatMessage,
   DeviceState,
@@ -76,7 +77,8 @@ export interface ProtocolRuntime {
   getFullNodeLabel: (nodeId: number) => string;
   getPickerStyleNodeLabel: (nodeId: number) => string;
 
-  sendReaction?: (...args: never[]) => Promise<void>;
+  sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
+  sendAttachment?: (file: File, to: number | string) => Promise<void>;
   sendPositionToDevice?: (...args: never[]) => Promise<void>;
   traceRoute?: (nodeId: number) => Promise<void>;
   reboot?: () => Promise<void>;
@@ -86,6 +88,9 @@ export interface ProtocolRuntime {
   setRemoteAdminKeyForNode?: (nodeId: number, key: string) => void;
   refreshOurPosition?: () => Promise<void>;
   updateGpsInterval?: (...args: never[]) => void;
+
+  /** Reticulum sidecar WebSocket events (optional — Reticulum runtime only). */
+  handleSidecarEvent?: (event: ReticulumSidecarEvent) => void;
 
   setConfig?: (...args: never[]) => Promise<void>;
   commitConfig?: (...args: never[]) => Promise<void>;

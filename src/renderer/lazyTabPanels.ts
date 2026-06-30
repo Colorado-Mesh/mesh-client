@@ -7,6 +7,7 @@ export const DiagnosticsPanel = lazy(() => import('./components/DiagnosticsPanel
 export const MapPanel = lazy(() => import('./components/MapPanel'));
 export const ModulePanel = lazy(() => import('./components/ModulePanel'));
 export const RadioPanel = lazy(() => import('./components/RadioPanel'));
+export const ReticulumRadioPanel = lazy(() => import('./components/ReticulumRadioPanel'));
 export const RepeatersPanel = lazy(() => import('./components/RepeatersPanel'));
 export const RoomsPanel = lazy(() => import('./components/RoomsPanel'));
 export const SecurityPanel = lazy(() => import('./components/SecurityPanel'));

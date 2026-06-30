@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Bir Giphy sayfa URL'si, medya URL'si, g:ID veya yalnızca GIF kimliği yapıştırın.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… veya g:ID",
     "meshcoreGifSend": "GIF gönder",
-    "meshcoreGifInvalid": "Geçerli bir Giphy URL'si veya GIF kimliği girin."
+    "meshcoreGifInvalid": "Geçerli bir Giphy URL'si veya GIF kimliği girin.",
+    "attachFile": "Dosya eki",
+    "attachFileHint": "Bir LXMF dosya eki gönderin (yalnızca DM)",
+    "attachDmOnly": "Bir dosya eklemeden önce doğrudan bir mesaj açın."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -622,7 +625,9 @@
       "disable": "Devre dışı bırak",
       "serialPort": "Serial port",
       "preset": "Ön Ayar",
-      "bleAvailable": "BLE eşleştirme bu platformda mevcuttur (yapılandırıldığında sepet aracılığıyla ekleyin)."
+      "bleAvailable": "BLE eşleştirme bu platformda mevcuttur (yapılandırıldığında sepet aracılığıyla ekleyin).",
+      "host": "Ev sahibi",
+      "port": "Liman"
     },
     "reticulumPeers": {
       "name": "Kişi",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "TX gücü uygulandı",
     "xmodemInvalidFilename": "Dosya adı geçersiz karakterler içeriyor",
     "validationInvalidPsk": "Geçersiz base64 PSK — anahtarı kontrol edin ve tekrar deneyin",
-    "meshcoreChannelNameRequired": "Ad boş olamaz"
+    "meshcoreChannelNameRequired": "Ad boş olamaz",
+    "reticulumStackSettings": {
+      "title": "Yığın ayarları",
+      "enableTransport": "Taşımayı etkinleştir (diğer akranlar için rota)",
+      "shareInstance": "Reticulum örneğini paylaş",
+      "logLevel": "Kayıt seviyesi",
+      "save": "Yığın ayarlarını kaydet"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum yapılandırmasını içe aktar",
+      "hint": "Rnsd tarzı bir yapılandırma dosyasını yapıştırın veya diskten içe aktarın. Merge, arayüz bloklarını ada göre ekler/günceller; replace, tüm arayüzlerin üzerine yazar.",
+      "pasteLabel": "Yapılandırma dosyası içeriği",
+      "fromFile": "Dosyadan içe aktar",
+      "fromSystem": "Sistem varsayılanını içe aktar",
+      "merge": "İçe aktarmayı birleştir",
+      "replace": "Arayüzleri değiştir",
+      "confirmTitle": "Reticulum yapılandırmasını içe aktar",
+      "confirmMerge": "İçe aktarılan arayüzler mevcut yapılandırmada birleştirilsin mi?",
+      "confirmReplace": "Tüm arayüzler içe aktarılan yapılandırmayla değiştirilsin mi? Bu işlem geri alınamaz.",
+      "confirm": "İthal"
+    },
+    "reticulumConfigImportFailed": "Yapılandırma içe aktarılamadı.",
+    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı.",
+    "reticulumFactoryReset": {
+      "title": "Fabrika ayarlarına dönme",
+      "hint": "Sidecar yığınından kimliği, kişileri ve mesajları temizler. Arabirim yapılandırması korunur.",
+      "button": "Yığın verilerini sıfırla",
+      "confirmTitle": "Reticulum yığını sıfırlansın mı?",
+      "confirmBody": "Bu, kimliği, kişileri ve yerel mesajları sepetten kaldırır. Arayüz yapılandırma dosyanız saklanır.",
+      "confirm": "Sıfırla"
+    },
+    "reticulumVoiceGames": {
+      "title": "Ses ve oyunlar",
+      "voiceStatus": "Ses (LXST): {{status}}",
+      "gamesStatus": "Oyunlar (LRGP): {{status}}",
+      "unavailable": "Bu yapıda mevcut değil"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Vložte URL stránky Giphy, URL média, g:ID nebo samotné ID GIFu.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… nebo g:ID",
     "meshcoreGifSend": "Odeslat gif",
-    "meshcoreGifInvalid": "Zadejte platnou adresu URL GIPHY nebo ID GIF."
+    "meshcoreGifInvalid": "Zadejte platnou adresu URL GIPHY nebo ID GIF.",
+    "attachFile": "Přiložte přílohu",
+    "attachFileHint": "Odeslat přílohu souboru LXMF (pouze DM)",
+    "attachDmOnly": "Před připojením souboru otevřete přímou zprávu."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Zakázat",
       "serialPort": "Serial port",
       "preset": "Předvolby",
-      "bleAvailable": "Na této platformě je k dispozici peering ble (při konfiguraci přidejte pomocí postranního vozíku)."
+      "bleAvailable": "Na této platformě je k dispozici peering ble (při konfiguraci přidejte pomocí postranního vozíku).",
+      "host": "Hostitel",
+      "port": "Port"
     },
     "reticulumPeers": {
       "name": "Rovesníci",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "TX napájení použito",
     "xmodemInvalidFilename": "Název souboru obsahuje neplatné znaky",
     "validationInvalidPsk": "Neplatný base64 PSK — zkontrolujte klíč a zkuste to znovu",
-    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný"
+    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný",
+    "reticulumStackSettings": {
+      "title": "Nastavení zásobníku",
+      "enableTransport": "Povolit přepravu (trasa pro ostatní protějšky)",
+      "shareInstance": "Sdílet instanci Reticulum",
+      "logLevel": "Úroveň záznamu",
+      "save": "Uložit nastavení zásobníku"
+    },
+    "reticulumConfigImport": {
+      "title": "Importovat konfiguraci Reticulum",
+      "hint": "Vložte konfigurační soubor ve stylu rnsd nebo importujte z disku. Sloučit přidává/aktualizuje bloky rozhraní podle názvu; nahradit přepíše všechna rozhraní.",
+      "pasteLabel": "Obsah konfiguračního souboru",
+      "fromFile": "Importuj ze souboru",
+      "fromSystem": "Importovat výchozí systém",
+      "merge": "Sloučit import",
+      "replace": "Nahradit rozhraní",
+      "confirmTitle": "Importovat konfiguraci Reticulum",
+      "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
+      "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Tuto akci nelze vrátit zpět.",
+      "confirm": "Import"
+    },
+    "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
+    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systémového Reticulum.",
+    "reticulumFactoryReset": {
+      "title": "Obnovení továrního nastavení",
+      "hint": "Vymaže identitu, kontakty a zprávy ze zásobníku postranních vozíků. Konfigurace rozhraní je zachována.",
+      "button": "Resetovat data zásobníku",
+      "confirmTitle": "Resetovat zásobník Reticulum?",
+      "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
+      "confirm": "Obnovit"
+    },
+    "reticulumVoiceGames": {
+      "title": "Hlas a hry",
+      "voiceStatus": "Hlas (LXST): {{status}}",
+      "gamesStatus": "Hry (LRGP): {{status}}",
+      "unavailable": "Není k dispozici v této sestavě"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

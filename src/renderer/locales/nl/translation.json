@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Plak een Giphy-pagina-URL, media-URL, g:ID of kale GIF-ID.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… of g:ID",
     "meshcoreGifSend": "Verstuur gif",
-    "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in."
+    "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in.",
+    "attachFile": "Bestand bijvoegen",
+    "attachFileHint": "Een LXMF-bestandsbijlage verzenden (alleen DM)",
+    "attachDmOnly": "Open een direct bericht voordat u een bestand toevoegt."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Onbruikbaar maken",
       "serialPort": "Seriële poort",
       "preset": "Vooraf ingesteld",
-      "bleAvailable": "BLE peering is beschikbaar op dit platform (toevoegen via zijspan indien geconfigureerd)."
+      "bleAvailable": "BLE peering is beschikbaar op dit platform (toevoegen via zijspan indien geconfigureerd).",
+      "host": "Ontvanger",
+      "port": "Poort"
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "TX-vermogen toegepast",
     "xmodemInvalidFilename": "Bestandsnaam bevat ongeldige tekens.",
     "validationInvalidPsk": "Ongeldige base64 PSK — controleer de sleutel en probeer het opnieuw",
-    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn"
+    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn",
+    "reticulumStackSettings": {
+      "title": "Stapelinstellingen",
+      "enableTransport": "Transport inschakelen (route voor andere peers)",
+      "shareInstance": "Reticulum-instantie delen",
+      "logLevel": "Logniveau",
+      "save": "Stapelinstellingen opslaan"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum-configuratie importeren",
+      "hint": "Plak een rnsd-stijl configuratiebestand of importeer vanaf schijf. Samenvoegen voegt interfaceblokken op naam toe/werkt deze bij; vervangen overschrijft alle interfaces.",
+      "pasteLabel": "Inhoud configuratiebestand",
+      "fromFile": "Uit bestand importeren…",
+      "fromSystem": "Systeemstandaard importeren",
+      "merge": "Import samenvoegen",
+      "replace": "Interfaces vervangen",
+      "confirmTitle": "Reticulum-configuratie importeren",
+      "confirmMerge": "Geïmporteerde interfaces samenvoegen in de huidige configuratie?",
+      "confirmReplace": "Alle interfaces vervangen door de geïmporteerde configuratie? Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Importeren"
+    },
+    "reticulumConfigImportFailed": "Configuratie-import mislukt.",
+    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumFactoryReset": {
+      "title": "Reset naar fabrieksinstellingen",
+      "hint": "Wist identiteit, contacten en berichten van de zijspanstapel. Interfaceconfiguratie blijft behouden.",
+      "button": "Stapelgegevens resetten",
+      "confirmTitle": "Reticulum-stack resetten?",
+      "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
+      "confirm": "Reset"
+    },
+    "reticulumVoiceGames": {
+      "title": "Spraak en games",
+      "voiceStatus": "Spraak (LXST): {{status}}",
+      "gamesStatus": "Spellen (LRGP): {{status}}",
+      "unavailable": "SSL is niet beschikbar in deze bouw"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

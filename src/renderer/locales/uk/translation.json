@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Вставте URL-адресу сторінки Giphy, URL-адресу медіафайлу, g:ID або ідентифікатор GIF.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… або g:ID",
     "meshcoreGifSend": "Надіслати GIF",
-    "meshcoreGifInvalid": "Введіть дійсну URL-адресу Giphy або ідентифікатор GIF."
+    "meshcoreGifInvalid": "Введіть дійсну URL-адресу Giphy або ідентифікатор GIF.",
+    "attachFile": "Вкласти файл",
+    "attachFileHint": "Надіслати вкладення файлу LXMF (лише DM)",
+    "attachDmOnly": "Відкрийте пряме повідомлення перед прикріпленням файлу."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Вимкнути",
       "serialPort": "послідовний порт",
       "preset": "Пресет",
-      "bleAvailable": "Пірінг BLE доступний на цій платформі (додайте через коляску, якщо налаштовано)."
+      "bleAvailable": "Пірінг BLE доступний на цій платформі (додайте через коляску, якщо налаштовано).",
+      "host": "Господар",
+      "port": "Порт"
     },
     "reticulumPeers": {
       "name": "Колега",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "Увімкнено живлення TX",
     "xmodemInvalidFilename": "Ім'я файлу містить недійсні символи",
     "validationInvalidPsk": "Недійсний base64 PSK — перевірте ключ і спробуйте ще раз",
-    "meshcoreChannelNameRequired": "Назва каналу не повинна бути порожньою"
+    "meshcoreChannelNameRequired": "Назва каналу не повинна бути порожньою",
+    "reticulumStackSettings": {
+      "title": "Налаштування стека",
+      "enableTransport": "Увімкнути транспорт (маршрут для інших однорангових вузлів)",
+      "shareInstance": "Share Reticulum instance",
+      "logLevel": "Рівень журналювання",
+      "save": "Зберегти налаштування стека"
+    },
+    "reticulumConfigImport": {
+      "title": "Import Reticulum config",
+      "hint": "Вставте конфігураційний файл у стилі rnsd або імпортуйте з диска. Об'єднання додає/оновлює блоки інтерфейсу за назвою; Replace перезаписує всі інтерфейси.",
+      "pasteLabel": "Вміст файлу конфігурації",
+      "fromFile": "Імпортувати з файлу…",
+      "fromSystem": "Імпортувати систему за замовчуванням",
+      "merge": "Об'єднати імпорт",
+      "replace": "Заміна інтерфейсів",
+      "confirmTitle": "Import Reticulum config",
+      "confirmMerge": "Об'єднати імпортовані інтерфейси з поточним конфігурацією?",
+      "confirmReplace": "Замінити всі інтерфейси імпортованим конфігурацією? Цю дію неможливо скасувати.",
+      "confirm": "Імпортувати"
+    },
+    "reticulumConfigImportFailed": "Не вдалося імпортувати налаштування.",
+    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumFactoryReset": {
+      "title": "Скидання на заводські налаштування",
+      "hint": "Очищення ідентичності, контактів та повідомлень зі стека коляски. Конфігурація інтерфейсу збережена.",
+      "button": "Скинути дані стека",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "Це видалить особистість, контакти та локальні повідомлення з коляски. Файл конфігурації інтерфейсу зберігається.",
+      "confirm": "Reset (Скид)"
+    },
+    "reticulumVoiceGames": {
+      "title": "Голос та ігри",
+      "voiceStatus": "Голос (LXST): {{status}}",
+      "gamesStatus": "Ігри (LRGP): {{status}}",
+      "unavailable": "Недоступно в цій збірці"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",

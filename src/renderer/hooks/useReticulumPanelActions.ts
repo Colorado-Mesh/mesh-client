@@ -12,6 +12,7 @@ export function useReticulumPanelActions(runtime: ReticulumRuntime) {
       refreshMessagesFromDb: runtime.refreshMessagesFromDb,
       requestRefresh: runtime.requestRefresh,
       setNodeFavorited: runtime.setNodeFavorited,
+      sendReaction: runtime.sendReaction,
     }),
     [runtime],
   );

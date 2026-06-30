@@ -117,6 +117,10 @@ export interface ProtocolCapabilities {
   hasReticulumInterfaceConfig: boolean;
   /** Reticulum: network / peers visibility panel */
   hasReticulumNetworkPanel: boolean;
+  /** Reticulum: Radio tab (identity, interfaces, config) */
+  hasReticulumRadioPanel: boolean;
+  /** Reticulum: LXMF file/image attachments in chat */
+  hasLxmfAttachments: boolean;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -176,6 +180,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
+  hasReticulumRadioPanel: false,
+  hasLxmfAttachments: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -236,6 +242,8 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
+  hasReticulumRadioPanel: false,
+  hasLxmfAttachments: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -245,13 +253,13 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasMqttHybrid: false,
   hasEnvironmentTelemetry: false,
   hasRfStats: false,
-  hasNeighborInfo: false,
+  hasNeighborInfo: true,
   hasChannelConfig: false,
   hasModemPresets: false,
-  hasTraceRoute: false,
+  hasTraceRoute: true,
   hasPerHopSnr: false,
   hasBatteryTelemetry: false,
-  hasRepeaterStatus: false,
+  hasRepeaterStatus: true,
   hasOnDemandNodeStatus: false,
   hasBluetoothConfig: false,
   hasDeviceRoleConfig: false,
@@ -280,19 +288,21 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasAtakPlugin: false,
   hasMapReport: false,
   hasXmodem: false,
-  hasContactImportExport: false,
+  hasContactImportExport: true,
   hasCryptoOperations: false,
   hasRawPacketLog: false,
   nodeListTabUsesContactsLabel: false,
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
-  hasJsonRadioConfigImport: false,
+  hasJsonRadioConfigImport: true,
   nodeStaleThresholdMs: 7 * 24 * 60 * 60 * 1000,
   nodeOfflineThresholdMs: 30 * 24 * 60 * 60 * 1000,
   hasFirmwareUpdateCheck: false,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: false,
-  hasDiagnosticsPanel: false,
+  hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
+  hasReticulumRadioPanel: true,
+  hasLxmfAttachments: true,
 };

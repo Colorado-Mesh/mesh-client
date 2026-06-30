@@ -48,15 +48,15 @@ async fn main() {
         args.reticulum_config_dir
             .unwrap_or_else(|| "./reticulum-config".into()),
     );
-    let storage_dir = PathBuf::from(args.storage_dir.unwrap_or_else(|| "./reticulum-storage".into()));
+    let storage_dir = PathBuf::from(
+        args.storage_dir
+            .unwrap_or_else(|| "./reticulum-storage".into()),
+    );
 
     info!(config_dir = %config_dir.display(), storage_dir = %storage_dir.display(), "data dirs");
 
     let (event_tx, _) = broadcast::channel::<String>(256);
-    let stack = Arc::new(
-        StackHandle::bootstrap(config_dir, storage_dir, event_tx)
-            .await,
-    );
+    let stack = Arc::new(StackHandle::bootstrap(config_dir, storage_dir, event_tx).await);
 
     let app = api::router(stack);
 

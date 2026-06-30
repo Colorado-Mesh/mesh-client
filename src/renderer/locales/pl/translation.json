@@ -332,7 +332,10 @@
     "meshcoreGifHint": "Wklej adres URL strony Giphy, adres URL multimediów, g:ID lub sam identyfikator GIF.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… lub g:ID",
     "meshcoreGifSend": "Wyślij GIF",
-    "meshcoreGifInvalid": "Wprowadź prawidłowy adres URL Giphy lub identyfikator GIF."
+    "meshcoreGifInvalid": "Wprowadź prawidłowy adres URL Giphy lub identyfikator GIF.",
+    "attachFile": "Załącz plik",
+    "attachFileHint": "Wyślij załącznik do pliku LXMF (tylko DM)",
+    "attachDmOnly": "Otwórz bezpośrednią wiadomość przed dołączeniem pliku."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -622,7 +625,9 @@
       "disable": "Wyłącz",
       "serialPort": "Port szeregowy",
       "preset": "Ustawienie wstępne",
-      "bleAvailable": "Na tej platformie dostępne jest peering BLE (po skonfigurowaniu dodaj za pośrednictwem wózka bocznego)."
+      "bleAvailable": "Na tej platformie dostępne jest peering BLE (po skonfigurowaniu dodaj za pośrednictwem wózka bocznego).",
+      "host": "Prowadząca",
+      "port": "Port"
     },
     "reticulumPeers": {
       "name": "Kolega",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "Zastosowano zasilanie TX",
     "xmodemInvalidFilename": "zawiera niedozwolone znaki",
     "validationInvalidPsk": "Nieprawidłowy base64 PSK — sprawdź klucz i spróbuj ponownie",
-    "meshcoreChannelNameRequired": "Nazwa nie może być pusta"
+    "meshcoreChannelNameRequired": "Nazwa nie może być pusta",
+    "reticulumStackSettings": {
+      "title": "Ustawienia stosu",
+      "enableTransport": "Włącz transport (trasa dla innych rówieśników)",
+      "shareInstance": "Share Reticulum instance",
+      "logLevel": "Poziom dziennika",
+      "save": "Zapisz ustawienia stosu"
+    },
+    "reticulumConfigImport": {
+      "title": "Import Reticulum config",
+      "hint": "Wklej plik konfiguracyjny w stylu rnsd lub zaimportuj z dysku. Scal dodaje/aktualizuje bloki interfejsu według nazwy; zastępuje nadpisuje wszystkie interfejsy.",
+      "pasteLabel": "Zawartość pliku konfiguracyjnego",
+      "fromFile": "Importuj z pliku",
+      "fromSystem": "Importuj domyślne ustawienia systemowe",
+      "merge": "Scal import",
+      "replace": "Wymień interfejsy",
+      "confirmTitle": "Import Reticulum config",
+      "confirmMerge": "Czy scalić zaimportowane interfejsy z bieżącą konfiguracją?",
+      "confirmReplace": "Zastąpić wszystkie interfejsy zaimportowaną konfiguracją? Tej czynności nie można cofnąć.",
+      "confirm": "Import"
+    },
+    "reticulumConfigImportFailed": "Import konfiguracji nie powiódł się.",
+    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumFactoryReset": {
+      "title": "Przywracanie ustawień fabrycznych",
+      "hint": "Usuwa tożsamość, kontakty i wiadomości ze stosu wózków bocznych. Konfiguracja interfejsu jest zachowana.",
+      "button": "Resetuj dane stosu",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "Usuwa to tożsamość, kontakty i lokalne wiadomości z wózka bocznego. Twój plik konfiguracyjny interfejsu jest przechowywany.",
+      "confirm": "Zresetuj"
+    },
+    "reticulumVoiceGames": {
+      "title": "Głos i gry",
+      "voiceStatus": "Głos (LXST): {{status}}",
+      "gamesStatus": "Gry (LRGP): {{status}}",
+      "unavailable": "Niedostępne w tej kompilacji"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

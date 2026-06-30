@@ -75,6 +75,8 @@ export interface ChatComposerProps {
   /** When provided, used instead of an internal outbox hook (ChatPanel shares one instance for message list). */
   queueOutbox?: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
   onSendChunk: (text: string, opts?: ChatComposerSendOpts) => Promise<void>;
+  /** Reticulum LXMF file/image attachment send (requires DM destination). */
+  onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Called after a successful send (e.g. clear unread divider). */
   onSendSuccess?: () => void;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
@@ -103,6 +105,7 @@ export function ChatComposer({
   outboxDestination,
   queueOutbox: queueOutboxProp,
   onSendChunk,
+  onSendAttachment,
   onSendSuccess,
   textareaRef,
   className,
@@ -113,6 +116,7 @@ export function ChatComposer({
   const limitHintId = useId();
   const counterLiveId = useId();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [chatActionError, setChatActionError] = useState<{
@@ -769,6 +773,55 @@ export function ChatComposer({
             😊
           </button>
         </HelpTooltip>
+        {onSendAttachment ? (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              aria-hidden
+              tabIndex={-1}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (!file || disabled || !isConnected) return;
+                if (outboxDestination == null) {
+                  setChatActionError({
+                    message: t('chatPanel.attachDmOnly'),
+                    viewKey,
+                  });
+                  return;
+                }
+                void (async () => {
+                  setSending(true);
+                  try {
+                    await onSendAttachment(file, outboxDestination);
+                    onSendSuccess?.();
+                  } catch (err) {
+                    // catch-no-log-ok: attachment failure shown inline in composer
+                    setChatActionError({
+                      message: errLikeToLogString(err),
+                      viewKey,
+                    });
+                  } finally {
+                    setSending(false);
+                  }
+                })();
+              }}
+            />
+            <HelpTooltip text={t('chatPanel.attachFileHint')}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled || !isConnected || sending}
+                aria-label={t('chatPanel.attachFile')}
+                className={emojiButtonClass}
+              >
+                📎
+              </button>
+            </HelpTooltip>
+          </>
+        ) : null}
         {showMeshcoreGifButton && (
           <HelpTooltip text={t('chatPanel.meshcoreGifButtonHint')}>
             <button

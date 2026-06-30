@@ -332,7 +332,10 @@
     "meshcoreGifHint": "粘贴 Giphy 页面 URL、媒体 URL、g:ID 或纯 GIF ID。",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… 或 g:ID",
     "meshcoreGifSend": "发送GIF",
-    "meshcoreGifInvalid": "请输入有效的Giphy URL或GIF ID。"
+    "meshcoreGifInvalid": "请输入有效的Giphy URL或GIF ID。",
+    "attachFile": "附加文件",
+    "attachFileHint": "发送LXMF文件附件（仅限DM ）",
+    "attachDmOnly": "在附加文件之前打开直接消息。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -622,7 +625,9 @@
       "disable": "禁用",
       "serialPort": "串口",
       "preset": "预置",
-      "bleAvailable": "BLE对等可在此平台上使用（配置后通过sidecar添加）。"
+      "bleAvailable": "BLE对等可在此平台上使用（配置后通过sidecar添加）。",
+      "host": "Host",
+      "port": "端口"
     },
     "reticulumPeers": {
       "name": "同事",
@@ -2220,7 +2225,43 @@
     "applyTxPowerSuccess": "已应用TX功率",
     "xmodemInvalidFilename": "文件名包含无效字符",
     "validationInvalidPsk": "Base64 PSK无效—请检查密钥并重试",
-    "meshcoreChannelNameRequired": "频道名称不能为空"
+    "meshcoreChannelNameRequired": "频道名称不能为空",
+    "reticulumStackSettings": {
+      "title": "堆栈设置",
+      "enableTransport": "启用传输（为其他同行路由）",
+      "shareInstance": "分享Reticulum实例",
+      "logLevel": "日志级别",
+      "save": "保存堆栈设置"
+    },
+    "reticulumConfigImport": {
+      "title": "导入Reticulum配置",
+      "hint": "粘贴rnsd样式的配置文件或从磁盘导入。Merge按名称添加/更新接口块； REPLACE覆盖所有接口。",
+      "pasteLabel": "配置文件内容",
+      "fromFile": "从文件导入…",
+      "fromSystem": "导入系统默认值",
+      "merge": "合并导入",
+      "replace": "替换接口",
+      "confirmTitle": "导入Reticulum配置",
+      "confirmMerge": "将导入的接口合并到当前配置中？",
+      "confirmReplace": "用导入的配置替换所有接口？此操作无法撤消。",
+      "confirm": "进口"
+    },
+    "reticulumConfigImportFailed": "导入设置失败.",
+    "reticulumConfigNotFound": "在默认路径下未找到系统Reticulum配置。",
+    "reticulumFactoryReset": {
+      "title": "恢复出厂设置",
+      "hint": "清除Sidecar堆栈中的身份、联系人和消息。接口配置被保留。",
+      "button": "重置堆栈数据",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "这将从Sidecar中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
+      "confirm": "一键复原"
+    },
+    "reticulumVoiceGames": {
+      "title": "语音和游戏",
+      "voiceStatus": "语音（ LXST ） ： {{status}}",
+      "gamesStatus": "游戏（ LRGP ） ： {{status}}",
+      "unavailable": "在此版本中不可用"
+    }
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

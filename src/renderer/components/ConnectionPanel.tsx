@@ -86,7 +86,7 @@ import type {
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
-import { ReticulumConnectionPanel } from './ReticulumConnectionPanel';
+import { ReticulumStackPanel } from './ReticulumStackPanel';
 // ─── Last Connection (localStorage) ───────────────────────────────
 interface LastConnection {
   type: ConnectionType;
@@ -2514,7 +2514,7 @@ export default function ConnectionPanel({
     return (
       <div className="w-full space-y-6">
         {renderExitActions(exitVariant)}
-        <ReticulumConnectionPanel
+        <ReticulumStackPanel
           stackRunning={stackRunning}
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
