@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "La configuration Flash n'est pas disponible pour cet appareil.",
       "blockedByStack": "Impossible de flasher pendant que la pile Reticulum contient le port série RNode.",
       "esp32SyncFailed": "Impossible de synchroniser avec le chargeur d'amorçage ESP32. Vérifiez le câble et le port USB, arrêtez les autres applications à l'aide du port série et réessayez.",
-      "flashTransferTooSmall": "Le transfert du micrologiciel n'a pas été terminé — presque aucune donnée n'a été écrite. Confirmez que vous avez sélectionné le bon port USB et que la carte est entrée en mode bootloader."
+      "flashTransferTooSmall": "Le transfert du micrologiciel n'a pas été terminé — presque aucune donnée n'a été écrite. Confirmez que vous avez sélectionné le bon port USB et que la carte est entrée en mode bootloader.",
+      "flashMd5Mismatch": "La vérification du micrologiciel a échoué après l'écriture. Réessayez avec un câble ou un port USB différent ; si cela persiste, téléchargez à nouveau le code postal du micrologiciel."
     },
     "selectSerialPort": "Sélectionner le port série",
     "noSerialPorts": "Ports USB-série trouvés :",

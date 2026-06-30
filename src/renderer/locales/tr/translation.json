@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "Bu cihaz için Flash yapılandırması mevcut değil.",
       "blockedByStack": "Reticulum yığını RNode seri bağlantı noktasını tutarken yanıp sönemez.",
       "esp32SyncFailed": "ESP32 önyükleyici ile senkronize edilemedi. USB kablosunu ve bağlantı noktasını kontrol edin, seri bağlantı noktasını kullanarak diğer uygulamaları durdurun ve tekrar deneyin.",
-      "flashTransferTooSmall": "Yazılım aktarımı tamamlanmadı — neredeyse hiç veri yazılmadı. Doğru USB bağlantı noktasını seçtiğinizden ve kartın önyükleyici moduna girdiğinden emin olun."
+      "flashTransferTooSmall": "Yazılım aktarımı tamamlanmadı — neredeyse hiç veri yazılmadı. Doğru USB bağlantı noktasını seçtiğinizden ve kartın önyükleyici moduna girdiğinden emin olun.",
+      "flashMd5Mismatch": "Yazılım doğrulaması yazıldıktan sonra başarısız oldu. Farklı bir USB kablosu veya bağlantı noktası ile tekrar deneyin; devam ederse, ürün yazılımı zip dosyasını yeniden indirin."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",

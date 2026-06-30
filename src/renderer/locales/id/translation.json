@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "Konfigurasi flash tidak tersedia untuk perangkat ini.",
       "blockedByStack": "Tidak dapat mem-flash saat tumpukan Reticulum menahan port serial RNode.",
       "esp32SyncFailed": "Tidak dapat menyinkronkan dengan bootloader ESP32. Periksa kabel USB dan port, hentikan aplikasi lain menggunakan port serial, dan coba lagi.",
-      "flashTransferTooSmall": "Transfer firmware tidak selesai — hampir tidak ada data yang ditulis. Pastikan Anda memilih port USB yang benar dan papan masuk ke mode bootloader."
+      "flashTransferTooSmall": "Transfer firmware tidak selesai — hampir tidak ada data yang ditulis. Pastikan Anda memilih port USB yang benar dan papan masuk ke mode bootloader.",
+      "flashMd5Mismatch": "Verifikasi firmware gagal setelah ditulis. Coba lagi dengan kabel atau port USB yang berbeda; jika terus berlanjut, unduh ulang zip firmware."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",

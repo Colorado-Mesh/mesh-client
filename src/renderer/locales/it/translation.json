@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "La configurazione Flash non è disponibile per questo dispositivo.",
       "blockedByStack": "Impossibile eseguire il flashing mentre lo stack Reticulum contiene la porta seriale RNode.",
       "esp32SyncFailed": "Impossibile sincronizzare con il bootloader ESP32. Controllare il cavo e la porta USB, interrompere altre app utilizzando la porta seriale e riprovare.",
-      "flashTransferTooSmall": "Il trasferimento del firmware non è stato completato — quasi nessun dato è stato scritto. Confermare di aver selezionato la porta USB corretta e che la scheda sia entrata in modalità bootloader."
+      "flashTransferTooSmall": "Il trasferimento del firmware non è stato completato — quasi nessun dato è stato scritto. Confermare di aver selezionato la porta USB corretta e che la scheda sia entrata in modalità bootloader.",
+      "flashMd5Mismatch": "Verifica del firmware non riuscita dopo la scrittura. Riprovare con un altro cavo o porta USB; se persiste, scaricare nuovamente lo zip del firmware."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",

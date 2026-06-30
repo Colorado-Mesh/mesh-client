@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "Konfiguracja Flash nie jest dostępna dla tego urządzenia.",
       "blockedByStack": "Nie można wykonać flashowania, gdy stos Reticulum zawiera port szeregowy RNode.",
       "esp32SyncFailed": "Nie można zsynchronizować z programem rozruchowym ESP32. Sprawdź kabel USB i port, zatrzymaj inne aplikacje za pomocą portu szeregowego i spróbuj ponownie.",
-      "flashTransferTooSmall": "Transfer oprogramowania sprzętowego nie został zakończony — prawie nie zapisano żadnych danych. Potwierdź, że wybrałeś właściwy port USB i że płyta weszła w tryb ładowania rozruchowego."
+      "flashTransferTooSmall": "Transfer oprogramowania sprzętowego nie został zakończony — prawie nie zapisano żadnych danych. Potwierdź, że wybrałeś właściwy port USB i że płyta weszła w tryb ładowania rozruchowego.",
+      "flashMd5Mismatch": "Weryfikacja oprogramowania nie powiodła się po zapisaniu. Spróbuj ponownie z innym kablem USB lub portem. Jeśli problem nie ustąpi, pobierz ponownie plik ZIP oprogramowania sprzętowego."
     },
     "selectSerialPort": "Wybierz port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych USB.",

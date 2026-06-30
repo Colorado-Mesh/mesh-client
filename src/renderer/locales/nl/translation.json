@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "Flash-configuratie is niet beschikbaar voor dit apparaat.",
       "blockedByStack": "Kan niet flitsen terwijl de Reticulum-stack de seriële RNode-poort bevat.",
       "esp32SyncFailed": "Kan niet synchroniseren met de ESP32-opstartlader. Controleer de USB-kabel en poort, stop andere apps met behulp van de seriële poort en probeer het opnieuw.",
-      "flashTransferTooSmall": "Firmware-overdracht is niet voltooid — er zijn bijna geen gegevens geschreven. Bevestig dat u de juiste USB-poort hebt geselecteerd en dat het bord in de bootloader-modus is gegaan."
+      "flashTransferTooSmall": "Firmware-overdracht is niet voltooid — er zijn bijna geen gegevens geschreven. Bevestig dat u de juiste USB-poort hebt geselecteerd en dat het bord in de bootloader-modus is gegaan.",
+      "flashMd5Mismatch": "Firmwareverificatie mislukt na schrijven. Probeer het opnieuw met een andere USB-kabel of poort; als het aanhoudt, download dan de ZIP-firmware opnieuw."
     },
     "selectSerialPort": "Seriële poort selecteren",
     "noSerialPorts": "Geen USB seriële poorten gevonden.",

@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "Für dieses Gerät ist keine Flash-Konfiguration verfügbar.",
       "blockedByStack": "Es kann nicht geflasht werden, während der Reticulum-Stack den seriellen RNode-Port enthält.",
       "esp32SyncFailed": "Konnte nicht mit dem ESP32-Bootloader synchronisiert werden. Überprüfen Sie das USB-Kabel und den Anschluss, stoppen Sie andere Apps über den seriellen Anschluss und versuchen Sie es erneut.",
-      "flashTransferTooSmall": "Die Firmware-Übertragung wurde nicht abgeschlossen — es wurden fast keine Daten geschrieben. Bestätigen Sie, dass Sie den richtigen USB-Anschluss ausgewählt haben und dass die Platine in den Bootloader-Modus gewechselt ist."
+      "flashTransferTooSmall": "Die Firmware-Übertragung wurde nicht abgeschlossen — es wurden fast keine Daten geschrieben. Bestätigen Sie, dass Sie den richtigen USB-Anschluss ausgewählt haben und dass die Platine in den Bootloader-Modus gewechselt ist.",
+      "flashMd5Mismatch": "Die Firmware-Überprüfung ist nach dem Schreiben fehlgeschlagen. Versuchen Sie es erneut mit einem anderen USB-Kabel oder -Anschluss. Wenn dies weiterhin der Fall ist, laden Sie die Firmware-ZIP-Datei erneut herunter."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",

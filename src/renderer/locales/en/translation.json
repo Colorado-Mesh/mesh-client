@@ -2972,7 +2972,8 @@
       "flashConfigMissing": "Flash configuration is not available for this device.",
       "blockedByStack": "Cannot flash while the Reticulum stack holds the RNode serial port.",
       "esp32SyncFailed": "Could not sync with the ESP32 bootloader. Check the USB cable and port, stop other apps using the serial port, and try again.",
-      "flashTransferTooSmall": "Firmware transfer did not complete — almost no data was written. Confirm you selected the correct USB port and that the board entered bootloader mode."
+      "flashTransferTooSmall": "Firmware transfer did not complete — almost no data was written. Confirm you selected the correct USB port and that the board entered bootloader mode.",
+      "flashMd5Mismatch": "Firmware verification failed after writing. Try again with a different USB cable or port; if it persists, re-download the firmware zip."
     }
   }
 }

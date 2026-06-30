@@ -16,6 +16,9 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'FLASH_TRANSFER_TOO_SMALL') {
     return i18n.t('flasher.errors.flashTransferTooSmall');
   }
+  if (message.includes('MD5 of file does not match')) {
+    return i18n.t('flasher.errors.flashMd5Mismatch');
+  }
   if (message.includes('Failed to execute') && message.includes('requestPort')) {
     return i18n.t('flasher.errors.portSelectionCancelled');
   }

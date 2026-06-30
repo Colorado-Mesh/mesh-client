@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "闪存配置不适用于该设备。",
       "blockedByStack": "当 Reticulum 堆栈保留 RNode 串行端口时无法闪烁。",
       "esp32SyncFailed": "无法与ESP32引导加载程序同步。检查USB电缆和端口，停止使用串行端口的其他应用程序，然后重试。",
-      "flashTransferTooSmall": "固件传输未完成—几乎未写入任何数据。确认您选择了正确的USB端口，并且主板已进入引导加载程序模式。"
+      "flashTransferTooSmall": "固件传输未完成—几乎未写入任何数据。确认您选择了正确的USB端口，并且主板已进入引导加载程序模式。",
+      "flashMd5Mismatch": "写入后固件验证失败。请使用其他USB电缆或端口重试；如果问题仍然存在，请重新下载固件ZIP。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",

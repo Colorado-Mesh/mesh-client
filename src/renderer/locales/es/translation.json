@@ -2871,7 +2871,8 @@
       "flashConfigMissing": "La configuración flash no está disponible para este dispositivo.",
       "blockedByStack": "No se puede flashear mientras la pila Reticulum contiene el puerto serie RNode.",
       "esp32SyncFailed": "No se ha podido sincronizar con el gestor de arranque ESP32. Compruebe el cable y el puerto USB, detenga otras aplicaciones que utilicen el puerto serie e inténtelo de nuevo.",
-      "flashTransferTooSmall": "La transferencia de firmware no se completó: casi no se escribieron datos. Confirme que ha seleccionado el puerto USB correcto y que la placa ha entrado en el modo de gestor de arranque."
+      "flashTransferTooSmall": "La transferencia de firmware no se completó: casi no se escribieron datos. Confirme que ha seleccionado el puerto USB correcto y que la placa ha entrado en el modo de gestor de arranque.",
+      "flashMd5Mismatch": "La verificación del firmware falló después de escribir. Inténtelo de nuevo con un cable o puerto USB diferente; si persiste, vuelva a descargar el zip del firmware."
     },
     "selectSerialPort": "Seleccionar porto serie",
     "noSerialPorts": "No se han encontrado puertos serie USB.",
