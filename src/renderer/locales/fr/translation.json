@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Entrez une URL Giphy ou un identifiant GIF valide.",
     "attachFile": "Pièce jointe",
     "attachFileHint": "Envoyer une pièce jointe au fichier LXMF (DM uniquement)",
-    "attachDmOnly": "Ouvrez un message direct avant de joindre un fichier."
+    "attachDmOnly": "Ouvrez un message direct avant de joindre un fichier.",
+    "composePlaceholderSelectDm": "Sélectionnez un contact ci-dessus pour démarrer un DM…",
+    "selectDmFirst": "Sélectionnez un destinataire DM avant de l'envoyer.",
+    "emptySelectDm": "Le chat Reticulum est réservé aux messages directs. Choisissez un contact ci-dessus ou ouvrez-en un dans l'onglet Nœuds.",
+    "noDmConversations": "Aucune conversation pour le moment.",
+    "noDmConversationsReticulum": "Aucune conversation pour le moment — ouvrez un contact à partir de l'onglet Nœuds."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

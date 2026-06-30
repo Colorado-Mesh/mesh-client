@@ -3,7 +3,7 @@ import type { MeshNode, MeshProtocol } from './types';
 /** Same ordering as ChatPanel: MeshCore prefers long then short; Meshtastic prefers short then long. */
 export function nodeDisplayName(node: MeshNode | undefined, protocol: MeshProtocol): string {
   if (!node) return '';
-  if (protocol === 'meshcore') {
+  if (protocol === 'meshcore' || protocol === 'reticulum') {
     return node.long_name?.trim() || node.short_name?.trim() || '';
   }
   return node.short_name?.trim() || node.long_name?.trim() || '';

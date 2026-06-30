@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Zadejte platnou adresu URL GIPHY nebo ID GIF.",
     "attachFile": "Přiložte přílohu",
     "attachFileHint": "Odeslat přílohu souboru LXMF (pouze DM)",
-    "attachDmOnly": "Před připojením souboru otevřete přímou zprávu."
+    "attachDmOnly": "Před připojením souboru otevřete přímou zprávu.",
+    "composePlaceholderSelectDm": "Vyberte kontakt výše a spusťte DM...",
+    "selectDmFirst": "Před odesláním vyberte příjemce DM.",
+    "emptySelectDm": "Reticulum chat je pouze přímá zpráva. Vyberte kontakt výše nebo jej otevřete na kartě Uzly.",
+    "noDmConversations": "Zatím žádné konverzace.",
+    "noDmConversationsReticulum": "Zatím žádné konverzace — otevřete kontakt na kartě Uzly."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Введіть дійсну URL-адресу Giphy або ідентифікатор GIF.",
     "attachFile": "Вкласти файл",
     "attachFileHint": "Надіслати вкладення файлу LXMF (лише DM)",
-    "attachDmOnly": "Відкрийте пряме повідомлення перед прикріпленням файлу."
+    "attachDmOnly": "Відкрийте пряме повідомлення перед прикріпленням файлу.",
+    "composePlaceholderSelectDm": "Виберіть контакт вище, щоб розпочати DM...",
+    "selectDmFirst": "Виберіть одержувача DM перед надсиланням.",
+    "emptySelectDm": "Чат Reticulum - це лише пряме повідомлення. Виберіть контакт вище або відкрийте його на вкладці Вузли.",
+    "noDmConversations": "Ще немає розмов.",
+    "noDmConversationsReticulum": "Ще немає розмов — відкрийте контакт на вкладці Вузли."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

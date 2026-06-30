@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "유효한 Giphy URL 또는 GIF ID를 입력하세요.",
     "attachFile": "파일 첨부",
     "attachFileHint": "LXMF 파일 첨부 파일 전송 (DM만 해당)",
-    "attachDmOnly": "파일을 첨부하기 전에 다이렉트 메시지를 엽니다."
+    "attachDmOnly": "파일을 첨부하기 전에 다이렉트 메시지를 엽니다.",
+    "composePlaceholderSelectDm": "DM을 시작하려면 위의 연락처를 선택하십시오...",
+    "selectDmFirst": "전송하기 전에 DM 수신자를 선택하십시오.",
+    "emptySelectDm": "Reticulum 채팅은 다이렉트 메시지일 뿐입니다. 위의 문의를 선택하거나 노드 탭에서 문의를 엽니다.",
+    "noDmConversations": "아직 대화가 없습니다.",
+    "noDmConversationsReticulum": "아직 대화가 없습니다. 노드 탭에서 문의를 엽니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

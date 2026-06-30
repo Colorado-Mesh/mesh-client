@@ -724,10 +724,34 @@ function ChatPanel({
     for (const [nodeNum, unread] of dmUnreadCounts) {
       if (unread > 0) all.add(nodeNum);
     }
+    // Reticulum LXMF is DM-only: surface known contacts even without prior chat history.
+    if (dmOnlyChat) {
+      for (const nodeId of nodes.keys()) {
+        if (nodeId === myNodeNum) continue;
+        all.add(nodeId);
+      }
+    }
     return Array.from(all).filter(
       (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
     );
-  }, [activeDmNode, openDmTabs, inferredDmTabs, dismissedDmTabs, dmUnreadCounts, protocol]);
+  }, [
+    activeDmNode,
+    dismissedDmTabs,
+    dmOnlyChat,
+    dmUnreadCounts,
+    inferredDmTabs,
+    myNodeNum,
+    nodes,
+    openDmTabs,
+    protocol,
+  ]);
+
+  // Reticulum DM-only: auto-focus first contact when none selected (contacts lack inferred tabs).
+  useEffect(() => {
+    if (!dmOnlyChat || activeDmNode != null || visibleDmTabs.length === 0) return;
+    setActiveDmNode(visibleDmTabs[0]);
+    setViewMode('dm');
+  }, [activeDmNode, dmOnlyChat, visibleDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
@@ -1235,6 +1259,10 @@ function ChatPanel({
     async (text: string, opts?: ChatComposerSendOpts) => {
       const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
+      if (dmOnlyChat && destination == null) {
+        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
+        return;
+      }
       if (
         protocol === 'meshcore' &&
         opts?.replyId != null &&
@@ -1251,7 +1279,7 @@ function ChatPanel({
       );
       await Promise.resolve(sendOutcome);
     },
-    [activeDmNode, channel, onReact, onSend, protocol, viewMode],
+    [activeDmNode, channel, dmOnlyChat, onReact, onSend, protocol, t, viewKey, viewMode],
   );
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
@@ -1477,14 +1505,16 @@ function ChatPanel({
 
   const composePlaceholder = useMemo(
     () =>
-      isDmMode
-        ? t('chatPanel.composePlaceholderDm', { name: dmNodeName })
-        : !isConnected
-          ? t('chatPanel.composePlaceholderConnectFirst')
-          : isMqttOnly
-            ? t('chatPanel.composePlaceholderMqttOnly')
-            : t('chatPanel.composePlaceholderDefault'),
-    [isDmMode, dmNodeName, isConnected, isMqttOnly, t],
+      dmOnlyChat && activeDmNode == null
+        ? t('chatPanel.composePlaceholderSelectDm')
+        : isDmMode
+          ? t('chatPanel.composePlaceholderDm', { name: dmNodeName })
+          : !isConnected
+            ? t('chatPanel.composePlaceholderConnectFirst')
+            : isMqttOnly
+              ? t('chatPanel.composePlaceholderMqttOnly')
+              : t('chatPanel.composePlaceholderDefault'),
+    [activeDmNode, dmOnlyChat, dmNodeName, isConnected, isDmMode, isMqttOnly, t],
   );
 
   return (
@@ -1693,7 +1723,9 @@ function ChatPanel({
           DMs
         </span>
         {visibleDmTabs.length === 0 ? (
-          <span className="text-[10px] text-gray-600 italic">No conversations</span>
+          <span className="text-[10px] text-gray-600 italic">
+            {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
+          </span>
         ) : (
           visibleDmTabs.map((nodeNum) => {
             const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
@@ -1977,11 +2009,13 @@ function ChatPanel({
             <div className="text-muted py-12 text-center">
               {searchQuery
                 ? t('chatPanel.emptyNoSearchMatches')
-                : isDmMode
-                  ? t('chatPanel.emptyNoDmMessages', { name: dmNodeName })
-                  : isConnected
-                    ? t('chatPanel.emptyNoMessagesYet')
-                    : t('chatPanel.emptyConnectFirst')}
+                : dmOnlyChat && activeDmNode == null
+                  ? t('chatPanel.emptySelectDm')
+                  : isDmMode
+                    ? t('chatPanel.emptyNoDmMessages', { name: dmNodeName })
+                    : isConnected
+                      ? t('chatPanel.emptyNoMessagesYet')
+                      : t('chatPanel.emptyConnectFirst')}
             </div>
           ) : (
             <div
@@ -2569,6 +2603,7 @@ function ChatPanel({
         connectionType={connectionType}
         isMqttOnly={isMqttOnly}
         isDmMode={isDmMode}
+        disabled={dmOnlyChat && activeDmNode == null}
         composerContext={viewMode === 'dm' ? 'dm' : 'channel'}
         senderDisplayName={composerSelfDisplayName}
         placeholder={composePlaceholder}

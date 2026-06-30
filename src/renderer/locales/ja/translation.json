@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。",
     "attachFile": "ファイルの添付",
     "attachFileHint": "LXMFファイルの添付ファイルを送信する（ DMのみ）",
-    "attachDmOnly": "ファイルを添付する前にダイレクトメッセージを開きます。"
+    "attachDmOnly": "ファイルを添付する前にダイレクトメッセージを開きます。",
+    "composePlaceholderSelectDm": "上記の連絡先を選択してDMを開始してください…",
+    "selectDmFirst": "送信する前にDM受信者を選択してください。",
+    "emptySelectDm": "Reticulumチャットはダイレクトメッセージのみです。上記の連絡先を選択するか、[ノード]タブから連絡先を開きます。",
+    "noDmConversations": "会話はまだありません。",
+    "noDmConversationsReticulum": "会話はまだありません。[ノード]タブから連絡先を開きます。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

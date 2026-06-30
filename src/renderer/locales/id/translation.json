@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Masukkan URL Giphy atau id GIF yang valid.",
     "attachFile": "Lampirkan file",
     "attachFileHint": "Kirim lampiran file LXMF (khusus DM)",
-    "attachDmOnly": "Buka pesan langsung sebelum melampirkan file."
+    "attachDmOnly": "Buka pesan langsung sebelum melampirkan file.",
+    "composePlaceholderSelectDm": "Pilih kontak di atas untuk memulai DM…",
+    "selectDmFirst": "Pilih penerima DM sebelum mengirim.",
+    "emptySelectDm": "Obrolan Reticulum hanya untuk pesan langsung. Pilih kontak di atas atau buka kontak dari tab Node.",
+    "noDmConversations": "Belum ada percakapan.",
+    "noDmConversationsReticulum": "Belum ada percakapan — buka kontak dari tab Node."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

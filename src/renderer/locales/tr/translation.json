@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Geçerli bir Giphy URL'si veya GIF kimliği girin.",
     "attachFile": "Dosya eki",
     "attachFileHint": "Bir LXMF dosya eki gönderin (yalnızca DM)",
-    "attachDmOnly": "Bir dosya eklemeden önce doğrudan bir mesaj açın."
+    "attachDmOnly": "Bir dosya eklemeden önce doğrudan bir mesaj açın.",
+    "composePlaceholderSelectDm": "DM başlatmak için yukarıdan bir kişi seçin…",
+    "selectDmFirst": "Göndermeden önce bir DM alıcısı seçin.",
+    "emptySelectDm": "Reticulum sohbeti yalnızca doğrudan mesajdır. Yukarıdan bir kişi seçin veya Düğümler sekmesinden bir kişi açın.",
+    "noDmConversations": "Henüz görüşme yok.",
+    "noDmConversationsReticulum": "Henüz görüşme yok — Düğümler sekmesinden bir kişi açın."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

@@ -511,7 +511,7 @@ describe('ChatPanel accessibility', () => {
     );
 
     expect(screen.queryByText('!ffffffff')).not.toBeInTheDocument();
-    expect(screen.getByText('No conversations')).toBeInTheDocument();
+    expect(screen.getByText('No conversations yet')).toBeInTheDocument();
   });
 
   it('allows closing inferred DM tab and resurfaces on subsequent message (even if timestamp is stale)', async () => {
@@ -3326,5 +3326,80 @@ describe('ChatPanel — notification sound on new messages', () => {
 
     await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatPanel reticulum dm-only chat', () => {
+  const reticulumProps = {
+    messages: [] as ChatMessage[],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map<number, MeshNode>(),
+    isActive: true,
+    protocol: 'reticulum' as const,
+    dmOnlyChat: true,
+  };
+
+  it('lists LXMF contacts as DM tabs and sends to auto-selected peer', async () => {
+    const user = userEvent.setup();
+    const peerId = 0xabc123;
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: 'deadbeef',
+          long_name: 'Peer One',
+          short_name: 'P1',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} nodes={nodes} onSend={onSend} />
+      </ToastProvider>,
+    );
+    expect(screen.getByRole('button', { name: 'Peer One' })).toBeInTheDocument();
+    const input = await waitForComposer();
+    await user.type(input, 'hello');
+    await user.keyboard('{Enter}');
+    await waitFor(() => {
+      expect(onSend).toHaveBeenCalledWith('hello', 0, peerId, undefined);
+    });
+  });
+
+  it('prompts to select a DM when no contacts are known', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByText('No conversations yet — open a contact from the Nodes tab.'),
+    ).toBeInTheDocument();
+    const input = await waitForComposer();
+    expect(input).toBeDisabled();
+    expect(
+      screen.getByPlaceholderText('Select a contact above to start a DM…'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+      ),
+    ).toBeInTheDocument();
   });
 });

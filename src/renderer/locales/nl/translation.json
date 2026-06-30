@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in.",
     "attachFile": "Bestand bijvoegen",
     "attachFileHint": "Een LXMF-bestandsbijlage verzenden (alleen DM)",
-    "attachDmOnly": "Open een direct bericht voordat u een bestand toevoegt."
+    "attachDmOnly": "Open een direct bericht voordat u een bestand toevoegt.",
+    "composePlaceholderSelectDm": "Selecteer hierboven een contactpersoon om een DM te starten...",
+    "selectDmFirst": "Selecteer een DM-ontvanger voordat u deze verzendt.",
+    "emptySelectDm": "Reticulum-chat is alleen een direct bericht. Kies hierboven een contact of open er een op het tabblad Knooppunten.",
+    "noDmConversations": "Nog geen gesprekken.",
+    "noDmConversationsReticulum": "Nog geen gesprekken — open een contactpersoon op het tabblad Knooppunten."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

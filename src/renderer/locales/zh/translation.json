@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "请输入有效的Giphy URL或GIF ID。",
     "attachFile": "附加文件",
     "attachFileHint": "发送LXMF文件附件（仅限DM ）",
-    "attachDmOnly": "在附加文件之前打开直接消息。"
+    "attachDmOnly": "在附加文件之前打开直接消息。",
+    "composePlaceholderSelectDm": "选择上面的联系人以开始DM…",
+    "selectDmFirst": "发送前选择DM收件人。",
+    "emptySelectDm": "Reticulum聊天仅为直接消息。选择上面的联系人或从“节点”选项卡中打开一个联系人。",
+    "noDmConversations": "还没有对话。",
+    "noDmConversationsReticulum": "还没有对话—从“节点”选项卡打开联系人。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

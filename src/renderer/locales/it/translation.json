@@ -335,7 +335,12 @@
     "meshcoreGifInvalid": "Inserisci un URL Giphy o un ID GIF valido.",
     "attachFile": "Allega file",
     "attachFileHint": "Inviare un file allegato LXMF (solo DM)",
-    "attachDmOnly": "Aprire un messaggio diretto prima di allegare un file."
+    "attachDmOnly": "Aprire un messaggio diretto prima di allegare un file.",
+    "composePlaceholderSelectDm": "Seleziona un contatto sopra per avviare un DM...",
+    "selectDmFirst": "Selezionare un destinatario DM prima dell'invio.",
+    "emptySelectDm": "La chat di Reticulum è solo un messaggio diretto. Scegli un contatto sopra o aprilo dalla scheda Nodi.",
+    "noDmConversations": "Ancora nessuna conversazione.",
+    "noDmConversationsReticulum": "Ancora nessuna conversazione: apri un contatto dalla scheda Nodi."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
