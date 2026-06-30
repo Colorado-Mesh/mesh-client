@@ -19,3 +19,4 @@ export const PacketDistributionPanel = lazy(() => import('./components/PacketDis
 export const RawPacketLogPanel = lazy(() => import('./components/RawPacketLogPanel'));
 export const RFHistogramsPanel = lazy(() => import('./components/RFHistogramsPanel'));
 export const PeerGraphPanel = lazy(() => import('./components/PeerGraphPanel'));
+export const ReticulumTopologyPanel = lazy(() => import('./components/ReticulumTopologyPanel'));

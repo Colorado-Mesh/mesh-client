@@ -96,11 +96,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId],
   );
 
-  const refreshIdentityFromSidecar = useCallback(async () => {
+  const refreshIdentityFromSidecar = useCallback(async (): Promise<string | null> => {
     const status = await fetchReticulumIdentityStatus();
     if (status.lxmfHash) {
       setSelfLxmfHash(status.lxmfHash);
+      return status.lxmfHash;
     }
+    return null;
   }, []);
 
   const refreshContactsFromSidecar = useCallback(async () => {
@@ -210,7 +212,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await window.electronAPI.reticulum.start({ reuseIfRunning: true });
       unsubEventRef.current?.();
       unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
-      await refreshIdentityFromSidecar();
+      const lxmfHash = await refreshIdentityFromSidecar();
+      const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
       await syncDiagnosticsFromSidecar();
       if (identityId) {
@@ -218,11 +221,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
         markStaleReticulumOutboundInStore(identityId);
         await refreshMessagesFromDb();
       }
-      setState({ status: 'configured', myNodeNum: selfNodeId ?? 0, connectionType: null });
+      setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
         connectionType: null,
-        myNodeNum: selfNodeId ?? 0,
+        myNodeNum: connectedNodeId,
       });
     } catch (e) {
       console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
@@ -237,7 +240,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     refreshMessagesFromDb,
     syncDiagnosticsFromSidecar,
     identityId,
-    selfNodeId,
     syncConnectionStore,
   ]);
 

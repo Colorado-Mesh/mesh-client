@@ -55,7 +55,6 @@ import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import ReticulumPingPanel from './ReticulumPingPanel';
-import ReticulumTopologyPanel from './ReticulumTopologyPanel';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -817,7 +816,6 @@ export default function DiagnosticsPanel({
       {capabilities?.hasReticulumNativeDiagnostics ? (
         <div className="space-y-4">
           <ReticulumPingPanel />
-          <ReticulumTopologyPanel />
         </div>
       ) : null}
 

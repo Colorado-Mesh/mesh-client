@@ -2791,6 +2791,7 @@
     "rooms": "Rooms",
     "rf": "RF",
     "graph": "Graph",
+    "topology": "Network topology",
     "admin": "Administration"
   },
   "takServerPanel": {

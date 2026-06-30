@@ -2707,7 +2707,8 @@
     "rooms": "Комнаты",
     "admin": "Администрирование",
     "peers": "Равные наставники",
-    "nomadnetwork": "Сеть кочевников"
+    "nomadnetwork": "Сеть кочевников",
+    "topology": "Топология сети"
   },
   "takServerPanel": {
     "title": "TAK Сервер",

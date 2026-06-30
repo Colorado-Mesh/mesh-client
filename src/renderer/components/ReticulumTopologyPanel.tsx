@@ -42,14 +42,20 @@ export default function ReticulumTopologyPanel() {
         edges?: TopologyEdge[];
       };
       const peerNodes = body.nodes ?? [];
+      const seenHashes = new Set<string>();
+      const uniquePeers = peerNodes.filter((peer) => {
+        if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
+        seenHashes.add(peer.destination_hash);
+        return true;
+      });
       const cx = 200;
       const cy = 160;
-      const radius = Math.max(80, Math.min(140, 40 + peerNodes.length * 8));
+      const radius = Math.max(80, Math.min(140, 40 + uniquePeers.length * 8));
       const rendered: RenderNode[] = [
         { id: 'self', label: t('reticulumTopology.self'), x: cx, y: cy },
       ];
-      peerNodes.forEach((peer, i) => {
-        const angle = (2 * Math.PI * i) / Math.max(peerNodes.length, 1);
+      uniquePeers.forEach((peer, i) => {
+        const angle = (2 * Math.PI * i) / Math.max(uniquePeers.length, 1);
         rendered.push({
           id: peer.destination_hash,
           label: peer.display_name ?? peer.destination_hash.slice(0, 8),
@@ -60,7 +66,7 @@ export default function ReticulumTopologyPanel() {
       const edgeList: TopologyEdge[] =
         body.edges && body.edges.length > 0
           ? body.edges
-          : peerNodes.map((peer) => ({ source: 'self', target: peer.destination_hash }));
+          : uniquePeers.map((peer) => ({ source: 'self', target: peer.destination_hash }));
       setNodes(rendered);
       setEdges(edgeList);
     } catch (e) {

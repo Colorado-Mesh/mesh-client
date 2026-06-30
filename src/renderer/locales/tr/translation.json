@@ -2707,7 +2707,8 @@
     "rooms": "Oda",
     "admin": "Yönetim",
     "peers": "Meslektaşlar",
-    "nomadnetwork": "Göçebe Ağı"
+    "nomadnetwork": "Göçebe Ağı",
+    "topology": "Ağ topolojisi"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",

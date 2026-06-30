@@ -2707,7 +2707,8 @@
     "rooms": "Pokoje",
     "admin": "Administracja",
     "peers": "Partnerzy",
-    "nomadnetwork": "Sieć Nomad"
+    "nomadnetwork": "Sieć Nomad",
+    "topology": "Topologia sieci"
   },
   "takServerPanel": {
     "title": "Serwer TAK",

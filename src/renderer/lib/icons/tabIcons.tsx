@@ -12,6 +12,7 @@ import {
   Lock,
   MapPin,
   MessageCircle,
+  Network,
   Radio,
   Settings,
   Shield,
@@ -68,6 +69,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Wifi {...p} />;
     case 'Graph':
       return <GitBranch {...p} />;
+    case 'Topology':
+      return <Network {...p} />;
     case 'Admin':
       return <Shield {...p} />;
     default:

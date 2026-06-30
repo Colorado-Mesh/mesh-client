@@ -881,8 +881,10 @@ function ChatPanel({
     overscan: 10,
     getItemKey: (index) => {
       const msg = filteredMessages[index];
-      if (!msg) return index;
-      return msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
+      if (!msg) return `msg-slot-${index}`;
+      return msg.id != null
+        ? `db-${msg.id}-${index}`
+        : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
     },
     anchorTo: 'end',
     followOnAppend: true,
@@ -1565,7 +1567,7 @@ function ChatPanel({
               <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
                 {t('chatPanel.channels')}
               </span>
-              {channels.map((ch) => {
+              {channels.map((ch, chIdx) => {
                 const unread = unreadCounts.get(ch.index) ?? 0;
                 const channelUnreadSuffix =
                   unread > 0 && !(viewMode === 'channels' && channel === ch.index)
@@ -1573,7 +1575,7 @@ function ChatPanel({
                     : '';
                 return (
                   <button
-                    key={`ch-${ch.index}-${ch.name}`}
+                    key={`ch-${ch.index}-${chIdx}-${ch.name}`}
                     aria-label={`${ch.name}${channelUnreadSuffix}`}
                     onClick={() => {
                       setChannel(ch.index);
@@ -1769,7 +1771,7 @@ function ChatPanel({
               dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
             return (
               <div
-                key={nodeNum}
+                key={`dm-${protocol}-${nodeNum}`}
                 className={`relative flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                   viewMode === 'dm' && activeDmNode === nodeNum
                     ? 'bg-purple-600 text-white'

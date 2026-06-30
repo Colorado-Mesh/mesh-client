@@ -2707,7 +2707,8 @@
     "rooms": "房间数",
     "admin": "管理",
     "peers": "Pee对端",
-    "nomadnetwork": "游牧网络"
+    "nomadnetwork": "游牧网络",
+    "topology": "网络拓扑图"
   },
   "takServerPanel": {
     "title": "TAK服务器",

@@ -2707,7 +2707,8 @@
     "rooms": "Ruang",
     "admin": "Administrasi",
     "peers": "Peer",
-    "nomadnetwork": "Nomad Network"
+    "nomadnetwork": "Nomad Network",
+    "topology": "Topologi jaringan"
   },
   "takServerPanel": {
     "title": "Server TAK",

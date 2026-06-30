@@ -2707,7 +2707,8 @@
     "rooms": "Ruimtes",
     "admin": "Beheer",
     "peers": "Collega's",
-    "nomadnetwork": "Nomad-netwerk"
+    "nomadnetwork": "Nomad-netwerk",
+    "topology": "Netwerktopologie"
   },
   "takServerPanel": {
     "title": "TAK-server",

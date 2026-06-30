@@ -2707,7 +2707,8 @@
     "rooms": "방",
     "admin": "관리",
     "peers": "통신자",
-    "nomadnetwork": "Nomad Network"
+    "nomadnetwork": "Nomad Network",
+    "topology": "네트워크 토폴로지"
   },
   "takServerPanel": {
     "title": "TAK 서버",

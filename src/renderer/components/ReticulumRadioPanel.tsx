@@ -419,7 +419,7 @@ export function ReticulumRadioPanel({
         </p>
       ) : null}
 
-      <ReticulumCollapsibleSection title={t('radioPanel.reticulumStackSettings.title')} defaultOpen>
+      <ReticulumCollapsibleSection title={t('radioPanel.reticulumStackSettings.title')}>
         <div className="space-y-2 text-sm">
           <label className="flex items-center gap-2 text-gray-300">
             <input
@@ -473,7 +473,7 @@ export function ReticulumRadioPanel({
         </div>
       </ReticulumCollapsibleSection>
 
-      <ReticulumCollapsibleSection title={t('connectionPanel.reticulumIdentity.title')} defaultOpen>
+      <ReticulumCollapsibleSection title={t('connectionPanel.reticulumIdentity.title')}>
         <p className="text-muted text-xs">{t('connectionPanel.reticulumIdentity.hint')}</p>
         {identityError ? (
           <p className="mt-2 text-sm text-red-400" role="alert">

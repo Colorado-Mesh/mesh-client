@@ -114,6 +114,7 @@ import {
   RepeatersPanel,
   ReticulumPeerListPanel,
   ReticulumRadioPanel,
+  ReticulumTopologyPanel,
   RFHistogramsPanel,
   RoomsPanel,
   SecurityPanel,
@@ -133,7 +134,9 @@ import {
   resolveSavedTabOnProtocolSwitch,
   ROOMS_PANEL_INDEX,
   SECURITY_PANEL_INDEX,
+  TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
+import { dedupeChannelPillsByIndex } from './lib/channelListDedupe';
 import { playMessageNotification } from './lib/chatNotifications';
 import {
   deviceHeaderVariant,
@@ -1556,7 +1559,7 @@ function AppContent() {
     if (capabilities.hasCompanionContactManagementConfig) {
       return meshcoreConfiguredChatChannels(activeRuntime.channels);
     }
-    return activeRuntime.channels;
+    return dedupeChannelPillsByIndex(activeRuntime.channels);
   }, [
     capabilities.hasReticulumInterfaceConfig,
     capabilities.hasCompanionContactManagementConfig,
@@ -3416,6 +3419,25 @@ function AppContent() {
                               myNodeId={activeRuntime.selfNodeId}
                               onNodeClick={setSelectedNodeId}
                             />
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id="panel-18"
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TOPOLOGY_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== TOPOLOGY_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                      style={{ height: 'calc(100vh - 140px)' }}
+                    >
+                      {activePanelIndex === TOPOLOGY_PANEL_INDEX &&
+                      capabilities.hasReticulumTopologyPanel ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <div className="h-full overflow-auto p-4">
+                              <ReticulumTopologyPanel />
+                            </div>
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

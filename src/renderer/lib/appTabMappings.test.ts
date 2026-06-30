@@ -33,6 +33,15 @@ describe('computeTabMappings', () => {
     expect(tabs.displayTabLabels[nodesTabIndex]).toBe('tabs.peers');
   });
 
+  it('shows Topology tab for Reticulum only', () => {
+    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
+    const topologyPanelIndex = TAB_SLOT_IDS.indexOf('Topology');
+    expect(RETICULUM_CAPABILITIES.hasReticulumTopologyPanel).toBe(true);
+    expect(reticulumTabs.tabIndexToPanelIndex).toContain(topologyPanelIndex);
+    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(topologyPanelIndex);
+  });
+
   it('shows Nomad Network tab after Chat for Reticulum only', () => {
     const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const nomadIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(

@@ -2707,7 +2707,8 @@
     "rooms": "Räume",
     "admin": "Verwaltung",
     "peers": "Kollegen",
-    "nomadnetwork": "Nomadennetzwerk"
+    "nomadnetwork": "Nomadennetzwerk",
+    "topology": "Netzwerk-Topologie"
   },
   "takServerPanel": {
     "title": "TAK-Server",

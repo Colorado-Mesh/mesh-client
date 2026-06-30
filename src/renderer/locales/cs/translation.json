@@ -2707,7 +2707,8 @@
     "rooms": "Pokoje",
     "admin": "Správa",
     "peers": "Vazby",
-    "nomadnetwork": "Nomad Network"
+    "nomadnetwork": "Nomad Network",
+    "topology": "topologie sítě"
   },
   "takServerPanel": {
     "title": "Server TAK",

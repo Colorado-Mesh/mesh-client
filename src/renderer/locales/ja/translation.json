@@ -2707,7 +2707,8 @@
     "rooms": "客室数",
     "admin": "管理",
     "peers": "ピア",
-    "nomadnetwork": "ノマドネットワーク"
+    "nomadnetwork": "ノマドネットワーク",
+    "topology": "ネットワーク・トポロジー"
   },
   "takServerPanel": {
     "title": "TAKサーバー",

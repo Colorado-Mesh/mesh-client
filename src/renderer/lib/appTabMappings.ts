@@ -5,6 +5,7 @@ import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
 export const NOMAD_NETWORK_PANEL_INDEX = TAB_SLOT_IDS.indexOf('NomadNetwork');
+export const TOPOLOGY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Topology');
 export const NODES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Nodes');
 export const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
@@ -33,6 +34,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   'hasRawPacketLog', // Sniffer
   'hasRfStats', // RF
   'hasNeighborInfo', // Graph
+  'hasReticulumTopologyPanel', // Topology
 ];
 
 function tabVisible(

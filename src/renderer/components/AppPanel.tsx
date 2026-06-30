@@ -507,7 +507,7 @@ export default function AppPanel({
       window.electronAPI.db
         .getMeshcoreMessageChannels()
         .then((rows) => {
-          setMsgChannels(rows.map((r) => r.channel));
+          setMsgChannels([...new Set(rows.map((r) => r.channel))].sort((a, b) => a - b));
         })
         .catch((e: unknown) => {
           console.debug('[AppPanel] getMeshcoreMessageChannels ' + errLikeToLogString(e));
@@ -516,7 +516,7 @@ export default function AppPanel({
       window.electronAPI.db
         .getMessageChannels()
         .then((rows) => {
-          setMsgChannels(rows.map((r) => r.channel));
+          setMsgChannels([...new Set(rows.map((r) => r.channel))].sort((a, b) => a - b));
         })
         .catch((e: unknown) => {
           console.debug('[AppPanel] getMessageChannels ' + errLikeToLogString(e));
