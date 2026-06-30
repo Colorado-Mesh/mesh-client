@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "行を展開：ポートとホップの詳細は上部にあります。ホップカウントは、RFパケットでhopStart - hopLimitを使用します（ MQTTではありません）。",
     "portLabel": "ポート",
     "transportSourceLabel": "持ち運び",
-    "hopsAbsentMqtt": "RFホップカウントなし（ MQTTパス）。"
+    "hopsAbsentMqtt": "RFホップカウントなし（ MQTTパス）。",
+    "reticulum": {
+      "legendHint": "RNSヘッダーフィールドの行を展開します。RX =インターフェースで受信。TX =このノードからのアウトバウンド。",
+      "direction": "方向",
+      "interface": "インターフェイス",
+      "packetType": "パケットタイプ",
+      "headerType": "ヘッダー",
+      "destination": "移動先",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
-    "self": "あなたは"
+    "self": "あなたは",
+    "hopBadge": "{{count}}時間"
   }
 }

@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Rozwiń wiersz: szczegóły portu i hopów znajdują się na górze. Liczniki przeskoków wykorzystują hopStart − hopLimit na pakietach RF (nie MQTT).",
     "portLabel": "Port",
     "transportSourceLabel": "Transport",
-    "hopsAbsentMqtt": "Brak liczby przeskoków RF (ścieżka MQTT)."
+    "hopsAbsentMqtt": "Brak liczby przeskoków RF (ścieżka MQTT).",
+    "reticulum": {
+      "legendHint": "Rozwiń wiersz dla pól nagłówka RNS. RX = odebrane na interfejsie; TX = wychodzące z tego węzła.",
+      "direction": "Kierunek",
+      "interface": "Interfejs",
+      "packetType": "Typ pakietu",
+      "headerType": "Header",
+      "destination": "Cel",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Topologia sieci",
-    "self": "Możesz pobrać"
+    "self": "Ty",
+    "hopBadge": "{{count}}h"
   }
 }

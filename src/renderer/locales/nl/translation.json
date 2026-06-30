@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Breid een rij uit: port- en hopdetails staan bovenaan. Hoptellingen gebruiken hopStart − hopLimit op RF-pakketten (niet MQTT).",
     "portLabel": "Poort",
     "transportSourceLabel": "Transport",
-    "hopsAbsentMqtt": "Geen RF-hoptelling (MQTT-pad)."
+    "hopsAbsentMqtt": "Geen RF-hoptelling (MQTT-pad).",
+    "reticulum": {
+      "legendHint": "Vouw een rij uit voor RNS-koptekstvelden. RX = ontvangen op een interface; TX = uitgaand van dit knooppunt.",
+      "direction": "Richting",
+      "interface": "Interface",
+      "packetType": "Pakkettype",
+      "headerType": "Header",
+      "destination": "Bestemming",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",
-    "self": "Jij"
+    "self": "Jij",
+    "hopBadge": "{{count}}h"
   }
 }

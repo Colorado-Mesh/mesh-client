@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "展开一行：端口和跃点详细信息位于顶部。跳数在RF数据包上使用hopStart − hopLimit （而不是MQTT ）。",
     "portLabel": "端口",
     "transportSourceLabel": "开始运输",
-    "hopsAbsentMqtt": "无射频跳数（ MQTT路径）。"
+    "hopsAbsentMqtt": "无射频跳数（ MQTT路径）。",
+    "reticulum": {
+      "legendHint": "展开RNS标头字段的行。RX =在接口上接收； TX =从此节点出站。",
+      "direction": "方向",
+      "interface": "接口",
+      "packetType": "数据包类型",
+      "headerType": "标头",
+      "destination": "目标",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "网络拓扑图",
-    "self": "你"
+    "self": "你",
+    "hopBadge": "{{count}}小时"
   }
 }

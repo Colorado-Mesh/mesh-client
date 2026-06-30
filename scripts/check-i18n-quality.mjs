@@ -230,6 +230,21 @@ export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
 /** Raw packet log panel — route/transport labels and protocol enum copy. */
 export const RAW_PACKET_LOG_PREFIX = 'rawPacketLog.';
 
+/** Reticulum RNS header column labels under rawPacketLog.reticulum.* */
+export const RAW_PACKET_LOG_RETICULUM_PREFIX = 'rawPacketLog.reticulum.';
+
+/** RX/TX direction tokens must stay verbatim when English uses them. */
+export const RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS = new Set(['rx', 'tx']);
+
+export const RETICULUM_TOPOLOGY_SELF_KEY = 'reticulumTopology.self';
+export const RETICULUM_TOPOLOGY_HOP_BADGE_KEY = 'reticulumTopology.hopBadge';
+
+/** Topology graph label for the local node — short pronoun, not a phrase. */
+export const RETICULUM_TOPOLOGY_SELF_FALSE_FRIEND_RES = [
+  { re: /pour vous/i, hint: 'use short pronoun "Vous", not phrase "pour vous"' },
+  { re: /pobrać/i, hint: 'use pronoun "Ty", not download phrase "Możesz pobrać"' },
+];
+
 export const RAW_PACKET_LOG_PROTOCOL_KEYS = new Set([
   'transportLegendHint',
   'transportCodesAbsent',
@@ -1450,6 +1465,12 @@ export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChan
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
 
+/** Bare CAT placeholder residue (e.g. "PH 0") without __ wrappers. */
+export const CAT_BARE_PH_PLACEHOLDER_RE = /\bPH\s*\d+\b/;
+
+/** HTML tags leaked from CAT export (e.g. <span>…</span>). */
+export const HTML_TAG_RESIDUE_RE = /<\/?[a-z][\w-]*\b/i;
+
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
 const placeholderNameSetCache = new Map();
 
@@ -1492,7 +1513,7 @@ export function interpolationPlaceholderIssues(enVal, val) {
 export const LOCALE_ARTIFACT_RES = [
   /<g\s+id=/i,
   /<\/g>/i,
-  /<ph\s+id=/i,
+  /<ph\s+/i,
   /<bpt\b/i,
   /<ept\b/i,
   /equiv-text=/i,
@@ -1633,6 +1654,14 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
   const issues = [];
   if (CAT_PH_PLACEHOLDER_RE.test(val)) {
     issues.push('CAT/XLIFF __ PH __ placeholder residue is not allowed');
+  }
+
+  if (CAT_BARE_PH_PLACEHOLDER_RE.test(val)) {
+    issues.push('CAT placeholder residue (bare PH N) is not allowed — use {{name}} interpolation');
+  }
+
+  if (HTML_TAG_RESIDUE_RE.test(val)) {
+    issues.push('HTML tag residue is not allowed in locale strings');
   }
 
   for (const re of LOCALE_ARTIFACT_RES) {
@@ -1876,6 +1905,26 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
         issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
       }
     }
+    if (flatKey.startsWith(RAW_PACKET_LOG_RETICULUM_PREFIX)) {
+      if (
+        RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS.has(packetLeaf) &&
+        (enVal === 'RX' || enVal === 'TX') &&
+        val !== enVal
+      ) {
+        issues.push(
+          `rawPacketLog reticulum ${packetLeaf} must stay verbatim "${enVal}" (radio direction token)`,
+        );
+      }
+      if (
+        packetLeaf === 'destination' &&
+        enVal === 'Destination' &&
+        /^[:;.,!?]+$/.test(val.trim())
+      ) {
+        issues.push(
+          'rawPacketLog reticulum destination must be a label, not punctuation-only garbage',
+        );
+      }
+    }
     if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
       issues.push(
         'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
@@ -1884,6 +1933,28 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
     for (const issue of meshcoreProtocolTokenIssues(flatKey, enVal, val)) {
       issues.push(issue);
     }
+  }
+
+  if (flatKey === RETICULUM_TOPOLOGY_SELF_KEY && enVal === 'You' && locale !== 'en') {
+    if (val === 'You') {
+      issues.push('reticulumTopology.self must be translated (local pronoun for "You")');
+    }
+    for (const { re, hint } of RETICULUM_TOPOLOGY_SELF_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulumTopology.self false friend: ${hint}`);
+      }
+    }
+    if (val.split(/\s+/).length > 2) {
+      issues.push('reticulumTopology.self should be a short pronoun, not a multi-word phrase');
+    }
+  }
+
+  if (
+    flatKey === RETICULUM_TOPOLOGY_HOP_BADGE_KEY &&
+    enVal.includes('{{count}}') &&
+    !val.includes('{{count}}')
+  ) {
+    issues.push('reticulumTopology.hopBadge must preserve {{count}} placeholder');
   }
 
   if (

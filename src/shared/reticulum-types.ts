@@ -32,6 +32,7 @@ export interface ReticulumPeer {
   last_seen?: number | null;
   interface?: string | null;
   path_hash?: string | null;
+  via_hash?: string | null;
   identity_hash?: string;
   /** Populated after a path request when sidecar returns hop data. */
   path_hops?: number;
@@ -53,6 +54,29 @@ export interface ReticulumPeerWireRow {
   last_seen?: number | null;
   interface?: string | null;
   path_hash?: string | null;
+  via_hash?: string | null;
+}
+
+export interface ReticulumTopologyEdge {
+  source: string;
+  target: string;
+}
+
+/** Sidecar wire row for GET /api/v1/packets and WS wire_packet events. */
+export interface ReticulumWirePacketRow {
+  ts: number;
+  direction: string;
+  interface_id: number;
+  interface_name: string;
+  raw_hex: string;
+  rssi?: number | null;
+  snr?: number | null;
+  q?: number | null;
+  packet_type?: string | null;
+  header_type?: string | null;
+  destination_hash?: string | null;
+  transport_type?: string | null;
+  context?: string | null;
 }
 
 /** Sidecar wire row for GET /api/v1/contacts */

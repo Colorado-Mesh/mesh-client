@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Розгорніть рядок: деталі порту та переходу знаходяться у верхній частині. Підрахунок стрибка використовує hopStart − hopLimit на радіочастотних пакетах (не MQTT).",
     "portLabel": "Порт",
     "transportSourceLabel": "Телепортувати",
-    "hopsAbsentMqtt": "Немає кількості стрибків RF (шлях MQTT)."
+    "hopsAbsentMqtt": "Немає кількості стрибків RF (шлях MQTT).",
+    "reticulum": {
+      "legendHint": "Розгорніть рядок для полів заголовка RNS. RX = отримано на інтерфейсі; TX = вихід з цього вузла.",
+      "direction": "Напрямок",
+      "interface": "Інтерфейс",
+      "packetType": "Тип пакету",
+      "headerType": "хедер",
+      "destination": "Призначення",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Топологія мережі",
-    "self": "Ви"
+    "self": "Ви",
+    "hopBadge": "{{count}}год"
   }
 }

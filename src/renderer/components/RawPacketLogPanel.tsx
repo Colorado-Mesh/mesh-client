@@ -25,7 +25,11 @@ import {
   parseMeshtasticRawPacketExpand,
 } from '../lib/meshtastic/meshtasticRawPacketExpand';
 import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
-import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
+import type {
+  MeshtasticRawPacketEntry,
+  ReticulumRawPacketEntry,
+} from '../lib/rawPacketLogConstants';
+import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 
 const ROUTE_LABEL: Record<string, string> = {
   FLOOD: 'FLOOD',
@@ -312,6 +316,66 @@ function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
   );
 }
 
+function ReticulumExpandedDetails({ p }: { p: ReticulumRawPacketEntry }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+      <p>
+        <span className="text-muted">{t('rawPacketLog.reticulum.direction')}:</span>{' '}
+        {p.direction.toUpperCase()}
+        {' · '}
+        <span className="text-muted">{t('rawPacketLog.reticulum.interface')}:</span>{' '}
+        {p.interfaceName}
+      </p>
+      <p>
+        <span className="text-muted">{t('rawPacketLog.reticulum.packetType')}:</span>{' '}
+        {formatReticulumWireEnumLabel(p.packetType)}
+        {' · '}
+        <span className="text-muted">{t('rawPacketLog.reticulum.headerType')}:</span>{' '}
+        {formatReticulumWireEnumLabel(p.headerType)}
+      </p>
+      {p.destinationHash ? (
+        <p>
+          <span className="text-muted">{t('rawPacketLog.reticulum.destination')}:</span>{' '}
+          {p.destinationHash.slice(0, 16)}
+        </p>
+      ) : null}
+      {(p.rssi != null || p.snr != null) && (
+        <p>
+          {p.rssi != null ? `RSSI ${p.rssi.toFixed(1)}` : null}
+          {p.rssi != null && p.snr != null ? ' · ' : null}
+          {p.snr != null ? `SNR ${p.snr.toFixed(1)}` : null}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ReticulumRow({ p }: { p: ReticulumRawPacketEntry }) {
+  const { t } = useTranslation();
+  const typeLabel = formatReticulumWireEnumLabel(p.packetType);
+  const dirLabel =
+    p.direction === 'tx' ? t('rawPacketLog.reticulum.tx') : t('rawPacketLog.reticulum.rx');
+  return (
+    <>
+      <span className="text-muted w-16 shrink-0">{formatTs(p.ts)}</span>
+      <span
+        className={`shrink-0 rounded px-1 text-[10px] ${
+          p.direction === 'tx'
+            ? 'bg-blue-900/60 text-blue-200'
+            : 'bg-emerald-900/60 text-emerald-200'
+        }`}
+      >
+        {dirLabel}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-gray-200">
+        {typeLabel} · {p.interfaceName}
+        {p.destinationHash ? ` · ${p.destinationHash.slice(0, 8)}` : ''}
+      </span>
+    </>
+  );
+}
+
 interface MeshcoreProps {
   variant: 'meshcore';
   packets: RxPacketEntry[];
@@ -330,10 +394,18 @@ interface MeshtasticProps {
   onNodeClick?: (nodeId: number) => void;
 }
 
-type Props = MeshcoreProps | MeshtasticProps;
+interface ReticulumProps {
+  variant: 'reticulum';
+  packets: ReticulumRawPacketEntry[];
+  onClear: () => void;
+  getNodeLabel: (nodeId: number) => string;
+}
+
+type Props = MeshcoreProps | MeshtasticProps | ReticulumProps;
 
 export default function RawPacketLogPanel(props: Props) {
-  const { variant, packets, onClear, getNodeLabel, onNodeClick } = props;
+  const { variant, packets, onClear, getNodeLabel } = props;
+  const onNodeClick = variant === 'reticulum' ? undefined : props.onNodeClick;
   const floodScopeHashtag = variant === 'meshcore' ? props.floodScopeHashtag : undefined;
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
@@ -359,6 +431,16 @@ export default function RawPacketLogPanel(props: Props) {
             meshcoreRawPacketSenderColumnText(p.fromNodeId, getNodeLabel)
               .toUpperCase()
               .includes(q)),
+      );
+    }
+    if (variant === 'reticulum') {
+      return packets.filter(
+        (p) =>
+          p.interfaceName.toLowerCase().includes(f) ||
+          (p.packetType ?? '').toLowerCase().includes(f) ||
+          (p.destinationHash ?? '').toLowerCase().includes(f) ||
+          p.direction.includes(f) ||
+          toHex(p.raw).includes(f),
       );
     }
     return packets.filter(
@@ -401,6 +483,10 @@ export default function RawPacketLogPanel(props: Props) {
       {variant === 'meshcore' ? (
         <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
           {t('rawPacketLog.transportLegendHint')}
+        </p>
+      ) : variant === 'reticulum' ? (
+        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+          {t('rawPacketLog.reticulum.legendHint')}
         </p>
       ) : (
         <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
@@ -454,11 +540,15 @@ export default function RawPacketLogPanel(props: Props) {
               const hexRaw =
                 variant === 'meshcore'
                   ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
-                  : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
+                  : variant === 'reticulum'
+                    ? toHex((filtered as ReticulumRawPacketEntry[])[vi.index].raw)
+                    : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
               const byteLen =
                 variant === 'meshcore'
                   ? (filtered as RxPacketEntry[])[vi.index].raw.length
-                  : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
+                  : variant === 'reticulum'
+                    ? (filtered as ReticulumRawPacketEntry[])[vi.index].raw.length
+                    : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
               const toggleExpand = () => {
                 setExpandedIdx(isExpanded ? null : vi.index);
@@ -467,7 +557,9 @@ export default function RawPacketLogPanel(props: Props) {
               const rowPacket =
                 variant === 'meshcore'
                   ? (filtered as RxPacketEntry[])[vi.index]
-                  : (filtered as MeshtasticRawPacketEntry[])[vi.index];
+                  : variant === 'reticulum'
+                    ? (filtered as ReticulumRawPacketEntry[])[vi.index]
+                    : (filtered as MeshtasticRawPacketEntry[])[vi.index];
 
               return (
                 <div
@@ -489,6 +581,8 @@ export default function RawPacketLogPanel(props: Props) {
                           getNodeLabel={getNodeLabel}
                           onNodeClick={onNodeClick}
                         />
+                      ) : variant === 'reticulum' ? (
+                        <ReticulumRow p={(filtered as ReticulumRawPacketEntry[])[vi.index]} />
                       ) : (
                         <MeshtasticRow
                           p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
@@ -510,6 +604,11 @@ export default function RawPacketLogPanel(props: Props) {
                       {variant === 'meshtastic' && (
                         <MeshtasticExpandedDetails
                           p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                        />
+                      )}
+                      {variant === 'reticulum' && (
+                        <ReticulumExpandedDetails
+                          p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
                         />
                       )}
                       <p className="text-muted mb-1 text-[10px]">

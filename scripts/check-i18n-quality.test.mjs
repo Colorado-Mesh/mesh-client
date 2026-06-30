@@ -1330,6 +1330,66 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'teleport');
   });
 
+  it('flags non-verbatim RX in rawPacketLog.reticulum.rx', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'rawPacketLog.reticulum.rx',
+      val: 'Recept',
+      enVal: 'RX',
+    });
+    expectIssue(issues, 'rawPacketLog reticulum rx must stay verbatim "RX"');
+  });
+
+  it('flags CAT ph tag in rawPacketLog.reticulum.rx', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pt-BR',
+      flatKey: 'rawPacketLog.reticulum.rx',
+      val: 'RX<ph x="1" type="x-unknown"/>',
+      enVal: 'RX',
+    });
+    expectIssue(issues, 'CAT/XLIFF/Memsource XML residue');
+  });
+
+  it('flags punctuation-only rawPacketLog.reticulum.destination', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'rawPacketLog.reticulum.destination',
+      val: ':',
+      enVal: 'Destination',
+    });
+    expectIssue(issues, 'punctuation-only garbage');
+  });
+
+  it('flags bare PH 0 in reticulumTopology.hopBadge', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumTopology.hopBadge',
+      val: 'PH 0',
+      enVal: '{{count}}h',
+    });
+    expectIssue(issues, 'hopBadge must preserve {{count}} placeholder');
+  });
+
+  it('flags untranslated reticulumTopology.self', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumTopology.self',
+      val: 'You',
+      enVal: 'You',
+    });
+    expectIssue(issues, 'reticulumTopology.self must be translated');
+  });
+
+  it('flags HTML span residue in rawPacketLog.reticulum.packetType', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'rawPacketLog.reticulum.packetType',
+      val: '<span>Tipo de bulto</span>',
+      enVal: 'Packet type',
+    });
+    expectIssue(issues, 'HTML tag residue');
+  });
+
   const enMeshcoreOpenWireCompatHint =
     'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
 

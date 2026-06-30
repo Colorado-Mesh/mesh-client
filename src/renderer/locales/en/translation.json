@@ -1745,7 +1745,8 @@
   },
   "reticulumTopology": {
     "title": "Network topology",
-    "self": "You"
+    "self": "You",
+    "hopBadge": "{{count}}h"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",
@@ -2420,7 +2421,17 @@
     "transportCodesAbsent": "No regional transport codes ({{route}} route — only TRANSPORT_FLOOD / TRANSPORT_DIRECT carry scope/return).",
     "transportCodesAbsentTooltip": "Plain FLOOD and DIRECT packets do not include regional transport scope/return fields in the MeshCore RF header.",
     "noPacketsMatchFilter": "No packets match the current filter.",
-    "rawHexLabel": "Raw hex ({{bytes}} bytes):"
+    "rawHexLabel": "Raw hex ({{bytes}} bytes):",
+    "reticulum": {
+      "legendHint": "Expand a row for RNS header fields. RX = received on an interface; TX = outbound from this node.",
+      "direction": "Direction",
+      "interface": "Interface",
+      "packetType": "Packet type",
+      "headerType": "Header",
+      "destination": "Destination",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {

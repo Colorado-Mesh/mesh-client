@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Espandi una riga: i dettagli della porta e del salto sono in alto. I conteggi hop utilizzano hopStart − hopLimit sui pacchetti RF (non MQTT).",
     "portLabel": "Porta",
     "transportSourceLabel": "Trasporto",
-    "hopsAbsentMqtt": "Nessun conteggio hop RF (percorso MQTT)."
+    "hopsAbsentMqtt": "Nessun conteggio hop RF (percorso MQTT).",
+    "reticulum": {
+      "legendHint": "Espandere una riga per i campi di intestazione RNS. RX = ricevuto su un'interfaccia; TX = in uscita da questo nodo.",
+      "direction": "Direzione",
+      "interface": "Interfaccia",
+      "packetType": "Tipo pacchetto",
+      "headerType": "Intestazione",
+      "destination": "Destinazione",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Topologia di rete.",
-    "self": "Tu"
+    "self": "Tu",
+    "hopBadge": "{{count}}h"
   }
 }

@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Perluas baris: detail port dan hop ada di bagian atas. Jumlah hop menggunakan hopStart − hopLimit pada paket RF (bukan MQTT).",
     "portLabel": "Port",
     "transportSourceLabel": "Pengangkutan",
-    "hopsAbsentMqtt": "Tidak ada jumlah hop RF (jalur MQTT)."
+    "hopsAbsentMqtt": "Tidak ada jumlah hop RF (jalur MQTT).",
+    "reticulum": {
+      "legendHint": "Perluas baris untuk bidang header RNS. RX = diterima pada antarmuka; TX = keluar dari simpul ini.",
+      "direction": "Arah",
+      "interface": "Antarmuka",
+      "packetType": "Jenis paket",
+      "headerType": "Header",
+      "destination": "Destinasi",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Topologi jaringan",
-    "self": "Kau"
+    "self": "Kau",
+    "hopBadge": "{{count}}h"
   }
 }

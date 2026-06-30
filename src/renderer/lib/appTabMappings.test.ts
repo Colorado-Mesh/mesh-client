@@ -12,14 +12,14 @@ import { TAB_SLOT_IDS } from './tabSlotIds';
 const identityT = ((key: string) => key) as TFunction;
 
 describe('computeTabMappings', () => {
-  it('shows Radio and Graph tabs for Reticulum', () => {
+  it('shows Radio tab but not Graph for Reticulum', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const radioPanelIndex = TAB_SLOT_IDS.indexOf('Radio');
     const graphPanelIndex = TAB_SLOT_IDS.indexOf('Graph');
     expect(RETICULUM_CAPABILITIES.hasReticulumRadioPanel).toBe(true);
-    expect(RETICULUM_CAPABILITIES.hasNeighborInfo).toBe(true);
+    expect(RETICULUM_CAPABILITIES.hasNeighborInfo).toBe(false);
     expect(tabs.tabIndexToPanelIndex).toContain(radioPanelIndex);
-    expect(tabs.tabIndexToPanelIndex).toContain(graphPanelIndex);
+    expect(tabs.tabIndexToPanelIndex).not.toContain(graphPanelIndex);
   });
 
   it('shows Diagnostics for Reticulum when native engine is enabled', () => {

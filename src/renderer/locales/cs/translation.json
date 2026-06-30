@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Rozbalte řádek: podrobnosti o portu a hopu jsou nahoře. Počet chmelů používá hopStart − hopLimit na RF paketech (ne MQTT).",
     "portLabel": "Port",
     "transportSourceLabel": "Přeprava",
-    "hopsAbsentMqtt": "Žádný počet RF hop (cesta MQTT)."
+    "hopsAbsentMqtt": "Žádný počet RF hop (cesta MQTT).",
+    "reticulum": {
+      "legendHint": "Rozbalte řádek pro pole záhlaví RNS. RX = přijato na rozhraní; TX = odchozí z tohoto uzlu.",
+      "direction": "Směr",
+      "interface": "Rozhraní",
+      "packetType": "Typ paketů",
+      "headerType": "Header",
+      "destination": "Cíl",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "topologie sítě",
-    "self": "Vy"
+    "self": "Vy",
+    "hopBadge": "{{count}}h"
   }
 }

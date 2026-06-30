@@ -174,6 +174,7 @@ import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities
 import { parseStoredJson } from './lib/parseStoredJson';
 import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import { useRadioProvider } from './lib/radio/providerFactory';
+import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
@@ -3346,7 +3347,13 @@ function AppContent() {
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="p-4">
-                              {capabilities.modulesTabUsesRepeatersLabel ? (
+                              {protocol === 'reticulum' ? (
+                                <PacketDistributionPanel
+                                  variant="reticulum"
+                                  packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                />
+                              ) : capabilities.modulesTabUsesRepeatersLabel ? (
                                 <PacketDistributionPanel
                                   variant="meshcore"
                                   packets={meshcoreRuntime.rawPackets}
@@ -3378,7 +3385,16 @@ function AppContent() {
                       {activePanelIndex === 15 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            {capabilities.modulesTabUsesRepeatersLabel ? (
+                            {protocol === 'reticulum' ? (
+                              <RawPacketLogPanel
+                                variant="reticulum"
+                                packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
+                                onClear={() => {
+                                  reticulumPanelActions.clearRawPackets?.();
+                                }}
+                                getNodeLabel={rawPacketGetNodeLabel}
+                              />
+                            ) : capabilities.modulesTabUsesRepeatersLabel ? (
                               <RawPacketLogPanel
                                 variant="meshcore"
                                 packets={meshcoreRuntime.rawPackets}
@@ -3423,7 +3439,7 @@ function AppContent() {
                       className="w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 17 ? (
+                      {activePanelIndex === 17 && capabilities.hasNeighborInfo ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <PeerGraphPanel

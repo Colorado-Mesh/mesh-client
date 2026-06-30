@@ -59,6 +59,14 @@ pub struct PeerRow {
     pub last_seen: Option<u64>,
     pub interface: Option<String>,
     pub path_hash: Option<String>,
+    #[serde(default)]
+    pub via_hash: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopologyEdge {
+    pub source: String,
+    pub target: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -10,6 +10,10 @@ import {
   ingestReticulumLxmfPayloadWithSideEffects,
   type ReticulumLxmfPayload,
 } from '@/renderer/lib/ingest/reticulumIngest';
+import {
+  MAX_RAW_PACKET_LOG_ENTRIES,
+  type ReticulumRawPacketEntry,
+} from '@/renderer/lib/rawPacketLogConstants';
 import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   resolveReticulumDestinationHash,
@@ -20,6 +24,7 @@ import {
   markStaleReticulumOutboundInStore,
   markStaleReticulumOutboundMessages,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
@@ -31,7 +36,11 @@ import {
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
-import type { ReticulumContact, ReticulumSidecarEvent } from '@/shared/reticulum-types';
+import type {
+  ReticulumContact,
+  ReticulumSidecarEvent,
+  ReticulumWirePacketRow,
+} from '@/shared/reticulum-types';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -71,6 +80,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     getOfflineIdentityIdForProtocol('reticulum');
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
+  const [rawPackets, setRawPackets] = useState<ReticulumRawPacketEntry[]>([]);
   const unsubEventRef = useRef<(() => void) | null>(null);
   const connectInFlightRef = useRef(false);
   const suppressReconnectRef = useRef(false);
@@ -148,6 +158,37 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
   }, []);
 
+  const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
+    setRawPackets((prev) => {
+      const next = [...prev, entry];
+      if (next.length > MAX_RAW_PACKET_LOG_ENTRIES) {
+        return next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES);
+      }
+      return next;
+    });
+  }, []);
+
+  const hydrateRawPackets = useCallback(async () => {
+    try {
+      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/packets?limit=500')) as {
+        packets?: ReticulumWirePacketRow[];
+      };
+      const entries = (body.packets ?? []).map(reticulumWireRowToEntry);
+      setRawPackets(entries.slice(-MAX_RAW_PACKET_LOG_ENTRIES));
+    } catch (e) {
+      console.debug('[useReticulumRuntime] hydrate raw packets ' + errLikeToLogString(e));
+    }
+  }, []);
+
+  const clearRawPackets = useCallback(async () => {
+    setRawPackets([]);
+    try {
+      await window.electronAPI.reticulum.proxyDelete('/api/v1/packets');
+    } catch (e) {
+      console.debug('[useReticulumRuntime] clear raw packets ' + errLikeToLogString(e));
+    }
+  }, []);
+
   const ingestLxmfPayload = useCallback(
     (p: ReticulumLxmfPayload) => {
       if (!identityId) return;
@@ -184,6 +225,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const handleSidecarEvent = useCallback(
     (evt: ReticulumSidecarEvent) => {
+      if (evt.type === 'wire_packet' && evt.payload && typeof evt.payload === 'object') {
+        appendRawPacket(reticulumWireRowToEntry(evt.payload as ReticulumWirePacketRow));
+      }
       if (evt.type === 'lxmf_message' && evt.payload && typeof evt.payload === 'object') {
         ingestLxmfPayload(evt.payload);
       }
@@ -214,6 +258,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
     },
     [
+      appendRawPacket,
       ingestLxmfPayload,
       refreshContactsFromSidecar,
       refreshLocalInterfacesFromSidecar,
@@ -226,6 +271,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubEventRef.current = null;
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
+    setRawPackets([]);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -278,6 +324,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await refreshContactsFromSidecar();
       await refreshLocalInterfacesFromSidecar();
       await syncDiagnosticsFromSidecar();
+      await hydrateRawPackets();
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, 5 * MS_PER_MINUTE);
         markStaleReticulumOutboundInStore(identityId, 5 * MS_PER_MINUTE);
@@ -304,6 +351,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     refreshLocalInterfacesFromSidecar,
     refreshMessagesFromDb,
     syncDiagnosticsFromSidecar,
+    hydrateRawPackets,
     identityId,
     syncConnectionStore,
   ]);
@@ -315,6 +363,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     await window.electronAPI.reticulum.stop();
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
+    setRawPackets([]);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -484,7 +533,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       nodes,
       deviceOwner: null,
       deviceLogs: [],
-      rawPackets: [],
+      rawPackets,
+      clearRawPackets,
       queueStatus: null,
       ourPosition: null,
       gpsLoading: false,
@@ -533,6 +583,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connect,
       connectAutomatic,
       disconnect,
+      clearRawPackets,
+      rawPackets,
       sendMessage,
       sendReaction,
       sendAttachment,

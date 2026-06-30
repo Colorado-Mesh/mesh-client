@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "행 확장: 포트 및 홉 세부 정보가 맨 위에 있습니다. 홉 카운트는 RF 패킷 (MQTT 아님) 에서 hopStart − hopLimit를 사용합니다.",
     "portLabel": "포팅하기",
     "transportSourceLabel": "교통편",
-    "hopsAbsentMqtt": "RF 홉 카운트 (MQTT 경로) 없음."
+    "hopsAbsentMqtt": "RF 홉 카운트 (MQTT 경로) 없음.",
+    "reticulum": {
+      "legendHint": "RNS 헤더 필드의 행을 확장합니다. RX = 인터페이스에서 수신; TX = 이 노드에서 아웃바운드.",
+      "direction": "방향",
+      "interface": "인터페이스",
+      "packetType": "패킷 유형",
+      "headerType": "Header",
+      "destination": "대상",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
-    "self": "나"
+    "self": "나",
+    "hopBadge": "{{count}} h"
   }
 }

@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Erweitern Sie eine Zeile: Port- und Hop-Details befinden sich oben. Hop-Zählungen verwenden hopStart − hopLimit für RF-Pakete (nicht MQTT).",
     "portLabel": "Port",
     "transportSourceLabel": "Transport",
-    "hopsAbsentMqtt": "Keine RF-Hop-Zählung (MQTT-Pfad)."
+    "hopsAbsentMqtt": "Keine RF-Hop-Zählung (MQTT-Pfad).",
+    "reticulum": {
+      "legendHint": "Erweitern Sie eine Zeile für RNS-Header-Felder. RX = auf einer Schnittstelle empfangen; TX = ausgehend von diesem Knoten.",
+      "direction": "Richtung",
+      "interface": "Schnittstelle (Interface)",
+      "packetType": "Pakettyp",
+      "headerType": "Kopfzeile",
+      "destination": "Ziel",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
-    "self": "You"
+    "self": "Du",
+    "hopBadge": "{{count}}h"
   }
 }

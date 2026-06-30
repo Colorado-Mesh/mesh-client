@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Développez une ligne : les détails du port et du saut sont en haut. Le nombre de sauts utilise hopStart − hopLimit sur les paquets RF (pas MQTT).",
     "portLabel": "Port",
     "transportSourceLabel": "Transport",
-    "hopsAbsentMqtt": "Pas de nombre de sauts RF (chemin MQTT)."
+    "hopsAbsentMqtt": "Pas de nombre de sauts RF (chemin MQTT).",
+    "reticulum": {
+      "legendHint": "Développez une ligne pour les champs d'en-tête RNS. RX = reçu sur une interface ; TX = sortant de ce nœud.",
+      "direction": "Direction",
+      "interface": "Interface",
+      "packetType": "Type de paquet",
+      "headerType": "En-tête",
+      "destination": "Destination",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Topologie de réseau",
-    "self": "pour vous"
+    "self": "Vous",
+    "hopBadge": "{{count}}h"
   }
 }

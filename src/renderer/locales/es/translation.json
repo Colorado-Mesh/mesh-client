@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Expande una fila: los detalles del puerto y el salto están en la parte superior. Los conteos de saltos utilizan hopStart − hopLimit en paquetes RF (no MQTT).",
     "portLabel": "Puerto",
     "transportSourceLabel": "Transporte",
-    "hopsAbsentMqtt": "Sin recuento de saltos de RF (ruta MQTT)."
+    "hopsAbsentMqtt": "Sin recuento de saltos de RF (ruta MQTT).",
+    "reticulum": {
+      "legendHint": "Expanda una fila para los campos de encabezado RNS. RX = recibido en una interfaz; TX = saliente de este nodo.",
+      "direction": "Dirección",
+      "interface": "Interfaz",
+      "packetType": "Tipo de paquete",
+      "headerType": "Cabecera",
+      "destination": "Destino",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Topología de red",
-    "self": "Tú"
+    "self": "Tú",
+    "hopBadge": "{{count}}h"
   }
 }

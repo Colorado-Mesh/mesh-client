@@ -1,7 +1,9 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
 pub mod config;
+mod packet_log;
 mod persistence;
+mod topology;
 mod types;
 mod via;
 
@@ -12,6 +14,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
+use packet_log::{PacketLogBuffer, WirePacketRow, MAX_WIRE_PACKET_LOG};
 use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
@@ -24,6 +27,7 @@ pub struct StackHandle {
     pub storage_dir: PathBuf,
     inner: Arc<RwLock<PersistedState>>,
     event_tx: broadcast::Sender<String>,
+    packet_log: Arc<PacketLogBuffer>,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
 }
@@ -47,10 +51,13 @@ impl StackHandle {
         }
 
         #[cfg(feature = "rns-stack")]
+        let packet_log = Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG));
+        #[cfg(feature = "rns-stack")]
         let live = match live::LiveBridge::spawn(
             config_dir.clone(),
             storage_dir.clone(),
             event_tx.clone(),
+            packet_log.clone(),
             &mut persisted,
         )
         .await
@@ -63,13 +70,22 @@ impl StackHandle {
         };
 
         let inner = Arc::new(RwLock::new(persisted));
+        #[cfg(feature = "rns-stack")]
         let handle = Self {
             config_dir,
             storage_dir,
             inner,
             event_tx,
-            #[cfg(feature = "rns-stack")]
+            packet_log,
             live,
+        };
+        #[cfg(not(feature = "rns-stack"))]
+        let handle = Self {
+            config_dir,
+            storage_dir,
+            inner,
+            event_tx,
+            packet_log: Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG)),
         };
         handle.emit_stats().await;
         handle
@@ -82,6 +98,14 @@ impl StackHandle {
 
     pub fn subscribe_events(&self) -> broadcast::Receiver<String> {
         self.event_tx.subscribe()
+    }
+
+    pub fn list_packets(&self, limit: usize) -> Vec<WirePacketRow> {
+        self.packet_log.snapshot(limit)
+    }
+
+    pub fn clear_packets(&self) {
+        self.packet_log.clear();
     }
 
     async fn sync_interfaces_from_config(&self) {
@@ -379,7 +403,8 @@ impl StackHandle {
 
     pub async fn topology_snapshot(&self) -> serde_json::Value {
         let peers = self.list_peers().await;
-        serde_json::json!({ "nodes": peers, "edges": [] })
+        let (nodes, edges) = topology::build_topology(&peers);
+        serde_json::json!({ "nodes": nodes, "edges": edges })
     }
 
     pub async fn clear_announces(&self) -> Result<(), String> {
@@ -709,6 +734,7 @@ mod tests {
             last_seen: None,
             interface: None,
             path_hash: None,
+            via_hash: None,
         }];
         let empty = merge_live_peer_fetch(&mut cache, Ok(vec![]));
         assert_eq!(empty.len(), 1);
@@ -729,6 +755,7 @@ mod tests {
             last_seen: Some(1),
             interface: Some("tcp".into()),
             path_hash: None,
+            via_hash: None,
         };
         let fetched = merge_live_peer_fetch(&mut cache, Ok(vec![row.clone()]));
         assert_eq!(fetched.len(), 1);
@@ -745,6 +772,7 @@ mod tests {
             last_seen: None,
             interface: None,
             path_hash: None,
+            via_hash: None,
         }];
         let fetched = sync_live_peer_cache(&mut cache, vec![]);
         assert!(fetched.is_empty());
@@ -761,6 +789,7 @@ mod tests {
             last_seen: Some(1),
             interface: Some("tcp".into()),
             path_hash: None,
+            via_hash: None,
         };
         let fetched = sync_live_peer_cache(&mut cache, vec![row.clone()]);
         assert_eq!(fetched.len(), 1);

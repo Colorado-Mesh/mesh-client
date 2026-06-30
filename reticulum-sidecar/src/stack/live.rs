@@ -18,6 +18,7 @@ use tokio::sync::broadcast;
 
 use super::StackHandle;
 use super::persistence::PersistedState;
+use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
 use super::types::{InterfaceRow, LxmfSendRequest, PeerRow};
 use super::via::{
     classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via,
@@ -40,6 +41,7 @@ impl LiveBridge {
         config_dir: PathBuf,
         _storage_dir: PathBuf,
         event_tx: broadcast::Sender<String>,
+        packet_log: Arc<PacketLogBuffer>,
         persisted: &mut PersistedState,
     ) -> Result<Self, String> {
         let config_str = config_dir
@@ -57,6 +59,24 @@ impl LiveBridge {
                 lxmf_core::discovery_stamper::LxmfDiscoveryStamper::default(),
             ))
             .await;
+
+        let (tap_tx, mut tap_rx) = broadcast::channel(256);
+        handle.register_packet_tap(tap_tx).await;
+        let packet_log_tap = packet_log.clone();
+        let event_tx_tap = event_tx.clone();
+        tokio::spawn(async move {
+            loop {
+                match tap_rx.recv().await {
+                    Ok(evt) => {
+                        let row = wire_packet_from_tap(&evt);
+                        packet_log_tap.push(row.clone());
+                        emit_wire_packet_event(&event_tx_tap, &row);
+                    }
+                    Err(broadcast::error::RecvError::Lagged(_)) => {}
+                    Err(broadcast::error::RecvError::Closed) => break,
+                }
+            }
+        });
 
         let identity_path = config_dir.join("identity");
         let identity = if identity_path.exists() {
@@ -218,7 +238,8 @@ impl LiveBridge {
                 hops: Some(e.hops),
                 last_seen: Some(e.timestamp as u64),
                 interface: Some(e.interface.clone()),
-                path_hash: Some(hex::encode(e.hash)),
+                path_hash: e.via.map(hex::encode),
+                via_hash: e.via.map(hex::encode),
             })
             .collect())
     }

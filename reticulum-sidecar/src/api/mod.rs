@@ -76,6 +76,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/peers/{hash}/probe", post(lxmf::peer_probe))
         .route("/api/v1/ping", post(lxmf::ping))
         .route("/api/v1/topology", get(system::topology))
+        .route("/api/v1/packets", get(system::list_packets).delete(system::clear_packets))
         .route("/api/v1/announces", delete(system::clear_announces))
         .route("/api/v1/propagation", get(propagation::list_propagation))
         .route(

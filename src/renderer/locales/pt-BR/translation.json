@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Expanda uma linha: os detalhes da porta e do salto estão no topo. As contagens de salto usam hopStart − hopLimit em pacotes de RF (não MQTT).",
     "portLabel": "Porta",
     "transportSourceLabel": "Transporte",
-    "hopsAbsentMqtt": "Sem contagem de saltos de RF (caminho MQTT)."
+    "hopsAbsentMqtt": "Sem contagem de saltos de RF (caminho MQTT).",
+    "reticulum": {
+      "legendHint": "Expanda uma linha para campos de cabeçalho RNs. RX = recebido em uma interface; TX = saída deste nó.",
+      "direction": "Direção",
+      "interface": "Interface",
+      "packetType": "Tipo de pacote",
+      "headerType": "Cabeçalho",
+      "destination": "Destino",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Topologia de rede",
-    "self": "Você"
+    "self": "Você",
+    "hopBadge": "{{count}}h"
   }
 }

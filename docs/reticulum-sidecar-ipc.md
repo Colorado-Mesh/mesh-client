@@ -74,7 +74,9 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 | POST   | `/api/v1/peers/{hash}/path`          |                        | `{ ok }` — emits `peers_updated` WS on success                                     |
 | POST   | `/api/v1/peers/{hash}/probe`         |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success |
 | POST   | `/api/v1/ping`                       | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                  |
-| GET    | `/api/v1/topology`                   |                        | `{ nodes, edges }`                                                                 |
+| GET    | `/api/v1/topology`                   |                        | `{ nodes, edges }` — edges use path-table `via_hash` next hops when available      |
+| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)  | `{ packets: [] }` — recent wire tap ring buffer                                    |
+| DELETE | `/api/v1/packets`                    |                        | `{ ok }` — clear wire tap buffer                                                   |
 | GET    | `/api/v1/propagation`                |                        | `{ propagation, preferred_id, auto_sync_interval_sec }`                            |
 | POST   | `/api/v1/propagation/{id}/enable`    |                        | `{ ok }`                                                                           |
 | POST   | `/api/v1/propagation/{id}/disable`   |                        | `{ ok }`                                                                           |
@@ -110,7 +112,7 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`.
+Event types: `lxmf_message`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`.
 
 `lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
 

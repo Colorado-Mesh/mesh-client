@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Разверните строку: сведения о порте и прыжке находятся вверху. Счетчики прыжков используют hopStart − hopLimit на радиочастотных пакетах (не MQTT).",
     "portLabel": "Порт",
     "transportSourceLabel": "Транспорт",
-    "hopsAbsentMqtt": "Нет количества радиочастотных переходов (путь MQTT)."
+    "hopsAbsentMqtt": "Нет количества радиочастотных переходов (путь MQTT).",
+    "reticulum": {
+      "legendHint": "Разверните строку для полей заголовка RNS. RX = получен на интерфейсе; TX = исходящий из этого узла.",
+      "direction": "Направление",
+      "interface": "Интерфейс",
+      "packetType": "тип пакета",
+      "headerType": "Шапка",
+      "destination": "Адрес назначения",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Топология сети",
-    "self": "Вы"
+    "self": "Вы",
+    "hopBadge": "{{count}}h"
   }
 }

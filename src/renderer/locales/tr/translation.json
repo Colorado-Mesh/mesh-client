@@ -2324,7 +2324,17 @@
     "meshtasticLegendHint": "Bir satırı genişletin: bağlantı noktası ve atlama noktası ayrıntıları en üsttedir. Hop sayımları RF paketlerinde hopStart − hopLimit kullanır (MQTT değil).",
     "portLabel": "Liman",
     "transportSourceLabel": "Ulaşım",
-    "hopsAbsentMqtt": "RF atlama sayısı yok (MQTT yolu)."
+    "hopsAbsentMqtt": "RF atlama sayısı yok (MQTT yolu).",
+    "reticulum": {
+      "legendHint": "RNS başlık alanları için bir satır genişletin. RX = bir arayüzde alınır; TX = bu düğümden giden.",
+      "direction": "Yön",
+      "interface": "Arayüz",
+      "packetType": "Paket türü",
+      "headerType": "Header",
+      "destination": "Hedef",
+      "rx": "RX",
+      "tx": "TX"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -2974,6 +2984,7 @@
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",
-    "self": "Sen"
+    "self": "Sen",
+    "hopBadge": "{{count}}h"
   }
 }

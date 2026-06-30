@@ -15,6 +15,7 @@ export function useReticulumPanelActions(runtime: ReticulumRuntime) {
       sendReaction: runtime.sendReaction,
       sendAttachment: runtime.sendAttachment,
       handleSidecarEvent: runtime.handleSidecarEvent,
+      clearRawPackets: runtime.clearRawPackets,
     }),
     [runtime],
   );

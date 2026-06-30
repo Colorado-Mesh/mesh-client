@@ -3,7 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  buildReticulumStarFallbackEdges,
+  buildReticulumTopologyLayout,
+} from '@/renderer/lib/reticulum/buildReticulumTopologyLayout';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import type { ReticulumTopologyEdge } from '@/shared/reticulum-types';
 
 interface TopologyNode {
   destination_hash: string;
@@ -11,25 +16,24 @@ interface TopologyNode {
   hops?: number | null;
 }
 
-interface TopologyEdge {
-  source: string;
-  target: string;
-}
-
 interface RenderNode {
   id: string;
   label: string;
   x: number;
   y: number;
+  depth: number;
+  hops?: number | null;
+  isRelay: boolean;
 }
 
 const NODE_R = 16;
 const CENTER_R = 20;
+const RELAY_R = 18;
 
 export default function ReticulumTopologyPanel() {
   const { t } = useTranslation();
   const [nodes, setNodes] = useState<RenderNode[]>([]);
-  const [edges, setEdges] = useState<TopologyEdge[]>([]);
+  const [edges, setEdges] = useState<ReticulumTopologyEdge[]>([]);
   const [error, setError] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -39,7 +43,7 @@ export default function ReticulumTopologyPanel() {
     try {
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/topology')) as {
         nodes?: TopologyNode[];
-        edges?: TopologyEdge[];
+        edges?: ReticulumTopologyEdge[];
       };
       const peerNodes = body.nodes ?? [];
       const seenHashes = new Set<string>();
@@ -48,25 +52,13 @@ export default function ReticulumTopologyPanel() {
         seenHashes.add(peer.destination_hash);
         return true;
       });
-      const cx = 200;
-      const cy = 160;
-      const radius = Math.max(80, Math.min(140, 40 + uniquePeers.length * 8));
-      const rendered: RenderNode[] = [
-        { id: 'self', label: t('reticulumTopology.self'), x: cx, y: cy },
-      ];
-      uniquePeers.forEach((peer, i) => {
-        const angle = (2 * Math.PI * i) / Math.max(uniquePeers.length, 1);
-        rendered.push({
-          id: peer.destination_hash,
-          label: peer.display_name ?? peer.destination_hash.slice(0, 8),
-          x: cx + radius * Math.cos(angle),
-          y: cy + radius * Math.sin(angle),
-        });
-      });
-      const edgeList: TopologyEdge[] =
+      const edgeList: ReticulumTopologyEdge[] =
         body.edges && body.edges.length > 0
           ? body.edges
-          : uniquePeers.map((peer) => ({ source: 'self', target: peer.destination_hash }));
+          : buildReticulumStarFallbackEdges(uniquePeers);
+      const rendered = buildReticulumTopologyLayout(uniquePeers, edgeList, {
+        selfLabel: t('reticulumTopology.self'),
+      });
       setNodes(rendered);
       setEdges(edgeList);
     } catch (e) {
@@ -125,27 +117,24 @@ export default function ReticulumTopologyPanel() {
             />
           );
         })}
-        {nodes.map((node) => (
-          <g key={node.id}>
-            <circle
-              cx={node.x}
-              cy={node.y}
-              r={node.id === 'self' ? CENTER_R : NODE_R}
-              fill={node.id === 'self' ? '#16a34a' : '#334155'}
-              stroke="#6b7280"
-              strokeWidth={1}
-            />
-            <text
-              x={node.x}
-              y={node.y + (node.id === 'self' ? CENTER_R : NODE_R) + 12}
-              textAnchor="middle"
-              fill="#d1d5db"
-              fontSize={10}
-            >
-              {node.label}
-            </text>
-          </g>
-        ))}
+        {nodes.map((node) => {
+          const isSelf = node.id === 'self';
+          const r = isSelf ? CENTER_R : node.isRelay ? RELAY_R : NODE_R;
+          const fill = isSelf ? '#16a34a' : node.isRelay ? '#b45309' : '#334155';
+          return (
+            <g key={node.id}>
+              <circle cx={node.x} cy={node.y} r={r} fill={fill} stroke="#6b7280" strokeWidth={1} />
+              <text x={node.x} y={node.y + r + 12} textAnchor="middle" fill="#d1d5db" fontSize={10}>
+                {node.label}
+              </text>
+              {!isSelf && node.hops != null && node.hops > 1 ? (
+                <text x={node.x} y={node.y + 4} textAnchor="middle" fill="#fbbf24" fontSize={9}>
+                  {t('reticulumTopology.hopBadge', { count: node.hops })}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
       </svg>
     </div>
   );

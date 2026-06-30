@@ -21,7 +21,9 @@
  *    peer/propagation UI (must-translate stack/config strings, disable parallax false friends, peer/
  *    probe/host/transport colleague false friends, sidecar build/Rust/cargo literals); peerDetailModal
  *    probe toasts and reticulumPing.failed connection false friends; CAT HTML entities, bracket
- *    [Data] placeholders, and sample-name garbage on nameLabel.
+ *    [Data] placeholders, bare PH N / <ph> / HTML tag residue, and sample-name garbage on nameLabel;
+ *    rawPacketLog.reticulum RX/TX verbatim tokens and destination punctuation garbage;
+ *    reticulumTopology.self pronoun and hopBadge {{count}} placeholder.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

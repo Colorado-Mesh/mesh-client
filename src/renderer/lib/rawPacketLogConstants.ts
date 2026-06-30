@@ -21,3 +21,20 @@ export interface MeshtasticRawPacketEntry {
   viaMqtt: boolean;
   isLocal?: boolean;
 }
+
+/** Reticulum RNS wire frame from sidecar packet tap. */
+export interface ReticulumRawPacketEntry {
+  ts: number;
+  direction: 'rx' | 'tx';
+  interfaceId: number;
+  interfaceName: string;
+  raw: Uint8Array;
+  rssi?: number | null;
+  snr?: number | null;
+  q?: number | null;
+  packetType?: string | null;
+  headerType?: string | null;
+  destinationHash?: string | null;
+  transportType?: string | null;
+  context?: string | null;
+}

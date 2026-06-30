@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
 
 use crate::stack::StackHandle;
 
@@ -57,4 +57,27 @@ pub async fn clear_announces(State(stack): State<Arc<StackHandle>>) -> Json<serd
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
+}
+
+#[derive(serde::Deserialize)]
+pub struct PacketListQuery {
+    #[serde(default = "default_packet_limit")]
+    pub limit: usize,
+}
+
+fn default_packet_limit() -> usize {
+    500
+}
+
+pub async fn list_packets(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<PacketListQuery>,
+) -> Json<serde_json::Value> {
+    let limit = query.limit.clamp(1, 2500);
+    Json(serde_json::json!({ "packets": stack.list_packets(limit) }))
+}
+
+pub async fn clear_packets(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    stack.clear_packets();
+    Json(serde_json::json!({ "ok": true }))
 }
