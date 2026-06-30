@@ -486,7 +486,7 @@ impl StackHandle {
 }
 
 fn enumerate_serial_ports() -> Vec<serde_json::Value> {
-    let mut ports = Vec::new();
+    let mut ports: Vec<serde_json::Value> = Vec::new();
 
     #[cfg(target_os = "macos")]
     {
