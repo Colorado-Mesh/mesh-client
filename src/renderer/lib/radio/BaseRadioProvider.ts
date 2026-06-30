@@ -121,6 +121,8 @@ export interface ProtocolCapabilities {
   hasReticulumRadioPanel: boolean;
   /** Reticulum: LXMF file/image attachments in chat */
   hasLxmfAttachments: boolean;
+  /** Reticulum: RNode firmware flasher on Radio tab */
+  hasRNodeFlasher: boolean;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -182,6 +184,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumNetworkPanel: false,
   hasReticulumRadioPanel: false,
   hasLxmfAttachments: false,
+  hasRNodeFlasher: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -244,6 +247,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumNetworkPanel: false,
   hasReticulumRadioPanel: false,
   hasLxmfAttachments: false,
+  hasRNodeFlasher: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -305,4 +309,5 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumNetworkPanel: true,
   hasReticulumRadioPanel: true,
   hasLxmfAttachments: true,
+  hasRNodeFlasher: true,
 };

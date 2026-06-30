@@ -52,12 +52,25 @@ flowchart TB
 
 Interfaces are stored in the sidecar rnsd config under Electron `userData/reticulum/config/`. The Radio tab **Interfaces** section supports:
 
-| Action           | UI                                                            | Sidecar API                      |
-| ---------------- | ------------------------------------------------------------- | -------------------------------- |
-| Add              | Type selector (TCP / Auto / RNode) + form + **Add interface** | `POST /api/v1/interfaces`        |
-| Edit             | **Edit** on a row → inline form                               | `PUT /api/v1/interfaces/{id}`    |
-| Enable / disable | Per-row toggle                                                | `POST …/enable` or `…/disable`   |
-| Delete           | **Delete** + confirmation modal                               | `DELETE /api/v1/interfaces/{id}` |
+| Action | UI                                                            | Sidecar API               |
+| ------ | ------------------------------------------------------------- | ------------------------- |
+| Add    | Type selector (TCP / Auto / RNode) + form + **Add interface** | `POST /api/v1/interfaces` |
+
+## RNode firmware flasher
+
+The **Reticulum → Radio** tab includes a collapsible **RNode Firmware Flasher** section (visible before the stack starts). It uses the renderer **Web Serial API** to:
+
+1. Flash nRF52 devices (DFU touch + zip manifest) or ESP32 devices (`esptool-js`).
+2. **Provision** EEPROM on new hardware (device info, MD5 checksum, lock byte).
+3. **Set firmware hash** after each flash (reads hash from device).
+4. Optional advanced tools: Bluetooth, TNC mode, display read/rotation, EEPROM wipe.
+
+**Serial port contention:** stop the Reticulum stack (or disable the active RNode interface) before flashing—the sidecar holds the serial port when an RNode interface is enabled. Disconnect Meshtastic or MeshCore USB serial on the same device.
+
+Firmware `.zip` files are selected locally (in-app GitHub download is deferred).
+| Edit | **Edit** on a row → inline form | `PUT /api/v1/interfaces/{id}` |
+| Enable / disable | Per-row toggle | `POST …/enable` or `…/disable` |
+| Delete | **Delete** + confirmation modal | `DELETE /api/v1/interfaces/{id}` |
 
 **Edit fields by type:**
 

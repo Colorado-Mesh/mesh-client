@@ -40,9 +40,12 @@ export const VITEST_SERVER_INLINE_EXTRA_DEPS = [
   'leaflet',
   'react-leaflet',
   'vitest-axe',
+  'js-md5',
 ] as const;
 
 export const VITEST_SERVER_INLINE_DEPS = [
   ...VITEST_CORE_DEPS,
   ...VITEST_SERVER_INLINE_EXTRA_DEPS,
+  'esptool-js',
+  '@zip.js/zip.js',
 ] as const;

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
@@ -10,6 +11,7 @@ import {
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { ConfirmModal } from './ConfirmModal';
+import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
 
 interface ReticulumInterfaceRow {
   id: string;
@@ -59,6 +61,7 @@ export function ReticulumRadioPanel({
   onStartStack,
 }: ReticulumRadioPanelProps) {
   const { t } = useTranslation();
+  const capabilities = useRadioProvider('reticulum');
   const { sidecarApiReady, identity, statsSummary, appInfo, refreshIdentity } =
     useReticulumSidecarApi({
       stackRunning,
@@ -421,9 +424,17 @@ export function ReticulumRadioPanel({
 
   const identityReady = identity?.configured === true;
   const identityActionsDisabled = !sidecarApiReady || connecting;
+  const rnodeInterfaceActive =
+    stackRunning &&
+    interfaces.some((iface) => iface.enabled && iface.type.toLowerCase().includes('rnode'));
+  const flasherPortBlocked = rnodeInterfaceActive;
 
   return (
     <div className="space-y-4">
+      {capabilities.hasRNodeFlasher ? (
+        <RNodeFlasherSection portBlocked={flasherPortBlocked} />
+      ) : null}
+
       {!sidecarApiReady ? (
         <p className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
