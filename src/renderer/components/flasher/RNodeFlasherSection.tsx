@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useElectronSerialPortPicker } from '@/renderer/hooks/useElectronSerialPortPicker';
 import { bytesToHex } from '@/renderer/lib/flasher/binaryUtils';
 import { rnodeDisplayBufferToPng } from '@/renderer/lib/flasher/displayUtils';
 import { flashEsp32Firmware } from '@/renderer/lib/flasher/esp32Flasher';
@@ -11,9 +12,11 @@ import {
   safeCloseSerialPort,
 } from '@/renderer/lib/flasher/flasherSerial';
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
+import { prepareEsp32PortForFlash } from '@/renderer/lib/flasher/prepareEsp32PortForFlash';
 import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
+import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { AdvancedTools } from './AdvancedTools';
@@ -23,6 +26,7 @@ import { DfuModeTrigger } from './DfuModeTrigger';
 import { DisplayCanvas } from './DisplayCanvas';
 import { FirmwareHashStep } from './FirmwareHashStep';
 import { FirmwarePicker } from './FirmwarePicker';
+import { FlasherSerialPortPicker } from './FlasherSerialPortPicker';
 import { FlashProgress } from './FlashProgress';
 import { ProvisionStep } from './ProvisionStep';
 import { TncConfig } from './TncConfig';
@@ -33,6 +37,8 @@ export interface RNodeFlasherSectionProps {
 
 export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const { t } = useTranslation();
+  const { serialPorts, showSerialPicker, requestSerialPort, selectSerialPort, cancelSerialPicker } =
+    useElectronSerialPortPicker();
   const [selectedProduct, setSelectedProduct] = useState<RNodeProduct | null>(null);
   const [selectedModel, setSelectedModel] = useState<RNodeModel | null>(null);
   const [firmwareFile, setFirmwareFile] = useState<File | null>(null);
@@ -63,7 +69,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       setBusy(true);
       let port: SerialPort | null = null;
       try {
-        port = await requestFlasherSerialPort();
+        port = await requestFlasherSerialPort(requestSerialPort);
         const rnode = await connectRNode(port);
         await fn(rnode);
         await rnode.close();
@@ -75,7 +81,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
         setBusy(false);
       }
     },
-    [portBlocked, t, showStatus],
+    [portBlocked, t, showStatus, requestSerialPort],
   );
 
   const handleEnterDfu = useCallback(async () => {
@@ -90,7 +96,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     setBusy(true);
     let port: SerialPort | null = null;
     try {
-      port = await requestFlasherSerialPort();
+      port = await requestFlasherSerialPort(requestSerialPort);
       const flasher = new Nrf52DfuFlasher(port);
       await flasher.enterDfuMode();
       showStatus(t('flasher.dfuModeDone'));
@@ -101,7 +107,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       await safeCloseSerialPort(port);
       setBusy(false);
     }
-  }, [portBlocked, selectedProduct, t, showStatus]);
+  }, [portBlocked, selectedProduct, t, showStatus, requestSerialPort]);
 
   const handleFlash = useCallback(async () => {
     if (portBlocked) {
@@ -122,7 +128,8 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     let port: SerialPort | null = null;
 
     try {
-      port = await requestFlasherSerialPort();
+      port = await requestFlasherSerialPort(requestSerialPort);
+      persistSerialPortIdentity(port);
 
       if (selectedProduct.platform === ROM.PLATFORM_NRF52) {
         const flasher = new Nrf52DfuFlasher(port);
@@ -133,6 +140,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           showStatus(t('flasher.errors.flashConfigMissing'), true);
           return;
         }
+        await prepareEsp32PortForFlash(port);
         await flashEsp32Firmware(port, firmwareFile, flashConfig, setFlashProgress);
       } else {
         showStatus(t('flasher.errors.selectProduct'), true);
@@ -147,7 +155,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       await safeCloseSerialPort(port);
       setFlashing(false);
     }
-  }, [firmwareFile, portBlocked, selectedModel, selectedProduct, showStatus, t]);
+  }, [firmwareFile, portBlocked, requestSerialPort, selectedModel, selectedProduct, showStatus, t]);
 
   const handleProvision = useCallback(async () => {
     if (!selectedProduct || !selectedModel) {
@@ -209,6 +217,14 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           <p className="rounded border border-amber-600/40 bg-amber-950/20 p-2 text-xs text-amber-200">
             {t('flasher.portContentionWarning')}
           </p>
+        ) : null}
+
+        {showSerialPicker ? (
+          <FlasherSerialPortPicker
+            ports={serialPorts}
+            onSelect={selectSerialPort}
+            onCancel={cancelSerialPicker}
+          />
         ) : null}
 
         {statusMessage ? (

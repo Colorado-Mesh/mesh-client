@@ -1,11 +1,15 @@
 import type { FileEntry } from '@zip.js/zip.js';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
+import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
+
 import { blobToBinaryString } from './binaryUtils';
 import { md5Latin1String } from './md5';
 import type { Esp32FlashConfig, FlashProgressCallback } from './types';
 
 const ESP32_FLASH_BAUD = 921600;
+/** Reject instant "success" when almost no firmware bytes were written. */
+const MIN_FLASH_BYTES_WRITTEN = 8192;
 
 export async function flashEsp32Firmware(
   serialPort: SerialPort,
@@ -13,6 +17,8 @@ export async function flashEsp32Firmware(
   flashConfig: Esp32FlashConfig,
   progressCallback?: FlashProgressCallback,
 ): Promise<void> {
+  await closeSerialPortIfOpen(serialPort);
+
   const { ESPLoader, Transport } = await import('esptool-js');
 
   const blobReader = new BlobReader(firmwareZip);
@@ -31,6 +37,9 @@ export async function flashEsp32Firmware(
     const data = await blobToBinaryString(blob);
     filesToFlash.push({ address: parseInt(address, 10), data });
   }
+
+  const totalFirmwareBytes = filesToFlash.reduce((sum, file) => sum + file.data.length, 0);
+  let maxBytesWritten = 0;
 
   const transport = new Transport(serialPort, true);
   const esploader = new ESPLoader({
@@ -54,6 +63,14 @@ export async function flashEsp32Firmware(
 
   await esploader.main();
 
+  const chipName =
+    (esploader as { chip?: { CHIP_NAME?: string } }).chip?.CHIP_NAME ??
+    (esploader as { chipName?: string }).chipName ??
+    '';
+  if (!chipName) {
+    throw new Error('ESP32_SYNC_FAILED');
+  }
+
   await esploader.writeFlash({
     fileArray: filesToFlash,
     flashSize: flashConfig.flash_size,
@@ -63,9 +80,14 @@ export async function flashEsp32Firmware(
     compress: true,
     calculateMD5Hash: (image: string) => md5Latin1String(image),
     reportProgress: (_fileIndex: number, written: number, total: number) => {
+      maxBytesWritten = Math.max(maxBytesWritten, written);
       progressCallback?.(Math.floor((written / total) * 100));
     },
   });
+
+  if (totalFirmwareBytes >= MIN_FLASH_BYTES_WRITTEN && maxBytesWritten < MIN_FLASH_BYTES_WRITTEN) {
+    throw new Error('FLASH_TRANSFER_TOO_SMALL');
+  }
 
   await transport.setDTR(false);
   await new Promise((resolve) => setTimeout(resolve, 100));

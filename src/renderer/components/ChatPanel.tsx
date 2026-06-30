@@ -45,7 +45,9 @@ import {
   MeshtasticMqttPathIcon,
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
+import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
+import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -453,8 +455,12 @@ function ChatPanel({
   const { addToast } = useToast();
   const ownNodeIdSet = useMemo(() => {
     const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
-    return new Set(base.filter((id) => id > 0));
-  }, [myNodeNum, ownNodeIds]);
+    const ids = base.filter((id) => id > 0);
+    if (protocol === 'reticulum') {
+      return new Set(ids.map((id) => normalizeReticulumNodeId(id)));
+    }
+    return new Set(ids);
+  }, [myNodeNum, ownNodeIds, protocol]);
 
   const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
 
@@ -760,27 +766,10 @@ function ChatPanel({
     for (const [nodeNum, unread] of dmUnreadCounts) {
       if (unread > 0) all.add(nodeNum);
     }
-    // Reticulum LXMF is DM-only: surface known contacts even without prior chat history.
-    if (dmOnlyChat) {
-      for (const nodeId of nodes.keys()) {
-        if (nodeId === myNodeNum) continue;
-        all.add(nodeId);
-      }
-    }
     return Array.from(all).filter(
       (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
     );
-  }, [
-    activeDmNode,
-    dismissedDmTabs,
-    dmOnlyChat,
-    dmUnreadCounts,
-    inferredDmTabs,
-    myNodeNum,
-    nodes,
-    openDmTabs,
-    protocol,
-  ]);
+  }, [activeDmNode, dismissedDmTabs, dmUnreadCounts, inferredDmTabs, openDmTabs, protocol]);
 
   // Reticulum DM-only: auto-focus first contact when none selected (contacts lack inferred tabs).
   useEffect(() => {
@@ -815,17 +804,25 @@ function ChatPanel({
 
   const viewMessages = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) {
+      const dmPeer =
+        protocol === 'reticulum' ? normalizeReticulumNodeId(activeDmNode) : activeDmNode;
+      if (protocol === 'reticulum') {
+        const filtered = regularMessages.filter((m) =>
+          reticulumMessageMatchesDmPeer(m, dmPeer, ownNodeIdSet),
+        );
+        return filtered;
+      }
       return regularMessages.filter(
         (m) =>
-          (m.to === activeDmNode && isOwnNode(m.sender_id)) ||
-          (m.sender_id === activeDmNode &&
+          (m.to === dmPeer && isOwnNode(m.sender_id)) ||
+          (m.sender_id === dmPeer &&
             (isOwnNode(m.to ?? 0) ||
               (protocol === 'meshcore' && m.channel === -1 && !isOwnNode(m.sender_id)))),
       );
     }
 
     return regularMessages.filter((m) => !m.to && m.channel === channel);
-  }, [activeDmNode, channel, isOwnNode, protocol, regularMessages, viewMode]);
+  }, [activeDmNode, channel, isOwnNode, protocol, regularMessages, viewMode, ownNodeIdSet]);
 
   const filteredMessages = useMemo(() => {
     let msgs = viewMessages;
@@ -2371,24 +2368,26 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {isOwn && msg.status === 'failed' && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onResend(msg);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
-                                    title={t('chatPanel.resendMessage')}
-                                  >
-                                    <RotateCcw
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
+                                {isOwn &&
+                                  (msg.status === 'failed' ||
+                                    (protocol === 'reticulum' && msg.status === 'sending')) && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onResend(msg);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      title={t('chatPanel.resendMessage')}
+                                    >
+                                      <RotateCcw
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                 {showLxmfDeliveryStatus && msg.status ? (
                                   <ReticulumMessageStatusBadge
                                     status={

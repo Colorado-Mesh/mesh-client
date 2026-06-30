@@ -24,11 +24,12 @@ import type { ContactGroup } from '../../shared/electron-api.types';
 import type { MeshNode } from '../lib/types';
 import {
   refreshReticulumPeersFromSidecar,
+  resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
 import { useToast } from './Toast';
 
-type PeerListTab = 'peers' | 'contacts';
+type PeerListTab = 'peers' | 'contacts' | 'favorites';
 type SortKey = 'name' | 'hops' | 'lastSeen' | 'interface' | 'favorite';
 type SortDir = 'asc' | 'desc';
 
@@ -112,7 +113,7 @@ export default function ReticulumPeerListPanel({
   const { addToast } = useToast();
   const peers = useReticulumPeerStore((s) => s.peers);
   const contacts = useReticulumPeerStore((s) => s.contacts);
-  const getDisplayName = useReticulumPeerStore((s) => s.getDisplayName);
+  const dismissedContactHashes = useReticulumPeerStore((s) => s.dismissedContactHashes);
   const isContact = useReticulumPeerStore((s) => s.isContact);
 
   const handleToggleFavorite = useCallback(
@@ -157,7 +158,25 @@ export default function ReticulumPeerListPanel({
     void runRefresh();
   }, [isConnected, runRefresh]);
 
+  const resolvePeerLabel = useCallback(
+    (peer: ReticulumPeer) => {
+      const nodeId = reticulumHashToNodeId(peer.destination_hash);
+      return resolveReticulumPeerLabel(peer, contactNodes?.get(nodeId)?.long_name);
+    },
+    [contactNodes],
+  );
+
   const sourceRows = useMemo(() => {
+    if (activeTab === 'favorites') {
+      const all = new Map<string, ReticulumPeer>();
+      for (const peer of peers.values()) {
+        if (peer.favorited) all.set(peer.destination_hash, peer);
+      }
+      for (const contact of contacts.values()) {
+        if (contact.favorited) all.set(contact.destination_hash, contact);
+      }
+      return [...all.values()];
+    }
     if (activeTab === 'contacts') {
       let rows: ReticulumPeer[];
       if (contactNodes && contactNodes.size > 0) {
@@ -165,6 +184,8 @@ export default function ReticulumPeerListPanel({
         for (const node of contactNodes.values()) {
           const hash = node.reticulum_destination_hash;
           if (!hash) continue;
+          const normalized = hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+          if (dismissedContactHashes.has(normalized)) continue;
           const fromStore = contacts.get(hash) ?? peers.get(hash);
           rows.push(
             fromStore ?? {
@@ -185,23 +206,35 @@ export default function ReticulumPeerListPanel({
       return rows;
     }
     return [...peers.values()];
-  }, [activeTab, contactNodes, contacts, peers, selectedGroupId, groupMemberIds]);
+  }, [
+    activeTab,
+    contactNodes,
+    contacts,
+    peers,
+    selectedGroupId,
+    groupMemberIds,
+    dismissedContactHashes,
+  ]);
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return sourceRows;
     return sourceRows.filter((peer) => {
-      const name = getDisplayName(peer).toLowerCase();
+      const name = resolvePeerLabel(peer).toLowerCase();
       const hash = peer.destination_hash.toLowerCase();
       return name.includes(q) || hash.includes(q);
     });
-  }, [searchQuery, sourceRows, getDisplayName]);
+  }, [searchQuery, sourceRows, resolvePeerLabel]);
 
   const sortedRows = useMemo(() => {
     const rows = [...filteredRows];
-    rows.sort((a, b) => comparePeers(a, b, sortKey, sortDir, getDisplayName));
+    rows.sort((a, b) => {
+      const favDelta = Number(Boolean(b.favorited)) - Number(Boolean(a.favorited));
+      if (favDelta !== 0) return favDelta;
+      return comparePeers(a, b, sortKey, sortDir, resolvePeerLabel);
+    });
     return rows;
-  }, [filteredRows, sortKey, sortDir, getDisplayName]);
+  }, [filteredRows, sortKey, sortDir, resolvePeerLabel]);
 
   const shouldVirtualize = sortedRows.length > 100;
   const rowVirtualizer = useVirtualizer({
@@ -295,7 +328,11 @@ export default function ReticulumPeerListPanel({
   };
 
   const emptyKey =
-    activeTab === 'contacts' ? 'peerListPanel.emptyContacts' : 'peerListPanel.emptyPeers';
+    activeTab === 'contacts'
+      ? 'peerListPanel.emptyContacts'
+      : activeTab === 'favorites'
+        ? 'peerListPanel.emptyFavorites'
+        : 'peerListPanel.emptyPeers';
 
   const tableColSpan = activeTab === 'peers' ? 6 : 5;
 
@@ -394,6 +431,17 @@ export default function ReticulumPeerListPanel({
           }}
         >
           {t('peerListPanel.tabContacts')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'favorites'}
+          className={`rounded px-3 py-1 text-sm ${activeTab === 'favorites' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
+          onClick={() => {
+            setActiveTab('favorites');
+          }}
+        >
+          {t('peerListPanel.tabFavorites')}
         </button>
         {contactGroupsEnabled && activeTab === 'contacts' && onGroupChange ? (
           <>
@@ -554,7 +602,7 @@ export default function ReticulumPeerListPanel({
                 const peer = sortedRows[virtualRow.index];
                 if (!peer) return null;
                 const busy = actionBusyHash === peer.destination_hash;
-                const label = getDisplayName(peer);
+                const label = resolvePeerLabel(peer);
                 const hashTitle = peer.destination_hash;
                 const contacted = isContact(peer.destination_hash);
                 return (

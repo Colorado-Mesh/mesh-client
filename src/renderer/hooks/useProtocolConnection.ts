@@ -5,7 +5,7 @@ import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
-import { getReticulumSession } from '../lib/sessions/reticulumSession';
+import { getReticulumSession, tryGetReticulumSession } from '../lib/sessions/reticulumSession';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
 import { useConnect } from './useConnect';
 import { useConnectionByProtocol } from './useConnectionByProtocol';
@@ -138,7 +138,11 @@ export function useProtocolConnectionActions(protocol: MeshProtocol): ProtocolCo
         );
       }
       if (protocol === 'reticulum') {
-        return getReticulumSession().connectAutomatic();
+        const session = tryGetReticulumSession();
+        if (session) {
+          return session.connectAutomatic();
+        }
+        return window.electronAPI.reticulum.start({ reuseIfRunning: true }).then(() => undefined);
       }
       return getMeshtasticSession().connectAutomatic(
         type,

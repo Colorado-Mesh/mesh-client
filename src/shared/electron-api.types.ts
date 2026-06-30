@@ -250,6 +250,7 @@ export interface ElectronAPI {
     ) => Promise<{ changes?: number }>;
     vacuumReticulumTables: () => Promise<{ ok?: boolean }>;
     getReticulumDestinations: () => Promise<unknown[]>;
+    deleteReticulumDestination: (destinationHash: string) => Promise<{ changes: number }>;
     upsertReticulumDestination: (row: {
       destination_hash: string;
       display_name?: string | null;

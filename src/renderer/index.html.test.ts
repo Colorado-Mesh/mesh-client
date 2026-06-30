@@ -21,4 +21,9 @@ describe('index.html CSP', () => {
     const csp = readCspContent();
     expect(csp).toMatch(/img-src[^;]*\bhttps:/);
   });
+
+  it('worker-src allows zip.js blob workers for RNode flasher', () => {
+    const csp = readCspContent();
+    expect(csp).toMatch(/worker-src[^;]*\bblob:/);
+  });
 });

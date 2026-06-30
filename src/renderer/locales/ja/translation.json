@@ -2869,8 +2869,15 @@
       "selectModel": "まずモデルを選択してください。",
       "selectFirmware": "最初にファームウェア ファイルを選択します。",
       "flashConfigMissing": "このデバイスではフラッシュ構成を使用できません。",
-      "blockedByStack": "Reticulum スタックが RNode シリアル ポートを保持している間はフラッシュできません。"
-    }
+      "blockedByStack": "Reticulum スタックが RNode シリアル ポートを保持している間はフラッシュできません。",
+      "esp32SyncFailed": "ESP 32ブートローダーと同期できませんでした。USBケーブルとポートを確認し、シリアルポートを使用して他のアプリを停止して、もう一度やり直してください。",
+      "flashTransferTooSmall": "ファームウェア転送が完了しませんでした—ほとんどデータが書き込まれませんでした。正しいUSBポートを選択し、ボードがブートローダーモードに入ったことを確認します。"
+    },
+    "selectSerialPort": "シリアルポートを選択",
+    "noSerialPorts": "USBシリアルポートが見つかりません。",
+    "noSerialPortsHint": "USB経由でボードを接続します。ログ内のBluetoothデバイスは無視されます。点滅に使用できるのはUSBシリアルポートのみです。",
+    "stackStoppedHint": "Reticulumスタックが停止しています—シリアルポートは点滅のために空いています。完了したら、[接続]タブでスタックを再起動します。",
+    "lastUsedPort": "前回使用"
   },
   "peerListPanel": {
     "heading": "ピア",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "最後のヒアリング",
     "colContact": "お問い合わせ",
     "contactYes": "あり",
-    "contactNo": "なし"
+    "contactNo": "なし",
+    "tabFavorites": "お気に入り",
+    "emptyFavorites": "お気に入りのピアはまだありません。連絡先またはピアに星を付けて、ここにピン留めします。"
   },
   "peerDetailModal": {
     "networkSection": "ネットワーク",
@@ -2911,7 +2920,12 @@
     "call": "音声通話",
     "callComingSoon": "今後のアップデートで予定されている音声通話",
     "iconColor": "アバターの色",
-    "iconColorAria": "ピアアバターの色"
+    "iconColorAria": "ピアアバターの色",
+    "saveContact": "連絡用として保存）",
+    "removeContact": "連絡先を削除",
+    "removeContactConfirmTitle": "連絡先を削除",
+    "removeContactConfirmBody": "これにより、連絡先がリストから削除されます。チャット履歴は保持されます。再度メッセージを送信すると、連絡先が再度追加されます。",
+    "probeOk": "プローブOK —到達可能なパス。"
   },
   "reticulumPropagation": {
     "preferred": "推奨",

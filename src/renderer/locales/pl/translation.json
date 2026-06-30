@@ -2869,8 +2869,15 @@
       "selectModel": "Najpierw wybierz model.",
       "selectFirmware": "Najpierw wybierz plik oprogramowania sprzętowego.",
       "flashConfigMissing": "Konfiguracja Flash nie jest dostępna dla tego urządzenia.",
-      "blockedByStack": "Nie można wykonać flashowania, gdy stos Reticulum zawiera port szeregowy RNode."
-    }
+      "blockedByStack": "Nie można wykonać flashowania, gdy stos Reticulum zawiera port szeregowy RNode.",
+      "esp32SyncFailed": "Nie można zsynchronizować z programem rozruchowym ESP32. Sprawdź kabel USB i port, zatrzymaj inne aplikacje za pomocą portu szeregowego i spróbuj ponownie.",
+      "flashTransferTooSmall": "Transfer oprogramowania sprzętowego nie został zakończony — prawie nie zapisano żadnych danych. Potwierdź, że wybrałeś właściwy port USB i że płyta weszła w tryb ładowania rozruchowego."
+    },
+    "selectSerialPort": "Wybierz port szeregowy",
+    "noSerialPorts": "Nie znaleziono portów szeregowych USB.",
+    "noSerialPortsHint": "Podłącz płytkę przez USB. Urządzenia Bluetooth w dzienniku są ignorowane; do migania można używać tylko portów szeregowych USB.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Ostatnio użyte"
   },
   "peerListPanel": {
     "heading": "Partnerzy",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Ostatnio słyszane",
     "colContact": "Kontakt",
     "contactYes": "Tak",
-    "contactNo": "Nr"
+    "contactNo": "Nr",
+    "tabFavorites": "Ulubione",
+    "emptyFavorites": "Nie ma jeszcze ulubionych rówieśników — oznacz kontakt lub rówieśnika, aby ich tu przypiąć."
   },
   "peerDetailModal": {
     "networkSection": "Sieć",
@@ -2911,7 +2920,12 @@
     "call": "Połączenie głosowe",
     "callComingSoon": "Połączenia głosowe będą w przyszłości aktualizowane",
     "iconColor": "Kolor awatara",
-    "iconColorAria": "Kolor awatara rówieśniczego"
+    "iconColorAria": "Kolor awatara rówieśniczego",
+    "saveContact": "Zapisz jako kontakt",
+    "removeContact": "Zdjąć soczewki kontaktowe,",
+    "removeContactConfirmTitle": "Zdjąć soczewki kontaktowe,",
+    "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z listy. Historia czatu jest zachowana; ponowne wysłanie wiadomości spowoduje ponowne dodanie kontaktu.",
+    "probeOk": "Sonda OK — ścieżka osiągalna."
   },
   "reticulumPropagation": {
     "preferred": "Preferowane",

@@ -269,6 +269,9 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:deleteReticulumMessage'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('db:deleteReticulumDestination'",
+    );
   });
 });
 

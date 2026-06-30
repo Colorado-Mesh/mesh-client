@@ -17,7 +17,8 @@ import {
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
-import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { ConfirmModal } from './ConfirmModal';
 
 export interface ReticulumPeerDetailModalProps {
   peerHash: string;
@@ -34,12 +35,13 @@ export default function ReticulumPeerDetailModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const peer = useReticulumPeerStore((s) => s.getPeer(peerHash));
   const isContact = useReticulumPeerStore((s) => s.isContact(peerHash));
-  const getDisplayName = useReticulumPeerStore((s) => s.getDisplayName);
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
   const setCustomDisplayName = useReticulumPeerStore((s) => s.setCustomDisplayName);
+  const removeContact = useReticulumPeerStore((s) => s.removeContact);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [pathStatus, setPathStatus] = useState<string | null>(null);
   const [probeStatus, setProbeStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -75,7 +77,9 @@ export default function ReticulumPeerDetailModal({
     };
   }, [onClose]);
 
-  const displayLabel = peer ? getDisplayName(peer) : peerHash.slice(0, 16);
+  const displayLabel = peer
+    ? resolveReticulumPeerLabel(peer, peer.display_name ?? peer.custom_display_name)
+    : peerHash.slice(0, 12);
 
   const copyHash = useCallback(async () => {
     try {
@@ -132,6 +136,40 @@ export default function ReticulumPeerDetailModal({
     onSendMessage(nodeId);
     onClose();
   };
+
+  const saveAsContact = useCallback(async () => {
+    if (!peer) return;
+    setBusy(true);
+    try {
+      const label = resolveReticulumPeerLabel(peer, peer.display_name);
+      await window.electronAPI.db.upsertReticulumDestination({
+        destination_hash: peerHash,
+        display_name: label,
+        last_heard: Math.floor(Date.now() / 1000),
+        favorited: Boolean(peer.favorited),
+      });
+      registerReticulumDestinationHash(reticulumHashToNodeId(peerHash), peerHash);
+      const { refreshReticulumPeersFromSidecar } = await import('../stores/reticulumPeerStore');
+      await refreshReticulumPeersFromSidecar();
+    } catch (e) {
+      console.warn('[ReticulumPeerDetailModal] save contact ' + errLikeToLogString(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [peer, peerHash]);
+
+  const handleRemoveContact = useCallback(async () => {
+    setBusy(true);
+    try {
+      await removeContact(peerHash);
+      setShowRemoveConfirm(false);
+      onClose();
+    } catch (e) {
+      console.warn('[ReticulumPeerDetailModal] remove contact ' + errLikeToLogString(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [onClose, peerHash, removeContact]);
 
   return (
     <div
@@ -313,6 +351,29 @@ export default function ReticulumPeerDetailModal({
             <MessageCircle className="h-4 w-4" aria-hidden />
             {t('peerDetailModal.sendMessage')}
           </button>
+          {!isContact ? (
+            <button
+              type="button"
+              disabled={busy}
+              className="rounded border border-slate-500 px-3 py-1.5 text-sm text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+              onClick={() => {
+                void saveAsContact();
+              }}
+            >
+              {t('peerDetailModal.saveContact')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              className="rounded border border-red-800 px-3 py-1.5 text-sm text-red-300 hover:bg-red-950/40 disabled:opacity-40"
+              onClick={() => {
+                setShowRemoveConfirm(true);
+              }}
+            >
+              {t('peerDetailModal.removeContact')}
+            </button>
+          )}
           <button
             type="button"
             disabled
@@ -328,6 +389,22 @@ export default function ReticulumPeerDetailModal({
         {pathStatus ? <p className="mb-2 text-xs text-gray-300">{pathStatus}</p> : null}
         {probeStatus ? <p className="mb-2 text-xs text-gray-300">{probeStatus}</p> : null}
       </div>
+      {showRemoveConfirm ? (
+        <ConfirmModal
+          title={t('peerDetailModal.removeContactConfirmTitle')}
+          message={t('peerDetailModal.removeContactConfirmBody')}
+          confirmLabel={t('peerDetailModal.removeContact')}
+          danger
+          confirmDisabled={busy}
+          onConfirm={() => {
+            void handleRemoveContact();
+          }}
+          onCancel={() => {
+            if (busy) return;
+            setShowRemoveConfirm(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

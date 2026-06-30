@@ -2869,8 +2869,15 @@
       "selectModel": "Nejprve vyberte model.",
       "selectFirmware": "Nejprve vyberte soubor firmwaru.",
       "flashConfigMissing": "Konfigurace Flash není pro toto zařízení k dispozici.",
-      "blockedByStack": "Nelze blikat, když zásobník Reticulum obsahuje sériový port RNode."
-    }
+      "blockedByStack": "Nelze blikat, když zásobník Reticulum obsahuje sériový port RNode.",
+      "esp32SyncFailed": "Nelze synchronizovat se zavaděčem ESP32. Zkontrolujte kabel a port USB, zastavte ostatní aplikace používající sériový port a zkuste to znovu.",
+      "flashTransferTooSmall": "Přenos firmwaru nebyl dokončen — téměř žádná data nebyla zapsána. Potvrďte, že jste vybrali správný port USB a že deska vstoupila do režimu zavaděče."
+    },
+    "selectSerialPort": "Výběr sériového portu",
+    "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
+    "noSerialPortsHint": "Připojte desku přes USB. Zařízení Bluetooth v protokolu jsou ignorována; pro blikání lze použít pouze sériové porty USB.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Naposledy použité"
   },
   "peerListPanel": {
     "heading": "Vazby",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Naposledy slyšeno",
     "colContact": "Kontakt",
     "contactYes": "Ano",
-    "contactNo": "Ne"
+    "contactNo": "Ne",
+    "tabFavorites": "Oblíbené",
+    "emptyFavorites": "Zatím žádní oblíbení kolegové — označte kontakt nebo kolegu a připněte je sem."
   },
   "peerDetailModal": {
     "networkSection": "Síť",
@@ -2911,7 +2920,12 @@
     "call": "Hlasové volání",
     "callComingSoon": "Hlasové hovory přicházející v budoucí aktualizaci",
     "iconColor": "Barva avatara",
-    "iconColorAria": "Barva avatara vrstevníka"
+    "iconColorAria": "Barva avatara vrstevníka",
+    "saveContact": "Uložit jako kontakt",
+    "removeContact": "Odstraňte kontaktní",
+    "removeContactConfirmTitle": "Odstraňte kontaktní",
+    "removeContactConfirmBody": "Tím se kontakt odstraní ze seznamu. Historie chatu je zachována; opětovné zaslání zprávy kontakt znovu přidá.",
+    "probeOk": "Sonda OK — cesta dosažitelná."
   },
   "reticulumPropagation": {
     "preferred": "Preference",

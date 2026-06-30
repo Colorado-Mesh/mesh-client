@@ -2869,8 +2869,15 @@
       "selectModel": "Önce bir model seçin.",
       "selectFirmware": "Önce bir ürün yazılımı dosyası seçin.",
       "flashConfigMissing": "Bu cihaz için Flash yapılandırması mevcut değil.",
-      "blockedByStack": "Reticulum yığını RNode seri bağlantı noktasını tutarken yanıp sönemez."
-    }
+      "blockedByStack": "Reticulum yığını RNode seri bağlantı noktasını tutarken yanıp sönemez.",
+      "esp32SyncFailed": "ESP32 önyükleyici ile senkronize edilemedi. USB kablosunu ve bağlantı noktasını kontrol edin, seri bağlantı noktasını kullanarak diğer uygulamaları durdurun ve tekrar deneyin.",
+      "flashTransferTooSmall": "Yazılım aktarımı tamamlanmadı — neredeyse hiç veri yazılmadı. Doğru USB bağlantı noktasını seçtiğinizden ve kartın önyükleyici moduna girdiğinden emin olun."
+    },
+    "selectSerialPort": "COM… seri portunu seçin",
+    "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
+    "noSerialPortsHint": "Kartınızı USB üzerinden bağlayın. Günlükteki Bluetooth cihazları yok sayılır; yanıp sönmek için yalnızca USB seri bağlantı noktaları kullanılabilir.",
+    "stackStoppedHint": "Reticulum yığını durdurulur — seri bağlantı noktası yanıp sönmek için serbesttir. İşiniz bittiğinde Bağlantı sekmesinde yığını tekrar başlatın.",
+    "lastUsedPort": "Son kullanılan"
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Son duyma",
     "colContact": "İletişim",
     "contactYes": "Evet",
-    "contactNo": "Hayır"
+    "contactNo": "Hayır",
+    "tabFavorites": "Favoriler",
+    "emptyFavorites": "Henüz favori akranınız yok — burada sabitlemek için bir kişiye veya akranınıza yıldız verin."
   },
   "peerDetailModal": {
     "networkSection": "Ağ",
@@ -2911,7 +2920,12 @@
     "call": "Sesli arama",
     "callComingSoon": "Gelecekteki bir güncellemede gelen sesli aramalar",
     "iconColor": "Avatar rengi",
-    "iconColorAria": "Akran avatarı rengi"
+    "iconColorAria": "Akran avatarı rengi",
+    "saveContact": "Kişi olarak kaydet",
+    "removeContact": "Yapılabiliyorsa",
+    "removeContactConfirmTitle": "Yapılabiliyorsa",
+    "removeContactConfirmBody": "Bu, kişiyi listenizden kaldırır. Sohbet geçmişi tutulur; onlara tekrar mesaj göndermek kişiyi yeniden ekleyecektir.",
+    "probeOk": "Prob tamam — yola ulaşılabilir."
   },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",

@@ -1188,6 +1188,13 @@ function AppContent() {
       ),
     [activeRuntime.selfNodeId, meshtasticRuntime.virtualNodeId, meshtasticRuntime.lastRfSelfNodeId],
   );
+  const reticulumOwnNodeIdsForChat = useMemo(() => {
+    const selfId =
+      typeof reticulumRuntime.selfNodeId === 'number'
+        ? reticulumRuntime.selfNodeId
+        : reticulumRuntime.state.myNodeNum;
+    return selfId > 0 ? [selfId >>> 0] : [];
+  }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
   const headerSelfNodeLabel = capabilities.prefersDeviceOwnerLongNameInHeader
     ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
       panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
@@ -1526,12 +1533,9 @@ function AppContent() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
-      sendMessage(
-        msg.payload,
-        msg.channel,
-        msg.to ?? undefined,
-        msg.replyId != null ? String(msg.replyId) : undefined,
-      );
+      const replyTo =
+        msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined);
+      sendMessage(msg.payload, msg.channel, msg.to ?? undefined, replyTo);
     },
     [sendMessage],
   );
@@ -2493,9 +2497,11 @@ function AppContent() {
                                 : activeRuntime.state.myNodeNum
                             }
                             ownNodeIds={
-                              capabilities.hasMqttHybrid
-                                ? meshtasticOwnNodeIdsForChat
-                                : Array.from(meshcoreOwnNodeIdSet)
+                              protocol === 'reticulum'
+                                ? reticulumOwnNodeIdsForChat
+                                : capabilities.hasMqttHybrid
+                                  ? meshtasticOwnNodeIdsForChat
+                                  : Array.from(meshcoreOwnNodeIdSet)
                             }
                             onSend={handleSend}
                             onReact={selectByProtocol(sendReactionByProtocol, protocol)}

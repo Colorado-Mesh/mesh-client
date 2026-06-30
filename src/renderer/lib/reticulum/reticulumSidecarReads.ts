@@ -135,6 +135,9 @@ export function formatReticulumPeerProbeToast(
       variant: 'success',
     };
   }
+  if (result.ok) {
+    return { message: t('peerDetailModal.probeOk'), variant: 'success' };
+  }
   return {
     message: t('peerDetailModal.probeFailed', { error: result.error ?? t('common.error') }),
     variant: 'error',

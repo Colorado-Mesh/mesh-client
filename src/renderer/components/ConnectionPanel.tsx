@@ -72,6 +72,7 @@ import {
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '../lib/timeConstants';
@@ -231,15 +232,6 @@ function getBleDeviceName(deviceId: string): string | null {
       'ConnectionPanel bleDeviceNames',
     ) ?? {};
   return cache[deviceId] ?? null;
-}
-
-function getSerialPortNodeName(portId: string): string | null {
-  const cache =
-    parseStoredJson<Record<string, string>>(
-      localStorage.getItem('mesh-client:serialPortNodeNames'),
-      'ConnectionPanel serialPortNodeNames',
-    ) ?? {};
-  return cache[portId] ?? null;
 }
 
 function MqttGlobeStatusIcon({ status }: { status: MQTTStatus }) {

@@ -20,13 +20,20 @@ export function ReticulumStackPanel({
   onSidecarEvent,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
-  const { sidecarStatus, sidecarUiRunning, autoStart, handleAutoStartChange } =
-    useReticulumSidecarApi({
-      connecting,
-      onStartStack,
-      onEvent: onSidecarEvent,
-      enableAutostart: true,
-    });
+  const {
+    sidecarStatus,
+    sidecarUiRunning,
+    autoStart,
+    handleAutoStartChange,
+    notifyManualStackStop,
+    notifyManualStackStart,
+    refreshSidecarStatus,
+  } = useReticulumSidecarApi({
+    connecting,
+    onStartStack,
+    onEvent: onSidecarEvent,
+    enableAutostart: true,
+  });
 
   return (
     <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
@@ -67,7 +74,11 @@ export function ReticulumStackPanel({
             aria-label={t('connectionPanel.reticulumStopStack')}
             disabled={connecting}
             onClick={() => {
-              void onStopStack();
+              notifyManualStackStop();
+              void (async () => {
+                await onStopStack();
+                await refreshSidecarStatus();
+              })();
             }}
             className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-40"
           >
@@ -79,6 +90,7 @@ export function ReticulumStackPanel({
             aria-label={t('connectionPanel.reticulumStartStack')}
             disabled={connecting}
             onClick={() => {
+              notifyManualStackStart();
               void onStartStack();
             }}
             className="w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-500 disabled:opacity-40"

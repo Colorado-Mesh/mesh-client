@@ -19,7 +19,7 @@ use tokio::sync::broadcast;
 use super::StackHandle;
 use super::persistence::PersistedState;
 use super::types::{InterfaceRow, LxmfSendRequest, PeerRow};
-use super::via::{classify_interface, resolve_peer_sent_via};
+use super::via::{classify_interface, resolve_outbound_sent_via, resolve_peer_sent_via};
 
 pub struct LiveBridge {
     handle: reticulum::ReticulumHandle,
@@ -194,7 +194,7 @@ impl LiveBridge {
             .query_control(TransportQuery::GetPathTable)
             .await;
         let Some(TransportQueryResponse::PathTable(entries)) = resp else {
-            return Ok(vec![]);
+            return Err("path table query unavailable".into());
         };
         if let Ok(mut cache) = self.peer_via_cache.lock() {
             cache.clear();
@@ -241,12 +241,17 @@ impl LiveBridge {
 
     pub async fn send_lxmf(&self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(&req.destination_hash)?;
-        let peer_iface = self
-            .peer_via_cache
-            .lock()
-            .ok()
-            .and_then(|cache| cache.get(&req.destination_hash).cloned());
-        let sent_via = resolve_peer_sent_via(peer_iface.as_deref());
+        let sent_via = match self.fetch_interfaces().await {
+            Ok(ifaces) if !ifaces.is_empty() => resolve_outbound_sent_via(&ifaces),
+            _ => {
+                let peer_iface = self
+                    .peer_via_cache
+                    .lock()
+                    .ok()
+                    .and_then(|cache| cache.get(&req.destination_hash).cloned());
+                resolve_peer_sent_via(peer_iface.as_deref())
+            }
+        };
 
         let msg = LxMessage::new(
             dest,

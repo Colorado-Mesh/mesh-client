@@ -2869,8 +2869,15 @@
       "selectModel": "Спочатку виберіть модель.",
       "selectFirmware": "Спочатку виберіть файл прошивки.",
       "flashConfigMissing": "Конфігурація Flash недоступна для цього пристрою.",
-      "blockedByStack": "Неможливо прошити, поки стек Reticulum містить послідовний порт RNode."
-    }
+      "blockedByStack": "Неможливо прошити, поки стек Reticulum містить послідовний порт RNode.",
+      "esp32SyncFailed": "Не вдалося синхронізуватися з завантажувачем ESP32. Перевірте USB-кабель і порт, зупиніть інші програми, що використовують послідовний порт, і повторіть спробу.",
+      "flashTransferTooSmall": "Перенесення прошивки не завершилося — майже не було записано даних. Переконайтеся, що ви вибрали правильний USB-порт і що плата перейшла в режим завантажувача."
+    },
+    "selectSerialPort": "Виберіть послідовний порт",
+    "noSerialPorts": "Послідовних портів USB не знайдено.",
+    "noSerialPortsHint": "Підключіть плату через USB. Пристрої Bluetooth у журналі ігноруються; для прошивання можна використовувати лише послідовні порти USB.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Останнє використане"
   },
   "peerListPanel": {
     "heading": "Однолітки",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Останнє прослуховування",
     "colContact": "Контакти",
     "contactYes": "Так",
-    "contactNo": "Ні"
+    "contactNo": "Ні",
+    "tabFavorites": "Обране",
+    "emptyFavorites": "Ще немає улюблених однолітків — позначте контакт або однолітка, щоб прикріпити їх тут."
   },
   "peerDetailModal": {
     "networkSection": "Засоби зв'язку",
@@ -2911,7 +2920,12 @@
     "call": "Голосовий виклик",
     "callComingSoon": "Голосові дзвінки з'являться в майбутньому оновленні",
     "iconColor": "Колір аватара",
-    "iconColorAria": "Колір однорангового аватара"
+    "iconColorAria": "Колір однорангового аватара",
+    "saveContact": "Зберегти як контакт",
+    "removeContact": "Видалити контакт",
+    "removeContactConfirmTitle": "Видалити контакт?",
+    "removeContactConfirmBody": "Після цього контакт буде видалено зі списку. Історія чату зберігається; повторне надсилання їм повідомлень повторно додасть контакт.",
+    "probeOk": "Датчик OK — шлях досяжний."
   },
   "reticulumPropagation": {
     "preferred": "Улюблене",

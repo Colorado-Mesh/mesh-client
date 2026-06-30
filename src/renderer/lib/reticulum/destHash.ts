@@ -2,7 +2,13 @@
 export function reticulumHashToNodeId(hash: string): number {
   const hex = hash.replace(/[^0-9a-f]/gi, '').slice(0, 12);
   const parsed = Number.parseInt(hex || '0', 16);
-  return Number.isFinite(parsed) ? parsed : 0;
+  // Meshtastic-style chat stores use uint32 node ids; fold so DM tabs and filters stay consistent.
+  return (Number.isFinite(parsed) ? parsed : 0) >>> 0;
+}
+
+/** Normalize a stored node id to the uint32 Reticulum chat key. */
+export function normalizeReticulumNodeId(nodeId: number): number {
+  return nodeId >>> 0;
 }
 
 const hashByNodeId = new Map<number, string>();

@@ -2869,8 +2869,15 @@
       "selectModel": "首先选择型号。",
       "selectFirmware": "首先选择一个固件文件。",
       "flashConfigMissing": "闪存配置不适用于该设备。",
-      "blockedByStack": "当 Reticulum 堆栈保留 RNode 串行端口时无法闪烁。"
-    }
+      "blockedByStack": "当 Reticulum 堆栈保留 RNode 串行端口时无法闪烁。",
+      "esp32SyncFailed": "无法与ESP32引导加载程序同步。检查USB电缆和端口，停止使用串行端口的其他应用程序，然后重试。",
+      "flashTransferTooSmall": "固件传输未完成—几乎未写入任何数据。确认您选择了正确的USB端口，并且主板已进入引导加载程序模式。"
+    },
+    "selectSerialPort": "选择串行端口",
+    "noSerialPorts": "未找到USB串行端口。",
+    "noSerialPortsHint": "通过USB连接您的主板。日志中的蓝牙设备将被忽略；只有USB串行端口可用于闪烁。",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "最后使用"
   },
   "peerListPanel": {
     "heading": "Pee对端",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "最后一次听到",
     "colContact": "联系方式",
     "contactYes": "是",
-    "contactNo": "否"
+    "contactNo": "否",
+    "tabFavorites": "收藏",
+    "emptyFavorites": "还没有收藏的同行—为联系人或同行加星标以在此处固定他们。"
   },
   "peerDetailModal": {
     "networkSection": "网络",
@@ -2911,7 +2920,12 @@
     "call": "音频呼叫",
     "callComingSoon": "语音通话将在未来的更新中推出",
     "iconColor": "头像颜色",
-    "iconColorAria": "头像颜色"
+    "iconColorAria": "头像颜色",
+    "saveContact": "另存为联系人",
+    "removeContact": "移除联系人",
+    "removeContactConfirmTitle": "移除联系人",
+    "removeContactConfirmBody": "这会将联系人从您的列表中删除。会保留聊天记录；再次向他们发送消息将重新添加工单。",
+    "probeOk": "探测正常—路径可达。"
   },
   "reticulumPropagation": {
     "preferred": "首选",

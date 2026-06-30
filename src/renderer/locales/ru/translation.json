@@ -2869,8 +2869,15 @@
       "selectModel": "Сначала выберите модель.",
       "selectFirmware": "Сначала выберите файл прошивки.",
       "flashConfigMissing": "Флэш-конфигурация недоступна для этого устройства.",
-      "blockedByStack": "Невозможно выполнить мигание, пока стек Reticulum удерживает последовательный порт RNode."
-    }
+      "blockedByStack": "Невозможно выполнить мигание, пока стек Reticulum удерживает последовательный порт RNode.",
+      "esp32SyncFailed": "Не удалось синхронизировать с загрузчиком ESP32. Проверьте USB-кабель и порт, остановите другие приложения, использующие последовательный порт, и повторите попытку.",
+      "flashTransferTooSmall": "Передача прошивки не завершена — данные почти не были записаны. Убедитесь, что вы выбрали правильный USB-порт и что плата перешла в режим загрузчика."
+    },
+    "selectSerialPort": "Выберите последовательный порт",
+    "noSerialPorts": "Последовательные порты USB не найдены.",
+    "noSerialPortsHint": "Подключите плату через USB. Устройства Bluetooth в журнале игнорируются; для прошивки можно использовать только последовательные порты USB.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Последнее использованное"
   },
   "peerListPanel": {
     "heading": "Равные наставники",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "В последний раз слышали:",
     "colContact": "Связаться",
     "contactYes": "Да",
-    "contactNo": "Нет"
+    "contactNo": "Нет",
+    "tabFavorites": "Избранное",
+    "emptyFavorites": "Пока нет избранных одноранговых узлов — поставьте звезду контакту или одноранговому узлу, чтобы закрепить их здесь."
   },
   "peerDetailModal": {
     "networkSection": "Сеть",
@@ -2911,7 +2920,12 @@
     "call": "Голосовое общение",
     "callComingSoon": "Голосовые вызовы появятся в будущем обновлении",
     "iconColor": "Цвет иконы Аватара",
-    "iconColorAria": "Цвет однорангового аватара"
+    "iconColorAria": "Цвет однорангового аватара",
+    "saveContact": "Сохранить как контакт",
+    "removeContact": "Удалить контакт",
+    "removeContactConfirmTitle": "Удалить контакт?",
+    "removeContactConfirmBody": "Контакт будет удален из списка. История чата сохраняется; переписка с ними приведет к повторному добавлению контакта.",
+    "probeOk": "Зонд в порядке — путь достижим."
   },
   "reticulumPropagation": {
     "preferred": "Предпочтительно",

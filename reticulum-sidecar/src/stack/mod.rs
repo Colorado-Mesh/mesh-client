@@ -16,7 +16,7 @@ use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, PeerRow, PropagationRow, StackIdentity,
+    LxmfSendRequest, NomadNodeRow, PeerRow, StackIdentity,
 };
 
 pub struct StackHandle {
@@ -269,15 +269,9 @@ impl StackHandle {
     pub async fn list_peers(&self) -> Vec<PeerRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            match live.fetch_peers().await {
-                Ok(peers) => {
-                    let mut inner = self.inner.write().await;
-                    return sync_live_peer_cache(&mut inner.peers, peers);
-                }
-                Err(e) => {
-                    tracing::debug!("live fetch_peers failed: {e}");
-                }
-            }
+            let fetched = live.fetch_peers().await;
+            let mut inner = self.inner.write().await;
+            return merge_live_peer_fetch(&mut inner.peers, fetched);
         }
         self.inner.read().await.peers.clone()
     }
@@ -423,10 +417,15 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let res = live.send_lxmf(&req).await?;
-            if let Some(msg) = res.get("message") {
-                self.emit_event("lxmf_message", msg.clone());
+            let payload = res.get("message").cloned().unwrap_or(res.clone());
+            if payload.get("text").is_some() {
+                self.emit_event("lxmf_message", payload.clone());
             }
-            return Ok(res);
+            return Ok(serde_json::json!({
+                "ok": true,
+                "message": payload,
+                "sent_via": res.get("sent_via"),
+            }));
         }
         let mut inner = self.inner.write().await;
         let res = inner.send_lxmf_local(&req)?;
@@ -648,8 +647,40 @@ fn enumerate_serial_ports() -> Vec<serde_json::Value> {
 
 /// Replaces the in-memory peer cache with a live path-table fetch result.
 fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<PeerRow> {
-    *cache = fetched.clone();
-    fetched
+    let merged: Vec<PeerRow> = fetched
+        .into_iter()
+        .map(|mut peer| {
+            if peer.display_name.is_none() {
+                if let Some(prev) = cache
+                    .iter()
+                    .find(|p| p.destination_hash == peer.destination_hash)
+                {
+                    peer.display_name = prev.display_name.clone();
+                }
+            }
+            peer
+        })
+        .collect();
+    *cache = merged.clone();
+    merged
+}
+
+/// Apply a live path-table fetch: update cache only when non-empty; otherwise keep last known peers.
+fn merge_live_peer_fetch(
+    cache: &mut Vec<PeerRow>,
+    fetched: Result<Vec<PeerRow>, String>,
+) -> Vec<PeerRow> {
+    match fetched {
+        Ok(peers) if !peers.is_empty() => sync_live_peer_cache(cache, peers),
+        Ok(_) => {
+            tracing::debug!("live fetch_peers returned empty path table, using cache");
+            cache.clone()
+        }
+        Err(e) => {
+            tracing::debug!("live fetch_peers failed: {e}");
+            cache.clone()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -665,6 +696,42 @@ mod tests {
         std::fs::create_dir_all(&config).expect("config dir");
         std::fs::create_dir_all(&storage).expect("storage dir");
         (config, storage)
+    }
+
+    #[test]
+    fn merge_live_peer_fetch_preserves_cache_on_empty_or_error() {
+        let mut cache = vec![PeerRow {
+            destination_hash: "abc".into(),
+            display_name: None,
+            hops: Some(1),
+            last_seen: None,
+            interface: None,
+            path_hash: None,
+        }];
+        let empty = merge_live_peer_fetch(&mut cache, Ok(vec![]));
+        assert_eq!(empty.len(), 1);
+        assert_eq!(cache.len(), 1);
+
+        let err = merge_live_peer_fetch(&mut cache, Err("path table query unavailable".into()));
+        assert_eq!(err.len(), 1);
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn merge_live_peer_fetch_replaces_cache_when_non_empty() {
+        let mut cache = Vec::new();
+        let row = PeerRow {
+            destination_hash: "deadbeef".into(),
+            display_name: Some("peer".into()),
+            hops: Some(2),
+            last_seen: Some(1),
+            interface: Some("tcp".into()),
+            path_hash: None,
+        };
+        let fetched = merge_live_peer_fetch(&mut cache, Ok(vec![row.clone()]));
+        assert_eq!(fetched.len(), 1);
+        assert_eq!(cache.len(), 1);
+        assert_eq!(cache[0].destination_hash, row.destination_hash);
     }
 
     #[test]

@@ -23,10 +23,13 @@ vi.mock('child_process', () => ({
 
 import {
   findReticulumSidecarProjectDir,
+  hasRnsStackSiblings,
   newestReticulumSidecarSourceMtimeMs,
   resolveSidecarBinaryPath,
   sidecarBinaryIsStale,
+  sidecarBinaryLacksRnsStack,
   sidecarBinaryName,
+  sidecarCargoBuildArgs,
 } from './reticulum-sidecar-path';
 
 describe('reticulum-sidecar-path', () => {
@@ -80,5 +83,29 @@ describe('reticulum-sidecar-path', () => {
     expect(newestReticulumSidecarSourceMtimeMs(projectDir)).toBeGreaterThan(
       fs.statSync(binary).mtimeMs,
     );
+  });
+
+  it('sidecarCargoBuildArgs uses rns-stack when Ratspeak siblings exist', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-siblings-'));
+    const meshRoot = path.join(tmpDir, 'mesh-client');
+    const projectDir = path.join(meshRoot, 'reticulum-sidecar');
+    fs.mkdirSync(path.join(tmpDir, 'rsReticulum', 'crates', 'rns-runtime'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'rsLXMF', 'crates', 'lxmf-core'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'rsReticulum/crates/rns-runtime/Cargo.toml'), '[package]\n');
+    fs.writeFileSync(path.join(tmpDir, 'rsLXMF/crates/lxmf-core/Cargo.toml'), '[package]\n');
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, 'Cargo.toml'), '[package]\nname = "test"\n');
+
+    expect(hasRnsStackSiblings(projectDir)).toBe(true);
+    expect(sidecarCargoBuildArgs(projectDir)).toEqual(['build', '--features', 'rns-stack']);
+  });
+
+  it('sidecarBinaryLacksRnsStack detects stub-only binaries', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-stub-'));
+    const binary = path.join(tmpDir, sidecarBinaryName());
+    fs.writeFileSync(binary, 'stub-sidecar-no-network-stack');
+    expect(sidecarBinaryLacksRnsStack(binary)).toBe(true);
+    fs.writeFileSync(binary, 'stub-sidecar-with-rns_runtime-linked');
+    expect(sidecarBinaryLacksRnsStack(binary)).toBe(false);
   });
 });

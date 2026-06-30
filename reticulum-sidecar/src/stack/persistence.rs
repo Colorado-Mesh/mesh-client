@@ -7,7 +7,7 @@ use uuid::Uuid;
 use serde::Deserialize;
 
 use super::types::*;
-use super::via::{resolve_stub_sent_via, resolve_peer_sent_via};
+use super::via::resolve_outbound_sent_via;
 
 const STATE_FILE: &str = "mesh_client_stack.json";
 
@@ -311,17 +311,7 @@ impl PersistedState {
         }
         let ts = Self::now_secs();
         self.upsert_contact(&req.destination_hash, None);
-        let peer_iface = self
-            .peers
-            .iter()
-            .find(|p| p.destination_hash == req.destination_hash)
-            .and_then(|p| p.interface.as_deref());
-        let sent_via = resolve_peer_sent_via(peer_iface);
-        let sent_via = if sent_via == "network" && peer_iface.is_none() {
-            resolve_stub_sent_via(&self.interfaces)
-        } else {
-            sent_via
-        };
+        let sent_via = resolve_outbound_sent_via(&self.interfaces);
         let mut payload = serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,
             "sender_name": self.identity.display_name.clone().unwrap_or_else(|| "Self".into()),

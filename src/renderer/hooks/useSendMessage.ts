@@ -29,6 +29,7 @@ import {
   updateMessageStatus,
 } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
+import { reticulumHashForNodeId } from '../stores/reticulumPeerStore';
 
 function persistMeshcoreOutboundRow(
   record: MessageRecord,
@@ -66,7 +67,11 @@ export function useSendMessage(
           console.warn('[useSendMessage] Reticulum runtime not mounted');
           return;
         }
-        const destHash = resolveReticulumDestinationHash(destination);
+        const destHash =
+          typeof destination === 'string'
+            ? destination
+            : (reticulumHashForNodeId(destination ?? 0) ??
+              resolveReticulumDestinationHash(destination));
         if (!destHash) {
           console.warn('[useSendMessage] no Reticulum destination hash for', destination);
           return;
@@ -78,12 +83,12 @@ export function useSendMessage(
         }
         const pendingId = `reticulum-pending-${Date.now()}`;
         const receivedVia = resolveReticulumOutboundVia(destHash);
-        const toNodeId = destination ?? reticulumHashToNodeId(destHash);
+        const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
         const senderName = session.getFullNodeLabel(selfNodeId);
         const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
         const record: MessageRecord = {
           id: pendingId,
-          from: selfNodeId,
+          from: selfNodeId >>> 0,
           senderName,
           to: toNodeId,
           payload: text,

@@ -1655,6 +1655,7 @@
     "heading": "Peers",
     "tabPeers": "Peers",
     "tabContacts": "Contacts",
+    "tabFavorites": "Favorites",
     "searchPlaceholder": "Search by name or hash…",
     "searchAria": "Search peers",
     "colName": "Name / Hash",
@@ -1669,6 +1670,7 @@
     "openChat": "Open chat",
     "emptyPeers": "No peers discovered yet. Send an announce or wait for network traffic.",
     "emptyContacts": "No contacts yet — message a peer to add them here.",
+    "emptyFavorites": "No favourite peers yet — star a contact or peer to pin them here.",
     "groupFilterAria": "Filter contacts by group",
     "allGroups": "All groups",
     "manageGroups": "Manage groups",
@@ -1681,6 +1683,10 @@
     "copyHash": "Copy destination hash",
     "editNameAria": "Custom display name",
     "sendMessage": "Send message",
+    "saveContact": "Save as contact",
+    "removeContact": "Remove contact",
+    "removeContactConfirmTitle": "Remove contact?",
+    "removeContactConfirmBody": "This removes the contact from your list. Chat history is kept; messaging them again will re-add the contact.",
     "isContact": "Contact",
     "call": "Voice call",
     "callComingSoon": "Voice calls coming in a future update",
@@ -1690,6 +1696,7 @@
     "pathFailed": "Path request failed: {{error}}",
     "probeHops": "Probe OK — {{hops}} hop(s).",
     "probeLocal": "Probe OK ({{mode}} mode).",
+    "probeOk": "Probe OK — path reachable.",
     "probeFailed": "Probe failed: {{error}}"
   },
   "reticulumPropagation": {
@@ -2895,7 +2902,12 @@
   },
   "flasher": {
     "title": "RNode Firmware Flasher",
+    "selectSerialPort": "Select serial port",
+    "noSerialPorts": "No USB serial ports found.",
+    "noSerialPortsHint": "Connect your board over USB. Bluetooth devices in the log are ignored; only USB serial ports can be used for flashing.",
     "portContentionWarning": "Stop the Reticulum stack or disable the active RNode serial interface before flashing. Disconnect Meshtastic or MeshCore serial on the same port.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Last used",
     "selectProduct": "Product",
     "selectModel": "Model",
     "selectProductPlaceholder": "Select a product…",
@@ -2958,7 +2970,9 @@
       "selectModel": "Select a model first.",
       "selectFirmware": "Select a firmware file first.",
       "flashConfigMissing": "Flash configuration is not available for this device.",
-      "blockedByStack": "Cannot flash while the Reticulum stack holds the RNode serial port."
+      "blockedByStack": "Cannot flash while the Reticulum stack holds the RNode serial port.",
+      "esp32SyncFailed": "Could not sync with the ESP32 bootloader. Check the USB cable and port, stop other apps using the serial port, and try again.",
+      "flashTransferTooSmall": "Firmware transfer did not complete — almost no data was written. Confirm you selected the correct USB port and that the board entered bootloader mode."
     }
   }
 }

@@ -83,6 +83,9 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,
     meshcore_local_stats: record.meshcoreLocalStats,
+    ...(record.reticulumDestinationHash
+      ? { reticulum_destination_hash: record.reticulumDestinationHash }
+      : {}),
   };
 }
 
@@ -126,6 +129,7 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     channelUtilization: node.channel_utilization,
     airUtilTx: node.air_util_tx,
     meshcoreLocalStats: node.meshcore_local_stats,
+    reticulumDestinationHash: node.reticulum_destination_hash,
   };
 }
 

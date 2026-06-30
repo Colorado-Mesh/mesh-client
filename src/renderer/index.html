@@ -7,7 +7,7 @@
     <!-- img-src https: — chat link preview thumbnails (fetch is gated in main; img is display-only) -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* wss://* https://* https://*.tile.openstreetmap.org https://api.github.com https://github.com; img-src 'self' data: https: https://*.tile.openstreetmap.org;"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* wss://* https://* https://*.tile.openstreetmap.org https://api.github.com https://github.com; img-src 'self' data: https: https://*.tile.openstreetmap.org;"
     />
     <title>Mesh Client</title>
   </head>

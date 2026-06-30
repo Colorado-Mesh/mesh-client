@@ -2869,8 +2869,15 @@
       "selectModel": "Seleziona prima un modello.",
       "selectFirmware": "Selezionare prima un file del firmware.",
       "flashConfigMissing": "La configurazione Flash non è disponibile per questo dispositivo.",
-      "blockedByStack": "Impossibile eseguire il flashing mentre lo stack Reticulum contiene la porta seriale RNode."
-    }
+      "blockedByStack": "Impossibile eseguire il flashing mentre lo stack Reticulum contiene la porta seriale RNode.",
+      "esp32SyncFailed": "Impossibile sincronizzare con il bootloader ESP32. Controllare il cavo e la porta USB, interrompere altre app utilizzando la porta seriale e riprovare.",
+      "flashTransferTooSmall": "Il trasferimento del firmware non è stato completato — quasi nessun dato è stato scritto. Confermare di aver selezionato la porta USB corretta e che la scheda sia entrata in modalità bootloader."
+    },
+    "selectSerialPort": "Selezionare la Porta Seriale.",
+    "noSerialPorts": "Nessuna porta seriale USB trovata.",
+    "noSerialPortsHint": "Collega la scheda tramite USB. I dispositivi Bluetooth nel registro vengono ignorati; solo le porte seriali USB possono essere utilizzate per il lampeggio.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Ultimo usato"
   },
   "peerListPanel": {
     "heading": "Compagni",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Ultimo sentito:",
     "colContact": "Contatti",
     "contactYes": "Si",
-    "contactNo": "No"
+    "contactNo": "No",
+    "tabFavorites": "Preferiti",
+    "emptyFavorites": "Ancora nessun collega preferito: aggiungi un contatto o un collega per aggiungerli qui."
   },
   "peerDetailModal": {
     "networkSection": "Network",
@@ -2911,7 +2920,12 @@
     "call": "Voice cali",
     "callComingSoon": "Chiamate vocali in arrivo con un aggiornamento futuro",
     "iconColor": "Colore avatar",
-    "iconColorAria": "Colore avatar peer"
+    "iconColorAria": "Colore avatar peer",
+    "saveContact": "Salva come contatto",
+    "removeContact": "Togliere le eventuali lenti a contatto,",
+    "removeContactConfirmTitle": "Togliere le eventuali lenti a contatto,",
+    "removeContactConfirmBody": "In questo modo il contatto verrà rimosso dall'elenco. La cronologia chat viene mantenuta; inviando nuovamente un messaggio, si aggiungerà nuovamente il contatto.",
+    "probeOk": "Sonda OK — percorso raggiungibile."
   },
   "reticulumPropagation": {
     "preferred": "Preferito",

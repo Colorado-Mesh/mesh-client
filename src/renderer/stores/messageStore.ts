@@ -117,6 +117,9 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
     const merged = existing ? { ...existing, ...message } : message;
+    if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
+      merged.to = existing.to;
+    }
     if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
       return s;
     }
@@ -137,6 +140,9 @@ export function upsertMessageRecordsForIdentity(
     for (const message of records) {
       const existing = byIdentity[message.id];
       const merged = existing ? { ...existing, ...message } : message;
+      if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
+        merged.to = existing.to;
+      }
       if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
         continue;
       }

@@ -44,6 +44,7 @@ export function createElectronAPIMock(): ElectronAPI {
       markStaleReticulumOutbound: vi.fn().mockResolvedValue({ changes: 0 }),
       vacuumReticulumTables: vi.fn().mockResolvedValue({ ok: true }),
       getReticulumDestinations: vi.fn().mockResolvedValue([]),
+      deleteReticulumDestination: vi.fn().mockResolvedValue({ changes: 1 }),
       upsertReticulumDestination: vi.fn().mockResolvedValue(undefined),
       searchMessages: vi.fn().mockResolvedValue([]),
       searchMeshcoreMessages: vi.fn().mockResolvedValue([]),

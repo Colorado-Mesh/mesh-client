@@ -36,6 +36,7 @@ export function useReticulumSidecarApi({
   });
   const [autoStart, setAutoStart] = useState(isReticulumAutostartEnabled);
   const autostartAttemptedRef = useRef(false);
+  const manualStopSuppressRef = useRef(false);
   const [identity, setIdentity] = useState<ReticulumIdentityStatus | null>(null);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
   const [appInfo, setAppInfo] = useState<{ sidecar_version?: string; rns_version?: string } | null>(
@@ -92,7 +93,7 @@ export function useReticulumSidecarApi({
     void refreshSidecarStatus();
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       setSidecarStatus(status);
-      if (!status.running) {
+      if (!status.running && !manualStopSuppressRef.current) {
         autostartAttemptedRef.current = false;
       }
     });
@@ -101,6 +102,7 @@ export function useReticulumSidecarApi({
 
   useEffect(() => {
     if (!enableAutostart || !autoStart || autostartAttemptedRef.current) return;
+    if (manualStopSuppressRef.current) return;
     if (sidecarStatus.running || connecting) return;
     autostartAttemptedRef.current = true;
     void onStartStack().catch((e: unknown) => {
@@ -108,6 +110,16 @@ export function useReticulumSidecarApi({
       autostartAttemptedRef.current = false;
     });
   }, [enableAutostart, autoStart, connecting, onStartStack, sidecarStatus.running]);
+
+  const notifyManualStackStop = useCallback(() => {
+    manualStopSuppressRef.current = true;
+    autostartAttemptedRef.current = true;
+  }, []);
+
+  const notifyManualStackStart = useCallback(() => {
+    manualStopSuppressRef.current = false;
+    autostartAttemptedRef.current = false;
+  }, []);
 
   useEffect(() => {
     void refreshIdentity();
@@ -150,5 +162,7 @@ export function useReticulumSidecarApi({
     refreshIdentity,
     refreshAppInfo,
     handleAutoStartChange,
+    notifyManualStackStop,
+    notifyManualStackStart,
   };
 }

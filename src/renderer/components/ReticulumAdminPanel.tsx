@@ -32,7 +32,7 @@ export function ReticulumAdminPanel({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const capabilities = useRadioProvider('reticulum');
-  const { sidecarApiReady, refreshIdentity } = useReticulumSidecarApi({
+  const { sidecarUiRunning, sidecarApiReady, refreshIdentity } = useReticulumSidecarApi({
     connecting,
     onStartStack,
     onEvent: onSidecarEvent,
@@ -90,7 +90,13 @@ export function ReticulumAdminPanel({
     <div className="w-full space-y-4">
       <h2 className="text-xl font-semibold text-red-400">{t('tabs.admin')}</h2>
 
-      {!sidecarApiReady ? (
+      {!sidecarUiRunning && capabilities.hasRNodeFlasher ? (
+        <div className="rounded-lg border border-green-700 bg-green-900/30 px-4 py-2 text-sm text-green-200">
+          {t('flasher.stackStoppedHint')}
+        </div>
+      ) : null}
+
+      {!sidecarUiRunning && !capabilities.hasRNodeFlasher ? (
         <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </div>

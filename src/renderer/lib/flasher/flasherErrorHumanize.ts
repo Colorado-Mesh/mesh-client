@@ -10,6 +10,12 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'NOT_RNODE') {
     return i18n.t('flasher.errors.notRnode');
   }
+  if (message === 'ESP32_SYNC_FAILED') {
+    return i18n.t('flasher.errors.esp32SyncFailed');
+  }
+  if (message === 'FLASH_TRANSFER_TOO_SMALL') {
+    return i18n.t('flasher.errors.flashTransferTooSmall');
+  }
   if (message.includes('Failed to execute') && message.includes('requestPort')) {
     return i18n.t('flasher.errors.portSelectionCancelled');
   }

@@ -134,6 +134,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:markStaleReticulumOutbound', identityId, staleAfterMs),
     vacuumReticulumTables: () => ipcRenderer.invoke('db:vacuumReticulumTables'),
     getReticulumDestinations: () => ipcRenderer.invoke('db:getReticulumDestinations'),
+    deleteReticulumDestination: (destinationHash: string) =>
+      ipcRenderer.invoke('db:deleteReticulumDestination', destinationHash),
     upsertReticulumDestination: (row: {
       destination_hash: string;
       display_name?: string | null;

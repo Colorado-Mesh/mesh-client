@@ -17,15 +17,18 @@ vi.mock('@/renderer/lib/radio/providerFactory', () => ({
 
 const refreshIdentity = vi.fn();
 vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
-  useReticulumSidecarApi: () => ({
+  useReticulumSidecarApi: vi.fn(() => ({
+    sidecarUiRunning: true,
     sidecarApiReady: true,
     refreshIdentity,
-  }),
+  })),
 }));
 
 vi.mock('./flasher/RNodeFlasherSection', () => ({
   RNodeFlasherSection: () => <div data-testid="flasher-mock" />,
 }));
+
+import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 
 import { ReticulumAdminPanel } from './ReticulumAdminPanel';
 import { ToastProvider } from './Toast';
@@ -86,6 +89,25 @@ describe('ReticulumAdminPanel', () => {
       );
     });
     expect(refreshIdentity).toHaveBeenCalled();
+  });
+
+  it('shows flasher hint when stack is stopped', () => {
+    vi.mocked(useReticulumSidecarApi).mockReturnValue({
+      sidecarUiRunning: false,
+      sidecarApiReady: false,
+      refreshIdentity,
+    } as unknown as ReturnType<typeof useReticulumSidecarApi>);
+
+    render(
+      <ToastProvider>
+        <ReticulumAdminPanel connecting={false} onStartStack={async () => {}} />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByText('flasher.stackStoppedHint')).toBeInTheDocument();
+    expect(
+      screen.queryByText('connectionPanel.reticulumIdentity.startStackFirst'),
+    ).not.toBeInTheDocument();
   });
 
   it('has no serious axe violations', async () => {

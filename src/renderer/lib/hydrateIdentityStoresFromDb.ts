@@ -293,6 +293,7 @@ function hydrateReticulumIdentity(
             longName: row.display_name ?? row.destination_hash.slice(0, 16),
             shortName: row.display_name?.slice(0, 4) ?? 'RT',
             lastHeardAt: row.last_heard ?? undefined,
+            reticulumDestinationHash: row.destination_hash,
           };
         });
         upsertNodeRecordsForIdentity(identityId, records);

@@ -54,27 +54,74 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
           : null;
       const db = getDbForIpc('db:saveReticulumMessage');
       if (!db) return { changes: 0 };
+      const messageHash = typeof m.message_hash === 'string' ? m.message_hash.slice(0, 128) : null;
+      const deliveryStatus =
+        typeof m.delivery_status === 'string' ? m.delivery_status.slice(0, 32) : null;
+      const truncatedTimestamp = Math.trunc(timestamp);
+      const senderName = typeof m.sender_name === 'string' ? m.sender_name.slice(0, 128) : null;
+      const toHash = typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null;
+      const replyToHash =
+        typeof m.reply_to_hash === 'string' ? m.reply_to_hash.slice(0, 128) : null;
+      const attachmentPath =
+        typeof m.attachment_path === 'string' ? m.attachment_path.slice(0, 512) : null;
+      const deliveryAttempts =
+        m.delivery_attempts != null && Number.isFinite(Number(m.delivery_attempts))
+          ? Math.trunc(Number(m.delivery_attempts))
+          : 0;
+      const nextDeliveryAttemptAt =
+        m.next_delivery_attempt_at != null && Number.isFinite(Number(m.next_delivery_attempt_at))
+          ? Math.trunc(Number(m.next_delivery_attempt_at))
+          : null;
+
+      if (
+        messageHash &&
+        !messageHash.startsWith('reticulum-pending-') &&
+        deliveryStatus &&
+        deliveryStatus !== 'sending'
+      ) {
+        db.prepareOnce(
+          `DELETE FROM reticulum_messages
+           WHERE identity_id = ? AND sender_id = ? AND payload = ?
+             AND message_hash LIKE 'reticulum-pending-%'
+             AND ABS(timestamp - ?) <= 60000`,
+        ).run(identityId, senderId, payload, truncatedTimestamp);
+      }
+
+      if (messageHash) {
+        const existing = db
+          .prepareOnce(
+            'SELECT id FROM reticulum_messages WHERE identity_id = ? AND message_hash = ? LIMIT 1',
+          )
+          .get(identityId, messageHash) as { id?: number } | undefined;
+        if (existing?.id != null) {
+          db.prepareOnce(
+            `UPDATE reticulum_messages
+             SET delivery_status = COALESCE(?, delivery_status),
+                 received_via = COALESCE(?, received_via),
+                 sender_name = COALESCE(?, sender_name)
+             WHERE id = ?`,
+          ).run(deliveryStatus, receivedVia, senderName, existing.id);
+          return { changes: 1 };
+        }
+      }
+
       db.prepareOnce(
         `INSERT INTO reticulum_messages (identity_id, sender_id, sender_name, payload, timestamp, to_hash, reply_to_hash, message_hash, received_via, delivery_status, delivery_attempts, next_delivery_attempt_at, attachment_path)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         identityId,
         senderId,
-        typeof m.sender_name === 'string' ? m.sender_name.slice(0, 128) : null,
+        senderName,
         payload,
-        Math.trunc(timestamp),
-        typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null,
-        typeof m.reply_to_hash === 'string' ? m.reply_to_hash.slice(0, 128) : null,
-        typeof m.message_hash === 'string' ? m.message_hash.slice(0, 128) : null,
+        truncatedTimestamp,
+        toHash,
+        replyToHash,
+        messageHash,
         receivedVia,
-        typeof m.delivery_status === 'string' ? m.delivery_status.slice(0, 32) : null,
-        m.delivery_attempts != null && Number.isFinite(Number(m.delivery_attempts))
-          ? Math.trunc(Number(m.delivery_attempts))
-          : 0,
-        m.next_delivery_attempt_at != null && Number.isFinite(Number(m.next_delivery_attempt_at))
-          ? Math.trunc(Number(m.next_delivery_attempt_at))
-          : null,
-        typeof m.attachment_path === 'string' ? m.attachment_path.slice(0, 512) : null,
+        deliveryStatus,
+        deliveryAttempts,
+        nextDeliveryAttemptAt,
+        attachmentPath,
       );
       return { changes: 1 };
     } catch (err) {
@@ -91,6 +138,22 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         .all() as Record<string, unknown>[];
     } catch (err) {
       finishDbIpcHandler('db:getReticulumDestinations', err);
+    }
+  });
+
+  ipcMain.handle('db:deleteReticulumDestination', (_event, destinationHash: string) => {
+    try {
+      if (typeof destinationHash !== 'string' || destinationHash.length > 128) {
+        return { changes: 0 };
+      }
+      const db = getDbForIpc('db:deleteReticulumDestination');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce('DELETE FROM reticulum_destinations WHERE destination_hash = ?')
+        .run(destinationHash);
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteReticulumDestination', err);
     }
   });
 

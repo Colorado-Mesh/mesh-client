@@ -2869,8 +2869,15 @@
       "selectModel": "Seleccione un modelo primero.",
       "selectFirmware": "Primero seleccione un archivo de firmware.",
       "flashConfigMissing": "La configuración flash no está disponible para este dispositivo.",
-      "blockedByStack": "No se puede flashear mientras la pila Reticulum contiene el puerto serie RNode."
-    }
+      "blockedByStack": "No se puede flashear mientras la pila Reticulum contiene el puerto serie RNode.",
+      "esp32SyncFailed": "No se ha podido sincronizar con el gestor de arranque ESP32. Compruebe el cable y el puerto USB, detenga otras aplicaciones que utilicen el puerto serie e inténtelo de nuevo.",
+      "flashTransferTooSmall": "La transferencia de firmware no se completó: casi no se escribieron datos. Confirme que ha seleccionado el puerto USB correcto y que la placa ha entrado en el modo de gestor de arranque."
+    },
+    "selectSerialPort": "Seleccionar porto serie",
+    "noSerialPorts": "No se han encontrado puertos serie USB.",
+    "noSerialPortsHint": "Conecte su placa a través de USB. Los dispositivos Bluetooth en el registro se ignoran; solo se pueden usar puertos serie USB para parpadear.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Usado por última vez"
   },
   "peerListPanel": {
     "heading": "Pares",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Escuchado la Última Vez",
     "colContact": "Contacto",
     "contactYes": "Sí",
-    "contactNo": "No"
+    "contactNo": "No",
+    "tabFavorites": "Favoritos",
+    "emptyFavorites": "Todavía no hay compañeros favoritos: marca un contacto o un compañero para fijarlos aquí."
   },
   "peerDetailModal": {
     "networkSection": "Red",
@@ -2911,7 +2920,12 @@
     "call": "Llamada de Voz",
     "callComingSoon": "Llamadas de voz que llegarán en una actualización futura",
     "iconColor": "Color del avatar",
-    "iconColorAria": "Color del avatar"
+    "iconColorAria": "Color del avatar",
+    "saveContact": "Guardar como contacto",
+    "removeContact": "Eliminar contacto",
+    "removeContactConfirmTitle": "Eliminar contacto",
+    "removeContactConfirmBody": "Esto elimina el contacto de su lista. El historial de chats se mantiene; enviarles un mensaje de nuevo volverá a añadir el contacto.",
+    "probeOk": "Sonda OK — ruta accesible."
   },
   "reticulumPropagation": {
     "preferred": "Preferido",

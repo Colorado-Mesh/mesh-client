@@ -2869,8 +2869,15 @@
       "selectModel": "Pilih model terlebih dahulu.",
       "selectFirmware": "Pilih file firmware terlebih dahulu.",
       "flashConfigMissing": "Konfigurasi flash tidak tersedia untuk perangkat ini.",
-      "blockedByStack": "Tidak dapat mem-flash saat tumpukan Reticulum menahan port serial RNode."
-    }
+      "blockedByStack": "Tidak dapat mem-flash saat tumpukan Reticulum menahan port serial RNode.",
+      "esp32SyncFailed": "Tidak dapat menyinkronkan dengan bootloader ESP32. Periksa kabel USB dan port, hentikan aplikasi lain menggunakan port serial, dan coba lagi.",
+      "flashTransferTooSmall": "Transfer firmware tidak selesai — hampir tidak ada data yang ditulis. Pastikan Anda memilih port USB yang benar dan papan masuk ke mode bootloader."
+    },
+    "selectSerialPort": "Pilih port serial",
+    "noSerialPorts": "Tidak ditemukan port serial USB.",
+    "noSerialPortsHint": "Hubungkan papan Anda melalui USB. Perangkat Bluetooth di log diabaikan; hanya port serial USB yang dapat digunakan untuk berkedip.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Terakhir digunakan"
   },
   "peerListPanel": {
     "heading": "Peer",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Terakhir didengar",
     "colContact": "Kontak",
     "contactYes": "Ya",
-    "contactNo": "Tidak"
+    "contactNo": "Tidak",
+    "tabFavorites": "Favorit",
+    "emptyFavorites": "Belum ada rekan favorit — beri bintang pada kontak atau rekan untuk menyematkannya di sini."
   },
   "peerDetailModal": {
     "networkSection": "Jaringan",
@@ -2911,7 +2920,12 @@
     "call": "Voice Call",
     "callComingSoon": "Panggilan suara akan datang dalam pembaruan mendatang",
     "iconColor": "Warna avatar",
-    "iconColorAria": "Warna avatar sejawat"
+    "iconColorAria": "Warna avatar sejawat",
+    "saveContact": "Simpan sebagai kontak",
+    "removeContact": "Hapus kontak",
+    "removeContactConfirmTitle": "Hapus kontak",
+    "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar Anda. Riwayat obrolan disimpan; mengirim pesan lagi kepada mereka akan menambahkan kembali kontak.",
+    "probeOk": "Probe OK — jalur dapat dijangkau."
   },
   "reticulumPropagation": {
     "preferred": "Disukai",

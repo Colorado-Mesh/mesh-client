@@ -56,6 +56,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       markStaleReticulumOutbound: async () => ({ changes: 0 }),
       vacuumReticulumTables: async () => ({ ok: true }),
       getReticulumDestinations: async () => [],
+      deleteReticulumDestination: async () => ({ changes: 1 }),
       upsertReticulumDestination: noopAsync,
       searchMessages: async () => [],
       searchMeshcoreMessages: async () => [],

@@ -28,11 +28,24 @@ export function dismissedDmTabsStorageKey(protocol: MeshProtocol): string {
  */
 export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
   const key = openDmTabsStorageKey(protocol);
+  const normalizeTabId = (id: number): number => (protocol === 'reticulum' ? id >>> 0 : id);
+  const normalizeList = (parsed: number[]): number[] => {
+    const out: number[] = [];
+    const seen = new Set<number>();
+    for (const id of parsed) {
+      if (typeof id !== 'number' || !Number.isFinite(id)) continue;
+      const normalized = normalizeTabId(id);
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      out.push(normalized);
+    }
+    return out;
+  };
   const specific = localStorage.getItem(key);
   if (specific != null) {
     const parsed = parseStoredJson<unknown>(specific, 'ChatPanel openDmTabs');
     if (Array.isArray(parsed) && parsed.every((n: unknown) => typeof n === 'number')) {
-      return parsed;
+      return normalizeList(parsed);
     }
   }
   if (protocol === 'meshtastic') {
@@ -48,7 +61,7 @@ export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
               errLikeToLogString(e),
           );
         }
-        return parsed;
+        return normalizeList(parsed);
       }
     }
   }

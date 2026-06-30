@@ -15,6 +15,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
 import {
   markStaleReticulumOutboundInStore,
   markStaleReticulumOutboundMessages,
@@ -25,7 +26,9 @@ import {
   nodeRecordsToMeshNodeMap,
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
+import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
 import type { ReticulumContact, ReticulumSidecarEvent } from '@/shared/reticulum-types';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -100,7 +103,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const applyContactNodes = useCallback(
     (contacts: ReticulumContact[]) => {
       if (!identityId) return;
-      upsertNodeRecordsForIdentity(identityId, contacts.map(reticulumContactToNodeRecord));
+      const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
+      const visible = contacts.filter(
+        (c) => !dismissed.has(c.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase()),
+      );
+      upsertNodeRecordsForIdentity(identityId, visible.map(reticulumContactToNodeRecord));
     },
     [identityId],
   );
@@ -141,9 +148,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const ingestLxmfPayload = useCallback(
     (p: ReticulumLxmfPayload) => {
       if (!identityId) return;
-      ingestReticulumLxmfPayloadWithSideEffects(identityId, p);
+      ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
+        selfLxmfHash: selfLxmfHash ?? undefined,
+      });
     },
-    [identityId],
+    [identityId, selfLxmfHash],
   );
 
   const refreshMessagesFromDb = useCallback(async () => {
@@ -259,8 +268,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await refreshContactsFromSidecar();
       await syncDiagnosticsFromSidecar();
       if (identityId) {
-        await markStaleReticulumOutboundMessages(identityId);
-        markStaleReticulumOutboundInStore(identityId);
+        await markStaleReticulumOutboundMessages(identityId, 5 * MS_PER_MINUTE);
+        markStaleReticulumOutboundInStore(identityId, 5 * MS_PER_MINUTE);
         await refreshMessagesFromDb();
       }
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
@@ -327,7 +336,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     async (text: string, to: number | string, replyToHash?: string, pendingId?: string) => {
       if (!identityId) return;
       const destination =
-        typeof to === 'string' ? to : (resolveReticulumDestinationHash(to) ?? String(to));
+        typeof to === 'string'
+          ? to
+          : (reticulumHashForNodeId(to) ?? resolveReticulumDestinationHash(to) ?? String(to));
       const body: Record<string, unknown> = {
         destination_hash: destination,
         text,
@@ -342,16 +353,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
           message?: ReticulumLxmfPayload;
           sent_via?: string;
         };
-        if (res?.message) {
-          const hash = res.message.message_hash;
+        const lxmfPayload = extractLxmfPayloadFromSendResponse(res);
+        if (lxmfPayload) {
+          const hash = lxmfPayload.message_hash;
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
-            ingestLxmfPayload(res.message);
+            ingestLxmfPayload(lxmfPayload);
             updateMessageStatus(identityId, hash, 'acked');
           } else {
-            ingestLxmfPayload(res.message);
+            ingestLxmfPayload(lxmfPayload);
             if (pendingId) updateMessageStatus(identityId, pendingId, 'acked');
           }
+        } else if (res?.ok === false) {
+          throw new Error('LXMF send rejected by sidecar');
         } else if (pendingId) {
           updateMessageStatus(identityId, pendingId, 'acked');
         }
@@ -368,7 +382,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const sendAttachment = useCallback(
     async (file: File, to: number | string) => {
       const destination =
-        typeof to === 'string' ? to : (resolveReticulumDestinationHash(to) ?? String(to));
+        typeof to === 'string'
+          ? to
+          : (reticulumHashForNodeId(to) ?? resolveReticulumDestinationHash(to) ?? String(to));
       const bytes = new Uint8Array(await file.arrayBuffer());
       let binary = '';
       for (const byte of bytes) {
@@ -381,7 +397,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         data_base64: btoa(binary),
       })) as { ok?: boolean; message?: ReticulumLxmfPayload };
       if (res?.message) {
-        ingestLxmfPayload(res.message);
+        const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
+        if (payload) ingestLxmfPayload(payload);
       }
     },
     [ingestLxmfPayload],
@@ -407,7 +424,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         emoji: glyph,
       })) as { ok?: boolean; message?: ReticulumLxmfPayload };
       if (res?.message) {
-        ingestLxmfPayload(res.message);
+        const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
+        if (payload) ingestLxmfPayload(payload);
       }
     },
     [identityId, ingestLxmfPayload, selfNodeId],

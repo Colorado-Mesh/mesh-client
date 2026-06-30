@@ -6,10 +6,15 @@ import {
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
 import { computeReticulumMessageHash } from '@/renderer/lib/reticulum/messageHash';
+import {
+  mergeReticulumIngestRecord,
+  type ReticulumIngestMergeContext,
+} from '@/renderer/lib/reticulum/reticulumIngestMerge';
 import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
 import type { IdentityId } from '@/renderer/lib/types';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
-import { addMessage, upsertMessage } from '@/renderer/stores/messageStore';
+import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
+import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 
 export interface ReticulumLxmfPayload {
   sender_hash?: string;
@@ -80,10 +85,13 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
 export function ingestReticulumLxmfPayload(
   identityId: IdentityId,
   p: ReticulumLxmfPayload,
+  ctx: ReticulumIngestMergeContext = {},
 ): boolean {
   const record = payloadToMessageRecord(p);
   if (!record) return false;
-  upsertMessage(identityId, record);
+  const existing = useMessageStore.getState().messages[identityId]?.[record.id];
+  const merged = mergeReticulumIngestRecord(existing, record, p, ctx);
+  upsertMessage(identityId, merged);
   return true;
 }
 
@@ -113,6 +121,7 @@ export async function persistReticulumMessageToDb(
 
 export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload): Promise<void> {
   if (!p.sender_hash) return;
+  useReticulumPeerStore.getState().restoreDismissedContact(p.sender_hash);
   try {
     await window.electronAPI.db.upsertReticulumDestination({
       destination_hash: p.sender_hash,
@@ -127,8 +136,9 @@ export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload
 export function ingestReticulumLxmfPayloadWithSideEffects(
   identityId: IdentityId,
   p: ReticulumLxmfPayload,
+  ctx: ReticulumIngestMergeContext = {},
 ): boolean {
-  const ingested = ingestReticulumLxmfPayload(identityId, p);
+  const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
   void persistReticulumMessageToDb(identityId, p);
   void persistReticulumContactFromPayload(p);

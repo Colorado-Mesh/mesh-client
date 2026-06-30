@@ -3444,7 +3444,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
     dmOnlyChat: true,
   };
 
-  it('lists LXMF contacts as DM tabs and sends to auto-selected peer', async () => {
+  it('opens DM via initialDmTarget instead of listing all contacts', async () => {
     const user = userEvent.setup();
     const peerId = 0xabc123;
     const onSend = vi.fn().mockResolvedValue(undefined);
@@ -3469,7 +3469,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
     ]);
     render(
       <ToastProvider>
-        <ChatPanel {...reticulumProps} nodes={nodes} onSend={onSend} />
+        <ChatPanel {...reticulumProps} nodes={nodes} onSend={onSend} initialDmTarget={peerId} />
       </ToastProvider>,
     );
     expect(screen.getByRole('button', { name: 'Peer One' })).toBeInTheDocument();
@@ -3479,6 +3479,35 @@ describe('ChatPanel reticulum dm-only chat', () => {
     await waitFor(() => {
       expect(onSend).toHaveBeenCalledWith('hello', 0, peerId, undefined);
     });
+  });
+
+  it('does not list contacts until opened from Nodes or message history', () => {
+    const peerId = 0xabc123;
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: 'deadbeef',
+          long_name: 'Peer One',
+          short_name: 'P1',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} nodes={nodes} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'Peer One' })).not.toBeInTheDocument();
   });
 
   it('prompts to select a DM when no contacts are known', async () => {

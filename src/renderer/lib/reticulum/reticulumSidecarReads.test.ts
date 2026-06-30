@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getStatus = vi.fn();
@@ -16,6 +17,7 @@ vi.stubGlobal('window', {
 
 import {
   fetchReticulumIdentityStatus,
+  formatReticulumPeerProbeToast,
   isReticulumSidecar404Error,
   isReticulumSidecarNotRunningError,
   isReticulumSidecarRunning,
@@ -80,6 +82,14 @@ describe('reticulumSidecarReads', () => {
       hops: undefined,
       mode: undefined,
       error: 'timeout',
+    });
+  });
+
+  it('formatReticulumPeerProbeToast treats ok without hops as success', () => {
+    const t = ((key: string) => key) as TFunction;
+    expect(formatReticulumPeerProbeToast(t, { ok: true })).toEqual({
+      message: 'peerDetailModal.probeOk',
+      variant: 'success',
     });
   });
 });

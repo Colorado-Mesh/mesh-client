@@ -55,6 +55,17 @@ export function resolveChatDmPeer(
   options?: ChatUnreadDmOptions,
 ): number | undefined {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
+  if (protocol === 'reticulum' && msg.to == null && msg.reticulum_sender_hash) {
+    const isOwn = (id: number) => ownNodeIds.has(id >>> 0);
+    const senderFromHash = Number.parseInt(
+      msg.reticulum_sender_hash.replace(/[^0-9a-f]/gi, '').slice(0, 12) || '0',
+      16,
+    );
+    const senderId = (Number.isFinite(senderFromHash) ? senderFromHash : 0) >>> 0;
+    if (senderId > 0 && !isOwn(senderId) && !isOwn(msg.sender_id)) {
+      return senderId;
+    }
+  }
   if (msg.to == null) return undefined;
   const isOwn = (id: number) => ownNodeIds.has(id);
   let peer: number | undefined;

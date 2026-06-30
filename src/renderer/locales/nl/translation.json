@@ -2869,8 +2869,15 @@
       "selectModel": "Selecteer eerst een model.",
       "selectFirmware": "Selecteer eerst een firmwarebestand.",
       "flashConfigMissing": "Flash-configuratie is niet beschikbaar voor dit apparaat.",
-      "blockedByStack": "Kan niet flitsen terwijl de Reticulum-stack de seriële RNode-poort bevat."
-    }
+      "blockedByStack": "Kan niet flitsen terwijl de Reticulum-stack de seriële RNode-poort bevat.",
+      "esp32SyncFailed": "Kan niet synchroniseren met de ESP32-opstartlader. Controleer de USB-kabel en poort, stop andere apps met behulp van de seriële poort en probeer het opnieuw.",
+      "flashTransferTooSmall": "Firmware-overdracht is niet voltooid — er zijn bijna geen gegevens geschreven. Bevestig dat u de juiste USB-poort hebt geselecteerd en dat het bord in de bootloader-modus is gegaan."
+    },
+    "selectSerialPort": "Seriële poort selecteren",
+    "noSerialPorts": "Geen USB seriële poorten gevonden.",
+    "noSerialPortsHint": "Sluit uw bord aan via USB. Bluetooth-apparaten in het logboek worden genegeerd; alleen USB-seriële poorten kunnen worden gebruikt om te knipperen.",
+    "stackStoppedHint": "Reticulum stack is gestopt — de seriële poort is vrij om te knipperen. Start de stapel opnieuw op het tabblad Verbinding wanneer u klaar bent.",
+    "lastUsedPort": "Laatst gebruikt"
   },
   "peerListPanel": {
     "heading": "Collega's",
@@ -2894,7 +2901,9 @@
     "colLastHeard": "Laatst gehoord",
     "colContact": "Contact",
     "contactYes": "Ja",
-    "contactNo": "Nee"
+    "contactNo": "Nee",
+    "tabFavorites": "Favorieten",
+    "emptyFavorites": "Nog geen favoriete collega's — geef een contactpersoon of collega een ster om ze hier vast te pinnen."
   },
   "peerDetailModal": {
     "networkSection": "Netwerk",
@@ -2911,7 +2920,12 @@
     "call": "Telefoonoproep",
     "callComingSoon": "Spraakoproepen komen in een toekomstige update",
     "iconColor": "Avatar kleur",
-    "iconColorAria": "Kleur peer-avatar"
+    "iconColorAria": "Kleur peer-avatar",
+    "saveContact": "Opslaan als contactpersoon",
+    "removeContact": "Contact verwijderen",
+    "removeContactConfirmTitle": "Contact verwijderen",
+    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit je lijst verwijderd. De chatgeschiedenis wordt bewaard; door ze opnieuw een bericht te sturen, wordt het contact opnieuw toegevoegd.",
+    "probeOk": "Sonde OK — pad bereikbaar."
   },
   "reticulumPropagation": {
     "preferred": "Voorkeur",

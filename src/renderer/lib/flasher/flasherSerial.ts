@@ -8,9 +8,12 @@ export function assertWebSerialAvailable(): void {
   }
 }
 
-export async function requestFlasherSerialPort(): Promise<SerialPort> {
+export async function requestFlasherSerialPort(
+  requestPort?: () => Promise<SerialPort>,
+): Promise<SerialPort> {
   assertWebSerialAvailable();
-  return navigator.serial!.requestPort({ filters: [] });
+  const request = requestPort ?? (() => navigator.serial!.requestPort({ filters: [] }));
+  return request();
 }
 
 export async function connectRNode(port: SerialPort): Promise<RNode> {

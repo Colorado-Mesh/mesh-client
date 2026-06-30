@@ -50,11 +50,41 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
   return path.join(app.getAppPath(), 'reticulum-sidecar', 'target', 'debug', name);
 }
 
+export function hasRnsStackSiblings(projectDir: string): boolean {
+  const rnsRuntime = path.normalize(
+    path.join(projectDir, '../../rsReticulum/crates/rns-runtime/Cargo.toml'),
+  );
+  const lxmfCore = path.normalize(
+    path.join(projectDir, '../../rsLXMF/crates/lxmf-core/Cargo.toml'),
+  );
+  return fs.existsSync(rnsRuntime) && fs.existsSync(lxmfCore);
+}
+
+/** Cargo build args: full RNS stack when Ratspeak siblings are present. */
+export function sidecarCargoBuildArgs(projectDir: string): string[] {
+  if (hasRnsStackSiblings(projectDir)) {
+    return ['build', '--features', 'rns-stack'];
+  }
+  return ['build'];
+}
+
+/** Stub sidecar builds omit rsReticulum symbols needed for live path-table peers. */
+export function sidecarBinaryLacksRnsStack(binaryPath: string): boolean {
+  try {
+    const bytes = fs.readFileSync(binaryPath);
+    return !bytes.includes(Buffer.from('rns_runtime'));
+  } catch {
+    // catch-no-log-ok binary missing or unreadable — treat as stub build
+    return true;
+  }
+}
+
 let devBuildInFlight: Promise<void> | null = null;
 
 function runCargoBuild(projectDir: string): Promise<void> {
+  const cargoArgs = sidecarCargoBuildArgs(projectDir);
   return new Promise((resolve, reject) => {
-    const proc = spawn('cargo', ['build'], {
+    const proc = spawn('cargo', cargoArgs, {
       cwd: projectDir,
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -147,10 +177,17 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
 
   const missing = !fs.existsSync(binaryPath);
   const stale = !missing && sidecarBinaryIsStale(binaryPath, projectDir);
+  const lacksRnsStack =
+    !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsStack(binaryPath);
   if (missing) {
     await runDevSidecarCargoBuild(projectDir, 'debug binary missing');
   } else if (stale) {
     await runDevSidecarCargoBuild(projectDir, 'sidecar sources newer than binary');
+  } else if (lacksRnsStack) {
+    await runDevSidecarCargoBuild(
+      projectDir,
+      'debug binary is stub-only; rebuilding with rns-stack for live peers',
+    );
   } else {
     return;
   }
