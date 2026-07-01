@@ -3386,7 +3386,8 @@ function AppContent() {
                       role="tabpanel"
                       aria-labelledby="tab-14"
                       hidden={activePanelIndex !== 15}
-                      className="w-full min-w-0"
+                      className="h-full w-full min-w-0"
+                      style={{ height: 'calc(100vh - 140px)' }}
                     >
                       {activePanelIndex === 15 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
@@ -3471,9 +3472,7 @@ function AppContent() {
                       capabilities.hasReticulumTopologyPanel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <div className="h-full overflow-auto p-4">
-                              <ReticulumTopologyPanel />
-                            </div>
+                            <ReticulumTopologyPanel />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

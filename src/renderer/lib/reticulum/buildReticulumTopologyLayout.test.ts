@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildReticulumTopologyGraph,
   buildReticulumTopologyLayout,
   computeReticulumNodeDepths,
   countRelayTargets,
+  filterReticulumVisibleNodeIds,
+  isReticulumHubNode,
   mergeReticulumTopologyEdgeNodes,
   shouldUseReticulumStarFallbackEdges,
 } from './buildReticulumTopologyLayout';
@@ -68,6 +71,24 @@ describe('buildReticulumTopologyLayout', () => {
     expect(countRelayTargets('hub', edges)).toBe(2);
   });
 
+  it('marks single-outgoing relay as hub', () => {
+    const edges = [
+      { source: 'self', target: 'hub' },
+      { source: 'hub', target: 'leaf' },
+    ];
+    expect(isReticulumHubNode('hub', edges)).toBe(true);
+    expect(isReticulumHubNode('leaf', edges)).toBe(false);
+    const graph = buildReticulumTopologyGraph(
+      [
+        { destination_hash: 'hub', hops: 1 },
+        { destination_hash: 'leaf', hops: 2 },
+      ],
+      edges,
+      { selfLabel: 'You' },
+    );
+    expect(graph.nodes.find((n) => n.id === 'hub')?.isHub).toBe(true);
+  });
+
   it('skips star fallback when multi-hop metadata is present', () => {
     expect(shouldUseReticulumStarFallbackEdges([{ destination_hash: 'x', hops: 2 }], [])).toBe(
       false,
@@ -81,5 +102,53 @@ describe('buildReticulumTopologyLayout', () => {
     expect(shouldUseReticulumStarFallbackEdges([{ destination_hash: 'x', hops: 1 }], [])).toBe(
       true,
     );
+  });
+
+  it('seeds hub closer to center than leaf', () => {
+    const edges = [
+      { source: 'self', target: 'hub' },
+      { source: 'hub', target: 'leaf' },
+    ];
+    const graph = buildReticulumTopologyGraph(
+      [
+        { destination_hash: 'hub', hops: 1 },
+        { destination_hash: 'leaf', hops: 2 },
+      ],
+      edges,
+      { selfLabel: 'You', cx: 400, cy: 300 },
+    );
+    const hub = graph.nodes.find((n) => n.id === 'hub')!;
+    const leaf = graph.nodes.find((n) => n.id === 'leaf')!;
+    const hubDist = Math.hypot(hub.seedX - 400, hub.seedY - 300);
+    const leafDist = Math.hypot(leaf.seedX - 400, leaf.seedY - 300);
+    expect(hubDist).toBeLessThan(leafDist);
+  });
+
+  it('filters distant leaves when graph exceeds visible cap', () => {
+    const nodes = Array.from({ length: 100 }, (_, i) => ({
+      destination_hash: `peer${i}`,
+      hops: i < 5 ? 1 : 3,
+    }));
+    const edges = nodes.flatMap((n, i) =>
+      i < 5
+        ? [{ source: 'self' as const, target: n.destination_hash }]
+        : [{ source: 'hub', target: n.destination_hash }],
+    );
+    edges.unshift({ source: 'self', target: 'hub' });
+    nodes.unshift({ destination_hash: 'hub', hops: 1 });
+
+    const depths = computeReticulumNodeDepths(edges, nodes);
+    const visible = filterReticulumVisibleNodeIds(
+      nodes.map((n) => n.destination_hash),
+      depths,
+      edges,
+    );
+    expect(visible.has('hub')).toBe(true);
+    expect(visible.has('peer0')).toBe(true);
+    expect(visible.has('peer50')).toBe(false);
+
+    const graph = buildReticulumTopologyGraph(nodes, edges, { selfLabel: 'You' });
+    expect(graph.hiddenCount).toBeGreaterThan(0);
+    expect(graph.nodes.some((n) => n.id === 'hub')).toBe(true);
   });
 });

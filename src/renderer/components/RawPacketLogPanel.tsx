@@ -18,6 +18,7 @@ import {
   MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
+import { createStableChatMeasureElement } from '../lib/chatScrollUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
@@ -27,6 +28,7 @@ import {
 import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
 import {
   type MeshtasticRawPacketEntry,
+  rawPacketContentKey,
   rawPacketVirtualizerKey,
   type ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
@@ -404,7 +406,7 @@ export default function RawPacketLogPanel(props: Props) {
   const floodScopeHashtag = variant === 'meshcore' ? props.floodScopeHashtag : undefined;
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [expandedContentKey, setExpandedContentKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
 
@@ -448,17 +450,26 @@ export default function RawPacketLogPanel(props: Props) {
     );
   }, [packets, filter, variant, getNodeLabel]);
 
-  useEffect(() => {
-    setExpandedIdx(null);
-  }, [packets, filter]);
+  const expandedIndex = useMemo(() => {
+    if (!expandedContentKey) return -1;
+    return filtered.findIndex((row) => rawPacketContentKey(row.ts, row.raw) === expandedContentKey);
+  }, [filtered, expandedContentKey]);
 
   const getScrollElement = useCallback(() => scrollRef.current, []);
-  const estimateSize = useCallback(() => 36, []);
+  const estimateSize = useCallback(
+    (index: number) => (index === expandedIndex ? 200 : 36),
+    [expandedIndex],
+  );
+  const measureElement = useMemo(
+    () => createStableChatMeasureElement(estimateSize),
+    [estimateSize],
+  );
 
   const virtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement,
     estimateSize,
+    measureElement,
     overscan: 12,
     getItemKey: (index) => {
       const row = filtered[index];
@@ -467,6 +478,12 @@ export default function RawPacketLogPanel(props: Props) {
     },
   });
 
+  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
+    if (instance.scrollDirection === 'backward') return false;
+    if (!atBottomRef.current) return false;
+    return instance.isAtEnd();
+  };
+
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -474,7 +491,7 @@ export default function RawPacketLogPanel(props: Props) {
   }, []);
 
   const handleClear = useCallback(() => {
-    setExpandedIdx(null);
+    setExpandedContentKey(null);
     onClear();
   }, [onClear]);
 
@@ -500,7 +517,7 @@ export default function RawPacketLogPanel(props: Props) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
-            setExpandedIdx(null);
+            setExpandedContentKey(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
           className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
@@ -529,14 +546,16 @@ export default function RawPacketLogPanel(props: Props) {
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="min-h-0 flex-1 overflow-auto font-mono text-[11px] text-gray-300"
+          className="min-h-0 flex-1 overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
           role="log"
           aria-live="polite"
           aria-relevant="additions"
         >
           <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
             {virtualizer.getVirtualItems().map((vi) => {
-              const isExpanded = expandedIdx === vi.index;
+              const row = filtered[vi.index];
+              const rowContentKey = row ? rawPacketContentKey(row.ts, row.raw) : null;
+              const isExpanded = rowContentKey != null && rowContentKey === expandedContentKey;
               const hexRaw =
                 variant === 'meshcore'
                   ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
@@ -551,7 +570,7 @@ export default function RawPacketLogPanel(props: Props) {
                     : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
               const toggleExpand = () => {
-                setExpandedIdx(isExpanded ? null : vi.index);
+                setExpandedContentKey(isExpanded || !rowContentKey ? null : rowContentKey);
               };
 
               return (

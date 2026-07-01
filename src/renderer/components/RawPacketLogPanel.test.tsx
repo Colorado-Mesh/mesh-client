@@ -151,7 +151,7 @@ function meshtasticPacket(
       }) as never,
     );
   return {
-    ts: 1_710_000_000_000,
+    ts: overrides.ts ?? 1_710_000_000_000,
     snr: 2.5,
     rssi: -90,
     raw,
@@ -182,6 +182,33 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
     expect(screen.getByText(/payload=decoded/)).toBeInTheDocument();
   });
 
+  it('keeps expanded row open when new packets arrive', () => {
+    const initial = meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' });
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="meshtastic"
+        packets={[initial]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'TestNode'}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('TEXT_MESSAGE_APP'));
+    expect(screen.getByText(/id=0x12345678/)).toBeInTheDocument();
+
+    const newer = meshtasticPacket({ portLabel: 'POSITION_APP', ts: 1_710_000_001_000 });
+    rerender(
+      <RawPacketLogPanel
+        variant="meshtastic"
+        packets={[newer, initial]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'TestNode'}
+      />,
+    );
+
+    expect(screen.getByText(/id=0x12345678/)).toBeInTheDocument();
+  });
+
   it('node name click opens details without expanding raw hex', () => {
     const onNodeClick = vi.fn();
     const packets = [meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' })];
@@ -204,7 +231,7 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
   it('collapses expanded row when filter excludes it', () => {
     const packets = [
       meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' }),
-      meshtasticPacket({ portLabel: 'POSITION_APP' }),
+      meshtasticPacket({ portLabel: 'POSITION_APP', ts: 1_710_000_001_000 }),
     ];
     render(
       <RawPacketLogPanel
