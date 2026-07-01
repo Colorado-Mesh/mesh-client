@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -755,22 +755,8 @@ export default function ConnectionPanel({
           return;
         }
         if (lastId && device.deviceId === lastId) {
-          if (autoConnectTimeoutRef.current) {
-            clearTimeout(autoConnectTimeoutRef.current);
-            autoConnectTimeoutRef.current = null;
-          }
-          void window.electronAPI.stopNobleBleScanning(protocol);
-          saveLastBleDevice(protocol, device.deviceId);
-          lastSelectedBleNameRef.current = device.deviceName ?? null;
-          setConnectionStage('connectionPanel.stageConnecting');
-          onConnect('ble', undefined, device.deviceId).catch((err: unknown) => {
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            const bleErrMsg = humanizeBleError(err, t);
-            if (bleErrMsg) setError(bleErrMsg);
-            setConnecting(false);
-            setConnectionStage('');
-          });
+          // reconnectBleWithScan + connectAutomatic already owns Noble auto-connect; a second
+          // onConnect here races prepareRfConnect / Noble IPC (dual-protocol startup).
           return;
         }
       }
@@ -1562,8 +1548,9 @@ export default function ConnectionPanel({
   };
 
   // ─── Connecting Progress View ───────────────────────────────────
+  let connectingProgressView: ReactNode = null;
   if (connecting && !isConnected) {
-    return (
+    connectingProgressView = (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
         <div className="w-full">{renderExitActions('connecting')}</div>
         <SpinnerIconLg className="text-bright-green" />
@@ -2499,6 +2486,15 @@ export default function ConnectionPanel({
         </div>
       </div>
     );
+
+  if (connectingProgressView) {
+    return (
+      <div className="w-full space-y-6">
+        {connectingProgressView}
+        {mqttSection}
+      </div>
+    );
+  }
 
   if (capabilities.hasReticulumInterfaceConfig) {
     const exitVariant = isConnected

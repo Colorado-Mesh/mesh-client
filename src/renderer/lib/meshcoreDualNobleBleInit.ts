@@ -83,9 +83,12 @@ export async function awaitNobleBleProtocolSettle(
   maxWaitMs: number,
 ): Promise<void> {
   if (!isRendererNobleBlePlatform()) return;
-  const deadline = Date.now() + maxWaitMs;
+  const startMs = Date.now();
+  const deadline = startMs + maxWaitMs;
   while (Date.now() < deadline) {
-    if (!nobleBleConfigureBusyForProtocol(protocol)) return;
+    if (!nobleBleConfigureBusyForProtocol(protocol)) {
+      return;
+    }
     await new Promise<void>((resolve) => setTimeout(resolve, MESHCORE_DUAL_NOBLE_BLE_POLL_MS));
   }
 }

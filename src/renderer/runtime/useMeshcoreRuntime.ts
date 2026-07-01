@@ -317,7 +317,7 @@ import type {
   MQTTStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
+import { mirrorMqttStatusForProtocol, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { updateMessageStatus, useMessageStore } from '../stores/messageStore';
 import {
@@ -797,7 +797,7 @@ export function useMeshcoreRuntime() {
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
-      mirrorMqttStatusToConnection(meshcoreIdentityIdRef.current, st);
+      mirrorMqttStatusForProtocol('meshcore', st);
       if (st === 'connected') {
         setMqttConnectionLoss(false);
       } else if (consumeMqttUserDisconnect()) {
@@ -810,8 +810,23 @@ export function useMeshcoreRuntime() {
 
   const maybeAutoLaunchMeshcoreMqttAfterIdentity = useCallback(() => {
     if (!readMeshcoreMqttSettingsFromStorage().autoLaunch) return;
-    if (mqttStatusRef.current !== 'disconnected') return;
-    void tryAutoLaunchMqtt('meshcore').catch((e: unknown) => {
+    void (async () => {
+      const st = mqttStatusRef.current;
+      if (st === 'connected') return;
+      // Startup may have opened MQTT before RF identity/JWT was ready — replace stale session.
+      if (st === 'connecting') {
+        await window.electronAPI.mqtt.disconnect('meshcore').catch((e: unknown) => {
+          console.debug(
+            '[useMeshcoreRuntime] MQTT stale connecting session disconnect ' +
+              errLikeToLogString(e),
+          );
+        });
+        mqttStatusRef.current = 'disconnected';
+        setMqttStatus('disconnected');
+      }
+      if (mqttStatusRef.current !== 'disconnected') return;
+      await tryAutoLaunchMqtt('meshcore');
+    })().catch((e: unknown) => {
       console.warn(
         '[useMeshcoreRuntime] MQTT auto-launch after identity persist failed ' +
           errLikeToLogString(e),
@@ -2039,19 +2054,17 @@ export function useMeshcoreRuntime() {
       // MQTT private key export runs after other init RPCs to avoid meshcore.js listener races
       // (Linux Web Bluetooth is especially sensitive).
       try {
-        const persisted = await awaitUnlessMeshcoreSetupCancelled(
+        await awaitUnlessMeshcoreSetupCancelled(
           setupGen,
           exportAndPersistMeshcoreMqttIdentity(conn, info.publicKey, transportType),
         );
-        if (persisted) {
-          maybeAutoLaunchMeshcoreMqttAfterIdentity();
-        }
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') throw e;
         console.warn(
           '[useMeshcoreRuntime] initConn MQTT identity export failed ' + errLikeToLogString(e),
         );
       }
+      maybeAutoLaunchMeshcoreMqttAfterIdentity();
 
       // Proactively fetch any messages that queued while disconnected.
       // Mirrors what event 131 does, but covers reconnects where the event was missed.
@@ -2180,6 +2193,9 @@ export function useMeshcoreRuntime() {
           }
         }
       }
+      if (type === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
     },
     [initConn, setupEventListeners, startMeshcoreSerialWatchdog],
   );
@@ -2192,7 +2208,9 @@ export function useMeshcoreRuntime() {
         driverIdentityId,
       });
       connRef.current = null;
-      if (type === 'ble') bleConnectInProgressRef.current = false;
+      if (type === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
       return Promise.resolve();
     },
     [teardownMeshcoreConnEventListeners],
@@ -2572,7 +2590,9 @@ export function useMeshcoreRuntime() {
         await handleRfConnectFailure(type, opened?.driverIdentityId);
         throw normalizedErr;
       } finally {
-        if (type === 'ble') bleConnectInProgressRef.current = false;
+        if (type === 'ble') {
+          bleConnectInProgressRef.current = false;
+        }
       }
     },
     [prepareRfConnect, attachRfSession, handleRfConnectFailure],
@@ -5825,8 +5845,9 @@ export function useMeshcoreRuntime() {
   }, [meshcoreIdentityId, nodes, meshcoreNodesFromStore]);
 
   useEffect(() => {
-    if (!meshcoreIdentityId) return;
-    setConnection(meshcoreIdentityId, {
+    const identityId = getIdentityIdForProtocol('meshcore') ?? meshcoreIdentityId;
+    if (!identityId) return;
+    setConnection(identityId, {
       status: state.status,
       connectionLoss: state.connectionLoss,
       serialNeedsReselect: state.serialNeedsReselect,

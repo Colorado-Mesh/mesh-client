@@ -168,7 +168,7 @@ import {
   shouldAutoLaunchMeshtasticMqtt,
   shouldMaintainMeshtasticMqttConnection,
 } from './lib/meshtasticMqttLiveIngest';
-import { tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
+import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
@@ -1779,6 +1779,12 @@ function AppContent() {
         }
         continue;
       }
+      if (prot === 'meshcore' && !shouldAutoLaunchMeshcoreMqttAtStartup()) {
+        console.debug(
+          '[App] MeshCore MQTT auto-launch deferred: JWT identity not ready (will retry after RF connect)',
+        );
+        continue;
+      }
       void tryAutoLaunchMqtt(prot).catch((e: unknown) => {
         console.warn('[App] MQTT auto-launch connect failed ' + errLikeToLogString(e));
       });
@@ -2231,7 +2237,7 @@ function AppContent() {
                   </span>
                 </div>
               )}
-              {capabilities.hasMqttHybrid && (
+              {capabilities.hasMqttConnectionPanel && (
                 <div
                   role="group"
                   className="mr-3 flex shrink-0 items-center gap-1.5 border-r border-gray-700 pr-3"

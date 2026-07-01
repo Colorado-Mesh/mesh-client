@@ -7,12 +7,26 @@ import {
   generateLetsMeshAuthToken,
   isLetsMeshSettings,
   letsMeshMqttUsernameFromIdentity,
+  meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentityAsync,
 } from './letsMeshJwt';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
 import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './meshtasticMqttTlsMigration';
 import type { MeshProtocol, MQTTSettings } from './types';
+
+/**
+ * JWT/device-signing MeshCore brokers need the radio-exported private key before connect.
+ * Defer startup auto-launch until RF init persists identity (initConn triggers retry).
+ */
+export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
+  const settings = readMeshcoreMqttSettingsFromStorage();
+  if (!settings.autoLaunch) return false;
+  if (isLetsMeshSettings(settings.server)) {
+    return meshcoreIdentityHasPrivateKey();
+  }
+  return Boolean(settings.password?.trim());
+}
 
 /** Connect MQTT for `prot` when `autoLaunch` is enabled in persisted settings. */
 export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {

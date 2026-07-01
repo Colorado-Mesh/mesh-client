@@ -66,3 +66,33 @@ describe('tryAutoLaunchMqtt', () => {
     expect(connect).not.toHaveBeenCalled();
   });
 });
+
+describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
+  const MESHCORE_KEY = 'mesh-client:mqttSettings:meshcore';
+  const IDENTITY_KEY = 'mesh-client:meshcoreIdentity';
+  const ENC_PK_KEY = 'mesh-client:meshcoreIdentityEncPK';
+
+  afterEach(() => {
+    localStorage.removeItem(MESHCORE_KEY);
+    localStorage.removeItem(IDENTITY_KEY);
+    localStorage.removeItem(ENC_PK_KEY);
+  });
+
+  it('defers JWT broker auto-launch until private key is cached', async () => {
+    const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
+    localStorage.setItem(
+      MESHCORE_KEY,
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        port: 1883,
+        autoLaunch: true,
+        useWebSocket: true,
+      }),
+    );
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
+
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify({ public_key: [1, 2] }));
+    localStorage.setItem(ENC_PK_KEY, 'enc');
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
+  });
+});

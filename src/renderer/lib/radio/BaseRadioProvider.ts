@@ -15,6 +15,8 @@ export interface ProtocolCapabilities {
   hopLimitRange: [number, number];
   /** Whether MQTT hybrid / MQTT-only nodes can appear in the node list */
   hasMqttHybrid: boolean;
+  /** Whether the Connection panel exposes MQTT connect/disconnect UI and header status */
+  hasMqttConnectionPanel: boolean;
   /** Whether environment sensor telemetry (temp, humidity, pressure, IAQ) is available */
   hasEnvironmentTelemetry: boolean;
   /** Whether LocalStats RF diagnostics (channel_utilization, air_util_tx, rx_bad, rx_dupe) are available */
@@ -150,6 +152,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasHopCount: true,
   hopLimitRange: [1, 7],
   hasMqttHybrid: true,
+  hasMqttConnectionPanel: true,
   hasEnvironmentTelemetry: true,
   hasRfStats: true,
   hasNeighborInfo: true,
@@ -221,6 +224,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hopLimitRange: [1, 64],
   /** MeshCore session is RF-first; MQTT bridge is optional and not shown as a node column. */
   hasMqttHybrid: false,
+  hasMqttConnectionPanel: true,
   hasEnvironmentTelemetry: true,
   hasRfStats: true,
   hasNeighborInfo: false,
@@ -291,6 +295,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasHopCount: false,
   hopLimitRange: [1, 128],
   hasMqttHybrid: false,
+  hasMqttConnectionPanel: false,
   hasEnvironmentTelemetry: false,
   hasRfStats: false,
   hasNeighborInfo: false,

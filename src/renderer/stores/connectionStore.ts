@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 
-import type { ConnectionType, IdentityId, MQTTStatus } from '../lib/types';
+import {
+  resolveIdentityIdForProtocol,
+  resolvePrimaryIdentityIdForProtocol,
+} from '../lib/identityByProtocol';
+import type { ConnectionType, IdentityId, MeshProtocol, MQTTStatus } from '../lib/types';
+import { useIdentityStore } from './identityStore';
 import { omitRecordKey } from './storeUtils';
 
 export type ConnectionStatus =
@@ -104,5 +109,16 @@ export function mirrorMqttStatusToConnection(
 ): void {
   if (identityId) {
     setConnection(identityId, { mqttStatus: status });
+  }
+}
+
+/** Mirror MQTT IPC status onto every identity bucket the UI may read for a protocol tab. */
+export function mirrorMqttStatusForProtocol(protocol: MeshProtocol, status: MQTTStatus): void {
+  const { identities, activeIdentityId } = useIdentityStore.getState();
+  const resolved = resolveIdentityIdForProtocol(identities, activeIdentityId, protocol);
+  const primary = resolvePrimaryIdentityIdForProtocol(identities, activeIdentityId, protocol);
+  const targets = new Set([resolved, primary].filter(Boolean));
+  for (const id of targets) {
+    setConnection(id!, { mqttStatus: status });
   }
 }

@@ -186,7 +186,7 @@ import type {
   TelemetryPoint,
 } from '../lib/types';
 import {
-  mirrorMqttStatusToConnection,
+  mirrorMqttStatusForProtocol,
   setConnection,
   useConnectionStore,
 } from '../stores/connectionStore';
@@ -963,7 +963,7 @@ export function useMeshtasticRuntime() {
       const prev = mqttStatusRef.current;
       mqttStatusRef.current = s;
       setMqttStatus(s);
-      mirrorMqttStatusToConnection(meshtasticIdentityIdRef.current, s);
+      mirrorMqttStatusForProtocol('meshtastic', s);
       if (s === 'connected') {
         setMqttConnectionLoss(false);
         if (prev !== 'connected') {
@@ -3858,8 +3858,9 @@ export function useMeshtasticRuntime() {
   }, [meshtasticIdentityId, rawPackets, meshtasticDeviceRecord]);
 
   useEffect(() => {
-    if (!meshtasticIdentityId) return;
-    setConnection(meshtasticIdentityId, {
+    const identityId = getIdentityIdForProtocol('meshtastic') ?? meshtasticIdentityId;
+    if (!identityId) return;
+    setConnection(identityId, {
       status: state.status,
       connectionLoss: state.connectionLoss,
       serialNeedsReselect: state.serialNeedsReselect,
