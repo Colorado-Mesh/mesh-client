@@ -86,12 +86,12 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 
 ### Nomad Network
 
-| Method | Path                                      | Body / notes          | Response        |
-| ------ | ----------------------------------------- | --------------------- | --------------- |
-| GET    | `/api/v1/nomadnetwork/nodes`              |                       | `{ nodes: [] }` |
-| POST   | `/api/v1/nomadnetwork/nodes/favorite`     | `{ hash, favorited }` | `{ ok }`        |
-| GET    | `/api/v1/nomadnetwork/page/{hash}/{path}` |                       | page payload    |
-| GET    | `/api/v1/nomadnetwork/file/{hash}`        |                       | file payload    |
+| Method | Path                                      | Body / notes          | Response                              |
+| ------ | ----------------------------------------- | --------------------- | ------------------------------------- |
+| GET    | `/api/v1/nomadnetwork/nodes`              |                       | `{ nodes: [] }`                       |
+| POST   | `/api/v1/nomadnetwork/nodes/favorite`     | `{ hash, favorited }` | `{ ok }`                              |
+| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…` |                       | page payload                          |
+| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…` |                       | `{ ok, file_name?, content_base64? }` |
 
 ### System
 

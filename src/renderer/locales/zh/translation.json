@@ -2984,7 +2984,25 @@
     "searchAnnounces": "搜索{{count}}宣布……",
     "emptyFavourites": "还没有最喜欢的Nomad Network节点。",
     "emptyAnnounces": "尚未宣布Nomad Network节点。",
-    "unavailable": "Nomad Network API不可用。重建Reticulum侧车并重新启动堆栈。"
+    "unavailable": "Nomad Network API不可用。重建Reticulum侧车并重新启动堆栈。",
+    "selectNode": "从列表中选择一个节点以浏览其页面。",
+    "lastSeen": "最后一次听到 {{time}}",
+    "hopsAway_one": "{{count}} 跳走",
+    "hopsAway_other": "{{count}} 跳开",
+    "openNode": "浏览{{name}}",
+    "pagePath": "页面路径",
+    "pagePathAria": "游牧页面路径",
+    "homePage": "主页",
+    "reloadPage": "重新加载页面",
+    "closeViewer": "关闭页面查看器",
+    "pageLoading": "正在加载页面...",
+    "pageFailed": "无法加载页面：{{error}}",
+    "pageTruncated": "页面被截断以供显示",
+    "showSource": "显示页面源",
+    "hideSource": "显示格式化页面",
+    "fileDownloading": "正在下载文件...",
+    "fileDownloadFailed": "下载文件失败：{{error}}",
+    "fileDownloadInProgress": "文件下载已在进行中。"
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "网络拓扑图",
     "self": "你",
-    "hopBadge": "{{count}}小时"
+    "hopBadge": "{{count}}小时",
+    "ariaLabel": "Reticulum 网络拓扑图",
+    "noNodes": "尚无拓扑数据 — 连接 Reticulum 堆栈并刷新。",
+    "nodeCount": "{{count}} 节点",
+    "edgeCount": "{{count}} 链接",
+    "hiddenCount": "显示 {{total}} 节点的 {{shown}}（远距离对等点隐藏）",
+    "legendSelf": "该节点",
+    "legendHub": "中继集线器",
+    "legendPeer": "同行",
+    "directLink": "直接链接",
+    "relayLink": "通过枢纽"
   }
 }

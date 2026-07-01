@@ -1730,7 +1730,25 @@
     "emptyFavourites": "No favourite Nomad Network nodes yet.",
     "emptyAnnounces": "No announced Nomad Network nodes yet.",
     "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
-    "toggleFavorite": "Toggle favourite"
+    "toggleFavorite": "Toggle favourite",
+    "selectNode": "Select a node from the list to browse its pages.",
+    "lastSeen": "Last heard {{time}}",
+    "hopsAway_one": "{{count}} hop away",
+    "hopsAway_other": "{{count}} hops away",
+    "openNode": "Browse {{name}}",
+    "pagePath": "Page path",
+    "pagePathAria": "Nomad page path",
+    "homePage": "Home page",
+    "reloadPage": "Reload page",
+    "closeViewer": "Close page viewer",
+    "pageLoading": "Loading page…",
+    "pageFailed": "Failed to load page: {{error}}",
+    "pageTruncated": "Page truncated for display",
+    "showSource": "Show page source",
+    "hideSource": "Show formatted page",
+    "fileDownloading": "Downloading file…",
+    "fileDownloadFailed": "Failed to download file: {{error}}",
+    "fileDownloadInProgress": "A file download is already in progress."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -1749,7 +1767,17 @@
   "reticulumTopology": {
     "title": "Network topology",
     "self": "You",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Reticulum network topology graph",
+    "noNodes": "No topology data yet — connect the Reticulum stack and refresh.",
+    "nodeCount": "{{count}} nodes",
+    "edgeCount": "{{count}} links",
+    "hiddenCount": "Showing {{shown}} of {{total}} nodes (distant peers hidden)",
+    "legendSelf": "This node",
+    "legendHub": "Relay hub",
+    "legendPeer": "Peer",
+    "directLink": "Direct link",
+    "relayLink": "Via hub"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",

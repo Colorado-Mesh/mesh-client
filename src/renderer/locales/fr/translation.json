@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Rechercher {{count}} Annonce…",
     "emptyFavourites": "Aucun nœud de réseau Nomad favori pour le moment.",
     "emptyAnnounces": "Aucun nœud de réseau Nomad annoncé pour le moment.",
-    "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile."
+    "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile.",
+    "selectNode": "Sélectionnez un nœud dans la liste pour parcourir ses pages.",
+    "lastSeen": "Dernière écoute {{time}}",
+    "hopsAway_one": "{{count}} saute",
+    "hopsAway_other": "{{count}} saute",
+    "openNode": "Parcourir {{name}}",
+    "pagePath": "Chemin de la page",
+    "pagePathAria": "Chemin de la page nomade",
+    "homePage": "Page d'accueil",
+    "reloadPage": "Recharger la page",
+    "closeViewer": "Fermer la visionneuse de page",
+    "pageLoading": "Chargement de la page…",
+    "pageFailed": "Échec du chargement de la page : {{error}}",
+    "pageTruncated": "Page tronquée pour affichage",
+    "showSource": "Afficher la source de la page",
+    "hideSource": "Afficher la page formatée",
+    "fileDownloading": "Téléchargement du fichier…",
+    "fileDownloadFailed": "Échec du téléchargement du fichier : {{error}}",
+    "fileDownloadInProgress": "Un téléchargement de fichier est déjà en cours."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Topologie de réseau",
     "self": "Vous",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Graphique de topologie du réseau Reticulum",
+    "noNodes": "Aucune donnée topologique pour l'instant : connectez la pile Reticulum et actualisez.",
+    "nodeCount": "Nœuds {{count}}",
+    "edgeCount": "Liens {{count}}",
+    "hiddenCount": "Affichage de {{shown}} sur {{total}} nœuds (pairs distants masqués)",
+    "legendSelf": "Ce nœud",
+    "legendHub": "Centre de relais",
+    "legendPeer": "Pair",
+    "directLink": "Lien direct",
+    "relayLink": "Via le hub"
   }
 }

@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Search {{count}} annuncia...",
     "emptyFavourites": "Ancora nessun nodo Nomad Network preferito.",
     "emptyAnnounces": "Ancora nessun nodo Nomad Network annunciato.",
-    "unavailable": "L'API Nomad Network non è disponibile. Ricostruisci il sidecar Reticulum e riavvia la pila."
+    "unavailable": "L'API Nomad Network non è disponibile. Ricostruisci il sidecar Reticulum e riavvia la pila.",
+    "selectNode": "Seleziona un nodo dall'elenco per sfogliarne le pagine.",
+    "lastSeen": "Ultimo udito {{time}}",
+    "hopsAway_one": "{{count}} salta via",
+    "hopsAway_other": "{{count}} salta via",
+    "openNode": "Sfoglia {{name}}",
+    "pagePath": "Percorso della pagina",
+    "pagePathAria": "Percorso della pagina nomade",
+    "homePage": "Pagina iniziale",
+    "reloadPage": "Ricarica la pagina",
+    "closeViewer": "Chiudi il visualizzatore di pagine",
+    "pageLoading": "Caricamento pagina…",
+    "pageFailed": "Impossibile caricare la pagina: {{error}}",
+    "pageTruncated": "Pagina troncata per la visualizzazione",
+    "showSource": "Mostra l'origine della pagina",
+    "hideSource": "Mostra la pagina formattata",
+    "fileDownloading": "Download del file…",
+    "fileDownloadFailed": "Impossibile scaricare il file: {{error}}",
+    "fileDownloadInProgress": "È già in corso il download di un file."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Topologia di rete.",
     "self": "Tu",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Grafico della topologia della rete Reticulum",
+    "noNodes": "Ancora nessun dato sulla topologia: collega lo stack Reticulum e aggiorna.",
+    "nodeCount": "{{count}} nodi",
+    "edgeCount": "{{count}} collegamenti",
+    "hiddenCount": "Visualizzazione di {{shown}} di {{total}} nodi (peer distanti nascosti)",
+    "legendSelf": "Questo nodo",
+    "legendHub": "Mozzo relè",
+    "legendPeer": "Pari",
+    "directLink": "Collegamento diretto",
+    "relayLink": "Tramite hub"
   }
 }

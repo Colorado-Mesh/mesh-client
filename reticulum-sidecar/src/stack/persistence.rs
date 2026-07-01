@@ -263,6 +263,39 @@ impl PersistedState {
         });
     }
 
+    pub fn upsert_nomad_node(
+        &mut self,
+        hash: &str,
+        display_name: Option<String>,
+        hops: Option<u8>,
+    ) {
+        let key = hash.to_lowercase();
+        let now = Self::now_secs();
+        if let Some(node) = self
+            .nomad_nodes
+            .iter_mut()
+            .find(|n| n.destination_hash.to_lowercase() == key)
+        {
+            if display_name.is_some() {
+                node.display_name = display_name;
+            }
+            if hops.is_some() {
+                node.hops = hops;
+            }
+            node.last_seen = Some(now);
+            node.status = Some("online".into());
+            return;
+        }
+        self.nomad_nodes.push(NomadNodeRow {
+            destination_hash: hash.to_string(),
+            display_name,
+            last_seen: Some(now),
+            favorited: false,
+            hops,
+            status: Some("online".into()),
+        });
+    }
+
     pub fn set_nomad_favorite(&mut self, hash: &str, favorited: bool) {
         let key = hash.to_lowercase();
         if let Some(node) = self
@@ -278,6 +311,7 @@ impl PersistedState {
             display_name: None,
             last_seen: Some(Self::now_secs()),
             favorited,
+            hops: None,
             status: Some("unknown".into()),
         });
     }

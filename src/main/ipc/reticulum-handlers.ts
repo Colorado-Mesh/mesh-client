@@ -18,7 +18,12 @@ export interface ReticulumIpcDeps {
 
 function isExpectedReticulumProxyError(message: string): boolean {
   const lower = message.toLowerCase();
-  return lower.includes('not running') || message.includes('404');
+  return (
+    lower.includes('not running') ||
+    message.includes('404') ||
+    lower.includes('fetch failed') ||
+    lower.includes('aborted')
+  );
 }
 
 function logReticulumProxyFailure(method: string, err: unknown): void {

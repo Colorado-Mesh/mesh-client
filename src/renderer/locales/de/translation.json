@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Suche {{count}} Ankündigungen…",
     "emptyFavourites": "Noch keine bevorzugten Nomad-Netzwerkknoten.",
     "emptyAnnounces": "Noch keine angekündigten Nomad-Netzwerkknoten.",
-    "unavailable": "Die Nomad-Netzwerk-API ist nicht verfügbar. Bauen Sie den Reticulum-Seitenwagen wieder auf und starten Sie den Stapel neu."
+    "unavailable": "Die Nomad-Netzwerk-API ist nicht verfügbar. Bauen Sie den Reticulum-Seitenwagen wieder auf und starten Sie den Stapel neu.",
+    "selectNode": "Wählen Sie einen Knoten aus der Liste aus, um seine Seiten zu durchsuchen.",
+    "lastSeen": "Zuletzt gehört {{time}}",
+    "hopsAway_one": "{{count}} hüpf weg",
+    "hopsAway_other": "{{count}} hüpft davon",
+    "openNode": "Durchsuchen {{name}}",
+    "pagePath": "Seitenpfad",
+    "pagePathAria": "Nomad-Seitenpfad",
+    "homePage": "Startseite",
+    "reloadPage": "Seite neu laden",
+    "closeViewer": "Schließen Sie den Seitenbetrachter",
+    "pageLoading": "Seite wird geladen…",
+    "pageFailed": "Seite konnte nicht geladen werden: {{error}}",
+    "pageTruncated": "Seite zur Anzeige gekürzt",
+    "showSource": "Seitenquelle anzeigen",
+    "hideSource": "Formatierte Seite anzeigen",
+    "fileDownloading": "Datei wird heruntergeladen…",
+    "fileDownloadFailed": "Datei konnte nicht heruntergeladen werden: {{error}}",
+    "fileDownloadInProgress": "Ein Datei-Download ist bereits im Gange."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
     "self": "Du",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Diagramm der Reticulum-Netzwerktopologie",
+    "noNodes": "Noch keine Topologiedaten – verbinden Sie den Reticulum-Stack und aktualisieren Sie ihn.",
+    "nodeCount": "{{count}}-Knoten",
+    "edgeCount": "{{count}}-Links",
+    "hiddenCount": "Zeigt {{shown}} von {{total}} Knoten (entfernte Peers ausgeblendet)",
+    "legendSelf": "Dieser Knoten",
+    "legendHub": "Relais-Hub",
+    "legendPeer": "Peer",
+    "directLink": "Direkter Link",
+    "relayLink": "Über den Hub"
   }
 }

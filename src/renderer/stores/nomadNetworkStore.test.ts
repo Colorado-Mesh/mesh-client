@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const getStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPost = vi.fn();
+const fetchReticulumInterfaces = vi.fn();
+
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    fetchReticulumInterfaces: () => fetchReticulumInterfaces(),
+  };
+});
 
 vi.stubGlobal('window', {
   electronAPI: {
@@ -21,6 +30,8 @@ describe('nomadNetworkStore', () => {
     getStatus.mockReset();
     proxyGet.mockReset();
     proxyPost.mockReset();
+    fetchReticulumInterfaces.mockReset();
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
     useNomadNetworkStore.setState({
       nodes: new Map(),
       lastRefreshAt: null,
@@ -84,5 +95,61 @@ describe('nomadNetworkStore', () => {
       favorited: true,
     });
     expect(useNomadNetworkStore.getState().getNode('abc')?.favorited).toBe(true);
+  });
+
+  it('fetchNomadPage requests page path with hops and egress', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'rnode', enabled: true }]);
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          'abc',
+          {
+            destination_hash: 'abc',
+            display_name: 'Forum',
+            favorited: false,
+            hops: 3,
+          },
+        ],
+      ]),
+    });
+    proxyGet.mockResolvedValue({ ok: true, content: 'page body', content_type: 'micron' });
+
+    const res = await useNomadNetworkStore.getState().fetchNomadPage('abc', '/page/index.mu');
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=3&egress=rf',
+    );
+    expect(res).toEqual({ ok: true, content: 'page body', content_type: 'micron' });
+  });
+
+  it('fetchNomadFile requests file path with hops and egress', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          'abc',
+          {
+            destination_hash: 'abc',
+            display_name: 'Forum',
+            favorited: false,
+            hops: 2,
+          },
+        ],
+      ]),
+    });
+    proxyGet.mockResolvedValue({
+      ok: true,
+      file_name: 'readme.txt',
+      content_base64: 'aGVsbG8=',
+    });
+
+    const res = await useNomadNetworkStore.getState().fetchNomadFile('abc', '/file/readme.txt');
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/file/abc?path=%2Ffile%2Freadme.txt&hops=2&egress=tcp',
+    );
+    expect(res).toEqual({ ok: true, file_name: 'readme.txt', content_base64: 'aGVsbG8=' });
   });
 });

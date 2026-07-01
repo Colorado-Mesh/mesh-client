@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Пошук {{count}} оголошень…",
     "emptyFavourites": "Улюблених вузлів Nomad Network поки немає.",
     "emptyAnnounces": "Ще немає анонсованих вузлів Nomad Network.",
-    "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack."
+    "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
+    "selectNode": "Виберіть вузол зі списку, щоб переглянути його сторінки.",
+    "lastSeen": "Востаннє почуто {{time}}",
+    "hopsAway_one": "{{count}} стрибай геть",
+    "hopsAway_other": "{{count}} стрибає геть",
+    "openNode": "Огляд {{name}}",
+    "pagePath": "Шлях сторінки",
+    "pagePathAria": "Шлях сторінки Nomad",
+    "homePage": "Домашня сторінка",
+    "reloadPage": "Перезавантажити сторінку",
+    "closeViewer": "Закрити засіб перегляду сторінок",
+    "pageLoading": "Завантаження сторінки…",
+    "pageFailed": "Не вдалося завантажити сторінку: {{error}}",
+    "pageTruncated": "Сторінка скорочена для відображення",
+    "showSource": "Показати джерело сторінки",
+    "hideSource": "Показати відформатовану сторінку",
+    "fileDownloading": "Завантаження файлу…",
+    "fileDownloadFailed": "Не вдалося завантажити файл: {{error}}",
+    "fileDownloadInProgress": "Завантаження файлу вже триває."
   },
   "reticulumPing": {
     "title": "Пінґ",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Топологія мережі",
     "self": "Ви",
-    "hopBadge": "{{count}}год"
+    "hopBadge": "{{count}}год",
+    "ariaLabel": "Граф топології мережі Reticulum",
+    "noNodes": "Ще немає даних про топологію — підключіть стек Reticulum і оновіть.",
+    "nodeCount": "{{count}} вузлів",
+    "edgeCount": "{{count}} посилань",
+    "hiddenCount": "Показано {{shown}} з {{total}} вузлів (віддалені вузли приховано)",
+    "legendSelf": "Цей вузол",
+    "legendHub": "Релейний концентратор",
+    "legendPeer": "Одноліток",
+    "directLink": "Пряме посилання",
+    "relayLink": "Через хаб"
   }
 }

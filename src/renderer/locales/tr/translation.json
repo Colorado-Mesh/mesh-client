@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Ara {{count}} Duyurular…",
     "emptyFavourites": "Henüz favori Nomad Network düğümü yok.",
     "emptyAnnounces": "Henüz duyurulmuş Nomad Network düğümü yok.",
-    "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat."
+    "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat.",
+    "selectNode": "Sayfalarına göz atmak için listeden bir düğüm seçin.",
+    "lastSeen": "Son duyulan {{time}}",
+    "hopsAway_one": "{{count}} atla",
+    "hopsAway_other": "{{count}} atlayarak uzaklaşır",
+    "openNode": "{{name}}'a göz atın",
+    "pagePath": "Sayfa yolu",
+    "pagePathAria": "Göçebe sayfa yolu",
+    "homePage": "Ana sayfa",
+    "reloadPage": "Sayfayı yeniden yükle",
+    "closeViewer": "Sayfa görüntüleyiciyi kapat",
+    "pageLoading": "Sayfa yükleniyor…",
+    "pageFailed": "Sayfa yüklenemedi: {{error}}",
+    "pageTruncated": "Sayfa görüntülenmek üzere kısaltıldı",
+    "showSource": "Sayfa kaynağını göster",
+    "hideSource": "Biçimlendirilmiş sayfayı göster",
+    "fileDownloading": "Dosya indiriliyor…",
+    "fileDownloadFailed": "Dosya indirilemedi: {{error}}",
+    "fileDownloadInProgress": "Bir dosya indirme işlemi zaten devam ediyor."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Ağ topolojisi",
     "self": "Sen",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Reticulum ağ topolojisi grafiği",
+    "noNodes": "Henüz topoloji verisi yok; Reticulum yığınını bağlayın ve yenileyin.",
+    "nodeCount": "{{count}} düğümleri",
+    "edgeCount": "{{count}} bağlantılar",
+    "hiddenCount": "{{shown}} / {{total}} düğümleri gösteriliyor (uzak eşler gizlendi)",
+    "legendSelf": "Bu düğüm",
+    "legendHub": "Röle göbeği",
+    "legendPeer": "Akran",
+    "directLink": "Doğrudan bağlantı",
+    "relayLink": "Merkez aracılığıyla"
   }
 }

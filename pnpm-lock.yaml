@@ -61,6 +61,9 @@ importers:
       builder-util-runtime:
         specifier: 9.7.0
         version: 9.7.0
+      dompurify:
+        specifier: ^3.4.11
+        version: 3.4.11
       electron-updater:
         specifier: ^6.8.9
         version: 6.8.9
@@ -88,6 +91,9 @@ importers:
       mgrs:
         specifier: ^2.1.0
         version: 2.1.0
+      micron-parser:
+        specifier: ^1.0.3
+        version: 1.0.3
       motion:
         specifier: ^12.42.1
         version: 12.42.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1345,6 +1351,9 @@ packages:
   '@types/responselike@1.0.3':
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
 
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
 
@@ -2023,6 +2032,9 @@ packages:
 
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
+
+  dompurify@3.4.11:
+    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
 
   dotenv-expand@11.0.7:
     resolution: {integrity: sha512-zIHwmZPRshsCdpMDyVsqGmgyP0yT8GAgXUnkdAoJisxvf33k7yO6OuoKmcTGuXPWSsm8Oh88nZicRLA9Y0rUeA==}
@@ -3234,6 +3246,9 @@ packages:
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
+
+  micron-parser@1.0.3:
+    resolution: {integrity: sha512-6BKZa6eoS2AeFkjfQ5pZp7qoFNhI/N/3cZAiD9gp7bVkwjRi2+Wc7SV7np6DL9hkOmy+BGBcysbX86ygYRYhKg==}
 
   mime-db@1.52.0:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
@@ -5626,6 +5641,9 @@ snapshots:
     dependencies:
       '@types/node': 25.9.4
 
+  '@types/trusted-types@2.0.7':
+    optional: true
+
   '@types/unist@2.0.11': {}
 
   '@types/use-sync-external-store@0.0.6': {}
@@ -6376,6 +6394,10 @@ snapshots:
   dom-accessibility-api@0.5.16: {}
 
   dom-accessibility-api@0.6.3: {}
+
+  dompurify@3.4.11:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
 
   dotenv-expand@11.0.7:
     dependencies:
@@ -7897,6 +7919,10 @@ snapshots:
     dependencies:
       braces: 3.0.3
       picomatch: 2.3.2
+
+  micron-parser@1.0.3:
+    dependencies:
+      dompurify: 3.4.11
 
   mime-db@1.52.0: {}
 

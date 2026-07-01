@@ -2984,7 +2984,25 @@
     "searchAnnounces": "検索{{count}}が発表します…",
     "emptyFavourites": "お気に入りのノーマッドネットワークノードはまだありません。",
     "emptyAnnounces": "Nomad Networkノードはまだ発表されていません。",
-    "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。"
+    "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。",
+    "selectNode": "リストからノードを選択して、そのページを参照します。",
+    "lastSeen": "最後に聞いたのは{{time}}",
+    "hopsAway_one": "{{count}} 飛び降りる",
+    "hopsAway_other": "{{count}} が飛び降りる",
+    "openNode": "{{name}}を参照",
+    "pagePath": "ページパス",
+    "pagePathAria": "ノマドページのパス",
+    "homePage": "ホームページ",
+    "reloadPage": "ページをリロードする",
+    "closeViewer": "ページビューアを閉じる",
+    "pageLoading": "ページを読み込み中…",
+    "pageFailed": "ページの読み込みに失敗しました: {{error}}",
+    "pageTruncated": "表示のためにページが切り詰められています",
+    "showSource": "ページのソースを表示",
+    "hideSource": "フォーマットされたページを表示",
+    "fileDownloading": "ファイルをダウンロード中…",
+    "fileDownloadFailed": "ファイルのダウンロードに失敗しました: {{error}}",
+    "fileDownloadInProgress": "ファイルのダウンロードはすでに進行中です。"
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
     "self": "あなたは",
-    "hopBadge": "{{count}}時間"
+    "hopBadge": "{{count}}時間",
+    "ariaLabel": "Reticulum ネットワーク トポロジー グラフ",
+    "noNodes": "トポロジ データがまだありません。Reticulum スタックに接続して更新します。",
+    "nodeCount": "{{count}} ノード",
+    "edgeCount": "{{count}} リンク",
+    "hiddenCount": "{{total}} ノードの {{shown}} を表示しています (遠くのピアは非表示)",
+    "legendSelf": "このノード",
+    "legendHub": "リレーハブ",
+    "legendPeer": "ピア",
+    "directLink": "直接リンク",
+    "relayLink": "ハブ経由"
   }
 }

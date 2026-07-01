@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Поиск {{count}} Объявления…",
     "emptyFavourites": "Избранных узлов Nomad Network пока нет.",
     "emptyAnnounces": "Анонсированных узлов Nomad Network пока нет.",
-    "unavailable": "Nomad Network API недоступен. Восстановите коляску Reticulum и перезапустите стек."
+    "unavailable": "Nomad Network API недоступен. Восстановите коляску Reticulum и перезапустите стек.",
+    "selectNode": "Выберите узел из списка, чтобы просмотреть его страницы.",
+    "lastSeen": "Последний раз слышали {{time}}",
+    "hopsAway_one": "{{count}} убегай",
+    "hopsAway_other": "{{count}} упрыгивает",
+    "openNode": "Просмотр {{name}}",
+    "pagePath": "Путь к странице",
+    "pagePathAria": "Путь к странице Nomad",
+    "homePage": "Домашняя страница",
+    "reloadPage": "Обновить страницу",
+    "closeViewer": "Закрыть просмотрщик страниц",
+    "pageLoading": "Загрузка страницы…",
+    "pageFailed": "Не удалось загрузить страницу: {{error}}.",
+    "pageTruncated": "Страница обрезана для отображения",
+    "showSource": "Показать источник страницы",
+    "hideSource": "Показать отформатированную страницу",
+    "fileDownloading": "Загрузка файла…",
+    "fileDownloadFailed": "Не удалось загрузить файл: {{error}}.",
+    "fileDownloadInProgress": "Загрузка файла уже идет."
   },
   "reticulumPing": {
     "title": "Проверка связи",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Топология сети",
     "self": "Вы",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Граф топологии сети Reticulum",
+    "noNodes": "Данных о топологии пока нет — подключите стек Reticulum и обновите.",
+    "nodeCount": "{{count}} узлы",
+    "edgeCount": "{{count}} ссылки",
+    "hiddenCount": "Показаны {{shown}} из {{total}} узлов (удаленные узлы скрыты)",
+    "legendSelf": "Этот узел",
+    "legendHub": "Релейный концентратор",
+    "legendPeer": "Вглядеться",
+    "directLink": "Прямая ссылка",
+    "relayLink": "Через хаб"
   }
 }

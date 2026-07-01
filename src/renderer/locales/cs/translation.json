@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Hledat {{count}} oznamuje...",
     "emptyFavourites": "Zatím žádné oblíbené uzly Nomad Network.",
     "emptyAnnounces": "Zatím nebyly oznámeny žádné uzly Nomad Network.",
-    "unavailable": "Nomad Network API není k dispozici. Znovu sestavte postranní vozík Reticulum a restartujte zásobník."
+    "unavailable": "Nomad Network API není k dispozici. Znovu sestavte postranní vozík Reticulum a restartujte zásobník.",
+    "selectNode": "Vyberte uzel ze seznamu pro procházení jeho stránek.",
+    "lastSeen": "Naposledy slyšet {{time}}",
+    "hopsAway_one": "{{count}} skočte pryč",
+    "hopsAway_other": "{{count}} odskočí pryč",
+    "openNode": "Procházet {{name}}",
+    "pagePath": "Cesta ke stránce",
+    "pagePathAria": "Cesta stránky Nomád",
+    "homePage": "Domovská stránka",
+    "reloadPage": "Znovu načíst stránku",
+    "closeViewer": "Zavřít prohlížeč stránek",
+    "pageLoading": "Načítání stránky…",
+    "pageFailed": "Nepodařilo se načíst stránku: {{error}}",
+    "pageTruncated": "Stránka zkrácena pro zobrazení",
+    "showSource": "Zobrazit zdroj stránky",
+    "hideSource": "Zobrazit naformátovanou stránku",
+    "fileDownloading": "Stahování souboru…",
+    "fileDownloadFailed": "Nepodařilo se stáhnout soubor: {{error}}",
+    "fileDownloadInProgress": "Stahování souboru již probíhá."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "topologie sítě",
     "self": "Vy",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Graf topologie sítě Reticulum",
+    "noNodes": "Zatím žádná data topologie – připojte zásobník Reticulum a obnovte jej.",
+    "nodeCount": "{{count}} uzly",
+    "edgeCount": "{{count}} odkazy",
+    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (vzdálení kolegové skryti)",
+    "legendSelf": "Tento uzel",
+    "legendHub": "Reléový náboj",
+    "legendPeer": "Peer",
+    "directLink": "Přímý odkaz",
+    "relayLink": "Přes hub"
   }
 }

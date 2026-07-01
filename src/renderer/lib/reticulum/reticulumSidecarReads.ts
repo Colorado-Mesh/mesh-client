@@ -43,7 +43,13 @@ export function isReticulumSidecar404Error(err: unknown): boolean {
 }
 
 export function isReticulumSidecarExpectedProxyError(err: unknown): boolean {
-  return isReticulumSidecarNotRunningError(err) || isReticulumSidecar404Error(err);
+  const msg = errLikeToLogString(err).toLowerCase();
+  return (
+    isReticulumSidecarNotRunningError(err) ||
+    isReticulumSidecar404Error(err) ||
+    msg.includes('fetch failed') ||
+    msg.includes('aborted')
+  );
 }
 
 export interface ReticulumSidecarInterfaceRow {

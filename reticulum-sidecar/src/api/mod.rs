@@ -108,7 +108,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(nomad::favorite_nomad_node),
         )
         .route(
-            "/api/v1/nomadnetwork/page/{hash}/{path}",
+            "/api/v1/nomadnetwork/page/{hash}",
             get(nomad::get_nomad_page),
         )
         .route(

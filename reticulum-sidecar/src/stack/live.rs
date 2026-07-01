@@ -4,6 +4,7 @@
 mod lxmf_outbound;
 
 use std::collections::HashMap;
+use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
@@ -14,12 +15,17 @@ use lxmf_core::message::LxMessage;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
+use rns_runtime::link_client::LinkClient;
 use rns_runtime::lifecycle::ShutdownSignal;
 use rns_runtime::reticulum;
-use rns_transport::messages::{TransportMessage, TransportQuery, TransportQueryResponse};
-use tokio::sync::broadcast;
+use rns_transport::messages::{
+    AnnounceHandlerEvent, TransportMessage, TransportQuery, TransportQueryResponse,
+};
+use tokio::sync::{RwLock, broadcast};
 
 use super::StackHandle;
+use super::nomad_file::nomad_file_name_from_path;
+use super::nomad_timeouts;
 use super::persistence::PersistedState;
 use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
 use super::types::{InterfaceRow, LxmfSendRequest, PeerRow};
@@ -180,6 +186,152 @@ impl LiveBridge {
         persisted.lxmf_ready = true;
 
         Ok(bridge)
+    }
+
+    pub async fn fetch_nomad_file(
+        &self,
+        hash_hex: &str,
+        path: &str,
+        interfaces: &[InterfaceRow],
+    ) -> serde_json::Value {
+        let dest = match parse_hash16(hash_hex) {
+            Ok(h) => h,
+            Err(e) => {
+                return serde_json::json!({ "ok": false, "error": e });
+            }
+        };
+        let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
+        let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
+        let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
+        match client
+            .query_destination(
+                dest,
+                path,
+                Vec::new(),
+                hops,
+                Duration::from_secs(timeout_secs),
+            )
+            .await
+        {
+            Ok(bytes) => {
+                let file_name = nomad_file_name_from_path(path);
+                let content_base64 = base64::Engine::encode(
+                    &base64::engine::general_purpose::STANDARD,
+                    &bytes,
+                );
+                serde_json::json!({
+                    "ok": true,
+                    "file_name": file_name,
+                    "content_base64": content_base64,
+                })
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": format!("{e}") }),
+        }
+    }
+
+    pub async fn fetch_nomad_page(
+        &self,
+        hash_hex: &str,
+        path: &str,
+        interfaces: &[InterfaceRow],
+    ) -> serde_json::Value {
+        let dest = match parse_hash16(hash_hex) {
+            Ok(h) => h,
+            Err(e) => {
+                return serde_json::json!({ "ok": false, "error": e });
+            }
+        };
+        let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
+        let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
+        let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
+        match client
+            .query_destination(
+                dest,
+                path,
+                Vec::new(),
+                hops,
+                Duration::from_secs(timeout_secs),
+            )
+            .await
+        {
+            Ok(bytes) => {
+                let content = String::from_utf8_lossy(&bytes).into_owned();
+                let content_type = if path.split('`').next().is_some_and(|p| p.ends_with(".mu")) {
+                    "micron"
+                } else {
+                    "text"
+                };
+                serde_json::json!({
+                    "ok": true,
+                    "content": content,
+                    "content_type": content_type,
+                })
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": format!("{e}") }),
+        }
+    }
+
+    async fn hops_to_destination(&self, hash_hex: &str) -> Option<u8> {
+        let resp = self
+            .handle
+            .query_control(TransportQuery::GetPathTable)
+            .await?;
+        let TransportQueryResponse::PathTable(entries) = resp else {
+            return None;
+        };
+        let key = hash_hex.to_lowercase();
+        entries
+            .iter()
+            .find(|e| hex::encode(e.hash).to_lowercase() == key)
+            .map(|e| e.hops)
+    }
+
+    /// Register handler for Nomad Network node announces (`nomadnetwork.node`).
+    pub fn register_nomad_announce_handler(
+        &self,
+        inner: Arc<RwLock<PersistedState>>,
+        config_dir: PathBuf,
+        storage_dir: PathBuf,
+    ) {
+        const NOMAD_NODE_ASPECT: &str = "nomadnetwork.node";
+        let transport_tx = self.handle.transport_tx.clone();
+        let event_tx = self.event_tx.clone();
+        tokio::spawn(async move {
+            let (callback_tx, mut callback_rx) =
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+            if transport_tx
+                .send(TransportMessage::RegisterAnnounceHandler {
+                    aspect_filter: Some(NOMAD_NODE_ASPECT.to_string()),
+                    receive_path_responses: false,
+                    callback_tx,
+                })
+                .await
+                .is_err()
+            {
+                tracing::warn!("nomad announce handler registration failed: transport closed");
+                return;
+            }
+
+            while let Some(evt) = callback_rx.recv().await {
+                let hash_hex = hex::encode(evt.destination_hash);
+                let display_name = parse_nomad_display_name(evt.app_data.as_deref());
+                let hops = Some(evt.hops);
+                let payload = {
+                    let mut state = inner.write().await;
+                    state.upsert_nomad_node(&hash_hex, display_name.clone(), hops);
+                    if let Err(e) = state.save(&config_dir, &storage_dir) {
+                        tracing::warn!("nomad node persist failed: {e}");
+                    }
+                    serde_json::json!({
+                        "destination_hash": hash_hex,
+                        "display_name": display_name,
+                        "hops": evt.hops,
+                    })
+                };
+                let frame = serde_json::json!({ "type": "nomadnetwork.node", "payload": payload });
+                let _ = event_tx.send(frame.to_string());
+            }
+        });
     }
 
     fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {
@@ -510,6 +662,46 @@ pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: ser
         "payload": payload
     });
     let _ = event_tx.send(frame.to_string());
+}
+
+/// Nomad Network encodes node display names in announce app_data as msgpack
+/// `[display_name_bytes, ...]` (see NomadNet / MeshChat wire compat).
+fn parse_nomad_display_name(app_data: Option<&[u8]>) -> Option<String> {
+    let bytes = app_data?;
+    if bytes.is_empty() {
+        return None;
+    }
+    if let Ok(value) = rmpv::decode::read_value(&mut Cursor::new(bytes)) {
+        if let rmpv::Value::Array(arr) = value {
+            if let Some(name) = arr.first().and_then(nomad_name_from_msgpack_value) {
+                return Some(name);
+            }
+        }
+    }
+    std::str::from_utf8(bytes)
+        .ok()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
+fn nomad_name_from_msgpack_value(value: &rmpv::Value) -> Option<String> {
+    match value {
+        rmpv::Value::Binary(bin) => std::str::from_utf8(bin)
+            .ok()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+        rmpv::Value::String(s) => {
+            let trimmed = s.as_str()?.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        }
+        _ => None,
+    }
 }
 
 pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {

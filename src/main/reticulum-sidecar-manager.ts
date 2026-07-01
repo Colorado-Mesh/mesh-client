@@ -13,7 +13,7 @@ import type {
 } from '../shared/reticulum-types';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import { sanitizeLogMessage } from './log-service';
-import { assertReticulumProxyPath } from './reticulum-proxy-path';
+import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
@@ -216,7 +216,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
     const normalized = assertReticulumProxyPath(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(reticulumProxyGetTimeoutMs(apiPath)),
     });
     if (!res.ok) {
       throw new Error(`sidecar GET ${normalized} failed: ${res.status}`);

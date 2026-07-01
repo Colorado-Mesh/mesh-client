@@ -19,6 +19,7 @@ rns-stack = [
     "dep:rns-identity",
     "dep:rns-transport",
     "dep:hex",
+    "dep:rmpv",
 ]
 rns-serial = ["rns-runtime/serial"]
 rns-ble = ["rns-runtime/ble"]
@@ -35,7 +36,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4"] }
 hex = { version = "0.4", optional = true }
+rmpv = { version = "1", optional = true }
 
+base64 = "0.22"
 bytes = "1"
 
 [dependencies.rns-runtime]

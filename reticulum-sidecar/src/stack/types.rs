@@ -87,6 +87,7 @@ pub struct NomadNodeRow {
     pub last_seen: Option<u64>,
     #[serde(default)]
     pub favorited: bool,
+    pub hops: Option<u8>,
     pub status: Option<String>,
 }
 

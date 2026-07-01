@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Pesquisar {{count}} Anuncia...",
     "emptyFavourites": "Ainda não há nós de rede Nomad favoritos.",
     "emptyAnnounces": "Ainda não há nós de rede Nomad anunciados.",
-    "unavailable": "A API Nomad Network não está disponível. Reconstrua o sidecar Reticulum e reinicie a stack."
+    "unavailable": "A API Nomad Network não está disponível. Reconstrua o sidecar Reticulum e reinicie a stack.",
+    "selectNode": "Selecione um nó da lista para navegar em suas páginas.",
+    "lastSeen": "Ouvido pela última vez {{time}}",
+    "hopsAway_one": "{{count}} pule para longe",
+    "hopsAway_other": "{{count}} pula para longe",
+    "openNode": "Navegar {{name}}",
+    "pagePath": "Caminho da página",
+    "pagePathAria": "Caminho da página nômade",
+    "homePage": "Página inicial",
+    "reloadPage": "Recarregar página",
+    "closeViewer": "Fechar visualizador de página",
+    "pageLoading": "Carregando página…",
+    "pageFailed": "Falha ao carregar a página: {{error}}",
+    "pageTruncated": "Página truncada para exibição",
+    "showSource": "Mostrar fonte da página",
+    "hideSource": "Mostrar página formatada",
+    "fileDownloading": "Baixando arquivo…",
+    "fileDownloadFailed": "Falha ao baixar arquivo: {{error}}",
+    "fileDownloadInProgress": "Um download de arquivo já está em andamento."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Topologia de rede",
     "self": "Você",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Gráfico de topologia de rede Reticulum",
+    "noNodes": "Ainda não há dados de topologia – conecte a pilha Reticulum e atualize.",
+    "nodeCount": "{{count}} nós",
+    "edgeCount": "links {{count}}",
+    "hiddenCount": "Mostrando {{shown}} de nós {{total}} (pontos distantes ocultos)",
+    "legendSelf": "Este nó",
+    "legendHub": "Centro de retransmissão",
+    "legendPeer": "Par",
+    "directLink": "Link direto",
+    "relayLink": "Através do hub"
   }
 }

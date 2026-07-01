@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Cari {{count}} Mengumumkan…",
     "emptyFavourites": "Belum ada node Nomad Network favorit.",
     "emptyAnnounces": "Belum ada node Nomad Network yang diumumkan.",
-    "unavailable": "Api Nomad Network tidak tersedia. Bangun kembali sidecar Reticulum dan mulai ulang tumpukan."
+    "unavailable": "Api Nomad Network tidak tersedia. Bangun kembali sidecar Reticulum dan mulai ulang tumpukan.",
+    "selectNode": "Pilih node dari daftar untuk menelusuri halamannya.",
+    "lastSeen": "Terakhir terdengar {{time}}",
+    "hopsAway_one": "{{count}} melompat menjauh",
+    "hopsAway_other": "{{count}} melompat menjauh",
+    "openNode": "Telusuri {{name}}",
+    "pagePath": "Jalur halaman",
+    "pagePathAria": "Jalur halaman pengembara",
+    "homePage": "Halaman beranda",
+    "reloadPage": "Muat ulang halaman",
+    "closeViewer": "Tutup penampil halaman",
+    "pageLoading": "Memuat halaman…",
+    "pageFailed": "Gagal memuat halaman: {{error}}",
+    "pageTruncated": "Halaman terpotong untuk ditampilkan",
+    "showSource": "Tampilkan sumber halaman",
+    "hideSource": "Tampilkan halaman yang diformat",
+    "fileDownloading": "Mengunduh berkas…",
+    "fileDownloadFailed": "Gagal mengunduh file: {{error}}",
+    "fileDownloadInProgress": "Pengunduhan file sedang berlangsung."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Topologi jaringan",
     "self": "Kau",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Grafik topologi jaringan Reticulum",
+    "noNodes": "Belum ada data topologi — sambungkan tumpukan Reticulum dan segarkan.",
+    "nodeCount": "{{count}} node",
+    "edgeCount": "Tautan {{count}}",
+    "hiddenCount": "Menampilkan {{shown}} dari {{total}} node (rekan jauh disembunyikan)",
+    "legendSelf": "simpul ini",
+    "legendHub": "hub relai",
+    "legendPeer": "Rekan",
+    "directLink": "Tautan langsung",
+    "relayLink": "Melalui hub"
   }
 }

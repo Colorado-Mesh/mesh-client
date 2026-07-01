@@ -1,18 +1,22 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
+  fetchReticulumInterfaces,
   isReticulumSidecar404Error,
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { NomadNodeRow } from '@/shared/nomad-types';
+import type { NomadFileResponse, NomadNodeRow, NomadPageResponse } from '@/shared/nomad-types';
 
 interface NomadNetworkStoreState {
   nodes: Map<string, NomadNodeRow>;
   lastRefreshAt: number | null;
   nomadApiAvailable: boolean;
   refreshFromSidecar: () => Promise<void>;
+  fetchNomadPage: (hash: string, path: string) => Promise<NomadPageResponse>;
+  fetchNomadFile: (hash: string, path: string) => Promise<NomadFileResponse>;
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   getNode: (hash: string) => NomadNodeRow | undefined;
 }
@@ -39,6 +43,54 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       } else if (!isReticulumSidecarExpectedProxyError(e)) {
         console.warn('[nomadNetworkStore] refresh ' + errLikeToLogString(e));
       }
+    }
+  },
+
+  fetchNomadPage: async (hash, path) => {
+    if (!(await isReticulumSidecarRunning())) {
+      return { ok: false, error: 'sidecar_not_running' };
+    }
+    try {
+      const interfaces = await fetchReticulumInterfaces();
+      const egress = resolveReticulumOutboundViaFromInterfaces(interfaces);
+      const node = get().nodes.get(hash.toLowerCase());
+      const hops = node?.hops ?? 8;
+      const qs = new URLSearchParams({
+        path,
+        hops: String(hops),
+        egress,
+      });
+      const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
+      return (await window.electronAPI.reticulum.proxyGet(
+        `/api/v1/nomadnetwork/page/${cleanHash}?${qs.toString()}`,
+      )) as NomadPageResponse;
+    } catch (e) {
+      // catch-no-log-ok error returned to caller for page UI
+      return { ok: false, error: errLikeToLogString(e) };
+    }
+  },
+
+  fetchNomadFile: async (hash, path) => {
+    if (!(await isReticulumSidecarRunning())) {
+      return { ok: false, error: 'sidecar_not_running' };
+    }
+    try {
+      const interfaces = await fetchReticulumInterfaces();
+      const egress = resolveReticulumOutboundViaFromInterfaces(interfaces);
+      const node = get().nodes.get(hash.toLowerCase());
+      const hops = node?.hops ?? 8;
+      const qs = new URLSearchParams({
+        path,
+        hops: String(hops),
+        egress,
+      });
+      const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
+      return (await window.electronAPI.reticulum.proxyGet(
+        `/api/v1/nomadnetwork/file/${cleanHash}?${qs.toString()}`,
+      )) as NomadFileResponse;
+    } catch (e) {
+      // catch-no-log-ok error returned to caller for file download UI
+      return { ok: false, error: errLikeToLogString(e) };
     }
   },
 

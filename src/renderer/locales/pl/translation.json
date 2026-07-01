@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Wyszukaj {{count}} Ogłoszenia…",
     "emptyFavourites": "Nie ma jeszcze ulubionych węzłów sieci Nomad.",
     "emptyAnnounces": "Nie ogłoszono jeszcze węzłów sieci Nomad.",
-    "unavailable": "Interfejs API sieci Nomad jest niedostępny. Odbuduj wózek boczny Reticulum i uruchom ponownie stos."
+    "unavailable": "Interfejs API sieci Nomad jest niedostępny. Odbuduj wózek boczny Reticulum i uruchom ponownie stos.",
+    "selectNode": "Wybierz węzeł z listy, aby przeglądać jego strony.",
+    "lastSeen": "Ostatnio słyszałem {{time}}",
+    "hopsAway_one": "{{count}} odskocz",
+    "hopsAway_other": "{{count}} odskakuje",
+    "openNode": "Przeglądaj {{name}}",
+    "pagePath": "Ścieżka strony",
+    "pagePathAria": "Ścieżka strony Nomada",
+    "homePage": "Strona główna",
+    "reloadPage": "Załaduj ponownie stronę",
+    "closeViewer": "Zamknij przeglądarkę stron",
+    "pageLoading": "Ładowanie strony…",
+    "pageFailed": "Nie udało się załadować strony: {{error}}",
+    "pageTruncated": "Strona obcięta w celu wyświetlenia",
+    "showSource": "Pokaż źródło strony",
+    "hideSource": "Pokaż sformatowaną stronę",
+    "fileDownloading": "Pobieram plik…",
+    "fileDownloadFailed": "Nie udało się pobrać pliku: {{error}}",
+    "fileDownloadInProgress": "Pobieranie pliku już trwa."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Topologia sieci",
     "self": "Ty",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Wykres topologii sieci Reticulum",
+    "noNodes": "Brak jeszcze danych o topologii — podłącz stos Reticulum i odśwież.",
+    "nodeCount": "{{count}} węzły",
+    "edgeCount": "{{count}} linki",
+    "hiddenCount": "Wyświetlanie {{shown}} z {{total}} węzłów (ukryte odległe urządzenia równorzędne)",
+    "legendSelf": "Ten węzeł",
+    "legendHub": "Hub przekaźnikowy",
+    "legendPeer": "Rówieśnik",
+    "directLink": "Bezpośredni link",
+    "relayLink": "Przez koncentrator"
   }
 }

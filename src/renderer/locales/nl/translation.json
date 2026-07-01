@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Search {{count}} kondigt aan...",
     "emptyFavourites": "Nog geen favoriete Nomad-netwerkknooppunten.",
     "emptyAnnounces": "Nog geen aangekondigde Nomad-netwerkknooppunten.",
-    "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw."
+    "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw.",
+    "selectNode": "Selecteer een knooppunt uit de lijst om door de pagina's ervan te bladeren.",
+    "lastSeen": "Laatst gehoord {{time}}",
+    "hopsAway_one": "{{count}} spring weg",
+    "hopsAway_other": "{{count}} springt weg",
+    "openNode": "Blader door {{name}}",
+    "pagePath": "Paginapad",
+    "pagePathAria": "Nomadenpaginapad",
+    "homePage": "Startpagina",
+    "reloadPage": "Pagina opnieuw laden",
+    "closeViewer": "Paginaviewer sluiten",
+    "pageLoading": "Pagina laden…",
+    "pageFailed": "Kan pagina niet laden: {{error}}",
+    "pageTruncated": "Pagina ingekort voor weergave",
+    "showSource": "Paginabron weergeven",
+    "hideSource": "Toon opgemaakte pagina",
+    "fileDownloading": "Bestand downloaden…",
+    "fileDownloadFailed": "Kan bestand niet downloaden: {{error}}",
+    "fileDownloadInProgress": "Er wordt al een bestand gedownload."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Netwerktopologie",
     "self": "Jij",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Reticulum-netwerktopologiegrafiek",
+    "noNodes": "Nog geen topologiegegevens: sluit de Reticulum-stack aan en vernieuw.",
+    "nodeCount": "{{count}} knooppunten",
+    "edgeCount": "{{count}}-koppelingen",
+    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (verre peers verborgen)",
+    "legendSelf": "Dit knooppunt",
+    "legendHub": "Relais hub",
+    "legendPeer": "Gelijke",
+    "directLink": "Directe link",
+    "relayLink": "Via hub"
   }
 }

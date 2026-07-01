@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use serde::Deserialize;
 
 use crate::stack::StackHandle;
@@ -30,16 +30,28 @@ pub async fn favorite_nomad_node(
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct NomadPageQuery {
+    pub path: String,
+}
+
 pub async fn get_nomad_page(
     State(stack): State<Arc<StackHandle>>,
-    Path((hash, path)): Path<(String, String)>,
+    Path(hash): Path<String>,
+    Query(query): Query<NomadPageQuery>,
 ) -> Json<serde_json::Value> {
-    Json(stack.nomad_page(&hash, &path).await)
+    Json(stack.nomad_page(&hash, &query.path).await)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NomadFileQuery {
+    pub path: String,
 }
 
 pub async fn get_nomad_file(
     State(stack): State<Arc<StackHandle>>,
     Path(hash): Path<String>,
+    Query(query): Query<NomadFileQuery>,
 ) -> Json<serde_json::Value> {
-    Json(stack.nomad_file(&hash).await)
+    Json(stack.nomad_file(&hash, &query.path).await)
 }

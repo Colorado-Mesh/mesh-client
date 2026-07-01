@@ -2984,7 +2984,25 @@
     "searchAnnounces": "검색 {{count}} 발표...",
     "emptyFavourites": "아직 즐겨찾는 Nomad Network 노드가 없습니다.",
     "emptyAnnounces": "아직 발표된 Nomad Network 노드가 없습니다.",
-    "unavailable": "Nomad Network API를 사용할 수 없습니다. Reticulum 사이드카를 재구축하고 스택을 다시 시작하십시오."
+    "unavailable": "Nomad Network API를 사용할 수 없습니다. Reticulum 사이드카를 재구축하고 스택을 다시 시작하십시오.",
+    "selectNode": "목록에서 노드를 선택하여 해당 페이지를 찾아보세요.",
+    "lastSeen": "마지막으로 들어본 날짜: {{time}}",
+    "hopsAway_one": "{{count}} 뛰어내려",
+    "hopsAway_other": "{{count}} 깡충깡충 뛰다",
+    "openNode": "{{name}} 찾아보기",
+    "pagePath": "페이지 경로",
+    "pagePathAria": "노매드 페이지 경로",
+    "homePage": "홈페이지",
+    "reloadPage": "페이지 새로고침",
+    "closeViewer": "페이지 뷰어 닫기",
+    "pageLoading": "페이지 로드 중…",
+    "pageFailed": "페이지를 로드하지 못했습니다: {{error}}",
+    "pageTruncated": "표시하기 위해 페이지가 잘렸습니다.",
+    "showSource": "페이지 소스 표시",
+    "hideSource": "서식이 지정된 페이지 표시",
+    "fileDownloading": "파일 다운로드 중…",
+    "fileDownloadFailed": "파일 다운로드 실패: {{error}}",
+    "fileDownloadInProgress": "파일 다운로드가 이미 진행 중입니다."
   },
   "reticulumPing": {
     "title": "핑",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
     "self": "나",
-    "hopBadge": "{{count}} h"
+    "hopBadge": "{{count}} h",
+    "ariaLabel": "Reticulum 네트워크 토폴로지 그래프",
+    "noNodes": "아직 토폴로지 데이터가 없습니다. Reticulum 스택을 연결하고 새로 고치세요.",
+    "nodeCount": "{{count}} 노드",
+    "edgeCount": "{{count}} 링크",
+    "hiddenCount": "{{total}} 노드 중 {{shown}} 표시 중(먼 피어는 숨겨짐)",
+    "legendSelf": "이 노드",
+    "legendHub": "릴레이 허브",
+    "legendPeer": "또래",
+    "directLink": "직접링크",
+    "relayLink": "허브를 통해"
   }
 }

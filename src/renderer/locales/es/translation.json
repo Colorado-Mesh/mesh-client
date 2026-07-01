@@ -2984,7 +2984,25 @@
     "searchAnnounces": "Buscar {{count}} anuncia...",
     "emptyFavourites": "Todavía no hay nodos favoritos de Nomad Network.",
     "emptyAnnounces": "Aún no se han anunciado nodos de Nomad Network.",
-    "unavailable": "La API de Nomad Network no está disponible. Reconstruya el sidecar Reticulum y reinicie la pila."
+    "unavailable": "La API de Nomad Network no está disponible. Reconstruya el sidecar Reticulum y reinicie la pila.",
+    "selectNode": "Seleccione un nodo de la lista para explorar sus páginas.",
+    "lastSeen": "Escuchado por última vez {{time}}",
+    "hopsAway_one": "{{count}} salta lejos",
+    "hopsAway_other": "{{count}} se aleja saltando",
+    "openNode": "Explorar {{name}}",
+    "pagePath": "Ruta de la página",
+    "pagePathAria": "Ruta de la página nómada",
+    "homePage": "pagina de inicio",
+    "reloadPage": "Recargar página",
+    "closeViewer": "Cerrar visor de páginas",
+    "pageLoading": "Cargando página…",
+    "pageFailed": "No se pudo cargar la página: {{error}}",
+    "pageTruncated": "Página truncada para su visualización",
+    "showSource": "Mostrar fuente de la página",
+    "hideSource": "Mostrar página formateada",
+    "fileDownloading": "Descargando archivo…",
+    "fileDownloadFailed": "No se pudo descargar el archivo: {{error}}",
+    "fileDownloadInProgress": "Ya hay una descarga de archivos en curso."
   },
   "reticulumPing": {
     "title": "Ping",
@@ -3003,6 +3021,16 @@
   "reticulumTopology": {
     "title": "Topología de red",
     "self": "Tú",
-    "hopBadge": "{{count}}h"
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Gráfico de topología de red Reticulum",
+    "noNodes": "Aún no hay datos de topología: conecte la pila de Reticulum y actualice.",
+    "nodeCount": "{{count}} nodos",
+    "edgeCount": "Enlaces {{count}}",
+    "hiddenCount": "Mostrando {{shown}} de {{total}} nodos (pares distantes ocultos)",
+    "legendSelf": "este nodo",
+    "legendHub": "Centro de retransmisión",
+    "legendPeer": "Par",
+    "directLink": "Enlace directo",
+    "relayLink": "A través del centro"
   }
 }

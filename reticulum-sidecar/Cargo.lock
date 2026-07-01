@@ -1181,11 +1181,13 @@ name = "mesh-client-reticulum-sidecar"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64",
  "bytes",
  "clap",
  "futures-util",
  "hex",
  "lxmf-core",
+ "rmpv",
  "rns-identity",
  "rns-runtime",
  "rns-transport",

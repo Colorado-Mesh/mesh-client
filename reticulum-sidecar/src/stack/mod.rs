@@ -1,6 +1,8 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
 pub mod config;
+mod nomad_file;
+mod nomad_timeouts;
 mod packet_log;
 mod persistence;
 mod topology;
@@ -87,6 +89,14 @@ impl StackHandle {
             event_tx,
             packet_log: Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG)),
         };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &handle.live {
+            live.register_nomad_announce_handler(
+                handle.inner.clone(),
+                handle.config_dir.clone(),
+                handle.storage_dir.clone(),
+            );
+        }
         handle.emit_stats().await;
         handle
     }
@@ -463,17 +473,29 @@ impl StackHandle {
         Ok(())
     }
 
-    pub async fn nomad_page(&self, _hash: &str, _path: &str) -> serde_json::Value {
+    pub async fn nomad_page(&self, hash: &str, path: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let interfaces = self.inner.read().await.interfaces.clone();
+            return live.fetch_nomad_page(hash, path, &interfaces).await;
+        }
+        let _ = (hash, path);
         serde_json::json!({
             "ok": false,
-            "error": "nomad page fetch not implemented in stub stack"
+            "error": "nomad page fetch requires live rns-stack sidecar"
         })
     }
 
-    pub async fn nomad_file(&self, _hash: &str) -> serde_json::Value {
+    pub async fn nomad_file(&self, hash: &str, path: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let interfaces = self.inner.read().await.interfaces.clone();
+            return live.fetch_nomad_file(hash, path, &interfaces).await;
+        }
+        let _ = (hash, path);
         serde_json::json!({
             "ok": false,
-            "error": "nomad file fetch not implemented in stub stack"
+            "error": "nomad file fetch requires live rns-stack sidecar"
         })
     }
 
@@ -832,6 +854,20 @@ mod tests {
         assert_eq!(fetched.len(), 1);
         assert_eq!(cache.len(), 1);
         assert_eq!(cache[0].destination_hash, row.destination_hash);
+    }
+
+    #[test]
+    fn upsert_nomad_node_updates_existing_display_name() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let mut state = PersistedState::load(&config_dir, &storage_dir);
+        state.upsert_nomad_node("abc123", Some("Forum".into()), Some(2));
+        state.upsert_nomad_node("ABC123", Some("Updated Forum".into()), Some(3));
+        assert_eq!(state.nomad_nodes.len(), 1);
+        assert_eq!(state.nomad_nodes[0].display_name.as_deref(), Some("Updated Forum"));
+        assert_eq!(state.nomad_nodes[0].hops, Some(3));
+        assert_eq!(state.nomad_nodes[0].status.as_deref(), Some("online"));
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
     }
 
     #[tokio::test]
