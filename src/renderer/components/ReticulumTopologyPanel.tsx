@@ -83,7 +83,11 @@ function peerStroke(node: RenderNode): string {
   return node.online ? '#22c55e' : '#ef4444';
 }
 
-export default function ReticulumTopologyPanel() {
+interface ReticulumTopologyPanelProps {
+  onPeerClick?: (peerHash: string) => void;
+}
+
+export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopologyPanelProps = {}) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const simRef = useRef<SimNodeState[]>([]);
@@ -438,7 +442,15 @@ export default function ReticulumTopologyPanel() {
 
             const r = PEER_R;
             return (
-              <g key={node.id} transform={`translate(${node.x},${node.y})`}>
+              <g
+                key={node.id}
+                transform={`translate(${node.x},${node.y})`}
+                onClick={() => onPeerClick?.(node.id)}
+                style={{ cursor: onPeerClick ? 'pointer' : undefined }}
+                role={onPeerClick ? 'button' : undefined}
+                tabIndex={onPeerClick ? 0 : undefined}
+                aria-label={node.label}
+              >
                 <circle
                   r={r + 2}
                   fill="none"

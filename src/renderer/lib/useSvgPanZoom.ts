@@ -9,6 +9,7 @@ export interface SvgPanZoomView {
 const MIN_SCALE = 0.35;
 const MAX_SCALE = 3;
 const ZOOM_SENSITIVITY = 0.0012;
+const DRAG_THRESHOLD_PX = 4;
 const DEFAULT_VIEW: SvgPanZoomView = { scale: 1, x: 0, y: 0 };
 
 export function useSvgPanZoom(initial: SvgPanZoomView = DEFAULT_VIEW) {
@@ -20,10 +21,18 @@ export function useSvgPanZoom(initial: SvgPanZoomView = DEFAULT_VIEW) {
 
   const [view, setView] = useState<SvgPanZoomView>(() => ({ ...initial }));
   const elementRef = useRef<SVGSVGElement | null>(null);
-  const dragRef = useRef<{ x: number; y: number; active: boolean }>({
+  const dragRef = useRef<{
+    x: number;
+    y: number;
+    active: boolean;
+    pointerId: number | null;
+    target: SVGSVGElement | null;
+  }>({
     x: 0,
     y: 0,
     active: false,
+    pointerId: null,
+    target: null,
   });
 
   const resetView = useCallback(() => {
@@ -70,21 +79,45 @@ export function useSvgPanZoom(initial: SvgPanZoomView = DEFAULT_VIEW) {
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
-    dragRef.current = { x: e.clientX, y: e.clientY, active: true };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      active: false,
+      pointerId: e.pointerId,
+      target: e.currentTarget,
+    };
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragRef.current.active) return;
-    const dx = e.clientX - dragRef.current.x;
-    const dy = e.clientY - dragRef.current.y;
-    dragRef.current = { x: e.clientX, y: e.clientY, active: true };
+    const drag = dragRef.current;
+    if (drag.pointerId == null) return;
+
+    if (!drag.active) {
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+      drag.active = true;
+      drag.target?.setPointerCapture(drag.pointerId);
+    }
+
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    dragRef.current = { ...drag, x: e.clientX, y: e.clientY };
     setView((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    dragRef.current.active = false;
-    e.currentTarget.releasePointerCapture(e.pointerId);
+    const drag = dragRef.current;
+    if (drag.pointerId === e.pointerId && drag.active) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    dragRef.current = {
+      x: 0,
+      y: 0,
+      active: false,
+      pointerId: null,
+      target: null,
+    };
   }, []);
 
   const transform = `translate(${view.x},${view.y}) scale(${view.scale})`;

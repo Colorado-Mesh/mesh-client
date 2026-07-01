@@ -440,25 +440,41 @@ export default function RawPacketLogPanel(props: Props) {
   const [filter, setFilter] = useState('');
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [pausedAtCount, setPausedAtCount] = useState(0);
+  /** Snapshot taken at pause time so ring-buffer eviction does not mutate the frozen view. */
+  const [pausedPackets, setPausedPackets] = useState<Props['packets'] | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   /** Sticky intent: user is reading latest packets and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  const isPausedRef = useRef(false);
+  isPausedRef.current = isPaused;
   const unreadStartIndexRef = useRef(-1);
   const anchorIndexRef = useRef(0);
   const prevFilteredLengthRef = useRef(0);
   const expandedRowKeyRef = useRef<string | null>(null);
   expandedRowKeyRef.current = expandedRowKey;
 
-  const pendingWhilePaused = isPaused ? Math.max(0, packets.length - pausedAtCount) : 0;
+  const pendingWhilePaused = useMemo(() => {
+    if (!isPaused || pausedPackets == null) return 0;
+    if (packets.length > pausedPackets.length) {
+      return packets.length - pausedPackets.length;
+    }
+    const snapLastTs = pausedPackets[pausedPackets.length - 1]?.ts;
+    if (snapLastTs == null) return 0;
+    let count = 0;
+    for (let i = packets.length - 1; i >= 0; i--) {
+      if (packets[i].ts <= snapLastTs) break;
+      count++;
+    }
+    return count;
+  }, [isPaused, pausedPackets, packets]);
 
   const filtered = useMemo(() => {
     const q = filter.trim().toUpperCase();
     const f = filter.trim().toLowerCase();
 
     if (variant === 'meshcore') {
-      const list = isPaused ? packets.slice(0, pausedAtCount) : packets;
+      const list = isPaused && pausedPackets != null ? (pausedPackets as RxPacketEntry[]) : packets;
       if (!filter.trim()) return list;
       return list.filter(
         (p) =>
@@ -476,7 +492,8 @@ export default function RawPacketLogPanel(props: Props) {
       );
     }
     if (variant === 'reticulum') {
-      const list = isPaused ? packets.slice(0, pausedAtCount) : packets;
+      const list =
+        isPaused && pausedPackets != null ? (pausedPackets as ReticulumRawPacketEntry[]) : packets;
       if (!filter.trim()) return list;
       return list.filter((p) => {
         const destinationLabel = reticulumDestinationColumnText(
@@ -500,7 +517,8 @@ export default function RawPacketLogPanel(props: Props) {
         );
       });
     }
-    const list = isPaused ? packets.slice(0, pausedAtCount) : packets;
+    const list =
+      isPaused && pausedPackets != null ? (pausedPackets as MeshtasticRawPacketEntry[]) : packets;
     if (!filter.trim()) return list;
     return list.filter(
       (p) =>
@@ -510,7 +528,7 @@ export default function RawPacketLogPanel(props: Props) {
         (p.isLocal && 'local'.includes(f)) ||
         (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
     );
-  }, [packets, pausedAtCount, isPaused, filter, variant, getNodeLabel]);
+  }, [packets, pausedPackets, isPaused, filter, variant, getNodeLabel]);
 
   const expandedIndex = useMemo(() => {
     if (!expandedRowKey) return -1;
@@ -536,7 +554,7 @@ export default function RawPacketLogPanel(props: Props) {
     measureElement,
     overscan: 12,
     anchorTo: 'end',
-    followOnAppend: true,
+    followOnAppend: !isPaused,
     scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
     getItemKey: (index) => {
       const row = filtered[index];
@@ -549,7 +567,7 @@ export default function RawPacketLogPanel(props: Props) {
   virtualizerRef.current = virtualizer;
 
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, delta, instance) => {
-    if (expandedRowKeyRef.current) return false;
+    if (isPausedRef.current || expandedRowKeyRef.current) return false;
     return createChatScrollAdjustPredicate({
       unreadStartIndexRef,
       isPinnedToBottomRef,
@@ -562,7 +580,9 @@ export default function RawPacketLogPanel(props: Props) {
       anchorIndexRef.current = items[0].index;
     }
     const atEnd = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
-    isPinnedToBottomRef.current = atEnd;
+    if (!isPaused) {
+      isPinnedToBottomRef.current = atEnd;
+    }
     setShowScrollButton(!atEnd && !isPaused);
   }, [isPaused]);
 
@@ -580,6 +600,7 @@ export default function RawPacketLogPanel(props: Props) {
   const togglePause = useCallback(() => {
     if (isPaused) {
       setIsPaused(false);
+      setPausedPackets(null);
       isPinnedToBottomRef.current = true;
       requestAnimationFrame(() => {
         virtualizerRef.current.scrollToEnd();
@@ -587,16 +608,21 @@ export default function RawPacketLogPanel(props: Props) {
       });
       return;
     }
-    setPausedAtCount(packets.length);
+    setPausedPackets(packets.slice());
     setIsPaused(true);
     isPinnedToBottomRef.current = false;
-  }, [isPaused, packets.length]);
+    requestAnimationFrame(() => {
+      virtualizerRef.current.scrollToIndex(anchorIndexRef.current, { align: 'start' });
+    });
+  }, [isPaused, packets]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
       if (!scrollRef.current) return;
       const atEnd = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
-      isPinnedToBottomRef.current = atEnd;
+      if (!isPaused) {
+        isPinnedToBottomRef.current = atEnd;
+      }
       setShowScrollButton(!atEnd && !isPaused);
     });
   }, [isPaused]);
@@ -619,7 +645,7 @@ export default function RawPacketLogPanel(props: Props) {
   const handleClear = useCallback(() => {
     setExpandedRowKey(null);
     setIsPaused(false);
-    setPausedAtCount(0);
+    setPausedPackets(null);
     onClear();
   }, [onClear]);
 

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
@@ -74,5 +74,18 @@ describe('ReticulumTopologyPanel', () => {
     expect(screen.getByText('reticulumTopology.legendPeerUser')).toBeInTheDocument();
     expect(screen.getByText('reticulumTopology.interfaceStatus:1/0')).toBeInTheDocument();
     expect(container.querySelector('svg.min-h-0.flex-1')).toBeTruthy();
+  });
+
+  it('calls onPeerClick when a peer node is clicked', async () => {
+    const onPeerClick = vi.fn();
+    render(<ReticulumTopologyPanel onPeerClick={onPeerClick} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Mother' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mother' }));
+    expect(onPeerClick).toHaveBeenCalledOnce();
+    expect(onPeerClick).toHaveBeenCalledWith('peeraaaa');
   });
 });

@@ -3470,7 +3470,7 @@ function AppContent() {
                       capabilities.hasReticulumTopologyPanel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <ReticulumTopologyPanel />
+                            <ReticulumTopologyPanel onPeerClick={setSelectedPeerHash} />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

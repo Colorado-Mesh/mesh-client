@@ -41,8 +41,6 @@ const TIER_FILL: Record<RenderNode['tier'], string> = {
   poor: '#ef4444',
 };
 
-const LABEL_ALWAYS_RELAY_MAX = 12;
-
 function relaySpokeColor(online: boolean): string {
   return online ? '#22c55e' : '#ef4444';
 }
@@ -62,9 +60,8 @@ function graphSizes(nodeCount: number): {
   return { centerR: 22, relayR: 18, peerR: 12, nodePadding: FORCE_GRAPH_DEFAULTS.nodePadding };
 }
 
-function truncateLabel(label: string, maxLen: number): string {
-  if (label.length <= maxLen) return label;
-  return `${label.slice(0, maxLen - 1)}…`;
+function stopPanZoomPointer(e: React.PointerEvent): void {
+  e.stopPropagation();
 }
 
 export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGraphPanelProps) {
@@ -89,8 +86,6 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
   });
   const [includeDistantPeers, setIncludeDistantPeers] = useState(false);
   const [maxHops, setMaxHops] = useState<number | null>(2);
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const { transform, resetView, bindSvgRef, onPointerDown, onPointerMove, onPointerUp } =
     useSvgPanZoom();
 
@@ -218,24 +213,6 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
   } = snapshot;
   const nodeById = new Map(renderNodes.map((n) => [n.id, n]));
   const hasGraph = renderNodes.length > 0;
-  const activeNodeId = hoveredNodeId ?? focusedNodeId;
-  const isDense = renderNodes.length > 20;
-  const showAllLabels = !isDense;
-
-  const shouldShowLabel = (node: RenderNode): boolean => {
-    if (node.kind === 'self') return true;
-    if (activeNodeId === node.id) return true;
-    if (!showAllLabels) return false;
-    if (node.kind === 'relay' && relayCount <= LABEL_ALWAYS_RELAY_MAX) return true;
-    return node.kind === 'peer' && renderNodes.length <= 16;
-  };
-
-  const isEdgeHighlighted = (edge: ForceEdge): boolean => {
-    if (!activeNodeId) return true;
-    return edge.source === activeNodeId || edge.target === activeNodeId;
-  };
-
-  const tooltipNode = activeNodeId ? nodeById.get(activeNodeId) : null;
 
   return (
     <div className="flex h-full flex-col">
@@ -306,29 +283,12 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
           )}
         </span>
       </div>
-      {isDense ? (
-        <p className="text-muted px-4 pb-1 text-[11px]">{t('peerGraph.hoverHint')}</p>
-      ) : null}
       {!hasGraph ? (
         <div className="text-muted flex flex-1 items-center justify-center text-xs">
           {t('peerGraph.noConnectedNodes')}
         </div>
       ) : (
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          {tooltipNode ? (
-            <div
-              className="pointer-events-none absolute top-3 left-1/2 z-10 max-w-[min(90%,28rem)] -translate-x-1/2 rounded-md border border-slate-600 bg-slate-900/95 px-3 py-1.5 text-center text-xs text-slate-100 shadow-lg"
-              role="status"
-            >
-              <span className="font-medium">{tooltipNode.label}</span>
-              {tooltipNode.hops != null ? (
-                <span className="text-slate-400">
-                  {' · '}
-                  {t('peerGraph.hopBadge', { count: tooltipNode.hops })}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
           <svg
             ref={setSvgRef}
             className="h-full w-full cursor-grab active:cursor-grabbing"
@@ -353,9 +313,8 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                 const b = nodeById.get(edge.target);
                 if (!a || !b) return null;
                 const isDirectSpoke = a.kind === 'self' && b.kind === 'relay';
-                const highlighted = isEdgeHighlighted(edge);
-                const stroke = isDirectSpoke ? relaySpokeColor(b.online) : '#64748b';
-                const strokeWidth = isDirectSpoke ? 2.5 : 1;
+                const stroke = isDirectSpoke ? relaySpokeColor(b.online) : '#94a3b8';
+                const strokeWidth = isDirectSpoke ? 3 : 1;
                 return (
                   <line
                     key={`${edge.source}-${edge.target}-${i}`}
@@ -365,36 +324,20 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                     y2={b.y}
                     stroke={stroke}
                     strokeWidth={strokeWidth}
-                    strokeDasharray={!isDirectSpoke ? '3 4' : undefined}
-                    strokeOpacity={highlighted ? (isDirectSpoke ? 0.85 : 0.45) : 0.12}
+                    strokeDasharray={edge.kind === 'relay' && !isDirectSpoke ? '4 4' : undefined}
+                    strokeOpacity={isDirectSpoke ? 0.9 : 0.55}
                   />
                 );
               })}
 
               {renderNodes.map((node) => {
-                const showLabel = shouldShowLabel(node);
-                const isActive = activeNodeId === node.id;
-                const dimmed = activeNodeId != null && !isActive;
-
                 if (node.kind === 'self') {
                   const fill = TIER_FILL[node.tier];
                   return (
                     <g
                       key={node.id}
                       transform={`translate(${node.x},${node.y})`}
-                      opacity={dimmed ? 0.45 : 1}
-                      onMouseEnter={() => {
-                        setHoveredNodeId(node.id);
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredNodeId(null);
-                      }}
-                      onFocus={() => {
-                        setFocusedNodeId(node.id);
-                      }}
-                      onBlur={() => {
-                        setFocusedNodeId(null);
-                      }}
+                      onPointerDown={stopPanZoomPointer}
                       onClick={() => onNodeClick?.(node.nodeId)}
                       style={{ cursor: onNodeClick ? 'pointer' : undefined }}
                       role={onNodeClick ? 'button' : undefined}
@@ -402,7 +345,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                       aria-label={node.label}
                     >
                       <circle
-                        r={sizes.centerR + 5}
+                        r={sizes.centerR + 6}
                         fill="none"
                         stroke="#c4b5fd"
                         strokeWidth={1}
@@ -415,18 +358,25 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                         stroke="#c4b5fd"
                         strokeWidth={2}
                       />
-                      {showLabel ? (
-                        <text
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fill="#f8fafc"
-                          fontSize={10}
-                          fontWeight="bold"
-                          style={{ pointerEvents: 'none', userSelect: 'none' }}
-                        >
-                          {truncateLabel(node.label, 14)}
-                        </text>
-                      ) : null}
+                      <text
+                        y={4}
+                        textAnchor="middle"
+                        fill="#f8fafc"
+                        fontSize={11}
+                        fontWeight={600}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {t('peerGraph.meShort')}
+                      </text>
+                      <text
+                        y={sizes.centerR + 14}
+                        textAnchor="middle"
+                        fill="#e2e8f0"
+                        fontSize={10}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {node.label}
+                      </text>
                     </g>
                   );
                 }
@@ -438,19 +388,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                     <g
                       key={node.id}
                       transform={`translate(${node.x},${node.y})`}
-                      opacity={dimmed ? 0.35 : 1}
-                      onMouseEnter={() => {
-                        setHoveredNodeId(node.id);
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredNodeId(null);
-                      }}
-                      onFocus={() => {
-                        setFocusedNodeId(node.id);
-                      }}
-                      onBlur={() => {
-                        setFocusedNodeId(null);
-                      }}
+                      onPointerDown={stopPanZoomPointer}
                       onClick={() => onNodeClick?.(node.nodeId)}
                       style={{ cursor: onNodeClick ? 'pointer' : undefined }}
                       role={onNodeClick ? 'button' : undefined}
@@ -462,36 +400,21 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                         y={-r}
                         width={r * 2}
                         height={r * 2}
-                        rx={3}
+                        rx={4}
                         fill={fill}
                         fillOpacity={node.online ? 0.85 : 0.55}
                         stroke={relaySpokeColor(node.online)}
-                        strokeWidth={isActive ? 2 : 1.5}
+                        strokeWidth={1.5}
                       />
-                      {node.hubOutDegree > 0 ? (
-                        <text
-                          y={1}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fill="#0f172a"
-                          fontSize={8}
-                          fontWeight={600}
-                          style={{ pointerEvents: 'none', userSelect: 'none' }}
-                        >
-                          {node.hubOutDegree}
-                        </text>
-                      ) : null}
-                      {showLabel ? (
-                        <text
-                          y={r + 11}
-                          textAnchor="middle"
-                          fill="#d1d5db"
-                          fontSize={9}
-                          style={{ pointerEvents: 'none', userSelect: 'none' }}
-                        >
-                          {truncateLabel(node.label, 16)}
-                        </text>
-                      ) : null}
+                      <text
+                        y={r + 12}
+                        textAnchor="middle"
+                        fill="#d1d5db"
+                        fontSize={10}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {node.label}
+                      </text>
                     </g>
                   );
                 }
@@ -502,19 +425,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                   <g
                     key={node.id}
                     transform={`translate(${node.x},${node.y})`}
-                    opacity={dimmed ? 0.3 : 0.92}
-                    onMouseEnter={() => {
-                      setHoveredNodeId(node.id);
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredNodeId(null);
-                    }}
-                    onFocus={() => {
-                      setFocusedNodeId(node.id);
-                    }}
-                    onBlur={() => {
-                      setFocusedNodeId(null);
-                    }}
+                    onPointerDown={stopPanZoomPointer}
                     onClick={() => onNodeClick?.(node.nodeId)}
                     style={{ cursor: onNodeClick ? 'pointer' : undefined }}
                     role={onNodeClick ? 'button' : undefined}
@@ -522,32 +433,28 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                     aria-label={node.label}
                   >
                     <circle
-                      r={r + (isActive ? 2 : 1)}
+                      r={r + 2}
                       fill="none"
                       stroke={relaySpokeColor(node.online)}
-                      strokeWidth={isActive ? 2 : 1}
+                      strokeWidth={1.5}
                       strokeOpacity={node.online ? 0.9 : 0.5}
                     />
                     <circle r={r} fill={fill} fillOpacity={0.92} stroke="#1e293b" strokeWidth={1} />
-                    {showLabel ? (
+                    <text
+                      y={r + 12}
+                      textAnchor="middle"
+                      fill="#d1d5db"
+                      fontSize={10}
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                      {node.label}
+                    </text>
+                    {node.hops != null && node.hops > 1 ? (
                       <text
-                        y={r + 10}
+                        y={4}
                         textAnchor="middle"
-                        fill="#d1d5db"
+                        fill="#fbbf24"
                         fontSize={8}
-                        style={{ pointerEvents: 'none', userSelect: 'none' }}
-                      >
-                        {truncateLabel(node.label, 12)}
-                      </text>
-                    ) : null}
-                    {isActive && node.hops != null && node.hops > 1 ? (
-                      <text
-                        y={1}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="#fef3c7"
-                        fontSize={7}
-                        fontWeight={600}
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                       >
                         {t('peerGraph.hopBadge', { count: node.hops })}
@@ -583,7 +490,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="24" height="8" aria-hidden>
-            <line x1="0" y1="4" x2="24" y2="4" stroke="#22c55e" strokeWidth="2.5" />
+            <line x1="0" y1="4" x2="24" y2="4" stroke="#22c55e" strokeWidth="3" />
           </svg>
           {t('peerGraph.directLink')}
         </span>
@@ -594,9 +501,9 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
               y1="4"
               x2="24"
               y2="4"
-              stroke="#64748b"
+              stroke="#94a3b8"
               strokeWidth="1"
-              strokeDasharray="3 4"
+              strokeDasharray="4 4"
             />
           </svg>
           {t('peerGraph.relayLink')}

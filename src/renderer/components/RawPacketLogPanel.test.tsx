@@ -213,7 +213,54 @@ describe('RawPacketLogPanel pause capture', () => {
     expect(screen.getByText('1 new while paused')).toBeTruthy();
   });
 
-  it('does not follow new packets while paused', () => {
+  it('freezes snapshot when ring buffer is at capacity and parent rotates entries', () => {
+    const cap = 3;
+    const packets = [
+      reticulumPacket(1_710_000_000_000),
+      reticulumPacket(1_710_000_001_000),
+      reticulumPacket(1_710_000_002_000),
+    ];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    const rotated = [...packets.slice(1), reticulumPacket(1_710_000_003_000)].slice(-cap);
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={rotated}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(lastVirtualizerOptions?.count).toBe(cap);
+    expect(screen.getByText('1 new while paused')).toBeTruthy();
+  });
+
+  it('disables followOnAppend while paused', () => {
+    render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[reticulumPacket(1_710_000_000_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(lastVirtualizerOptions?.followOnAppend).toBe(false);
+  });
+
+  it('does not follow new packets while paused at bottom', () => {
     mockIsAtEnd = true;
     const packets = [reticulumPacket(1_710_000_000_000)];
     const { rerender } = render(
