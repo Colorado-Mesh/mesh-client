@@ -86,6 +86,7 @@ import {
   findFirstMessageIndexByDayKey,
   findMessageIndexByKey,
   getChatDayKey,
+  getChatMessageVirtualizerKey,
   getDistFromChatBottom,
   scheduleVirtualRowRemeasure,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
@@ -876,13 +877,7 @@ function ChatPanel({
     estimateSize: estimateMessageSize,
     measureElement: measureMessageElement,
     overscan: 10,
-    getItemKey: (index) => {
-      const msg = filteredMessages[index];
-      if (!msg) return `msg-slot-${index}`;
-      return msg.id != null
-        ? `db-${msg.id}-${index}`
-        : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
-    },
+    getItemKey: (index) => getChatMessageVirtualizerKey(filteredMessages[index], index),
     anchorTo: 'end',
     followOnAppend: true,
     scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,

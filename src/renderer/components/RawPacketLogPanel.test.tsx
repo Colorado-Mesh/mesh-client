@@ -1,16 +1,20 @@
 import { create, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Portnums } from '@meshtastic/protobufs';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import RawPacketLogPanel from './RawPacketLogPanel';
 
 vi.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: (opts: { count: number }) => ({
+  useVirtualizer: (opts: { count: number; getItemKey?: (index: number) => string | number }) => ({
     getVirtualItems: () =>
-      Array.from({ length: opts.count }, (_, index) => ({ index, start: index * 36 })),
+      Array.from({ length: opts.count }, (_, index) => ({
+        index,
+        key: opts.getItemKey?.(index) ?? index,
+        start: index * 36,
+      })),
     getTotalSize: () => opts.count * 36,
     measureElement: () => {},
   }),
@@ -44,6 +48,38 @@ function meshcorePacket(rawHex: string, payloadTypeString: string): RxPacketEntr
     parseOk: true,
   };
 }
+
+describe('RawPacketLogPanel duplicate row keys', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('does not warn when two identical captures share content but differ by index', () => {
+    const packet = meshcorePacket(
+      '150107819d28f7a0d427af7cbd3c6057b29763736b3878eb027514687b110abe33456565ca1117316f81033b1de05496a57ab1c44335f53749008b593a19cd9c9e340d34f076',
+      'GRP_TXT',
+    );
+    render(
+      <RawPacketLogPanel
+        variant="meshcore"
+        packets={[packet, { ...packet }]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter((args: unknown[]) =>
+      String(args[0]).includes('Encountered two children with the same key'),
+    );
+    expect(duplicateKeyWarnings).toHaveLength(0);
+  });
+});
 
 describe('RawPacketLogPanel meshcore expanded details', () => {
   it('shows GRP_TXT channel hash plus MAC/ciphertext info', () => {

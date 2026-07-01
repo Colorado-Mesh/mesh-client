@@ -25,9 +25,10 @@ import {
   parseMeshtasticRawPacketExpand,
 } from '../lib/meshtastic/meshtasticRawPacketExpand';
 import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
-import type {
-  MeshtasticRawPacketEntry,
-  ReticulumRawPacketEntry,
+import {
+  type MeshtasticRawPacketEntry,
+  rawPacketVirtualizerKey,
+  type ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
 import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 
@@ -45,12 +46,6 @@ function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
-}
-
-/** Stable virtualizer row key — ts alone can collide within the same millisecond. */
-function rawPacketRowKey(ts: number, raw: Uint8Array): string {
-  const prefix = raw.length > 0 ? toHex(raw.subarray(0, Math.min(4, raw.length))) : 'empty';
-  return `${ts}-${raw.length}-${prefix}`;
 }
 
 function formatTs(ts: number): string {
@@ -465,6 +460,11 @@ export default function RawPacketLogPanel(props: Props) {
     getScrollElement,
     estimateSize,
     overscan: 12,
+    getItemKey: (index) => {
+      const row = filtered[index];
+      if (!row) return `raw-slot-${index}`;
+      return rawPacketVirtualizerKey(row.ts, row.raw, index);
+    },
   });
 
   const onScroll = useCallback(() => {
@@ -554,16 +554,9 @@ export default function RawPacketLogPanel(props: Props) {
                 setExpandedIdx(isExpanded ? null : vi.index);
               };
 
-              const rowPacket =
-                variant === 'meshcore'
-                  ? (filtered as RxPacketEntry[])[vi.index]
-                  : variant === 'reticulum'
-                    ? (filtered as ReticulumRawPacketEntry[])[vi.index]
-                    : (filtered as MeshtasticRawPacketEntry[])[vi.index];
-
               return (
                 <div
-                  key={rawPacketRowKey(rowPacket.ts, rowPacket.raw)}
+                  key={vi.key}
                   data-index={vi.index}
                   ref={virtualizer.measureElement}
                   className="absolute top-0 left-0 w-full border-b border-gray-800"
