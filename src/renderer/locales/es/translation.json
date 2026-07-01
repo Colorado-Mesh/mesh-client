@@ -682,7 +682,10 @@
       "editFailed": "Error al guardar la interfaz.",
       "pipeCommand": "Comando de tubería",
       "addFailed": "Error al añadir la interfaz.",
-      "toggleFailed": "Error al cambiar el estado de la interfaz."
+      "toggleFailed": "Error al cambiar el estado de la interfaz.",
+      "restartStackHint": "Reinicie la pila en la pestaña Conexión para que los cambios en la interfaz en serie surtan efecto.",
+      "localOfflineRow": "Interfaz local sin conexión: compruebe la contención de cables y puertos, luego reinicie la pila.",
+      "localOfflineRowStale": "No se ha encontrado el puerto serie {{port}}: es posible que el conector USB haya cambiado la ruta."
     },
     "reticulumPeers": {
       "name": "Par",
@@ -695,6 +698,16 @@
       "title": "Nodos de propagación",
       "enable": "Habilitar",
       "disable": "Desactivar"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} interfaz(es) local (es) que necesita (n) atención",
+      "stalePort": "{{name}}: puerto serie {{port}} no encontrado",
+      "stalePortHint": "El conector USB puede haber cambiado la ruta. Actualice en → Interfaces de radio, luego reinicie la pila.",
+      "offline": "{{name}}: la interfaz local está habilitada pero sin conexión",
+      "offlineHint": "Compruebe el cable, libere el puerto de Meshtastic/MeshCore y, a continuación, reinicie la pila.",
+      "openRadio": "Radio abierta",
+      "refreshPorts": "Actualizar puertos",
+      "availablePorts": "Disponible: {{ports}}"
     }
   },
   "contactGroupsModal": {

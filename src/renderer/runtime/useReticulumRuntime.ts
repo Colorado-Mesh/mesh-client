@@ -31,6 +31,7 @@ import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPa
 import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
+  fetchReticulumSerialPorts,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -174,10 +175,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
-      const snapshot = (await window.electronAPI.reticulum.proxyGet(
-        '/api/v1/diagnostics',
-      )) as Parameters<typeof buildReticulumDiagnosticRows>[0];
-      const rows = buildReticulumDiagnosticRows(snapshot);
+      const [snapshot, interfaces, osSerialPorts] = await Promise.all([
+        window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
+          Parameters<typeof buildReticulumDiagnosticRows>[0]
+        >,
+        fetchReticulumInterfaces(),
+        fetchReticulumSerialPorts(),
+      ]);
+      localInterfacesRef.current = interfaces;
+      const rows = buildReticulumDiagnosticRows(snapshot, { interfaces, osSerialPorts });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
       }));

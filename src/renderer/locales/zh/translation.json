@@ -682,7 +682,10 @@
       "editFailed": "保存接口失败。",
       "pipeCommand": "管道命令",
       "addFailed": "添加接口失败。",
-      "toggleFailed": "更改接口状态失败。"
+      "toggleFailed": "更改接口状态失败。",
+      "restartStackHint": "在“连接”选项卡上重新启动堆栈，使串行接口更改生效。",
+      "localOfflineRow": "本地接口离线—检查电缆和端口争用，然后重新启动堆栈。",
+      "localOfflineRowStale": "未找到串行端口{{port}} — USB替换器可能已更改路径。"
     },
     "reticulumPeers": {
       "name": "节点",
@@ -695,6 +698,16 @@
       "title": "传播节点",
       "enable": "启用",
       "disable": "禁用"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}}本地接口需要注意",
+      "stalePort": "{{name}} ：未找到串行端口{{port}}",
+      "stalePortHint": "USB替换插头可能已更改路径。在无线→接口中更新，然后重新启动堆栈。",
+      "offline": "{{name}} ：本地接口已启用但离线",
+      "offlineHint": "检查电缆，从Meshtastic/MeshCore释放端口，然后重新启动堆栈。",
+      "openRadio": "打开收音机",
+      "refreshPorts": "刷新端口",
+      "availablePorts": "可用： {{ports}}"
     }
   },
   "contactGroupsModal": {

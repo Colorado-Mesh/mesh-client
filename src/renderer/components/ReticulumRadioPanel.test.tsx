@@ -65,4 +65,43 @@ describe('ReticulumRadioPanel', () => {
       });
     });
   });
+
+  it('shows offline reason on local serial interface rows', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: true,
+          loglevel: 3,
+          announce_interval_sec: 600,
+        });
+      }
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'heltec',
+              name: 'Heltec V3',
+              type: 'rnode',
+              enabled: true,
+              status: 'down',
+              serial_port: '/dev/cu.usbserial-7',
+            },
+          ],
+        });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({ ports: [{ path: '/dev/cu.usbserial-0001' }] });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<ReticulumRadioPanel connecting={false} onStartStack={async () => {}} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('connectionPanel.reticulumInterfaces.localOfflineRowStale'),
+      ).toBeInTheDocument();
+    });
+  });
 });

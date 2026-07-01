@@ -1,12 +1,27 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  collectReticulumLocalInterfaceAlerts,
+  type ReticulumLocalInterfaceAlert,
+} from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import {
+  fetchReticulumInterfaces,
+  fetchReticulumSerialPorts,
+  invalidateReticulumInterfacesCache,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
+import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+
+import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 
 export interface ReticulumStackPanelProps {
   connecting: boolean;
   stackError?: string | null;
   onStartStack: () => Promise<void>;
   onStopStack: () => Promise<void>;
+  onOpenRadioPanel?: () => void;
 }
 
 /** Connection tab: sidecar lifecycle only (start/stop, autostart, status). */
@@ -15,11 +30,37 @@ export function ReticulumStackPanel({
   stackError,
   onStartStack,
   onStopStack,
+  onOpenRadioPanel,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
+  const [localAlerts, setLocalAlerts] = useState<ReticulumLocalInterfaceAlert[]>([]);
+  const [availablePorts, setAvailablePorts] = useState<string[]>([]);
+  const refreshLocalHealthRef = useRef<(() => Promise<void>) | null>(null);
+
+  const refreshLocalHealth = useCallback(async () => {
+    invalidateReticulumInterfacesCache();
+    const [interfaces, ports] = await Promise.all([
+      fetchReticulumInterfaces(),
+      fetchReticulumSerialPorts(),
+    ]);
+    setAvailablePorts(ports);
+    setLocalAlerts(collectReticulumLocalInterfaceAlerts(interfaces, ports));
+  }, []);
+
+  useEffect(() => {
+    refreshLocalHealthRef.current = refreshLocalHealth;
+  }, [refreshLocalHealth]);
+
+  const handleSidecarEvent = useCallback((evt: ReticulumSidecarEvent) => {
+    if (evt.type === 'interface.state' || evt.type === 'stats_update') {
+      void refreshLocalHealthRef.current?.();
+    }
+  }, []);
+
   const {
     sidecarStatus,
     sidecarUiRunning,
+    sidecarApiReady,
     autoStart,
     handleAutoStartChange,
     notifyManualStackStop,
@@ -29,7 +70,17 @@ export function ReticulumStackPanel({
     connecting,
     onStartStack,
     enableAutostart: true,
+    onEvent: handleSidecarEvent,
   });
+
+  useEffect(() => {
+    if (!sidecarApiReady) {
+      setLocalAlerts([]);
+      setAvailablePorts([]);
+      return;
+    }
+    void refreshLocalHealth();
+  }, [sidecarApiReady, refreshLocalHealth]);
 
   return (
     <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
@@ -63,6 +114,16 @@ export function ReticulumStackPanel({
           <p className="text-muted text-xs" role="status">
             127.0.0.1:{sidecarStatus.port}
           </p>
+        ) : null}
+        {sidecarUiRunning ? (
+          <ReticulumLocalInterfaceAlertsBlock
+            alerts={localAlerts}
+            availablePorts={availablePorts}
+            onOpenRadio={onOpenRadioPanel}
+            onRefreshPorts={() => {
+              void refreshLocalHealth();
+            }}
+          />
         ) : null}
         {sidecarUiRunning ? (
           <button

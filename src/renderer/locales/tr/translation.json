@@ -682,7 +682,10 @@
       "editFailed": "Arabirim kaydedilemedi.",
       "pipeCommand": "Boru komutu",
       "addFailed": "Arabirim eklenemedi.",
-      "toggleFailed": "Arabirim durumu değiştirilemedi."
+      "toggleFailed": "Arabirim durumu değiştirilemedi.",
+      "restartStackHint": "Seri arayüz değişikliklerinin etkili olması için Bağlantı sekmesindeki yığını yeniden başlatın.",
+      "localOfflineRow": "Yerel arayüz çevrimdışı — kablo ve bağlantı noktası çekişmesini kontrol edin, ardından yığını yeniden başlatın.",
+      "localOfflineRowStale": "Seri bağlantı noktası {{port}} bulunamadı — USB yeniden fişi yolu değiştirmiş olabilir."
     },
     "reticulumPeers": {
       "name": "Eş",
@@ -695,6 +698,16 @@
       "title": "Yayılma düğümleri",
       "enable": "Etkinleştir",
       "disable": "Devre dışı bırak"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} yerel arabirim(ler) ile ilgilenilmesi gerekiyor",
+      "stalePort": "{{name}}: seri bağlantı noktası {{port}} bulunamadı",
+      "stalePortHint": "USB yeniden fişi yolu değiştirmiş olabilir. Radyo → Arayüzlerinde güncelleme yapın, ardından yığını yeniden başlatın.",
+      "offline": "{{name}}: yerel arayüz etkin ancak çevrimdışı",
+      "offlineHint": "Kabloyu kontrol edin, Meshtastic/MeshCore'dan bağlantı noktasını serbest bırakın, ardından yığını yeniden başlatın.",
+      "openRadio": "Açık Radyo",
+      "refreshPorts": "Portları Yenile",
+      "availablePorts": "Mevcut: {{ports}}"
     }
   },
   "contactGroupsModal": {

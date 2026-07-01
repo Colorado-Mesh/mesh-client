@@ -682,7 +682,10 @@
       "editFailed": "インターフェースの保存に失敗しました。",
       "pipeCommand": "パイプコマンド",
       "addFailed": "インターフェースの追加に失敗しました。",
-      "toggleFailed": "インターフェースの状態を変更できませんでした。"
+      "toggleFailed": "インターフェースの状態を変更できませんでした。",
+      "restartStackHint": "シリアルインターフェースの変更を有効にするには、[接続]タブでスタックを再起動します。",
+      "localOfflineRow": "ローカルインターフェイスオフライン—ケーブルとポートの競合を確認し、スタックを再起動します。",
+      "localOfflineRowStale": "シリアルポート{{port}}が見つかりません— USBレプラグがパスを変更した可能性があります。"
     },
     "reticulumPeers": {
       "name": "ピア",
@@ -695,6 +698,16 @@
       "title": "伝播ノード",
       "enable": "有効にする",
       "disable": "無効にする"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}}ローカルインターフェースに注意が必要です",
+      "stalePort": "{{name}} ：シリアルポート{{port}}が見つかりません",
+      "stalePortHint": "USBレプラグがパスを変更した可能性があります。Radio → Interfacesで更新し、スタックを再起動します。",
+      "offline": "{{name}} ：ローカルインターフェースは有効ですが、オフラインです",
+      "offlineHint": "ケーブルを確認し、Meshtastic/MeshCoreからポートを解放してから、スタックを再起動します。",
+      "openRadio": "ラジオを開く",
+      "refreshPorts": "リフレッシュポート",
+      "availablePorts": "利用可能： {{ports}}"
     }
   },
   "contactGroupsModal": {

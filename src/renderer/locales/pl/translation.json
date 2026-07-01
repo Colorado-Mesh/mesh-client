@@ -682,7 +682,10 @@
       "editFailed": "Nie udało się zapisać interfejsu.",
       "pipeCommand": "Polecenie rury",
       "addFailed": "Nie udało się dodać interfejsu.",
-      "toggleFailed": "Nie udało się zmienić stanu interfejsu."
+      "toggleFailed": "Nie udało się zmienić stanu interfejsu.",
+      "restartStackHint": "Uruchom ponownie stos na karcie Połączenie, aby zmiany interfejsu szeregowego zaczęły obowiązywać.",
+      "localOfflineRow": "Lokalny interfejs offline — sprawdź napięcie kabli i portów, a następnie uruchom ponownie stos.",
+      "localOfflineRowStale": "Nie znaleziono portu szeregowego {{port}} — ponowna wtyczka USB mogła zmienić ścieżkę."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -695,6 +698,16 @@
       "title": "Węzły propagacji",
       "enable": "Włącz",
       "disable": "Wyłącz"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "Lokalne interfejsy {{count}} wymagają uwagi",
+      "stalePort": "{{name}}: nie znaleziono portu szeregowego {{port}}",
+      "stalePortHint": "Wtyczka USB mogła zmienić ścieżkę. Zaktualizuj → interfejsy radiowe, a następnie uruchom ponownie stos.",
+      "offline": "{{name}}: interfejs lokalny jest włączony, ale offline",
+      "offlineHint": "Sprawdź kabel, uwolnij port z Meshtastic/MeshCore, a następnie uruchom ponownie stos.",
+      "openRadio": "Otwórz radio",
+      "refreshPorts": "Odśwież porty",
+      "availablePorts": "Dostępne: {{ports}}"
     }
   },
   "contactGroupsModal": {

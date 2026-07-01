@@ -682,7 +682,10 @@
       "editFailed": "Impossibile salvare l'interfaccia.",
       "pipeCommand": "Comando tubo",
       "addFailed": "Impossibile aggiungere l'interfaccia.",
-      "toggleFailed": "Impossibile modificare lo stato dell'interfaccia."
+      "toggleFailed": "Impossibile modificare lo stato dell'interfaccia.",
+      "restartStackHint": "Riavviare lo stack nella scheda Connessione per rendere effettive le modifiche dell'interfaccia seriale.",
+      "localOfflineRow": "Interfaccia locale offline: controllare il conflitto di cavi e porte, quindi riavviare lo stack.",
+      "localOfflineRowStale": "Porta seriale {{port}} non trovata — La ricarica USB potrebbe aver modificato il percorso."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -695,6 +698,16 @@
       "title": "Nodi di propagazione",
       "enable": "Abilita",
       "disable": "Disabilita"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} le interfacce locali richiedono attenzione",
+      "stalePort": "{{name}}: porta seriale {{port}} non trovata",
+      "stalePortHint": "La ricarica USB potrebbe aver modificato il percorso. Aggiornare in → Interfacce Radio, quindi riavviare lo stack.",
+      "offline": "{{name}}: l'interfaccia locale è abilitata ma offline",
+      "offlineHint": "Controllare il cavo, rilasciare la porta da Meshtastic/MeshCore, quindi riavviare lo stack.",
+      "openRadio": "Open Radio",
+      "refreshPorts": "Aggiorna porte",
+      "availablePorts": "Disponibile: {{ports}}"
     }
   },
   "contactGroupsModal": {

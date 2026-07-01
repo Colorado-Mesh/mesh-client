@@ -32,22 +32,56 @@ pub fn resolve_outbound_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
     resolve_stub_sent_via(interfaces)
 }
 
-/// Preserve config `iface_type` when live RNS stats report generic modes (e.g. LoRa).
+fn live_matches_config(live_row: &InterfaceRow, cfg: &InterfaceRow) -> bool {
+    live_row.id == cfg.id || live_row.name == cfg.name
+}
+
+/// Union config with live RNS stats: every configured interface is returned; live rows
+/// overlay status/enabled when names match. Config-only rows (e.g. failed USB open) stay
+/// visible with `status: down`.
 pub fn merge_live_interfaces_with_config(
     config: &[InterfaceRow],
     live: Vec<InterfaceRow>,
 ) -> Vec<InterfaceRow> {
-    live.into_iter()
-        .map(|mut live_row| {
-            if let Some(cfg) = config
-                .iter()
-                .find(|c| c.id == live_row.id || c.name == live_row.name)
-            {
-                live_row.iface_type = cfg.iface_type.clone();
+    let mut merged: Vec<InterfaceRow> = Vec::with_capacity(config.len().max(live.len()));
+
+    for cfg in config {
+        if let Some(mut live_row) = live
+            .iter()
+            .find(|l| live_matches_config(l, cfg))
+            .cloned()
+        {
+            live_row.id = cfg.id.clone();
+            live_row.iface_type = cfg.iface_type.clone();
+            live_row.host = cfg.host.clone();
+            live_row.port = cfg.port;
+            live_row.preset = cfg.preset.clone();
+            live_row.serial_port = cfg.serial_port.clone();
+            live_row.frequency = cfg.frequency;
+            live_row.bandwidth = cfg.bandwidth;
+            live_row.txpower = cfg.txpower;
+            live_row.spreading_factor = cfg.spreading_factor;
+            live_row.coding_rate = cfg.coding_rate;
+            live_row.callsign = cfg.callsign.clone();
+            live_row.id_interval = cfg.id_interval;
+            live_row.mode = cfg.mode.clone();
+            merged.push(live_row);
+        } else {
+            let mut row = cfg.clone();
+            if row.enabled {
+                row.status = "down".into();
             }
-            live_row
-        })
-        .collect()
+            merged.push(row);
+        }
+    }
+
+    for live_row in live {
+        if !config.iter().any(|c| live_matches_config(&live_row, c)) {
+            merged.push(live_row);
+        }
+    }
+
+    merged
 }
 
 /// Resolve transport for a peer destination hash from a path-table interface name.
@@ -150,5 +184,82 @@ mod tests {
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(resolve_outbound_sent_via(&merged), "rf");
+        assert_eq!(merged[0].iface_type, "rnode");
+    }
+
+    fn sample_iface(id: &str, name: &str, iface_type: &str, enabled: bool, status: &str) -> InterfaceRow {
+        InterfaceRow {
+            id: id.into(),
+            name: name.into(),
+            iface_type: iface_type.into(),
+            enabled,
+            status: status.into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+        }
+    }
+
+    #[test]
+    fn merge_live_interfaces_keeps_config_only_rows_as_down() {
+        let config = vec![
+            sample_iface("heltec-v3", "Heltec V3", "rnode", true, "up"),
+            sample_iface("auto", "Default Interface", "auto", true, "up"),
+            sample_iface("tcp", "RNS Testnet", "tcp", true, "up"),
+        ];
+        let live = vec![
+            InterfaceRow {
+                id: "rns-0".into(),
+                name: "Default Interface".into(),
+                iface_type: "Auto".into(),
+                enabled: true,
+                status: "up".into(),
+                host: None,
+                port: None,
+                preset: None,
+                serial_port: None,
+                frequency: None,
+                bandwidth: None,
+                txpower: None,
+                spreading_factor: None,
+                coding_rate: None,
+                callsign: None,
+                id_interval: None,
+                mode: None,
+            },
+            InterfaceRow {
+                id: "rns-1".into(),
+                name: "RNS Testnet".into(),
+                iface_type: "TCP".into(),
+                enabled: true,
+                status: "up".into(),
+                host: None,
+                port: None,
+                preset: None,
+                serial_port: None,
+                frequency: None,
+                bandwidth: None,
+                txpower: None,
+                spreading_factor: None,
+                coding_rate: None,
+                callsign: None,
+                id_interval: None,
+                mode: None,
+            },
+        ];
+        let merged = merge_live_interfaces_with_config(&config, live);
+        assert_eq!(merged.len(), 3);
+        let heltec = merged.iter().find(|r| r.name == "Heltec V3").unwrap();
+        assert_eq!(heltec.status, "down");
+        assert_eq!(heltec.iface_type, "rnode");
     }
 }

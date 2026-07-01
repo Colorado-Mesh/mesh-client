@@ -682,7 +682,10 @@
       "editFailed": "Uložení rozhraní se nezdařilo.",
       "pipeCommand": "Příkaz potrubí",
       "addFailed": "Přidání rozhraní se nezdařilo.",
-      "toggleFailed": "Nepodařilo se změnit stav rozhraní."
+      "toggleFailed": "Nepodařilo se změnit stav rozhraní.",
+      "restartStackHint": "Restartujte zásobník na kartě Připojení, aby se projevily sériové změny rozhraní.",
+      "localOfflineRow": "Místní rozhraní offline — zkontrolujte napětí kabelu a portu a poté restartujte zásobník.",
+      "localOfflineRowStale": "Sériový port {{port}} nebyl nalezen — USB replug mohl změnit cestu."
     },
     "reticulumPeers": {
       "name": "Rovesníci",
@@ -695,6 +698,16 @@
       "title": "Propagační uzly",
       "enable": "Povolit",
       "disable": "Zakázat"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} místní rozhraní vyžadují pozornost",
+      "stalePort": "{{name}}: sériový port {{port}} nenalezen",
+      "stalePortHint": "Replug USB mohl změnit cestu. Aktualizujte v části Radio → Interfaces (Rádiová rozhraní) a poté restartujte zásobník.",
+      "offline": "{{name}}: místní rozhraní je povoleno, ale offline",
+      "offlineHint": "Zkontrolujte kabel, uvolněte port z Meshtastic/MeshCore a restartujte zásobník.",
+      "openRadio": "Otevřít rádio",
+      "refreshPorts": "Obnovit porty",
+      "availablePorts": "Dostupné: {{ports}}"
     }
   },
   "contactGroupsModal": {

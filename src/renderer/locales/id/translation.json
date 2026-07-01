@@ -682,7 +682,10 @@
       "editFailed": "Gagal menyimpan antarmuka.",
       "pipeCommand": "Perintah pipa",
       "addFailed": "Gagal menambahkan antarmuka.",
-      "toggleFailed": "Gagal mengubah status antarmuka."
+      "toggleFailed": "Gagal mengubah status antarmuka.",
+      "restartStackHint": "Mulai ulang tumpukan pada tab Koneksi agar perubahan antarmuka serial dapat diterapkan.",
+      "localOfflineRow": "Antarmuka lokal offline — periksa pertentangan kabel dan port, lalu mulai ulang tumpukan.",
+      "localOfflineRowStale": "Port serial {{port}} tidak ditemukan — Replug USB mungkin telah mengubah jalur."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -695,6 +698,16 @@
       "title": "Node propagasi",
       "enable": "Fungsikan",
       "disable": "Nonaktifkan"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} antarmuka lokal perlu diperhatikan",
+      "stalePort": "{{name}}: port serial {{port}} tidak ditemukan",
+      "stalePortHint": "Replug USB mungkin telah mengubah jalur. Perbarui di Radio → Interface, lalu mulai ulang tumpukan.",
+      "offline": "{{name}}: antarmuka lokal diaktifkan tetapi offline",
+      "offlineHint": "Periksa kabel, lepaskan port dari Meshtastic/MeshCore, lalu mulai ulang tumpukan.",
+      "openRadio": "Buka Radio",
+      "refreshPorts": "Segarkan port",
+      "availablePorts": "Tersedia: {{ports}}"
     }
   },
   "contactGroupsModal": {

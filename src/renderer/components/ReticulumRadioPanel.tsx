@@ -5,6 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import {
+  classifyReticulumLocalInterface,
+  reticulumLocalInterfaceTextClass,
+} from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
@@ -111,6 +116,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
     name: string;
   } | null>(null);
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
+  const [restartStackHint, setRestartStackHint] = useState(false);
   const [pendingImportMode, setPendingImportMode] = useState<'merge' | 'replace'>('merge');
   const [stackSettings, setStackSettings] = useState({
     enable_transport: false,
@@ -121,12 +127,28 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
   const refreshInterfaces = useCallback(async () => {
     if (!sidecarApiReady) return;
     try {
+      invalidateReticulumInterfacesCache();
       const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
         interfaces?: ReticulumInterfaceRow[];
       };
       setInterfaces(body.interfaces ?? []);
     } catch (e) {
       console.debug('[ReticulumRadioPanel] interfaces ' + errLikeToLogString(e));
+    }
+  }, [sidecarApiReady]);
+
+  const refreshSerialPorts = useCallback(async () => {
+    if (!sidecarApiReady) {
+      setSerialPorts([]);
+      return;
+    }
+    try {
+      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/serial/ports')) as {
+        ports?: { path: string; label?: string }[];
+      };
+      setSerialPorts(body.ports ?? []);
+    } catch (e) {
+      console.debug('[ReticulumRadioPanel] serial ports ' + errLikeToLogString(e));
     }
   }, [sidecarApiReady]);
 
@@ -159,6 +181,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
     sidecarEventRef.current = (evt: ReticulumSidecarEvent) => {
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         void refreshInterfaces();
+        void refreshSerialPorts();
       }
       if (
         evt.type === 'peers_updated' ||
@@ -168,7 +191,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         void refreshPeers();
       }
     };
-  }, [refreshInterfaces, refreshPeers]);
+  }, [refreshInterfaces, refreshPeers, refreshSerialPorts]);
 
   useEffect(() => {
     if (!sidecarApiReady) {
@@ -178,7 +201,8 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
     void refreshInterfaces();
     void refreshStackSettings();
     void refreshPeers();
-  }, [sidecarApiReady, refreshInterfaces, refreshStackSettings, refreshPeers]);
+    void refreshSerialPorts();
+  }, [sidecarApiReady, refreshInterfaces, refreshStackSettings, refreshPeers, refreshSerialPorts]);
 
   useEffect(() => {
     if (!sidecarApiReady) return;
@@ -189,13 +213,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         setPresets(presetsBody.presets ?? []);
       })
       .catch(() => {});
-    void window.electronAPI.reticulum
-      .proxyGet('/api/v1/serial/ports')
-      .then((body) => {
-        const portsBody = body as { ports?: { path: string; label?: string }[] };
-        setSerialPorts(portsBody.ports ?? []);
-      })
-      .catch(() => {});
+    void refreshSerialPorts();
     void window.electronAPI.reticulum
       .proxyGet('/api/v1/ble/availability')
       .then((body) => {
@@ -203,7 +221,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         setBleAvailable(Boolean(ble.available));
       })
       .catch(() => {});
-  }, [sidecarApiReady]);
+  }, [sidecarApiReady, refreshSerialPorts]);
 
   const handleExportIdentity = async () => {
     const passphrase = exportPassphrase.trim();
@@ -300,6 +318,9 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.addFailed'));
         return;
       }
+      if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
+        setRestartStackHint(true);
+      }
       await refreshInterfaces();
     } catch (e) {
       // catch-no-log-ok: interface add failure shown via setIdentityError
@@ -355,6 +376,9 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
       if (res?.ok === false) {
         setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.editFailed'));
         return;
+      }
+      if ('serial_port' in patch) {
+        setRestartStackHint(true);
       }
       setEditingInterface(null);
       await refreshInterfaces();
@@ -619,8 +643,14 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
           </ReticulumCollapsibleSection>
 
           <ReticulumCollapsibleSection title={t('connectionPanel.reticulumInterfaces.title')}>
+            {restartStackHint ? (
+              <p className="mb-3 text-xs text-amber-300" role="status">
+                {t('connectionPanel.reticulumInterfaces.restartStackHint')}
+              </p>
+            ) : null}
             <InterfacesSection
               interfaces={interfaces}
+              osSerialPortPaths={serialPorts.map((p) => p.path)}
               ifaceType={ifaceType}
               ifaceHost={ifaceHost}
               ifacePort={ifacePort}
@@ -630,6 +660,9 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
               presets={presets}
               serialPorts={serialPorts}
               bleAvailable={bleAvailable}
+              onRefreshPorts={() => {
+                void refreshSerialPorts();
+              }}
               onIfaceTypeChange={setIfaceType}
               onIfaceHostChange={setIfaceHost}
               onIfacePortChange={setIfacePort}
@@ -912,6 +945,11 @@ function InterfaceEditPanel({
   const [serialPort, setSerialPort] = useState(iface.serial_port ?? '');
   const [preset, setPreset] = useState(iface.preset ?? '');
   const [callsign, setCallsign] = useState(iface.callsign ?? '');
+  const osSerialPaths = serialPorts.map((p) => p.path);
+  const serialPortStale =
+    serialPort.trim().length > 0 &&
+    osSerialPaths.length > 0 &&
+    !osSerialPaths.includes(serialPort.trim());
 
   return (
     <div className="mt-3 rounded border border-amber-700/50 bg-amber-950/10 p-3">
@@ -982,6 +1020,11 @@ function InterfaceEditPanel({
                 />
               )}
             </label>
+            {serialPortStale ? (
+              <p className="text-xs text-amber-300" role="alert">
+                {t('connectionPanel.reticulumLocalInterfaces.stalePortHint')}
+              </p>
+            ) : null}
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.preset')}
               <select
@@ -1048,6 +1091,7 @@ function InterfaceEditPanel({
 
 function InterfacesSection({
   interfaces,
+  osSerialPortPaths,
   ifaceType,
   ifaceHost,
   ifacePort,
@@ -1057,6 +1101,7 @@ function InterfacesSection({
   presets,
   serialPorts,
   bleAvailable,
+  onRefreshPorts,
   onIfaceTypeChange,
   onIfaceHostChange,
   onIfacePortChange,
@@ -1072,6 +1117,7 @@ function InterfacesSection({
   onSaveEdit,
 }: {
   interfaces: ReticulumInterfaceRow[];
+  osSerialPortPaths: string[];
   ifaceType: ReticulumIfaceUiType;
   ifaceHost: string;
   ifacePort: string;
@@ -1081,6 +1127,7 @@ function InterfacesSection({
   presets: { id: string; label: string }[];
   serialPorts: { path: string; label?: string }[];
   bleAvailable: boolean;
+  onRefreshPorts: () => void;
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
   onIfaceHostChange: (v: string) => void;
   onIfacePortChange: (v: string) => void;
@@ -1099,6 +1146,20 @@ function InterfacesSection({
   const showHostPort = ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p';
   const showSerial = ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss';
   const showRnodePreset = ifaceType === 'rnode' || ifaceType === 'rnode_multi';
+
+  const localRowReason = (iface: ReticulumInterfaceRow): string | null => {
+    const health = classifyReticulumLocalInterface(iface, osSerialPortPaths);
+    if (health === 'stale_port') {
+      return t('connectionPanel.reticulumInterfaces.localOfflineRowStale', {
+        port: iface.serial_port ?? '',
+      });
+    }
+    if (health === 'enabled_down') {
+      return t('connectionPanel.reticulumInterfaces.localOfflineRow');
+    }
+    return null;
+  };
+
   return (
     <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
       <h3 className="text-sm font-medium text-gray-200">
@@ -1212,6 +1273,16 @@ function InterfacesSection({
             ) : null}
           </>
         ) : null}
+        {showSerial && serialPorts.length > 0 ? (
+          <button
+            type="button"
+            onClick={onRefreshPorts}
+            className="rounded border border-gray-600 px-2 py-1.5 text-xs text-gray-300 hover:bg-slate-800"
+            aria-label={t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
+          >
+            {t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onAdd}
@@ -1229,49 +1300,60 @@ function InterfacesSection({
         {interfaces.length === 0 ? (
           <li className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</li>
         ) : (
-          interfaces.map((iface) => (
-            <li
-              key={iface.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-700/60 px-2 py-1.5"
-            >
-              <span>
-                {iface.name} ({iface.type}) — {iface.status}
-              </span>
-              <span className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onStartEdit(iface);
-                  }}
-                  className="text-xs text-sky-400 hover:underline"
-                  aria-label={t('connectionPanel.reticulumInterfaces.edit', { name: iface.name })}
-                >
-                  {t('connectionPanel.reticulumInterfaces.edit')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onToggle(iface.id, !iface.enabled);
-                  }}
-                  className="text-xs text-amber-400 hover:underline"
-                >
-                  {iface.enabled
-                    ? t('connectionPanel.reticulumInterfaces.disable')
-                    : t('connectionPanel.reticulumInterfaces.enable')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onDelete(iface.id, iface.name);
-                  }}
-                  className="text-xs text-red-400 hover:underline"
-                  aria-label={t('connectionPanel.reticulumInterfaces.delete', { name: iface.name })}
-                >
-                  {t('connectionPanel.reticulumInterfaces.delete')}
-                </button>
-              </span>
-            </li>
-          ))
+          interfaces.map((iface) => {
+            const rowReason = localRowReason(iface);
+            const rowBorder = rowReason != null ? 'border-red-800/60' : 'border-gray-700/60';
+            return (
+              <li
+                key={iface.id}
+                className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
+              >
+                <span>
+                  <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
+                    {iface.name} ({iface.type}) — {iface.status}
+                  </span>
+                  {rowReason ? (
+                    <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
+                  ) : null}
+                </span>
+                <span className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onStartEdit(iface);
+                    }}
+                    className="text-xs text-sky-400 hover:underline"
+                    aria-label={t('connectionPanel.reticulumInterfaces.edit', { name: iface.name })}
+                  >
+                    {t('connectionPanel.reticulumInterfaces.edit')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggle(iface.id, !iface.enabled);
+                    }}
+                    className="text-xs text-amber-400 hover:underline"
+                  >
+                    {iface.enabled
+                      ? t('connectionPanel.reticulumInterfaces.disable')
+                      : t('connectionPanel.reticulumInterfaces.enable')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDelete(iface.id, iface.name);
+                    }}
+                    className="text-xs text-red-400 hover:underline"
+                    aria-label={t('connectionPanel.reticulumInterfaces.delete', {
+                      name: iface.name,
+                    })}
+                  >
+                    {t('connectionPanel.reticulumInterfaces.delete')}
+                  </button>
+                </span>
+              </li>
+            );
+          })
         )}
       </ul>
       {editingInterface ? (

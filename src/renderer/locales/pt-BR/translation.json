@@ -682,7 +682,10 @@
       "editFailed": "Falha ao salvar a interface.",
       "pipeCommand": "Comando de tubo",
       "addFailed": "Falha ao adicionar interface.",
-      "toggleFailed": "Falha ao alterar o estado da interface."
+      "toggleFailed": "Falha ao alterar o estado da interface.",
+      "restartStackHint": "Reinicie a pilha na guia Conexão para que as alterações da interface serial entrem em vigor.",
+      "localOfflineRow": "Interface local offline — verifique a contenção do cabo e da porta e reinicie a pilha.",
+      "localOfflineRowStale": "Porta serial {{port}} não encontrada — A recarga USB pode ter alterado o caminho."
     },
     "reticulumPeers": {
       "name": "Par",
@@ -695,6 +698,16 @@
       "title": "Nós de propagação",
       "enable": "Ativar",
       "disable": "Desativar"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} interface(s) local (is) precisa (m) de atenção",
+      "stalePort": "{{name}}: porta serial {{port}} não encontrada",
+      "stalePortHint": "O conector USB pode ter alterado o caminho. Atualize em → Interfaces de Rádio e reinicie a pilha.",
+      "offline": "{{name}}: a interface local está ativada, mas offline",
+      "offlineHint": "Verifique o cabo, libere a porta do Meshtastic/MeshCore e reinicie a pilha.",
+      "openRadio": "Open Radio",
+      "refreshPorts": "Atualizar portas",
+      "availablePorts": "Disponível: {{ports}}"
     }
   },
   "contactGroupsModal": {

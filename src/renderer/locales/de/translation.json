@@ -682,7 +682,10 @@
       "editFailed": "Die Benutzeroberfläche konnte nicht gespeichert werden.",
       "pipeCommand": "Rohrbefehl",
       "addFailed": "Schnittstelle konnte nicht hinzugefügt werden.",
-      "toggleFailed": "Fehler beim Ändern des Schnittstellenstatus."
+      "toggleFailed": "Fehler beim Ändern des Schnittstellenstatus.",
+      "restartStackHint": "Starten Sie den Stack auf der Registerkarte Verbindung neu, damit Änderungen an der seriellen Schnittstelle wirksam werden.",
+      "localOfflineRow": "Lokale Schnittstelle offline — Überprüfen Sie den Kabel- und Portkonflikt und starten Sie den Stack neu.",
+      "localOfflineRowStale": "Serielle Schnittstelle {{port}} nicht gefunden — USB-Anschluss hat möglicherweise den Pfad geändert."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -695,6 +698,16 @@
       "title": "Ausbreitungsknoten",
       "enable": "Aktivieren",
       "disable": "Deaktivieren"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} Lokale Schnittstelle(n) müssen beachtet werden",
+      "stalePort": "{{name}}: serielle Schnittstelle {{port}} nicht gefunden",
+      "stalePortHint": "Der USB-Anschluss hat möglicherweise den Pfad geändert. Aktualisieren Sie in den Funkschnittstellen → und starten Sie dann den Stack neu.",
+      "offline": "{{name}}: Lokale Schnittstelle ist aktiviert, aber offline",
+      "offlineHint": "Überprüfen Sie das Kabel, lassen Sie den Anschluss von Meshtastic/MeshCore los und starten Sie den Stack neu.",
+      "openRadio": "Öffne Radio",
+      "refreshPorts": "Ports aktualisieren",
+      "availablePorts": "Verfügbar: {{ports}}"
     }
   },
   "contactGroupsModal": {

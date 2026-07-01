@@ -1,3 +1,8 @@
+import {
+  collectReticulumLocalInterfaceAlerts,
+  isReticulumLocalSerialInterface,
+  type ReticulumLocalInterfaceInput,
+} from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
 
 export interface ReticulumDiagnosticsSnapshot {
@@ -13,12 +18,19 @@ export interface ReticulumDiagnosticsSnapshot {
     type: string;
     enabled: boolean;
     status: string;
+    serial_port?: string | null;
   }[];
+}
+
+export interface ReticulumDiagnosticsBuildOptions {
+  interfaces?: ReticulumLocalInterfaceInput[];
+  osSerialPorts?: string[];
 }
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
 export function buildReticulumDiagnosticRows(
   snapshot: ReticulumDiagnosticsSnapshot,
+  options?: ReticulumDiagnosticsBuildOptions,
 ): DiagnosticRow[] {
   const rows: DiagnosticRow[] = [];
   const now = Date.now();
@@ -48,7 +60,43 @@ export function buildReticulumDiagnosticRows(
     });
   }
 
+  const healthInterfaces = options?.interfaces ?? snapshot.interfaces ?? [];
+  const osSerialPorts = options?.osSerialPorts ?? [];
+  const localAlerts = collectReticulumLocalInterfaceAlerts(healthInterfaces, osSerialPorts);
+  const localAlertIds = new Set(localAlerts.map((a) => a.iface.id));
+
+  for (const alert of localAlerts) {
+    const port = alert.iface.serial_port ?? '';
+    if (alert.reason === 'stale_port') {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, `reticulum/local-stale-port/${alert.iface.id}`),
+        nodeId: homeNodeId,
+        condition: 'reticulum/local-stale-port',
+        cause: `Local interface "${alert.iface.name}" serial port ${port} not found on this system`,
+        severity: 'warning',
+        detectedAt: now,
+      });
+    } else {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, `reticulum/local-offline/${alert.iface.id}`),
+        nodeId: homeNodeId,
+        condition: 'reticulum/local-offline',
+        cause: `Local interface "${alert.iface.name}" is enabled but offline`,
+        severity: 'warning',
+        detectedAt: now,
+      });
+    }
+  }
+
   for (const iface of snapshot.interfaces ?? []) {
+    if (localAlertIds.has(iface.id)) {
+      continue;
+    }
+    if (isReticulumLocalSerialInterface(iface.type)) {
+      continue;
+    }
     if (iface.enabled && iface.status !== 'up') {
       rows.push({
         kind: 'rf',

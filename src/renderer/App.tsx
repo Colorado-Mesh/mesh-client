@@ -2473,6 +2473,15 @@ function AppContent() {
                             onStartReticulumStack={() =>
                               reticulumConnection.connectAutomatic('http')
                             }
+                            onOpenReticulumRadioPanel={() => {
+                              const radioTabIndex = findFilteredTabIndexForPanel(
+                                selectByProtocol(tabsByProtocol, 'reticulum'),
+                                RADIO_TAB_PANEL_INDEX,
+                              );
+                              if (radioTabIndex >= 0) {
+                                setActiveTab(radioTabIndex);
+                              }
+                            }}
                           />
                         </div>
                       </Suspense>

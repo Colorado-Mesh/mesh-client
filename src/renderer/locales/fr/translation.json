@@ -682,7 +682,10 @@
       "editFailed": "Échec de l'enregistrement de l'interface.",
       "pipeCommand": "Commande de tuyau",
       "addFailed": "Échec de l'ajout de l'interface.",
-      "toggleFailed": "Impossible de modifier l'état de l'interface."
+      "toggleFailed": "Impossible de modifier l'état de l'interface.",
+      "restartStackHint": "Redémarrez la pile sur l'onglet Connexion pour que les modifications de l'interface série prennent effet.",
+      "localOfflineRow": "Interface locale hors ligne — vérifiez la contention du câble et du port, puis redémarrez la pile.",
+      "localOfflineRowStale": "Port série {{port}} introuvable — USB replug peut avoir changé le chemin."
     },
     "reticulumPeers": {
       "name": "Pair",
@@ -695,6 +698,16 @@
       "title": "Nœuds de propagation",
       "enable": "Activer",
       "disable": "Désactiver"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} interface(s) locale (s) à prendre en compte",
+      "stalePort": "{{name}} : port série {{port}} introuvable",
+      "stalePortHint": "La prise USB peut avoir changé le chemin. Mettez à jour dans → Interfaces radio, puis redémarrez la pile.",
+      "offline": "{{name}} : l'interface locale est activée mais hors ligne",
+      "offlineHint": "Vérifiez le câble, libérez le port de Meshtastic/MeshCore, puis redémarrez la pile.",
+      "openRadio": "Ouvrir la radio",
+      "refreshPorts": "Ports d'actualisation",
+      "availablePorts": "Disponible : {{ports}}"
     }
   },
   "contactGroupsModal": {

@@ -682,7 +682,10 @@
       "editFailed": "Kan interface niet opslaan.",
       "pipeCommand": "Pijpopdracht",
       "addFailed": "Kan interface niet toevoegen.",
-      "toggleFailed": "Status wijzigen mislukt"
+      "toggleFailed": "Status wijzigen mislukt",
+      "restartStackHint": "Start de stapel opnieuw op het tabblad Verbinding om wijzigingen in de seriële interface van kracht te laten worden.",
+      "localOfflineRow": "Lokale interface offline — controleer de kabel- en poortcontentie en start de stapel opnieuw.",
+      "localOfflineRowStale": "Seriële poort {{port}} niet gevonden — USB-replug heeft mogelijk het pad gewijzigd."
     },
     "reticulumPeers": {
       "name": "Peer",
@@ -695,6 +698,16 @@
       "title": "Propagatieknooppunten",
       "enable": "Activeer",
       "disable": "Onbruikbaar maken"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} lokale interface(s) hebben aandacht nodig",
+      "stalePort": "{{name}}: seriële poort {{port}} niet gevonden",
+      "stalePortHint": "USB-replug heeft mogelijk het pad gewijzigd. Update in Radio → Interfaces en start vervolgens de stapel opnieuw.",
+      "offline": "{{name}}: lokale interface is ingeschakeld, maar offline",
+      "offlineHint": "Controleer de kabel, ontgrendel de poort van Meshtastic/MeshCore en start de stapel opnieuw.",
+      "openRadio": "Open radio",
+      "refreshPorts": "Poorten vernieuwen",
+      "availablePorts": "Beschikbaar: {{ports}}"
     }
   },
   "contactGroupsModal": {

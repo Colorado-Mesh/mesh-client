@@ -65,11 +65,34 @@ export interface ReticulumSidecarInterfaceRow {
   type: string;
   enabled: boolean;
   status: string;
+  serial_port?: string | null;
 }
 
 const RETICULUM_INTERFACES_CACHE_MS = 5_000;
 let cachedReticulumInterfaces: ReticulumSidecarInterfaceRow[] = [];
 let cachedReticulumInterfacesAt = 0;
+
+export function invalidateReticulumInterfacesCache(): void {
+  cachedReticulumInterfacesAt = 0;
+}
+
+/** Fetch OS serial port paths from the sidecar (for local interface health checks). */
+export async function fetchReticulumSerialPorts(): Promise<string[]> {
+  if (!(await isReticulumSidecarRunning())) {
+    return [];
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/serial/ports')) as {
+      ports?: { path: string }[];
+    };
+    return (body.ports ?? []).map((p) => p.path);
+  } catch (e) {
+    if (!isReticulumSidecarExpectedProxyError(e)) {
+      console.debug('[reticulumSidecarReads] serial ports ' + errLikeToLogString(e));
+    }
+    return [];
+  }
+}
 
 /** Fetch configured sidecar interfaces (shared by runtime and radio panel). */
 export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterfaceRow[]> {

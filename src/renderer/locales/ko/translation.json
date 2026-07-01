@@ -682,7 +682,10 @@
       "editFailed": "인터페이스를 저장하지 못했습니다.",
       "pipeCommand": "파이프 명령",
       "addFailed": "인터페이스를 추가하지 못했습니다.",
-      "toggleFailed": "인터페이스 상태를 변경하지 못했습니다."
+      "toggleFailed": "인터페이스 상태를 변경하지 못했습니다.",
+      "restartStackHint": "직렬 인터페이스 변경 사항을 적용하려면 연결 탭에서 스택을 다시 시작하십시오.",
+      "localOfflineRow": "로컬 인터페이스 오프라인 — 케이블 및 포트 경합을 확인한 다음 스택을 다시 시작하십시오.",
+      "localOfflineRowStale": "시리얼 포트 {{port}} 을 (를) 찾을 수 없음 — USB 교체로 경로가 변경되었을 수 있습니다."
     },
     "reticulumPeers": {
       "name": "피어",
@@ -695,6 +698,16 @@
       "title": "전파 노드",
       "enable": "활성화",
       "disable": "비활성화"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} 로컬 인터페이스에 주의가 필요합니다.",
+      "stalePort": "{{name}}: 시리얼 포트 {{port}} 을 (를) 찾을 수 없음",
+      "stalePortHint": "USB 리플러그가 경로를 변경했을 수 있습니다. 라디오 인터페이스에서 → 업데이트한 다음 스택을 다시 시작하십시오.",
+      "offline": "{{name}}: 로컬 인터페이스가 활성화되어 있지만 오프라인 상태임",
+      "offlineHint": "케이블을 확인하고 Meshtastic/MeshCore에서 포트를 분리한 다음 스택을 다시 시작하십시오.",
+      "openRadio": "라디오 열기",
+      "refreshPorts": "포트 새로 고침",
+      "availablePorts": "사용 가능: {{ports}}"
     }
   },
   "contactGroupsModal": {

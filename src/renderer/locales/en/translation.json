@@ -521,6 +521,16 @@
     "reticulumRestartStack": "Restart stack",
     "reticulumAutostart": "Auto-start stack when opening Connection",
     "reticulumStackRunning": "Stack running",
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} local interface(s) need attention",
+      "stalePort": "{{name}}: serial port {{port}} not found",
+      "stalePortHint": "USB replug may have changed the path. Update in Radio → Interfaces, then restart the stack.",
+      "offline": "{{name}}: local interface is enabled but offline",
+      "offlineHint": "Check cable, release port from Meshtastic/MeshCore, then restart the stack.",
+      "openRadio": "Open Radio",
+      "refreshPorts": "Refresh ports",
+      "availablePorts": "Available: {{ports}}"
+    },
     "reticulumNetworkTitle": "Network interfaces",
     "reticulumNetworkEmpty": "No interfaces reported yet.",
     "reticulumNetworkUnknown": "Interface",
@@ -571,7 +581,10 @@
       "name": "Name",
       "callsign": "Callsign",
       "pipeCommand": "Pipe command",
-      "editFailed": "Failed to save interface."
+      "editFailed": "Failed to save interface.",
+      "restartStackHint": "Restart the stack on the Connection tab for serial interface changes to take effect.",
+      "localOfflineRow": "Local interface offline — check cable and port contention, then restart the stack.",
+      "localOfflineRowStale": "Serial port {{port}} not found — USB replug may have changed the path."
     },
     "reticulumPeers": {
       "name": "Peer",
