@@ -91,8 +91,16 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
   const [maxHops, setMaxHops] = useState<number | null>(2);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-  const { transform, resetView, onWheel, onPointerDown, onPointerMove, onPointerUp } =
+  const { transform, resetView, bindSvgRef, onPointerDown, onPointerMove, onPointerUp } =
     useSvgPanZoom();
+
+  const setSvgRef = useCallback(
+    (el: SVGSVGElement | null) => {
+      svgRef.current = el;
+      bindSvgRef(el);
+    },
+    [bindSvgRef],
+  );
 
   const publishSnapshotFromSim = useCallback(() => {
     const renderNodes = simRef.current
@@ -322,11 +330,10 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
             </div>
           ) : null}
           <svg
-            ref={svgRef}
+            ref={setSvgRef}
             className="h-full w-full cursor-grab active:cursor-grabbing"
             aria-label={t('peerGraph.ariaLabel')}
             role="img"
-            onWheel={onWheel}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}

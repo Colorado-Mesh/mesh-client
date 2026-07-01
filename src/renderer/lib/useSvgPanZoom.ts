@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface SvgPanZoomView {
   scale: number;
@@ -9,9 +9,17 @@ export interface SvgPanZoomView {
 const MIN_SCALE = 0.35;
 const MAX_SCALE = 3;
 const ZOOM_SENSITIVITY = 0.0012;
+const DEFAULT_VIEW: SvgPanZoomView = { scale: 1, x: 0, y: 0 };
 
-export function useSvgPanZoom(initial: SvgPanZoomView = { scale: 1, x: 0, y: 0 }) {
-  const [view, setView] = useState<SvgPanZoomView>(initial);
+export function useSvgPanZoom(initial: SvgPanZoomView = DEFAULT_VIEW) {
+  const initialRef = useRef(initial);
+
+  useEffect(() => {
+    initialRef.current = initial;
+  }, [initial]);
+
+  const [view, setView] = useState<SvgPanZoomView>(() => ({ ...initial }));
+  const elementRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; active: boolean }>({
     x: 0,
     y: 0,
@@ -19,12 +27,14 @@ export function useSvgPanZoom(initial: SvgPanZoomView = { scale: 1, x: 0, y: 0 }
   });
 
   const resetView = useCallback(() => {
-    setView(initial);
-  }, [initial]);
+    setView({ ...initialRef.current });
+  }, []);
 
-  const onWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
+    const el = elementRef.current;
+    if (!el) return;
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
     const delta = -e.deltaY * ZOOM_SENSITIVITY;
@@ -38,6 +48,25 @@ export function useSvgPanZoom(initial: SvgPanZoomView = { scale: 1, x: 0, y: 0 }
       };
     });
   }, []);
+
+  const bindSvgRef = useCallback(
+    (el: SVGSVGElement | null) => {
+      if (elementRef.current) {
+        elementRef.current.removeEventListener('wheel', handleWheel);
+      }
+      elementRef.current = el;
+      if (el) {
+        el.addEventListener('wheel', handleWheel, { passive: false });
+      }
+    },
+    [handleWheel],
+  );
+
+  useEffect(() => {
+    return () => {
+      elementRef.current?.removeEventListener('wheel', handleWheel);
+    };
+  }, [handleWheel]);
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
@@ -64,7 +93,7 @@ export function useSvgPanZoom(initial: SvgPanZoomView = { scale: 1, x: 0, y: 0 }
     view,
     transform,
     resetView,
-    onWheel,
+    bindSvgRef,
     onPointerDown,
     onPointerMove,
     onPointerUp,

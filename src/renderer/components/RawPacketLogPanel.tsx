@@ -36,7 +36,6 @@ import {
 } from '../lib/nodeLongNameOrHex';
 import {
   type MeshtasticRawPacketEntry,
-  rawPacketContentKey,
   rawPacketVirtualizerKey,
   type ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
@@ -439,7 +438,7 @@ export default function RawPacketLogPanel(props: Props) {
   const floodScopeHashtag = variant === 'meshcore' ? props.floodScopeHashtag : undefined;
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
-  const [expandedContentKey, setExpandedContentKey] = useState<string | null>(null);
+  const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [pausedAtCount, setPausedAtCount] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -449,8 +448,8 @@ export default function RawPacketLogPanel(props: Props) {
   const unreadStartIndexRef = useRef(-1);
   const anchorIndexRef = useRef(0);
   const prevFilteredLengthRef = useRef(0);
-  const expandedContentKeyRef = useRef<string | null>(null);
-  expandedContentKeyRef.current = expandedContentKey;
+  const expandedRowKeyRef = useRef<string | null>(null);
+  expandedRowKeyRef.current = expandedRowKey;
 
   const pendingWhilePaused = isPaused ? Math.max(0, packets.length - pausedAtCount) : 0;
 
@@ -514,9 +513,11 @@ export default function RawPacketLogPanel(props: Props) {
   }, [packets, pausedAtCount, isPaused, filter, variant, getNodeLabel]);
 
   const expandedIndex = useMemo(() => {
-    if (!expandedContentKey) return -1;
-    return filtered.findIndex((row) => rawPacketContentKey(row.ts, row.raw) === expandedContentKey);
-  }, [filtered, expandedContentKey]);
+    if (!expandedRowKey) return -1;
+    return filtered.findIndex(
+      (row, index) => rawPacketVirtualizerKey(row.ts, row.raw, index) === expandedRowKey,
+    );
+  }, [filtered, expandedRowKey]);
 
   const getScrollElement = useCallback(() => scrollRef.current, []);
   const estimateSize = useCallback(
@@ -548,7 +549,7 @@ export default function RawPacketLogPanel(props: Props) {
   virtualizerRef.current = virtualizer;
 
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, delta, instance) => {
-    if (expandedContentKeyRef.current) return false;
+    if (expandedRowKeyRef.current) return false;
     return createChatScrollAdjustPredicate({
       unreadStartIndexRef,
       isPinnedToBottomRef,
@@ -602,7 +603,7 @@ export default function RawPacketLogPanel(props: Props) {
 
   // Follow latest when pinned; preserve anchor row when user scrolled up to inspect history.
   useEffect(() => {
-    if (isPaused || expandedContentKey) return;
+    if (isPaused || expandedRowKey) return;
     const prevLen = prevFilteredLengthRef.current;
     prevFilteredLengthRef.current = filtered.length;
     if (filtered.length <= prevLen) return;
@@ -613,10 +614,10 @@ export default function RawPacketLogPanel(props: Props) {
     }
 
     virtualizerRef.current.scrollToIndex(anchorIndexRef.current, { align: 'start' });
-  }, [filtered.length, isPaused, expandedContentKey]);
+  }, [filtered.length, isPaused, expandedRowKey]);
 
   const handleClear = useCallback(() => {
-    setExpandedContentKey(null);
+    setExpandedRowKey(null);
     setIsPaused(false);
     setPausedAtCount(0);
     onClear();
@@ -644,7 +645,7 @@ export default function RawPacketLogPanel(props: Props) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
-            setExpandedContentKey(null);
+            setExpandedRowKey(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
           className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
@@ -707,8 +708,8 @@ export default function RawPacketLogPanel(props: Props) {
             <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
               {virtualizer.getVirtualItems().map((vi) => {
                 const row = filtered[vi.index];
-                const rowContentKey = row ? rawPacketContentKey(row.ts, row.raw) : null;
-                const isExpanded = rowContentKey != null && rowContentKey === expandedContentKey;
+                const rowKey = row ? rawPacketVirtualizerKey(row.ts, row.raw, vi.index) : null;
+                const isExpanded = rowKey != null && rowKey === expandedRowKey;
                 const hexRaw =
                   variant === 'meshcore'
                     ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
@@ -723,10 +724,10 @@ export default function RawPacketLogPanel(props: Props) {
                       : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
                 const toggleExpand = () => {
-                  if (!isExpanded && rowContentKey) {
+                  if (!isExpanded && rowKey) {
                     isPinnedToBottomRef.current = false;
                   }
-                  setExpandedContentKey(isExpanded || !rowContentKey ? null : rowContentKey);
+                  setExpandedRowKey(isExpanded || !rowKey ? null : rowKey);
                 };
 
                 return (
