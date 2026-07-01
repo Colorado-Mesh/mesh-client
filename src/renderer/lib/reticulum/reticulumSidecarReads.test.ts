@@ -17,6 +17,7 @@ vi.stubGlobal('window', {
 
 import {
   fetchReticulumIdentityStatus,
+  fetchReticulumInterfaces,
   formatReticulumPeerProbeToast,
   isReticulumSidecar404Error,
   isReticulumSidecarNotRunningError,
@@ -58,6 +59,16 @@ describe('reticulumSidecarReads', () => {
       lxmfHash: null,
     });
     expect(proxyGet).not.toHaveBeenCalled();
+  });
+
+  it('fetchReticulumInterfaces caches results for a short interval', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValue({
+      interfaces: [{ id: '1', name: 'tcp', type: 'tcp', enabled: true, status: 'up' }],
+    });
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+    await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
+    expect(proxyGet).toHaveBeenCalledTimes(1);
   });
 
   it('requestReticulumPeerPath parses ok response', async () => {

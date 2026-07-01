@@ -23,7 +23,7 @@ vi.stubGlobal('window', {
   },
 });
 
-import { useNomadNetworkStore } from './nomadNetworkStore';
+import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
 
 describe('nomadNetworkStore', () => {
   beforeEach(() => {
@@ -32,6 +32,7 @@ describe('nomadNetworkStore', () => {
     proxyPost.mockReset();
     fetchReticulumInterfaces.mockReset();
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    resetNomadEgressCacheForTests();
     useNomadNetworkStore.setState({
       nodes: new Map(),
       lastRefreshAt: null,

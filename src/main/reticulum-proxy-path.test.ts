@@ -62,4 +62,11 @@ describe('reticulumProxyGetTimeoutMs', () => {
   it('uses default timeout for other GET routes', () => {
     expect(reticulumProxyGetTimeoutMs('/api/v1/nomadnetwork/nodes')).toBe(10_000);
   });
+
+  it('uses longer timeout for transport query routes', () => {
+    expect(reticulumProxyGetTimeoutMs('/api/v1/peers')).toBe(30_000);
+    expect(reticulumProxyGetTimeoutMs('/api/v1/interfaces')).toBe(30_000);
+    expect(reticulumProxyGetTimeoutMs('/api/v1/topology')).toBe(30_000);
+    expect(reticulumProxyGetTimeoutMs('/api/v1/packets?limit=500')).toBe(30_000);
+  });
 });

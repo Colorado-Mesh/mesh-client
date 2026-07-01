@@ -60,19 +60,38 @@ export interface ReticulumSidecarInterfaceRow {
   status: string;
 }
 
+const RETICULUM_INTERFACES_CACHE_MS = 5_000;
+let cachedReticulumInterfaces: ReticulumSidecarInterfaceRow[] = [];
+let cachedReticulumInterfacesAt = 0;
+
 /** Fetch configured sidecar interfaces (shared by runtime and radio panel). */
 export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterfaceRow[]> {
   if (!(await isReticulumSidecarRunning())) {
+    cachedReticulumInterfaces = [];
+    cachedReticulumInterfacesAt = 0;
     return [];
+  }
+  const now = Date.now();
+  if (
+    cachedReticulumInterfaces.length > 0 &&
+    now - cachedReticulumInterfacesAt < RETICULUM_INTERFACES_CACHE_MS
+  ) {
+    return cachedReticulumInterfaces;
   }
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
       interfaces?: ReticulumSidecarInterfaceRow[];
     };
-    return body.interfaces ?? [];
+    const interfaces = body.interfaces ?? [];
+    cachedReticulumInterfaces = interfaces;
+    cachedReticulumInterfacesAt = now;
+    return interfaces;
   } catch (e) {
     if (!isReticulumSidecarExpectedProxyError(e)) {
       console.debug('[reticulumSidecarReads] interfaces ' + errLikeToLogString(e));
+    }
+    if (cachedReticulumInterfaces.length > 0) {
+      return cachedReticulumInterfaces;
     }
     return [];
   }

@@ -35,6 +35,10 @@ use super::via::{
 };
 use lxmf_outbound::LxmfOutboundDriver;
 
+/// Cap blocking transport control queries so HTTP handlers return cached state
+/// before the Electron IPC proxy GET timeout (10s default).
+const TRANSPORT_QUERY_TIMEOUT: Duration = Duration::from_secs(8);
+
 pub struct LiveBridge {
     config_dir: PathBuf,
     handle: reticulum::ReticulumHandle,
@@ -271,10 +275,30 @@ impl LiveBridge {
         }
     }
 
+    async fn query_control_timed(
+        &self,
+        query: TransportQuery,
+    ) -> Option<TransportQueryResponse> {
+        match tokio::time::timeout(
+            TRANSPORT_QUERY_TIMEOUT,
+            self.handle.query_control(query),
+        )
+        .await
+        {
+            Ok(resp) => resp,
+            Err(_) => {
+                tracing::debug!(
+                    "transport control query timed out after {:?}",
+                    TRANSPORT_QUERY_TIMEOUT
+                );
+                None
+            }
+        }
+    }
+
     async fn hops_to_destination(&self, hash_hex: &str) -> Option<u8> {
         let resp = self
-            .handle
-            .query_control(TransportQuery::GetPathTable)
+            .query_control_timed(TransportQuery::GetPathTable)
             .await?;
         let TransportQueryResponse::PathTable(entries) = resp else {
             return None;
@@ -344,23 +368,32 @@ impl LiveBridge {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             loop {
                 interval.tick().await;
-                let path_entries = if let Some(TransportQueryResponse::PathTable(entries)) = handle
-                    .query_control(TransportQuery::GetPathTable)
-                    .await
+                let path_entries = match tokio::time::timeout(
+                    TRANSPORT_QUERY_TIMEOUT,
+                    handle.query_control(TransportQuery::GetPathTable),
+                )
+                .await
                 {
-                    if let Ok(mut cache) = peer_via_cache.lock() {
-                        cache.clear();
-                        for entry in &entries {
-                            let key = hex::encode(entry.hash);
-                            cache.insert(key, entry.interface.clone());
+                    Ok(Some(TransportQueryResponse::PathTable(entries))) => {
+                        if let Ok(mut cache) = peer_via_cache.lock() {
+                            cache.clear();
+                            for entry in &entries {
+                                let key = hex::encode(entry.hash);
+                                cache.insert(key, entry.interface.clone());
+                            }
                         }
+                        entries
+                            .iter()
+                            .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+                            .collect::<Vec<_>>()
                     }
-                    entries
-                        .iter()
-                        .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
-                        .collect::<Vec<_>>()
-                } else {
-                    Vec::new()
+                    _ => {
+                        tracing::debug!(
+                            "maintenance path table query timed out after {:?}",
+                            TRANSPORT_QUERY_TIMEOUT
+                        );
+                        Vec::new()
+                    }
                 };
                 let mut router = router.lock().await;
                 if let Ok(mut driver) = outbound.lock() {
@@ -382,11 +415,11 @@ impl LiveBridge {
     pub async fn fetch_interfaces(&self) -> Result<Vec<InterfaceRow>, String> {
         let config_rows = super::config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
         let resp = self
-            .handle
-            .query_control(TransportQuery::GetInterfaceStats)
+            .query_control_timed(TransportQuery::GetInterfaceStats)
             .await;
         let Some(TransportQueryResponse::InterfaceStats(stats)) = resp else {
-            return Ok(vec![]);
+            tracing::debug!("live fetch_interfaces unavailable, using config rows");
+            return Ok(config_rows);
         };
         let live_rows: Vec<InterfaceRow> = stats
             .iter()
@@ -416,11 +449,10 @@ impl LiveBridge {
 
     pub async fn fetch_peers(&self) -> Result<Vec<PeerRow>, String> {
         let resp = self
-            .handle
-            .query_control(TransportQuery::GetPathTable)
+            .query_control_timed(TransportQuery::GetPathTable)
             .await;
         let Some(TransportQueryResponse::PathTable(entries)) = resp else {
-            return Err("path table query unavailable".into());
+            return Err("path table query timed out or unavailable".into());
         };
         if let Ok(mut cache) = self.peer_via_cache.lock() {
             cache.clear();

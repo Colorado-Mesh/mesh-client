@@ -22,14 +22,16 @@ function isExpectedReticulumProxyError(message: string): boolean {
     lower.includes('not running') ||
     message.includes('404') ||
     lower.includes('fetch failed') ||
-    lower.includes('aborted')
+    lower.includes('aborted') ||
+    lower.includes('timeout')
   );
 }
 
-function logReticulumProxyFailure(method: string, err: unknown): void {
+function logReticulumProxyFailure(method: string, err: unknown, apiPath?: string): void {
   const message = err instanceof Error ? err.message : String(err);
   const log = isExpectedReticulumProxyError(message) ? console.debug : console.error;
-  log(`[ReticulumIPC] ${method} failed:`, sanitizeLogMessage(message));
+  const pathSuffix = apiPath ? ` path=${apiPath}` : '';
+  log(`[ReticulumIPC] ${method} failed${pathSuffix}:`, sanitizeLogMessage(message));
 }
 
 /** Register Reticulum sidecar IPC handlers (`reticulum:*`). */
@@ -64,7 +66,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyGet(apiPath);
     } catch (err) {
-      logReticulumProxyFailure('proxyGet', err);
+      logReticulumProxyFailure('proxyGet', err, apiPath);
       throw err;
     }
   });

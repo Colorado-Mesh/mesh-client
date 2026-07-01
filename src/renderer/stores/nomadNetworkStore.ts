@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import {
+  resolveReticulumOutboundViaFromInterfaces,
+  type ReticulumVia,
+} from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   fetchReticulumInterfaces,
   isReticulumSidecar404Error,
@@ -9,6 +12,30 @@ import {
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { NomadFileResponse, NomadNodeRow, NomadPageResponse } from '@/shared/nomad-types';
+
+const NOMAD_EGRESS_CACHE_MS = 60_000;
+
+let cachedNomadEgress: ReticulumVia = 'network';
+let cachedNomadEgressAt = 0;
+
+async function resolveNomadEgress(): Promise<ReticulumVia> {
+  if (Date.now() - cachedNomadEgressAt < NOMAD_EGRESS_CACHE_MS) {
+    return cachedNomadEgress;
+  }
+  const interfaces = await fetchReticulumInterfaces();
+  cachedNomadEgress = resolveReticulumOutboundViaFromInterfaces(interfaces);
+  cachedNomadEgressAt = Date.now();
+  return cachedNomadEgress;
+}
+
+function invalidateNomadEgressCache(): void {
+  cachedNomadEgressAt = 0;
+}
+
+/** @internal test helper */
+export function resetNomadEgressCacheForTests(): void {
+  invalidateNomadEgressCache();
+}
 
 interface NomadNetworkStoreState {
   nodes: Map<string, NomadNodeRow>;
@@ -37,6 +64,8 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
         map.set(node.destination_hash.toLowerCase(), node);
       }
       set({ nodes: map, lastRefreshAt: Date.now(), nomadApiAvailable: true });
+      invalidateNomadEgressCache();
+      void resolveNomadEgress();
     } catch (e) {
       if (isReticulumSidecar404Error(e)) {
         set({ nomadApiAvailable: false });
@@ -51,8 +80,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       return { ok: false, error: 'sidecar_not_running' };
     }
     try {
-      const interfaces = await fetchReticulumInterfaces();
-      const egress = resolveReticulumOutboundViaFromInterfaces(interfaces);
+      const egress = await resolveNomadEgress();
       const node = get().nodes.get(hash.toLowerCase());
       const hops = node?.hops ?? 8;
       const qs = new URLSearchParams({
@@ -75,8 +103,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       return { ok: false, error: 'sidecar_not_running' };
     }
     try {
-      const interfaces = await fetchReticulumInterfaces();
-      const egress = resolveReticulumOutboundViaFromInterfaces(interfaces);
+      const egress = await resolveNomadEgress();
       const node = get().nodes.get(hash.toLowerCase());
       const hops = node?.hops ?? 8;
       const qs = new URLSearchParams({
