@@ -18,20 +18,27 @@ import {
   MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
-import { createStableChatMeasureElement } from '../lib/chatScrollUtils';
+import {
+  createStableChatMeasureElement,
+  VIRTUALIZER_SCROLL_END_THRESHOLD,
+} from '../lib/chatScrollUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
   formatMeshtasticRawPacketExpandDebugLine,
   parseMeshtasticRawPacketExpand,
 } from '../lib/meshtastic/meshtasticRawPacketExpand';
-import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
+import {
+  meshcoreRawPacketSenderColumnText,
+  reticulumDestinationColumnText,
+} from '../lib/nodeLongNameOrHex';
 import {
   type MeshtasticRawPacketEntry,
   rawPacketContentKey,
   rawPacketVirtualizerKey,
   type ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
+import { registerReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 
 const ROUTE_LABEL: Record<string, string> = {
@@ -313,8 +320,19 @@ function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
   );
 }
 
-function ReticulumExpandedDetails({ p }: { p: ReticulumRawPacketEntry }) {
+function ReticulumExpandedDetails({
+  p,
+  getNodeLabel,
+}: {
+  p: ReticulumRawPacketEntry;
+  getNodeLabel: (nodeId: number) => string;
+}) {
   const { t } = useTranslation();
+  const destinationLabel = reticulumDestinationColumnText(
+    p.destinationHash,
+    getNodeLabel,
+    reticulumHashToNodeId,
+  );
   return (
     <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
       <p>
@@ -334,7 +352,7 @@ function ReticulumExpandedDetails({ p }: { p: ReticulumRawPacketEntry }) {
       {p.destinationHash ? (
         <p>
           <span className="text-muted">{t('rawPacketLog.reticulum.destination')}:</span>{' '}
-          {p.destinationHash.slice(0, 16)}
+          {destinationLabel ?? p.destinationHash.slice(0, 16)}
         </p>
       ) : null}
       {(p.rssi != null || p.snr != null) && (
@@ -348,11 +366,22 @@ function ReticulumExpandedDetails({ p }: { p: ReticulumRawPacketEntry }) {
   );
 }
 
-function ReticulumRow({ p }: { p: ReticulumRawPacketEntry }) {
+function ReticulumRow({
+  p,
+  getNodeLabel,
+}: {
+  p: ReticulumRawPacketEntry;
+  getNodeLabel: (nodeId: number) => string;
+}) {
   const { t } = useTranslation();
   const typeLabel = formatReticulumWireEnumLabel(p.packetType);
   const dirLabel =
     p.direction === 'tx' ? t('rawPacketLog.reticulum.tx') : t('rawPacketLog.reticulum.rx');
+  const destinationLabel = reticulumDestinationColumnText(
+    p.destinationHash,
+    getNodeLabel,
+    reticulumHashToNodeId,
+  );
   return (
     <>
       <span className="text-muted w-16 shrink-0">{formatTs(p.ts)}</span>
@@ -367,7 +396,7 @@ function ReticulumRow({ p }: { p: ReticulumRawPacketEntry }) {
       </span>
       <span className="min-w-0 flex-1 truncate text-gray-200">
         {typeLabel} · {p.interfaceName}
-        {p.destinationHash ? ` · ${p.destinationHash.slice(0, 8)}` : ''}
+        {destinationLabel ? ` · ${destinationLabel}` : ''}
       </span>
     </>
   );
@@ -408,7 +437,9 @@ export default function RawPacketLogPanel(props: Props) {
   const [filter, setFilter] = useState('');
   const [expandedContentKey, setExpandedContentKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const atBottomRef = useRef(true);
+  const isPinnedToBottomRef = useRef(true);
+  const expandedContentKeyRef = useRef<string | null>(null);
+  expandedContentKeyRef.current = expandedContentKey;
 
   const filtered = useMemo(() => {
     if (!filter.trim()) return packets;
@@ -431,14 +462,27 @@ export default function RawPacketLogPanel(props: Props) {
       );
     }
     if (variant === 'reticulum') {
-      return packets.filter(
-        (p) =>
+      return packets.filter((p) => {
+        const destinationLabel = reticulumDestinationColumnText(
+          p.destinationHash,
+          getNodeLabel,
+          reticulumHashToNodeId,
+        );
+        if (p.destinationHash) {
+          registerReticulumDestinationHash(
+            reticulumHashToNodeId(p.destinationHash),
+            p.destinationHash,
+          );
+        }
+        return (
           p.interfaceName.toLowerCase().includes(f) ||
           (p.packetType ?? '').toLowerCase().includes(f) ||
           (p.destinationHash ?? '').toLowerCase().includes(f) ||
+          (destinationLabel ?? '').toLowerCase().includes(f) ||
           p.direction.includes(f) ||
-          toHex(p.raw).includes(f),
-      );
+          toHex(p.raw).includes(f)
+        );
+      });
     }
     return packets.filter(
       (p) =>
@@ -471,6 +515,9 @@ export default function RawPacketLogPanel(props: Props) {
     estimateSize,
     measureElement,
     overscan: 12,
+    anchorTo: 'end',
+    followOnAppend: true,
+    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
     getItemKey: (index) => {
       const row = filtered[index];
       if (!row) return `raw-slot-${index}`;
@@ -478,16 +525,22 @@ export default function RawPacketLogPanel(props: Props) {
     },
   });
 
+  const virtualizerRef = useRef(virtualizer);
+  virtualizerRef.current = virtualizer;
+
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
     if (instance.scrollDirection === 'backward') return false;
-    if (!atBottomRef.current) return false;
+    if (expandedContentKeyRef.current) return false;
+    if (!isPinnedToBottomRef.current) return false;
     return instance.isAtEnd();
   };
 
   const onScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    isPinnedToBottomRef.current = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
+  }, []);
+
+  const unpinScroll = useCallback(() => {
+    isPinnedToBottomRef.current = false;
   }, []);
 
   const handleClear = useCallback(() => {
@@ -546,6 +599,8 @@ export default function RawPacketLogPanel(props: Props) {
         <div
           ref={scrollRef}
           onScroll={onScroll}
+          onPointerDown={unpinScroll}
+          onWheel={unpinScroll}
           className="min-h-0 flex-1 overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
           role="log"
           aria-live="polite"
@@ -570,6 +625,9 @@ export default function RawPacketLogPanel(props: Props) {
                     : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
               const toggleExpand = () => {
+                if (!isExpanded && rowContentKey) {
+                  isPinnedToBottomRef.current = false;
+                }
                 setExpandedContentKey(isExpanded || !rowContentKey ? null : rowContentKey);
               };
 
@@ -594,7 +652,10 @@ export default function RawPacketLogPanel(props: Props) {
                           onNodeClick={onNodeClick}
                         />
                       ) : variant === 'reticulum' ? (
-                        <ReticulumRow p={(filtered as ReticulumRawPacketEntry[])[vi.index]} />
+                        <ReticulumRow
+                          p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
+                          getNodeLabel={getNodeLabel}
+                        />
                       ) : (
                         <MeshtasticRow
                           p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
@@ -621,6 +682,7 @@ export default function RawPacketLogPanel(props: Props) {
                       {variant === 'reticulum' && (
                         <ReticulumExpandedDetails
                           p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
+                          getNodeLabel={getNodeLabel}
                         />
                       )}
                       <p className="text-muted mb-1 text-[10px]">
