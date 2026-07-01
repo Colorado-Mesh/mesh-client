@@ -1925,7 +1925,16 @@
     "me": "Dit onderdeel",
     "directLink": "Direct (0 hops)",
     "relayLink": "Via relais (1 hop)",
-    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (niet-verbonden knooppunten verborgen)"
+    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (niet-verbonden knooppunten verborgen)",
+    "noConnectedNodes": "Geen verbonden peers om weer te geven — pas filters aan of wacht op netwerkverkeer.",
+    "meShort": "Jij",
+    "relayHub": "Direct relais",
+    "relayCount": "{{count}} relaishubs",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Toon collega's op afstand",
+    "maxHopsFilter": "Max hops",
+    "maxHopsAll": "Alle hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Collega's",

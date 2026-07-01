@@ -1916,6 +1916,7 @@
   "peerGraph": {
     "title": "Peer Communication Graph",
     "noNodes": "No nodes observed yet",
+    "noConnectedNodes": "No connected peers to display — adjust filters or wait for network traffic.",
     "nodeCount": "{{count}} nodes",
     "edgeCount": "{{count}} links",
     "ariaLabel": "Peer communication network graph",
@@ -1923,9 +1924,17 @@
     "warn": "Marginal signal",
     "poor": "Poor signal",
     "me": "This node",
-    "directLink": "Direct (0 hops)",
-    "relayLink": "Via relay (1 hop)",
-    "hiddenCount": "Showing {{shown}} of {{total}} nodes (unconnected nodes hidden)"
+    "meShort": "You",
+    "relayHub": "Direct relay",
+    "relayCount": "{{count}} relay hubs",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Show distant peers",
+    "maxHopsFilter": "Max hops",
+    "maxHopsAll": "All hops",
+    "maxHopsOption": "{{count}} hops",
+    "directLink": "Direct link",
+    "relayLink": "Via relay",
+    "hiddenCount": "Showing {{shown}} of {{total}} nodes (distant peers hidden)"
   },
   "peerListPanel": {
     "heading": "Peers",

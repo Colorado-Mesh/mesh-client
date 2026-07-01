@@ -1925,7 +1925,16 @@
     "me": "Questo nodo",
     "directLink": "Diretto (0 luppoli)",
     "relayLink": "Tramite relè (1 hop)",
-    "hiddenCount": "Mostra {{shown}} di {{total}} nodi (nodi non connessi nascosti)"
+    "hiddenCount": "Mostra {{shown}} di {{total}} nodi (nodi non connessi nascosti)",
+    "noConnectedNodes": "Nessun peer connesso da visualizzare: regola i filtri o attendi il traffico di rete.",
+    "meShort": "Tu",
+    "relayHub": "Relè diretto",
+    "relayCount": "Hub relè {{count}}",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Mostra colleghi distanti",
+    "maxHopsFilter": "Max hops",
+    "maxHopsAll": "Tutti gli hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Compagni",

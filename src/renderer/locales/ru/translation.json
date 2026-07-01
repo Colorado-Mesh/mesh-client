@@ -1925,7 +1925,16 @@
     "me": "Этот узел",
     "directLink": "Прямой (0 прыжков)",
     "relayLink": "Через реле (1 переход)",
-    "hiddenCount": "Отображение {{shown}} из {{total}} узлов (несвязанные узлы скрыты)"
+    "hiddenCount": "Отображение {{shown}} из {{total}} узлов (несвязанные узлы скрыты)",
+    "noConnectedNodes": "Нет подключенных одноранговых узлов для отображения — настройте фильтры или дождитесь сетевого трафика.",
+    "meShort": "Вы",
+    "relayHub": "Прямое реле",
+    "relayCount": "{{count}} ступицы реле",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Показать удаленных коллег",
+    "maxHopsFilter": "Макс. hops",
+    "maxHopsAll": "Все hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Равные наставники",

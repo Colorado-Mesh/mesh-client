@@ -1925,7 +1925,16 @@
     "me": "Ten węzeł",
     "directLink": "Bezpośredni (0 przeskoków)",
     "relayLink": "Przez przekaźnik (1 przeskok)",
-    "hiddenCount": "Wyświetlanie {{shown}} z węzłów {{total}} (niepołączone węzły ukryte)"
+    "hiddenCount": "Wyświetlanie {{shown}} z węzłów {{total}} (niepołączone węzły ukryte)",
+    "noConnectedNodes": "Brak połączonych partnerów do wyświetlenia — dostosuj filtry lub poczekaj na ruch sieciowy.",
+    "meShort": "Możesz pobrać",
+    "relayHub": "Przekaźnik bezpośredni",
+    "relayCount": "Koncentratory przekaźników {{count}}",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Pokaż odległych rówieśników",
+    "maxHopsFilter": "Maks. hops",
+    "maxHopsAll": "Wszystkie hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Partnerzy",

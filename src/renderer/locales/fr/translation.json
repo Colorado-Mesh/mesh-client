@@ -1925,7 +1925,16 @@
     "me": "Ce nœud",
     "directLink": "Direct (0 saut)",
     "relayLink": "Par relais (1 saut)",
-    "hiddenCount": "Affichage de {{shown}} sur {{total}} nœuds (nœuds non connectés masqués)"
+    "hiddenCount": "Affichage de {{shown}} sur {{total}} nœuds (nœuds non connectés masqués)",
+    "noConnectedNodes": "Aucun homologue connecté à afficher — ajustez les filtres ou attendez le trafic réseau.",
+    "meShort": "pour vous",
+    "relayHub": "Relais direct",
+    "relayCount": "{{count}} hubs relais",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Afficher les pairs distants",
+    "maxHopsFilter": "Sauts max",
+    "maxHopsAll": "Tous les sauts",
+    "maxHopsOption": "{{count}} sauts"
   },
   "peerListPanel": {
     "heading": "Pairs",

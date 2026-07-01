@@ -1925,7 +1925,16 @@
     "me": "Tento uzel",
     "directLink": "Přímý (0 chmelů)",
     "relayLink": "Přes relé (1 hop)",
-    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (skryté nespojené uzly)"
+    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (skryté nespojené uzly)",
+    "noConnectedNodes": "Žádné připojené peery k zobrazení — upravte filtry nebo počkejte na síťový provoz.",
+    "meShort": "Vy",
+    "relayHub": "Přímé relé",
+    "relayCount": "{{count}} reléové rozbočovače",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Zobrazit vzdálené kolegy",
+    "maxHopsFilter": "Max. hops",
+    "maxHopsAll": "Všechny hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Vazby",

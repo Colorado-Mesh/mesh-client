@@ -1925,7 +1925,16 @@
     "me": "Bu düğüm",
     "directLink": "Direkt (0 atlama)",
     "relayLink": "Röle üzerinden (1 atlama)",
-    "hiddenCount": "{{shown}}/{{total}} düğüm gösteriliyor (bağlantısız düğümler gizli)"
+    "hiddenCount": "{{shown}}/{{total}} düğüm gösteriliyor (bağlantısız düğümler gizli)",
+    "noConnectedNodes": "Görüntülenecek bağlı eş yok — filtreleri ayarlayın veya ağ trafiğini bekleyin.",
+    "meShort": "Sen",
+    "relayHub": "Doğrudan röle",
+    "relayCount": "{{count}} röle göbekleri",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Uzak akranları göster",
+    "maxHopsFilter": "Maks hops",
+    "maxHopsAll": "Tüm hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",

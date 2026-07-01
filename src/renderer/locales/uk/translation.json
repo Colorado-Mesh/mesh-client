@@ -1925,7 +1925,16 @@
     "me": "Цей вузол",
     "directLink": "Прямий (0 переходів)",
     "relayLink": "Через реле (1 стрибок)",
-    "hiddenCount": "Відображаються {{shown}} з {{total}} вузлів (непідключені вузли приховані)"
+    "hiddenCount": "Відображаються {{shown}} з {{total}} вузлів (непідключені вузли приховані)",
+    "noConnectedNodes": "Немає підключених вузлів для відображення — налаштуйте фільтри або дочекайтеся мережевого трафіку.",
+    "meShort": "Ви",
+    "relayHub": "Пряме реле",
+    "relayCount": "{{count}} концентратори реле",
+    "hopBadge": "{{count}}год",
+    "showDistantPeers": "Показати віддалені вузли",
+    "maxHopsFilter": "Макс. hops",
+    "maxHopsAll": "Усі hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Однолітки",

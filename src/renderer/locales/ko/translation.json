@@ -1925,7 +1925,16 @@
     "me": "이 노드",
     "directLink": "직접 (0홉)",
     "relayLink": "비아 릴레이 (1 홉)",
-    "hiddenCount": "{{shown}} / {{total}} 개 노드 표시 (연결되지 않은 노드 숨김)"
+    "hiddenCount": "{{shown}} / {{total}} 개 노드 표시 (연결되지 않은 노드 숨김)",
+    "noConnectedNodes": "표시할 연결된 피어가 없습니다 — 필터를 조정하거나 네트워크 트래픽을 기다리십시오.",
+    "meShort": "나",
+    "relayHub": "직접 릴레이",
+    "relayCount": "{{count}} 릴레이 허브",
+    "hopBadge": "{{count}} h",
+    "showDistantPeers": "멀리 있는 동료 표시",
+    "maxHopsFilter": "최대 홉",
+    "maxHopsAll": "모든 홉",
+    "maxHopsOption": "{{count}} 홉"
   },
   "peerListPanel": {
     "heading": "통신자",

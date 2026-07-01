@@ -1925,7 +1925,16 @@
     "me": "此节点",
     "directLink": "直接（ 0跳）",
     "relayLink": "通过继电器（ 1跳）",
-    "hiddenCount": "显示{{shown}}/{{total}}节点（未连接节点隐藏）"
+    "hiddenCount": "显示{{shown}}/{{total}}节点（未连接节点隐藏）",
+    "noConnectedNodes": "没有可显示的连接对等项—调整过滤器或等待网络流量。",
+    "meShort": "你",
+    "relayHub": "直接继电器",
+    "relayCount": "{{count}}继电器集线器",
+    "hopBadge": "{{count}}小时",
+    "showDistantPeers": "显示远程同行",
+    "maxHopsFilter": "最大跳数",
+    "maxHopsAll": "所有跃点",
+    "maxHopsOption": "{{count}}跳"
   },
   "peerListPanel": {
     "heading": "Pee对端",

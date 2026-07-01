@@ -1925,7 +1925,16 @@
     "me": "Este nó",
     "directLink": "Direto (0 saltos)",
     "relayLink": "Via relé (1 salto)",
-    "hiddenCount": "Mostrando {{shown}} de {{total}} nós (nós não conectados ocultos)"
+    "hiddenCount": "Mostrando {{shown}} de {{total}} nós (nós não conectados ocultos)",
+    "noConnectedNodes": "Sem pares conectados para exibir — ajuste os filtros ou aguarde o tráfego da rede.",
+    "meShort": "Você",
+    "relayHub": "Relé direto",
+    "relayCount": "{{count}} centros de retransmissão",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Mostrar colegas distantes",
+    "maxHopsFilter": "Máx. hops",
+    "maxHopsAll": "Todos os hops",
+    "maxHopsOption": "{{count}} hops"
   },
   "peerListPanel": {
     "heading": "Pares",
