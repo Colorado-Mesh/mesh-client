@@ -3291,6 +3291,7 @@ function AppContent() {
                                   ? meshcorePanelActions.applyMeshcorePathHashMode
                                   : undefined
                               }
+                              reticulumIdentityId={reticulumIdentityId}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -3390,33 +3391,35 @@ function AppContent() {
                       {activePanelIndex === 15 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            {protocol === 'reticulum' ? (
-                              <RawPacketLogPanel
-                                variant="reticulum"
-                                packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
-                                onClear={() => {
-                                  reticulumPanelActions.clearRawPackets?.();
-                                }}
-                                getNodeLabel={rawPacketGetNodeLabel}
-                              />
-                            ) : capabilities.modulesTabUsesRepeatersLabel ? (
-                              <RawPacketLogPanel
-                                variant="meshcore"
-                                packets={meshcoreRuntime.rawPackets}
-                                onClear={meshcorePanelActions.clearRawPackets}
-                                getNodeLabel={rawPacketGetNodeLabel}
-                                onNodeClick={setSelectedNodeId}
-                                floodScopeHashtag={meshcoreFloodScopeHashtag}
-                              />
-                            ) : (
-                              <RawPacketLogPanel
-                                variant="meshtastic"
-                                packets={meshtasticRuntime.rawPackets}
-                                onClear={meshtasticPanelActions.clearRawPackets}
-                                getNodeLabel={rawPacketGetNodeLabel}
-                                onNodeClick={setSelectedNodeId}
-                              />
-                            )}
+                            <div className="flex h-full min-h-0 flex-col">
+                              {protocol === 'reticulum' ? (
+                                <RawPacketLogPanel
+                                  variant="reticulum"
+                                  packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
+                                  onClear={() => {
+                                    reticulumPanelActions.clearRawPackets?.();
+                                  }}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                />
+                              ) : capabilities.modulesTabUsesRepeatersLabel ? (
+                                <RawPacketLogPanel
+                                  variant="meshcore"
+                                  packets={meshcoreRuntime.rawPackets}
+                                  onClear={meshcorePanelActions.clearRawPackets}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                  onNodeClick={setSelectedNodeId}
+                                  floodScopeHashtag={meshcoreFloodScopeHashtag}
+                                />
+                              ) : (
+                                <RawPacketLogPanel
+                                  variant="meshtastic"
+                                  packets={meshtasticRuntime.rawPackets}
+                                  onClear={meshtasticPanelActions.clearRawPackets}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                  onNodeClick={setSelectedNodeId}
+                                />
+                              )}
+                            </div>
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

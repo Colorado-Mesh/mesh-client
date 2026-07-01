@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 octets",
     "meshcorePathHashDeviceReported": "Rapports radio connectés : {{mode}}",
     "meshcorePathHashModeHint": "Nécessite un microprogramme compagnon v1.14.0+ et des répéteurs sur v1.14+ le long du chemin. Les répéteurs pré-1,14 déposent silencieusement des paquets de plusieurs octets. Les serveurs de répéteur et de salle peuvent également utiliser CLI : set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Échec du mode de hachage du chemin : {{message}}"
+    "meshcorePathHashApplyFailed": "Échec du mode de hachage du chemin : {{message}}",
+    "reticulumDmOnlyMessagesHint": "Le chat Reticulum stocke uniquement les messages directs — il n'y a pas de canaux à effacer individuellement.",
+    "clearReticulumMessagesTitle": "Effacer les messages directs",
+    "clearReticulumMessagesConfirm": "Cela supprimera définitivement tous les messages directs Reticulum {{count}} stockés localement. Cela ne peut pas être annulé.",
+    "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Sonde OK (mode {{mode}}).",
     "probeFailed": "Échec de la sonde : {{error}}",
     "isContact": "Contact",
-    "call": "Appel vocal",
-    "callComingSoon": "Appels vocaux à venir dans une prochaine mise à jour",
     "iconColor": "Couleur de l’avatar",
     "iconColorAria": "Couleur de l’avatar",
     "saveContact": "Enregistrer comme contact",
@@ -2662,7 +2664,20 @@
     "legendHub": "Centre de relais",
     "legendPeer": "Pair",
     "directLink": "Lien direct",
-    "relayLink": "Via le hub"
+    "relayLink": "Via le hub",
+    "showDistantPeers": "Afficher les pairs distants",
+    "maxHopsFilter": "Sauts max",
+    "maxHopsAll": "Tous les sauts",
+    "maxHopsOption": "{{count}} sauts",
+    "centerRns": "RNS",
+    "interfaceStatus": "{{online}} en ligne, {{offline}} interfaces hors ligne",
+    "unassignedInterface": "Les autres chemins",
+    "legendInterfaceOnline": "Interface en ligne",
+    "legendInterfaceOffline": "Interface hors ligne",
+    "legendPeerUser": "LXMF pair",
+    "legendPeerServer": "Nœud nomade",
+    "interfaceLink": "Liaison interface",
+    "peerLink": "Lien avec les pairs"
   },
   "rfHistograms": {
     "title": "REPARTITION DE SIGNAUX",

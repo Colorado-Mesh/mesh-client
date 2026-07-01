@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 - byte",
     "meshcorePathHashDeviceReported": "Laporan radio yang terhubung: {{mode}}",
     "meshcorePathHashModeHint": "Membutuhkan firmware pendamping v1.14.0+ dan repeater pada v1.14+ di sepanjang jalur. Repeater pra-1.14 secara diam-diam menjatuhkan paket multibyte. Repeater dan server kamar juga dapat menggunakan CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Mode hash jalur gagal: {{message}}"
+    "meshcorePathHashApplyFailed": "Mode hash jalur gagal: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum chat hanya menyimpan pesan langsung — tidak ada saluran untuk dihapus secara individual.",
+    "clearReticulumMessagesTitle": "Hapus pesan langsung",
+    "clearReticulumMessagesConfirm": "Ini akan menghapus semua {{count}} pesan langsung Reticulum yang disimpan secara lokal secara permanen. Ini tidak dapat diurungkan.",
+    "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Selidiki OK (mode {{mode}}).",
     "probeFailed": "Probe gagal: {{error}}",
     "isContact": "Kontak",
-    "call": "Voice Call",
-    "callComingSoon": "Panggilan suara akan datang dalam pembaruan mendatang",
     "iconColor": "Warna avatar",
     "iconColorAria": "Warna avatar sejawat",
     "saveContact": "Simpan sebagai kontak",
@@ -2662,7 +2664,20 @@
     "legendHub": "hub relai",
     "legendPeer": "Rekan",
     "directLink": "Tautan langsung",
-    "relayLink": "Melalui hub"
+    "relayLink": "Melalui hub",
+    "centerRns": "RNS",
+    "showDistantPeers": "Tampilkan rekan yang jauh",
+    "maxHopsFilter": "Hop maks",
+    "maxHopsAll": "Semua hop",
+    "maxHopsOption": "{{count}} hop",
+    "interfaceStatus": "{{online}} online, {{offline}} antarmuka offline",
+    "unassignedInterface": "Jalur lainnya",
+    "legendInterfaceOnline": "Antarmuka online",
+    "legendInterfaceOffline": "Antarmuka offline",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nomad node",
+    "interfaceLink": "Tautan antarmuka",
+    "peerLink": "Tautan sejawat"
   },
   "rfHistograms": {
     "title": "Distribusi Sinyal RF",

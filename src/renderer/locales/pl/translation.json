@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3-bajtowy",
     "meshcorePathHashDeviceReported": "Połączone raporty radiowe: {{mode}}",
     "meshcorePathHashModeHint": "Wymaga towarzyszącego oprogramowania sprzętowego v1.14.0+ i wtórników w v1.14+ wzdłuż ścieżki. Wzmacniacze Pre-1.14 cicho upuszczają pakiety wielobajtowe. Serwery repeater i room mogą również używać CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Tryb skrótu ścieżki nie powiódł się: {{message}}"
+    "meshcorePathHashApplyFailed": "Tryb skrótu ścieżki nie powiódł się: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Czat Reticulum przechowuje tylko bezpośrednie wiadomości — nie ma kanałów do indywidualnego wyczyszczenia.",
+    "clearReticulumMessagesTitle": "Przejrzyste komunikaty bezpośrednie",
+    "clearReticulumMessagesConfirm": "Spowoduje to trwałe usunięcie wszystkich przechowywanych lokalnie wiadomości bezpośrednich Reticulum {{count}}. Tej czynności nie można cofnąć.",
+    "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Sonda OK (tryb {{mode}}).",
     "probeFailed": "Sonda nie powiodła się: {{error}}",
     "isContact": "Kontakt",
-    "call": "Połączenie głosowe",
-    "callComingSoon": "Połączenia głosowe będą w przyszłości aktualizowane",
     "iconColor": "Kolor awatara",
     "iconColorAria": "Kolor awatara rówieśniczego",
     "saveContact": "Zapisz jako kontakt",
@@ -2662,7 +2664,20 @@
     "legendHub": "Hub przekaźnikowy",
     "legendPeer": "Rówieśnik",
     "directLink": "Bezpośredni link",
-    "relayLink": "Przez koncentrator"
+    "relayLink": "Przez koncentrator",
+    "centerRns": "RNS",
+    "showDistantPeers": "Pokaż odległych rówieśników",
+    "maxHopsFilter": "Maks. hops",
+    "maxHopsAll": "Wszystkie hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "Interfejsy {{online}} online, {{offline}} offline",
+    "unassignedInterface": "Inne ścieżki",
+    "legendInterfaceOnline": "Interfejs online",
+    "legendInterfaceOffline": "Interfejs offline",
+    "legendPeerUser": "Rówieśnik LXMF",
+    "legendPeerServer": "Węzeł Nomad",
+    "interfaceLink": "Łącze interfejsu",
+    "peerLink": "Powiązanie z rówieśnikiem"
   },
   "rfHistograms": {
     "title": "Dystrybucja sygnału RF",

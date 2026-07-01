@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3字节",
     "meshcorePathHashDeviceReported": "已连接的无线电报告： {{mode}}",
     "meshcorePathHashModeHint": "需要配套固件v1.14.0+和路径上v1.14+的中继器。v1.14之前的中继器会静默丢弃多字节数据包。中继器和房间服务器也可以使用CLI：set path.hash.mode {0|1|2}。",
-    "meshcorePathHashApplyFailed": "路径哈希模式失败： {{message}}"
+    "meshcorePathHashApplyFailed": "路径哈希模式失败： {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum聊天仅存储直接消息—没有可单独清除的频道。",
+    "clearReticulumMessagesTitle": "清除直接消息",
+    "clearReticulumMessagesConfirm": "这将永久删除所有{{count}}本地存储的Reticulum直接消息。此操作无法撤消。",
+    "clearReticulumMessagesConfirmButton": "清除{{count}}消息"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1901,8 +1905,6 @@
     "probeLocal": "探头正常（ {{mode}}模式）。",
     "probeFailed": "探头失败： {{error}}",
     "isContact": "联系方式",
-    "call": "音频呼叫",
-    "callComingSoon": "语音通话将在未来的更新中推出",
     "iconColor": "头像颜色",
     "iconColorAria": "头像颜色",
     "saveContact": "另存为联系人",
@@ -2662,7 +2664,20 @@
     "legendHub": "中继集线器",
     "legendPeer": "同行",
     "directLink": "直接链接",
-    "relayLink": "通过枢纽"
+    "relayLink": "通过枢纽",
+    "showDistantPeers": "显示远程同行",
+    "maxHopsFilter": "最大 hops",
+    "maxHopsAll": "所有 hops",
+    "maxHopsOption": "{{count}} hops",
+    "centerRns": "RNS  雷恩机场",
+    "interfaceStatus": "{{online}}在线， {{offline}}离线接口",
+    "unassignedInterface": "其他道",
+    "legendInterfaceOnline": "在线界面",
+    "legendInterfaceOffline": "接口离线",
+    "legendPeerUser": "LXMF对等点",
+    "legendPeerServer": "游牧节点",
+    "interfaceLink": "链接",
+    "peerLink": "对等链接"
   },
   "rfHistograms": {
     "title": "射频信号分布",

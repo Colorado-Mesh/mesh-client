@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3-байт",
     "meshcorePathHashDeviceReported": "Звіти про підключені радіоприймачі: {{mode}}",
     "meshcorePathHashModeHint": "Потрібна супровідна прошивка v1.14.0+ та повторювачі на v1.14+ вздовж шляху. Повторювачі з прошивкою до v1.14 мовчки скидають багатобайтові пакети. Сервери ретрансляторів і кімнат також можуть використовувати інтерфейс командного рядка: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Помилка режиму хешування шляху: {{message}}"
+    "meshcorePathHashApplyFailed": "Помилка режиму хешування шляху: {{message}}",
+    "reticulumDmOnlyMessagesHint": "У чаті Reticulum зберігаються лише прямі повідомлення — немає каналів для індивідуального очищення.",
+    "clearReticulumMessagesTitle": "Очистити прямі повідомлення",
+    "clearReticulumMessagesConfirm": "Це призведе до остаточного видалення всіх {{count}} локально збережених прямих повідомлень Reticulum. Цю дію неможливо скасувати.",
+    "clearReticulumMessagesConfirmButton": "Очистити повідомлення {{count}}"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Зонд OK (режим {{mode}}).",
     "probeFailed": "Збій зонда: {{error}}",
     "isContact": "Контакти",
-    "call": "Голосовий виклик",
-    "callComingSoon": "Голосові дзвінки з'являться в майбутньому оновленні",
     "iconColor": "Колір аватара",
     "iconColorAria": "Колір однорангового аватара",
     "saveContact": "Зберегти як контакт",
@@ -2662,7 +2664,20 @@
     "legendHub": "Релейний концентратор",
     "legendPeer": "Одноліток",
     "directLink": "Пряме посилання",
-    "relayLink": "Через хаб"
+    "relayLink": "Через хаб",
+    "showDistantPeers": "Показати віддалені вузли",
+    "maxHopsFilter": "Макс. hops",
+    "maxHopsAll": "Усі hops",
+    "maxHopsOption": "{{count}} hops",
+    "centerRns": "rns",
+    "interfaceStatus": "{{online}} онлайн, {{offline}} офлайн-інтерфейси",
+    "unassignedInterface": "Інші шляхи",
+    "legendInterfaceOnline": "Інтерфейс онлайн",
+    "legendInterfaceOffline": "Інтерфейс не в мережі",
+    "legendPeerUser": "Одноранговий LXMF",
+    "legendPeerServer": "Вузол Nomad",
+    "interfaceLink": "Посилання на інтерфейс",
+    "peerLink": "Посилання вузла"
   },
   "rfHistograms": {
     "title": "Розподіл радіочастотних сигналів",

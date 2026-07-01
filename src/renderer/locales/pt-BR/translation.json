@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 bytes",
     "meshcorePathHashDeviceReported": "Relatórios de rádio conectados: {{mode}}",
     "meshcorePathHashModeHint": "Requer firmware complementar v1.14.0+ e repetidores no v1.14+ ao longo do caminho. Os repetidores pré-1.14 descartam silenciosamente os pacotes de vários bytes. Servidores repetidores e de sala também podem usar CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Falha no modo de hash do caminho: {{message}}"
+    "meshcorePathHashApplyFailed": "Falha no modo de hash do caminho: {{message}}",
+    "reticulumDmOnlyMessagesHint": "O chat Reticulum armazena apenas mensagens diretas — não há canais para limpar individualmente.",
+    "clearReticulumMessagesTitle": "Limpar mensagens diretas",
+    "clearReticulumMessagesConfirm": "Isso excluirá permanentemente todas as {{count}} mensagens diretas Reticulum armazenadas localmente. Isso não pode ser desfeito.",
+    "clearReticulumMessagesConfirmButton": "Limpar mensagens {{count}}"
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Sonda OK (modo {{mode}}).",
     "probeFailed": "Falha na sonda: {{error}}",
     "isContact": "Contato",
-    "call": "Ligação de voz",
-    "callComingSoon": "Chamadas de voz chegando em uma atualização futura",
     "iconColor": "Cor do avatar",
     "iconColorAria": "Cor do avatar dos pares",
     "saveContact": "Salvar como contato",
@@ -2662,7 +2664,20 @@
     "legendHub": "Centro de retransmissão",
     "legendPeer": "Par",
     "directLink": "Link direto",
-    "relayLink": "Através do hub"
+    "relayLink": "Através do hub",
+    "showDistantPeers": "Mostrar colegas distantes",
+    "maxHopsFilter": "Máx. hops",
+    "maxHopsAll": "Todos os hops",
+    "maxHopsOption": "{{count}} hops",
+    "centerRns": "RNS",
+    "interfaceStatus": "{{online}} online, {{offline}} interfaces offline",
+    "unassignedInterface": "em outros caminhos.",
+    "legendInterfaceOnline": "Interface online",
+    "legendInterfaceOffline": "Interface offline",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nó nômade",
+    "interfaceLink": "Link da interface",
+    "peerLink": "entre pares"
   },
   "rfHistograms": {
     "title": "Distribuição de sinal de RF",

@@ -3,22 +3,60 @@ import { Mesh, Portnums } from '@meshtastic/protobufs';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
+import type {
+  MeshtasticRawPacketEntry,
+  ReticulumRawPacketEntry,
+} from '../lib/rawPacketLogConstants';
 import RawPacketLogPanel from './RawPacketLogPanel';
 
+let mockIsAtEnd = true;
+const mockScrollToEnd = vi.fn();
+const mockScrollToIndex = vi.fn();
+let lastVirtualizerOptions: Record<string, unknown> | undefined;
+let lastVirtualizerInstance: Record<string, unknown> | undefined;
+
 vi.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: (opts: { count: number; getItemKey?: (index: number) => string | number }) => ({
-    getVirtualItems: () =>
-      Array.from({ length: opts.count }, (_, index) => ({
-        index,
-        key: opts.getItemKey?.(index) ?? index,
-        start: index * 36,
-      })),
-    getTotalSize: () => opts.count * 36,
-    measureElement: () => {},
-  }),
+  useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
+    lastVirtualizerOptions = opts;
+    const count = opts.count;
+    const getItemKey = opts.getItemKey as ((index: number) => string | number) | undefined;
+    const instance = {
+      getVirtualItems: () =>
+        Array.from({ length: count }, (_, index) => ({
+          index,
+          key: getItemKey?.(index) ?? index,
+          start: index * 36,
+        })),
+      getTotalSize: () => count * 36,
+      measureElement: () => {},
+      isAtEnd: () => mockIsAtEnd,
+      scrollToEnd: mockScrollToEnd,
+      scrollToIndex: mockScrollToIndex,
+      get scrollDirection() {
+        return 'forward' as const;
+      },
+      shouldAdjustScrollPositionOnItemSizeChange: undefined as
+        | ((
+            item: { index: number },
+            delta: number,
+            inst: { scrollDirection: string | null; isAtEnd: () => boolean },
+          ) => boolean)
+        | undefined,
+    };
+    lastVirtualizerInstance = instance;
+    return instance;
+  },
 }));
+
+beforeEach(() => {
+  mockIsAtEnd = true;
+  mockScrollToEnd.mockClear();
+  mockScrollToIndex.mockClear();
+  lastVirtualizerOptions = undefined;
+  lastVirtualizerInstance = undefined;
+});
 
 function hexToU8(hex: string): Uint8Array {
   const out = new Uint8Array(hex.length / 2);
@@ -48,6 +86,105 @@ function meshcorePacket(rawHex: string, payloadTypeString: string): RxPacketEntr
     parseOk: true,
   };
 }
+
+function reticulumPacket(ts: number, interfaceName = 'RNode'): ReticulumRawPacketEntry {
+  return {
+    ts,
+    direction: 'rx',
+    interfaceId: 1,
+    interfaceName,
+    raw: new Uint8Array([0x01, 0x02, ts & 0xff]),
+    packetType: 'DATA',
+    headerType: 'SINGLE',
+  };
+}
+
+describe('RawPacketLogPanel scroll pinning', () => {
+  it('configures TanStack Virtual with sniffer scroll contract', () => {
+    render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[reticulumPacket(1_710_000_000_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+    expect(lastVirtualizerOptions?.anchorTo).toBe('end');
+    expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
+    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
+      item: { index: number },
+      delta: number,
+      instance: {
+        scrollDirection: 'forward' | 'backward' | null;
+        isAtEnd: () => boolean;
+      },
+    ) => boolean;
+    expect(adjust).toBeTypeOf('function');
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => true })).toBe(true);
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => false })).toBe(
+      false,
+    );
+  });
+
+  it('scrolls to end when pinned and new packets arrive', () => {
+    mockIsAtEnd = true;
+    const initial = reticulumPacket(1_710_000_000_000);
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[initial]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    mockScrollToEnd.mockClear();
+    const newer = reticulumPacket(1_710_000_001_000, 'TCP');
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[initial, newer]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).toHaveBeenCalled();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('preserves scroll anchor when not pinned and new packets arrive', () => {
+    mockIsAtEnd = false;
+    const packets = [reticulumPacket(1_710_000_000_000), reticulumPacket(1_710_000_001_000)];
+    const { container, rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const scrollContainer = container.querySelector('[role="log"]')!;
+    fireEvent.scroll(scrollContainer);
+
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_002_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'start' });
+  });
+});
 
 describe('RawPacketLogPanel duplicate row keys', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -200,7 +337,7 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
     rerender(
       <RawPacketLogPanel
         variant="meshtastic"
-        packets={[newer, initial]}
+        packets={[initial, newer]}
         onClear={vi.fn()}
         getNodeLabel={() => 'TestNode'}
       />,

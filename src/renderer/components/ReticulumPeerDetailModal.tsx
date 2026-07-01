@@ -1,4 +1,4 @@
-import { Copy, MessageCircle, Phone, Star, X } from 'lucide-react-motion';
+import { Copy, MessageCircle, Star, X } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +16,7 @@ import {
   probeReticulumPeer,
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
@@ -83,7 +84,7 @@ export default function ReticulumPeerDetailModal({
 
   const copyHash = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(peerHash);
+      await writeClipboardText(peerHash);
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] copy ' + errLikeToLogString(e));
     }
@@ -374,16 +375,6 @@ export default function ReticulumPeerDetailModal({
               {t('peerDetailModal.removeContact')}
             </button>
           )}
-          <button
-            type="button"
-            disabled
-            title={t('peerDetailModal.callComingSoon')}
-            className="flex cursor-not-allowed items-center gap-1 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-500 opacity-50"
-            aria-label={t('peerDetailModal.callComingSoon')}
-          >
-            <Phone className="h-4 w-4" aria-hidden />
-            {t('peerDetailModal.call')}
-          </button>
         </section>
 
         {pathStatus ? <p className="mb-2 text-xs text-gray-300">{pathStatus}</p> : null}

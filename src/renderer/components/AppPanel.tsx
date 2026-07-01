@@ -178,6 +178,8 @@ interface Props {
   deviceReportedPathHashMode?: 0 | 1 | 2 | null;
   isMeshcoreRadioConnected?: boolean;
   onApplyMeshcorePathHashMode?: (mode: 0 | 1 | 2) => Promise<void>;
+  /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
+  reticulumIdentityId?: string | null;
 }
 
 interface PendingAction {
@@ -212,6 +214,7 @@ export default function AppPanel({
   deviceReportedPathHashMode,
   isMeshcoreRadioConnected = false,
   onApplyMeshcorePathHashMode,
+  reticulumIdentityId = null,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') !== '1',
@@ -240,7 +243,9 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig } =
+    useRadioProvider(protocol);
+  const isReticulumDmOnly = hasReticulumInterfaceConfig;
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -1974,33 +1979,63 @@ export default function AppPanel({
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
                 {t('appPanel.messagesSection')}
               </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
-                  {t('appPanel.clearChannelLabel')}
-                </label>
-                <select
-                  id="apppanel-clear-channel"
-                  value={clearChannelTarget}
-                  onChange={(e) => {
-                    setClearChannelTarget(parseInt(e.target.value, 10));
-                  }}
-                  aria-label={t('common.channel')}
-                  className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
-                >
-                  <option value={CLEAR_ALL_CHANNELS_VALUE}>
-                    {t('appPanel.allChannelsOption')}
-                  </option>
-                  {msgChannels.map((ch) => (
-                    <option key={ch} value={ch}>
-                      {getChannelLabel(ch)}
+              {isReticulumDmOnly ? (
+                <p className="text-muted text-xs leading-relaxed">
+                  {t('appPanel.reticulumDmOnlyMessagesHint')}
+                </p>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="apppanel-clear-channel"
+                    className="shrink-0 text-sm text-gray-400"
+                  >
+                    {t('appPanel.clearChannelLabel')}
+                  </label>
+                  <select
+                    id="apppanel-clear-channel"
+                    value={clearChannelTarget}
+                    onChange={(e) => {
+                      setClearChannelTarget(parseInt(e.target.value, 10));
+                    }}
+                    aria-label={t('common.channel')}
+                    className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                  >
+                    <option value={CLEAR_ALL_CHANNELS_VALUE}>
+                      {t('appPanel.allChannelsOption')}
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {msgChannels.map((ch) => (
+                      <option key={ch} value={ch}>
+                        {getChannelLabel(ch)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <button
                 type="button"
-                aria-label={`Clear Messages (${messageCount})`}
+                aria-label={t('appPanel.clearMessagesCount', { count: messageCount })}
                 onClick={() => {
+                  if (isReticulumDmOnly) {
+                    executeWithConfirmation({
+                      name: 'Clear Messages',
+                      title: t('appPanel.clearReticulumMessagesTitle'),
+                      message: t('appPanel.clearReticulumMessagesConfirm', { count: messageCount }),
+                      confirmLabel: t('appPanel.clearReticulumMessagesConfirmButton', {
+                        count: messageCount,
+                      }),
+                      danger: true,
+                      messageClearMeta: {
+                        clearedAll: true,
+                        replaceFromDb: true,
+                        messagesMode: 'replace',
+                      },
+                      action: async () => {
+                        if (!reticulumIdentityId) return;
+                        await window.electronAPI.db.clearReticulumMessages(reticulumIdentityId);
+                      },
+                    });
+                    return;
+                  }
                   const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
                   const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
                   executeWithConfirmation({
@@ -2037,7 +2072,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear Messages ({messageCount})
+                {t('appPanel.clearMessagesCount', { count: messageCount })}
               </button>
             </div>
 

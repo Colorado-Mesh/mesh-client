@@ -9,42 +9,45 @@ import {
   startForceSimulationLoop,
 } from '@/renderer/lib/forceDirectedGraphLayout';
 import {
-  buildReticulumStarFallbackEdges,
-  buildReticulumTopologyGraph,
-  buildReticulumViaHashEdges,
+  buildReticulumMeshTopologyGraph,
   type ReticulumTopologyGraph,
   type ReticulumTopologyGraphNode,
-  shouldUseReticulumStarFallbackEdges,
 } from '@/renderer/lib/reticulum/buildReticulumTopologyLayout';
-import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { ReticulumTopologyEdge } from '@/shared/reticulum-types';
+import {
+  fetchReticulumInterfaces,
+  isReticulumSidecarRunning,
+  type ReticulumSidecarInterfaceRow,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { reticulumPeerDisplayName, useReticulumPeerStore } from '../stores/reticulumPeerStore';
 
-interface TopologyNode {
-  destination_hash: string;
-  display_name?: string | null;
-  hops?: number | null;
-  via_hash?: string | null;
-}
-
-function enrichTopologyPeerNames(nodes: TopologyNode[]): TopologyNode[] {
-  const peers = useReticulumPeerStore.getState().peers;
+function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRow[] {
+  const storePeers = useReticulumPeerStore.getState().peers;
   const contacts = useReticulumPeerStore.getState().contacts;
   const nomadNodes = useNomadNetworkStore.getState().nodes;
 
-  return nodes.map((node) => {
-    if (node.display_name?.trim()) return node;
-    const hash = node.destination_hash.toLowerCase();
-    const fromPeer = peers.get(hash) ?? contacts.get(hash);
+  return peers.map((peer) => {
+    const hash = peer.destination_hash.toLowerCase();
+    const fromStore = storePeers.get(hash) ?? contacts.get(hash);
     const fromNomad = nomadNodes.get(hash);
     const display_name =
-      (fromPeer ? reticulumPeerDisplayName(fromPeer) : null) ||
+      peer.display_name?.trim() ||
+      (fromStore ? reticulumPeerDisplayName(fromStore) : null) ||
       fromNomad?.display_name?.trim() ||
       null;
-    if (!display_name || display_name === hash.slice(0, 12)) return node;
-    return { ...node, display_name };
+    const interfaceName =
+      peer.interface?.trim() || fromStore?.interface?.trim() || peer.interface || null;
+    if (display_name && display_name !== hash.slice(0, 12) && interfaceName === peer.interface) {
+      return { ...peer, display_name };
+    }
+    return {
+      ...peer,
+      display_name:
+        display_name && display_name !== hash.slice(0, 12) ? display_name : peer.display_name,
+      interface: interfaceName,
+    };
   });
 }
 
@@ -58,15 +61,26 @@ interface RenderSnapshot {
   edges: ForceEdge[];
   hiddenCount: number;
   totalNodeCount: number;
+  onlineInterfaceCount: number;
+  offlineInterfaceCount: number;
 }
 
 const SELF_ID = 'self';
-const BASE_NODE_R = 16;
-const CENTER_R = 20;
-const HUB_BASE_R = 18;
+const CENTER_R = 22;
+const INTERFACE_R = 18;
+const PEER_R = 14;
 
-function hubRadius(outDegree: number): number {
-  return Math.min(HUB_BASE_R + outDegree * 2, 28);
+function interfaceSpokeColor(online: boolean): string {
+  return online ? '#22c55e' : '#ef4444';
+}
+
+function peerFill(node: RenderNode): string {
+  if (!node.online) return '#475569';
+  return node.peerKind === 'server' ? '#64748b' : '#2563eb';
+}
+
+function peerStroke(node: RenderNode): string {
+  return node.online ? '#22c55e' : '#ef4444';
 }
 
 export default function ReticulumTopologyPanel() {
@@ -75,15 +89,24 @@ export default function ReticulumTopologyPanel() {
   const simRef = useRef<SimNodeState[]>([]);
   const metaRef = useRef<Map<string, ReticulumTopologyGraphNode>>(new Map());
   const edgesRef = useRef<ForceEdge[]>([]);
-  const statsRef = useRef({ hiddenCount: 0, totalNodeCount: 0 });
+  const statsRef = useRef({
+    hiddenCount: 0,
+    totalNodeCount: 0,
+    onlineInterfaceCount: 0,
+    offlineInterfaceCount: 0,
+  });
   const [snapshot, setSnapshot] = useState<RenderSnapshot>({
     nodes: [],
     edges: [],
     hiddenCount: 0,
     totalNodeCount: 0,
+    onlineInterfaceCount: 0,
+    offlineInterfaceCount: 0,
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [includeDistantPeers, setIncludeDistantPeers] = useState(true);
+  const [maxHops, setMaxHops] = useState<number | null>(null);
 
   const publishSnapshotFromSim = useCallback(() => {
     const renderNodes = simRef.current
@@ -98,6 +121,8 @@ export default function ReticulumTopologyPanel() {
       edges: [...edgesRef.current],
       hiddenCount: statsRef.current.hiddenCount,
       totalNodeCount: statsRef.current.totalNodeCount,
+      onlineInterfaceCount: statsRef.current.onlineInterfaceCount,
+      offlineInterfaceCount: statsRef.current.offlineInterfaceCount,
     });
   }, []);
 
@@ -127,9 +152,12 @@ export default function ReticulumTopologyPanel() {
 
       metaRef.current = meta;
       edgesRef.current = graph.edges;
+      const interfaceNodes = graph.nodes.filter((n) => n.kind === 'interface');
       statsRef.current = {
         hiddenCount: graph.hiddenCount,
         totalNodeCount: graph.totalNodeCount,
+        onlineInterfaceCount: interfaceNodes.filter((n) => n.online).length,
+        offlineInterfaceCount: interfaceNodes.filter((n) => !n.online).length,
       };
       publishSnapshotFromSim();
     },
@@ -143,31 +171,50 @@ export default function ReticulumTopologyPanel() {
       return;
     }
     try {
-      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/topology')) as {
-        nodes?: TopologyNode[];
-        edges?: ReticulumTopologyEdge[];
-      };
-      const peerNodes = enrichTopologyPeerNames(body.nodes ?? []);
+      const [topologyBody, interfaces, identityBody] = await Promise.all([
+        window.electronAPI.reticulum.proxyGet('/api/v1/topology') as Promise<{
+          nodes?: ReticulumPeerWireRow[];
+        }>,
+        fetchReticulumInterfaces(),
+        window.electronAPI.reticulum.proxyGet('/api/v1/identity/status') as Promise<{
+          display_name?: string | null;
+        }>,
+      ]);
+
+      const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
       const seenHashes = new Set<string>();
       const uniquePeers = peerNodes.filter((peer) => {
         if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
         seenHashes.add(peer.destination_hash);
         return true;
       });
-      const edgeList: ReticulumTopologyEdge[] =
-        body.edges && body.edges.length > 0
-          ? body.edges
-          : shouldUseReticulumStarFallbackEdges(uniquePeers, body.edges ?? [])
-            ? buildReticulumStarFallbackEdges(uniquePeers)
-            : buildReticulumViaHashEdges(uniquePeers);
+
+      const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
+
+      const serverPeerHashes = new Set(
+        [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
+      );
 
       const width = svgRef.current?.clientWidth ?? 800;
       const height = svgRef.current?.clientHeight ?? 600;
-      const graph = buildReticulumTopologyGraph(uniquePeers, edgeList, {
-        selfLabel: t('reticulumTopology.self'),
-        cx: width / 2,
-        cy: height / 2,
-      });
+      const graph = buildReticulumMeshTopologyGraph(
+        interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
+          id: iface.id,
+          name: iface.name,
+          type: iface.type,
+          enabled: iface.enabled,
+          status: iface.status,
+        })),
+        uniquePeers,
+        {
+          selfLabel,
+          unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
+          cx: width / 2,
+          cy: height / 2,
+          filter: { includeDistantPeers, maxHops },
+          serverPeerHashes,
+        },
+      );
       applyGraph(graph);
       setLoading(false);
     } catch (e) {
@@ -175,17 +222,21 @@ export default function ReticulumTopologyPanel() {
       setError(errLikeToLogString(e));
       setLoading(false);
     }
-  }, [applyGraph, t]);
+  }, [applyGraph, includeDistantPeers, maxHops, t]);
 
   useEffect(() => {
     void refresh();
     const unsub = window.electronAPI.reticulum.onEvent((evt) => {
-      if (evt.type === 'peers_updated' || evt.type === 'stats_update') {
+      if (
+        evt.type === 'peers_updated' ||
+        evt.type === 'stats_update' ||
+        evt.type === 'interface.state'
+      ) {
         void refresh();
       }
     });
     return unsub;
-  }, [refresh]);
+  }, [includeDistantPeers, maxHops, refresh]);
 
   useEffect(() => {
     return startForceSimulationLoop({
@@ -202,12 +253,14 @@ export default function ReticulumTopologyPanel() {
     });
   }, [publishSnapshotFromSim]);
 
-  const { nodes, edges, hiddenCount, totalNodeCount } = snapshot;
+  const { nodes, edges, hiddenCount, totalNodeCount, onlineInterfaceCount, offlineInterfaceCount } =
+    snapshot;
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const hasGraph = nodes.length > 0;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-4 px-4 py-2 text-xs text-slate-400">
+      <div className="flex flex-wrap items-center gap-4 px-4 py-2 text-xs text-slate-400">
         <span className="font-medium text-slate-300">{t('reticulumTopology.title')}</span>
         <button
           type="button"
@@ -218,6 +271,45 @@ export default function ReticulumTopologyPanel() {
         >
           {t('common.refresh')}
         </button>
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <input
+            type="checkbox"
+            checked={includeDistantPeers}
+            onChange={(e) => {
+              setIncludeDistantPeers(e.target.checked);
+            }}
+            aria-label={t('reticulumTopology.showDistantPeers')}
+            className="accent-brand-green h-3.5 w-3.5 rounded"
+          />
+          {t('reticulumTopology.showDistantPeers')}
+        </label>
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <span>{t('reticulumTopology.maxHopsFilter')}</span>
+          <select
+            value={maxHops ?? 'all'}
+            onChange={(e) => {
+              const value = e.target.value;
+              setMaxHops(value === 'all' ? null : Number.parseInt(value, 10));
+            }}
+            aria-label={t('reticulumTopology.maxHopsFilter')}
+            className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
+          >
+            <option value="all">{t('reticulumTopology.maxHopsAll')}</option>
+            {[1, 2, 3, 5, 8].map((hops) => (
+              <option key={hops} value={hops}>
+                {t('reticulumTopology.maxHopsOption', { count: hops })}
+              </option>
+            ))}
+          </select>
+        </label>
+        {hasGraph && (
+          <span className="text-slate-500">
+            {t('reticulumTopology.interfaceStatus', {
+              online: onlineInterfaceCount,
+              offline: offlineInterfaceCount,
+            })}
+          </span>
+        )}
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
             <span className="text-slate-500">
@@ -227,7 +319,7 @@ export default function ReticulumTopologyPanel() {
               })}
             </span>
           )}
-          {nodes.length > 0 && (
+          {hasGraph && (
             <>
               {t('reticulumTopology.nodeCount', { count: nodes.length })}
               {' · '}
@@ -237,11 +329,11 @@ export default function ReticulumTopologyPanel() {
         </span>
       </div>
       {error ? <p className="px-4 text-xs text-red-400">{error}</p> : null}
-      {loading && nodes.length === 0 && !error ? (
+      {loading && !hasGraph && !error ? (
         <div className="text-muted flex flex-1 items-center justify-center text-xs">
           {t('common.loading')}
         </div>
-      ) : nodes.length === 0 && !error ? (
+      ) : !hasGraph && !error ? (
         <div className="text-muted flex flex-1 items-center justify-center text-xs">
           {t('reticulumTopology.noNodes')}
         </div>
@@ -263,7 +355,9 @@ export default function ReticulumTopologyPanel() {
             const a = nodeById.get(edge.source);
             const b = nodeById.get(edge.target);
             if (!a || !b) return null;
-            const isDirect = edge.kind === 'direct';
+            const isInterfaceSpoke = a.kind === 'self' && b.kind === 'interface';
+            const stroke = isInterfaceSpoke ? interfaceSpokeColor(b.online) : '#94a3b8';
+            const strokeWidth = isInterfaceSpoke ? 3 : 1;
             return (
               <line
                 key={`${edge.source}-${edge.target}-${i}`}
@@ -271,36 +365,103 @@ export default function ReticulumTopologyPanel() {
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                stroke={isDirect ? '#64748b' : '#334155'}
-                strokeWidth={isDirect ? 2 : 1}
-                strokeDasharray={isDirect ? undefined : '4 4'}
-                strokeOpacity={isDirect ? 0.8 : 0.5}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+                strokeOpacity={isInterfaceSpoke ? 0.9 : 0.55}
               />
             );
           })}
 
           {nodes.map((node) => {
-            const isSelf = node.id === SELF_ID;
-            const r = isSelf ? CENTER_R : node.isHub ? hubRadius(node.hubOutDegree) : BASE_NODE_R;
-            const fill = isSelf ? '#16a34a' : node.isHub ? '#b45309' : '#334155';
+            if (node.kind === 'self') {
+              return (
+                <g key={node.id} transform={`translate(${node.x},${node.y})`}>
+                  <circle r={CENTER_R} fill="#f8fafc" stroke="#0f172a" strokeWidth={2} />
+                  <text
+                    y={4}
+                    textAnchor="middle"
+                    fill="#0f172a"
+                    fontSize={11}
+                    fontWeight={600}
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    {t('reticulumTopology.centerRns')}
+                  </text>
+                  <text
+                    y={CENTER_R + 14}
+                    textAnchor="middle"
+                    fill="#e2e8f0"
+                    fontSize={10}
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    {node.label}
+                  </text>
+                </g>
+              );
+            }
+
+            if (node.kind === 'interface') {
+              const r = INTERFACE_R;
+              const fill = node.online ? '#16a34a' : '#dc2626';
+              return (
+                <g key={node.id} transform={`translate(${node.x},${node.y})`}>
+                  <rect
+                    x={-r}
+                    y={-r}
+                    width={r * 2}
+                    height={r * 2}
+                    rx={4}
+                    fill={fill}
+                    fillOpacity={0.85}
+                    stroke={node.online ? '#22c55e' : '#ef4444'}
+                    strokeWidth={1.5}
+                  />
+                  <path
+                    d="M-6,-2 L6,-2 M-6,2 L6,2 M-2,-6 L-2,6 M2,-6 L2,6"
+                    stroke="#f8fafc"
+                    strokeWidth={1.2}
+                    strokeLinecap="round"
+                    aria-hidden
+                  />
+                  <text
+                    y={r + 12}
+                    textAnchor="middle"
+                    fill="#d1d5db"
+                    fontSize={10}
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    {node.label}
+                  </text>
+                </g>
+              );
+            }
+
+            const r = PEER_R;
             return (
               <g key={node.id} transform={`translate(${node.x},${node.y})`}>
-                {node.isHub && (
-                  <circle
-                    r={r + 4}
-                    fill="none"
-                    stroke="#fbbf24"
-                    strokeWidth={1}
-                    strokeOpacity={0.35}
-                  />
-                )}
+                <circle
+                  r={r + 2}
+                  fill="none"
+                  stroke={peerStroke(node)}
+                  strokeWidth={1.5}
+                  strokeOpacity={node.online ? 0.9 : 0.6}
+                />
                 <circle
                   r={r}
-                  fill={fill}
-                  fillOpacity={0.9}
-                  stroke={isSelf ? '#22c55e' : node.isHub ? '#fbbf24' : '#6b7280'}
-                  strokeWidth={1.5}
+                  fill={peerFill(node)}
+                  fillOpacity={0.92}
+                  stroke="#1e293b"
+                  strokeWidth={1}
                 />
+                {node.peerKind === 'server' ? (
+                  <g aria-hidden>
+                    <rect x={-4} y={-5} width={8} height={3} fill="#f8fafc" rx={0.5} />
+                    <rect x={-4} y={-1} width={8} height={3} fill="#f8fafc" rx={0.5} />
+                    <rect x={-4} y={3} width={8} height={3} fill="#f8fafc" rx={0.5} />
+                  </g>
+                ) : (
+                  <circle cy={-2} r={3} fill="#f8fafc" aria-hidden />
+                )}
                 <text
                   y={r + 12}
                   textAnchor="middle"
@@ -310,12 +471,12 @@ export default function ReticulumTopologyPanel() {
                 >
                   {node.label}
                 </text>
-                {!isSelf && node.hops != null && node.hops > 1 ? (
+                {node.hops != null && node.hops > 1 ? (
                   <text
                     y={4}
                     textAnchor="middle"
                     fill="#fbbf24"
-                    fontSize={9}
+                    fontSize={8}
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
                     {t('reticulumTopology.hopBadge', { count: node.hops })}
@@ -328,36 +489,36 @@ export default function ReticulumTopologyPanel() {
       )}
       <div className="flex flex-wrap gap-4 px-4 py-2 text-xs text-slate-500">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-green-600" />
+          <span className="inline-block h-2 w-2 rounded-full bg-slate-100" />
           {t('reticulumTopology.legendSelf')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-amber-600" />
-          {t('reticulumTopology.legendHub')}
+          <span className="inline-block h-2 w-2 rounded-sm bg-green-600" />
+          {t('reticulumTopology.legendInterfaceOnline')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-slate-600" />
-          {t('reticulumTopology.legendPeer')}
+          <span className="inline-block h-2 w-2 rounded-sm bg-red-600" />
+          {t('reticulumTopology.legendInterfaceOffline')}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
+          {t('reticulumTopology.legendPeerUser')}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-slate-500" />
+          {t('reticulumTopology.legendPeerServer')}
         </span>
         <span className="flex items-center gap-1.5">
-          <svg width="24" height="8">
-            <line x1="0" y1="4" x2="24" y2="4" stroke="#64748b" strokeWidth="2" />
+          <svg width="24" height="8" aria-hidden>
+            <line x1="0" y1="4" x2="24" y2="4" stroke="#22c55e" strokeWidth="3" />
           </svg>
-          {t('reticulumTopology.directLink')}
+          {t('reticulumTopology.interfaceLink')}
         </span>
         <span className="flex items-center gap-1.5">
-          <svg width="24" height="8">
-            <line
-              x1="0"
-              y1="4"
-              x2="24"
-              y2="4"
-              stroke="#475569"
-              strokeWidth="1"
-              strokeDasharray="4 4"
-            />
+          <svg width="24" height="8" aria-hidden>
+            <line x1="0" y1="4" x2="24" y2="4" stroke="#94a3b8" strokeWidth="1" />
           </svg>
-          {t('reticulumTopology.relayLink')}
+          {t('reticulumTopology.peerLink')}
         </span>
       </div>
     </div>

@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 bajty",
     "meshcorePathHashDeviceReported": "Připojené rádiové zprávy: {{mode}}",
     "meshcorePathHashModeHint": "Vyžaduje doprovodný firmware v1.14.0+ a opakovače na v1.14+ podél cesty. Pre-1.14 opakovače tiše upouštějí vícebajtové pakety. Servery opakovače a místnosti mohou také používat CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Režim hash cesty se nezdařil: {{message}}"
+    "meshcorePathHashApplyFailed": "Režim hash cesty se nezdařil: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum chat ukládá pouze přímé zprávy — neexistují žádné kanály, které by bylo možné individuálně vymazat.",
+    "clearReticulumMessagesTitle": "Vymazat přímé zprávy",
+    "clearReticulumMessagesConfirm": "Tím trvale odstraníte všechny {{count}} lokálně uložené přímé zprávy Reticulum. Tuto akci nelze vrátit zpět.",
+    "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Sonda je v pořádku (režim {{mode}}).",
     "probeFailed": "Sonda selhala: {{error}}",
     "isContact": "Kontakt",
-    "call": "Hlasové volání",
-    "callComingSoon": "Hlasové hovory přicházející v budoucí aktualizaci",
     "iconColor": "Barva avatara",
     "iconColorAria": "Barva avatara vrstevníka",
     "saveContact": "Uložit jako kontakt",
@@ -2662,7 +2664,20 @@
     "legendHub": "Reléový náboj",
     "legendPeer": "Peer",
     "directLink": "Přímý odkaz",
-    "relayLink": "Přes hub"
+    "relayLink": "Přes hub",
+    "centerRns": "RNS",
+    "showDistantPeers": "Zobrazit vzdálené kolegy",
+    "maxHopsFilter": "Max. hops",
+    "maxHopsAll": "Všechny hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "{{online}} online, {{offline}} offline rozhraní",
+    "unassignedInterface": "Jiné cesty",
+    "legendInterfaceOnline": "Rozhraní online",
+    "legendInterfaceOffline": "Rozhraní offline",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nomádský uzel",
+    "interfaceLink": "Propojení rozhraní",
+    "peerLink": "Odkaz na protějšek"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",

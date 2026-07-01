@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 байта",
     "meshcorePathHashDeviceReported": "Подключенные радиоотчеты: {{mode}}",
     "meshcorePathHashModeHint": "Требуется сопутствующая прошивка v1.14.0+ и повторители на v1.14+ вдоль пути. Повторители Pre-1.14 бесшумно сбрасывают многобайтовые пакеты. Серверы повторителей и комнат также могут использовать CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Сбой режима хеширования пути: {{message}}"
+    "meshcorePathHashApplyFailed": "Сбой режима хеширования пути: {{message}}",
+    "reticulumDmOnlyMessagesHint": "В чате Reticulum хранятся только прямые сообщения — нет каналов для индивидуальной очистки.",
+    "clearReticulumMessagesTitle": "Очистить прямые сообщения",
+    "clearReticulumMessagesConfirm": "Это приведет к окончательному удалению всех {{count}} локально сохраненных прямых сообщений Reticulum. Это действие нельзя отменить.",
+    "clearReticulumMessagesConfirmButton": "Очистить {{count}} сообщения"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Зонд OK (режим {{mode}}).",
     "probeFailed": "Сбой зонда: {{error}}",
     "isContact": "Связаться",
-    "call": "Голосовое общение",
-    "callComingSoon": "Голосовые вызовы появятся в будущем обновлении",
     "iconColor": "Цвет иконы Аватара",
     "iconColorAria": "Цвет однорангового аватара",
     "saveContact": "Сохранить как контакт",
@@ -2662,7 +2664,20 @@
     "legendHub": "Релейный концентратор",
     "legendPeer": "Вглядеться",
     "directLink": "Прямая ссылка",
-    "relayLink": "Через хаб"
+    "relayLink": "Через хаб",
+    "centerRns": "RNS",
+    "showDistantPeers": "Показать удаленных коллег",
+    "maxHopsFilter": "Макс. hops",
+    "maxHopsAll": "Все hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "{{online}} онлайн, {{offline}} автономные интерфейсы",
+    "unassignedInterface": "Другие пути",
+    "legendInterfaceOnline": "Интерфейс онлайн",
+    "legendInterfaceOffline": "Интерфейс не в сети",
+    "legendPeerUser": "Одноранговый LXMF",
+    "legendPeerServer": "Узел кочевника",
+    "interfaceLink": "Интерфейсная ссылка",
+    "peerLink": "Одноранговая ссылка"
   },
   "rfHistograms": {
     "title": "Распределение радиочастотных сигналов",

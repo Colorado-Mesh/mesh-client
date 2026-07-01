@@ -4,7 +4,7 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
@@ -19,6 +19,7 @@ import {
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
 import {
+  createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
@@ -384,9 +385,11 @@ function ReticulumRow({
   );
   return (
     <>
-      <span className="text-muted w-16 shrink-0">{formatTs(p.ts)}</span>
+      <span className="text-muted w-[90px] shrink-0 text-[10px] tabular-nums">
+        {formatTs(p.ts)}
+      </span>
       <span
-        className={`shrink-0 rounded px-1 text-[10px] ${
+        className={`w-9 shrink-0 rounded px-1 text-center text-[10px] ${
           p.direction === 'tx'
             ? 'bg-blue-900/60 text-blue-200'
             : 'bg-emerald-900/60 text-emerald-200'
@@ -437,7 +440,11 @@ export default function RawPacketLogPanel(props: Props) {
   const [filter, setFilter] = useState('');
   const [expandedContentKey, setExpandedContentKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** Sticky intent: user is reading latest packets and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
+  const unreadStartIndexRef = useRef(-1);
+  const anchorIndexRef = useRef(0);
+  const prevFilteredLengthRef = useRef(0);
   const expandedContentKeyRef = useRef<string | null>(null);
   expandedContentKeyRef.current = expandedContentKey;
 
@@ -528,20 +535,44 @@ export default function RawPacketLogPanel(props: Props) {
   const virtualizerRef = useRef(virtualizer);
   virtualizerRef.current = virtualizer;
 
-  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (_item, _delta, instance) => {
-    if (instance.scrollDirection === 'backward') return false;
+  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, delta, instance) => {
     if (expandedContentKeyRef.current) return false;
-    if (!isPinnedToBottomRef.current) return false;
-    return instance.isAtEnd();
+    return createChatScrollAdjustPredicate({
+      unreadStartIndexRef,
+      isPinnedToBottomRef,
+    })(item, delta, instance);
   };
 
   const onScroll = useCallback(() => {
+    const items = virtualizerRef.current.getVirtualItems();
+    if (items.length > 0) {
+      anchorIndexRef.current = items[0].index;
+    }
     isPinnedToBottomRef.current = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
   }, []);
 
-  const unpinScroll = useCallback(() => {
-    isPinnedToBottomRef.current = false;
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      if (!scrollRef.current) return;
+      isPinnedToBottomRef.current = virtualizerRef.current.isAtEnd(
+        VIRTUALIZER_SCROLL_END_THRESHOLD,
+      );
+    });
   }, []);
+
+  // Follow latest when pinned; preserve anchor row when user scrolled up to inspect history.
+  useEffect(() => {
+    const prevLen = prevFilteredLengthRef.current;
+    prevFilteredLengthRef.current = filtered.length;
+    if (filtered.length <= prevLen) return;
+
+    if (isPinnedToBottomRef.current) {
+      virtualizerRef.current.scrollToEnd();
+      return;
+    }
+
+    virtualizerRef.current.scrollToIndex(anchorIndexRef.current, { align: 'start' });
+  }, [filtered.length]);
 
   const handleClear = useCallback(() => {
     setExpandedContentKey(null);
@@ -549,7 +580,7 @@ export default function RawPacketLogPanel(props: Props) {
   }, [onClear]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {variant === 'meshcore' ? (
         <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
           {t('rawPacketLog.transportLegendHint')}
@@ -599,8 +630,6 @@ export default function RawPacketLogPanel(props: Props) {
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          onPointerDown={unpinScroll}
-          onWheel={unpinScroll}
           className="min-h-0 flex-1 overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
           role="log"
           aria-live="polite"

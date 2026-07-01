@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 bayt",
     "meshcorePathHashDeviceReported": "Bağlı radyo raporları: {{mode}}",
     "meshcorePathHashModeHint": "Yol boyunca v1.14+ üzerinde tamamlayıcı ürün yazılımı v1.14.0+ ve tekrarlayıcılar gerektirir. Ön 1.14 tekrarlayıcılar çok baytlı paketleri sessizce düşürür. Tekrarlayıcı ve oda sunucuları da CLI: set path.hash.mode {0|1|2} kullanabilir.",
-    "meshcorePathHashApplyFailed": "Yol karma modu başarısız oldu: {{message}}"
+    "meshcorePathHashApplyFailed": "Yol karma modu başarısız oldu: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum sohbet yalnızca doğrudan mesajları saklar — tek tek temizlenecek kanal yoktur.",
+    "clearReticulumMessagesTitle": "Doğrudan mesajları temizle",
+    "clearReticulumMessagesConfirm": "Bu, yerel olarak depolanan tüm {{count}} Reticulum doğrudan mesajlarını kalıcı olarak silecektir. Bu işlem geri alınamaz.",
+    "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Prob OK ({{mode}} modu).",
     "probeFailed": "Prob başarısız oldu: {{error}}",
     "isContact": "İletişim",
-    "call": "Sesli arama",
-    "callComingSoon": "Gelecekteki bir güncellemede gelen sesli aramalar",
     "iconColor": "Avatar rengi",
     "iconColorAria": "Akran avatarı rengi",
     "saveContact": "Kişi olarak kaydet",
@@ -2662,7 +2664,20 @@
     "legendHub": "Röle göbeği",
     "legendPeer": "Akran",
     "directLink": "Doğrudan bağlantı",
-    "relayLink": "Merkez aracılığıyla"
+    "relayLink": "Merkez aracılığıyla",
+    "centerRns": "RN'ler",
+    "showDistantPeers": "Uzak akranları göster",
+    "maxHopsFilter": "Maks hops",
+    "maxHopsAll": "Tüm hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "{{online}} çevrimiçi, {{offline}} çevrimdışı arayüzler",
+    "unassignedInterface": "Diğer yollar",
+    "legendInterfaceOnline": "Çevrimiçi arayüz",
+    "legendInterfaceOffline": "Arayüz çevrimdışı",
+    "legendPeerUser": "LXMF akran",
+    "legendPeerServer": "Göçebe düğüm",
+    "interfaceLink": "Arayüz bağlantısı",
+    "peerLink": "Akran bağlantısı"
   },
   "rfHistograms": {
     "title": "RF Sinyal Dağılımı",

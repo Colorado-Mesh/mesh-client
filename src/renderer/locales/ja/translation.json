@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 Byte",
     "meshcorePathHashDeviceReported": "接続された無線レポート： {{mode}}",
     "meshcorePathHashModeHint": "パス上にv1.14.0以降のコンパニオンファームウェアとv1.14以降のリピーターが必要です。v1.14未満のリピーターはマルチバイトパケットを黙って破棄します。リピーターとルームサーバーはCLIでも利用できます: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "パスハッシュモードに失敗しました： {{message}}"
+    "meshcorePathHashApplyFailed": "パスハッシュモードに失敗しました： {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulumチャットはダイレクトメッセージのみを保存します。個別にクリアするチャンネルはありません。",
+    "clearReticulumMessagesTitle": "ダイレクトメッセージを消去",
+    "clearReticulumMessagesConfirm": "これにより、ローカルに保存されているすべての{{count}} Reticulumダイレクトメッセージが完全に削除されます。これは元に戻せません。",
+    "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -1901,8 +1905,6 @@
     "probeLocal": "プローブOK （ {{mode}}モード）。",
     "probeFailed": "プローブが失敗しました： {{error}}",
     "isContact": "お問い合わせ",
-    "call": "音声通話",
-    "callComingSoon": "今後のアップデートで予定されている音声通話",
     "iconColor": "アバターの色",
     "iconColorAria": "ピアアバターの色",
     "saveContact": "連絡用として保存）",
@@ -2662,7 +2664,20 @@
     "legendHub": "リレーハブ",
     "legendPeer": "ピア",
     "directLink": "直接リンク",
-    "relayLink": "ハブ経由"
+    "relayLink": "ハブ経由",
+    "centerRns": "RNS",
+    "showDistantPeers": "遠隔地の同僚を表示",
+    "maxHopsFilter": "最大ホップ数",
+    "maxHopsAll": "すべてのホップ",
+    "maxHopsOption": "{{count}}ホップ",
+    "interfaceStatus": "{{online}}オンライン、{{offline}}オフラインインターフェイス",
+    "unassignedInterface": "その他のパス",
+    "legendInterfaceOnline": "インターフェースオンライン",
+    "legendInterfaceOffline": "オフラインインターフェース",
+    "legendPeerUser": "LXMFピア",
+    "legendPeerServer": "放浪者ノード",
+    "interfaceLink": "インターフェースリンク",
+    "peerLink": "ピアリンク"
   },
   "rfHistograms": {
     "title": "RF信号分布",

@@ -40,6 +40,7 @@ export function createElectronAPIMock(): ElectronAPI {
       getReticulumMessages: vi.fn().mockResolvedValue([]),
       searchReticulumMessages: vi.fn().mockResolvedValue([]),
       deleteReticulumMessage: vi.fn().mockResolvedValue({ changes: 1 }),
+      clearReticulumMessages: vi.fn().mockResolvedValue({ changes: 0 }),
       saveReticulumMessage: vi.fn().mockResolvedValue(undefined),
       markStaleReticulumOutbound: vi.fn().mockResolvedValue({ changes: 0 }),
       vacuumReticulumTables: vi.fn().mockResolvedValue({ ok: true }),

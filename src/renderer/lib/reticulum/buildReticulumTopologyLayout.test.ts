@@ -1,18 +1,124 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildReticulumMeshTopologyGraph,
   buildReticulumTopologyGraph,
   buildReticulumTopologyLayout,
   buildReticulumViaHashEdges,
   computeReticulumNodeDepths,
   countRelayTargets,
   filterReticulumVisibleNodeIds,
+  interfaceNodeId,
   isReticulumHubNode,
+  isReticulumInterfaceOnline,
+  isReticulumPeerOnline,
+  matchPeerToInterfaceId,
   mergeReticulumTopologyEdgeNodes,
   shouldUseReticulumStarFallbackEdges,
 } from './buildReticulumTopologyLayout';
 
-describe('buildReticulumTopologyLayout', () => {
+const sampleInterfaces = [
+  { id: 'tcp-east', name: 'RNS_Transport_US-East', enabled: true, status: 'up' },
+  { id: 'eth0', name: 'dude.eth', enabled: true, status: 'down' },
+];
+
+describe('buildReticulumMeshTopologyGraph', () => {
+  it('places configured interfaces on spokes from self with peer children', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      sampleInterfaces,
+      [
+        {
+          destination_hash: 'peeraaaa',
+          display_name: 'Mother',
+          hops: 2,
+          interface: 'RNS_Transport_US-East',
+        },
+        {
+          destination_hash: 'peerbbbb',
+          display_name: 'D20Ph1',
+          hops: 1,
+          interface: 'dude.eth',
+        },
+      ],
+      { selfLabel: 'NV0N', unassignedInterfaceLabel: 'Other paths' },
+    );
+
+    expect(graph.nodes.find((n) => n.id === 'self')?.label).toBe('NV0N');
+    expect(graph.nodes.some((n) => n.id === interfaceNodeId('tcp-east'))).toBe(true);
+    expect(graph.nodes.find((n) => n.id === interfaceNodeId('tcp-east'))?.label).toBe(
+      'RNS_Transport_US-East',
+    );
+    expect(
+      graph.edges.some(
+        (e) =>
+          e.source === 'self' && e.target === interfaceNodeId('tcp-east') && e.kind === 'direct',
+      ),
+    ).toBe(true);
+    expect(
+      graph.edges.some(
+        (e) =>
+          e.source === interfaceNodeId('tcp-east') && e.target === 'peeraaaa' && e.kind === 'relay',
+      ),
+    ).toBe(true);
+    expect(graph.nodes.find((n) => n.id === 'peeraaaa')?.kind).toBe('peer');
+  });
+
+  it('marks interface online/offline from enabled and status', () => {
+    const graph = buildReticulumMeshTopologyGraph(sampleInterfaces, [], {
+      selfLabel: 'You',
+      unassignedInterfaceLabel: 'Other paths',
+    });
+    expect(graph.nodes.find((n) => n.id === interfaceNodeId('tcp-east'))?.online).toBe(true);
+    expect(graph.nodes.find((n) => n.id === interfaceNodeId('eth0'))?.online).toBe(false);
+  });
+
+  it('routes unmatched peers through unassigned interface bucket', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      sampleInterfaces,
+      [{ destination_hash: 'orphan', hops: 1, interface: 'unknown_iface' }],
+      { selfLabel: 'You', unassignedInterfaceLabel: 'Other paths' },
+    );
+    expect(graph.nodes.some((n) => n.id === interfaceNodeId('__unassigned__'))).toBe(true);
+    expect(
+      graph.edges.some(
+        (e) => e.source === interfaceNodeId('__unassigned__') && e.target === 'orphan',
+      ),
+    ).toBe(true);
+  });
+
+  it('classifies nomad hashes as server peers', () => {
+    const graph = buildReticulumMeshTopologyGraph(
+      sampleInterfaces,
+      [{ destination_hash: 'nomad01', hops: 1, interface: 'dude.eth' }],
+      {
+        selfLabel: 'You',
+        unassignedInterfaceLabel: 'Other paths',
+        serverPeerHashes: new Set(['nomad01']),
+      },
+    );
+    expect(graph.nodes.find((n) => n.id === 'nomad01')?.peerKind).toBe('server');
+  });
+});
+
+describe('reticulum topology helpers', () => {
+  it('matches peer interface names case-insensitively', () => {
+    expect(matchPeerToInterfaceId('rns_transport_us-east', sampleInterfaces)).toBe('tcp-east');
+    expect(matchPeerToInterfaceId('missing', sampleInterfaces)).toBeNull();
+  });
+
+  it('detects peer and interface online state', () => {
+    expect(isReticulumInterfaceOnline({ id: 'a', name: 'A', enabled: true, status: 'up' })).toBe(
+      true,
+    );
+    expect(isReticulumInterfaceOnline({ id: 'a', name: 'A', enabled: false, status: 'up' })).toBe(
+      false,
+    );
+    expect(isReticulumPeerOnline({ destination_hash: 'x', hops: 1 })).toBe(true);
+    expect(isReticulumPeerOnline({ destination_hash: 'x', hops: 0 })).toBe(false);
+  });
+});
+
+describe('buildReticulumTopologyLayout (via-hash legacy)', () => {
   it('assigns BFS depths from self over via edges', () => {
     const nodes = [
       { destination_hash: 'hub', hops: 1 },
@@ -165,6 +271,8 @@ describe('buildReticulumTopologyLayout', () => {
       nodes.map((n) => n.destination_hash),
       depths,
       edges,
+      nodes,
+      { includeDistantPeers: false },
     );
     expect(visible.has('hub')).toBe(true);
     expect(visible.has('peer0')).toBe(true);
@@ -173,5 +281,30 @@ describe('buildReticulumTopologyLayout', () => {
     const graph = buildReticulumTopologyGraph(nodes, edges, { selfLabel: 'You' });
     expect(graph.hiddenCount).toBeGreaterThan(0);
     expect(graph.nodes.some((n) => n.id === 'hub')).toBe(true);
+  });
+
+  it('includes edge-attached distant peers when includeDistantPeers is enabled', () => {
+    const nodes = Array.from({ length: 100 }, (_, i) => ({
+      destination_hash: `peer${i}`,
+      hops: i < 5 ? 1 : 3,
+    }));
+    const edges = nodes.flatMap((n, i) =>
+      i < 5
+        ? [{ source: 'self' as const, target: n.destination_hash }]
+        : [{ source: 'hub', target: n.destination_hash }],
+    );
+    edges.unshift({ source: 'self', target: 'hub' });
+    nodes.unshift({ destination_hash: 'hub', hops: 1 });
+
+    const depths = computeReticulumNodeDepths(edges, nodes);
+    const visible = filterReticulumVisibleNodeIds(
+      nodes.map((n) => n.destination_hash),
+      depths,
+      edges,
+      nodes,
+      { includeDistantPeers: true },
+    );
+    expect(visible.has('hub')).toBe(true);
+    expect(visible.has('peer50')).toBe(true);
   });
 });

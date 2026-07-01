@@ -229,6 +229,7 @@ export interface ElectronAPI {
       identityId: string,
       messageHash: string,
     ) => Promise<{ changes: number }>;
+    clearReticulumMessages: (identityId: string) => Promise<{ changes: number }>;
     saveReticulumMessage: (message: {
       identity_id: string;
       sender_id: string;

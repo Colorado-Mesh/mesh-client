@@ -395,7 +395,7 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByRole('img', { name: 'Received via MQTT' })).toBeInTheDocument();
   });
 
-  it('shows Reticulum RF/TCP/network transport badges for incoming messages', () => {
+  it('shows Reticulum RF/TCP/network transport badges for incoming messages', async () => {
     const { rerender } = render(
       <ToastProvider>
         <ChatPanel
@@ -403,6 +403,8 @@ describe('ChatPanel accessibility', () => {
           protocol="reticulum"
           dmOnlyChat
           myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
           messages={[
             {
               sender_id: 2,
@@ -417,7 +419,9 @@ describe('ChatPanel accessibility', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+    });
 
     rerender(
       <ToastProvider>
@@ -426,6 +430,8 @@ describe('ChatPanel accessibility', () => {
           protocol="reticulum"
           dmOnlyChat
           myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
           messages={[
             {
               sender_id: 2,
@@ -440,7 +446,9 @@ describe('ChatPanel accessibility', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.getByLabelText('Received via TCP')).toHaveTextContent('TCP');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Received via TCP')).toHaveTextContent('TCP');
+    });
 
     rerender(
       <ToastProvider>
@@ -449,6 +457,8 @@ describe('ChatPanel accessibility', () => {
           protocol="reticulum"
           dmOnlyChat
           myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
           messages={[
             {
               sender_id: 2,
@@ -463,7 +473,9 @@ describe('ChatPanel accessibility', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.getByTitle('Received via network')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTitle('Received via network')).toBeInTheDocument();
+    });
   });
 
   it('shows Reticulum outbound transport status for own messages', () => {
@@ -3553,5 +3565,58 @@ describe('ChatPanel reticulum dm-only chat', () => {
         'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('hides message history when no DM tab is selected', () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'History Peer',
+        payload: 'prior hello',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    localStorage.setItem(`mesh-client:dismissedDmTabs:reticulum`, JSON.stringify({ [peerId]: 1 }));
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByText('prior hello')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps closed DM tabs dismissed after remount', () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'History Peer',
+        payload: 'prior hello',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    localStorage.setItem(`mesh-client:openDmTabs:reticulum`, JSON.stringify([]));
+    localStorage.setItem(`mesh-client:dismissedDmTabs:reticulum`, JSON.stringify({ [peerId]: 1 }));
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'History Peer' })).not.toBeInTheDocument();
+    expect(screen.queryByText('prior hello')).not.toBeInTheDocument();
   });
 });

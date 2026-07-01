@@ -341,6 +341,17 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
   return Object.fromEntries(Object.entries(source).filter(([key]) => Number(key) !== nodeNum));
 }
 
+/** True when the user closed a DM tab and no new messages arrived since dismiss. */
+function isDismissedDmConversation(
+  nodeNum: number,
+  dismissedDmTabs: Record<number, number>,
+  inferredDmTabs: ReadonlyMap<number, number>,
+): boolean {
+  const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
+  const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
+  return dmCount > 0 && dismissedCount >= dmCount;
+}
+
 function latestMessageTimestamp(messages: readonly ChatMessage[], nowMs = Date.now()): number {
   let latest = 0;
   for (const msg of messages) {
@@ -775,12 +786,25 @@ function ChatPanel({
       }
     }
     for (const [nodeNum, unread] of dmUnreadCounts) {
-      if (unread > 0) all.add(nodeNum);
+      if (
+        unread > 0 &&
+        (!dmOnlyChat || !isDismissedDmConversation(nodeNum, dismissedDmTabs, inferredDmTabs))
+      ) {
+        all.add(nodeNum);
+      }
     }
     return Array.from(all).filter(
       (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
     );
-  }, [activeDmNode, dismissedDmTabs, dmUnreadCounts, inferredDmTabs, openDmTabs, protocol]);
+  }, [
+    activeDmNode,
+    dismissedDmTabs,
+    dmOnlyChat,
+    dmUnreadCounts,
+    inferredDmTabs,
+    openDmTabs,
+    protocol,
+  ]);
 
   // Reticulum DM-only: auto-focus the conversation with the most history when none selected.
   useEffect(() => {
@@ -842,7 +866,7 @@ function ChatPanel({
     }
 
     if (dmOnlyChat) {
-      return regularMessages;
+      return [];
     }
 
     return regularMessages.filter((m) => !m.to && m.channel === channel);
@@ -1382,19 +1406,46 @@ function ChatPanel({
       if (inferredDmTabSet.has(nodeNum)) {
         const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
         setDismissedDmTabs((prev) => ({ ...prev, [nodeNum]: dmCount }));
+        const dmViewKey = `dm:${nodeNum}`;
+        const peerMessages = regularMessages.filter((m) => {
+          if (protocol === 'reticulum') {
+            return reticulumMessageMatchesDmPeer(
+              m,
+              normalizeReticulumNodeId(nodeNum),
+              ownNodeIdSet,
+            );
+          }
+          return (
+            (m.to === nodeNum && isOwnNode(m.sender_id)) ||
+            (m.sender_id === nodeNum && isOwnNode(m.to ?? 0))
+          );
+        });
+        const latest = latestMessageTimestamp(peerMessages);
+        if (dmOnlyChat && latest > 0) {
+          setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[dmViewKey, latest]]));
+        }
       }
       if (activeDmNode === nodeNum) {
-        // Switch to next tab or back to channels
         const remaining = visibleDmTabs.filter((n) => n !== nodeNum);
         if (remaining.length > 0) {
           setActiveDmNode(remaining[remaining.length - 1]);
         } else {
           setActiveDmNode(null);
-          setViewMode('channels');
+          setViewMode(dmOnlyChat ? 'dm' : 'channels');
         }
       }
     },
-    [activeDmNode, inferredDmTabSet, inferredDmTabs, visibleDmTabs],
+    [
+      activeDmNode,
+      dmOnlyChat,
+      inferredDmTabSet,
+      inferredDmTabs,
+      isOwnNode,
+      ownNodeIdSet,
+      protocol,
+      regularMessages,
+      visibleDmTabs,
+    ],
   );
 
   function msgStarId(msg: ChatMessage): string {

@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3 bytes",
     "meshcorePathHashDeviceReported": "Verbonden radioreportages: {{mode}}",
     "meshcorePathHashModeHint": "Vereist begeleidende firmware v1.14.0+ en repeaters op v1.14+ langs het pad. Pre-1.14 repeaters laten geruisloos multibyte-pakketten vallen. Repeater- en roomservers kunnen ook CLI: set path.hash.mode {0|1|2} gebruiken.",
-    "meshcorePathHashApplyFailed": "Pad hash-modus mislukt: {{message}}"
+    "meshcorePathHashApplyFailed": "Pad hash-modus mislukt: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum-chat slaat alleen directe berichten op — er zijn geen kanalen om individueel te wissen.",
+    "clearReticulumMessagesTitle": "Directe berichten wissen",
+    "clearReticulumMessagesConfirm": "Hiermee worden alle {{count}} lokaal opgeslagen Reticulum-directe berichten permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1901,8 +1905,6 @@
     "probeLocal": "Sonde OK ({{mode}} modus).",
     "probeFailed": "Sonde mislukt: {{error}}",
     "isContact": "Contact",
-    "call": "Telefoonoproep",
-    "callComingSoon": "Spraakoproepen komen in een toekomstige update",
     "iconColor": "Avatar kleur",
     "iconColorAria": "Kleur peer-avatar",
     "saveContact": "Opslaan als contactpersoon",
@@ -2662,7 +2664,20 @@
     "legendHub": "Relais hub",
     "legendPeer": "Gelijke",
     "directLink": "Directe link",
-    "relayLink": "Via hub"
+    "relayLink": "Via hub",
+    "centerRns": "RNS",
+    "showDistantPeers": "Toon collega's op afstand",
+    "maxHopsFilter": "Max hops",
+    "maxHopsAll": "Alle hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "{{online}} online, {{offline}} offline interfaces",
+    "unassignedInterface": "Andere paden",
+    "legendInterfaceOnline": "Online web-interface",
+    "legendInterfaceOffline": "Interface offline",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nomad-knooppunt",
+    "interfaceLink": "Interface link",
+    "peerLink": "Collegiale link"
   },
   "rfHistograms": {
     "title": "RF-signaalverdeling",

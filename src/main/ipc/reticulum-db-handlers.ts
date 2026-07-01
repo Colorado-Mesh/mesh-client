@@ -261,6 +261,20 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     },
   );
 
+  ipcMain.handle('db:clearReticulumMessages', (_event, identityId: string) => {
+    try {
+      if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
+      const db = getDbForIpc('db:clearReticulumMessages');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce('DELETE FROM reticulum_messages WHERE identity_id = ?')
+        .run(identityId);
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:clearReticulumMessages', err);
+    }
+  });
+
   ipcMain.handle('db:vacuumReticulumTables', () => {
     try {
       const db = getDbForIpc('db:vacuumReticulumTables');

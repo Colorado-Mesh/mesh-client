@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: Record<string, number>) => {
+    t: (key: string, opts?: Record<string, number | string>) => {
       if (opts && 'count' in opts) return `${key}:${opts.count}`;
       if (opts && 'shown' in opts && 'total' in opts) {
         return `${key}:${opts.shown}/${opts.total}`;
+      }
+      if (opts && 'online' in opts && 'offline' in opts) {
+        return `${key}:${opts.online}/${opts.offline}`;
       }
       return key;
     },
@@ -22,8 +25,10 @@ vi.mock('@/renderer/lib/forceDirectedGraphLayout', async (importOriginal) => {
 });
 
 const isReticulumSidecarRunning = vi.fn();
+const fetchReticulumInterfaces = vi.fn();
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: () => isReticulumSidecarRunning(),
+  fetchReticulumInterfaces: () => fetchReticulumInterfaces(),
 }));
 
 import ReticulumTopologyPanel from './ReticulumTopologyPanel';
@@ -31,29 +36,43 @@ import ReticulumTopologyPanel from './ReticulumTopologyPanel';
 describe('ReticulumTopologyPanel', () => {
   beforeEach(() => {
     isReticulumSidecarRunning.mockResolvedValue(true);
-    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
-      nodes: [
-        { destination_hash: 'hub', hops: 1 },
-        { destination_hash: 'leaf', hops: 2 },
-      ],
-      edges: [
-        { source: 'self', target: 'hub' },
-        { source: 'hub', target: 'leaf' },
-      ],
+    fetchReticulumInterfaces.mockResolvedValue([
+      { id: 'tcp-east', name: 'RNS_Transport_US-East', type: 'tcp', enabled: true, status: 'up' },
+    ]);
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({
+          nodes: [
+            {
+              destination_hash: 'peeraaaa',
+              display_name: 'Mother',
+              hops: 2,
+              interface: 'RNS_Transport_US-East',
+            },
+          ],
+          edges: [],
+        });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
     });
     window.electronAPI.reticulum.onEvent = vi.fn().mockReturnValue(() => {});
   });
 
-  it('renders full-height graph shell and legend after refresh', async () => {
+  it('renders mesh-style graph shell and legend after refresh', async () => {
     const { container } = render(<ReticulumTopologyPanel />);
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/topology');
+      expect(fetchReticulumInterfaces).toHaveBeenCalled();
     });
 
     expect(screen.getByText('reticulumTopology.title')).toBeInTheDocument();
-    expect(screen.getByText('reticulumTopology.legendHub')).toBeInTheDocument();
-    expect(screen.getByText('reticulumTopology.legendPeer')).toBeInTheDocument();
+    expect(screen.getByText('reticulumTopology.legendInterfaceOnline')).toBeInTheDocument();
+    expect(screen.getByText('reticulumTopology.legendPeerUser')).toBeInTheDocument();
+    expect(screen.getByText('reticulumTopology.interfaceStatus:1/0')).toBeInTheDocument();
     expect(container.querySelector('svg.min-h-0.flex-1')).toBeTruthy();
   });
 });

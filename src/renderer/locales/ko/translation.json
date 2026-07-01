@@ -199,7 +199,11 @@
     "meshcorePathHashModeShort2": "3바이트",
     "meshcorePathHashDeviceReported": "연결된 라디오 보고서: {{mode}}",
     "meshcorePathHashModeHint": "경로상 v1.14.0+ 동반 펌웨어와 v1.14+ 리피터가 필요합니다. v1.14 이전 리피터는 멀티바이트 패킷을 조용히 드롭합니다. 리피터 및 룸 서버는 CLI에서 set path.hash.mode {0|1|2}를 사용할 수도 있습니다.",
-    "meshcorePathHashApplyFailed": "경로 해시 모드 실패: {{message}}"
+    "meshcorePathHashApplyFailed": "경로 해시 모드 실패: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum 채팅은 다이렉트 메시지만 저장합니다. 개별적으로 지울 채널이 없습니다.",
+    "clearReticulumMessagesTitle": "다이렉트 메시지 지우기",
+    "clearReticulumMessagesConfirm": "이렇게 하면 로컬로 저장된 모든 {{count}} 개의 Reticulum 다이렉트 메시지가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -1901,8 +1905,6 @@
     "probeLocal": "프로브 OK ({{mode}} 모드).",
     "probeFailed": "프로브 실패: {{error}}",
     "isContact": "연락하기",
-    "call": "음성 통화",
-    "callComingSoon": "음성 통화는 향후 업데이트될 예정입니다.",
     "iconColor": "아바타 색상",
     "iconColorAria": "피어 아바타 색상",
     "saveContact": "연락처로 저장",
@@ -2662,7 +2664,20 @@
     "legendHub": "릴레이 허브",
     "legendPeer": "또래",
     "directLink": "직접링크",
-    "relayLink": "허브를 통해"
+    "relayLink": "허브를 통해",
+    "centerRns": "RNS",
+    "showDistantPeers": "멀리 있는 동료 표시",
+    "maxHopsFilter": "최대 홉",
+    "maxHopsAll": "모든 홉",
+    "maxHopsOption": "{{count}} 홉",
+    "interfaceStatus": "{{online}} 온라인, {{offline}} 오프라인 인터페이스",
+    "unassignedInterface": "기타 경로",
+    "legendInterfaceOnline": "온라인 인터페이스",
+    "legendInterfaceOffline": "오프라인 인터페이스",
+    "legendPeerUser": "LXMF 피어",
+    "legendPeerServer": "노마드 노드",
+    "interfaceLink": "인터페이스 링크",
+    "peerLink": "피어 링크"
   },
   "rfHistograms": {
     "title": "RF 신호 분포",
