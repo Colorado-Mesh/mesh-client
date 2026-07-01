@@ -662,7 +662,12 @@
       "openRadio": "Otevřít rádio",
       "refreshPorts": "Obnovit porty",
       "availablePorts": "Dostupné: {{ports}}"
-    }
+    },
+    "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
+    "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
+    "stageAutoConnectingBle": "Připojení k {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Čekání na dokončení Meshtastic Bluetooth — MeshCore se po dokončení automaticky připojí k {{deviceName}}…",
+    "stageWaitingNobleBleMeshcore": "Čekání na dokončení MeshCore Bluetooth – Meshtastic se po dokončení automaticky připojí k {{deviceName}}…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

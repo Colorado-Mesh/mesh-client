@@ -1470,7 +1470,39 @@ const UPGRADE_ACCESS_FALSE_FRIENDS = [
 const ACL_LISTING_AD_FALSE_FRIEND_RES = [/ACL-advertentie/i, /Iklan ACL/i];
 
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
-export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
+export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set([
+  'channelLoading',
+  'savingChannel',
+  'autoConnectingTo',
+  'autoReconnectInProgress',
+  'stageAutoConnectingBle',
+  'stageWaitingNobleBleMeshtastic',
+  'stageWaitingNobleBleMeshcore',
+]);
+
+/** connectionPanel.autoReconnectInProgress — must mean reconnect, not initial connect. */
+export const AUTO_RECONNECT_IN_PROGRESS_KEY = 'connectionPanel.autoReconnectInProgress';
+
+export const AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS = {
+  uk: [
+    {
+      re: /^Триває автоматичне підключення/i,
+      hint: 'autoReconnectInProgress must use повторне/перепідключення (reconnect), not generic підключення (connect)',
+    },
+  ],
+  it: [
+    {
+      re: /^Connessione automatica/i,
+      hint: 'autoReconnectInProgress must be "Riconnessione automatica…", not initial "Connessione automatica"',
+    },
+  ],
+  cs: [
+    {
+      re: /^Probíhá automatické připojení/i,
+      hint: 'autoReconnectInProgress must use opětovné připojení (reconnect), not generic připojení',
+    },
+  ],
+};
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
@@ -1785,7 +1817,7 @@ function checkReticulumPeerAndPingIssues(ctx) {
  * @returns {string[]}
  */
 function checkMustTranslateAndFormFieldIssues(ctx) {
-  const { locale, val, enVal, leafKey } = ctx;
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (locale !== 'en' && MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
@@ -1842,6 +1874,23 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
     (/\.{4,}/.test(val) || /\.{3,}$/.test(val))
   ) {
     issues.push('use Unicode ellipsis (…) instead of ASCII dots when English uses …');
+  }
+
+  if (
+    locale !== 'en' &&
+    ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
+    enVal.endsWith('…') &&
+    /…{2,}/.test(val)
+  ) {
+    issues.push('use a single Unicode ellipsis (…), not repeated ……');
+  }
+
+  if (flatKey === AUTO_RECONNECT_IN_PROGRESS_KEY && locale !== 'en') {
+    for (const { re, hint } of AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`autoReconnectInProgress false friend: ${hint}`);
+      }
+    }
   }
   return issues;
 }

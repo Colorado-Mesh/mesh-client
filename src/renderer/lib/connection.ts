@@ -11,6 +11,7 @@ import {
   getMeshtasticStreamsDiagnostics,
   logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
+import { notifyNobleBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
@@ -192,6 +193,7 @@ export async function createBleConnection(
         if (!connectResult.ok) {
           throw new Error(connectResult.error || 'BLE connect failed');
         }
+        notifyNobleBlePrimaryRfLinkReady(sessionId);
         if (attempt > 1) {
           console.info(
             `[connection] createBleConnection recovered on retry ${formatJsonForRendererLog({

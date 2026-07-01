@@ -662,7 +662,12 @@
       "openRadio": "Otwórz radio",
       "refreshPorts": "Odśwież porty",
       "availablePorts": "Dostępne: {{ports}}"
-    }
+    },
+    "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
+    "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
+    "stageAutoConnectingBle": "Łączenie z {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Oczekiwanie na zakończenie Meshtastic Bluetooth — MeshCore automatycznie połączy się z {{deviceName}} po zakończeniu…",
+    "stageWaitingNobleBleMeshcore": "Oczekiwanie na zakończenie połączenia Bluetooth MeshCore — po zakończeniu Meshtastic automatycznie połączy się z {{deviceName}}…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

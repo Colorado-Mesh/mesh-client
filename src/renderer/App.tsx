@@ -161,6 +161,7 @@ import {
   meshcoreRoomServerIdsFromNodes,
   repairMeshcoreHydratedMessages,
 } from './lib/meshcoreDbCacheHydration';
+import { initNobleBleDualRadioStartup } from './lib/meshcoreDualNobleBleInit';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
@@ -648,6 +649,10 @@ function AppContent() {
 
   useLayoutEffect(() => {
     ensureOfflineProtocolIdentities();
+  }, []);
+
+  useLayoutEffect(() => {
+    initNobleBleDualRadioStartup();
   }, []);
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredMeshProtocol());

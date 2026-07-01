@@ -662,7 +662,12 @@
       "openRadio": "라디오 열기",
       "refreshPorts": "포트 새로 고침",
       "availablePorts": "사용 가능: {{ports}}"
-    }
+    },
+    "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
+    "autoReconnectInProgress": "자동 재연결 진행 중…",
+    "stageAutoConnectingBle": "{{deviceName}}에 연결 중…",
+    "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth가 완료되기를 기다리는 중 — MeshCore는 완료되면 자동으로 {{deviceName}}에 연결됩니다…",
+    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth가 완료되기를 기다리는 중 — 완료되면 Meshtastic이 자동으로 {{deviceName}}에 연결됩니다…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

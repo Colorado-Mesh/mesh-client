@@ -662,7 +662,12 @@
       "openRadio": "ラジオを開く",
       "refreshPorts": "リフレッシュポート",
       "availablePorts": "利用可能： {{ports}}"
-    }
+    },
+    "autoConnectingTo": "{{deviceName}} に自動接続中…",
+    "autoReconnectInProgress": "自動再接続中です…",
+    "stageAutoConnectingBle": "{{deviceName}} に接続中…",
+    "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth が完了するのを待っています — 完了すると、MeshCore は自動的に {{deviceName}} に接続します…",
+    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth が完了するのを待っています — 完了すると、Meshtastic は自動的に {{deviceName}} に接続します…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

@@ -662,7 +662,12 @@
       "openRadio": "打开收音机",
       "refreshPorts": "刷新端口",
       "availablePorts": "可用： {{ports}}"
-    }
+    },
+    "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
+    "autoReconnectInProgress": "正在自动重新连接…",
+    "stageAutoConnectingBle": "正在连接到 {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}…",
+    "stageWaitingNobleBleMeshcore": "正在等待 MeshCore Bluetooth 完成 — 完成后 Meshtastic 将自动连接到 {{deviceName}}…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

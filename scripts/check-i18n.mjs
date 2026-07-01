@@ -17,7 +17,9 @@
  *    wire / g: GIF composer strings (protocol tokens, companion-wire false friends, Open-aware),
  *    connectionBanner serialReselectAction MT garbage, meshcoreGifHint bare-id false friends,
  *    meshcoreReactionEmojiOption contact/fabric false friends, Ukrainian broken apostrophe spacing,
- *    and roomsPanel collapse/expand hotel-room wording; MeshCore path-hash hop-count brewing false
+ *    and roomsPanel collapse/expand hotel-room wording; connectionPanel Noble BLE wait/auto-connect
+ *    stage strings (Unicode ellipsis hygiene, autoReconnectInProgress reconnect false friends);
+ *    MeshCore path-hash hop-count brewing false
  *    friends, CAT/Qt plural-form residue (&apos;, "plural form:"), short label parenthesis garbage,
  *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}; Reticulum identity/interface/
  *    peer/propagation UI (must-translate stack/config strings, disable parallax false friends, peer/

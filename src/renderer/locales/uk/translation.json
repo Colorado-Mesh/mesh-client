@@ -662,7 +662,12 @@
       "openRadio": "Відкрити радіо",
       "refreshPorts": "Оновити порти",
       "availablePorts": "Доступно: {{ports}}"
-    }
+    },
+    "autoConnectingTo": "Автоматичне підключення до {{deviceName}}…",
+    "autoReconnectInProgress": "Триває автоматичне повторне підключення…",
+    "stageAutoConnectingBle": "Підключення до {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Очікування завершення Meshtastic Bluetooth — MeshCore автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
+    "stageWaitingNobleBleMeshcore": "Очікування завершення MeshCore Bluetooth — Meshtastic автоматично підключиться до {{deviceName}}, коли це буде зроблено…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

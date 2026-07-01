@@ -1001,6 +1001,8 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     const mcConnKey = 'mesh-client:lastConnection:meshcore';
     const mtConnKey = 'mesh-client:lastConnection:meshtastic';
     localStorage.setItem(protocolKey, 'meshcore');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
     localStorage.setItem(
       mcConnKey,
       JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
@@ -1011,7 +1013,9 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     );
     const onAutoConnect = vi.fn().mockResolvedValue(undefined);
     const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
-    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBleProtocolSettle');
+    dualNoble.resetNobleBleConnectMutexForTests();
+    dualNoble.initNobleBleDualRadioStartup();
+    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled');
 
     try {
       render(
@@ -1037,15 +1041,20 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     } finally {
       localStorage.removeItem(mcConnKey);
       localStorage.removeItem(mtConnKey);
+      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+      dualNoble.resetNobleBleConnectMutexForTests();
       restore();
     }
   });
 
-  it('defers inactive meshtastic auto-connect until active meshcore settles', async () => {
+  it('defers inactive meshtastic auto-connect until active meshcore primary settles', async () => {
     const { restore } = mockMacNoblePlatform();
     const mcConnKey = 'mesh-client:lastConnection:meshcore';
     const mtConnKey = 'mesh-client:lastConnection:meshtastic';
     localStorage.setItem(protocolKey, 'meshcore');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
     localStorage.setItem(
       mcConnKey,
       JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
@@ -1056,13 +1065,17 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     );
     const onAutoConnect = vi.fn().mockResolvedValue(undefined);
     const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    dualNoble.resetNobleBleConnectMutexForTests();
+    dualNoble.initNobleBleDualRadioStartup();
     let releaseSettle!: () => void;
-    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBleProtocolSettle').mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseSettle = resolve;
-        }),
-    );
+    const settleSpy = vi
+      .spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled')
+      .mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseSettle = resolve;
+          }),
+      );
 
     try {
       render(
@@ -1077,7 +1090,7 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
       );
 
       await Promise.resolve();
-      expect(settleSpy).toHaveBeenCalledWith('meshcore', expect.any(Number));
+      expect(settleSpy).toHaveBeenCalled();
       expect(onAutoConnect).not.toHaveBeenCalled();
 
       releaseSettle();
@@ -1092,15 +1105,20 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     } finally {
       localStorage.removeItem(mcConnKey);
       localStorage.removeItem(mtConnKey);
+      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+      dualNoble.resetNobleBleConnectMutexForTests();
       restore();
     }
   });
 
-  it('defers inactive meshcore auto-connect until active meshtastic settles', async () => {
+  it('defers inactive meshcore auto-connect until active meshtastic primary settles', async () => {
     const { restore } = mockMacNoblePlatform();
     const mcConnKey = 'mesh-client:lastConnection:meshcore';
     const mtConnKey = 'mesh-client:lastConnection:meshtastic';
     localStorage.setItem(protocolKey, 'meshtastic');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'meshcore-ble-device');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'meshtastic-ble-device');
     localStorage.setItem(
       mcConnKey,
       JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble-device' }),
@@ -1111,13 +1129,17 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     );
     const onAutoConnect = vi.fn().mockResolvedValue(undefined);
     const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    dualNoble.resetNobleBleConnectMutexForTests();
+    dualNoble.initNobleBleDualRadioStartup();
     let releaseSettle!: () => void;
-    const settleSpy = vi.spyOn(dualNoble, 'awaitNobleBleProtocolSettle').mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseSettle = resolve;
-        }),
-    );
+    const settleSpy = vi
+      .spyOn(dualNoble, 'awaitNobleBlePrimaryAutoConnectSettled')
+      .mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseSettle = resolve;
+          }),
+      );
 
     try {
       render(
@@ -1132,7 +1154,7 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
       );
 
       await Promise.resolve();
-      expect(settleSpy).toHaveBeenCalledWith('meshtastic', expect.any(Number));
+      expect(settleSpy).toHaveBeenCalled();
       expect(onAutoConnect).not.toHaveBeenCalled();
 
       releaseSettle();
@@ -1147,6 +1169,9 @@ describe('ConnectionPanel active-protocol-first BLE auto-connect', () => {
     } finally {
       localStorage.removeItem(mcConnKey);
       localStorage.removeItem(mtConnKey);
+      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+      dualNoble.resetNobleBleConnectMutexForTests();
       restore();
     }
   });

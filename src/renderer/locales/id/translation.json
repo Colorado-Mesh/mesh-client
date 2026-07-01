@@ -662,7 +662,12 @@
       "openRadio": "Buka Radio",
       "refreshPorts": "Segarkan port",
       "availablePorts": "Tersedia: {{ports}}"
-    }
+    },
+    "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
+    "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
+    "stageAutoConnectingBle": "Menghubungkan ke {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Menunggu Bluetooth Meshtastic selesai — MeshCore akan terhubung ke {{deviceName}} secara otomatis setelah selesai…",
+    "stageWaitingNobleBleMeshcore": "Menunggu Bluetooth MeshCore selesai — Meshtastic akan terhubung ke {{deviceName}} secara otomatis setelah selesai…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

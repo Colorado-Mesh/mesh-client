@@ -245,6 +245,48 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
   });
 
+  it('flags ASCII ellipsis on connectionPanel.autoConnectingTo', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'connectionPanel.autoConnectingTo',
+      val: 'Automatische Verbindung mit {{deviceName}}...',
+      enVal: 'Auto-connecting to {{deviceName}}…',
+    });
+    expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
+  });
+
+  it('flags double Unicode ellipsis on Noble BLE wait stage copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'connectionPanel.stageWaitingNobleBleMeshtastic',
+      val: '正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}……',
+      enVal:
+        'Waiting for Meshtastic Bluetooth to finish — MeshCore will connect to {{deviceName}} automatically when it is done…',
+    });
+    expectIssue(issues, 'use a single Unicode ellipsis (…), not repeated');
+  });
+
+  it('flags autoReconnectInProgress connect-vs-reconnect false friend in Ukrainian', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'connectionPanel.autoReconnectInProgress',
+      val: 'Триває автоматичне підключення…',
+      enVal: 'Auto-reconnect in progress…',
+    });
+    expectIssue(issues, 'autoReconnectInProgress false friend');
+  });
+
+  it('passes valid autoReconnectInProgress in Ukrainian', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'uk',
+        flatKey: 'connectionPanel.autoReconnectInProgress',
+        val: 'Триває автоматичне повторне підключення…',
+        enVal: 'Auto-reconnect in progress…',
+      }),
+    ).toEqual([]);
+  });
+
   it('flags retryRemoteChannels loading-channel false friend in Spanish', () => {
     const issues = localeStringQualityIssues({
       locale: 'es',

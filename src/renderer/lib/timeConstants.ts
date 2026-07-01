@@ -197,5 +197,8 @@ export const MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
 /** MeshCore BLE protocol handshake after Web Bluetooth connect. */
 export const MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
 
+/** Cap meshcore.js deviceQuery during Noble IPC handshake (onConnected otherwise hangs until outer timeout). */
+export const MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS = 8_000;
+
 /** Exponential backoff cap for RF auto-reconnect (2s × 2^attempt, max this value). */
 export const MESHCORE_MAX_RECONNECT_DELAY_MS = 32_000;

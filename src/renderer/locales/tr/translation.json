@@ -662,7 +662,12 @@
       "openRadio": "Açık Radyo",
       "refreshPorts": "Portları Yenile",
       "availablePorts": "Mevcut: {{ports}}"
-    }
+    },
+    "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
+    "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
+    "stageAutoConnectingBle": "{{deviceName}}'a bağlanılıyor…",
+    "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth'un bitmesi bekleniyor — İşlem tamamlandığında MeshCore {{deviceName}}'a otomatik olarak bağlanacak…",
+    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth'un tamamlanması bekleniyor — İşlem tamamlandığında Meshtastic {{deviceName}}'a otomatik olarak bağlanacaktır…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -84,6 +84,10 @@ import {
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
+import {
+  isRendererNobleBlePlatform,
+  withNobleBleConnectMutex,
+} from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import {
@@ -2280,11 +2284,20 @@ export function useMeshtasticRuntime() {
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
         console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
-        opened = await openMeshtasticTransport(type, {
-          httpAddress,
-          blePeripheralId,
-          lastSerialPortId: serialPortId,
-        });
+        opened =
+          type === 'ble' && isRendererNobleBlePlatform()
+            ? await withNobleBleConnectMutex('meshtastic', () =>
+                openMeshtasticTransport(type, {
+                  httpAddress,
+                  blePeripheralId,
+                  lastSerialPortId: serialPortId,
+                }),
+              )
+            : await openMeshtasticTransport(type, {
+                httpAddress,
+                blePeripheralId,
+                lastSerialPortId: serialPortId,
+              });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);
@@ -2314,11 +2327,20 @@ export function useMeshtasticRuntime() {
           type,
           httpAddress ?? blePeripheralId,
         );
-        opened = await openMeshtasticTransport(type, {
-          httpAddress,
-          blePeripheralId,
-          lastSerialPortId,
-        });
+        opened =
+          type === 'ble' && isRendererNobleBlePlatform()
+            ? await withNobleBleConnectMutex('meshtastic', () =>
+                openMeshtasticTransport(type, {
+                  httpAddress,
+                  blePeripheralId,
+                  lastSerialPortId,
+                }),
+              )
+            : await openMeshtasticTransport(type, {
+                httpAddress,
+                blePeripheralId,
+                lastSerialPortId,
+              });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);

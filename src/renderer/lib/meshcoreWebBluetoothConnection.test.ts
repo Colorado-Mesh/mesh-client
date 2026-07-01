@@ -6,6 +6,13 @@ vi.mock('@liamcottle/meshcore.js', () => ({
     onFrameReceived = vi.fn();
     emit = vi.fn();
   },
+  SerialConnection: class {
+    close = vi.fn().mockResolvedValue(undefined);
+  },
+  WebSerialConnection: class {
+    close = vi.fn().mockResolvedValue(undefined);
+  },
+  Constants: {},
 }));
 
 import { MeshcoreWebBluetoothConnection } from './meshcoreWebBluetoothConnection';

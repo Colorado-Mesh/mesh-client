@@ -8,9 +8,14 @@ import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIc
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
 import {
-  awaitNobleBleProtocolSettle,
+  awaitNobleBlePrimaryAutoConnectSettled,
+  dualNobleBleBothRadiosConfigured,
+  getNobleBleDualRadioPrimaryProtocol,
+  initNobleBleDualRadioStartup,
+  isNobleBleDualRadioSecondary,
   isRendererNobleBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
+  notifyNobleBlePrimaryAutoConnectSettled,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
@@ -25,6 +30,7 @@ import {
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
+import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
 import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
@@ -34,7 +40,6 @@ import {
 } from '../lib/connectionPanelErrorHumanize';
 import { runConnectionPanelStorageMigrations } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
-import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -143,6 +148,39 @@ function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
 }
 
 const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';
+const STAGE_WAITING_NOBLE_BLE_MESHTASTIC = 'connectionPanel.stageWaitingNobleBleMeshtastic';
+const STAGE_WAITING_NOBLE_BLE_MESHCORE = 'connectionPanel.stageWaitingNobleBleMeshcore';
+
+function resolveBleAutoConnectLabel(
+  bleId: string,
+  lc?: LastConnection | null,
+  fallbackName?: string | null,
+): string {
+  return lc?.bleDeviceName ?? getBleDeviceName(bleId) ?? fallbackName ?? bleId;
+}
+
+function resolveConnectionStageText(
+  stage: string,
+  autoConnectTarget: string | null,
+  t: (key: string, opts?: Record<string, string>) => string,
+): string {
+  if (!stage) return '';
+  if (autoConnectTarget) {
+    if (stage === STAGE_WAITING_NOBLE_BLE_MESHCORE) {
+      return t('connectionPanel.stageWaitingNobleBleMeshcore', { deviceName: autoConnectTarget });
+    }
+    if (stage === STAGE_WAITING_NOBLE_BLE_MESHTASTIC) {
+      return t('connectionPanel.stageWaitingNobleBleMeshtastic', { deviceName: autoConnectTarget });
+    }
+    if (
+      stage === 'connectionPanel.stageConnecting' ||
+      stage === 'connectionPanel.stageConnectingLast'
+    ) {
+      return t('connectionPanel.stageAutoConnectingBle', { deviceName: autoConnectTarget });
+    }
+  }
+  return t(stage);
+}
 
 function shouldForgetGrantedWebBluetoothDevice(
   device: BluetoothDevice,
@@ -344,6 +382,7 @@ export default function ConnectionPanel({
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
+  const nobleBleMutexWait = useNobleBleConnectMutexWait(protocol);
   const [showRePairButton, setShowRePairButton] = useState(false);
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const showPinPromptRef = useRef(false);
@@ -603,6 +642,7 @@ export default function ConnectionPanel({
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
+  const [autoConnectBleTarget, setAutoConnectBleTarget] = useState<string | null>(null);
   const [sharedBleNotice, setSharedBleNotice] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
@@ -675,6 +715,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
+      setAutoConnectBleTarget(null);
       if (autoConnectTimeoutRef.current) {
         clearTimeout(autoConnectTimeoutRef.current);
         autoConnectTimeoutRef.current = null;
@@ -759,7 +800,7 @@ export default function ConnectionPanel({
           return;
         }
       }
-      if (connectionTypeRef.current === 'ble') {
+      if (connectionTypeRef.current === 'ble' && !isAutoConnectingRef.current) {
         setShowBlePicker(true);
         setConnectionStage('connectionPanel.stageScanning');
       }
@@ -1257,10 +1298,27 @@ export default function ConnectionPanel({
   // Serial and BLE use gesture-free reconnect when the platform remembers the device.
   // HTTP still uses the one-click reconnect card (no autoconnect on mount).
   useEffect(() => {
+    initNobleBleDualRadioStartup();
+
+    const notifyPrimaryAutoConnectSettledIfNeeded = () => {
+      if (
+        dualNobleBleBothRadiosConfigured() &&
+        getNobleBleDualRadioPrimaryProtocol() === protocol
+      ) {
+        notifyNobleBlePrimaryAutoConnectSettled();
+      }
+    };
+
     if (autoConnectFiredRef.current) return;
-    if (deviceStateRef.current.status !== 'disconnected') return;
+    if (deviceStateRef.current.status !== 'disconnected') {
+      notifyPrimaryAutoConnectSettledIfNeeded();
+      return;
+    }
     const lc = lastConnectionRef.current;
-    if (!lc) return;
+    if (!lc) {
+      notifyPrimaryAutoConnectSettledIfNeeded();
+      return;
+    }
 
     autoConnectFiredRef.current = true;
 
@@ -1272,6 +1330,7 @@ export default function ConnectionPanel({
         console.warn('[ConnectionPanel] auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
+        setAutoConnectBleTarget(null);
         setError(t('connectionPanel.error.autoConnectTimeout'));
         setConnecting(false);
         setConnectionStage('');
@@ -1285,6 +1344,7 @@ export default function ConnectionPanel({
       }
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
+      setAutoConnectBleTarget(null);
       const errMsg =
         err instanceof Error
           ? transport === 'serial'
@@ -1296,17 +1356,36 @@ export default function ConnectionPanel({
       setConnectionStage('');
     };
 
+    const maybeNotifyPrimaryBleAutoConnectSettled = notifyPrimaryAutoConnectSettledIfNeeded;
+
     const startBleNobleAutoConnect = (): boolean => {
-      if (!lastBleId || isLinux) return false;
+      if (!lastBleId || isLinux) {
+        maybeNotifyPrimaryBleAutoConnectSettled();
+        return false;
+      }
+      const bleTargetLabel = resolveBleAutoConnectLabel(
+        lastBleId,
+        lc,
+        lastConnectionBleDeviceNameFallbackRef.current,
+      );
+      setAutoConnectBleTarget(bleTargetLabel);
       setConnectionType('ble');
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
       setConnecting(true);
+      setShowBlePicker(false);
       setConnectionStage('connectionPanel.stageConnecting');
-      // reconnectBleWithScan owns failure timing (wait + scan); do not use the 30s serial timeout here.
-      void reconnectBleWithScan(protocol, lastBleId, () =>
-        onAutoConnectRef.current('ble', undefined, undefined, lastBleId),
-      )
+      // Primary: notify secondary after the first connect attempt (not after scan fallback).
+      void reconnectBleWithScan(protocol, lastBleId, () => {
+        const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
+        if (
+          dualNobleBleBothRadiosConfigured() &&
+          getNobleBleDualRadioPrimaryProtocol() === protocol
+        ) {
+          void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled);
+        }
+        return attempt;
+      })
         .then(() => {
           isAutoConnectingRef.current = false;
           setIsAutoConnecting(false);
@@ -1332,27 +1411,67 @@ export default function ConnectionPanel({
       setIsAutoConnecting(false);
       setConnecting(false);
       setConnectionStage('');
+      maybeNotifyPrimaryBleAutoConnectSettled();
       if (getStoredMeshProtocol() === 'meshcore') {
         setSharedBleNotice(true);
       }
       return true;
     };
 
+    const runSecondaryBleAutoConnect = async (bleId: string) => {
+      const primary = getNobleBleDualRadioPrimaryProtocol();
+      const bleTargetLabel = resolveBleAutoConnectLabel(
+        bleId,
+        lc,
+        lastConnectionBleDeviceNameFallbackRef.current,
+      );
+      setAutoConnectBleTarget(bleTargetLabel);
+      setConnectionType('ble');
+      isAutoConnectingRef.current = true;
+      setIsAutoConnecting(true);
+      setConnecting(true);
+      setShowBlePicker(false);
+      setConnectionStage(
+        primary === 'meshtastic'
+          ? STAGE_WAITING_NOBLE_BLE_MESHTASTIC
+          : STAGE_WAITING_NOBLE_BLE_MESHCORE,
+      );
+      await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+      setConnectionStage('connectionPanel.stageConnecting');
+      void reconnectBleWithScan(protocol, bleId, () =>
+        onAutoConnectRef.current('ble', undefined, undefined, bleId),
+      )
+        .then(() => {
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setConnecting(false);
+          setConnectionStage('');
+        })
+        .catch(onAutoConnectFailed);
+    };
+
     const runBleAutoConnectWithDefer = async () => {
       if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
-      const activeProtocol = getStoredMeshProtocol();
-      const otherProtocol = protocol === 'meshtastic' ? 'meshcore' : 'meshtastic';
-      const otherHasNobleBle =
-        isRendererNobleBlePlatform() &&
-        loadLastConnection(otherProtocol)?.type === 'ble' &&
-        Boolean(resolveLastBlePeripheralId(otherProtocol));
-      if (protocol !== activeProtocol && otherHasNobleBle) {
-        await awaitNobleBleProtocolSettle(
-          activeProtocol,
-          POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
-        );
+      const bleId = lastBleId;
+      const secondary = isNobleBleDualRadioSecondary(protocol);
+      if (secondary) {
+        if (!bleId) {
+          console.warn(`[ConnectionPanel] ${protocol} dual-radio auto-connect skipped — no BLE id`);
+          return;
+        }
+        await runSecondaryBleAutoConnect(bleId);
+        return;
       }
-      startBleNobleAutoConnect();
+      const started = startBleNobleAutoConnect();
+      if (!started) {
+        console.warn(
+          `[ConnectionPanel] BLE auto-connect skipped for ${protocol} — no remembered device`,
+        );
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setConnecting(false);
+        setConnectionStage('');
+      }
     };
 
     const migrateLastConnectionToBle = (bleDeviceId: string) => {
@@ -1383,11 +1502,16 @@ export default function ConnectionPanel({
           return;
         }
         onAutoConnectFailed(err, 'serial');
+        maybeNotifyPrimaryBleAutoConnectSettled();
       });
     } else if (lc.type === 'ble') {
       if (lastBleId && !isLinux) {
         void runBleAutoConnectWithDefer();
+      } else {
+        maybeNotifyPrimaryBleAutoConnectSettled();
       }
+    } else {
+      maybeNotifyPrimaryBleAutoConnectSettled();
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
   }, [protocol, isLinux, t]);
@@ -1507,6 +1631,42 @@ export default function ConnectionPanel({
     state.status === 'stale' ||
     state.status === 'reconnecting';
 
+  useEffect(() => {
+    const rfBusy =
+      connecting ||
+      isAutoConnecting ||
+      state.status === 'connecting' ||
+      state.status === 'reconnecting';
+    if (!rfBusy || !isRendererNobleBlePlatform()) return;
+
+    if (nobleBleMutexWait.waitingOnNobleBlePeer) {
+      const primary = nobleBleMutexWait.primaryProtocol;
+      if (primary === 'meshtastic') {
+        setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHTASTIC);
+      } else if (primary === 'meshcore') {
+        setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHCORE);
+      }
+      return;
+    }
+
+    if (
+      nobleBleMutexWait.active === protocol &&
+      (connectionStage === STAGE_WAITING_NOBLE_BLE_MESHTASTIC ||
+        connectionStage === STAGE_WAITING_NOBLE_BLE_MESHCORE)
+    ) {
+      setConnectionStage('connectionPanel.stageConnecting');
+    }
+  }, [
+    connecting,
+    isAutoConnecting,
+    state.status,
+    protocol,
+    nobleBleMutexWait.waitingOnNobleBlePeer,
+    nobleBleMutexWait.active,
+    nobleBleMutexWait.primaryProtocol,
+    connectionStage,
+  ]);
+
   const handleExitApp = useCallback(
     async (variant: 'connected' | 'idle' | 'connecting') => {
       if (variant === 'connecting') {
@@ -1547,11 +1707,37 @@ export default function ConnectionPanel({
   };
 
   // ─── Connecting Progress View ───────────────────────────────────
+  const rfSessionPending =
+    connecting ||
+    isAutoConnecting ||
+    state.status === 'connecting' ||
+    state.status === 'reconnecting';
+  const showNobleBleWaitNotice =
+    nobleBleMutexWait.waitingOnNobleBlePeer && rfSessionPending && isRendererNobleBlePlatform();
+
+  const showAutoReconnectBanner =
+    isAutoConnecting ||
+    state.status === 'reconnecting' ||
+    connecting ||
+    nobleBleMutexWait.waitingForPrimaryAutoConnect;
+
+  const renderAutoReconnectBanner = (): ReactNode =>
+    showAutoReconnectBanner ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className="rounded-lg border border-cyan-700/45 bg-cyan-950/40 px-4 py-3 text-sm text-cyan-100"
+      >
+        {t('connectionPanel.autoReconnectInProgress')}
+      </div>
+    ) : null;
+
   let connectingProgressView: ReactNode = null;
-  if (connecting && !isConnected) {
+  if ((connecting && !isConnected) || (showNobleBleWaitNotice && state.status !== 'configured')) {
     connectingProgressView = (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
         <div className="w-full">{renderExitActions('connecting')}</div>
+        {renderAutoReconnectBanner()}
         <SpinnerIconLg className="text-bright-green" />
         <div className="space-y-2 text-center">
           <h2 className="text-xl font-semibold text-gray-200">
@@ -1559,9 +1745,11 @@ export default function ConnectionPanel({
               ? t('connectionPanel.pairWithDevice')
               : showBlePicker
                 ? t('connectionPanel.scanningBluetooth')
-                : isAutoConnecting
-                  ? t('connectionPanel.autoConnecting')
-                  : t('connectionPanel.connecting')}
+                : isAutoConnecting && autoConnectBleTarget
+                  ? t('connectionPanel.autoConnectingTo', { deviceName: autoConnectBleTarget })
+                  : isAutoConnecting
+                    ? t('connectionPanel.autoConnecting')
+                    : t('connectionPanel.connecting')}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
             <p
@@ -1571,7 +1759,7 @@ export default function ConnectionPanel({
                   : 'text-muted text-sm'
               }
             >
-              {connectionStage ? t(connectionStage) : ''}
+              {resolveConnectionStageText(connectionStage, autoConnectBleTarget, t)}
             </p>
             <p className="text-muted/80 mt-1 text-xs">{t('connectionPanel.stayOnTab')}</p>
           </div>
@@ -2531,6 +2719,7 @@ export default function ConnectionPanel({
     return (
       <div className="w-full space-y-6">
         {renderExitActions('connected')}
+        {renderAutoReconnectBanner()}
 
         <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
           <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
@@ -2653,6 +2842,7 @@ export default function ConnectionPanel({
   return (
     <div className="w-full space-y-6">
       {renderExitActions('idle')}
+      {renderAutoReconnectBanner()}
 
       {/* Last Connection — one-click reconnect card */}
       {lastConnection && !connecting && (
@@ -2730,6 +2920,11 @@ export default function ConnectionPanel({
         {error && (
           <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
             {error}
+          </div>
+        )}
+        {showAutoReconnectBanner && (
+          <div className="border-b border-cyan-800/60 bg-cyan-950/30 px-4 py-2 text-xs text-cyan-100">
+            {t('connectionPanel.autoReconnectInProgress')}
           </div>
         )}
 
