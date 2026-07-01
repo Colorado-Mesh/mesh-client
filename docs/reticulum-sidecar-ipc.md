@@ -58,31 +58,31 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 
 ### LXMF and contacts
 
-| Method | Path                           | Body / notes                                               | Response                      |
-| ------ | ------------------------------ | ---------------------------------------------------------- | ----------------------------- |
-| POST   | `/api/v1/lxmf/send`            | `{ destination_hash, text, reply_to_hash?, reply_to_id? }` | `{ ok, sent_via?, message? }` |
-| POST   | `/api/v1/lxmf/reaction`        | `{ destination_hash, target_hash, emoji }`                 | `{ ok, message? }`            |
-| POST   | `/api/v1/lxmf/resource`        | LXMF file attachment payload                               | `{ ok, message? }`            |
-| DELETE | `/api/v1/lxmf/messages/{hash}` |                                                            | `{ ok }`                      |
-| GET    | `/api/v1/contacts`             |                                                            | `{ contacts: [] }`            |
+| Method | Path                           | Body / notes                                               | Response                                                                                                                                                      |
+| ------ | ------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/v1/lxmf/send`            | `{ destination_hash, text, reply_to_hash?, reply_to_id? }` | Live: `{ ok, delivery_method?, delivery_status?, sent_via?, message? }` or `{ ok: false, error: "no_propagation_node" }`. Stub: `{ ok, sent_via?, message? }` |
+| POST   | `/api/v1/lxmf/reaction`        | `{ destination_hash, target_hash, emoji }`                 | `{ ok, message? }`                                                                                                                                            |
+| POST   | `/api/v1/lxmf/resource`        | LXMF file attachment payload                               | `{ ok, message? }`                                                                                                                                            |
+| DELETE | `/api/v1/lxmf/messages/{hash}` |                                                            | `{ ok }`                                                                                                                                                      |
+| GET    | `/api/v1/contacts`             |                                                            | `{ contacts: [] }`                                                                                                                                            |
 
 ### Peers, topology, and propagation
 
-| Method | Path                                 | Body / notes           | Response                                                                           |
-| ------ | ------------------------------------ | ---------------------- | ---------------------------------------------------------------------------------- |
-| GET    | `/api/v1/peers`                      |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                         |
-| POST   | `/api/v1/peers/{hash}/path`          |                        | `{ ok }` — emits `peers_updated` WS on success                                     |
-| POST   | `/api/v1/peers/{hash}/probe`         |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success |
-| POST   | `/api/v1/ping`                       | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                  |
-| GET    | `/api/v1/topology`                   |                        | `{ nodes, edges }` — edges use path-table `via_hash` next hops when available      |
-| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)  | `{ packets: [] }` — recent wire tap ring buffer                                    |
-| DELETE | `/api/v1/packets`                    |                        | `{ ok }` — clear wire tap buffer                                                   |
-| GET    | `/api/v1/propagation`                |                        | `{ propagation, preferred_id, auto_sync_interval_sec }`                            |
-| POST   | `/api/v1/propagation/{id}/enable`    |                        | `{ ok }`                                                                           |
-| POST   | `/api/v1/propagation/{id}/disable`   |                        | `{ ok }`                                                                           |
-| POST   | `/api/v1/propagation/{id}/preferred` |                        | `{ ok }`                                                                           |
-| POST   | `/api/v1/propagation/sync`           |                        | `{ ok }`                                                                           |
-| POST   | `/api/v1/propagation/sync/cancel`    |                        | `{ ok }`                                                                           |
+| Method | Path                                 | Body / notes           | Response                                                                                                                |
+| ------ | ------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`                      |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                                                              |
+| POST   | `/api/v1/peers/{hash}/path`          |                        | `{ ok }` — emits `peers_updated` WS on success                                                                          |
+| POST   | `/api/v1/peers/{hash}/probe`         |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                      |
+| POST   | `/api/v1/ping`                       | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                       |
+| GET    | `/api/v1/topology`                   |                        | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed |
+| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)  | `{ packets: [] }` — recent wire tap ring buffer                                                                         |
+| DELETE | `/api/v1/packets`                    |                        | `{ ok }` — clear wire tap buffer                                                                                        |
+| GET    | `/api/v1/propagation`                |                        | `{ propagation, preferred_id, auto_sync_interval_sec }`                                                                 |
+| POST   | `/api/v1/propagation/{id}/enable`    |                        | `{ ok }`                                                                                                                |
+| POST   | `/api/v1/propagation/{id}/disable`   |                        | `{ ok }`                                                                                                                |
+| POST   | `/api/v1/propagation/{id}/preferred` |                        | `{ ok }`                                                                                                                |
+| POST   | `/api/v1/propagation/sync`           |                        | `{ ok }`                                                                                                                |
+| POST   | `/api/v1/propagation/sync/cancel`    |                        | `{ ok }`                                                                                                                |
 
 ### Nomad Network
 
@@ -112,7 +112,7 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`.
 
 `lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
 

@@ -6,6 +6,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   buildReticulumStarFallbackEdges,
   buildReticulumTopologyLayout,
+  shouldUseReticulumStarFallbackEdges,
 } from '@/renderer/lib/reticulum/buildReticulumTopologyLayout';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumTopologyEdge } from '@/shared/reticulum-types';
@@ -14,6 +15,7 @@ interface TopologyNode {
   destination_hash: string;
   display_name?: string | null;
   hops?: number | null;
+  via_hash?: string | null;
 }
 
 interface RenderNode {
@@ -55,7 +57,9 @@ export default function ReticulumTopologyPanel() {
       const edgeList: ReticulumTopologyEdge[] =
         body.edges && body.edges.length > 0
           ? body.edges
-          : buildReticulumStarFallbackEdges(uniquePeers);
+          : shouldUseReticulumStarFallbackEdges(uniquePeers, body.edges ?? [])
+            ? buildReticulumStarFallbackEdges(uniquePeers)
+            : [];
       const rendered = buildReticulumTopologyLayout(uniquePeers, edgeList, {
         selfLabel: t('reticulumTopology.self'),
       });

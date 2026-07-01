@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Impossibile inviare",
     "reticulumImageAttachment": "Immagine: {{name}}",
     "reticulumFileAttachment": "File: {{name}}",
-    "reticulumShowInFolder": "Nella cartella"
+    "reticulumShowInFolder": "Nella cartella",
+    "reticulumSendPropagated": "In coda al nodo di propagazione",
+    "reticulumNoPropagationNode": "Nessun nodo di propagazione configurato. Imposta un nodo di propagazione preferito nella scheda Reticulum Radio.",
+    "sentViaPropagation": "Nodo di propagazione"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

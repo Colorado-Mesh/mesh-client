@@ -2,6 +2,7 @@ export interface ReticulumTopologyNodeInput {
   destination_hash: string;
   display_name?: string | null;
   hops?: number | null;
+  via_hash?: string | null;
 }
 
 export interface ReticulumTopologyEdgeInput {
@@ -36,8 +37,9 @@ function buildAdjacency(edges: ReticulumTopologyEdgeInput[]): Map<string, Set<st
 /** BFS depth from self for ring layout. Unreachable nodes get depth 99. */
 export function computeReticulumNodeDepths(
   edges: ReticulumTopologyEdgeInput[],
-  nodeIds: Iterable<string>,
+  nodes: readonly ReticulumTopologyNodeInput[],
 ): Map<string, number> {
+  const nodeIds = nodes.map((n) => n.destination_hash);
   const adj = buildAdjacency(edges);
   const depths = new Map<string, number>();
   depths.set(SELF_ID, 0);
@@ -51,8 +53,15 @@ export function computeReticulumNodeDepths(
       queue.push(neighbor);
     }
   }
+  const hopsById = new Map(nodes.map((n) => [n.destination_hash, n.hops]));
   for (const id of nodeIds) {
-    if (!depths.has(id)) depths.set(id, 99);
+    if (depths.has(id)) continue;
+    const hops = hopsById.get(id);
+    if (hops != null && hops > 0) {
+      depths.set(id, hops);
+    } else {
+      depths.set(id, 99);
+    }
   }
   return depths;
 }
@@ -60,6 +69,33 @@ export function computeReticulumNodeDepths(
 /** Count how many edges use this node as a relay (via) source. */
 export function countRelayTargets(nodeId: string, edges: ReticulumTopologyEdgeInput[]): number {
   return edges.filter((e) => e.source === nodeId).length;
+}
+
+/** Merge relay stub ids from edges into the node list so SVG lines can render. */
+export function mergeReticulumTopologyEdgeNodes(
+  nodes: ReticulumTopologyNodeInput[],
+  edges: ReticulumTopologyEdgeInput[],
+): ReticulumTopologyNodeInput[] {
+  const byHash = new Map(nodes.map((n) => [n.destination_hash, n]));
+  for (const edge of edges) {
+    for (const id of [edge.source, edge.target]) {
+      if (id === SELF_ID || byHash.has(id)) continue;
+      byHash.set(id, { destination_hash: id, display_name: null, hops: null });
+    }
+  }
+  return [...byHash.values()];
+}
+
+/** Star fallback misrepresents multi-hop when via/hops data exists but edges are empty. */
+export function shouldUseReticulumStarFallbackEdges(
+  peers: readonly ReticulumTopologyNodeInput[],
+  edges: readonly ReticulumTopologyEdgeInput[],
+): boolean {
+  if (edges.length > 0) return false;
+  return !peers.some(
+    (peer) =>
+      (peer.hops != null && peer.hops > 1) || (peer.via_hash != null && peer.via_hash.length > 0),
+  );
 }
 
 export interface BuildReticulumTopologyLayoutOptions {
@@ -75,15 +111,15 @@ export function buildReticulumTopologyLayout(
 ): ReticulumTopologyLayoutNode[] {
   const cx = opts.cx ?? 200;
   const cy = opts.cy ?? 160;
+  const mergedNodes = mergeReticulumTopologyEdgeNodes(nodes, edges);
   const seen = new Set<string>();
-  const uniqueNodes = nodes.filter((n) => {
+  const uniqueNodes = mergedNodes.filter((n) => {
     if (!n.destination_hash || seen.has(n.destination_hash)) return false;
     seen.add(n.destination_hash);
     return true;
   });
 
-  const nodeIds = uniqueNodes.map((n) => n.destination_hash);
-  const depths = computeReticulumNodeDepths(edges, nodeIds);
+  const depths = computeReticulumNodeDepths(edges, uniqueNodes);
   const byDepth = new Map<number, ReticulumTopologyNodeInput[]>();
   for (const node of uniqueNodes) {
     const depth = depths.get(node.destination_hash) ?? 99;

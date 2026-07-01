@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Senden fehlgeschlagen",
     "reticulumImageAttachment": "Bild: {{name}}",
     "reticulumFileAttachment": "Datei: {{name}}",
-    "reticulumShowInFolder": "In Ordner"
+    "reticulumShowInFolder": "In Ordner",
+    "reticulumSendPropagated": "In der Warteschlange am Ausbreitungsknoten",
+    "reticulumNoPropagationNode": "Kein Ausbreitungsknoten konfiguriert. Legen Sie auf der Registerkarte „Reticulum Radio“ einen bevorzugten Ausbreitungsknoten fest.",
+    "sentViaPropagation": "Ausbreitungsknoten"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

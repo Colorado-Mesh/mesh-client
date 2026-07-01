@@ -29,7 +29,15 @@ export interface ReticulumLxmfPayload {
   received_via?: string;
   sent_via?: string;
   delivery_status?: string;
+  delivery_method?: string;
   attachment?: { file_name?: string; mime_type?: string; data_base64?: string };
+}
+
+function parseReticulumDeliveryMethod(
+  value: string | undefined,
+): MessageRecord['reticulumDeliveryMethod'] {
+  if (value === 'direct' || value === 'propagated' || value === 'opportunistic') return value;
+  return undefined;
 }
 
 function mapDeliveryStatusToMessageStatus(
@@ -37,14 +45,18 @@ function mapDeliveryStatusToMessageStatus(
   direction?: string,
 ): MessageStatus {
   if (deliveryStatus === 'failed') return 'failed';
-  if (deliveryStatus === 'sending' || deliveryStatus === 'pending') return 'sending';
-  if (direction === 'inbound' || direction === 'outbound') return 'acked';
+  if (deliveryStatus === 'delivered') return 'acked';
+  if (deliveryStatus === 'queued' || deliveryStatus === 'sending' || deliveryStatus === 'pending') {
+    return 'sending';
+  }
+  if (direction === 'inbound') return 'acked';
+  if (direction === 'outbound') return 'sending';
   return 'acked';
 }
 
 function resolvePersistedDeliveryStatus(p: ReticulumLxmfPayload): string | null {
   if (p.delivery_status) return p.delivery_status;
-  if (p.direction === 'inbound' || p.direction === 'outbound') return 'delivered';
+  if (p.direction === 'inbound') return 'delivered';
   return null;
 }
 
@@ -65,6 +77,8 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
   const receivedVia = resolvePayloadTransport(p);
   const status = mapDeliveryStatusToMessageStatus(p.delivery_status, p.direction);
 
+  const deliveryMethod = parseReticulumDeliveryMethod(p.delivery_method);
+
   return {
     id: messageHash,
     from: senderNodeId,
@@ -78,6 +92,7 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
     reticulumMessageHash: messageHash,
     reticulumSenderHash: p.sender_hash,
     ...(p.reply_to_hash ? { reticulumReplyToHash: p.reply_to_hash } : {}),
+    ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
     ...(isReaction ? { tapback: true, reticulumReplyToHash: p.reaction_target } : {}),
   };
 }

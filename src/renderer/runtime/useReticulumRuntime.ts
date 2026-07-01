@@ -231,6 +231,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'lxmf_message' && evt.payload && typeof evt.payload === 'object') {
         ingestLxmfPayload(evt.payload);
       }
+      if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { message_hash?: string; status?: string };
+        if (identityId && p.message_hash && p.status) {
+          const status =
+            p.status === 'delivered' ? 'acked' : p.status === 'failed' ? 'failed' : 'sending';
+          updateMessageStatus(identityId, p.message_hash, status);
+        }
+      }
       if (
         evt.type === 'propagation.sync_progress' &&
         evt.payload &&
@@ -259,6 +267,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     },
     [
       appendRawPacket,
+      identityId,
       ingestLxmfPayload,
       refreshContactsFromSidecar,
       refreshLocalInterfacesFromSidecar,
@@ -411,24 +420,32 @@ export function useReticulumRuntime(): ProtocolRuntime {
       try {
         const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body)) as {
           ok?: boolean;
+          error?: string;
           message?: ReticulumLxmfPayload;
           sent_via?: string;
+          delivery_method?: string;
+          delivery_status?: string;
         };
+        if (res?.ok === false) {
+          if (res.error === 'no_propagation_node') {
+            throw new Error('no_propagation_node');
+          }
+          throw new Error(res.error ?? 'LXMF send rejected by sidecar');
+        }
         const lxmfPayload = extractLxmfPayloadFromSendResponse(res);
         if (lxmfPayload) {
           const hash = lxmfPayload.message_hash;
+          const outboundStatus = 'sending' as const;
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
             ingestLxmfPayload(lxmfPayload);
-            updateMessageStatus(identityId, hash, 'acked');
+            updateMessageStatus(identityId, hash, outboundStatus);
           } else {
             ingestLxmfPayload(lxmfPayload);
-            if (pendingId) updateMessageStatus(identityId, pendingId, 'acked');
+            if (pendingId) updateMessageStatus(identityId, pendingId, outboundStatus);
           }
-        } else if (res?.ok === false) {
-          throw new Error('LXMF send rejected by sidecar');
         } else if (pendingId) {
-          updateMessageStatus(identityId, pendingId, 'acked');
+          updateMessageStatus(identityId, pendingId, 'failed', 'LXMF send returned no payload');
         }
       } catch (e) {
         if (pendingId) {

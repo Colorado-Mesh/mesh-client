@@ -2393,6 +2393,7 @@ function ChatPanel({
                                         : 'failed'
                                     }
                                     via={reticulumOutboundVia(msg.receivedVia)}
+                                    deliveryMethod={msg.reticulumDeliveryMethod}
                                     error={msg.error}
                                   />
                                 ) : msg.mqttStatus ? (

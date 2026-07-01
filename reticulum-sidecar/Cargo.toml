@@ -36,6 +36,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4"] }
 hex = { version = "0.4", optional = true }
 
+bytes = "1"
+
 [dependencies.rns-runtime]
 package = "rns-runtime"
 path = "../../rsReticulum/crates/rns-runtime"

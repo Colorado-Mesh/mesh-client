@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Falha ao enviar",
     "reticulumImageAttachment": "Imagem: {{name}}",
     "reticulumFileAttachment": "Arquivo: {{name}}",
-    "reticulumShowInFolder": "_Mostrar na pasta"
+    "reticulumShowInFolder": "_Mostrar na pasta",
+    "reticulumSendPropagated": "Na fila no nó de propagação",
+    "reticulumNoPropagationNode": "Nenhum nó de propagação configurado. Defina um nó de propagação preferencial na guia Reticulum Radio.",
+    "sentViaPropagation": "Nó de propagação"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -358,9 +358,21 @@ impl StackHandle {
     }
 
     pub async fn set_preferred_propagation(&self, id: &str) -> Result<(), String> {
-        let mut inner = self.inner.write().await;
-        inner.set_preferred_propagation(id)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
+        let prop_hash = {
+            let mut inner = self.inner.write().await;
+            inner.set_preferred_propagation(id)?;
+            let hash = inner
+                .propagation
+                .iter()
+                .find(|p| p.id == id)
+                .and_then(|p| p.destination_hash.clone());
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            hash
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.set_outbound_propagation_node(prop_hash.as_deref()).await;
+        }
         Ok(())
     }
 
@@ -403,7 +415,32 @@ impl StackHandle {
 
     pub async fn topology_snapshot(&self) -> serde_json::Value {
         let peers = self.list_peers().await;
-        let (nodes, edges) = topology::build_topology(&peers);
+        let (mut nodes, edges) = topology::build_topology(&peers);
+        let inner = self.inner.read().await;
+        let mut name_by_hash: std::collections::HashMap<String, String> = inner
+            .peers
+            .iter()
+            .filter_map(|p| {
+                p.display_name
+                    .as_ref()
+                    .filter(|n| !n.is_empty())
+                    .map(|n| (p.destination_hash.clone(), n.clone()))
+            })
+            .collect();
+        for contact in &inner.contacts {
+            if contact
+                .display_name
+                .as_ref()
+                .is_some_and(|n| !n.is_empty())
+                && !name_by_hash.contains_key(&contact.destination_hash)
+            {
+                name_by_hash.insert(
+                    contact.destination_hash.clone(),
+                    contact.display_name.clone().unwrap_or_default(),
+                );
+            }
+        }
+        topology::merge_topology_display_names(&mut nodes, &name_by_hash);
         serde_json::json!({ "nodes": nodes, "edges": edges })
     }
 

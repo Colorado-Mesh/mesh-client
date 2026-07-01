@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Odeslání se nezdařilo",
     "reticulumImageAttachment": "Obrázek: {{name}}",
     "reticulumFileAttachment": "Soubor: {{name}}",
-    "reticulumShowInFolder": "Zobrazit ve složce"
+    "reticulumShowInFolder": "Zobrazit ve složce",
+    "reticulumSendPropagated": "Ve frontě v uzlu propagace",
+    "reticulumNoPropagationNode": "Není nakonfigurován žádný uzel šíření. Nastavte preferovaný uzel šíření na kartě Reticulum Radio.",
+    "sentViaPropagation": "Uzel šíření"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

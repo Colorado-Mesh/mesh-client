@@ -35,6 +35,8 @@ export interface MessageRecord {
   reticulumSenderHash?: string;
   /** Reticulum reply target message hash (hex). */
   reticulumReplyToHash?: string;
+  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic). */
+  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
 }

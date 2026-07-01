@@ -115,6 +115,7 @@ function wirePeerToPeer(row: ReticulumPeerWireRow): ReticulumPeer {
     last_seen: row.last_seen ?? null,
     interface: row.interface ?? null,
     path_hash: row.path_hash ?? null,
+    via_hash: row.via_hash ?? null,
   };
 }
 

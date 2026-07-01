@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Не удалось отправить",
     "reticulumImageAttachment": "Изображение: {{name}}",
     "reticulumFileAttachment": "Файл: {{name}}",
-    "reticulumShowInFolder": "Показать в папке"
+    "reticulumShowInFolder": "Показать в папке",
+    "reticulumSendPropagated": "В очереди на узле распространения",
+    "reticulumNoPropagationNode": "Не настроен узел распространения. Установите предпочтительный узел распространения на вкладке Reticulum Radio.",
+    "sentViaPropagation": "Узел распространения"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

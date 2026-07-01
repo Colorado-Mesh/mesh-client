@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Échec d'envoi",
     "reticulumImageAttachment": "Image : {{name}}",
     "reticulumFileAttachment": "Dossier : {{name}}",
-    "reticulumShowInFolder": "Montrer dans son dossier"
+    "reticulumShowInFolder": "Montrer dans son dossier",
+    "reticulumSendPropagated": "En file d'attente au nœud de propagation",
+    "reticulumNoPropagationNode": "Aucun nœud de propagation configuré. Définissez un nœud de propagation préféré dans l’onglet Reticulum Radio.",
+    "sentViaPropagation": "Nœud de propagation"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

@@ -352,7 +352,10 @@
     "reticulumSendFailed": "보내지 못했습니다",
     "reticulumImageAttachment": "이미지: {{name}}",
     "reticulumFileAttachment": "파일: {{name}}",
-    "reticulumShowInFolder": "폴더에 표시"
+    "reticulumShowInFolder": "폴더에 표시",
+    "reticulumSendPropagated": "전파 노드에서 대기 중",
+    "reticulumNoPropagationNode": "전파 노드가 구성되지 않았습니다. Reticulum Radio 탭에서 기본 전파 노드를 설정합니다.",
+    "sentViaPropagation": "전파 노드"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Gönderilemedi",
     "reticulumImageAttachment": "Resim: {{name}}",
     "reticulumFileAttachment": "Dosya: {{name}}",
-    "reticulumShowInFolder": "Dizinde"
+    "reticulumShowInFolder": "Dizinde",
+    "reticulumSendPropagated": "Yayılma düğümünde sıraya alındı",
+    "reticulumNoPropagationNode": "Hiçbir yayılma düğümü yapılandırılmadı. Reticulum Radio sekmesinde tercih edilen bir yayılma düğümü ayarlayın.",
+    "sentViaPropagation": "Yayılma düğümü"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

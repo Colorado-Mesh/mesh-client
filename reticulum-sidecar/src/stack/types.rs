@@ -76,6 +76,8 @@ pub struct PropagationRow {
     pub hops: Option<u8>,
     pub enabled: bool,
     pub status: String,
+    #[serde(default)]
+    pub destination_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

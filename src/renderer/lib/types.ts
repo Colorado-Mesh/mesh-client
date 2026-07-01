@@ -360,6 +360,8 @@ export interface ChatMessage {
   reticulum_reply_to_hash?: string;
   /** Local path when a Reticulum attachment was saved to disk. */
   reticulumAttachmentPath?: string;
+  /** Reticulum LXMF delivery method for outbound status badge (direct / propagated). */
+  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
   sender_name: string;
   payload: string;
   channel: number;

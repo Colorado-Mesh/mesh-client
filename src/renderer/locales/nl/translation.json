@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Versturen mislukt",
     "reticulumImageAttachment": "Afbeelding: {{name}}",
     "reticulumFileAttachment": "Bestand: {{name}}",
-    "reticulumShowInFolder": "Tonen in map"
+    "reticulumShowInFolder": "Tonen in map",
+    "reticulumSendPropagated": "In de wachtrij geplaatst bij het voortplantingsknooppunt",
+    "reticulumNoPropagationNode": "Er is geen propagatieknooppunt geconfigureerd. Stel een voorkeurspropagatieknooppunt in op het tabblad Reticulum Radio.",
+    "sentViaPropagation": "Voortplantingsknooppunt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

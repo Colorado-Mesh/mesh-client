@@ -352,7 +352,10 @@
     "reticulumSendFailed": "发送失败",
     "reticulumImageAttachment": "图片： {{name}}",
     "reticulumFileAttachment": "文件： {{name}}",
-    "reticulumShowInFolder": "在文件夹中"
+    "reticulumShowInFolder": "在文件夹中",
+    "reticulumSendPropagated": "在传播节点排队",
+    "reticulumNoPropagationNode": "未配置传播节点。请在 Reticulum Radio 选项卡上设置首选传播节点。",
+    "sentViaPropagation": "传播节点"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

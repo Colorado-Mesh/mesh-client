@@ -2,7 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use super::types::{PeerRow, TopologyEdge};
 
+const SELF_ID: &str = "self";
+
 /// Build topology nodes and edges from path-table peers.
+///
+/// RNS `via_hash` is the immediate next-hop **transport id**, which may differ from a hub's
+/// destination hash. Relay nodes referenced only as `via` are synthesized when missing.
 pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
     let mut peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
     for peer in peers {
@@ -27,7 +32,7 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
             .as_ref()
             .filter(|via| !via.is_empty())
             .cloned()
-            .unwrap_or_else(|| "self".into());
+            .unwrap_or_else(|| SELF_ID.into());
         let key = (source.clone(), target.clone());
         if edge_keys.insert(key) {
             edges.push(TopologyEdge { source, target });
@@ -49,6 +54,8 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
         }
     }
 
+    infer_self_to_via_edges(&mut edges, &mut edge_keys);
+
     let mut nodes: Vec<PeerRow> = peer_by_hash.into_values().collect();
     nodes.sort_by(|a, b| a.destination_hash.cmp(&b.destination_hash));
     edges.sort_by(|a, b| {
@@ -57,6 +64,43 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
             .then_with(|| a.target.cmp(&b.target))
     });
     (nodes, edges)
+}
+
+/// When a relay is only referenced as `via` (not its own path-table row), link it to self.
+fn infer_self_to_via_edges(edges: &mut Vec<TopologyEdge>, edge_keys: &mut HashSet<(String, String)>) {
+    let mut has_incoming = HashSet::new();
+    for edge in edges.iter() {
+        has_incoming.insert(edge.target.clone());
+    }
+    let vias: Vec<String> = edges
+        .iter()
+        .filter(|e| e.source != SELF_ID)
+        .map(|e| e.source.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .filter(|via| !has_incoming.contains(via))
+        .collect();
+    for via in vias {
+        let key = (SELF_ID.into(), via.clone());
+        if edge_keys.insert(key) {
+            edges.push(TopologyEdge {
+                source: SELF_ID.into(),
+                target: via,
+            });
+        }
+    }
+}
+
+/// Overlay cached display names onto topology nodes (path table rows omit names).
+pub fn merge_topology_display_names(nodes: &mut [PeerRow], name_by_hash: &HashMap<String, String>) {
+    for node in nodes.iter_mut() {
+        if node.display_name.as_ref().is_some_and(|n| !n.is_empty()) {
+            continue;
+        }
+        if let Some(name) = name_by_hash.get(&node.destination_hash) {
+            node.display_name = Some(name.clone());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -104,6 +148,48 @@ mod tests {
         let (nodes, edges) = build_topology(&[peer(leaf, 2, Some(hub))]);
         assert_eq!(nodes.len(), 2);
         assert!(nodes.iter().any(|n| n.destination_hash == hub));
+        assert!(edges.iter().any(|e| e.source == "self" && e.target == hub));
+        assert!(edges.iter().any(|e| e.source == hub && e.target == leaf));
+    }
+
+    #[test]
+    fn infer_self_link_for_relay_only_via() {
+        let relay = "relay5555555555555";
+        let leaf = "leaf66666666666666";
+        let (_, edges) = build_topology(&[peer(leaf, 3, Some(relay))]);
+        assert!(edges.iter().any(|e| e.source == "self" && e.target == relay));
+        assert!(edges.iter().any(|e| e.source == relay && e.target == leaf));
+    }
+
+    #[test]
+    fn merge_topology_display_names_overlays_cached_names() {
+        let mut nodes = vec![PeerRow {
+            destination_hash: "abc".into(),
+            display_name: None,
+            hops: Some(1),
+            last_seen: None,
+            interface: None,
+            path_hash: None,
+            via_hash: None,
+        }];
+        let mut names = HashMap::new();
+        names.insert("abc".into(), "Alice".into());
+        merge_topology_display_names(&mut nodes, &names);
+        assert_eq!(nodes[0].display_name.as_deref(), Some("Alice"));
+    }
+
+    #[test]
+    fn mixed_direct_and_multi_hop_peers() {
+        let hub = "hub77777777777777";
+        let leaf = "leaf88888888888888";
+        let (nodes, edges) = build_topology(&[
+            peer("direct99", 1, None),
+            peer(hub, 1, None),
+            peer(leaf, 2, Some(hub)),
+        ]);
+        assert_eq!(nodes.len(), 3);
+        assert!(edges.iter().any(|e| e.source == "self" && e.target == "direct99"));
+        assert!(edges.iter().any(|e| e.source == "self" && e.target == hub));
         assert!(edges.iter().any(|e| e.source == hub && e.target == leaf));
     }
 }

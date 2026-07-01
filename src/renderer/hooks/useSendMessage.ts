@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { useToast } from '../components/Toast';
 import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -51,6 +53,8 @@ function persistMeshcoreOutboundRow(
 export function useSendMessage(
   identityId: IdentityId | null,
 ): (text: string, channelIndex: number, destination?: number, replyTo?: string) => void {
+  const { addToast } = useToast();
+  const { t } = useTranslation();
   return useCallback(
     (text: string, channelIndex: number, destination?: number, replyTo?: string) => {
       if (!identityId) return;
@@ -110,7 +114,11 @@ export function useSendMessage(
           );
         }
         void send(text, destHash, replyTo ?? undefined, pendingId).catch((e: unknown) => {
-          console.warn('[useSendMessage] reticulum send failed ' + errLikeToLogString(e));
+          const err = errLikeToLogString(e);
+          if (err.includes('no_propagation_node')) {
+            addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
+          }
+          console.warn('[useSendMessage] reticulum send failed ' + err);
         });
         return;
       }
@@ -275,6 +283,6 @@ export function useSendMessage(
           }
         });
     },
-    [identityId],
+    [identityId, addToast, t],
   );
 }

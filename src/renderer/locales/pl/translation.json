@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Nie udało się wysłać",
     "reticulumImageAttachment": "Zdjęcie: {{name}}",
     "reticulumFileAttachment": "Plik: {{name}}",
-    "reticulumShowInFolder": "Pokaż w folderze"
+    "reticulumShowInFolder": "Pokaż w folderze",
+    "reticulumSendPropagated": "W kolejce w węźle propagacji",
+    "reticulumNoPropagationNode": "Nie skonfigurowano węzła propagacji. Ustaw preferowany węzeł propagacji na karcie Reticulum Radio.",
+    "sentViaPropagation": "Węzeł propagacji"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

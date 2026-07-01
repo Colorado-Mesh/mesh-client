@@ -1181,6 +1181,7 @@ name = "mesh-client-reticulum-sidecar"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "bytes",
  "clap",
  "futures-util",
  "hex",

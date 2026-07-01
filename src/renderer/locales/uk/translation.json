@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Не вдалося надіслати.",
     "reticulumImageAttachment": "Зображення: {{name}}",
     "reticulumFileAttachment": "Файл: {{name}}",
-    "reticulumShowInFolder": "У теці"
+    "reticulumShowInFolder": "У теці",
+    "reticulumSendPropagated": "У черзі на вузлі поширення",
+    "reticulumNoPropagationNode": "Вузол розповсюдження не налаштовано. Установіть бажаний вузол розповсюдження на вкладці Reticulum Radio.",
+    "sentViaPropagation": "Вузол розповсюдження"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

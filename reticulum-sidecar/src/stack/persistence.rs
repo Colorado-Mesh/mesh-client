@@ -66,6 +66,7 @@ impl PersistedState {
                 hops: Some(0),
                 enabled: false,
                 status: "unknown".into(),
+                destination_hash: None,
             });
         }
     }

@@ -1,5 +1,8 @@
 //! Live rsReticulum bridge (optional runtime queries + LXMF send/receive).
 
+#[path = "lxmf_outbound.rs"]
+mod lxmf_outbound;
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -24,6 +27,7 @@ use super::via::{
     classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via,
     resolve_peer_sent_via,
 };
+use lxmf_outbound::LxmfOutboundDriver;
 
 pub struct LiveBridge {
     config_dir: PathBuf,
@@ -34,6 +38,8 @@ pub struct LiveBridge {
     lxmf_hash_hex: String,
     display_name: String,
     peer_via_cache: Arc<Mutex<HashMap<String, String>>>,
+    outbound: Arc<Mutex<LxmfOutboundDriver>>,
+    event_tx: broadcast::Sender<String>,
 }
 
 impl LiveBridge {
@@ -140,13 +146,35 @@ impl LiveBridge {
             handle: handle.clone(),
             _shutdown: shutdown,
             router: Arc::new(tokio::sync::Mutex::new(router)),
-            identity,
-            lxmf_hash_hex,
-            display_name,
+            identity: identity.clone(),
+            lxmf_hash_hex: lxmf_hash_hex.clone(),
+            display_name: display_name.clone(),
             peer_via_cache,
+            outbound: Arc::new(Mutex::new(LxmfOutboundDriver::new(
+                handle.transport_tx.clone(),
+                &identity,
+                lxmf_hash_hex.clone(),
+                display_name.clone(),
+            ))),
+            event_tx: event_tx.clone(),
         };
 
+        let preferred_prop_hash = persisted
+            .preferred_propagation_id
+            .as_ref()
+            .and_then(|id| {
+                persisted
+                    .propagation
+                    .iter()
+                    .find(|p| p.id == *id)
+                    .and_then(|p| p.destination_hash.clone())
+            });
+
         bridge.spawn_maintenance(event_tx);
+
+        if let Some(hash_hex) = preferred_prop_hash {
+            bridge.set_outbound_propagation_node(Some(&hash_hex)).await;
+        }
 
         persisted.rns_ready = true;
         persisted.lxmf_ready = true;
@@ -158,26 +186,45 @@ impl LiveBridge {
         let handle = self.handle.clone();
         let router = self.router.clone();
         let peer_via_cache = self.peer_via_cache.clone();
+        let outbound = self.outbound.clone();
+        let event_tx = self.event_tx.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             loop {
                 interval.tick().await;
-                if let Some(TransportQueryResponse::PathTable(entries)) = handle
+                let path_entries = if let Some(TransportQueryResponse::PathTable(entries)) = handle
                     .query_control(TransportQuery::GetPathTable)
                     .await
                 {
                     if let Ok(mut cache) = peer_via_cache.lock() {
                         cache.clear();
-                        for entry in entries {
+                        for entry in &entries {
                             let key = hex::encode(entry.hash);
-                            cache.insert(key, entry.interface);
+                            cache.insert(key, entry.interface.clone());
                         }
                     }
-                }
+                    entries
+                        .iter()
+                        .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+                        .collect::<Vec<_>>()
+                } else {
+                    Vec::new()
+                };
                 let mut router = router.lock().await;
-                router.tick();
+                if let Ok(mut driver) = outbound.lock() {
+                    driver.update_path_table(&path_entries);
+                    driver.process_tick(&mut router, &event_tx);
+                }
             }
         });
+    }
+
+    pub async fn set_outbound_propagation_node(&self, destination_hash: Option<&str>) {
+        let hash = destination_hash.and_then(lxmf_outbound::parse_propagation_hash);
+        let mut router = self.router.lock().await;
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.set_propagation_node(&mut router, hash);
+        }
     }
 
     pub async fn fetch_interfaces(&self) -> Result<Vec<InterfaceRow>, String> {
@@ -269,7 +316,34 @@ impl LiveBridge {
 
     pub async fn send_lxmf(&self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(&req.destination_hash)?;
-        let sent_via = match self.fetch_interfaces().await {
+        let has_path = self
+            .outbound
+            .lock()
+            .map(|d| d.has_path_to(&req.destination_hash))
+            .unwrap_or(false);
+
+        let delivery_method = if has_path {
+            DeliveryMethod::Direct
+        } else {
+            let router = self.router.lock().await;
+            if router.outbound_propagation_node.is_some() {
+                DeliveryMethod::Propagated
+            } else {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "no_propagation_node",
+                    "destination_hash": req.destination_hash,
+                }));
+            }
+        };
+        let delivery_method_str = match delivery_method {
+            DeliveryMethod::Direct => "direct",
+            DeliveryMethod::Propagated => "propagated",
+            DeliveryMethod::Opportunistic => "opportunistic",
+            DeliveryMethod::Paper => "paper",
+        };
+
+        let egress_via = match self.fetch_interfaces().await {
             Ok(ifaces) if !ifaces.is_empty() => resolve_outbound_sent_via(&ifaces),
             _ => {
                 let peer_iface = self
@@ -281,18 +355,17 @@ impl LiveBridge {
             }
         };
 
-        let msg = LxMessage::new(
+        let mut msg = LxMessage::new(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
             "",
             &req.text,
-            DeliveryMethod::Direct,
+            delivery_method,
         );
         let mut router = self.router.lock().await;
         router
             .try_send(msg)
             .map_err(|e| format!("lxmf send: {e:?}"))?;
-        router.tick();
 
         let ts_ms = (std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -308,8 +381,10 @@ impl LiveBridge {
             "reply_to_hash": req.reply_to_hash,
             "reply_to_id": req.reply_to_id,
             "direction": "outbound",
-            "sent_via": sent_via,
-            "received_via": sent_via
+            "delivery_method": delivery_method_str,
+            "sent_via": egress_via,
+            "received_via": egress_via,
+            "delivery_status": "queued"
         });
         let hash_input = format!(
             "{}:{}:{}",
@@ -326,11 +401,17 @@ impl LiveBridge {
             );
         }
 
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.process_tick(&mut router, &self.event_tx);
+        }
+
         Ok(serde_json::json!({
             "ok": true,
             "destination_hash": req.destination_hash,
             "text": req.text,
-            "sent_via": sent_via,
+            "delivery_method": delivery_method_str,
+            "sent_via": egress_via,
+            "delivery_status": "queued",
             "message": payload
         }))
     }
@@ -374,7 +455,7 @@ impl LiveBridge {
     }
 }
 
-fn lxmf_payload_from_message(
+pub(super) fn lxmf_payload_from_message(
     msg: &LxMessage,
     self_lxmf_hash: &str,
     self_name: &str,
@@ -423,7 +504,7 @@ fn lxmf_payload_from_message(
     payload
 }
 
-fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: serde_json::Value) {
+pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: serde_json::Value) {
     let frame = serde_json::json!({
         "type": "lxmf_message",
         "payload": payload
@@ -431,7 +512,7 @@ fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: serde_json::Va
     let _ = event_tx.send(frame.to_string());
 }
 
-fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
+pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
     let clean: String = hex_str.chars().filter(|c| c.is_ascii_hexdigit()).collect();
     let bytes = hex::decode(if clean.len() >= 32 {
         &clean[..32]

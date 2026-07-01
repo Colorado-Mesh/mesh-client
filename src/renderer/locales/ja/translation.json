@@ -352,7 +352,10 @@
     "reticulumSendFailed": "送信に失敗しました。",
     "reticulumImageAttachment": "画像： {{name}}",
     "reticulumFileAttachment": "ファイル： {{name}}",
-    "reticulumShowInFolder": "フォルダを表示"
+    "reticulumShowInFolder": "フォルダを表示",
+    "reticulumSendPropagated": "伝播ノードでキューに入れられました",
+    "reticulumNoPropagationNode": "伝播ノードが構成されていません。 Reticulum Radio タブで優先伝播ノードを設定します。",
+    "sentViaPropagation": "伝播ノード"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

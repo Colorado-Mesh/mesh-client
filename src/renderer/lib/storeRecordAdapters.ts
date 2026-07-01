@@ -50,6 +50,9 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
+    ...(record.reticulumDeliveryMethod
+      ? { reticulumDeliveryMethod: record.reticulumDeliveryMethod }
+      : {}),
   };
 }
 

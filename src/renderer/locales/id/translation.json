@@ -352,7 +352,10 @@
     "reticulumSendFailed": "Gagal mengirim",
     "reticulumImageAttachment": "Gambar: {{name}}",
     "reticulumFileAttachment": "File: {{name}}",
-    "reticulumShowInFolder": "Tampilkan dalam Folder"
+    "reticulumShowInFolder": "Tampilkan dalam Folder",
+    "reticulumSendPropagated": "Mengantri di node propagasi",
+    "reticulumNoPropagationNode": "Tidak ada node propagasi yang dikonfigurasi. Tetapkan node propagasi pilihan pada tab Reticulum Radio.",
+    "sentViaPropagation": "Node propagasi"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
