@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Mostrar colegas distantes",
     "maxHopsFilter": "Máx. hops",
     "maxHopsAll": "Todos os hops",
-    "maxHopsOption": "{{count}} hops"
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "Resetar a visualização",
+    "hoverHint": "Passe o mouse ou foque um nó para seu nome. Arraste para deslocar, role para ampliar.",
+    "compactLeafCount": "{{count}} pares diretos compactos"
   },
   "peerListPanel": {
     "heading": "Pares",

@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Entfernte Kollegen anzeigen",
     "maxHopsFilter": "Max. Hops",
     "maxHopsAll": "Alle Hops",
-    "maxHopsOption": "{{count}} Hops"
+    "maxHopsOption": "{{count}} Hops",
+    "resetView": "Ansicht zurücksetzen",
+    "hoverHint": "Bewegen Sie den Mauszeiger über einen Knoten oder fokussieren Sie ihn für seinen Namen. Zum Schwenken ziehen, zum Zoomen scrollen.",
+    "compactLeafCount": "{{count}} COMPACT-Direktkollegen"
   },
   "peerListPanel": {
     "heading": "Kollegen",

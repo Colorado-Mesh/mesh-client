@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Afficher les pairs distants",
     "maxHopsFilter": "Sauts max",
     "maxHopsAll": "Tous les sauts",
-    "maxHopsOption": "{{count}} sauts"
+    "maxHopsOption": "{{count}} sauts",
+    "resetView": "Réinitialisation de Vue",
+    "hoverHint": "Survolez ou concentrez un nœud pour son nom. Faites glisser pour effectuer un panoramique, faites défiler pour zoomer.",
+    "compactLeafCount": "{{count}} pairs directs compacts"
   },
   "peerListPanel": {
     "heading": "Pairs",

@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Mostra colleghi distanti",
     "maxHopsFilter": "Max hops",
     "maxHopsAll": "Tutti gli hops",
-    "maxHopsOption": "{{count}} hops"
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "Resetta visualizzazione",
+    "hoverHint": "Passa il mouse o attiva un nodo per il suo nome. Trascina per scorrere, scorri per ingrandire.",
+    "compactLeafCount": "{{count}} peer diretti compatti"
   },
   "peerListPanel": {
     "heading": "Compagni",

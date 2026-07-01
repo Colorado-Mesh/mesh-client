@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Toon collega's op afstand",
     "maxHopsFilter": "Max hops",
     "maxHopsAll": "Alle hops",
-    "maxHopsOption": "{{count}} hops"
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "Weergave opnieuw instellen (reset)",
+    "hoverHint": "Plaats de muisaanwijzer op een knooppunt of focus op de naam. Sleep om te pannen, scroll om in te zoomen.",
+    "compactLeafCount": "{{count}} compacte directe collega's"
   },
   "peerListPanel": {
     "heading": "Collega's",

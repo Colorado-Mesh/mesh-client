@@ -1934,7 +1934,10 @@
     "showDistantPeers": "显示远程同行",
     "maxHopsFilter": "最大跳数",
     "maxHopsAll": "所有跃点",
-    "maxHopsOption": "{{count}}跳"
+    "maxHopsOption": "{{count}}跳",
+    "resetView": "重设视角",
+    "hoverHint": "悬停或聚焦节点以获取其名称。拖动以平移，滚动以缩放。",
+    "compactLeafCount": "{{count}}紧凑型直接同行"
   },
   "peerListPanel": {
     "heading": "Pee对端",

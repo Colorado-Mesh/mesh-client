@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Tampilkan rekan yang jauh",
     "maxHopsFilter": "Hop maks",
     "maxHopsAll": "Semua hop",
-    "maxHopsOption": "{{count}} hop"
+    "maxHopsOption": "{{count}} hop",
+    "resetView": "Atur ulang tampilan",
+    "hoverHint": "Arahkan kursor atau fokuskan simpul untuk namanya. Tarik untuk menggeser, gulir untuk memperbesar.",
+    "compactLeafCount": "{{count}} rekan langsung ringkas"
   },
   "peerListPanel": {
     "heading": "Peer",

@@ -1934,7 +1934,10 @@
     "showDistantPeers": "멀리 있는 동료 표시",
     "maxHopsFilter": "최대 홉",
     "maxHopsAll": "모든 홉",
-    "maxHopsOption": "{{count}} 홉"
+    "maxHopsOption": "{{count}} 홉",
+    "resetView": "초기화",
+    "hoverHint": "이름에 맞게 노드를 가리키거나 포커스를 맞춥니다. 드래그하여 이동하고 스크롤하여 확대/축소합니다.",
+    "compactLeafCount": "{{count}} 컴팩트 직접 피어"
   },
   "peerListPanel": {
     "heading": "통신자",

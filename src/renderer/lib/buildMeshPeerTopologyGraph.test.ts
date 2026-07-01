@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMeshPeerTopologyGraph,
   isMeshPeerOnline,
+  isMeshRelayHubCandidate,
+  MESH_PEER_MAX_RELAY_HUBS,
   resolveMeshPeerRelayId,
 } from './buildMeshPeerTopologyGraph';
 import type { MeshNode } from './types';
@@ -96,8 +98,46 @@ describe('buildMeshPeerTopologyGraph', () => {
     });
 
     expect(
-      graph.edges.some((e) => e.source === '1' && e.target === '9' && e.kind === 'direct'),
+      graph.edges.some((e) => e.source === '1' && e.target === '9' && e.kind === 'relay'),
     ).toBe(true);
+  });
+
+  it('caps relay hubs and demotes MQTT-only direct peers to compact leaves', () => {
+    const nodes = new Map<number, MeshNode>([[1, node(1, { hops_away: 0 })]]);
+    for (let i = 2; i <= 40; i++) {
+      nodes.set(
+        i,
+        node(i, {
+          hops_away: 0,
+          source: 'mqtt',
+          heard_via_mqtt_only: true,
+        }),
+      );
+    }
+
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId: 1,
+      selfLabel: 'Me',
+    });
+
+    expect(graph.relayCount).toBeLessThanOrEqual(MESH_PEER_MAX_RELAY_HUBS);
+    expect(graph.demotedDirectCount).toBeGreaterThan(0);
+    const thickSpokes = graph.edges.filter((e) => e.source === '1' && e.kind === 'direct').length;
+    expect(thickSpokes).toBeLessThanOrEqual(MESH_PEER_MAX_RELAY_HUBS);
+  });
+});
+
+describe('isMeshRelayHubCandidate', () => {
+  it('promotes relays with distant children or RF evidence', () => {
+    expect(isMeshRelayHubCandidate(node(1, { source: 'mqtt', heard_via_mqtt_only: true }), 2)).toBe(
+      true,
+    );
+    expect(isMeshRelayHubCandidate(node(2, { source: 'mqtt', heard_via_mqtt_only: true }), 0)).toBe(
+      false,
+    );
+    expect(isMeshRelayHubCandidate(node(3, { source: 'rf', heard_via_mqtt_only: false }), 0)).toBe(
+      true,
+    );
   });
 });
 

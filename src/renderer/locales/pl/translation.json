@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Pokaż odległych rówieśników",
     "maxHopsFilter": "Maks. hops",
     "maxHopsAll": "Wszystkie hops",
-    "maxHopsOption": "{{count}} hops"
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "Odśwież widok",
+    "hoverHint": "Najedź kursorem lub ustaw ostrość na węzeł dla jego nazwy. Przeciągnij, aby przesunąć, przewiń, aby powiększyć.",
+    "compactLeafCount": "{{count}} kompaktowych rówieśników bezpośrednich"
   },
   "peerListPanel": {
     "heading": "Partnerzy",

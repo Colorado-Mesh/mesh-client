@@ -1934,7 +1934,10 @@
     "showDistantPeers": "遠隔地の同僚を表示",
     "maxHopsFilter": "最大ホップ数",
     "maxHopsAll": "すべてのホップ",
-    "maxHopsOption": "{{count}}ホップ"
+    "maxHopsOption": "{{count}}ホップ",
+    "resetView": "ビューをリセット",
+    "hoverHint": "ノードにカーソルを合わせるか、その名前にフォーカスを合わせます。ドラッグしてパンし、スクロールしてズームします。",
+    "compactLeafCount": "{{count}}コンパクトダイレクトピア"
   },
   "peerListPanel": {
     "heading": "ピア",

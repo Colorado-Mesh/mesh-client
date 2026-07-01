@@ -1934,7 +1934,10 @@
     "showDistantPeers": "Uzak akranları göster",
     "maxHopsFilter": "Maks hops",
     "maxHopsAll": "Tüm hops",
-    "maxHopsOption": "{{count}} hops"
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "GÃ¶rÃ¼nÃ¼mÃ¼ SÄ±fÄ±rla",
+    "hoverHint": "Bir düğümün üzerine gelin veya ismine odaklanın. Kaydırmak için sürükleyin, yakınlaştırmak için kaydırın.",
+    "compactLeafCount": "{{count}} kompakt doğrudan eşler"
   },
   "peerListPanel": {
     "heading": "Meslektaşlar",

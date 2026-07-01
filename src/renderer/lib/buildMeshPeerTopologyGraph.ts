@@ -26,6 +26,8 @@ export interface MeshPeerTopologyGraph {
   hiddenCount: number;
   totalNodeCount: number;
   relayCount: number;
+  /** Direct peers demoted from relay hub to reduce center starburst clutter. */
+  demotedDirectCount: number;
 }
 
 export interface MeshPeerTopologyFilterOptions {
@@ -44,7 +46,10 @@ export interface BuildMeshPeerTopologyGraphOptions {
   nowMs?: number;
 }
 
-const MAX_VISIBLE_NODES = 90;
+/** Default visible node budget — tuned for readable force layout without label pile-up. */
+export const MESH_PEER_MAX_VISIBLE_NODES = 48;
+/** Max relay hubs with thick self spokes; excess direct peers render as compact leaf dots. */
+export const MESH_PEER_MAX_RELAY_HUBS = 20;
 export const MESH_PEER_UNASSIGNED_RELAY_ID = -1;
 
 function effectiveHops(node: MeshNode): number | null {
@@ -90,6 +95,29 @@ export function resolveMeshPeerRelayId(
   return null;
 }
 
+/**
+ * Prefer RF/neighbor evidence for relay hub promotion. MQTT-only nodes at 0 hops are
+ * usually heard via the broker, not direct RF neighbors — promoting all of them causes
+ * the center starburst seen on large Meshtastic maps.
+ */
+export function isMeshRelayHubCandidate(node: MeshNode, distantChildCount: number): boolean {
+  if (distantChildCount > 0) return true;
+  if ((node.neighbors?.length ?? 0) > 0) return true;
+  if (node.source === 'rf' && !node.heard_via_mqtt_only) return true;
+  const hops = effectiveHops(node);
+  if (hops === 1 && node.source !== 'mqtt') return true;
+  return false;
+}
+
+function relayHubScore(node: MeshNode, distantChildCount: number, nowMs: number): number {
+  const health = nodeHealthScore(node, nowMs).total;
+  const recency =
+    node.last_heard != null && node.last_heard > 0
+      ? Math.max(0, 100 - (nowMs - node.last_heard) / MS_PER_HOUR)
+      : 0;
+  return distantChildCount * 10_000 + health * 10 + recency;
+}
+
 function filterMeshPeers(
   peers: readonly MeshNode[],
   opts?: MeshPeerTopologyFilterOptions,
@@ -104,7 +132,7 @@ function filterMeshPeers(
     return true;
   });
 
-  const peerBudget = Math.max(0, MAX_VISIBLE_NODES - 1);
+  const peerBudget = Math.max(0, MESH_PEER_MAX_VISIBLE_NODES - 1);
   const hiddenCount = Math.max(0, filtered.length - peerBudget);
   if (filtered.length > peerBudget) {
     filtered = [...filtered]
@@ -119,6 +147,7 @@ function seedMeshPeerPositions(
   myNodeId: number,
   relayIds: readonly number[],
   peersByRelay: ReadonlyMap<number, readonly MeshNode[]>,
+  leafDirectPeers: readonly MeshNode[],
   unassignedPeers: readonly MeshNode[],
   cx: number,
   cy: number,
@@ -126,13 +155,14 @@ function seedMeshPeerPositions(
   const positions = new Map<number, { x: number; y: number }>();
   positions.set(myNodeId, { x: cx, y: cy });
 
-  const relayRadius = 130;
-  const peerRadius = 250;
-  const relayCount = relayIds.length + (unassignedPeers.length > 0 ? 1 : 0);
+  const hubCount = relayIds.length + (unassignedPeers.length > 0 ? 1 : 0);
+  const relayRadius = 120 + Math.min(100, hubCount * 4);
+  const peerRadius = relayRadius + 100 + Math.min(80, hubCount * 2);
+  const leafRadius = peerRadius + 60;
   let slot = 0;
 
   for (const relayId of relayIds) {
-    const angle = (2 * Math.PI * slot) / Math.max(relayCount, 1) - Math.PI / 2;
+    const angle = (2 * Math.PI * slot) / Math.max(hubCount, 1) - Math.PI / 2;
     slot += 1;
     positions.set(relayId, {
       x: cx + relayRadius * Math.cos(angle),
@@ -140,7 +170,7 @@ function seedMeshPeerPositions(
     });
 
     const peers = peersByRelay.get(relayId) ?? [];
-    const spread = Math.min(Math.PI / 2.5, peers.length * 0.12);
+    const spread = Math.min(Math.PI / 1.8, Math.max(0.25, peers.length * 0.18));
     peers.forEach((peer, j) => {
       const offset = peers.length <= 1 ? 0 : (j / (peers.length - 1) - 0.5) * spread;
       const peerAngle = angle + offset;
@@ -152,12 +182,12 @@ function seedMeshPeerPositions(
   }
 
   if (unassignedPeers.length > 0) {
-    const angle = (2 * Math.PI * slot) / Math.max(relayCount, 1) - Math.PI / 2;
+    const angle = (2 * Math.PI * slot) / Math.max(hubCount, 1) - Math.PI / 2;
     positions.set(MESH_PEER_UNASSIGNED_RELAY_ID, {
       x: cx + relayRadius * Math.cos(angle),
       y: cy + relayRadius * Math.sin(angle),
     });
-    const spread = Math.min(Math.PI / 2.5, unassignedPeers.length * 0.12);
+    const spread = Math.min(Math.PI / 1.8, Math.max(0.25, unassignedPeers.length * 0.18));
     unassignedPeers.forEach((peer, j) => {
       const offset =
         unassignedPeers.length <= 1 ? 0 : (j / (unassignedPeers.length - 1) - 0.5) * spread;
@@ -165,6 +195,16 @@ function seedMeshPeerPositions(
       positions.set(peer.node_id, {
         x: cx + peerRadius * Math.cos(peerAngle),
         y: cy + peerRadius * Math.sin(peerAngle),
+      });
+    });
+  }
+
+  if (leafDirectPeers.length > 0) {
+    leafDirectPeers.forEach((peer, j) => {
+      const angle = (2 * Math.PI * j) / leafDirectPeers.length - Math.PI / 2;
+      positions.set(peer.node_id, {
+        x: cx + leafRadius * Math.cos(angle),
+        y: cy + leafRadius * Math.sin(angle),
       });
     });
   }
@@ -201,7 +241,7 @@ function buildGraphNode(
 
 /**
  * Mesh-style peer graph: local node center → direct relay hubs → distant peers.
- * Mirrors the Reticulum topology policy (hub attachment + hop filters + node budget).
+ * Relay hubs are capped so large MQTT node maps do not starburst every leaf from center.
  */
 export function buildMeshPeerTopologyGraph(
   nodes: ReadonlyMap<number, MeshNode>,
@@ -227,14 +267,12 @@ export function buildMeshPeerTopologyGraph(
     }
   }
 
-  const relayIdSet = new Set<number>(directPeers.map((p) => p.node_id));
   const peersByRelay = new Map<number, MeshNode[]>();
   const unassignedPeers: MeshNode[] = [];
 
   for (const peer of distantPeers) {
     const relayId = resolveMeshPeerRelayId(peer, nodes, myNodeId);
     if (relayId != null) {
-      relayIdSet.add(relayId);
       if (!peersByRelay.has(relayId)) peersByRelay.set(relayId, []);
       peersByRelay.get(relayId)!.push(peer);
     } else {
@@ -242,11 +280,35 @@ export function buildMeshPeerTopologyGraph(
     }
   }
 
-  const relayIds = [...relayIdSet].sort((a, b) => a - b);
+  const relayCandidates = new Map<number, number>();
+  for (const peer of directPeers) {
+    relayCandidates.set(peer.node_id, peersByRelay.get(peer.node_id)?.length ?? 0);
+  }
+  for (const relayId of peersByRelay.keys()) {
+    relayCandidates.set(relayId, peersByRelay.get(relayId)?.length ?? 0);
+  }
+
+  const rankedRelayIds = [...relayCandidates.entries()]
+    .filter(([id, childCount]) => {
+      const node = nodes.get(id);
+      return node != null && isMeshRelayHubCandidate(node, childCount);
+    })
+    .sort((a, b) => {
+      const nodeA = nodes.get(a[0])!;
+      const nodeB = nodes.get(b[0])!;
+      return relayHubScore(nodeB, b[1], nowMs) - relayHubScore(nodeA, a[1], nowMs);
+    })
+    .map(([id]) => id);
+
+  const relayIds = rankedRelayIds.slice(0, MESH_PEER_MAX_RELAY_HUBS);
+  const relayIdSet = new Set(relayIds);
+  const demotedDirectPeers = directPeers.filter((p) => !relayIdSet.has(p.node_id));
+
   const positions = seedMeshPeerPositions(
     myNodeId,
     relayIds,
     peersByRelay,
+    demotedDirectPeers,
     unassignedPeers,
     cx,
     cy,
@@ -262,7 +324,7 @@ export function buildMeshPeerTopologyGraph(
       tier: selfNode ? nodeHealthTier(nodeHealthScore(selfNode, nowMs).total) : 'good',
       online: true,
       isHub: false,
-      hubOutDegree: relayIds.length + (unassignedPeers.length > 0 ? 1 : 0),
+      hubOutDegree: relayIds.length,
       seedX: positions.get(myNodeId)?.x ?? cx,
       seedY: positions.get(myNodeId)?.y ?? cy,
     },
@@ -281,7 +343,18 @@ export function buildMeshPeerTopologyGraph(
       source: String(myNodeId),
       target: String(relayId),
       kind: 'direct',
-      springLength: 150,
+      springLength: 160,
+    });
+  }
+
+  for (const peer of demotedDirectPeers) {
+    graphNodes.push(buildGraphNode(peer, 'peer', 1, 0, positions, cx, cy, nowMs));
+    visibleNodeIds.add(peer.node_id);
+    forceEdges.push({
+      source: String(myNodeId),
+      target: String(peer.node_id),
+      kind: 'relay',
+      springLength: 200,
     });
   }
 
@@ -295,8 +368,8 @@ export function buildMeshPeerTopologyGraph(
     forceEdges.push({
       source: edgeSource,
       target: String(peer.node_id),
-      kind: edgeSource === String(myNodeId) ? 'direct' : 'relay',
-      springLength: edgeSource === String(myNodeId) ? 150 : 110,
+      kind: edgeSource === String(myNodeId) ? 'relay' : 'relay',
+      springLength: edgeSource === String(myNodeId) ? 200 : 120,
     });
   }
 
@@ -306,5 +379,6 @@ export function buildMeshPeerTopologyGraph(
     hiddenCount,
     totalNodeCount: allPeers.length + 1,
     relayCount: relayIds.length,
+    demotedDirectCount: demotedDirectPeers.length,
   };
 }
