@@ -209,6 +209,7 @@ import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
+import { useReticulumPeerStore } from './stores/reticulumPeerStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
@@ -756,6 +757,7 @@ function AppContent() {
     if (!reticulumNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(reticulumNodesById));
   }, [reticulumNodesById]);
+  const reticulumPathPeerCount = useReticulumPeerStore((s) => s.peers.size);
 
   const meshtasticDbRefresh = useProtocolDbRefresh('meshtastic', meshtasticIdentityId);
   const meshcoreDbRefresh = useProtocolDbRefresh('meshcore', meshcoreIdentityId);
@@ -1158,6 +1160,10 @@ function AppContent() {
     : capabilities.nodeListTabUsesPeersLabel
       ? t('common.peers')
       : t('common.nodes');
+  const footerNodeCount =
+    protocol === 'reticulum' && reticulumPathPeerCount > 0
+      ? reticulumPathPeerCount
+      : nodesForUi.size;
 
   useNodeStatusNotifier(nodesForUi, capabilities);
 
@@ -2049,13 +2055,6 @@ function AppContent() {
     setActiveTab(1); // Switch to Chat tab
   }, []);
 
-  const handleOpenPeersTab = useCallback(() => {
-    const peersTabIndex = findFilteredTabIndexForPanel(tabsByProtocol.reticulum, NODES_PANEL_INDEX);
-    if (peersTabIndex >= 0) {
-      setActiveTab(peersTabIndex);
-    }
-  }, [tabsByProtocol.reticulum]);
-
   const handleOpenRoom = useCallback(
     (nodeNum: number) => {
       setPendingRoomTarget(nodeNum);
@@ -2731,7 +2730,6 @@ function AppContent() {
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
                                 onSidecarEvent={reticulumPanelActions.handleSidecarEvent}
-                                onOpenPeersTab={handleOpenPeersTab}
                               />
                             ) : (
                               <>
@@ -3533,7 +3531,7 @@ function AppContent() {
               <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right font-mono text-[10px] whitespace-nowrap tabular-nums">
                 <span>
                   {t('app.footerStats', {
-                    nodeCount: nodesForUi.size,
+                    nodeCount: footerNodeCount,
                     nodeLabel: nodeCountLabel,
                     messageCount: activeUiMessages.length,
                   })}

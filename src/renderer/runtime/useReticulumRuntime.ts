@@ -84,6 +84,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const unsubEventRef = useRef<(() => void) | null>(null);
   const connectInFlightRef = useRef(false);
   const suppressReconnectRef = useRef(false);
+  const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
@@ -114,17 +115,33 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, selfNodeId],
   );
 
-  const applyContactNodes = useCallback(
-    (contacts: ReticulumContact[]) => {
-      if (!identityId) return;
-      const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
-      const visible = contacts.filter(
-        (c) => !dismissed.has(c.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase()),
+  const applyPeerNodesFromStore = useCallback(() => {
+    if (!identityId) return;
+    const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
+    const peers = useReticulumPeerStore.getState().peers;
+    const records = [];
+    for (const peer of peers.values()) {
+      const hash = peer.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+      if (dismissed.has(hash)) continue;
+      const contact = peer as ReticulumContact;
+      records.push(
+        reticulumContactToNodeRecord({
+          destination_hash: peer.destination_hash,
+          display_name: peer.custom_display_name ?? peer.display_name ?? null,
+          last_heard: contact.last_heard ?? peer.last_seen ?? 0,
+          hops: peer.hops ?? null,
+          interface: peer.interface ?? null,
+          favorited: Boolean(peer.favorited),
+        }),
       );
-      upsertNodeRecordsForIdentity(identityId, visible.map(reticulumContactToNodeRecord));
-    },
-    [identityId],
-  );
+    }
+    upsertNodeRecordsForIdentity(identityId, records);
+  }, [identityId]);
+
+  const refreshContactsFromSidecar = useCallback(async () => {
+    await refreshReticulumPeersFromSidecar();
+    applyPeerNodesFromStore();
+  }, [applyPeerNodesFromStore]);
 
   const refreshIdentityFromSidecar = useCallback(async (): Promise<string | null> => {
     const status = await fetchReticulumIdentityStatus();
@@ -134,11 +151,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     return null;
   }, []);
-
-  const refreshContactsFromSidecar = useCallback(async () => {
-    const contacts = await refreshReticulumPeersFromSidecar();
-    applyContactNodes(contacts);
-  }, [applyContactNodes]);
 
   const refreshLocalInterfacesFromSidecar = useCallback(async () => {
     localInterfacesRef.current = await fetchReticulumInterfaces();
@@ -157,6 +169,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.debug('[useReticulumRuntime] diagnostics ' + errLikeToLogString(e));
     }
   }, []);
+
+  const scheduleDebouncedSidecarRefresh = useCallback(() => {
+    if (peerRefreshDebounceRef.current) {
+      clearTimeout(peerRefreshDebounceRef.current);
+    }
+    peerRefreshDebounceRef.current = setTimeout(() => {
+      peerRefreshDebounceRef.current = null;
+      void refreshContactsFromSidecar();
+      void refreshLocalInterfacesFromSidecar();
+      void syncDiagnosticsFromSidecar();
+    }, 2_000);
+  }, [refreshContactsFromSidecar, refreshLocalInterfacesFromSidecar, syncDiagnosticsFromSidecar]);
 
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
     setRawPackets((prev) => {
@@ -260,19 +284,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
         evt.type === 'interface.state' ||
         evt.type === 'stats_update'
       ) {
-        void refreshContactsFromSidecar();
-        void refreshLocalInterfacesFromSidecar();
-        void syncDiagnosticsFromSidecar();
+        scheduleDebouncedSidecarRefresh();
       }
     },
-    [
-      appendRawPacket,
-      identityId,
-      ingestLxmfPayload,
-      refreshContactsFromSidecar,
-      refreshLocalInterfacesFromSidecar,
-      syncDiagnosticsFromSidecar,
-    ],
+    [appendRawPacket, identityId, ingestLxmfPayload, scheduleDebouncedSidecarRefresh],
   );
 
   const tearDownFromSidecarStop = useCallback(() => {

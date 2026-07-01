@@ -10,10 +10,7 @@ import {
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
-import {
-  refreshReticulumPeersFromSidecar,
-  useReticulumPeerStore,
-} from '../stores/reticulumPeerStore';
+import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import ReticulumCallPanel from './ReticulumCallPanel';
@@ -73,15 +70,13 @@ export interface ReticulumRadioPanelProps {
   connecting: boolean;
   onSidecarEvent?: (evt: ReticulumSidecarEvent) => void;
   onStartStack: () => Promise<void>;
-  onOpenPeersTab?: () => void;
 }
 
-/** Radio tab: identity, interfaces, network peers, propagation, config import. */
+/** Radio tab: identity, interfaces, propagation, config import. */
 export function ReticulumRadioPanel({
   connecting,
   onSidecarEvent,
   onStartStack,
-  onOpenPeersTab,
 }: ReticulumRadioPanelProps) {
   const { t } = useTranslation();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
@@ -101,7 +96,6 @@ export function ReticulumRadioPanel({
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [confirmSaved, setConfirmSaved] = useState(false);
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
-  const peerCount = useReticulumPeerStore((s) => s.peers.size);
   const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
   const [ifaceHost, setIfaceHost] = useState('');
   const [ifacePort, setIfacePort] = useState('4242');
@@ -654,10 +648,6 @@ export function ReticulumRadioPanel({
                 void saveEditInterface(id, patch);
               }}
             />
-          </ReticulumCollapsibleSection>
-
-          <ReticulumCollapsibleSection title={t('connectionPanel.reticulumNetworkTitle')}>
-            <PeersSummarySection embedded peerCount={peerCount} onOpenPeersTab={onOpenPeersTab} />
           </ReticulumCollapsibleSection>
 
           <ReticulumCollapsibleSection title={t('connectionPanel.reticulumPropagation.title')}>
@@ -1296,45 +1286,6 @@ function InterfacesSection({
       ) : null}
     </div>
   );
-}
-
-function PeersSummarySection({
-  peerCount,
-  onOpenPeersTab,
-  embedded = false,
-}: {
-  peerCount: number;
-  onOpenPeersTab?: () => void;
-  embedded?: boolean;
-}) {
-  const { t } = useTranslation();
-  const body = (
-    <>
-      {!embedded ? (
-        <h3 className="text-sm font-medium text-gray-200">
-          {t('connectionPanel.reticulumNetworkTitle')}
-        </h3>
-      ) : null}
-      <p className="text-muted mt-2 text-xs">
-        {peerCount > 0
-          ? t('peerListPanel.radioPeerCount', { count: peerCount })
-          : t('connectionPanel.reticulumNetworkEmpty')}
-      </p>
-      {onOpenPeersTab ? (
-        <button
-          type="button"
-          className="mt-2 text-sm text-amber-400 hover:underline"
-          onClick={onOpenPeersTab}
-        >
-          {t('peerListPanel.viewAllPeers')}
-        </button>
-      ) : null}
-    </>
-  );
-
-  if (embedded) return body;
-
-  return <div className="bg-deep-black rounded-lg border border-gray-700 p-4">{body}</div>;
 }
 
 export default ReticulumRadioPanel;

@@ -26,7 +26,7 @@ export function reticulumMessageMatchesDmPeer(
   const to = reticulumUnsetDmTo(msg.to) ? null : normalizeReticulumNodeId(msg.to!);
 
   if (isReticulumOwnNode(sender, ownNodeIds) && to === peer) return true;
-  if (sender === peer && (to == null || isReticulumOwnNode(to, ownNodeIds))) return true;
+  if (sender === peer && !isReticulumOwnNode(sender, ownNodeIds)) return true;
 
   if (msg.reticulum_sender_hash) {
     const fromHash = normalizeReticulumNodeId(reticulumHashToNodeId(msg.reticulum_sender_hash));

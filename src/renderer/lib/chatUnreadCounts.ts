@@ -9,6 +9,7 @@ import {
   findMeshtasticParentMessageForReply,
   findParentMessageForReply,
 } from '@/renderer/lib/replyPreview';
+import { normalizeReticulumNodeId, reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
 import { reticulumUnsetDmTo } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
@@ -57,7 +58,13 @@ export function resolveChatDmPeer(
 ): number | undefined {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
   if (protocol === 'reticulum' && reticulumUnsetDmTo(msg.to) && msg.reticulum_sender_hash) {
-    const isOwn = (id: number) => ownNodeIds.has(id >>> 0);
+    const isOwn = (id: number) => {
+      const normalized = normalizeReticulumNodeId(id);
+      for (const own of ownNodeIds) {
+        if (normalizeReticulumNodeId(own) === normalized) return true;
+      }
+      return false;
+    };
     const senderFromHash = Number.parseInt(
       msg.reticulum_sender_hash.replace(/[^0-9a-f]/gi, '').slice(0, 12) || '0',
       16,
@@ -68,20 +75,24 @@ export function resolveChatDmPeer(
     }
   }
   const effectiveTo = protocol === 'reticulum' && msg.to === 0 ? undefined : msg.to;
+  const isOwn = (id: number) => {
+    if (protocol === 'reticulum') {
+      const normalized = normalizeReticulumNodeId(id);
+      for (const own of ownNodeIds) {
+        if (normalizeReticulumNodeId(own) === normalized) return true;
+      }
+      return false;
+    }
+    return ownNodeIds.has(id);
+  };
   if (effectiveTo == null) {
-    if (
-      protocol === 'reticulum' &&
-      msg.to === 0 &&
-      msg.sender_id > 0 &&
-      !ownNodeIds.has(msg.sender_id >>> 0)
-    ) {
+    if (protocol === 'reticulum' && msg.to === 0 && msg.sender_id > 0 && !isOwn(msg.sender_id)) {
       const peerU32 = msg.sender_id >>> 0;
       if (options?.excludeDmPeer?.(peerU32)) return undefined;
       return peerU32;
     }
     return undefined;
   }
-  const isOwn = (id: number) => ownNodeIds.has(id);
   let peer: number | undefined;
   if (isOwn(msg.sender_id) && !isOwn(effectiveTo)) peer = effectiveTo;
   else if (isOwn(effectiveTo) && !isOwn(msg.sender_id)) peer = msg.sender_id;
@@ -93,6 +104,25 @@ export function resolveChatDmPeer(
     !isOwn(msg.sender_id)
   ) {
     peer = msg.sender_id;
+  }
+  if (peer == null && protocol === 'reticulum') {
+    const fromU = msg.sender_id >>> 0;
+    const toU = effectiveTo != null ? effectiveTo >>> 0 : null;
+    const isOwnU32 = (id: number) => ownNodeIds.has(id >>> 0);
+    if (msg.reticulum_sender_hash && toU != null && fromU !== toU) {
+      const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
+      if (senderFromHash === fromU && !isOwnU32(toU)) {
+        peer = toU;
+      } else if (senderFromHash === fromU && !isOwnU32(fromU)) {
+        peer = fromU;
+      } else if (!isOwnU32(fromU)) {
+        peer = fromU;
+      }
+    } else if (fromU > 0 && !isOwnU32(fromU)) {
+      peer = fromU;
+    } else if (toU != null && toU > 0 && !isOwnU32(toU)) {
+      peer = toU;
+    }
   }
   if (peer == null) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;

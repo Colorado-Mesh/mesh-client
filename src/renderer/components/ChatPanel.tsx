@@ -463,7 +463,15 @@ function ChatPanel({
     return new Set(ids);
   }, [myNodeNum, ownNodeIds, protocol]);
 
-  const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
+  const isOwnNode = useCallback(
+    (nodeId: number) => {
+      if (protocol === 'reticulum') {
+        return ownNodeIdSet.has(normalizeReticulumNodeId(nodeId));
+      }
+      return ownNodeIdSet.has(nodeId);
+    },
+    [ownNodeIdSet, protocol],
+  );
 
   const meshcoreExcludeDmPeer = useMemo((): ChatUnreadDmOptions['excludeDmPeer'] | undefined => {
     if (protocol !== 'meshcore') return undefined;
@@ -772,12 +780,21 @@ function ChatPanel({
     );
   }, [activeDmNode, dismissedDmTabs, dmUnreadCounts, inferredDmTabs, openDmTabs, protocol]);
 
-  // Reticulum DM-only: auto-focus first contact when none selected (contacts lack inferred tabs).
+  // Reticulum DM-only: auto-focus the conversation with the most history when none selected.
   useEffect(() => {
     if (!dmOnlyChat || activeDmNode != null || visibleDmTabs.length === 0) return;
-    setActiveDmNode(visibleDmTabs[0]);
+    let bestTab = visibleDmTabs[0];
+    let bestCount = inferredDmTabs.get(bestTab) ?? 0;
+    for (const [nodeNum, count] of inferredDmTabs) {
+      if (!visibleDmTabs.includes(nodeNum)) continue;
+      if (count > bestCount) {
+        bestCount = count;
+        bestTab = nodeNum;
+      }
+    }
+    setActiveDmNode(bestTab);
     setViewMode('dm');
-  }, [activeDmNode, dmOnlyChat, visibleDmTabs]);
+  }, [activeDmNode, dmOnlyChat, inferredDmTabs, visibleDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
@@ -822,8 +839,21 @@ function ChatPanel({
       );
     }
 
+    if (dmOnlyChat) {
+      return regularMessages;
+    }
+
     return regularMessages.filter((m) => !m.to && m.channel === channel);
-  }, [activeDmNode, channel, isOwnNode, protocol, regularMessages, viewMode, ownNodeIdSet]);
+  }, [
+    activeDmNode,
+    channel,
+    dmOnlyChat,
+    isOwnNode,
+    protocol,
+    regularMessages,
+    viewMode,
+    ownNodeIdSet,
+  ]);
 
   const filteredMessages = useMemo(() => {
     let msgs = viewMessages;

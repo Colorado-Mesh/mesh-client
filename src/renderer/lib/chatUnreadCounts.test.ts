@@ -305,6 +305,33 @@ describe('chatUnreadCounts', () => {
     );
     expect(peer).toBe(peerId);
   });
+
+  it('Reticulum inbound with to_hash infers peer when own identity is unknown', () => {
+    const peerId = 2838895306;
+    const peer = resolveChatDmPeer(
+      msg({ channel: 0, sender_id: peerId, to: 4172361550 }),
+      new Set(),
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum outbound infers peer from to when own identity is unknown', () => {
+    const selfHash = 'f9aa38ba0c5a00000000000000000000';
+    const selfId = parseInt(selfHash.slice(0, 12), 16) >>> 0;
+    const peerId = 2838895306;
+    const peer = resolveChatDmPeer(
+      msg({
+        channel: 0,
+        sender_id: selfId,
+        to: peerId,
+        reticulum_sender_hash: selfHash,
+      }),
+      new Set(),
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
 });
 
 describe('chatViewKeyForMessage', () => {

@@ -45,7 +45,12 @@ describe('reticulumMessageMatchesDmPeer', () => {
   });
 
   it('does not match unrelated channel traffic', () => {
-    const msg = dmMsg({ sender_id: peerId, to: 999, payload: 'other' });
+    const msg = dmMsg({ sender_id: 12345, to: peerId, payload: 'other' });
     expect(reticulumMessageMatchesDmPeer(msg, peerId, own)).toBe(false);
+  });
+
+  it('matches inbound DM when stored to_hash does not match current identity', () => {
+    const msg = dmMsg({ sender_id: peerId, to: selfId, payload: 'reply' });
+    expect(reticulumMessageMatchesDmPeer(msg, peerId, new Set())).toBe(true);
   });
 });
