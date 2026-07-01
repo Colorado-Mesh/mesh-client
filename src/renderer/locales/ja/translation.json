@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulumチャットはダイレクトメッセージのみを保存します。個別にクリアするチャンネルはありません。",
     "clearReticulumMessagesTitle": "ダイレクトメッセージを消去",
     "clearReticulumMessagesConfirm": "これにより、ローカルに保存されているすべての{{count}} Reticulumダイレクトメッセージが完全に削除されます。これは元に戻せません。",
-    "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去"
+    "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去",
+    "reticulumSection": "Reticulum — レティキュラム・スタック",
+    "reticulumAnnounceHelp": "あなたの身元がネットワーク上で発表される頻度と、保存されているアナウンスをクリアするためのツール。",
+    "reticulumPropagationHelp": "伝播ノードの同期方法を選択し、必要に応じて最新の伝播データを取得します。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "メッシュを介してこのノードのラジオ設定を開きます（ローカルラジオと保存された管理者キーが必要です）。",
     "openRoomButton": "🏠 ルームを開く",
     "remoteAuthCancelled": "リモートアクセスがキャンセルされました。",
-    "shareContactSent": "無線で送信されたコンタクトシェア。"
+    "shareContactSent": "無線で送信されたコンタクトシェア。",
+    "blockContact": "ブロック",
+    "unblockContact": "ブロック解除"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -1911,7 +1916,11 @@
     "removeContact": "連絡先を削除",
     "removeContactConfirmTitle": "連絡先を削除",
     "removeContactConfirmBody": "これにより、連絡先がリストから削除されます。チャット履歴は保持されます。再度メッセージを送信すると、連絡先が再度追加されます。",
-    "probeOk": "プローブOK —到達可能なパス。"
+    "probeOk": "プローブOK —到達可能なパス。",
+    "blockContact": "連絡先をブロックする",
+    "unblockContact": "連絡先のブロックを解除する",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} —最終閲覧{{seen}}"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMFピア",
     "legendPeerServer": "放浪者ノード",
     "interfaceLink": "インターフェースリンク",
-    "peerLink": "ピアリンク"
+    "peerLink": "ピアリンク",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "オンライン",
+    "interfaceStatusOffline": "オフライン",
+    "glyphWifi": "Wi-Fiインターフェース",
+    "glyphLora": "LoRaインターフェース",
+    "glyphTcp": "TCPインターフェース",
+    "glyphSerial": "シリアル通信"
   },
   "rfHistograms": {
     "title": "RF信号分布",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
-    "placeholder": "すべてのメッセージを検索… (ユーザー:名前、チャンネル:名前)"
+    "placeholder": "すべてのメッセージを検索… (ユーザー:名前、チャンネル:名前)",
+    "noResults": "見つかりませんでした",
+    "hint": "入力してすべてのメッセージを検索",
+    "resultCount": "{{count}}件の結果—クリックしてナビゲート",
+    "openSearch": "メッセージを検索"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "diagnosticsPing": {
+    "title": "連続ping",
+    "reticulumHint": "スタックが実行されている間、各インターバルでping （ RTT ）およびパスプローブ（ホップ）を実行します。",
+    "hashLabel": "宛先ハッシュ",
+    "hashPlaceholder": "32文字の宛先ハッシュ…",
+    "hashAria": "Pingする宛先ハッシュ",
+    "intervalLabel": "間隔",
+    "intervalAria": "Ping試行間隔（秒）",
+    "start": "開始",
+    "stop": "停止",
+    "runOnce": "Pingを1回実行する",
+    "colSeq": "#",
+    "colRtt": "Rett症候群",
+    "colHops": "ホップ",
+    "colStatus": "ステータス",
+    "rttMs": "{{ms}}ミリ秒",
+    "statusOk": "OK",
+    "statusFailed": "失敗： {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "アクティブなアイデンティティ",
+    "active": "アクティブアイデンティティ： {{name}}",
+    "activeBadge": "活動中"
+  },
+  "identityVault": {
+    "title": "アイデンティティ保管庫",
+    "hint": "Vaultパスコードを使用して、IDバックアップのローカルコピーを暗号化します。ロックを解除して、保護されたID操作にアクセスします。",
+    "passcode": "Vaultのパスコード",
+    "confirmPasscode": "パスコードを確認",
+    "setPasscode": "ボールトを有効にする",
+    "unlock": "貯蔵庫のロックを解除",
+    "lock": "保管庫のロック",
+    "statusNotConfigured": "Not configured",
+    "statusLocked": "ロック",
+    "statusUnlocked": "ロック解除",
+    "passcodeTooShort": "少なくとも 4 文字必要です。",
+    "passcodeMismatch": "パスコードが一致しません。",
+    "setSuccess": "Vaultのパスコードが保存されました。",
+    "setFailed": "Vaultパスコードを保存できませんでした。",
+    "unlockSuccess": "ボールトがアンロックされました。",
+    "unlockFailed": "パスコードが正しくないか、Vaultエラーが発生しました。",
+    "lockSuccess": "ボールトがロックされています。"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "伝播モード",
+    "modeAria": "伝播同期モード",
+    "modeAuto": "自動",
+    "modeManual": "手動",
+    "modeOff": "OFF",
+    "sync": "同期",
+    "syncAria": "伝播メッセージを同期",
+    "cancelSync": "取り消す",
+    "cancelSyncAria": "伝播の同期をキャンセル"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "プレイヤーアイコンを見る",
+    "iconNameAria": "ピアアバターアイコン",
+    "iconCircle": "円",
+    "iconStar": "スター",
+    "iconHeart": "ハートマーク",
+    "iconShield": "シールド",
+    "iconUser": "ユーザー"
   }
 }

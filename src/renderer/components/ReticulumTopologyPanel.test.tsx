@@ -11,6 +11,9 @@ vi.mock('react-i18next', () => ({
       if (opts && 'online' in opts && 'offline' in opts) {
         return `${key}:${opts.online}/${opts.offline}`;
       }
+      if (opts && 'name' in opts && 'status' in opts) {
+        return `${key}:${opts.name}:${opts.status}`;
+      }
       return key;
     },
   }),
@@ -87,5 +90,33 @@ describe('ReticulumTopologyPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mother' }));
     expect(onPeerClick).toHaveBeenCalledOnce();
     expect(onPeerClick).toHaveBeenCalledWith('peeraaaa');
+  });
+
+  it('renders interface tooltip title for interface nodes', async () => {
+    fetchReticulumInterfaces.mockResolvedValue([
+      {
+        id: 'wifi-1',
+        name: 'Home Wi-Fi',
+        type: 'WifiInterface',
+        enabled: true,
+        status: 'up',
+      },
+    ]);
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/topology') {
+        return Promise.resolve({ nodes: [], edges: [] });
+      }
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({ display_name: 'NV0N' });
+      }
+      return Promise.resolve({});
+    });
+
+    const { container } = render(<ReticulumTopologyPanel />);
+
+    await waitFor(() => {
+      expect(container.querySelector('title')).toBeTruthy();
+    });
+    expect(container.querySelector('title')?.textContent).toContain('Home Wi-Fi');
   });
 });

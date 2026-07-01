@@ -3,11 +3,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 
+import { registerChatOutboxDrainListener } from '../lib/chatOutboxDrain';
+
 export type { OutboxEntry };
 
 // Retry backoff delays in ms: 30s, 2m, 10m, 10m (max 5 attempts then permanently failed)
 const RETRY_DELAYS_MS = [30_000, 120_000, 600_000, 600_000];
 const MAX_ATTEMPTS = 5;
+/** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
+export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export interface UseChatOutboxOptions {
   protocol: MeshProtocol;
@@ -25,6 +29,7 @@ export interface UseChatOutbox {
   queue: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
   retry: (id: number) => void;
   cancel: (id: number) => void;
+  drainNow: () => Promise<void>;
 }
 
 export function useChatOutbox({
@@ -82,7 +87,8 @@ export function useChatOutbox({
       const eligible = freshRows.filter(
         (r) =>
           (r.status === 'queued' || r.status === 'failed') &&
-          (r.nextRetryAt == null || r.nextRetryAt <= now),
+          (r.nextRetryAt == null || r.nextRetryAt <= now) &&
+          now - r.createdAt <= OUTBOX_MAX_AGE_MS,
       );
       for (const row of eligible) {
         if (!isSendAvailableRef.current) break;
@@ -105,11 +111,23 @@ export function useChatOutbox({
           const nextAttemptCount = row.attemptCount + 1;
           if (isBlocked) {
             const newStatus: OutboxStatus = 'blocked';
-            await window.electronAPI.chat.outbox.updateStatus(row.id, newStatus, errMsg);
+            await window.electronAPI.chat.outbox.updateStatus(
+              row.id,
+              newStatus,
+              errMsg,
+              undefined,
+              nextAttemptCount,
+            );
             updateRow(row.id, { status: newStatus, error: errMsg, attemptCount: nextAttemptCount });
           } else if (nextAttemptCount >= MAX_ATTEMPTS) {
             const newStatus: OutboxStatus = 'failed';
-            await window.electronAPI.chat.outbox.updateStatus(row.id, newStatus, errMsg);
+            await window.electronAPI.chat.outbox.updateStatus(
+              row.id,
+              newStatus,
+              errMsg,
+              undefined,
+              nextAttemptCount,
+            );
             updateRow(row.id, { status: newStatus, error: errMsg, attemptCount: nextAttemptCount });
           } else {
             const delayMs =
@@ -121,6 +139,7 @@ export function useChatOutbox({
               newStatus,
               errMsg,
               nextRetryAt,
+              nextAttemptCount,
             );
             updateRow(row.id, {
               status: newStatus,
@@ -145,6 +164,13 @@ export function useChatOutbox({
     // drainOnce intentionally omitted: only trigger on availability/protocol change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSendAvailable, protocol]);
+
+  // Allow runtimes to trigger drain on peer announce / path update
+  useEffect(() => {
+    return registerChatOutboxDrainListener(protocol, () => {
+      void drainOnce();
+    });
+  }, [protocol, drainOnce]);
 
   const queue = useCallback(
     async (entry: OutboxEntryInput): Promise<OutboxEntry> => {
@@ -189,5 +215,5 @@ export function useChatOutbox({
     [removeRow],
   );
 
-  return { rows, queue, retry, cancel };
+  return { rows, queue, retry, cancel, drainNow: drainOnce };
 }

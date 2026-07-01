@@ -12,7 +12,9 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
+import { IdentityVaultPanel } from './IdentityVaultPanel';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
+import { ReticulumIdentitySwitcher } from './ReticulumIdentitySwitcher';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 
 interface ReticulumInterfaceRow {
@@ -538,6 +540,17 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
             }}
           />
         )}
+        {identityReady && sidecarApiReady ? (
+          <ReticulumIdentitySwitcher
+            disabled={identityActionsDisabled}
+            onSwitched={() => {
+              void refreshIdentity();
+            }}
+          />
+        ) : null}
+        {identityReady ? (
+          <IdentityVaultPanel disabled={identityActionsDisabled} secret={exportJson} />
+        ) : null}
         {identityReady && sidecarApiReady ? (
           <ReticulumAnnounceControls disabled={!sidecarApiReady} />
         ) : null}

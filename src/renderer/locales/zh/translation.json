@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulum聊天仅存储直接消息—没有可单独清除的频道。",
     "clearReticulumMessagesTitle": "清除直接消息",
     "clearReticulumMessagesConfirm": "这将永久删除所有{{count}}本地存储的Reticulum直接消息。此操作无法撤消。",
-    "clearReticulumMessagesConfirmButton": "清除{{count}}消息"
+    "clearReticulumMessagesConfirmButton": "清除{{count}}消息",
+    "reticulumSection": "Reticulum — 网状堆栈",
+    "reticulumAnnounceHelp": "您的身份在网络上公布的频率，以及清除存储的公告的工具。",
+    "reticulumPropagationHelp": "选择传播节点的同步方式，并在需要时提取最新传播数据。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "在网格上打开此节点的无线电设置（需要本地无线电和已保存的管理密钥）。",
     "openRoomButton": "🏠 打开房间",
     "remoteAuthCancelled": "远程访问已取消。",
-    "shareContactSent": "通过无线电发送的联系人共享。"
+    "shareContactSent": "通过无线电发送的联系人共享。",
+    "blockContact": "物块",
+    "unblockContact": "取消屏蔽"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -1911,7 +1916,11 @@
     "removeContact": "移除联系人",
     "removeContactConfirmTitle": "移除联系人",
     "removeContactConfirmBody": "这会将联系人从您的列表中删除。会保留聊天记录；再次向他们发送消息将重新添加工单。",
-    "probeOk": "探测正常—路径可达。"
+    "probeOk": "探测正常—路径可达。",
+    "blockContact": "阻止联系人",
+    "unblockContact": "取消阻止联系人",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} —最后一次出现{{seen}}"
   },
   "peerGraph": {
     "title": "同行沟通图表",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF对等点",
     "legendPeerServer": "游牧节点",
     "interfaceLink": "链接",
-    "peerLink": "对等链接"
+    "peerLink": "对等链接",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "离线",
+    "glyphWifi": "Wi-Fi接口",
+    "glyphLora": "LoRa接口",
+    "glyphTcp": "TCP接口",
+    "glyphSerial": "串口"
   },
   "rfHistograms": {
     "title": "射频信号分布",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
-    "placeholder": "搜索所有消息...（用户：名称，频道：名称）"
+    "placeholder": "搜索所有消息...（用户：名称，频道：名称）",
+    "noResults": "搜不到",
+    "hint": "键入以搜索所有消息",
+    "resultCount": "{{count}}个结果—点击导航",
+    "openSearch": "搜索消息"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
+  },
+  "diagnosticsPing": {
+    "title": "持续ping",
+    "reticulumHint": "在堆栈运行时，在每个间隔上运行ping （ RTT ）和路径探测（跳数）。",
+    "hashLabel": "目的IP哈希",
+    "hashPlaceholder": "32个字符的目的地哈希…",
+    "hashAria": "要ping的目标哈希",
+    "intervalLabel": "间隔",
+    "intervalAria": "Ping尝试之间的秒数",
+    "start": "启动",
+    "stop": "停止",
+    "runOnce": "Ping一次",
+    "colSeq": "#",
+    "colRtt": "往返时延",
+    "colHops": "跳数",
+    "colStatus": "状态",
+    "rttMs": "{{ms}}毫秒",
+    "statusOk": "确认",
+    "statusFailed": "失败： {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "有效身份",
+    "active": "有效身份： {{name}}",
+    "activeBadge": "活跃"
+  },
+  "identityVault": {
+    "title": "身份保管库",
+    "hint": "使用保管库密码加密身份备份的本地副本。解锁以访问受保护的身份操作。",
+    "passcode": "保管库密码",
+    "confirmPasscode": "确认密码",
+    "setPasscode": "启用保管库",
+    "unlock": "解锁保管库",
+    "lock": "锁定保管库",
+    "statusNotConfigured": "未配置",
+    "statusLocked": "已锁定",
+    "statusUnlocked": "已经解锁",
+    "passcodeTooShort": "必须至少为4个字符",
+    "passcodeMismatch": "密码不匹配。",
+    "setSuccess": "Vault密码已保存。",
+    "setFailed": "无法保存保管库密码。",
+    "unlockSuccess": "避难所已解锁。",
+    "unlockFailed": "密码或保管库错误。",
+    "lockSuccess": "密室已锁定。"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "传播模式",
+    "modeAria": "传播同步模式",
+    "modeAuto": "推荐加点",
+    "modeManual": "说明书",
+    "modeOff": "关闭",
+    "sync": "同步",
+    "syncAria": "同步传播消息",
+    "cancelSync": "取消推荐",
+    "cancelSyncAria": "取消传播同步"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "阿凡达图标",
+    "iconNameAria": "阿凡达图标",
+    "iconCircle": "圈型",
+    "iconStar": "星",
+    "iconHeart": "倾心点",
+    "iconShield": "防护罩",
+    "iconUser": "用户"
   }
 }

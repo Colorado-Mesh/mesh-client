@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "La chat di Reticulum memorizza solo messaggi diretti — non ci sono canali da cancellare individualmente.",
     "clearReticulumMessagesTitle": "Cancella messaggi diretti",
     "clearReticulumMessagesConfirm": "In questo modo verranno eliminati definitivamente tutti i messaggi diretti {{count}} memorizzati localmente su Reticulum. Questa operazione non può essere annullata.",
-    "clearReticulumMessagesConfirmButton": "Cancella messaggi {{count}}"
+    "clearReticulumMessagesConfirmButton": "Cancella messaggi {{count}}",
+    "reticulumSection": "Reticulum — Stack reticolo",
+    "reticulumAnnounceHelp": "Con quale frequenza la tua identità viene annunciata sulla rete e gli strumenti per cancellare gli annunci memorizzati.",
+    "reticulumPropagationHelp": "Scegli come sincronizzare i nodi di propagazione e tira i dati di propagazione più recenti quando necessario."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Apre le impostazioni radio per questo nodo sulla mesh (richiede la radio locale e la chiave di amministrazione salvata).",
     "openRoomButton": "🏠 Apri stanza",
     "remoteAuthCancelled": "Accesso remoto annullato.",
-    "shareContactSent": "Condivisione dei contatti inviata via radio."
+    "shareContactSent": "Condivisione dei contatti inviata via radio.",
+    "blockContact": "Blocco",
+    "unblockContact": "Sblocca"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -1911,7 +1916,11 @@
     "removeContact": "Togliere le eventuali lenti a contatto,",
     "removeContactConfirmTitle": "Togliere le eventuali lenti a contatto,",
     "removeContactConfirmBody": "In questo modo il contatto verrà rimosso dall'elenco. La cronologia chat viene mantenuta; inviando nuovamente un messaggio, si aggiungerà nuovamente il contatto.",
-    "probeOk": "Sonda OK — percorso raggiungibile."
+    "probeOk": "Sonda OK — percorso raggiungibile.",
+    "blockContact": "Blocca contatto",
+    "unblockContact": "Sblocca contatto",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — ultimo accesso {{seen}}"
   },
   "peerGraph": {
     "title": "Grafico di comunicazione peer",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF peer",
     "legendPeerServer": "Nodo nomade",
     "interfaceLink": "Collegamento interfaccia",
-    "peerLink": "Collegamento peer"
+    "peerLink": "Collegamento peer",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Interfaccia Wi-Fi",
+    "glyphLora": "Interfaccia LoRa",
+    "glyphTcp": "Interfaccia TCP",
+    "glyphSerial": "Interfaccia seriale"
   },
   "rfHistograms": {
     "title": "Distribuzione del segnale RF",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Chiudi ricerca",
-    "placeholder": "Cerca tutti i messaggi… (utente:nome, canale:nome)"
+    "placeholder": "Cerca tutti i messaggi… (utente:nome, canale:nome)",
+    "noResults": "Nessun risultato",
+    "hint": "Digita per cercare in tutti i messaggi",
+    "resultCount": "{{count}} risultato/i — clicca per navigare",
+    "openSearch": "Cerca nei messaggi"
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Aggiornamento disponibile",
     "menuToastAvailableBody": "È disponibile la versione {{version}}.",
     "menuToastErrorTitle": "Controllo aggiornamento non riuscito"
+  },
+  "diagnosticsPing": {
+    "title": "Ping continuo",
+    "reticulumHint": "Esegue ping (RTT) e path probe (hop) su ogni intervallo mentre lo stack è in esecuzione.",
+    "hashLabel": "Hash di destinazione",
+    "hashPlaceholder": "Hash di destinazione di 32 caratteri...",
+    "hashAria": "Hash di destinazione per il ping",
+    "intervalLabel": "Intervallo (s)",
+    "intervalAria": "Secondi tra i tentativi di ping",
+    "start": "Inizio",
+    "stop": "Stop",
+    "runOnce": "Effettua il ping una",
+    "colSeq": "#",
+    "colRtt": "Disturbo di Rett",
+    "colHops": "Salta",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Non riuscito: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Identità attiva",
+    "active": "Identità attiva: {{name}}",
+    "activeBadge": "attiva"
+  },
+  "identityVault": {
+    "title": "Caveau identità",
+    "hint": "Crittografa una copia locale del backup della tua identità con un codice di sicurezza. Sblocca per accedere alle operazioni di identità protette.",
+    "passcode": "Codice di accesso al vault",
+    "confirmPasscode": "Conferma passcode",
+    "setPasscode": "Abilita vault",
+    "unlock": "Sblocca caveau",
+    "lock": "Blocca volta",
+    "statusNotConfigured": "Non configurata",
+    "statusLocked": "Bloccato",
+    "statusUnlocked": "Mantenere la",
+    "passcodeTooShort": "Il codice di accesso deve essere di almeno 4 caratteri.",
+    "passcodeMismatch": "Le password inserite non coincidono.",
+    "setSuccess": "Codice di accesso al vault salvato.",
+    "setFailed": "Impossibile salvare il codice di accesso al vault.",
+    "unlockSuccess": "Caveau sbloccato.",
+    "unlockFailed": "Codice di accesso errato o errore di vaulting.",
+    "lockSuccess": "Caveau bloccato."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Modalità di propagazione",
+    "modeAria": "Modalità di sincronizzazione della propagazione",
+    "modeAuto": "Auto",
+    "modeManual": "Manuale",
+    "modeOff": "Spento",
+    "sync": "Sincronizza",
+    "syncAria": "Sincronizza messaggi di propagazione",
+    "cancelSync": "Annulla",
+    "cancelSyncAria": "Annulla sincronizzazione propagazione"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "icona avatar",
+    "iconNameAria": "icona avatar",
+    "iconCircle": "Circonferenza",
+    "iconStar": "Stella",
+    "iconHeart": "Cuore",
+    "iconShield": "Shield",
+    "iconUser": "Utente"
   }
 }

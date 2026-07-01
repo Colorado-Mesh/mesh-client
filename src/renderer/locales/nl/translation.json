@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulum-chat slaat alleen directe berichten op — er zijn geen kanalen om individueel te wissen.",
     "clearReticulumMessagesTitle": "Directe berichten wissen",
     "clearReticulumMessagesConfirm": "Hiermee worden alle {{count}} lokaal opgeslagen Reticulum-directe berichten permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
-    "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen"
+    "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen",
+    "reticulumSection": "Reticulum stack",
+    "reticulumAnnounceHelp": "Hoe vaak uw identiteit wordt aangekondigd op het netwerk en tools om opgeslagen aankondigingen te wissen.",
+    "reticulumPropagationHelp": "Kies hoe propagatieknooppunten worden gesynchroniseerd en haal de nieuwste propagatiegegevens op wanneer dat nodig is."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Opent radio-instellingen voor dit knooppunt via de mesh (vereist lokale radio en opgeslagen admin-sleutel).",
     "openRoomButton": "🏠 Ruimte openen",
     "remoteAuthCancelled": "Toegang op afstand geannuleerd.",
-    "shareContactSent": "Contact delen verzonden via de radio."
+    "shareContactSent": "Contact delen verzonden via de radio.",
+    "blockContact": "Blok",
+    "unblockContact": "Deblokkeer"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -1911,7 +1916,11 @@
     "removeContact": "Contact verwijderen",
     "removeContactConfirmTitle": "Contact verwijderen",
     "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit je lijst verwijderd. De chatgeschiedenis wordt bewaard; door ze opnieuw een bericht te sturen, wordt het contact opnieuw toegevoegd.",
-    "probeOk": "Sonde OK — pad bereikbaar."
+    "probeOk": "Sonde OK — pad bereikbaar.",
+    "blockContact": "Contactpersoon blokkeren",
+    "unblockContact": "Contactpersoon deblokkeren",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — laatst gezien {{seen}}"
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF peer",
     "legendPeerServer": "Nomad-knooppunt",
     "interfaceLink": "Interface link",
-    "peerLink": "Collegiale link"
+    "peerLink": "Collegiale link",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Wi-Fi-interface",
+    "glyphLora": "LoRa-interface",
+    "glyphTcp": "TCP-interface",
+    "glyphSerial": "Seriële interface"
   },
   "rfHistograms": {
     "title": "RF-signaalverdeling",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",
-    "placeholder": "Zoek in alle berichten… (gebruiker:naam, kanaal:naam)"
+    "placeholder": "Zoek in alle berichten… (gebruiker:naam, kanaal:naam)",
+    "noResults": "Geen resultaten",
+    "hint": "Typ om in alle berichten te zoeken",
+    "resultCount": "{{count}} result(s) — klik om te navigeren",
+    "openSearch": "Zoek berichten"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
+  },
+  "diagnosticsPing": {
+    "title": "Continue ping",
+    "reticulumHint": "Voert ping (RTT) en padsonde (hops) uit op elk interval terwijl de stapel draait.",
+    "hashLabel": "Bestemmingshash",
+    "hashPlaceholder": "Bestemmingshash van 32 tekens...",
+    "hashAria": "Bestemmingshash naar ping",
+    "intervalLabel": "Interval(len)",
+    "intervalAria": "Seconden tussen pingpogingen",
+    "start": "Beginnen",
+    "stop": "Stop",
+    "runOnce": "Eenmaal pingen",
+    "colSeq": "#",
+    "colRtt": "project voor regionale technologieoverdracht",
+    "colHops": "Hop",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Mislukt: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "huidige identiteit",
+    "active": "Actieve identiteit: {{name}}",
+    "activeBadge": "actief"
+  },
+  "identityVault": {
+    "title": "Identiteitskluis",
+    "hint": "Versleutel een lokale kopie van je identiteitsback-up met een kluiswachtwoordcode. Ontgrendel om toegang te krijgen tot beschermde identiteitsbewerkingen.",
+    "passcode": "Toegangscode kluis",
+    "confirmPasscode": "Toegangscode bevestigen",
+    "setPasscode": "Schakel kluis in",
+    "unlock": "Ontgrendel kluis",
+    "lock": "Kluis vergrendelen",
+    "statusNotConfigured": "Niet geconfigureerd",
+    "statusLocked": "Vastgezet",
+    "statusUnlocked": "Ontgrendeld",
+    "passcodeTooShort": "De toegangscode moet uit minimaal 4 tekens bestaan.",
+    "passcodeMismatch": "Ingevoerde toegangscodes komen niet overeen.",
+    "setSuccess": "Toegangscode kluis opgeslagen.",
+    "setFailed": "Kan kluistoegangscode niet opslaan.",
+    "unlockSuccess": "Kluis ontgrendeld",
+    "unlockFailed": "Onjuiste toegangscode of kluisfout.",
+    "lockSuccess": "Kluis vergrendeld."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "voortplantingsmodus",
+    "modeAria": "Voortplantingssynchronisatiemodus",
+    "modeAuto": "Auto",
+    "modeManual": "Handmatig",
+    "modeOff": "Off",
+    "sync": "Synchroniseren",
+    "syncAria": "Voortplantingsberichten synchroniseren",
+    "cancelSync": "Annuleren",
+    "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar-pictogram",
+    "iconNameAria": "Peer-avatarpictogram",
+    "iconCircle": "Cirkel",
+    "iconStar": "Ster",
+    "iconHeart": "Hart",
+    "iconShield": "Afscherming",
+    "iconUser": "Gebruiker"
   }
 }

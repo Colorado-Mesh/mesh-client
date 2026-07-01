@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulum chat hanya menyimpan pesan langsung — tidak ada saluran untuk dihapus secara individual.",
     "clearReticulumMessagesTitle": "Hapus pesan langsung",
     "clearReticulumMessagesConfirm": "Ini akan menghapus semua {{count}} pesan langsung Reticulum yang disimpan secara lokal secara permanen. Ini tidak dapat diurungkan.",
-    "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}"
+    "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}",
+    "reticulumSection": "Reticulum — Tumpukan retikulum",
+    "reticulumAnnounceHelp": "Seberapa sering identitas Anda diumumkan di jaringan, dan alat untuk menghapus pengumuman yang tersimpan.",
+    "reticulumPropagationHelp": "Pilih bagaimana node propagasi disinkronkan dan tarik data propagasi terbaru bila diperlukan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Membuka pengaturan Radio untuk simpul ini melalui mesh (memerlukan radio lokal dan kunci admin yang disimpan).",
     "openRoomButton": "🏠 Buka ruangan",
     "remoteAuthCancelled": "Akses jarak jauh dibatalkan.",
-    "shareContactSent": "Berbagi kontak yang dikirim melalui radio."
+    "shareContactSent": "Berbagi kontak yang dikirim melalui radio.",
+    "blockContact": "Blokir",
+    "unblockContact": "Buka blokir"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -1911,7 +1916,11 @@
     "removeContact": "Hapus kontak",
     "removeContactConfirmTitle": "Hapus kontak",
     "removeContactConfirmBody": "Ini akan menghapus kontak dari daftar Anda. Riwayat obrolan disimpan; mengirim pesan lagi kepada mereka akan menambahkan kembali kontak.",
-    "probeOk": "Probe OK — jalur dapat dijangkau."
+    "probeOk": "Probe OK — jalur dapat dijangkau.",
+    "blockContact": "Blokir kontak",
+    "unblockContact": "Buka blokir kontak",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — terakhir terlihat {{seen}}"
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF peer",
     "legendPeerServer": "Nomad node",
     "interfaceLink": "Tautan antarmuka",
-    "peerLink": "Tautan sejawat"
+    "peerLink": "Tautan sejawat",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "luring",
+    "glyphWifi": "Antarmuka Wi-Fi",
+    "glyphLora": "Antarmuka LoRa",
+    "glyphTcp": "Antarmuka TCP",
+    "glyphSerial": "Antarmuka Serial"
   },
   "rfHistograms": {
     "title": "Distribusi Sinyal RF",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",
-    "placeholder": "Cari semua pesan… (pengguna:nama, saluran:nama)"
+    "placeholder": "Cari semua pesan… (pengguna:nama, saluran:nama)",
+    "noResults": "Tidak ada hasil",
+    "hint": "Ketik untuk mencari di semua pesan",
+    "resultCount": "{{count}} hasil- klik untuk menavigasi",
+    "openSearch": "Cari pesan"
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
+  },
+  "diagnosticsPing": {
+    "title": "Ping berkelanjutan",
+    "reticulumHint": "Menjalankan ping (RTT) dan probe jalur (hop) pada setiap interval saat tumpukan sedang berjalan.",
+    "hashLabel": "Hash tujuan",
+    "hashPlaceholder": "Hash tujuan 32 karakter…",
+    "hashAria": "Hash tujuan ke ping",
+    "intervalLabel": "Interval",
+    "intervalAria": "Detik antara upaya ping",
+    "start": "Mulai",
+    "stop": "Berhenti",
+    "runOnce": "Ping sekali",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Hop",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Gagal: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Identitas aktif",
+    "active": "Identitas aktif: {{name}}",
+    "activeBadge": "aktif"
+  },
+  "identityVault": {
+    "title": "Kubah identitas",
+    "hint": "Enkripsi salinan lokal cadangan identitas Anda dengan kode sandi brankas. Buka kunci untuk mengakses operasi identitas yang dilindungi.",
+    "passcode": "Kode sandi brankas",
+    "confirmPasscode": "Konfirmasi kode sandi",
+    "setPasscode": "Aktifkan brankas",
+    "unlock": "Buka kunci brankas",
+    "lock": "Kunci brankas",
+    "statusNotConfigured": "Tidak terkonfigurasi",
+    "statusLocked": "Terkunci",
+    "statusUnlocked": "Tidak terkunci",
+    "passcodeTooShort": "Kode sandi harus setidaknya 4 karakter.",
+    "passcodeMismatch": "Kode sandi tidak cocok.",
+    "setSuccess": "Kode sandi brankas disimpan.",
+    "setFailed": "Tidak dapat menyimpan kode sandi brankas.",
+    "unlockSuccess": "Lemari besi tidak terkunci.",
+    "unlockFailed": "Kesalahan kode sandi atau brankas yang salah.",
+    "lockSuccess": "Kubah terkunci."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Mode propagasi",
+    "modeAria": "Mode sinkronisasi propagasi",
+    "modeAuto": "Otomatis",
+    "modeManual": "Panduan",
+    "modeOff": "Tidak aktif",
+    "sync": "Sinkronkan",
+    "syncAria": "Sinkronkan pesan propagasi",
+    "cancelSync": "Batal",
+    "cancelSyncAria": "Batalkan sinkronisasi propagasi"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikon avatar",
+    "iconNameAria": "Ikon avatar sejawat",
+    "iconCircle": "Lingkaran",
+    "iconStar": "Star",
+    "iconHeart": "Hati",
+    "iconShield": "Perisai",
+    "iconUser": "Pengguna"
   }
 }

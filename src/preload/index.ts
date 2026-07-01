@@ -146,6 +146,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
       icon_name?: string | null;
       icon_color?: string | null;
     }) => ipcRenderer.invoke('db:upsertReticulumDestination', row),
+    getBlockedContacts: (protocol: string, identityId: string) =>
+      ipcRenderer.invoke('db:getBlockedContacts', protocol, identityId),
+    blockContact: (protocol: string, identityId: string, blockedHash: string) =>
+      ipcRenderer.invoke('db:blockContact', protocol, identityId, blockedHash),
+    unblockContact: (protocol: string, identityId: string, blockedHash: string) =>
+      ipcRenderer.invoke('db:unblockContact', protocol, identityId, blockedHash),
+    getReticulumIdentityActivity: (destinationHash: string) =>
+      ipcRenderer.invoke('db:getReticulumIdentityActivity', destinationHash),
+    upsertReticulumIdentityActivity: (row: {
+      destination_hash: string;
+      aspect: string;
+      identity_hash?: string | null;
+      last_seen: number;
+      hops?: number | null;
+    }) => ipcRenderer.invoke('db:upsertReticulumIdentityActivity', row),
     saveMeshcoreContact: (contact: {
       node_id: number;
       public_key: string;
@@ -932,6 +947,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  // ─── Reticulum identity vault ────────────────────────────────────
+  vault: {
+    setPasscode: (passcode: string, secret: string) =>
+      ipcRenderer.invoke('vault:setPasscode', passcode, secret),
+    unlock: (passcode: string) => ipcRenderer.invoke('vault:unlock', passcode),
+    lock: () => ipcRenderer.invoke('vault:lock'),
+    status: () => ipcRenderer.invoke('vault:status'),
+  },
+
   // ─── Chat export ─────────────────────────────────────────────────
   chat: {
     export: (messages: unknown[]) =>
@@ -961,8 +985,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('chat:outbox:list', protocol) as Promise<OutboxEntry[]>,
       add: (entry: OutboxEntryInput) =>
         ipcRenderer.invoke('chat:outbox:add', entry) as Promise<OutboxEntry>,
-      updateStatus: (id: number, status: OutboxStatus, error?: string, nextRetryAt?: number) =>
-        ipcRenderer.invoke('chat:outbox:updateStatus', id, status, error, nextRetryAt),
+      updateStatus: (
+        id: number,
+        status: OutboxStatus,
+        error?: string,
+        nextRetryAt?: number,
+        attemptCount?: number,
+      ) =>
+        ipcRenderer.invoke(
+          'chat:outbox:updateStatus',
+          id,
+          status,
+          error,
+          nextRetryAt,
+          attemptCount,
+        ),
       remove: (id: number) => ipcRenderer.invoke('chat:outbox:remove', id),
     },
   },

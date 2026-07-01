@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulum chat ukládá pouze přímé zprávy — neexistují žádné kanály, které by bylo možné individuálně vymazat.",
     "clearReticulumMessagesTitle": "Vymazat přímé zprávy",
     "clearReticulumMessagesConfirm": "Tím trvale odstraníte všechny {{count}} lokálně uložené přímé zprávy Reticulum. Tuto akci nelze vrátit zpět.",
-    "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy"
+    "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
+    "reticulumSection": "Reticulum — Zásobník retikula",
+    "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
+    "reticulumPropagationHelp": "Zvolte způsob synchronizace propagačních uzlů a v případě potřeby vytáhněte nejnovější propagační data."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Otevře nastavení rádia pro tento uzel přes síť (vyžaduje místní rádio a uložený klíč správce).",
     "openRoomButton": "🏠 Otevřít místnost",
     "remoteAuthCancelled": "Vzdálený přístup byl zrušen.",
-    "shareContactSent": "Sdílení kontaktu odesláno rádiem."
+    "shareContactSent": "Sdílení kontaktu odesláno rádiem.",
+    "blockContact": "Blokovací díl",
+    "unblockContact": "Odblokování"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -1911,7 +1916,11 @@
     "removeContact": "Odstraňte kontaktní",
     "removeContactConfirmTitle": "Odstraňte kontaktní",
     "removeContactConfirmBody": "Tím se kontakt odstraní ze seznamu. Historie chatu je zachována; opětovné zaslání zprávy kontakt znovu přidá.",
-    "probeOk": "Sonda OK — cesta dosažitelná."
+    "probeOk": "Sonda OK — cesta dosažitelná.",
+    "blockContact": "Zablokovat kontakt",
+    "unblockContact": "Odblokovat kontakt",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — naposledy viděn/a {{seen}}"
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF peer",
     "legendPeerServer": "Nomádský uzel",
     "interfaceLink": "Propojení rozhraní",
-    "peerLink": "Odkaz na protějšek"
+    "peerLink": "Odkaz na protějšek",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Rozhraní Wi-Fi:",
+    "glyphLora": "Rozhraní LoRa",
+    "glyphTcp": "Rozhraní TCP",
+    "glyphSerial": "Sériové rozhraní"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",
-    "placeholder": "Prohledat všechny zprávy… (uživatel:jméno, kanál:jméno)"
+    "placeholder": "Prohledat všechny zprávy… (uživatel:jméno, kanál:jméno)",
+    "noResults": "Žádné výsledky",
+    "hint": "Zadejte pro vyhledávání ve všech zprávách",
+    "resultCount": "{{count}} výsledky — klikni pro navigaci",
+    "openSearch": "Hledat zprávy..."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "diagnosticsPing": {
+    "title": "Kontinuální ping",
+    "reticulumHint": "Spustí ping (RTT) a dráhovou sondu (hops) v každém intervalu, když je zásobník spuštěn.",
+    "hashLabel": "Cílová hodnota hash",
+    "hashPlaceholder": "32znakový cílový hash…",
+    "hashAria": "Cílový hash na ping",
+    "intervalLabel": "Interval (y)",
+    "intervalAria": "Sekundy mezi pokusy o ping",
+    "start": "Začít",
+    "stop": "Zastavit",
+    "runOnce": "Ping jednou",
+    "colSeq": "č.",
+    "colRtt": "Rettova choroba",
+    "colHops": "Chmel",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Nezdařilo se: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktivní identita",
+    "active": "Aktivní identita: {{name}}",
+    "activeBadge": "aktivní"
+  },
+  "identityVault": {
+    "title": "Trezor identity",
+    "hint": "Zašifrujte místní kopii zálohy své identity pomocí hesla do trezoru. Odemkněte pro přístup k chráněným operacím identity.",
+    "passcode": "Heslo trezoru",
+    "confirmPasscode": "Potvrdit přístupový kód",
+    "setPasscode": "Povolit trezor",
+    "unlock": "Odemknout trezor",
+    "lock": "Uzamknout trezor",
+    "statusNotConfigured": "Nenastaveno",
+    "statusLocked": "Uzamčeno",
+    "statusUnlocked": "Odemčeno",
+    "passcodeTooShort": "Heslo musí mít alespoň 4 znaky.",
+    "passcodeMismatch": "Hesla se neshodují.",
+    "setSuccess": "Heslo trezoru uloženo.",
+    "setFailed": "Heslo trezoru se nepodařilo uložit.",
+    "unlockSuccess": "Trezor odemčen.",
+    "unlockFailed": "Nesprávný přístupový kód nebo chyba trezoru.",
+    "lockSuccess": "Trezor je uzamčen."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Režim propagace",
+    "modeAria": "Režim synchronizace propagace",
+    "modeAuto": "Auto",
+    "modeManual": "Manuální",
+    "modeOff": "Vypnuto",
+    "sync": "Synchronizace",
+    "syncAria": "Synchronizovat propagační zprávy",
+    "cancelSync": "Zrušit",
+    "cancelSyncAria": "Zrušit synchronizaci propagace"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikona avatara",
+    "iconNameAria": "Ikona avatara protějšku",
+    "iconCircle": "Kruh",
+    "iconStar": "Hvězdička",
+    "iconHeart": "Srdce",
+    "iconShield": "Štít",
+    "iconUser": "Uživatel"
   }
 }

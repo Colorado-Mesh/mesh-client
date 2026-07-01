@@ -8,7 +8,11 @@ import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
 import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
-import { normalizeReactionEmoji } from './reactions';
+import {
+  firstGraphemeCluster,
+  isReactionPickerEmojiGlyph,
+  normalizeReactionEmoji,
+} from './reactions';
 import { registerReticulumDestinationHash, reticulumHashToNodeId } from './reticulum/destHash';
 import { computeReticulumMessageHash } from './reticulum/messageHash';
 import type {
@@ -18,6 +22,77 @@ import type {
   MeshWaypoint,
   NeighborInfoRecord,
 } from './types';
+
+export interface ChatReactionRow {
+  emoji: number;
+  payload: string;
+  sender_id: number;
+  sender_name: string;
+  id?: number;
+}
+
+/** Detect Reticulum LXMF tapback rows rehydrated from SQLite (emoji-only payload + parent hash). */
+export function isReticulumTapbackDbRow(row: {
+  reply_to_hash?: string | null;
+  payload: string;
+}): boolean {
+  if (!row.reply_to_hash) return false;
+  const trimmed = row.payload.trim();
+  if (!trimmed) return false;
+  const glyph = firstGraphemeCluster(trimmed);
+  if (!glyph || glyph !== trimmed) return false;
+  return isReactionPickerEmojiGlyph(glyph);
+}
+
+/** Parent key for grouping tapbacks (Meshtastic packet id or Reticulum message hash). */
+export function reactionParentKeyFromChatMessage(msg: ChatMessage): string | number | undefined {
+  if (msg.emoji == null) return undefined;
+  if (msg.reticulum_reply_to_hash) return msg.reticulum_reply_to_hash;
+  if (msg.replyId != null) return msg.replyId;
+  return undefined;
+}
+
+/** Lookup keys on a parent chat message for attached tapback rows. */
+export function reactionLookupKeysForParentMessage(msg: ChatMessage): (string | number)[] {
+  const keys = new Set<string | number>();
+  if (msg.packetId != null) keys.add(msg.packetId);
+  keys.add(msg.timestamp);
+  if (msg.reticulum_message_hash) keys.add(msg.reticulum_message_hash);
+  return [...keys];
+}
+
+export function groupChatReactionsByParentKey(messages: ChatMessage[]): {
+  regularMessages: ChatMessage[];
+  reactionsByParentKey: Map<string | number, ChatReactionRow[]>;
+} {
+  const regular: ChatMessage[] = [];
+  const reactions = new Map<string | number, ChatReactionRow[]>();
+
+  const reactionDedupeKey = (senderId: number, emoji: number, payload: string): string =>
+    `${senderId}|${emoji}|${payload.trim()}`;
+
+  for (const msg of messages) {
+    const parentKey = reactionParentKeyFromChatMessage(msg);
+    if (parentKey != null) {
+      const existing = reactions.get(parentKey) ?? [];
+      const dedupeKey = reactionDedupeKey(msg.sender_id, msg.emoji!, msg.payload);
+      if (!existing.some((r) => reactionDedupeKey(r.sender_id, r.emoji, r.payload) === dedupeKey)) {
+        existing.push({
+          emoji: msg.emoji!,
+          payload: msg.payload,
+          sender_id: msg.sender_id,
+          sender_name: msg.sender_name,
+          id: msg.id,
+        });
+        reactions.set(parentKey, existing);
+      }
+      continue;
+    }
+    regular.push(msg);
+  }
+
+  return { regularMessages: regular, reactionsByParentKey: reactions };
+}
 
 export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const packetId = /^\d+$/.test(record.id) ? Number(record.id) : undefined;
@@ -234,6 +309,7 @@ export function reticulumDbRowToMessageRecord(row: {
   registerReticulumDestinationHash(from, row.sender_id);
   const messageHash =
     row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
+  const isTapback = isReticulumTapbackDbRow(row);
   const receivedVia =
     row.received_via === 'rf' ||
     row.received_via === 'tcp' ||
@@ -259,7 +335,11 @@ export function reticulumDbRowToMessageRecord(row: {
     status,
     reticulumMessageHash: messageHash,
     reticulumSenderHash: row.sender_id,
-    ...(row.reply_to_hash ? { reticulumReplyToHash: row.reply_to_hash } : {}),
+    ...(isTapback
+      ? { tapback: true, reticulumReplyToHash: row.reply_to_hash! }
+      : row.reply_to_hash
+        ? { reticulumReplyToHash: row.reply_to_hash }
+        : {}),
     ...(receivedVia ? { receivedVia } : {}),
     ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
   };

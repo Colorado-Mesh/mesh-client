@@ -28,6 +28,7 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { hasCustomReticulumProfileIcon, ReticulumProfileIcon } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
 
 type PeerListTab = 'peers' | 'contacts' | 'favorites';
@@ -114,6 +115,8 @@ export default function ReticulumPeerListPanel({
   const { addToast } = useToast();
   const peers = useReticulumPeerStore((s) => s.peers);
   const contacts = useReticulumPeerStore((s) => s.contacts);
+  const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
+  const hydratePeerAppearancesFromDb = useReticulumPeerStore((s) => s.hydratePeerAppearancesFromDb);
   const dismissedContactHashes = useReticulumPeerStore((s) => s.dismissedContactHashes);
   const isContact = useReticulumPeerStore((s) => s.isContact);
 
@@ -153,6 +156,10 @@ export default function ReticulumPeerListPanel({
       setRefreshing(false);
     }
   }, [onRefresh]);
+
+  useEffect(() => {
+    void hydratePeerAppearancesFromDb();
+  }, [hydratePeerAppearancesFromDb]);
 
   useEffect(() => {
     if (!isConnected) return;
@@ -608,6 +615,11 @@ export default function ReticulumPeerListPanel({
                 const busy = actionBusyHash === peer.destination_hash;
                 const label = resolvePeerLabel(peer);
                 const hashTitle = peer.destination_hash;
+                const iconMeta = peerAppearanceByHash.get(peer.destination_hash.toLowerCase());
+                const showIcon = hasCustomReticulumProfileIcon(
+                  iconMeta?.icon_name,
+                  iconMeta?.icon_color,
+                );
                 const contacted = isContact(peer.destination_hash);
                 return (
                   <tr
@@ -623,7 +635,16 @@ export default function ReticulumPeerListPanel({
                       className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono"
                       title={hashTitle}
                     >
-                      {label}
+                      <span className="inline-flex items-center gap-1.5">
+                        {showIcon ? (
+                          <ReticulumProfileIcon
+                            iconName={iconMeta?.icon_name}
+                            iconColor={iconMeta?.icon_color}
+                            size={14}
+                          />
+                        ) : null}
+                        <span className="truncate">{label}</span>
+                      </span>
                     </td>
                     {activeTab === 'peers' ? (
                       <>

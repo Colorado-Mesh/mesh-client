@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulum sohbet yalnızca doğrudan mesajları saklar — tek tek temizlenecek kanal yoktur.",
     "clearReticulumMessagesTitle": "Doğrudan mesajları temizle",
     "clearReticulumMessagesConfirm": "Bu, yerel olarak depolanan tüm {{count}} Reticulum doğrudan mesajlarını kalıcı olarak silecektir. Bu işlem geri alınamaz.",
-    "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle"
+    "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle",
+    "reticulumSection": "Reticulum — Retikulum yığını",
+    "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
+    "reticulumPropagationHelp": "Yayılma düğümlerinin nasıl senkronize edileceğini seçin ve gerektiğinde en son yayılma verilerini çekin."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Bu düğüm için Radyo ayarlarını mesh üzerinden açar (yerel radyo ve kayıtlı yönetici anahtarı gerektirir).",
     "openRoomButton": "🏠 Odayı aç",
     "remoteAuthCancelled": "Uzaktan erişim iptal edildi.",
-    "shareContactSent": "İletişim paylaşımı telsiz üzerinden gönderilir."
+    "shareContactSent": "İletişim paylaşımı telsiz üzerinden gönderilir.",
+    "blockContact": "Blok",
+    "unblockContact": "Engellemeyi kaldır"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -1911,7 +1916,11 @@
     "removeContact": "Yapılabiliyorsa",
     "removeContactConfirmTitle": "Yapılabiliyorsa",
     "removeContactConfirmBody": "Bu, kişiyi listenizden kaldırır. Sohbet geçmişi tutulur; onlara tekrar mesaj göndermek kişiyi yeniden ekleyecektir.",
-    "probeOk": "Prob tamam — yola ulaşılabilir."
+    "probeOk": "Prob tamam — yola ulaşılabilir.",
+    "blockContact": "Kişiyi & Engelle",
+    "unblockContact": "& Kişinin Engellemesini Kaldır",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — son görülme {{seen}}"
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF akran",
     "legendPeerServer": "Göçebe düğüm",
     "interfaceLink": "Arayüz bağlantısı",
-    "peerLink": "Akran bağlantısı"
+    "peerLink": "Akran bağlantısı",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "çevrim dışı",
+    "glyphWifi": "Wi-Fi arayüzü",
+    "glyphLora": "LoRa arayüzü",
+    "glyphTcp": "TCP arayüzü",
+    "glyphSerial": "Seri arayüz"
   },
   "rfHistograms": {
     "title": "RF Sinyal Dağılımı",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",
-    "placeholder": "Tüm mesajları ara… (kullanıcı:adı, kanal:adı)"
+    "placeholder": "Tüm mesajları ara… (kullanıcı:adı, kanal:adı)",
+    "noResults": "Sonuç yok",
+    "hint": "Tüm mesajlarda aramak için yazın",
+    "resultCount": "{{count}} sonuç — gezinmek için tıklayın",
+    "openSearch": "Mesajları Ara"
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+  },
+  "diagnosticsPing": {
+    "title": "Sürekli ping",
+    "reticulumHint": "Yığın çalışırken her aralıkta ping (RTT) ve yol probunu (atlama) çalıştırır.",
+    "hashLabel": "Hedef hash",
+    "hashPlaceholder": "32 karakterlik hedef hash…",
+    "hashAria": "Hedef hash'ten ping'e",
+    "intervalLabel": "Aralık (lar)",
+    "intervalAria": "Ping denemeleri arasındaki saniye",
+    "start": "Başla",
+    "stop": "Durdurma",
+    "runOnce": "Bir kez ping yap",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Şerbetçi otu",
+    "colStatus": "Durum",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "Tamam",
+    "statusFailed": "Başarısız: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktif kimlik",
+    "active": "Aktif kimlik: {{name}}",
+    "activeBadge": "aktif"
+  },
+  "identityVault": {
+    "title": "Kimlik kasası",
+    "hint": "Kimlik yedeklemenizin yerel bir kopyasını kasa şifresi ile şifreleyin. Korunan kimlik işlemlerine erişmek için kilidini açın.",
+    "passcode": "Kasa şifresi",
+    "confirmPasscode": "Şifreni onayla",
+    "setPasscode": "Kasayı etkinleştir",
+    "unlock": "Kasanın kilidini aç",
+    "lock": "Kasayı kilitle",
+    "statusNotConfigured": "Yapılandırılmamış",
+    "statusLocked": "Kilitli",
+    "statusUnlocked": "Kilidi açıldı",
+    "passcodeTooShort": "Şifre en az 4 karakterden oluşmalıdır.",
+    "passcodeMismatch": "Şifreler eşleşmiyor.",
+    "setSuccess": "Kasa şifresi kaydedildi.",
+    "setFailed": "Kasa şifresi kaydedilemedi.",
+    "unlockSuccess": "Kasa açıldı",
+    "unlockFailed": "Yanlış şifre veya kasa hatası.",
+    "lockSuccess": "Kasa kilitlendi."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Yayılma modu",
+    "modeAria": "Yayılma senkronizasyon modu",
+    "modeAuto": "Otomatik",
+    "modeManual": "Manuel",
+    "modeOff": "Kapalı",
+    "sync": "Senkronizasyon",
+    "syncAria": "Yayılma mesajlarını senkronize et",
+    "cancelSync": "İptal",
+    "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar Görünümü",
+    "iconNameAria": "Avatar Görünümü",
+    "iconCircle": "Yuvarlak",
+    "iconStar": "Yıldız",
+    "iconHeart": "Kalp",
+    "iconShield": "Koruma",
+    "iconUser": "Kullanıcı"
   }
 }

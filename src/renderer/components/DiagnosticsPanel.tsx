@@ -53,8 +53,8 @@ import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
+import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
-import ReticulumPingPanel from './ReticulumPingPanel';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -813,11 +813,7 @@ export default function DiagnosticsPanel({
         </a>
       </div>
 
-      {capabilities?.hasReticulumNativeDiagnostics ? (
-        <div className="space-y-4">
-          <ReticulumPingPanel />
-        </div>
-      ) : null}
+      {capabilities?.hasReticulumNativeDiagnostics ? <DiagnosticsPingPanel /> : null}
 
       {diagnosticRowsRestoredAt != null &&
         showLoRaMeshDiagnostics &&

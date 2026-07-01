@@ -10,6 +10,7 @@ import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
@@ -37,6 +38,7 @@ import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
+import { blockHashForNodeNum, useBlockStore } from '../stores/blockStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
@@ -116,6 +118,48 @@ function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
   return Array.from(publicKey)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+}
+
+function NodeBlockButton({
+  protocol,
+  node,
+  publicKeyHex,
+}: {
+  protocol: MeshProtocol | undefined;
+  node: MeshNode;
+  publicKeyHex?: string;
+}) {
+  const { t } = useTranslation();
+  const identityId =
+    protocol && protocol !== 'reticulum'
+      ? (getIdentityIdForProtocol(protocol) ?? getOfflineIdentityIdForProtocol(protocol))
+      : null;
+  const blockedHash =
+    protocol === 'meshcore' && publicKeyHex
+      ? publicKeyHex
+      : protocol && protocol !== 'reticulum'
+        ? blockHashForNodeNum(node.node_id)
+        : '';
+  const isBlocked = useBlockStore((s) => (blockedHash ? s.isBlocked(blockedHash) : false));
+  const block = useBlockStore((s) => s.block);
+  const unblock = useBlockStore((s) => s.unblock);
+  if (!protocol || protocol === 'reticulum' || !identityId || !blockedHash) return null;
+  return (
+    <button
+      type="button"
+      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isBlocked ? 'text-red-400' : 'text-gray-500 hover:text-red-400'}`}
+      aria-label={
+        isBlocked ? t('nodeDetailModal.unblockContact') : t('nodeDetailModal.blockContact')
+      }
+      onClick={() => {
+        void (isBlocked
+          ? unblock(protocol, identityId, blockedHash)
+          : block(protocol, identityId, blockedHash));
+      }}
+    >
+      {isBlocked ? t('nodeDetailModal.unblockContact') : t('nodeDetailModal.blockContact')}
+    </button>
+  );
 }
 
 function WatchToggleButton({ nodeId }: { nodeId: number }) {
@@ -622,6 +666,15 @@ export default function NodeDetailModal({
             <div className="ml-3 flex shrink-0 flex-col items-end gap-1">
               <div className="flex items-center gap-1">
                 <WatchToggleButton nodeId={node.node_id} />
+                <NodeBlockButton
+                  protocol={protocol}
+                  node={node}
+                  publicKeyHex={
+                    storeContactPublicKey
+                      ? meshcorePublicKeyToHex(storeContactPublicKey)
+                      : node.public_key_hex
+                  }
+                />
                 <button
                   onClick={() => {
                     onToggleFavorite(node.node_id, !node.favorited);

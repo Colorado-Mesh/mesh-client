@@ -907,7 +907,7 @@ describe('ChatPanel accessibility', () => {
     expect(screen.queryByRole('button', { name: 'Jump to Unread' })).not.toBeInTheDocument();
   });
 
-  it('shows role="alert" when onSend rejects', async () => {
+  it('queues failed send to outbox when onSend rejects', async () => {
     const user = userEvent.setup();
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const onSend = vi.fn().mockRejectedValue(new Error('send failed'));
@@ -921,8 +921,10 @@ describe('ChatPanel accessibility', () => {
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(onSend).toHaveBeenCalled();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('send failed');
+      expect(screen.getByText('hello')).toBeInTheDocument();
     });
+    expect(screen.getByText(/Failed|Queued/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringMatching(/\[ChatComposer\].*Send failed/s),
     );

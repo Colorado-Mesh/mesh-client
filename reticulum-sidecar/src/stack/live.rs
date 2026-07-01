@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
-use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS};
+use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE};
 use lxmf_core::message::LxMessage;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
@@ -899,6 +899,11 @@ pub(super) fn lxmf_payload_from_message(
             obj.insert("attachment".into(), attachment);
         }
     }
+    if let Some(icon) = icon_appearance_json_from_message(msg) {
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert("icon_appearance".into(), icon);
+        }
+    }
     payload
 }
 
@@ -932,6 +937,37 @@ fn mime_from_file_name(file_name: &str) -> String {
     } else {
         "application/octet-stream".into()
     }
+}
+
+fn rgb_triplet_from_msgpack(value: &rmpv::Value) -> Option<[u8; 3]> {
+    let bytes = match value {
+        rmpv::Value::Binary(bin) if bin.len() >= 3 => bin.as_slice(),
+        rmpv::Value::Array(arr) if arr.len() >= 3 => {
+            let r = arr.first()?.as_u64()? as u8;
+            let g = arr.get(1)?.as_u64()? as u8;
+            let b = arr.get(2)?.as_u64()? as u8;
+            return Some([r, g, b]);
+        }
+        _ => return None,
+    };
+    Some([bytes[0], bytes[1], bytes[2]])
+}
+
+fn icon_appearance_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
+    let field = msg.get_field(FIELD_ICON_APPEARANCE)?;
+    let value = rmpv::decode::read_value(&mut Cursor::new(field.as_slice())).ok()?;
+    let arr = value.as_array()?;
+    let icon_name = arr.first()?.as_str()?.to_string();
+    if icon_name.trim().is_empty() {
+        return None;
+    }
+    let fg = rgb_triplet_from_msgpack(arr.get(1)?)?;
+    let bg = rgb_triplet_from_msgpack(arr.get(2)?)?;
+    Some(serde_json::json!({
+        "icon_name": icon_name,
+        "foreground_rgb": [fg[0], fg[1], fg[2]],
+        "background_rgb": [bg[0], bg[1], bg[2]],
+    }))
 }
 
 fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
@@ -1014,4 +1050,38 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
     let mut out = [0u8; 16];
     out.copy_from_slice(&bytes[..16]);
     Ok(out)
+}
+
+#[cfg(test)]
+mod icon_appearance_tests {
+    use super::*;
+    use lxmf_core::constants::FIELD_ICON_APPEARANCE;
+    use lxmf_core::message::LxMessage;
+
+    #[test]
+    fn icon_appearance_json_from_message_parses_msgpack_field() {
+        let mut buf = Vec::new();
+        rmpv::encode::write_value(
+            &mut buf,
+            &rmpv::Value::Array(vec![
+                rmpv::Value::String("hiking".into()),
+                rmpv::Value::Binary(vec![255, 255, 0]),
+                rmpv::Value::Binary(vec![0, 0, 255]),
+            ]),
+        )
+        .expect("encode icon appearance");
+
+        let mut msg = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hello",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_ICON_APPEARANCE, buf);
+        let json = icon_appearance_json_from_message(&msg).expect("icon json");
+        assert_eq!(json["icon_name"], "hiking");
+        assert_eq!(json["foreground_rgb"], serde_json::json!([255, 255, 0]));
+        assert_eq!(json["background_rgb"], serde_json::json!([0, 0, 255]));
+    }
 }

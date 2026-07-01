@@ -78,6 +78,9 @@
     "title": "App Settings",
     "logPanelSection": "Log panel",
     "floodAdvertSection": "Flood Advert",
+    "reticulumSection": "Reticulum stack",
+    "reticulumAnnounceHelp": "How often your identity is announced on the network, and tools to clear stored announces.",
+    "reticulumPropagationHelp": "Choose how propagation nodes are synced and pull the latest propagation data when needed.",
     "floodAdvertScheduleLabel": "Automatically send a flood advert on a schedule:",
     "floodAdvertEvery12h": "Every 12 hours",
     "floodAdvertEvery24h": "Every 24 hours",
@@ -1673,6 +1676,8 @@
     "notesPlaceholder": "Private notes about this node (not transmitted)…",
     "watchNode": "Watch",
     "unwatchNode": "Watching",
+    "blockContact": "Block",
+    "unblockContact": "Unblock",
     "deleteNode": "Delete Node",
     "deleteNodeConfirm": "Remove this node from local database? It will reappear when it broadcasts again.",
     "cancel": "Cancel",
@@ -1911,7 +1916,11 @@
     "probeHops": "Probe OK — {{hops}} hop(s).",
     "probeLocal": "Probe OK ({{mode}} mode).",
     "probeOk": "Probe OK — path reachable.",
-    "probeFailed": "Probe failed: {{error}}"
+    "probeFailed": "Probe failed: {{error}}",
+    "blockContact": "Block contact",
+    "unblockContact": "Unblock contact",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — last seen {{seen}}"
   },
   "peerGraph": {
     "title": "Peer Communication Graph",
@@ -2656,6 +2665,49 @@
     "result": "RTT {{ms}} ms",
     "failed": "Ping failed: {{error}}"
   },
+  "diagnosticsPing": {
+    "title": "Continuous ping",
+    "reticulumHint": "Runs ping (RTT) and path probe (hops) on each interval while the stack is running.",
+    "hashLabel": "Destination hash",
+    "hashPlaceholder": "32-character destination hash…",
+    "hashAria": "Destination hash to ping",
+    "intervalLabel": "Interval (s)",
+    "intervalAria": "Seconds between ping attempts",
+    "start": "Start",
+    "stop": "Stop",
+    "runOnce": "Ping once",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Hops",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Failed: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Active identity",
+    "active": "Active identity: {{name}}",
+    "activeBadge": "active"
+  },
+  "identityVault": {
+    "title": "Identity vault",
+    "hint": "Encrypt a local copy of your identity backup with a vault passcode. Unlock to access protected identity operations.",
+    "passcode": "Vault passcode",
+    "confirmPasscode": "Confirm passcode",
+    "setPasscode": "Enable vault",
+    "unlock": "Unlock vault",
+    "lock": "Lock vault",
+    "statusNotConfigured": "Not configured",
+    "statusLocked": "Locked",
+    "statusUnlocked": "Unlocked",
+    "passcodeTooShort": "Passcode must be at least 4 characters.",
+    "passcodeMismatch": "Passcodes do not match.",
+    "setSuccess": "Vault passcode saved.",
+    "setFailed": "Could not save vault passcode.",
+    "unlockSuccess": "Vault unlocked.",
+    "unlockFailed": "Incorrect passcode or vault error.",
+    "lockSuccess": "Vault locked."
+  },
   "reticulumPropagation": {
     "preferred": "Preferred",
     "setPreferred": "Set preferred",
@@ -2667,6 +2719,26 @@
     "addNodeLabel": "Add propagation node by hash",
     "addNodePlaceholder": "32-character LXMF destination hash",
     "localInboxStats": "{{count}} queued · {{bytes}} bytes"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Propagation mode",
+    "modeAria": "Propagation sync mode",
+    "modeAuto": "Auto",
+    "modeManual": "Manual",
+    "modeOff": "Off",
+    "sync": "Sync",
+    "syncAria": "Sync propagation messages",
+    "cancelSync": "Cancel",
+    "cancelSyncAria": "Cancel propagation sync"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar icon",
+    "iconNameAria": "Peer avatar icon",
+    "iconCircle": "Circle",
+    "iconStar": "Star",
+    "iconHeart": "Heart",
+    "iconShield": "Shield",
+    "iconUser": "User"
   },
   "reticulumTopology": {
     "title": "Network topology",
@@ -2683,6 +2755,13 @@
     "maxHopsAll": "All hops",
     "maxHopsOption": "{{count}} hops",
     "interfaceStatus": "{{online}} online, {{offline}} offline interfaces",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Wi-Fi interface",
+    "glyphLora": "LoRa interface",
+    "glyphTcp": "TCP interface",
+    "glyphSerial": "Serial interface",
     "unassignedInterface": "Other paths",
     "legendSelf": "This node",
     "legendHub": "Relay hub",
@@ -2850,7 +2929,11 @@
   },
   "searchModal": {
     "closeSearch": "Close search",
-    "placeholder": "Search all messages… (user:name, channel:name)"
+    "placeholder": "Search all messages… (user:name, channel:name)",
+    "noResults": "No results",
+    "hint": "Type to search across all messages",
+    "resultCount": "{{count}} result(s) — click to navigate",
+    "openSearch": "Search messages"
   },
   "securityPanel": {
     "keyRegenRequested": "Key regeneration requested. Device will generate new keys.",

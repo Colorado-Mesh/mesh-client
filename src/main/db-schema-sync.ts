@@ -15,9 +15,10 @@ import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLast
 import { meshProtocolSqlInList } from '../shared/meshProtocol';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
+import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 39;
+export const CURRENT_SCHEMA_VERSION = 41;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -210,6 +211,23 @@ export const CANONICAL_TABLES_DDL = `
         received_via TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS blocked_contacts (
+        protocol      TEXT NOT NULL,
+        identity_id   TEXT NOT NULL,
+        blocked_hash  TEXT NOT NULL,
+        created_at    INTEGER NOT NULL,
+        PRIMARY KEY (protocol, identity_id, blocked_hash)
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_identity_activity (
+        destination_hash TEXT NOT NULL,
+        aspect           TEXT NOT NULL,
+        identity_hash    TEXT,
+        last_seen        INTEGER NOT NULL,
+        hops             INTEGER,
+        PRIMARY KEY (destination_hash, aspect)
+      );
+
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -258,6 +276,8 @@ export const INDEX_DDLS: readonly string[] = [
         WHERE packet_id IS NOT NULL`,
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_ts ON reticulum_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_identity ON reticulum_messages(identity_id, timestamp DESC)',
+  'CREATE INDEX IF NOT EXISTS idx_blocked_contacts_lookup ON blocked_contacts(protocol, identity_id)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_activity_dest ON reticulum_identity_activity(destination_hash)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
@@ -840,6 +860,7 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   repairMeshcoreOrphanSendingMessages(db);
   repairMeshtasticInboundNullStatus(db);
   purgeMeshcoreRowsFromMeshtasticNodesTable(db);
+  ensureMessageFtsTables(db);
 }
 
 /**

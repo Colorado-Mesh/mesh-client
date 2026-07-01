@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Der Reticulum-Chat speichert nur Direktnachrichten — es gibt keine Kanäle, die einzeln gelöscht werden können.",
     "clearReticulumMessagesTitle": "Direktnachrichten löschen",
     "clearReticulumMessagesConfirm": "Dadurch werden alle {{count}} lokal gespeicherten Reticulum-Direktnachrichten dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
-    "clearReticulumMessagesConfirmButton": "{{count}} Nachrichten löschen"
+    "clearReticulumMessagesConfirmButton": "{{count}} Nachrichten löschen",
+    "reticulumSection": "Reticulum-Stack",
+    "reticulumAnnounceHelp": "Wie oft Ihre Identität im Netzwerk bekannt gegeben wird, und Tools zum Löschen gespeicherter Ankündigungen.",
+    "reticulumPropagationHelp": "Wählen Sie aus, wie Ausbreitungsknoten synchronisiert werden, und ziehen Sie bei Bedarf die neuesten Ausbreitungsdaten ab."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Öffnet die Radioeinstellungen für diesen Knoten über das Netz (erfordert lokales Radio und gespeicherten Admin-Schlüssel).",
     "openRoomButton": "🏠 Raum öffnen",
     "remoteAuthCancelled": "Fernzugriff abgebrochen.",
-    "shareContactSent": "Kontaktfreigabe über Funk gesendet."
+    "shareContactSent": "Kontaktfreigabe über Funk gesendet.",
+    "blockContact": "Block",
+    "unblockContact": "Entsperren"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -1911,7 +1916,11 @@
     "removeContact": "Vorhandene Kontaktlinsen entfernen,",
     "removeContactConfirmTitle": "Vorhandene Kontaktlinsen entfernen,",
     "removeContactConfirmBody": "Dadurch wird der Kontakt aus Ihrer Liste entfernt. Der Chat-Verlauf wird beibehalten. Wenn Sie sie erneut benachrichtigen, wird der Kontakt erneut hinzugefügt.",
-    "probeOk": "Sonde OK — Weg erreichbar."
+    "probeOk": "Sonde OK — Weg erreichbar.",
+    "serviceBadge": "{{service}}",
+    "blockContact": "Kontakt blockieren",
+    "unblockContact": "Kontakt entsperren",
+    "serviceBadgeTitle": "{{aspect}} — zuletzt gesehen {{seen}}"
   },
   "peerGraph": {
     "title": "Peer-Kommunikationsgrafik",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF-Peer",
     "legendPeerServer": "Nomadenknoten",
     "interfaceLink": "Schnittstellenlink",
-    "peerLink": "Peer-Link"
+    "peerLink": "Peer-Link",
+    "glyphSerial": "Serielle Schnittstelle",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "WLAN-Schnittstelle",
+    "glyphLora": "LoRa-Schnittstelle",
+    "glyphTcp": "TCP-Schnittstelle"
   },
   "rfHistograms": {
     "title": "Signalverteilung",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Suche schließen",
-    "placeholder": "Alle Nachrichten durchsuchen… (Benutzer:Name, Kanal:Name)"
+    "placeholder": "Alle Nachrichten durchsuchen… (Benutzer:Name, Kanal:Name)",
+    "noResults": "Keine Ergebnisse",
+    "hint": "Geben Sie ein, um über alle Nachrichten zu suchen",
+    "resultCount": "{{count}} Ergebnis(se) — zum Navigieren anklicken",
+    "openSearch": "Nachrichten durchsuchen"
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+  },
+  "diagnosticsPing": {
+    "title": "Kontinuierlicher Ping",
+    "reticulumHint": "Führt Ping (RTT) und Pfadsonde (Hops) in jedem Intervall aus, während der Stack läuft.",
+    "hashLabel": "Ziel-Hash",
+    "hashPlaceholder": "32-stelliger Ziel-Hash...",
+    "hashAria": "Ziel-Hash zu Ping",
+    "intervalLabel": "Intervall (s)",
+    "intervalAria": "Sekunden zwischen Ping-Versuchen",
+    "start": "Start",
+    "stop": "Stop",
+    "runOnce": "Einmal pingen",
+    "colSeq": "es",
+    "colRtt": "Hirnatrophische Hyperammonämie",
+    "colHops": "Hops",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "i.O.",
+    "statusFailed": "Fehlgeschlagen: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktive Identität",
+    "active": "Aktive Identität: {{name}}",
+    "activeBadge": "aktiv"
+  },
+  "identityVault": {
+    "title": "Identitätstresor",
+    "hint": "Verschlüsseln Sie eine lokale Kopie Ihrer Identitätssicherung mit einem Tresor-Passcode. Freischalten, um auf geschützte Identitätsvorgänge zuzugreifen.",
+    "passcode": "Tresor-Passcode",
+    "confirmPasscode": "Passcode bestätigen",
+    "setPasscode": "Vault aktivieren",
+    "unlock": "Öffne die Gruft!",
+    "lock": "Tresor sperren",
+    "statusNotConfigured": "Nicht konfiguriert",
+    "statusLocked": "Gesperrt",
+    "statusUnlocked": "freigeschaltet",
+    "passcodeTooShort": "Muss mindestens aus 4 Zeichen bestehen",
+    "passcodeMismatch": "Passwörter stimmen nicht überein",
+    "setSuccess": "Tresor-Passcode gespeichert.",
+    "setFailed": "Tresor-Passcode konnte nicht gespeichert werden.",
+    "unlockSuccess": "Tresor freigeschaltet.",
+    "unlockFailed": "Falscher Passcode oder Tresorfehler.",
+    "lockSuccess": "Tresor gesperrt."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Ausbreitungsmodus",
+    "modeAria": "Ausbreitungssynchronisationsmodus",
+    "modeAuto": "Automatisch",
+    "modeManual": "Hand",
+    "modeOff": "Aus",
+    "sync": "Sync",
+    "syncAria": "Ausbreitungsnachrichten synchronisieren",
+    "cancelSync": "Abbrechen",
+    "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "\"Avatar-Symbol\",",
+    "iconNameAria": "Peer-Avatar-Symbol",
+    "iconCircle": "Kreis",
+    "iconStar": "Stern",
+    "iconHeart": "Herz",
+    "iconShield": "Schild",
+    "iconUser": "Nutzer"
   }
 }

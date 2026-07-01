@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
@@ -48,6 +49,7 @@ import { MS_PER_MINUTE } from '@/shared/timeConstants';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import type { DeviceState, MeshNode } from '../lib/types';
+import { useBlockStore } from '../stores/blockStore';
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useIdentityStore } from '../stores/identityStore';
@@ -59,6 +61,11 @@ import {
 } from '../stores/messageStore';
 import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
+import {
+  parseAnnounceActivityRows,
+  useReticulumIdentityActivityStore,
+} from '../stores/reticulumIdentityActivityStore';
+import { useReticulumPacketStore } from '../stores/reticulumPacketStore';
 import {
   refreshReticulumPeersFromSidecar,
   RETICULUM_PEER_REFRESH_MS,
@@ -193,15 +200,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
     rawPacketAppenderRef.current?.append(entry);
+    useReticulumPacketStore.getState().appendPacket(entry);
   }, []);
 
   const hydrateRawPackets = useCallback(async () => {
     try {
-      const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/packets?limit=500')) as {
-        packets?: ReticulumWirePacketRow[];
-      };
-      const entries = (body.packets ?? []).map(reticulumWireRowToEntry);
-      setRawPackets(entries.slice(-MAX_RAW_PACKET_LOG_ENTRIES));
+      await useReticulumPacketStore.getState().hydrateFromSidecar();
+      const fromStore = useReticulumPacketStore.getState().packets;
+      setRawPackets(fromStore.slice(-MAX_RAW_PACKET_LOG_ENTRIES));
     } catch (e) {
       console.debug('[useReticulumRuntime] hydrate raw packets ' + errLikeToLogString(e));
     }
@@ -210,11 +216,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const clearRawPackets = useCallback(async () => {
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
-    try {
-      await window.electronAPI.reticulum.proxyDelete('/api/v1/packets');
-    } catch (e) {
-      console.debug('[useReticulumRuntime] clear raw packets ' + errLikeToLogString(e));
-    }
+    await useReticulumPacketStore.getState().clearSidecarBuffer();
   }, []);
 
   const ingestLxmfPayload = useCallback(
@@ -258,6 +260,27 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
   }, [identityId]);
 
+  const recordAnnounceActivity = useCallback((payload: unknown, defaultAspect?: string) => {
+    const rows = parseAnnounceActivityRows(payload);
+    if (rows.length === 0 && defaultAspect && payload && typeof payload === 'object') {
+      const p = payload as Record<string, unknown>;
+      const destinationHash =
+        typeof p.destination_hash === 'string' ? p.destination_hash : undefined;
+      if (destinationHash) {
+        rows.push({
+          destination_hash: destinationHash,
+          aspect: defaultAspect,
+          identity_hash: typeof p.identity_hash === 'string' ? p.identity_hash : null,
+          last_seen: Date.now(),
+          hops: typeof p.hops === 'number' && Number.isFinite(p.hops) ? Math.trunc(p.hops) : null,
+        });
+      }
+    }
+    for (const row of rows) {
+      void useReticulumIdentityActivityStore.getState().upsertActivity(row);
+    }
+  }, []);
+
   const handleSidecarEvent = useCallback(
     (evt: ReticulumSidecarEvent) => {
       if (evt.type === 'wire_packet' && evt.payload && typeof evt.payload === 'object') {
@@ -291,6 +314,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       if (evt.type === 'nomadnetwork.node') {
         void useNomadNetworkStore.getState().refreshFromSidecar();
+        recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
       }
       if (
         evt.type === 'announce.received' ||
@@ -299,9 +323,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
         evt.type === 'stats_update'
       ) {
         scheduleDebouncedSidecarRefresh();
+        if (evt.type === 'announce.received') {
+          recordAnnounceActivity(evt.payload);
+          requestChatOutboxDrain('reticulum');
+        }
       }
     },
-    [appendRawPacket, identityId, ingestLxmfPayload, scheduleDebouncedSidecarRefresh],
+    [
+      appendRawPacket,
+      identityId,
+      ingestLxmfPayload,
+      recordAnnounceActivity,
+      scheduleDebouncedSidecarRefresh,
+    ],
   );
 
   const tearDownFromSidecarStop = useCallback(() => {
@@ -647,6 +681,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
       handleSidecarEvent,
     ],
   );
+
+  useEffect(() => {
+    if (!identityId) return;
+    void useBlockStore.getState().load('reticulum', identityId);
+  }, [identityId]);
 
   useEffect(() => {
     registerReticulumSession({

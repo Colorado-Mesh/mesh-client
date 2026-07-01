@@ -20,6 +20,7 @@ import {
   runSchemaUpgrade,
 } from './db-schema-sync';
 import { sanitizeLogMessage } from './log-service';
+import { buildFtsMatchQuery, isMessageFtsReady } from './messageFts';
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
 export { CURRENT_SCHEMA_VERSION, DatabaseSchemaTooNewError, isDatabaseSchemaTooNewError };
@@ -394,6 +395,18 @@ export function mergeDatabase(sourcePath: string) {
 
 export function searchMessages(query: string, limit = 50): unknown[] {
   const db = getDatabase();
+  const ftsQuery = buildFtsMatchQuery(query);
+  if (ftsQuery && isMessageFtsReady(db)) {
+    return db
+      .prepare(
+        `SELECT m.id, m.sender_id, m.sender_name, m.payload, m.channel, m.timestamp, m.to_node
+         FROM messages m
+         INNER JOIN messages_fts ON messages_fts.rowid = m.id
+         WHERE messages_fts MATCH ?
+         ORDER BY m.timestamp DESC LIMIT ?`,
+      )
+      .all(ftsQuery, limit);
+  }
   const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(
@@ -405,6 +418,18 @@ export function searchMessages(query: string, limit = 50): unknown[] {
 
 export function searchMeshcoreMessages(query: string, limit = 50): unknown[] {
   const db = getDatabase();
+  const ftsQuery = buildFtsMatchQuery(query);
+  if (ftsQuery && isMessageFtsReady(db)) {
+    return db
+      .prepare(
+        `SELECT m.id, m.sender_id, m.sender_name, m.payload, m.channel_idx, m.timestamp, m.to_node
+         FROM meshcore_messages m
+         INNER JOIN meshcore_messages_fts ON meshcore_messages_fts.rowid = m.id
+         WHERE meshcore_messages_fts MATCH ?
+         ORDER BY m.timestamp DESC LIMIT ?`,
+      )
+      .all(ftsQuery, limit);
+  }
   const like = `%${escapeSqlLikePattern(query)}%`;
   return db
     .prepare(

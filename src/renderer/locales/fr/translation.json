@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Le chat Reticulum stocke uniquement les messages directs — il n'y a pas de canaux à effacer individuellement.",
     "clearReticulumMessagesTitle": "Effacer les messages directs",
     "clearReticulumMessagesConfirm": "Cela supprimera définitivement tous les messages directs Reticulum {{count}} stockés localement. Cela ne peut pas être annulé.",
-    "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}"
+    "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}",
+    "reticulumSection": "Reticulum — Empilement de réticulum",
+    "reticulumAnnounceHelp": "La fréquence à laquelle votre identité est annoncée sur le réseau et les outils pour effacer les annonces stockées.",
+    "reticulumPropagationHelp": "Choisissez comment les nœuds de propagation sont synchronisés et extrayez les dernières données de propagation si nécessaire."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Ouvre les paramètres radio pour ce nœud sur le maillage (nécessite une radio locale et une clé d'administration enregistrée).",
     "openRoomButton": "🏠 Ouvrir la salle",
     "remoteAuthCancelled": "Accès à distance annulé.",
-    "shareContactSent": "Partage de contact envoyé par radio."
+    "shareContactSent": "Partage de contact envoyé par radio.",
+    "blockContact": "Bloc",
+    "unblockContact": "Débloquer"
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -1911,7 +1916,11 @@
     "removeContact": "Enlever les lentilles de contact",
     "removeContactConfirmTitle": "Enlever les lentilles de contact",
     "removeContactConfirmBody": "Cela supprime le contact de votre liste. L'historique du chat est conservé ; leur envoyer à nouveau un message ajoutera à nouveau le contact.",
-    "probeOk": "Sonde OK — chemin accessible."
+    "probeOk": "Sonde OK — chemin accessible.",
+    "blockContact": "Bloquer contact",
+    "unblockContact": "Débloquer contact",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — dernière vue {{seen}}"
   },
   "peerGraph": {
     "title": "Graphique de communication par les pairs",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF pair",
     "legendPeerServer": "Nœud nomade",
     "interfaceLink": "Liaison interface",
-    "peerLink": "Lien avec les pairs"
+    "peerLink": "Lien avec les pairs",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "en ligne",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Interface Wi-Fi",
+    "glyphLora": "Interface LoRa",
+    "glyphTcp": "Interface TCP",
+    "glyphSerial": "Interface série"
   },
   "rfHistograms": {
     "title": "REPARTITION DE SIGNAUX",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",
-    "placeholder": "Rechercher tous les messages… (utilisateur : nom, canal : nom)"
+    "placeholder": "Rechercher tous les messages… (utilisateur : nom, canal : nom)",
+    "noResults": "Aucun résultat",
+    "hint": "Tapez pour rechercher dans tous les messages",
+    "resultCount": "{{count}} résultat(s) — cliquez pour naviguer",
+    "openSearch": "Rechercher des messages"
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",
     "menuToastErrorTitle": "Échec de la vérification de"
+  },
+  "diagnosticsPing": {
+    "title": "Ping continu",
+    "reticulumHint": "Exécute le ping (RTT) et la sonde de trajectoire (hops) sur chaque intervalle pendant que la pile est en cours d'exécution.",
+    "hashLabel": "Hash de Destination",
+    "hashPlaceholder": "Hachage de destination de 32 caractères…",
+    "hashAria": "Hachage de destination vers ping",
+    "intervalLabel": "Intervalle (s)",
+    "intervalAria": "Secondes entre les tentatives de ping",
+    "start": "Début",
+    "stop": "Arrêter",
+    "runOnce": "Ping une fois",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Sauts",
+    "colStatus": "Statut",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "VALIDER",
+    "statusFailed": "Échec : {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "identité actuelle",
+    "active": "Identité active : {{name}}",
+    "activeBadge": "active"
+  },
+  "identityVault": {
+    "title": "Coffre-fort d'identité",
+    "hint": "Chiffrez une copie locale de votre sauvegarde d'identité avec un mot de passe de coffre-fort. Déverrouiller pour accéder aux opérations d'identité protégées.",
+    "passcode": "Code d'accès du coffre-fort",
+    "confirmPasscode": "Confirmez le code d'accès.",
+    "setPasscode": "Activer le coffre-fort",
+    "unlock": "Déverrouiller le coffre-fort",
+    "lock": "Verrouiller le coffre-fort",
+    "statusNotConfigured": "Non configuré",
+    "statusLocked": "Verrouillé",
+    "statusUnlocked": "Déverrouillé",
+    "passcodeTooShort": "Le mot de passe doit contenir au moins 4 caractères",
+    "passcodeMismatch": "Les codes d'accès ne correspondent pas.",
+    "setSuccess": "Code d'accès du coffre-fort enregistré.",
+    "setFailed": "Impossible d'enregistrer le mot de passe du coffre-fort.",
+    "unlockSuccess": "Coffre déverrouillé.",
+    "unlockFailed": "Code d'accès incorrect ou erreur de coffre-fort.",
+    "lockSuccess": "Coffre-fort verrouillé."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "mode de propagation",
+    "modeAria": "Mode de synchronisation de la propagation",
+    "modeAuto": "Auto",
+    "modeManual": "Manuel",
+    "modeOff": "Arrêt",
+    "sync": "Synchronisation",
+    "syncAria": "Synchroniser les messages de propagation",
+    "cancelSync": "Annuler",
+    "cancelSyncAria": "Annuler la synchronisation de la propagation"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar",
+    "iconNameAria": "Avatar",
+    "iconCircle": "(Circle)",
+    "iconStar": "Étoile",
+    "iconHeart": "Cœur",
+    "iconShield": "Bouclier",
+    "iconUser": "Utilisateur"
   }
 }

@@ -1,6 +1,8 @@
 import type { IpcMain } from 'electron';
 
+import { isMeshProtocol } from '../../shared/meshProtocol';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
+import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
 
 export interface ReticulumDbIpcDeps {
   ipcMain: IpcMain;
@@ -166,6 +168,17 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         const safeLimit = Math.min(Math.max(1, Number(limit) || 200), 5000);
         const db = getDbForIpc('db:searchReticulumMessages');
         if (!db) return [];
+        const ftsQuery = buildFtsMatchQuery(query);
+        if (ftsQuery && isMessageFtsReady(db)) {
+          return db
+            .prepareOnce(
+              `SELECT r.* FROM reticulum_messages r
+             INNER JOIN reticulum_messages_fts ON reticulum_messages_fts.rowid = r.id
+             WHERE r.identity_id = ? AND reticulum_messages_fts MATCH ?
+             ORDER BY r.timestamp DESC LIMIT ?`,
+            )
+            .all(identityId, ftsQuery, safeLimit) as Record<string, unknown>[];
+        }
         const pattern = `%${query.replace(/[%_]/g, '')}%`;
         return db
           .prepareOnce(
@@ -283,6 +296,116 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       return { ok: true };
     } catch (err) {
       finishDbIpcHandler('db:vacuumReticulumTables', err);
+    }
+  });
+
+  ipcMain.handle('db:getBlockedContacts', (_event, protocol: string, identityId: string) => {
+    try {
+      if (!isMeshProtocol(protocol)) return [];
+      if (typeof identityId !== 'string' || identityId.length > 128) return [];
+      const db = getDbForIpc('db:getBlockedContacts');
+      if (!db) return [];
+      return db
+        .prepareOnce(
+          'SELECT blocked_hash, created_at FROM blocked_contacts WHERE protocol = ? AND identity_id = ? ORDER BY created_at DESC',
+        )
+        .all(protocol, identityId) as { blocked_hash: string; created_at: number }[];
+    } catch (err) {
+      finishDbIpcHandler('db:getBlockedContacts', err);
+    }
+  });
+
+  ipcMain.handle(
+    'db:blockContact',
+    (_event, protocol: string, identityId: string, blockedHash: string) => {
+      try {
+        if (!isMeshProtocol(protocol)) return { changes: 0 };
+        if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
+        if (typeof blockedHash !== 'string' || blockedHash.length > 128) return { changes: 0 };
+        const db = getDbForIpc('db:blockContact');
+        if (!db) return { changes: 0 };
+        db.prepareOnce(
+          `INSERT INTO blocked_contacts (protocol, identity_id, blocked_hash, created_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(protocol, identity_id, blocked_hash) DO NOTHING`,
+        ).run(protocol, identityId, blockedHash.toLowerCase(), Date.now());
+        return { changes: 1 };
+      } catch (err) {
+        finishDbIpcHandler('db:blockContact', err);
+      }
+    },
+  );
+
+  ipcMain.handle(
+    'db:unblockContact',
+    (_event, protocol: string, identityId: string, blockedHash: string) => {
+      try {
+        if (!isMeshProtocol(protocol)) return { changes: 0 };
+        if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
+        if (typeof blockedHash !== 'string' || blockedHash.length > 128) return { changes: 0 };
+        const db = getDbForIpc('db:unblockContact');
+        if (!db) return { changes: 0 };
+        const result = db
+          .prepareOnce(
+            'DELETE FROM blocked_contacts WHERE protocol = ? AND identity_id = ? AND blocked_hash = ?',
+          )
+          .run(protocol, identityId, blockedHash.toLowerCase());
+        return { changes: result.changes ?? 0 };
+      } catch (err) {
+        finishDbIpcHandler('db:unblockContact', err);
+      }
+    },
+  );
+
+  ipcMain.handle('db:getReticulumIdentityActivity', (_event, destinationHash: string) => {
+    try {
+      if (typeof destinationHash !== 'string' || destinationHash.length > 128) return [];
+      const db = getDbForIpc('db:getReticulumIdentityActivity');
+      if (!db) return [];
+      return db
+        .prepareOnce(
+          'SELECT * FROM reticulum_identity_activity WHERE destination_hash = ? ORDER BY last_seen DESC',
+        )
+        .all(destinationHash.toLowerCase()) as Record<string, unknown>[];
+    } catch (err) {
+      finishDbIpcHandler('db:getReticulumIdentityActivity', err);
+    }
+  });
+
+  ipcMain.handle('db:upsertReticulumIdentityActivity', (_event, row: unknown) => {
+    try {
+      if (!row || typeof row !== 'object') return { changes: 0 };
+      const r = row as Record<string, unknown>;
+      const destinationHash = r.destination_hash;
+      const aspect = r.aspect;
+      if (typeof destinationHash !== 'string' || destinationHash.length > 128)
+        return { changes: 0 };
+      if (typeof aspect !== 'string' || aspect.length > 128) return { changes: 0 };
+      const lastSeen = Number(r.last_seen);
+      if (!Number.isFinite(lastSeen)) return { changes: 0 };
+      const identityHash =
+        typeof r.identity_hash === 'string' ? r.identity_hash.slice(0, 128) : null;
+      const hops =
+        r.hops != null && Number.isFinite(Number(r.hops)) ? Math.trunc(Number(r.hops)) : null;
+      const db = getDbForIpc('db:upsertReticulumIdentityActivity');
+      if (!db) return { changes: 0 };
+      db.prepareOnce(
+        `INSERT INTO reticulum_identity_activity (destination_hash, aspect, identity_hash, last_seen, hops)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(destination_hash, aspect) DO UPDATE SET
+           identity_hash = COALESCE(excluded.identity_hash, reticulum_identity_activity.identity_hash),
+           last_seen = excluded.last_seen,
+           hops = COALESCE(excluded.hops, reticulum_identity_activity.hops)`,
+      ).run(
+        destinationHash.toLowerCase(),
+        aspect.slice(0, 128),
+        identityHash,
+        Math.trunc(lastSeen),
+        hops,
+      );
+      return { changes: 1 };
+    } catch (err) {
+      finishDbIpcHandler('db:upsertReticulumIdentityActivity', err);
     }
   });
 }

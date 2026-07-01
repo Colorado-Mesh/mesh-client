@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { normalizeLastHeardMs } from '@/renderer/lib/nodeStatus';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
@@ -17,9 +19,19 @@ import {
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { useBlockStore } from '@/renderer/stores/blockStore';
+import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
+import {
+  resolveReticulumPeerLabel,
+  useReticulumPeerStore,
+} from '@/renderer/stores/reticulumPeerStore';
 
-import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
+import {
+  RETICULUM_PROFILE_ICON_NAMES,
+  ReticulumProfileIcon,
+  type ReticulumProfileIconName,
+} from './ReticulumProfileIcon';
 
 export interface ReticulumPeerDetailModalProps {
   peerHash: string;
@@ -40,6 +52,19 @@ export default function ReticulumPeerDetailModal({
   const setCustomDisplayName = useReticulumPeerStore((s) => s.setCustomDisplayName);
   const removeContact = useReticulumPeerStore((s) => s.removeContact);
 
+  const identityId =
+    getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
+  const isBlocked = useBlockStore((s) => s.isBlocked(peerHash));
+  const blockContact = useBlockStore((s) => s.block);
+  const unblockContact = useBlockStore((s) => s.unblock);
+  const activityKey = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  const activityRows = useReticulumIdentityActivityStore((s) => s.byDestination.get(activityKey));
+  const loadActivity = useReticulumIdentityActivityStore((s) => s.loadForDestination);
+
+  useEffect(() => {
+    void loadActivity(peerHash);
+  }, [loadActivity, peerHash]);
+
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -47,24 +72,37 @@ export default function ReticulumPeerDetailModal({
   const [probeStatus, setProbeStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [iconColor, setIconColor] = useState('green');
+  const [iconName, setIconName] = useState<ReticulumProfileIconName>('circle');
 
   useEffect(() => {
     void window.electronAPI.db.getReticulumDestinations().then((rows) => {
-      const list = rows as { destination_hash?: string; icon_color?: string | null }[];
+      const list = rows as {
+        destination_hash?: string;
+        icon_name?: string | null;
+        icon_color?: string | null;
+      }[];
       const row = list.find((r) => r.destination_hash === peerHash);
       if (row?.icon_color) setIconColor(row.icon_color);
+      if (
+        row?.icon_name &&
+        RETICULUM_PROFILE_ICON_NAMES.includes(row.icon_name as ReticulumProfileIconName)
+      ) {
+        setIconName(row.icon_name as ReticulumProfileIconName);
+      }
     });
   }, [peerHash]);
 
-  const saveIconColor = async (color: string) => {
-    setIconColor(color);
+  const saveIconAppearance = async (patch: { icon_color?: string; icon_name?: string }) => {
+    if (patch.icon_color != null) setIconColor(patch.icon_color);
+    if (patch.icon_name != null) setIconName(patch.icon_name as ReticulumProfileIconName);
     try {
       await window.electronAPI.db.upsertReticulumDestination({
         destination_hash: peerHash,
-        icon_color: color,
+        ...patch,
       });
+      useReticulumPeerStore.getState().patchPeerAppearance(peerHash, patch);
     } catch (e) {
-      console.warn('[ReticulumPeerDetailModal] icon color ' + errLikeToLogString(e));
+      console.warn('[ReticulumPeerDetailModal] icon appearance ' + errLikeToLogString(e));
     }
   };
 
@@ -224,6 +262,7 @@ export default function ReticulumPeerDetailModal({
               </div>
             ) : (
               <div className="flex items-center gap-2">
+                <ReticulumProfileIcon iconName={iconName} iconColor={iconColor} size={20} />
                 <h2
                   id="reticulum-peer-detail-title"
                   className="text-bright-green truncate text-lg font-semibold"
@@ -276,24 +315,44 @@ export default function ReticulumPeerDetailModal({
                 <Copy className="h-3.5 w-3.5" />
               </button>
             </div>
-            <label className="mt-2 block text-xs text-gray-400" htmlFor="peer-icon-color">
-              {t('peerDetailModal.iconColor')}
-              <select
-                id="peer-icon-color"
-                value={iconColor}
-                className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
-                aria-label={t('peerDetailModal.iconColorAria')}
-                onChange={(e) => {
-                  void saveIconColor(e.target.value);
-                }}
-              >
-                <option value="green">{t('common.colorGreen')}</option>
-                <option value="cyan">{t('common.colorCyan')}</option>
-                <option value="amber">{t('common.colorAmber')}</option>
-                <option value="red">{t('common.colorRed')}</option>
-                <option value="purple">{t('common.colorPurple')}</option>
-              </select>
-            </label>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <label className="block text-xs text-gray-400" htmlFor="peer-icon-name">
+                {t('reticulumProfileIcon.iconName')}
+                <select
+                  id="peer-icon-name"
+                  value={iconName}
+                  className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+                  aria-label={t('reticulumProfileIcon.iconNameAria')}
+                  onChange={(e) => {
+                    void saveIconAppearance({ icon_name: e.target.value });
+                  }}
+                >
+                  <option value="circle">{t('reticulumProfileIcon.iconCircle')}</option>
+                  <option value="star">{t('reticulumProfileIcon.iconStar')}</option>
+                  <option value="heart">{t('reticulumProfileIcon.iconHeart')}</option>
+                  <option value="shield">{t('reticulumProfileIcon.iconShield')}</option>
+                  <option value="user">{t('reticulumProfileIcon.iconUser')}</option>
+                </select>
+              </label>
+              <label className="block text-xs text-gray-400" htmlFor="peer-icon-color">
+                {t('peerDetailModal.iconColor')}
+                <select
+                  id="peer-icon-color"
+                  value={iconColor}
+                  className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+                  aria-label={t('peerDetailModal.iconColorAria')}
+                  onChange={(e) => {
+                    void saveIconAppearance({ icon_color: e.target.value });
+                  }}
+                >
+                  <option value="green">{t('common.colorGreen')}</option>
+                  <option value="cyan">{t('common.colorCyan')}</option>
+                  <option value="amber">{t('common.colorAmber')}</option>
+                  <option value="red">{t('common.colorRed')}</option>
+                  <option value="purple">{t('common.colorPurple')}</option>
+                </select>
+              </label>
+            </div>
           </div>
           <button
             type="button"
@@ -309,6 +368,26 @@ export default function ReticulumPeerDetailModal({
           <h3 className="text-sm font-medium text-gray-200">
             {t('peerDetailModal.networkSection')}
           </h3>
+          {(activityRows ?? []).length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(activityRows ?? []).map((row) => (
+                <span
+                  key={row.aspect}
+                  className="rounded border border-cyan-600/40 bg-cyan-600/20 px-1.5 py-0.5 text-[10px] font-medium text-cyan-300"
+                  title={t('peerDetailModal.serviceBadgeTitle', {
+                    aspect: row.aspect,
+                    seen: formatRelativeOrIsoDate(row.last_seen, t, normalizeLastHeardMs),
+                  })}
+                >
+                  {t('peerDetailModal.serviceBadge', {
+                    service: row.aspect.includes('.')
+                      ? (row.aspect.split('.').pop() ?? row.aspect)
+                      : row.aspect,
+                  })}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt className="text-muted">{t('peerListPanel.colInterface')}</dt>
             <dd>{peer?.interface ?? '—'}</dd>
@@ -375,6 +454,31 @@ export default function ReticulumPeerDetailModal({
               {t('peerDetailModal.removeContact')}
             </button>
           )}
+          {identityId ? (
+            isBlocked ? (
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+                onClick={() => {
+                  void unblockContact('reticulum', identityId, peerHash);
+                }}
+              >
+                {t('peerDetailModal.unblockContact')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded border border-red-900 px-3 py-1.5 text-sm text-red-400 hover:bg-red-950/30 disabled:opacity-40"
+                onClick={() => {
+                  void blockContact('reticulum', identityId, peerHash);
+                }}
+              >
+                {t('peerDetailModal.blockContact')}
+              </button>
+            )
+          ) : null}
         </section>
 
         {pathStatus ? <p className="mb-2 text-xs text-gray-300">{pathStatus}</p> : null}

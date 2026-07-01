@@ -23,6 +23,13 @@ export interface ReticulumPeerProbeResult {
   error?: string;
 }
 
+export interface ReticulumPingProbeResult {
+  ok: boolean;
+  rttMs?: number;
+  hops?: number;
+  error?: string;
+}
+
 /** True when the Reticulum sidecar process is listening. */
 export async function isReticulumSidecarRunning(): Promise<boolean> {
   try {
@@ -157,6 +164,31 @@ export async function probeReticulumPeer(hash: string): Promise<ReticulumPeerPro
   }
 }
 
+/** Compose sidecar ping (RTT) + path probe (hops) for diagnostics loops. */
+export async function pingReticulumDestination(hash: string): Promise<ReticulumPingProbeResult> {
+  if (!(await isReticulumSidecarRunning())) {
+    return { ok: false, error: 'sidecar_not_running' };
+  }
+  try {
+    const [pingRes, probeRes] = await Promise.all([
+      window.electronAPI.reticulum.proxyPost('/api/v1/ping', {
+        destination_hash: hash,
+      }) as Promise<{ ok?: boolean; rtt_ms?: number; error?: string }>,
+      probeReticulumPeer(hash),
+    ]);
+    const ok = Boolean(pingRes.ok) || probeRes.ok;
+    return {
+      ok,
+      rttMs: pingRes.rtt_ms,
+      hops: probeRes.hops,
+      error: pingRes.error ?? probeRes.error,
+    };
+  } catch (e) {
+    // catch-no-log-ok probe result carries error string for diagnostics UI
+    return { ok: false, error: errLikeToLogString(e) };
+  }
+}
+
 export function formatReticulumPeerPathToast(
   t: TFunction,
   result: ReticulumPeerPathResult,
@@ -193,4 +225,32 @@ export function formatReticulumPeerProbeToast(
     message: t('peerDetailModal.probeFailed', { error: result.error ?? t('common.error') }),
     variant: 'error',
   };
+}
+
+export interface ReticulumSidecarIdentityRow {
+  id: string;
+  display_name?: string | null;
+  identity_hash?: string | null;
+  lxmf_hash?: string | null;
+  active?: boolean;
+  configured?: boolean;
+}
+
+export async function listReticulumIdentities(): Promise<ReticulumSidecarIdentityRow[]> {
+  if (!(await isReticulumSidecarRunning())) return [];
+  const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/identities')) as {
+    identities?: ReticulumSidecarIdentityRow[];
+  };
+  return body.identities ?? [];
+}
+
+export async function switchReticulumIdentity(identityId: string): Promise<boolean> {
+  if (!(await isReticulumSidecarRunning())) return false;
+  const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identities/switch', {
+    identity_id: identityId,
+  })) as { ok?: boolean; error?: string };
+  if (res?.ok === false) {
+    throw new Error(res.error ?? 'identity switch failed');
+  }
+  return Boolean(res?.ok);
 }

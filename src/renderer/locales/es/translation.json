@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "El chat de Reticulum solo almacena mensajes directos: no hay canales que borrar individualmente.",
     "clearReticulumMessagesTitle": "Perfeccionar mensajes claros y directos",
     "clearReticulumMessagesConfirm": "Esto eliminará de forma permanente todos los {{count}} mensajes directos de Reticulum almacenados localmente. Esto no se puede deshacer.",
-    "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes"
+    "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes",
+    "reticulumSection": "Reticulum — Pila de retículo",
+    "reticulumAnnounceHelp": "Con qué frecuencia se anuncia su identidad en la red y herramientas para borrar los anuncios almacenados.",
+    "reticulumPropagationHelp": "Elija cómo se sincronizan los nodos de propagación y extraiga los últimos datos de propagación cuando sea necesario."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Abre la configuración de radio para este nodo a través de la malla (requiere radio local y la clave de administrador guardada).",
     "openRoomButton": "🏠 Abrir sala",
     "remoteAuthCancelled": "Acceso remoto cancelado.",
-    "shareContactSent": "Contacto compartido enviado por radio."
+    "shareContactSent": "Contacto compartido enviado por radio.",
+    "blockContact": "Bloque",
+    "unblockContact": "Unblock"
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -1911,7 +1916,11 @@
     "removeContact": "Eliminar contacto",
     "removeContactConfirmTitle": "Eliminar contacto",
     "removeContactConfirmBody": "Esto elimina el contacto de su lista. El historial de chats se mantiene; enviarles un mensaje de nuevo volverá a añadir el contacto.",
-    "probeOk": "Sonda OK — ruta accesible."
+    "probeOk": "Sonda OK — ruta accesible.",
+    "blockContact": "Bloquear contacto",
+    "unblockContact": "Desbloquear contacto",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — visto por última vez {{seen}}"
   },
   "peerGraph": {
     "title": "Gráfico de comunicación con los compañeros",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF peer",
     "legendPeerServer": "Nódulo nómada",
     "interfaceLink": "Enlace de interfaces",
-    "peerLink": "Enlace de pares"
+    "peerLink": "Enlace de pares",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "En línea",
+    "interfaceStatusOffline": "fuera de línea",
+    "glyphWifi": "Interfaz Wi-Fi",
+    "glyphLora": "Interfaz LoRa",
+    "glyphTcp": "Interfaz TCP",
+    "glyphSerial": "Interfaz en serie"
   },
   "rfHistograms": {
     "title": "Distribución de señal de RF",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",
-    "placeholder": "Buscar todos los mensajes… (usuario:nombre, canal:nombre)"
+    "placeholder": "Buscar todos los mensajes… (usuario:nombre, canal:nombre)",
+    "noResults": "Sin resultados",
+    "hint": "Escriba para buscar en todos los mensajes",
+    "resultCount": "{{count}} resultado(s) — haz clic para navegar",
+    "openSearch": "Buscar mensajes"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
+  },
+  "diagnosticsPing": {
+    "title": "Ping continuo",
+    "reticulumHint": "Ejecuta ping (RTT) y sonda de ruta (saltos) en cada intervalo mientras la pila se está ejecutando.",
+    "hashLabel": "Hash de destino",
+    "hashPlaceholder": "Hash de destino de 32 caracteres...",
+    "hashAria": "Hash de destino para hacer ping",
+    "intervalLabel": "intervalo de tiempo (en segundos)",
+    "intervalAria": "Segundos entre intentos de ping",
+    "start": "Comienzo",
+    "stop": "Parada",
+    "runOnce": "Hacer ping una vez",
+    "colSeq": "N.º",
+    "colRtt": "RTT",
+    "colHops": "Saltos",
+    "colStatus": "Sincronizar el estado de confirmación de la reserva con el pedido Woo correspondiente",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Error: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Identidad del activo:",
+    "active": "Identidad activa: {{name}}",
+    "activeBadge": "activo"
+  },
+  "identityVault": {
+    "title": "Repositorio de Identidades",
+    "hint": "Cifre una copia local de su copia de seguridad de identidad con un código de acceso de bóveda. Desbloquear para acceder a operaciones de identidad protegidas.",
+    "passcode": "Código de acceso a la bóveda",
+    "confirmPasscode": "Confirma tu código de acceso",
+    "setPasscode": "Habilitar entorno de seguridad",
+    "unlock": "Desbloquear bóveda",
+    "lock": "Bloquear bóveda",
+    "statusNotConfigured": "Sin configurar",
+    "statusLocked": "Bloqueado",
+    "statusUnlocked": "Desbloqueado",
+    "passcodeTooShort": "debe tener al menos 4 caracteres",
+    "passcodeMismatch": "Los códigos de acceso no coinciden.",
+    "setSuccess": "Código de acceso de bóveda guardado.",
+    "setFailed": "No se ha podido guardar el código de acceso de la bóveda.",
+    "unlockSuccess": "Bóveda desbloqueada.",
+    "unlockFailed": "Código de acceso incorrecto o error de bóveda.",
+    "lockSuccess": "Bóveda bloqueada."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "modo de propagación",
+    "modeAria": "Modo de sincronización de propagación",
+    "modeAuto": "Automático",
+    "modeManual": "Manual",
+    "modeOff": "Apagado",
+    "sync": "Sincronizar",
+    "syncAria": "Sincronizar mensajes de propagación",
+    "cancelSync": "Cancelar",
+    "cancelSyncAria": "Cancelar sincronización de propagación"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Icono del Avatar",
+    "iconNameAria": "Icono del Avatar",
+    "iconCircle": "Círculo",
+    "iconStar": "Estrella",
+    "iconHeart": "Corazón",
+    "iconShield": "Escudo",
+    "iconUser": "Usuario"
   }
 }

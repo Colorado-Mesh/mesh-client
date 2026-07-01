@@ -7,11 +7,17 @@ import {
 } from '@/renderer/lib/reticulum/destHash';
 import { computeReticulumMessageHash } from '@/renderer/lib/reticulum/messageHash';
 import {
+  isDefaultReticulumProfileIcon,
+  parseReticulumIconAppearanceFromPayload,
+  type ReticulumIconAppearanceWire,
+} from '@/renderer/lib/reticulum/reticulumIconAppearance';
+import {
   mergeReticulumIngestRecord,
   type ReticulumIngestMergeContext,
 } from '@/renderer/lib/reticulum/reticulumIngestMerge';
 import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
 import type { IdentityId } from '@/renderer/lib/types';
+import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
@@ -31,6 +37,7 @@ export interface ReticulumLxmfPayload {
   delivery_status?: string;
   delivery_method?: string;
   attachment?: { file_name?: string; mime_type?: string; data_base64?: string };
+  icon_appearance?: ReticulumIconAppearanceWire | null;
 }
 
 function parseReticulumDeliveryMethod(
@@ -91,9 +98,12 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
     ...(receivedVia ? { receivedVia } : {}),
     reticulumMessageHash: messageHash,
     reticulumSenderHash: p.sender_hash,
-    ...(p.reply_to_hash ? { reticulumReplyToHash: p.reply_to_hash } : {}),
+    ...(isReaction
+      ? { tapback: true, reticulumReplyToHash: p.reaction_target }
+      : p.reply_to_hash
+        ? { reticulumReplyToHash: p.reply_to_hash }
+        : {}),
     ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
-    ...(isReaction ? { tapback: true, reticulumReplyToHash: p.reaction_target } : {}),
   };
 }
 
@@ -102,6 +112,9 @@ export function ingestReticulumLxmfPayload(
   p: ReticulumLxmfPayload,
   ctx: ReticulumIngestMergeContext = {},
 ): boolean {
+  if (p.sender_hash && useBlockStore.getState().isBlocked(p.sender_hash)) {
+    return false;
+  }
   const record = payloadToMessageRecord(p);
   if (!record) return false;
   const existing = useMessageStore.getState().messages[identityId]?.[record.id];
@@ -150,11 +163,31 @@ export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload
   }
 }
 
+/** Persist peer avatar from LXMF FIELD_ICON_APPEARANCE (MeshChat wire compat). */
+export async function persistReticulumIconFromPayload(p: ReticulumLxmfPayload): Promise<void> {
+  if (!p.sender_hash || p.direction === 'outbound') return;
+  const appearance = parseReticulumIconAppearanceFromPayload(p);
+  if (!appearance || isDefaultReticulumProfileIcon(appearance.icon_name, appearance.icon_color)) {
+    return;
+  }
+  try {
+    await window.electronAPI.db.upsertReticulumDestination({
+      destination_hash: p.sender_hash,
+      icon_name: appearance.icon_name,
+      icon_color: appearance.icon_color,
+    });
+    useReticulumPeerStore.getState().patchPeerAppearance(p.sender_hash, appearance);
+  } catch (e) {
+    console.warn('[reticulumIngest] upsert icon ' + errLikeToLogString(e));
+  }
+}
+
 export function ingestReticulumLxmfPayloadWithSideEffects(
   identityId: IdentityId,
   p: ReticulumLxmfPayload,
   ctx: ReticulumIngestMergeContext = {},
 ): boolean {
+  void persistReticulumIconFromPayload(p);
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
   void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);

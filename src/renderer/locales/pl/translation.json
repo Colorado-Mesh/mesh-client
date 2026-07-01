@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Czat Reticulum przechowuje tylko bezpośrednie wiadomości — nie ma kanałów do indywidualnego wyczyszczenia.",
     "clearReticulumMessagesTitle": "Przejrzyste komunikaty bezpośrednie",
     "clearReticulumMessagesConfirm": "Spowoduje to trwałe usunięcie wszystkich przechowywanych lokalnie wiadomości bezpośrednich Reticulum {{count}}. Tej czynności nie można cofnąć.",
-    "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}"
+    "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}",
+    "reticulumSection": "Reticulum — Stos siateczkowy",
+    "reticulumAnnounceHelp": "Jak często Twoja tożsamość jest ogłaszana w sieci i narzędzia do czyszczenia przechowywanych ogłoszeń.",
+    "reticulumPropagationHelp": "Wybierz sposób synchronizacji węzłów propagacji i w razie potrzeby pobierz najnowsze dane propagacji."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Otwiera ustawienia radia dla tego węzła nad siatką (wymaga lokalnego radia i zapisanego klucza administratora).",
     "openRoomButton": "🏠 Otwórz pokój",
     "remoteAuthCancelled": "Zdalny dostęp anulowany.",
-    "shareContactSent": "Udział kontaktu wysłany przez radio."
+    "shareContactSent": "Udział kontaktu wysłany przez radio.",
+    "blockContact": "Blokuj",
+    "unblockContact": "Odblokuj"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -1911,7 +1916,11 @@
     "removeContact": "Zdjąć soczewki kontaktowe,",
     "removeContactConfirmTitle": "Zdjąć soczewki kontaktowe,",
     "removeContactConfirmBody": "Spowoduje to usunięcie kontaktu z listy. Historia czatu jest zachowana; ponowne wysłanie wiadomości spowoduje ponowne dodanie kontaktu.",
-    "probeOk": "Sonda OK — ścieżka osiągalna."
+    "probeOk": "Sonda OK — ścieżka osiągalna.",
+    "blockContact": "Blokuj kontakt",
+    "unblockContact": "Odblokuj kontakt",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — ostatnio widziany {{seen}}"
   },
   "peerGraph": {
     "title": "Wykres komunikacji koleżeńskiej",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "Rówieśnik LXMF",
     "legendPeerServer": "Węzeł Nomad",
     "interfaceLink": "Łącze interfejsu",
-    "peerLink": "Powiązanie z rówieśnikiem"
+    "peerLink": "Powiązanie z rówieśnikiem",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Interfejs Wi-Fi",
+    "glyphLora": "Interfejs LoRa",
+    "glyphTcp": "Interfejs TCP",
+    "glyphSerial": "Transmisja szeregowa"
   },
   "rfHistograms": {
     "title": "Dystrybucja sygnału RF",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",
-    "placeholder": "Przeszukaj wszystkie wiadomości… (użytkownik:nazwa, kanał:nazwa)"
+    "placeholder": "Przeszukaj wszystkie wiadomości… (użytkownik:nazwa, kanał:nazwa)",
+    "noResults": "Brak wyników",
+    "hint": "Wpisz, aby wyszukać we wszystkich wiadomościach",
+    "resultCount": "{{count}} wynik(i) — kliknij, aby nawigować",
+    "openSearch": "Wyszukiwanie wiadomości"
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
+  },
+  "diagnosticsPing": {
+    "title": "Ciągły ping",
+    "reticulumHint": "Uruchamia ping (RTT) i sondę ścieżki (przeskoki) na każdym interwale podczas pracy stosu.",
+    "hashLabel": "Skrót miejsca docelowego",
+    "hashPlaceholder": "32-znakowy hasz miejsca docelowego…",
+    "hashAria": "Skrót miejsca docelowego do polecenia ping",
+    "intervalLabel": "przedział czasu (s)",
+    "intervalAria": "Sekundy między próbami ping",
+    "start": "Początek",
+    "stop": "Przestań",
+    "runOnce": "Jednokrotny ping",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Skoki",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Niepowodzenie: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Tożsamość aktywna",
+    "active": "Aktywna tożsamość: {{name}}",
+    "activeBadge": "aktywne"
+  },
+  "identityVault": {
+    "title": "Skarbiec tożsamości",
+    "hint": "Zaszyfruj lokalną kopię kopii zapasowej tożsamości za pomocą kodu dostępu do skarbca. Odblokuj, aby uzyskać dostęp do chronionych operacji tożsamości.",
+    "passcode": "Kod dostępu do skarbca",
+    "confirmPasscode": "Potwierdź kod dostępu",
+    "setPasscode": "Włącz repozytorium",
+    "unlock": "Odblokuj skarbiec",
+    "lock": "Zablokuj skarbiec",
+    "statusNotConfigured": "Brak konfiguracji",
+    "statusLocked": "Zablokowany",
+    "statusUnlocked": "Odblokowany",
+    "passcodeTooShort": "Kod dostępu musi składać się z co najmniej 4 znaków.",
+    "passcodeMismatch": "Kody dostępu nie są zgodne.",
+    "setSuccess": "Zapisano kod dostępu do skarbca.",
+    "setFailed": "Nie można zapisać kodu dostępu do skarbca.",
+    "unlockSuccess": "Skarbiec odblokowany.",
+    "unlockFailed": "Nieprawidłowy kod dostępu lub błąd skarbca.",
+    "lockSuccess": "Skarbiec zablokowany."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Tryb propagacji:",
+    "modeAria": "Tryb synchronizacji propagacji",
+    "modeAuto": "Automatyczne",
+    "modeManual": "Instrukcja obsługi",
+    "modeOff": "Wył.",
+    "sync": "Synchronizuj",
+    "syncAria": "Synchronizuj komunikaty propagacji",
+    "cancelSync": "Anuluj",
+    "cancelSyncAria": "Anuluj synchronizację propagacji"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikona awatara",
+    "iconNameAria": "Ikona awatara rówieśniczego",
+    "iconCircle": "Koło",
+    "iconStar": "Ocena",
+    "iconHeart": "Serce",
+    "iconShield": "Tarcza",
+    "iconUser": "Użytkownik"
   }
 }

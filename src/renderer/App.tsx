@@ -3289,6 +3289,10 @@ function AppContent() {
                                   : undefined
                               }
                               reticulumIdentityId={reticulumIdentityId}
+                              reticulumSidecarReady={
+                                reticulumRuntime.state.status !== 'disconnected'
+                              }
+                              reticulumControlsDisabled={!isConnectedOrOperational}
                             />
                           </Suspense>
                         </ErrorBoundary>

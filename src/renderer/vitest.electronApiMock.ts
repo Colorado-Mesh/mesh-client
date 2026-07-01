@@ -1,6 +1,26 @@
 import { vi } from 'vitest';
 
-import type { ElectronAPI } from '@/shared/electron-api.types';
+import type { ElectronAPI, OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
+
+const outboxMockRows: OutboxEntry[] = [];
+let outboxMockIdSeq = 1;
+
+/** Reset in-memory outbox rows between renderer-ui tests. */
+export function resetElectronAPIOutboxMock(): void {
+  outboxMockRows.length = 0;
+  outboxMockIdSeq = 1;
+}
+
+function makeOutboxMockRow(entry: OutboxEntryInput): OutboxEntry {
+  const now = Date.now();
+  return {
+    id: outboxMockIdSeq++,
+    attemptCount: 0,
+    createdAt: now,
+    updatedAt: now,
+    ...entry,
+  };
+}
 
 /** Full typed electronAPI stub for renderer-ui tests (extracted from setup for reuse). */
 export function createElectronAPIMock(): ElectronAPI {
@@ -47,6 +67,11 @@ export function createElectronAPIMock(): ElectronAPI {
       getReticulumDestinations: vi.fn().mockResolvedValue([]),
       deleteReticulumDestination: vi.fn().mockResolvedValue({ changes: 1 }),
       upsertReticulumDestination: vi.fn().mockResolvedValue(undefined),
+      getBlockedContacts: vi.fn().mockResolvedValue([]),
+      blockContact: vi.fn().mockResolvedValue({ changes: 1 }),
+      unblockContact: vi.fn().mockResolvedValue({ changes: 1 }),
+      getReticulumIdentityActivity: vi.fn().mockResolvedValue([]),
+      upsertReticulumIdentityActivity: vi.fn().mockResolvedValue({ changes: 1 }),
       searchMessages: vi.fn().mockResolvedValue([]),
       searchMeshcoreMessages: vi.fn().mockResolvedValue([]),
       getMeshcoreContacts: vi.fn().mockResolvedValue([]),
@@ -223,10 +248,42 @@ export function createElectronAPIMock(): ElectronAPI {
         fetch: vi.fn().mockResolvedValue(null),
       },
       outbox: {
-        list: vi.fn().mockResolvedValue([]),
-        add: vi.fn().mockResolvedValue(null),
-        updateStatus: vi.fn().mockResolvedValue(undefined),
-        remove: vi.fn().mockResolvedValue(undefined),
+        list: vi
+          .fn()
+          .mockImplementation((protocol: string) =>
+            Promise.resolve(outboxMockRows.filter((r) => r.protocol === protocol)),
+          ),
+        add: vi.fn().mockImplementation((entry: OutboxEntryInput) => {
+          const row = makeOutboxMockRow(entry);
+          outboxMockRows.push(row);
+          return Promise.resolve(row);
+        }),
+        updateStatus: vi
+          .fn()
+          .mockImplementation(
+            (
+              id: number,
+              status: OutboxEntry['status'],
+              error?: string,
+              nextRetryAt?: number | null,
+              attemptCount?: number,
+            ) => {
+              const row = outboxMockRows.find((r) => r.id === id);
+              if (row) {
+                row.status = status;
+                if (error !== undefined) row.error = error ?? null;
+                if (nextRetryAt !== undefined) row.nextRetryAt = nextRetryAt ?? null;
+                if (attemptCount !== undefined) row.attemptCount = attemptCount;
+                row.updatedAt = Date.now();
+              }
+              return Promise.resolve(undefined);
+            },
+          ),
+        remove: vi.fn().mockImplementation((id: number) => {
+          const idx = outboxMockRows.findIndex((r) => r.id === id);
+          if (idx >= 0) outboxMockRows.splice(idx, 1);
+          return Promise.resolve(undefined);
+        }),
       },
     },
     meshtasticXmodem: {
@@ -265,6 +322,12 @@ export function createElectronAPIMock(): ElectronAPI {
       showConfigImportDialog: vi.fn().mockResolvedValue({ path: null, content: null }),
       onEvent: vi.fn().mockReturnValue(() => {}),
       onStatus: vi.fn().mockReturnValue(() => {}),
+    },
+    vault: {
+      setPasscode: vi.fn().mockResolvedValue({ ok: true }),
+      unlock: vi.fn().mockResolvedValue({ ok: true }),
+      lock: vi.fn().mockResolvedValue({ ok: true }),
+      status: vi.fn().mockResolvedValue({ configured: false, unlocked: false }),
     },
   } satisfies ElectronAPI;
 }

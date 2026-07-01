@@ -6,6 +6,7 @@ import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import {
   chatMessageToMessageRecord,
+  groupChatReactionsByParentKey,
   meshNodeToNodeRecord,
   messageRecordsToChatMessages,
   messageRecordToChatMessage,
@@ -164,5 +165,36 @@ describe('store record adapters (merge precedence)', () => {
     expect(record.reticulumReplyToHash).toBe('cc'.repeat(16));
     const chat = messageRecordToChatMessage(record);
     expect(chat.reticulum_reply_to_hash).toBe('cc'.repeat(16));
+  });
+
+  it('rehydrates Reticulum tapbacks from DB rows using reply_to_hash parent linkage', () => {
+    const parentHash = 'ee'.repeat(16);
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      sender_name: 'Peer',
+      payload: '👍',
+      timestamp: 1_700_000_000_001,
+      reply_to_hash: parentHash,
+      message_hash: 'ff'.repeat(16),
+    });
+    expect(record.tapback).toBe(true);
+    expect(record.reticulumReplyToHash).toBe(parentHash);
+    const chat = messageRecordToChatMessage(record);
+    expect(chat.emoji).toBe(0x1f44d);
+    expect(chat.reticulum_reply_to_hash).toBe(parentHash);
+
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'You',
+      payload: 'parent',
+      channel: 0,
+      timestamp: 1_700_000_000_000,
+      reticulum_message_hash: parentHash,
+    };
+    const { regularMessages, reactionsByParentKey } = groupChatReactionsByParentKey([parent, chat]);
+    expect(regularMessages).toHaveLength(1);
+    expect(reactionsByParentKey.get(parentHash)).toEqual([
+      expect.objectContaining({ emoji: 0x1f44d, payload: '👍' }),
+    ]);
   });
 });

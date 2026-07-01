@@ -22,6 +22,7 @@ import {
   isReticulumSidecar404Error,
   isReticulumSidecarNotRunningError,
   isReticulumSidecarRunning,
+  pingReticulumDestination,
   probeReticulumPeer,
   requestReticulumPeerPath,
 } from './reticulumSidecarReads';
@@ -93,6 +94,19 @@ describe('reticulumSidecarReads', () => {
       hops: undefined,
       mode: undefined,
       error: 'timeout',
+    });
+  });
+
+  it('pingReticulumDestination merges ping RTT and probe hops', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost
+      .mockResolvedValueOnce({ ok: true, rtt_ms: 42 })
+      .mockResolvedValueOnce({ ok: true, hops: 3 });
+    await expect(pingReticulumDestination('abc')).resolves.toEqual({
+      ok: true,
+      rttMs: 42,
+      hops: 3,
+      error: undefined,
     });
   });
 

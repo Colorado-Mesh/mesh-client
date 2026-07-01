@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "В чате Reticulum хранятся только прямые сообщения — нет каналов для индивидуальной очистки.",
     "clearReticulumMessagesTitle": "Очистить прямые сообщения",
     "clearReticulumMessagesConfirm": "Это приведет к окончательному удалению всех {{count}} локально сохраненных прямых сообщений Reticulum. Это действие нельзя отменить.",
-    "clearReticulumMessagesConfirmButton": "Очистить {{count}} сообщения"
+    "clearReticulumMessagesConfirmButton": "Очистить {{count}} сообщения",
+    "reticulumSection": "Reticulum — Стек ретикулума",
+    "reticulumAnnounceHelp": "Как часто ваша личность объявляется в сети, и инструменты для очистки сохраненных объявлений.",
+    "reticulumPropagationHelp": "Выберите способ синхронизации узлов распространения и при необходимости извлеките последние данные распространения."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Открывает настройки радио для этого узла по сети (требуется локальное радио и сохраненный ключ администратора).",
     "openRoomButton": "🏠 Открыть комнату",
     "remoteAuthCancelled": "Удаленный доступ отменен.",
-    "shareContactSent": "Контактный ресурс отправлен по радио."
+    "shareContactSent": "Контактный ресурс отправлен по радио.",
+    "blockContact": "Заблокировать",
+    "unblockContact": "Разблокировано"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -1911,7 +1916,11 @@
     "removeContact": "Удалить контакт",
     "removeContactConfirmTitle": "Удалить контакт?",
     "removeContactConfirmBody": "Контакт будет удален из списка. История чата сохраняется; переписка с ними приведет к повторному добавлению контакта.",
-    "probeOk": "Зонд в порядке — путь достижим."
+    "probeOk": "Зонд в порядке — путь достижим.",
+    "blockContact": "Заблокировать контакт",
+    "unblockContact": "Разблокировать контакт",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — последний раз видели {{seen}}"
   },
   "peerGraph": {
     "title": "График одноранговой связи",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "Одноранговый LXMF",
     "legendPeerServer": "Узел кочевника",
     "interfaceLink": "Интерфейсная ссылка",
-    "peerLink": "Одноранговая ссылка"
+    "peerLink": "Одноранговая ссылка",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "в сети",
+    "interfaceStatusOffline": "вне сети",
+    "glyphWifi": "Интерфейс Wi-Fi",
+    "glyphLora": "Интерфейс LoRa",
+    "glyphTcp": "Интерфейс TCP",
+    "glyphSerial": "Последовательный интерфейс"
   },
   "rfHistograms": {
     "title": "Распределение радиочастотных сигналов",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",
-    "placeholder": "Искать все сообщения… (пользователь:имя, канал:имя)"
+    "placeholder": "Искать все сообщения… (пользователь:имя, канал:имя)",
+    "noResults": "Нет результатов",
+    "hint": "Введите для поиска по всем сообщениям",
+    "resultCount": "{{count}} result(s) — нажмите, чтобы перейти",
+    "openSearch": "Поиск сообщений"
   },
   "securityPanel": {
     "keyRegenRequested": "Запрошено восстановление ключа. Устройство сгенерирует новые ключи.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Доступны обновления",
     "menuToastAvailableBody": "Доступна версия {{version}}.",
     "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
+  },
+  "diagnosticsPing": {
+    "title": "Непрерывный пинг",
+    "reticulumHint": "Запускает ping (RTT) и path probe (hops) на каждом интервале во время работы стека.",
+    "hashLabel": "Целевой хэш",
+    "hashPlaceholder": "32-символьный хэш назначения...",
+    "hashAria": "Хеш назначения для пинга",
+    "intervalLabel": "Шаг(и)",
+    "intervalAria": "Секунды между попытками пинга",
+    "start": "Запуск",
+    "stop": "Остановить",
+    "runOnce": "Пинг один раз",
+    "colSeq": "№ п/п",
+    "colRtt": "*Ова",
+    "colHops": "Хопи",
+    "colStatus": "Статус",
+    "rttMs": "{{ms}} мс",
+    "statusOk": "OK",
+    "statusFailed": "Ошибка: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "активное удостоверение",
+    "active": "Активная личность: {{name}}",
+    "activeBadge": "действующее"
+  },
+  "identityVault": {
+    "title": "Хранилище личных данных",
+    "hint": "Зашифруйте локальную копию резервной копии удостоверения с помощью кода доступа к хранилищу. Разблокируйте доступ к защищенным операциям идентификации.",
+    "passcode": "Пароль хранилища",
+    "confirmPasscode": "Подтвердите код доступа",
+    "setPasscode": "Включить хранилище",
+    "unlock": "Разблокировать хранилище",
+    "lock": "Хранилище замков",
+    "statusNotConfigured": "Не сконфигурировано",
+    "statusLocked": "Закреплен",
+    "statusUnlocked": "Разблокировано",
+    "passcodeTooShort": "Пароль должен содержать не менее 4 символов.",
+    "passcodeMismatch": "Пароли не совпадают.",
+    "setSuccess": "Пароль хранилища сохранен.",
+    "setFailed": "Не удалось сохранить код доступа к хранилищу.",
+    "unlockSuccess": "Хранилище разблокировано.",
+    "unlockFailed": "Неверный код доступа или ошибка хранилища.",
+    "lockSuccess": "Хранилище заблокировано."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Режим распространения",
+    "modeAria": "Режим синхронизации распространения",
+    "modeAuto": "Автоматический режим",
+    "modeManual": "вручную",
+    "modeOff": "Выкл.",
+    "sync": "Синхронизировать",
+    "syncAria": "Сообщения о распространении синхронизации",
+    "cancelSync": "Отмена",
+    "cancelSyncAria": "Отмена синхронизации распространения"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Значок аватара",
+    "iconNameAria": "Значок аватара",
+    "iconCircle": "Круг",
+    "iconStar": "Звезда",
+    "iconHeart": "Сердце",
+    "iconShield": "Щит",
+    "iconUser": "Пользователь"
   }
 }

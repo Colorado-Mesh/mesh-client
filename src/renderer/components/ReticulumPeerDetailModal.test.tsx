@@ -26,6 +26,7 @@ const PEER_HASH = 'abcdef1234567890abcdef1234567890';
 
 describe('ReticulumPeerDetailModal — copy hash', () => {
   beforeEach(() => {
+    vi.mocked(window.electronAPI.db.getReticulumIdentityActivity).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getReticulumDestinations).mockResolvedValue([]);
     useReticulumPeerStore.setState({
       peers: new Map([

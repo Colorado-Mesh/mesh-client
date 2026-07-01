@@ -9,6 +9,8 @@ import { useToast } from './Toast';
 
 export interface ReticulumAnnounceControlsProps {
   disabled?: boolean;
+  /** When true, omit top border/margin for embedding in App panel. */
+  embedded?: boolean;
 }
 
 interface StackSettingsPayload {
@@ -35,7 +37,10 @@ function clampAnnounceIntervalSec(value: number): number {
 }
 
 /** Announce interval and clear-announces controls for the Reticulum stack. */
-export function ReticulumAnnounceControls({ disabled = false }: ReticulumAnnounceControlsProps) {
+export function ReticulumAnnounceControls({
+  disabled = false,
+  embedded = false,
+}: ReticulumAnnounceControlsProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [announceInterval, setAnnounceInterval] = useState(0);
@@ -122,7 +127,7 @@ export function ReticulumAnnounceControls({ disabled = false }: ReticulumAnnounc
   const controlsDisabled = disabled || busy;
 
   return (
-    <div className="mt-4 border-t border-gray-700 pt-4">
+    <div className={embedded ? 'space-y-2' : 'mt-4 border-t border-gray-700 pt-4'}>
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-xs text-gray-400" htmlFor="reticulum-announce-interval">
           {t('reticulumIdentity.announceIntervalSec')}

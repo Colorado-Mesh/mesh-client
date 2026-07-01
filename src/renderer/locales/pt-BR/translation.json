@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "O chat Reticulum armazena apenas mensagens diretas — não há canais para limpar individualmente.",
     "clearReticulumMessagesTitle": "Limpar mensagens diretas",
     "clearReticulumMessagesConfirm": "Isso excluirá permanentemente todas as {{count}} mensagens diretas Reticulum armazenadas localmente. Isso não pode ser desfeito.",
-    "clearReticulumMessagesConfirmButton": "Limpar mensagens {{count}}"
+    "clearReticulumMessagesConfirmButton": "Limpar mensagens {{count}}",
+    "reticulumSection": "Reticulum — Pilha de retículo",
+    "reticulumAnnounceHelp": "Com que frequência sua identidade é anunciada na rede e ferramentas para limpar anúncios armazenados.",
+    "reticulumPropagationHelp": "Escolha como os nós de propagação são sincronizados e extraia os dados de propagação mais recentes quando necessário."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Abre as configurações de rádio para este nó sobre a malha (requer rádio local e chave de administração salva).",
     "openRoomButton": "🏠 Abrir sala",
     "remoteAuthCancelled": "Acesso remoto cancelado.",
-    "shareContactSent": "Compartilhamento de contato enviado pelo rádio."
+    "shareContactSent": "Compartilhamento de contato enviado pelo rádio.",
+    "blockContact": "Bloquear",
+    "unblockContact": "Desbloquear"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -1911,7 +1916,11 @@
     "removeContact": "Remover contato",
     "removeContactConfirmTitle": "Remover contato",
     "removeContactConfirmBody": "Isso remove o contato da sua lista. O histórico de bate-papo é mantido; enviar mensagens novamente adicionará novamente o contato.",
-    "probeOk": "Sonda OK — caminho alcançável."
+    "probeOk": "Sonda OK — caminho alcançável.",
+    "blockContact": "Bloquear contacto",
+    "unblockContact": "Desbloquear contacto",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — visto pela última vez {{seen}}"
   },
   "peerGraph": {
     "title": "Gráfico de Comunicação entre Pares",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF peer",
     "legendPeerServer": "Nó nômade",
     "interfaceLink": "Link da interface",
-    "peerLink": "entre pares"
+    "peerLink": "entre pares",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Interface Wi-Fi",
+    "glyphLora": "Interface LoRa",
+    "glyphTcp": "Interface TCP",
+    "glyphSerial": "Interface Serial"
   },
   "rfHistograms": {
     "title": "Distribuição de sinal de RF",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",
-    "placeholder": "Pesquisar todas as mensagens… (usuário:nome, canal:nome)"
+    "placeholder": "Pesquisar todas as mensagens… (usuário:nome, canal:nome)",
+    "noResults": "Nenhum resultado",
+    "hint": "Digite para pesquisar em todas as mensagens",
+    "resultCount": "{{count}} resultado(s) — clique para navegar",
+    "openSearch": "Buscar mensagens"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
     "menuToastErrorTitle": "verificação de atualização falhou"
+  },
+  "diagnosticsPing": {
+    "title": "Ping contínuo",
+    "reticulumHint": "Executa ping (RTT) e sonda de caminho (Hops) em cada intervalo enquanto a pilha está em execução.",
+    "hashLabel": "Hash de destino",
+    "hashPlaceholder": "Hash de destino de 32 caracteres…",
+    "hashAria": "Hash de destino para ping",
+    "intervalLabel": "(Intervalo(s))",
+    "intervalAria": "Segundos entre tentativas de ping",
+    "start": "Iniciar",
+    "stop": "Parar",
+    "runOnce": "Fazer ping uma vez",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Saltos",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Reprovado: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "identidade ativa",
+    "active": "Identidade ativa: {{name}}",
+    "activeBadge": "Ativo"
+  },
+  "identityVault": {
+    "title": "Identity Vault",
+    "hint": "Criptografe uma cópia local do seu backup de identidade com uma senha do cofre. Desbloqueie para acessar operações de identidade protegida.",
+    "passcode": "Senha do cofre",
+    "confirmPasscode": "Confirmar código",
+    "setPasscode": "Ativar cofre",
+    "unlock": "Desbloquear cofre",
+    "lock": "Cofre de fechadura",
+    "statusNotConfigured": "Não configurado",
+    "statusLocked": "Locked",
+    "statusUnlocked": "Desbloqueado",
+    "passcodeTooShort": "A senha deve ter pelo menos 4 caracteres.",
+    "passcodeMismatch": "As senhas não correspondem.",
+    "setSuccess": "Senha do cofre salva.",
+    "setFailed": "Não foi possível salvar a senha do cofre.",
+    "unlockSuccess": "Cofre desbloqueado.",
+    "unlockFailed": "Senha incorreta ou erro no cofre.",
+    "lockSuccess": "Cofre bloqueado."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Modo de propagação",
+    "modeAria": "Modo de sincronização de propagação",
+    "modeAuto": "Automático",
+    "modeManual": "Manual",
+    "modeOff": "Desligado",
+    "sync": "Sincronizar",
+    "syncAria": "Sincronizar mensagens de propagação",
+    "cancelSync": "Cancelar",
+    "cancelSyncAria": "Cancelar sincronização de propagação"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ícone de avatar",
+    "iconNameAria": "Ícone de avatar de pares",
+    "iconCircle": "Círculo",
+    "iconStar": "Estrela",
+    "iconHeart": "Coração",
+    "iconShield": "Blindagem",
+    "iconUser": "Usuário"
   }
 }

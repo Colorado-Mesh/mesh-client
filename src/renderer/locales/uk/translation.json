@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "У чаті Reticulum зберігаються лише прямі повідомлення — немає каналів для індивідуального очищення.",
     "clearReticulumMessagesTitle": "Очистити прямі повідомлення",
     "clearReticulumMessagesConfirm": "Це призведе до остаточного видалення всіх {{count}} локально збережених прямих повідомлень Reticulum. Цю дію неможливо скасувати.",
-    "clearReticulumMessagesConfirmButton": "Очистити повідомлення {{count}}"
+    "clearReticulumMessagesConfirmButton": "Очистити повідомлення {{count}}",
+    "reticulumSection": "Reticulum — Стек ретикулуму",
+    "reticulumAnnounceHelp": "Як часто ваша особа оголошується в мережі, а також інструменти для очищення збережених оголошень.",
+    "reticulumPropagationHelp": "Виберіть спосіб синхронізації вузлів розповсюдження та витягуйте найновіші дані розповсюдження, коли це необхідно."
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "Відкриває налаштування радіо для цього вузла через сіть (вимагає локального радіо та збереженого ключа адміністратора).",
     "openRoomButton": "🏠 Відкрити кімнату",
     "remoteAuthCancelled": "Віддалений доступ скасовано.",
-    "shareContactSent": "Контактний спільний ресурс надіслано по радіо."
+    "shareContactSent": "Контактний спільний ресурс надіслано по радіо.",
+    "blockContact": "Блок",
+    "unblockContact": "Розблокувати"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -1911,7 +1916,11 @@
     "removeContact": "Видалити контакт",
     "removeContactConfirmTitle": "Видалити контакт?",
     "removeContactConfirmBody": "Після цього контакт буде видалено зі списку. Історія чату зберігається; повторне надсилання їм повідомлень повторно додасть контакт.",
-    "probeOk": "Датчик OK — шлях досяжний."
+    "probeOk": "Датчик OK — шлях досяжний.",
+    "blockContact": "& Заблокувати контакт",
+    "unblockContact": "& Розблокувати контакт",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — останній раз бачили {{seen}}"
   },
   "peerGraph": {
     "title": "Графік однорангової комунікації",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "Одноранговий LXMF",
     "legendPeerServer": "Вузол Nomad",
     "interfaceLink": "Посилання на інтерфейс",
-    "peerLink": "Посилання вузла"
+    "peerLink": "Посилання вузла",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "онлайн",
+    "interfaceStatusOffline": "автономний",
+    "glyphWifi": "Інтерфейс Wi-Fi",
+    "glyphLora": "Інтерфейс LoRa",
+    "glyphTcp": "Інтерфейс TCP",
+    "glyphSerial": "Послідовний інтерфейс"
   },
   "rfHistograms": {
     "title": "Розподіл радіочастотних сигналів",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",
-    "placeholder": "Пошук у всіх повідомленнях… (користувач:ім’я, канал:ім’я)"
+    "placeholder": "Пошук у всіх повідомленнях… (користувач:ім’я, канал:ім’я)",
+    "noResults": "Немає результатів",
+    "hint": "Введіть, щоб виконати пошук у всіх повідомленнях",
+    "resultCount": "{{count}} результат(и) — натисніть, щоб перейти",
+    "openSearch": "Пошук повідомлень"
   },
   "securityPanel": {
     "keyRegenRequested": "Запит на регенерацію ключа. Пристрій генеруватиме нові ключі.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "Доступне оновлення",
     "menuToastAvailableBody": "Доступна версія {{version}}.",
     "menuToastErrorTitle": "Помилка перевірки оновлення"
+  },
+  "diagnosticsPing": {
+    "title": "Безперервний пінг",
+    "reticulumHint": "Запускає ping (RTT) та контурний зонд (HOPS) на кожному інтервалі під час роботи стека.",
+    "hashLabel": "Хеш пункту призначення",
+    "hashPlaceholder": "32-символьний хеш призначення…",
+    "hashAria": "Хеш призначення для ping",
+    "intervalLabel": "Інтервал (и)",
+    "intervalAria": "Секунди між спробами ping",
+    "start": "Почати",
+    "stop": "Зупинити",
+    "runOnce": "Ping один раз",
+    "colSeq": "#",
+    "colRtt": "ЗП",
+    "colHops": "Hops:",
+    "colStatus": "Статус",
+    "rttMs": "{{ms}} мс",
+    "statusOk": "Гаразд",
+    "statusFailed": "Помилка: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Активна ідентифікація",
+    "active": "Активна особа: {{name}}",
+    "activeBadge": "виконавець дії"
+  },
+  "identityVault": {
+    "title": "Сховище ідентифікаційних даних",
+    "hint": "Зашифруйте локальну копію резервної копії особи за допомогою пароля сховища. Розблокуйте доступ до операцій із захищеною ідентифікацією.",
+    "passcode": "Пароль сховища",
+    "confirmPasscode": "Підтвердити пароль",
+    "setPasscode": "Увімкнути сховище",
+    "unlock": "Розблокувати сховище",
+    "lock": "Закрити сховище",
+    "statusNotConfigured": "Не налаштовано",
+    "statusLocked": "Заблоковано",
+    "statusUnlocked": "Розблоковано",
+    "passcodeTooShort": "Пароль має містити щонайменше 4 символи.",
+    "passcodeMismatch": "Коди доступу не збігаються.",
+    "setSuccess": "Код доступу до сховища збережено.",
+    "setFailed": "Не вдалося зберегти код доступу до сховища.",
+    "unlockSuccess": "Сейф розблоковано.",
+    "unlockFailed": "Неправильний код доступу або помилка сховища.",
+    "lockSuccess": "Сховище заблоковано."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Режим поширення",
+    "modeAria": "Режим синхронізації поширення",
+    "modeAuto": "Авто",
+    "modeManual": "Підручник",
+    "modeOff": "Вимк.",
+    "sync": "Синхронізувати",
+    "syncAria": "Повідомлення про поширення синхронізації",
+    "cancelSync": "Скасувати",
+    "cancelSyncAria": "Скасувати синхронізацію поширення"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Значок аватара",
+    "iconNameAria": "Піктограма однорангового аватара",
+    "iconCircle": "Коло",
+    "iconStar": "Зірка",
+    "iconHeart": "Серце",
+    "iconShield": "Щит",
+    "iconUser": "Користувач"
   }
 }

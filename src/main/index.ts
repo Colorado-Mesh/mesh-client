@@ -86,6 +86,7 @@ import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
+import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
   clearLogFile,
@@ -4391,21 +4392,41 @@ ipcMain.handle('chat:outbox:add', (_event, entry: unknown) => {
 
 ipcMain.handle(
   'chat:outbox:updateStatus',
-  (_event, id: unknown, status: unknown, error?: unknown, nextRetryAt?: unknown) => {
+  (
+    _event,
+    id: unknown,
+    status: unknown,
+    error?: unknown,
+    nextRetryAt?: unknown,
+    attemptCount?: unknown,
+  ) => {
     if (typeof id !== 'number' || !Number.isInteger(id))
       throw new Error('chat:outbox:updateStatus: invalid id');
     if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
       throw new Error('chat:outbox:updateStatus: invalid status');
     const db = getDatabase();
-    db.prepareOnce(
-      'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
-    ).run(
-      status,
-      typeof error === 'string' ? error : null,
-      typeof nextRetryAt === 'number' ? nextRetryAt : null,
-      Date.now(),
-      id,
-    );
+    if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
+      db.prepareOnce(
+        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
+      ).run(
+        status,
+        typeof error === 'string' ? error : null,
+        typeof nextRetryAt === 'number' ? nextRetryAt : null,
+        attemptCount,
+        Date.now(),
+        id,
+      );
+    } else {
+      db.prepareOnce(
+        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+      ).run(
+        status,
+        typeof error === 'string' ? error : null,
+        typeof nextRetryAt === 'number' ? nextRetryAt : null,
+        Date.now(),
+        id,
+      );
+    }
   },
 );
 
@@ -5596,6 +5617,7 @@ registerReticulumIpcHandlers({
   getMainWindow: () => mainWindow,
 });
 registerReticulumDbIpcHandlers({ ipcMain });
+registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
 // ─── Second-instance handler ────────────────────────────────────────

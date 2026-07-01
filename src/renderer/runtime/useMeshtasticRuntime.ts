@@ -4,6 +4,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   buildStoreForwardHistoryToRadioBytes,
@@ -968,6 +969,7 @@ export function useMeshtasticRuntime() {
         setMqttConnectionLoss(false);
         if (prev !== 'connected') {
           mqttReconnectBacklogUntilRef.current = Date.now() + MQTT_RECONNECT_BACKLOG_MS;
+          requestChatOutboxDrain('meshtastic');
         }
         pushMqttChannelKeys();
       } else if (consumeMqttUserDisconnect()) {

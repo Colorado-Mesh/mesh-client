@@ -203,7 +203,10 @@
     "reticulumDmOnlyMessagesHint": "Reticulum 채팅은 다이렉트 메시지만 저장합니다. 개별적으로 지울 채널이 없습니다.",
     "clearReticulumMessagesTitle": "다이렉트 메시지 지우기",
     "clearReticulumMessagesConfirm": "이렇게 하면 로컬로 저장된 모든 {{count}} 개의 Reticulum 다이렉트 메시지가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
-    "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기"
+    "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기",
+    "reticulumSection": "Reticulum — 레티큘럼 스택",
+    "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
+    "reticulumPropagationHelp": "전파 노드의 동기화 방법을 선택하고 필요한 경우 최신 전파 데이터를 가져옵니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -1683,7 +1686,9 @@
     "configureRemotelyHint": "메시를 통해 이 노드에 대한 라디오 설정을 엽니다 (로컬 라디오 및 저장된 관리자 키 필요).",
     "openRoomButton": "🏠 룸 열기",
     "remoteAuthCancelled": "원격 액세스가 취소되었습니다.",
-    "shareContactSent": "라디오를 통해 전송된 연락처 공유."
+    "shareContactSent": "라디오를 통해 전송된 연락처 공유.",
+    "blockContact": "차단",
+    "unblockContact": "차단 해제"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -1911,7 +1916,11 @@
     "removeContact": "연락처 삭제",
     "removeContactConfirmTitle": "연락처 삭제",
     "removeContactConfirmBody": "이렇게 하면 목록에서 연락처가 제거됩니다. 채팅 기록이 유지됩니다. 메시지를 다시 보내면 문의가 다시 추가됩니다.",
-    "probeOk": "프로브 확인 — 경로에 도달할 수 있습니다."
+    "probeOk": "프로브 확인 — 경로에 도달할 수 있습니다.",
+    "blockContact": "대화 상대 차단( B)",
+    "unblockContact": "대화 상대 차단 해제( B)",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — 마지막 확인 {{seen}}"
   },
   "peerGraph": {
     "title": "동료 커뮤니케이션 그래프",
@@ -2694,7 +2703,14 @@
     "legendPeerUser": "LXMF 피어",
     "legendPeerServer": "노마드 노드",
     "interfaceLink": "인터페이스 링크",
-    "peerLink": "피어 링크"
+    "peerLink": "피어 링크",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "온라인",
+    "interfaceStatusOffline": "오프라인",
+    "glyphWifi": "Wi-Fi 인터페이스",
+    "glyphLora": "LoRa 인터페이스",
+    "glyphTcp": "TCP 인터페이스",
+    "glyphSerial": "직렬 통신"
   },
   "rfHistograms": {
     "title": "RF 신호 분포",
@@ -2850,7 +2866,11 @@
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
-    "placeholder": "모든 메시지 검색… (사용자:이름, 채널:이름)"
+    "placeholder": "모든 메시지 검색… (사용자:이름, 채널:이름)",
+    "noResults": "결과 없음",
+    "hint": "모든 메시지를 검색하려면 입력하세요.",
+    "resultCount": "{{count}} 결과 - 클릭하여 탐색",
+    "openSearch": "메시지 검색"
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",
@@ -3070,5 +3090,68 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
+  },
+  "diagnosticsPing": {
+    "title": "연속 핑",
+    "reticulumHint": "스택이 실행되는 동안 각 간격에서 ping (RTT) 및 경로 프로브 (홉) 를 실행합니다.",
+    "hashLabel": "대상 해시",
+    "hashPlaceholder": "32자 대상 해시…",
+    "hashAria": "대상 해시에서 핑까지",
+    "intervalLabel": "간격",
+    "intervalAria": "핑 시도 사이의 시간 (초)",
+    "start": "시작",
+    "stop": "정지",
+    "runOnce": "핑 한 번",
+    "colSeq": "#",
+    "colRtt": "레트 증후군",
+    "colHops": "홉",
+    "colStatus": "상태",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "확인",
+    "statusFailed": "실패: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "활성 신원",
+    "active": "활성 ID: {{name}}",
+    "activeBadge": "활성화"
+  },
+  "identityVault": {
+    "title": "신원 정보 보관소",
+    "hint": "Vault 암호를 사용하여 ID 백업의 로컬 복사본을 암호화합니다. 잠금 해제하여 보호된 ID 작업에 액세스하세요.",
+    "passcode": "Vault 암호",
+    "confirmPasscode": "새 암호를 확인",
+    "setPasscode": "볼트 활성화",
+    "unlock": "금고 잠금 해제",
+    "lock": "금고 잠금",
+    "statusNotConfigured": "구성되지 않음",
+    "statusLocked": "잠김",
+    "statusUnlocked": "잠금 해제",
+    "passcodeTooShort": "최소한 4자 이상이어야 합니다",
+    "passcodeMismatch": "비밀번호가 일치하지 않습니다.",
+    "setSuccess": "Vault 암호가 저장되었습니다.",
+    "setFailed": "볼트 암호를 저장할 수 없습니다.",
+    "unlockSuccess": "금고가 잠금 해제되었습니다.",
+    "unlockFailed": "잘못된 암호 또는 볼트 오류입니다.",
+    "lockSuccess": "금고가 잠겼습니다."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "전파 모드",
+    "modeAria": "전파 동기화 모드",
+    "modeAuto": "자동",
+    "modeManual": "수동",
+    "modeOff": "해제",
+    "sync": "동기화",
+    "syncAria": "전파 메시지 동기화",
+    "cancelSync": "취소",
+    "cancelSyncAria": "전파 동기화 취소"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "아바타 아이콘",
+    "iconNameAria": "피어 아바타 아이콘",
+    "iconCircle": "원형",
+    "iconStar": "스타",
+    "iconHeart": "심장",
+    "iconShield": "실드",
+    "iconUser": "사용자"
   }
 }

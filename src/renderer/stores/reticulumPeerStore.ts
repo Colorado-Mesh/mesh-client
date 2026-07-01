@@ -25,11 +25,19 @@ interface ReticulumDestinationDbRow {
   display_name?: string | null;
   last_heard?: number | null;
   favorited?: number | null;
+  icon_name?: string | null;
+  icon_color?: string | null;
+}
+
+export interface ReticulumPeerAppearance {
+  icon_name?: string | null;
+  icon_color?: string | null;
 }
 
 interface ReticulumPeerStoreState {
   peers: Map<string, ReticulumPeer>;
   contacts: Map<string, ReticulumContact>;
+  peerAppearanceByHash: Map<string, ReticulumPeerAppearance>;
   lastRefreshAt: number | null;
   dismissedContactHashes: Set<string>;
   replacePeers: (peers: ReticulumPeer[]) => void;
@@ -39,6 +47,8 @@ interface ReticulumPeerStoreState {
   setCustomDisplayName: (hash: string, name: string | null) => Promise<void>;
   removeContact: (hash: string, identityId?: string | null) => Promise<void>;
   restoreDismissedContact: (hash: string) => void;
+  hydratePeerAppearancesFromDb: () => Promise<void>;
+  patchPeerAppearance: (hash: string, appearance: ReticulumPeerAppearance) => void;
   getPeer: (hash: string) => ReticulumPeer | ReticulumContact | undefined;
   getDisplayName: (peer: ReticulumPeer) => string;
   isContact: (hash: string) => boolean;
@@ -222,6 +232,7 @@ export function reticulumContactToNodeRecord(contact: ReticulumContact): NodeRec
 export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) => ({
   peers: new Map(),
   contacts: new Map(),
+  peerAppearanceByHash: new Map(),
   lastRefreshAt: null,
   dismissedContactHashes: loadDismissedContactHashes(),
 
@@ -349,6 +360,34 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
     set({ dismissedContactHashes: dismissed });
   },
 
+  hydratePeerAppearancesFromDb: async () => {
+    try {
+      const rows =
+        (await window.electronAPI.db.getReticulumDestinations()) as ReticulumDestinationDbRow[];
+      const next = new Map<string, ReticulumPeerAppearance>();
+      for (const row of rows) {
+        if (!row.destination_hash) continue;
+        if (row.icon_name == null && row.icon_color == null) continue;
+        next.set(normalizeHash(row.destination_hash), {
+          icon_name: row.icon_name,
+          icon_color: row.icon_color,
+        });
+      }
+      set({ peerAppearanceByHash: next });
+    } catch (e) {
+      console.warn('[reticulumPeerStore] hydratePeerAppearances ' + errLikeToLogString(e));
+    }
+  },
+
+  patchPeerAppearance: (hash, appearance) => {
+    const key = normalizeHash(hash);
+    set((s) => {
+      const next = new Map(s.peerAppearanceByHash);
+      next.set(key, { ...next.get(key), ...appearance });
+      return { peerAppearanceByHash: next };
+    });
+  },
+
   getPeer: (hash) => {
     const key = normalizeHash(hash);
     return get().contacts.get(key) ?? get().peers.get(key);
@@ -438,6 +477,7 @@ export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumConta
       contacts,
       lastRefreshAt: Date.now(),
     });
+    await useReticulumPeerStore.getState().hydratePeerAppearancesFromDb();
 
     for (const peer of peers.values()) {
       registerReticulumDestinationHash(

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -1399,6 +1400,7 @@ export function useMeshcoreRuntime() {
           meshcorePathUpdatePendingRef.current,
         );
       }
+      requestChatOutboxDrain('meshcore');
     },
     [],
   );

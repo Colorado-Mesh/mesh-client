@@ -44,6 +44,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { HelpTooltip } from './HelpTooltip';
+import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
 import { useToast } from './Toast';
 
 const GPS_REFRESH_INTERVAL_LABELS: Record<number, string> = {
@@ -180,6 +181,8 @@ interface Props {
   onApplyMeshcorePathHashMode?: (mode: 0 | 1 | 2) => Promise<void>;
   /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
   reticulumIdentityId?: string | null;
+  reticulumSidecarReady?: boolean;
+  reticulumControlsDisabled?: boolean;
 }
 
 interface PendingAction {
@@ -215,6 +218,8 @@ export default function AppPanel({
   isMeshcoreRadioConnected = false,
   onApplyMeshcorePathHashMode,
   reticulumIdentityId = null,
+  reticulumSidecarReady = false,
+  reticulumControlsDisabled = false,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') !== '1',
@@ -660,6 +665,13 @@ export default function AppPanel({
           </div>
         </div>
       )}
+
+      {protocol === 'reticulum' ? (
+        <ReticulumAppPanelSection
+          sidecarReady={reticulumSidecarReady}
+          disabled={reticulumControlsDisabled}
+        />
+      ) : null}
 
       {/* GPS / Location */}
       <div className="space-y-3">

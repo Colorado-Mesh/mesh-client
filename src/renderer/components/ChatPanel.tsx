@@ -117,6 +117,10 @@ import {
   reactionGlyphFromPicker,
 } from '../lib/reactions';
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
+import {
+  groupChatReactionsByParentKey,
+  reactionLookupKeysForParentMessage,
+} from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useReticulumPropagationStore } from '../stores/reticulumPropagationStore';
@@ -717,40 +721,11 @@ function ChatPanel({
   );
 
   // Separate regular messages from reaction messages
-  const { regularMessages, reactionsByReplyId } = useMemo(() => {
-    const regular: ChatMessage[] = [];
-    const reactions = new Map<
-      number,
-      { emoji: number; payload: string; sender_id: number; sender_name: string; id?: number }[]
-    >();
-
-    const reactionDedupeKey = (senderId: number, emoji: number, payload: string): string =>
-      `${senderId}|${emoji}|${payload.trim()}`;
-
-    for (const msg of displayMessages) {
-      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) {
-        continue;
-      }
-      if (msg.emoji && msg.replyId) {
-        const existing = reactions.get(msg.replyId) ?? [];
-        const dedupeKey = reactionDedupeKey(msg.sender_id, msg.emoji, msg.payload);
-        if (
-          !existing.some((r) => reactionDedupeKey(r.sender_id, r.emoji, r.payload) === dedupeKey)
-        ) {
-          existing.push({
-            emoji: msg.emoji,
-            payload: msg.payload,
-            sender_id: msg.sender_id,
-            sender_name: msg.sender_name,
-            id: msg.id,
-          });
-          reactions.set(msg.replyId, existing);
-        }
-      } else {
-        regular.push(msg);
-      }
-    }
-    return { regularMessages: regular, reactionsByReplyId: reactions };
+  const { regularMessages, reactionsByParentKey } = useMemo(() => {
+    const filtered = displayMessages.filter(
+      (msg) => !(protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)),
+    );
+    return groupChatReactionsByParentKey(filtered);
   }, [displayMessages, protocol]);
 
   const inferredDmTabs = useMemo(() => {
@@ -993,7 +968,7 @@ function ChatPanel({
   });
 
   const viewOutboxRows = useMemo(
-    () => outboxRows.filter((r) => r.viewKey === viewKey),
+    () => outboxRows.filter((r): r is OutboxEntry => r?.viewKey === viewKey),
     [outboxRows, viewKey],
   );
 
@@ -1110,7 +1085,7 @@ function ChatPanel({
     const hasInboundForView = newMsgs.some((msg) => {
       if (isOwnNode(msg.sender_id)) return false;
       if (msg.isHistory) return false;
-      if (msg.emoji && msg.replyId) return false;
+      if (msg.emoji && (msg.replyId != null || msg.reticulum_reply_to_hash)) return false;
       if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return false;
       const peer = resolveDmPeer(msg);
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
@@ -1498,13 +1473,8 @@ function ChatPanel({
   }
 
   /** Flat reaction rows for a message key (chronological as stored). */
-  function getReactionRows(messageKey: number | undefined, parentMsg?: ChatMessage) {
-    if (messageKey == null) return [];
-    const lookupKeys = new Set<number>([messageKey]);
-    if (parentMsg?.packetId != null && parentMsg.packetId !== parentMsg.timestamp) {
-      lookupKeys.add(parentMsg.packetId);
-      lookupKeys.add(parentMsg.timestamp);
-    }
+  function getReactionRows(parentMsg: ChatMessage) {
+    const lookupKeys = reactionLookupKeysForParentMessage(parentMsg);
     const seen = new Set<string>();
     const rows: {
       emoji: number;
@@ -1514,7 +1484,7 @@ function ChatPanel({
       id?: number;
     }[] = [];
     for (const key of lookupKeys) {
-      for (const row of reactionsByReplyId.get(key) ?? []) {
+      for (const row of reactionsByParentKey.get(key) ?? []) {
         const dedupeKey = `${row.sender_id}|${row.emoji}|${row.payload.trim()}`;
         if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
@@ -2156,7 +2126,7 @@ function ChatPanel({
                 if (!msg) return null;
                 const isOwn = isOwnNode(msg.sender_id);
                 const isDm = !!msg.to;
-                const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp, msg);
+                const reactionRows = getReactionRows(msg);
                 const messageRowKey = msg.packetId ?? msg.timestamp;
                 const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
                 const pickerOpensAbove = i >= filteredMessages.length - 3;

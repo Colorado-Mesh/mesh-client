@@ -11,6 +11,16 @@ import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 export type { MeshProtocol };
 
 export type { MeshNode, MQTTSettings, MQTTStatus };
+
+export interface IdentityVaultStatus {
+  configured: boolean;
+  unlocked: boolean;
+}
+
+export interface IdentityVaultActionResult {
+  ok: boolean;
+  error?: string;
+}
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -260,6 +270,36 @@ export interface ElectronAPI {
       icon_name?: string | null;
       icon_color?: string | null;
     }) => Promise<void>;
+    getBlockedContacts: (
+      protocol: string,
+      identityId: string,
+    ) => Promise<{ blocked_hash: string; created_at: number }[]>;
+    blockContact: (
+      protocol: string,
+      identityId: string,
+      blockedHash: string,
+    ) => Promise<{ changes: number }>;
+    unblockContact: (
+      protocol: string,
+      identityId: string,
+      blockedHash: string,
+    ) => Promise<{ changes: number }>;
+    getReticulumIdentityActivity: (destinationHash: string) => Promise<
+      {
+        destination_hash: string;
+        aspect: string;
+        identity_hash?: string | null;
+        last_seen: number;
+        hops?: number | null;
+      }[]
+    >;
+    upsertReticulumIdentityActivity: (row: {
+      destination_hash: string;
+      aspect: string;
+      identity_hash?: string | null;
+      last_seen: number;
+      hops?: number | null;
+    }) => Promise<{ changes: number }>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;
@@ -769,6 +809,7 @@ export interface ElectronAPI {
         status: OutboxStatus,
         error?: string,
         nextRetryAt?: number,
+        attemptCount?: number,
       ) => Promise<void>;
       remove: (id: number) => Promise<void>;
     };
@@ -801,6 +842,14 @@ export interface ElectronAPI {
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
+  };
+
+  // ─── Reticulum identity vault ────────────────────────────────────────────────
+  vault: {
+    setPasscode: (passcode: string, secret: string) => Promise<IdentityVaultActionResult>;
+    unlock: (passcode: string) => Promise<IdentityVaultActionResult>;
+    lock: () => Promise<IdentityVaultActionResult>;
+    status: () => Promise<IdentityVaultStatus>;
   };
 
   // ─── Log panel ───────────────────────────────────────────────────────────────

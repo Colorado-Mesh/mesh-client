@@ -35,6 +35,8 @@ export interface ReticulumTopologyGraphNode {
   hops?: number | null;
   online: boolean;
   peerKind?: 'user' | 'server';
+  interfaceType?: string | null;
+  interfaceStatus?: string | null;
   isHub: boolean;
   hubOutDegree: number;
   seedX: number;
@@ -469,6 +471,8 @@ export function buildReticulumMeshTopologyGraph(
       kind: 'interface',
       depth: 1,
       online: isReticulumInterfaceOnline(iface),
+      interfaceType: iface.type ?? null,
+      interfaceStatus: iface.status ?? null,
       isHub: true,
       hubOutDegree: peerCount,
       seedX: pos.x,

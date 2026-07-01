@@ -18,6 +18,10 @@ import {
   isReticulumSidecarRunning,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  normalizeReticulumInterfaceGlyphType,
+  type ReticulumTopologyInterfaceGlyph,
+} from '@/renderer/lib/reticulum/reticulumTopologyInterfaceGlyph';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
@@ -81,6 +85,107 @@ function peerFill(node: RenderNode): string {
 
 function peerStroke(node: RenderNode): string {
   return node.online ? '#22c55e' : '#ef4444';
+}
+
+function interfaceGlyphAriaKey(glyph: ReticulumTopologyInterfaceGlyph): string {
+  switch (glyph) {
+    case 'wifi':
+      return 'reticulumTopology.glyphWifi';
+    case 'lora':
+      return 'reticulumTopology.glyphLora';
+    case 'serial':
+      return 'reticulumTopology.glyphSerial';
+    default:
+      return 'reticulumTopology.glyphTcp';
+  }
+}
+
+function InterfaceGlyph({
+  glyph,
+  ariaLabel,
+}: {
+  glyph: ReticulumTopologyInterfaceGlyph;
+  ariaLabel: string;
+}) {
+  const stroke = '#f8fafc';
+  const strokeWidth = 1.2;
+  switch (glyph) {
+    case 'wifi':
+      return (
+        <g aria-label={ariaLabel}>
+          <path
+            d="M0,-7 C-5,-2 -5,2 0,7 C5,2 5,-2 0,-7"
+            fill="none"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+          <path
+            d="M-4,-3 C-2,-1 -2,1 -4,3"
+            fill="none"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+          <circle cy={4} r={1.2} fill={stroke} />
+        </g>
+      );
+    case 'lora':
+      return (
+        <g aria-label={ariaLabel}>
+          <path
+            d="M-6,4 L-2,-4 L2,4"
+            fill="none"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M-3,4 L0,-1 L3,4"
+            fill="none"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cy={4} r={1.2} fill={stroke} />
+        </g>
+      );
+    case 'serial':
+      return (
+        <g aria-label={ariaLabel}>
+          <rect
+            x={-5}
+            y={-3}
+            width={10}
+            height={6}
+            rx={1}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+          />
+          <path
+            d="M-7,0 L-5,0 M5,0 L7,0"
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        </g>
+      );
+    default:
+      return (
+        <g aria-label={ariaLabel}>
+          <circle r={5} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+          <path
+            d="M-3,-1 L3,-1 M-3,1 L3,1 M-1,-3 L-1,3 M1,-3 L1,3"
+            stroke={stroke}
+            strokeWidth={1}
+            strokeLinecap="round"
+          />
+        </g>
+      );
+  }
 }
 
 interface ReticulumTopologyPanelProps {
@@ -407,8 +512,17 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
             if (node.kind === 'interface') {
               const r = INTERFACE_R;
               const fill = node.online ? '#16a34a' : '#dc2626';
+              const glyph = normalizeReticulumInterfaceGlyphType(node.interfaceType);
+              const statusLabel = node.online
+                ? t('reticulumTopology.interfaceStatusOnline')
+                : t('reticulumTopology.interfaceStatusOffline');
+              const tooltip = t('reticulumTopology.interfaceTooltip', {
+                name: node.label,
+                status: statusLabel,
+              });
               return (
                 <g key={node.id} transform={`translate(${node.x},${node.y})`}>
+                  <title>{tooltip}</title>
                   <rect
                     x={-r}
                     y={-r}
@@ -420,13 +534,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
                     stroke={node.online ? '#22c55e' : '#ef4444'}
                     strokeWidth={1.5}
                   />
-                  <path
-                    d="M-6,-2 L6,-2 M-6,2 L6,2 M-2,-6 L-2,6 M2,-6 L2,6"
-                    stroke="#f8fafc"
-                    strokeWidth={1.2}
-                    strokeLinecap="round"
-                    aria-hidden
-                  />
+                  <InterfaceGlyph glyph={glyph} ariaLabel={t(interfaceGlyphAriaKey(glyph))} />
                   <text
                     y={r + 12}
                     textAnchor="middle"

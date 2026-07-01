@@ -455,8 +455,33 @@ export function ChatComposer({
     } catch (err) {
       console.error('[ChatComposer] Send failed: ' + errLikeToLogString(err));
       const fallback = variant === 'room' ? t('roomsPanel.postFailed') : t('chatPanel.sendFailed');
+      const errMsg = err instanceof Error ? err.message : fallback;
+      if (allowOutbox && queueOutbox) {
+        const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
+        for (let i = 0; i < textsToSend.length; i++) {
+          await queueOutbox({
+            protocol,
+            viewKey,
+            channel: outboxChannel,
+            toNode: outboxDestination ?? null,
+            payload: textsToSend[i],
+            replyId: i === 0 && typeof replyKey === 'number' ? replyKey : null,
+            status: 'queued',
+            error: null,
+            nextRetryAt: null,
+            groupId,
+            groupIndex: groupId ? i : null,
+            groupTotal: groupId ? textsToSend.length : null,
+          });
+        }
+        clearSentDraft(draftSnapshot);
+        setMentionQuery(null);
+        onReplyClear?.();
+        onSendSuccess?.();
+        return;
+      }
       setChatActionError({
-        message: err instanceof Error ? err.message : fallback,
+        message: errMsg,
         viewKey,
       });
     } finally {
