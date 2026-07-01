@@ -751,6 +751,8 @@ export interface ElectronAPI {
       fileName: string;
       mimeType?: string;
       dataBase64: string;
+      /** When false, save under app userData without a dialog. */
+      promptSave?: boolean;
     }) => Promise<{ success: boolean; path?: string }>;
     showItemInFolder: (filePath: string) => Promise<{ ok: boolean }>;
     linkPreview: {

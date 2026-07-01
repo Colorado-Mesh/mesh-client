@@ -934,7 +934,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chat: {
     export: (messages: unknown[]) =>
       ipcRenderer.invoke('chat:export', messages) as Promise<{ success: boolean; path?: string }>,
-    saveReticulumAttachment: (opts: { fileName: string; mimeType?: string; dataBase64: string }) =>
+    saveReticulumAttachment: (opts: {
+      fileName: string;
+      mimeType?: string;
+      dataBase64: string;
+      promptSave?: boolean;
+    }) =>
       ipcRenderer.invoke('chat:saveReticulumAttachment', opts) as Promise<{
         success: boolean;
         path?: string;

@@ -4227,22 +4227,32 @@ ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
   const o = opts as Record<string, unknown>;
   const fileName = typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment';
   const dataBase64 = typeof o.dataBase64 === 'string' ? o.dataBase64 : '';
+  const promptSave = o.promptSave !== false;
   if (!dataBase64 || dataBase64.length > 16 * 1024 * 1024) {
     throw new Error('dataBase64 invalid or too large');
   }
-  if (!mainWindow) return { success: false };
   try {
-    const ext = path.extname(fileName) || '';
-    const result = await dialog.showSaveDialog(mainWindow, {
-      title: 'Save attachment',
-      defaultPath: fileName,
-      filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
-    });
-    if (result.canceled || !result.filePath) return { success: false };
     const buf = Buffer.from(dataBase64, 'base64');
     if (buf.length > 16 * 1024 * 1024) throw new Error('decoded attachment too large');
-    await fs.promises.writeFile(result.filePath, buf);
-    return { success: true, path: result.filePath };
+    let targetPath: string;
+    if (promptSave) {
+      if (!mainWindow) return { success: false };
+      const ext = path.extname(fileName) || '';
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save attachment',
+        defaultPath: fileName,
+        filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
+      });
+      if (result.canceled || !result.filePath) return { success: false };
+      targetPath = result.filePath;
+    } else {
+      const dir = path.join(app.getPath('userData'), 'reticulum', 'attachments');
+      await fs.promises.mkdir(dir, { recursive: true });
+      const safeName = fileName.replace(/[^\w.-]+/g, '_').slice(0, 120) || 'attachment';
+      targetPath = path.join(dir, `${Date.now()}-${safeName}`);
+    }
+    await fs.promises.writeFile(targetPath, buf);
+    return { success: true, path: targetPath };
   } catch (err) {
     console.error(
       '[IPC] chat:saveReticulumAttachment failed:',

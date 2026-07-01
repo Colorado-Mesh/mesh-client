@@ -119,6 +119,7 @@ import {
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
+import { useReticulumPropagationStore } from '../stores/reticulumPropagationStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
@@ -454,6 +455,7 @@ function ChatPanel({
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
+  const reticulumPropagationSync = useReticulumPropagationStore((s) => s.sync);
   const ownNodeIdSet = useMemo(() => {
     const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
     const ids = base.filter((id) => id > 0);
@@ -1772,6 +1774,20 @@ function ChatPanel({
               {t('chatPanel.waitingMessagesSyncNow')}
             </button>
           )}
+        </div>
+      )}
+
+      {protocol === 'reticulum' && reticulumPropagationSync.active && (
+        <div
+          className="mb-2 flex items-center gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200"
+          role="status"
+        >
+          <span>{t('chatPanel.reticulumPropagationSyncActive')}</span>
+          {reticulumPropagationSync.progress > 0 ? (
+            <span className="text-muted">
+              {Math.min(100, Math.round(reticulumPropagationSync.progress))}%
+            </span>
+          ) : null}
         </div>
       )}
 

@@ -10,3 +10,7 @@ export function parseReticulumAttachmentPayload(
 export function isReticulumImageAttachment(mimeType: string): boolean {
   return mimeType.startsWith('image/');
 }
+
+export function isReticulumAudioAttachment(mimeType: string): boolean {
+  return mimeType.startsWith('audio/');
+}

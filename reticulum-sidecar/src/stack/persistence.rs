@@ -69,6 +69,46 @@ impl PersistedState {
                 destination_hash: None,
             });
         }
+        self.sync_local_propagation_hash();
+    }
+
+    pub fn sync_local_propagation_hash(&mut self) {
+        if !self.identity.configured {
+            return;
+        }
+        if let Some(node) = self.propagation.iter_mut().find(|p| p.id == "local-prop") {
+            node.destination_hash = Some(self.identity.lxmf_hash.clone());
+        }
+    }
+
+    pub fn add_propagation_node(
+        &mut self,
+        destination_hash: &str,
+        name: Option<String>,
+    ) -> Result<PropagationRow, String> {
+        let hash = destination_hash.trim().to_lowercase();
+        if hash.len() != 32 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("destination_hash must be 32 hex characters".into());
+        }
+        if self.propagation.iter().any(|p| {
+            p.destination_hash
+                .as_ref()
+                .map(|d| d.to_lowercase() == hash)
+                .unwrap_or(false)
+        }) {
+            return Err("propagation node already exists".into());
+        }
+        let id = format!("pn-{}", &hash[..8]);
+        let row = PropagationRow {
+            id,
+            name: name.unwrap_or_else(|| format!("Propagation node {}", &hash[..8])),
+            hops: None,
+            enabled: true,
+            status: "known".into(),
+            destination_hash: Some(hash),
+        };
+        self.propagation.push(row.clone());
+        Ok(row)
     }
 
     pub fn save(&self, _config_dir: &Path, storage_dir: &Path) -> Result<(), String> {
@@ -104,6 +144,7 @@ impl PersistedState {
         };
         self.rns_ready = true;
         self.lxmf_ready = true;
+        self.sync_local_propagation_hash();
         Ok(self.identity.clone())
     }
 
@@ -127,6 +168,7 @@ impl PersistedState {
         };
         self.rns_ready = true;
         self.lxmf_ready = true;
+        self.sync_local_propagation_hash();
         Ok(self.identity.clone())
     }
 
@@ -177,6 +219,7 @@ impl PersistedState {
         };
         self.rns_ready = true;
         self.lxmf_ready = true;
+        self.sync_local_propagation_hash();
         Ok(self.identity.clone())
     }
 

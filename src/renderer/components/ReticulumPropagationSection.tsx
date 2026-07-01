@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
@@ -21,6 +21,8 @@ export default function ReticulumPropagationSection({
   const setPreferredOnSidecar = useReticulumPropagationStore((s) => s.setPreferredOnSidecar);
   const startSync = useReticulumPropagationStore((s) => s.startSync);
   const cancelSync = useReticulumPropagationStore((s) => s.cancelSync);
+  const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
+  const [addHash, setAddHash] = useState('');
 
   useEffect(() => {
     void refreshFromSidecar();
@@ -81,6 +83,14 @@ export default function ReticulumPropagationSection({
           >
             <span>
               {node.name} ({node.status})
+              {node.id === 'local-prop' && node.message_count != null ? (
+                <span className="text-muted ml-1 text-xs">
+                  {t('reticulumPropagation.localInboxStats', {
+                    count: node.message_count,
+                    bytes: node.storage_bytes ?? 0,
+                  })}
+                </span>
+              ) : null}
               {preferredId === node.id ? (
                 <span className="text-readable-green ml-1 text-xs">
                   {t('reticulumPropagation.preferred')}
@@ -97,6 +107,17 @@ export default function ReticulumPropagationSection({
                 aria-label={t('reticulumPropagation.setPreferred')}
               >
                 {t('reticulumPropagation.setPreferred')}
+              </button>
+              <button
+                type="button"
+                className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                disabled={sync.active}
+                onClick={() => {
+                  void startSync(node.id);
+                }}
+                aria-label={t('reticulumPropagation.syncNowFor', { name: node.name })}
+              >
+                {t('reticulumPropagation.syncNow')}
               </button>
               <button
                 type="button"
@@ -134,6 +155,36 @@ export default function ReticulumPropagationSection({
             {t('reticulumPropagation.autoSyncInterval', { sec: autoSyncIntervalSec })}
           </span>
         ) : null}
+      </div>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">
+          <span className="text-muted">{t('reticulumPropagation.addNodeLabel')}</span>
+          <input
+            type="text"
+            value={addHash}
+            onChange={(e) => {
+              setAddHash(e.target.value);
+            }}
+            placeholder={t('reticulumPropagation.addNodePlaceholder')}
+            className="rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
+            aria-label={t('reticulumPropagation.addNodePlaceholder')}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!addHash.trim()}
+          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
+          onClick={() => {
+            void addPropagationNode(addHash.trim()).then((ok) => {
+              if (ok) {
+                setAddHash('');
+                handleRefresh();
+              }
+            });
+          }}
+        >
+          {t('reticulumPropagation.addNode')}
+        </button>
       </div>
     </>
   );

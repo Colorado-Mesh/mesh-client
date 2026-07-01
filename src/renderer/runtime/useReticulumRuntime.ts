@@ -24,6 +24,7 @@ import {
   markStaleReticulumOutboundInStore,
   markStaleReticulumOutboundMessages,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
+import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   fetchReticulumIdentityStatus,
@@ -216,9 +217,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const ingestLxmfPayload = useCallback(
     (p: ReticulumLxmfPayload) => {
       if (!identityId) return;
-      ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
-        selfLxmfHash: selfLxmfHash ?? undefined,
-      });
+      void (async () => {
+        let attachmentPath: string | null = null;
+        if (p.attachment?.data_base64 && p.direction !== 'outbound') {
+          attachmentPath = await cacheReticulumInboundAttachment(p.attachment);
+        }
+        ingestReticulumLxmfPayloadWithSideEffects(identityId, p, {
+          selfLxmfHash: selfLxmfHash ?? undefined,
+          attachmentPath,
+        });
+      })();
     },
     [identityId, selfLxmfHash],
   );
@@ -255,6 +263,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'lxmf_message' && evt.payload && typeof evt.payload === 'object') {
         ingestLxmfPayload(evt.payload);
       }
+      if (evt.type === 'resource.received' && evt.payload && typeof evt.payload === 'object') {
+        ingestLxmfPayload(evt.payload);
+      }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { message_hash?: string; status?: string };
         if (identityId && p.message_hash && p.status) {
@@ -264,7 +275,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
       }
       if (
-        evt.type === 'propagation.sync_progress' &&
+        (evt.type === 'propagation_sync' || evt.type === 'propagation.sync_progress') &&
         evt.payload &&
         typeof evt.payload === 'object'
       ) {

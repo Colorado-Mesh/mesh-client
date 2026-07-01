@@ -40,7 +40,7 @@ flowchart TB
 1. **Reticulum → Connection** (`ReticulumStackPanel`): click **Start stack** (or enable **Auto-start** for next visit). **Stop stack** shuts down the sidecar without quitting the app; **Disconnect & quit** stops the sidecar (when running) and exits mesh-client.
 2. **Reticulum → Radio** (`ReticulumRadioPanel`): create or import identity; add/edit/delete/enable interfaces; import or export rnsd-style config; adjust stack settings and announce interval; manage peers and propagation.
 3. **Reticulum → Admin** (`ReticulumAdminPanel`): RNode firmware flasher and stack factory reset (danger zone).
-4. **Chat:** DM-only LXMF text, reactions, and file attachments.
+4. **Chat:** DM-only LXMF text, reactions, file attachments, and voice clips (recorded as LXMF attachments).
 
 **Diagnostics tab** shows Reticulum-native interface/path/LXMF health (not Meshtastic Hop Goblins). **Topology tab** builds a best-effort graph from the RNS path table: each row supplies one immediate next-hop (`via_hash`, a transport relay id that may differ from a hub’s destination hash). The sidecar infers `self → relay` links when a relay is only referenced as `via`. Layout uses BFS over edges with a `hops` fallback when a node is not reachable from `self`. This is not a full multi-hop trace—RNS exposes only the next hop per destination. Sidebar **Peers** tab ([`ReticulumPeerListPanel`](src/renderer/components/ReticulumPeerListPanel.tsx)) lists network path-table peers and LXMF contacts in separate sub-tabs.
 
@@ -110,6 +110,19 @@ With **`rns-stack`**, `POST /api/v1/lxmf/send` chooses delivery method from the 
 | No, no propagation node                   | `{ ok: false, error: "no_propagation_node" }` | Toast prompts user to set a preferred propagation node on the Radio tab   |
 
 The chat UI keeps outbound messages in **Sending** until the sidecar emits `lxmf_outbound_status` (`delivered` / `failed`). This follows Reticulum’s async LXMF model—no TCP-style “connection refused” when a contact is offline; configure a propagation node for store-and-forward instead.
+
+## LXMF attachments and voice clips
+
+- **Send:** Chat composer paperclip (files) or mic button (voice clip, max ~60 s) on Reticulum DMs. Outbound uses `POST /api/v1/lxmf/resource` with `FIELD_FILE_ATTACHMENTS` on the live stack.
+- **Receive:** Inbound attachments are cached under `userData/reticulum/attachments/`; chat shows playback for audio and **Save attachment** / **Show in folder** actions.
+- **Realtime voice calls (LXST/Codec2):** not in scope; the Radio tab no longer shows a voice-call stub.
+
+## Propagation nodes
+
+- **Preferred node:** offline DMs route to the preferred propagation node when the destination is not in the path table.
+- **Sync:** Per-node **Sync messages** on the Radio tab; progress via `propagation_sync` WebSocket events (also surfaced in Chat while syncing).
+- **Local inbox:** Enable **Local propagation (offline inbox)** on the Radio tab to serve as a propagation node (`rns-stack`); stats show queued count and storage used.
+- **Add remote node:** Paste a 32-character destination hash in the propagation section to add a known MeshChat/Ratspeak propagation node.
 
 ## Building the sidecar
 

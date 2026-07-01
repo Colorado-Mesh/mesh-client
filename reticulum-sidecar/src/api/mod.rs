@@ -79,6 +79,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/packets", get(system::list_packets).delete(system::clear_packets))
         .route("/api/v1/announces", delete(system::clear_announces))
         .route("/api/v1/propagation", get(propagation::list_propagation))
+        .route("/api/v1/propagation/add", post(propagation::add_propagation_node))
         .route(
             "/api/v1/propagation/{id}/preferred",
             post(propagation::set_preferred_propagation),

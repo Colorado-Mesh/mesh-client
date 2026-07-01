@@ -13,7 +13,6 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
-import ReticulumCallPanel from './ReticulumCallPanel';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 
 interface ReticulumInterfaceRow {
@@ -652,10 +651,6 @@ export function ReticulumRadioPanel({
 
           <ReticulumCollapsibleSection title={t('connectionPanel.reticulumPropagation.title')}>
             <ReticulumPropagationSection embedded />
-          </ReticulumCollapsibleSection>
-
-          <ReticulumCollapsibleSection title={t('reticulumCall.title')}>
-            <ReticulumCallPanel embedded />
           </ReticulumCollapsibleSection>
         </>
       ) : null}

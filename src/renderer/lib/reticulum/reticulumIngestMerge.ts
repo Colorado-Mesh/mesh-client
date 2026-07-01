@@ -4,6 +4,7 @@ import { normalizeReticulumNodeId, reticulumHashToNodeId } from './destHash';
 
 export interface ReticulumIngestMergeContext {
   selfLxmfHash?: string | null;
+  attachmentPath?: string | null;
 }
 
 interface LxmfDirectionPayload {
@@ -61,6 +62,12 @@ export function mergeReticulumIngestRecord(
     merged.reticulumSenderHash = existing.reticulumSenderHash ?? merged.reticulumSenderHash;
   } else if (existingFromSelf && incomingFromSelf && payload.direction === 'outbound') {
     merged.receivedVia = record.receivedVia ?? existing.receivedVia;
+  }
+
+  if (ctx.attachmentPath) {
+    merged.reticulumAttachmentPath = ctx.attachmentPath;
+  } else if (existing?.reticulumAttachmentPath) {
+    merged.reticulumAttachmentPath = existing.reticulumAttachmentPath;
   }
 
   return merged;

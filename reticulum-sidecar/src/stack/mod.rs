@@ -11,6 +11,8 @@ mod via;
 
 #[cfg(feature = "rns-stack")]
 mod live;
+#[cfg(feature = "rns-stack")]
+mod propagation_bridge;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -357,19 +359,57 @@ impl StackHandle {
         let inner = self.inner.read().await;
         let preferred_id = inner.preferred_propagation_id.clone();
         let auto_sync_interval_sec = inner.auto_sync_interval_sec;
+        #[cfg(feature = "rns-stack")]
+        let local_stats = if let Some(live) = &self.live {
+            let (count, bytes) = live.propagation_local_stats();
+            let serving = live.propagation_is_local_serving();
+            Some((count, bytes, serving, live.propagation_local_hash()))
+        } else {
+            None
+        };
         let propagation: Vec<serde_json::Value> = inner
             .propagation
             .iter()
             .map(|p| {
                 let preferred = preferred_id.as_deref() == Some(p.id.as_str());
-                serde_json::json!({
+                let mut row = serde_json::json!({
                     "id": p.id,
                     "name": p.name,
                     "hops": p.hops,
                     "enabled": p.enabled,
                     "status": p.status,
                     "preferred": preferred,
-                })
+                    "destination_hash": p.destination_hash,
+                });
+                #[cfg(feature = "rns-stack")]
+                if p.id == "local-prop" {
+                    if let Some((count, bytes, serving, hash)) = &local_stats {
+                        if let Some(obj) = row.as_object_mut() {
+                            obj.insert(
+                                "message_count".into(),
+                                serde_json::Value::Number((*count).into()),
+                            );
+                            obj.insert(
+                                "storage_bytes".into(),
+                                serde_json::Value::Number((*bytes).into()),
+                            );
+                            obj.insert("enabled".into(), serde_json::Value::Bool(*serving));
+                            obj.insert(
+                                "status".into(),
+                                if *serving {
+                                    serde_json::Value::String("active".into())
+                                } else {
+                                    serde_json::Value::String("idle".into())
+                                },
+                            );
+                            obj.insert(
+                                "destination_hash".into(),
+                                serde_json::Value::String(hash.clone()),
+                            );
+                        }
+                    }
+                }
+                row
             })
             .collect();
         serde_json::json!({
@@ -399,6 +439,20 @@ impl StackHandle {
     }
 
     pub async fn start_propagation_sync(&self, propagation_id: &str) -> Result<(), String> {
+        let prop_hash = {
+            let inner = self.inner.read().await;
+            inner
+                .propagation
+                .iter()
+                .find(|p| p.id == propagation_id)
+                .and_then(|p| p.destination_hash.clone())
+                .ok_or_else(|| format!("propagation node not found: {propagation_id}"))?
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.start_propagation_sync(&prop_hash).await?;
+            return Ok(());
+        }
         let mut inner = self.inner.write().await;
         inner.start_propagation_sync(propagation_id)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
@@ -410,6 +464,11 @@ impl StackHandle {
     }
 
     pub async fn cancel_propagation_sync(&self) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.cancel_propagation_sync().await;
+            return Ok(());
+        }
         let mut inner = self.inner.write().await;
         inner.cancel_propagation_sync();
         inner.save(&self.config_dir, &self.storage_dir)?;
@@ -421,10 +480,27 @@ impl StackHandle {
     }
 
     pub async fn set_propagation_enabled(&self, id: &str, enabled: bool) -> Result<(), String> {
+        if id == "local-prop" {
+            #[cfg(feature = "rns-stack")]
+            if let Some(live) = &self.live {
+                live.set_local_propagation_serving(enabled).await;
+            }
+        }
         let mut inner = self.inner.write().await;
         inner.set_propagation_enabled(id, enabled)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(())
+    }
+
+    pub async fn add_propagation_node(
+        &self,
+        destination_hash: &str,
+        name: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let mut inner = self.inner.write().await;
+        let row = inner.add_propagation_node(destination_hash, name)?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(serde_json::json!({ "ok": true, "node": row }))
     }
 
     pub async fn ping_destination(&self, destination_hash: &str) -> Result<serde_json::Value, String> {
@@ -555,6 +631,16 @@ impl StackHandle {
         &self,
         req: LxmfResourceRequest,
     ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let res = live.send_lxmf_resource(&req).await?;
+            if res.get("ok").and_then(|v| v.as_bool()) == Some(true) {
+                let payload = res.get("message").cloned().unwrap_or(res.clone());
+                self.emit_event("resource.received", payload.clone());
+                self.emit_event("lxmf_message", payload);
+            }
+            return Ok(res);
+        }
         let mut inner = self.inner.write().await;
         let res = inner.send_resource_local(&req)?;
         inner.save(&self.config_dir, &self.storage_dir)?;

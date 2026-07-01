@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isReticulumAudioAttachment,
   isReticulumImageAttachment,
   parseReticulumAttachmentPayload,
 } from './parseReticulumAttachmentPayload';
@@ -20,5 +21,10 @@ describe('parseReticulumAttachmentPayload', () => {
   it('detects image mime types', () => {
     expect(isReticulumImageAttachment('image/jpeg')).toBe(true);
     expect(isReticulumImageAttachment('application/pdf')).toBe(false);
+  });
+
+  it('detects audio mime types', () => {
+    expect(isReticulumAudioAttachment('audio/webm')).toBe(true);
+    expect(isReticulumAudioAttachment('text/plain')).toBe(false);
   });
 });

@@ -13,6 +13,9 @@ export interface PropagationNodeRow {
   enabled: boolean;
   status: string;
   preferred?: boolean;
+  destination_hash?: string | null;
+  message_count?: number;
+  storage_bytes?: number;
 }
 
 interface PropagationSyncState {
@@ -34,6 +37,7 @@ interface ReticulumPropagationStoreState {
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: () => Promise<boolean>;
+  addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
 }
 
 export const useReticulumPropagationStore = create<ReticulumPropagationStoreState>((set, get) => ({
@@ -123,5 +127,21 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
       return false;
     }
+  },
+
+  addPropagationNode: async (destinationHash, name) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/add', {
+        destination_hash: destinationHash,
+        name: name ?? undefined,
+      })) as { ok?: boolean };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
+    }
+    return false;
   },
 }));

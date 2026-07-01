@@ -113,6 +113,7 @@ export function ingestReticulumLxmfPayload(
 export async function persistReticulumMessageToDb(
   identityId: IdentityId,
   p: ReticulumLxmfPayload,
+  attachmentPath?: string | null,
 ): Promise<void> {
   if (!p.text || !p.sender_hash) return;
   const timestamp = p.timestamp ?? Date.now();
@@ -128,6 +129,7 @@ export async function persistReticulumMessageToDb(
       message_hash: p.message_hash ?? computeReticulumMessageHash(p.sender_hash, timestamp, p.text),
       received_via: resolvePayloadTransport(p) ?? null,
       delivery_status: resolvePersistedDeliveryStatus(p),
+      attachment_path: attachmentPath ?? null,
     });
   } catch (e) {
     console.warn('[reticulumIngest] save message ' + errLikeToLogString(e));
@@ -155,7 +157,7 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
 ): boolean {
   const ingested = ingestReticulumLxmfPayload(identityId, p, ctx);
   if (!ingested) return false;
-  void persistReticulumMessageToDb(identityId, p);
+  void persistReticulumMessageToDb(identityId, p, ctx.attachmentPath);
   void persistReticulumContactFromPayload(p);
   return true;
 }

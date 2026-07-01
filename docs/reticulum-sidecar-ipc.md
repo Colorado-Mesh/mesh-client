@@ -58,31 +58,32 @@ The Radio tab UI edits a subset: **name** for all types; **host** / **port** for
 
 ### LXMF and contacts
 
-| Method | Path                           | Body / notes                                               | Response                                                                                                                                                      |
-| ------ | ------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/v1/lxmf/send`            | `{ destination_hash, text, reply_to_hash?, reply_to_id? }` | Live: `{ ok, delivery_method?, delivery_status?, sent_via?, message? }` or `{ ok: false, error: "no_propagation_node" }`. Stub: `{ ok, sent_via?, message? }` |
-| POST   | `/api/v1/lxmf/reaction`        | `{ destination_hash, target_hash, emoji }`                 | `{ ok, message? }`                                                                                                                                            |
-| POST   | `/api/v1/lxmf/resource`        | LXMF file attachment payload                               | `{ ok, message? }`                                                                                                                                            |
-| DELETE | `/api/v1/lxmf/messages/{hash}` |                                                            | `{ ok }`                                                                                                                                                      |
-| GET    | `/api/v1/contacts`             |                                                            | `{ contacts: [] }`                                                                                                                                            |
+| Method | Path                           | Body / notes                                                              | Response                                                                                                                                                      |
+| ------ | ------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/v1/lxmf/send`            | `{ destination_hash, text, reply_to_hash?, reply_to_id? }`                | Live: `{ ok, delivery_method?, delivery_status?, sent_via?, message? }` or `{ ok: false, error: "no_propagation_node" }`. Stub: `{ ok, sent_via?, message? }` |
+| POST   | `/api/v1/lxmf/reaction`        | `{ destination_hash, target_hash, emoji }`                                | `{ ok, message? }`                                                                                                                                            |
+| POST   | `/api/v1/lxmf/resource`        | `{ destination_hash, file_name, mime_type, data_base64, reply_to_hash? }` | Live: LXMF `FIELD_FILE_ATTACHMENTS` send. Stub: local persist only. `{ ok, message? }`                                                                        |
+| DELETE | `/api/v1/lxmf/messages/{hash}` |                                                                           | `{ ok }`                                                                                                                                                      |
+| GET    | `/api/v1/contacts`             |                                                                           | `{ contacts: [] }`                                                                                                                                            |
 
 ### Peers, topology, and propagation
 
-| Method | Path                                 | Body / notes           | Response                                                                                                                |
-| ------ | ------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/peers`                      |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                                                              |
-| POST   | `/api/v1/peers/{hash}/path`          |                        | `{ ok }` — emits `peers_updated` WS on success                                                                          |
-| POST   | `/api/v1/peers/{hash}/probe`         |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                      |
-| POST   | `/api/v1/ping`                       | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                       |
-| GET    | `/api/v1/topology`                   |                        | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed |
-| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)  | `{ packets: [] }` — recent wire tap ring buffer                                                                         |
-| DELETE | `/api/v1/packets`                    |                        | `{ ok }` — clear wire tap buffer                                                                                        |
-| GET    | `/api/v1/propagation`                |                        | `{ propagation, preferred_id, auto_sync_interval_sec }`                                                                 |
-| POST   | `/api/v1/propagation/{id}/enable`    |                        | `{ ok }`                                                                                                                |
-| POST   | `/api/v1/propagation/{id}/disable`   |                        | `{ ok }`                                                                                                                |
-| POST   | `/api/v1/propagation/{id}/preferred` |                        | `{ ok }`                                                                                                                |
-| POST   | `/api/v1/propagation/sync`           |                        | `{ ok }`                                                                                                                |
-| POST   | `/api/v1/propagation/sync/cancel`    |                        | `{ ok }`                                                                                                                |
+| Method | Path                                 | Body / notes                  | Response                                                                                                                       |
+| ------ | ------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/v1/peers`                      |                               | `{ peers: [] }` — live path table when `rns-stack` enabled                                                                     |
+| POST   | `/api/v1/peers/{hash}/path`          |                               | `{ ok }` — emits `peers_updated` WS on success                                                                                 |
+| POST   | `/api/v1/peers/{hash}/probe`         |                               | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                             |
+| POST   | `/api/v1/ping`                       | `{ destination_hash }`        | `{ ok, rtt_ms? }`                                                                                                              |
+| GET    | `/api/v1/topology`                   |                               | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed        |
+| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)         | `{ packets: [] }` — recent wire tap ring buffer                                                                                |
+| DELETE | `/api/v1/packets`                    |                               | `{ ok }` — clear wire tap buffer                                                                                               |
+| GET    | `/api/v1/propagation`                |                               | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| POST   | `/api/v1/propagation/add`            | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash                                                                         |
+| POST   | `/api/v1/propagation/{id}/enable`    |                               | `{ ok }`                                                                                                                       |
+| POST   | `/api/v1/propagation/{id}/disable`   |                               | `{ ok }`                                                                                                                       |
+| POST   | `/api/v1/propagation/{id}/preferred` |                               | `{ ok }`                                                                                                                       |
+| POST   | `/api/v1/propagation/sync`           |                               | `{ ok }`                                                                                                                       |
+| POST   | `/api/v1/propagation/sync/cancel`    |                               | `{ ok }`                                                                                                                       |
 
 ### Nomad Network
 
