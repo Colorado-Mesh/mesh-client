@@ -2527,7 +2527,12 @@
       "destination": "Hedef",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Duraklat",
+    "resumeCapture": "Geri",
+    "resumeCaptureWithCount": "Özgeçmiş (+{{count}})",
+    "pausedPending": "{{count}} duraklatılmış durumdayken yeni",
+    "jumpToLatest": "En yeniye atla"
   },
   "remoteAdmin": {
     "errors": {

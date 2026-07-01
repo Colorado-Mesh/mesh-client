@@ -2527,7 +2527,12 @@
       "destination": "Bestemming",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Pauze",
+    "resumeCapture": "C.V.",
+    "resumeCaptureWithCount": "CV (+{{count}})",
+    "pausedPending": "{{count}} nieuw tijdens pauze",
+    "jumpToLatest": "Spring naar het laatste nieuws"
   },
   "remoteAdmin": {
     "errors": {

@@ -2527,7 +2527,12 @@
       "destination": "Cíl",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Pozastavení",
+    "resumeCapture": "Pokračovat",
+    "resumeCaptureWithCount": "Pokračovat (+{{count}})",
+    "pausedPending": "{{count}} nové při pozastavení",
+    "jumpToLatest": "Přejít na nejnovější"
   },
   "remoteAdmin": {
     "errors": {

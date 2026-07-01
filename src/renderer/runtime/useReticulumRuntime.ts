@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
+import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
@@ -82,6 +83,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const [rawPackets, setRawPackets] = useState<ReticulumRawPacketEntry[]>([]);
+  const rawPacketAppenderRef = useRef<BatchedRingBufferAppender<ReticulumRawPacketEntry> | null>(
+    null,
+  );
+  rawPacketAppenderRef.current ??= new BatchedRingBufferAppender(
+    setRawPackets,
+    MAX_RAW_PACKET_LOG_ENTRIES,
+  );
   const unsubEventRef = useRef<(() => void) | null>(null);
   const connectInFlightRef = useRef(false);
   const suppressReconnectRef = useRef(false);
@@ -184,13 +192,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [refreshContactsFromSidecar, refreshLocalInterfacesFromSidecar, syncDiagnosticsFromSidecar]);
 
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
-    setRawPackets((prev) => {
-      const next = [...prev, entry];
-      if (next.length > MAX_RAW_PACKET_LOG_ENTRIES) {
-        return next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES);
-      }
-      return next;
-    });
+    rawPacketAppenderRef.current?.append(entry);
   }, []);
 
   const hydrateRawPackets = useCallback(async () => {
@@ -206,6 +208,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, []);
 
   const clearRawPackets = useCallback(async () => {
+    rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
     try {
       await window.electronAPI.reticulum.proxyDelete('/api/v1/packets');
@@ -306,6 +309,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     unsubEventRef.current = null;
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
+    rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -398,6 +402,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     await window.electronAPI.reticulum.stop();
     localInterfacesRef.current = [];
     setSelfLxmfHash(null);
+    rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);

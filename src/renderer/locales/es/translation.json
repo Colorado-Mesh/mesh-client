@@ -2527,7 +2527,12 @@
       "destination": "Destino",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Pausa",
+    "resumeCapture": "Reanudar",
+    "resumeCaptureWithCount": "Currículum vitae (+{{count}})",
+    "pausedPending": "{{count}} nuevo mientras está en pausa",
+    "jumpToLatest": "Saltar a la última"
   },
   "remoteAdmin": {
     "errors": {

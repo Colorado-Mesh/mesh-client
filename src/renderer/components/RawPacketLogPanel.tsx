@@ -4,6 +4,7 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { ArrowDown } from 'lucide-react-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -439,6 +440,9 @@ export default function RawPacketLogPanel(props: Props) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
   const [expandedContentKey, setExpandedContentKey] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [pausedAtCount, setPausedAtCount] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   /** Sticky intent: user is reading latest packets and wants auto-follow on new traffic. */
   const isPinnedToBottomRef = useRef(true);
@@ -448,12 +452,16 @@ export default function RawPacketLogPanel(props: Props) {
   const expandedContentKeyRef = useRef<string | null>(null);
   expandedContentKeyRef.current = expandedContentKey;
 
+  const pendingWhilePaused = isPaused ? Math.max(0, packets.length - pausedAtCount) : 0;
+
   const filtered = useMemo(() => {
-    if (!filter.trim()) return packets;
     const q = filter.trim().toUpperCase();
     const f = filter.trim().toLowerCase();
+
     if (variant === 'meshcore') {
-      return packets.filter(
+      const list = isPaused ? packets.slice(0, pausedAtCount) : packets;
+      if (!filter.trim()) return list;
+      return list.filter(
         (p) =>
           (p.routeTypeString ?? '').includes(q) ||
           (p.payloadTypeString ?? '').includes(q) ||
@@ -469,7 +477,9 @@ export default function RawPacketLogPanel(props: Props) {
       );
     }
     if (variant === 'reticulum') {
-      return packets.filter((p) => {
+      const list = isPaused ? packets.slice(0, pausedAtCount) : packets;
+      if (!filter.trim()) return list;
+      return list.filter((p) => {
         const destinationLabel = reticulumDestinationColumnText(
           p.destinationHash,
           getNodeLabel,
@@ -491,7 +501,9 @@ export default function RawPacketLogPanel(props: Props) {
         );
       });
     }
-    return packets.filter(
+    const list = isPaused ? packets.slice(0, pausedAtCount) : packets;
+    if (!filter.trim()) return list;
+    return list.filter(
       (p) =>
         (p.portLabel ?? '').includes(q) ||
         toHex(p.raw).includes(f) ||
@@ -499,7 +511,7 @@ export default function RawPacketLogPanel(props: Props) {
         (p.isLocal && 'local'.includes(f)) ||
         (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
     );
-  }, [packets, filter, variant, getNodeLabel]);
+  }, [packets, pausedAtCount, isPaused, filter, variant, getNodeLabel]);
 
   const expandedIndex = useMemo(() => {
     if (!expandedContentKey) return -1;
@@ -548,20 +560,49 @@ export default function RawPacketLogPanel(props: Props) {
     if (items.length > 0) {
       anchorIndexRef.current = items[0].index;
     }
-    isPinnedToBottomRef.current = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    const atEnd = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    isPinnedToBottomRef.current = atEnd;
+    setShowScrollButton(!atEnd && !isPaused);
+  }, [isPaused]);
+
+  const unpinScroll = useCallback(() => {
+    isPinnedToBottomRef.current = false;
+    setShowScrollButton(true);
   }, []);
+
+  const scrollToLatest = useCallback(() => {
+    isPinnedToBottomRef.current = true;
+    virtualizerRef.current.scrollToEnd();
+    setShowScrollButton(false);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    if (isPaused) {
+      setIsPaused(false);
+      isPinnedToBottomRef.current = true;
+      requestAnimationFrame(() => {
+        virtualizerRef.current.scrollToEnd();
+        setShowScrollButton(false);
+      });
+      return;
+    }
+    setPausedAtCount(packets.length);
+    setIsPaused(true);
+    isPinnedToBottomRef.current = false;
+  }, [isPaused, packets.length]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
       if (!scrollRef.current) return;
-      isPinnedToBottomRef.current = virtualizerRef.current.isAtEnd(
-        VIRTUALIZER_SCROLL_END_THRESHOLD,
-      );
+      const atEnd = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
+      isPinnedToBottomRef.current = atEnd;
+      setShowScrollButton(!atEnd && !isPaused);
     });
-  }, []);
+  }, [isPaused]);
 
   // Follow latest when pinned; preserve anchor row when user scrolled up to inspect history.
   useEffect(() => {
+    if (isPaused || expandedContentKey) return;
     const prevLen = prevFilteredLengthRef.current;
     prevFilteredLengthRef.current = filtered.length;
     if (filtered.length <= prevLen) return;
@@ -572,10 +613,12 @@ export default function RawPacketLogPanel(props: Props) {
     }
 
     virtualizerRef.current.scrollToIndex(anchorIndexRef.current, { align: 'start' });
-  }, [filtered.length]);
+  }, [filtered.length, isPaused, expandedContentKey]);
 
   const handleClear = useCallback(() => {
     setExpandedContentKey(null);
+    setIsPaused(false);
+    setPausedAtCount(0);
     onClear();
   }, [onClear]);
 
@@ -607,6 +650,29 @@ export default function RawPacketLogPanel(props: Props) {
           className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
         />
         <span className="text-muted shrink-0 text-[10px]">{filtered.length}</span>
+        {isPaused && pendingWhilePaused > 0 ? (
+          <span className="shrink-0 text-[10px] text-amber-300/90">
+            {t('rawPacketLog.pausedPending', { count: pendingWhilePaused })}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={togglePause}
+          disabled={packets.length === 0}
+          aria-pressed={isPaused}
+          aria-label={isPaused ? t('rawPacketLog.resumeCapture') : t('rawPacketLog.pauseCapture')}
+          className={`shrink-0 rounded border px-2 py-1 text-xs ${
+            isPaused
+              ? 'border-amber-600/70 bg-amber-950/50 text-amber-200 hover:bg-amber-900/50'
+              : 'border-gray-600 bg-slate-800 text-gray-300 hover:bg-slate-700'
+          } disabled:opacity-40`}
+        >
+          {isPaused
+            ? pendingWhilePaused > 0
+              ? t('rawPacketLog.resumeCaptureWithCount', { count: pendingWhilePaused })
+              : t('rawPacketLog.resumeCapture')
+            : t('rawPacketLog.pauseCapture')}
+        </button>
         <button
           type="button"
           onClick={handleClear}
@@ -627,103 +693,119 @@ export default function RawPacketLogPanel(props: Props) {
           {t('rawPacketLog.noPacketsMatchFilter')}
         </div>
       ) : (
-        <div
-          ref={scrollRef}
-          onScroll={onScroll}
-          className="min-h-0 flex-1 overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
-          role="log"
-          aria-live="polite"
-          aria-relevant="additions"
-        >
-          <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
-            {virtualizer.getVirtualItems().map((vi) => {
-              const row = filtered[vi.index];
-              const rowContentKey = row ? rawPacketContentKey(row.ts, row.raw) : null;
-              const isExpanded = rowContentKey != null && rowContentKey === expandedContentKey;
-              const hexRaw =
-                variant === 'meshcore'
-                  ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
-                  : variant === 'reticulum'
-                    ? toHex((filtered as ReticulumRawPacketEntry[])[vi.index].raw)
-                    : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
-              const byteLen =
-                variant === 'meshcore'
-                  ? (filtered as RxPacketEntry[])[vi.index].raw.length
-                  : variant === 'reticulum'
-                    ? (filtered as ReticulumRawPacketEntry[])[vi.index].raw.length
-                    : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
+        <div className="relative min-h-0 flex-1">
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            onPointerDown={unpinScroll}
+            onWheel={unpinScroll}
+            className="h-full overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
+            role="log"
+            aria-live={isPaused ? 'off' : 'polite'}
+            aria-relevant="additions"
+          >
+            <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+              {virtualizer.getVirtualItems().map((vi) => {
+                const row = filtered[vi.index];
+                const rowContentKey = row ? rawPacketContentKey(row.ts, row.raw) : null;
+                const isExpanded = rowContentKey != null && rowContentKey === expandedContentKey;
+                const hexRaw =
+                  variant === 'meshcore'
+                    ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
+                    : variant === 'reticulum'
+                      ? toHex((filtered as ReticulumRawPacketEntry[])[vi.index].raw)
+                      : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
+                const byteLen =
+                  variant === 'meshcore'
+                    ? (filtered as RxPacketEntry[])[vi.index].raw.length
+                    : variant === 'reticulum'
+                      ? (filtered as ReticulumRawPacketEntry[])[vi.index].raw.length
+                      : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
-              const toggleExpand = () => {
-                if (!isExpanded && rowContentKey) {
-                  isPinnedToBottomRef.current = false;
-                }
-                setExpandedContentKey(isExpanded || !rowContentKey ? null : rowContentKey);
-              };
+                const toggleExpand = () => {
+                  if (!isExpanded && rowContentKey) {
+                    isPinnedToBottomRef.current = false;
+                  }
+                  setExpandedContentKey(isExpanded || !rowContentKey ? null : rowContentKey);
+                };
 
-              return (
-                <div
-                  key={vi.key}
-                  data-index={vi.index}
-                  ref={virtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full border-b border-gray-800"
-                  style={{ transform: `translateY(${vi.start}px)` }}
-                >
-                  <div className="flex w-full items-start">
-                    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
-                    <div
-                      className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
-                      onClick={toggleExpand}
-                    >
-                      {variant === 'meshcore' ? (
-                        <MeshcoreRow
-                          p={(filtered as RxPacketEntry[])[vi.index]}
-                          getNodeLabel={getNodeLabel}
-                          onNodeClick={onNodeClick}
-                        />
-                      ) : variant === 'reticulum' ? (
-                        <ReticulumRow
-                          p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
-                          getNodeLabel={getNodeLabel}
-                        />
-                      ) : (
-                        <MeshtasticRow
-                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
-                          getNodeLabel={getNodeLabel}
-                          onNodeClick={onNodeClick}
-                        />
-                      )}
+                return (
+                  <div
+                    key={vi.key}
+                    data-index={vi.index}
+                    ref={virtualizer.measureElement}
+                    className="absolute top-0 left-0 w-full border-b border-gray-800"
+                    style={{ transform: `translateY(${vi.start}px)` }}
+                  >
+                    <div className="flex w-full items-start">
+                      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
+                      <div
+                        className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
+                        onClick={toggleExpand}
+                      >
+                        {variant === 'meshcore' ? (
+                          <MeshcoreRow
+                            p={(filtered as RxPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                            onNodeClick={onNodeClick}
+                          />
+                        ) : variant === 'reticulum' ? (
+                          <ReticulumRow
+                            p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                          />
+                        ) : (
+                          <MeshtasticRow
+                            p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                            onNodeClick={onNodeClick}
+                          />
+                        )}
+                      </div>
+                      <span className="text-muted shrink-0 px-3 py-1.5 text-[10px]">
+                        {byteLen}B
+                      </span>
                     </div>
-                    <span className="text-muted shrink-0 px-3 py-1.5 text-[10px]">{byteLen}B</span>
+                    {isExpanded && (
+                      <div className="bg-slate-900/60 px-3 pb-2">
+                        {variant === 'meshcore' && (
+                          <MeshcoreExpandedDetails
+                            p={(filtered as RxPacketEntry[])[vi.index]}
+                            floodScopeHashtag={floodScopeHashtag}
+                          />
+                        )}
+                        {variant === 'meshtastic' && (
+                          <MeshtasticExpandedDetails
+                            p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                          />
+                        )}
+                        {variant === 'reticulum' && (
+                          <ReticulumExpandedDetails
+                            p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                          />
+                        )}
+                        <p className="text-muted mb-1 text-[10px]">
+                          {t('rawPacketLog.rawHexLabel', { bytes: byteLen })}
+                        </p>
+                        <p className="text-[10px] break-all text-gray-400">{hexRaw}</p>
+                      </div>
+                    )}
                   </div>
-                  {isExpanded && (
-                    <div className="bg-slate-900/60 px-3 pb-2">
-                      {variant === 'meshcore' && (
-                        <MeshcoreExpandedDetails
-                          p={(filtered as RxPacketEntry[])[vi.index]}
-                          floodScopeHashtag={floodScopeHashtag}
-                        />
-                      )}
-                      {variant === 'meshtastic' && (
-                        <MeshtasticExpandedDetails
-                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
-                        />
-                      )}
-                      {variant === 'reticulum' && (
-                        <ReticulumExpandedDetails
-                          p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
-                          getNodeLabel={getNodeLabel}
-                        />
-                      )}
-                      <p className="text-muted mb-1 text-[10px]">
-                        {t('rawPacketLog.rawHexLabel', { bytes: byteLen })}
-                      </p>
-                      <p className="text-[10px] break-all text-gray-400">{hexRaw}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+          {showScrollButton && !isPaused ? (
+            <button
+              type="button"
+              onClick={scrollToLatest}
+              className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+            >
+              <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
+              {t('rawPacketLog.jumpToLatest')}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

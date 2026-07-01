@@ -186,6 +186,123 @@ describe('RawPacketLogPanel scroll pinning', () => {
   });
 });
 
+describe('RawPacketLogPanel pause capture', () => {
+  it('freezes visible packet count while paused even when parent packets grow', () => {
+    const packets = [reticulumPacket(1_710_000_000_000), reticulumPacket(1_710_000_001_000)];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_002_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(lastVirtualizerOptions?.count).toBe(2);
+    expect(screen.getByText('1 new while paused')).toBeTruthy();
+  });
+
+  it('does not follow new packets while paused', () => {
+    mockIsAtEnd = true;
+    const packets = [reticulumPacket(1_710_000_000_000)];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_001_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('resumes live capture and scrolls to end', () => {
+    const packets = [reticulumPacket(1_710_000_000_000)];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_001_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    mockScrollToEnd.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
+
+    expect(lastVirtualizerOptions?.count).toBe(2);
+    expect(mockScrollToEnd).toHaveBeenCalled();
+  });
+
+  it('does not follow new packets while a row is expanded', () => {
+    mockIsAtEnd = true;
+    const packets = [reticulumPacket(1_710_000_000_000)];
+    const { container, rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const row = container.querySelector('[data-index="0"] .cursor-pointer');
+    expect(row).toBeTruthy();
+    fireEvent.click(row!);
+
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_001_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+  });
+});
+
 describe('RawPacketLogPanel duplicate row keys', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 

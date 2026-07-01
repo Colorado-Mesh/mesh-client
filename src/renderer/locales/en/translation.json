@@ -2517,6 +2517,11 @@
     "transportCodesAbsent": "No regional transport codes ({{route}} route — only TRANSPORT_FLOOD / TRANSPORT_DIRECT carry scope/return).",
     "transportCodesAbsentTooltip": "Plain FLOOD and DIRECT packets do not include regional transport scope/return fields in the MeshCore RF header.",
     "noPacketsMatchFilter": "No packets match the current filter.",
+    "pauseCapture": "Pause",
+    "resumeCapture": "Resume",
+    "resumeCaptureWithCount": "Resume (+{{count}})",
+    "pausedPending": "{{count}} new while paused",
+    "jumpToLatest": "Jump to latest",
     "rawHexLabel": "Raw hex ({{bytes}} bytes):",
     "reticulum": {
       "legendHint": "Expand a row for RNS header fields. RX = received on an interface; TX = outbound from this node.",

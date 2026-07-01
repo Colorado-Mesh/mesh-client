@@ -2527,7 +2527,12 @@
       "destination": "Destinasi",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Jeda",
+    "resumeCapture": "Lanjutkan",
+    "resumeCaptureWithCount": "Lanjutkan (+{{count}})",
+    "pausedPending": "{{count}} baru saat dijeda",
+    "jumpToLatest": "Langsung ke yang terbaru"
   },
   "remoteAdmin": {
     "errors": {

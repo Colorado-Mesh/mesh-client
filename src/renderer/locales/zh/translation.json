@@ -2527,7 +2527,12 @@
       "destination": "目标",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "暂停",
+    "resumeCapture": "继续",
+    "resumeCaptureWithCount": "恢复(+ {{count}})",
+    "pausedPending": "{{count}}暂停期间新增",
+    "jumpToLatest": "跳转到最新"
   },
   "remoteAdmin": {
     "errors": {

@@ -2527,7 +2527,12 @@
       "destination": "대상",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "일시 중지",
+    "resumeCapture": "돌아가기",
+    "resumeCaptureWithCount": "이력서 (+ {{count}})",
+    "pausedPending": "{{count}} 일시 중지된 새 기능",
+    "jumpToLatest": "최근 페이지로 이동"
   },
   "remoteAdmin": {
     "errors": {

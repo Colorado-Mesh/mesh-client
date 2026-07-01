@@ -2527,7 +2527,12 @@
       "destination": "Призначення",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Пауза",
+    "resumeCapture": "Відновити",
+    "resumeCaptureWithCount": "Резюме (+{{count}})",
+    "pausedPending": "{{count}} новий під час призупинення",
+    "jumpToLatest": "Перейти до останньої версії"
   },
   "remoteAdmin": {
     "errors": {

@@ -2527,7 +2527,12 @@
       "destination": "Адрес назначения",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Пауза",
+    "resumeCapture": "Возобновление",
+    "resumeCaptureWithCount": "Резюме (+{{count}})",
+    "pausedPending": "{{count}} новый во время приостановки",
+    "jumpToLatest": "Перейти к последним"
   },
   "remoteAdmin": {
     "errors": {

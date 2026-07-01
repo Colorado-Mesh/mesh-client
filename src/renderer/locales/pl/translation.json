@@ -2527,7 +2527,12 @@
       "destination": "Cel",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Wstrzymaj",
+    "resumeCapture": "Resume",
+    "resumeCaptureWithCount": "Wznów (+{{count}})",
+    "pausedPending": "{{count}} nowe podczas pauzy",
+    "jumpToLatest": "Przejdź do najnowszych"
   },
   "remoteAdmin": {
     "errors": {

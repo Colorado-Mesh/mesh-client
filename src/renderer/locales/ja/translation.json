@@ -2527,7 +2527,12 @@
       "destination": "移動先",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "一時停止",
+    "resumeCapture": "レジュメ",
+    "resumeCaptureWithCount": "再開(+ {{count}})",
+    "pausedPending": "一時停止中の{{count}} NEW",
+    "jumpToLatest": "最新情報にジャンプ"
   },
   "remoteAdmin": {
     "errors": {

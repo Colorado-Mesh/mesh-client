@@ -2527,7 +2527,12 @@
       "destination": "Destinazione",
       "rx": "RX",
       "tx": "TX"
-    }
+    },
+    "pauseCapture": "Pausa",
+    "resumeCapture": "Riprendi",
+    "resumeCaptureWithCount": "Riprendi (+{{count}})",
+    "pausedPending": "{{count}} New IN pausa",
+    "jumpToLatest": "Vai al più recente"
   },
   "remoteAdmin": {
     "errors": {
