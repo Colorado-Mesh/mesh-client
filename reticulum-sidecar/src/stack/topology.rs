@@ -202,6 +202,7 @@ mod tests {
             &[],
             &[NomadNodeRow {
                 destination_hash: "abc".into(),
+                identity_hash: None,
                 display_name: Some("Forum".into()),
                 last_seen: None,
                 favorited: false,

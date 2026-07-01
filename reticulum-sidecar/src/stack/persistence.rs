@@ -309,6 +309,7 @@ impl PersistedState {
     pub fn upsert_nomad_node(
         &mut self,
         hash: &str,
+        identity_hash: Option<String>,
         display_name: Option<String>,
         hops: Option<u8>,
     ) {
@@ -319,6 +320,9 @@ impl PersistedState {
             .iter_mut()
             .find(|n| n.destination_hash.to_lowercase() == key)
         {
+            if identity_hash.is_some() {
+                node.identity_hash = identity_hash;
+            }
             if display_name.is_some() {
                 node.display_name = display_name;
             }
@@ -331,6 +335,7 @@ impl PersistedState {
         }
         self.nomad_nodes.push(NomadNodeRow {
             destination_hash: hash.to_string(),
+            identity_hash,
             display_name,
             last_seen: Some(now),
             favorited: false,
@@ -351,6 +356,7 @@ impl PersistedState {
         }
         self.nomad_nodes.push(NomadNodeRow {
             destination_hash: hash.to_string(),
+            identity_hash: None,
             display_name: None,
             last_seen: Some(Self::now_secs()),
             favorited,

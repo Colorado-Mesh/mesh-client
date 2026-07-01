@@ -26,9 +26,9 @@ use tokio::sync::{RwLock, broadcast};
 use super::StackHandle;
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_timeouts;
+use super::packet_log::PacketLogBuffer;
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
-use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
 use super::types::{InterfaceRow, LxmfResourceRequest, LxmfSendRequest, PeerRow};
 use super::via::{
     classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via,
@@ -39,6 +39,9 @@ use lxmf_outbound::LxmfOutboundDriver;
 /// Cap blocking transport control queries so HTTP handlers return cached state
 /// before the Electron IPC proxy GET timeout (10s default).
 const TRANSPORT_QUERY_TIMEOUT: Duration = Duration::from_secs(8);
+
+/// Aspect Nomad Network nodes announce and serve page/file requests under.
+const NOMAD_NODE_ASPECT: &str = "nomadnetwork.node";
 
 pub struct LiveBridge {
     config_dir: PathBuf,
@@ -61,7 +64,12 @@ impl LiveBridge {
         config_dir: PathBuf,
         storage_dir: PathBuf,
         event_tx: broadcast::Sender<String>,
-        packet_log: Arc<PacketLogBuffer>,
+        // Wire packet capture (Stats/Sniffer panel) is populated from RF/BLE
+        // transports on the Meshtastic/MeshCore side; rsReticulum does not
+        // currently expose a packet tap API (no `register_packet_tap` /
+        // `PacketTapEvent` in the upstream crate), so this buffer stays
+        // empty for the live Reticulum stack until upstream adds one.
+        _packet_log: Arc<PacketLogBuffer>,
         persisted: &mut PersistedState,
     ) -> Result<Self, String> {
         let config_str = config_dir
@@ -79,24 +87,6 @@ impl LiveBridge {
                 lxmf_core::discovery_stamper::LxmfDiscoveryStamper::default(),
             ))
             .await;
-
-        let (tap_tx, mut tap_rx) = broadcast::channel(256);
-        handle.register_packet_tap(tap_tx).await;
-        let packet_log_tap = packet_log.clone();
-        let event_tx_tap = event_tx.clone();
-        tokio::spawn(async move {
-            loop {
-                match tap_rx.recv().await {
-                    Ok(evt) => {
-                        let row = wire_packet_from_tap(&evt);
-                        packet_log_tap.push(row.clone());
-                        emit_wire_packet_event(&event_tx_tap, &row);
-                    }
-                    Err(broadcast::error::RecvError::Lagged(_)) => {}
-                    Err(broadcast::error::RecvError::Closed) => break,
-                }
-            }
-        });
 
         let identity_path = config_dir.join("identity");
         let identity = if identity_path.exists() {
@@ -203,13 +193,21 @@ impl LiveBridge {
         Ok(bridge)
     }
 
+    /// `hash_hex` is the announced Nomad node destination hash (used for the
+    /// path-table hops lookup); `identity_hash_hex` is the node's identity
+    /// hash recovered from its announce (`AnnounceHandlerEvent::identity_hash`),
+    /// required by `LinkClient::query` to rebuild the `nomadnetwork.node`
+    /// destination on our side. Falls back to `hash_hex` when the identity
+    /// hash hasn't been observed yet (e.g. node added without an announce);
+    /// the query will simply fail to resolve a path in that case.
     pub async fn fetch_nomad_file(
         &self,
         hash_hex: &str,
+        identity_hash_hex: Option<&str>,
         path: &str,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
-        let dest = match parse_hash16(hash_hex) {
+        let remote_hash = match parse_hash16(identity_hash_hex.unwrap_or(hash_hex)) {
             Ok(h) => h,
             Err(e) => {
                 return serde_json::json!({ "ok": false, "error": e });
@@ -219,8 +217,9 @@ impl LiveBridge {
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         match client
-            .query_destination(
-                dest,
+            .query(
+                remote_hash,
+                NOMAD_NODE_ASPECT,
                 path,
                 Vec::new(),
                 hops,
@@ -244,13 +243,15 @@ impl LiveBridge {
         }
     }
 
+    /// See `fetch_nomad_file` for `hash_hex` / `identity_hash_hex` semantics.
     pub async fn fetch_nomad_page(
         &self,
         hash_hex: &str,
+        identity_hash_hex: Option<&str>,
         path: &str,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
-        let dest = match parse_hash16(hash_hex) {
+        let remote_hash = match parse_hash16(identity_hash_hex.unwrap_or(hash_hex)) {
             Ok(h) => h,
             Err(e) => {
                 return serde_json::json!({ "ok": false, "error": e });
@@ -260,8 +261,9 @@ impl LiveBridge {
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         match client
-            .query_destination(
-                dest,
+            .query(
+                remote_hash,
+                NOMAD_NODE_ASPECT,
                 path,
                 Vec::new(),
                 hops,
@@ -328,7 +330,6 @@ impl LiveBridge {
         config_dir: PathBuf,
         storage_dir: PathBuf,
     ) {
-        const NOMAD_NODE_ASPECT: &str = "nomadnetwork.node";
         let transport_tx = self.handle.transport_tx.clone();
         let event_tx = self.event_tx.clone();
         tokio::spawn(async move {
@@ -349,11 +350,17 @@ impl LiveBridge {
 
             while let Some(evt) = callback_rx.recv().await {
                 let hash_hex = hex::encode(evt.destination_hash);
+                let identity_hash_hex = evt.identity_hash.map(hex::encode);
                 let display_name = parse_nomad_display_name(evt.app_data.as_deref());
                 let hops = Some(evt.hops);
                 let payload = {
                     let mut state = inner.write().await;
-                    state.upsert_nomad_node(&hash_hex, display_name.clone(), hops);
+                    state.upsert_nomad_node(
+                        &hash_hex,
+                        identity_hash_hex.clone(),
+                        display_name.clone(),
+                        hops,
+                    );
                     if let Err(e) = state.save(&config_dir, &storage_dir) {
                         tracing::warn!("nomad node persist failed: {e}");
                     }

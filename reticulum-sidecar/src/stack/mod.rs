@@ -543,11 +543,26 @@ impl StackHandle {
         Ok(())
     }
 
+    #[cfg(feature = "rns-stack")]
+    async fn nomad_identity_hash_for(&self, hash: &str) -> Option<String> {
+        let key = hash.to_lowercase();
+        self.inner
+            .read()
+            .await
+            .nomad_nodes
+            .iter()
+            .find(|n| n.destination_hash.to_lowercase() == key)
+            .and_then(|n| n.identity_hash.clone())
+    }
+
     pub async fn nomad_page(&self, hash: &str, path: &str) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
-            return live.fetch_nomad_page(hash, path, &interfaces).await;
+            let identity_hash = self.nomad_identity_hash_for(hash).await;
+            return live
+                .fetch_nomad_page(hash, identity_hash.as_deref(), path, &interfaces)
+                .await;
         }
         let _ = (hash, path);
         serde_json::json!({
@@ -560,7 +575,10 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
-            return live.fetch_nomad_file(hash, path, &interfaces).await;
+            let identity_hash = self.nomad_identity_hash_for(hash).await;
+            return live
+                .fetch_nomad_file(hash, identity_hash.as_deref(), path, &interfaces)
+                .await;
         }
         let _ = (hash, path);
         serde_json::json!({
@@ -940,8 +958,8 @@ mod tests {
     fn upsert_nomad_node_updates_existing_display_name() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let mut state = PersistedState::load(&config_dir, &storage_dir);
-        state.upsert_nomad_node("abc123", Some("Forum".into()), Some(2));
-        state.upsert_nomad_node("ABC123", Some("Updated Forum".into()), Some(3));
+        state.upsert_nomad_node("abc123", None, Some("Forum".into()), Some(2));
+        state.upsert_nomad_node("ABC123", None, Some("Updated Forum".into()), Some(3));
         assert_eq!(state.nomad_nodes.len(), 1);
         assert_eq!(state.nomad_nodes[0].display_name.as_deref(), Some("Updated Forum"));
         assert_eq!(state.nomad_nodes[0].hops, Some(3));

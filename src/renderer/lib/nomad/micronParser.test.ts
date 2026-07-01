@@ -19,7 +19,7 @@ describe('renderNomadMicronPage', () => {
     ].join('\n');
 
     const html = renderNomadMicronPage(markup);
-    const plainText = html.replace(/<[^>]*>/g, '');
+    const plainText = new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '';
 
     expect(plainText).toContain('Hello Nomad');
     expect(plainText).toContain('olored text');

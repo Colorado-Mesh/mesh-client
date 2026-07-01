@@ -83,6 +83,11 @@ pub struct PropagationRow {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NomadNodeRow {
     pub destination_hash: String,
+    /// Identity hash recovered from the node's `nomadnetwork.node` announce
+    /// (`AnnounceHandlerEvent::identity_hash`); required to rebuild the
+    /// destination for page/file link queries via `LinkClient::query`.
+    #[serde(default)]
+    pub identity_hash: Option<String>,
     pub display_name: Option<String>,
     pub last_seen: Option<u64>,
     #[serde(default)]
