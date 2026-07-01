@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildReticulumTopologyGraph,
   buildReticulumTopologyLayout,
+  buildReticulumViaHashEdges,
   computeReticulumNodeDepths,
   countRelayTargets,
   filterReticulumVisibleNodeIds,
@@ -102,6 +103,28 @@ describe('buildReticulumTopologyLayout', () => {
     expect(shouldUseReticulumStarFallbackEdges([{ destination_hash: 'x', hops: 1 }], [])).toBe(
       true,
     );
+  });
+
+  it('builds via-hash edges for multi-hop peers when API omits edge list', () => {
+    const hub = 'hub11111111111111';
+    const leaf = 'leaf22222222222222';
+    const edges = buildReticulumViaHashEdges([
+      { destination_hash: hub, hops: 1 },
+      { destination_hash: leaf, hops: 2, via_hash: hub },
+    ]);
+    expect(edges).toContainEqual({ source: 'self', target: hub });
+    expect(edges).toContainEqual({ source: hub, target: leaf });
+
+    const graph = buildReticulumTopologyGraph(
+      [
+        { destination_hash: hub, hops: 1, display_name: 'Hub Node' },
+        { destination_hash: leaf, hops: 2, display_name: 'Leaf Node' },
+      ],
+      edges,
+      { selfLabel: 'You' },
+    );
+    expect(graph.nodes.some((n) => n.id === leaf)).toBe(true);
+    expect(graph.edges.some((e) => e.source === hub && e.target === leaf)).toBe(true);
   });
 
   it('seeds hub closer to center than leaf', () => {

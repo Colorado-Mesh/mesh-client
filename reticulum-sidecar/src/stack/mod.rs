@@ -307,9 +307,21 @@ impl StackHandle {
         if let Some(live) = &self.live {
             let fetched = live.fetch_peers().await;
             let mut inner = self.inner.write().await;
-            return merge_live_peer_fetch(&mut inner.peers, fetched);
+            let mut peers = merge_live_peer_fetch(&mut inner.peers, fetched);
+            let name_by_hash = topology::build_topology_name_map(
+                &inner.peers,
+                &inner.contacts,
+                &inner.nomad_nodes,
+            );
+            topology::overlay_peer_display_names(&mut peers, &name_by_hash);
+            return peers;
         }
-        self.inner.read().await.peers.clone()
+        let inner = self.inner.read().await;
+        let mut peers = inner.peers.clone();
+        let name_by_hash =
+            topology::build_topology_name_map(&inner.peers, &inner.contacts, &inner.nomad_nodes);
+        topology::overlay_peer_display_names(&mut peers, &name_by_hash);
+        peers
     }
 
     pub async fn request_peer_path(&self, hash: &str) -> Result<(), String> {
@@ -427,29 +439,11 @@ impl StackHandle {
         let peers = self.list_peers().await;
         let (mut nodes, edges) = topology::build_topology(&peers);
         let inner = self.inner.read().await;
-        let mut name_by_hash: std::collections::HashMap<String, String> = inner
-            .peers
-            .iter()
-            .filter_map(|p| {
-                p.display_name
-                    .as_ref()
-                    .filter(|n| !n.is_empty())
-                    .map(|n| (p.destination_hash.clone(), n.clone()))
-            })
-            .collect();
-        for contact in &inner.contacts {
-            if contact
-                .display_name
-                .as_ref()
-                .is_some_and(|n| !n.is_empty())
-                && !name_by_hash.contains_key(&contact.destination_hash)
-            {
-                name_by_hash.insert(
-                    contact.destination_hash.clone(),
-                    contact.display_name.clone().unwrap_or_default(),
-                );
-            }
-        }
+        let name_by_hash = topology::build_topology_name_map(
+            &inner.peers,
+            &inner.contacts,
+            &inner.nomad_nodes,
+        );
         topology::merge_topology_display_names(&mut nodes, &name_by_hash);
         serde_json::json!({ "nodes": nodes, "edges": edges })
     }

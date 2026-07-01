@@ -131,6 +131,39 @@ export function buildReticulumStarFallbackEdges(
   return peers.map((peer) => ({ source: SELF_ID, target: peer.destination_hash }));
 }
 
+/** Build edges from path-table `via_hash` when the API returns nodes but no edge list. */
+export function buildReticulumViaHashEdges(
+  peers: readonly ReticulumTopologyNodeInput[],
+): ReticulumTopologyEdgeInput[] {
+  const edges: ReticulumTopologyEdgeInput[] = [];
+  const edgeKeys = new Set<string>();
+
+  for (const peer of peers) {
+    if (!peer.destination_hash) continue;
+    const target = peer.destination_hash;
+    const via = peer.via_hash?.trim();
+    const source = via && via.length > 0 ? via : SELF_ID;
+    const key = `${source}\0${target}`;
+    if (edgeKeys.has(key)) continue;
+    edgeKeys.add(key);
+    edges.push({ source, target });
+  }
+
+  const hasIncoming = new Set(edges.map((edge) => edge.target));
+  const viaSources = new Set(
+    edges.filter((edge) => edge.source !== SELF_ID).map((edge) => edge.source),
+  );
+  for (const via of viaSources) {
+    if (hasIncoming.has(via)) continue;
+    const key = `${SELF_ID}\0${via}`;
+    if (edgeKeys.has(key)) continue;
+    edgeKeys.add(key);
+    edges.push({ source: SELF_ID, target: via });
+  }
+
+  return edges;
+}
+
 function classifyForceEdge(edge: ReticulumTopologyEdgeInput): ForceEdge['kind'] {
   if (edge.source === SELF_ID) return 'direct';
   return 'relay';

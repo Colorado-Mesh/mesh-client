@@ -43,3 +43,19 @@ export function meshcoreRawPacketSenderColumnText(
   if (label === bare) return idHex;
   return `${label} · ${idHex}`;
 }
+
+/** Reticulum sniffer destination column: human name when known, else hash prefix. */
+export function reticulumDestinationColumnText(
+  destinationHash: string | null | undefined,
+  getNodeLabel: (id: number) => string,
+  hashToNodeId: (hash: string) => number,
+): string | null {
+  const hash = destinationHash?.replace(/[^0-9a-f]/gi, '');
+  if (!hash) return null;
+  const nodeId = hashToNodeId(hash);
+  const label = getNodeLabel(nodeId);
+  const hashPrefix = hash.slice(0, 8).toUpperCase();
+  const bare = nodeId.toString(16).toUpperCase();
+  if (!label || label === bare || label.toUpperCase() === hashPrefix) return hashPrefix;
+  return `${label} · ${hashPrefix}`;
+}

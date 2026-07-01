@@ -22,6 +22,7 @@ import type { ReticulumContact, ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 import type { MeshNode } from '../lib/types';
+import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import {
   refreshReticulumPeersFromSidecar,
   resolveReticulumPeerLabel,
@@ -161,7 +162,10 @@ export default function ReticulumPeerListPanel({
   const resolvePeerLabel = useCallback(
     (peer: ReticulumPeer) => {
       const nodeId = reticulumHashToNodeId(peer.destination_hash);
-      return resolveReticulumPeerLabel(peer, contactNodes?.get(nodeId)?.long_name);
+      const nomadName = useNomadNetworkStore
+        .getState()
+        .nodes.get(peer.destination_hash.toLowerCase())?.display_name;
+      return resolveReticulumPeerLabel(peer, contactNodes?.get(nodeId)?.long_name, nomadName);
     },
     [contactNodes],
   );

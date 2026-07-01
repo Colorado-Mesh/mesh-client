@@ -11,6 +11,7 @@ import {
 import {
   buildReticulumStarFallbackEdges,
   buildReticulumTopologyGraph,
+  buildReticulumViaHashEdges,
   type ReticulumTopologyGraph,
   type ReticulumTopologyGraphNode,
   shouldUseReticulumStarFallbackEdges,
@@ -18,11 +19,33 @@ import {
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumTopologyEdge } from '@/shared/reticulum-types';
 
+import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
+import { reticulumPeerDisplayName, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+
 interface TopologyNode {
   destination_hash: string;
   display_name?: string | null;
   hops?: number | null;
   via_hash?: string | null;
+}
+
+function enrichTopologyPeerNames(nodes: TopologyNode[]): TopologyNode[] {
+  const peers = useReticulumPeerStore.getState().peers;
+  const contacts = useReticulumPeerStore.getState().contacts;
+  const nomadNodes = useNomadNetworkStore.getState().nodes;
+
+  return nodes.map((node) => {
+    if (node.display_name?.trim()) return node;
+    const hash = node.destination_hash.toLowerCase();
+    const fromPeer = peers.get(hash) ?? contacts.get(hash);
+    const fromNomad = nomadNodes.get(hash);
+    const display_name =
+      (fromPeer ? reticulumPeerDisplayName(fromPeer) : null) ||
+      fromNomad?.display_name?.trim() ||
+      null;
+    if (!display_name || display_name === hash.slice(0, 12)) return node;
+    return { ...node, display_name };
+  });
 }
 
 interface RenderNode extends ReticulumTopologyGraphNode {
@@ -124,7 +147,7 @@ export default function ReticulumTopologyPanel() {
         nodes?: TopologyNode[];
         edges?: ReticulumTopologyEdge[];
       };
-      const peerNodes = body.nodes ?? [];
+      const peerNodes = enrichTopologyPeerNames(body.nodes ?? []);
       const seenHashes = new Set<string>();
       const uniquePeers = peerNodes.filter((peer) => {
         if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
@@ -136,7 +159,7 @@ export default function ReticulumTopologyPanel() {
           ? body.edges
           : shouldUseReticulumStarFallbackEdges(uniquePeers, body.edges ?? [])
             ? buildReticulumStarFallbackEdges(uniquePeers)
-            : [];
+            : buildReticulumViaHashEdges(uniquePeers);
 
       const width = svgRef.current?.clientWidth ?? 800;
       const height = svgRef.current?.clientHeight ?? 600;

@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use super::types::{PeerRow, TopologyEdge};
+use super::types::{ContactRow, NomadNodeRow, PeerRow, TopologyEdge};
 
 const SELF_ID: &str = "self";
 
@@ -103,6 +103,40 @@ pub fn merge_topology_display_names(nodes: &mut [PeerRow], name_by_hash: &HashMa
     }
 }
 
+/// Collect human-readable labels from peers, LXMF contacts, and Nomad announces.
+pub fn build_topology_name_map(
+    peers: &[PeerRow],
+    contacts: &[ContactRow],
+    nomad_nodes: &[NomadNodeRow],
+) -> HashMap<String, String> {
+    let mut name_by_hash = HashMap::new();
+    for peer in peers {
+        if let Some(name) = peer.display_name.as_ref().filter(|n| !n.is_empty()) {
+            name_by_hash.insert(peer.destination_hash.clone(), name.clone());
+        }
+    }
+    for contact in contacts {
+        if let Some(name) = contact.display_name.as_ref().filter(|n| !n.is_empty()) {
+            name_by_hash
+                .entry(contact.destination_hash.clone())
+                .or_insert_with(|| name.clone());
+        }
+    }
+    for node in nomad_nodes {
+        if let Some(name) = node.display_name.as_ref().filter(|n| !n.is_empty()) {
+            name_by_hash
+                .entry(node.destination_hash.clone())
+                .or_insert_with(|| name.clone());
+        }
+    }
+    name_by_hash
+}
+
+/// Overlay known display names onto path-table peer rows.
+pub fn overlay_peer_display_names(peers: &mut [PeerRow], name_by_hash: &HashMap<String, String>) {
+    merge_topology_display_names(peers, name_by_hash);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -159,6 +193,23 @@ mod tests {
         let (_, edges) = build_topology(&[peer(leaf, 3, Some(relay))]);
         assert!(edges.iter().any(|e| e.source == "self" && e.target == relay));
         assert!(edges.iter().any(|e| e.source == relay && e.target == leaf));
+    }
+
+    #[test]
+    fn build_topology_name_map_includes_nomad_nodes() {
+        let names = build_topology_name_map(
+            &[],
+            &[],
+            &[NomadNodeRow {
+                destination_hash: "abc".into(),
+                display_name: Some("Forum".into()),
+                last_seen: None,
+                favorited: false,
+                hops: Some(2),
+                status: None,
+            }],
+        );
+        assert_eq!(names.get("abc").map(String::as_str), Some("Forum"));
     }
 
     #[test]

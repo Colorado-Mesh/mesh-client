@@ -60,12 +60,15 @@ function peerDisplayName(peer: ReticulumPeer): string {
 export function resolveReticulumPeerLabel(
   peer: ReticulumPeer,
   nodeLongName?: string | null,
+  nomadDisplayName?: string | null,
 ): string {
   const label = peerDisplayName(peer);
   const hashSlice = peer.destination_hash.slice(0, 12);
   if (label !== hashSlice) return label;
   const wire = nodeLongName?.trim();
   if (wire && wire !== hashSlice) return wire;
+  const nomad = nomadDisplayName?.trim();
+  if (nomad && nomad !== hashSlice) return nomad;
   return label;
 }
 
@@ -380,10 +383,10 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
 
 export const RETICULUM_PEER_REFRESH_MS = 30_000;
 
-/** Fetch sidecar peers/contacts, overlay SQLite meta, update store; returns contacts for nodeStore sync. */
+/** Fetch sidecar peers/contacts, overlay SQLite + nomad announce names, update store. */
 export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumContact[]> {
   try {
-    const [contactsBody, peersBody, dbRows] = await Promise.all([
+    const [contactsBody, peersBody, dbRows, nomadBody] = await Promise.all([
       window.electronAPI.reticulum.proxyGet('/api/v1/contacts') as Promise<{
         contacts?: ReticulumContactWireRow[];
       }>,
@@ -391,7 +394,17 @@ export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumConta
         peers?: ReticulumPeerWireRow[];
       }>,
       window.electronAPI.db.getReticulumDestinations() as Promise<ReticulumDestinationDbRow[]>,
+      window.electronAPI.reticulum.proxyGet('/api/v1/nomadnetwork/nodes') as Promise<{
+        nodes?: { destination_hash: string; display_name?: string | null }[];
+      }>,
     ]);
+
+    const nomadNameByHash = new Map<string, string>();
+    for (const node of nomadBody.nodes ?? []) {
+      const name = node.display_name?.trim();
+      if (!name) continue;
+      nomadNameByHash.set(normalizeHash(node.destination_hash), name);
+    }
 
     const hopsByHash = new Map<string, number>();
     const ifaceByHash = new Map<string, string>();
@@ -401,7 +414,13 @@ export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumConta
       if (peer.interface) ifaceByHash.set(hash, peer.interface);
     }
 
-    const wirePeers = (peersBody.peers ?? []).map(wirePeerToPeer);
+    const wirePeers = (peersBody.peers ?? []).map((row) => {
+      const peer = wirePeerToPeer(row);
+      const hash = normalizeHash(peer.destination_hash);
+      if (peer.display_name?.trim()) return peer;
+      const nomadName = nomadNameByHash.get(hash);
+      return nomadName ? { ...peer, display_name: nomadName } : peer;
+    });
     const wireContacts = (contactsBody.contacts ?? []).map((row) =>
       wireContactToContact(row, hopsByHash, ifaceByHash),
     );
