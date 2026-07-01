@@ -108,17 +108,10 @@
     "colorScheme": "配色方案",
     "dangerZoneSection": "危险区",
     "destructiveActions": "破坏性行为",
-    "dangerZoneDesc": "这些操作是永久性的且无法撤消。仔细确认每一步。",
-    "diagnosticsSection": "诊断",
     "pruneDistantNodesTitle": "修剪远程节点",
-    "pruneDistantNodesDesc": "超出地图和节点过滤中的距离阈值。需要有效的 GPS 位置。",
     "pruneOfflineNodesTitle": "修剪离线节点",
-    "pruneOfflineNodesDays": "超过 {{days}} 天没有听到任何消息。已收藏的节点被排除在外。",
-    "clearAllNodesCount": "清除所有节点 ({{count}})",
     "deleteContactsNoPubkeysTitle": "删除没有公钥的联系人",
-    "deleteContactsNoPubkeysDesc": "排除从消息创建的聊天存根节点。",
     "messagesSection": "留言",
-    "channelLabel": "渠道：",
     "allChannelsOption": "所有频道",
     "clearMessagesCount": "清除消息 ({{count}})",
     "coordFormatMgrs": "MGRS",
@@ -160,7 +153,6 @@
     "removeUnnamedNodesLabel": "启动时删除未命名节点",
     "capTotalNodesLabel": "总节点上限，保持最新",
     "autoPrunePositionHistoryLabel": "启动时自动修剪位置历史记录，早于",
-    "removeContactsNeverAdvertisedLabel": "删除从未在启动时发布广告的联系人",
     "autoPruneUnheardContactsLabel": "启动时自动修剪未听到的联系人，早于",
     "capTotalContactsLabel": "限制联系人总数，保留最近查看的联系人",
     "limitMessagesLoadedLabel": "已加载限制消息",
@@ -229,13 +221,11 @@
   "channelUtilization": {
     "title": "渠道利用率",
     "noData": "尚无可用的频道利用率数据",
-    "meshcoreNote": "MeshCore ：仅显示连接的节点",
     "tooltipLabel": "渠道利用率"
   },
   "chatPanel": {
     "channels": "槽钢",
     "searchMessages": "搜索消息",
-    "searchAllChannels": "搜索所有频道",
     "closeDmTab": "关闭DM选项卡",
     "searchMessagesPlaceholder": "搜索消息",
     "searchResults_one": "{{count}}结果",
@@ -265,19 +255,14 @@
     "filterBySender": "按发件人筛选",
     "clearSenderFilter": "清除过滤器",
     "filteringBySender": "按{{name}}筛选",
-    "muteNotifications": "免打扰",
-    "unmuteNotifications": "取消静音通知",
     "jumpToDate": "跳转到日期",
-    "noMessagesOnDate": "此日期没有消息",
     "exportChat": "导出聊天",
-    "exportChatSuccess": "聊天已导出",
     "exportChatFailed": "导出失败",
     "dmNodeLastHeard": "最后一次听到{{time}}",
     "dmNodeBattery": "{{pct}}%电量",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}}跳",
     "dmNodeHopsPlural": "{{count}}跳",
-    "quickDm": "直接消息{{name}}",
     "muteConversation": "将此对话设为静音",
     "unmuteConversation": "取消此对话的静音",
     "starMessage": "星级消息",
@@ -329,9 +314,6 @@
     "waitingMessagesSyncNow": "立即同步",
     "jumpToUnread": "跳至未读",
     "jumpToLatest": "跳到最新",
-    "meshcoreReactionPickerLabel": "选择网格反应",
-    "meshcoreReactionEmojiOption": "与{{emoji}}反应",
-    "meshcoreReactionNotInteroperable": "MeshCore网格反应不支持该表情符号。",
     "reactionFailed": "反应失败",
     "meshcoreGifButton": "插入Giphy GIF",
     "meshcoreGifButtonHint": "以 MeshCore Open g: wire 格式发送 Giphy GIF",
@@ -373,7 +355,6 @@
   },
   "chatPayload": {
     "mention": "提及{{label}}",
-    "emptyMention": "空提及",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "在Giphy上打开"
   },
@@ -383,36 +364,20 @@
     "save": "保存",
     "yes": "是",
     "no": "否",
-    "apply": "确认",
-    "ok": "确认",
-    "reset": "重置",
     "clear": "清楚",
-    "export": "导出",
-    "import": "进口",
     "refresh": "重新整理",
-    "delete": "删除",
     "edit": "修改",
-    "add": "新增",
-    "remove": "移除",
-    "send": "傳送",
-    "search": "搜索",
     "loading": "正在載入",
     "error": "错误",
-    "success": "成功",
     "warning": "警告",
-    "enabled": "已启用",
     "disabled": "已禁用",
     "unknown": "未知",
-    "none": "无",
     "never": "从未",
-    "always": "始终",
     "dismiss": "忽略",
     "channel": "通道",
     "nodes": "节点",
     "contacts": "联系人",
     "messages": "消息",
-    "connect": "连接",
-    "disconnect": "断开",
     "discord": "Discord",
     "github": "GitHub",
     "website": "网站",
@@ -448,7 +413,6 @@
     "requiresLocalRadio": "连接本地Meshtastic收音机以使用远程管理。",
     "sessionActive": "管理会话处于活动状态",
     "sessionStale": "管理会话已过期—在更改设置之前刷新",
-    "sessionNone": "未建立管理会话—正在加载或连接本地无线电",
     "establishingSession": "正在建立管理会话…"
   },
   "connectionBanner": {
@@ -472,8 +436,6 @@
     "selectBluetoothDevice": "选择蓝牙设备",
     "devicesFound": "找到{{count}}",
     "scanningDevices": "正在扫描 {{protocol}} 设备...",
-    "adaDfuHint": "在 macOS 上，如果设备显示为“AdaDFU”，请先在“系统设置”→“蓝牙”中将其配对以查看其 Meshtastic 名称。",
-    "meshcorePairingNote": "连接之前，请在系统蓝牙设置中将您的 MeshCore 设备配对。如果出现提示，请使用 PIN 码 - 如果您的系统不要求输入 PIN，连接将会失败，您可能需要删除配对并使用 PIN 重新配对。",
     "selectSerialPort": "选择串口",
     "noSerialPorts": "未找到串行端口。确保您的设备已插入。",
     "enterPin": "输入您设备上显示的 PIN：",
@@ -560,7 +522,6 @@
     "stagePairingFailed": "配对失败。请重新配对您的设备。",
     "stageCheckingPairing": "正在检查蓝牙配对...",
     "stageEnterPinLinux": "输入设备上显示的 PIN（首先与 Linux 配对）",
-    "stageScanningLast": "正在扫描最后一个蓝牙设备...",
     "stageReconnecting": "正在重新连接到最后一个蓝牙设备...",
     "pinPlaceholder": "别针",
     "humanize": {
@@ -627,15 +588,10 @@
     "reticulumStackTitle": "Reticulum 堆栈",
     "reticulumStackHint": "启动本地 Reticulum/LXMF 侧车进程（TCP 和 Auto 接口）。",
     "reticulumStartStack": "启动堆栈",
-    "reticulumRestartStack": "重启堆栈",
-    "reticulumNetworkTitle": "网络接口",
     "reticulumNetworkEmpty": "尚未报告任何接口。",
-    "reticulumNetworkUnknown": "接口",
-    "reticulumNetworkDisabled": "已禁用",
     "reticulumSidecarMissing": "Reticulum 侧车未构建。请在 mesh-client 仓库中运行 `pnpm run reticulum:sidecar:build`（需要 Rust）。",
     "reticulumSidecarCargoMissing": "未找到 Rust 工具链（cargo）。请从 https://rustup.rs 安装，然后运行 `pnpm run reticulum:sidecar:build`。",
     "reticulumSidecarStartFailed": "无法启动 Reticulum 堆栈：{{message}}",
-    "disconnect": "断开",
     "reticulumStopStack": "停止堆栈",
     "reticulumAutostart": "打开连接时自动启动堆栈",
     "reticulumStackRunning": "堆栈运行",
@@ -654,7 +610,6 @@
       "failed": "身份设置失败",
       "export": "导出备份",
       "exportPassphrase": "备份密码",
-      "exportPassphraseHint": "加密导出的备份JSON。将密码短语与备份文件分开存储。",
       "exportPassphraseRequired": "在导出前输入备用密码。"
     },
     "reticulumInterfaces": {
@@ -688,7 +643,6 @@
       "localOfflineRowStale": "未找到串行端口{{port}} — USB替换器可能已更改路径。"
     },
     "reticulumPeers": {
-      "name": "节点",
       "hops": "Hops",
       "actions": "动作",
       "path": "路径",
@@ -727,8 +681,6 @@
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",
     "dismissRow": "忽略",
     "searchAnomalies": "搜索异常...",
-    "meshcoreInterferenceHeading": "MeshCore 节点在频率 ({{count}}) 上听到",
-    "meshcoreInterferenceDescription": "这些条目标识了该无线电听到的同频 MeshCore 干扰。它们可能会导致利用率和重试问题，但它们本身并不是 Meshtastic 路由故障诊断。",
     "otherCrossProtocolHeading": "其他同频/跨栈流量 ({{count}})",
     "removeMqttFilter": "删除每个节点 MQTT 过滤器",
     "excludeMqttData": "从诊断中排除该节点的 MQTT 数据",
@@ -860,10 +812,6 @@
       "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。"
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "MeshCore节点非常接近（ RSSI {{rssi}} dBm ） —可能导致数据包冲突。",
-      "meshcoreNearby": "在附近检测到MeshCore节点（ RSSI {{rssi}} dBm ） —可能会干扰流量。",
-      "meshcoreDistant": "此频率的远程MeshCore活动（ RSSI {{rssi}} dBm ）。",
-      "meshcoreGeneric": "在此频率上传输的MeshCore节点。",
       "meshtastic": "在此频率上传输的Meshtastic节点。发件人： {{sender}}. {{proximity}}此节点可能位于您的MeshCore中继器区域。",
       "unknownLora": "检测到无法识别的LoRa信号（ RSSI {{rssi}} dBm ， SNR {{snr}} dB ）。",
       "potentialRepeaterConflict": "检测到高MeshCore数据包速率（ > 5/min ）。附近的MeshCore中继器可能导致数据包冲突。"
@@ -943,12 +891,10 @@
     "meshcoreRepeaterConflictBanner": "高MeshCore数据包速率（ > 5/min ） —附近的中继器可能导致您的Meshtastic通道发生冲突。",
     "meshcoreHeardByMeshtasticHeading": "Meshtastic收音机听到的MeshCore节点（ {{count}} ）",
     "meshcoreHeardByMeshtasticDescription": "MeshCore发射器在过去90分钟内无意中听到本地射频（ Meshtastic设备日志或MeshCore无线电接收器）。不包括MeshCore中继器触点同步。这些不是你的Meshtastic节点。",
-    "meshcoreHeardByMeshtasticEmpty": "在过去90分钟内，您的Meshtastic频率上没有听到任何MeshCore节点。",
     "meshcoreHeardUnknownNode": "未识别的MeshCore变送器",
     "meshcoreHeardNearbyEncrypted": "附近的MeshCore RF （加密）",
     "foreignLoraHeading": "您Meshtastic频率上的其他外来LoRa （ {{count}} ）",
-    "foreignLoraDescription": "在过去90分钟内，您的频率上有Meshtastic发射器和无法识别的LoRa信号。上面的部分列出了MeshCore节点。",
-    "foreignLoraEmpty": "在过去90分钟内，您的Meshtastic频率上没有Meshtastic或未知的LoRa活动。"
+    "foreignLoraDescription": "在过去90分钟内，您的频率上有Meshtastic发射器和无法识别的LoRa信号。上面的部分列出了MeshCore节点。"
   },
   "errorBoundary": {
     "title": "出了点问题",
@@ -970,7 +916,6 @@
     "selectProductPlaceholder": "选择产品...",
     "selectModelPlaceholder": "选择型号...",
     "firmwareFile": "固件文件 (.zip)",
-    "chooseFirmware": "选择固件...",
     "enterDfuMode": "进入DFU模式",
     "enterDfuHint": "对于 nRF52 板：将设备置于 USB DFU 引导加载程序模式（1200 波特率触摸）。",
     "flashFirmware": "闪存固件",
@@ -1054,7 +999,6 @@
     "flashDone": "固件刷写"
   },
   "logAnalyzeModal": {
-    "closeDialog": "关闭对话框",
     "title": "日志分析",
     "totalEntries": "{{count}} 条目",
     "errorsShort": "{{count}} 错误",
@@ -1149,16 +1093,12 @@
         "recommendation": "无法从路由器请求存储和转发聊天历史记录（通常是与其他无线电流量的短暂比赛）。如果聊天积压保持为空，请重新连接或等待下一个路由器心跳。"
       },
       "serial-reconnect": {
-        "label": "USB串行重新连接",
-        "recommendation": "断开连接后， USB串行未完全释放。退出网状客户端并重新打开，或拔下并重新插入电缆，然后重新连接。"
+        "label": "USB串行重新连接"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "做事。"
-      },
-      "serial-reconnect": {
-        "recommendation": "断开连接后， USB串行未完全释放。退出网状客户端并重新打开，或拔下并重新插入电缆，然后重新连接。"
       }
     }
   },
@@ -1189,13 +1129,9 @@
   },
   "mapPanel": {
     "locationUnavailable": "無法取得位置。",
-    "gpsHardwareUnavailable": "GPS硬件不可用。",
-    "locationError": "位置错误： {{error}}",
     "locationRequestFailed": "位置请求失败。",
     "showMyLocation": "顯示我的位置",
     "networkMap": "显示节点位置的网络图",
-    "toggleRouteWeightLines": "切换工艺路线权重线",
-    "routeWeights": "工艺路线权重",
     "layerControls": "层数",
     "layerControlsAria": "切换地图图层控件",
     "basemapHeading": "底图",
@@ -1288,7 +1224,6 @@
     "cannedMessagesApplied": "已应用罐装邮件。",
     "rtttlSaved": "RTTTL铃声已保存。",
     "title": "模块配置",
-    "readOnly": "只读",
     "connectToDevice": "连接到设备以修改模块配置。",
     "waitingForModuleConfig": "正在等待设备的模块配置...",
     "selectPreset": "选择预设...",
@@ -1441,14 +1376,7 @@
       "echoMode": "回声模式",
       "baudRate": "波特率",
       "storeForwardEnabled": "启用存储和转发",
-      "sfHeartbeat": "发送心跳",
-      "sfMaxStored": "最大存储记录数",
-      "sfHistoryMax": "历史回报最大值",
-      "sfHistoryWindow": "历史返回窗口",
       "sfHeartbeatDesc": "定期广播状态，以便客户知道 S&F 可用。",
-      "sfMaxStoredDesc": "设备上保留的最大记录数。",
-      "sfHistoryMaxDesc": "当节点请求历史记录时返回的最大消息数。",
-      "sfHistoryWindowDesc": "返回消息的时间早于多久（秒）。",
       "telDeviceTelemetryEnabled": "发送设备遥测",
       "telDeviceTelemetryEnabledDesc": "通过遥测模块将设备指标（电池、电压、信道利用率）广播到网格。",
       "telDeviceInterval": "设备指标间隔",
@@ -1864,7 +1792,6 @@
   },
   "nomadNetwork": {
     "title": "游牧网络",
-    "empty": "尚未发现游牧网络节点。",
     "toggleFavorite": "切换收藏夹",
     "favourites": "收藏夹",
     "announces": "宣布",
@@ -1922,7 +1849,6 @@
     "probeHops": "探头正常— {{hops}}跃点。",
     "probeLocal": "探头正常（ {{mode}}模式）。",
     "probeFailed": "探头失败： {{error}}",
-    "isContact": "联系方式",
     "iconColor": "头像颜色",
     "iconColorAria": "头像颜色",
     "saveContact": "另存为联系人",
@@ -1958,7 +1884,6 @@
     "maxHopsAll": "所有跃点",
     "maxHopsOption": "{{count}}跳",
     "resetView": "重设视角",
-    "hoverHint": "悬停或聚焦节点以获取其名称。拖动以平移，滚动以缩放。",
     "compactLeafCount": "{{count}}紧凑型直接同行"
   },
   "peerListPanel": {
@@ -1978,8 +1903,6 @@
     "groupFilterAria": "按组筛选联系人",
     "allGroups": "所有群组",
     "manageGroups": "管理组",
-    "radioPeerCount": "路径表中的{{count}}个对等点",
-    "viewAllPeers": "在同行选项卡中查看全部",
     "colLastHeard": "最后一次听到",
     "colContact": "联系方式",
     "contactYes": "是",
@@ -2029,19 +1952,14 @@
     "sectionLora": "LoRa/无线电",
     "sectionPositionGps": "位置/GPS",
     "sectionPower": "力量",
-    "sectionTelemetry": "遥测",
     "sectionWifi": "无线网络/网络",
-    "passwordPlaceholder": "密码",
     "yourNamePlaceholder": "你的名字",
     "namePlaceholder": "姓名",
     "networkNamePlaceholder": "网络名称",
     "encryptionNone": "无（无加密）",
     "encryptionSimple": "简单（默认 Meshtastic 键）",
     "generateRandomKey": "生成随机密钥",
-    "setKeyFromSha256": "从 SHA-256(name) 前 16 个字节设置密钥 (MeshCore #channels)",
     "removeAllContactsTitle": "从收音机中删除所有联系人，保留在数据库中",
-    "contactsOnRadio": "{{count}} / {{max}} 无线电联系人",
-    "aesEncrypted": "AES 加密",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "钥匙尺寸",
@@ -2051,8 +1969,6 @@
     "connectToConfigure": "连接到设备以修改配置。",
     "importConfigJson": "导入配置 JSON",
     "offloadContacts": "卸载",
-    "deviceMetricsDescription": "网状广播：通过 LoRa 发送电池、电压和信道利用率的频率。 0 = 禁用；默认 1800 秒（30 分钟）。连接的应用程序：当通过蓝牙、串行或 Wi-Fi 连接时，固件通常仍会每隔 60 秒向该客户端推送一次设备指标，以确保屏幕上的新鲜度，这与您的网格间隔不同。",
-    "deviceMetricsTooltip": "Meshtastic 固件大约每分钟向连接的客户端发送一次设备指标以进行本地监控，无论网格遥测间隔如何。官方参考：https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "指标"
@@ -2116,18 +2032,6 @@
     "pairingPinDesc": "用于蓝牙配对的 6 位固定 PIN。默认值：123456。",
     "wifiPasswordLabel": "无线网络密码",
     "wifiPasswordPlaceholder": "密码",
-    "deviceUserIdentity": "设备用户/身份",
-    "displaySection": "展示",
-    "loraRadio": "LoRa/无线电",
-    "positionGps": "位置/GPS",
-    "powerSection": "力量",
-    "telemetrySection": "遥测",
-    "wifiNetwork": "无线网络/网络",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "姓名",
-    "latPlaceholder": "000000",
-    "lonPlaceholder": "000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "基本的",
     "channelNameSecondary": "频道名称",
     "resetChannelDefaults": "重置为默认值",
@@ -2144,7 +2048,6 @@
     "channelSaveFailed": "失败：{{message}}",
     "validationAes128": "AES-128 密钥必须恰好为 16 个字节（24 个 base64 字符）",
     "validationAes256": "AES-256 密钥必须恰好为 32 字节（44 个 base64 字符）",
-    "factoryResetConfirmTitle": "恢复出厂设置",
     "factoryResetButton": "恢复出厂设置设备",
     "dangerZonePermanent": "这些操作是永久性的且无法撤消。",
     "resetNodeDbName": "重置NodeDB",
@@ -2220,7 +2123,6 @@
     "lightSleepDurationDesc": "轻度睡眠周期的持续时间。0 =使用默认值。",
     "batteryShutdownLabel": "电池关闭后",
     "batteryShutdownDesc": "自上次网格活动以来的这么多秒后关闭电池。0 =已禁用。",
-    "deviceMetricsIntervalLabel": "设备指标更新间隔",
     "wifiEnabledLabel": "无线网络已启用",
     "ethernetEnabledLabel": "以太网已启用",
     "mqttUplinkLabel": "MQTT上行链路",
@@ -2509,12 +2411,6 @@
       "confirmTitle": "重置 Reticulum 堆栈？",
       "confirmBody": "这将从Sidecar中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
       "confirm": "一键复原"
-    },
-    "reticulumVoiceGames": {
-      "title": "语音和游戏",
-      "voiceStatus": "语音（ LXST ） ： {{status}}",
-      "gamesStatus": "游戏（ LRGP ） ： {{status}}",
-      "unavailable": "在此版本中不可用"
     }
   },
   "rawPacketLog": {
@@ -2660,8 +2556,6 @@
     "pathHashCliSet2": "设置路径哈希模式3字节"
   },
   "reticulumIdentity": {
-    "title": "标识",
-    "activeIdentity": "有效身份",
     "announceIntervalSec": "公告间隔（秒）",
     "clearAnnounces": "清除公告",
     "announceSaved": "通告间隔已保存。",
@@ -2669,14 +2563,6 @@
     "announceSaveSidecarStopped": "在保存公告设置之前启动Reticulum堆栈。",
     "clearAnnouncesDone": "宣布已清除。",
     "clearAnnouncesFailed": "清除公告失败。"
-  },
-  "reticulumPing": {
-    "title": "Ping",
-    "hashPlaceholder": "目标哈希…",
-    "hashAria": "要ping的目标哈希",
-    "run": "Ping",
-    "result": "RTT {{ms}}毫秒",
-    "failed": "Ping失败： {{error}}"
   },
   "reticulumPropagation": {
     "preferred": "首选",
@@ -2700,10 +2586,6 @@
     "edgeCount": "{{count}} 链接",
     "hiddenCount": "显示 {{total}} 节点的 {{shown}}（远距离对等点隐藏）",
     "legendSelf": "该节点",
-    "legendHub": "中继集线器",
-    "legendPeer": "同行",
-    "directLink": "直接链接",
-    "relayLink": "通过枢纽",
     "showDistantPeers": "显示远程同行",
     "maxHopsFilter": "最大 hops",
     "maxHopsAll": "所有 hops",
@@ -2834,7 +2716,6 @@
     "jumpToUnread": "跳至未读",
     "newMessagesDivider": "新消息",
     "loggingInMarkerAria": "登录到聊天室服务器",
-    "savedPasswordNotLoggedIn": "密码已保存—打开房间并登录",
     "favorite": "收藏的教室",
     "unfavorite": "从收藏夹中移除",
     "loginAllSaved": "全部登录",
@@ -2882,17 +2763,14 @@
     "placeholder": "搜索所有消息...（用户：名称，频道：名称）",
     "noResults": "搜不到",
     "hint": "键入以搜索所有消息",
-    "resultCount": "{{count}}个结果—点击导航",
-    "openSearch": "搜索消息"
+    "resultCount": "{{count}}个结果—点击导航"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
     "failed": "失败： {{message}}",
     "adminKeysApplied": "已应用管理密钥。",
     "adminSettingsApplied": "已应用管理设置。",
-    "keysBackedUp": "钥匙备份到系统钥匙串。",
     "backupFailed": "备份失败： {{message}}",
-    "keysRestored": "密钥已从备份还原。",
     "restoreFailed": "还原失败： {{message}}",
     "dataSigned": "数据已成功签名。",
     "signNoResult": "签名操作未返回任何结果。",
@@ -2936,8 +2814,6 @@
     "adminChannelDesc": "允许传入设备控制不安全的旧管理通道。",
     "keyBackupUnavailable": "系统钥匙串加密在此平台上不可用。备份和恢复已禁用。",
     "keyBackupDesc": "将您的 DM 密钥备份到系统钥匙串（加密）。您可以随时将它们恢复到设备上。",
-    "backupAvailable": "可用备份",
-    "noBackupStored": "没有存储备份",
     "backupKeys": "备份密钥",
     "restoreKeys": "恢复密钥",
     "working": "在职的...",

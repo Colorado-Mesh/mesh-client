@@ -109,17 +109,10 @@
     "colorScheme": "Barevné schéma",
     "dangerZoneSection": "Nebezpečná zóna",
     "destructiveActions": "Destruktivní akce",
-    "dangerZoneDesc": "Tyto akce jsou trvalé a nelze je vrátit zpět. Každý krok pečlivě potvrďte.",
-    "diagnosticsSection": "Diagnostika",
     "pruneDistantNodesTitle": "Prořezávat vzdálené uzly",
-    "pruneDistantNodesDesc": "Za prahem vzdálenosti v Map & Node Filtering. Vyžaduje platnou polohu GPS.",
     "pruneOfflineNodesTitle": "Prořezávat offline uzly",
-    "pruneOfflineNodesDays": "Nebylo slyšet více než {{days}} dní. Oblíbené uzly jsou vyloučeny.",
-    "clearAllNodesCount": "Vymazat všechny uzly ({{count}})",
     "deleteContactsNoPubkeysTitle": "Smazat kontakty bez Pubkeys",
-    "deleteContactsNoPubkeysDesc": "Nezahrnuje uzly chatu vytvořené ze zpráv.",
     "messagesSection": "Zprávy",
-    "channelLabel": "Kanál:",
     "allChannelsOption": "Všechny kanály",
     "clearMessagesCount": "Vymazat zprávy ({{count}})",
     "latLabel": "Šířka:",
@@ -160,7 +153,6 @@
     "removeUnnamedNodesLabel": "Odeberte nepojmenované uzly při spuštění",
     "capTotalNodesLabel": "Uzavřete celkový počet uzlů, ponechte nejnovější",
     "autoPrunePositionHistoryLabel": "Automatické prořezávání historie pozic při spuštění, starší než",
-    "removeContactsNeverAdvertisedLabel": "Při spuštění odstraňte kontakty, které nikdy neinzerovaly",
     "autoPruneUnheardContactsLabel": "Automaticky oříznout neslyšené kontakty při spuštění, starší než",
     "capTotalContactsLabel": "Uzavřete celkový počet kontaktů, ponechte naposledy zobrazené",
     "limitMessagesLoadedLabel": "Limit načtených zpráv",
@@ -229,13 +221,11 @@
   "channelUtilization": {
     "title": "Využití kanálu",
     "noData": "Zatím nejsou k dispozici žádné údaje o využití kanálu",
-    "meshcoreNote": "MeshCore: zobrazuje pouze připojený uzel",
     "tooltipLabel": "Využití kanálu"
   },
   "chatPanel": {
     "channels": "Kanály",
     "searchMessages": "Hledat zprávy",
-    "searchAllChannels": "Prohledejte všechny kanály",
     "closeDmTab": "Zavřít kartu DM",
     "searchMessagesPlaceholder": "Hledat zprávy...",
     "searchResults_one": "{{count}} výsledek",
@@ -265,19 +255,14 @@
     "filterBySender": "Filtrovat podle odesílatele",
     "clearSenderFilter": "Obnovit filtr",
     "filteringBySender": "Filtrování podle {{name}}",
-    "muteNotifications": "\"Vypnout zvuk oznámení\"",
-    "unmuteNotifications": "Zrušit ztlumení oznámení",
     "jumpToDate": "Přejít k aktuálnímu datu",
-    "noMessagesOnDate": "V tento den nejsou žádné zprávy",
     "exportChat": "Exportovat chat",
-    "exportChatSuccess": "Chat exportován",
     "exportChatFailed": "Export neuspěl",
     "dmNodeLastHeard": "Naposledy slyšeno {{time}}",
     "dmNodeBattery": "{{pct}}% baterie",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} chmel",
-    "quickDm": "Přímá zpráva {{name}}",
     "muteConversation": "Ztlumit tuto konverzaci",
     "unmuteConversation": "Zrušit ztlumení této konverzace",
     "starMessage": "Označit zprávu",
@@ -329,9 +314,6 @@
     "waitingMessagesSyncNow": "Synchronizovat nyní",
     "jumpToUnread": "Přejít na nepřečtené",
     "jumpToLatest": "Přejít na nejnovější",
-    "meshcoreReactionPickerLabel": "Zvolte reakci sítě",
-    "meshcoreReactionEmojiOption": "Reagovat s {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Tento emodži není podporován pro MeshCore mesh reakce.",
     "reactionFailed": "Reakce selhala",
     "meshcoreGifButton": "Vložit GIPHY GIF",
     "meshcoreGifButtonHint": "Odeslat Giphy GIF ve wire g: MeshCore Open",
@@ -373,7 +355,6 @@
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
-    "emptyMention": "Prázdná zmínka",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Otevřít na Giphy"
   },
@@ -383,36 +364,20 @@
     "save": "Uložit",
     "yes": "Ano",
     "no": "Žádný",
-    "apply": "Použít",
-    "ok": "OK",
-    "reset": "Resetovat",
     "clear": "Jasný",
-    "export": "Vývozní",
-    "import": "Importovat",
     "refresh": "Obnovit",
-    "delete": "Vymazat",
     "edit": "Upravit",
-    "add": "Přidat",
-    "remove": "Odstranit",
-    "send": "Poslat",
-    "search": "Vyhledávání",
     "loading": "Načítání",
     "error": "Chyba",
-    "success": "Úspěch",
     "warning": "Varování",
-    "enabled": "Povoleno",
     "disabled": "Zakázáno",
     "unknown": "Neznámý",
-    "none": "Žádný",
     "never": "Nikdy",
-    "always": "Vždy",
     "dismiss": "Propustit",
     "channel": "Kanál",
     "nodes": "uzly",
     "contacts": "kontakty",
     "messages": "zprávy",
-    "connect": "Připojit",
-    "disconnect": "Odpojit",
     "discord": "Discord",
     "github": "GitHub",
     "website": "webové stránky",
@@ -448,7 +413,6 @@
     "requiresLocalRadio": "Připojte místní rádio Meshtastic a použijte vzdálenou správu.",
     "sessionActive": "Administrátorská relace aktivní",
     "sessionStale": "Zastaralá relace správce — obnovte před změnou nastavení",
-    "sessionNone": "Administrativní relace nebyla vytvořena — načítání nebo připojení místního rádia",
     "establishingSession": "Vytváření relace administrátora..."
   },
   "connectionBanner": {
@@ -472,8 +436,6 @@
     "selectBluetoothDevice": "Vyberte Zařízení Bluetooth",
     "devicesFound": "{{count}} nalezeno",
     "scanningDevices": "Vyhledávání {{protocol}} zařízení...",
-    "adaDfuHint": "Pokud se v systému macOS zařízení zobrazuje jako „AdaDFU“, nejprve ho spárujte v Nastavení systému → Bluetooth, abyste viděli jeho název Meshtastic.",
-    "meshcorePairingNote": "Před připojením spárujte své zařízení MeshCore v systémovém nastavení Bluetooth. Pokud budete vyzváni, použijte PIN kód — pokud váš systém nepožádá o PIN, připojení se nezdaří a možná budete muset zrušit párování a znovu spárovat pomocí PIN.",
     "selectSerialPort": "Vyberte Sériový port",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty. Ujistěte se, že je vaše zařízení zapojeno.",
     "enterPin": "Zadejte PIN zobrazený na vašem zařízení:",
@@ -560,7 +522,6 @@
     "stagePairingFailed": "Párování se nezdařilo. Prosím znovu spárujte své zařízení.",
     "stageCheckingPairing": "Kontrola párování Bluetooth…",
     "stageEnterPinLinux": "Zadejte PIN zobrazený na vašem zařízení (nejprve spárujte s Linuxem)",
-    "stageScanningLast": "Vyhledávání posledního zařízení Bluetooth…",
     "stageReconnecting": "Opětovné připojování k poslednímu zařízení Bluetooth…",
     "pinPlaceholder": "KOLÍK",
     "humanize": {
@@ -627,15 +588,10 @@
     "reticulumStackTitle": "Zásobník Reticulum",
     "reticulumStackHint": "Spustí lokální sidecar Reticulum/LXMF (rozhraní TCP a Auto).",
     "reticulumStartStack": "Spustit zásobník",
-    "reticulumRestartStack": "Restartovat zásobník",
-    "reticulumNetworkTitle": "Síťová rozhraní",
     "reticulumNetworkEmpty": "Zatím nebyla nahlášena žádná rozhraní.",
-    "reticulumNetworkUnknown": "Rozhraní",
-    "reticulumNetworkDisabled": "vypnuto",
     "reticulumSidecarMissing": "Sidecar Reticulum není sestaven. V repozitáři mesh-client spusťte `pnpm run reticulum:sidecar:build` (vyžaduje Rust).",
     "reticulumSidecarCargoMissing": "Nástrojová sada Rust (cargo) nebyla nalezena. Nainstalujte z https://rustup.rs a spusťte `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Nelze spustit zásobník Reticulum: {{message}}",
-    "disconnect": "Odpojit",
     "reticulumStopStack": "Zastavit zásobník",
     "reticulumAutostart": "Automatické spuštění zásobníku při otevření připojení",
     "reticulumStackRunning": "Zásobník spuštěn",
@@ -654,7 +610,6 @@
       "failed": "Nastavení identity selhalo",
       "export": "Exportovat zálohu",
       "exportPassphrase": "Záložní přístupová fráze",
-      "exportPassphraseHint": "Šifruje exportovanou zálohu JSON. Heslo uložte odděleně od záložního souboru.",
       "exportPassphraseRequired": "Před exportem zadejte záložní přístupovou frázi."
     },
     "reticulumInterfaces": {
@@ -688,7 +643,6 @@
       "localOfflineRowStale": "Sériový port {{port}} nebyl nalezen — USB replug mohl změnit cestu."
     },
     "reticulumPeers": {
-      "name": "Rovesníci",
       "hops": "Hops",
       "actions": "Akce",
       "path": "Cesta",
@@ -727,8 +681,6 @@
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",
     "dismissRow": "Propustit",
     "searchAnomalies": "Hledat anomálie...",
-    "meshcoreInterferenceHeading": "Uzly MeshCore slyšet na frekvenci ({{count}})",
-    "meshcoreInterferenceDescription": "Tyto položky identifikují rušení MeshCore na frekvenci, které toto rádio slyší. Mohou přispět k problémům s využitím a opakováním, ale samy o sobě nejsou diagnostikou selhání trasy Meshtastic.",
     "otherCrossProtocolHeading": "Jiný frekvenční / cross-stack provoz ({{count}})",
     "removeMqttFilter": "Odstraňte filtr MQTT pro každý uzel",
     "excludeMqttData": "Vyloučit data MQTT tohoto uzlu z diagnostiky",
@@ -860,10 +812,6 @@
       "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "Uzel MeshCore velmi blízko (RSSI {{rssi}} dBm) — pravděpodobně způsobuje kolize paketů.",
-      "meshcoreNearby": "V blízkosti byl zjištěn uzel MeshCore (RSSI {{rssi}} dBm) – může rušit provoz.",
-      "meshcoreDistant": "Vzdálená aktivita MeshCore na této frekvenci (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "MeshCore uzel vysílající na této frekvenci.",
       "meshtastic": "Meshtastic uzel vysílající na této frekvenci. Odesílatel: {{sender}}. {{proximity}}Tento uzel se může nacházet v oblasti opakovače MeshCore.",
       "unknownLora": "Detekován nerozpoznaný signál LoRa (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Zjištěna vysoká rychlost paketů MeshCore (>5/min). Nedaleký opakovač MeshCore může způsobovat kolize paketů."
@@ -943,12 +891,10 @@
     "meshcoreRepeaterConflictBanner": "Vysoká rychlost paketů MeshCore (>5/min) — blízký opakovač může způsobovat kolize na vašem Meshtastic kanálu.",
     "meshcoreHeardByMeshtasticHeading": "Uzly MeshCore slyšené vaším Meshtastic rádiem ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "Vysílače MeshCore zaslechly v posledních 90 minutách místní RF (protokoly Meshtastic zařízení nebo MeshCore rádio RX). Nezahrnuje synchronizaci kontaktů opakovače MeshCore. Toto není váš Meshtastic uzel.",
-    "meshcoreHeardByMeshtasticEmpty": "Za posledních 90 minut nebyly na vaší Meshtastic frekvenci slyšet žádné uzly MeshCore.",
     "meshcoreHeardUnknownNode": "Neidentifikovaný vysílač MeshCore",
     "meshcoreHeardNearbyEncrypted": "Nedaleko MeshCore RF (šifrované)",
     "foreignLoraHeading": "Další cizí LoRa na vaší Meshtastic frekvenci ({{count}})",
-    "foreignLoraDescription": "Meshtastic vysílače a nerozpoznané LoRa signály na vaší frekvenci za posledních 90 minut. Uzly MeshCore jsou uvedeny ve výše uvedené části.",
-    "foreignLoraEmpty": "Žádná Meshtastic nebo neznámá aktivita LoRa na vaší Meshtastic frekvenci za posledních 90 minut."
+    "foreignLoraDescription": "Meshtastic vysílače a nerozpoznané LoRa signály na vaší frekvenci za posledních 90 minut. Uzly MeshCore jsou uvedeny ve výše uvedené části."
   },
   "errorBoundary": {
     "title": "Něco se pokazilo",
@@ -970,7 +916,6 @@
     "selectProductPlaceholder": "Vyberte produkt…",
     "selectModelPlaceholder": "Vyberte model…",
     "firmwareFile": "Soubor firmwaru (.zip)",
-    "chooseFirmware": "Vyberte firmware…",
     "enterDfuMode": "Vstupte do režimu DFU",
     "enterDfuHint": "Pro desky nRF52: přepne zařízení do režimu bootloaderu USB DFU (dotyk 1200 baudů).",
     "flashFirmware": "Flash firmware",
@@ -1054,7 +999,6 @@
     "flashDone": "Firmware blikal"
   },
   "logAnalyzeModal": {
-    "closeDialog": "Zavřít dialog",
     "title": "Analýza protokolu",
     "totalEntries": "{{count}} záznamů",
     "errorsShort": "{{count}} chyb",
@@ -1149,16 +1093,12 @@
         "recommendation": "Z routeru nebylo možné vyžádat historii chatu Store & Forward (často se jedná o krátký závod s jiným rádiovým provozem). Pokud nevyřízený chat zůstane prázdný, znovu se připojte nebo počkejte na další srdeční tep směrovače."
       },
       "serial-reconnect": {
-        "label": "Sériové připojení USB",
-        "recommendation": "USB sériový port se po odpojení neuvolnil čistě. Ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu zapojte kabel a poté jej znovu připojte."
+        "label": "Sériové připojení USB"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Udělej tu věc."
-      },
-      "serial-reconnect": {
-        "recommendation": "USB sériový port se po odpojení neuvolnil čistě. Ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu zapojte kabel a poté jej znovu připojte."
       }
     }
   },
@@ -1189,13 +1129,9 @@
   },
   "mapPanel": {
     "locationUnavailable": "Poloha není k dispozici.",
-    "gpsHardwareUnavailable": "Hardware GPS není k dispozici.",
-    "locationError": "Chyba umístění: {{error}}",
     "locationRequestFailed": "Požadavek na polohu se nezdařil.",
     "showMyLocation": "Zobrazit moji polohu",
     "networkMap": "Mapa sítě zobrazující pozice uzlů",
-    "toggleRouteWeightLines": "Přepnout čáry hmotnosti trasy",
-    "routeWeights": "Váhy trasy",
     "layerControls": "Vrstvy",
     "layerControlsAria": "Přepnout ovládací prvky mapové vrstvy",
     "basemapHeading": "Podkladová mapa",
@@ -1288,7 +1224,6 @@
     "cannedMessagesApplied": "Byly použity předpřipravené zprávy.",
     "rtttlSaved": "RTTTL vyzváněcí tón uložen.",
     "title": "Konfigurace modulu",
-    "readOnly": "Pouze pro čtení",
     "connectToDevice": "Chcete-li upravit konfiguraci modulu, připojte se k zařízení.",
     "waitingForModuleConfig": "Čekání na konfiguraci modulu ze zařízení…",
     "selectPreset": "Vyberte předvolbu…",
@@ -1441,14 +1376,7 @@
       "echoMode": "Režim Echo",
       "baudRate": "Přenosová rychlost",
       "storeForwardEnabled": "Store & Forward povoleno",
-      "sfHeartbeat": "Odeslat tlukot srdce",
-      "sfMaxStored": "Maximální počet uložených záznamů",
-      "sfHistoryMax": "Návratnost historie max",
-      "sfHistoryWindow": "Návratové okno historie",
       "sfHeartbeatDesc": "Pravidelně vysílat přítomnost, aby klienti věděli, že S&F je k dispozici.",
-      "sfMaxStoredDesc": "Maximální počet záznamů uložených v zařízení.",
-      "sfHistoryMaxDesc": "Maximální počet zpráv, které se mají vrátit, když uzel požaduje historii.",
-      "sfHistoryWindowDesc": "Jak daleko zpět v čase vrátit zprávy (v sekundách).",
       "telDeviceTelemetryEnabled": "Odeslat telemetrii zařízení",
       "telDeviceTelemetryEnabledDesc": "Vysílejte metriky zařízení (baterie, napětí, využití kanálu) do sítě prostřednictvím telemetrického modulu.",
       "telDeviceInterval": "Interval metrik zařízení",
@@ -1864,7 +1792,6 @@
   },
   "nomadNetwork": {
     "title": "Nomad Network",
-    "empty": "Zatím nebyly nalezeny žádné uzly Nomad Network.",
     "toggleFavorite": "Přepnout oblíbené",
     "favourites": "Oblíbené",
     "announces": "Oznámení",
@@ -1922,7 +1849,6 @@
     "probeHops": "Sonda OK — {{hops}} hop(y).",
     "probeLocal": "Sonda je v pořádku (režim {{mode}}).",
     "probeFailed": "Sonda selhala: {{error}}",
-    "isContact": "Kontakt",
     "iconColor": "Barva avatara",
     "iconColorAria": "Barva avatara vrstevníka",
     "saveContact": "Uložit jako kontakt",
@@ -1958,7 +1884,6 @@
     "maxHopsAll": "Všechny hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "PÅenastavit pohled",
-    "hoverHint": "Najeďte myší nebo zaměřte uzel na jeho název. Přetažením posunete, posuňte pro zvětšení.",
     "compactLeafCount": "{{count}} kompaktní přímé protějšky"
   },
   "peerListPanel": {
@@ -1978,8 +1903,6 @@
     "groupFilterAria": "Filtrovat kontakty podle skupiny",
     "allGroups": "Všechny skupiny",
     "manageGroups": "Spravovat skupiny",
-    "radioPeerCount": "{{count}} kolegů v tabulce cest",
-    "viewAllPeers": "Zobrazit vše na kartě Kolegové",
     "colLastHeard": "Naposledy slyšeno",
     "colContact": "Kontakt",
     "contactYes": "Ano",
@@ -2029,19 +1952,14 @@
     "sectionLora": "LoRa / Rádio",
     "sectionPositionGps": "Poloha / GPS",
     "sectionPower": "Moc",
-    "sectionTelemetry": "Telemetrie",
     "sectionWifi": "WiFi / síť",
-    "passwordPlaceholder": "Heslo",
     "yourNamePlaceholder": "Vaše jméno",
     "namePlaceholder": "JMÉNO",
     "networkNamePlaceholder": "Název sítě",
     "encryptionNone": "Žádné (žádné šifrování)",
     "encryptionSimple": "Jednoduché (výchozí klíč Meshtastic)",
     "generateRandomKey": "Vygenerujte náhodný klíč",
-    "setKeyFromSha256": "Nastavit klíč z SHA-256(název) prvních 16 bajtů (MeshCore #channels)",
     "removeAllContactsTitle": "Odstraňte všechny kontakty z rádia, ponechte v databázi",
-    "contactsOnRadio": "{{count}} / {{max}} kontaktů v rádiu",
-    "aesEncrypted": "šifrováno AES",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Velikost klíče",
@@ -2051,8 +1969,6 @@
     "connectToConfigure": "Chcete-li upravit konfiguraci, připojte se k zařízení.",
     "importConfigJson": "Import konfigurace JSON",
     "offloadContacts": "Snižte zátěž",
-    "deviceMetricsDescription": "Mesh vysílání: jak často jsou baterie, napětí a využití kanálu odesílány přes LoRa. 0 = zakázáno; výchozí 1800 s (30 min). Připojená aplikace: při připojení přes Bluetooth, sériovou nebo Wi-Fi firmware často stále předává metriky zařízení tomuto klientovi přibližně každých 60 s, aby byla na obrazovce aktuálnost – to není stejné jako váš interval mesh.",
-    "deviceMetricsTooltip": "Firmware Meshtastic odesílá metriky zařízení připojenému klientovi zhruba jednou za minutu pro místní monitorování, bez ohledu na interval telemetrie sítě. Oficiální odkaz: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metrický"
@@ -2116,18 +2032,6 @@
     "pairingPinDesc": "6místný pevný PIN pro spárování Bluetooth. Výchozí: 123456.",
     "wifiPasswordLabel": "Heslo WiFi",
     "wifiPasswordPlaceholder": "Heslo",
-    "deviceUserIdentity": "Uživatel / Identita zařízení",
-    "displaySection": "Zobrazit",
-    "loraRadio": "LoRa / Rádio",
-    "positionGps": "Poloha / GPS",
-    "powerSection": "Moc",
-    "telemetrySection": "Telemetrie",
-    "wifiNetwork": "WiFi / síť",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "JMÉNO",
-    "latPlaceholder": "0,000000",
-    "lonPlaceholder": "0,000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Primární",
     "channelNameSecondary": "Název kanálu",
     "resetChannelDefaults": "Obnovit výchozí nastavení",
@@ -2144,7 +2048,6 @@
     "channelSaveFailed": "Selhalo: {{message}}",
     "validationAes128": "Klíč AES-128 musí mít přesně 16 bajtů (24 base64 znaků)",
     "validationAes256": "Klíč AES-256 musí mít přesně 32 bajtů (44 base64 znaků)",
-    "factoryResetConfirmTitle": "Obnovení továrního nastavení",
     "factoryResetButton": "Obnovení továrního nastavení zařízení",
     "dangerZonePermanent": "Tyto akce jsou trvalé a nelze je vrátit zpět.",
     "resetNodeDbName": "Obnovte NodeDB",
@@ -2220,7 +2123,6 @@
     "lightSleepDurationDesc": "Délka cyklů lehkého spánku. 0 = použít výchozí.",
     "batteryShutdownLabel": "Po vypnutí baterie",
     "batteryShutdownDesc": "Vypněte baterii po tolika sekundách od poslední aktivity sítě. 0 = zakázáno.",
-    "deviceMetricsIntervalLabel": "Interval aktualizace metrik zařízení",
     "wifiEnabledLabel": "WiFi povoleno",
     "ethernetEnabledLabel": "Ethernet povolen",
     "mqttUplinkLabel": "Uplink MQTT",
@@ -2509,12 +2411,6 @@
       "confirmTitle": "Resetovat zásobník Reticulum?",
       "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
       "confirm": "Obnovit"
-    },
-    "reticulumVoiceGames": {
-      "title": "Hlas a hry",
-      "voiceStatus": "Hlas (LXST): {{status}}",
-      "gamesStatus": "Hry (LRGP): {{status}}",
-      "unavailable": "Není k dispozici v této sestavě"
     }
   },
   "rawPacketLog": {
@@ -2660,8 +2556,6 @@
     "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt"
   },
   "reticulumIdentity": {
-    "title": "Identita",
-    "activeIdentity": "Aktivní identita",
     "announceIntervalSec": "Interval oznamování (sekundy)",
     "clearAnnounces": "Vymazat oznámení",
     "announceSaved": "Interval oznámení uložen.",
@@ -2669,14 +2563,6 @@
     "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
     "clearAnnouncesDone": "Oznámení vymazána.",
     "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení."
-  },
-  "reticulumPing": {
-    "title": "Ping",
-    "hashPlaceholder": "Cílový hash…",
-    "hashAria": "Cílový hash na ping",
-    "run": "Ping",
-    "result": "RTT {{ms}} ms",
-    "failed": "Ping se nezdařil: {{error}}"
   },
   "reticulumPropagation": {
     "preferred": "Preference",
@@ -2700,10 +2586,6 @@
     "edgeCount": "{{count}} odkazy",
     "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (vzdálení kolegové skryti)",
     "legendSelf": "Tento uzel",
-    "legendHub": "Reléový náboj",
-    "legendPeer": "Peer",
-    "directLink": "Přímý odkaz",
-    "relayLink": "Přes hub",
     "centerRns": "RNS",
     "showDistantPeers": "Zobrazit vzdálené kolegy",
     "maxHopsFilter": "Max. hops",
@@ -2834,7 +2716,6 @@
     "jumpToUnread": "Přejít na nepřečtené",
     "newMessagesDivider": "Nové zprávy",
     "loggingInMarkerAria": "Přihlášení na pokojový server",
-    "savedPasswordNotLoggedIn": "Heslo uloženo — otevřete místnost a přihlaste se",
     "favorite": "Oblíbený pokoj",
     "unfavorite": "Odebrat z oblíbených",
     "loginAllSaved": "Přihlásit vše",
@@ -2882,17 +2763,14 @@
     "placeholder": "Prohledat všechny zprávy… (uživatel:jméno, kanál:jméno)",
     "noResults": "Žádné výsledky",
     "hint": "Zadejte pro vyhledávání ve všech zprávách",
-    "resultCount": "{{count}} výsledky — klikni pro navigaci",
-    "openSearch": "Hledat zprávy..."
+    "resultCount": "{{count}} výsledky — klikni pro navigaci"
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
     "failed": "Selhalo: {{message}}",
     "adminKeysApplied": "Byly použity administrátorské klíče.",
     "adminSettingsApplied": "Bylo použito nastavení správy.",
-    "keysBackedUp": "Klíče zálohované do systémové klíčenky.",
     "backupFailed": "Zálohování se nezdařilo: {{message}}",
-    "keysRestored": "Klíče obnoveny ze zálohy.",
     "restoreFailed": "Obnovení se nezdařilo: {{message}}",
     "dataSigned": "Data byla úspěšně podepsána.",
     "signNoResult": "Operace znamení nevrátila žádný výsledek.",
@@ -2936,8 +2814,6 @@
     "adminChannelDesc": "Povolit ovládání příchozího zařízení nad nezabezpečeným starším kanálem správce.",
     "keyBackupUnavailable": "Systémové šifrování keychain není na této platformě dostupné. Zálohování a obnovení jsou zakázány.",
     "keyBackupDesc": "Zálohujte své DM klíče do systémové klíčenky (zašifrované). Do zařízení je můžete kdykoli obnovit.",
-    "backupAvailable": "Záloha k dispozici",
-    "noBackupStored": "Žádná záloha není uložena",
     "backupKeys": "Záložní klíče",
     "restoreKeys": "Obnovit klíče",
     "working": "Pracovní...",

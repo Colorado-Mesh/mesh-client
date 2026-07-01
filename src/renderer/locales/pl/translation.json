@@ -109,17 +109,10 @@
     "colorScheme": "Schemat kolorów",
     "dangerZoneSection": "Strefa zagrożenia",
     "destructiveActions": "Destrukcyjne działania",
-    "dangerZoneDesc": "Działania te są trwałe i nie można ich cofnąć. Dokładnie potwierdzaj każdy krok.",
-    "diagnosticsSection": "Diagnostyka",
     "pruneDistantNodesTitle": "Przytnij odległe węzły",
-    "pruneDistantNodesDesc": "Przekroczenie progu odległości w filtrowaniu map i węzłów. Wymaga prawidłowej lokalizacji GPS.",
     "pruneOfflineNodesTitle": "Przytnij węzły offline",
-    "pruneOfflineNodesDays": "Nie słyszano od ponad {{days}} dni. Ulubione węzły są wykluczone.",
-    "clearAllNodesCount": "Wyczyść wszystkie węzły ({{count}})",
     "deleteContactsNoPubkeysTitle": "Usuń kontakty bez kluczy Pubkeys",
-    "deleteContactsNoPubkeysDesc": "Nie obejmuje węzłów pośrednich czatu utworzonych na podstawie wiadomości.",
     "messagesSection": "Wiadomości",
-    "channelLabel": "Kanał:",
     "allChannelsOption": "Wszystkie kanały",
     "clearMessagesCount": "Wyczyść wiadomości ({{count}})",
     "latLabel": "łac.:",
@@ -160,7 +153,6 @@
     "removeUnnamedNodesLabel": "Usuń nienazwane węzły podczas uruchamiania",
     "capTotalNodesLabel": "Ogranicz wszystkie węzły, zachowaj najnowsze",
     "autoPrunePositionHistoryLabel": "Automatyczne czyszczenie historii pozycji przy uruchomieniu, starsza niż",
-    "removeContactsNeverAdvertisedLabel": "Usuń kontakty, które nigdy nie były reklamowane podczas uruchamiania",
     "autoPruneUnheardContactsLabel": "Automatycznie usuwaj niesłyszalne kontakty przy uruchomieniu, starsze niż",
     "capTotalContactsLabel": "Ogranicz wszystkie kontakty, zachowaj ostatnio widoczne",
     "limitMessagesLoadedLabel": "Ogranicz ładowanie wiadomości",
@@ -229,13 +221,11 @@
   "channelUtilization": {
     "title": "Wykorzystanie kanału",
     "noData": "Brak dostępnych danych o wykorzystaniu kanału",
-    "meshcoreNote": "MeshCore: wyświetlanie tylko połączonego węzła",
     "tooltipLabel": "Wykorzystanie kanału"
   },
   "chatPanel": {
     "channels": "Kanały",
     "searchMessages": "Wyszukaj wiadomości",
-    "searchAllChannels": "Przeszukaj wszystkie kanały",
     "closeDmTab": "Zamknij zakładkę DM",
     "searchMessagesPlaceholder": "Wyszukaj wiadomości...",
     "searchResults_one": "Wynik {{count}}",
@@ -265,19 +255,14 @@
     "filterBySender": "Filtruj według nadawcy",
     "clearSenderFilter": "Wyczyść filtr",
     "filteringBySender": "Filtrowanie według {{name}}",
-    "muteNotifications": "Wycisz powiadomienia",
-    "unmuteNotifications": "Wyłącz wyciszenie powiadomień",
     "jumpToDate": "Przejdź do daty",
-    "noMessagesOnDate": "Brak wiadomości w tym dniu",
     "exportChat": "Eksportuj czat",
-    "exportChatSuccess": "Czat wyeksportowany",
     "exportChatFailed": "Eksport nie powiódł się",
     "dmNodeLastHeard": "Ostatnio słyszane: {{time}}",
     "dmNodeBattery": "Akumulator {{pct}}%",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} hopów",
-    "quickDm": "Wiadomość bezpośrednia {{name}}",
     "muteConversation": "Wycisz tę konwersację",
     "unmuteConversation": "Wyłącz wyciszenie tej konwersacji",
     "starMessage": "Komunikat gwiazdki",
@@ -329,9 +314,6 @@
     "waitingMessagesSyncNow": "Synchronizuj teraz",
     "jumpToUnread": "Przejdź do nieprzeczytanych",
     "jumpToLatest": "Przejdź do najnowszych",
-    "meshcoreReactionPickerLabel": "Wybierz reakcję siatki",
-    "meshcoreReactionEmojiOption": "Reaguj z {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Ten emotikon nie jest obsługiwany w przypadku reakcji siatkowych MeshCore.",
     "reactionFailed": "Reakcja nie powiodła się",
     "meshcoreGifButton": "Wstaw plik GIF Giphy",
     "meshcoreGifButtonHint": "Wyślij GIF Giphy w wire g: MeshCore Open",
@@ -373,7 +355,6 @@
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
-    "emptyMention": "Pusta wzmianka",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Otwórz na Giphy"
   },
@@ -383,36 +364,20 @@
     "save": "Zapisz",
     "yes": "Tak",
     "no": "Nie",
-    "apply": "Zastosuj",
-    "ok": "OK",
-    "reset": "Nastawić",
     "clear": "Jasne",
-    "export": "Eksportuj",
-    "import": "Import",
     "refresh": "Odśwież",
-    "delete": "Delete",
     "edit": "Edytuj",
-    "add": "Dodaj",
-    "remove": "Usunąć",
-    "send": "Wysłać",
-    "search": "Szukaj",
     "loading": "Wczytywanie",
     "error": "Błąd",
-    "success": "Udało się",
     "warning": "Ostrzeżenie",
-    "enabled": "Włączony",
     "disabled": "Wył.",
     "unknown": "Nieznany",
-    "none": "Brak",
     "never": "Nigdy",
-    "always": "Zawsze",
     "dismiss": "Odrzuć",
     "channel": "Kanał",
     "nodes": "węzły",
     "contacts": "Kontakty",
     "messages": "wiadomości",
-    "connect": "Łączyć",
-    "disconnect": "Odłączyć",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Strona internetowa",
@@ -448,7 +413,6 @@
     "requiresLocalRadio": "Podłącz lokalne radio Meshtastic, aby korzystać ze zdalnej administracji.",
     "sessionActive": "Aktywna sesja administratora",
     "sessionStale": "Sesja administratora nieaktualna — odśwież przed zmianą ustawień",
-    "sessionNone": "Nie ustanowiono sesji administratora — ładowanie lub podłączanie lokalnego radia",
     "establishingSession": "Ustanawianie sesji administratora…"
   },
   "connectionBanner": {
@@ -472,8 +436,6 @@
     "selectBluetoothDevice": "Wybierz Urządzenie Bluetooth",
     "devicesFound": "Znaleziono {{count}}",
     "scanningDevices": "Skanowanie w poszukiwaniu urządzeń {{protocol}}...",
-    "adaDfuHint": "Jeśli w systemie macOS urządzenie wyświetla się jako „AdaDFU”, najpierw sparuj je w Ustawieniach systemowych → Bluetooth, aby zobaczyć jego nazwę Meshtastic.",
-    "meshcorePairingNote": "Przed połączeniem sparuj urządzenie MeshCore w systemowych ustawieniach Bluetooth. Jeśli zostaniesz o to poproszony, użyj kodu PIN — jeśli system nie poprosi o podanie kodu PIN, połączenie nie powiedzie się i może być konieczne usunięcie parowania i ponowne sparowanie za pomocą kodu PIN.",
     "selectSerialPort": "Wybierz Port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych. Upewnij się, że Twoje urządzenie jest podłączone.",
     "enterPin": "Wpisz PIN widoczny na Twoim urządzeniu:",
@@ -560,7 +522,6 @@
     "stagePairingFailed": "Parowanie nie powiodło się. Proszę ponownie sparować urządzenie.",
     "stageCheckingPairing": "Sprawdzam parowanie Bluetooth…",
     "stageEnterPinLinux": "Wprowadź PIN widoczny na Twoim urządzeniu (najpierw sparuj z Linuksem)",
-    "stageScanningLast": "Skanowanie w poszukiwaniu ostatniego urządzenia Bluetooth…",
     "stageReconnecting": "Ponowne łączenie z ostatnim urządzeniem Bluetooth…",
     "pinPlaceholder": "SZPILKA",
     "humanize": {
@@ -627,15 +588,10 @@
     "reticulumStackTitle": "Stos Reticulum",
     "reticulumStackHint": "Uruchamia lokalny sidecar Reticulum/LXMF (interfejsy TCP i Auto).",
     "reticulumStartStack": "Uruchom stos",
-    "reticulumRestartStack": "Uruchom ponownie stos",
-    "reticulumNetworkTitle": "Interfejsy sieciowe",
     "reticulumNetworkEmpty": "Nie zgłoszono jeszcze interfejsów.",
-    "reticulumNetworkUnknown": "Interfejs",
-    "reticulumNetworkDisabled": "wyłączone",
     "reticulumSidecarMissing": "Sidecar Reticulum nie został zbudowany. W repozytorium mesh-client uruchom `pnpm run reticulum:sidecar:build` (wymaga Rust).",
     "reticulumSidecarCargoMissing": "Nie znaleziono toolchain Rust (cargo). Zainstaluj z https://rustup.rs, a następnie uruchom `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Nie można uruchomić stosu Reticulum: {{message}}",
-    "disconnect": "Odłącz",
     "reticulumStopStack": "Zatrzymaj stos",
     "reticulumAutostart": "Automatyczny start stosu po otwarciu połączenia",
     "reticulumStackRunning": "Stos działa",
@@ -654,7 +610,6 @@
       "failed": "Konfiguracja tożsamości nie powiodła się",
       "export": "Kopia zapasowa eksportu",
       "exportPassphrase": "Hasło zapasowe",
-      "exportPassphraseHint": "Szyfruje wyeksportowaną kopię zapasową JSON. Przechowuj hasło oddzielnie od pliku kopii zapasowej.",
       "exportPassphraseRequired": "Wprowadź hasło zapasowe przed eksportem."
     },
     "reticulumInterfaces": {
@@ -688,7 +643,6 @@
       "localOfflineRowStale": "Nie znaleziono portu szeregowego {{port}} — ponowna wtyczka USB mogła zmienić ścieżkę."
     },
     "reticulumPeers": {
-      "name": "Peer",
       "hops": "Hops",
       "actions": "Działania",
       "path": "Ścieżka",
@@ -727,8 +681,6 @@
     "dropRoutingRows": "Usuń wiersze routingu starsze niż {{hours}} godzin (1–168)",
     "dismissRow": "Odrzucać",
     "searchAnomalies": "Szukaj anomalii...",
-    "meshcoreInterferenceHeading": "Węzły MeshCore słyszalne na częstotliwości ({{count}})",
-    "meshcoreInterferenceDescription": "Wpisy te identyfikują zakłócenia MeshCore na częstotliwości słyszane przez to radio. Mogą przyczyniać się do problemów z wykorzystaniem i ponownymi próbami, ale same w sobie nie służą do diagnostyki awarii tras Meshtastic.",
     "otherCrossProtocolHeading": "Inny ruch na częstotliwości / między stosami ({{count}})",
     "removeMqttFilter": "Usuń filtr MQTT dla każdego węzła",
     "excludeMqttData": "Wyklucz dane MQTT tego węzła z diagnostyki",
@@ -860,10 +812,6 @@
       "excessiveFlooding": "{{percent}}% transmisji jest kierowanych przez powódź — trasowanie bezpośrednie może nie zostać ustanowione z pobliskimi węzłami."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "Węzeł MeshCore bardzo blisko (RSSI {{rssi}} dBm) — prawdopodobnie powoduje kolizje pakietów.",
-      "meshcoreNearby": "W pobliżu wykryto węzeł MeshCore (RSSI {{rssi}} dBm) — może zakłócać ruch.",
-      "meshcoreDistant": "Odległa aktywność MeshCore na tej częstotliwości (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "Węzeł MeshCore transmitujący na tej częstotliwości.",
       "meshtastic": "Węzeł Meshtastic nadający na tej częstotliwości. Nadawca: {{sender}}. {{proximity}}Ten węzeł może znajdować się w obszarze wzmacniacza MeshCore.",
       "unknownLora": "Wykryto nierozpoznany sygnał LoRa (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Wykryto wysoką szybkość pakietów MeshCore (>5/min). Pobliski wzmacniacz MeshCore może powodować kolizje pakietów."
@@ -943,12 +891,10 @@
     "meshcoreRepeaterConflictBanner": "Wysoka szybkość pakietów MeshCore (>5/min) — pobliski repeater może powodować kolizje na kanale Meshtastic.",
     "meshcoreHeardByMeshtasticHeading": "Węzły MeshCore słyszane przez Meshtastic radio ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "Nadajniki MeshCore podsłuchiwane na lokalnym falach radiowych w ciągu ostatnich 90 minut (dzienniki urządzeń Meshtastic lub MeshCore radio RX). Nie obejmuje synchronizacji styków wzmacniacza MeshCore. To nie jest Twój węzeł Meshtastic.",
-    "meshcoreHeardByMeshtasticEmpty": "W ciągu ostatnich 90 minut na częstotliwości Meshtastic nie słychać żadnych węzłów MeshCore.",
     "meshcoreHeardUnknownNode": "Niezidentyfikowany nadajnik MeshCore",
     "meshcoreHeardNearbyEncrypted": "W pobliżu MeshCore RF (zaszyfrowany)",
     "foreignLoraHeading": "Inne obce LoRa na Twojej częstotliwości Meshtastic ({{count}})",
-    "foreignLoraDescription": "Nadajniki Meshtastic i nierozpoznane sygnały LoRa na Twojej częstotliwości w ciągu ostatnich 90 minut. Węzły MeshCore są wymienione w sekcji powyżej.",
-    "foreignLoraEmpty": "Brak aktywności Meshtastic lub nieznanej aktywności LoRa na częstotliwości Meshtastic w ciągu ostatnich 90 minut."
+    "foreignLoraDescription": "Nadajniki Meshtastic i nierozpoznane sygnały LoRa na Twojej częstotliwości w ciągu ostatnich 90 minut. Węzły MeshCore są wymienione w sekcji powyżej."
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -970,7 +916,6 @@
     "selectProductPlaceholder": "Wybierz produkt…",
     "selectModelPlaceholder": "Wybierz model…",
     "firmwareFile": "Plik oprogramowania sprzętowego (.zip)",
-    "chooseFirmware": "Wybierz oprogramowanie…",
     "enterDfuMode": "Wejdź w tryb DFU",
     "enterDfuHint": "Dla kart nRF52: ustawia urządzenie w tryb bootloadera USB DFU (dotyk 1200 bodów).",
     "flashFirmware": "Oprogramowanie sprzętowe Flash",
@@ -1054,7 +999,6 @@
     "flashDone": "Oprogramowanie sprzętowe błysnęło"
   },
   "logAnalyzeModal": {
-    "closeDialog": "Zamknij okno dialogowe",
     "title": "Analiza dziennika",
     "totalEntries": "{{count}} wpisy",
     "errorsShort": "{{count}} błędy",
@@ -1149,16 +1093,12 @@
         "recommendation": "Nie można zażądać historii czatu Store & Forward od routera (często krótki wyścig z innym ruchem radiowym). Jeśli backlog czatu pozostaje pusty, podłącz ponownie lub poczekaj na kolejne tętno routera."
       },
       "serial-reconnect": {
-        "label": "Ponowne połączenie szeregowe USB",
-        "recommendation": "Szereg USB nie zwolnił się czysto po rozłączeniu. Zamknij mesh-client i otwórz go ponownie lub odłącz i ponownie podłącz kabel, a następnie podłącz ponownie."
+        "label": "Ponowne połączenie szeregowe USB"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Zrób to."
-      },
-      "serial-reconnect": {
-        "recommendation": "Szereg USB nie zwolnił się czysto po rozłączeniu. Zamknij mesh-client i otwórz go ponownie lub odłącz i ponownie podłącz kabel, a następnie podłącz ponownie."
       }
     }
   },
@@ -1189,13 +1129,9 @@
   },
   "mapPanel": {
     "locationUnavailable": "Lokalizacja niedostępna.",
-    "gpsHardwareUnavailable": "Sprzęt GPS niedostępny.",
-    "locationError": "Błąd lokalizacji: {{error}}",
     "locationRequestFailed": "Żądanie lokalizacji nie powiodło się.",
     "showMyLocation": "Pokaż moją lokalizację",
     "networkMap": "Mapa sieci pokazująca pozycje węzłów",
-    "toggleRouteWeightLines": "Przełącz linie ciężaru trasy",
-    "routeWeights": "Wagi tras",
     "layerControls": "Warstwy",
     "layerControlsAria": "Przełącz kontrolki warstwy mapy",
     "basemapHeading": "\"Mapa bazowa\"",
@@ -1288,7 +1224,6 @@
     "cannedMessagesApplied": "Zastosowano komunikaty w puszkach.",
     "rtttlSaved": "Zapisano dzwonek RTTTL.",
     "title": "Konfiguracja modułu",
-    "readOnly": "Tylko do odczytu",
     "connectToDevice": "Połącz się z urządzeniem, aby zmodyfikować konfigurację modułu.",
     "waitingForModuleConfig": "Oczekiwanie na konfigurację modułu z urządzenia…",
     "selectPreset": "Wybierz ustawienie wstępne…",
@@ -1441,14 +1376,7 @@
       "echoMode": "Tryb echa",
       "baudRate": "Szybkość transmisji",
       "storeForwardEnabled": "Włączono opcję Przechowuj i przesyłaj dalej",
-      "sfHeartbeat": "Wyślij bicie serca",
-      "sfMaxStored": "Maksymalna liczba przechowywanych rekordów",
-      "sfHistoryMax": "Historia zwrotu maks",
-      "sfHistoryWindow": "Okno powrotu historii",
       "sfHeartbeatDesc": "Okresowo emituj informacje o obecności, aby klienci wiedzieli, że S&F jest dostępny.",
-      "sfMaxStoredDesc": "Maksymalna liczba rekordów przechowywanych na urządzeniu.",
-      "sfHistoryMaxDesc": "Maksymalna liczba komunikatów zwracanych, gdy węzeł żąda historii.",
-      "sfHistoryWindowDesc": "Jak daleko w czasie należy zwracać wiadomości (w sekundach).",
       "telDeviceTelemetryEnabled": "Wyślij telemetrię urządzenia",
       "telDeviceTelemetryEnabledDesc": "Metryki urządzeń nadawczych (akumulator, napięcie, wykorzystanie kanału) do siatki za pośrednictwem modułu telemetrycznego.",
       "telDeviceInterval": "Interwał metryk urządzenia",
@@ -1864,7 +1792,6 @@
   },
   "nomadNetwork": {
     "title": "Sieć Nomad",
-    "empty": "Nie wykryto jeszcze węzłów sieci Nomad.",
     "toggleFavorite": "Przełącz ulubione",
     "favourites": "Ulubione",
     "announces": "Ogłoszenia",
@@ -1922,7 +1849,6 @@
     "probeHops": "Sonda OK — {{hops}} hop(s).",
     "probeLocal": "Sonda OK (tryb {{mode}}).",
     "probeFailed": "Sonda nie powiodła się: {{error}}",
-    "isContact": "Kontakt",
     "iconColor": "Kolor awatara",
     "iconColorAria": "Kolor awatara rówieśniczego",
     "saveContact": "Zapisz jako kontakt",
@@ -1958,7 +1884,6 @@
     "maxHopsAll": "Wszystkie hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Odśwież widok",
-    "hoverHint": "Najedź kursorem lub ustaw ostrość na węzeł dla jego nazwy. Przeciągnij, aby przesunąć, przewiń, aby powiększyć.",
     "compactLeafCount": "{{count}} kompaktowych rówieśników bezpośrednich"
   },
   "peerListPanel": {
@@ -1978,8 +1903,6 @@
     "groupFilterAria": "Filtruj kontakty według grupy",
     "allGroups": "Wszystkie grupy",
     "manageGroups": "Zarządzaj grupami",
-    "radioPeerCount": "{{count}} rówieśnicy w tabeli ścieżek",
-    "viewAllPeers": "Wyświetl wszystko w zakładce Współpracownicy",
     "colLastHeard": "Ostatnio słyszane",
     "colContact": "Kontakt",
     "contactYes": "Tak",
@@ -2029,19 +1952,14 @@
     "sectionLora": "LoRa / Radia",
     "sectionPositionGps": "Pozycja / GPS",
     "sectionPower": "Moc",
-    "sectionTelemetry": "Telemetria",
     "sectionWifi": "Wi-Fi/sieć",
-    "passwordPlaceholder": "Hasło",
     "yourNamePlaceholder": "Twoje imię",
     "namePlaceholder": "NAZWA",
     "networkNamePlaceholder": "Nazwa sieci",
     "encryptionNone": "Brak (bez szyfrowania)",
     "encryptionSimple": "Prosty (domyślny klawisz Meshtastic)",
     "generateRandomKey": "Wygeneruj losowy klucz",
-    "setKeyFromSha256": "Ustaw klucz z SHA-256 (nazwa) pierwszych 16 bajtów (MeshCore #channels)",
     "removeAllContactsTitle": "Usuń wszystkie kontakty z radia i zachowaj je w bazie danych",
-    "contactsOnRadio": "{{count}} / {{max}} kontakty w radiu",
-    "aesEncrypted": "Szyfrowane AES",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Rozmiar klucza",
@@ -2051,8 +1969,6 @@
     "connectToConfigure": "Połącz się z urządzeniem, aby zmodyfikować konfigurację.",
     "importConfigJson": "Importuj konfigurację JSON",
     "offloadContacts": "Rozładować",
-    "deviceMetricsDescription": "Transmisja mesh: jak często bateria, napięcie i wykorzystanie kanału są przesyłane przez LoRa. 0 = wyłączone; domyślnie 1800 s (30 min). Połączona aplikacja: w przypadku połączenia przez Bluetooth, port szeregowy lub Wi-Fi oprogramowanie sprzętowe często nadal przesyła dane urządzenia do tego klienta co około 60 sekund, aby zapewnić świeżość obrazu na ekranie — to nie jest to samo, co interwał siatki.",
-    "deviceMetricsTooltip": "Oprogramowanie sprzętowe Meshtastic wysyła dane urządzenia do podłączonego klienta mniej więcej raz na minutę w celu lokalnego monitorowania, niezależnie od interwału telemetrii mesh. Oficjalne odniesienie: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metryczny"
@@ -2116,18 +2032,6 @@
     "pairingPinDesc": "6-cyfrowy stały PIN do parowania Bluetooth. Wartość domyślna: 123456.",
     "wifiPasswordLabel": "Hasło Wi-Fi",
     "wifiPasswordPlaceholder": "Hasło",
-    "deviceUserIdentity": "Użytkownik/tożsamość urządzenia",
-    "displaySection": "Wyświetlacz",
-    "loraRadio": "LoRa / Radia",
-    "positionGps": "Pozycja / GPS",
-    "powerSection": "Moc",
-    "telemetrySection": "Telemetria",
-    "wifiNetwork": "Wi-Fi/sieć",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "NAZWA",
-    "latPlaceholder": "0,000000",
-    "lonPlaceholder": "0,000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Podstawowy",
     "channelNameSecondary": "Nazwa kanału",
     "resetChannelDefaults": "Przywróć ustawienia domyślne",
@@ -2144,7 +2048,6 @@
     "channelSaveFailed": "Niepowodzenie: {{message}}",
     "validationAes128": "Klucz AES-128 musi mieć dokładnie 16 bajtów (24 znaki base64)",
     "validationAes256": "Klucz AES-256 musi mieć dokładnie 32 bajty (44 znaki base64)",
-    "factoryResetConfirmTitle": "Reset do ustawień fabrycznych",
     "factoryResetButton": "Urządzenie zresetowane do ustawień fabrycznych",
     "dangerZonePermanent": "Działania te są trwałe i nie można ich cofnąć.",
     "resetNodeDbName": "Zresetuj NodeDB",
@@ -2220,7 +2123,6 @@
     "lightSleepDurationDesc": "Czas trwania cykli uśpienia światła. 0 = użyj domyślnego.",
     "batteryShutdownLabel": "Wyłączenie akumulatora po",
     "batteryShutdownDesc": "Wyłącz akumulator po tylu sekundach od ostatniej aktywności siatki. 0 = wyłączone.",
-    "deviceMetricsIntervalLabel": "Interwał aktualizacji danych urządzenia",
     "wifiEnabledLabel": "Wi-Fi włączone",
     "ethernetEnabledLabel": "Ethernet włączony",
     "mqttUplinkLabel": "MQTT Uplink",
@@ -2509,12 +2411,6 @@
       "confirmTitle": "Zresetować stos Reticulum?",
       "confirmBody": "Usuwa to tożsamość, kontakty i lokalne wiadomości z wózka bocznego. Twój plik konfiguracyjny interfejsu jest przechowywany.",
       "confirm": "Zresetuj"
-    },
-    "reticulumVoiceGames": {
-      "title": "Głos i gry",
-      "voiceStatus": "Głos (LXST): {{status}}",
-      "gamesStatus": "Gry (LRGP): {{status}}",
-      "unavailable": "Niedostępne w tej kompilacji"
     }
   },
   "rawPacketLog": {
@@ -2660,8 +2556,6 @@
     "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy"
   },
   "reticulumIdentity": {
-    "title": "Tożsamość",
-    "activeIdentity": "Tożsamość aktywna",
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
     "clearAnnounces": "Wyczyść ogłoszenia",
     "announceSaved": "Interwał zapowiedzi zapisany.",
@@ -2669,14 +2563,6 @@
     "announceSaveSidecarStopped": "Uruchom stos Reticulum przed zapisaniem ustawień zapowiedzi.",
     "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
     "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń."
-  },
-  "reticulumPing": {
-    "title": "Ping",
-    "hashPlaceholder": "Skrót miejsca docelowego…",
-    "hashAria": "Skrót miejsca docelowego do polecenia ping",
-    "run": "Ping",
-    "result": "RTT {{ms}} ms",
-    "failed": "Ping nie powiódł się: {{error}}"
   },
   "reticulumPropagation": {
     "preferred": "Preferowane",
@@ -2700,10 +2586,6 @@
     "edgeCount": "{{count}} linki",
     "hiddenCount": "Wyświetlanie {{shown}} z {{total}} węzłów (ukryte odległe urządzenia równorzędne)",
     "legendSelf": "Ten węzeł",
-    "legendHub": "Hub przekaźnikowy",
-    "legendPeer": "Rówieśnik",
-    "directLink": "Bezpośredni link",
-    "relayLink": "Przez koncentrator",
     "centerRns": "RNS",
     "showDistantPeers": "Pokaż odległych rówieśników",
     "maxHopsFilter": "Maks. hops",
@@ -2834,7 +2716,6 @@
     "jumpToUnread": "Przejdź do nieprzeczytanych",
     "newMessagesDivider": "Nowe wiadomości",
     "loggingInMarkerAria": "Logowanie do serwera pokojowego",
-    "savedPasswordNotLoggedIn": "Hasło zostało zapisane — otwórz pokój i zaloguj się",
     "favorite": "Ulubiony pokój",
     "unfavorite": "Usuń z ulubionych",
     "loginAllSaved": "Zaloguj się do wszystkich",
@@ -2882,17 +2763,14 @@
     "placeholder": "Przeszukaj wszystkie wiadomości… (użytkownik:nazwa, kanał:nazwa)",
     "noResults": "Brak wyników",
     "hint": "Wpisz, aby wyszukać we wszystkich wiadomościach",
-    "resultCount": "{{count}} wynik(i) — kliknij, aby nawigować",
-    "openSearch": "Wyszukiwanie wiadomości"
+    "resultCount": "{{count}} wynik(i) — kliknij, aby nawigować"
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
     "failed": "Niepowodzenie: {{message}}",
     "adminKeysApplied": "Zastosowano klucze administracyjne.",
     "adminSettingsApplied": "Zastosowano ustawienia administracyjne.",
-    "keysBackedUp": "Kopie zapasowe kluczy zapisane w pęku kluczy systemowych.",
     "backupFailed": "Tworzenie kopii zapasowej nie powiodło się: {{message}}",
-    "keysRestored": "Klucze przywrócone z kopii zapasowej.",
     "restoreFailed": "Przywracanie nie powiodło się: {{message}}",
     "dataSigned": "Dane zostały podpisane pomyślnie.",
     "signNoResult": "Operacja podpisywania nie zwróciła żadnego wyniku.",
@@ -2936,8 +2814,6 @@
     "adminChannelDesc": "Zezwalaj na kontrolę urządzeń przychodzących za pośrednictwem niezabezpieczonego starszego kanału administracyjnego.",
     "keyBackupUnavailable": "Szyfrowanie pęku kluczy systemowych nie jest dostępne na tej platformie. Tworzenie kopii zapasowych i przywracanie są wyłączone.",
     "keyBackupDesc": "Utwórz kopię zapasową kluczy DM w pęku kluczy systemowych (zaszyfrowanych). W każdej chwili możesz je przywrócić na urządzeniu.",
-    "backupAvailable": "Dostępna kopia zapasowa",
-    "noBackupStored": "Nie zapisano kopii zapasowej",
     "backupKeys": "Klucze zapasowe",
     "restoreKeys": "Przywróć klucze",
     "working": "Pracujący...",

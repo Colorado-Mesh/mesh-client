@@ -68,6 +68,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,sh}\" && sort-package-json --ignore \"**/*.md\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md,sh}\" && sort-package-json --check --ignore \"**/*.md\"",
     "i18n:auto-translate": "node scripts/i18n-auto-translate.mjs",
+    "i18n:prune-unused": "node scripts/prune-i18n-unused.mjs",
     "preinstall": "pnpm dlx only-allow pnpm",
     "postinstall": "node scripts/rebuild-native.mjs",
     "lint": "eslint . --max-warnings 0",

@@ -109,17 +109,10 @@
     "colorScheme": "Skema warna",
     "dangerZoneSection": "Zona Bahaya",
     "destructiveActions": "Tindakan destruktif",
-    "dangerZoneDesc": "Tindakan ini bersifat permanen dan tidak dapat dibatalkan. Konfirmasikan setiap langkah dengan hati-hati.",
-    "diagnosticsSection": "Diagnostik",
     "pruneDistantNodesTitle": "Pangkas Node Jauh",
-    "pruneDistantNodesDesc": "Melampaui ambang batas jarak dalam Pemfilteran Peta & Node. Membutuhkan lokasi GPS yang valid.",
     "pruneOfflineNodesTitle": "Pangkas Node Offline",
-    "pruneOfflineNodesDays": "Tidak terdengar selama lebih dari {{days}} hari. Node yang difavoritkan tidak termasuk.",
-    "clearAllNodesCount": "Hapus Semua Node ({{count}})",
     "deleteContactsNoPubkeysTitle": "Hapus Kontak Tanpa Kunci Pub",
-    "deleteContactsNoPubkeysDesc": "Tidak termasuk simpul rintisan obrolan yang dibuat dari pesan.",
     "messagesSection": "Pesan",
-    "channelLabel": "Saluran:",
     "allChannelsOption": "Semua Saluran",
     "clearMessagesCount": "Hapus Pesan ({{count}})",
     "latLabel": "Latin:",
@@ -160,7 +153,6 @@
     "removeUnnamedNodesLabel": "Hapus node yang tidak disebutkan namanya saat startup",
     "capTotalNodesLabel": "Batasi total node, pertahankan yang terbaru",
     "autoPrunePositionHistoryLabel": "Pangkas riwayat posisi secara otomatis saat startup, lebih lama dari",
-    "removeContactsNeverAdvertisedLabel": "Hapus kontak yang tidak pernah beriklan saat startup",
     "autoPruneUnheardContactsLabel": "Pangkas otomatis kontak yang belum pernah terdengar saat startup, lebih lama dari",
     "capTotalContactsLabel": "Batasi total kontak, pertahankan yang terakhir terlihat",
     "limitMessagesLoadedLabel": "Batasi pesan yang dimuat",
@@ -229,13 +221,11 @@
   "channelUtilization": {
     "title": "Pemanfaatan Saluran",
     "noData": "Data pemanfaatan saluran belum tersedia",
-    "meshcoreNote": "MeshCore: hanya menampilkan node yang terhubung",
     "tooltipLabel": "Pemanfaatan saluran"
   },
   "chatPanel": {
     "channels": "Saluran",
     "searchMessages": "Cari pesan",
-    "searchAllChannels": "Cari semua saluran",
     "closeDmTab": "Tutup tab DM",
     "searchMessagesPlaceholder": "Telusuri pesan...",
     "searchResults_one": "{{count}} hasil",
@@ -265,19 +255,14 @@
     "filterBySender": "Filter menurut pengirim",
     "clearSenderFilter": "Hapus filter",
     "filteringBySender": "Memfilter menurut {{name}}",
-    "muteNotifications": "Bisukan pemberitahuan",
-    "unmuteNotifications": "Bunyikan notifikasi",
     "jumpToDate": "Langsung ke tanggal",
-    "noMessagesOnDate": "Tidak ada pesan pada tanggal ini",
     "exportChat": "Ekspor Obrolan",
-    "exportChatSuccess": "Obrolan diekspor",
     "exportChatFailed": "Export failed",
     "dmNodeLastHeard": "Terakhir didengar {{time}}",
     "dmNodeBattery": "{{pct}}% baterai",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} hop",
-    "quickDm": "Pesan langsung {{name}}",
     "muteConversation": "Bisukan percakapan ini",
     "unmuteConversation": "Batalkan percakapan ini",
     "starMessage": "Bintang untuk Pesan",
@@ -329,9 +314,6 @@
     "waitingMessagesSyncNow": "Sinkronkan sekarang",
     "jumpToUnread": "Langsung ke Belum Dibaca",
     "jumpToLatest": "Langsung ke Terbaru",
-    "meshcoreReactionPickerLabel": "Pilih reaksi mesh",
-    "meshcoreReactionEmojiOption": "Bereaksi dengan {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Emoji itu tidak didukung untuk reaksi mesh MeshCore.",
     "reactionFailed": "Reaksi gagal",
     "meshcoreGifButton": "Masukkan GIF Giphy",
     "meshcoreGifButtonHint": "Kirim GIF Giphy sebagai MeshCore Open g: wire",
@@ -373,7 +355,6 @@
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
-    "emptyMention": "Sebutan kosong",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Buka di Giphy"
   },
@@ -383,36 +364,20 @@
     "save": "Menyimpan",
     "yes": "Ya",
     "no": "TIDAK",
-    "apply": "Menerapkan",
-    "ok": "OKE",
-    "reset": "Mengatur ulang",
     "clear": "Jernih",
-    "export": "Ekspor",
-    "import": "Impor",
     "refresh": "Menyegarkan",
-    "delete": "Menghapus",
     "edit": "Sunting",
-    "add": "Menambahkan",
-    "remove": "Menghapus",
-    "send": "Mengirim",
-    "search": "Mencari",
     "loading": "Memuat",
     "error": "Kesalahan",
-    "success": "Kesuksesan",
     "warning": "Peringatan",
-    "enabled": "Diaktifkan",
     "disabled": "Dengan disabilitas",
     "unknown": "Tidak dikenal",
-    "none": "Tidak ada",
     "never": "Tidak pernah",
-    "always": "Selalu",
     "dismiss": "Membubarkan",
     "channel": "Saluran",
     "nodes": "node",
     "contacts": "kontak",
     "messages": "pesan",
-    "connect": "Menghubungkan",
-    "disconnect": "Memutuskan",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Situs web",
@@ -448,7 +413,6 @@
     "requiresLocalRadio": "Sambungkan radio Meshtastic lokal untuk menggunakan administrasi jarak jauh.",
     "sessionActive": "Sesi admin aktif",
     "sessionStale": "Sesi admin basi — segarkan sebelum mengubah pengaturan",
-    "sessionNone": "Sesi admin belum ditetapkan — memuat atau menghubungkan radio lokal",
     "establishingSession": "Menetapkan sesi admin…"
   },
   "connectionBanner": {
@@ -472,8 +436,6 @@
     "selectBluetoothDevice": "Pilih Perangkat Bluetooth",
     "devicesFound": "{{count}} ditemukan",
     "scanningDevices": "Memindai perangkat {{protocol}}...",
-    "adaDfuHint": "Di macOS, jika perangkat ditampilkan sebagai \"AdaDFU\", pasangkan terlebih dahulu di Pengaturan Sistem → Bluetooth untuk melihat nama Meshtastic-nya.",
-    "meshcorePairingNote": "Pasangkan perangkat MeshCore Anda dalam pengaturan Bluetooth sistem sebelum menghubungkan. Gunakan kode PIN jika diminta — jika sistem Anda tidak meminta PIN, koneksi akan gagal dan Anda mungkin perlu menghapus pemasangan dan memasangkan kembali dengan PIN.",
     "selectSerialPort": "Pilih Port Serial",
     "noSerialPorts": "Tidak ada port serial yang ditemukan. Pastikan perangkat Anda terhubung.",
     "enterPin": "Masukkan PIN yang ditampilkan pada perangkat Anda:",
@@ -560,7 +522,6 @@
     "stagePairingFailed": "Penyandingan gagal. Harap pasangkan kembali perangkat Anda.",
     "stageCheckingPairing": "Memeriksa penyandingan Bluetooth…",
     "stageEnterPinLinux": "Masukkan PIN yang ditampilkan pada perangkat Anda (pasangkan dengan Linux terlebih dahulu)",
-    "stageScanningLast": "Memindai perangkat Bluetooth terakhir…",
     "stageReconnecting": "Menyambungkan kembali ke perangkat Bluetooth terakhir…",
     "pinPlaceholder": "PIN",
     "humanize": {
@@ -627,15 +588,10 @@
     "reticulumStackTitle": "Stack Reticulum",
     "reticulumStackHint": "Memulai sidecar Reticulum/LXMF lokal (antarmuka TCP dan Auto).",
     "reticulumStartStack": "Mulai stack",
-    "reticulumRestartStack": "Mulai ulang stack",
-    "reticulumNetworkTitle": "Antarmuka jaringan",
     "reticulumNetworkEmpty": "Belum ada antarmuka yang dilaporkan.",
-    "reticulumNetworkUnknown": "Antarmuka",
-    "reticulumNetworkDisabled": "dinonaktifkan",
     "reticulumSidecarMissing": "Sidecar Reticulum belum dibangun. Dari repo mesh-client jalankan `pnpm run reticulum:sidecar:build` (memerlukan Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) tidak ditemukan. Instal dari https://rustup.rs lalu jalankan `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Tidak dapat memulai stack Reticulum: {{message}}",
-    "disconnect": "Memutuskan",
     "reticulumStopStack": "Hentikan tumpukan",
     "reticulumAutostart": "Mulai otomatis tumpukan saat membuka Koneksi",
     "reticulumStackRunning": "Stack berjalan",
@@ -654,7 +610,6 @@
       "failed": "Penyiapan identitas gagal",
       "export": "Ekspor cadangan",
       "exportPassphrase": "Frasa sandi cadangan",
-      "exportPassphraseHint": "Mengenkripsi JSON cadangan yang diekspor. Simpan frasa sandi secara terpisah dari file cadangan.",
       "exportPassphraseRequired": "Masukkan frasa sandi cadangan sebelum mengekspor."
     },
     "reticulumInterfaces": {
@@ -688,7 +643,6 @@
       "localOfflineRowStale": "Port serial {{port}} tidak ditemukan — Replug USB mungkin telah mengubah jalur."
     },
     "reticulumPeers": {
-      "name": "Peer",
       "hops": "Hops",
       "actions": "Aksi",
       "path": "Path",
@@ -727,8 +681,6 @@
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",
     "dismissRow": "Membubarkan",
     "searchAnomalies": "Anomali penelusuran...",
-    "meshcoreInterferenceHeading": "Node MeshCore terdengar pada frekuensi ({{count}})",
-    "meshcoreInterferenceDescription": "Entri ini mengidentifikasi interferensi MeshCore pada frekuensi yang didengar oleh radio ini. Mereka dapat berkontribusi pada masalah pemanfaatan dan percobaan ulang, namun bukan merupakan diagnostik kegagalan rute Meshtastic saja.",
     "otherCrossProtocolHeading": "Lalu lintas frekuensi/lintas tumpukan lainnya ({{count}})",
     "removeMqttFilter": "Hapus filter MQTT per node",
     "excludeMqttData": "Kecualikan data MQTT simpul ini dari diagnostik",
@@ -860,10 +812,6 @@
       "excessiveFlooding": "{{percent}}% transmisi dialiri banjir — perutean langsung mungkin tidak dilakukan dengan node terdekat."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "Node MeshCore sangat dekat (RSSI {{rssi}} dBm) — kemungkinan menyebabkan tabrakan paket.",
-      "meshcoreNearby": "Node MeshCore terdeteksi di sekitar (RSSI {{rssi}} dBm) — dapat mengganggu lalu lintas.",
-      "meshcoreDistant": "Aktivitas MeshCore jauh pada frekuensi ini (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "Node MeshCore mentransmisikan pada frekuensi ini.",
       "meshtastic": "Node Meshtastic mentransmisikan pada frekuensi ini. Pengirim: {{sender}}. {{proximity}}Node ini mungkin berada di area repeater MeshCore Anda.",
       "unknownLora": "Sinyal LoRa yang tidak dikenal terdeteksi (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Kecepatan paket MeshCore tinggi terdeteksi (>5/mnt). Repeater MeshCore terdekat mungkin menyebabkan tabrakan paket."
@@ -943,12 +891,10 @@
     "meshcoreRepeaterConflictBanner": "Kecepatan paket MeshCore tinggi (>5/menit) — repeater terdekat dapat menyebabkan tabrakan pada saluran Meshtastic Anda.",
     "meshcoreHeardByMeshtasticHeading": "Node MeshCore didengar oleh radio Meshtastic Anda ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "Pemancar MeshCore mendengar RF lokal dalam 90 menit terakhir (log perangkat Meshtastic atau RX radio MeshCore). Tidak termasuk sinkronisasi kontak repeater MeshCore. Ini bukan simpul Meshtastic Anda.",
-    "meshcoreHeardByMeshtasticEmpty": "Tidak ada node MeshCore yang terdengar pada frekuensi Meshtastic Anda dalam 90 menit terakhir.",
     "meshcoreHeardUnknownNode": "Pemancar MeshCore tak dikenal",
     "meshcoreHeardNearbyEncrypted": "RF MeshCore terdekat (terenkripsi)",
     "foreignLoraHeading": "LoRa asing lainnya pada frekuensi Meshtastic Anda ({{count}})",
-    "foreignLoraDescription": "Pemancar Meshtastic dan sinyal LoRa yang tidak dikenal pada frekuensi Anda dalam 90 menit terakhir. Simpul MeshCore tercantum di bagian di atas.",
-    "foreignLoraEmpty": "Tidak ada aktivitas Meshtastic atau LoRa yang tidak diketahui pada frekuensi Meshtastic Anda dalam 90 menit terakhir."
+    "foreignLoraDescription": "Pemancar Meshtastic dan sinyal LoRa yang tidak dikenal pada frekuensi Anda dalam 90 menit terakhir. Simpul MeshCore tercantum di bagian di atas."
   },
   "errorBoundary": {
     "title": "Ada yang tidak beres",
@@ -970,7 +916,6 @@
     "selectProductPlaceholder": "Pilih produk…",
     "selectModelPlaceholder": "Pilih model…",
     "firmwareFile": "File firmware (.zip)",
-    "chooseFirmware": "Pilih firmware…",
     "enterDfuMode": "Masuk ke mode DFU",
     "enterDfuHint": "Untuk papan nRF52: menempatkan perangkat ke mode bootloader USB DFU (1200 baud touch).",
     "flashFirmware": "Firmware flash",
@@ -1054,7 +999,6 @@
     "flashDone": "Firmware di-flash"
   },
   "logAnalyzeModal": {
-    "closeDialog": "Tutup dialog",
     "title": "Analisis Log",
     "totalEntries": "{{count}} entri",
     "errorsShort": "{{count}} kesalahan",
@@ -1149,16 +1093,12 @@
         "recommendation": "Riwayat obrolan Simpan & Teruskan tidak dapat diminta dari router (sering kali perlombaan singkat dengan lalu lintas radio lainnya). Jika backlog obrolan tetap kosong, sambungkan kembali atau tunggu detak jantung router berikutnya."
       },
       "serial-reconnect": {
-        "label": "Sambungkan Ulang Serial USB",
-        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh-client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
+        "label": "Sambungkan Ulang Serial USB"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Lakukan hal itu."
-      },
-      "serial-reconnect": {
-        "recommendation": "Serial USB tidak terlepas dengan bersih setelah terputus. Keluar dari mesh-client dan buka kembali, atau cabut dan pasang kembali kabel, lalu sambungkan lagi."
       }
     }
   },
@@ -1189,13 +1129,9 @@
   },
   "mapPanel": {
     "locationUnavailable": "Lokasi tidak tersedia.",
-    "gpsHardwareUnavailable": "Perangkat keras GPS tidak tersedia.",
-    "locationError": "Kesalahan lokasi: {{error}}",
     "locationRequestFailed": "Permintaan lokasi gagal.",
     "showMyLocation": "Tunjukkan lokasi saya",
     "networkMap": "Peta jaringan menunjukkan posisi node",
-    "toggleRouteWeightLines": "Alihkan garis bobot rute",
-    "routeWeights": "Bobot rute",
     "layerControls": "Lapisan",
     "layerControlsAria": "Alihkan kontrol lapisan peta",
     "basemapHeading": "Peta dasar",
@@ -1288,7 +1224,6 @@
     "cannedMessagesApplied": "Pesan Kalengan diterapkan.",
     "rtttlSaved": "Nada dering RTTTL disimpan.",
     "title": "Konfigurasi Modul",
-    "readOnly": "Hanya baca",
     "connectToDevice": "Hubungkan ke perangkat untuk mengubah konfigurasi modul.",
     "waitingForModuleConfig": "Menunggu konfigurasi modul dari perangkat…",
     "selectPreset": "Pilih prasetel…",
@@ -1441,14 +1376,7 @@
       "echoMode": "Modus gema",
       "baudRate": "Tingkat baud",
       "storeForwardEnabled": "Simpan & Teruskan diaktifkan",
-      "sfHeartbeat": "Kirim detak jantung",
-      "sfMaxStored": "Catatan yang disimpan maksimal",
-      "sfHistoryMax": "Pengembalian histori maks",
-      "sfHistoryWindow": "Jendela pengembalian riwayat",
       "sfHeartbeatDesc": "Siarkan kehadiran secara berkala sehingga klien tahu S&F tersedia.",
-      "sfMaxStoredDesc": "Catatan maksimum disimpan di perangkat.",
-      "sfHistoryMaxDesc": "Pesan maksimal yang akan dikembalikan ketika node meminta riwayat.",
-      "sfHistoryWindowDesc": "Seberapa jauh waktu untuk membalas pesan (detik).",
       "telDeviceTelemetryEnabled": "Kirim telemetri perangkat",
       "telDeviceTelemetryEnabledDesc": "Menyiarkan metrik perangkat (baterai, voltase, pemanfaatan saluran) ke mesh melalui modul telemetri.",
       "telDeviceInterval": "Interval metrik perangkat",
@@ -1864,7 +1792,6 @@
   },
   "nomadNetwork": {
     "title": "Nomad Network",
-    "empty": "Belum ada node Nomad Network yang ditemukan.",
     "toggleFavorite": "Alihkan favorit",
     "favourites": "Favorit",
     "announces": "Mengumumkan",
@@ -1922,7 +1849,6 @@
     "probeHops": "Selidiki OK — {{hops}} hop.",
     "probeLocal": "Selidiki OK (mode {{mode}}).",
     "probeFailed": "Probe gagal: {{error}}",
-    "isContact": "Kontak",
     "iconColor": "Warna avatar",
     "iconColorAria": "Warna avatar sejawat",
     "saveContact": "Simpan sebagai kontak",
@@ -1958,7 +1884,6 @@
     "maxHopsAll": "Semua hop",
     "maxHopsOption": "{{count}} hop",
     "resetView": "Atur ulang tampilan",
-    "hoverHint": "Arahkan kursor atau fokuskan simpul untuk namanya. Tarik untuk menggeser, gulir untuk memperbesar.",
     "compactLeafCount": "{{count}} rekan langsung ringkas"
   },
   "peerListPanel": {
@@ -1978,8 +1903,6 @@
     "groupFilterAria": "Filter kontak menurut grup",
     "allGroups": "Semua groups",
     "manageGroups": "Kelola Grup",
-    "radioPeerCount": "{{count}} rekan di tabel jalur",
-    "viewAllPeers": "Lihat semua di tab Rekan",
     "colLastHeard": "Terakhir didengar",
     "colContact": "Kontak",
     "contactYes": "Ya",
@@ -2029,19 +1952,14 @@
     "sectionLora": "LoRa / Radio",
     "sectionPositionGps": "Posisi / GPS",
     "sectionPower": "Kekuatan",
-    "sectionTelemetry": "Telemetri",
     "sectionWifi": "Wi-Fi / Jaringan",
-    "passwordPlaceholder": "Kata sandi",
     "yourNamePlaceholder": "Nama Anda",
     "namePlaceholder": "NAMA",
     "networkNamePlaceholder": "Nama jaringan",
     "encryptionNone": "Tidak ada (tidak ada enkripsi)",
     "encryptionSimple": "Sederhana (kunci Meshtastic default)",
     "generateRandomKey": "Hasilkan kunci acak",
-    "setKeyFromSha256": "Setel kunci dari SHA-256(nama) 16 byte pertama (MeshCore #channels)",
     "removeAllContactsTitle": "Hapus semua kontak dari radio, simpan di database",
-    "contactsOnRadio": "{{count}} / {{max}} kontak di radio",
-    "aesEncrypted": "dienkripsi AES",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Ukuran Kunci",
@@ -2051,8 +1969,6 @@
     "connectToConfigure": "Hubungkan ke perangkat untuk mengubah konfigurasi.",
     "importConfigJson": "Impor Konfigurasi JSON",
     "offloadContacts": "Pembongkaran",
-    "deviceMetricsDescription": "Siaran mesh: seberapa sering baterai, voltase, dan pemanfaatan saluran dikirim melalui LoRa. 0 = dinonaktifkan; default 1800 detik (30 menit). Aplikasi yang terhubung: ketika ditautkan melalui Bluetooth, serial, atau Wi-Fi, firmware sering kali masih mengirimkan metrik perangkat ke klien ini setiap 60 detik untuk kesegaran di layar—yang tidak sama dengan interval mesh Anda.",
-    "deviceMetricsTooltip": "Firmware Meshtastic mengirimkan metrik perangkat ke klien yang terhubung kira-kira sekali per menit untuk pemantauan lokal, terlepas dari interval telemetri mesh. Referensi resmi: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metrik"
@@ -2116,18 +2032,6 @@
     "pairingPinDesc": "PIN tetap 6 digit untuk pemasangan Bluetooth. Bawaan: 123456.",
     "wifiPasswordLabel": "Kata Sandi Wi-Fi",
     "wifiPasswordPlaceholder": "Kata sandi",
-    "deviceUserIdentity": "Pengguna / Identitas Perangkat",
-    "displaySection": "Menampilkan",
-    "loraRadio": "LoRa / Radio",
-    "positionGps": "Posisi / GPS",
-    "powerSection": "Kekuatan",
-    "telemetrySection": "Telemetri",
-    "wifiNetwork": "Wi-Fi / Jaringan",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "NAMA",
-    "latPlaceholder": "0,000000",
-    "lonPlaceholder": "0,000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Utama",
     "channelNameSecondary": "Nama saluran",
     "resetChannelDefaults": "Atur ulang ke default",
@@ -2144,7 +2048,6 @@
     "channelSaveFailed": "Gagal: {{message}}",
     "validationAes128": "Kunci AES-128 harus berukuran tepat 16 byte (24 karakter base64)",
     "validationAes256": "Kunci AES-256 harus berukuran tepat 32 byte (44 karakter base64)",
-    "factoryResetConfirmTitle": "Reset Pabrik",
     "factoryResetButton": "Perangkat Reset Pabrik",
     "dangerZonePermanent": "Tindakan ini bersifat permanen dan tidak dapat dibatalkan.",
     "resetNodeDbName": "Setel ulang NodeDB",
@@ -2220,7 +2123,6 @@
     "lightSleepDurationDesc": "Durasi siklus tidur ringan. 0 = gunakan bawaan.",
     "batteryShutdownLabel": "Pematian baterai setelahnya",
     "batteryShutdownDesc": "Matikan baterai setelah beberapa detik sejak aktivitas mesh terakhir. 0 = dinonaktifkan.",
-    "deviceMetricsIntervalLabel": "Interval pembaruan metrik perangkat",
     "wifiEnabledLabel": "Wi-Fi diaktifkan",
     "ethernetEnabledLabel": "Ethernet diaktifkan",
     "mqttUplinkLabel": "Tautan MQTT",
@@ -2509,12 +2411,6 @@
       "confirmTitle": "Atur ulang tumpukan Reticulum?",
       "confirmBody": "Tindakan ini akan menghapus identitas, kontak, dan pesan lokal dari sidecar. File konfigurasi antarmuka Anda disimpan.",
       "confirm": "Atur ulang"
-    },
-    "reticulumVoiceGames": {
-      "title": "Suara dan permainan",
-      "voiceStatus": "Suara (LXST): {{status}}",
-      "gamesStatus": "Permainan (LRGP): {{status}}",
-      "unavailable": "Tidak tersedia di build ini"
     }
   },
   "rawPacketLog": {
@@ -2660,8 +2556,6 @@
     "pathHashCliSet2": "Atur mode hash jalur 3 - byte"
   },
   "reticulumIdentity": {
-    "title": "Identitas",
-    "activeIdentity": "Identitas aktif",
     "announceIntervalSec": "Interval pengumuman (detik)",
     "clearAnnounces": "Hapus pengumuman",
     "announceSaved": "Interval pengumuman disimpan.",
@@ -2669,14 +2563,6 @@
     "announceSaveSidecarStopped": "Mulai tumpukan Reticulum sebelum menyimpan pengaturan pengumuman.",
     "clearAnnouncesDone": "Pengumuman dihapus.",
     "clearAnnouncesFailed": "Gagal menghapus pengumuman."
-  },
-  "reticulumPing": {
-    "title": "Ping",
-    "hashPlaceholder": "Hash tujuan…",
-    "hashAria": "Hash tujuan ke ping",
-    "run": "Ping",
-    "result": "RTT {{ms}} ms",
-    "failed": "Ping gagal: {{error}}"
   },
   "reticulumPropagation": {
     "preferred": "Disukai",
@@ -2700,10 +2586,6 @@
     "edgeCount": "Tautan {{count}}",
     "hiddenCount": "Menampilkan {{shown}} dari {{total}} node (rekan jauh disembunyikan)",
     "legendSelf": "simpul ini",
-    "legendHub": "hub relai",
-    "legendPeer": "Rekan",
-    "directLink": "Tautan langsung",
-    "relayLink": "Melalui hub",
     "centerRns": "RNS",
     "showDistantPeers": "Tampilkan rekan yang jauh",
     "maxHopsFilter": "Hop maks",
@@ -2834,7 +2716,6 @@
     "jumpToUnread": "Langsung ke belum dibaca",
     "newMessagesDivider": "Pesan baru",
     "loggingInMarkerAria": "Masuk ke server ruangan",
-    "savedPasswordNotLoggedIn": "Kata sandi disimpan — buka ruangan dan masuk",
     "favorite": "Ruangan favorit",
     "unfavorite": "Hapus dari favorit",
     "loginAllSaved": "Masuk semua",
@@ -2882,17 +2763,14 @@
     "placeholder": "Cari semua pesan… (pengguna:nama, saluran:nama)",
     "noResults": "Tidak ada hasil",
     "hint": "Ketik untuk mencari di semua pesan",
-    "resultCount": "{{count}} hasil- klik untuk menavigasi",
-    "openSearch": "Cari pesan"
+    "resultCount": "{{count}} hasil- klik untuk menavigasi"
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
     "failed": "Gagal: {{message}}",
     "adminKeysApplied": "Kunci admin diterapkan.",
     "adminSettingsApplied": "Pengaturan administrasi diterapkan.",
-    "keysBackedUp": "Kunci dicadangkan ke gantungan kunci sistem.",
     "backupFailed": "Pencadangan gagal: {{message}}",
-    "keysRestored": "Kunci dipulihkan dari cadangan.",
     "restoreFailed": "Pemulihan gagal: {{message}}",
     "dataSigned": "Data berhasil ditandatangani.",
     "signNoResult": "Operasi tanda tangan tidak membuahkan hasil.",
@@ -2936,8 +2814,6 @@
     "adminChannelDesc": "Izinkan kontrol perangkat masuk atas saluran admin lama yang tidak aman.",
     "keyBackupUnavailable": "Enkripsi rantai kunci sistem tidak tersedia pada platform ini. Pencadangan dan pemulihan dinonaktifkan.",
     "keyBackupDesc": "Cadangkan kunci DM Anda ke gantungan kunci sistem (terenkripsi). Anda dapat memulihkannya ke perangkat kapan saja.",
-    "backupAvailable": "Cadangan tersedia",
-    "noBackupStored": "Tidak ada cadangan yang disimpan",
     "backupKeys": "Kunci Cadangan",
     "restoreKeys": "Pulihkan Kunci",
     "working": "Bekerja...",

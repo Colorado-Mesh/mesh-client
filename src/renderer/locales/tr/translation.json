@@ -108,17 +108,10 @@
     "colorScheme": "Renk şeması",
     "dangerZoneSection": "Tehlikeli Bölge",
     "destructiveActions": "Yıkıcı eylemler",
-    "dangerZoneDesc": "Bu eylemler kalıcıdır ve geri alınamaz. Her adımı dikkatlice onaylayın.",
-    "diagnosticsSection": "Teşhis",
     "pruneDistantNodesTitle": "Uzak Düğümleri Budama",
-    "pruneDistantNodesDesc": "Harita ve Düğüm Filtrelemede mesafe eşiğinin ötesinde. Geçerli bir GPS konumu gerektirir.",
     "pruneOfflineNodesTitle": "Çevrimdışı Düğümleri Budama",
-    "pruneOfflineNodesDays": "{{days}} günden fazladır haber alınamadı. Favorilere eklenen düğümler hariç tutulur.",
-    "clearAllNodesCount": "Tüm Düğümleri Temizle ({{count}})",
     "deleteContactsNoPubkeysTitle": "Pubkey'ler Olmadan Kişileri Sil",
-    "deleteContactsNoPubkeysDesc": "Mesajlardan oluşturulan sohbet saplama düğümlerini hariç tutar.",
     "messagesSection": "Mesajlar",
-    "channelLabel": "Kanal:",
     "allChannelsOption": "Tüm Kanallar",
     "clearMessagesCount": "Mesajları Temizle ({{count}})",
     "floodAdvertScheduleLabel": "Bir programa göre otomatik olarak bir sel reklamı gönderin:",
@@ -160,7 +153,6 @@
     "removeUnnamedNodesLabel": "Başlangıçta adsız düğümleri kaldırın",
     "capTotalNodesLabel": "Toplam düğümleri sınırlandırın, en yeniyi koruyun",
     "autoPrunePositionHistoryLabel": "Başlangıçta konum geçmişini otomatik olarak buda, şu tarihten daha eski:",
-    "removeContactsNeverAdvertisedLabel": "Başlangıçta hiç reklam vermeyen kişileri kaldırın",
     "autoPruneUnheardContactsLabel": "Başlangıçta şu tarihten daha eski, duyulmamış kişileri otomatik olarak buda:",
     "capTotalContactsLabel": "Toplam kişileri sınırlandırın, en son görülenleri koruyun",
     "limitMessagesLoadedLabel": "Yüklenen mesajları sınırla",
@@ -229,13 +221,11 @@
   "channelUtilization": {
     "title": "Kanal Kullanımı",
     "noData": "Henüz kanal kullanım verisi yok",
-    "meshcoreNote": "MeshCore: yalnızca bağlı düğüm gösteriliyor",
     "tooltipLabel": "Kanal kullanımı"
   },
   "chatPanel": {
     "channels": "Kanallar",
     "searchMessages": "Mesajlarda ara",
-    "searchAllChannels": "Tüm kanalları ara",
     "closeDmTab": "DM sekmesini kapat",
     "searchMessagesPlaceholder": "Mesajları ara...",
     "searchResults_one": "{{count}} sonuç",
@@ -265,19 +255,14 @@
     "filterBySender": "Gönderene göre filtrele",
     "clearSenderFilter": "Filtreyi temizle",
     "filteringBySender": "{{name}} ile filtreleme",
-    "muteNotifications": "Bildirimleri sessizleştir",
-    "unmuteNotifications": "Bildirimlerin sesini aç",
     "jumpToDate": "Şu tarihi göster",
-    "noMessagesOnDate": "Bu tarihte mesaj yok",
     "exportChat": "Sohbeti Dışa Aktar",
-    "exportChatSuccess": "Sohbet dışa aktarıldı",
     "exportChatFailed": "Dışa aktarma başarısız oldu",
     "dmNodeLastHeard": "Son duyma {{time}}",
     "dmNodeBattery": "{{pct}}% pil",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} atlama",
-    "quickDm": "Doğrudan mesaj {{name}}",
     "muteConversation": "Bu konuşmayı sessize al",
     "unmuteConversation": "Bu konuşmanın sesini aç",
     "starMessage": "Mesajı Yıldızla",
@@ -329,9 +314,6 @@
     "waitingMessagesSyncNow": "Şimdi senkronize et",
     "jumpToUnread": "Okunmamışlara Atla",
     "jumpToLatest": "En Yeniye Atla",
-    "meshcoreReactionPickerLabel": "Ağ reaksiyonunu seçin",
-    "meshcoreReactionEmojiOption": "{{emoji}} ile tepki verin",
-    "meshcoreReactionNotInteroperable": "Bu emoji, MeshCore mesh reaksiyonları için desteklenmiyor.",
     "reactionFailed": "Tepki başarısız oldu",
     "meshcoreGifButton": "Giphy GIF Ekle",
     "meshcoreGifButtonHint": "Giphy GIF'i MeshCore Open g: wire olarak gönder",
@@ -373,7 +355,6 @@
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
-    "emptyMention": "Boş söz",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Giphy'de aç"
   },
@@ -383,36 +364,20 @@
     "save": "Kaydetmek",
     "yes": "Evet",
     "no": "HAYIR",
-    "apply": "Uygula",
-    "ok": "TAMAM",
-    "reset": "Sıfırla",
     "clear": "Temizlemek",
-    "export": "İhracat",
-    "import": "İçe aktarmak",
     "refresh": "Yenile",
-    "delete": "Silmek",
     "edit": "Düzenlemek",
-    "add": "Eklemek",
-    "remove": "Kaldırmak",
-    "send": "Göndermek",
-    "search": "Aramak",
     "loading": "Yükleniyor",
     "error": "Hata",
-    "success": "Başarı",
     "warning": "Uyarı",
-    "enabled": "Etkinleştirilmiş",
     "disabled": "Engelli",
     "unknown": "Bilinmiyor",
-    "none": "Hiçbiri",
     "never": "Asla",
-    "always": "Her zaman",
     "dismiss": "Azletmek",
     "channel": "Kanal",
     "nodes": "düğümler",
     "contacts": "kişiler",
     "messages": "mesajlar",
-    "connect": "Bağlamak",
-    "disconnect": "Bağlantıyı kes",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Web sitesi",
@@ -448,7 +413,6 @@
     "requiresLocalRadio": "Uzaktan yönetimi kullanmak için yerel bir Meshtastic telsiz bağlayın.",
     "sessionActive": "Yönetici oturumu etkin",
     "sessionStale": "Yönetici oturumu eski — ayarları değiştirmeden önce yenileyin",
-    "sessionNone": "Yönetici oturumu kurulmadı — yerel radyo yükleniyor veya bağlanıyor",
     "establishingSession": "Yönetici oturumu oluşturuluyor…"
   },
   "connectionBanner": {
@@ -472,8 +436,6 @@
     "selectBluetoothDevice": "Bluetooth Cihazını Seçin",
     "devicesFound": "{{count}} bulundu",
     "scanningDevices": "{{protocol}} cihazları taranıyor...",
-    "adaDfuHint": "MacOS'ta bir cihaz \"AdaDFU\" olarak görünüyorsa, Meshtastic adını görmek için önce onu Sistem Ayarları → Bluetooth'ta eşleştirin.",
-    "meshcorePairingNote": "Bağlanmadan önce MeshCore cihazınızı sistem Bluetooth ayarlarında eşleştirin. İstendiğinde bir PIN kodu kullanın; sisteminiz bir PIN sormazsa bağlantı başarısız olur ve eşleştirmeyi kaldırıp bir PIN ile yeniden eşleştirmeniz gerekebilir.",
     "selectSerialPort": "Seri Bağlantı Noktasını Seçin",
     "noSerialPorts": "Seri bağlantı noktası bulunamadı. Cihazınızın fişe takılı olduğundan emin olun.",
     "enterPin": "Cihazınızda gösterilen PIN'i girin:",
@@ -560,7 +522,6 @@
     "stagePairingFailed": "Eşleştirme başarısız oldu. Lütfen cihazınızı yeniden eşleştirin.",
     "stageCheckingPairing": "Bluetooth eşleşmesi kontrol ediliyor…",
     "stageEnterPinLinux": "Cihazınızda gösterilen PIN'i girin (önce Linux ile eşleştirin)",
-    "stageScanningLast": "Son Bluetooth cihazı taranıyor…",
     "stageReconnecting": "Son Bluetooth cihazına yeniden bağlanılıyor…",
     "pinPlaceholder": "PIN",
     "humanize": {
@@ -627,15 +588,10 @@
     "reticulumStackTitle": "Reticulum yığını",
     "reticulumStackHint": "Yerel Reticulum/LXMF sidecarını başlatır (TCP ve Auto arayüzleri).",
     "reticulumStartStack": "Yığını başlat",
-    "reticulumRestartStack": "Yığını yeniden başlat",
-    "reticulumNetworkTitle": "Ağ arayüzleri",
     "reticulumNetworkEmpty": "Henüz arayüz bildirilmedi.",
-    "reticulumNetworkUnknown": "Arayüz",
-    "reticulumNetworkDisabled": "devre dışı",
     "reticulumSidecarMissing": "Reticulum sidecar derlenmedi. mesh-client deposunda `pnpm run reticulum:sidecar:build` çalıştırın (Rust gerekir).",
     "reticulumSidecarCargoMissing": "Rust toolchain (cargo) bulunamadı. https://rustup.rs adresinden yükleyin ve ardından `pnpm run reticulum:sidecar:build` çalıştırın.",
     "reticulumSidecarStartFailed": "Reticulum yığını başlatılamadı: {{message}}",
-    "disconnect": "Bağlantıyı kes",
     "reticulumStopStack": "Yığını durdur",
     "reticulumAutostart": "Bağlantı açılırken yığını otomatik olarak başlat",
     "reticulumStackRunning": "Yığın çalışıyor",
@@ -654,7 +610,6 @@
       "failed": "Kimlik kurulumu başarısız oldu",
       "export": "Yedeklemeyi dışa aktar",
       "exportPassphrase": "Yedekleme parolası",
-      "exportPassphraseHint": "Dışa aktarılan yedekleme JSON'unu şifreler. Parolayı yedekleme dosyasından ayrı olarak saklayın.",
       "exportPassphraseRequired": "Dışa aktarmadan önce bir yedek parola girin."
     },
     "reticulumInterfaces": {
@@ -688,7 +643,6 @@
       "localOfflineRowStale": "Seri bağlantı noktası {{port}} bulunamadı — USB yeniden fişi yolu değiştirmiş olabilir."
     },
     "reticulumPeers": {
-      "name": "Eş",
       "hops": "Hops",
       "actions": "Eylemler",
       "path": "Yol",
@@ -727,8 +681,6 @@
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",
     "dismissRow": "Azletmek",
     "searchAnomalies": "Arama anormallikleri...",
-    "meshcoreInterferenceHeading": "MeshCore düğümleri frekansta duyuldu ({{count}})",
-    "meshcoreInterferenceDescription": "Bu girişler, bu radyo tarafından duyulan frekanstaki MeshCore girişimini tanımlar. Kullanım ve yeniden deneme sorunlarına katkıda bulunabilirler ancak kendi başlarına Meshtastic rota hatası teşhisi değildirler.",
     "otherCrossProtocolHeading": "Diğer frekansta/yığınlar arası trafik ({{count}})",
     "removeMqttFilter": "Düğüm başına MQTT filtresini kaldır",
     "excludeMqttData": "Bu düğümün MQTT verilerini tanılamanın dışında tutun",
@@ -860,10 +812,6 @@
       "excessiveFlooding": "İletimlerin % {{percent}}kadarı taşkın yönlendirmelidir — yakındaki düğümlerle doğrudan yönlendirme kurulamayabilir."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "MeshCore düğümü çok yakın (RSSI {{rssi}} dBm) — muhtemelen paket çarpışmalarına neden oluyor.",
-      "meshcoreNearby": "Yakınlarda MeshCore düğümü algılandı (RSSI {{rssi}} dBm) — trafiği etkileyebilir.",
-      "meshcoreDistant": "Bu frekansta uzak MeshCore etkinliği (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "MeshCore düğümü bu frekansta iletim yapıyor.",
       "meshtastic": "Meshtastic düğüm bu frekansta iletim yapıyor. Gönderen: {{sender}}. {{proximity}}Bu düğüm MeshCore tekrarlayıcı alanınızda olabilir.",
       "unknownLora": "Tanınmayan LoRa sinyali algılandı (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Yüksek MeshCore paket hızı algılandı (>5/dak). Yakındaki bir MeshCore yineleyici paket çarpışmalarına neden oluyor olabilir."
@@ -943,12 +891,10 @@
     "meshcoreRepeaterConflictBanner": "Yüksek MeshCore paket hızı (>5/dak) — yakındaki bir tekrarlayıcı Meshtastic kanalınızda çarpışmalara neden olabilir.",
     "meshcoreHeardByMeshtasticHeading": "Meshtastic telsiziniz tarafından duyulan MeshCore düğümleri ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "MeshCore vericileri son 90 dakika içinde yerel RF'ye kulak misafiri oldu (Meshtastic cihaz günlükleri veya MeshCore radyo RX). MeshCore tekrarlayıcı kontak senkronizasyonunu içermez. Bunlar senin Meshtastic düğümün değil.",
-    "meshcoreHeardByMeshtasticEmpty": "Son 90 dakika içinde Meshtastic frekansınızda hiçbir MeshCore düğümü duyulmadı.",
     "meshcoreHeardUnknownNode": "Tanımsız MeshCore verici",
     "meshcoreHeardNearbyEncrypted": "Yakınlardaki MeshCore RF (şifreli)",
     "foreignLoraHeading": "Meshtastic frekansınızdaki diğer yabancı LoRa ({{count}})",
-    "foreignLoraDescription": "Son 90 dakika içinde frekansınızda Meshtastic vericiler ve tanınmayan LoRa sinyalleri. MeshCore düğümleri yukarıdaki bölümde listelenmiştir.",
-    "foreignLoraEmpty": "Son 90 dakika içinde Meshtastic frekansınızda Meshtastic veya bilinmeyen LoRa aktivitesi yok."
+    "foreignLoraDescription": "Son 90 dakika içinde frekansınızda Meshtastic vericiler ve tanınmayan LoRa sinyalleri. MeshCore düğümleri yukarıdaki bölümde listelenmiştir."
   },
   "errorBoundary": {
     "title": "Bir şeyler ters gitti",
@@ -970,7 +916,6 @@
     "selectProductPlaceholder": "Bir ürün seçin…",
     "selectModelPlaceholder": "Bir model seçin…",
     "firmwareFile": "Firmware dosyası (.zip)",
-    "chooseFirmware": "Ürün yazılımını seçin…",
     "enterDfuMode": "DFU moduna girin",
     "enterDfuHint": "NRF52 kartları için: cihazı USB DFU önyükleyici moduna geçirir (1200 baud touch).",
     "flashFirmware": "Flaş ürün yazılımı",
@@ -1054,7 +999,6 @@
     "flashDone": "Aygıt yazılımı yanıp söndü"
   },
   "logAnalyzeModal": {
-    "closeDialog": "İletişim kutusunu kapat",
     "title": "Günlük Analizi",
     "totalEntries": "{{count}} girişleri",
     "errorsShort": "{{count}} hatalar",
@@ -1149,16 +1093,12 @@
         "recommendation": "Sohbet geçmişini sakla ve ilet bir yönlendiriciden talep edilemez (genellikle diğer radyo trafiğiyle kısa bir yarış). Sohbet iş yığını boş kalırsa, yeniden bağlanın veya bir sonraki yönlendiricinin kalp atışını bekleyin."
       },
       "serial-reconnect": {
-        "label": "USB Seri Yeniden Bağlantı",
-        "recommendation": "USB seri bağlantısı kesildikten sonra temiz bir şekilde serbest bırakılmadı. Mesh istemcisinden çıkın ve yeniden açın veya kabloyu çıkarıp yeniden takın, ardından tekrar bağlayın."
+        "label": "USB Seri Yeniden Bağlantı"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Şunu yap."
-      },
-      "serial-reconnect": {
-        "recommendation": "USB seri bağlantısı kesildikten sonra temiz bir şekilde serbest bırakılmadı. Mesh istemcisinden çıkın ve yeniden açın veya kabloyu çıkarıp yeniden takın, ardından tekrar bağlayın."
       }
     }
   },
@@ -1189,13 +1129,9 @@
   },
   "mapPanel": {
     "locationUnavailable": "Konum kullanılamıyor.",
-    "gpsHardwareUnavailable": "GPS donanımı mevcut değil.",
-    "locationError": "Konum hatası: {{error}}",
     "locationRequestFailed": "Konum isteği başarısız oldu.",
     "showMyLocation": "Konumumu göster",
     "networkMap": "Düğüm konumlarını gösteren ağ haritası",
-    "toggleRouteWeightLines": "Rota ağırlık çizgilerini değiştir",
-    "routeWeights": "Rota ağırlıkları",
     "layerControls": "Katmanlar",
     "layerControlsAria": "Harita katmanı kontrollerini aç/kapat",
     "basemapHeading": "\"Basemap\"",
@@ -1288,7 +1224,6 @@
     "cannedMessagesApplied": "Hazır Mesajlar uygulandı.",
     "rtttlSaved": "RTTTL zil sesi kaydedildi.",
     "title": "Modül Yapılandırması",
-    "readOnly": "Salt okunur",
     "connectToDevice": "Modül yapılandırmasını değiştirmek için bir cihaza bağlanın.",
     "waitingForModuleConfig": "Cihazdan modül yapılandırması bekleniyor…",
     "selectPreset": "Bir ön ayar seçin…",
@@ -1441,14 +1376,7 @@
       "echoMode": "Yankı modu",
       "baudRate": "Baud hızı",
       "storeForwardEnabled": "Sakla ve İlet etkin",
-      "sfHeartbeat": "Kalp atışı gönder",
-      "sfMaxStored": "Maksimum saklanan kayıtlar",
-      "sfHistoryMax": "Geçmiş dönüş maksimumu",
-      "sfHistoryWindow": "Geçmişe dönüş penceresi",
       "sfHeartbeatDesc": "Müşterilerin S&F'nin mevcut olduğunu bilmesi için varlığınızı periyodik olarak yayınlayın.",
-      "sfMaxStoredDesc": "Cihazda tutulan maksimum kayıt.",
-      "sfHistoryMaxDesc": "Bir düğüm geçmiş isteğinde bulunduğunda döndürülecek maksimum ileti sayısı.",
-      "sfHistoryWindowDesc": "Mesajların geri döndürülmesi için zaman açısından ne kadar geriye gidildiği (saniye).",
       "telDeviceTelemetryEnabled": "Cihaz telemetrisini gönder",
       "telDeviceTelemetryEnabledDesc": "Cihaz ölçümlerini (pil, voltaj, kanal kullanımı) telemetri modülü aracılığıyla ağa yayınlayın.",
       "telDeviceInterval": "Cihaz ölçüm aralığı",
@@ -1864,7 +1792,6 @@
   },
   "nomadNetwork": {
     "title": "Göçebe Ağı",
-    "empty": "Henüz hiçbir Göçebe Ağı düğümü keşfedilmedi.",
     "toggleFavorite": "Favorileri aç/kapat",
     "favourites": "Favoriler",
     "announces": "Duyurular",
@@ -1922,7 +1849,6 @@
     "probeHops": "Prob tamam — {{hops}} hop(lar).",
     "probeLocal": "Prob OK ({{mode}} modu).",
     "probeFailed": "Prob başarısız oldu: {{error}}",
-    "isContact": "İletişim",
     "iconColor": "Avatar rengi",
     "iconColorAria": "Akran avatarı rengi",
     "saveContact": "Kişi olarak kaydet",
@@ -1958,7 +1884,6 @@
     "maxHopsAll": "Tüm hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "GÃ¶rÃ¼nÃ¼mÃ¼ SÄ±fÄ±rla",
-    "hoverHint": "Bir düğümün üzerine gelin veya ismine odaklanın. Kaydırmak için sürükleyin, yakınlaştırmak için kaydırın.",
     "compactLeafCount": "{{count}} kompakt doğrudan eşler"
   },
   "peerListPanel": {
@@ -1978,8 +1903,6 @@
     "groupFilterAria": "Kişileri gruba göre filtrele",
     "allGroups": "Tüm gruplar",
     "manageGroups": "Grup Yönetimi",
-    "radioPeerCount": "{{count}} yol tablosundaki eş(ler)",
-    "viewAllPeers": "Akranlar sekmesinde tümünü görüntüle",
     "colLastHeard": "Son duyma",
     "colContact": "İletişim",
     "contactYes": "Evet",
@@ -2029,19 +1952,14 @@
     "sectionLora": "LoRa / Radyo",
     "sectionPositionGps": "Konum / GPS",
     "sectionPower": "Güç",
-    "sectionTelemetry": "Telemetri",
     "sectionWifi": "Wi-Fi / Ağ",
-    "passwordPlaceholder": "Şifre",
     "yourNamePlaceholder": "Adınız",
     "namePlaceholder": "İSİM",
     "networkNamePlaceholder": "Ağ adı",
     "encryptionNone": "Yok (şifreleme yok)",
     "encryptionSimple": "Basit (varsayılan Meshtastic tuşu)",
     "generateRandomKey": "Rastgele anahtar oluştur",
-    "setKeyFromSha256": "Anahtarı SHA-256'dan (ad) ilk 16 bayta ayarlayın (MeshCore #kanallar)",
     "removeAllContactsTitle": "Telsizdeki tüm kişileri kaldırın, veritabanında tutun",
-    "contactsOnRadio": "Radyodaki {{count}} / {{max}} kişileri",
-    "aesEncrypted": "AES şifreli",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Anahtar Boyutu",
@@ -2051,8 +1969,6 @@
     "connectToConfigure": "Yapılandırmayı değiştirmek için bir cihaza bağlanın.",
     "importConfigJson": "JSON Yapılandırmasını İçe Aktar",
     "offloadContacts": "Boşaltma",
-    "deviceMetricsDescription": "Örgü yayını: Pil, voltaj ve kanal kullanımının LoRa üzerinden ne sıklıkla gönderildiği. 0 = devre dışı; varsayılan 1800 sn (30 dk). Bağlı uygulama: Bluetooth, seri veya Wi-Fi üzerinden bağlandığında, ürün yazılımı ekrandaki tazelik için genellikle cihaz ölçümlerini bu istemciye yaklaşık her 60 saniyede bir iletir; bu, ağ aralığınızla aynı değildir.",
-    "deviceMetricsTooltip": "Meshtastic ürün yazılımı, ağ telemetri aralığından bağımsız olarak, yerel izleme için cihaz ölçümlerini bağlı bir istemciye yaklaşık dakikada bir kez gönderir. Resmi referans: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metrik"
@@ -2116,18 +2032,6 @@
     "pairingPinDesc": "Bluetooth eşleştirmesi için 6 haneli sabit PIN. Varsayılan: 123456.",
     "wifiPasswordLabel": "Wi-Fi Şifresi",
     "wifiPasswordPlaceholder": "Şifre",
-    "deviceUserIdentity": "Cihaz Kullanıcısı / Kimliği",
-    "displaySection": "Görüntülemek",
-    "loraRadio": "LoRa / Radyo",
-    "positionGps": "Konum / GPS",
-    "powerSection": "Güç",
-    "telemetrySection": "Telemetri",
-    "wifiNetwork": "Wi-Fi / Ağ",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "İSİM",
-    "latPlaceholder": "0,000000",
-    "lonPlaceholder": "0,000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Öncelik",
     "channelNameSecondary": "Kanal adı",
     "resetChannelDefaults": "Varsayılanlara sıfırla",
@@ -2144,7 +2048,6 @@
     "channelSaveFailed": "Başarısız: {{message}}",
     "validationAes128": "AES-128 anahtarı tam olarak 16 bayt olmalıdır (24 base64 karakter)",
     "validationAes256": "AES-256 anahtarı tam olarak 32 bayt olmalıdır (44 base64 karakter)",
-    "factoryResetConfirmTitle": "Fabrika Ayarlarına Sıfırlama",
     "factoryResetButton": "Fabrika Ayarlarına Sıfırlama Cihazı",
     "dangerZonePermanent": "Bu eylemler kalıcıdır ve geri alınamaz.",
     "resetNodeDbName": "NodeDB'yi sıfırla",
@@ -2220,7 +2123,6 @@
     "lightSleepDurationDesc": "Hafif uyku döngülerinin süresi. 0 = varsayılanı kullan.",
     "batteryShutdownLabel": "Pilin kapanması",
     "batteryShutdownDesc": "Son ağ etkinliğinden bu kadar saniye sonra pili kapatın. 0 = devre dışı.",
-    "deviceMetricsIntervalLabel": "Cihaz metrikleri güncelleme aralığı",
     "wifiEnabledLabel": "WiFi etkin",
     "ethernetEnabledLabel": "Ethernet etkin",
     "mqttUplinkLabel": "MQTT Yukarı Bağlantı",
@@ -2509,12 +2411,6 @@
       "confirmTitle": "Reticulum yığını sıfırlansın mı?",
       "confirmBody": "Bu, kimliği, kişileri ve yerel mesajları sepetten kaldırır. Arayüz yapılandırma dosyanız saklanır.",
       "confirm": "Sıfırla"
-    },
-    "reticulumVoiceGames": {
-      "title": "Ses ve oyunlar",
-      "voiceStatus": "Ses (LXST): {{status}}",
-      "gamesStatus": "Oyunlar (LRGP): {{status}}",
-      "unavailable": "Bu yapıda mevcut değil"
     }
   },
   "rawPacketLog": {
@@ -2660,8 +2556,6 @@
     "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt"
   },
   "reticulumIdentity": {
-    "title": "Kimlikler",
-    "activeIdentity": "Aktif kimlik",
     "announceIntervalSec": "Anons aralığı (saniye)",
     "clearAnnounces": "Duyuruları temizle",
     "announceSaved": "Duyuru aralığı kaydedildi.",
@@ -2669,14 +2563,6 @@
     "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
     "clearAnnouncesDone": "Anonslar temizlendi.",
     "clearAnnouncesFailed": "Duyurular temizlenemedi."
-  },
-  "reticulumPing": {
-    "title": "Ping",
-    "hashPlaceholder": "Hedef hash…",
-    "hashAria": "Hedef hash'ten ping'e",
-    "run": "Ping",
-    "result": "RTT {{ms}} ms",
-    "failed": "Ping başarısız oldu: {{error}}"
   },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",
@@ -2700,10 +2586,6 @@
     "edgeCount": "{{count}} bağlantılar",
     "hiddenCount": "{{shown}} / {{total}} düğümleri gösteriliyor (uzak eşler gizlendi)",
     "legendSelf": "Bu düğüm",
-    "legendHub": "Röle göbeği",
-    "legendPeer": "Akran",
-    "directLink": "Doğrudan bağlantı",
-    "relayLink": "Merkez aracılığıyla",
     "centerRns": "RN'ler",
     "showDistantPeers": "Uzak akranları göster",
     "maxHopsFilter": "Maks hops",
@@ -2834,7 +2716,6 @@
     "jumpToUnread": "Okunmamışlara atla",
     "newMessagesDivider": "Yeni mesajlar",
     "loggingInMarkerAria": "Sunucuya giriş yapılıyor...",
-    "savedPasswordNotLoggedIn": "Şifre kaydedildi — odayı açın ve giriş yapın",
     "favorite": "Favori oda",
     "unfavorite": "Favorilerimden Sil",
     "loginAllSaved": "Tümüne giriş yap",
@@ -2882,17 +2763,14 @@
     "placeholder": "Tüm mesajları ara… (kullanıcı:adı, kanal:adı)",
     "noResults": "Sonuç yok",
     "hint": "Tüm mesajlarda aramak için yazın",
-    "resultCount": "{{count}} sonuç — gezinmek için tıklayın",
-    "openSearch": "Mesajları Ara"
+    "resultCount": "{{count}} sonuç — gezinmek için tıklayın"
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
     "failed": "Başarısız: {{message}}",
     "adminKeysApplied": "Yönetici anahtarları uygulandı.",
     "adminSettingsApplied": "Yönetim ayarları uygulandı.",
-    "keysBackedUp": "Anahtarlar sistem anahtarlığına yedeklendi.",
     "backupFailed": "Yedekleme başarısız oldu: {{message}}",
-    "keysRestored": "Anahtarlar yedekten geri yüklendi.",
     "restoreFailed": "Geri yükleme başarısız oldu: {{message}}",
     "dataSigned": "Veriler başarıyla imzalandı.",
     "signNoResult": "İmzalama işlemi sonuç vermedi.",
@@ -2936,8 +2814,6 @@
     "adminChannelDesc": "Güvenli olmayan eski yönetici kanalı üzerinde gelen cihazın kontrolüne izin verin.",
     "keyBackupUnavailable": "Sistem anahtar zinciri şifrelemesi bu platformda mevcut değildir. Yedekleme ve geri yükleme devre dışı.",
     "keyBackupDesc": "DM anahtarlarınızı sistem anahtarlığına (şifreli) yedekleyin. Bunları istediğiniz zaman cihaza geri yükleyebilirsiniz.",
-    "backupAvailable": "Yedekleme mevcut",
-    "noBackupStored": "Yedekleme depolanmadı",
     "backupKeys": "Yedekleme Anahtarları",
     "restoreKeys": "Anahtarları Geri Yükle",
     "working": "Çalışma...",
