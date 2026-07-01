@@ -5,8 +5,13 @@ import {
   computeTabMappings,
   findFilteredTabIndexForPanel,
   NODES_PANEL_INDEX,
+  RADIO_TAB_PANEL_INDEX,
 } from './appTabMappings';
-import { MESHTASTIC_CAPABILITIES, RETICULUM_CAPABILITIES } from './radio/BaseRadioProvider';
+import {
+  MESHCORE_CAPABILITIES,
+  MESHTASTIC_CAPABILITIES,
+  RETICULUM_CAPABILITIES,
+} from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS } from './tabSlotIds';
 
 const identityT = ((key: string) => key) as TFunction;
@@ -75,5 +80,62 @@ describe('computeTabMappings', () => {
 
     const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
     expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('NomadNetwork'));
+  });
+
+  it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {
+    const tabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
+    const expectedSlots: (typeof TAB_SLOT_IDS)[number][] = [
+      'Connection',
+      'Chat',
+      'Nodes',
+      'Map',
+      'Radio',
+      'Modules',
+      'Admin',
+      'Telemetry',
+      'Security',
+      'TAK',
+      'App',
+      'Diagnostics',
+      'Stats',
+      'Sniffer',
+      'RF',
+      'Graph',
+    ];
+    for (const slot of expectedSlots) {
+      expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf(slot));
+    }
+  });
+
+  it('shows MeshCore sidebar panels including Radio, Map, and Repeaters', () => {
+    const tabs = computeTabMappings(identityT, 'meshcore', MESHCORE_CAPABILITIES);
+    const radioTabIndex = findFilteredTabIndexForPanel(tabs, RADIO_TAB_PANEL_INDEX);
+    expect(radioTabIndex).toBeGreaterThanOrEqual(0);
+    expect(tabs.displayTabLabels[radioTabIndex]).toBe('tabs.radio');
+
+    const expectedSlots: (typeof TAB_SLOT_IDS)[number][] = [
+      'Connection',
+      'Chat',
+      'Nodes',
+      'Map',
+      'Radio',
+      'Modules',
+      'Admin',
+      'Rooms',
+      'Telemetry',
+      'Security',
+      'App',
+      'Diagnostics',
+      'Stats',
+      'Sniffer',
+      'RF',
+      'Graph',
+    ];
+    for (const slot of expectedSlots) {
+      expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf(slot));
+    }
+    expect(
+      tabs.displayTabLabels[tabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Modules'))],
+    ).toBe('tabs.repeaters');
   });
 });

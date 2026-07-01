@@ -20,9 +20,9 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Chat
   'hasNomadNetworkPanel', // Nomad Network
   undefined, // Nodes/Contacts
-  'hasFullPositionConfig', // Map
-  { or: ['hasChannelConfig', 'hasReticulumRadioPanel'] }, // Radio
-  'modulesTabUsesRepeatersLabel', // Modules or Repeaters
+  { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel'] }, // Map
+  { or: ['hasChannelConfig', 'hasReticulumRadioPanel', 'hasJsonRadioConfigImport'] }, // Radio
+  { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
   { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
   'hasRoomServersPanel', // Rooms
   'hasEnvironmentTelemetry', // Telemetry
@@ -33,7 +33,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   'hasRawPacketLog', // Stats
   'hasRawPacketLog', // Sniffer
   'hasRfStats', // RF
-  'hasNeighborInfo', // Graph
+  { or: ['hasNeighborInfo', 'nodeListTabUsesContactsLabel'] }, // Graph
   'hasReticulumTopologyPanel', // Topology
 ];
 

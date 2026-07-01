@@ -3445,7 +3445,9 @@ function AppContent() {
                       className="w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 17 && capabilities.hasNeighborInfo ? (
+                      {activePanelIndex === 17 &&
+                      (capabilities.hasNeighborInfo ||
+                        capabilities.nodeListTabUsesContactsLabel) ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <PeerGraphPanel
