@@ -69,32 +69,6 @@ pub fn emit_wire_packet_event(event_tx: &broadcast::Sender<String>, row: &WirePa
     let _ = event_tx.send(msg.to_string());
 }
 
-#[cfg(feature = "rns-stack")]
-pub fn wire_packet_from_tap(evt: &rns_transport::messages::PacketTapEvent) -> WirePacketRow {
-    use rns_transport::messages::PacketTapDirection;
-    WirePacketRow {
-        ts: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0),
-        direction: match evt.direction {
-            PacketTapDirection::Rx => "rx".into(),
-            PacketTapDirection::Tx => "tx".into(),
-        },
-        interface_id: evt.interface_id,
-        interface_name: evt.interface_name.clone(),
-        raw_hex: hex::encode(&evt.raw),
-        rssi: evt.rssi,
-        snr: evt.snr,
-        q: evt.q,
-        packet_type: evt.packet_type.clone(),
-        header_type: evt.header_type.clone(),
-        destination_hash: evt.destination_hash.map(hex::encode),
-        transport_type: evt.transport_type.clone(),
-        context: evt.context.clone(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -26,7 +26,7 @@ use tokio::sync::{RwLock, broadcast};
 use super::StackHandle;
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_timeouts;
-use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
+use super::packet_log::PacketLogBuffer;
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::types::{InterfaceRow, LxmfResourceRequest, LxmfSendRequest, PeerRow};
@@ -64,7 +64,12 @@ impl LiveBridge {
         config_dir: PathBuf,
         storage_dir: PathBuf,
         event_tx: broadcast::Sender<String>,
-        packet_log: Arc<PacketLogBuffer>,
+        // Wire packet capture (Stats/Sniffer panel) is populated from RF/BLE
+        // transports on the Meshtastic/MeshCore side; rsReticulum does not
+        // currently expose a packet tap API (no `register_packet_tap` /
+        // `PacketTapEvent` in the upstream crate), so this buffer stays
+        // empty for the live Reticulum stack until upstream adds one.
+        _packet_log: Arc<PacketLogBuffer>,
         persisted: &mut PersistedState,
     ) -> Result<Self, String> {
         let config_str = config_dir
@@ -82,24 +87,6 @@ impl LiveBridge {
                 lxmf_core::discovery_stamper::LxmfDiscoveryStamper::default(),
             ))
             .await;
-
-        let (tap_tx, mut tap_rx) = broadcast::channel(256);
-        handle.register_packet_tap(tap_tx).await;
-        let packet_log_tap = packet_log.clone();
-        let event_tx_tap = event_tx.clone();
-        tokio::spawn(async move {
-            loop {
-                match tap_rx.recv().await {
-                    Ok(evt) => {
-                        let row = wire_packet_from_tap(&evt);
-                        packet_log_tap.push(row.clone());
-                        emit_wire_packet_event(&event_tx_tap, &row);
-                    }
-                    Err(broadcast::error::RecvError::Lagged(_)) => {}
-                    Err(broadcast::error::RecvError::Closed) => break,
-                }
-            }
-        });
 
         let identity_path = config_dir.join("identity");
         let identity = if identity_path.exists() {
