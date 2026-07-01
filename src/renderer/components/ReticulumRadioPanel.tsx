@@ -67,16 +67,11 @@ function ReticulumCollapsibleSection({
 
 export interface ReticulumRadioPanelProps {
   connecting: boolean;
-  onSidecarEvent?: (evt: ReticulumSidecarEvent) => void;
   onStartStack: () => Promise<void>;
 }
 
 /** Radio tab: identity, interfaces, propagation, config import. */
-export function ReticulumRadioPanel({
-  connecting,
-  onSidecarEvent,
-  onStartStack,
-}: ReticulumRadioPanelProps) {
+export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadioPanelProps) {
   const { t } = useTranslation();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
 
@@ -160,7 +155,6 @@ export function ReticulumRadioPanel({
 
   useEffect(() => {
     sidecarEventRef.current = (evt: ReticulumSidecarEvent) => {
-      onSidecarEvent?.(evt);
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         void refreshInterfaces();
       }
@@ -172,7 +166,7 @@ export function ReticulumRadioPanel({
         void refreshPeers();
       }
     };
-  }, [onSidecarEvent, refreshInterfaces, refreshPeers]);
+  }, [refreshInterfaces, refreshPeers]);
 
   useEffect(() => {
     if (!sidecarApiReady) {

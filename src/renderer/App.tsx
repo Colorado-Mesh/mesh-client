@@ -2473,7 +2473,6 @@ function AppContent() {
                             onStartReticulumStack={() =>
                               reticulumConnection.connectAutomatic('http')
                             }
-                            onReticulumSidecarEvent={reticulumPanelActions.handleSidecarEvent}
                           />
                         </div>
                       </Suspense>
@@ -2729,7 +2728,6 @@ function AppContent() {
                               <ReticulumRadioPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
-                                onSidecarEvent={reticulumPanelActions.handleSidecarEvent}
                               />
                             ) : (
                               <>
@@ -3029,7 +3027,6 @@ function AppContent() {
                               <ReticulumAdminPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
-                                onSidecarEvent={reticulumPanelActions.handleSidecarEvent}
                               />
                             ) : (
                               <AdminPanel

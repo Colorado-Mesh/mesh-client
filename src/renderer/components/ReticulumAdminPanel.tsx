@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
-import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
@@ -20,22 +19,16 @@ interface ReticulumInterfaceRow {
 export interface ReticulumAdminPanelProps {
   connecting: boolean;
   onStartStack: () => Promise<void>;
-  onSidecarEvent?: (evt: ReticulumSidecarEvent) => void;
 }
 
 /** Administration tab: RNode flasher and stack factory reset (danger zone). */
-export function ReticulumAdminPanel({
-  connecting,
-  onStartStack,
-  onSidecarEvent,
-}: ReticulumAdminPanelProps) {
+export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdminPanelProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
   const capabilities = useRadioProvider('reticulum');
   const { sidecarUiRunning, sidecarApiReady, refreshIdentity } = useReticulumSidecarApi({
     connecting,
     onStartStack,
-    onEvent: onSidecarEvent,
   });
 
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
