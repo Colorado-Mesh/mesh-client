@@ -130,3 +130,22 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(5);
   });
 });
+
+describe('reticulumSelfIdentityToNodeRecord', () => {
+  it('uses identity display name for self node labels', async () => {
+    const { reticulumSelfIdentityToNodeRecord } = await import('./reticulumPeerStore');
+    const { reticulumHashToNodeId } = await import('@/renderer/lib/reticulum/destHash');
+    const hash = 'f8b4e04e1234567890abcdef';
+    const record = reticulumSelfIdentityToNodeRecord(hash, 'NV0N');
+    expect(record.longName).toBe('NV0N');
+    expect(record.shortName).toBe('NV0N');
+    expect(record.nodeId).toBe(reticulumHashToNodeId(hash));
+  });
+
+  it('falls back to hash prefix when display name is missing', async () => {
+    const { reticulumSelfIdentityToNodeRecord } = await import('./reticulumPeerStore');
+    const record = reticulumSelfIdentityToNodeRecord('f8b4e04e1234567890abcdef', null);
+    expect(record.longName).toBe('f8b4e04e1234');
+    expect(record.shortName).toBe('f8b4');
+  });
+});

@@ -58,8 +58,23 @@ describe('reticulumSidecarReads', () => {
     await expect(fetchReticulumIdentityStatus()).resolves.toEqual({
       configured: false,
       lxmfHash: null,
+      displayName: null,
     });
     expect(proxyGet).not.toHaveBeenCalled();
+  });
+
+  it('fetchReticulumIdentityStatus returns lxmf hash and display name', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValue({
+      configured: true,
+      lxmf_hash: 'f8b4e04e1234567890abcdef',
+      display_name: 'NV0N',
+    });
+    await expect(fetchReticulumIdentityStatus()).resolves.toEqual({
+      configured: true,
+      lxmfHash: 'f8b4e04e1234567890abcdef',
+      displayName: 'NV0N',
+    });
   });
 
   it('fetchReticulumInterfaces caches results for a short interval', async () => {

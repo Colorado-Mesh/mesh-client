@@ -229,6 +229,23 @@ export function reticulumContactToNodeRecord(contact: ReticulumContact): NodeRec
   };
 }
 
+/** Build a node-store row for the local Reticulum identity (not in the peer/contact table). */
+export function reticulumSelfIdentityToNodeRecord(
+  lxmfHash: string,
+  displayName: string | null | undefined,
+): NodeRecord {
+  const hash = lxmfHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  const nodeId = reticulumHashToNodeId(hash);
+  registerReticulumDestinationHash(nodeId, hash);
+  const label = displayName?.trim() || hash.slice(0, 12);
+  return {
+    nodeId,
+    longName: label,
+    shortName: label.slice(0, 4) || 'RT',
+    reticulumDestinationHash: hash,
+  };
+}
+
 export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) => ({
   peers: new Map(),
   contacts: new Map(),
