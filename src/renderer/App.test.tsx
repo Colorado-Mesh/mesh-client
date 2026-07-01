@@ -631,8 +631,10 @@ describe('App accessibility', () => {
     renderApp();
 
     const mqttLabel = await screen.findByLabelText('MQTT error');
-    expect(mqttLabel.querySelector('span.lg\\:inline')).toHaveClass('animate-pulse');
-    expect(mqttLabel.querySelector('span.lg\\:inline')).toHaveClass('text-red-400');
+    const mqttText = mqttLabel.querySelector('span.lg\\:inline');
+    expect(mqttText).toHaveClass('text-red-400');
+    expect(mqttText).not.toHaveClass('animate-pulse');
+    expect(mqttLabel.querySelector('svg')).toHaveClass('animate-pulse');
   });
 
   it('shows pulsing red device status when reconnecting after loss', async () => {
@@ -656,8 +658,10 @@ describe('App accessibility', () => {
     renderApp();
 
     const deviceLabel = await screen.findByLabelText('Reconnecting (BLE)');
-    expect(deviceLabel.querySelector('span.lg\\:inline')).toHaveClass('animate-pulse');
-    expect(deviceLabel.querySelector('span.lg\\:inline')).toHaveClass('text-red-400');
+    const deviceText = deviceLabel.querySelector('span.lg\\:inline');
+    expect(deviceText).toHaveClass('text-red-400');
+    expect(deviceText).not.toHaveClass('animate-pulse');
+    expect(deviceLabel.parentElement?.querySelector('.rounded-full')).toHaveClass('animate-pulse');
   });
 
   it('renders the queue badge in meshcore mode when queueStatus is available', async () => {
