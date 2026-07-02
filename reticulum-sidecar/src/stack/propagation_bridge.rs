@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
 use lxmf_core::propagation_sync::{PropagationSyncTask, SyncTaskState};
@@ -93,10 +93,10 @@ impl PropagationBridge {
     pub fn sync_progress(&self) -> f64 {
         self.sync_task.lock().map(|task| match task.state {
             SyncTaskState::Idle => 0.0,
-            SyncTaskState::Establishing => 0.1,
-            SyncTaskState::Offering => 0.25,
-            SyncTaskState::AwaitingResponse => 0.4,
-            SyncTaskState::Transferring => 0.7,
+            SyncTaskState::Establishing => 10.0,
+            SyncTaskState::Offering => 25.0,
+            SyncTaskState::AwaitingResponse => 40.0,
+            SyncTaskState::Transferring => 70.0,
             SyncTaskState::Complete => 100.0,
             SyncTaskState::Failed => 0.0,
         }).unwrap_or(0.0)
@@ -117,6 +117,8 @@ impl PropagationBridge {
         let bridge = Arc::clone(self);
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_millis(500));
+            let started = Instant::now();
+            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
             loop {
                 interval.tick().await;
                 if cancel.load(Ordering::SeqCst) {
@@ -125,6 +127,20 @@ impl PropagationBridge {
                 }
                 let active = bridge.sync_active();
                 let progress = bridge.sync_progress();
+                if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
+                    bridge.cancel_sync();
+                    let payload = serde_json::json!({
+                        "active": false,
+                        "progress": 0.0,
+                        "message": "propagation node unreachable",
+                    });
+                    let frame = serde_json::json!({
+                        "type": "propagation_sync",
+                        "payload": payload,
+                    });
+                    let _ = event_tx.send(frame.to_string());
+                    break;
+                }
                 let payload = serde_json::json!({
                     "active": active,
                     "progress": progress,

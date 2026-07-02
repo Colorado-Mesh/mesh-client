@@ -37,6 +37,7 @@ import {
   pickReticulumLocalHealthPollMs,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+import { applyPropagationSyncEvent } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   fetchReticulumIdentityStatus,
@@ -45,6 +46,7 @@ import {
   invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
   nodeRecordsToMeshNodeMap,
@@ -85,7 +87,6 @@ import {
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
-import { useReticulumPropagationStore } from '../stores/reticulumPropagationStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 const INITIAL_STATE: DeviceState = {
@@ -112,6 +113,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     useIdentityStore(() => getIdentityIdForProtocol('reticulum')) ??
     getOfflineIdentityIdForProtocol('reticulum');
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
+  useReticulumPropagationAutoSync(state.status === 'configured');
   const [selfLxmfHash, setSelfLxmfHash] = useState<string | null>(null);
   const [rawPackets, setRawPackets] = useState<ReticulumRawPacketEntry[]>([]);
   const rawPacketAppenderRef = useRef<BatchedRingBufferAppender<ReticulumRawPacketEntry> | null>(
@@ -390,11 +392,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         typeof evt.payload === 'object'
       ) {
         const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
-        useReticulumPropagationStore.getState().setSyncState({
-          active: p.active ?? true,
-          progress: typeof p.progress === 'number' ? p.progress : 0,
-          message: p.message ?? null,
-        });
+        applyPropagationSyncEvent(p);
       }
       if (evt.type === 'nomadnetwork.node') {
         void useNomadNetworkStore.getState().refreshFromSidecar();

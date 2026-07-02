@@ -1,7 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import { RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+import {
+  RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC,
+  reticulumPropagationAutoSyncOptionKey,
+} from '@/shared/reticulumPropagationAutoSync';
+
+import {
+  ReticulumPropagationLastRefreshed,
+  ReticulumPropagationRefreshButton,
+  ReticulumPropagationSyncProgress,
+} from './ReticulumPropagationSyncProgress';
 
 export interface ReticulumPropagationSectionProps {
   onRefresh?: () => void;
@@ -16,20 +28,39 @@ export default function ReticulumPropagationSection({
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const autoSyncIntervalSec = useReticulumPropagationStore((s) => s.autoSyncIntervalSec);
+  const lastPropagationSyncAt = useReticulumPropagationStore((s) => s.lastPropagationSyncAt);
   const sync = useReticulumPropagationStore((s) => s.sync);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const setPreferredOnSidecar = useReticulumPropagationStore((s) => s.setPreferredOnSidecar);
+  const setAutoSyncIntervalOnSidecar = useReticulumPropagationStore(
+    (s) => s.setAutoSyncIntervalOnSidecar,
+  );
   const startSync = useReticulumPropagationStore((s) => s.startSync);
-  const cancelSync = useReticulumPropagationStore((s) => s.cancelSync);
   const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
   const [addHash, setAddHash] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     void refreshFromSidecar();
   }, [refreshFromSidecar]);
 
-  const handleRefresh = () => {
-    void refreshFromSidecar().then(() => onRefresh?.());
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    const startedAt = Date.now();
+    try {
+      await refreshFromSidecar();
+      onRefresh?.();
+    } finally {
+      const elapsed = Date.now() - startedAt;
+      const remaining = RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS - elapsed;
+      if (remaining > 0) {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, remaining);
+        });
+      }
+      setRefreshing(false);
+    }
   };
 
   const body = (
@@ -39,43 +70,30 @@ export default function ReticulumPropagationSection({
           <h3 className="text-sm font-medium text-gray-200">
             {t('connectionPanel.reticulumPropagation.title')}
           </h3>
-          <button
-            type="button"
-            className="text-xs text-amber-400 hover:underline"
-            onClick={handleRefresh}
-          >
-            {t('common.refresh')}
-          </button>
+          <ReticulumPropagationRefreshButton
+            refreshing={refreshing}
+            onRefresh={() => {
+              void handleRefresh();
+            }}
+          />
         </div>
       ) : (
-        <button
-          type="button"
-          className="text-xs text-amber-400 hover:underline"
-          onClick={handleRefresh}
-        >
-          {t('common.refresh')}
-        </button>
+        <ReticulumPropagationRefreshButton
+          refreshing={refreshing}
+          onRefresh={() => {
+            void handleRefresh();
+          }}
+        />
       )}
-      {sync.active ? (
-        <div className="mt-2">
-          <div className="h-2 overflow-hidden rounded bg-gray-800">
-            <div
-              className="bg-readable-green h-full transition-all"
-              style={{ width: `${Math.min(100, sync.progress)}%` }}
-            />
-          </div>
-          <button
-            type="button"
-            className="mt-2 text-xs text-red-400 hover:underline"
-            onClick={() => {
-              void cancelSync();
-            }}
-          >
-            {t('reticulumPropagation.cancelSync')}
-          </button>
-        </div>
-      ) : null}
-      <ul className="mt-2 space-y-2 text-sm">
+      <ReticulumPropagationLastRefreshed />
+      <ReticulumPropagationSyncProgress
+        cancelLabel={t('reticulumPropagation.cancelSync')}
+        cancelAriaLabel={t('reticulumPropagation.cancelSync')}
+      />
+      <ul
+        className={`mt-2 space-y-2 text-sm transition-opacity ${refreshing ? 'opacity-60' : 'opacity-100'}`}
+        aria-busy={refreshing}
+      >
         {nodes.map((node) => (
           <li
             key={node.id}
@@ -139,6 +157,35 @@ export default function ReticulumPropagationSection({
           </li>
         ))}
       </ul>
+      <div className="mt-3 space-y-1">
+        <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">
+          {t('reticulumPropagation.autoSyncIntervalLabel')}
+        </label>
+        <select
+          id="reticulum-propagation-auto-sync"
+          value={autoSyncIntervalSec}
+          disabled={sync.active}
+          onChange={(e) => {
+            const sec = Number(e.target.value);
+            void setAutoSyncIntervalOnSidecar(sec);
+          }}
+          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          aria-label={t('reticulumPropagation.autoSyncIntervalAria')}
+        >
+          {RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC.map((sec) => (
+            <option key={sec} value={sec}>
+              {t(reticulumPropagationAutoSyncOptionKey(sec))}
+            </option>
+          ))}
+        </select>
+        {lastPropagationSyncAt ? (
+          <p className="text-muted text-xs">
+            {t('reticulumPropagation.lastSynced', {
+              time: formatRelativeOrIsoDate(lastPropagationSyncAt, t),
+            })}
+          </p>
+        ) : null}
+      </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
@@ -150,11 +197,6 @@ export default function ReticulumPropagationSection({
         >
           {t('reticulumPropagation.syncNow')}
         </button>
-        {autoSyncIntervalSec > 0 ? (
-          <span className="text-muted text-xs">
-            {t('reticulumPropagation.autoSyncInterval', { sec: autoSyncIntervalSec })}
-          </span>
-        ) : null}
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">
@@ -178,7 +220,7 @@ export default function ReticulumPropagationSection({
             void addPropagationNode(addHash.trim()).then((ok) => {
               if (ok) {
                 setAddHash('');
-                handleRefresh();
+                void handleRefresh();
               }
             });
           }}

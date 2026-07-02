@@ -11,6 +11,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('./ReticulumPropagationSyncProgress', () => ({
+  ReticulumPropagationSyncProgress: () => null,
+}));
+
 import { ReticulumPropagationControls } from './ReticulumPropagationControls';
 
 describe('ReticulumPropagationControls', () => {

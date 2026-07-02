@@ -7,6 +7,11 @@ use serde::Deserialize;
 use crate::stack::StackHandle;
 
 #[derive(Debug, Deserialize)]
+pub struct PropagationAutoSyncIntervalBody {
+    pub interval_sec: u32,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct PropagationSyncBody {
     pub propagation_id: String,
 }
@@ -39,6 +44,19 @@ pub async fn set_preferred_propagation(
     Path(id): Path<String>,
 ) -> Json<serde_json::Value> {
     match stack.set_preferred_propagation(&id).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn set_propagation_auto_sync_interval(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<PropagationAutoSyncIntervalBody>,
+) -> Json<serde_json::Value> {
+    match stack
+        .set_propagation_auto_sync_interval(body.interval_sec)
+        .await
+    {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

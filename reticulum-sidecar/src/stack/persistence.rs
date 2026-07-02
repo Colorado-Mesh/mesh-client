@@ -53,7 +53,7 @@ impl PersistedState {
             lxmf_ready: false,
             preferred_propagation_id: None,
             propagation_sync: serde_json::Value::Null,
-            auto_sync_interval_sec: 0,
+            auto_sync_interval_sec: 3600,
             nomad_nodes: Vec::new(),
         }
     }
@@ -309,6 +309,10 @@ impl PersistedState {
             "progress": 0,
             "message": null,
         });
+    }
+
+    pub fn set_auto_sync_interval_sec(&mut self, sec: u32) {
+        self.auto_sync_interval_sec = sec;
     }
 
     pub fn upsert_nomad_node(

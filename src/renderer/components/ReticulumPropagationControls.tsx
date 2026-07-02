@@ -9,6 +9,8 @@ import {
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
+import { ReticulumPropagationSyncProgress } from './ReticulumPropagationSyncProgress';
+
 export interface ReticulumPropagationControlsProps {
   sidecarReady?: boolean;
   disabled?: boolean;
@@ -26,7 +28,6 @@ export function ReticulumPropagationControls({
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const setPreferredOnSidecar = useReticulumPropagationStore((s) => s.setPreferredOnSidecar);
   const startSync = useReticulumPropagationStore((s) => s.startSync);
-  const cancelSync = useReticulumPropagationStore((s) => s.cancelSync);
 
   const [mode, setMode] = useState<ReticulumPropagationMode>(() => readReticulumPropagationMode());
 
@@ -84,27 +85,12 @@ export function ReticulumPropagationControls({
         <option value="off">{t('reticulumPropagationHeader.modeOff')}</option>
       </select>
       <p className="text-muted text-xs">{t('appPanel.reticulumPropagationHelp')}</p>
-      {sync.active ? (
-        <div className="space-y-2">
-          <div className="h-2 overflow-hidden rounded bg-gray-800">
-            <div
-              className="bg-readable-green h-full transition-all"
-              style={{ width: `${Math.min(100, sync.progress)}%` }}
-            />
-          </div>
-          <button
-            type="button"
-            disabled={disabled || !sidecarReady}
-            className="text-xs text-red-400 hover:underline disabled:opacity-40"
-            aria-label={t('reticulumPropagationHeader.cancelSyncAria')}
-            onClick={() => {
-              void cancelSync();
-            }}
-          >
-            {t('reticulumPropagationHeader.cancelSync')}
-          </button>
-        </div>
-      ) : (
+      <ReticulumPropagationSyncProgress
+        cancelLabel={t('reticulumPropagationHeader.cancelSync')}
+        cancelAriaLabel={t('reticulumPropagationHeader.cancelSyncAria')}
+        disabled={disabled || !sidecarReady}
+      />
+      {!sync.active ? (
         <button
           type="button"
           disabled={syncDisabled}
@@ -114,7 +100,7 @@ export function ReticulumPropagationControls({
         >
           {t('reticulumPropagationHeader.sync')}
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

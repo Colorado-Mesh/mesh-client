@@ -98,6 +98,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(propagation::cancel_propagation_sync),
         )
         .route(
+            "/api/v1/propagation/auto-sync-interval",
+            post(propagation::set_propagation_auto_sync_interval),
+        )
+        .route(
             "/api/v1/propagation/{id}/enable",
             post(propagation::enable_propagation),
         )

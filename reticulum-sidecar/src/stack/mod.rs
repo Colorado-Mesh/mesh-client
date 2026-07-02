@@ -454,6 +454,13 @@ impl StackHandle {
         Ok(())
     }
 
+    pub async fn set_propagation_auto_sync_interval(&self, sec: u32) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.set_auto_sync_interval_sec(sec);
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
     pub async fn start_propagation_sync(&self, propagation_id: &str) -> Result<(), String> {
         let prop_hash = {
             let inner = self.inner.read().await;
