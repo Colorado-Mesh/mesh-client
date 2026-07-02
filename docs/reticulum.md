@@ -69,13 +69,26 @@ Interfaces are stored in the sidecar rnsd config under Electron `userData/reticu
 
 - **All:** display name
 - **TCP:** host, port
-- **RNode:** USB serial or **Bluetooth** (`ble://…` URI), LoRa preset, callsign — use **Pick device** for serial/BLE selection
+- **RNode:** USB serial, **Bluetooth** (`ble://…` URI), or **Wi-Fi** (`tcp://host[:7633]`, default port **7633**), LoRa preset, callsign — use **Pick device** for serial/BLE selection; Wi-Fi uses host + port fields
 - **BLE Peer mesh:** optional seed peer addresses (sidecar spawns `BlePeerInterface` at runtime)
 - **Auto:** name only (minimal discovery interface)
 
 **Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth **simultaneously on different devices** (macOS, Windows, and Linux). The app tracks peripheral ownership by MAC address and serializes **active scans** only—connected GATT links are not torn down when another stack scans or connects elsewhere. Do not point two protocols at the same BLE MAC; the app rejects same-device conflicts. On Linux, mesh stacks use Web Bluetooth in the renderer while Reticulum uses the sidecar `btleplug` stack.
 
 For bulk changes or migrating from another rsReticulum install, use **Config import** (merge or replace) on the **Network** tab, or paste from a file picked via the system config paths below.
+
+## RNode over Wi-Fi
+
+RNode Wi-Fi is **not** a separate interface type. It stays **`RNodeInterface`** with `port = tcp://host[:7633]` (default TCP port **7633**). Do **not** use the **TCP Client** interface type (default mesh port **4242**) for RNode Wi-Fi.
+
+| Step      | Action                                                                                                                                                            |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provision | USB → **Admin → Wi-Fi** (station SSID/PSK, or AP mode), **or** ~10 s button hold → join RNode AP → bootstrap console at `http://10.0.0.1`, **or** `rnodeconf` CLI |
+| Interface | **Connection → Interfaces** → type **RNode** → transport **Wi-Fi** → host/IP + port (7633) + LoRa preset                                                          |
+| Hardware  | ESP32-S3 Wi-Fi-capable boards; plain ESP32 Wi-Fi is disabled in stock firmware                                                                                    |
+| Pitfall   | Wi-Fi is **off after flash** until provisioned; find the station IP on the OLED alternate page, router DHCP, or Admin **Read config**                             |
+
+The sidecar must be built with **`rns-rnode-tcp`** (included in mesh-client release builds) for `tcp://` RNode interfaces to connect at runtime.
 
 ## Stack settings and announces (Network tab)
 
@@ -90,7 +103,7 @@ The **Reticulum → Admin** tab lists **RNode Firmware Flasher** as a collapsibl
 1. Flash nRF52 devices (DFU touch + zip manifest) or ESP32 devices (`esptool-js`).
 2. **Provision** EEPROM on new hardware (device info, MD5 checksum, lock byte).
 3. **Set firmware hash** after each flash (reads hash from device).
-4. Optional advanced tools: Bluetooth, TNC mode, display read/rotation, EEPROM wipe.
+4. Optional advanced tools: Bluetooth, **Wi-Fi** (station/AP provisioning), TNC mode, display read/rotation, EEPROM wipe.
 
 **Serial port contention:** stop the Reticulum stack (or disable the active RNode interface) before flashing—the sidecar holds the serial port when an RNode interface is enabled. Disconnect Meshtastic or MeshCore USB serial on the same device.
 
@@ -154,7 +167,7 @@ pnpm run reticulum:sidecar:build -- --features rns-stack
 # or: cd reticulum-sidecar && cargo build --features rns-stack
 ```
 
-Optional: `rns-serial`, `rns-ble` features for RNode and BLE peering.
+Optional: `rns-serial`, `rns-ble`, `rns-rnode-tcp` features for RNode USB serial, BLE, and Wi-Fi (`tcp://`) transports.
 
 CI builds both **stub** and **`rns-stack`** matrix jobs on linux x64, macOS arm64, and Windows x64/arm64 (see `.github/workflows/reticulum-sidecar.yaml`). Each job runs `cargo test` before release build.
 

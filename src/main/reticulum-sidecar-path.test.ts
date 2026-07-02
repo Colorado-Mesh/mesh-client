@@ -98,7 +98,11 @@ describe('reticulum-sidecar-path', () => {
     fs.writeFileSync(path.join(projectDir, 'Cargo.toml'), '[package]\nname = "test"\n');
 
     expect(hasRnsStackSiblings(projectDir)).toBe(true);
-    expect(sidecarCargoBuildArgs(projectDir)).toEqual(['build', '--features', 'rns-stack,rns-ble']);
+    expect(sidecarCargoBuildArgs(projectDir)).toEqual([
+      'build',
+      '--features',
+      'rns-stack,rns-ble,rns-rnode-tcp',
+    ]);
   });
 
   it('sidecarBinaryLacksRnsBle detects sidecars built without rns-ble', () => {

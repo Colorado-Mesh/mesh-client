@@ -663,7 +663,14 @@
       "bleUnavailable": "O Bluetooth não está disponível para varredura Reticulum. Verifique o Bluetooth do sistema e a build sidecar (rns-ble).",
       "restartStackFailed": "Falha na reinicialização da pilha: {{message}}",
       "restartStackUnavailable": "A reinicialização da pilha não estará disponível até que o tempo de execução do Reticulum esteja pronto.",
-      "localOfflineRowBle": "Bluetooth RNode offline – certifique-se de que o dispositivo esteja ligado e dentro do alcance e reinicie a pilha."
+      "localOfflineRowBle": "Bluetooth RNode offline – certifique-se de que o dispositivo esteja ligado e dentro do alcance e reinicie a pilha.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "Host ou IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 ou rnode.local",
+      "rnodeWifiPort": "Porta TCP:",
+      "rnodeWifiSetupTitle": "Configuração de RNode Wi-Fi",
+      "rnodeWifiSetupHint": "O Wi-Fi está desligado após piscar — provisione o RNode primeiro (Reticulum → Admin → Wi-Fi, ou junte-se ao seu AP e abra http://10.0.0.1). Requer firmware compatível com Wi-Fi ESP32-S3.\n\nApós o modo de estação: encontre o IP na tela alternativa OLED, na lista DHCP do roteador ou na configuração de → leitura do administrador. Use tcp://host (porta padrão 7633) — não o tipo de interface TCP Client.\n\nO botão de espera de ~10 s em muitas placas Heltec habilita o Wi-Fi AP (~7 s é o emparelhamento Bluetooth).",
+      "localOfflineRowWifi": "RNode Wi-Fi inacessível — verifique o IP, a porta 7633, a mesma LAN e a energia; provisione novamente no Admin se o endereço DHCP for alterado."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "Conectando interface(s) locais…",
       "connectingRow": "{{name}}: conectando via Bluetooth",
       "connectingHintBle": "Os links BLE RNode podem levar até 30 segundos após o início da pilha. Insira um PIN de emparelhamento se o seu sistema operacional solicitar – isso é normal, não um erro.",
-      "offlineHintBle": "Seu sistema operacional pode solicitar um PIN Bluetooth de 6 dígitos (macOS, Windows ou Linux). RNode gera um novo código a cada emparelhamento – não há PIN padrão. Rádios sem cabeça: conecte USB → Reticulum Admin → Bluetooth → Iniciar emparelhamento → insira o PIN mostrado na caixa de diálogo do sistema operacional. Rádios com display: segure o botão por aproximadamente 7 s em dispositivos Heltec (o tempo varia; aproximadamente 10 s em muitas placas habilita o AP Wi-Fi), leia o PIN na tela e insira-o na caixa de diálogo do sistema operacional. Limpe as ligações com falha nas configurações de Bluetooth do seu sistema operacional antes de tentar novamente."
+      "offlineHintBle": "Seu sistema operacional pode solicitar um PIN Bluetooth de 6 dígitos (macOS, Windows ou Linux). RNode gera um novo código a cada emparelhamento – não há PIN padrão. Rádios sem cabeça: conecte USB → Reticulum Admin → Bluetooth → Iniciar emparelhamento → insira o PIN mostrado na caixa de diálogo do sistema operacional. Rádios com display: segure o botão por aproximadamente 7 s em dispositivos Heltec (o tempo varia; aproximadamente 10 s em muitas placas habilita o AP Wi-Fi), leia o PIN na tela e insira-o na caixa de diálogo do sistema operacional. Limpe as ligações com falha nas configurações de Bluetooth do seu sistema operacional antes de tentar novamente.",
+      "offlineHintWifi": "Verifique se o RNode está na sua LAN, ligado e acessível no IP configurado (porta TCP padrão 7633, não 4242). Atualize o host abaixo se o DHCP tiver atribuído um novo endereço ou reprovisione o Wi-Fi no Reticulum → Admin."
     },
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "Provisione a EEPROM antes de definir o hash do firmware.",
     "firmwareHashDone": "Conjunto de hash de firmware",
     "flashDone": "Firmware atualizado",
-    "bluetoothHint": "Ative o Bluetooth no dispositivo e use Iniciar emparelhamento. O PIN de 6 dígitos aparece aqui através do serial USB – insira o mesmo PIN na caixa de diálogo Bluetooth do seu sistema operacional (macOS, Windows ou Linux) quando o Reticulum se conectar via BLE. Dispositivos sem cabeça sem USB não podem mostrar um PIN na tela."
+    "bluetoothHint": "Ative o Bluetooth no dispositivo e use Iniciar emparelhamento. O PIN de 6 dígitos aparece aqui através do serial USB – insira o mesmo PIN na caixa de diálogo Bluetooth do seu sistema operacional (macOS, Windows ou Linux) quando o Reticulum se conectar via BLE. Dispositivos sem cabeça sem USB não podem mostrar um PIN na tela.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "O Wi-Fi é desativado após piscar. Configure o modo de estação aqui (USB serial) e, em seguida, adicione uma interface RNode Wi-Fi na Conexão com o host tcp://(porta 7633). Requer firmware compatível com Wi-Fi ESP32-S3. Reinicie a placa após aplicar as alterações.",
+    "wifiSsidLabel": "SSID Wi-Fi",
+    "wifiPskLabel": "Senha do Wi-Fi",
+    "wifiChannelLabel": "Canal (opcional)",
+    "wifiStaticIpLabel": "IP estático (opcional)",
+    "wifiStaticNetmaskLabel": "Máscara de rede (opcional)",
+    "wifiDhcpPlaceholder": "Deixar vazio para DHCP",
+    "wifiOff": "Wi-Fi desligado",
+    "wifiEnableAp": "Ativar AP",
+    "wifiApplyStation": "Aplicar estação",
+    "wifiReadConfig": "Ler configuração",
+    "wifiAdvancedShow": "Avançado",
+    "wifiAdvancedHide": "Ocultar avançado",
+    "wifiAdvancedToggle": "Alternar opções avançadas de Wi-Fi",
+    "wifiOffSuccess": "Wi-Fi desativado. Reinicie a placa para que as alterações entrem em vigor.",
+    "wifiApSuccess": "Modo de ponto de acesso ativado. Ingresse no RNode AP a partir do seu computador (gateway padrão 10.0.0.1) e, em seguida, configure as credenciais da estação ou use o console de inicialização.",
+    "wifiStationSuccess": "Modo de estação salvo. Reinicie a placa, encontre seu IP (exibição, DHCP do roteador ou configuração de leitura) e adicione tcp://… em → Interfaces de conexão.",
+    "wifiConfigEmpty": "Nenhum dado de configuração retornado."
   },
   "logAnalyzeModal": {
     "title": "Análise de registro",

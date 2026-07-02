@@ -218,4 +218,91 @@ describe('ReticulumInterfacesPanel', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('does not flag Wi-Fi RNode tcp:// interface rows as stale USB serial ports', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-wifi',
+            name: 'RNode WiFi',
+            type: 'rnode',
+            enabled: true,
+            status: 'down',
+            serial_port: 'tcp://192.168.1.42:7633',
+          },
+        ]}
+        serialPorts={[]}
+        serialPortPaths={[]}
+      />,
+    );
+
+    expect(screen.getByText(/RNode WiFi \(rnode\)/)).toBeInTheDocument();
+    expect(
+      screen.queryByText('connectionPanel.reticulumInterfaces.localOfflineRowStale'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.localOfflineRowWifi'),
+    ).toBeInTheDocument();
+  });
+
+  it('posts tcp:// serial_port when adding Wi-Fi RNode transport', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    const typeSelect = screen.getByLabelText('connectionPanel.reticulumInterfaces.type');
+    await user.selectOptions(typeSelect, 'rnode');
+    const transportSelect = screen.getByLabelText(
+      'connectionPanel.reticulumInterfaces.rnodeTransport',
+    );
+    await user.selectOptions(transportSelect, 'wifi');
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeWifiHost'),
+      '192.168.1.10',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }),
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/interfaces', {
+        type: 'rnode',
+        serial_port: 'tcp://192.168.1.10',
+        preset: null,
+      });
+    });
+  });
+
+  it('edit Wi-Fi RNode shows host and port fields', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-wifi',
+            name: 'rnode-wifi',
+            type: 'rnode',
+            enabled: true,
+            status: 'down',
+            serial_port: 'tcp://10.0.0.50',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeWifiHost'),
+      ).toHaveValue('10.0.0.50');
+      expect(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeWifiPort'),
+      ).toHaveValue(String(7633));
+    });
+  });
 });

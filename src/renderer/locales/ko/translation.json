@@ -663,7 +663,14 @@
       "bleUnavailable": "Reticulum 스캔에는 Bluetooth를 사용할 수 없습니다. 시스템 Bluetooth 및 사이드카 빌드(rns-ble)를 확인하세요.",
       "restartStackFailed": "스택 다시 시작 실패: {{message}}",
       "restartStackUnavailable": "Reticulum 런타임이 준비될 때까지 스택을 다시 시작할 수 없습니다.",
-      "localOfflineRowBle": "Bluetooth Rnode 오프라인 - 장치가 켜져 있고 범위 내에 있는지 확인한 다음 스택을 다시 시작합니다."
+      "localOfflineRowBle": "Bluetooth Rnode 오프라인 - 장치가 켜져 있고 범위 내에 있는지 확인한 다음 스택을 다시 시작합니다.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "호스트 또는 IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 또는 rnode.local",
+      "rnodeWifiPort": "TCP 포트:",
+      "rnodeWifiSetupTitle": "Wi-Fi RNode 설정",
+      "rnodeWifiSetupHint": "깜박인 후 Wi-Fi가 꺼져 있음 — RNode를 먼저 프로비저닝합니다 (Reticulum → Admin → Wi-Fi 또는 AP에 연결하고 http://10.0.0.1을 엽니다). ESP32-S3 Wi-Fi 지원 펌웨어가 필요합니다.\n\n스테이션 모드 후: OLED 대체 화면, 라우터 DHCP 목록 또는 관리자 → 읽기 구성에서 IP를 찾습니다. TCP 클라이언트 인터페이스 유형이 아닌 tcp://host (기본 포트 7633) 를 사용하십시오.\n\n많은 Heltec 보드의 ~ 10 초 버튼 홀드는 Wi-Fi AP를 활성화합니다 (~ 7 초는 블루투스 페어링입니다).",
+      "localOfflineRowWifi": "Wi-Fi RNode에 연결할 수 없음 — IP, 포트 7633, 동일한 LAN 및 전원을 확인하고 DHCP 주소가 변경된 경우 관리자에게 다시 프로비저닝합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "로컬 인터페이스 연결 중...",
       "connectingRow": "{{name}}: 블루투스를 통해 연결 중",
       "connectingHintBle": "BLE Rnode 링크는 스택이 시작된 후 최대 30초가 걸릴 수 있습니다. OS에서 메시지가 표시되면 페어링 PIN을 입력하세요. 이는 오류가 아니라 정상입니다.",
-      "offlineHintBle": "OS에서 6자리 Bluetooth PIN을 요구할 수 있습니다(macOS, Windows 또는 Linux). Rnode는 페어링할 때마다 새 코드를 생성합니다. 기본 PIN은 없습니다. 헤드리스 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → OS 대화 상자에 표시된 PIN을 입력합니다. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 ~7초 동안 누르고(타이밍은 다양합니다. 대신 많은 보드에서 ~10초는 Wi-Fi AP를 활성화합니다) 화면에서 PIN을 읽은 다음 OS 대화 상자에 입력합니다. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 삭제하세요."
+      "offlineHintBle": "OS에서 6자리 Bluetooth PIN을 요구할 수 있습니다(macOS, Windows 또는 Linux). Rnode는 페어링할 때마다 새 코드를 생성합니다. 기본 PIN은 없습니다. 헤드리스 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → OS 대화 상자에 표시된 PIN을 입력합니다. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 ~7초 동안 누르고(타이밍은 다양합니다. 대신 많은 보드에서 ~10초는 Wi-Fi AP를 활성화합니다) 화면에서 PIN을 읽은 다음 OS 대화 상자에 입력합니다. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 삭제하세요.",
+      "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "펌웨어 해시를 설정하기 전에 EEPROM을 프로비저닝하십시오.",
     "firmwareHashDone": "펌웨어 해시 세트",
     "flashDone": "펌웨어가 플래시되었습니다.",
-    "bluetoothHint": "장치에서 Bluetooth를 활성화한 다음 페어링 시작을 사용하십시오. 6자리 PIN은 USB 직렬을 통해 여기에 표시됩니다. Reticulum이 BLE를 통해 연결되면 OS Bluetooth 대화 상자(macOS, Windows 또는 Linux)에 동일한 PIN을 입력하세요. USB가 없는 헤드리스 장치는 화면에 PIN을 표시할 수 없습니다."
+    "bluetoothHint": "장치에서 Bluetooth를 활성화한 다음 페어링 시작을 사용하십시오. 6자리 PIN은 USB 직렬을 통해 여기에 표시됩니다. Reticulum이 BLE를 통해 연결되면 OS Bluetooth 대화 상자(macOS, Windows 또는 Linux)에 동일한 PIN을 입력하세요. USB가 없는 헤드리스 장치는 화면에 PIN을 표시할 수 없습니다.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "깜박인 후 Wi-Fi가 비활성화되었습니다. 여기에서 스테이션 모드를 구성한 다음 (USB 직렬) tcp://호스트와의 연결 (포트 7633) 에 Wi-Fi RNode 인터페이스를 추가합니다. ESP32-S3 Wi-Fi 지원 펌웨어가 필요합니다. 변경 사항을 적용한 후 보드를 재부팅하십시오.",
+    "wifiSsidLabel": "Wi-Fi SSID",
+    "wifiPskLabel": "Wi-Fi 비밀번호",
+    "wifiChannelLabel": "채널 (선택 사항)",
+    "wifiStaticIpLabel": "고정 IP (선택 사항)",
+    "wifiStaticNetmaskLabel": "넷마스크 (선택 사항)",
+    "wifiDhcpPlaceholder": "DHCP에 대해 비워 둡니다",
+    "wifiOff": "Wi-Fi 끄기",
+    "wifiEnableAp": "AP 활성화",
+    "wifiApplyStation": "스테이션 적용",
+    "wifiReadConfig": "설정 읽기",
+    "wifiAdvancedShow": "Advanced",
+    "wifiAdvancedHide": "고급 숨기기",
+    "wifiAdvancedToggle": "고급 Wi-Fi 옵션 전환",
+    "wifiOffSuccess": "Wi-Fi가 비활성화되었습니다. 변경 사항을 적용하려면 보드를 재부팅하십시오.",
+    "wifiApSuccess": "액세스 포인트 모드가 활성화되었습니다. 컴퓨터 (기본 게이트웨이 10.0.0.1) 에서 RNode AP에 가입한 다음 스테이션 자격 증명을 구성하거나 부트스트랩 콘솔을 사용하십시오.",
+    "wifiStationSuccess": "스테이션 모드가 저장되었습니다. 보드를 재부팅한 다음 해당 IP (디스플레이, 라우터 DHCP 또는 읽기 구성) 를 찾아 연결 → 인터페이스에 tcp://… 를 추가하십시오.",
+    "wifiConfigEmpty": "반환된 구성 데이터가 없습니다."
   },
   "logAnalyzeModal": {
     "title": "로그 분석",

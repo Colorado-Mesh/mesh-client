@@ -663,7 +663,14 @@
       "bleUnavailable": "Il Bluetooth non è disponibile per la scansione Reticulum. Controlla il sistema Bluetooth e la build sidecar (rns-ble).",
       "restartStackFailed": "Riavvio dello stack non riuscito: {{message}}",
       "restartStackUnavailable": "Il riavvio dello stack non è disponibile finché il runtime Reticulum non è pronto.",
-      "localOfflineRowBle": "Bluetooth RNode offline: assicurati che il dispositivo sia acceso e nel raggio di portata, quindi riavvia lo stack."
+      "localOfflineRowBle": "Bluetooth RNode offline: assicurati che il dispositivo sia acceso e nel raggio di portata, quindi riavvia lo stack.",
+      "rnodeTransportWifi": "Wifi",
+      "rnodeWifiHost": "Host o IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 o rnode.local",
+      "rnodeWifiPort": "Porta TCP",
+      "rnodeWifiSetupTitle": "Configurazione Wi-Fi RNode",
+      "rnodeWifiSetupHint": "Il Wi-Fi è spento dopo il lampeggio: eseguire prima il provisioning dell'RNode (Reticulum → Admin → Wi-Fi, o unirsi al suo AP e aprire http://10.0.0.1). Richiede firmware con funzionalità Wi-Fi ESP32-S3.\n\nDopo la modalità stazione: trova l'IP sullo schermo alternativo OLED, l'elenco DHCP del router o la configurazione di → lettura amministratore. Utilizzare tcp://host (porta predefinita 7633) — non il tipo di interfaccia TCP Client.\n\nIl pulsante ~10 s su molte schede Heltec abilita l'AP Wi-Fi (~7 s è l'accoppiamento Bluetooth).",
+      "localOfflineRowWifi": "Wi-Fi RNode non raggiungibile: verificare IP, porta 7633, stessa LAN e alimentazione; eseguire nuovamente il provisioning in Admin se l'indirizzo DHCP è cambiato."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "Collegamento delle interfacce locali…",
       "connectingRow": "{{name}}: connessione tramite Bluetooth",
       "connectingHintBle": "I collegamenti BLE RNode possono richiedere fino a 30 secondi dall'avvio dello stack. Inserisci un PIN di accoppiamento se richiesto dal sistema operativo: è normale, non si tratta di un errore.",
-      "offlineHintBle": "Il tuo sistema operativo potrebbe richiedere un PIN Bluetooth a 6 cifre (macOS, Windows o Linux). RNode genera un nuovo codice a ogni accoppiamento: non esiste un PIN predefinito. Radio headless: collega USB → Reticulum Admin → Bluetooth → Avvia accoppiamento → inserisci il PIN mostrato nella finestra di dialogo del sistema operativo. Radio con display: tieni premuto il pulsante per ~7 s sui dispositivi Heltec (la tempistica varia; ~10 s su molte schede abilita invece l'AP Wi-Fi), leggi il PIN sullo schermo, quindi inseriscilo nella finestra di dialogo del sistema operativo. Cancella i collegamenti non riusciti nelle impostazioni Bluetooth del tuo sistema operativo prima di riprovare."
+      "offlineHintBle": "Il tuo sistema operativo potrebbe richiedere un PIN Bluetooth a 6 cifre (macOS, Windows o Linux). RNode genera un nuovo codice a ogni accoppiamento: non esiste un PIN predefinito. Radio headless: collega USB → Reticulum Admin → Bluetooth → Avvia accoppiamento → inserisci il PIN mostrato nella finestra di dialogo del sistema operativo. Radio con display: tieni premuto il pulsante per ~7 s sui dispositivi Heltec (la tempistica varia; ~10 s su molte schede abilita invece l'AP Wi-Fi), leggi il PIN sullo schermo, quindi inseriscilo nella finestra di dialogo del sistema operativo. Cancella i collegamenti non riusciti nelle impostazioni Bluetooth del tuo sistema operativo prima di riprovare.",
+      "offlineHintWifi": "Verificare che l'RNode sia sulla LAN, acceso e raggiungibile all'IP configurato (porta TCP predefinita 7633, non 4242). Aggiorna l'host di seguito se il DHCP ha assegnato un nuovo indirizzo o effettua nuovamente il provisioning del Wi-Fi in Reticulum → Admin."
     },
     "autoConnectingTo": "Connessione automatica a {{deviceName}}…",
     "autoReconnectInProgress": "Riconnessione automatica in corso…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "Eseguire il provisioning della EEPROM prima di impostare l'hash del firmware.",
     "firmwareHashDone": "Set di hash del firmware",
     "flashDone": "Il firmware è lampeggiato",
-    "bluetoothHint": "Abilita il Bluetooth sul dispositivo, quindi utilizza Avvia accoppiamento. Il PIN di 6 cifre viene visualizzato qui sulla seriale USB: inserisci lo stesso PIN nella finestra di dialogo Bluetooth del tuo sistema operativo (macOS, Windows o Linux) quando Reticulum si connette tramite BLE. I dispositivi headless senza USB non possono mostrare un PIN sullo schermo."
+    "bluetoothHint": "Abilita il Bluetooth sul dispositivo, quindi utilizza Avvia accoppiamento. Il PIN di 6 cifre viene visualizzato qui sulla seriale USB: inserisci lo stesso PIN nella finestra di dialogo Bluetooth del tuo sistema operativo (macOS, Windows o Linux) quando Reticulum si connette tramite BLE. I dispositivi headless senza USB non possono mostrare un PIN sullo schermo.",
+    "wifiTitle": "Wifi",
+    "wifiHint": "Il Wi-Fi è disabilitato dopo il lampeggio. Configurare qui la modalità stazione (seriale USB), quindi aggiungere un'interfaccia Wi-Fi RNode su Connessione con tcp://host (porta 7633). Richiede firmware con funzionalità Wi-Fi ESP32-S3. Riavviare la scheda dopo aver applicato le modifiche.",
+    "wifiSsidLabel": "SSID Wi-Fi",
+    "wifiPskLabel": "Password Wi-Fi",
+    "wifiChannelLabel": "Canale (opzionale)",
+    "wifiStaticIpLabel": "IP statico (opzionale)",
+    "wifiStaticNetmaskLabel": "Netmask (opzionale)",
+    "wifiDhcpPlaceholder": "Lasciare vuoto per DHCP",
+    "wifiOff": "Wi-Fi disattivo",
+    "wifiEnableAp": "Abilita AP",
+    "wifiApplyStation": "Applica stazione",
+    "wifiReadConfig": "Leggi la configurazione IBS",
+    "wifiAdvancedShow": "Avanzato",
+    "wifiAdvancedHide": "Nascondi Avanzate",
+    "wifiAdvancedToggle": "Attiva/disattiva le opzioni Wi-Fi avanzate",
+    "wifiOffSuccess": "Wi-Fi disabilitato. Riavvia la scheda per rendere effettive le modifiche.",
+    "wifiApSuccess": "Modalità punto di accesso abilitata. Collegare l'AP RNode dal computer (gateway predefinito 10.0.0.1), quindi configurare le credenziali della stazione o utilizzare la console di avvio.",
+    "wifiStationSuccess": "Modalità stazione salvata. Riavviare la scheda, quindi trovare il suo IP (display, router DHCP o Read config) e aggiungere tcp://… su Connection → Interfaces.",
+    "wifiConfigEmpty": "Nessun dato di configurazione restituito."
   },
   "logAnalyzeModal": {
     "title": "Analisi del registro",

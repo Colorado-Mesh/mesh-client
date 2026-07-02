@@ -663,7 +663,14 @@
       "bleUnavailable": "Bluetooth ist für Reticulum-Scannen nicht verfügbar. Überprüfen Sie das System-Bluetooth und den Sidecar-Build (rns-ble).",
       "restartStackFailed": "Stack-Neustart fehlgeschlagen: {{message}}",
       "restartStackUnavailable": "Der Stack-Neustart ist erst verfügbar, wenn die Reticulum-Laufzeitumgebung bereit ist.",
-      "localOfflineRowBle": "Bluetooth RNode offline – stellen Sie sicher, dass das Gerät eingeschaltet und in Reichweite ist, und starten Sie dann den Stack neu."
+      "localOfflineRowBle": "Bluetooth RNode offline – stellen Sie sicher, dass das Gerät eingeschaltet und in Reichweite ist, und starten Sie dann den Stack neu.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "Host oder IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 oder rnode.local",
+      "rnodeWifiPort": "TCP- Port",
+      "rnodeWifiSetupTitle": "WLAN-RNode-Einrichtung",
+      "rnodeWifiSetupHint": "WLAN ist nach dem Blinken ausgeschaltet — stellen Sie zuerst den RNode bereit (Reticulum → Admin → Wi-Fi, oder schließen Sie sich seinem AP an und öffnen Sie http://10.0.0.1). Benötigt ESP32-S3 Wi-Fi-fähige Firmware.\n\nNach dem Stationsmodus: Suchen Sie die IP auf dem alternativen OLED-Bildschirm, der DHCP-Liste Ihres Routers oder → der Administrator-Lesekonfiguration. Verwenden Sie tcp://host (Standardport 7633) — nicht den Typ der TCP-Clientschnittstelle.\n\nDas Halten der ~10 s -Taste auf vielen Heltec-Boards ermöglicht Wi-Fi AP (~7 s ist Bluetooth-Kopplung).",
+      "localOfflineRowWifi": "Wi-Fi RNode nicht erreichbar — überprüfen Sie IP, Port 7633, gleiches LAN und Stromversorgung; erneute Bereitstellung im Admin, wenn sich die DHCP-Adresse geändert hat."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "Lokale Schnittstelle(n) verbinden…",
       "connectingRow": "{{name}}: Verbindung über Bluetooth",
       "connectingHintBle": "BLE-RNode-Links können bis zu 30 Sekunden nach dem Start des Stapels dauern. Geben Sie eine Kopplungs-PIN ein, wenn Ihr Betriebssystem Sie dazu auffordert – das ist normal und kein Fehler.",
-      "offlineHintBle": "Ihr Betriebssystem fordert möglicherweise zur Eingabe einer 6-stelligen Bluetooth-PIN auf (macOS, Windows oder Linux). RNode generiert bei jedem Pairing einen neuen Code – es gibt keine Standard-PIN. Headless-Radios: USB anschließen → Reticulum Admin → Bluetooth → Kopplung starten → die angezeigte PIN in den OS-Dialog eingeben. Funkgeräte mit Display: Halten Sie die Taste bei Heltec-Geräten etwa 7 Sekunden lang gedrückt (die Zeitspanne variiert; bei vielen Karten wird stattdessen etwa 10 Sekunden lang Wi-Fi AP aktiviert), lesen Sie die PIN auf dem Bildschirm ab und geben Sie sie dann in das Betriebssystemdialogfeld ein. Löschen Sie fehlgeschlagene Verbindungen in den Bluetooth-Einstellungen Ihres Betriebssystems, bevor Sie es erneut versuchen."
+      "offlineHintBle": "Ihr Betriebssystem fordert möglicherweise zur Eingabe einer 6-stelligen Bluetooth-PIN auf (macOS, Windows oder Linux). RNode generiert bei jedem Pairing einen neuen Code – es gibt keine Standard-PIN. Headless-Radios: USB anschließen → Reticulum Admin → Bluetooth → Kopplung starten → die angezeigte PIN in den OS-Dialog eingeben. Funkgeräte mit Display: Halten Sie die Taste bei Heltec-Geräten etwa 7 Sekunden lang gedrückt (die Zeitspanne variiert; bei vielen Karten wird stattdessen etwa 10 Sekunden lang Wi-Fi AP aktiviert), lesen Sie die PIN auf dem Bildschirm ab und geben Sie sie dann in das Betriebssystemdialogfeld ein. Löschen Sie fehlgeschlagene Verbindungen in den Bluetooth-Einstellungen Ihres Betriebssystems, bevor Sie es erneut versuchen.",
+      "offlineHintWifi": "Überprüfen Sie, ob sich der RNode in Ihrem LAN befindet, eingeschaltet ist und über die konfigurierte IP erreichbar ist (Standard-TCP-Port 7633, nicht 4242). Aktualisieren Sie den Host unten, wenn DHCP eine neue Adresse zugewiesen hat, oder stellen Sie Wi-Fi im Reticulum → Admin erneut bereit."
     },
     "autoConnectingTo": "Automatische Verbindung mit {{deviceName}}…",
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "Stellen Sie den EEPROM bereit, bevor Sie den Firmware-Hash setzen.",
     "firmwareHashDone": "Firmware-Hash-Set",
     "flashDone": "Firmware geflasht",
-    "bluetoothHint": "Aktivieren Sie Bluetooth auf dem Gerät und verwenden Sie dann „Kopplung starten“. Die 6-stellige PIN erscheint hier über USB seriell – geben Sie dieselbe PIN in den Bluetooth-Dialog Ihres Betriebssystems (macOS, Windows oder Linux) ein, wenn Reticulum über BLE eine Verbindung herstellt. Headless-Geräte ohne USB können keine PIN auf dem Bildschirm anzeigen."
+    "bluetoothHint": "Aktivieren Sie Bluetooth auf dem Gerät und verwenden Sie dann „Kopplung starten“. Die 6-stellige PIN erscheint hier über USB seriell – geben Sie dieselbe PIN in den Bluetooth-Dialog Ihres Betriebssystems (macOS, Windows oder Linux) ein, wenn Reticulum über BLE eine Verbindung herstellt. Headless-Geräte ohne USB können keine PIN auf dem Bildschirm anzeigen.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "WLAN ist nach dem Blinken deaktiviert. Konfigurieren Sie hier den Stationsmodus (USB seriell) und fügen Sie dann eine Wi-Fi RNode-Schnittstelle auf Verbindung mit tcp://Host (Port 7633) hinzu. Benötigt ESP32-S3 Wi-Fi-fähige Firmware. Starten Sie das Board nach dem Anwenden von Änderungen neu.",
+    "wifiSsidLabel": "Wi-Fi SSID",
+    "wifiPskLabel": "W-LAN Passwort",
+    "wifiChannelLabel": "Kanal (optional)",
+    "wifiStaticIpLabel": "Statische IP (optional)",
+    "wifiStaticNetmaskLabel": "Netzmaske (optional)",
+    "wifiDhcpPlaceholder": "Frei lassen für",
+    "wifiOff": "Wi-Fi aus",
+    "wifiEnableAp": "AP aktivieren",
+    "wifiApplyStation": "Station anwenden",
+    "wifiReadConfig": "READ-CONFIG",
+    "wifiAdvancedShow": "Fortgeschrittene",
+    "wifiAdvancedHide": "Erweitert ausblenden",
+    "wifiAdvancedToggle": "Erweiterte WLAN-Optionen umschalten",
+    "wifiOffSuccess": "WLAN deaktiviert. Starten Sie das Board neu, damit die Änderungen wirksam werden.",
+    "wifiApSuccess": "Zugriffspunktmodus aktiviert. Schließen Sie sich dem RNode-AP von Ihrem Computer aus an (Standard-Gateway 10.0.0.1), konfigurieren Sie dann die Stationsanmeldeinformationen oder verwenden Sie die Bootstrap-Konsole.",
+    "wifiStationSuccess": "Stationsmodus gespeichert. Starten Sie die Platine neu, suchen Sie dann ihre IP (Display, Router-DHCP oder Lesekonfiguration) und fügen Sie tcp://… auf den Verbindungsschnittstellen → hinzu.",
+    "wifiConfigEmpty": "Es wurden keine Konfigurationsdaten zurückgegeben."
   },
   "logAnalyzeModal": {
     "title": "Protokollanalyse",

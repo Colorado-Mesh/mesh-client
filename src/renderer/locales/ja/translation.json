@@ -663,7 +663,14 @@
       "bleUnavailable": "Bluetooth は Reticulum スキャンには使用できません。システムの Bluetooth とサイドカー ビルド (rns-ble) を確認してください。",
       "restartStackFailed": "スタックの再起動に失敗しました: {{message}}",
       "restartStackUnavailable": "Reticulum ランタイムの準備が整うまで、スタックの再起動はできません。",
-      "localOfflineRowBle": "Bluetooth RNode オフライン — デバイスがオンで範囲内にあることを確認してから、スタックを再起動します。"
+      "localOfflineRowBle": "Bluetooth RNode オフライン — デバイスがオンで範囲内にあることを確認してから、スタックを再起動します。",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "ホストまたはIP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42またはrnode.local",
+      "rnodeWifiPort": "ポート番号",
+      "rnodeWifiSetupTitle": "Wi-Fi RNodeの設定",
+      "rnodeWifiSetupHint": "点滅後、Wi-Fiがオフになっています—最初にRNodeをプロビジョニングします（ Reticulum → Admin → Wi-Fi、またはそのAPに参加してhttp://10.0.0.1を開きます）。 ESP 32 - S 3 Wi-Fi対応ファームウェアが必要です。\n\nステーションモード後： OLED代替画面、ルーターDHCPリスト、または管理者→読み取り設定でIPを見つけます。 TCPクライアントインターフェイスタイプではなく、tcp :// host （デフォルトポート7633 ）を使用します。\n\n多くのHeltecボードで約10秒間のボタンホールドにより、Wi-Fi APが有効になります（約7秒間はBluetoothペアリング）。",
+      "localOfflineRowWifi": "Wi-Fi RNode到達不能— IP、ポート7633、同じLAN、および電源を確認します。DHCPアドレスが変更された場合は、管理者で再プロビジョニングします。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "ローカルインターフェースを接続中…",
       "connectingRow": "{{name}}: Bluetooth 経由で接続しています",
       "connectingHintBle": "BLE RNode リンクは、スタックの開始後、最大 30 秒かかる場合があります。 OS のプロンプトが表示されたら、ペアリング PIN を入力します。これは正常であり、エラーではありません。",
-      "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。"
+      "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。",
+      "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "ファームウェアハッシュを設定する前に、EEPROMをプロビジョニングします。",
     "firmwareHashDone": "ファームウェアハッシュセット",
     "flashDone": "ファームウェアがフラッシュされました",
-    "bluetoothHint": "デバイスで Bluetooth を有効にし、[ペアリングの開始] を使用します。ここでは、USB シリアル経由で 6 桁の PIN が表示されます。Reticulum が BLE 経由で接続する場合は、OS の Bluetooth ダイアログ (macOS、Windows、または Linux) に同じ PIN を入力します。 USB のないヘッドレス デバイスでは、画面に PIN を表示できません。"
+    "bluetoothHint": "デバイスで Bluetooth を有効にし、[ペアリングの開始] を使用します。ここでは、USB シリアル経由で 6 桁の PIN が表示されます。Reticulum が BLE 経由で接続する場合は、OS の Bluetooth ダイアログ (macOS、Windows、または Linux) に同じ PIN を入力します。 USB のないヘッドレス デバイスでは、画面に PIN を表示できません。",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "点滅後、Wi-Fiが無効になっています。ここでステーションモード（ USBシリアル）を設定し、tcp :// host （ポート7633 ）を使用して接続にWi-Fi RNodeインターフェースを追加します。ESP 32 - S 3 Wi-Fi対応ファームウェアが必要です。変更を適用した後、ボードを再起動します。",
+    "wifiSsidLabel": "Wi-Fi  SSID",
+    "wifiPskLabel": "Wi-Fiパスワード",
+    "wifiChannelLabel": "チャンネル（任意）",
+    "wifiStaticIpLabel": "静的IP （オプション）",
+    "wifiStaticNetmaskLabel": "ネットマスク（オプション）",
+    "wifiDhcpPlaceholder": "DHCPの場合は空白のままにします",
+    "wifiOff": "Wi-Fiオフ",
+    "wifiEnableAp": "APを有効にする",
+    "wifiApplyStation": "ステーションを適用",
+    "wifiReadConfig": "設定の読み取り",
+    "wifiAdvancedShow": "高度",
+    "wifiAdvancedHide": "詳細を非表示します",
+    "wifiAdvancedToggle": "高度なWi-Fiオプションを切り替える",
+    "wifiOffSuccess": "Wi-Fiが無効になっています。変更を有効にするには、ボードを再起動してください。",
+    "wifiApSuccess": "アクセスポイントモードが有効です。コンピュータ（デフォルトゲートウェイ10.0.0.1 ）からRNode APに参加し、ステーションの資格情報を設定するか、ブートストラップコンソールを使用します。",
+    "wifiStationSuccess": "ステーションモードが保存されました。ボードを再起動し、そのIP （ディスプレイ、ルーターDHCP、または設定の読み取り）を見つけて、接続→インターフェースにtcp ://...を追加します。",
+    "wifiConfigEmpty": "設定データが返されませんでした。"
   },
   "logAnalyzeModal": {
     "title": "ログ分析",

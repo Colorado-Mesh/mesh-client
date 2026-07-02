@@ -28,7 +28,7 @@ cd reticulum-sidecar
 cargo build --release --features rns-stack
 ```
 
-Optional: `--features rns-stack,rns-serial,rns-ble`
+Optional: `--features rns-stack,rns-serial,rns-ble,rns-rnode-tcp`
 
 ## Dev
 
@@ -37,7 +37,7 @@ pnpm run reticulum:sidecar:dev
 curl -s http://127.0.0.1:19437/api/v1/status
 ```
 
-Or **Reticulum tab → Connection → Start stack** (sidecar must be running before identity or Radio configuration).
+Or **Reticulum tab → Connection → Start stack** (sidecar must be running before identity or Network configuration).
 
 ## API
 

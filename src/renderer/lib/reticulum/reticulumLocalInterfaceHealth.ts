@@ -1,3 +1,7 @@
+import { isReticulumTcpRnodeSerialPort } from './reticulumRnodeTransport';
+
+export { isReticulumTcpRnodeSerialPort } from './reticulumRnodeTransport';
+
 export const RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES = new Set(['rnode', 'rnode_multi', 'kiss']);
 
 const ONLINE_STATUSES = new Set(['up', 'connected', 'online', 'running']);
@@ -61,11 +65,14 @@ export function isReticulumBleRnodeSerialPort(port: string | null | undefined): 
   return typeof port === 'string' && port.trim().toLowerCase().startsWith('ble://');
 }
 
-export type ReticulumLocalOfflineDisplayKind = 'serial' | 'ble';
+export type ReticulumLocalOfflineDisplayKind = 'serial' | 'ble' | 'wifi';
 
 export function reticulumLocalOfflineDisplayKind(
   iface: Pick<ReticulumLocalInterfaceInput, 'serial_port'>,
 ): ReticulumLocalOfflineDisplayKind {
+  if (isReticulumTcpRnodeSerialPort(iface.serial_port)) {
+    return 'wifi';
+  }
   return isReticulumBleRnodeSerialPort(iface.serial_port) ? 'ble' : 'serial';
 }
 
@@ -80,7 +87,12 @@ export function classifyReticulumLocalInterface(
     return 'disabled';
   }
   const port = iface.serial_port?.trim();
-  if (port && !isReticulumBleRnodeSerialPort(port) && !osSerialPorts.includes(port)) {
+  if (
+    port &&
+    !isReticulumBleRnodeSerialPort(port) &&
+    !isReticulumTcpRnodeSerialPort(port) &&
+    !osSerialPorts.includes(port)
+  ) {
     return 'stale_port';
   }
   if (!isReticulumInterfaceOnlineStatus(iface.status)) {

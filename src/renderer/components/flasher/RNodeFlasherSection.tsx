@@ -40,6 +40,7 @@ import { flasherStepButtonClass } from './flasherStepButtonStyles';
 import { FlashProgress } from './FlashProgress';
 import { ProvisionStep } from './ProvisionStep';
 import { TncConfig } from './TncConfig';
+import { WifiConfig } from './WifiConfig';
 
 export interface RNodeFlasherSectionProps {
   portBlocked: boolean;
@@ -69,6 +70,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const [provisioning, setProvisioning] = useState(false);
   const [settingHash, setSettingHash] = useState(false);
   const [pairingPin, setPairingPin] = useState<number | null>(null);
+  const [wifiConfigSummary, setWifiConfigSummary] = useState<string | null>(null);
   const [displayImage, setDisplayImage] = useState<string | null>(null);
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -469,6 +471,57 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
               await rnode.startBluetoothPairing((pin) => {
                 setPairingPin(pin);
               });
+            });
+          }}
+        />
+
+        <WifiConfig
+          disabled={actionsDisabled}
+          configSummary={wifiConfigSummary}
+          onWifiOff={() => {
+            void runWithRNode(async (rnode) => {
+              await rnode.setWifiMode('off');
+              await rnode.saveConfig();
+              showStatus(t('flasher.wifiOffSuccess'));
+            });
+          }}
+          onEnableAp={(ssid, psk) => {
+            void runWithRNode(async (rnode) => {
+              if (ssid.trim()) {
+                await rnode.setWifiSsid(ssid);
+              }
+              if (psk.trim()) {
+                await rnode.setWifiPsk(psk);
+              }
+              await rnode.setWifiMode('ap');
+              await rnode.saveConfig();
+              showStatus(t('flasher.wifiApSuccess'));
+            });
+          }}
+          onApplyStation={({ ssid, psk, channel, staticIp, staticNetmask }) => {
+            void runWithRNode(async (rnode) => {
+              await rnode.setWifiSsid(ssid);
+              await rnode.setWifiPsk(psk);
+              if (channel != null) {
+                await rnode.setWifiChannel(channel);
+              }
+              if (staticIp && staticNetmask) {
+                await rnode.setWifiStaticIp(staticIp);
+                await rnode.setWifiStaticNetmask(staticNetmask);
+              } else {
+                await rnode.setWifiIpDhcp();
+                await rnode.setWifiNetmaskDhcp();
+              }
+              await rnode.setWifiMode('station');
+              await rnode.saveConfig();
+              showStatus(t('flasher.wifiStationSuccess'));
+            });
+          }}
+          onReadConfig={() => {
+            void runWithRNode(async (rnode) => {
+              const raw = await rnode.readDeviceConfig();
+              const hex = raw.map((b) => b.toString(16).padStart(2, '0')).join(' ');
+              setWifiConfigSummary(hex.length > 0 ? hex : t('flasher.wifiConfigEmpty'));
             });
           }}
         />

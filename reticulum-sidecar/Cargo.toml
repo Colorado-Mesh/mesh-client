@@ -23,6 +23,7 @@ rns-stack = [
 ]
 rns-serial = ["rns-runtime/serial"]
 rns-ble = ["rns-runtime/ble", "dep:rns-interface", "rns-interface/ble"]
+rns-rnode-tcp = ["rns-runtime/rnode-tcp"]
 
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }

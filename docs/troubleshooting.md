@@ -885,6 +885,20 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
 
+### RNode Wi-Fi interface offline or won't connect
+
+**Symptoms**: Connection tab shows a Wi-Fi RNode interface as **down**; logs may show TCP connect failures to the configured host.
+
+**Checks**:
+
+1. **Interface type**: use **RNode** with transport **Wi-Fi** (`tcp://192.168.x.x:7633`), not **TCP Client** (mesh upstream on port **4242**).
+2. **Provisioning**: Wi-Fi is disabled after flashing until you configure station or AP mode (**Admin → Wi-Fi**, AP + `http://10.0.0.1`, or `rnodeconf`).
+3. **IP address**: DHCP may change the RNode IP — update the host on Connection → Interfaces, or set a static IP in Admin → Wi-Fi advanced.
+4. **LAN reachability**: the computer running mesh-client must be on the same network as the RNode; check firewall rules for outbound TCP to port **7633**.
+5. **Sidecar build**: packaged builds include `rns-rnode-tcp`; dev builds need `pnpm run reticulum:sidecar:build` with `rns-stack,rns-ble,rns-rnode-tcp` features.
+
+See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
+
 ### Can't see RF packets on custom MQTT broker
 
 **Cause**: The packet logger publishes to `{prefix}/{pubKey}/packets`, but you're viewing the packets somewhere that doesn't receive published MQTT messages.

@@ -663,7 +663,14 @@
       "bleUnavailable": "Reticulum taraması için Bluetooth kullanılamaz. Sistem Bluetooth'unu ve sepet yapısını (rns-ble) kontrol edin.",
       "restartStackFailed": "Yığın yeniden başlatma başarısız oldu: {{message}}",
       "restartStackUnavailable": "Reticulum çalışma zamanı hazır olana kadar yığının yeniden başlatılması kullanılamaz.",
-      "localOfflineRowBle": "Bluetooth RNode çevrimdışı — cihazın açık ve kapsama alanı içinde olduğundan emin olun, ardından yığını yeniden başlatın."
+      "localOfflineRowBle": "Bluetooth RNode çevrimdışı — cihazın açık ve kapsama alanı içinde olduğundan emin olun, ardından yığını yeniden başlatın.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "Sunucu adı veya IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 veya rnode.local",
+      "rnodeWifiPort": "TCP bağlantı noktası",
+      "rnodeWifiSetupTitle": "Wi-Fi RNode kurulumu",
+      "rnodeWifiSetupHint": "Wi-Fi yanıp söndükten sonra kapalıdır — önce RNode'u sağlayın (Reticulum → Admin → Wi-Fi veya AP'ye katılın ve http://10.0.0.1 adresini açın). ESP32 - S3 Wi-Fi özellikli ürün yazılımı gerektirir.\n\nİstasyon modundan sonra: IP'yi OLED alternatif ekranında, yönlendirici DHCP listenizde veya Yönetici → Okuma yapılandırmasında bulun. TCP İstemcisi arayüz türünü değil, tcp :// host (varsayılan bağlantı noktası 7633) kullanın.\n\nBirçok Heltec kartında ~10 saniye düğme basılı tutma, Wi-Fi AP'yi etkinleştirir (~7 saniye Bluetooth eşleştirmesidir).",
+      "localOfflineRowWifi": "Wi — Fi RNode'a erişilemiyor — IP, bağlantı noktası 7633, aynı lan ve gücü doğrulayın; DHCP adresi değişirse Yöneticide yeniden provizyon."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "Yerel arayüz(ler) bağlanıyor…",
       "connectingRow": "{{name}}: Bluetooth üzerinden bağlanılıyor",
       "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra 30 saniye kadar sürebilir. İşletim sisteminiz isterse bir eşleştirme PIN'i girin; bu normaldir, bir hata değil.",
-      "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin."
+      "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin.",
+      "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "Ürün yazılımı karmasını ayarlamadan önce EEPROM'u sağlayın.",
     "firmwareHashDone": "Aygıt yazılımı karma kümesi",
     "flashDone": "Aygıt yazılımı yanıp söndü",
-    "bluetoothHint": "Cihazda Bluetooth'u etkinleştirin ve ardından Eşleştirmeyi başlat seçeneğini kullanın. 6 basamaklı PIN burada USB seri üzerinden görünür; Reticulum BLE üzerinden bağlandığında aynı PIN'i işletim sisteminizin Bluetooth iletişim kutusuna (macOS, Windows veya Linux) girin. USB'si olmayan başsız cihazlar ekranda PIN gösteremez."
+    "bluetoothHint": "Cihazda Bluetooth'u etkinleştirin ve ardından Eşleştirmeyi başlat seçeneğini kullanın. 6 basamaklı PIN burada USB seri üzerinden görünür; Reticulum BLE üzerinden bağlandığında aynı PIN'i işletim sisteminizin Bluetooth iletişim kutusuna (macOS, Windows veya Linux) girin. USB'si olmayan başsız cihazlar ekranda PIN gösteremez.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "Wi-Fi yanıp söndükten sonra devre dışı bırakılır. İstasyon modunu buradan yapılandırın (USB seri numarası), ardından tcp :// ana bilgisayar ile bağlantı (bağlantı noktası 7633) üzerine bir Wi-Fi RNode arayüzü ekleyin. ESP32 - S3 Wi-Fi özellikli ürün yazılımı gerektirir. Değişiklikleri uyguladıktan sonra kartı yeniden başlatın.",
+    "wifiSsidLabel": "Wi-Fi SSID",
+    "wifiPskLabel": "Wi-Fi parolası",
+    "wifiChannelLabel": "Kanal (isteğe bağlı)",
+    "wifiStaticIpLabel": "Statik IP (isteğe bağlı)",
+    "wifiStaticNetmaskLabel": "Ağ maskesi (isteğe bağlı)",
+    "wifiDhcpPlaceholder": "için boş bırakın",
+    "wifiOff": "Wi-Fi bağlantısını kapat",
+    "wifiEnableAp": "AP'yi etkinleştir",
+    "wifiApplyStation": "İstasyon uygula",
+    "wifiReadConfig": "Yapılandırmayı oku",
+    "wifiAdvancedShow": "Gelişmiş",
+    "wifiAdvancedHide": "Gelişmiş seçenekleri gizle",
+    "wifiAdvancedToggle": "Gelişmiş Wi-Fi seçeneklerini aç/kapat",
+    "wifiOffSuccess": "Wi-Fi devre dışı bırakıldı. Değişikliklerin geçerli olması için kartı yeniden başlatın.",
+    "wifiApSuccess": "Erişim noktası modu etkin. Bilgisayarınızdan RNode AP'ye katılın (varsayılan ağ geçidi 10.0.0.1), ardından istasyon kimlik bilgilerini yapılandırın veya önyükleme konsolunu kullanın.",
+    "wifiStationSuccess": "İstasyon modu kaydedildi. Kartı yeniden başlatın, ardından IP'sini (ekran, yönlendirici DHCP veya Read config) bulun ve → Bağlantı Arabirimlerine tcp ://… ekleyin.",
+    "wifiConfigEmpty": "Yapılandırma verisi döndürülmedi."
   },
   "logAnalyzeModal": {
     "title": "Günlük Analizi",

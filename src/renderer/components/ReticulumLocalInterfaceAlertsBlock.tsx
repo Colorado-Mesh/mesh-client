@@ -61,9 +61,16 @@ export function ReticulumLocalInterfaceAlertsBlock({
               <p className="text-muted mt-0.5 text-[11px]">
                 {alert.reason === 'stale_port'
                   ? t('connectionPanel.reticulumLocalInterfaces.stalePortHint')
-                  : reticulumLocalOfflineDisplayKind(alert.iface) === 'ble'
-                    ? t('connectionPanel.reticulumLocalInterfaces.offlineHintBle')
-                    : t('connectionPanel.reticulumLocalInterfaces.offlineHint')}
+                  : (() => {
+                      const kind = reticulumLocalOfflineDisplayKind(alert.iface);
+                      if (kind === 'ble') {
+                        return t('connectionPanel.reticulumLocalInterfaces.offlineHintBle');
+                      }
+                      if (kind === 'wifi') {
+                        return t('connectionPanel.reticulumLocalInterfaces.offlineHintWifi');
+                      }
+                      return t('connectionPanel.reticulumLocalInterfaces.offlineHint');
+                    })()}
               </p>
             ) : null}
           </li>

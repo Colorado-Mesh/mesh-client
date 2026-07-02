@@ -67,6 +67,16 @@ describe('reticulumLocalInterfaceHealth', () => {
       'ble',
     );
     expect(reticulumLocalOfflineDisplayKind({ serial_port: '/dev/cu.usbserial-1' })).toBe('serial');
+    expect(reticulumLocalOfflineDisplayKind({ serial_port: 'tcp://192.168.1.10' })).toBe('wifi');
+  });
+
+  it('does not flag tcp:// RNode URIs as stale USB serial ports', () => {
+    expect(
+      classifyReticulumLocalInterface(
+        { ...heltec, serial_port: 'tcp://192.168.1.42:7633', status: 'down' },
+        [],
+      ),
+    ).toBe('enabled_down');
   });
 
   it('collectLocalInterfaceAlerts returns stale and offline entries', () => {

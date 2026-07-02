@@ -663,7 +663,14 @@
       "bleUnavailable": "Bluetooth is niet beschikbaar voor Reticulum-scannen. Controleer systeem Bluetooth en zijspanopbouw (rns-ble).",
       "restartStackFailed": "Opnieuw opstarten van stapel mislukt: {{message}}",
       "restartStackUnavailable": "Het opnieuw opstarten van de stapel is pas beschikbaar als de Reticulum-runtime gereed is.",
-      "localOfflineRowBle": "Bluetooth RNode offline: zorg ervoor dat het apparaat is ingeschakeld en binnen bereik is en start vervolgens de stapel opnieuw op."
+      "localOfflineRowBle": "Bluetooth RNode offline: zorg ervoor dat het apparaat is ingeschakeld en binnen bereik is en start vervolgens de stapel opnieuw op.",
+      "rnodeTransportWifi": "Wifi",
+      "rnodeWifiHost": "Host of IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 of rnode.local",
+      "rnodeWifiPort": "TCP-poort",
+      "rnodeWifiSetupTitle": "Wi-Fi RNode instellen",
+      "rnodeWifiSetupHint": "Wi-Fi is uitgeschakeld na het knipperen — voorzie eerst de RNode (Reticulum → Admin → Wi-Fi, of sluit je aan bij de AP en open http://10.0.0.1). Vereist ESP32-S3 Wi-Fi-compatibele firmware.\n\nNa zendermodus: zoek het IP-adres op het OLED-alternatieve scherm, uw router-DHCP-lijst of Admin → Read-configuratie. Gebruik tcp://host (standaardpoort 7633) — niet het TCP Client-interfacetype.\n\n~10 s knop ingedrukt houden op veel Heltec-borden maakt Wi-Fi AP mogelijk (~7 s is Bluetooth-koppeling).",
+      "localOfflineRowWifi": "Wi-Fi RNode onbereikbaar — verifieer IP, poort 7633, hetzelfde LAN en stroom; opnieuw instellen in Admin als het DHCP-adres is gewijzigd."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "Lokale interface(s) aansluiten…",
       "connectingRow": "{{name}}: verbinden via Bluetooth",
       "connectingHintBle": "BLE RNode-koppelingen kunnen tot 30 seconden duren nadat de stapel is gestart. Voer een koppelingspincode in als uw besturingssysteem daarom vraagt. Dit is normaal en geen fout.",
-      "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert."
+      "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert.",
+      "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin."
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "Bepaal de EEPROM voordat u de firmware-hash instelt.",
     "firmwareHashDone": "Firmware-hashset",
     "flashDone": "Firmware geflasht",
-    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppelen starten. De zescijferige pincode verschijnt hier via USB-serieel. Voer dezelfde pincode in in het Bluetooth-dialoogvenster van uw besturingssysteem (macOS, Windows of Linux) wanneer Reticulum verbinding maakt via BLE. Headless-apparaten zonder USB kunnen geen pincode op het scherm weergeven."
+    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppelen starten. De zescijferige pincode verschijnt hier via USB-serieel. Voer dezelfde pincode in in het Bluetooth-dialoogvenster van uw besturingssysteem (macOS, Windows of Linux) wanneer Reticulum verbinding maakt via BLE. Headless-apparaten zonder USB kunnen geen pincode op het scherm weergeven.",
+    "wifiTitle": "Wifi",
+    "wifiHint": "Wi-Fi is uitgeschakeld na het knipperen. Configureer hier de stationmodus (USB-serieel) en voeg vervolgens een Wi-Fi RNode-interface toe op Verbinding met tcp://host (poort 7633). Vereist ESP32-S3 Wi-Fi-compatibele firmware. Start het bord opnieuw op na het toepassen van wijzigingen.",
+    "wifiSsidLabel": "Wifi SSID",
+    "wifiPskLabel": "WiFi-wachtwoord",
+    "wifiChannelLabel": "Kanaal (optioneel)",
+    "wifiStaticIpLabel": "Statisch IP-adres (optioneel)",
+    "wifiStaticNetmaskLabel": "Netmasker (optioneel)",
+    "wifiDhcpPlaceholder": "Laat leeg voor DHCP",
+    "wifiOff": "Wi-Fi uit",
+    "wifiEnableAp": "AP inschakelen",
+    "wifiApplyStation": "Station toepassen",
+    "wifiReadConfig": "Lees configuratie",
+    "wifiAdvancedShow": "Geavanceerd",
+    "wifiAdvancedHide": "Verberg Geavanceerd",
+    "wifiAdvancedToggle": "Geavanceerde wifi-opties in-/uitschakelen",
+    "wifiOffSuccess": "Wi-Fi uitgeschakeld. Start het bord opnieuw op om wijzigingen door te voeren.",
+    "wifiApSuccess": "Toegangspuntmodus ingeschakeld. Sluit de RNode AP aan vanaf uw computer (standaard gateway 10.0.0.1) en configureer vervolgens de inloggegevens van het station of gebruik de bootstrapconsole.",
+    "wifiStationSuccess": "Stationmodus opgeslagen. Start het bord opnieuw op, zoek vervolgens het IP-adres (display, router DHCP of Read config) en voeg tcp://… toe aan de → verbindingsinterfaces.",
+    "wifiConfigEmpty": "Geen configuratiegegevens geretourneerd."
   },
   "logAnalyzeModal": {
     "title": "Loganalyse",

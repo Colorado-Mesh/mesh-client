@@ -891,6 +891,31 @@ port = /dev/ttyACM0
     }
 
     #[test]
+    fn rnode_tcp_serial_port_round_trip() {
+        let content = r#"
+[interfaces]
+[[WiFi RNode]]
+type = RNodeInterface
+enabled = Yes
+port = tcp://192.168.1.10:7633
+frequency = 915000000
+bandwidth = 125000
+spreadingfactor = 8
+codingrate = 5
+txpower = 17
+"#;
+        let parsed = parse_config(content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode.serial_port.as_deref(), Some("tcp://192.168.1.10:7633"));
+
+        let block = interface_row_to_block(rnode);
+        assert_eq!(block.get("port"), Some("tcp://192.168.1.10:7633"));
+        let serialized = serialize_config(&parsed);
+        assert!(serialized.contains("port = tcp://192.168.1.10:7633"));
+    }
+
+    #[test]
     fn ble_peer_seed_addresses_round_trip() {
         let content = r#"
 [interfaces]

@@ -42,6 +42,13 @@ export class RNode {
   static readonly CMD_DISP_RCND = 0x68;
   static readonly CMD_BT_CTRL = 0x46;
   static readonly CMD_BT_PIN = 0x62;
+  static readonly CMD_WIFI_MODE = 0x6a;
+  static readonly CMD_WIFI_SSID = 0x6b;
+  static readonly CMD_WIFI_PSK = 0x6c;
+  static readonly CMD_CFG_READ = 0x6d;
+  static readonly CMD_WIFI_CHN = 0x6e;
+  static readonly CMD_WIFI_IP = 0x84;
+  static readonly CMD_WIFI_NM = 0x85;
   static readonly CMD_DISP_READ = 0x66;
   static readonly CMD_DETECT = 0x08;
   static readonly DETECT_REQ = 0x73;
@@ -394,6 +401,65 @@ export class RNode {
       pinCallback(pin);
     });
     await this.sendKissCommand([RNode.CMD_BT_CTRL, 0x02]);
+  }
+
+  async setWifiMode(mode: 'off' | 'station' | 'ap'): Promise<void> {
+    const payload = mode === 'off' ? 0 : mode === 'station' ? 1 : 2;
+    await this.sendKissCommand([RNode.CMD_WIFI_MODE, payload]);
+  }
+
+  async setWifiSsid(ssid: string): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_SSID, ...RNode.nullableStringPayload(ssid)]);
+  }
+
+  async setWifiPsk(psk: string): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_PSK, ...RNode.nullableStringPayload(psk)]);
+  }
+
+  async setWifiChannel(channel: number): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_CHN, channel & 0xff]);
+  }
+
+  async setWifiIpDhcp(): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_IP, 0, 0, 0, 0]);
+  }
+
+  async setWifiNetmaskDhcp(): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_NM, 255, 255, 255, 0]);
+  }
+
+  async setWifiStaticIp(ip: string): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_IP, ...RNode.ipv4Payload(ip)]);
+  }
+
+  async setWifiStaticNetmask(nm: string): Promise<void> {
+    await this.sendKissCommand([RNode.CMD_WIFI_NM, ...RNode.ipv4Payload(nm)]);
+  }
+
+  async readDeviceConfig(): Promise<number[]> {
+    return this.sendCommand(RNode.CMD_CFG_READ, [0x00]);
+  }
+
+  static nullableStringPayload(value: string): number[] {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return [0];
+    }
+    return [...new TextEncoder().encode(trimmed), 0];
+  }
+
+  static ipv4Payload(dotted: string): number[] {
+    const parts = dotted.trim().split('.');
+    if (parts.length !== 4) {
+      throw new Error('invalid IPv4 address');
+    }
+    return parts.map((part) => {
+      const n = Number.parseInt(part, 10);
+      if (!Number.isFinite(n) || n < 0 || n > 255) {
+        throw new Error('invalid IPv4 address');
+      }
+      return n;
+    });
   }
 
   async readDisplay(): Promise<number[]> {

@@ -63,7 +63,7 @@ export function hasRnsStackSiblings(projectDir: string): boolean {
 /** Cargo build args: full RNS stack (+ BLE) when Ratspeak siblings are present. */
 export function sidecarCargoBuildArgs(projectDir: string): string[] {
   if (hasRnsStackSiblings(projectDir)) {
-    return ['build', '--features', 'rns-stack,rns-ble'];
+    return ['build', '--features', 'rns-stack,rns-ble,rns-rnode-tcp'];
   }
   return ['build'];
 }

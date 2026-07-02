@@ -663,7 +663,14 @@
       "bleUnavailable": "Bluetooth tidak tersedia untuk pemindaian Reticulum. Periksa sistem Bluetooth dan build sidecar (rns-ble).",
       "restartStackFailed": "Gagal memulai ulang tumpukan: {{message}}",
       "restartStackUnavailable": "Mulai ulang tumpukan tidak tersedia hingga runtime Reticulum siap.",
-      "localOfflineRowBle": "Bluetooth RNode offline — pastikan perangkat aktif dan berada dalam jangkauan, lalu mulai ulang tumpukan."
+      "localOfflineRowBle": "Bluetooth RNode offline — pastikan perangkat aktif dan berada dalam jangkauan, lalu mulai ulang tumpukan.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "Host atau IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 atau rnode.local",
+      "rnodeWifiPort": "Port TCP",
+      "rnodeWifiSetupTitle": "Pengaturan Wi-Fi RNode",
+      "rnodeWifiSetupHint": "Wi-Fi mati setelah berkedip — sediakan RNode terlebih dahulu (Reticulum → Admin → Wi-Fi, atau bergabung dengan AP - nya dan buka http://10.0.0.1). Membutuhkan firmware berkemampuan Wi-Fi ESP32 - S3.\n\nSetelah mode stasiun: temukan IP di layar alternatif OLED, daftar DHCP router Anda, atau konfigurasi → Baca Admin. Gunakan tcp :// host (port default 7633) — bukan jenis antarmuka Klien TCP.\n\n~10 detik menahan tombol pada banyak papan Heltec memungkinkan Wi-Fi AP (~7 detik adalah pasangan Bluetooth).",
+      "localOfflineRowWifi": "Wi-Fi RNode tidak dapat dijangkau — verifikasi IP, port 7633, Lan yang sama, dan daya; sediakan kembali di Admin jika alamat DHCP berubah."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "Menghubungkan antarmuka lokal…",
       "connectingRow": "{{name}}: menghubungkan melalui Bluetooth",
       "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 30 detik setelah tumpukan dimulai. Masukkan PIN penyandingan jika OS Anda meminta — ini normal, bukan kesalahan.",
-      "offlineHintBle": "OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — tidak ada PIN default. Radio tanpa kepala: sambungkan USB → Reticulum Admin → Bluetooth → Mulai memasangkan → masukkan PIN yang ditampilkan ke dalam dialog OS. Radio dengan tampilan: tahan tombol ~7 detik pada perangkat Heltec (waktu bervariasi; ~10 detik di banyak papan mengaktifkan Wi-Fi AP), baca PIN di layar, lalu masukkan dalam dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS Anda sebelum mencoba lagi."
+      "offlineHintBle": "OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — tidak ada PIN default. Radio tanpa kepala: sambungkan USB → Reticulum Admin → Bluetooth → Mulai memasangkan → masukkan PIN yang ditampilkan ke dalam dialog OS. Radio dengan tampilan: tahan tombol ~7 detik pada perangkat Heltec (waktu bervariasi; ~10 detik di banyak papan mengaktifkan Wi-Fi AP), baca PIN di layar, lalu masukkan dalam dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS Anda sebelum mencoba lagi.",
+      "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "Sediakan EEPROM sebelum mengatur hash firmware.",
     "firmwareHashDone": "Kumpulan hash firmware",
     "flashDone": "Firmware di-flash",
-    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di sini melalui serial USB — masukkan PIN yang sama dalam dialog Bluetooth OS Anda (macOS, Windows, atau Linux) ketika Reticulum terhubung melalui BLE. Perangkat tanpa kepala tanpa USB tidak dapat menampilkan PIN di layar."
+    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di sini melalui serial USB — masukkan PIN yang sama dalam dialog Bluetooth OS Anda (macOS, Windows, atau Linux) ketika Reticulum terhubung melalui BLE. Perangkat tanpa kepala tanpa USB tidak dapat menampilkan PIN di layar.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "Wi-Fi dinonaktifkan setelah berkedip. Konfigurasikan mode stasiun di sini (serial USB), lalu tambahkan antarmuka Wi-Fi RNode pada Koneksi dengan tcp :// host (port 7633). Membutuhkan firmware berkemampuan Wi-Fi ESP32 - S3. Reboot papan setelah menerapkan perubahan.",
+    "wifiSsidLabel": "SSID Wi-Fi",
+    "wifiPskLabel": "Kata sandi Wi-Fi",
+    "wifiChannelLabel": "Saluran (opsional)",
+    "wifiStaticIpLabel": "IP Statis (opsional)",
+    "wifiStaticNetmaskLabel": "Netmask (opsional)",
+    "wifiDhcpPlaceholder": "Biarkan kosong untuk DHCP",
+    "wifiOff": "Wi-Fi mati",
+    "wifiEnableAp": "Aktifkan AP",
+    "wifiApplyStation": "Terapkan stasiun",
+    "wifiReadConfig": "Baca konfigurasi",
+    "wifiAdvancedShow": "Meningkat",
+    "wifiAdvancedHide": "Sembunyikan lanjutan",
+    "wifiAdvancedToggle": "Alihkan opsi Wi-Fi tingkat lanjut",
+    "wifiOffSuccess": "Wi-Fi dinonaktifkan. Nyalakan ulang papan agar perubahan diterapkan.",
+    "wifiApSuccess": "Mode titik akses diaktifkan. Bergabunglah dengan RNode AP dari komputer Anda (gateway default 10.0.0.1), lalu konfigurasikan kredensial stasiun atau gunakan konsol bootstrap.",
+    "wifiStationSuccess": "Mode stasiun disimpan. Reboot papan, lalu temukan IP - nya (display, router DHCP, atau Read config) dan tambahkan tcp ://… pada Connection → Interfaces.",
+    "wifiConfigEmpty": "Tidak ada data konfigurasi yang dikembalikan."
   },
   "logAnalyzeModal": {
     "title": "Analisis Log",

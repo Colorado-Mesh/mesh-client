@@ -663,7 +663,14 @@
       "bleUnavailable": "蓝牙不适用于 Reticulum 扫描。请检查系统蓝牙和 sidecar 构建 (rns-ble)。",
       "restartStackFailed": "堆栈重启失败：{{message}}",
       "restartStackUnavailable": "在 Reticulum 运行时准备就绪之前，堆栈重新启动不可用。",
-      "localOfflineRowBle": "蓝牙 RNode 离线 — 确保设备已开启且在范围内，然后重新启动堆栈。"
+      "localOfflineRowBle": "蓝牙 RNode 离线 — 确保设备已开启且在范围内，然后重新启动堆栈。",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "主机名或IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42或rnode.local",
+      "rnodeWifiPort": "TCP埠",
+      "rnodeWifiSetupTitle": "Wi-Fi RNode设置",
+      "rnodeWifiSetupHint": "闪烁后Wi-Fi关闭—首先设置RNode （ Reticulum → Admin → Wi-Fi ，或加入其AP并打开http://10.0.0.1 ）。 需要ESP32-S3支持Wi-Fi的固件。\n\n站模式后：在OLED备用屏幕、路由器DHCP列表或管理员→读取配置中找到IP。 使用tcp://host （默认端口7633 ） —不是TCP客户端接口类型。\n\n在许多Heltec板上按住约10秒的按钮可启用Wi-Fi AP （约7秒为蓝牙配对）。",
+      "localOfflineRowWifi": "Wi-Fi RNode不可达—验证IP、端口7633、相同的LAN和电源；如果DHCP地址发生更改，则在管理员中重新配置。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -689,7 +696,8 @@
       "connectingHeading": "连接本地接口...",
       "connectingRow": "{{name}}：通过蓝牙连接",
       "connectingHintBle": "堆栈启动后，BLE RNode 链接最多可能需要 30 秒。如果操作系统出现提示，请输入配对 PIN — 这是正常现象，不是错误。",
-      "offlineHintBle": "您的操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。 RNode 每次配对都会生成一个新代码 - 没有默认 PIN。无头无线电：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 输入操作系统对话框中显示的 PIN。带显示屏的无线电：在 Heltec 设备上按住按钮约 7 秒（时间各不相同；许多板上约 10 秒启用 Wi-Fi AP），读取屏幕上的 PIN，然后将其输入到操作系统对话框中。重试之前，请清除操作系统蓝牙设置中失败的绑定。"
+      "offlineHintBle": "您的操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。 RNode 每次配对都会生成一个新代码 - 没有默认 PIN。无头无线电：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 输入操作系统对话框中显示的 PIN。带显示屏的无线电：在 Heltec 设备上按住按钮约 7 秒（时间各不相同；许多板上约 10 秒启用 Wi-Fi AP），读取屏幕上的 PIN，然后将其输入到操作系统对话框中。重试之前，请清除操作系统蓝牙设置中失败的绑定。",
+      "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -1029,7 +1037,26 @@
     "firmwareHashRequiresProvision": "在设置固件哈希之前预配EEPROM。",
     "firmwareHashDone": "固件哈希集",
     "flashDone": "固件刷写",
-    "bluetoothHint": "启用设备上的蓝牙，然后使用开始配对。 6 位 PIN 码通过 USB 串行显示在此处 — 当 Reticulum 通过 BLE 连接时，在操作系统蓝牙对话框（macOS、Windows 或 Linux）中输入相同的 PIN 码。没有 USB 的无头设备无法在屏幕上显示 PIN。"
+    "bluetoothHint": "启用设备上的蓝牙，然后使用开始配对。 6 位 PIN 码通过 USB 串行显示在此处 — 当 Reticulum 通过 BLE 连接时，在操作系统蓝牙对话框（macOS、Windows 或 Linux）中输入相同的 PIN 码。没有 USB 的无头设备无法在屏幕上显示 PIN。",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "闪烁后禁用无线网络。在此处配置站点模式（ USB串行） ，然后使用tcp://host （端口7633 ）在Connection上添加Wi-Fi RNode接口。需要ESP32-S3支持Wi-Fi的固件。应用更改后重新启动电路板。",
+    "wifiSsidLabel": "Wi-Fi SSID",
+    "wifiPskLabel": "无线网络密码",
+    "wifiChannelLabel": "通道（可选）",
+    "wifiStaticIpLabel": "静态IP （可选）",
+    "wifiStaticNetmaskLabel": "网络掩码（可选）",
+    "wifiDhcpPlaceholder": "留空",
+    "wifiOff": "无线网络已关闭",
+    "wifiEnableAp": "启用接入点",
+    "wifiApplyStation": "应用站点",
+    "wifiReadConfig": "读取配置",
+    "wifiAdvancedShow": "优质",
+    "wifiAdvancedHide": "隐藏高级选项",
+    "wifiAdvancedToggle": "切换高级Wi-Fi选项",
+    "wifiOffSuccess": "Wi-Fi已禁用。重新启动主板以使更改生效。",
+    "wifiApSuccess": "接入点模式已启用。从您的计算机（默认网关10.0.0.1 ）加入RNode AP ，然后配置站点凭据或使用引导控制台。",
+    "wifiStationSuccess": "工作站模式已保存。重新启动主板，然后查找其IP （显示器、路由器DHCP或读取配置） ，并在连接→接口上添加tcp://…。",
+    "wifiConfigEmpty": "未返回配置数据。"
   },
   "logAnalyzeModal": {
     "title": "日志分析",
