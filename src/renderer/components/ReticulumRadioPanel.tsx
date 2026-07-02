@@ -222,7 +222,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         const presetsBody = body as { presets?: { id: string; label: string }[] };
         setPresets(presetsBody.presets ?? []);
       })
-      .catch(() => {});
+      .catch(() => {}); // catch-no-log-ok optional RNode presets prefetch; empty presets is safe default
     void refreshSerialPorts();
     void window.electronAPI.reticulum
       .proxyGet('/api/v1/ble/availability')
@@ -230,7 +230,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         const ble = body as { available?: boolean };
         setBleAvailable(Boolean(ble.available));
       })
-      .catch(() => {});
+      .catch(() => {}); // catch-no-log-ok optional BLE availability probe; false default is safe
   }, [sidecarApiReady, refreshSerialPorts]);
 
   const handleExportIdentity = async () => {
