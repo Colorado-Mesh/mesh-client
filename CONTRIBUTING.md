@@ -23,12 +23,14 @@ Thank you for your interest in contributing. See [docs/development-environment.m
 ## Quick Commands
 
 ```bash
+node scripts/check-environment.mjs # before pnpm install (fresh clone)
 pnpm install
-pnpm run dev      # Development mode
-pnpm run build    # Production build
-pnpm run lint     # ESLint
-pnpm run test:run # Run tests
-pnpm run update   # Update all deps, with update warnings for @meshtastic/core and @liamcottle/meshcore.js
+pnpm run check:environment # after install
+pnpm run dev               # Development mode
+pnpm run build             # Production build
+pnpm run lint              # ESLint
+pnpm run test:run          # Run tests
+pnpm run update            # Update all deps, with update warnings for @meshtastic/core and @liamcottle/meshcore.js
 ```
 
 ## Pre-commit Hook

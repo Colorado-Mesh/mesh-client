@@ -38,6 +38,7 @@
     "check:console-log": "node scripts/check-console-log.mjs",
     "check:db-migrations": "node scripts/check-db-migrations.mjs",
     "check:electron-security": "node scripts/check-electron-security.mjs",
+    "check:environment": "node scripts/check-environment.mjs",
     "check:flatpak": "node scripts/check-flatpak.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:i18n:branch": "node scripts/check-i18n.mjs --branch",

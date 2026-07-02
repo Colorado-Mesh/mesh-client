@@ -21,6 +21,23 @@ node --version
 pnpm --version
 ```
 
+### Environment check
+
+Run the automated checklist after cloning (works before pnpm is installed):
+
+```bash
+node scripts/check-environment.mjs # before pnpm install
+pnpm install
+pnpm run check:environment # re-check after install
+pnpm run dev
+```
+
+**Required** checks (must pass): Git, Node.js, pnpm, `node_modules`, and platform-native build tools (Xcode CLT on macOS, `g++`/`make` on Linux, MSVC `cl` on Windows).
+
+**Optional** checks (warnings only): Python/pip, Rust, actionlint, yamllint, Docker, and Linux `dialout` group membership. Fix optional items when you need docs builds, pre-commit hooks, Reticulum sidecar work, `act`, or USB serial on Linux.
+
+Use the printed `→` hints and `setup:*` scripts (`setup:build-deps`, `setup:actionlint`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
+
 ### MkDocs (documentation) tooling
 
 Docs are built with MkDocs Material.
@@ -47,7 +64,9 @@ If `pnpm run docs:install` fails with `externally-managed-environment`, activate
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client
 cd mesh-client
+node scripts/check-environment.mjs # optional but recommended on first clone
 pnpm install
+pnpm run check:environment # re-check after install
 ```
 
 If you are updating from an older clone, use a clean install when troubleshooting native module issues:
@@ -323,6 +342,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 | Script                    | Description                                                |
 | ------------------------- | ---------------------------------------------------------- |
+| `check:environment`       | Verify local dev prerequisites (run after clone)           |
 | `setup:actionlint`        | Install actionlint for GitHub workflow linting             |
 | `setup:build-deps`        | Install native build dependencies                          |
 | `setup:dialout`           | Add user to dialout group for serial port access (Linux)   |
@@ -471,6 +491,9 @@ act --container-architecture linux/amd64 -P ubuntu-latest=ghcr.io/catthehacker/u
 
 These scripts try to install optional tooling automatically. If they fail (for example, missing `sudo`/admin rights), follow the manual steps in this doc instead.
 
+0. Verify your environment (recommended after a fresh clone):
+   - `node scripts/check-environment.mjs` (before `pnpm install`)
+   - `pnpm run check:environment` (after `pnpm install`)
 1. Install `actionlint` (used by the git pre-commit hook):
    - `pnpm run setup:actionlint`
    - This installs into `.githooks/bin` so the hook can find it.

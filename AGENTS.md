@@ -8,6 +8,7 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 - **Testing:** Ship a passing test for behavioral changes; do not call the task done without it.
 - **Stateful/I/O code:** Preserve integrity on failure; document failure point, fallback, and logging where it matters.
 - **Pre-commit patience:** This repo has a very long pre-commit hook chain (lint, typecheck, thousands of tests, audit, actionlint, yamllint, many check:\* scripts). Commits can take 2+ minutes. Be patient and let them finish — do not interrupt or force-skip hooks.
+- **Fresh clone:** Before other setup work, run `node scripts/check-environment.mjs` (works before pnpm is installed). After `pnpm install`, re-run `pnpm run check:environment`. Fix required failures using the printed hints and `setup:*` scripts; optional warnings can wait.
 
 ### Platform parity
 
