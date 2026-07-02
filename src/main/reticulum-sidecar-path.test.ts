@@ -27,6 +27,7 @@ import {
   newestReticulumSidecarSourceMtimeMs,
   resolveSidecarBinaryPath,
   sidecarBinaryIsStale,
+  sidecarBinaryLacksRnsBle,
   sidecarBinaryLacksRnsStack,
   sidecarBinaryName,
   sidecarCargoBuildArgs,
@@ -97,7 +98,16 @@ describe('reticulum-sidecar-path', () => {
     fs.writeFileSync(path.join(projectDir, 'Cargo.toml'), '[package]\nname = "test"\n');
 
     expect(hasRnsStackSiblings(projectDir)).toBe(true);
-    expect(sidecarCargoBuildArgs(projectDir)).toEqual(['build', '--features', 'rns-stack']);
+    expect(sidecarCargoBuildArgs(projectDir)).toEqual(['build', '--features', 'rns-stack,rns-ble']);
+  });
+
+  it('sidecarBinaryLacksRnsBle detects sidecars built without rns-ble', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-ble-'));
+    const binary = path.join(tmpDir, sidecarBinaryName());
+    fs.writeFileSync(binary, 'rns-ble feature not enabled in this build');
+    expect(sidecarBinaryLacksRnsBle(binary)).toBe(true);
+    fs.writeFileSync(binary, 'ble_peer runtime linked');
+    expect(sidecarBinaryLacksRnsBle(binary)).toBe(false);
   });
 
   it('sidecarBinaryLacksRnsStack detects stub-only binaries', () => {

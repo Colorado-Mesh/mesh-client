@@ -69,7 +69,14 @@ rebuild_reticulum_sidecar() {
     return 0
   fi
   echo 'Rebuilding Reticulum sidecar (cargo build)...'
-  (cd reticulum-sidecar && cargo build)
+  local sidecar_dir='reticulum-sidecar'
+  local rns_runtime='../rsReticulum/crates/rns-runtime/Cargo.toml'
+  local lxmf_core='../rsLXMF/crates/lxmf-core/Cargo.toml'
+  if [ -f "${sidecar_dir}/${rns_runtime}" ] && [ -f "${sidecar_dir}/${lxmf_core}" ]; then
+    (cd reticulum-sidecar && cargo build --features rns-stack,rns-ble)
+  else
+    (cd reticulum-sidecar && cargo build)
+  fi
 }
 
 # Print a highlighted warning box for an updated package

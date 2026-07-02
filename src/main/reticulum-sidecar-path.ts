@@ -60,10 +60,10 @@ export function hasRnsStackSiblings(projectDir: string): boolean {
   return fs.existsSync(rnsRuntime) && fs.existsSync(lxmfCore);
 }
 
-/** Cargo build args: full RNS stack when Ratspeak siblings are present. */
+/** Cargo build args: full RNS stack (+ BLE) when Ratspeak siblings are present. */
 export function sidecarCargoBuildArgs(projectDir: string): string[] {
   if (hasRnsStackSiblings(projectDir)) {
-    return ['build', '--features', 'rns-stack'];
+    return ['build', '--features', 'rns-stack,rns-ble'];
   }
   return ['build'];
 }
@@ -75,6 +75,17 @@ export function sidecarBinaryLacksRnsStack(binaryPath: string): boolean {
     return !bytes.includes(Buffer.from('rns_runtime'));
   } catch {
     // catch-no-log-ok binary missing or unreadable — treat as stub build
+    return true;
+  }
+}
+
+/** Sidecars built without `rns-ble` embed this availability stub string. */
+export function sidecarBinaryLacksRnsBle(binaryPath: string): boolean {
+  try {
+    const bytes = fs.readFileSync(binaryPath);
+    return bytes.includes(Buffer.from('rns-ble feature not enabled in this build'));
+  } catch {
+    // catch-no-log-ok binary missing or unreadable — treat as no BLE support
     return true;
   }
 }
@@ -179,6 +190,8 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
   const stale = !missing && sidecarBinaryIsStale(binaryPath, projectDir);
   const lacksRnsStack =
     !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsStack(binaryPath);
+  const lacksRnsBle =
+    !missing && hasRnsStackSiblings(projectDir) && sidecarBinaryLacksRnsBle(binaryPath);
   if (missing) {
     await runDevSidecarCargoBuild(projectDir, 'debug binary missing');
   } else if (stale) {
@@ -187,6 +200,11 @@ export async function ensureDevSidecarBinary(binaryPath: string): Promise<void> 
     await runDevSidecarCargoBuild(
       projectDir,
       'debug binary is stub-only; rebuilding with rns-stack for live peers',
+    );
+  } else if (lacksRnsBle) {
+    await runDevSidecarCargoBuild(
+      projectDir,
+      'debug binary lacks rns-ble; rebuilding with BLE interface support',
     );
   } else {
     return;
