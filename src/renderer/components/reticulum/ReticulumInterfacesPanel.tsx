@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { reticulumInterfaceChangeRequiresStackRestart } from '@/renderer/lib/reticulum/reticulumInterfaceStackRestart';
 import {
   classifyReticulumLocalInterface,
@@ -684,287 +685,294 @@ function InterfacesSection({
   };
 
   return (
-    <div className="bg-deep-black/40 rounded-lg border border-gray-700 p-3">
-      <h3 className="text-sm font-medium text-gray-200">
-        {t('connectionPanel.reticulumInterfaces.title')}
-      </h3>
-      <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="text-xs text-gray-400">
-          {t('connectionPanel.reticulumInterfaces.type')}
-          <select
-            value={ifaceType}
-            disabled={actionsDisabled}
-            onChange={(e) => {
-              onIfaceTypeChange(e.target.value as ReticulumIfaceUiType);
-            }}
-            className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-            aria-label={t('connectionPanel.reticulumInterfaces.type')}
-          >
-            <option value="tcp">TCP</option>
-            <option value="udp">UDP</option>
-            <option value="auto">Auto</option>
-            <option value="rnode">RNode</option>
-            <option value="rnode_multi">RNode Multi</option>
-            <option value="kiss">KISS</option>
-            <option value="pipe">Pipe</option>
-            <option value="i2p">I2P</option>
-            {bleAvailable ? (
-              <option value="ble_peer">
-                {t('connectionPanel.reticulumInterfaces.blePeerType')}
-              </option>
-            ) : null}
-          </select>
-        </label>
-        {ifaceType === 'rnode' ? (
+    <details className="group bg-deep-black/40 rounded-lg border border-gray-700">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800">
+        <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
+        <DetailsChevron />
+      </summary>
+      <div className="space-y-3 px-3 pb-3">
+        <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs text-gray-400">
-            {t('connectionPanel.reticulumInterfaces.rnodeTransport')}
+            {t('connectionPanel.reticulumInterfaces.type')}
             <select
-              value={rnodeTransport}
+              value={ifaceType}
               disabled={actionsDisabled}
               onChange={(e) => {
-                onRnodeTransportChange(e.target.value as ReticulumRnodeTransport);
+                onIfaceTypeChange(e.target.value as ReticulumIfaceUiType);
               }}
               className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-              aria-label={t('connectionPanel.reticulumInterfaces.rnodeTransport')}
+              aria-label={t('connectionPanel.reticulumInterfaces.type')}
             >
-              <option value="serial">
-                {t('connectionPanel.reticulumInterfaces.rnodeTransportSerial')}
-              </option>
+              <option value="tcp">TCP</option>
+              <option value="udp">UDP</option>
+              <option value="auto">Auto</option>
+              <option value="rnode">RNode</option>
+              <option value="rnode_multi">RNode Multi</option>
+              <option value="kiss">KISS</option>
+              <option value="pipe">Pipe</option>
+              <option value="i2p">I2P</option>
               {bleAvailable ? (
-                <option value="ble">
-                  {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
+                <option value="ble_peer">
+                  {t('connectionPanel.reticulumInterfaces.blePeerType')}
                 </option>
               ) : null}
             </select>
           </label>
-        ) : null}
-        {showHostPort ? (
-          <>
+          {ifaceType === 'rnode' ? (
             <label className="text-xs text-gray-400">
-              {t('connectionPanel.reticulumInterfaces.host')}
-              <input
-                value={ifaceHost}
+              {t('connectionPanel.reticulumInterfaces.rnodeTransport')}
+              <select
+                value={rnodeTransport}
                 disabled={actionsDisabled}
                 onChange={(e) => {
-                  onIfaceHostChange(e.target.value);
+                  onRnodeTransportChange(e.target.value as ReticulumRnodeTransport);
                 }}
                 className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                aria-label={t('connectionPanel.reticulumInterfaces.rnodeTransport')}
+              >
+                <option value="serial">
+                  {t('connectionPanel.reticulumInterfaces.rnodeTransportSerial')}
+                </option>
+                {bleAvailable ? (
+                  <option value="ble">
+                    {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
+                  </option>
+                ) : null}
+              </select>
+            </label>
+          ) : null}
+          {showHostPort ? (
+            <>
+              <label className="text-xs text-gray-400">
+                {t('connectionPanel.reticulumInterfaces.host')}
+                <input
+                  value={ifaceHost}
+                  disabled={actionsDisabled}
+                  onChange={(e) => {
+                    onIfaceHostChange(e.target.value);
+                  }}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                />
+              </label>
+              {ifaceType !== 'i2p' ? (
+                <label className="text-xs text-gray-400">
+                  {t('connectionPanel.reticulumInterfaces.port')}
+                  <input
+                    value={ifacePort}
+                    disabled={actionsDisabled}
+                    onChange={(e) => {
+                      onIfacePortChange(e.target.value);
+                    }}
+                    className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  />
+                </label>
+              ) : null}
+            </>
+          ) : null}
+          {ifaceType === 'pipe' ? (
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.pipeCommand')}
+              <input
+                value={pipeCommand}
+                disabled={actionsDisabled}
+                onChange={(e) => {
+                  onPipeCommandChange(e.target.value);
+                }}
+                className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
               />
             </label>
-            {ifaceType !== 'i2p' ? (
+          ) : null}
+          {showSerial && !(ifaceType === 'rnode' && rnodeTransport === 'ble') ? (
+            <>
               <label className="text-xs text-gray-400">
-                {t('connectionPanel.reticulumInterfaces.port')}
-                <input
-                  value={ifacePort}
-                  disabled={actionsDisabled}
-                  onChange={(e) => {
-                    onIfacePortChange(e.target.value);
-                  }}
-                  className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                />
+                {t('connectionPanel.reticulumInterfaces.serialPort')}
+                {serialPorts.length > 0 ? (
+                  <select
+                    value={serialPort}
+                    disabled={actionsDisabled}
+                    onChange={(e) => {
+                      onSerialPortChange(e.target.value);
+                    }}
+                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  >
+                    <option value="">—</option>
+                    {serialPorts.map((p) => (
+                      <option key={p.path} value={p.path}>
+                        {p.label ?? p.path}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={serialPort}
+                    disabled={actionsDisabled}
+                    onChange={(e) => {
+                      onSerialPortChange(e.target.value);
+                    }}
+                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  />
+                )}
               </label>
-            ) : null}
-          </>
-        ) : null}
-        {ifaceType === 'pipe' ? (
-          <label className="text-xs text-gray-400">
-            {t('connectionPanel.reticulumInterfaces.pipeCommand')}
-            <input
-              value={pipeCommand}
-              disabled={actionsDisabled}
-              onChange={(e) => {
-                onPipeCommandChange(e.target.value);
-              }}
-              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-            />
-          </label>
-        ) : null}
-        {showSerial && !(ifaceType === 'rnode' && rnodeTransport === 'ble') ? (
-          <>
+              {showRnodePreset ? (
+                <label className="text-xs text-gray-400">
+                  {t('connectionPanel.reticulumInterfaces.preset')}
+                  <select
+                    value={selectedPreset}
+                    disabled={actionsDisabled}
+                    onChange={(e) => {
+                      onSelectedPresetChange(e.target.value);
+                    }}
+                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  >
+                    <option value="">—</option>
+                    {presets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </>
+          ) : null}
+          {showBlePeer ? (
             <label className="text-xs text-gray-400">
-              {t('connectionPanel.reticulumInterfaces.serialPort')}
-              {serialPorts.length > 0 ? (
-                <select
-                  value={serialPort}
-                  disabled={actionsDisabled}
-                  onChange={(e) => {
-                    onSerialPortChange(e.target.value);
-                  }}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                >
-                  <option value="">—</option>
-                  {serialPorts.map((p) => (
-                    <option key={p.path} value={p.path}>
-                      {p.label ?? p.path}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={serialPort}
-                  disabled={actionsDisabled}
-                  onChange={(e) => {
-                    onSerialPortChange(e.target.value);
-                  }}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                />
-              )}
+              {t('connectionPanel.reticulumInterfaces.seedAddresses')}
+              <input
+                value={seedAddresses}
+                disabled={actionsDisabled}
+                onChange={(e) => {
+                  onSeedAddressesChange(e.target.value);
+                }}
+                placeholder="AA:BB:CC:DD:EE:FF"
+                className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+              />
             </label>
-            {showRnodePreset ? (
-              <label className="text-xs text-gray-400">
-                {t('connectionPanel.reticulumInterfaces.preset')}
-                <select
-                  value={selectedPreset}
-                  disabled={actionsDisabled}
-                  onChange={(e) => {
-                    onSelectedPresetChange(e.target.value);
-                  }}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                >
-                  <option value="">—</option>
-                  {presets.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-          </>
-        ) : null}
-        {showBlePeer ? (
-          <label className="text-xs text-gray-400">
-            {t('connectionPanel.reticulumInterfaces.seedAddresses')}
-            <input
-              value={seedAddresses}
-              disabled={actionsDisabled}
-              onChange={(e) => {
-                onSeedAddressesChange(e.target.value);
+          ) : null}
+          {showRnodeBle ? (
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
+              <input
+                value={serialPort}
+                readOnly
+                className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              />
+            </label>
+          ) : null}
+          {needsDevicePicker ? (
+            <button
+              type="button"
+              disabled={actionsDisabled || (!sidecarReady && pickerMode !== 'serial')}
+              onClick={() => {
+                onPickDevice(pickerMode, (value) => {
+                  if (ifaceType === 'ble_peer') {
+                    onSeedAddressesChange(
+                      seedAddresses.trim() ? `${seedAddresses},${value}` : value,
+                    );
+                    return;
+                  }
+                  onSerialPortChange(value);
+                });
               }}
-              placeholder="AA:BB:CC:DD:EE:FF"
-              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-            />
-          </label>
-        ) : null}
-        {showRnodeBle ? (
-          <label className="text-xs text-gray-400">
-            {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
-            <input
-              value={serialPort}
-              readOnly
-              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
-            />
-          </label>
-        ) : null}
-        {needsDevicePicker ? (
+              className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
+              aria-label={t('connectionPanel.reticulumInterfaces.pickDevice')}
+            >
+              {t('connectionPanel.reticulumInterfaces.pickDevice')}
+            </button>
+          ) : null}
           <button
             type="button"
-            disabled={actionsDisabled || (!sidecarReady && pickerMode !== 'serial')}
-            onClick={() => {
-              onPickDevice(pickerMode, (value) => {
-                if (ifaceType === 'ble_peer') {
-                  onSeedAddressesChange(seedAddresses.trim() ? `${seedAddresses},${value}` : value);
-                  return;
-                }
-                onSerialPortChange(value);
-              });
-            }}
-            className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
-            aria-label={t('connectionPanel.reticulumInterfaces.pickDevice')}
+            disabled={actionsDisabled}
+            onClick={onAdd}
+            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-600 disabled:opacity-40"
           >
-            {t('connectionPanel.reticulumInterfaces.pickDevice')}
+            {t('connectionPanel.reticulumInterfaces.add')}
           </button>
+        </div>
+        {bleAvailable && ifaceType !== 'ble_peer' ? (
+          <p className="text-muted mt-2 text-xs">
+            {t('connectionPanel.reticulumInterfaces.bleAvailable')}
+          </p>
         ) : null}
-        <button
-          type="button"
-          disabled={actionsDisabled}
-          onClick={onAdd}
-          className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-600 disabled:opacity-40"
-        >
-          {t('connectionPanel.reticulumInterfaces.add')}
-        </button>
-      </div>
-      {bleAvailable && ifaceType !== 'ble_peer' ? (
-        <p className="text-muted mt-2 text-xs">
-          {t('connectionPanel.reticulumInterfaces.bleAvailable')}
-        </p>
-      ) : null}
-      <ul className="mt-3 space-y-2 text-sm">
-        {interfaces.length === 0 ? (
-          <li className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</li>
-        ) : (
-          interfaces.map((iface) => {
-            const rowReason = localRowReason(iface);
-            const rowBorder = rowReason != null ? 'border-red-800/60' : 'border-gray-700/60';
-            return (
-              <li
-                key={iface.id}
-                className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
-              >
-                <span>
-                  <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
-                    {iface.name} ({iface.type}) — {iface.status}
+        <ul className="mt-3 space-y-2 text-sm">
+          {interfaces.length === 0 ? (
+            <li className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</li>
+          ) : (
+            interfaces.map((iface) => {
+              const rowReason = localRowReason(iface);
+              const rowBorder = rowReason != null ? 'border-red-800/60' : 'border-gray-700/60';
+              return (
+                <li
+                  key={iface.id}
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
+                >
+                  <span>
+                    <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
+                      {iface.name} ({iface.type}) — {iface.status}
+                    </span>
+                    {rowReason ? (
+                      <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
+                    ) : null}
                   </span>
-                  {rowReason ? (
-                    <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
-                  ) : null}
-                </span>
-                <span className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={actionsDisabled}
-                    onClick={() => {
-                      onStartEdit(iface);
-                    }}
-                    className="text-xs text-sky-400 hover:underline disabled:opacity-40"
-                    aria-label={t('connectionPanel.reticulumInterfaces.edit', { name: iface.name })}
-                  >
-                    {t('connectionPanel.reticulumInterfaces.edit')}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={actionsDisabled}
-                    onClick={() => {
-                      onToggle(iface.id, !iface.enabled, iface.type);
-                    }}
-                    className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                  >
-                    {iface.enabled
-                      ? t('connectionPanel.reticulumInterfaces.disable')
-                      : t('connectionPanel.reticulumInterfaces.enable')}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={actionsDisabled}
-                    onClick={() => {
-                      onDelete(iface.id, iface.name);
-                    }}
-                    className="text-xs text-red-400 hover:underline disabled:opacity-40"
-                    aria-label={t('connectionPanel.reticulumInterfaces.delete', {
-                      name: iface.name,
-                    })}
-                  >
-                    {t('connectionPanel.reticulumInterfaces.delete')}
-                  </button>
-                </span>
-              </li>
-            );
-          })
-        )}
-      </ul>
-      {editingInterface ? (
-        <InterfaceEditPanel
-          key={editingInterface.id}
-          iface={editingInterface}
-          presets={presets}
-          serialPorts={serialPorts}
-          onPickDevice={onPickDevice}
-          onSave={(patch) => {
-            onSaveEdit(editingInterface.id, patch);
-          }}
-          onCancel={onCancelEdit}
-        />
-      ) : null}
-    </div>
+                  <span className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={actionsDisabled}
+                      onClick={() => {
+                        onStartEdit(iface);
+                      }}
+                      className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                      aria-label={t('connectionPanel.reticulumInterfaces.edit', {
+                        name: iface.name,
+                      })}
+                    >
+                      {t('connectionPanel.reticulumInterfaces.edit')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionsDisabled}
+                      onClick={() => {
+                        onToggle(iface.id, !iface.enabled, iface.type);
+                      }}
+                      className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                    >
+                      {iface.enabled
+                        ? t('connectionPanel.reticulumInterfaces.disable')
+                        : t('connectionPanel.reticulumInterfaces.enable')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionsDisabled}
+                      onClick={() => {
+                        onDelete(iface.id, iface.name);
+                      }}
+                      className="text-xs text-red-400 hover:underline disabled:opacity-40"
+                      aria-label={t('connectionPanel.reticulumInterfaces.delete', {
+                        name: iface.name,
+                      })}
+                    >
+                      {t('connectionPanel.reticulumInterfaces.delete')}
+                    </button>
+                  </span>
+                </li>
+              );
+            })
+          )}
+        </ul>
+        {editingInterface ? (
+          <InterfaceEditPanel
+            key={editingInterface.id}
+            iface={editingInterface}
+            presets={presets}
+            serialPorts={serialPorts}
+            onPickDevice={onPickDevice}
+            onSave={(patch) => {
+              onSaveEdit(editingInterface.id, patch);
+            }}
+            onCancel={onCancelEdit}
+          />
+        ) : null}
+      </div>
+    </details>
   );
 }
