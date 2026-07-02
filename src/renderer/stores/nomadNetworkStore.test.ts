@@ -98,6 +98,22 @@ describe('nomadNetworkStore', () => {
     expect(useNomadNetworkStore.getState().getNode('abc')?.favorited).toBe(true);
   });
 
+  it('does not cache network egress when interfaces list is empty', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ type: 'rnode', enabled: true }]);
+    proxyGet.mockResolvedValue({ ok: true, content: 'page body', content_type: 'micron' });
+
+    await useNomadNetworkStore.getState().fetchNomadPage('abc', '/page/index.mu');
+    await useNomadNetworkStore.getState().fetchNomadPage('abc', '/page/index.mu');
+
+    expect(fetchReticulumInterfaces).toHaveBeenCalledTimes(2);
+    expect(proxyGet).toHaveBeenLastCalledWith(
+      '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=8&egress=rf',
+    );
+  });
+
   it('fetchNomadPage requests page path with hops and egress', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'rnode', enabled: true }]);

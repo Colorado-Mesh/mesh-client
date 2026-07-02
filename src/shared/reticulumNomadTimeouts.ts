@@ -62,11 +62,15 @@ export function nomadPageProxyTimeoutMs(egressVia: ReticulumNomadEgressVia, hops
   return nomadPageOverallTimeoutSecs(egressVia, hops) * 1_000 + 2_000;
 }
 
-/** Parse hops/egress from a nomad page proxy path (including query string). */
+/**
+ * IPC proxy timeout for Nomad page/file fetches. Uses the larger of the
+ * egress-specific budget and the RF worst-case budget so a stale `network`
+ * egress guess cannot abort before the sidecar finishes an RF link query.
+ */
 export function nomadPageProxyTimeoutMsFromApiPath(apiPath: string): number {
   const query = apiPath.includes('?') ? (apiPath.split('?')[1] ?? '') : '';
   const params = new URLSearchParams(query);
   const hops = Number.parseInt(params.get('hops') ?? '8', 10);
   const egress = parseReticulumNomadEgressVia(params.get('egress'));
-  return nomadPageProxyTimeoutMs(egress, hops);
+  return Math.max(nomadPageProxyTimeoutMs(egress, hops), nomadPageProxyTimeoutMs('rf', hops));
 }

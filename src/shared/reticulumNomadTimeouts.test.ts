@@ -34,7 +34,7 @@ describe('reticulumNomadTimeouts', () => {
       nomadPageProxyTimeoutMsFromApiPath(
         '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&egress=tcp',
       ),
-    ).toBe(47_000);
+    ).toBe(101_000);
   });
 
   it('falls back for unknown egress', () => {

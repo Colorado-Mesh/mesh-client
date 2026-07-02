@@ -47,7 +47,7 @@ describe('reticulumProxyGetTimeoutMs', () => {
       reticulumProxyGetTimeoutMs(
         '/api/v1/nomadnetwork/page/abc?path=%2Fpage%2Findex.mu&hops=8&egress=tcp',
       ),
-    ).toBe(47_000);
+    ).toBe(101_000);
   });
 
   it('uses longer RF timeout from hops and egress', () => {

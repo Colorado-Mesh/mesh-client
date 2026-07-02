@@ -23,6 +23,11 @@ async function resolveNomadEgress(): Promise<ReticulumVia> {
     return cachedNomadEgress;
   }
   const interfaces = await fetchReticulumInterfaces();
+  if (interfaces.length === 0) {
+    // Failure point: interfaces query timed out while transport is busy.
+    // Fallback: do not cache `network` — retry on the next page fetch.
+    return cachedNomadEgressAt > 0 ? cachedNomadEgress : 'network';
+  }
   cachedNomadEgress = resolveReticulumOutboundViaFromInterfaces(interfaces);
   cachedNomadEgressAt = Date.now();
   return cachedNomadEgress;
