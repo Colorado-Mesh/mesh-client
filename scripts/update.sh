@@ -20,11 +20,26 @@ fi
 # Usage: get_version "<lockfile-key>"
 # Example: get_version "@jsr/meshtastic__core" -> "2.6.6"
 get_version() {
-  grep -E "^  '?$1@" "$LOCKFILE" \
-    | grep -v '(' \
-    | head -1 \
-    | sed "s/.*@//; s/'//; s/:\$//" \
-    || echo ""
+  local key="$1"
+  if [ -z "$key" ]; then
+    echo ''
+    return 0
+  fi
+  if ! command -v node > /dev/null 2>&1; then
+    echo "Error: node is required to parse ${LOCKFILE}." >&2
+    return 1
+  fi
+  node - "$key" "$LOCKFILE" << 'EOF'
+const fs = require('node:fs');
+
+const key = process.argv[2];
+const lockfile = process.argv[3];
+const lock = fs.readFileSync(lockfile, 'utf8');
+const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const re = new RegExp(`^  ['"]?${escaped}@([^'":]+)['"]?:`, 'm');
+const match = lock.match(re);
+process.stdout.write(match?.[1] ?? '');
+EOF
 }
 
 # Get resolved rustc version (empty if not installed)

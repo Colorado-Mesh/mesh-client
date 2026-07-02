@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Не підключено — повідомлення доступні лише для читання",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Згадайте пропозиції"
+    "mentionSuggestionsAria": "Згадайте пропозиції",
+    "openDmByAddress": "ВІДЧИНЕНО",
+    "dmAddressPlaceholder": "Хеш призначення або lxmf://…",
+    "dmAddressAria": "Адреса призначення ретикулуму",
+    "dmAddressInvalid": "Введіть дійсний 32-символьний хеш призначення або адресу lxmf://."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Показати відформатовану сторінку",
     "fileDownloading": "Завантаження файлу…",
     "fileDownloadFailed": "Не вдалося завантажити файл: {{error}}",
-    "fileDownloadInProgress": "Завантаження файлу вже триває."
+    "fileDownloadInProgress": "Завантаження файлу вже триває.",
+    "sendMessage": "повідомлення",
+    "sendMessageAria": "Надіслати повідомлення до {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

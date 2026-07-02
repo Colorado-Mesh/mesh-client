@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Nicht verbunden – Nachrichten sind schreibgeschützt",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Erwähnen Sie Vorschläge"
+    "mentionSuggestionsAria": "Erwähnen Sie Vorschläge",
+    "openDmByAddress": "Offen",
+    "dmAddressPlaceholder": "Ziel-Hash oder lxmf://…",
+    "dmAddressAria": "Retikulum-Zieladresse",
+    "dmAddressInvalid": "Geben Sie einen gültigen 32-stelligen Ziel-Hash oder eine lxmf://-Adresse ein."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Formatierte Seite anzeigen",
     "fileDownloading": "Datei wird heruntergeladen…",
     "fileDownloadFailed": "Datei konnte nicht heruntergeladen werden: {{error}}",
-    "fileDownloadInProgress": "Ein Datei-Download ist bereits im Gange."
+    "fileDownloadInProgress": "Ein Datei-Download ist bereits im Gange.",
+    "sendMessage": "Nachricht",
+    "sendMessageAria": "Nachricht an {{name}} senden"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

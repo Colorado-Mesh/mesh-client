@@ -7,8 +7,21 @@ describe('queueLenFromMeshCoreCoreStatsRaw', () => {
     const raw = new Uint8Array(9);
     raw[6] = 0x05;
     raw[7] = 0x01;
-    raw[8] = 3;
-    expect(queueLenFromMeshCoreCoreStatsRaw(raw, 5)).toBe(3);
+    raw[8] = 7;
+    expect(queueLenFromMeshCoreCoreStatsRaw(raw, 5)).toBe(7);
+  });
+
+  it('ignores 0xff byte-8 padding on HTTP/TCP 7-byte-padded CORE stats', () => {
+    const raw = Uint8Array.from([0, 0, 0xec, 0xeb, 0, 0, 0, 0, 0xff]);
+    expect(queueLenFromMeshCoreCoreStatsRaw(raw, 0)).toBe(0);
+  });
+
+  it('does not treat byte 8 as padding when byte 7 is non-zero', () => {
+    const raw = new Uint8Array(9);
+    raw[6] = 0x05;
+    raw[7] = 0x01;
+    raw[8] = 0xff;
+    expect(queueLenFromMeshCoreCoreStatsRaw(raw, 5)).toBe(0xff);
   });
 
   it('uses last byte for legacy 7-byte payload', () => {

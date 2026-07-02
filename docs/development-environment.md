@@ -256,6 +256,18 @@ flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
 
 Offline install inside the Flatpak sandbox uses `scripts/flatpak-pnpm-install.mjs`, which retries transient `@jsr/_tmp_*` rename races (same root cause as Windows `dist:win` hoisted installs).
 
+**3b. Bundle Reticulum sidecar** (required for Reticulum tab in the Flatpak; CI does this automatically)
+
+The manifest copies `resources/` into the app, including `resources/reticulum-sidecar/mesh-client-reticulum`. Before `flatpak-builder`, build the sidecar and install the binary there:
+
+```bash
+pnpm run reticulum:sidecar:build
+install -Dm755 reticulum-sidecar/target/debug/mesh-client-reticulum \
+  resources/reticulum-sidecar/mesh-client-reticulum
+```
+
+For a release-quality local Flatpak, use `cargo build --release` with `rns-stack,rns-ble,rns-rnode-tcp` (see [Reticulum sidecar](#reticulum-sidecar-optional)).
+
 **4. Build and install locally**
 
 ```bash
@@ -289,6 +301,8 @@ flatpak run org.coloradomesh.MeshClient
 ```
 
 **Runtime issues** (GPU, VMware guests): see [Flatpak: `vmwgfx: driver missing` (VMware on macOS)](troubleshooting.md#flatpak-vmwgfx-driver-missing-vmware-on-macos).
+
+**Launch failures on Arch/CachyOS Wayland**: see [Flatpak: immediate exit on Arch / CachyOS / Wayland (#598)](troubleshooting.md#flatpak-immediate-exit-on-arch--cachyos--wayland-598).
 
 **Lint the manifest** before submitting to Flathub:
 

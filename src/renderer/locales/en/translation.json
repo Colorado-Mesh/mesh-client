@@ -411,9 +411,13 @@
     "composePlaceholderDefault": "Enter message here",
     "composePlaceholderSelectDm": "Select a contact above to start a DM…",
     "selectDmFirst": "Select a DM recipient before sending.",
-    "emptySelectDm": "Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.",
+    "emptySelectDm": "Reticulum chat is direct message only. Pick a contact above, enter an address, or open one from the Nodes tab.",
     "noDmConversations": "No conversations yet",
-    "noDmConversationsReticulum": "No conversations yet — open a contact from the Nodes tab.",
+    "noDmConversationsReticulum": "No conversations yet — enter an address or open a contact from the Nodes tab.",
+    "openDmByAddress": "Open",
+    "dmAddressPlaceholder": "Hash or lxmf://…",
+    "dmAddressAria": "Destination address",
+    "dmAddressInvalid": "Enter a valid 32-character destination hash or lxmf:// address.",
     "sendFailed": "Send failed",
     "queueButton": "Queue",
     "replyingTo": "Replying to",
@@ -2288,7 +2292,9 @@
     "hideSource": "Show formatted page",
     "fileDownloading": "Downloading file…",
     "fileDownloadFailed": "Failed to download file: {{error}}",
-    "fileDownloadInProgress": "A file download is already in progress."
+    "fileDownloadInProgress": "A file download is already in progress.",
+    "sendMessage": "Message",
+    "sendMessageAria": "Send message to {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Overall Distribution",

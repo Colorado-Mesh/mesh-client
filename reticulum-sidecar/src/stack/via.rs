@@ -1,5 +1,7 @@
 //! Reticulum LXMF transport classification (RF / TCP / network).
 
+use std::collections::HashMap;
+
 use super::types::InterfaceRow;
 
 /// Classify an RNS interface name or UI type into a transport marker.
@@ -39,18 +41,42 @@ fn live_matches_config(live_row: &InterfaceRow, cfg: &InterfaceRow) -> bool {
 /// Union config with live RNS stats: every configured interface is returned; live rows
 /// overlay status/enabled when names match. Config-only rows (e.g. failed USB open) stay
 /// visible with `status: down`.
+fn find_live_index_for_config(
+    cfg: &InterfaceRow,
+    live: &[InterfaceRow],
+    live_by_id: &HashMap<String, usize>,
+    live_by_name: &HashMap<String, usize>,
+) -> Option<usize> {
+    let mut candidates = Vec::with_capacity(2);
+    if let Some(&idx) = live_by_id.get(&cfg.id) {
+        candidates.push(idx);
+    }
+    if let Some(&idx) = live_by_name.get(&cfg.name) {
+        candidates.push(idx);
+    }
+    candidates
+        .into_iter()
+        .filter(|&idx| live_matches_config(&live[idx], cfg))
+        .min()
+}
+
 pub fn merge_live_interfaces_with_config(
     config: &[InterfaceRow],
     live: Vec<InterfaceRow>,
 ) -> Vec<InterfaceRow> {
     let mut merged: Vec<InterfaceRow> = Vec::with_capacity(config.len().max(live.len()));
+    let mut live_by_id: HashMap<String, usize> = HashMap::new();
+    let mut live_by_name: HashMap<String, usize> = HashMap::new();
+    for (idx, row) in live.iter().enumerate() {
+        live_by_id.entry(row.id.clone()).or_insert(idx);
+        live_by_name.entry(row.name.clone()).or_insert(idx);
+    }
+    let mut matched_live = vec![false; live.len()];
 
     for cfg in config {
-        if let Some(mut live_row) = live
-            .iter()
-            .find(|l| live_matches_config(l, cfg))
-            .cloned()
-        {
+        if let Some(idx) = find_live_index_for_config(cfg, &live, &live_by_id, &live_by_name) {
+            matched_live[idx] = true;
+            let mut live_row = live[idx].clone();
             live_row.id = cfg.id.clone();
             live_row.iface_type = cfg.iface_type.clone();
             live_row.host = cfg.host.clone();
@@ -78,8 +104,8 @@ pub fn merge_live_interfaces_with_config(
         }
     }
 
-    for live_row in live {
-        if !config.iter().any(|c| live_matches_config(&live_row, c)) {
+    for (idx, live_row) in live.into_iter().enumerate() {
+        if !matched_live[idx] {
             merged.push(live_row);
         }
     }

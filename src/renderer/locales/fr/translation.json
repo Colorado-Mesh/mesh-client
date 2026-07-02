@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Non connecté : les messages sont en lecture seule",
     "starredDm": "DM : {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Mentionner des suggestions"
+    "mentionSuggestionsAria": "Mentionner des suggestions",
+    "openDmByAddress": "Ouvrir",
+    "dmAddressPlaceholder": "Hachage de destination ou lxmf://…",
+    "dmAddressAria": "Adresse de destination du réticulum",
+    "dmAddressInvalid": "Entrez un hachage de destination valide de 32 caractères ou une adresse lxmf://."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Afficher la page formatée",
     "fileDownloading": "Téléchargement du fichier…",
     "fileDownloadFailed": "Échec du téléchargement du fichier : {{error}}",
-    "fileDownloadInProgress": "Un téléchargement de fichier est déjà en cours."
+    "fileDownloadInProgress": "Un téléchargement de fichier est déjà en cours.",
+    "sendMessage": "Message",
+    "sendMessageAria": "Envoyer un message à {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

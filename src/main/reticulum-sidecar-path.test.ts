@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -5,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
   app: {
-    getAppPath: () => '/virtual/app',
+    getAppPath: vi.fn(() => '/virtual/app'),
     isPackaged: false,
     getPath: () => '/tmp/mesh-client-test',
   },
@@ -38,6 +39,7 @@ describe('reticulum-sidecar-path', () => {
 
   afterEach(() => {
     spawnMock.mockReset();
+    vi.mocked(app.getAppPath).mockReturnValue('/virtual/app');
     if (tmpDir) {
       fs.rmSync(tmpDir, { recursive: true, force: true });
       tmpDir = '';
@@ -62,6 +64,17 @@ describe('reticulum-sidecar-path', () => {
     fs.writeFileSync(binary, '');
 
     expect(resolveSidecarBinaryPath([tmpDir])).toBe(binary);
+  });
+
+  it('resolveSidecarBinaryPath prefers resources/reticulum-sidecar under app path (Flatpak)', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-reticulum-flatpak-'));
+    const appRoot = path.join(tmpDir, 'lib', 'mesh-client');
+    const bundled = path.join(appRoot, 'resources', 'reticulum-sidecar', sidecarBinaryName());
+    fs.mkdirSync(path.dirname(bundled), { recursive: true });
+    fs.writeFileSync(bundled, 'flatpak-sidecar');
+
+    vi.mocked(app.getAppPath).mockReturnValue(appRoot);
+    expect(resolveSidecarBinaryPath()).toBe(bundled);
   });
 
   it('sidecarBinaryIsStale returns true when Rust source is newer than binary', () => {

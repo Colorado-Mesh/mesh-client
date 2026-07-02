@@ -67,4 +67,18 @@ describe('identityVault', () => {
     expect(blocked.ok).toBe(false);
     expect(blocked.error).toMatch(/too many unlock attempts/i);
   });
+
+  it('serializes concurrent unlock attempts for accurate rate limiting', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-vault-'));
+    setIdentityVaultPathForTests(path.join(tmpDir, 'identity-vault.json'));
+    await setIdentityVaultPasscode('vault-pass-9999', '{"identity":"backup"}');
+    lockIdentityVault();
+
+    const attempts = await Promise.all(
+      Array.from({ length: 6 }, () => unlockIdentityVault('wrong-pass')),
+    );
+    const blocked = attempts.filter((res) => res.error?.match(/too many unlock attempts/i));
+    expect(blocked).toHaveLength(1);
+    expect(attempts.filter((res) => !res.ok)).toHaveLength(6);
+  });
 });

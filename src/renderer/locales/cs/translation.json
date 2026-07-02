@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Nepřipojeno — zprávy jsou pouze pro čtení",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Zmínit návrhy"
+    "mentionSuggestionsAria": "Zmínit návrhy",
+    "openDmByAddress": "OTEVŘENO",
+    "dmAddressPlaceholder": "Cílový hash nebo lxmf://…",
+    "dmAddressAria": "Cílová adresa retikula",
+    "dmAddressInvalid": "Zadejte platný 32znakový cílový hash nebo adresu lxmf://."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Zobrazit naformátovanou stránku",
     "fileDownloading": "Stahování souboru…",
     "fileDownloadFailed": "Nepodařilo se stáhnout soubor: {{error}}",
-    "fileDownloadInProgress": "Stahování souboru již probíhá."
+    "fileDownloadInProgress": "Stahování souboru již probíhá.",
+    "sendMessage": "Zpráva",
+    "sendMessageAria": "Odeslat zprávu na {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

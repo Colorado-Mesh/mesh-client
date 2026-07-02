@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "未连接 — 消息是只读的",
     "starredDm": "DM：{{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "提及建议"
+    "mentionSuggestionsAria": "提及建议",
+    "openDmByAddress": "打开",
+    "dmAddressPlaceholder": "目标哈希或 lxmf://...",
+    "dmAddressAria": "网状目标地址",
+    "dmAddressInvalid": "输入有效的 32 字符目标哈希或 lxmf:// 地址。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "显示格式化页面",
     "fileDownloading": "正在下载文件...",
     "fileDownloadFailed": "下载文件失败：{{error}}",
-    "fileDownloadInProgress": "文件下载已在进行中。"
+    "fileDownloadInProgress": "文件下载已在进行中。",
+    "sendMessage": "信息",
+    "sendMessageAria": "发送消息至 {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

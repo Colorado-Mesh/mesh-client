@@ -39,7 +39,11 @@ function matchesSearch(node: NomadNodeRow, query: string): boolean {
   return name.includes(q) || hash.includes(q);
 }
 
-export default function NomadNetworkPanel() {
+export default function NomadNetworkPanel({
+  onOpenDm,
+}: {
+  onOpenDm?: (destinationHash: string) => void;
+}) {
   const { t } = useTranslation();
   const nodes = useNomadNetworkStore((s) => s.nodes);
   const lastRefreshAt = useNomadNetworkStore((s) => s.lastRefreshAt);
@@ -311,6 +315,22 @@ export default function NomadNetworkPanel() {
                   </span>
                 ) : null}
                 <div className="ml-auto flex flex-wrap gap-1">
+                  {onOpenDm ? (
+                    <button
+                      type="button"
+                      disabled={!sidecarRunning}
+                      className="rounded border border-purple-600 px-2 py-1 text-xs text-purple-300 hover:bg-purple-900/30 disabled:opacity-40"
+                      aria-label={t('nomadNetwork.sendMessageAria', {
+                        name:
+                          selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
+                      })}
+                      onClick={() => {
+                        onOpenDm(selectedNode.destination_hash);
+                      }}
+                    >
+                      {t('nomadNetwork.sendMessage')}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
@@ -414,6 +434,7 @@ export default function NomadNetworkPanel() {
                       onDownloadFile={(hash, path) => {
                         void downloadNodeFile(hash, path);
                       }}
+                      onOpenDm={onOpenDm}
                     />
                   ) : (
                     <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap text-gray-200">

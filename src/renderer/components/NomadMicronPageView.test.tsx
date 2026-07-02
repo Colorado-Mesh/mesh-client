@@ -1,8 +1,10 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import NomadMicronPageView from './NomadMicronPageView';
+
+const LXMF_HASH = '368f994c056de0d8882855eb0d627497';
 
 describe('NomadMicronPageView', () => {
   const defaultProps = {
@@ -10,6 +12,7 @@ describe('NomadMicronPageView', () => {
     selectedHash: 'abc1234567890abcdef1234567890ab',
     onNavigate: vi.fn(),
     onDownloadFile: vi.fn(),
+    onOpenDm: vi.fn(),
   };
 
   it('does not mount script tags from malicious micron markup', () => {
@@ -42,5 +45,28 @@ describe('NomadMicronPageView', () => {
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('opens DM for lxmf:// links instead of navigating', () => {
+    const onOpenDm = vi.fn();
+    const onNavigate = vi.fn();
+    const markup = `\`[Contact\`lxmf://${LXMF_HASH}\`*]\``;
+    render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onOpenDm={onOpenDm}
+        onNavigate={onNavigate}
+        content={markup}
+      />,
+    );
+    const link = document.querySelector<HTMLElement>('[data-action="openNode"]');
+    expect(link).not.toBeNull();
+    const href = link?.getAttribute('href');
+    const title = link?.getAttribute('title');
+    const dataDest = link?.getAttribute('data-destination');
+    expect(href ?? title ?? dataDest).toBeTruthy();
+    fireEvent.click(link!);
+    expect(onOpenDm).toHaveBeenCalledWith(LXMF_HASH);
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 });

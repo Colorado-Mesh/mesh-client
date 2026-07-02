@@ -38,6 +38,13 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
     if (fs.existsSync(bundled)) return bundled;
   }
 
+  try {
+    const appBundled = path.join(app.getAppPath(), 'resources', 'reticulum-sidecar', name);
+    if (fs.existsSync(appBundled)) return appBundled;
+  } catch {
+    // catch-no-log-ok app path unavailable in unit tests without electron ready
+  }
+
   const projectDir = findReticulumSidecarProjectDir(extraRoots);
   if (projectDir) {
     for (const profile of ['debug', 'release'] as const) {

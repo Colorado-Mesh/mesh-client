@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Brak połączenia — wiadomości są tylko do odczytu",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Wspomnij o sugestiach"
+    "mentionSuggestionsAria": "Wspomnij o sugestiach",
+    "openDmByAddress": "Otwarte",
+    "dmAddressPlaceholder": "Hash docelowy lub lxmf://…",
+    "dmAddressAria": "Adres docelowy siateczki",
+    "dmAddressInvalid": "Wprowadź prawidłowy 32-znakowy skrót docelowy lub adres lxmf://."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Pokaż sformatowaną stronę",
     "fileDownloading": "Pobieram plik…",
     "fileDownloadFailed": "Nie udało się pobrać pliku: {{error}}",
-    "fileDownloadInProgress": "Pobieranie pliku już trwa."
+    "fileDownloadInProgress": "Pobieranie pliku już trwa.",
+    "sendMessage": "Wiadomość",
+    "sendMessageAria": "Wyślij wiadomość do {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

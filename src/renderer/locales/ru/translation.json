@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Не подключено — сообщения доступны только для чтения.",
     "starredDm": "ДМ: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Упоминание предложений"
+    "mentionSuggestionsAria": "Упоминание предложений",
+    "openDmByAddress": "Открыть",
+    "dmAddressPlaceholder": "Хэш назначения или lxmf://…",
+    "dmAddressAria": "Адрес назначения ретикулума",
+    "dmAddressInvalid": "Введите действительный 32-значный хэш пункта назначения или адрес lxmf://."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Показать отформатированную страницу",
     "fileDownloading": "Загрузка файла…",
     "fileDownloadFailed": "Не удалось загрузить файл: {{error}}.",
-    "fileDownloadInProgress": "Загрузка файла уже идет."
+    "fileDownloadInProgress": "Загрузка файла уже идет.",
+    "sendMessage": "Сообщение",
+    "sendMessageAria": "Отправить сообщение {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

@@ -28,6 +28,7 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   - --env=NODE_ENV=production
   - --env=ELECTRON_IS_DEV=0
+  - --env=ELECTRON_OZONE_PLATFORM_HINT=auto
 
 modules:
   - name: mesh-client

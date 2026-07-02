@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Tidak tersambung — pesan hanya dapat dibaca",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Sebutkan saran"
+    "mentionSuggestionsAria": "Sebutkan saran",
+    "openDmByAddress": "Membuka",
+    "dmAddressPlaceholder": "Hash tujuan atau lxmf://…",
+    "dmAddressAria": "Alamat tujuan retikulum",
+    "dmAddressInvalid": "Masukkan hash tujuan 32 karakter atau alamat lxmf:// yang valid."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Tampilkan halaman yang diformat",
     "fileDownloading": "Mengunduh berkas…",
     "fileDownloadFailed": "Gagal mengunduh file: {{error}}",
-    "fileDownloadInProgress": "Pengunduhan file sedang berlangsung."
+    "fileDownloadInProgress": "Pengunduhan file sedang berlangsung.",
+    "sendMessage": "Pesan",
+    "sendMessageAria": "Kirim pesan ke {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

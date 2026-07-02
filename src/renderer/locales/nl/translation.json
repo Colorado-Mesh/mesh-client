@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Niet verbonden: berichten zijn alleen-lezen",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Noem suggesties"
+    "mentionSuggestionsAria": "Noem suggesties",
+    "openDmByAddress": "Open",
+    "dmAddressPlaceholder": "Bestemmingshash of lxmf://…",
+    "dmAddressAria": "Bestemmingsadres van Reticulum",
+    "dmAddressInvalid": "Voer een geldig bestemmingshash- of lxmf://-adres van 32 tekens in."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2317,7 +2321,9 @@
     "hideSource": "Toon opgemaakte pagina",
     "fileDownloading": "Bestand downloaden…",
     "fileDownloadFailed": "Kan bestand niet downloaden: {{error}}",
-    "fileDownloadInProgress": "Er wordt al een bestand gedownload."
+    "fileDownloadInProgress": "Er wordt al een bestand gedownload.",
+    "sendMessage": "Bericht",
+    "sendMessageAria": "Stuur bericht naar {{name}}"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
