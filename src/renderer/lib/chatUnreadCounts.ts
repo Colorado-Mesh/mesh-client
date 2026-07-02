@@ -107,9 +107,9 @@ export function resolveChatDmPeer(
   }
   if (peer == null && protocol === 'reticulum') {
     const fromU = msg.sender_id >>> 0;
-    const toU = effectiveTo != null ? effectiveTo >>> 0 : null;
+    const toU = effectiveTo >>> 0;
     const isOwnU32 = (id: number) => ownNodeIds.has(id >>> 0);
-    if (msg.reticulum_sender_hash && toU != null && fromU !== toU) {
+    if (msg.reticulum_sender_hash && fromU !== toU) {
       const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
       if (senderFromHash === fromU && !isOwnU32(toU)) {
         peer = toU;
@@ -120,7 +120,7 @@ export function resolveChatDmPeer(
       }
     } else if (fromU > 0 && !isOwnU32(fromU)) {
       peer = fromU;
-    } else if (toU != null && toU > 0 && !isOwnU32(toU)) {
+    } else if (toU > 0 && !isOwnU32(toU)) {
       peer = toU;
     }
   }

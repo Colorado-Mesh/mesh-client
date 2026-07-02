@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isNomadFilePath,
   isNomadMicronPage,
+  mountNomadMicronHtml,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
 } from './micronParser';
@@ -19,7 +20,9 @@ describe('renderNomadMicronPage', () => {
     ].join('\n');
 
     const html = renderNomadMicronPage(markup);
-    const plainText = new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '';
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const plainText = container.textContent ?? '';
 
     expect(plainText).toContain('Hello Nomad');
     expect(plainText).toContain('olored text');
