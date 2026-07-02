@@ -351,7 +351,9 @@
     "recordVoice": "录制语音留言",
     "recordVoiceHint": "录制语音剪辑并作为 LXMF 附件发送（仅限 DM）",
     "stopVoiceRecording": "停止录制并发送",
-    "voiceRecordingTooLong": "语音片段达到 60 秒限制并已发送。"
+    "voiceRecordingTooLong": "语音片段达到 60 秒限制并已发送。",
+    "reticulumSendAttachmentFailed": "发送附件失败",
+    "reticulumSendAttachmentNoIdentity": "Reticulum 身份未就绪 — 请先连接并配置身份"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "正在自动重新连接…",
     "stageAutoConnectingBle": "正在连接到 {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}…",
-    "stageWaitingNobleBleMeshcore": "正在等待 MeshCore Bluetooth 完成 — 完成后 Meshtastic 将自动连接到 {{deviceName}}…"
+    "stageWaitingNobleBleMeshcore": "正在等待 MeshCore Bluetooth 完成 — 完成后 Meshtastic 将自动连接到 {{deviceName}}…",
+    "reticulumStats": {
+      "interfaces": "{{count}}接口",
+      "peers": "{{count}}同行"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi已禁用。重新启动主板以使更改生效。",
     "wifiApSuccess": "接入点模式已启用。从您的计算机（默认网关10.0.0.1 ）加入RNode AP ，然后配置站点凭据或使用引导控制台。",
     "wifiStationSuccess": "工作站模式已保存。重新启动主板，然后查找其IP （显示器、路由器DHCP或读取配置） ，并在连接→接口上添加tcp://…。",
-    "wifiConfigEmpty": "未返回配置数据。"
+    "wifiConfigEmpty": "未返回配置数据。",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "日志分析",

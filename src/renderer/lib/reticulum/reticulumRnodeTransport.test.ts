@@ -33,12 +33,22 @@ describe('reticulumRnodeTransport', () => {
       host: '2001:db8::1',
       port: 7633,
     });
+    expect(parseReticulumRnodeTcpPort('tcp://2001:db8::1:9000')).toEqual({
+      host: '2001:db8::1',
+      port: 9000,
+    });
+    expect(parseReticulumRnodeTcpPort('tcp://2001:db8::1')).toEqual({
+      host: '2001:db8::1',
+      port: RNODE_DEFAULT_TCP_PORT,
+    });
   });
 
   it('builds tcp:// URIs with default port omitted', () => {
     expect(buildReticulumRnodeTcpPort('192.168.1.42')).toBe('tcp://192.168.1.42');
     expect(buildReticulumRnodeTcpPort('192.168.1.42', 7633)).toBe('tcp://192.168.1.42');
     expect(buildReticulumRnodeTcpPort('192.168.1.42', 9000)).toBe('tcp://192.168.1.42:9000');
+    expect(buildReticulumRnodeTcpPort('2001:db8::1')).toBe('tcp://[2001:db8::1]');
+    expect(buildReticulumRnodeTcpPort('2001:db8::1', 9000)).toBe('tcp://[2001:db8::1]:9000');
     expect(buildReticulumRnodeTcpPort('  ')).toBe('');
   });
 

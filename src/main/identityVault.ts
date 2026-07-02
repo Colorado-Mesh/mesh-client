@@ -5,7 +5,7 @@ import path from 'node:path';
 import { app } from 'electron';
 
 const VAULT_VERSION = 1;
-const MIN_PASSCODE_LENGTH = 4;
+const MIN_PASSCODE_LENGTH = 8;
 const MAX_PASSCODE_LENGTH = 256;
 const MAX_SECRET_BYTES = 512 * 1024;
 /** scrypt params (~64 MiB) — Node crypto only; avoids argon2 native Electron ABI rebuilds. */
@@ -35,6 +35,30 @@ export interface IdentityVaultActionResult {
 
 let unlockedSecret: string | null = null;
 let vaultPathOverride: string | null = null;
+
+const UNLOCK_MAX_ATTEMPTS = 5;
+const UNLOCK_WINDOW_MS = 60_000;
+let unlockAttemptWindowStart = 0;
+let unlockAttemptCount = 0;
+
+function checkUnlockRateLimit(): string | null {
+  const now = Date.now();
+  if (now - unlockAttemptWindowStart > UNLOCK_WINDOW_MS) {
+    unlockAttemptWindowStart = now;
+    unlockAttemptCount = 0;
+  }
+  if (unlockAttemptCount >= UNLOCK_MAX_ATTEMPTS) {
+    return 'too many unlock attempts; try again later';
+  }
+  unlockAttemptCount += 1;
+  return null;
+}
+
+/** Test hook: reset unlock rate limit state. */
+export function resetIdentityVaultUnlockRateLimitForTests(): void {
+  unlockAttemptWindowStart = 0;
+  unlockAttemptCount = 0;
+}
 
 /** Test hook: override vault file path (null restores default). */
 export function setIdentityVaultPathForTests(next: string | null): void {
@@ -187,10 +211,13 @@ export async function setIdentityVaultPasscode(
 }
 
 export async function unlockIdentityVault(passcode: string): Promise<IdentityVaultActionResult> {
+  const rateError = checkUnlockRateLimit();
+  if (rateError) return { ok: false, error: rateError };
   const envelope = readEnvelopeFromDisk();
   if (!envelope) return { ok: false, error: 'vault not configured' };
   try {
     unlockedSecret = await decryptVaultSecret(passcode, envelope);
+    unlockAttemptCount = 0;
     return { ok: true };
   } catch (err) {
     unlockedSecret = null;

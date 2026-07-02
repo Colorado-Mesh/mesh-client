@@ -130,7 +130,7 @@ The chat UI keeps outbound messages in **Sending** until the sidecar emits `lxmf
 ## LXMF attachments and voice clips
 
 - **Send:** Chat composer paperclip (files) or mic button (voice clip, max ~60 s) on Reticulum DMs. Outbound uses `POST /api/v1/lxmf/resource` with `FIELD_FILE_ATTACHMENTS` on the live stack.
-- **Receive:** Inbound attachments are cached under `userData/reticulum/attachments/`; chat shows playback for audio and **Save attachment** / **Show in folder** actions.
+- **Receive:** Inbound attachments are cached under `userData/reticulum/attachments/`; chat shows playback for audio and **Save attachment** / **Show in folder** actions. Paths are jailed to that directory in the main process — arbitrary `attachment_path` values in SQLite are rejected at save time and **Show in folder** only opens jailed paths.
 - **Realtime voice calls (LXST/Codec2):** not in scope; the Network tab no longer shows a voice-call stub.
 
 ## Propagation nodes
@@ -195,5 +195,7 @@ The sidecar stores the active config under Electron `userData/reticulum/config/`
 
 - **LXST voice** and **LRGP games**: API status endpoints exist; full rsLXST/lrgp-rs integration is tracked separately.
 - **Hardware identity (YubiKey/PIV)**: not yet wired.
-- **Interface hot-reload** under `rns-stack`: CRUD updates config on disk; restart the stack for live RNS to pick up changes.
+- **Interface hot-reload** under `rns-stack`: CRUD updates config on disk; **restart the stack** after add, edit, or **delete** so live RNS drops stale transports.
+- **RNode Wi-Fi (`tcp://`)**: use bracketed IPv6 literals (`tcp://[2001:db8::1]:7633`); unbracketed IPv6 with an explicit port is rejected by the UI parser.
+- **Identity vault**: minimum 8-character passcode; unlock is rate-limited in the main process. Sidecar stub mode may return a one-time mnemonic on generate — it is **not** written to `mesh_client_stack.json` on disk.
 - **Meshtastic/MeshCore RF paths**: ConnectionDriver, MQTT hybrid, channel config, Rooms BBS, Hop Goblins diagnostics.

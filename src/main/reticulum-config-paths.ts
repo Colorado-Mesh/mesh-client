@@ -3,6 +3,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
+import { readUtf8FileBounded } from './reticulum-config-read';
+
 /** Platform-default rnsd config file paths (first existing wins). */
 export function defaultReticulumConfigPaths(): string[] {
   const home = os.homedir();
@@ -21,7 +23,7 @@ export function readFirstExistingConfig(): { path: string | null; content: strin
   for (const candidate of defaultReticulumConfigPaths()) {
     try {
       if (fs.existsSync(candidate)) {
-        return { path: candidate, content: fs.readFileSync(candidate, 'utf8') };
+        return { path: candidate, content: readUtf8FileBounded(candidate) };
       }
     } catch {
       // catch-no-log-ok: try next default path
@@ -43,7 +45,7 @@ export async function showReticulumConfigImportDialog(): Promise<{
   }
   const filePath = result.filePaths[0];
   try {
-    return { path: filePath, content: fs.readFileSync(filePath, 'utf8') };
+    return { path: filePath, content: readUtf8FileBounded(filePath) };
   } catch {
     // catch-no-log-ok: dialog file read failed; caller shows empty content
     return { path: filePath, content: null };

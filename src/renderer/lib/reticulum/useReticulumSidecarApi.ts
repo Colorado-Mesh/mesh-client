@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   isReticulumAutostartEnabled,
@@ -29,6 +30,7 @@ export function useReticulumSidecarApi({
   onEvent,
   enableAutostart = false,
 }: UseReticulumSidecarApiOptions) {
+  const { t } = useTranslation();
   const [sidecarStatus, setSidecarStatus] = useState<ReticulumSidecarStatus>({
     running: false,
     port: 0,
@@ -139,17 +141,17 @@ export function useReticulumSidecarApi({
         const p = evt.payload as Record<string, unknown>;
         const parts: string[] = [];
         if (typeof p.interface_count === 'number') {
-          parts.push(`interfaces: ${p.interface_count}`);
+          parts.push(t('connectionPanel.reticulumStats.interfaces', { count: p.interface_count }));
         }
         if (typeof p.peer_count === 'number') {
-          parts.push(`peers: ${p.peer_count}`);
+          parts.push(t('connectionPanel.reticulumStats.peers', { count: p.peer_count }));
         }
         if (parts.length > 0) setStatsSummary(parts.join(' · '));
       }
       onEvent(evt);
     });
     return unsub;
-  }, [sidecarApiReady, onEvent]);
+  }, [sidecarApiReady, onEvent, t]);
 
   const handleAutoStartChange = useCallback((enabled: boolean) => {
     setAutoStart(enabled);

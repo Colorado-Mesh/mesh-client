@@ -30,7 +30,7 @@ use super::nomad_timeouts;
 use super::packet_log::PacketLogBuffer;
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
-use super::types::{InterfaceRow, LxmfResourceRequest, LxmfSendRequest, PeerRow};
+use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow};
 use super::via::{
     classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via,
     resolve_peer_sent_via,
@@ -79,7 +79,7 @@ impl LiveBridge {
         // `PacketTapEvent` in the upstream crate), so this buffer stays
         // empty for the live Reticulum stack until upstream adds one.
         _packet_log: Arc<PacketLogBuffer>,
-        persisted: &mut PersistedState,
+        inner: Arc<RwLock<PersistedState>>,
     ) -> Result<Self, String> {
         let config_str = config_dir
             .to_str()
@@ -98,9 +98,10 @@ impl LiveBridge {
             .await;
 
         let identity_path = config_dir.join("identity");
+        let identity_configured = inner.read().await.identity.configured;
         let identity = if identity_path.exists() {
             Identity::from_file(&identity_path).map_err(|e| format!("load identity: {e}"))?
-        } else if persisted.identity.configured {
+        } else if identity_configured {
             Identity::new()
         } else {
             return Err("identity not configured for live stack".into());
@@ -116,7 +117,9 @@ impl LiveBridge {
         let lxmf_dest_hash =
             Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
         let lxmf_hash_hex = hex::encode(lxmf_dest_hash);
-        let display_name = persisted
+        let display_name = inner
+            .read()
+            .await
             .identity
             .display_name
             .clone()
@@ -132,6 +135,9 @@ impl LiveBridge {
         let event_tx_cb = event_tx.clone();
         let self_hash_cb = lxmf_hash_hex.clone();
         let self_name_cb = display_name.clone();
+        let inner_for_cb = inner.clone();
+        let config_dir_for_cb = config_dir.clone();
+        let storage_dir_for_cb = storage_dir.clone();
         router.register_delivery_callback(move |msg| {
             if !msg.incoming {
                 return;
@@ -151,6 +157,17 @@ impl LiveBridge {
                 None,
                 "inbound",
             );
+            let inner = inner_for_cb.clone();
+            let config_dir = config_dir_for_cb.clone();
+            let storage_dir = storage_dir_for_cb.clone();
+            let sender = sender_hex.clone();
+            tokio::spawn(async move {
+                let mut state = inner.write().await;
+                state.upsert_contact(&sender, None);
+                if let Err(e) = state.save(&config_dir, &storage_dir) {
+                    tracing::warn!("contact persist failed: {e}");
+                }
+            });
             emit_lxmf_event(&event_tx_cb, payload);
         });
 
@@ -200,16 +217,19 @@ impl LiveBridge {
             })),
         };
 
-        let preferred_prop_hash = persisted
-            .preferred_propagation_id
-            .as_ref()
-            .and_then(|id| {
-                persisted
-                    .propagation
-                    .iter()
-                    .find(|p| p.id == *id)
-                    .and_then(|p| p.destination_hash.clone())
-            });
+        let preferred_prop_hash = {
+            let state = inner.read().await;
+            state
+                .preferred_propagation_id
+                .as_ref()
+                .and_then(|id| {
+                    state
+                        .propagation
+                        .iter()
+                        .find(|p| p.id == *id)
+                        .and_then(|p| p.destination_hash.clone())
+                })
+        };
 
         bridge.spawn_maintenance(event_tx);
 
@@ -221,8 +241,11 @@ impl LiveBridge {
             let _ = bridge.sync_ble_peer_interfaces(&ifaces).await;
         }
 
-        persisted.rns_ready = true;
-        persisted.lxmf_ready = true;
+        {
+            let mut state = inner.write().await;
+            state.rns_ready = true;
+            state.lxmf_ready = true;
+        }
 
         Ok(bridge)
     }
@@ -452,10 +475,105 @@ impl LiveBridge {
                 if let Ok(mut driver) = outbound.lock() {
                     driver.update_path_table(&path_entries);
                     driver.process_tick(&mut router, &event_tx);
+                    let known_identities = driver.known_identities_for_propagation();
+                    propagation.tick(&known_identities);
+                } else {
+                    propagation.tick(&HashMap::new());
                 }
-                propagation.tick(&HashMap::new());
             }
         });
+    }
+
+    /// Register handler for announces carrying identity public keys (LXMF path proofs).
+    pub fn register_lxmf_identity_announce_handler(&self) {
+        let transport_tx = self.handle.transport_tx.clone();
+        let outbound = self.outbound.clone();
+        tokio::spawn(async move {
+            let (callback_tx, mut callback_rx) =
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+            if transport_tx
+                .send(TransportMessage::RegisterAnnounceHandler {
+                    aspect_filter: None,
+                    receive_path_responses: false,
+                    callback_tx,
+                })
+                .await
+                .is_err()
+            {
+                tracing::warn!("LXMF identity announce handler registration failed: transport closed");
+                return;
+            }
+
+            while let Some(evt) = callback_rx.recv().await {
+                if let Some(pub_key) = evt.public_key {
+                    let dest_hex = hex::encode(evt.destination_hash);
+                    if let Ok(mut driver) = outbound.lock() {
+                        driver.register_identity_key(&dest_hex, pub_key);
+                    }
+                }
+            }
+        });
+    }
+
+    pub async fn send_reaction(
+        &self,
+        req: &LxmfReactionRequest,
+    ) -> Result<serde_json::Value, String> {
+        let dest = parse_hash16(&req.destination_hash)?;
+        let has_path = self
+            .outbound
+            .lock()
+            .map(|d| d.has_path_to(&req.destination_hash))
+            .unwrap_or(false);
+
+        let delivery_method = if has_path {
+            DeliveryMethod::Direct
+        } else {
+            let router = self.router.lock().await;
+            if router.outbound_propagation_node.is_some() {
+                DeliveryMethod::Propagated
+            } else {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "no_propagation_node",
+                    "destination_hash": req.destination_hash,
+                }));
+            }
+        };
+
+        let msg = LxMessage::new(
+            dest,
+            parse_hash16(&self.lxmf_hash_hex)?,
+            "",
+            &req.emoji,
+            delivery_method,
+        );
+        let mut router = self.router.lock().await;
+        router
+            .try_send(msg)
+            .map_err(|e| format!("lxmf reaction send: {e:?}"))?;
+
+        let ts_ms = (std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+            * 1000) as i64;
+        let payload = serde_json::json!({
+            "sender_hash": self.lxmf_hash_hex,
+            "sender_name": self.display_name,
+            "text": req.emoji,
+            "timestamp": ts_ms,
+            "to_hash": req.destination_hash,
+            "reaction_target": req.target_hash,
+            "direction": "outbound",
+            "delivery_status": "queued"
+        });
+
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.process_tick(&mut router, &self.event_tx);
+        }
+
+        Ok(payload)
     }
 
     pub async fn set_local_propagation_serving(&self, enabled: bool) {

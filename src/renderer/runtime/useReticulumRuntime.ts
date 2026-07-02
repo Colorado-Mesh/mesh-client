@@ -8,6 +8,7 @@ import {
   mergeReticulumDiagnosticRows,
 } from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import i18n from '@/renderer/lib/i18n';
 import {
   ingestReticulumLxmfPayloadWithSideEffects,
   type ReticulumLxmfPayload,
@@ -91,6 +92,17 @@ const INITIAL_STATE: DeviceState = {
   myNodeNum: 0,
   connectionType: null,
 };
+
+const UINT8_BASE64_CHUNK_SIZE = 0x8000;
+
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += UINT8_BASE64_CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + UINT8_BASE64_CHUNK_SIZE);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
 
 export type ReticulumRuntime = ReturnType<typeof useReticulumRuntime>;
 
@@ -454,6 +466,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   useEffect(() => {
     return () => {
+      if (peerRefreshDebounceRef.current) {
+        clearTimeout(peerRefreshDebounceRef.current);
+        peerRefreshDebounceRef.current = null;
+      }
       unsubEventRef.current?.();
       unsubEventRef.current = null;
       // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
@@ -513,6 +529,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const disconnect = useCallback(async () => {
     suppressReconnectRef.current = true;
+    if (peerRefreshDebounceRef.current) {
+      clearTimeout(peerRefreshDebounceRef.current);
+      peerRefreshDebounceRef.current = null;
+    }
     unsubEventRef.current?.();
     unsubEventRef.current = null;
     await window.electronAPI.reticulum.stop();
@@ -545,6 +565,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await refreshContactsFromSidecar();
       await refreshLocalInterfacesFromSidecar();
       await syncDiagnosticsFromSidecar();
+      await hydrateRawPackets();
+      if (identityId) {
+        await markStaleReticulumOutboundMessages(identityId, 5 * MS_PER_MINUTE);
+        markStaleReticulumOutboundInStore(identityId, 5 * MS_PER_MINUTE);
+        await refreshMessagesFromDb();
+      }
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -565,8 +591,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
+    refreshMessagesFromDb,
     syncConnectionStore,
     syncDiagnosticsFromSidecar,
+    hydrateRawPackets,
+    identityId,
     tearDownFromSidecarStop,
     scheduleLocalInterfaceStatusBurst,
   ]);
@@ -685,7 +714,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
       } catch (e) {
         if (pendingId) {
-          updateMessageStatus(identityId, pendingId, 'failed', errLikeToLogString(e));
+          const errStr = errLikeToLogString(e);
+          const userMessage = errStr.includes('no_propagation_node')
+            ? i18n.t('chatPanel.reticulumNoPropagationNode')
+            : i18n.t('chatPanel.reticulumSendFailed');
+          updateMessageStatus(identityId, pendingId, 'failed', userMessage);
         }
         throw e;
       }
@@ -695,27 +728,36 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const sendAttachment = useCallback(
     async (file: File, to: number | string) => {
+      if (!identityId) {
+        throw new Error(i18n.t('chatPanel.reticulumSendAttachmentNoIdentity'));
+      }
       const destination =
         typeof to === 'string'
           ? to
           : (reticulumHashForNodeId(to) ?? resolveReticulumDestinationHash(to) ?? String(to));
       const bytes = new Uint8Array(await file.arrayBuffer());
-      let binary = '';
-      for (const byte of bytes) {
-        binary += String.fromCharCode(byte);
-      }
-      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/resource', {
-        destination_hash: destination,
-        file_name: file.name,
-        mime_type: file.type || 'application/octet-stream',
-        data_base64: btoa(binary),
-      })) as { ok?: boolean; message?: ReticulumLxmfPayload };
-      if (res?.message) {
-        const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
-        if (payload) ingestLxmfPayload(payload);
+      try {
+        const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/resource', {
+          destination_hash: destination,
+          file_name: file.name,
+          mime_type: file.type || 'application/octet-stream',
+          data_base64: uint8ArrayToBase64(bytes),
+        })) as { ok?: boolean; error?: string; message?: ReticulumLxmfPayload };
+        if (res?.ok === false) {
+          throw new Error(res.error ?? i18n.t('chatPanel.reticulumSendAttachmentFailed'));
+        }
+        if (res?.message) {
+          const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
+          if (payload) ingestLxmfPayload(payload);
+        }
+      } catch (e) {
+        console.warn('[useReticulumRuntime] send attachment failed ' + errLikeToLogString(e));
+        throw e instanceof Error && e.message
+          ? e
+          : new Error(i18n.t('chatPanel.reticulumSendAttachmentFailed'));
       }
     },
-    [ingestLxmfPayload],
+    [identityId, ingestLxmfPayload],
   );
 
   const sendReaction = useCallback(
@@ -783,6 +825,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId],
   );
 
+  const onPowerResume = useCallback(() => {
+    if (suppressReconnectRef.current) {
+      console.debug('[useReticulumRuntime] power resume — skip reconnect (user disconnect)');
+      return;
+    }
+    void connect();
+  }, [connect]);
+
   const runtime = useMemo(
     () => ({
       state,
@@ -815,9 +865,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       disconnect,
       restartStack,
       onPowerSuspend: () => {},
-      onPowerResume: () => {
-        void connect();
-      },
+      onPowerResume,
       prepareRfConnect: async () => {},
       attachRfSession: async () => {},
       handleRfConnectFailure: async () => {},
@@ -835,7 +883,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,
-      handleSidecarEvent,
     }),
     [
       state,
@@ -846,6 +893,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectAutomatic,
       disconnect,
       restartStack,
+      onPowerResume,
       clearRawPackets,
       rawPackets,
       sendMessage,
@@ -859,7 +907,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,
-      handleSidecarEvent,
     ],
   );
 

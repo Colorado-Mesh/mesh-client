@@ -4,9 +4,9 @@ import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
 import {
+  bleOwnerI18nKey,
   isBlePeripheralConflictErrorMessage,
   isBleScanBusyErrorMessage,
-  reticulumOwnerLabel,
 } from './reticulum/reticulumBleAdapterLease';
 
 export function hostFromAddressInput(address: string): string {
@@ -140,9 +140,8 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   if (isBlePeripheralConflictErrorMessage(msg)) {
     const ownerMatch = /already in use by (\S+)/i.exec(msg);
     const rawOwner = ownerMatch?.[1] ?? '';
-    const ownerLabel = rawOwner
-      ? reticulumOwnerLabel(rawOwner as BlePeripheralOwner)
-      : t('common.unknown');
+    const ownerKey = rawOwner ? bleOwnerI18nKey(rawOwner as BlePeripheralOwner) : null;
+    const ownerLabel = ownerKey ? t(ownerKey) : t('common.unknown');
     return t('connectionPanel.humanize.ble.sameDeviceConflict', { owner: ownerLabel });
   }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {

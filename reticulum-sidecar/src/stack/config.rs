@@ -84,8 +84,12 @@ pub fn read_config(config_dir: &Path) -> Result<String, String> {
 }
 
 pub fn write_config(config_dir: &Path, content: &str) -> Result<(), String> {
+    parse_config(content)?;
     fs::create_dir_all(config_dir).map_err(|e| e.to_string())?;
-    fs::write(config_path(config_dir), content).map_err(|e| e.to_string())
+    let path = config_path(config_dir);
+    let tmp_path = config_dir.join(format!("{CONFIG_FILENAME}.tmp"));
+    fs::write(&tmp_path, content).map_err(|e| e.to_string())?;
+    fs::rename(&tmp_path, &path).map_err(|e| e.to_string())
 }
 
 pub fn get_stack_settings(config_dir: &Path) -> Result<StackSettings, String> {
@@ -767,6 +771,10 @@ fn serialize_config(parsed: &ParsedConfig) -> String {
         }
         out.push('\n');
     }
+    for line in &parsed.extra_sections {
+        out.push_str(line);
+        out.push('\n');
+    }
     out
 }
 
@@ -934,6 +942,41 @@ seed_addresses = AA:BB:CC:DD:EE:FF,RNode 1234
         );
         let serialized = serialize_config(&parsed);
         assert!(serialized.contains("seed_addresses = AA:BB:CC:DD:EE:FF,RNode 1234"));
+    }
+
+    #[test]
+    fn extra_sections_round_trip() {
+        let content = r#"[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+
+[[Auto Peer]]
+type = AutoInterface
+enabled = Yes
+
+[future_section]
+future_key = future_value
+"#;
+        let parsed = parse_config(content).unwrap();
+        assert!(!parsed.extra_sections.is_empty());
+        let serialized = serialize_config(&parsed);
+        assert!(serialized.contains("[future_section]"));
+        assert!(serialized.contains("future_key = future_value"));
+        let reparsed = parse_config(&serialized).unwrap();
+        assert_eq!(parsed.extra_sections, reparsed.extra_sections);
+    }
+
+    #[test]
+    fn write_config_rejects_invalid_content() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let err = write_config(&dir, "not valid ini [[[").unwrap_err();
+        assert!(!err.is_empty());
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -37,6 +37,9 @@ pub async fn identity_status(State(stack): State<Arc<StackHandle>>) -> Json<serd
     }))
 }
 
+/// Generate a new identity. The response includes the mnemonic **once** so the
+/// UI can show it for backup; it is not written to disk (`mesh_client_stack.json`
+/// strips `mnemonic` on save).
 pub async fn identity_generate(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<GenerateBody>,

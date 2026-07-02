@@ -21,7 +21,7 @@ pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
     link_delivery: LinkDeliveryManager,
     route_hops: HashMap<[u8; 16], u8>,
-    known_identities: HashMap<String, [u8; 32]>,
+    known_identities: HashMap<String, [u8; 64]>,
     path_table_hashes: HashSet<String>,
     self_lxmf_hash: String,
     self_display_name: String,
@@ -34,7 +34,7 @@ impl LxmfOutboundDriver {
         self_lxmf_hash: String,
         self_display_name: String,
     ) -> Self {
-        Self {
+        let mut driver = Self {
             transport_tx: transport_tx.clone(),
             link_delivery: LinkDeliveryManager::new(
                 transport_tx,
@@ -44,9 +44,20 @@ impl LxmfOutboundDriver {
             route_hops: HashMap::new(),
             known_identities: HashMap::new(),
             path_table_hashes: HashSet::new(),
-            self_lxmf_hash,
+            self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
-        }
+        };
+        driver.register_identity_key(&self_lxmf_hash, identity.get_public_key());
+        driver
+    }
+
+    pub fn register_identity_key(&mut self, dest_hash_hex: &str, public_key: [u8; 64]) {
+        self.known_identities
+            .insert(dest_hash_hex.to_lowercase(), public_key);
+    }
+
+    pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
+        self.known_identities.clone()
     }
 
     pub fn set_propagation_node(&mut self, router: &mut LxmRouter, hash: Option<[u8; 16]>) {
@@ -78,7 +89,7 @@ impl LxmfOutboundDriver {
                 (
                     dest,
                     DirectDeliveryPlanInput {
-                        identity_known: self.known_identities.contains_key(&dest_hex)
+                        identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase())
                             || self.route_hops.contains_key(&dest),
                         route: direct_route_snapshot(&self.route_hops, dest),
                         reusable_link: direct_reusable_link_state(&self.link_delivery, dest),
@@ -153,7 +164,10 @@ impl LxmfOutboundDriver {
         prop_hash: [u8; 16],
     ) {
         let prop_hex = hex::encode(prop_hash);
-        if !self.known_identities.contains_key(&prop_hex) {
+        if !self
+            .known_identities
+            .contains_key(&prop_hex.to_lowercase())
+        {
             queue_path_request(&self.transport_tx, prop_hash, false, "propagation node path");
             router.send(message);
             return;
@@ -188,7 +202,7 @@ impl LxmfOutboundDriver {
             plan_direct_delivery(
                 &mut message,
                 DirectDeliveryPlanInput {
-                    identity_known: self.known_identities.contains_key(&dest_hex)
+                    identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase())
                         || self.route_hops.contains_key(&dest_hash),
                     route: direct_route_snapshot(&self.route_hops, dest_hash),
                     reusable_link: direct_reusable_link_state(&self.link_delivery, dest_hash),
@@ -250,7 +264,7 @@ impl LxmfOutboundDriver {
     }
 
     fn encrypt_for_destination(&self, dest_hash_hex: &str, plaintext: &[u8]) -> Option<Vec<u8>> {
-        let pub_key = self.known_identities.get(dest_hash_hex)?;
+        let pub_key = self.known_identities.get(&dest_hash_hex.to_lowercase())?;
         let remote = Identity::from_public_key(pub_key).ok()?;
         remote.encrypt(plaintext, None).ok()
     }

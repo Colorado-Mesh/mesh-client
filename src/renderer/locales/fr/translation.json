@@ -351,7 +351,9 @@
     "recordVoice": "Enregistrer un message vocal",
     "recordVoiceHint": "Enregistrez un clip vocal et envoyez-le sous forme de pièce jointe LXMF (DM uniquement)",
     "stopVoiceRecording": "Arrêter l'enregistrement et envoyer",
-    "voiceRecordingTooLong": "Le clip vocal a atteint la limite de 60 secondes et a été envoyé."
+    "voiceRecordingTooLong": "Le clip vocal a atteint la limite de 60 secondes et a été envoyé.",
+    "reticulumSendAttachmentFailed": "Échec de l'envoi de la pièce jointe",
+    "reticulumSendAttachmentNoIdentity": "Identité Reticulum non prête — connectez et configurez d'abord l'identité"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Reconnexion automatique en cours…",
     "stageAutoConnectingBle": "Connexion à {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "En attente de la fin du Bluetooth Meshtastic — MeshCore se connectera automatiquement à {{deviceName}} lorsque ce sera fait…",
-    "stageWaitingNobleBleMeshcore": "En attente de la fin du Bluetooth MeshCore — Meshtastic se connectera automatiquement à {{deviceName}} lorsque ce sera fait…"
+    "stageWaitingNobleBleMeshcore": "En attente de la fin du Bluetooth MeshCore — Meshtastic se connectera automatiquement à {{deviceName}} lorsque ce sera fait…",
+    "reticulumStats": {
+      "interfaces": "{{count}} interfaces",
+      "peers": "{{count}} pairs"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi désactivé. Redémarrez le tableau pour que les modifications prennent effet.",
     "wifiApSuccess": "Mode de point d'accès activé. Rejoignez le point d'accès RNode à partir de votre ordinateur (passerelle par défaut 10.0.0.1), puis configurez les informations d'identification de la station ou utilisez la console d'amorçage.",
     "wifiStationSuccess": "Mode station enregistré. Redémarrez la carte, puis trouvez son IP (affichage, DHCP du routeur ou configuration de lecture) et ajoutez tcp ://… sur les → interfaces de connexion.",
-    "wifiConfigEmpty": "Aucune donnée de configuration retournée."
+    "wifiConfigEmpty": "Aucune donnée de configuration retournée.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Analyse des journaux",

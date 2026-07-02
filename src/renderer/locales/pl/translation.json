@@ -351,7 +351,9 @@
     "recordVoice": "Nagraj wiadomość głosową",
     "recordVoiceHint": "Nagraj klip głosowy i wyślij jako załącznik LXMF (tylko DM)",
     "stopVoiceRecording": "Zatrzymaj nagrywanie i wyślij",
-    "voiceRecordingTooLong": "Klip głosowy osiągnął limit 60 sekund i został wysłany."
+    "voiceRecordingTooLong": "Klip głosowy osiągnął limit 60 sekund i został wysłany.",
+    "reticulumSendAttachmentFailed": "Nie udało się wysłać załącznika.",
+    "reticulumSendAttachmentNoIdentity": "Tożsamość Reticulum nie jest gotowa — najpierw połącz i skonfiguruj tożsamość"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
     "stageAutoConnectingBle": "Łączenie z {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "Oczekiwanie na zakończenie Meshtastic Bluetooth — MeshCore automatycznie połączy się z {{deviceName}} po zakończeniu…",
-    "stageWaitingNobleBleMeshcore": "Oczekiwanie na zakończenie połączenia Bluetooth MeshCore — po zakończeniu Meshtastic automatycznie połączy się z {{deviceName}}…"
+    "stageWaitingNobleBleMeshcore": "Oczekiwanie na zakończenie połączenia Bluetooth MeshCore — po zakończeniu Meshtastic automatycznie połączy się z {{deviceName}}…",
+    "reticulumStats": {
+      "interfaces": "Interfejsy {{count}}",
+      "peers": "{{count}} rówieśnicy"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi wyłączone. Uruchom ponownie płytę, aby zmiany zaczęły obowiązywać.",
     "wifiApSuccess": "Tryb punktu dostępu włączony. Dołącz do RNode AP ze swojego komputera (brama domyślna 10.0.0.1), a następnie skonfiguruj poświadczenia stacji lub użyj konsoli bootstrap.",
     "wifiStationSuccess": "Tryb stacji zapisany. Uruchom ponownie płytę, a następnie znajdź jej adres IP (wyświetlacz, router DHCP lub Read config) i dodaj tcp://… na → interfejsach połączeń.",
-    "wifiConfigEmpty": "Nie zwrócono danych konfiguracyjnych."
+    "wifiConfigEmpty": "Nie zwrócono danych konfiguracyjnych.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Analiza dziennika",

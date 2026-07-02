@@ -351,7 +351,9 @@
     "recordVoice": "Nahrajte hlasovou zprávu",
     "recordVoiceHint": "Nahrajte hlasový klip a odešlete jej jako přílohu LXMF (pouze DM)",
     "stopVoiceRecording": "Zastavte nahrávání a odešlete",
-    "voiceRecordingTooLong": "Hlasový záznam dosáhl limitu 60 sekund a byl odeslán."
+    "voiceRecordingTooLong": "Hlasový záznam dosáhl limitu 60 sekund a byl odeslán.",
+    "reticulumSendAttachmentFailed": "Nepodařilo se odeslat přílohu",
+    "reticulumSendAttachmentNoIdentity": "Identita Reticulum není připravena — nejprve připojte a nakonfigurujte identitu"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
     "stageAutoConnectingBle": "Připojení k {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "Čekání na dokončení Meshtastic Bluetooth — MeshCore se po dokončení automaticky připojí k {{deviceName}}…",
-    "stageWaitingNobleBleMeshcore": "Čekání na dokončení MeshCore Bluetooth – Meshtastic se po dokončení automaticky připojí k {{deviceName}}…"
+    "stageWaitingNobleBleMeshcore": "Čekání na dokončení MeshCore Bluetooth – Meshtastic se po dokončení automaticky připojí k {{deviceName}}…",
+    "reticulumStats": {
+      "interfaces": "{{count}} rozhraní",
+      "peers": "{{count}} kolegové"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi zakázáno. Restartujte desku, aby se změny projevily.",
     "wifiApSuccess": "Režim přístupového bodu povolen. Připojte se k přístupovému bodu RNode z počítače (výchozí brána 10.0.0.1), poté nakonfigurujte pověření stanice nebo použijte konzolu bootstrap.",
     "wifiStationSuccess": "Režim stanice uložen. Restartujte desku, najděte její IP (displej, směrovač DHCP nebo Read config) a přidejte tcp://… na Připojovací → rozhraní.",
-    "wifiConfigEmpty": "Nebyla vrácena žádná konfigurační data."
+    "wifiConfigEmpty": "Nebyla vrácena žádná konfigurační data.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Analýza protokolu",

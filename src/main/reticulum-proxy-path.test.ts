@@ -31,6 +31,13 @@ describe('assertReticulumProxyPath', () => {
     expect(() => assertReticulumProxyPath('/api/v1/../system/factory-reset')).toThrow(
       /invalid segments/,
     );
+    expect(() => assertReticulumProxyPath('/api/v1/%2e%2e/system/factory-reset')).toThrow(
+      /invalid segments/,
+    );
+  });
+
+  it('rejects paths with fragments in the path segment', () => {
+    expect(assertReticulumProxyPath('/api/v1/peers#frag')).toBe('/api/v1/peers#frag');
   });
 });
 

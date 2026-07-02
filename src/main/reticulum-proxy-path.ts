@@ -47,12 +47,21 @@ export function assertReticulumProxyPath(apiPath: string): string {
   if (!trimmed) {
     throw new Error('Reticulum proxy path is required');
   }
-  const pathOnly = trimmed.split('?')[0] ?? trimmed;
-  const normalized = pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
+  if (trimmed.length > 2048) {
+    throw new Error('Reticulum proxy path is too long');
+  }
+  const withoutFragment = trimmed.split('#')[0] ?? trimmed;
+  const pathOnly = withoutFragment.split('?')[0] ?? withoutFragment;
+  let normalized = pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    throw new Error('Reticulum proxy path contains invalid encoding');
+  }
   if (!normalized.startsWith(RETICULUM_PROXY_PATH_PREFIX)) {
     throw new Error(`Reticulum proxy path must start with ${RETICULUM_PROXY_PATH_PREFIX}`);
   }
-  if (normalized.includes('..') || normalized.includes('\\')) {
+  if (normalized.includes('..') || normalized.includes('\\') || normalized.includes('\0')) {
     throw new Error('Reticulum proxy path contains invalid segments');
   }
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;

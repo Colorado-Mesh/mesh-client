@@ -13,8 +13,10 @@ mod ws;
 use std::sync::Arc;
 
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post, put};
-use tower_http::cors::CorsLayer;
+use http::HeaderValue;
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 
 use crate::stack::StackHandle;
 
@@ -125,6 +127,31 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/identities", get(system::list_identities))
         .route("/api/v1/identities/switch", post(system::switch_identity))
         .route("/ws", get(ws::ws_handler))
-        .layer(CorsLayer::permissive())
+        .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
+        .layer(localhost_cors_layer())
         .with_state(stack)
+}
+
+fn localhost_cors_layer() -> CorsLayer {
+    CorsLayer::new()
+        .allow_origin(AllowOrigin::predicate(
+            |origin: &HeaderValue, _request_parts| is_localhost_origin(origin),
+        ))
+        .allow_methods(Any)
+        .allow_headers(Any)
+}
+
+fn is_localhost_origin(origin: &HeaderValue) -> bool {
+    let Ok(origin) = origin.to_str() else {
+        return false;
+    };
+    let origin = origin.trim_end_matches('/');
+    origin == "http://localhost"
+        || origin == "https://localhost"
+        || origin.starts_with("http://localhost:")
+        || origin.starts_with("https://localhost:")
+        || origin == "http://127.0.0.1"
+        || origin == "https://127.0.0.1"
+        || origin.starts_with("http://127.0.0.1:")
+        || origin.starts_with("https://127.0.0.1:")
 }

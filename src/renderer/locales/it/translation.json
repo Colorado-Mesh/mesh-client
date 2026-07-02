@@ -351,7 +351,9 @@
     "recordVoice": "Registra un messaggio vocale",
     "recordVoiceHint": "Registra un clip vocale e invialo come allegato LXMF (solo DM)",
     "stopVoiceRecording": "Interrompi la registrazione e invia",
-    "voiceRecordingTooLong": "La clip vocale ha raggiunto il limite di 60 secondi ed è stata inviata."
+    "voiceRecordingTooLong": "La clip vocale ha raggiunto il limite di 60 secondi ed è stata inviata.",
+    "reticulumSendAttachmentFailed": "Impossibile inviare l'allegato",
+    "reticulumSendAttachmentNoIdentity": "Identità Reticulum non pronta — connetti e configura prima l'identità"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Riconnessione automatica in corso…",
     "stageAutoConnectingBle": "Connessione a {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "In attesa del completamento di Meshtastic Bluetooth — MeshCore si connetterà automaticamente a {{deviceName}} al termine…",
-    "stageWaitingNobleBleMeshcore": "In attesa del completamento di MeshCore Bluetooth — Meshtastic si connetterà automaticamente a {{deviceName}} al termine…"
+    "stageWaitingNobleBleMeshcore": "In attesa del completamento di MeshCore Bluetooth — Meshtastic si connetterà automaticamente a {{deviceName}} al termine…",
+    "reticulumStats": {
+      "interfaces": "{{count}} interfacce",
+      "peers": "{{count}} colleghi"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi disabilitato. Riavvia la scheda per rendere effettive le modifiche.",
     "wifiApSuccess": "Modalità punto di accesso abilitata. Collegare l'AP RNode dal computer (gateway predefinito 10.0.0.1), quindi configurare le credenziali della stazione o utilizzare la console di avvio.",
     "wifiStationSuccess": "Modalità stazione salvata. Riavviare la scheda, quindi trovare il suo IP (display, router DHCP o Read config) e aggiungere tcp://… su Connection → Interfaces.",
-    "wifiConfigEmpty": "Nessun dato di configurazione restituito."
+    "wifiConfigEmpty": "Nessun dato di configurazione restituito.",
+    "wifiNetmaskPlaceholder": "255.255.255.0."
   },
   "logAnalyzeModal": {
     "title": "Analisi del registro",

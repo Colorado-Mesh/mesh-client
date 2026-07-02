@@ -3,14 +3,26 @@ import type { IpcMain } from 'electron';
 import { isMeshProtocol } from '../../shared/meshProtocol';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
+import { sanitizeReticulumAttachmentPathForDb } from '../reticulum-attachment-path';
+import { assertIpcSender } from '../validate-ipc-sender';
+
+const ALLOWED_DELIVERY_STATUS = new Set([
+  'sending',
+  'pending',
+  'delivered',
+  'failed',
+  'received',
+  'queued',
+]);
 
 export interface ReticulumDbIpcDeps {
   ipcMain: IpcMain;
 }
 
 export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps): void {
-  ipcMain.handle('db:getReticulumMessages', (_event, identityId: string, limit = 500) => {
+  ipcMain.handle('db:getReticulumMessages', (event, identityId: string, limit = 500) => {
     try {
+      assertIpcSender(event, 'db:getReticulumMessages');
       if (typeof identityId !== 'string' || identityId.length > 128) return [];
       const safeLimit = Math.min(Math.max(1, Number(limit) || 500), 10000);
       const db = getDbForIpc('db:getReticulumMessages');
@@ -27,8 +39,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:saveReticulumMessage', (_event, message: unknown) => {
+  ipcMain.handle('db:saveReticulumMessage', (event, message: unknown) => {
     try {
+      assertIpcSender(event, 'db:saveReticulumMessage');
       if (!message || typeof message !== 'object') {
         throw new Error('db:saveReticulumMessage: message must be an object');
       }
@@ -58,14 +71,17 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       if (!db) return { changes: 0 };
       const messageHash = typeof m.message_hash === 'string' ? m.message_hash.slice(0, 128) : null;
       const deliveryStatus =
-        typeof m.delivery_status === 'string' ? m.delivery_status.slice(0, 32) : null;
+        typeof m.delivery_status === 'string' && ALLOWED_DELIVERY_STATUS.has(m.delivery_status)
+          ? m.delivery_status.slice(0, 32)
+          : null;
       const truncatedTimestamp = Math.trunc(timestamp);
       const senderName = typeof m.sender_name === 'string' ? m.sender_name.slice(0, 128) : null;
       const toHash = typeof m.to_hash === 'string' ? m.to_hash.slice(0, 128) : null;
       const replyToHash =
         typeof m.reply_to_hash === 'string' ? m.reply_to_hash.slice(0, 128) : null;
-      const attachmentPath =
-        typeof m.attachment_path === 'string' ? m.attachment_path.slice(0, 512) : null;
+      const attachmentPath = sanitizeReticulumAttachmentPathForDb(
+        typeof m.attachment_path === 'string' ? m.attachment_path : null,
+      );
       const deliveryAttempts =
         m.delivery_attempts != null && Number.isFinite(Number(m.delivery_attempts))
           ? Math.trunc(Number(m.delivery_attempts))
@@ -131,8 +147,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:getReticulumDestinations', () => {
+  ipcMain.handle('db:getReticulumDestinations', (event) => {
     try {
+      assertIpcSender(event, 'db:getReticulumDestinations');
       const db = getDbForIpc('db:getReticulumDestinations');
       if (!db) return [];
       return db
@@ -143,8 +160,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:deleteReticulumDestination', (_event, destinationHash: string) => {
+  ipcMain.handle('db:deleteReticulumDestination', (event, destinationHash: string) => {
     try {
+      assertIpcSender(event, 'db:deleteReticulumDestination');
       if (typeof destinationHash !== 'string' || destinationHash.length > 128) {
         return { changes: 0 };
       }
@@ -161,8 +179,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
 
   ipcMain.handle(
     'db:searchReticulumMessages',
-    (_event, identityId: string, query: string, limit = 200) => {
+    (event, identityId: string, query: string, limit = 200) => {
       try {
+        assertIpcSender(event, 'db:searchReticulumMessages');
         if (typeof identityId !== 'string' || identityId.length > 128) return [];
         if (typeof query !== 'string' || query.length > 256) return [];
         const safeLimit = Math.min(Math.max(1, Number(limit) || 200), 5000);
@@ -193,8 +212,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     },
   );
 
-  ipcMain.handle('db:deleteReticulumMessage', (_event, identityId: string, messageHash: string) => {
+  ipcMain.handle('db:deleteReticulumMessage', (event, identityId: string, messageHash: string) => {
     try {
+      assertIpcSender(event, 'db:deleteReticulumMessage');
       if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
       if (typeof messageHash !== 'string' || messageHash.length > 128) return { changes: 0 };
       const db = getDbForIpc('db:deleteReticulumMessage');
@@ -208,8 +228,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:upsertReticulumDestination', (_event, row: unknown) => {
+  ipcMain.handle('db:upsertReticulumDestination', (event, row: unknown) => {
     try {
+      assertIpcSender(event, 'db:upsertReticulumDestination');
       if (!row || typeof row !== 'object') {
         throw new Error('db:upsertReticulumDestination: row must be an object');
       }
@@ -235,7 +256,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         r.last_heard != null && Number.isFinite(Number(r.last_heard))
           ? Math.trunc(Number(r.last_heard))
           : null,
-        r.favorited ? 1 : 0,
+        r.favorited === true || r.favorited === 1 ? 1 : 0,
         typeof r.icon_name === 'string' ? r.icon_name.slice(0, 64) : null,
         typeof r.icon_color === 'string' ? r.icon_color.slice(0, 32) : null,
       );
@@ -247,8 +268,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
 
   ipcMain.handle(
     'db:markStaleReticulumOutbound',
-    (_event, identityId: string, staleAfterMs: number) => {
+    (event, identityId: string, staleAfterMs: number) => {
       try {
+        assertIpcSender(event, 'db:markStaleReticulumOutbound');
         if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
         const rawStale =
           typeof staleAfterMs === 'number' && Number.isFinite(staleAfterMs)
@@ -274,8 +296,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     },
   );
 
-  ipcMain.handle('db:clearReticulumMessages', (_event, identityId: string) => {
+  ipcMain.handle('db:clearReticulumMessages', (event, identityId: string) => {
     try {
+      assertIpcSender(event, 'db:clearReticulumMessages');
       if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
       const db = getDbForIpc('db:clearReticulumMessages');
       if (!db) return { changes: 0 };
@@ -288,8 +311,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:vacuumReticulumTables', () => {
+  ipcMain.handle('db:vacuumReticulumTables', (event) => {
     try {
+      assertIpcSender(event, 'db:vacuumReticulumTables');
       const db = getDbForIpc('db:vacuumReticulumTables');
       if (!db) return { ok: false };
       db.execScript('VACUUM');
@@ -299,8 +323,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:getBlockedContacts', (_event, protocol: string, identityId: string) => {
+  ipcMain.handle('db:getBlockedContacts', (event, protocol: string, identityId: string) => {
     try {
+      assertIpcSender(event, 'db:getBlockedContacts');
       if (!isMeshProtocol(protocol)) return [];
       if (typeof identityId !== 'string' || identityId.length > 128) return [];
       const db = getDbForIpc('db:getBlockedContacts');
@@ -317,8 +342,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
 
   ipcMain.handle(
     'db:blockContact',
-    (_event, protocol: string, identityId: string, blockedHash: string) => {
+    (event, protocol: string, identityId: string, blockedHash: string) => {
       try {
+        assertIpcSender(event, 'db:blockContact');
         if (!isMeshProtocol(protocol)) return { changes: 0 };
         if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
         if (typeof blockedHash !== 'string' || blockedHash.length > 128) return { changes: 0 };
@@ -338,8 +364,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
 
   ipcMain.handle(
     'db:unblockContact',
-    (_event, protocol: string, identityId: string, blockedHash: string) => {
+    (event, protocol: string, identityId: string, blockedHash: string) => {
       try {
+        assertIpcSender(event, 'db:unblockContact');
         if (!isMeshProtocol(protocol)) return { changes: 0 };
         if (typeof identityId !== 'string' || identityId.length > 128) return { changes: 0 };
         if (typeof blockedHash !== 'string' || blockedHash.length > 128) return { changes: 0 };
@@ -357,8 +384,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     },
   );
 
-  ipcMain.handle('db:getReticulumIdentityActivity', (_event, destinationHash: string) => {
+  ipcMain.handle('db:getReticulumIdentityActivity', (event, destinationHash: string) => {
     try {
+      assertIpcSender(event, 'db:getReticulumIdentityActivity');
       if (typeof destinationHash !== 'string' || destinationHash.length > 128) return [];
       const db = getDbForIpc('db:getReticulumIdentityActivity');
       if (!db) return [];
@@ -372,8 +400,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:upsertReticulumIdentityActivity', (_event, row: unknown) => {
+  ipcMain.handle('db:upsertReticulumIdentityActivity', (event, row: unknown) => {
     try {
+      assertIpcSender(event, 'db:upsertReticulumIdentityActivity');
       if (!row || typeof row !== 'object') return { changes: 0 };
       const r = row as Record<string, unknown>;
       const destinationHash = r.destination_hash;

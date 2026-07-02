@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use clap::Parser;
 use tokio::sync::broadcast;
-use tracing::info;
+use tracing::{error, info};
 
 use crate::stack::StackHandle;
 
@@ -30,6 +30,10 @@ struct Args {
     storage_dir: Option<String>,
 }
 
+fn is_loopback_host(host: &str) -> bool {
+    matches!(host, "127.0.0.1" | "localhost" | "::1" | "[::1]")
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
@@ -42,6 +46,19 @@ async fn main() {
     let args = Args::parse();
     if args.headless {
         info!("mesh-client-reticulum headless mode");
+    }
+
+    if !is_loopback_host(&args.host)
+        && std::env::var("MESH_CLIENT_RETICULUM_BIND_ALL")
+            .ok()
+            .as_deref()
+            != Some("1")
+    {
+        error!(
+            host = %args.host,
+            "refusing to bind to non-loopback host without MESH_CLIENT_RETICULUM_BIND_ALL=1"
+        );
+        std::process::exit(1);
     }
 
     let config_dir = PathBuf::from(
@@ -60,10 +77,23 @@ async fn main() {
 
     let app = api::router(stack);
 
-    let addr: SocketAddr = format!("{}:{}", args.host, args.port)
-        .parse()
-        .expect("valid listen address");
+    let addr: SocketAddr = match format!("{}:{}", args.host, args.port).parse() {
+        Ok(addr) => addr,
+        Err(e) => {
+            error!(host = %args.host, port = args.port, error = %e, "invalid listen address");
+            std::process::exit(1);
+        }
+    };
     info!(%addr, "listening");
-    let listener = tokio::net::TcpListener::bind(addr).await.expect("bind");
-    axum::serve(listener, app).await.expect("serve");
+    let listener = match tokio::net::TcpListener::bind(addr).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            error!(%addr, error = %e, "failed to bind listen address");
+            std::process::exit(1);
+        }
+    };
+    if let Err(e) = axum::serve(listener, app).await {
+        error!(error = %e, "HTTP server exited with error");
+        std::process::exit(1);
+    }
 }

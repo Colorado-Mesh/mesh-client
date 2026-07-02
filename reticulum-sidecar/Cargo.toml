@@ -29,6 +29,7 @@ rns-rnode-tcp = ["rns-runtime/rnode-tcp"]
 axum = { version = "0.8", features = ["ws"] }
 clap = { version = "4", features = ["derive"] }
 futures-util = "0.3"
+http = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }

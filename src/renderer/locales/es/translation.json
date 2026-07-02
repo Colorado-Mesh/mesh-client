@@ -351,7 +351,9 @@
     "recordVoice": "Grabar mensaje de voz",
     "recordVoiceHint": "Grabe un clip de voz y envíelo como un archivo adjunto LXMF (solo DM)",
     "stopVoiceRecording": "Dejar de grabar y enviar",
-    "voiceRecordingTooLong": "El clip de voz alcanzó el límite de 60 segundos y se envió."
+    "voiceRecordingTooLong": "El clip de voz alcanzó el límite de 60 segundos y se envió.",
+    "reticulumSendAttachmentFailed": "Error al enviar el archivo adjunto",
+    "reticulumSendAttachmentNoIdentity": "Identidad Reticulum no lista — conéctese y configure la identidad primero"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Reconexión automática en curso…",
     "stageAutoConnectingBle": "Conectando a {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "Esperando a que termine el Bluetooth de Meshtastic — MeshCore se conectará a {{deviceName}} automáticamente cuando termine…",
-    "stageWaitingNobleBleMeshcore": "Esperando a que termine el Bluetooth MeshCore — Meshtastic se conectará a {{deviceName}} automáticamente cuando termine…"
+    "stageWaitingNobleBleMeshcore": "Esperando a que termine el Bluetooth MeshCore — Meshtastic se conectará a {{deviceName}} automáticamente cuando termine…",
+    "reticulumStats": {
+      "interfaces": "{{count}} interfaces",
+      "peers": "{{count}} compañeros"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi desactivado. Reinicie la placa para que los cambios surtan efecto.",
     "wifiApSuccess": "Modo de punto de acceso habilitado. Únase al RNode AP desde su ordenador (puerta de enlace predeterminada 10.0.0.1) y, a continuación, configure las credenciales de la estación o utilice la consola de arranque.",
     "wifiStationSuccess": "Modo de estación guardado. Reinicie la placa, luego busque su IP (pantalla, enrutador DHCP o configuración de lectura) y agregue tcp://... en las → interfaces de conexión.",
-    "wifiConfigEmpty": "No se han devuelto datos de configuración."
+    "wifiConfigEmpty": "No se han devuelto datos de configuración.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Análisis de registros",

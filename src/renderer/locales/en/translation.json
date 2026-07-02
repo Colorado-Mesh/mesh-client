@@ -254,6 +254,8 @@
     "reticulumSendPropagated": "Queued at propagation node",
     "reticulumSendDelivered": "Delivered",
     "reticulumSendFailed": "Failed to send",
+    "reticulumSendAttachmentFailed": "Failed to send attachment",
+    "reticulumSendAttachmentNoIdentity": "Reticulum identity not ready — connect and configure identity first",
     "reticulumNoPropagationNode": "No propagation node configured. Set a preferred propagation node on the Reticulum Network tab.",
     "sentViaPropagation": "Propagation node",
     "reticulumImageAttachment": "Image: {{name}}",
@@ -503,6 +505,15 @@
     "reticulumSidecarMissing": "Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).",
     "reticulumSidecarCargoMissing": "Rust toolchain (cargo) not found. Install from https://rustup.rs then run `pnpm run reticulum:sidecar:build`.",
     "reticulumSidecarStartFailed": "Could not start Reticulum stack: {{message}}",
+    "reticulumStats": {
+      "interfaces": "{{count}} interfaces",
+      "peers": "{{count}} peers"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    },
     "reticulumIdentity": {
       "title": "Reticulum identity",
       "hint": "Start the stack above, then create or import a mnemonic identity.",
@@ -1018,6 +1029,7 @@
     "wifiStaticIpLabel": "Static IP (optional)",
     "wifiStaticNetmaskLabel": "Netmask (optional)",
     "wifiDhcpPlaceholder": "Leave empty for DHCP",
+    "wifiNetmaskPlaceholder": "255.255.255.0",
     "wifiOff": "Wi-Fi off",
     "wifiEnableAp": "Enable AP",
     "wifiApplyStation": "Apply station",

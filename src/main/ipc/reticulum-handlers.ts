@@ -8,6 +8,7 @@ import {
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
+import { assertIpcSender } from '../validate-ipc-sender';
 
 export interface ReticulumIpcDeps {
   idleStatus: ReticulumSidecarStatus;
@@ -34,11 +35,19 @@ function logReticulumProxyFailure(method: string, err: unknown, apiPath?: string
   log(`[ReticulumIPC] ${method} failed${pathSuffix}:`, sanitizeLogMessage(message));
 }
 
+function assertProxyApiPath(apiPath: unknown): string {
+  if (typeof apiPath !== 'string') {
+    throw new Error('Reticulum proxy path must be a string');
+  }
+  return apiPath;
+}
+
 /** Register Reticulum sidecar IPC handlers (`reticulum:*`). */
 export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   const { idleStatus, ensureManager, getManager } = deps;
 
-  ipcMain.handle('reticulum:start', async (_event, opts) => {
+  ipcMain.handle('reticulum:start', async (event, opts) => {
+    assertIpcSender(event, 'reticulum:start');
     try {
       console.debug('[ReticulumIPC] start');
       const m = ensureManager();
@@ -52,58 +61,74 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
   });
 
-  ipcMain.handle('reticulum:stop', async () => {
+  ipcMain.handle('reticulum:stop', async (event) => {
+    assertIpcSender(event, 'reticulum:stop');
     console.debug('[ReticulumIPC] stop');
     await getManager()?.stop();
   });
 
-  ipcMain.handle('reticulum:getStatus', () => {
+  ipcMain.handle('reticulum:getStatus', (event) => {
+    assertIpcSender(event, 'reticulum:getStatus');
     return getManager()?.getStatus() ?? idleStatus;
   });
 
-  ipcMain.handle('reticulum:proxyGet', async (_event, apiPath: string) => {
+  ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
+    assertIpcSender(event, 'reticulum:proxyGet');
+    const pathArg = assertProxyApiPath(apiPath);
     try {
       const m = ensureManager();
-      return await m.proxyGet(apiPath);
+      return await m.proxyGet(pathArg);
     } catch (err) {
-      logReticulumProxyFailure('proxyGet', err, apiPath);
+      logReticulumProxyFailure('proxyGet', err, pathArg);
       throw err;
     }
   });
 
-  ipcMain.handle('reticulum:proxyPost', async (_event, apiPath: string, body: unknown) => {
+  ipcMain.handle('reticulum:proxyPost', async (event, apiPath: unknown, body: unknown) => {
+    assertIpcSender(event, 'reticulum:proxyPost');
+    const pathArg = assertProxyApiPath(apiPath);
     try {
       const m = ensureManager();
-      return await m.proxyPost(apiPath, body);
+      return await m.proxyPost(pathArg, body);
     } catch (err) {
-      logReticulumProxyFailure('proxyPost', err);
+      logReticulumProxyFailure('proxyPost', err, pathArg);
       throw err;
     }
   });
 
-  ipcMain.handle('reticulum:proxyPut', async (_event, apiPath: string, body: unknown) => {
+  ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
+    assertIpcSender(event, 'reticulum:proxyPut');
+    const pathArg = assertProxyApiPath(apiPath);
     try {
       const m = ensureManager();
-      return await m.proxyPut(apiPath, body);
+      return await m.proxyPut(pathArg, body);
     } catch (err) {
-      logReticulumProxyFailure('proxyPut', err);
+      logReticulumProxyFailure('proxyPut', err, pathArg);
       throw err;
     }
   });
 
-  ipcMain.handle('reticulum:proxyDelete', async (_event, apiPath: string) => {
+  ipcMain.handle('reticulum:proxyDelete', async (event, apiPath: unknown) => {
+    assertIpcSender(event, 'reticulum:proxyDelete');
+    const pathArg = assertProxyApiPath(apiPath);
     try {
       const m = ensureManager();
-      return await m.proxyDelete(apiPath);
+      return await m.proxyDelete(pathArg);
     } catch (err) {
-      logReticulumProxyFailure('proxyDelete', err);
+      logReticulumProxyFailure('proxyDelete', err, pathArg);
       throw err;
     }
   });
 
-  ipcMain.handle('reticulum:readDefaultConfigFile', () => readFirstExistingConfig());
+  ipcMain.handle('reticulum:readDefaultConfigFile', (event) => {
+    assertIpcSender(event, 'reticulum:readDefaultConfigFile');
+    return readFirstExistingConfig();
+  });
 
-  ipcMain.handle('reticulum:showConfigImportDialog', async () => showReticulumConfigImportDialog());
+  ipcMain.handle('reticulum:showConfigImportDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showConfigImportDialog');
+    return showReticulumConfigImportDialog();
+  });
 }
 
 export function wireReticulumSidecarBridge(

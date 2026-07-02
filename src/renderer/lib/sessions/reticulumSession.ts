@@ -49,8 +49,9 @@ export function getReticulumSendMessage(
   return session.sendMessage;
 }
 
-export function resolveReticulumOutboundVia(destinationHash: string): MessageTransport {
-  return activeSession?.resolveOutboundVia?.(destinationHash) ?? 'network';
+/** destinationHash reserved for future per-destination routing (direct vs propagation). */
+export function resolveReticulumOutboundVia(_destinationHash: string): MessageTransport {
+  return activeSession?.resolveOutboundVia?.(_destinationHash) ?? 'network';
 }
 
 /** @deprecated Use registerReticulumSession from useReticulumRuntime mount */

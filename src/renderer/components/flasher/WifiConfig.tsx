@@ -98,7 +98,7 @@ export function WifiConfig({
               onChange={(e) => {
                 setStaticNetmask(e.target.value);
               }}
-              placeholder="255.255.255.0"
+              placeholder={t('flasher.wifiNetmaskPlaceholder')}
               className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-40"
               aria-label={t('flasher.wifiStaticNetmaskLabel')}
             />
@@ -117,7 +117,7 @@ export function WifiConfig({
         </button>
         <button
           type="button"
-          disabled={disabled}
+          disabled={disabled || !ssid.trim() || !psk.trim()}
           aria-label={t('flasher.wifiEnableAp')}
           onClick={() => {
             onEnableAp(ssid, psk);
@@ -132,11 +132,17 @@ export function WifiConfig({
           aria-label={t('flasher.wifiApplyStation')}
           onClick={() => {
             const parsedChannel = channel.trim() ? Number.parseInt(channel, 10) : undefined;
+            const validChannel =
+              parsedChannel != null &&
+              Number.isFinite(parsedChannel) &&
+              parsedChannel >= 1 &&
+              parsedChannel <= 14
+                ? parsedChannel
+                : undefined;
             onApplyStation({
               ssid,
               psk,
-              channel:
-                parsedChannel != null && Number.isFinite(parsedChannel) ? parsedChannel : undefined,
+              channel: validChannel,
               staticIp: staticIp.trim() || undefined,
               staticNetmask: staticNetmask.trim() || undefined,
             });

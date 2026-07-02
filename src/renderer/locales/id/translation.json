@@ -351,7 +351,9 @@
     "recordVoice": "Rekam pesan suara",
     "recordVoiceHint": "Rekam klip suara dan kirim sebagai lampiran LXMF (khusus DM)",
     "stopVoiceRecording": "Berhenti merekam dan kirim",
-    "voiceRecordingTooLong": "Klip suara mencapai batas 60 detik dan telah dikirim."
+    "voiceRecordingTooLong": "Klip suara mencapai batas 60 detik dan telah dikirim.",
+    "reticulumSendAttachmentFailed": "Gagal mengirim lampiran",
+    "reticulumSendAttachmentNoIdentity": "Identitas Reticulum belum siap — hubungkan dan konfigurasikan identitas terlebih dahulu"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
     "stageAutoConnectingBle": "Menghubungkan ke {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "Menunggu Bluetooth Meshtastic selesai — MeshCore akan terhubung ke {{deviceName}} secara otomatis setelah selesai…",
-    "stageWaitingNobleBleMeshcore": "Menunggu Bluetooth MeshCore selesai — Meshtastic akan terhubung ke {{deviceName}} secara otomatis setelah selesai…"
+    "stageWaitingNobleBleMeshcore": "Menunggu Bluetooth MeshCore selesai — Meshtastic akan terhubung ke {{deviceName}} secara otomatis setelah selesai…",
+    "reticulumStats": {
+      "interfaces": "{{count}} antarmuka",
+      "peers": "{{count}} rekan"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi dinonaktifkan. Nyalakan ulang papan agar perubahan diterapkan.",
     "wifiApSuccess": "Mode titik akses diaktifkan. Bergabunglah dengan RNode AP dari komputer Anda (gateway default 10.0.0.1), lalu konfigurasikan kredensial stasiun atau gunakan konsol bootstrap.",
     "wifiStationSuccess": "Mode stasiun disimpan. Reboot papan, lalu temukan IP - nya (display, router DHCP, atau Read config) dan tambahkan tcp ://… pada Connection → Interfaces.",
-    "wifiConfigEmpty": "Tidak ada data konfigurasi yang dikembalikan."
+    "wifiConfigEmpty": "Tidak ada data konfigurasi yang dikembalikan.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Analisis Log",

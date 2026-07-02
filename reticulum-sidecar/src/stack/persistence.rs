@@ -113,7 +113,11 @@ impl PersistedState {
 
     pub fn save(&self, _config_dir: &Path, storage_dir: &Path) -> Result<(), String> {
         let path = storage_dir.join(STATE_FILE);
-        let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
+        let mut value = serde_json::to_value(self).map_err(|e| e.to_string())?;
+        if let Some(identity) = value.get_mut("identity").and_then(|v| v.as_object_mut()) {
+            identity.remove("mnemonic");
+        }
+        let raw = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
         fs::write(path, raw).map_err(|e| e.to_string())
     }
 

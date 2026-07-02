@@ -58,6 +58,21 @@ export function parseReticulumRnodeTcpPort(uri: string): { host: string; port: n
     }
     return { host, port };
   }
+  const sep = rest.lastIndexOf(':');
+  const maybePort = rest.slice(sep + 1);
+  const port = Number.parseInt(maybePort, 10);
+  if (
+    maybePort.length > 0 &&
+    /^[0-9]+$/.test(maybePort) &&
+    Number.isFinite(port) &&
+    port > 255 &&
+    port <= 65535
+  ) {
+    const host = rest.slice(0, sep);
+    if (host) {
+      return { host, port };
+    }
+  }
   return { host: rest, port: RNODE_DEFAULT_TCP_PORT };
 }
 
@@ -66,11 +81,12 @@ export function buildReticulumRnodeTcpPort(host: string, port?: number): string 
   if (!trimmedHost) {
     return '';
   }
+  const hostPart = trimmedHost.includes(':') ? `[${trimmedHost}]` : trimmedHost;
   const resolvedPort = port ?? RNODE_DEFAULT_TCP_PORT;
   if (resolvedPort === RNODE_DEFAULT_TCP_PORT) {
-    return `${TCP_SCHEME}${trimmedHost}`;
+    return `${TCP_SCHEME}${hostPart}`;
   }
-  return `${TCP_SCHEME}${trimmedHost}:${resolvedPort}`;
+  return `${TCP_SCHEME}${hostPart}:${resolvedPort}`;
 }
 
 export function inferReticulumRnodeTransport(

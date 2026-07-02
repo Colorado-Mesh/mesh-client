@@ -351,7 +351,9 @@
     "recordVoice": "Sesli mesajı kaydet",
     "recordVoiceHint": "Bir ses klibi kaydedin ve LXMF eki olarak gönderin (yalnızca DM)",
     "stopVoiceRecording": "Kaydı durdur ve gönder",
-    "voiceRecordingTooLong": "Ses klibi 60 saniye sınırına ulaştı ve gönderildi."
+    "voiceRecordingTooLong": "Ses klibi 60 saniye sınırına ulaştı ve gönderildi.",
+    "reticulumSendAttachmentFailed": "Ek gönderilemedi",
+    "reticulumSendAttachmentNoIdentity": "Reticulum kimliği hazır değil — önce bağlanın ve kimliği yapılandırın"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
     "stageAutoConnectingBle": "{{deviceName}}'a bağlanılıyor…",
     "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth'un bitmesi bekleniyor — İşlem tamamlandığında MeshCore {{deviceName}}'a otomatik olarak bağlanacak…",
-    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth'un tamamlanması bekleniyor — İşlem tamamlandığında Meshtastic {{deviceName}}'a otomatik olarak bağlanacaktır…"
+    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth'un tamamlanması bekleniyor — İşlem tamamlandığında Meshtastic {{deviceName}}'a otomatik olarak bağlanacaktır…",
+    "reticulumStats": {
+      "interfaces": "{{count}} arayüzler",
+      "peers": "{{count}} akranlar"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi devre dışı bırakıldı. Değişikliklerin geçerli olması için kartı yeniden başlatın.",
     "wifiApSuccess": "Erişim noktası modu etkin. Bilgisayarınızdan RNode AP'ye katılın (varsayılan ağ geçidi 10.0.0.1), ardından istasyon kimlik bilgilerini yapılandırın veya önyükleme konsolunu kullanın.",
     "wifiStationSuccess": "İstasyon modu kaydedildi. Kartı yeniden başlatın, ardından IP'sini (ekran, yönlendirici DHCP veya Read config) bulun ve → Bağlantı Arabirimlerine tcp ://… ekleyin.",
-    "wifiConfigEmpty": "Yapılandırma verisi döndürülmedi."
+    "wifiConfigEmpty": "Yapılandırma verisi döndürülmedi.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Günlük Analizi",

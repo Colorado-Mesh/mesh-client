@@ -9,6 +9,7 @@ import {
   decryptVaultSecret,
   encryptVaultSecret,
   lockIdentityVault,
+  resetIdentityVaultUnlockRateLimitForTests,
   setIdentityVaultPasscode,
   setIdentityVaultPathForTests,
   unlockIdentityVault,
@@ -20,6 +21,7 @@ describe('identityVault', () => {
   afterEach(() => {
     setIdentityVaultPathForTests(null);
     lockIdentityVault();
+    resetIdentityVaultUnlockRateLimitForTests();
     if (tmpDir && fs.existsSync(tmpDir)) {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -49,5 +51,20 @@ describe('identityVault', () => {
     lockIdentityVault();
     const unlockResult = await unlockIdentityVault('vault-pass-9999');
     expect(unlockResult.ok).toBe(true);
+  });
+
+  it('rate-limits repeated failed unlock attempts', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-vault-'));
+    setIdentityVaultPathForTests(path.join(tmpDir, 'identity-vault.json'));
+    await setIdentityVaultPasscode('vault-pass-9999', '{"identity":"backup"}');
+    lockIdentityVault();
+
+    for (let i = 0; i < 5; i++) {
+      const res = await unlockIdentityVault('wrong-pass');
+      expect(res.ok).toBe(false);
+    }
+    const blocked = await unlockIdentityVault('vault-pass-9999');
+    expect(blocked.ok).toBe(false);
+    expect(blocked.error).toMatch(/too many unlock attempts/i);
   });
 });

@@ -351,7 +351,9 @@
     "recordVoice": "Sprachnachricht aufzeichnen",
     "recordVoiceHint": "Nehmen Sie einen Sprachclip auf und senden Sie ihn als LXMF-Anhang (nur DM).",
     "stopVoiceRecording": "Stoppen Sie die Aufnahme und senden Sie",
-    "voiceRecordingTooLong": "Der Sprachclip hat die 60-Sekunden-Grenze erreicht und wurde gesendet."
+    "voiceRecordingTooLong": "Der Sprachclip hat die 60-Sekunden-Grenze erreicht und wurde gesendet.",
+    "reticulumSendAttachmentFailed": "Anhang konnte nicht gesendet werden",
+    "reticulumSendAttachmentNoIdentity": "Reticulum-Identität nicht bereit — verbinden und konfigurieren Sie zuerst die Identität"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
     "stageAutoConnectingBle": "Verbindung zu {{deviceName}} wird hergestellt…",
     "stageWaitingNobleBleMeshtastic": "Warten auf die Fertigstellung von Meshtastic Bluetooth — MeshCore verbindet sich automatisch mit {{deviceName}}, wenn es fertig ist…",
-    "stageWaitingNobleBleMeshcore": "Warten auf die Fertigstellung von MeshCore Bluetooth — Meshtastic verbindet sich automatisch mit {{deviceName}}, wenn es fertig ist…"
+    "stageWaitingNobleBleMeshcore": "Warten auf die Fertigstellung von MeshCore Bluetooth — Meshtastic verbindet sich automatisch mit {{deviceName}}, wenn es fertig ist…",
+    "reticulumStats": {
+      "interfaces": "{{count}} Schnittstellen",
+      "peers": "{{count}} Kollegen"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "WLAN deaktiviert. Starten Sie das Board neu, damit die Änderungen wirksam werden.",
     "wifiApSuccess": "Zugriffspunktmodus aktiviert. Schließen Sie sich dem RNode-AP von Ihrem Computer aus an (Standard-Gateway 10.0.0.1), konfigurieren Sie dann die Stationsanmeldeinformationen oder verwenden Sie die Bootstrap-Konsole.",
     "wifiStationSuccess": "Stationsmodus gespeichert. Starten Sie die Platine neu, suchen Sie dann ihre IP (Display, Router-DHCP oder Lesekonfiguration) und fügen Sie tcp://… auf den Verbindungsschnittstellen → hinzu.",
-    "wifiConfigEmpty": "Es wurden keine Konfigurationsdaten zurückgegeben."
+    "wifiConfigEmpty": "Es wurden keine Konfigurationsdaten zurückgegeben.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Protokollanalyse",

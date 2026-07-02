@@ -113,9 +113,11 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import type { TakServerManager } from './tak-server-manager';
 import { getCheckNowFromMenu, initUpdater } from './updater';
+import { assertIpcSender, validateIpcSender } from './validate-ipc-sender';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
@@ -492,29 +494,6 @@ function safeMeshcoreChannelIndex(value: unknown): number {
     throw new Error('Invalid MeshCore channel index');
   }
   return Math.trunc(n);
-}
-
-/** Validate IPC sender origin to prevent untrusted renderers from invoking privileged handlers. */
-function validateIpcSender(event: Electron.IpcMainInvokeEvent): boolean {
-  const frame = event.senderFrame;
-  if (!frame) return false;
-  try {
-    const url = new URL(frame.url);
-    const isDev = !app.isPackaged;
-    if (isDev) {
-      return (
-        url.protocol === 'file:' ||
-        url.protocol === 'mesh-client:' ||
-        (url.protocol === 'http:' &&
-          (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) ||
-        url.protocol === 'https:'
-      );
-    }
-    return url.protocol === 'file:' || url.protocol === 'mesh-client:';
-  } catch {
-    // catch-no-log-ok invalid URL in frame is expected; treat as untrusted
-    return false;
-  }
 }
 
 function validateSaveMessage(message: unknown): asserts message is Record<string, unknown> & {
@@ -2546,7 +2525,8 @@ const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
 ]);
 const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['noble', 'reticulum', 'webbt']);
 
-ipcMain.handle('bleCoexistence:register', (_event, mac: unknown, owner: unknown) => {
+ipcMain.handle('bleCoexistence:register', (event, mac: unknown, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:register');
   if (
     typeof mac !== 'string' ||
     typeof owner !== 'string' ||
@@ -2557,7 +2537,8 @@ ipcMain.handle('bleCoexistence:register', (_event, mac: unknown, owner: unknown)
   bleCoexistenceCoordinator.register(mac, owner as BlePeripheralOwner);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:unregister', (_event, mac: unknown, owner: unknown) => {
+ipcMain.handle('bleCoexistence:unregister', (event, mac: unknown, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:unregister');
   if (
     typeof mac !== 'string' ||
     typeof owner !== 'string' ||
@@ -2568,7 +2549,8 @@ ipcMain.handle('bleCoexistence:unregister', (_event, mac: unknown, owner: unknow
   bleCoexistenceCoordinator.unregister(mac, owner as BlePeripheralOwner);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:assertCanConnect', (_event, owner: unknown, mac: unknown) => {
+ipcMain.handle('bleCoexistence:assertCanConnect', (event, owner: unknown, mac: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:assertCanConnect');
   if (
     typeof mac !== 'string' ||
     typeof owner !== 'string' ||
@@ -2579,22 +2561,28 @@ ipcMain.handle('bleCoexistence:assertCanConnect', (_event, owner: unknown, mac: 
   bleCoexistenceCoordinator.assertCanConnect(owner as BlePeripheralOwner, mac);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:getState', () => bleCoexistenceCoordinator.getState());
-ipcMain.handle('bleCoexistence:acquireScan', async (_event, owner: unknown) => {
+ipcMain.handle('bleCoexistence:getState', (event) => {
+  assertIpcSender(event, 'bleCoexistence:getState');
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:acquireScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
     throw new Error('bleCoexistence:acquireScan: owner must be noble, reticulum, or webbt');
   }
   await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:releaseScan', (_event, owner: unknown) => {
+ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:releaseScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
     throw new Error('bleCoexistence:releaseScan: owner must be noble, reticulum, or webbt');
   }
   bleCoexistenceCoordinator.releaseScan(owner as BleScanOwner);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:pauseNobleScan', async () => {
+ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
+  assertIpcSender(event, 'bleCoexistence:pauseNobleScan');
   await bleCoexistenceCoordinator.pauseNobleScan();
   return bleCoexistenceCoordinator.getState();
 });
@@ -4337,7 +4325,7 @@ ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
     throw new Error('filePath must be a non-empty string');
   }
   try {
-    shell.showItemInFolder(path.resolve(filePath));
+    shell.showItemInFolder(assertReticulumAttachmentPathJailed(filePath));
     return { ok: true };
   } catch (err) {
     console.error(

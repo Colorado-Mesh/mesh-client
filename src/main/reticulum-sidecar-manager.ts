@@ -11,6 +11,7 @@ import type {
   ReticulumSidecarStatus,
   ReticulumStatusResponse,
 } from '../shared/reticulum-types';
+import { RETICULUM_PROXY_MAX_BODY_BYTES } from '../shared/reticulumProxyLimits';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import { sanitizeLogMessage } from './log-service';
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
@@ -19,6 +20,30 @@ import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-si
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
+
+function sidecarChildEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    PATH: process.env.PATH,
+    HOME: process.env.HOME,
+    USER: process.env.USER,
+    TMPDIR: process.env.TMPDIR,
+    LANG: process.env.LANG,
+    LC_ALL: process.env.LC_ALL,
+  };
+  if (process.platform === 'win32') {
+    env.APPDATA = process.env.APPDATA;
+    env.USERPROFILE = process.env.USERPROFILE;
+    env.LOCALAPPDATA = process.env.LOCALAPPDATA;
+  }
+  return env;
+}
+
+function assertProxyBodySize(body: unknown): void {
+  const json = JSON.stringify(body ?? {});
+  if (json.length > RETICULUM_PROXY_MAX_BODY_BYTES) {
+    throw new Error('Reticulum proxy body too large');
+  }
+}
 
 async function findFreePort(host = '127.0.0.1'): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -142,7 +167,7 @@ export class ReticulumSidecarManager extends EventEmitter {
 
     const proc = spawn(binary, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
+      env: sidecarChildEnv(),
     });
     this.proc = proc;
 
@@ -244,6 +269,17 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!res.ok) {
       throw new Error(`sidecar GET ${normalized} failed: ${res.status}`);
     }
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      if (!text) return { ok: true };
+      try {
+        return JSON.parse(text) as unknown;
+      } catch {
+        // catch-no-log-ok non-JSON GET body returned as plain text wrapper
+        return { ok: true, body: text };
+      }
+    }
     return res.json();
   }
 
@@ -253,6 +289,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error('Reticulum sidecar is not running');
     }
     const normalized = assertReticulumProxyPath(apiPath);
+    assertProxyBodySize(body);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -271,6 +308,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error('Reticulum sidecar is not running');
     }
     const normalized = assertReticulumProxyPath(apiPath);
+    assertProxyBodySize(body);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

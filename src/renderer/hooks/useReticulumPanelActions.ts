@@ -14,7 +14,6 @@ export function useReticulumPanelActions(runtime: ReticulumRuntime) {
       setNodeFavorited: runtime.setNodeFavorited,
       sendReaction: runtime.sendReaction,
       sendAttachment: runtime.sendAttachment,
-      handleSidecarEvent: runtime.handleSidecarEvent,
       clearRawPackets: runtime.clearRawPackets,
     }),
     [runtime],

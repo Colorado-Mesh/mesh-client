@@ -351,7 +351,9 @@
     "recordVoice": "音声メッセージを録音する",
     "recordVoiceHint": "音声クリップを録音し、LXMF 添付ファイルとして送信します (DM のみ)",
     "stopVoiceRecording": "録音を停止して送信する",
-    "voiceRecordingTooLong": "音声クリップが 60 秒の制限に達したため、送信されました。"
+    "voiceRecordingTooLong": "音声クリップが 60 秒の制限に達したため、送信されました。",
+    "reticulumSendAttachmentFailed": "添付ファイルの送信に失敗しました",
+    "reticulumSendAttachmentNoIdentity": "Reticulum IDが準備できていません — 先に接続してIDを設定してください"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "自動再接続中です…",
     "stageAutoConnectingBle": "{{deviceName}} に接続中…",
     "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth が完了するのを待っています — 完了すると、MeshCore は自動的に {{deviceName}} に接続します…",
-    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth が完了するのを待っています — 完了すると、Meshtastic は自動的に {{deviceName}} に接続します…"
+    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth が完了するのを待っています — 完了すると、Meshtastic は自動的に {{deviceName}} に接続します…",
+    "reticulumStats": {
+      "interfaces": "{{count}}インターフェース",
+      "peers": "{{count}}同僚"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fiが無効になっています。変更を有効にするには、ボードを再起動してください。",
     "wifiApSuccess": "アクセスポイントモードが有効です。コンピュータ（デフォルトゲートウェイ10.0.0.1 ）からRNode APに参加し、ステーションの資格情報を設定するか、ブートストラップコンソールを使用します。",
     "wifiStationSuccess": "ステーションモードが保存されました。ボードを再起動し、そのIP （ディスプレイ、ルーターDHCP、または設定の読み取り）を見つけて、接続→インターフェースにtcp ://...を追加します。",
-    "wifiConfigEmpty": "設定データが返されませんでした。"
+    "wifiConfigEmpty": "設定データが返されませんでした。",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "ログ分析",

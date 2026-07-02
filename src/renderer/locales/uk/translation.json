@@ -351,7 +351,9 @@
     "recordVoice": "Записати голосове повідомлення",
     "recordVoiceHint": "Запишіть голосовий кліп і надішліть його як вкладення LXMF (лише DM)",
     "stopVoiceRecording": "Зупинити запис і відправити",
-    "voiceRecordingTooLong": "Голосовий кліп досяг обмеження в 60 секунд і був надісланий."
+    "voiceRecordingTooLong": "Голосовий кліп досяг обмеження в 60 секунд і був надісланий.",
+    "reticulumSendAttachmentFailed": "Не вдалося надіслати вкладення",
+    "reticulumSendAttachmentNoIdentity": "Ідентичність Reticulum не готова — спочатку підключіть і налаштуйте ідентичність"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -703,7 +705,16 @@
     "autoReconnectInProgress": "Триває автоматичне повторне підключення…",
     "stageAutoConnectingBle": "Підключення до {{deviceName}}…",
     "stageWaitingNobleBleMeshtastic": "Очікування завершення Meshtastic Bluetooth — MeshCore автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
-    "stageWaitingNobleBleMeshcore": "Очікування завершення MeshCore Bluetooth — Meshtastic автоматично підключиться до {{deviceName}}, коли це буде зроблено…"
+    "stageWaitingNobleBleMeshcore": "Очікування завершення MeshCore Bluetooth — Meshtastic автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
+    "reticulumStats": {
+      "interfaces": "{{count}} інтерфейси",
+      "peers": "{{count}} однолітків"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -1056,7 +1067,8 @@
     "wifiOffSuccess": "Wi-Fi вимкнено. Перезавантажте плату, щоб зміни набули чинності.",
     "wifiApSuccess": "Режим точки доступу увімкнено. Приєднайтеся до точки доступу RNode зі свого комп'ютера (шлюз за замовчуванням 10.0.0.1), потім налаштуйте облікові дані станції або скористайтеся консоллю завантаження.",
     "wifiStationSuccess": "Режим станції збережено. Перезавантажте плату, а потім знайдіть її IP-адресу (дисплей, DHCP маршрутизатора або конфігурацію читання) і додайте tcp://… на → інтерфейсах підключення.",
-    "wifiConfigEmpty": "Дані конфігурації не повернуто."
+    "wifiConfigEmpty": "Дані конфігурації не повернуто.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
   },
   "logAnalyzeModal": {
     "title": "Аналіз журналу",

@@ -1186,6 +1186,7 @@ dependencies = [
  "clap",
  "futures-util",
  "hex",
+ "http",
  "lxmf-core",
  "rmpv",
  "rns-identity",

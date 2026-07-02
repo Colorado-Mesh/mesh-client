@@ -207,6 +207,7 @@ export function ReticulumInterfacesPanel({
         setEditingInterface(null);
       }
       await onRefresh();
+      await restartStackForInterfaceChange();
     } catch (e) {
       // catch-no-log-ok: delete failure shown via interfaceError
       setInterfaceError(errLikeToLogString(e));

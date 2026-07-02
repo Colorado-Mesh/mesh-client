@@ -66,14 +66,28 @@ export function parseBleMacFromReticulumSerialPort(serialPort: string): string |
   return mac.length > 0 ? mac : null;
 }
 
+export function bleOwnerI18nKey(owner: BlePeripheralOwner): string | null {
+  switch (owner) {
+    case 'noble:meshtastic':
+    case 'webbt:meshtastic':
+      return 'connectionPanel.bleOwner.meshtastic';
+    case 'noble:meshcore':
+    case 'webbt:meshcore':
+      return 'connectionPanel.bleOwner.meshcore';
+    case 'reticulum':
+      return 'connectionPanel.bleOwner.reticulum';
+    default:
+      return null;
+  }
+}
+
+/** English fallback for logs/tests; UI should use bleOwnerI18nKey + t(). */
 export function reticulumOwnerLabel(owner: BlePeripheralOwner): string {
   switch (owner) {
     case 'noble:meshtastic':
-      return 'Meshtastic';
-    case 'noble:meshcore':
-      return 'MeshCore';
     case 'webbt:meshtastic':
       return 'Meshtastic';
+    case 'noble:meshcore':
     case 'webbt:meshcore':
       return 'MeshCore';
     case 'reticulum':

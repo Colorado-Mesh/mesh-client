@@ -59,6 +59,8 @@ impl StackHandle {
             persisted.interfaces = ifaces;
         }
 
+        let inner = Arc::new(RwLock::new(persisted));
+
         #[cfg(feature = "rns-stack")]
         let packet_log = Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG));
         #[cfg(feature = "rns-stack")]
@@ -67,7 +69,7 @@ impl StackHandle {
             storage_dir.clone(),
             event_tx.clone(),
             packet_log.clone(),
-            &mut persisted,
+            inner.clone(),
         )
         .await
         {
@@ -78,7 +80,8 @@ impl StackHandle {
             }
         };
 
-        let inner = Arc::new(RwLock::new(persisted));
+        #[cfg(not(feature = "rns-stack"))]
+        let inner = inner;
         #[cfg(feature = "rns-stack")]
         let handle = Self {
             config_dir,
@@ -103,6 +106,7 @@ impl StackHandle {
                 handle.config_dir.clone(),
                 handle.storage_dir.clone(),
             );
+            live.register_lxmf_identity_announce_handler();
         }
         handle.emit_stats().await;
         handle
@@ -157,6 +161,8 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         let identity = inner.generate_identity(display_name)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
+        drop(inner);
+        self.maybe_emit_identity_restart();
         Ok(identity)
     }
 
@@ -168,6 +174,8 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         let identity = inner.import_identity_mnemonic(mnemonic, display_name)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
+        drop(inner);
+        self.maybe_emit_identity_restart();
         Ok(identity)
     }
 
@@ -615,10 +623,23 @@ impl StackHandle {
         Ok(res)
     }
 
+    fn maybe_emit_identity_restart(&self) {
+        #[cfg(feature = "rns-stack")]
+        if self.live.is_some() {
+            self.emit_event("stack_restart_requested", serde_json::json!({ "ok": true }));
+        }
+    }
+
     pub async fn lxmf_reaction(
         &self,
         req: LxmfReactionRequest,
     ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let res = live.send_reaction(&req).await?;
+            self.emit_event("lxmf_message", res.clone());
+            return Ok(res);
+        }
         let mut inner = self.inner.write().await;
         let res = inner.send_reaction(&req)?;
         inner.save(&self.config_dir, &self.storage_dir)?;

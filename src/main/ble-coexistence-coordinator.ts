@@ -125,9 +125,7 @@ export class BleCoexistenceCoordinator {
 
   /** Stop Noble scan without disconnecting GATT sessions (Reticulum picker on darwin/win32). */
   async pauseNobleScan(): Promise<void> {
-    if (!this.nobleManager) return;
-    await this.nobleManager.pauseScanningForExternalScan();
-    this.nobleScanPausedForExternal = true;
+    await this.acquireScan('reticulum');
   }
 }
 
