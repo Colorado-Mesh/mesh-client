@@ -312,7 +312,12 @@
       "pink400": "Rose 400",
       "orange400": "Orange 400",
       "yellow400": "Jaune 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Élaguer automatiquement les nœuds au démarrage, datant de plus de {{days}} jours",
+    "autoPrunePositionHistoryDaysAria": "Élaguer automatiquement l'historique des positions au démarrage, datant de plus de {{days}} jours",
+    "capTotalNodesCountAria": "Limiter le nombre total de nœuds, conserver les nœuds {{count}} les plus récents",
+    "limitMessagesLoadedCountAria": "Limiter les messages chargés {{count}} messages",
+    "capStoredMessagesCountAria": "Limiter les messages stockés, conserver les messages {{count}} les plus récents"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

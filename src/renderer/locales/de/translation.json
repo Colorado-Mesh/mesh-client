@@ -312,7 +312,12 @@
       "pink400": "Rosa 400",
       "orange400": "Orange 400",
       "yellow400": "Gelb 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Knoten beim Start automatisch bereinigen, die älter als {{days}} Tage sind",
+    "autoPrunePositionHistoryDaysAria": "Positionsverlauf beim Start automatisch bereinigen, älter als {{days}} Tage",
+    "capTotalNodesCountAria": "Begrenzen Sie die Gesamtzahl der Knoten und behalten Sie die neuesten {{count}}-Knoten bei",
+    "limitMessagesLoadedCountAria": "Begrenzen Sie die Anzahl der geladenen Nachrichten: {{count}} Nachrichten",
+    "capStoredMessagesCountAria": "Gespeicherte Nachrichten begrenzen, neueste {{count}}-Nachrichten behalten"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

@@ -1018,7 +1018,9 @@ export default function AppPanel({
                 }}
                 disabled={!settings.autoPruneEnabled}
                 aria-labelledby="apppanel-auto-prune-label"
-                aria-label={`Auto-prune nodes on startup, older than ${settings.autoPruneDays} days`}
+                aria-label={t('appPanel.autoPruneNodesOlderThanAria', {
+                  days: settings.autoPruneDays,
+                })}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
@@ -1076,7 +1078,7 @@ export default function AppPanel({
                 }}
                 disabled={!settings.nodeCapEnabled}
                 aria-labelledby="apppanel-node-cap-label"
-                aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
+                aria-label={t('appPanel.capTotalNodesCountAria', { count: settings.nodeCapCount })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.nodes')}</span>
@@ -1114,7 +1116,9 @@ export default function AppPanel({
                 }}
                 disabled={!settings.positionHistoryPruneEnabled}
                 aria-labelledby="apppanel-position-history-prune-label"
-                aria-label={`Auto-prune position history on startup, older than ${settings.positionHistoryPruneDays} days`}
+                aria-label={t('appPanel.autoPrunePositionHistoryDaysAria', {
+                  days: settings.positionHistoryPruneDays,
+                })}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
@@ -1354,7 +1358,9 @@ export default function AppPanel({
               }}
               disabled={!settings.messageLimitEnabled}
               aria-labelledby="apppanel-message-limit-label"
-              aria-label={`Limit messages loaded ${settings.messageLimitCount} messages`}
+              aria-label={t('appPanel.limitMessagesLoadedCountAria', {
+                count: settings.messageLimitCount,
+              })}
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">{t('common.messages')}</span>
@@ -1392,7 +1398,9 @@ export default function AppPanel({
                 }}
                 disabled={!retention.meshtasticEnabled}
                 aria-labelledby="apppanel-message-retention-meshtastic-label"
-                aria-label={`Cap stored messages, keep newest ${retention.meshtasticCount} messages`}
+                aria-label={t('appPanel.capStoredMessagesCountAria', {
+                  count: retention.meshtasticCount,
+                })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
@@ -1430,7 +1438,9 @@ export default function AppPanel({
                 }}
                 disabled={!retention.meshcoreEnabled}
                 aria-labelledby="apppanel-message-retention-meshcore-label"
-                aria-label={`Cap stored messages, keep newest ${retention.meshcoreCount} messages`}
+                aria-label={t('appPanel.capStoredMessagesCountAria', {
+                  count: retention.meshcoreCount,
+                })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.messages')}</span>

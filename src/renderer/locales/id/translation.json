@@ -312,7 +312,12 @@
       "pink400": "Merah Muda 400",
       "orange400": "Oranye 400",
       "yellow400": "Kuning 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Pangkas otomatis node saat startup, lebih lama dari {{days}} hari",
+    "autoPrunePositionHistoryDaysAria": "Pangkas riwayat posisi secara otomatis saat startup, lebih lama dari {{days}} hari",
+    "capTotalNodesCountAria": "Batasi total node, pertahankan node {{count}} terbaru",
+    "limitMessagesLoadedCountAria": "Batasi pesan yang dimuat {{count}} pesan",
+    "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -312,7 +312,12 @@
       "pink400": "Różowy 400",
       "orange400": "Pomarańczowy 400",
       "yellow400": "Żółty 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Automatycznie oczyszczaj węzły przy uruchomieniu, starsze niż {{days}} dni",
+    "autoPrunePositionHistoryDaysAria": "Automatyczne czyszczenie historii pozycji przy uruchomieniu, starszej niż {{days}} dni",
+    "capTotalNodesCountAria": "Ogranicz wszystkie węzły, zachowaj najnowsze węzły {{count}}",
+    "limitMessagesLoadedCountAria": "Ogranicz ładowanie wiadomości {{count}}",
+    "capStoredMessagesCountAria": "Ogranicz zapisane wiadomości, zachowaj najnowsze wiadomości {{count}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

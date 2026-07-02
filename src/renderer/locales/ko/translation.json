@@ -312,7 +312,12 @@
       "pink400": "핑크 400",
       "orange400": "오렌지 400",
       "yellow400": "노란색 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "{{days}}일보다 오래된 시작 시 노드 자동 정리",
+    "autoPrunePositionHistoryDaysAria": "시작 시 위치 기록 자동 정리({{days}}일 이상)",
+    "capTotalNodesCountAria": "총 노드 수를 제한하고 최신 {{count}} 노드를 유지합니다.",
+    "limitMessagesLoadedCountAria": "{{count}} 메시지 로드 제한",
+    "capStoredMessagesCountAria": "저장된 메시지를 제한하고 최신 {{count}} 메시지를 유지하세요."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

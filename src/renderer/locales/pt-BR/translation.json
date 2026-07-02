@@ -312,7 +312,12 @@
       "pink400": "Rosa 400",
       "orange400": "Laranja 400",
       "yellow400": "Amarelo 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Remover nós automaticamente na inicialização, com mais de {{days}} dias",
+    "autoPrunePositionHistoryDaysAria": "Remoção automática do histórico de posições na inicialização, com mais de {{days}} dias",
+    "capTotalNodesCountAria": "Limite o total de nós, mantenha os nós {{count}} mais recentes",
+    "limitMessagesLoadedCountAria": "Limitar mensagens carregadas {{count}} mensagens",
+    "capStoredMessagesCountAria": "Limite as mensagens armazenadas, mantenha as mensagens {{count}} mais recentes"
   },
   "aria": {
     "closeDialog": "Fechar janela",

@@ -36,6 +36,7 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'diagnosticsPanel.reticulum.remedy.', leafKeys: true },
   { prefix: 'diagnosticsPanel.reticulum.runtime.', leafKeys: true },
   { prefix: 'connectionPanel.reticulumInterfaces.status.', leafKeys: true },
+  { prefix: 'connectionPanel.bleOwner.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

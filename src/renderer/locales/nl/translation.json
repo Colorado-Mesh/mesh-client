@@ -312,7 +312,12 @@
       "pink400": "Roze 400",
       "orange400": "Oranje 400",
       "yellow400": "Geel 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Knooppunten automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
+    "autoPrunePositionHistoryDaysAria": "Positiegeschiedenis automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
+    "capTotalNodesCountAria": "Beperk het totale aantal knooppunten, behoud de nieuwste {{count}} knooppunten",
+    "limitMessagesLoadedCountAria": "Beperk het aantal geladen berichten {{count}} berichten",
+    "capStoredMessagesCountAria": "Beperk opgeslagen berichten, bewaar de nieuwste {{count}} berichten"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

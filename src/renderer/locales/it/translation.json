@@ -312,7 +312,12 @@
       "pink400": "Rosa 400",
       "orange400": "Arancione 400",
       "yellow400": "Giallo 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Elimina automaticamente i nodi all'avvio, più vecchi di {{days}} giorni",
+    "autoPrunePositionHistoryDaysAria": "Elimina automaticamente la cronologia delle posizioni all'avvio, più vecchia di {{days}} giorni",
+    "capTotalNodesCountAria": "Limita i nodi totali, mantieni i nodi {{count}} più recenti",
+    "limitMessagesLoadedCountAria": "Limita i messaggi caricati {{count}} messaggi",
+    "capStoredMessagesCountAria": "Limita i messaggi memorizzati, mantieni i messaggi {{count}} più recenti"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

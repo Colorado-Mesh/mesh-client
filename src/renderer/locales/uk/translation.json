@@ -312,7 +312,12 @@
       "pink400": "Рожевий 400",
       "orange400": "Апельсин 400",
       "yellow400": "Жовтий 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Автоматичне видалення вузлів під час запуску, старше {{days}} днів",
+    "autoPrunePositionHistoryDaysAria": "Автоматичне видалення історії позицій під час запуску, старше {{days}} днів",
+    "capTotalNodesCountAria": "Обмежити загальну кількість вузлів, зберегти найновіші вузли {{count}}",
+    "limitMessagesLoadedCountAria": "Обмеження завантажених повідомлень: {{count}} повідомлень",
+    "capStoredMessagesCountAria": "Обмежити збережені повідомлення, зберегти найновіші {{count}} повідомлення"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

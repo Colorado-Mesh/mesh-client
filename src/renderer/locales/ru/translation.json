@@ -312,7 +312,12 @@
       "pink400": "Розовый 400",
       "orange400": "Оранжевый 400",
       "yellow400": "Желтый 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Автоматическое удаление узлов при запуске, старше {{days}} дней.",
+    "autoPrunePositionHistoryDaysAria": "Автоматическое удаление истории позиций при запуске, старше {{days}} дней.",
+    "capTotalNodesCountAria": "Ограничить общее количество узлов, сохранить новейшие узлы {{count}}",
+    "limitMessagesLoadedCountAria": "Ограничить количество загруженных сообщений {{count}}.",
+    "capStoredMessagesCountAria": "Ограничивать сохраненные сообщения, сохранять новейшие сообщения {{count}}"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

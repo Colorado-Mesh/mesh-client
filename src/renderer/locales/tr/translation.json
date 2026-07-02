@@ -312,7 +312,12 @@
       "pink400": "Pembe 400",
       "orange400": "Turuncu 400",
       "yellow400": "Sarı 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Başlangıçta {{days}} günden eski düğümleri otomatik olarak buda",
+    "autoPrunePositionHistoryDaysAria": "Başlangıçta konum geçmişini otomatik olarak buda, {{days}} günden eski",
+    "capTotalNodesCountAria": "Toplam düğüm sayısını sınırlayın, en yeni {{count}} düğümleri koruyun",
+    "limitMessagesLoadedCountAria": "Yüklenen mesajları sınırla {{count}} mesajları",
+    "capStoredMessagesCountAria": "Saklanan mesajları sınırlandırın, en yeni {{count}} mesajlarını saklayın"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

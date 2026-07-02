@@ -312,7 +312,12 @@
       "pink400": "ピンク400",
       "orange400": "オレンジ400",
       "yellow400": "イエロー400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "起動時に{{days}}日より古いノードを自動プルーニングします",
+    "autoPrunePositionHistoryDaysAria": "{{days}} 日より古い、起動時のポジション履歴の自動プルーニング",
+    "capTotalNodesCountAria": "合計ノード数を制限し、最新の {{count}} ノードを保持",
+    "limitMessagesLoadedCountAria": "読み込まれるメッセージを制限する {{count}} メッセージ",
+    "capStoredMessagesCountAria": "保存されたメッセージを制限し、最新の {{count}} メッセージを保持します"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

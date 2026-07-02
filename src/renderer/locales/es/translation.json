@@ -312,7 +312,12 @@
       "pink400": "rosa 400",
       "orange400": "naranja 400",
       "yellow400": "Amarillo 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Nodos de poda automática al inicio, con más de {{days}} días",
+    "autoPrunePositionHistoryDaysAria": "Historial de posición de poda automática al inicio, anterior a {{days}} días",
+    "capTotalNodesCountAria": "Limitar el total de nodos, mantener los nodos {{count}} más nuevos",
+    "limitMessagesLoadedCountAria": "Limitar mensajes cargados {{count}} mensajes",
+    "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

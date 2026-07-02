@@ -312,7 +312,12 @@
       "pink400": "粉色400",
       "orange400": "橙子400",
       "yellow400": "黄400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "启动时自动修剪节点，早于 {{days}} 天",
+    "autoPrunePositionHistoryDaysAria": "启动时自动修剪仓位历史记录，早于 {{days}} 天",
+    "capTotalNodesCountAria": "限制节点总数，保留最新的 {{count}} 节点",
+    "limitMessagesLoadedCountAria": "限制加载的消息 {{count}} 消息",
+    "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息"
   },
   "aria": {
     "closeDialog": "关闭对话框",

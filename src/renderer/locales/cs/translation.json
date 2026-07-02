@@ -312,7 +312,12 @@
       "pink400": "Růžová 400",
       "orange400": "Oranžová 400",
       "yellow400": "Žlutá 400"
-    }
+    },
+    "autoPruneNodesOlderThanAria": "Automaticky ořezávat uzly při spuštění, starší než {{days}} dnů",
+    "autoPrunePositionHistoryDaysAria": "Automatické prořezávání historie pozic při spuštění, starší než {{days}} dnů",
+    "capTotalNodesCountAria": "Omezte celkový počet uzlů, ponechte nejnovější {{count}} uzly",
+    "limitMessagesLoadedCountAria": "Omezit počet načtených zpráv: {{count}} zpráv",
+    "capStoredMessagesCountAria": "Uzavřít uložené zprávy, ponechat nejnovější {{count}} zprávy"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
