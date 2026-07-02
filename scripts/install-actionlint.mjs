@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { promises as fs } from 'node:fs';
+import { createWriteStream, promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,7 +40,7 @@ async function downloadToFile(url, destinationPath) {
   if (!res.ok) {
     throw new Error(`Failed to download: ${res.status} ${res.statusText}`);
   }
-  const file = fs.createWriteStream(destinationPath);
+  const file = createWriteStream(destinationPath);
   // Pipe the response body stream into the file.
   await pipeline(res.body, file);
 }

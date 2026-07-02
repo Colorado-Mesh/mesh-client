@@ -7,12 +7,10 @@ on:
     tags: ['v*']
 
 jobs:
-  # Both arches use the flathub-infra container (Flathub remote, flatpak-builder, privileged
-  # system installs). aarch64 uses GitHub's native ARM runners — do not build on bare
-  # ubuntu-latest with apt flatpak; that lacks --privileged and fails with
-  # "Flatpak system operation Deploy not allowed for user".
-  flatpak:
-    name: Flatpak (${{ matrix.arch }})
+  # Sidecar is built on bare Ubuntu runners (apt). The flathub-infra Flatpak container is a
+  # minimal freedesktopsdk/sdk rootfs with no apt/dnf — host cargo builds cannot install deps there.
+  reticulum-sidecar:
+    name: Reticulum sidecar (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     env:
       RS_RETICULUM_REF: 6d2b28475321bc15c8f60796513d8878b47ed3ab
@@ -28,10 +26,6 @@ jobs:
           - arch: aarch64
             runner: ubuntu-24.04-arm
             cargo_target: aarch64-unknown-linux-gnu
-    container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
-      options: --privileged
-
     steps:
       - uses: actions/checkout@v6
 
@@ -50,8 +44,7 @@ jobs:
           targets: ${{ matrix.cargo_target }}
 
       - name: Install Reticulum sidecar Linux build deps
-        # flathub-infra container is Fedora-based (dnf), not Debian (apt).
-        run: dnf install -y dbus-devel pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
 
       - name: Build Reticulum sidecar for Flatpak payload
         working-directory: reticulum-sidecar
@@ -61,6 +54,42 @@ jobs:
           install -Dm755 \
             "target/${{ matrix.cargo_target }}/release/mesh-client-reticulum" \
             "${GITHUB_WORKSPACE}/resources/reticulum-sidecar/mesh-client-reticulum"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-reticulum-${{ matrix.arch }}
+          path: resources/reticulum-sidecar/mesh-client-reticulum
+          retention-days: 1
+
+  # Both arches use the flathub-infra container (Flathub remote, flatpak-builder, privileged
+  # system installs). aarch64 uses GitHub's native ARM runners — do not build on bare
+  # ubuntu-latest with apt flatpak; that lacks --privileged and fails with
+  # "Flatpak system operation Deploy not allowed for user".
+  flatpak:
+    name: Flatpak (${{ matrix.arch }})
+    needs: reticulum-sidecar
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: mesh-client-reticulum-${{ matrix.arch }}
+          path: resources/reticulum-sidecar
 
       - name: Generate offline pnpm sources
         run: |
