@@ -23,6 +23,8 @@ pnpm run typecheck
 pnpm run format:check
 ```
 
+To approximate **Linux CI** from any host, use container mode (`pnpm run act:ci`) or host mode without Docker (`pnpm run act:ci:native`). See [CI/CD — Running locally with act](ci-cd.md#running-ci-locally-with-act).
+
 ## Documentation Workflow
 
 - Create/activate a local Python virtualenv first (required on many macOS setups):

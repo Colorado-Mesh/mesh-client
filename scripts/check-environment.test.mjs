@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatCheckResult,
+  formatLocalActDockerNote,
   parseVersion,
   resolveExitCode,
   versionGte,
@@ -106,5 +107,44 @@ describe('check-environment resolveExitCode', () => {
         { status: 'pass', severity: 'required', label: 'Node.js' },
       ]),
     ).toBe(0);
+  });
+});
+
+describe('check-environment formatLocalActDockerNote', () => {
+  it('returns null when neither docker nor act checks are present', () => {
+    expect(
+      formatLocalActDockerNote([{ status: 'pass', severity: 'required', label: 'Git' }]),
+    ).toBeNull();
+  });
+
+  it('returns paired missing note when docker or act warns', () => {
+    expect(
+      formatLocalActDockerNote([
+        { status: 'warn', severity: 'optional', label: 'Docker not found (optional)' },
+        { status: 'pass', severity: 'optional', label: 'act', detail: '0.2.0' },
+      ]),
+    ).toContain('act:ci:native');
+  });
+
+  it('returns ready note when both docker and act pass', () => {
+    expect(
+      formatLocalActDockerNote([
+        { status: 'pass', severity: 'optional', label: 'Docker', detail: 'Docker 27' },
+        { status: 'pass', severity: 'optional', label: 'act', detail: 'act version 0.2.76' },
+      ]),
+    ).toContain('act:ci:native');
+  });
+
+  it('suggests native mode when act is ready but docker is not', () => {
+    expect(
+      formatLocalActDockerNote([
+        {
+          status: 'warn',
+          severity: 'optional',
+          label: 'Docker daemon not running (optional)',
+        },
+        { status: 'pass', severity: 'optional', label: 'act', detail: 'act version 0.2.76' },
+      ]),
+    ).toContain('act:ci:native');
   });
 });
