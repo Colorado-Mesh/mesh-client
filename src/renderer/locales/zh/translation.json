@@ -657,7 +657,10 @@
       "rnodeTransportBle": "蓝牙",
       "meshBleActive": "在启用 Reticulum BLE 之前禁用 Meshtastic 或 MeshCore 蓝牙。",
       "reticulumBleBlocksMesh": "在通过蓝牙连接 Meshtastic 或 MeshCore 之前禁用 Reticulum BLE 接口。",
-      "seedAddresses": "种子同伴（可选）"
+      "seedAddresses": "种子同伴（可选）",
+      "pickerBlePeerEmpty": "附近未发现 Reticulum BLE 对等点。同行必须做广告；尝试重新扫描或手动输入种子地址。",
+      "pickerBleRnodeEmpty": "附近未发现 BLE RNode。确保 RNode 已开机且在范围内，然后尝试重新扫描。",
+      "bleUnavailable": "蓝牙不适用于 Reticulum 扫描。请检查系统蓝牙和 sidecar 构建 (rns-ble)。"
     },
     "reticulumPeers": {
       "hops": "Hops",

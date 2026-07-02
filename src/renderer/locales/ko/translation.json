@@ -657,7 +657,10 @@
       "rnodeTransportBle": "블루투스",
       "meshBleActive": "Reticulum BLE를 활성화하기 전에 Meshtastic 또는 MeshCore Bluetooth를 비활성화하십시오.",
       "reticulumBleBlocksMesh": "Bluetooth를 통해 Meshtastic 또는 MeshCore를 연결하기 전에 Reticulum BLE 인터페이스를 비활성화하십시오.",
-      "seedAddresses": "시드 피어(선택 사항)"
+      "seedAddresses": "시드 피어(선택 사항)",
+      "pickerBlePeerEmpty": "근처에서 Reticulum BLE 피어를 찾을 수 없습니다. 동료는 광고를 해야 합니다. 다시 스캔을 시도하거나 시드 주소를 수동으로 입력하세요.",
+      "pickerBleRnodeEmpty": "근처에서 BLE RNode를 찾을 수 없습니다. Rnode의 전원이 켜져 있고 범위 내에 있는지 확인한 다음 다시 검색을 시도하십시오.",
+      "bleUnavailable": "Reticulum 스캔에는 Bluetooth를 사용할 수 없습니다. 시스템 Bluetooth 및 사이드카 빌드(rns-ble)를 확인하세요."
     },
     "reticulumPeers": {
       "hops": "Hops",

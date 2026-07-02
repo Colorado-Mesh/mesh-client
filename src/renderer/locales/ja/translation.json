@@ -657,7 +657,10 @@
       "rnodeTransportBle": "ブルートゥース",
       "meshBleActive": "Reticulum BLE を有効にする前に、Meshtastic または MeshCore Bluetooth を無効にします。",
       "reticulumBleBlocksMesh": "Bluetooth 経由で Meshtastic または MeshCore を接続する前に、Reticulum BLE インターフェイスを無効にします。",
-      "seedAddresses": "シードピア (オプション)"
+      "seedAddresses": "シードピア (オプション)",
+      "pickerBlePeerEmpty": "近くに Reticulum BLE ピアが見つかりません。ピアは宣伝する必要があります。再スキャンを試すか、シード アドレスを手動で入力してください。",
+      "pickerBleRnodeEmpty": "近くに BLE RNode が見つかりません。 RNode の電源が入っており、範囲内にあることを確認してから、再スキャンを試してください。",
+      "bleUnavailable": "Bluetooth は Reticulum スキャンには使用できません。システムの Bluetooth とサイドカー ビルド (rns-ble) を確認してください。"
     },
     "reticulumPeers": {
       "hops": "Hops",

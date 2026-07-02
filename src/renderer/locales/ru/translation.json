@@ -657,7 +657,10 @@
       "rnodeTransportBle": "Bluetooth",
       "meshBleActive": "Отключите Meshtastic или MeshCore Bluetooth перед включением Reticulum BLE.",
       "reticulumBleBlocksMesh": "Отключите интерфейсы Reticulum BLE перед подключением Meshtastic или MeshCore через Bluetooth.",
-      "seedAddresses": "Начальные одноранговые соединения (необязательно)"
+      "seedAddresses": "Начальные одноранговые соединения (необязательно)",
+      "pickerBlePeerEmpty": "Поблизости не обнаружено аналогов Reticulum BLE. Сверстники должны рекламировать; попробуйте выполнить повторное сканирование или введите исходный адрес вручную.",
+      "pickerBleRnodeEmpty": "Поблизости не найдено BLE RNodes. Убедитесь, что RNode включен и находится в радиусе действия, затем попробуйте выполнить повторное сканирование.",
+      "bleUnavailable": "Bluetooth недоступен для сканирования Reticulum. Проверьте систему Bluetooth и сборку коляски (rns-ble)."
     },
     "reticulumPeers": {
       "hops": "Hops",

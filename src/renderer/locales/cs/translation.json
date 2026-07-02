@@ -657,7 +657,10 @@
       "rnodeTransportBle": "Bluetooth",
       "meshBleActive": "Před povolením Reticulum BLE deaktivujte Meshtastic nebo MeshCore Bluetooth.",
       "reticulumBleBlocksMesh": "Před připojením Meshtastic nebo MeshCore přes Bluetooth vypněte rozhraní Reticulum BLE.",
-      "seedAddresses": "Seed peers (volitelné)"
+      "seedAddresses": "Seed peers (volitelné)",
+      "pickerBlePeerEmpty": "V okolí nebyli nalezeni žádní kolegové Reticulum BLE. Peers musí inzerovat; zkuste znovu naskenovat nebo ručně zadejte adresu zdroje.",
+      "pickerBleRnodeEmpty": "V okolí nebyly nalezeny žádné BLE RNody. Ujistěte se, že je RNode zapnutý a v dosahu, pak zkuste znovu prohledat.",
+      "bleUnavailable": "Bluetooth není k dispozici pro skenování Reticulum. Zkontrolujte systém Bluetooth a sestavení sidecar (rns-ble)."
     },
     "reticulumPeers": {
       "hops": "Hops",

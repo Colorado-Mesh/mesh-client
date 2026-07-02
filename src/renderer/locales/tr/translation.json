@@ -657,7 +657,10 @@
       "rnodeTransportBle": "Bluetooth",
       "meshBleActive": "Reticulum BLE'yi etkinleştirmeden önce Meshtastic veya MeshCore Bluetooth'u devre dışı bırakın.",
       "reticulumBleBlocksMesh": "Meshtastic veya MeshCore'u Bluetooth üzerinden bağlamadan önce Reticulum BLE arayüzlerini devre dışı bırakın.",
-      "seedAddresses": "Tohum eşleri (isteğe bağlı)"
+      "seedAddresses": "Tohum eşleri (isteğe bağlı)",
+      "pickerBlePeerEmpty": "Yakınlarda Reticulum BLE eşi bulunamadı. Akranlar reklam yapıyor olmalı; Yeniden taramayı deneyin veya manuel olarak bir tohum adresi girin.",
+      "pickerBleRnodeEmpty": "Yakınlarda BLE RNode'u bulunamadı. RNode'un açık ve menzil içinde olduğundan emin olun ve ardından Yeniden Taramayı deneyin.",
+      "bleUnavailable": "Reticulum taraması için Bluetooth kullanılamaz. Sistem Bluetooth'unu ve sepet yapısını (rns-ble) kontrol edin."
     },
     "reticulumPeers": {
       "hops": "Hops",

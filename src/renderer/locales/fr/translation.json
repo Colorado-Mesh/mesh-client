@@ -657,7 +657,10 @@
       "rnodeTransportBle": "Bluetooth",
       "meshBleActive": "Désactivez Meshtastic ou MeshCore Bluetooth avant d'activer Reticulum BLE.",
       "reticulumBleBlocksMesh": "Désactivez les interfaces Reticulum BLE avant de connecter Meshtastic ou MeshCore via Bluetooth.",
-      "seedAddresses": "Pairs de départ (facultatif)"
+      "seedAddresses": "Pairs de départ (facultatif)",
+      "pickerBlePeerEmpty": "Aucun homologue du Reticulum BLE trouvé à proximité. Les pairs doivent faire de la publicité ; essayez Rescan ou entrez une adresse de départ manuellement.",
+      "pickerBleRnodeEmpty": "Aucun RNode BLE trouvé à proximité. Assurez-vous que le RNode est sous tension et à portée, puis essayez de réanalyser.",
+      "bleUnavailable": "Bluetooth n'est pas disponible pour la numérisation Reticulum. Vérifiez le système Bluetooth et la construction du side-car (rns-ble)."
     },
     "reticulumPeers": {
       "hops": "Hops",

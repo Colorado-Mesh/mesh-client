@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 
 import {
   acquireReticulumBleAdapter,
+  isMeshBleConnected,
   isReticulumBleInterfaceRow,
   releaseReticulumBleAdapter,
 } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
@@ -27,6 +28,8 @@ export interface ReticulumDevicePickerRequest {
 }
 
 const BLE_SCAN_INTERFACE_SETTLE_MS = 400;
+/** After Noble teardown, allow CoreBluetooth/btleplug to settle before scanning. */
+const BLE_ADAPTER_SETTLE_MS = 500;
 
 async function pauseEnabledReticulumBleInterfaces(): Promise<string[]> {
   invalidateReticulumInterfacesCache();
@@ -64,6 +67,12 @@ async function resumeReticulumBleInterfaces(ids: readonly string[]): Promise<voi
   }
 }
 
+function scanModeForPicker(mode: ReticulumDevicePickerMode): 'peer' | 'rnode' | 'all' {
+  if (mode === 'ble-peer') return 'peer';
+  if (mode === 'ble-rnode') return 'rnode';
+  return 'all';
+}
+
 export function useReticulumInterfaceDevicePicker() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ReticulumDevicePickerMode>('serial');
@@ -87,20 +96,44 @@ export function useReticulumInterfaceDevicePicker() {
     setSerialPorts(ports.map((path) => ({ path })));
   }, []);
 
-  const runBleScan = useCallback(async (scanMode: 'peer' | 'rnode' | 'all') => {
+  const runBleScan = useCallback(async (pickerMode: ReticulumDevicePickerMode) => {
     setScanning(true);
     setScanError(null);
     setDevices([]);
     let pausedInterfaceIds: string[] = [];
+    let adapterAcquired = false;
+    const scanMode = scanModeForPicker(pickerMode);
     try {
+      if (isMeshBleConnected()) {
+        setScanError('mesh_ble_active');
+        return;
+      }
+
       pausedInterfaceIds = await pauseEnabledReticulumBleInterfaces();
+
+      const avail = (await window.electronAPI.reticulum.proxyGet('/api/v1/ble/availability')) as {
+        available?: boolean;
+        missing?: string[];
+      };
+      if (!avail.available) {
+        const reason = avail.missing?.[0];
+        setScanError(reason?.length ? reason : 'ble_unavailable');
+        return;
+      }
+
       const acquired = await acquireReticulumBleAdapter();
       if (!acquired) {
         setScanError('adapter_busy');
         return;
       }
+      adapterAcquired = true;
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, BLE_ADAPTER_SETTLE_MS);
+      });
+
       const body = (await window.electronAPI.reticulum.proxyGet(
-        `/api/v1/ble/scan?timeout_secs=5&mode=${scanMode}`,
+        `/api/v1/ble/scan?timeout_secs=8&mode=${scanMode}`,
       )) as { devices?: ReticulumPickerDevice[]; error?: string; ok?: boolean };
       if (body.error || body.ok === false) {
         setScanError(body.error ?? 'scan_failed');
@@ -112,6 +145,9 @@ export function useReticulumInterfaceDevicePicker() {
       setScanError(err instanceof Error ? err.message : String(err));
     } finally {
       await resumeReticulumBleInterfaces(pausedInterfaceIds);
+      if (adapterAcquired) {
+        await releaseReticulumBleAdapter();
+      }
       setScanning(false);
     }
   }, []);
@@ -139,9 +175,7 @@ export function useReticulumInterfaceDevicePicker() {
         return;
       }
 
-      const scanMode =
-        request.mode === 'ble-peer' ? 'peer' : request.mode === 'ble-rnode' ? 'rnode' : 'all';
-      await runBleScan(scanMode);
+      await runBleScan(request.mode);
     },
     [refreshSerial, runBleScan],
   );
@@ -168,8 +202,7 @@ export function useReticulumInterfaceDevicePicker() {
     selectDevice,
     refreshSerial,
     rescanBle: () => {
-      const scanMode = mode === 'ble-peer' ? 'peer' : mode === 'ble-rnode' ? 'rnode' : 'all';
-      void runBleScan(scanMode);
+      void runBleScan(mode);
     },
   };
 }

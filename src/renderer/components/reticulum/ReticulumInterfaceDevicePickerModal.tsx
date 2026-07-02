@@ -104,9 +104,11 @@ export function ReticulumInterfaceDevicePickerModal({
           <p className="border-b border-gray-700 px-4 py-2 text-xs text-amber-300" role="alert">
             {scanError === 'stack_required'
               ? t('connectionPanel.reticulumInterfaces.pickerStackRequired')
-              : scanError === 'adapter_busy'
+              : scanError === 'adapter_busy' || scanError === 'mesh_ble_active'
                 ? t('connectionPanel.reticulumInterfaces.meshBleActive')
-                : scanError}
+                : scanError === 'ble_unavailable'
+                  ? t('connectionPanel.reticulumInterfaces.bleUnavailable')
+                  : scanError}
           </p>
         ) : null}
 
@@ -164,7 +166,11 @@ export function ReticulumInterfaceDevicePickerModal({
             </div>
           ) : devices.length === 0 ? (
             <p className="text-muted px-4 py-6 text-center text-sm">
-              {t('connectionPanel.reticulumInterfaces.pickerBleEmpty')}
+              {mode === 'ble-peer'
+                ? t('connectionPanel.reticulumInterfaces.pickerBlePeerEmpty')
+                : mode === 'ble-rnode'
+                  ? t('connectionPanel.reticulumInterfaces.pickerBleRnodeEmpty')
+                  : t('connectionPanel.reticulumInterfaces.pickerBleEmpty')}
             </p>
           ) : (
             devices.map((device) => {

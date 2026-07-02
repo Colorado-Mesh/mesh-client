@@ -657,7 +657,10 @@
       "meshBleActive": "Schakel Meshtastic of MeshCore Bluetooth uit voordat u Reticulum BLE inschakelt.",
       "reticulumBleBlocksMesh": "Schakel Reticulum BLE-interfaces uit voordat u Meshtastic of MeshCore via Bluetooth verbindt.",
       "seedAddresses": "Zaadpeers (optioneel)",
-      "pickerSerialTitle": "Selecteer seriële poort"
+      "pickerSerialTitle": "Selecteer seriële poort",
+      "pickerBlePeerEmpty": "Geen Reticulum BLE-peers gevonden in de buurt. Peers moeten adverteren; probeer Opnieuw scannen of voer handmatig een zaadadres in.",
+      "pickerBleRnodeEmpty": "Geen BLE RNodes gevonden in de buurt. Zorg ervoor dat de RNode is ingeschakeld en binnen bereik is, en probeer vervolgens Opnieuw scannen.",
+      "bleUnavailable": "Bluetooth is niet beschikbaar voor Reticulum-scannen. Controleer systeem Bluetooth en zijspanopbouw (rns-ble)."
     },
     "reticulumPeers": {
       "hops": "Hops",

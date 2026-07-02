@@ -25,6 +25,15 @@ export interface ReticulumInterfaceBleRow {
   serial_port?: string | null;
 }
 
+/** BLE session statuses where the radio link is up or being established. */
+const MESH_BLE_ACTIVE_STATUSES = new Set([
+  'connecting',
+  'connected',
+  'configured',
+  'reconnecting',
+  'stale',
+]);
+
 /** True when any Meshtastic or MeshCore identity is on an active BLE connection. */
 export function isMeshBleConnected(): boolean {
   const { identities } = useIdentityStore.getState();
@@ -32,7 +41,7 @@ export function isMeshBleConnected(): boolean {
     if (identity.protocol.type === 'reticulum') continue;
     const conn = getConnection(identity.id);
     if (conn?.connectionType !== 'ble') continue;
-    if (conn.status === 'connecting' || conn.status === 'connected') return true;
+    if (MESH_BLE_ACTIVE_STATUSES.has(conn.status)) return true;
   }
   return false;
 }

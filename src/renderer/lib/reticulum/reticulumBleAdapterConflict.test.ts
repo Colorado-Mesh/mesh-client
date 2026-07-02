@@ -78,6 +78,31 @@ describe('reticulumBleAdapterConflict', () => {
     expect(meshBleBlockedByReticulum([{ type: 'ble_peer', enabled: true }])).toBe(true);
   });
 
+  it('treats configured BLE mesh sessions as active', () => {
+    useIdentityStore.setState({
+      identities: {
+        mt: {
+          id: 'mt',
+          protocol: { type: 'meshtastic' } as never,
+          signature: '1',
+          transports: [],
+          createdAt: 0,
+          lastSeenAt: 0,
+        },
+      },
+      activeIdentityId: 'mt',
+    });
+    setConnection('mt', {
+      status: 'configured',
+      connectionType: 'ble',
+      mqttStatus: 'disconnected',
+      reconnectAttempt: 0,
+      myNodeNum: 1,
+    });
+
+    expect(isMeshBleConnected()).toBe(true);
+  });
+
   it('ignores reticulum identities and non-BLE transports', () => {
     useIdentityStore.setState({
       identities: {
