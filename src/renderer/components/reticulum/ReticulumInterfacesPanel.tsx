@@ -1337,7 +1337,7 @@ function InterfacesSection({
                         {t('connectionPanel.reticulumInterfaces.auditRepair')}
                       </button>
                     ) : null}
-                    {repairKind === 'disable' ? (
+                    {repairKind === 'disable' && help.isSystemManaged ? (
                       <button
                         type="button"
                         disabled={actionsDisabled}

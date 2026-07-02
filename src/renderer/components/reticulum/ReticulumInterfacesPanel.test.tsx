@@ -316,6 +316,61 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  it('does not duplicate disable when audit suggests disable on user-managed interface', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/config/audit') {
+        return Promise.resolve({
+          issues: [
+            {
+              kind: 'tcp_unreachable',
+              severity: 'warning',
+              interface_id: 'hub-dublin',
+              interface_name: 'RNS Testnet Dublin',
+              message: 'unreachable',
+              repair_kind: 'disable',
+            },
+          ],
+        });
+      }
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: false });
+      }
+      if (path === '/api/v1/rnode/presets') {
+        return Promise.resolve({ presets: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'hub-dublin',
+            name: 'RNS Testnet Dublin',
+            type: 'tcp',
+            enabled: true,
+            status: 'down',
+            host: 'dublin.example',
+            port: 4242,
+          },
+        ]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('diagnosticsPanel.reticulum.audit.tcp_unreachable'),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.disable' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'connectionPanel.reticulumInterfaces.auditDisable' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows runtime badge and hides edit/delete for SharedInstanceServer', () => {
     render(
       <ReticulumInterfacesPanel
