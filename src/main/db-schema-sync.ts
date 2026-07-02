@@ -15,9 +15,10 @@ import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLast
 import { meshProtocolSqlInList } from '../shared/meshProtocol';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
+import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 36;
+export const CURRENT_SCHEMA_VERSION = 41;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -188,6 +189,45 @@ export const CANONICAL_TABLES_DDL = `
         UNIQUE(node_id, path_hash)
       );
 
+      CREATE TABLE IF NOT EXISTS reticulum_destinations (
+        destination_hash TEXT PRIMARY KEY,
+        display_name     TEXT,
+        last_heard       INTEGER,
+        favorited        INTEGER DEFAULT 0,
+        icon_name        TEXT,
+        icon_color       TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_messages (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        identity_id  TEXT NOT NULL,
+        sender_id    TEXT NOT NULL,
+        sender_name  TEXT,
+        payload      TEXT NOT NULL,
+        timestamp    INTEGER NOT NULL,
+        to_hash      TEXT,
+        reply_to_hash TEXT,
+        message_hash TEXT,
+        received_via TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS blocked_contacts (
+        protocol      TEXT NOT NULL,
+        identity_id   TEXT NOT NULL,
+        blocked_hash  TEXT NOT NULL,
+        created_at    INTEGER NOT NULL,
+        PRIMARY KEY (protocol, identity_id, blocked_hash)
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_identity_activity (
+        destination_hash TEXT NOT NULL,
+        aspect           TEXT NOT NULL,
+        identity_hash    TEXT,
+        last_seen        INTEGER NOT NULL,
+        hops             INTEGER,
+        PRIMARY KEY (destination_hash, aspect)
+      );
+
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -234,7 +274,10 @@ export const INDEX_DDLS: readonly string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_packet_dedup
         ON messages(sender_id, packet_id)
         WHERE packet_id IS NOT NULL`,
-  'CREATE INDEX IF NOT EXISTS idx_nodes_last_heard ON nodes(last_heard)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_ts ON reticulum_messages(timestamp)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_identity ON reticulum_messages(identity_id, timestamp DESC)',
+  'CREATE INDEX IF NOT EXISTS idx_blocked_contacts_lookup ON blocked_contacts(protocol, identity_id)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_activity_dest ON reticulum_identity_activity(destination_hash)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
@@ -341,6 +384,21 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     rx_hops: 'INTEGER',
     room_server_id: 'INTEGER',
   },
+  reticulum_messages: {
+    identity_id: 'TEXT NOT NULL',
+    sender_id: 'TEXT NOT NULL',
+    sender_name: 'TEXT',
+    payload: 'TEXT NOT NULL',
+    timestamp: 'INTEGER NOT NULL',
+    to_hash: 'TEXT',
+    reply_to_hash: 'TEXT',
+    message_hash: 'TEXT',
+    received_via: 'TEXT',
+    delivery_status: 'TEXT',
+    delivery_attempts: 'INTEGER DEFAULT 0',
+    next_delivery_attempt_at: 'INTEGER',
+    attachment_path: 'TEXT',
+  },
   position_history: {
     node_id: 'INTEGER NOT NULL',
     latitude: 'REAL NOT NULL',
@@ -384,9 +442,12 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     created_at: 'INTEGER NOT NULL',
     updated_at: 'INTEGER NOT NULL',
   },
-  node_notes: {
-    notes: "TEXT NOT NULL DEFAULT ''",
-    updated_at: 'INTEGER',
+  reticulum_destinations: {
+    display_name: 'TEXT',
+    last_heard: 'INTEGER',
+    favorited: 'INTEGER DEFAULT 0',
+    icon_name: 'TEXT',
+    icon_color: 'TEXT',
   },
 };
 
@@ -799,6 +860,7 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   repairMeshcoreOrphanSendingMessages(db);
   repairMeshtasticInboundNullStatus(db);
   purgeMeshcoreRowsFromMeshtasticNodesTable(db);
+  ensureMessageFtsTables(db);
 }
 
 /**

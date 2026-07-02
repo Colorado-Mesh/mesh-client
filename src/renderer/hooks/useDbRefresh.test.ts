@@ -88,4 +88,28 @@ describe('useProtocolDbRefresh', () => {
     });
     expect(useNodeStore.getState().nodes[ID]).toBeUndefined();
   });
+
+  it('refreshAllFromDb loads Reticulum messages from SQLite', async () => {
+    vi.spyOn(window.electronAPI.db, 'getReticulumDestinations').mockResolvedValue([]);
+    vi.spyOn(window.electronAPI.db, 'getReticulumMessages').mockResolvedValue([
+      {
+        sender_id: 'aa'.repeat(16),
+        sender_name: 'Peer',
+        payload: 'hi',
+        timestamp: 1000,
+        to_hash: null,
+        reply_to_hash: null,
+        message_hash: 'bb'.repeat(16),
+        received_via: 'network',
+        delivery_status: 'delivered',
+      },
+    ]);
+
+    const { result } = renderHook(() => useProtocolDbRefresh('reticulum', ID));
+    await result.current.refreshAllFromDb();
+
+    await waitFor(() => {
+      expect(Object.keys(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
+    });
+  });
 });

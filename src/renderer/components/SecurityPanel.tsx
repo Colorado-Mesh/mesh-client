@@ -10,7 +10,7 @@ import {
   mergeMeshtasticConfigApplyValue,
   stripMeshtasticProtobufMeta,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
-import type { ConfigTargetContext } from '@/renderer/lib/types';
+import type { ConfigTargetContext, MeshProtocol } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import { ConfigApplyNotice } from './ConfigApplyNotice';
@@ -34,7 +34,7 @@ interface Props {
   onCommit: () => Promise<void>;
   isConnected: boolean;
   securityConfig: SecurityConfig | null;
-  protocol?: 'meshtastic' | 'meshcore';
+  protocol?: MeshProtocol;
   onSignData?: (data: Uint8Array) => Promise<Uint8Array | null>;
   onExportPrivateKey?: () => Promise<Uint8Array | null>;
   onImportPrivateKey?: (privateKey: Uint8Array) => Promise<boolean>;

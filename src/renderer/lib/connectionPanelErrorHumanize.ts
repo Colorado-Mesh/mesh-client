@@ -1,6 +1,13 @@
 import type { TFunction } from 'i18next';
 
+import type { BlePeripheralOwner } from '@/shared/electron-api.types';
+
 import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
+import {
+  isBlePeripheralConflictErrorMessage,
+  isBleScanBusyErrorMessage,
+  reticulumOwnerLabel,
+} from './reticulum/reticulumBleAdapterLease';
 
 export function hostFromAddressInput(address: string): string {
   const raw = address.trim();
@@ -127,6 +134,17 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   const isWindows = platform === 'win32';
   const isLinux = platform === 'linux';
   const isDarwin = platform === 'darwin';
+  if (isBleScanBusyErrorMessage(msg)) {
+    return t('connectionPanel.humanize.ble.scanBusy');
+  }
+  if (isBlePeripheralConflictErrorMessage(msg)) {
+    const ownerMatch = /already in use by (\S+)/i.exec(msg);
+    const rawOwner = ownerMatch?.[1] ?? '';
+    const ownerLabel = rawOwner
+      ? reticulumOwnerLabel(rawOwner as BlePeripheralOwner)
+      : t('common.unknown');
+    return t('connectionPanel.humanize.ble.sameDeviceConflict', { owner: ownerLabel });
+  }
   if (msg.includes('Bluetooth adapter not found') || msg.includes('adapter is not available')) {
     const hint = isWindows
       ? t('connectionPanel.humanize.ble.adapterWindowsHint')
@@ -211,4 +229,22 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
     });
   }
   return msg;
+}
+
+export function humanizeReticulumSidecarError(err: unknown, t: TFunction): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes('RETICULUM_CARGO_MISSING') || /cargo.*not found/i.test(msg)) {
+    return t('connectionPanel.reticulumSidecarCargoMissing');
+  }
+  if (
+    msg.includes('RETICULUM_SIDECAR') ||
+    msg.includes('sidecar binary not found') ||
+    msg.includes('RETICULUM_CARGO_BUILD_FAILED')
+  ) {
+    if (msg.includes('RETICULUM_CARGO_BUILD_FAILED')) {
+      return t('connectionPanel.reticulumSidecarStartFailed', { message: msg });
+    }
+    return t('connectionPanel.reticulumSidecarMissing');
+  }
+  return t('connectionPanel.reticulumSidecarStartFailed', { message: msg });
 }

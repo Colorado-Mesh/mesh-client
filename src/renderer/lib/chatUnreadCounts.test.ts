@@ -6,6 +6,7 @@ import {
   computeDmUnreadCounts,
   hasAudibleBackgroundMessages,
   pickAudibleNotificationType,
+  resolveChatDmPeer,
   resolveChatNotificationType,
   totalUnreadCount,
 } from './chatUnreadCounts';
@@ -126,6 +127,23 @@ describe('chatUnreadCounts', () => {
       'meshcore',
     );
     expect(total).toBe(2);
+  });
+
+  it('totalUnreadCount for reticulum ignores channel-indexed rows (DM-only chat)', () => {
+    const channelOnly = totalUnreadCount(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 0, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'reticulum',
+    );
+    const meshtasticSame = totalUnreadCount(
+      [msg({ channel: 0, timestamp: 2000 }), msg({ channel: 0, timestamp: 3000 })],
+      {},
+      ownNodes,
+      'meshtastic',
+    );
+    expect(channelOnly).toBe(0);
+    expect(meshtasticSame).toBe(2);
   });
 
   it('does not count future poison rows toward channel unread (RTC skew)', () => {
@@ -249,6 +267,70 @@ describe('chatUnreadCounts', () => {
       'meshcore',
     );
     expect(total).toBe(1);
+  });
+
+  it('Reticulum inbound with to:0 infers peer from reticulum_sender_hash', () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const peer = resolveChatDmPeer(
+      msg({
+        channel: 0,
+        to: 0,
+        sender_id: peerId,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+      }),
+      ownNodes,
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum inbound with to:0 infers peer from sender_id when hash absent', () => {
+    const peerId = 2838895306;
+    const peer = resolveChatDmPeer(
+      msg({ channel: 0, to: 0, sender_id: peerId }),
+      ownNodes,
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum outbound self→peer resolves peer when ownNodeIds populated', () => {
+    const selfId = 1;
+    const peerId = 2838895306;
+    const own = new Set([selfId]);
+    const peer = resolveChatDmPeer(
+      msg({ channel: 0, sender_id: selfId, to: peerId }),
+      own,
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum inbound with to_hash infers peer when own identity is unknown', () => {
+    const peerId = 2838895306;
+    const peer = resolveChatDmPeer(
+      msg({ channel: 0, sender_id: peerId, to: 4172361550 }),
+      new Set(),
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum outbound infers peer from to when own identity is unknown', () => {
+    const selfHash = 'f9aa38ba0c5a00000000000000000000';
+    const selfId = parseInt(selfHash.slice(0, 12), 16) >>> 0;
+    const peerId = 2838895306;
+    const peer = resolveChatDmPeer(
+      msg({
+        channel: 0,
+        sender_id: selfId,
+        to: peerId,
+        reticulum_sender_hash: selfHash,
+      }),
+      new Set(),
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
   });
 });
 

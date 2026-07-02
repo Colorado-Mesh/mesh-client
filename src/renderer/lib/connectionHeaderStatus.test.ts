@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CONNECTION_HEADER_PULSE_RED_DOT,
+  CONNECTION_HEADER_PULSE_RED_ICON,
   CONNECTION_HEADER_PULSE_RED_TEXT,
   deviceHeaderVariant,
   headerDotClass,
@@ -58,15 +59,36 @@ describe('connectionHeaderStatus', () => {
   });
 
   describe('variants and classes', () => {
-    it('mqtt error uses pulsing red text', () => {
+    it('mqtt error uses red text without pulse (dot pulses)', () => {
       expect(mqttHeaderVariant('error', false)).toBe('error');
       expect(headerTextClass('error')).toBe(CONNECTION_HEADER_PULSE_RED_TEXT);
-      expect(headerIconClass('error')).toBe(CONNECTION_HEADER_PULSE_RED_TEXT);
+      expect(headerTextClass('error')).not.toContain('animate-pulse');
+      expect(headerIconClass('error')).toBe(CONNECTION_HEADER_PULSE_RED_ICON);
+      expect(headerIconClass('error')).toContain('animate-pulse');
+      expect(headerDotClass('error')).toContain('animate-pulse');
     });
 
-    it('mqtt connecting uses yellow pulse', () => {
+    it('mqtt connecting uses yellow text without pulse (dot pulses)', () => {
       expect(mqttHeaderVariant('connecting', false)).toBe('warn');
       expect(headerTextClass('warn')).toContain('text-yellow-400');
+      expect(headerTextClass('warn')).not.toContain('animate-pulse');
+      expect(headerDotClass('warn')).toContain('animate-pulse');
+    });
+
+    it('device connecting uses yellow text without pulse (dot pulses)', () => {
+      expect(deviceHeaderVariant('connecting', false)).toBe('warn');
+      expect(headerTextClass('warn')).toContain('text-yellow-400');
+      expect(headerTextClass('warn')).not.toContain('animate-pulse');
+    });
+
+    it('device configured uses green', () => {
+      expect(deviceHeaderVariant('configured', false)).toBe('ok');
+      expect(headerDotClass('ok')).toContain('bg-green-500');
+    });
+
+    it('device connected without configure uses muted connected variant', () => {
+      expect(deviceHeaderVariant('connected', false)).toBe('connected');
+      expect(headerTextClass('connected')).toContain('text-muted');
     });
 
     it('device error uses pulsing red dot', () => {

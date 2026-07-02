@@ -245,6 +245,48 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
   });
 
+  it('flags ASCII ellipsis on connectionPanel.autoConnectingTo', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'connectionPanel.autoConnectingTo',
+      val: 'Automatische Verbindung mit {{deviceName}}...',
+      enVal: 'Auto-connecting to {{deviceName}}…',
+    });
+    expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
+  });
+
+  it('flags double Unicode ellipsis on Noble BLE wait stage copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'zh',
+      flatKey: 'connectionPanel.stageWaitingNobleBleMeshtastic',
+      val: '正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}……',
+      enVal:
+        'Waiting for Meshtastic Bluetooth to finish — MeshCore will connect to {{deviceName}} automatically when it is done…',
+    });
+    expectIssue(issues, 'use a single Unicode ellipsis (…), not repeated');
+  });
+
+  it('flags autoReconnectInProgress connect-vs-reconnect false friend in Ukrainian', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'connectionPanel.autoReconnectInProgress',
+      val: 'Триває автоматичне підключення…',
+      enVal: 'Auto-reconnect in progress…',
+    });
+    expectIssue(issues, 'autoReconnectInProgress false friend');
+  });
+
+  it('passes valid autoReconnectInProgress in Ukrainian', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'uk',
+        flatKey: 'connectionPanel.autoReconnectInProgress',
+        val: 'Триває автоматичне повторне підключення…',
+        enVal: 'Auto-reconnect in progress…',
+      }),
+    ).toEqual([]);
+  });
+
   it('flags retryRemoteChannels loading-channel false friend in Spanish', () => {
     const issues = localeStringQualityIssues({
       locale: 'es',
@@ -1330,6 +1372,76 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'teleport');
   });
 
+  it('flags non-verbatim RX in rawPacketLog.reticulum.rx', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'rawPacketLog.reticulum.rx',
+      val: 'Recept',
+      enVal: 'RX',
+    });
+    expectIssue(issues, 'rawPacketLog reticulum rx must stay verbatim "RX"');
+  });
+
+  it('flags CAT ph tag in rawPacketLog.reticulum.rx', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pt-BR',
+      flatKey: 'rawPacketLog.reticulum.rx',
+      val: 'RX<ph x="1" type="x-unknown"/>',
+      enVal: 'RX',
+    });
+    expectIssue(issues, 'CAT/XLIFF/Memsource XML residue');
+  });
+
+  it('flags punctuation-only rawPacketLog.reticulum.destination', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'rawPacketLog.reticulum.destination',
+      val: ':',
+      enVal: 'Destination',
+    });
+    expectIssue(issues, 'punctuation-only garbage');
+  });
+
+  it('flags bare PH 0 in reticulumTopology.hopBadge', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumTopology.hopBadge',
+      val: 'PH 0',
+      enVal: '{{count}}h',
+    });
+    expectIssue(issues, 'hopBadge must preserve {{count}} placeholder');
+  });
+
+  it('flags untranslated reticulumTopology.self', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumTopology.self',
+      val: 'You',
+      enVal: 'You',
+    });
+    expectIssue(issues, 'reticulumTopology.self must be translated');
+  });
+
+  it('flags HTML span residue in rawPacketLog.reticulum.packetType', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'rawPacketLog.reticulum.packetType',
+      val: '<span>Tipo de bulto</span>',
+      enVal: 'Packet type',
+    });
+    expectIssue(issues, 'HTML tag residue');
+  });
+
+  it('flags inverted French flasher.noSerialPorts', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'flasher.noSerialPorts',
+      val: 'Ports USB-série trouvés :',
+      enVal: 'No USB serial ports found.',
+    });
+    expectIssue(issues, 'must express absence');
+  });
+
   const enMeshcoreOpenWireCompatHint =
     'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
 
@@ -1462,6 +1574,185 @@ describe('roomsPanel saved passwords per-key quality', () => {
       enVal: 'USB serial connection lost — select your device again',
     });
     expectIssue(issues, 'Ukrainian apostrophe words must not have a space');
+  });
+
+  it('flags spaced reticulum sidecar build command', () => {
+    const enVal =
+      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).';
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'connectionPanel.reticulumSidecarMissing',
+      val: 'Sidecar missing. Run `pnpm run reticulum: sidecar: build` (Rust).',
+      enVal,
+    });
+    expectIssue(issues, 'reticulum sidecar build command must appear exactly');
+  });
+
+  it('flags Rust translated as corrosion in reticulumSidecarMissing', () => {
+    const enVal =
+      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).';
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'connectionPanel.reticulumSidecarMissing',
+      val: 'Sidecar no construido. Ejecute `pnpm run reticulum:sidecar:build` (requiere óxido).',
+      enVal,
+    });
+    expectIssue(issues, 'reticulum sidecar Rust false friend');
+  });
+
+  it('allows Interface cognate for reticulumNetworkUnknown', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'fr',
+        flatKey: 'connectionPanel.reticulumNetworkUnknown',
+        val: 'Interface',
+        enVal: 'Interface',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags German parallax false friend on reticulum disable', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'connectionPanel.reticulumInterfaces.disable',
+      val: 'Horizontaler Parallaxeffekt',
+      enVal: 'Disable',
+    });
+    expectIssue(issues, 'parallax');
+  });
+
+  it('flags untranslated reticulumStackRunning', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'connectionPanel.reticulumStackRunning',
+      val: 'Stack running',
+      enVal: 'Stack running',
+    });
+    expectIssue(issues, 'still identical to English');
+  });
+
+  it('flags Italian pressure false friend on reticulumPeers.name', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'connectionPanel.reticulumPeers.name',
+      val: 'Pressione',
+      enVal: 'Peer',
+    });
+    expectIssue(issues, 'reticulum peer name false friend');
+  });
+
+  it('flags Russian chimney stack false friend on reticulumStackRunning', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'connectionPanel.reticulumStackRunning',
+      val: 'Работает дымовая труба',
+      enVal: 'Stack running',
+    });
+    expectIssue(issues, 'reticulum stack running false friend');
+  });
+
+  it('flags Polish road-barrier false friend on reticulumStopStack', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'connectionPanel.reticulumStopStack',
+      val: 'Stos ograniczników',
+      enVal: 'Stop stack',
+    });
+    expectIssue(issues, 'reticulum stop stack false friend');
+  });
+
+  it('flags Russian Edit false friend on reticulum enable', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'connectionPanel.reticulumInterfaces.enable',
+      val: 'Редактировать',
+      enVal: 'Enable',
+    });
+    expectIssue(issues, 'reticulum enable false friend');
+  });
+
+  it('flags Korean inquiry false friend on emptySelectDm', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'chatPanel.emptySelectDm',
+      val: '위의 문의를 선택하세요.',
+      enVal:
+        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+    });
+    expectIssue(issues, 'chatPanel reticulum contact false friend');
+  });
+
+  it('flags Ukrainian sensor false friend on peerDetailModal probeHops', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'peerDetailModal.probeHops',
+      val: 'Датчик OK — {{hops}} стрибок(и).',
+      enVal: 'Probe OK — {{hops}} hop(s).',
+    });
+    expectIssue(issues, 'peerDetailModal probe false friend');
+  });
+
+  it('flags Ukrainian connection false friend on reticulumPing.failed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'reticulumPing.failed',
+      val: "Помилка зв 'язку: {{error}}",
+      enVal: 'Ping failed: {{error}}',
+    });
+    expectIssue(issues, 'reticulumPing.failed must mention ping');
+  });
+
+  it('flags HTML entity residue on nameLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'connectionPanel.reticulumIdentity.nameLabel',
+      val: 'Nom :&#10;',
+      enVal: 'Name:',
+    });
+    expectIssue(issues, 'HTML numeric entity residue');
+  });
+
+  it('flags CAT sample name on nameLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'connectionPanel.reticulumIdentity.nameLabel',
+      val: 'Name: Gerald Abram Foeh Junior',
+      enVal: 'Name:',
+    });
+    expectIssue(issues, 'nameLabel must be a short');
+  });
+
+  it('flags CAT XML residue on reticulumPing.run', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'reticulumPing.run',
+      val: '<primary><command>ping</command></primary>',
+      enVal: 'Ping',
+    });
+    expectIssue(issues, 'CAT/XLIFF/Memsource XML residue');
+  });
+
+  it('flags bracket [Data] placeholder on reticulumSendDelivered', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'chatPanel.reticulumSendDelivered',
+      val: '[Data] dostarczenia',
+      enVal: 'Delivered',
+    });
+    expectIssue(issues, 'CAT bracket placeholder residue');
+  });
+
+  it('flags untranslated reticulumSendDelivered', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'chatPanel.reticulumSendDelivered',
+      val: 'Delivered',
+      enVal: 'Delivered',
+    });
+    expectIssue(
+      issues,
+      'reticulumSendDelivered" is still identical to English — translate the UI text',
+    );
   });
 });
 

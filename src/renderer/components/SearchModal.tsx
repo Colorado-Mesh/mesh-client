@@ -6,12 +6,13 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
+import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import type { MeshNode } from '../lib/types';
 
 interface SearchResult {
   id: number;
-  sender_id: number | null;
+  sender_id: number | string | null;
   sender_name: string | null;
   payload: string;
   channel: number;
@@ -23,7 +24,8 @@ interface SearchResult {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  protocol: 'meshtastic' | 'meshcore';
+  protocol: MeshProtocol;
+  reticulumIdentityId?: string | null;
   nodes: Map<number, MeshNode>;
   channels: { index: number; name: string }[];
   onNavigateToChannel: (channelIdx: number) => void;
@@ -56,6 +58,7 @@ export default function SearchModal({
   isOpen,
   onClose,
   protocol,
+  reticulumIdentityId,
   nodes,
   channels,
   onNavigateToChannel,
@@ -103,14 +106,24 @@ export default function SearchModal({
         setLoading(true);
         try {
           let raw: unknown[];
-          if (protocol === 'meshcore') {
+          if (protocol === 'reticulum') {
+            if (!reticulumIdentityId) {
+              setResults([]);
+              return;
+            }
+            raw = await window.electronAPI.db.searchReticulumMessages(
+              reticulumIdentityId,
+              baseQuery || ' ',
+              100,
+            );
+          } else if (protocol === 'meshcore') {
             raw = await window.electronAPI.db.searchMeshcoreMessages(baseQuery || ' ', 100);
           } else {
             raw = await window.electronAPI.db.searchMessages(baseQuery || ' ', 100);
           }
           let items = (raw as SearchResult[]).map((r) => ({
             ...r,
-            channel: r.channel_idx ?? r.channel ?? 0,
+            channel: protocol === 'reticulum' ? -1 : (r.channel_idx ?? r.channel ?? 0),
           }));
           if (userFilter) {
             items = items.filter((r) => (r.sender_name ?? '').toLowerCase().includes(userFilter));
@@ -132,7 +145,7 @@ export default function SearchModal({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, protocol, channels]);
+  }, [query, protocol, channels, reticulumIdentityId]);
 
   if (!isOpen) return null;
 
@@ -142,7 +155,7 @@ export default function SearchModal({
   };
 
   const getSenderName = (r: SearchResult) => {
-    if (r.sender_id) {
+    if (typeof r.sender_id === 'number' && r.sender_id) {
       const node = nodes.get(r.sender_id);
       if (node) return node.long_name;
     }
@@ -198,12 +211,10 @@ export default function SearchModal({
         {/* Results */}
         <div className="overflow-y-auto">
           {results.length === 0 && !loading && query.trim() && (
-            <p className="py-8 text-center text-sm text-gray-500">No results</p>
+            <p className="py-8 text-center text-sm text-gray-500">{t('searchModal.noResults')}</p>
           )}
           {results.length === 0 && !query.trim() && (
-            <p className="py-8 text-center text-sm text-gray-600">
-              Type to search across all channels
-            </p>
+            <p className="py-8 text-center text-sm text-gray-600">{t('searchModal.hint')}</p>
           )}
           {results.map((r) => (
             <button
@@ -229,7 +240,7 @@ export default function SearchModal({
 
         {results.length > 0 && (
           <div className="border-t border-gray-800 px-4 py-2 text-xs text-gray-600">
-            {results.length} result{results.length !== 1 ? 's' : ''} — click to navigate
+            {t('searchModal.resultCount', { count: results.length })}
           </div>
         )}
       </div>

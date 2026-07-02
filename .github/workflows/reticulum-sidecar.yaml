@@ -1,0 +1,139 @@
+name: Reticulum sidecar
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'reticulum-sidecar/**'
+      - '.github/workflows/reticulum-sidecar.yaml'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: mesh-client-reticulum-linux-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: mesh-client-reticulum-macos-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: mesh-client-reticulum-win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      # Optional rns-stack path deps must exist on disk even for the default stub build.
+      # checkout@v6 only allows paths under GITHUB_WORKSPACE; Cargo expects Ratspeak siblings.
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build sidecar (stub)
+        working-directory: reticulum-sidecar
+        run: |
+          cargo test
+          cargo build --release --target ${{ matrix.target }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            reticulum-sidecar/target/${{ matrix.target }}/release/mesh-client-reticulum*
+          retention-days: 14
+
+  build-rns-stack:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: mesh-client-reticulum-rns-linux-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: mesh-client-reticulum-rns-macos-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: mesh-client-reticulum-rns-win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install Linux BLE build deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      - name: Build sidecar (rns-stack)
+        working-directory: reticulum-sidecar
+        run: |
+          cargo test --features rns-stack,rns-ble
+          cargo build --release --target ${{ matrix.target }} --features rns-stack,rns-ble
+      - name: Upload rns-stack artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            reticulum-sidecar/target/${{ matrix.target }}/release/mesh-client-reticulum*
+          retention-days: 14
+
+  build-windows-arm64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      # Optional rns-stack path deps must exist on disk even for the default stub build.
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: aarch64-pc-windows-msvc
+      - name: Build WoA sidecar (stub)
+        working-directory: reticulum-sidecar
+        run: |
+          cargo test
+          cargo build --release --target aarch64-pc-windows-msvc
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-reticulum-win-arm64
+          path: reticulum-sidecar/target/aarch64-pc-windows-msvc/release/mesh-client-reticulum.exe
+          retention-days: 14
+
+  build-windows-arm64-rns-stack:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: aarch64-pc-windows-msvc
+      - name: Build WoA sidecar (rns-stack)
+        working-directory: reticulum-sidecar
+        run: |
+          cargo test --features rns-stack,rns-ble
+          cargo build --release --target aarch64-pc-windows-msvc --features rns-stack,rns-ble
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mesh-client-reticulum-rns-win-arm64
+          path: reticulum-sidecar/target/aarch64-pc-windows-msvc/release/mesh-client-reticulum.exe
+          retention-days: 14

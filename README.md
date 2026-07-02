@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
+> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
@@ -23,12 +23,12 @@ Reliable Desktop Power. Local Persistence. Total Insight.
 
 While official mobile apps cover the basics, desktop power users often face a fragmented ecosystem: limited app availability for MeshCore, inconsistent support across operating systems, and persistent sync issues on macOS. Mesh-Client fills those gaps with a high-performance desktop experience.
 
-With a dedicated local SQLite database, Mesh-Client keeps message history and mesh logs durable across restarts and sync failures. It provides one reliable hub for both Meshtastic and MeshCore firmware, delivering a unified workflow regardless of protocol or hardware.
+With a dedicated local SQLite database, Mesh-Client keeps message history and mesh logs durable across restarts and sync failures. It provides one reliable hub for Meshtastic, MeshCore, and Reticulum (via an AGPL Rust sidecar), delivering a unified workflow regardless of protocol or hardware.
 
 **Why Mesh-Client?**
 
 - **True message persistence:** Local SQLite storage for reliable long-term history, without lost chats or broken logs.
-- **Universal protocol support:** One consistent interface for both Meshtastic and MeshCore devices.
+- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (amber protocol pill; LXMF DMs via sidecar).
 - **Advanced mesh visibility:** Routing diagnostics and mesh health insight that mobile apps often skip.
 - **Desktop-first workflow:** MQTT integration and a full-featured interface for power users.
 - **Cross-platform stability:** A feature-rich experience across macOS, Linux, and Windows.
@@ -69,6 +69,8 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 ---
 
 ## Key Features
+
+See [docs/reticulum.md](docs/reticulum.md) for Reticulum/LXMF architecture (AGPL sidecar, amber protocol pill).
 
 ### Meshtastic Features
 

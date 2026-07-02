@@ -803,6 +803,88 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
 
+### Reticulum sidecar won't start or health poll times out
+
+**Symptoms**: Connection tab **Start stack** fails; logs show `[ReticulumSidecar]` health poll timeout; `reticulum:getStatus` reports `lastError`. Identity **Generate** / **Import** errors with `Reticulum sidecar is not running`.
+
+**Checks**:
+
+0. **Identity wizard**: click **Start stack** at the top of the Reticulum Connection panel before generating or importing a mnemonic. The sidecar must be running for `reticulum:proxyGet` / `proxyPost` identity routes.
+1. **Dev — binary missing**: build once from repo root: `pnpm run reticulum:sidecar:build` (requires [Rust](https://rustup.rs/); see [development-environment.md](development-environment.md#reticulum-sidecar-optional)). Electron **Start stack** can auto-run `cargo build` on first click, but you need `cargo` on `PATH`. Error text `sidecar binary not found` means `reticulum-sidecar/target/debug/mesh-client-reticulum` does not exist yet.
+2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` or confirm `curl http://127.0.0.1:19437/api/v1/status` after **Start stack**.
+3. **Packaged app**: confirm `mesh-client-reticulum` exists under the app resources (`reticulum-sidecar/` beside the executable). WoA needs the ARM64 sidecar artifact, not x64.
+4. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
+5. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
+
+Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
+
+### Reticulum Nomad Network or topology API returns 404
+
+**Symptoms**: Device log shows `sidecar GET /api/v1/nomadnetwork/nodes failed: 404` or `/api/v1/topology` **404** while the sidecar process is running. Nomad Network tab may show **API unavailable**.
+
+**Cause**: The running `mesh-client-reticulum` binary is **older than** the Rust sources in `reticulum-sidecar/` (routes were added after the binary was built). Dev auto-build only ran when the binary was missing, or you have not rebuilt since pulling.
+
+**Fix**:
+
+1. From repo root: `pnpm run reticulum:sidecar:build`
+2. Quit mesh-client fully, reopen, **Connection → Start stack**
+3. Confirm with `curl` against the sidecar port from logs: `/api/v1/nomadnetwork/nodes` and `/api/v1/topology` return JSON 200
+
+In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the debug binary.
+
+### Reticulum sidecar stops during dev (Vite HMR)
+
+**Symptoms**: After saving a file in `pnpm run dev`, many `[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running` lines appear; Nomad/Propagation/Radio panels fail until you restart the stack.
+
+**Cause**: Hot module reload remounted the Reticulum runtime, which previously called `reticulum:stop` on every unmount.
+
+**Fix**: Current dev builds **preserve** the sidecar across HMR remounts. If you still see this on an older build, click **Start stack** again on Connection. Explicit **Disconnect** / app quit still stops the sidecar.
+
+### Reticulum `proxyGet` fetch failed / many `[ReticulumIPC] start` lines
+
+**Symptoms**: Device log or devtools shows `Error occurred in handler for 'reticulum:proxyGet': TypeError: fetch failed`, often in bursts of three or more at once. The app log may also show dozens of `[ReticulumIPC] start` entries within a few seconds while Nomad/Radio/Peers panels stay empty or stale.
+
+**Cause**: Overlapping sidecar start attempts restart the process before its HTTP server is ready (start/reconnect storm). Panels keep calling `proxyGet` against a dead or stale localhost port during the churn.
+
+**Fix**: Current builds serialize sidecar start in the main process and suppress autostart/reconnect feedback loops during an in-flight start. If you still see this: disable **Autostart stack** on Connection, click **Start stack** once, wait up to ~30s for the health poll, then reopen other Reticulum tabs.
+
+### Reticulum announce interval resets after saving stack settings
+
+**Symptoms**: You set an announce interval on the Radio tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.
+
+**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**.
+
+**Fix**: Current Radio UI merge-reads settings before PUT. If you hit this on an older build, re-save the announce interval after stack settings changes.
+
+### Clear announces does not empty the Peers tab under rns-stack
+
+**Symptoms**: **Clear announces** on Radio succeeds but peers reappear after refresh.
+
+**Cause**: With the full **`rns-stack`** build, `DELETE /api/v1/announces` clears the stub cache only; the live RNS path table repopulates on the next `GET /api/v1/peers`.
+
+**Workaround**: Expect peers to return while connected to a live network; use the stub sidecar for offline UI testing of an empty peer list.
+
+### Reticulum identity hash mismatch (stub vs live stack)
+
+**Symptoms**: UI shows a configured identity hash that does not match Ratspeak/rsReticulum on disk, or LXMF peers cannot reach you.
+
+**Cause**: The stub stack can mark identity configured in `mesh_client_stack.json` before `config/identity` exists; the live bridge may spawn a fresh RNS identity until the identity file is written.
+
+**Fix**: Generate or import identity with the stack running; restart the stack after identity changes. Compare `GET /api/v1/identity/status` with your Ratspeak identity file.
+
+### Reticulum interface add/edit/delete fails
+
+**Symptoms**: Radio tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.
+
+**Checks**:
+
+1. **Stack running**: start the sidecar from **Connection → Start stack** before using the Radio tab. Identity and interface routes require a live sidecar (`reticulum:proxyGet` / `proxyPut` / `proxyDelete`).
+2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging).
+3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
+4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
+
+For bulk fixes, use Radio **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-radio-tab).
+
 ### Can't see RF packets on custom MQTT broker
 
 **Cause**: The packet logger publishes to `{prefix}/{pubKey}/packets`, but you're viewing the packets somewhere that doesn't receive published MQTT messages.

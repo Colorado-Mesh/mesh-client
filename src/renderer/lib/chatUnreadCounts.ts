@@ -9,6 +9,8 @@ import {
   findMeshtasticParentMessageForReply,
   findParentMessageForReply,
 } from '@/renderer/lib/replyPreview';
+import { normalizeReticulumNodeId, reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
+import { reticulumUnsetDmTo } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
@@ -55,11 +57,45 @@ export function resolveChatDmPeer(
   options?: ChatUnreadDmOptions,
 ): number | undefined {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
-  if (msg.to == null) return undefined;
-  const isOwn = (id: number) => ownNodeIds.has(id);
+  if (protocol === 'reticulum' && reticulumUnsetDmTo(msg.to) && msg.reticulum_sender_hash) {
+    const isOwn = (id: number) => {
+      const normalized = normalizeReticulumNodeId(id);
+      for (const own of ownNodeIds) {
+        if (normalizeReticulumNodeId(own) === normalized) return true;
+      }
+      return false;
+    };
+    const senderFromHash = Number.parseInt(
+      msg.reticulum_sender_hash.replace(/[^0-9a-f]/gi, '').slice(0, 12) || '0',
+      16,
+    );
+    const senderId = (Number.isFinite(senderFromHash) ? senderFromHash : 0) >>> 0;
+    if (senderId > 0 && !isOwn(senderId) && !isOwn(msg.sender_id)) {
+      return senderId;
+    }
+  }
+  const effectiveTo = protocol === 'reticulum' && msg.to === 0 ? undefined : msg.to;
+  const isOwn = (id: number) => {
+    if (protocol === 'reticulum') {
+      const normalized = normalizeReticulumNodeId(id);
+      for (const own of ownNodeIds) {
+        if (normalizeReticulumNodeId(own) === normalized) return true;
+      }
+      return false;
+    }
+    return ownNodeIds.has(id);
+  };
+  if (effectiveTo == null) {
+    if (protocol === 'reticulum' && msg.to === 0 && msg.sender_id > 0 && !isOwn(msg.sender_id)) {
+      const peerU32 = msg.sender_id >>> 0;
+      if (options?.excludeDmPeer?.(peerU32)) return undefined;
+      return peerU32;
+    }
+    return undefined;
+  }
   let peer: number | undefined;
-  if (isOwn(msg.sender_id) && !isOwn(msg.to)) peer = msg.to;
-  else if (isOwn(msg.to) && !isOwn(msg.sender_id)) peer = msg.sender_id;
+  if (isOwn(msg.sender_id) && !isOwn(effectiveTo)) peer = effectiveTo;
+  else if (isOwn(effectiveTo) && !isOwn(msg.sender_id)) peer = msg.sender_id;
   if (
     peer == null &&
     protocol === 'meshcore' &&
@@ -68,6 +104,25 @@ export function resolveChatDmPeer(
     !isOwn(msg.sender_id)
   ) {
     peer = msg.sender_id;
+  }
+  if (peer == null && protocol === 'reticulum') {
+    const fromU = msg.sender_id >>> 0;
+    const toU = effectiveTo >>> 0;
+    const isOwnU32 = (id: number) => ownNodeIds.has(id >>> 0);
+    if (msg.reticulum_sender_hash && fromU !== toU) {
+      const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
+      if (senderFromHash === fromU && !isOwnU32(toU)) {
+        peer = toU;
+      } else if (senderFromHash === fromU && !isOwnU32(fromU)) {
+        peer = fromU;
+      } else if (!isOwnU32(fromU)) {
+        peer = fromU;
+      }
+    } else if (fromU > 0 && !isOwnU32(fromU)) {
+      peer = fromU;
+    } else if (toU > 0 && !isOwnU32(toU)) {
+      peer = toU;
+    }
   }
   if (peer == null) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
@@ -155,9 +210,25 @@ export function totalUnreadCount(
     nowMs,
   );
   let total = 0;
-  for (const n of channel.values()) total += n;
+  // Reticulum chat is DM-only; channel-indexed rows must not inflate the badge.
+  if (protocol !== 'reticulum') {
+    for (const n of channel.values()) total += n;
+  }
   for (const n of dm.values()) total += n;
   return total;
+}
+
+const RETICULUM_OPERATIONAL_STATUSES = new Set(['connected', 'configured', 'stale']);
+
+/** Reticulum LXMF chat unread for sidebar/tray badges. */
+export function computeReticulumChatUnread(
+  messages: readonly ChatMessage[],
+  connectionStatus: string | undefined,
+  persistedLastRead: Readonly<Record<string, number>>,
+): number {
+  if (!connectionStatus || !RETICULUM_OPERATIONAL_STATUSES.has(connectionStatus)) return 0;
+  if (messages.length === 0) return 0;
+  return totalUnreadCount(messages, persistedLastRead, new Set(), 'reticulum');
 }
 
 /** True when at least one message maps to a view that is not per-conversation muted. */

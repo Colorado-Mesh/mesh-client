@@ -45,6 +45,9 @@ import {
   MeshtasticMqttPathIcon,
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
+import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
+import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
+import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -83,6 +86,7 @@ import {
   findFirstMessageIndexByDayKey,
   findMessageIndexByKey,
   getChatDayKey,
+  getChatMessageVirtualizerKey,
   getDistFromChatBottom,
   scheduleVirtualRowRemeasure,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
@@ -113,12 +117,19 @@ import {
   reactionGlyphFromPicker,
 } from '../lib/reactions';
 import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
+import {
+  groupChatReactionsByParentKey,
+  reactionLookupKeysForParentMessage,
+} from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
-import { ChatComposer } from './ChatComposer';
+import { useReticulumPropagationStore } from '../stores/reticulumPropagationStore';
+import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
+import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
 import { useToast } from './Toast';
 
 function chatPanelIsLinux(): boolean {
@@ -252,10 +263,12 @@ function OutboxBubble({
   );
 }
 
-function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
+function TransportBadge({ via }: { via: NonNullable<ChatMessage['receivedVia']> }) {
   const { t } = useTranslation();
   const rfLabel = t('chatPanel.receivedViaRf');
   const mqttLabel = t('chatPanel.receivedViaMqtt');
+  const tcpLabel = t('chatPanel.receivedViaTcp');
+  const networkLabel = t('chatPanel.receivedViaNetwork');
   const rfIcon = (
     <span role="img" title={rfLabel} aria-label={rfLabel}>
       <MeshtasticRfPathIcon />
@@ -271,7 +284,26 @@ function TransportBadge({ via }: { via: 'rf' | 'mqtt' | 'both' }) {
     const bothLabel = t('chatPanel.receivedViaRfAndMqtt');
     return <MeshtasticHybridPathIcons title={bothLabel} ariaLabel={bothLabel} />;
   }
+  if (via === 'tcp') {
+    return (
+      <span className="text-[10px] text-sky-400" title={tcpLabel} aria-label={tcpLabel}>
+        TCP
+      </span>
+    );
+  }
+  if (via === 'network') {
+    return (
+      <span role="img" title={networkLabel} aria-label={networkLabel}>
+        <MeshtasticMqttPathIcon />
+      </span>
+    );
+  }
   return via === 'rf' ? rfIcon : mqttIcon;
+}
+
+function reticulumOutboundVia(via: ChatMessage['receivedVia']): 'rf' | 'tcp' | 'network' {
+  if (via === 'rf' || via === 'tcp' || via === 'network') return via;
+  return 'network';
 }
 
 function StoreForwardBadge() {
@@ -313,6 +345,17 @@ function withoutDmNode(source: Record<number, number>, nodeNum: number): Record<
   return Object.fromEntries(Object.entries(source).filter(([key]) => Number(key) !== nodeNum));
 }
 
+/** True when the user closed a DM tab and no new messages arrived since dismiss. */
+function isDismissedDmConversation(
+  nodeNum: number,
+  dismissedDmTabs: Record<number, number>,
+  inferredDmTabs: ReadonlyMap<number, number>,
+): boolean {
+  const dismissedCount = dismissedDmTabs[nodeNum] ?? 0;
+  const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
+  return dmCount > 0 && dismissedCount >= dmCount;
+}
+
 function latestMessageTimestamp(messages: readonly ChatMessage[], nowMs = Date.now()): number {
   let latest = 0;
   for (const msg of messages) {
@@ -350,7 +393,7 @@ export interface ChatPanelProps {
     text: string,
     channel: number,
     destination?: number,
-    replyId?: number,
+    replyRef?: number | string,
   ) => void | Promise<void>;
   onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
@@ -378,6 +421,18 @@ export interface ChatPanelProps {
   /** MeshCore MsgWaiting drain — messages queued on device. */
   waitingMessagesCount?: number;
   onSyncWaitingMessages?: () => void;
+  /** Reticulum LXMF: DM-only chat (no channel pills). */
+  dmOnlyChat?: boolean;
+  /** Reticulum LXMF delivery status badge on outbound/inbound messages. */
+  showLxmfDeliveryStatus?: boolean;
+  /** Reticulum LXMF attachment line in message bubbles. */
+  showLxmfAttachmentLine?: boolean;
+  /** Composer single-message payload limit override (LXMF). */
+  composerPayloadLimit?: number;
+  /** Use LXMF message hash for threaded replies (ratspeak.chat.v2). */
+  lxmfReplyHashReplies?: boolean;
+  /** Reticulum LXMF file/image attachments in DM composer. */
+  onSendAttachment?: (file: File, destination: number) => Promise<void>;
 }
 
 function ChatPanel({
@@ -405,16 +460,35 @@ function ChatPanel({
   onFetchStoreForwardHistory,
   waitingMessagesCount = 0,
   onSyncWaitingMessages,
+  dmOnlyChat = false,
+  showLxmfDeliveryStatus = false,
+  showLxmfAttachmentLine = false,
+  composerPayloadLimit,
+  lxmfReplyHashReplies = false,
+  onSendAttachment,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
   const { addToast } = useToast();
+  const reticulumPropagationSync = useReticulumPropagationStore((s) => s.sync);
   const ownNodeIdSet = useMemo(() => {
     const base = ownNodeIds != null && ownNodeIds.length > 0 ? ownNodeIds : [myNodeNum];
-    return new Set(base.filter((id) => id > 0));
-  }, [myNodeNum, ownNodeIds]);
+    const ids = base.filter((id) => id > 0);
+    if (protocol === 'reticulum') {
+      return new Set(ids.map((id) => normalizeReticulumNodeId(id)));
+    }
+    return new Set(ids);
+  }, [myNodeNum, ownNodeIds, protocol]);
 
-  const isOwnNode = useCallback((nodeId: number) => ownNodeIdSet.has(nodeId), [ownNodeIdSet]);
+  const isOwnNode = useCallback(
+    (nodeId: number) => {
+      if (protocol === 'reticulum') {
+        return ownNodeIdSet.has(normalizeReticulumNodeId(nodeId));
+      }
+      return ownNodeIdSet.has(nodeId);
+    },
+    [ownNodeIdSet, protocol],
+  );
 
   const meshcoreExcludeDmPeer = useMemo((): ChatUnreadDmOptions['excludeDmPeer'] | undefined => {
     if (protocol !== 'meshcore') return undefined;
@@ -535,7 +609,9 @@ function ChatPanel({
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
-  const [viewMode, setViewMode] = useState<'channels' | 'dm' | 'starred'>('channels');
+  const [viewMode, setViewMode] = useState<'channels' | 'dm' | 'starred'>(() =>
+    dmOnlyChat ? 'dm' : 'channels',
+  );
   const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => loadOpenDmTabsInitial(protocol));
   const openDmTabsRef = useRef(openDmTabs);
   openDmTabsRef.current = openDmTabs;
@@ -645,40 +721,11 @@ function ChatPanel({
   );
 
   // Separate regular messages from reaction messages
-  const { regularMessages, reactionsByReplyId } = useMemo(() => {
-    const regular: ChatMessage[] = [];
-    const reactions = new Map<
-      number,
-      { emoji: number; payload: string; sender_id: number; sender_name: string; id?: number }[]
-    >();
-
-    const reactionDedupeKey = (senderId: number, emoji: number, payload: string): string =>
-      `${senderId}|${emoji}|${payload.trim()}`;
-
-    for (const msg of displayMessages) {
-      if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) {
-        continue;
-      }
-      if (msg.emoji && msg.replyId) {
-        const existing = reactions.get(msg.replyId) ?? [];
-        const dedupeKey = reactionDedupeKey(msg.sender_id, msg.emoji, msg.payload);
-        if (
-          !existing.some((r) => reactionDedupeKey(r.sender_id, r.emoji, r.payload) === dedupeKey)
-        ) {
-          existing.push({
-            emoji: msg.emoji,
-            payload: msg.payload,
-            sender_id: msg.sender_id,
-            sender_name: msg.sender_name,
-            id: msg.id,
-          });
-          reactions.set(msg.replyId, existing);
-        }
-      } else {
-        regular.push(msg);
-      }
-    }
-    return { regularMessages: regular, reactionsByReplyId: reactions };
+  const { regularMessages, reactionsByParentKey } = useMemo(() => {
+    const filtered = displayMessages.filter(
+      (msg) => !(protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)),
+    );
+    return groupChatReactionsByParentKey(filtered);
   }, [displayMessages, protocol]);
 
   const inferredDmTabs = useMemo(() => {
@@ -714,12 +761,41 @@ function ChatPanel({
       }
     }
     for (const [nodeNum, unread] of dmUnreadCounts) {
-      if (unread > 0) all.add(nodeNum);
+      if (
+        unread > 0 &&
+        (!dmOnlyChat || !isDismissedDmConversation(nodeNum, dismissedDmTabs, inferredDmTabs))
+      ) {
+        all.add(nodeNum);
+      }
     }
     return Array.from(all).filter(
       (nodeNum) => protocol !== 'meshtastic' || !isMeshtasticBroadcastNodeNum(nodeNum),
     );
-  }, [activeDmNode, openDmTabs, inferredDmTabs, dismissedDmTabs, dmUnreadCounts, protocol]);
+  }, [
+    activeDmNode,
+    dismissedDmTabs,
+    dmOnlyChat,
+    dmUnreadCounts,
+    inferredDmTabs,
+    openDmTabs,
+    protocol,
+  ]);
+
+  // Reticulum DM-only: auto-focus the conversation with the most history when none selected.
+  useEffect(() => {
+    if (!dmOnlyChat || activeDmNode != null || visibleDmTabs.length === 0) return;
+    let bestTab = visibleDmTabs[0];
+    let bestCount = inferredDmTabs.get(bestTab) ?? 0;
+    for (const [nodeNum, count] of inferredDmTabs) {
+      if (!visibleDmTabs.includes(nodeNum)) continue;
+      if (count > bestCount) {
+        bestCount = count;
+        bestTab = nodeNum;
+      }
+    }
+    setActiveDmNode(bestTab);
+    setViewMode('dm');
+  }, [activeDmNode, dmOnlyChat, inferredDmTabs, visibleDmTabs]);
 
   const inferredDmTabSet = useMemo(() => new Set(inferredDmTabs.keys()), [inferredDmTabs]);
 
@@ -747,17 +823,38 @@ function ChatPanel({
 
   const viewMessages = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) {
+      const dmPeer =
+        protocol === 'reticulum' ? normalizeReticulumNodeId(activeDmNode) : activeDmNode;
+      if (protocol === 'reticulum') {
+        const filtered = regularMessages.filter((m) =>
+          reticulumMessageMatchesDmPeer(m, dmPeer, ownNodeIdSet),
+        );
+        return filtered;
+      }
       return regularMessages.filter(
         (m) =>
-          (m.to === activeDmNode && isOwnNode(m.sender_id)) ||
-          (m.sender_id === activeDmNode &&
+          (m.to === dmPeer && isOwnNode(m.sender_id)) ||
+          (m.sender_id === dmPeer &&
             (isOwnNode(m.to ?? 0) ||
               (protocol === 'meshcore' && m.channel === -1 && !isOwnNode(m.sender_id)))),
       );
     }
 
+    if (dmOnlyChat) {
+      return [];
+    }
+
     return regularMessages.filter((m) => !m.to && m.channel === channel);
-  }, [activeDmNode, channel, isOwnNode, protocol, regularMessages, viewMode]);
+  }, [
+    activeDmNode,
+    channel,
+    dmOnlyChat,
+    isOwnNode,
+    protocol,
+    regularMessages,
+    viewMode,
+    ownNodeIdSet,
+  ]);
 
   const filteredMessages = useMemo(() => {
     let msgs = viewMessages;
@@ -811,11 +908,7 @@ function ChatPanel({
     estimateSize: estimateMessageSize,
     measureElement: measureMessageElement,
     overscan: 10,
-    getItemKey: (index) => {
-      const msg = filteredMessages[index];
-      if (!msg) return index;
-      return msg.id != null ? `db-${msg.id}` : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
-    },
+    getItemKey: (index) => getChatMessageVirtualizerKey(filteredMessages[index], index),
     anchorTo: 'end',
     followOnAppend: true,
     scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
@@ -875,7 +968,7 @@ function ChatPanel({
   });
 
   const viewOutboxRows = useMemo(
-    () => outboxRows.filter((r) => r.viewKey === viewKey),
+    () => outboxRows.filter((r): r is OutboxEntry => r?.viewKey === viewKey),
     [outboxRows, viewKey],
   );
 
@@ -992,7 +1085,7 @@ function ChatPanel({
     const hasInboundForView = newMsgs.some((msg) => {
       if (isOwnNode(msg.sender_id)) return false;
       if (msg.isHistory) return false;
-      if (msg.emoji && msg.replyId) return false;
+      if (msg.emoji && (msg.replyId != null || msg.reticulum_reply_to_hash)) return false;
       if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return false;
       const peer = resolveDmPeer(msg);
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
@@ -1224,9 +1317,13 @@ function ChatPanel({
   }, [showSearch]);
 
   const handleSendChunk = useCallback(
-    async (text: string, opts?: { replyId?: number }) => {
+    async (text: string, opts?: ChatComposerSendOpts) => {
       const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
+      if (dmOnlyChat && destination == null) {
+        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
+        return;
+      }
       if (
         protocol === 'meshcore' &&
         opts?.replyId != null &&
@@ -1235,10 +1332,15 @@ function ChatPanel({
         await onReact(text, opts.replyId, sendChannel);
         return;
       }
-      const sendOutcome = onSend(text, sendChannel, destination, opts?.replyId);
+      const sendOutcome = onSend(
+        text,
+        sendChannel,
+        destination,
+        opts?.replyHash ?? opts?.replyId ?? undefined,
+      );
       await Promise.resolve(sendOutcome);
     },
-    [activeDmNode, channel, onReact, onSend, protocol, viewMode],
+    [activeDmNode, channel, dmOnlyChat, onReact, onSend, protocol, t, viewKey, viewMode],
   );
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
@@ -1279,19 +1381,46 @@ function ChatPanel({
       if (inferredDmTabSet.has(nodeNum)) {
         const dmCount = inferredDmTabs.get(nodeNum) ?? 0;
         setDismissedDmTabs((prev) => ({ ...prev, [nodeNum]: dmCount }));
+        const dmViewKey = `dm:${nodeNum}`;
+        const peerMessages = regularMessages.filter((m) => {
+          if (protocol === 'reticulum') {
+            return reticulumMessageMatchesDmPeer(
+              m,
+              normalizeReticulumNodeId(nodeNum),
+              ownNodeIdSet,
+            );
+          }
+          return (
+            (m.to === nodeNum && isOwnNode(m.sender_id)) ||
+            (m.sender_id === nodeNum && isOwnNode(m.to ?? 0))
+          );
+        });
+        const latest = latestMessageTimestamp(peerMessages);
+        if (dmOnlyChat && latest > 0) {
+          setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[dmViewKey, latest]]));
+        }
       }
       if (activeDmNode === nodeNum) {
-        // Switch to next tab or back to channels
         const remaining = visibleDmTabs.filter((n) => n !== nodeNum);
         if (remaining.length > 0) {
           setActiveDmNode(remaining[remaining.length - 1]);
         } else {
           setActiveDmNode(null);
-          setViewMode('channels');
+          setViewMode(dmOnlyChat ? 'dm' : 'channels');
         }
       }
     },
-    [activeDmNode, inferredDmTabSet, inferredDmTabs, visibleDmTabs],
+    [
+      activeDmNode,
+      dmOnlyChat,
+      inferredDmTabSet,
+      inferredDmTabs,
+      isOwnNode,
+      ownNodeIdSet,
+      protocol,
+      regularMessages,
+      visibleDmTabs,
+    ],
   );
 
   function msgStarId(msg: ChatMessage): string {
@@ -1344,13 +1473,8 @@ function ChatPanel({
   }
 
   /** Flat reaction rows for a message key (chronological as stored). */
-  function getReactionRows(messageKey: number | undefined, parentMsg?: ChatMessage) {
-    if (messageKey == null) return [];
-    const lookupKeys = new Set<number>([messageKey]);
-    if (parentMsg?.packetId != null && parentMsg.packetId !== parentMsg.timestamp) {
-      lookupKeys.add(parentMsg.packetId);
-      lookupKeys.add(parentMsg.timestamp);
-    }
+  function getReactionRows(parentMsg: ChatMessage) {
+    const lookupKeys = reactionLookupKeysForParentMessage(parentMsg);
     const seen = new Set<string>();
     const rows: {
       emoji: number;
@@ -1360,7 +1484,7 @@ function ChatPanel({
       id?: number;
     }[] = [];
     for (const key of lookupKeys) {
-      for (const row of reactionsByReplyId.get(key) ?? []) {
+      for (const row of reactionsByParentKey.get(key) ?? []) {
         const dedupeKey = `${row.sender_id}|${row.emoji}|${row.payload.trim()}`;
         if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
@@ -1464,55 +1588,61 @@ function ChatPanel({
 
   const composePlaceholder = useMemo(
     () =>
-      isDmMode
-        ? t('chatPanel.composePlaceholderDm', { name: dmNodeName })
-        : !isConnected
-          ? t('chatPanel.composePlaceholderConnectFirst')
-          : isMqttOnly
-            ? t('chatPanel.composePlaceholderMqttOnly')
-            : t('chatPanel.composePlaceholderDefault'),
-    [isDmMode, dmNodeName, isConnected, isMqttOnly, t],
+      dmOnlyChat && activeDmNode == null
+        ? t('chatPanel.composePlaceholderSelectDm')
+        : isDmMode
+          ? t('chatPanel.composePlaceholderDm', { name: dmNodeName })
+          : !isConnected
+            ? t('chatPanel.composePlaceholderConnectFirst')
+            : isMqttOnly
+              ? t('chatPanel.composePlaceholderMqttOnly')
+              : t('chatPanel.composePlaceholderDefault'),
+    [activeDmNode, dmOnlyChat, dmNodeName, isConnected, isDmMode, isMqttOnly, t],
   );
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
       {/* Row 1 — Channel selector + toolbar utilities */}
       <div
-        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${viewMode === 'dm' ? 'opacity-50' : ''}`}
+        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-50' : ''}`}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-            {t('chatPanel.channels')}
-          </span>
-          {channels.map((ch) => {
-            const unread = unreadCounts.get(ch.index) ?? 0;
-            const channelUnreadSuffix =
-              unread > 0 && !(viewMode === 'channels' && channel === ch.index)
-                ? ` ${unread > 99 ? '99+' : unread}`
-                : '';
-            return (
-              <button
-                key={ch.index}
-                aria-label={`${ch.name}${channelUnreadSuffix}`}
-                onClick={() => {
-                  setChannel(ch.index);
-                  setViewMode('channels');
-                }}
-                className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  viewMode === 'channels' && channel === ch.index
-                    ? 'bg-readable-green text-white'
-                    : 'bg-secondary-dark text-muted hover:text-gray-200'
-                }`}
-              >
-                {ch.name}
-                {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                    {unread > 99 ? '99+' : unread}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {!dmOnlyChat && (
+            <>
+              <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
+                {t('chatPanel.channels')}
+              </span>
+              {channels.map((ch, chIdx) => {
+                const unread = unreadCounts.get(ch.index) ?? 0;
+                const channelUnreadSuffix =
+                  unread > 0 && !(viewMode === 'channels' && channel === ch.index)
+                    ? ` ${unread > 99 ? '99+' : unread}`
+                    : '';
+                return (
+                  <button
+                    key={`ch-${ch.index}-${chIdx}-${ch.name}`}
+                    aria-label={`${ch.name}${channelUnreadSuffix}`}
+                    onClick={() => {
+                      setChannel(ch.index);
+                      setViewMode('channels');
+                    }}
+                    className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      viewMode === 'channels' && channel === ch.index
+                        ? 'bg-readable-green text-white'
+                        : 'bg-secondary-dark text-muted hover:text-gray-200'
+                    }`}
+                  >
+                    {ch.name}
+                    {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                        {unread > 99 ? '99+' : unread}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
 
         <div className="flex shrink-0 items-start gap-2 self-start">
@@ -1639,7 +1769,7 @@ function ChatPanel({
                 : 'text-muted hover:text-gray-300'
             }`}
             onClick={() => {
-              setViewMode((v) => (v === 'starred' ? 'channels' : 'starred'));
+              setViewMode((v) => (v === 'starred' ? (dmOnlyChat ? 'dm' : 'channels') : 'starred'));
             }}
           >
             <Star
@@ -1668,15 +1798,31 @@ function ChatPanel({
         </div>
       )}
 
+      {protocol === 'reticulum' && reticulumPropagationSync.active && (
+        <div
+          className="mb-2 flex items-center gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200"
+          role="status"
+        >
+          <span>{t('chatPanel.reticulumPropagationSyncActive')}</span>
+          {reticulumPropagationSync.progress > 0 ? (
+            <span className="text-muted">
+              {Math.min(100, Math.round(reticulumPropagationSync.progress))}%
+            </span>
+          ) : null}
+        </div>
+      )}
+
       {/* Row 2 — DM tabs */}
       <div
-        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${!dmOnlyChat && viewMode === 'channels' ? 'opacity-50' : ''}`}
       >
         <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-          DMs
+          {t('chatPanel.dms')}
         </span>
         {visibleDmTabs.length === 0 ? (
-          <span className="text-[10px] text-gray-600 italic">No conversations</span>
+          <span className="text-[10px] text-gray-600 italic">
+            {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
+          </span>
         ) : (
           visibleDmTabs.map((nodeNum) => {
             const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
@@ -1684,7 +1830,7 @@ function ChatPanel({
               dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
             return (
               <div
-                key={nodeNum}
+                key={`dm-${protocol}-${nodeNum}`}
                 className={`relative flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                   viewMode === 'dm' && activeDmNode === nodeNum
                     ? 'bg-purple-600 text-white'
@@ -1960,11 +2106,13 @@ function ChatPanel({
             <div className="text-muted py-12 text-center">
               {searchQuery
                 ? t('chatPanel.emptyNoSearchMatches')
-                : isDmMode
-                  ? t('chatPanel.emptyNoDmMessages', { name: dmNodeName })
-                  : isConnected
-                    ? t('chatPanel.emptyNoMessagesYet')
-                    : t('chatPanel.emptyConnectFirst')}
+                : dmOnlyChat && activeDmNode == null
+                  ? t('chatPanel.emptySelectDm')
+                  : isDmMode
+                    ? t('chatPanel.emptyNoDmMessages', { name: dmNodeName })
+                    : isConnected
+                      ? t('chatPanel.emptyNoMessagesYet')
+                      : t('chatPanel.emptyConnectFirst')}
             </div>
           ) : (
             <div
@@ -1978,7 +2126,7 @@ function ChatPanel({
                 if (!msg) return null;
                 const isOwn = isOwnNode(msg.sender_id);
                 const isDm = !!msg.to;
-                const reactionRows = getReactionRows(msg.packetId ?? msg.timestamp, msg);
+                const reactionRows = getReactionRows(msg);
                 const messageRowKey = msg.packetId ?? msg.timestamp;
                 const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
                 const pickerOpensAbove = i >= filteredMessages.length - 3;
@@ -2240,14 +2388,22 @@ function ChatPanel({
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
-                              <ChatPayloadText
-                                text={msg.payload}
-                                query={searchQuery}
-                                loadLinkPreviews={!showScrollButton}
-                                onContentResize={() => {
-                                  scheduleMessageRowRemeasure(i);
-                                }}
-                              />
+                              {showLxmfAttachmentLine &&
+                              parseReticulumAttachmentPayload(msg.payload) ? (
+                                <ReticulumAttachmentLine
+                                  payload={msg.payload}
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                />
+                              ) : (
+                                <ChatPayloadText
+                                  text={msg.payload}
+                                  query={searchQuery}
+                                  loadLinkPreviews={!showScrollButton}
+                                  onContentResize={() => {
+                                    scheduleMessageRowRemeasure(i);
+                                  }}
+                                />
+                              )}
                             </div>
 
                             {/* Transport + RF hop count (incoming) */}
@@ -2274,25 +2430,40 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
-                                {isOwn && msg.status === 'failed' && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onResend(msg);
-                                    }}
-                                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
-                                    title={t('chatPanel.resendMessage')}
-                                  >
-                                    <RotateCcw
-                                      aria-hidden
-                                      className="h-3.5 w-3.5"
-                                      trigger={parentIconTrigger}
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
-                                {msg.mqttStatus ? (
+                                {isOwn &&
+                                  (msg.status === 'failed' ||
+                                    (protocol === 'reticulum' && msg.status === 'sending')) && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onResend(msg);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      title={t('chatPanel.resendMessage')}
+                                    >
+                                      <RotateCcw
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
+                                {showLxmfDeliveryStatus && msg.status ? (
+                                  <ReticulumMessageStatusBadge
+                                    status={
+                                      msg.status === 'sending' ||
+                                      msg.status === 'acked' ||
+                                      msg.status === 'failed'
+                                        ? msg.status
+                                        : 'failed'
+                                    }
+                                    via={reticulumOutboundVia(msg.receivedVia)}
+                                    deliveryMethod={msg.reticulumDeliveryMethod}
+                                    error={msg.error}
+                                  />
+                                ) : msg.mqttStatus ? (
                                   <>
                                     <MessageStatusBadge status={msg.mqttStatus} transport="mqtt" />
                                     {msg.status && (
@@ -2552,6 +2723,7 @@ function ChatPanel({
         connectionType={connectionType}
         isMqttOnly={isMqttOnly}
         isDmMode={isDmMode}
+        disabled={dmOnlyChat && activeDmNode == null}
         composerContext={viewMode === 'dm' ? 'dm' : 'channel'}
         senderDisplayName={composerSelfDisplayName}
         placeholder={composePlaceholder}
@@ -2564,6 +2736,9 @@ function ChatPanel({
         outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
         queueOutbox={queueOutbox}
         onSendChunk={handleSendChunk}
+        onSendAttachment={onSendAttachment}
+        payloadLimit={composerPayloadLimit}
+        lxmfReplyHashReplies={lxmfReplyHashReplies}
         onSendSuccess={() => {
           setUnreadDividerTimestamp(0);
         }}

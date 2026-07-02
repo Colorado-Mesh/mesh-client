@@ -1,4 +1,9 @@
-import { Connection, SerialConnection, WebSerialConnection } from '@liamcottle/meshcore.js';
+import {
+  Connection,
+  Constants,
+  SerialConnection,
+  WebSerialConnection,
+} from '@liamcottle/meshcore.js';
 
 import { isPairingRelatedError } from '@/shared/blePairingError';
 
@@ -6,11 +11,13 @@ import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
 import { closeSerialPortIfOpen } from '../../connection';
 import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
+import { notifyNobleBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
 import { MeshcoreWebBluetoothConnection } from '../../meshcoreWebBluetoothConnection';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
+import { MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS } from '../../timeConstants';
 import { TransportWebBluetoothIpc } from '../../transportWebBluetoothIpc';
 import type { NobleBleSessionId } from '../../types';
 
@@ -243,6 +250,16 @@ class IpcNobleConnection {
         constructor(private readonly session: NobleBleSessionId) {
           super();
         }
+        async onConnected() {
+          await withTimeout(
+            (this as unknown as Connection).deviceQuery(
+              Constants.SupportedCompanionProtocolVersion,
+            ),
+            MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS,
+            'MeshCore BLE deviceQuery',
+          );
+          this.emit('connected');
+        }
         async sendToRadioFrame(data: Uint8Array) {
           this.emit('tx', data);
           await this.write(data);
@@ -313,6 +330,7 @@ class IpcNobleConnection {
           Promise.race([
             instance.onConnected().then(() => {
               rejectHandshakeOnDisconnect = undefined;
+              notifyNobleBlePrimaryRfLinkReady(sessionId);
               console.info(
                 `[IpcNobleConnection:${sessionId}] onConnected() resolved after ${
                   Date.now() - handshakeStart

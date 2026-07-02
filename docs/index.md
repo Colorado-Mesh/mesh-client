@@ -12,14 +12,14 @@ repository version, see [README on GitHub](https://github.com/Colorado-Mesh/mesh
 
 ## Why
 
-Mesh-Client provides one desktop workflow for both Meshtastic and MeshCore
+Mesh-Client provides one desktop workflow for Meshtastic, MeshCore, and Reticulum (LXMF via AGPL sidecar)
 with persistent local storage, keyboard-first UX, and protocol-specific
 diagnostic tooling.
 
 Key outcomes:
 
 - True message persistence with SQLite-backed history.
-- Unified interface across Meshtastic and MeshCore.
+- Unified interface across Meshtastic, MeshCore, and Reticulum.
 - Advanced mesh visibility via diagnostics, map overlays, and routing insights.
 - Multi-language support (16+ languages) with offline static bundles.
 - Cross-platform desktop support for macOS, Linux, and Windows.

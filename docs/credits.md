@@ -26,8 +26,13 @@ We were inspired by features from these projects:
 - [meshtastic-cli](https://github.com/statico/meshtastic-cli): Terminal UI for monitoring Meshtastic mesh networks
 - [Mesh Monitor](https://meshmonitor.org/): Web-based mesh network monitoring dashboard
 - [CoreScope](https://github.com/Kpa-clawbot/CoreScope): Self-hosted MeshCore network analyzer with RF analytics, packet visualization, and topology tools
+- [**Ratspeak**](https://github.com/ratspeak/Ratspeak): Primary reference for the Reticulum/rsReticulum/rsLXMF stack, sidecar IPC patterns, and peer interop ([rsReticulum](https://github.com/ratspeak/rsReticulum), [rsLXMF](https://github.com/ratspeak/rsLXMF))
 
-## Libraries & Tools
+### Bundled binaries
+
+| Binary                  | License  | Role                                                                                     |
+| ----------------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `mesh-client-reticulum` | AGPL-3.0 | Spawned Reticulum/LXMF sidecar (separate process; see [docs/reticulum.md](reticulum.md)) |
 
 Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/mesh-client/blob/main/package.json) at the repository root; the tables below mirror them for attribution.
 

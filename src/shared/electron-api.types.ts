@@ -1,11 +1,26 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import type { MeshProtocol } from './meshProtocol';
+import type {
+  ReticulumSidecarEvent,
+  ReticulumSidecarStartOptions,
+  ReticulumSidecarStatus,
+} from './reticulum-types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 
 export type { MeshProtocol };
 
 export type { MeshNode, MQTTSettings, MQTTStatus };
+
+export interface IdentityVaultStatus {
+  configured: boolean;
+  unlocked: boolean;
+}
+
+export interface IdentityVaultActionResult {
+  ok: boolean;
+  error?: string;
+}
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -142,6 +157,21 @@ export interface SpellcheckReplacePayload {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
+export type BlePeripheralOwner =
+  'noble:meshtastic' | 'noble:meshcore' | 'webbt:meshtastic' | 'webbt:meshcore' | 'reticulum';
+
+export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
+
+export interface BleRegisteredConnection {
+  mac: string;
+  owner: BlePeripheralOwner;
+}
+
+export interface BleCoexistenceState {
+  connections: BleRegisteredConnection[];
+  scanOwner: BleScanOwner | null;
+}
+
 export interface ElectronAPI {
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
@@ -214,6 +244,77 @@ export interface ElectronAPI {
       senderId: number,
       senderName: string,
     ) => Promise<void>;
+    getReticulumMessages: (identityId: string, limit?: number) => Promise<unknown[]>;
+    searchReticulumMessages: (
+      identityId: string,
+      query: string,
+      limit?: number,
+    ) => Promise<unknown[]>;
+    deleteReticulumMessage: (
+      identityId: string,
+      messageHash: string,
+    ) => Promise<{ changes: number }>;
+    clearReticulumMessages: (identityId: string) => Promise<{ changes: number }>;
+    saveReticulumMessage: (message: {
+      identity_id: string;
+      sender_id: string;
+      sender_name?: string | null;
+      payload: string;
+      timestamp: number;
+      to_hash?: string | null;
+      reply_to_hash?: string | null;
+      message_hash?: string | null;
+      received_via?: string | null;
+      delivery_status?: string | null;
+      delivery_attempts?: number | null;
+      next_delivery_attempt_at?: number | null;
+      attachment_path?: string | null;
+    }) => Promise<void>;
+    markStaleReticulumOutbound: (
+      identityId: string,
+      staleAfterMs?: number,
+    ) => Promise<{ changes?: number }>;
+    vacuumReticulumTables: () => Promise<{ ok?: boolean }>;
+    getReticulumDestinations: () => Promise<unknown[]>;
+    deleteReticulumDestination: (destinationHash: string) => Promise<{ changes: number }>;
+    upsertReticulumDestination: (row: {
+      destination_hash: string;
+      display_name?: string | null;
+      last_heard?: number | null;
+      favorited?: boolean | number | null;
+      icon_name?: string | null;
+      icon_color?: string | null;
+    }) => Promise<void>;
+    getBlockedContacts: (
+      protocol: string,
+      identityId: string,
+    ) => Promise<{ blocked_hash: string; created_at: number }[]>;
+    blockContact: (
+      protocol: string,
+      identityId: string,
+      blockedHash: string,
+    ) => Promise<{ changes: number }>;
+    unblockContact: (
+      protocol: string,
+      identityId: string,
+      blockedHash: string,
+    ) => Promise<{ changes: number }>;
+    getReticulumIdentityActivity: (destinationHash: string) => Promise<
+      {
+        destination_hash: string;
+        aspect: string;
+        identity_hash?: string | null;
+        last_seen: number;
+        hops?: number | null;
+      }[]
+    >;
+    upsertReticulumIdentityActivity: (row: {
+      destination_hash: string;
+      aspect: string;
+      identity_hash?: string | null;
+      last_seen: number;
+      hops?: number | null;
+    }) => Promise<{ changes: number }>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;
@@ -551,6 +652,17 @@ export interface ElectronAPI {
     onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
   };
 
+  // ─── BLE coexistence (multi-protocol peripheral registry + scan mutex) ─────
+  bleCoexistence: {
+    register: (mac: string, owner: BlePeripheralOwner) => Promise<BleCoexistenceState>;
+    unregister: (mac: string, owner: BlePeripheralOwner) => Promise<BleCoexistenceState>;
+    assertCanConnect: (owner: BlePeripheralOwner, mac: string) => Promise<BleCoexistenceState>;
+    getState: () => Promise<BleCoexistenceState>;
+    acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
+    releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
+    pauseNobleScan: () => Promise<BleCoexistenceState>;
+  };
+
   // ─── Noble BLE ───────────────────────────────────────────────────────────────
   onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
   onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
@@ -702,6 +814,14 @@ export interface ElectronAPI {
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;
+    saveReticulumAttachment: (opts: {
+      fileName: string;
+      mimeType?: string;
+      dataBase64: string;
+      /** When false, save under app userData without a dialog. */
+      promptSave?: boolean;
+    }) => Promise<{ success: boolean; path?: string }>;
+    showItemInFolder: (filePath: string) => Promise<{ ok: boolean }>;
     linkPreview: {
       fetch: (
         url: string,
@@ -715,6 +835,7 @@ export interface ElectronAPI {
         status: OutboxStatus,
         error?: string,
         nextRetryAt?: number,
+        attemptCount?: number,
       ) => Promise<void>;
       remove: (id: number) => Promise<void>;
     };
@@ -732,6 +853,29 @@ export interface ElectronAPI {
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;
+  };
+
+  // ─── Reticulum sidecar ───────────────────────────────────────────────────────
+  reticulum: {
+    start: (opts?: ReticulumSidecarStartOptions) => Promise<ReticulumSidecarStatus>;
+    stop: () => Promise<void>;
+    getStatus: () => Promise<ReticulumSidecarStatus>;
+    proxyGet: (apiPath: string) => Promise<unknown>;
+    proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
+    proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;
+    proxyDelete: (apiPath: string) => Promise<unknown>;
+    readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
+    showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
+    onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
+    onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
+  };
+
+  // ─── Reticulum identity vault ────────────────────────────────────────────────
+  vault: {
+    setPasscode: (passcode: string, secret: string) => Promise<IdentityVaultActionResult>;
+    unlock: (passcode: string) => Promise<IdentityVaultActionResult>;
+    lock: () => Promise<IdentityVaultActionResult>;
+    status: () => Promise<IdentityVaultStatus>;
   };
 
   // ─── Log panel ───────────────────────────────────────────────────────────────

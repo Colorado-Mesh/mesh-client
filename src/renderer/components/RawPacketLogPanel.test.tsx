@@ -1,20 +1,62 @@
 import { create, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Portnums } from '@meshtastic/protobufs';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
+import type {
+  MeshtasticRawPacketEntry,
+  ReticulumRawPacketEntry,
+} from '../lib/rawPacketLogConstants';
 import RawPacketLogPanel from './RawPacketLogPanel';
 
+let mockIsAtEnd = true;
+const mockScrollToEnd = vi.fn();
+const mockScrollToIndex = vi.fn();
+let lastVirtualizerOptions: Record<string, unknown> | undefined;
+let lastVirtualizerInstance: Record<string, unknown> | undefined;
+
 vi.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: (opts: { count: number }) => ({
-    getVirtualItems: () =>
-      Array.from({ length: opts.count }, (_, index) => ({ index, start: index * 36 })),
-    getTotalSize: () => opts.count * 36,
-    measureElement: () => {},
-  }),
+  useVirtualizer: (opts: Record<string, unknown> & { count: number }) => {
+    lastVirtualizerOptions = opts;
+    const count = opts.count;
+    const getItemKey = opts.getItemKey as ((index: number) => string | number) | undefined;
+    const instance = {
+      getVirtualItems: () =>
+        Array.from({ length: count }, (_, index) => ({
+          index,
+          key: getItemKey?.(index) ?? index,
+          start: index * 36,
+        })),
+      getTotalSize: () => count * 36,
+      measureElement: () => {},
+      isAtEnd: () => mockIsAtEnd,
+      scrollToEnd: mockScrollToEnd,
+      scrollToIndex: mockScrollToIndex,
+      get scrollDirection() {
+        return 'forward' as const;
+      },
+      shouldAdjustScrollPositionOnItemSizeChange: undefined as
+        | ((
+            item: { index: number },
+            delta: number,
+            inst: { scrollDirection: string | null; isAtEnd: () => boolean },
+          ) => boolean)
+        | undefined,
+    };
+    lastVirtualizerInstance = instance;
+    return instance;
+  },
 }));
+
+beforeEach(() => {
+  mockIsAtEnd = true;
+  mockScrollToEnd.mockClear();
+  mockScrollToIndex.mockClear();
+  lastVirtualizerOptions = undefined;
+  lastVirtualizerInstance = undefined;
+});
 
 function hexToU8(hex: string): Uint8Array {
   const out = new Uint8Array(hex.length / 2);
@@ -44,6 +86,301 @@ function meshcorePacket(rawHex: string, payloadTypeString: string): RxPacketEntr
     parseOk: true,
   };
 }
+
+function reticulumPacket(ts: number, interfaceName = 'RNode'): ReticulumRawPacketEntry {
+  return {
+    ts,
+    direction: 'rx',
+    interfaceId: 1,
+    interfaceName,
+    raw: new Uint8Array([0x01, 0x02, ts & 0xff]),
+    packetType: 'DATA',
+    headerType: 'SINGLE',
+  };
+}
+
+describe('RawPacketLogPanel scroll pinning', () => {
+  it('configures TanStack Virtual with sniffer scroll contract', () => {
+    render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[reticulumPacket(1_710_000_000_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+    expect(lastVirtualizerOptions?.anchorTo).toBe('end');
+    expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
+    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
+      item: { index: number },
+      delta: number,
+      instance: {
+        scrollDirection: 'forward' | 'backward' | null;
+        isAtEnd: () => boolean;
+      },
+    ) => boolean;
+    expect(adjust).toBeTypeOf('function');
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => true })).toBe(true);
+    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => false })).toBe(
+      false,
+    );
+  });
+
+  it('scrolls to end when pinned and new packets arrive', () => {
+    mockIsAtEnd = true;
+    const initial = reticulumPacket(1_710_000_000_000);
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[initial]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    mockScrollToEnd.mockClear();
+    const newer = reticulumPacket(1_710_000_001_000, 'TCP');
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[initial, newer]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).toHaveBeenCalled();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('preserves scroll anchor when not pinned and new packets arrive', () => {
+    mockIsAtEnd = false;
+    const packets = [reticulumPacket(1_710_000_000_000), reticulumPacket(1_710_000_001_000)];
+    const { container, rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const scrollContainer = container.querySelector('[role="log"]')!;
+    fireEvent.scroll(scrollContainer);
+
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_002_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'start' });
+  });
+});
+
+describe('RawPacketLogPanel pause capture', () => {
+  it('freezes visible packet count while paused even when parent packets grow', () => {
+    const packets = [reticulumPacket(1_710_000_000_000), reticulumPacket(1_710_000_001_000)];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_002_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(lastVirtualizerOptions?.count).toBe(2);
+    expect(screen.getByText('1 new while paused')).toBeTruthy();
+  });
+
+  it('freezes snapshot when ring buffer is at capacity and parent rotates entries', () => {
+    const cap = 3;
+    const packets = [
+      reticulumPacket(1_710_000_000_000),
+      reticulumPacket(1_710_000_001_000),
+      reticulumPacket(1_710_000_002_000),
+    ];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    const rotated = [...packets.slice(1), reticulumPacket(1_710_000_003_000)].slice(-cap);
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={rotated}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(lastVirtualizerOptions?.count).toBe(cap);
+    expect(screen.getByText('1 new while paused')).toBeTruthy();
+  });
+
+  it('disables followOnAppend while paused', () => {
+    render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[reticulumPacket(1_710_000_000_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(lastVirtualizerOptions?.followOnAppend).toBe(false);
+  });
+
+  it('does not follow new packets while paused at bottom', () => {
+    mockIsAtEnd = true;
+    const packets = [reticulumPacket(1_710_000_000_000)];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_001_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+  });
+
+  it('resumes live capture and scrolls to end', () => {
+    const packets = [reticulumPacket(1_710_000_000_000)];
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_001_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    mockScrollToEnd.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
+
+    expect(lastVirtualizerOptions?.count).toBe(2);
+    expect(mockScrollToEnd).toHaveBeenCalled();
+  });
+
+  it('does not follow new packets while a row is expanded', () => {
+    mockIsAtEnd = true;
+    const packets = [reticulumPacket(1_710_000_000_000)];
+    const { container, rerender } = render(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={packets}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const row = container.querySelector('[data-index="0"] .cursor-pointer');
+    expect(row).toBeTruthy();
+    fireEvent.click(row!);
+
+    mockScrollToEnd.mockClear();
+    mockScrollToIndex.mockClear();
+
+    rerender(
+      <RawPacketLogPanel
+        variant="reticulum"
+        packets={[...packets, reticulumPacket(1_710_000_001_000)]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+  });
+});
+
+describe('RawPacketLogPanel duplicate row keys', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('does not warn when two identical captures share content but differ by index', () => {
+    const packet = meshcorePacket(
+      '150107819d28f7a0d427af7cbd3c6057b29763736b3878eb027514687b110abe33456565ca1117316f81033b1de05496a57ab1c44335f53749008b593a19cd9c9e340d34f076',
+      'GRP_TXT',
+    );
+    render(
+      <RawPacketLogPanel
+        variant="meshcore"
+        packets={[packet, { ...packet }]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter((args: unknown[]) =>
+      String(args[0]).includes('Encountered two children with the same key'),
+    );
+    expect(duplicateKeyWarnings).toHaveLength(0);
+  });
+});
 
 describe('RawPacketLogPanel meshcore expanded details', () => {
   it('shows GRP_TXT channel hash plus MAC/ciphertext info', () => {
@@ -115,7 +452,7 @@ function meshtasticPacket(
       }) as never,
     );
   return {
-    ts: 1_710_000_000_000,
+    ts: overrides.ts ?? 1_710_000_000_000,
     snr: 2.5,
     rssi: -90,
     raw,
@@ -146,6 +483,33 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
     expect(screen.getByText(/payload=decoded/)).toBeInTheDocument();
   });
 
+  it('keeps expanded row open when new packets arrive', () => {
+    const initial = meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' });
+    const { rerender } = render(
+      <RawPacketLogPanel
+        variant="meshtastic"
+        packets={[initial]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'TestNode'}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('TEXT_MESSAGE_APP'));
+    expect(screen.getByText(/id=0x12345678/)).toBeInTheDocument();
+
+    const newer = meshtasticPacket({ portLabel: 'POSITION_APP', ts: 1_710_000_001_000 });
+    rerender(
+      <RawPacketLogPanel
+        variant="meshtastic"
+        packets={[initial, newer]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'TestNode'}
+      />,
+    );
+
+    expect(screen.getByText(/id=0x12345678/)).toBeInTheDocument();
+  });
+
   it('node name click opens details without expanding raw hex', () => {
     const onNodeClick = vi.fn();
     const packets = [meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' })];
@@ -168,7 +532,7 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
   it('collapses expanded row when filter excludes it', () => {
     const packets = [
       meshtasticPacket({ portLabel: 'TEXT_MESSAGE_APP' }),
-      meshtasticPacket({ portLabel: 'POSITION_APP' }),
+      meshtasticPacket({ portLabel: 'POSITION_APP', ts: 1_710_000_001_000 }),
     ];
     render(
       <RawPacketLogPanel

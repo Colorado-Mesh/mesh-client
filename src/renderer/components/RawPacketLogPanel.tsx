@@ -4,7 +4,8 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown } from 'lucide-react-motion';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
@@ -18,14 +19,28 @@ import {
   MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE,
   MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE,
 } from '../../shared/meshcoreRfPath';
+import {
+  createChatScrollAdjustPredicate,
+  createStableChatMeasureElement,
+  VIRTUALIZER_SCROLL_END_THRESHOLD,
+} from '../lib/chatScrollUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
   formatMeshtasticRawPacketExpandDebugLine,
   parseMeshtasticRawPacketExpand,
 } from '../lib/meshtastic/meshtasticRawPacketExpand';
-import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
-import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
+import {
+  meshcoreRawPacketSenderColumnText,
+  reticulumDestinationColumnText,
+} from '../lib/nodeLongNameOrHex';
+import {
+  type MeshtasticRawPacketEntry,
+  rawPacketVirtualizerKey,
+  type ReticulumRawPacketEntry,
+} from '../lib/rawPacketLogConstants';
+import { registerReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
+import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 
 const ROUTE_LABEL: Record<string, string> = {
   FLOOD: 'FLOOD',
@@ -41,12 +56,6 @@ function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
-}
-
-/** Stable virtualizer row key — ts alone can collide within the same millisecond. */
-function rawPacketRowKey(ts: number, raw: Uint8Array): string {
-  const prefix = raw.length > 0 ? toHex(raw.subarray(0, Math.min(4, raw.length))) : 'empty';
-  return `${ts}-${raw.length}-${prefix}`;
 }
 
 function formatTs(ts: number): string {
@@ -312,6 +321,90 @@ function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
   );
 }
 
+function ReticulumExpandedDetails({
+  p,
+  getNodeLabel,
+}: {
+  p: ReticulumRawPacketEntry;
+  getNodeLabel: (nodeId: number) => string;
+}) {
+  const { t } = useTranslation();
+  const destinationLabel = reticulumDestinationColumnText(
+    p.destinationHash,
+    getNodeLabel,
+    reticulumHashToNodeId,
+  );
+  return (
+    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+      <p>
+        <span className="text-muted">{t('rawPacketLog.reticulum.direction')}:</span>{' '}
+        {p.direction.toUpperCase()}
+        {' · '}
+        <span className="text-muted">{t('rawPacketLog.reticulum.interface')}:</span>{' '}
+        {p.interfaceName}
+      </p>
+      <p>
+        <span className="text-muted">{t('rawPacketLog.reticulum.packetType')}:</span>{' '}
+        {formatReticulumWireEnumLabel(p.packetType)}
+        {' · '}
+        <span className="text-muted">{t('rawPacketLog.reticulum.headerType')}:</span>{' '}
+        {formatReticulumWireEnumLabel(p.headerType)}
+      </p>
+      {p.destinationHash ? (
+        <p>
+          <span className="text-muted">{t('rawPacketLog.reticulum.destination')}:</span>{' '}
+          {destinationLabel ?? p.destinationHash.slice(0, 16)}
+        </p>
+      ) : null}
+      {(p.rssi != null || p.snr != null) && (
+        <p>
+          {p.rssi != null ? `RSSI ${p.rssi.toFixed(1)}` : null}
+          {p.rssi != null && p.snr != null ? ' · ' : null}
+          {p.snr != null ? `SNR ${p.snr.toFixed(1)}` : null}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ReticulumRow({
+  p,
+  getNodeLabel,
+}: {
+  p: ReticulumRawPacketEntry;
+  getNodeLabel: (nodeId: number) => string;
+}) {
+  const { t } = useTranslation();
+  const typeLabel = formatReticulumWireEnumLabel(p.packetType);
+  const dirLabel =
+    p.direction === 'tx' ? t('rawPacketLog.reticulum.tx') : t('rawPacketLog.reticulum.rx');
+  const destinationLabel = reticulumDestinationColumnText(
+    p.destinationHash,
+    getNodeLabel,
+    reticulumHashToNodeId,
+  );
+  return (
+    <>
+      <span className="text-muted w-[90px] shrink-0 text-[10px] tabular-nums">
+        {formatTs(p.ts)}
+      </span>
+      <span
+        className={`w-9 shrink-0 rounded px-1 text-center text-[10px] ${
+          p.direction === 'tx'
+            ? 'bg-blue-900/60 text-blue-200'
+            : 'bg-emerald-900/60 text-emerald-200'
+        }`}
+      >
+        {dirLabel}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-gray-200">
+        {typeLabel} · {p.interfaceName}
+        {destinationLabel ? ` · ${destinationLabel}` : ''}
+      </span>
+    </>
+  );
+}
+
 interface MeshcoreProps {
   variant: 'meshcore';
   packets: RxPacketEntry[];
@@ -330,23 +423,60 @@ interface MeshtasticProps {
   onNodeClick?: (nodeId: number) => void;
 }
 
-type Props = MeshcoreProps | MeshtasticProps;
+interface ReticulumProps {
+  variant: 'reticulum';
+  packets: ReticulumRawPacketEntry[];
+  onClear: () => void;
+  getNodeLabel: (nodeId: number) => string;
+}
+
+type Props = MeshcoreProps | MeshtasticProps | ReticulumProps;
 
 export default function RawPacketLogPanel(props: Props) {
-  const { variant, packets, onClear, getNodeLabel, onNodeClick } = props;
+  const { variant, packets, onClear, getNodeLabel } = props;
+  const onNodeClick = variant === 'reticulum' ? undefined : props.onNodeClick;
   const floodScopeHashtag = variant === 'meshcore' ? props.floodScopeHashtag : undefined;
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  /** Snapshot taken at pause time so ring-buffer eviction does not mutate the frozen view. */
+  const [pausedPackets, setPausedPackets] = useState<Props['packets'] | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const atBottomRef = useRef(true);
+  /** Sticky intent: user is reading latest packets and wants auto-follow on new traffic. */
+  const isPinnedToBottomRef = useRef(true);
+  const isPausedRef = useRef(false);
+  isPausedRef.current = isPaused;
+  const unreadStartIndexRef = useRef(-1);
+  const anchorIndexRef = useRef(0);
+  const prevFilteredLengthRef = useRef(0);
+  const expandedRowKeyRef = useRef<string | null>(null);
+  expandedRowKeyRef.current = expandedRowKey;
+
+  const pendingWhilePaused = useMemo(() => {
+    if (!isPaused || pausedPackets == null) return 0;
+    if (packets.length > pausedPackets.length) {
+      return packets.length - pausedPackets.length;
+    }
+    const snapLastTs = pausedPackets[pausedPackets.length - 1]?.ts;
+    if (snapLastTs == null) return 0;
+    let count = 0;
+    for (let i = packets.length - 1; i >= 0; i--) {
+      if (packets[i].ts <= snapLastTs) break;
+      count++;
+    }
+    return count;
+  }, [isPaused, pausedPackets, packets]);
 
   const filtered = useMemo(() => {
-    if (!filter.trim()) return packets;
     const q = filter.trim().toUpperCase();
     const f = filter.trim().toLowerCase();
+
     if (variant === 'meshcore') {
-      return packets.filter(
+      const list = isPaused && pausedPackets != null ? (pausedPackets as RxPacketEntry[]) : packets;
+      if (!filter.trim()) return list;
+      return list.filter(
         (p) =>
           (p.routeTypeString ?? '').includes(q) ||
           (p.payloadTypeString ?? '').includes(q) ||
@@ -361,7 +491,36 @@ export default function RawPacketLogPanel(props: Props) {
               .includes(q)),
       );
     }
-    return packets.filter(
+    if (variant === 'reticulum') {
+      const list =
+        isPaused && pausedPackets != null ? (pausedPackets as ReticulumRawPacketEntry[]) : packets;
+      if (!filter.trim()) return list;
+      return list.filter((p) => {
+        const destinationLabel = reticulumDestinationColumnText(
+          p.destinationHash,
+          getNodeLabel,
+          reticulumHashToNodeId,
+        );
+        if (p.destinationHash) {
+          registerReticulumDestinationHash(
+            reticulumHashToNodeId(p.destinationHash),
+            p.destinationHash,
+          );
+        }
+        return (
+          p.interfaceName.toLowerCase().includes(f) ||
+          (p.packetType ?? '').toLowerCase().includes(f) ||
+          (p.destinationHash ?? '').toLowerCase().includes(f) ||
+          (destinationLabel ?? '').toLowerCase().includes(f) ||
+          p.direction.includes(f) ||
+          toHex(p.raw).includes(f)
+        );
+      });
+    }
+    const list =
+      isPaused && pausedPackets != null ? (pausedPackets as MeshtasticRawPacketEntry[]) : packets;
+    if (!filter.trim()) return list;
+    return list.filter(
       (p) =>
         (p.portLabel ?? '').includes(q) ||
         toHex(p.raw).includes(f) ||
@@ -369,38 +528,136 @@ export default function RawPacketLogPanel(props: Props) {
         (p.isLocal && 'local'.includes(f)) ||
         (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
     );
-  }, [packets, filter, variant, getNodeLabel]);
+  }, [packets, pausedPackets, isPaused, filter, variant, getNodeLabel]);
 
-  useEffect(() => {
-    setExpandedIdx(null);
-  }, [packets, filter]);
+  const expandedIndex = useMemo(() => {
+    if (!expandedRowKey) return -1;
+    return filtered.findIndex(
+      (row, index) => rawPacketVirtualizerKey(row.ts, row.raw, index) === expandedRowKey,
+    );
+  }, [filtered, expandedRowKey]);
 
   const getScrollElement = useCallback(() => scrollRef.current, []);
-  const estimateSize = useCallback(() => 36, []);
+  const estimateSize = useCallback(
+    (index: number) => (index === expandedIndex ? 200 : 36),
+    [expandedIndex],
+  );
+  const measureElement = useMemo(
+    () => createStableChatMeasureElement(estimateSize),
+    [estimateSize],
+  );
 
   const virtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement,
     estimateSize,
+    measureElement,
     overscan: 12,
+    anchorTo: 'end',
+    followOnAppend: !isPaused,
+    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
+    getItemKey: (index) => {
+      const row = filtered[index];
+      if (!row) return `raw-slot-${index}`;
+      return rawPacketVirtualizerKey(row.ts, row.raw, index);
+    },
   });
 
+  const virtualizerRef = useRef(virtualizer);
+  virtualizerRef.current = virtualizer;
+
+  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, delta, instance) => {
+    if (isPausedRef.current || expandedRowKeyRef.current) return false;
+    return createChatScrollAdjustPredicate({
+      unreadStartIndexRef,
+      isPinnedToBottomRef,
+    })(item, delta, instance);
+  };
+
   const onScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    const items = virtualizerRef.current.getVirtualItems();
+    if (items.length > 0) {
+      anchorIndexRef.current = items[0].index;
+    }
+    const atEnd = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    if (!isPaused) {
+      isPinnedToBottomRef.current = atEnd;
+    }
+    setShowScrollButton(!atEnd && !isPaused);
+  }, [isPaused]);
+
+  const unpinScroll = useCallback(() => {
+    isPinnedToBottomRef.current = false;
+    setShowScrollButton(true);
   }, []);
 
+  const scrollToLatest = useCallback(() => {
+    isPinnedToBottomRef.current = true;
+    virtualizerRef.current.scrollToEnd();
+    setShowScrollButton(false);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    if (isPaused) {
+      setIsPaused(false);
+      setPausedPackets(null);
+      isPinnedToBottomRef.current = true;
+      requestAnimationFrame(() => {
+        virtualizerRef.current.scrollToEnd();
+        setShowScrollButton(false);
+      });
+      return;
+    }
+    setPausedPackets(packets.slice());
+    setIsPaused(true);
+    isPinnedToBottomRef.current = false;
+    requestAnimationFrame(() => {
+      virtualizerRef.current.scrollToIndex(anchorIndexRef.current, { align: 'start' });
+    });
+  }, [isPaused, packets]);
+
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      if (!scrollRef.current) return;
+      const atEnd = virtualizerRef.current.isAtEnd(VIRTUALIZER_SCROLL_END_THRESHOLD);
+      if (!isPaused) {
+        isPinnedToBottomRef.current = atEnd;
+      }
+      setShowScrollButton(!atEnd && !isPaused);
+    });
+  }, [isPaused]);
+
+  // Follow latest when pinned; preserve anchor row when user scrolled up to inspect history.
+  useEffect(() => {
+    if (isPaused || expandedRowKey) return;
+    const prevLen = prevFilteredLengthRef.current;
+    prevFilteredLengthRef.current = filtered.length;
+    if (filtered.length <= prevLen) return;
+
+    if (isPinnedToBottomRef.current) {
+      virtualizerRef.current.scrollToEnd();
+      return;
+    }
+
+    virtualizerRef.current.scrollToIndex(anchorIndexRef.current, { align: 'start' });
+  }, [filtered.length, isPaused, expandedRowKey]);
+
   const handleClear = useCallback(() => {
-    setExpandedIdx(null);
+    setExpandedRowKey(null);
+    setIsPaused(false);
+    setPausedPackets(null);
     onClear();
   }, [onClear]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {variant === 'meshcore' ? (
         <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
           {t('rawPacketLog.transportLegendHint')}
+        </p>
+      ) : variant === 'reticulum' ? (
+        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+          {t('rawPacketLog.reticulum.legendHint')}
         </p>
       ) : (
         <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
@@ -414,12 +671,35 @@ export default function RawPacketLogPanel(props: Props) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
-            setExpandedIdx(null);
+            setExpandedRowKey(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
           className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
         />
         <span className="text-muted shrink-0 text-[10px]">{filtered.length}</span>
+        {isPaused && pendingWhilePaused > 0 ? (
+          <span className="shrink-0 text-[10px] text-amber-300/90">
+            {t('rawPacketLog.pausedPending', { count: pendingWhilePaused })}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={togglePause}
+          disabled={packets.length === 0}
+          aria-pressed={isPaused}
+          aria-label={isPaused ? t('rawPacketLog.resumeCapture') : t('rawPacketLog.pauseCapture')}
+          className={`shrink-0 rounded border px-2 py-1 text-xs ${
+            isPaused
+              ? 'border-amber-600/70 bg-amber-950/50 text-amber-200 hover:bg-amber-900/50'
+              : 'border-gray-600 bg-slate-800 text-gray-300 hover:bg-slate-700'
+          } disabled:opacity-40`}
+        >
+          {isPaused
+            ? pendingWhilePaused > 0
+              ? t('rawPacketLog.resumeCaptureWithCount', { count: pendingWhilePaused })
+              : t('rawPacketLog.resumeCapture')
+            : t('rawPacketLog.pauseCapture')}
+        </button>
         <button
           type="button"
           onClick={handleClear}
@@ -440,88 +720,119 @@ export default function RawPacketLogPanel(props: Props) {
           {t('rawPacketLog.noPacketsMatchFilter')}
         </div>
       ) : (
-        <div
-          ref={scrollRef}
-          onScroll={onScroll}
-          className="min-h-0 flex-1 overflow-auto font-mono text-[11px] text-gray-300"
-          role="log"
-          aria-live="polite"
-          aria-relevant="additions"
-        >
-          <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
-            {virtualizer.getVirtualItems().map((vi) => {
-              const isExpanded = expandedIdx === vi.index;
-              const hexRaw =
-                variant === 'meshcore'
-                  ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
-                  : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
-              const byteLen =
-                variant === 'meshcore'
-                  ? (filtered as RxPacketEntry[])[vi.index].raw.length
-                  : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
+        <div className="relative min-h-0 flex-1">
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            onPointerDown={unpinScroll}
+            onWheel={unpinScroll}
+            className="h-full overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
+            role="log"
+            aria-live={isPaused ? 'off' : 'polite'}
+            aria-relevant="additions"
+          >
+            <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+              {virtualizer.getVirtualItems().map((vi) => {
+                const row = filtered[vi.index];
+                const rowKey = row ? rawPacketVirtualizerKey(row.ts, row.raw, vi.index) : null;
+                const isExpanded = rowKey != null && rowKey === expandedRowKey;
+                const hexRaw =
+                  variant === 'meshcore'
+                    ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
+                    : variant === 'reticulum'
+                      ? toHex((filtered as ReticulumRawPacketEntry[])[vi.index].raw)
+                      : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
+                const byteLen =
+                  variant === 'meshcore'
+                    ? (filtered as RxPacketEntry[])[vi.index].raw.length
+                    : variant === 'reticulum'
+                      ? (filtered as ReticulumRawPacketEntry[])[vi.index].raw.length
+                      : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
-              const toggleExpand = () => {
-                setExpandedIdx(isExpanded ? null : vi.index);
-              };
+                const toggleExpand = () => {
+                  if (!isExpanded && rowKey) {
+                    isPinnedToBottomRef.current = false;
+                  }
+                  setExpandedRowKey(isExpanded || !rowKey ? null : rowKey);
+                };
 
-              const rowPacket =
-                variant === 'meshcore'
-                  ? (filtered as RxPacketEntry[])[vi.index]
-                  : (filtered as MeshtasticRawPacketEntry[])[vi.index];
-
-              return (
-                <div
-                  key={rawPacketRowKey(rowPacket.ts, rowPacket.raw)}
-                  data-index={vi.index}
-                  ref={virtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full border-b border-gray-800"
-                  style={{ transform: `translateY(${vi.start}px)` }}
-                >
-                  <div className="flex w-full items-start">
-                    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
-                    <div
-                      className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
-                      onClick={toggleExpand}
-                    >
-                      {variant === 'meshcore' ? (
-                        <MeshcoreRow
-                          p={(filtered as RxPacketEntry[])[vi.index]}
-                          getNodeLabel={getNodeLabel}
-                          onNodeClick={onNodeClick}
-                        />
-                      ) : (
-                        <MeshtasticRow
-                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
-                          getNodeLabel={getNodeLabel}
-                          onNodeClick={onNodeClick}
-                        />
-                      )}
+                return (
+                  <div
+                    key={vi.key}
+                    data-index={vi.index}
+                    ref={virtualizer.measureElement}
+                    className="absolute top-0 left-0 w-full border-b border-gray-800"
+                    style={{ transform: `translateY(${vi.start}px)` }}
+                  >
+                    <div className="flex w-full items-start">
+                      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
+                      <div
+                        className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
+                        onClick={toggleExpand}
+                      >
+                        {variant === 'meshcore' ? (
+                          <MeshcoreRow
+                            p={(filtered as RxPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                            onNodeClick={onNodeClick}
+                          />
+                        ) : variant === 'reticulum' ? (
+                          <ReticulumRow
+                            p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                          />
+                        ) : (
+                          <MeshtasticRow
+                            p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                            onNodeClick={onNodeClick}
+                          />
+                        )}
+                      </div>
+                      <span className="text-muted shrink-0 px-3 py-1.5 text-[10px]">
+                        {byteLen}B
+                      </span>
                     </div>
-                    <span className="text-muted shrink-0 px-3 py-1.5 text-[10px]">{byteLen}B</span>
+                    {isExpanded && (
+                      <div className="bg-slate-900/60 px-3 pb-2">
+                        {variant === 'meshcore' && (
+                          <MeshcoreExpandedDetails
+                            p={(filtered as RxPacketEntry[])[vi.index]}
+                            floodScopeHashtag={floodScopeHashtag}
+                          />
+                        )}
+                        {variant === 'meshtastic' && (
+                          <MeshtasticExpandedDetails
+                            p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
+                          />
+                        )}
+                        {variant === 'reticulum' && (
+                          <ReticulumExpandedDetails
+                            p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
+                            getNodeLabel={getNodeLabel}
+                          />
+                        )}
+                        <p className="text-muted mb-1 text-[10px]">
+                          {t('rawPacketLog.rawHexLabel', { bytes: byteLen })}
+                        </p>
+                        <p className="text-[10px] break-all text-gray-400">{hexRaw}</p>
+                      </div>
+                    )}
                   </div>
-                  {isExpanded && (
-                    <div className="bg-slate-900/60 px-3 pb-2">
-                      {variant === 'meshcore' && (
-                        <MeshcoreExpandedDetails
-                          p={(filtered as RxPacketEntry[])[vi.index]}
-                          floodScopeHashtag={floodScopeHashtag}
-                        />
-                      )}
-                      {variant === 'meshtastic' && (
-                        <MeshtasticExpandedDetails
-                          p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
-                        />
-                      )}
-                      <p className="text-muted mb-1 text-[10px]">
-                        {t('rawPacketLog.rawHexLabel', { bytes: byteLen })}
-                      </p>
-                      <p className="text-[10px] break-all text-gray-400">{hexRaw}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+          {showScrollButton && !isPaused ? (
+            <button
+              type="button"
+              onClick={scrollToLatest}
+              className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+            >
+              <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
+              {t('rawPacketLog.jumpToLatest')}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

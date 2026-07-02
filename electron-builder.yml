@@ -20,6 +20,10 @@ publish:
 extraResources:
   - from: resources/icons/win/colorado-mesh.ico
     to: colorado-mesh.ico
+  - from: resources/reticulum-sidecar
+    to: reticulum-sidecar
+    filter:
+      - '**/*'
   - from: resources/icons/linux/256x256.png
     to: 256x256.png
   - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template.png

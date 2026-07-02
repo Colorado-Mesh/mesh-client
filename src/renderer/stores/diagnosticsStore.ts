@@ -1228,6 +1228,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       clearTimeout(diagnosticsDebounce.fullReanalysisTimer);
     diagnosticsDebounce.fullReanalysisTimer = setTimeout(() => {
       diagnosticsDebounce.fullReanalysisTimer = null;
+      if (capabilities?.hasHopCount === false) {
+        set({ diagnosticRows: [], diagnosticRowsRestoredAt: null });
+        schedulePersistDiagnosticRows(() => get().diagnosticRows);
+        return;
+      }
       const state = get();
       const nodes = getNodes();
       const homeNode = nodes.get(myNodeNum) ?? null;

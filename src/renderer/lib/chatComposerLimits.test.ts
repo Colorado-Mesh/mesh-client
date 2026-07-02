@@ -11,6 +11,7 @@ import {
   MAX_CHUNKS,
   MESHCORE_PAYLOAD_LIMIT,
   MESHTASTIC_PAYLOAD_LIMIT,
+  RETICULUM_LXMF_PAYLOAD_LIMIT,
   splitChatMessage,
 } from './chatComposerLimits';
 
@@ -21,6 +22,10 @@ describe('getChatPayloadLimit', () => {
 
   it('returns 133 for meshcore', () => {
     expect(getChatPayloadLimit('meshcore')).toBe(MESHCORE_PAYLOAD_LIMIT);
+  });
+
+  it('returns LXMF limit for reticulum', () => {
+    expect(getChatPayloadLimit('reticulum')).toBe(RETICULUM_LXMF_PAYLOAD_LIMIT);
   });
 });
 

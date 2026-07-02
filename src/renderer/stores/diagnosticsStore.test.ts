@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { RETICULUM_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
 import {
   computeCuStats24h,
@@ -123,6 +124,29 @@ describe('diagnosticsStore analysis timers', () => {
     store.runReanalysis(() => new Map(), 1);
     vi.advanceTimersByTime(2000);
     expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('runReanalysis clears LoRa diagnostic rows for Reticulum', () => {
+    vi.useFakeTimers();
+    const store = useDiagnosticsStore.getState();
+    useDiagnosticsStore.setState({
+      diagnosticRows: [
+        {
+          kind: 'routing',
+          id: 'routing:1',
+          nodeId: 1,
+          type: 'bad_route',
+          severity: 'warning',
+          description: 'stale routing row',
+          detectedAt: Date.now(),
+        },
+      ],
+      diagnosticRowsRestoredAt: Date.now(),
+    });
+    store.runReanalysis(() => new Map(), 0, RETICULUM_CAPABILITIES);
+    vi.advanceTimersByTime(2000);
+    expect(useDiagnosticsStore.getState().diagnosticRows).toEqual([]);
+    expect(useDiagnosticsStore.getState().diagnosticRowsRestoredAt).toBeNull();
   });
 
   it('clearDiagnostics cancels both pending analysis timers', () => {

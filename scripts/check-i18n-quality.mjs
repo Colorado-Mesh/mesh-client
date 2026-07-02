@@ -230,6 +230,21 @@ export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
 /** Raw packet log panel — route/transport labels and protocol enum copy. */
 export const RAW_PACKET_LOG_PREFIX = 'rawPacketLog.';
 
+/** Reticulum RNS header column labels under rawPacketLog.reticulum.* */
+export const RAW_PACKET_LOG_RETICULUM_PREFIX = 'rawPacketLog.reticulum.';
+
+/** RX/TX direction tokens must stay verbatim when English uses them. */
+export const RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS = new Set(['rx', 'tx']);
+
+export const RETICULUM_TOPOLOGY_SELF_KEY = 'reticulumTopology.self';
+export const RETICULUM_TOPOLOGY_HOP_BADGE_KEY = 'reticulumTopology.hopBadge';
+
+/** Topology graph label for the local node — short pronoun, not a phrase. */
+export const RETICULUM_TOPOLOGY_SELF_FALSE_FRIEND_RES = [
+  { re: /pour vous/i, hint: 'use short pronoun "Vous", not phrase "pour vous"' },
+  { re: /pobrać/i, hint: 'use pronoun "Ty", not download phrase "Możesz pobrać"' },
+];
+
 export const RAW_PACKET_LOG_PROTOCOL_KEYS = new Set([
   'transportLegendHint',
   'transportCodesAbsent',
@@ -241,6 +256,16 @@ export const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set([
   'payloadLabel',
   'transportHeading',
 ]);
+
+/** Flasher UI when no USB serial ports are enumerated. */
+export const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
+  'flasher.noSerialPorts',
+  'flasher.errors.noSerialPorts',
+]);
+
+/** French MT inverts "No … found" into affirmative "trouvé(s):" labels. */
+export const FR_NO_SERIAL_PORTS_INVERTED_RE = /\btrouvés?\s*:/i;
+export const FR_NO_SERIAL_PORTS_NEGATION_RE = /\b(aucun|pas de|non trouv|introuvable)/i;
 
 /** MyMemory/CAT padding with dot runs in short UI labels. */
 export const CAT_DOT_PADDING_RE = /\.{4,}/;
@@ -339,7 +364,536 @@ export const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
 /** Lowercase mesh-client product name with CAT spaces around the hyphen. */
 export const MESH_CLIENT_LOWERCASE_SPACED_RE = /mesh\s+-\s+client/i;
 
-/** App → MeshCore Open wire (experimental) toggle copy. */
+/** Reticulum connection panel strings added with Phase B sidecar scaffold. */
+export const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
+  'reticulumStackTitle',
+  'reticulumStackHint',
+  'reticulumStartStack',
+  'reticulumStopStack',
+  'reticulumRestartStack',
+  'reticulumAutostart',
+  'reticulumStackRunning',
+  'reticulumNetworkTitle',
+  'reticulumNetworkEmpty',
+  'reticulumNetworkUnknown',
+  'reticulumNetworkDisabled',
+  'reticulumSidecarMissing',
+  'reticulumSidecarCargoMissing',
+  'reticulumSidecarStartFailed',
+]);
+
+/** radioPanel.* top-level Reticulum keys (not nested objects). */
+export const RETICULUM_RADIO_PANEL_TOP_LEAF_KEYS = new Set([
+  'reticulumConfigImportFailed',
+  'reticulumConfigNotFound',
+]);
+
+/** Leaf keys that must not remain identical to English in Reticulum UI copy. */
+export const RETICULUM_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'reticulumStackRunning',
+  'reticulumStopStack',
+  'reticulumConfigNotFound',
+  'shareInstance',
+  'serialPort',
+]);
+
+/**
+ * @param {string} flatKey
+ * @param {string} leafKey
+ * @param {string} enVal
+ */
+export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
+  if (RETICULUM_MUST_TRANSLATE_LEAF_KEYS.has(leafKey)) return true;
+  if (leafKey === 'confirmTitle' && /Reticulum stack/i.test(enVal)) return true;
+  if (leafKey === 'title' && /Import Reticulum config/i.test(enVal)) return true;
+  if (leafKey === 'confirm' && enVal === 'Import') return true;
+  if (leafKey === 'confirm' && enVal === 'Reset') return true;
+  if (leafKey === 'delete' && enVal === 'Delete') return true;
+  if (leafKey === 'deleteConfirm' && enVal === 'Delete') return true;
+  if (flatKey.endsWith('reticulumIdentity.title') && enVal === 'Reticulum identity') return true;
+  return false;
+}
+
+/** MT mistranslates UI Disable as parallax / unrelated accessibility jargon. */
+export const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
+
+/** MT mistranslates network Host as recording venue / unrelated nouns. */
+export const RETICULUM_HOST_FALSE_FRIEND_RES = [
+  {
+    re: /Aufnehmende/i,
+    hint: 'reticulumInterfaces.host must be Host/hostname, not recording-facility wording',
+  },
+];
+
+/** MT mistranslates routing peers as colleagues, pressure, points, or people. */
+export const RETICULUM_PEER_NAME_FALSE_FRIEND_RES = [
+  {
+    re: /^Pressione$/i,
+    hint: 'reticulumPeers.name must be peer wording, not Italian "Pressione" (pressure)',
+  },
+  {
+    re: /^Ponto$/i,
+    hint: 'reticulumPeers.name must be "Par/Peer", not Portuguese "Ponto" (point)',
+  },
+  {
+    re: /^Kolega$/i,
+    hint: 'reticulumPeers.name must be "Peer/Węzeł", not Polish colleague "Kolega"',
+  },
+  { re: /^Равны$/i, hint: 'reticulumPeers.name must be peer/node wording, not Russian "Равны"' },
+  { re: /^Kişi$/i, hint: 'reticulumPeers.name must be "Eş/Peer", not Turkish "Kişi" (person)' },
+  { re: /^同事$/, hint: 'reticulumPeers.name must be 对等节点/节点, not office colleague 同事' },
+  {
+    re: /^Sesama Rekan Kerja$/i,
+    hint: 'reticulumPeers.name must be peer wording, not Indonesian coworker phrase',
+  },
+  {
+    re: /^Колега$/i,
+    hint: 'reticulumPeers.name must be "Вузол/Peer", not Ukrainian office colleague "Колега"',
+  },
+  { re: /^동료$/, hint: 'reticulumPeers.name must be "피어", not office colleague "동료"' },
+  {
+    re: /^Compañeros$/i,
+    hint: 'reticulumPeers.name must be "Par/Peer", not Spanish companions "Compañeros"',
+  },
+  {
+    re: /^Gleichrangige$/i,
+    hint: 'reticulumPeers.name must be "Peer", not truncated German adjective "Gleichrangige"',
+  },
+];
+
+/** MT confuses software stack running with chimney/pallet stacks or starting. */
+export const RETICULUM_STACK_RUNNING_FALSE_FRIENDS = {
+  ru: [
+    {
+      re: /дымов/i,
+      hint: 'reticulumStackRunning must be "Стек работает", not chimney stack "дымовая труба"',
+    },
+  ],
+  pl: [
+    {
+      re: /^Bieżący stos$/i,
+      hint: 'reticulumStackRunning must mean running, not "current stack" (Bieżący stos)',
+    },
+  ],
+  uk: [
+    {
+      re: /^Запуск стека$/i,
+      hint: 'reticulumStackRunning must be "Стек працює", not "Запуск стека" (starting)',
+    },
+  ],
+  de: [
+    {
+      re: /^Stapel läuft$/i,
+      hint: 'use software "Stack läuft", not physical pallet "Stapel läuft"',
+    },
+  ],
+  nl: [
+    {
+      re: /^Stapel loopt$/i,
+      hint: 'use "Stack actief/draait", not physical pallet "Stapel loopt"',
+    },
+  ],
+  'pt-BR': [
+    {
+      re: /Empilhamento EM/i,
+      hint: 'use "Pilha em execução", not garbled "Empilhamento EM execução"',
+    },
+  ],
+};
+
+/** MT mistranslates Stop stack as road barriers or physical pallet stacks. */
+export const RETICULUM_STOP_STACK_FALSE_FRIENDS = {
+  pl: [
+    {
+      re: /ogranicznik/i,
+      hint: 'reticulumStopStack must be "Zatrzymaj stos", not road barrier "ograniczników"',
+    },
+  ],
+  de: [
+    {
+      re: /^Stapel stoppen$/i,
+      hint: 'match "Stack stoppen", not physical pallet "Stapel stoppen"',
+    },
+  ],
+};
+
+/** Enable toggle mistranslated as Edit. */
+export const RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES = [
+  {
+    re: /^Редактировать$/i,
+    hint: 'reticulum enable must be "Включить", not "Редактировать" (Edit)',
+  },
+];
+
+/** Russian sidecar mistranslated as baby stroller (коляска). */
+export const RETICULUM_SIDECAR_STROLLER_RE = /коляск/i;
+
+/** Extra probe column false friends beyond anemometer/transducer checks. */
+export const RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES = [
+  { re: /^Taster$/i, hint: 'reticulumPeers.probe is probe action, not button "Taster"' },
+  {
+    re: /^Deşmeyin$/i,
+    hint: 'reticulumPeers.probe must be noun "Sonda", not imperative "Deşmeyin"',
+  },
+];
+
+/** Propagation nodes title mistranslated as reproduction or anatomical nodules. */
+export const RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES = [
+  {
+    re: /Voortplanting/i,
+    hint: 'use "Propagatie", not biological reproduction "Voortplanting"',
+  },
+  {
+    re: /Nódulos/i,
+    hint: 'use "Nós de propagação", not anatomical "Nódulos"',
+  },
+];
+
+/** Peer table Actions column mistranslated as interventions/measures. */
+export const RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES = [
+  { re: /^Maßnahmen$/i, hint: 'use "Aktionen" for table Actions column' },
+  { re: /^Opatření$/i, hint: 'use "Akce" for table Actions column' },
+  { re: /^Interventions$/i, hint: 'use "Actions" equivalent, not "Interventions"' },
+];
+
+/** MT mistranslates mesh Probe as weather/anemometer/transducer wording. */
+export const RETICULUM_PROBE_FALSE_FRIEND_RES = [
+  {
+    re: /anemometer/i,
+    hint: 'reticulumPeers.probe must be short probe wording, not anemometer copy',
+  },
+  {
+    re: /Преобразователь/i,
+    hint: 'reticulumPeers.probe must be "Зонд/Probe", not transducer wording',
+  },
+  {
+    re: /del tronco/i,
+    hint: 'reticulumPeers.probe must be "Sonda/Probe", not "del tronco" garbage',
+  },
+  {
+    re: /Датчик/i,
+    hint: 'mesh probe must be "Зонд", not physical sensor "Датчик"',
+  },
+  {
+    re: /датчик/i,
+    hint: 'mesh probe must be "зонд", not physical sensor "датчик"',
+  },
+];
+
+/** MT turns "other peers" into office colleagues on stack transport toggle. */
+export const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
+  { re: /\bKollegen\b/i, hint: 'use networking "Peers", not German office colleague "Kollegen"' },
+  { re: /\bcolleagues\b/i, hint: 'use networking "peers", not office "colleagues"' },
+];
+
+/** Leaf keys allowed to stay identical to English in Reticulum UI copy. */
+export const RETICULUM_IDENTICAL_OK_LEAF_KEYS = new Set([
+  'reticulumNetworkUnknown',
+  'hops',
+  'port',
+  'hashLabel',
+]);
+
+/** @param {string} flatKey */
+export function isReticulumUiFlatKey(flatKey) {
+  if (flatKey === 'aria.switchToReticulum') return true;
+  if (flatKey.startsWith('connectionPanel.reticulum')) return true;
+  if (flatKey.startsWith('radioPanel.reticulum')) return true;
+  return false;
+}
+
+/**
+ * @param {string} flatKey
+ * @param {string} leafKey
+ * @param {string} val
+ * @param {string} enVal
+ */
+export function isReticulumIdenticalEnglishOk(flatKey, leafKey, val, enVal) {
+  if (RETICULUM_IDENTICAL_OK_LEAF_KEYS.has(leafKey)) return true;
+  if (leafKey === 'hashLabel' && /LXMF/i.test(val) && /LXMF/i.test(enVal)) return true;
+  if (flatKey.endsWith('reticulumPeers.name') && /^Peer$/i.test(val)) return true;
+  return false;
+}
+
+export const RETICULUM_SIDECAR_BUILD_CMD = 'pnpm run reticulum:sidecar:build';
+
+/** MyMemory often breaks npm script colons or translates Rust/cargo as common nouns. */
+export const RETICULUM_SIDECAR_BUILD_SPACED_RE = /reticulum\s*:\s*sidecar\s*:\s*build/i;
+
+const RETICULUM_STACK_HINT_PROTOCOL_TOKENS = ['LXMF', 'TCP', 'Auto'];
+
+const RUSTUP_INSTALL_URL_HOST = 'rustup.rs';
+
+/** @param {string} text */
+function containsRustupInstallUrl(text) {
+  const urlRe = /https?:\/\/[a-z0-9.-]+/gi;
+  let match;
+  while ((match = urlRe.exec(text)) !== null) {
+    try {
+      const candidate = match[0];
+      const parsed = new URL(candidate.endsWith('/') ? candidate : `${candidate}/`);
+      if (parsed.hostname === RUSTUP_INSTALL_URL_HOST) return true;
+    } catch {
+      // ignore malformed URL-like fragments in locale strings
+    }
+  }
+  return false;
+}
+
+/** Programming-language Rust mistranslated as corrosion, karat, cargo freight, etc. */
+const RUST_PROGRAMMING_FALSE_FRIEND_RES = [
+  { re: /óxido/i, hint: 'use programming language "Rust", not Spanish "óxido" (oxide)' },
+  { re: /\bKarat\b/i, hint: 'use programming language "Rust", not Indonesian "Karat"' },
+  { re: /\bPas\b/i, hint: 'use programming language "Rust", not Turkish "Pas" (rust corrosion)' },
+  { re: /\brez\b/i, hint: 'use programming language "Rust", not Czech "rez" (corrosion)' },
+  { re: /[Rr]dzy\b/, hint: 'use programming language "Rust", not Polish "rdzy" (corrosion)' },
+  { re: /rouille/i, hint: 'use programming language "Rust", not French "rouille" (corrosion)' },
+  { re: /roest/i, hint: 'use programming language "Rust", not Dutch/German corrosion wording' },
+  { re: /ferrugem/i, hint: 'use programming language "Rust", not Portuguese "ferrugem"' },
+  { re: /ржав/i, hint: 'use programming language "Rust", not Russian rust-corrosion wording' },
+  { re: /іржав/i, hint: 'use programming language "Rust", not Ukrainian rust-corrosion wording' },
+  { re: /antiruggine/i, hint: 'use programming language "Rust", not Italian "antiruggine"' },
+  { re: /錆/, hint: 'use programming language "Rust", not Japanese 錆 (corrosion)' },
+  {
+    re: /러스트/,
+    hint: 'use Latin "Rust" for the programming language, not Korean transliteration',
+  },
+];
+
+/** cargo package manager mistranslated as freight/load. */
+const CARGO_TOOLCHAIN_FALSE_FRIEND_RES = [
+  { re: /\bFracht\b/i, hint: 'use Rust package manager "cargo", not German "Fracht" (freight)' },
+  {
+    re: /\bcarga\b/i,
+    hint: 'use Rust package manager "cargo", not Spanish/Portuguese "carga" (load)',
+  },
+  { re: /\bladunku\b/i, hint: 'use Rust package manager "cargo", not Polish "ładunku" (load)' },
+  { re: /\bnáklad\b/i, hint: 'use Rust package manager "cargo", not Czech "náklad" (load)' },
+  {
+    re: /\bвантаж\b/i,
+    hint: 'use Rust package manager "cargo", not Ukrainian "вантаж" (cargo freight)',
+  },
+  { re: /\bгруз\b/i, hint: 'use Rust package manager "cargo", not Russian "груз" (freight)' },
+  {
+    re: /\bkargo\b/i,
+    hint: 'use Rust package manager "cargo", not Turkish/Indonesian freight "kargo"',
+  },
+  { re: /\blading\b/i, hint: 'use Rust package manager "cargo", not Dutch "lading" (freight)' },
+  { re: /\bcarico\b/i, hint: 'use Rust package manager "cargo", not Italian "carico" (load)' },
+  { re: /\b화물\b/, hint: 'use Rust package manager "cargo", not Korean 化물 (freight)' },
+  { re: /\b货物\b/, hint: 'use Rust package manager "cargo", not Chinese 货物 (freight)' },
+  { re: /\bカーゴ\b/, hint: 'use Rust package manager "cargo", not Japanese katakana freight' },
+];
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @returns {string[]}
+ */
+export function reticulumConnectionPanelLiteralIssues(enVal, val) {
+  const issues = [];
+  if (enVal.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
+    if (!val.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
+      issues.push(
+        `reticulum sidecar build command must appear exactly as \`${RETICULUM_SIDECAR_BUILD_CMD}\``,
+      );
+    }
+    if (RETICULUM_SIDECAR_BUILD_SPACED_RE.test(val) && !val.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
+      issues.push('reticulum:sidecar:build command must not insert spaces around colons');
+    }
+  }
+  if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {
+    issues.push('use "mesh-client" without spaces around the hyphen (not "mesh - client")');
+  }
+  if (/\bRust\b/.test(enVal) && !/\bRust\b/.test(val)) {
+    issues.push('keep programming language name "Rust" untranslated');
+  }
+  if (enVal.includes('(cargo)') && !/\bcargo\b/.test(val)) {
+    issues.push('keep Rust package manager name "cargo" untranslated');
+  }
+  if (containsRustupInstallUrl(enVal) && !containsRustupInstallUrl(val)) {
+    issues.push('keep rustup install URL https://rustup.rs verbatim');
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumConnectionPanelIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
+  if (!isReticulumUiFlatKey(flatKey)) {
+    return issues;
+  }
+
+  const isConnectionTopLevel =
+    flatKey.startsWith('connectionPanel.') && RETICULUM_CONNECTION_PANEL_LEAF_KEYS.has(leafKey);
+  const isRadioTopLevel =
+    flatKey.startsWith('radioPanel.') && RETICULUM_RADIO_PANEL_TOP_LEAF_KEYS.has(leafKey);
+  const isNestedReticulum =
+    flatKey.startsWith('connectionPanel.reticulum') || flatKey.startsWith('radioPanel.reticulum');
+
+  if (
+    !isConnectionTopLevel &&
+    !isRadioTopLevel &&
+    !isNestedReticulum &&
+    flatKey !== 'aria.switchToReticulum'
+  ) {
+    return issues;
+  }
+
+  if (
+    locale !== 'en' &&
+    val === enVal &&
+    reticulumRequiresTranslation(flatKey, leafKey, enVal) &&
+    !isReticulumIdenticalEnglishOk(flatKey, leafKey, val, enVal)
+  ) {
+    issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (leafKey === 'reticulumNetworkDisabled' && locale !== 'en' && /^disabled$/i.test(val)) {
+    issues.push('translate reticulumNetworkDisabled — do not leave English "disabled"');
+  }
+
+  if (leafKey === 'reticulumStackHint' && locale !== 'en') {
+    for (const token of RETICULUM_STACK_HINT_PROTOCOL_TOKENS) {
+      if (enVal.includes(token) && !val.includes(token)) {
+        issues.push(`reticulumStackHint must preserve protocol token "${token}"`);
+      }
+    }
+  }
+
+  if (
+    (flatKey.endsWith('.disable') || flatKey.endsWith('.enable')) &&
+    enVal === 'Disable' &&
+    RETICULUM_DISABLE_PARALLAX_RE.test(val)
+  ) {
+    issues.push('reticulum disable label must not use parallax/accessibility false-friend wording');
+  }
+
+  if (flatKey.endsWith('reticulumInterfaces.host') && enVal === 'Host') {
+    for (const { re, hint } of RETICULUM_HOST_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum host false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey.endsWith('reticulumPeers.name') && enVal === 'Peer') {
+    for (const { re, hint } of RETICULUM_PEER_NAME_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum peer name false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey.endsWith('reticulumPeers.probe') && enVal === 'Probe') {
+    for (const { re, hint } of RETICULUM_PROBE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum probe false friend: ${hint}`);
+      }
+    }
+    for (const { re, hint } of RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum probe false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey.endsWith('reticulumPeers.actions') && enVal === 'Actions') {
+    for (const { re, hint } of RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum peers actions false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey.endsWith('reticulumPropagation.title') &&
+    enVal === 'Propagation nodes' &&
+    locale !== 'en'
+  ) {
+    for (const { re, hint } of RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum propagation title false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumStackRunning' && locale !== 'en') {
+    for (const { re, hint } of RETICULUM_STACK_RUNNING_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reticulum stack running false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumStopStack' && locale !== 'en') {
+    for (const { re, hint } of RETICULUM_STOP_STACK_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reticulum stop stack false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    (flatKey.endsWith('.enable') || flatKey.endsWith('reticulumPropagation.enable')) &&
+    enVal === 'Enable'
+  ) {
+    for (const { re, hint } of RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum enable false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey.endsWith('reticulumInterfaces.bleAvailable') &&
+    enVal.includes('sidecar') &&
+    RETICULUM_SIDECAR_STROLLER_RE.test(val)
+  ) {
+    issues.push(
+      'reticulum sidecar false friend: use sidecar process wording, not stroller "коляска"',
+    );
+  }
+
+  if (flatKey.endsWith('reticulumStackSettings.enableTransport') && enVal.includes('other peers')) {
+    for (const { re, hint } of RETICULUM_OTHER_PEERS_COLLEAGUE_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum transport peers false friend: ${hint}`);
+      }
+    }
+  }
+
+  for (const issue of reticulumConnectionPanelLiteralIssues(enVal, val)) {
+    issues.push(issue);
+  }
+
+  if (leafKey === 'reticulumSidecarMissing' || leafKey === 'reticulumSidecarCargoMissing') {
+    for (const { re, hint } of RUST_PROGRAMMING_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum sidecar Rust false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumSidecarCargoMissing') {
+    for (const { re, hint } of CARGO_TOOLCHAIN_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulum sidecar cargo false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (leafKey === 'reticulumSidecarStartFailed' && locale === 'ja' && /網膜/.test(val)) {
+    issues.push('reticulumSidecarStartFailed uses 網膜 (retina) — use Reticulum stack wording');
+  }
+
+  return issues;
+}
+
 export const MESHCORE_OPEN_WIRE_APP_LEAF_KEYS = new Set([
   'meshcoreOpenWireExperimentalTitle',
   'meshcoreOpenWireCompatLabel',
@@ -693,7 +1247,23 @@ export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'emptyNoDmMessages',
   'emptyNoMessagesYet',
   'emptyConnectFirst',
+  'attachFile',
+  'attachFileHint',
+  'attachDmOnly',
+  'composePlaceholderSelectDm',
+  'selectDmFirst',
+  'emptySelectDm',
+  'noDmConversations',
+  'noDmConversationsReticulum',
+  'reticulumSendDelivered',
+  'reticulumSendSending',
+  'reticulumSendFailed',
 ]);
+
+/** Reticulum DM-only chat copy — contact must not become customer inquiry (문의). */
+export const CHAT_RETICULUM_CONTACT_FALSE_FRIENDS = {
+  ko: [{ re: /문의/, hint: 'use 연락처 (contact), not customer inquiry "문의"' }],
+};
 
 /** chatPanel outbox / date divider keys checked for known auto-translate false friends. */
 export const CHAT_PANEL_OUTBOX_UI_LEAF_KEYS = new Set([
@@ -900,10 +1470,48 @@ const UPGRADE_ACCESS_FALSE_FRIENDS = [
 const ACL_LISTING_AD_FALSE_FRIEND_RES = [/ACL-advertentie/i, /Iklan ACL/i];
 
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
-export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set(['channelLoading', 'savingChannel']);
+export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set([
+  'channelLoading',
+  'savingChannel',
+  'autoConnectingTo',
+  'autoReconnectInProgress',
+  'stageAutoConnectingBle',
+  'stageWaitingNobleBleMeshtastic',
+  'stageWaitingNobleBleMeshcore',
+]);
+
+/** connectionPanel.autoReconnectInProgress — must mean reconnect, not initial connect. */
+export const AUTO_RECONNECT_IN_PROGRESS_KEY = 'connectionPanel.autoReconnectInProgress';
+
+export const AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS = {
+  uk: [
+    {
+      re: /^Триває автоматичне підключення/i,
+      hint: 'autoReconnectInProgress must use повторне/перепідключення (reconnect), not generic підключення (connect)',
+    },
+  ],
+  it: [
+    {
+      re: /^Connessione automatica/i,
+      hint: 'autoReconnectInProgress must be "Riconnessione automatica…", not initial "Connessione automatica"',
+    },
+  ],
+  cs: [
+    {
+      re: /^Probíhá automatické připojení/i,
+      hint: 'autoReconnectInProgress must use opětovné připojení (reconnect), not generic připojení',
+    },
+  ],
+};
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
 export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
+
+/** Bare CAT placeholder residue (e.g. "PH 0") without __ wrappers. */
+export const CAT_BARE_PH_PLACEHOLDER_RE = /\bPH\s*\d+\b/;
+
+/** HTML tags leaked from CAT export (e.g. <span>…</span>). */
+export const HTML_TAG_RESIDUE_RE = /<\/?[a-z][\w-]*\b/i;
 
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
 const placeholderNameSetCache = new Map();
@@ -947,15 +1555,35 @@ export function interpolationPlaceholderIssues(enVal, val) {
 export const LOCALE_ARTIFACT_RES = [
   /<g\s+id=/i,
   /<\/g>/i,
-  /<ph\s+id=/i,
+  /<ph\s+/i,
+  /<x\s+id=/i,
   /<bpt\b/i,
   /<ept\b/i,
   /equiv-text=/i,
+  /<primary>/i,
+  /<command>/i,
 ];
+
+/** HTML numeric entities leaked from CAT export (e.g. &#10; line feed). */
+export const HTML_ENTITY_RESIDUE_RE = /&#\d+;/;
+
+/** Bracket placeholders from CAT/MyMemory (e.g. [Data] dostarczenia). */
+export const BRACKET_CAT_PLACEHOLDER_RE = /\[(?:Data|Date|Time)\]/i;
+
+/** peerDetailModal probe toast keys — same probe wording rules as reticulumPeers.probe. */
+export const PEER_DETAIL_PROBE_LEAF_KEYS = new Set(['probeHops', 'probeLocal', 'probeFailed']);
 
 /** Brand / product names preserved verbatim when present in English. */
 // GPIO is a hardware acronym that must not be translated or expanded in UI strings.
-export const PROTECTED_BRANDS = ['TAK', 'Discord', 'Meshtastic', 'MeshCore', 'MQTT', 'GPIO'];
+export const PROTECTED_BRANDS = [
+  'TAK',
+  'Discord',
+  'Meshtastic',
+  'MeshCore',
+  'MQTT',
+  'GPIO',
+  'Reticulum',
+];
 
 const BRAND_WORD_RES = new Map([
   ['TAK', /\bTAK\b/g],
@@ -964,6 +1592,7 @@ const BRAND_WORD_RES = new Map([
   ['MeshCore', /\bMeshCore\b/g],
   ['MQTT', /\bMQTT\b/g],
   ['GPIO', /\bGPIO\b/g],
+  ['Reticulum', /\bReticulum\b/g],
 ]);
 
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.
@@ -1064,10 +1693,18 @@ export function protectedBrandIssues(enVal, val, brands = PROTECTED_BRANDS) {
  * @returns {string[]}
  */
 function checkCatEncodingAndMeshtasticIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (CAT_PH_PLACEHOLDER_RE.test(val)) {
     issues.push('CAT/XLIFF __ PH __ placeholder residue is not allowed');
+  }
+
+  if (CAT_BARE_PH_PLACEHOLDER_RE.test(val)) {
+    issues.push('CAT placeholder residue (bare PH N) is not allowed — use {{name}} interpolation');
+  }
+
+  if (HTML_TAG_RESIDUE_RE.test(val)) {
+    issues.push('HTML tag residue is not allowed in locale strings');
   }
 
   for (const re of LOCALE_ARTIFACT_RES) {
@@ -1113,6 +1750,25 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
     issues.push('CAT/Qt plural-form placeholder residue is not allowed');
   }
 
+  if (HTML_ENTITY_RESIDUE_RE.test(val)) {
+    issues.push('HTML numeric entity residue (e.g. &#10;) is not allowed');
+  }
+
+  if (BRACKET_CAT_PLACEHOLDER_RE.test(val)) {
+    issues.push('CAT bracket placeholder residue (e.g. [Data]) is not allowed');
+  }
+
+  if (
+    leafKey === 'nameLabel' &&
+    enVal === 'Name:' &&
+    locale !== 'en' &&
+    /Gerald|Junior|&#/i.test(val)
+  ) {
+    issues.push(
+      'nameLabel must be a short "Name:" label — remove CAT sample-name or entity garbage',
+    );
+  }
+
   if (
     locale === 'fr' &&
     (flatKey.startsWith(CHANNEL_URL_PREFIX) || FR_MESH_CHANNEL_KEYS.has(flatKey)) &&
@@ -1124,11 +1780,44 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
 }
 
 /**
+ * Reticulum peer detail, ping, and related UI outside connectionPanel.* nesting.
+ *
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumPeerAndPingIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
+
+  if (
+    flatKey.startsWith('peerDetailModal.') &&
+    PEER_DETAIL_PROBE_LEAF_KEYS.has(leafKey) &&
+    enVal.includes('Probe')
+  ) {
+    for (const { re, hint } of RETICULUM_PROBE_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`peerDetailModal probe false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === 'reticulumPing.failed' && enVal.includes('Ping failed') && locale !== 'en') {
+    if (/зв['\s]*язк|связ(и|ь)/i.test(val) && !/пінг|ping|эхо|sond|prob/i.test(val)) {
+      issues.push(
+        'reticulumPing.failed must mention ping/probe, not generic connection "зв\'язку/связи"',
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
 function checkMustTranslateAndFormFieldIssues(ctx) {
-  const { locale, val, enVal, leafKey } = ctx;
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (locale !== 'en' && MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
@@ -1185,6 +1874,23 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
     (/\.{4,}/.test(val) || /\.{3,}$/.test(val))
   ) {
     issues.push('use Unicode ellipsis (…) instead of ASCII dots when English uses …');
+  }
+
+  if (
+    locale !== 'en' &&
+    ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
+    enVal.endsWith('…') &&
+    /…{2,}/.test(val)
+  ) {
+    issues.push('use a single Unicode ellipsis (…), not repeated ……');
+  }
+
+  if (flatKey === AUTO_RECONNECT_IN_PROGRESS_KEY && locale !== 'en') {
+    for (const { re, hint } of AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`autoReconnectInProgress false friend: ${hint}`);
+      }
+    }
   }
   return issues;
 }
@@ -1259,6 +1965,26 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
         issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
       }
     }
+    if (flatKey.startsWith(RAW_PACKET_LOG_RETICULUM_PREFIX)) {
+      if (
+        RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS.has(packetLeaf) &&
+        (enVal === 'RX' || enVal === 'TX') &&
+        val !== enVal
+      ) {
+        issues.push(
+          `rawPacketLog reticulum ${packetLeaf} must stay verbatim "${enVal}" (radio direction token)`,
+        );
+      }
+      if (
+        packetLeaf === 'destination' &&
+        enVal === 'Destination' &&
+        /^[:;.,!?]+$/.test(val.trim())
+      ) {
+        issues.push(
+          'rawPacketLog reticulum destination must be a label, not punctuation-only garbage',
+        );
+      }
+    }
     if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
       issues.push(
         'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
@@ -1267,6 +1993,28 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
     for (const issue of meshcoreProtocolTokenIssues(flatKey, enVal, val)) {
       issues.push(issue);
     }
+  }
+
+  if (flatKey === RETICULUM_TOPOLOGY_SELF_KEY && enVal === 'You' && locale !== 'en') {
+    if (val === 'You') {
+      issues.push('reticulumTopology.self must be translated (local pronoun for "You")');
+    }
+    for (const { re, hint } of RETICULUM_TOPOLOGY_SELF_FALSE_FRIEND_RES) {
+      if (re.test(val)) {
+        issues.push(`reticulumTopology.self false friend: ${hint}`);
+      }
+    }
+    if (val.split(/\s+/).length > 2) {
+      issues.push('reticulumTopology.self should be a short pronoun, not a multi-word phrase');
+    }
+  }
+
+  if (
+    flatKey === RETICULUM_TOPOLOGY_HOP_BADGE_KEY &&
+    enVal.includes('{{count}}') &&
+    !val.includes('{{count}}')
+  ) {
+    issues.push('reticulumTopology.hopBadge must preserve {{count}} placeholder');
   }
 
   if (
@@ -1278,6 +2026,27 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
         issues.push(`de device role false friend: ${hint}`);
       }
     }
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkFlasherIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (
+    FLASHER_NO_SERIAL_PORTS_KEYS.has(flatKey) &&
+    /^No .* found/i.test(enVal) &&
+    locale === 'fr' &&
+    FR_NO_SERIAL_PORTS_INVERTED_RE.test(val) &&
+    !FR_NO_SERIAL_PORTS_NEGATION_RE.test(val)
+  ) {
+    issues.push(
+      'flasher noSerialPorts must express absence (aucun/pas de), not affirmative "trouvé(s):"',
+    );
   }
   return issues;
 }
@@ -1466,6 +2235,17 @@ function checkChatPanelIssues(ctx) {
           'replyRequiresPacketId still has English "send ack", "refresh chat", or "RF packet id" — translate',
         );
         break;
+      }
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    (flatKey === 'chatPanel.emptySelectDm' || flatKey === 'chatPanel.noDmConversationsReticulum')
+  ) {
+    for (const { re, hint } of CHAT_RETICULUM_CONTACT_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`chatPanel reticulum contact false friend: ${hint}`);
       }
     }
   }
@@ -1978,6 +2758,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkRadioPanelChannelIssues,
   checkRoomsPanelFalseFriendIssues,
   checkMeshAdvertAndRawPacketLogIssues,
+  checkFlasherIssues,
   checkRoomsGuestPasswordAndNlMeshIssues,
   checkMqttWifiAndScriptIssues,
   checkRoomsPanelTranslationIssues,
@@ -1985,6 +2766,8 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkRoomsPanelMembersIssues,
   checkAppPanelReduceMotionAndBrandIssues,
   checkMeshcoreOpenWireIssues,
+  checkReticulumConnectionPanelIssues,
+  checkReticulumPeerAndPingIssues,
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,

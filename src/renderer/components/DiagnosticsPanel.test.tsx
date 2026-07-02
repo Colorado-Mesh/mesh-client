@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
+import { RETICULUM_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, RoutingDiagnosticRow } from '../lib/types';
 import type { ForeignLoraDetection } from '../stores/diagnosticsStore';
 import DiagnosticsPanel from './DiagnosticsPanel';
@@ -468,5 +469,38 @@ describe('DiagnosticsPanel cross-protocol RF', () => {
     expect(
       screen.queryByRole('heading', { name: /meshcore nodes heard by your meshtastic radio/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('DiagnosticsPanel reticulum scope', () => {
+  it('does not surface Meshtastic routing rows on the Reticulum tab', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'routing',
+        id: 'routing:99',
+        nodeId: 0x12345678,
+        type: 'hop_goblin',
+        severity: 'error',
+        description: 'Ghost hop from Meshtastic',
+        detectedAt: Date.now(),
+      } satisfies RoutingDiagnosticRow,
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="reticulum"
+        capabilities={RETICULUM_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.queryByText('Ghost hop from Meshtastic')).not.toBeInTheDocument();
+    expect(screen.getByText(/no diagnostics detected/i)).toBeInTheDocument();
+    expect(screen.queryByText(/network health/i)).not.toBeInTheDocument();
   });
 });

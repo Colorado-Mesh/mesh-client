@@ -3580,7 +3580,7 @@ function MeshcoreChannelSection({
             const revealed = revealedIdx.has(ch.index);
             return (
               <div
-                key={ch.index}
+                key={`ch-${ch.index}-${ch.name}`}
                 className="bg-deep-black/60 flex items-center gap-2 rounded-lg border border-gray-700/50 px-3 py-2"
               >
                 <span className="rounded bg-gray-700 px-1.5 py-0.5 font-mono text-xs font-bold text-gray-400">

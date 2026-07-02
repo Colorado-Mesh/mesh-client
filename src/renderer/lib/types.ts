@@ -166,6 +166,8 @@ export interface MeshNode {
   air_util_tx?: number;
   altitude?: number;
   favorited?: boolean;
+  /** Reticulum LXMF destination hash (canonical address for send). */
+  reticulum_destination_hash?: string;
   on_radio?: boolean;
   // MeshCore routing info
   hops?: number;
@@ -350,6 +352,16 @@ export interface CachedNode {
 export interface ChatMessage {
   id?: number;
   sender_id: number;
+  /** Reticulum LXMF destination hash when `sender_id` is a synthetic node id mapping. */
+  reticulum_sender_hash?: string;
+  /** Stable LXMF message hash for ratspeak.chat.v2 threaded replies. */
+  reticulum_message_hash?: string;
+  /** Reticulum reply target message hash (hex). */
+  reticulum_reply_to_hash?: string;
+  /** Local path when a Reticulum attachment was saved to disk. */
+  reticulumAttachmentPath?: string;
+  /** Reticulum LXMF delivery method for outbound status badge (direct / propagated). */
+  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
   sender_name: string;
   payload: string;
   channel: number;
@@ -365,7 +377,7 @@ export interface ChatMessage {
   // Direct message destination (undefined = broadcast)
   to?: number;
   // Which transport(s) delivered this incoming message
-  receivedVia?: 'rf' | 'mqtt' | 'both';
+  receivedVia?: 'rf' | 'mqtt' | 'both' | 'tcp' | 'network';
   // true for backlog messages (e.g. MeshCore MsgWaiting catch-up); excluded from unread counter
   isHistory?: boolean;
   /** Full raw line from device/MQTT for dedupe only (not persisted); avoids collapsing same-second identical payloads. */

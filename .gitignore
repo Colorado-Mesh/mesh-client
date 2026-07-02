@@ -24,3 +24,6 @@ coverage/
 .context-os
 .rtk
 flatpak/generated-sources.json
+
+# Rust reticulum sidecar (cargo build output)
+reticulum-sidecar/target/

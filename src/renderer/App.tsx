@@ -23,19 +23,26 @@ import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
   ensureMeshcoreChatLastReadSanitized,
+  ensureReticulumChatLastReadSanitized,
   getSanitizedMeshcoreChatLastRead,
   getSanitizedMeshcoreRoomsLastRead,
   getSanitizedMeshtasticChatLastRead,
+  getSanitizedReticulumChatLastRead,
   loadMutedViews,
   removePersistedLastReadForChannel,
   subscribeMutedViewsChanged,
   subscribePersistedLastRead,
   subscribePersistedRoomsLastRead,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import { type ChatUnreadDmOptions, totalUnreadCount } from '@/renderer/lib/chatUnreadCounts';
+import {
+  type ChatUnreadDmOptions,
+  computeReticulumChatUnread,
+  totalUnreadCount,
+} from '@/renderer/lib/chatUnreadCounts';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
+import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -86,23 +93,29 @@ import {
   useProtocolDisconnect,
 } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
+import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
-import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
+import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
 import {
   AdminPanel,
   AppPanel,
   DiagnosticsPanel,
   MapPanel,
   ModulePanel,
+  NomadNetworkPanel,
   PacketDistributionPanel,
   PeerGraphPanel,
   RadioPanel,
   RawPacketLogPanel,
   RepeatersPanel,
+  ReticulumAdminPanel,
+  ReticulumPeerListPanel,
+  ReticulumRadioPanel,
+  ReticulumTopologyPanel,
   RFHistogramsPanel,
   RoomsPanel,
   SecurityPanel,
@@ -115,10 +128,16 @@ import {
   computeTabMappings,
   findFilteredTabIndexForPanel,
   MAP_TAB_PANEL_INDEX,
+  MODULES_PANEL_INDEX,
+  NODES_PANEL_INDEX,
+  NOMAD_NETWORK_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
   ROOMS_PANEL_INDEX,
+  SECURITY_PANEL_INDEX,
+  TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
+import { dedupeChannelPillsByIndex } from './lib/channelListDedupe';
 import { playMessageNotification } from './lib/chatNotifications';
 import {
   deviceHeaderVariant,
@@ -142,6 +161,7 @@ import {
   meshcoreRoomServerIdsFromNodes,
   repairMeshcoreHydratedMessages,
 } from './lib/meshcoreDbCacheHydration';
+import { initNobleBleDualRadioStartup } from './lib/meshcoreDualNobleBleInit';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
@@ -149,12 +169,13 @@ import {
   shouldAutoLaunchMeshtasticMqtt,
   shouldMaintainMeshtasticMqttConnection,
 } from './lib/meshtasticMqttLiveIngest';
-import { tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
+import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { parseStoredJson } from './lib/parseStoredJson';
 import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import { useRadioProvider } from './lib/radio/providerFactory';
+import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
@@ -181,6 +202,7 @@ import {
 import type { MeshcoreRuntime, MeshtasticRuntime } from './runtime/runtimeTypes';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
+import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
@@ -188,6 +210,7 @@ import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
+import { useReticulumPeerStore } from './stores/reticulumPeerStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
@@ -388,13 +411,15 @@ function ColoradoMeshWatermarkMark() {
 export default function App() {
   const meshtasticRuntime = useMeshtasticRuntime();
   const meshcoreRuntime = useMeshcoreRuntime();
+  const reticulumRuntime = useReticulumRuntime();
   const runtimeMap = useMemo<RuntimeMap>(
     () =>
       ({
         meshtastic: meshtasticRuntime,
         meshcore: meshcoreRuntime,
+        reticulum: reticulumRuntime,
       }) as unknown as RuntimeMap,
-    [meshtasticRuntime, meshcoreRuntime],
+    [meshtasticRuntime, meshcoreRuntime, reticulumRuntime],
   );
   return (
     <ProtocolRuntimeProvider value={runtimeMap}>
@@ -408,6 +433,7 @@ function AppContent() {
   const runtimes = useAllRuntimes();
   const meshtasticRuntime = runtimes.meshtastic as unknown as MeshtasticRuntime;
   const meshcoreRuntime = runtimes.meshcore as unknown as MeshcoreRuntime;
+  const reticulumRuntime = runtimes.reticulum;
   const [activeTab, setActiveTab] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('mesh-client:sidebarCollapsed') === 'true';
@@ -476,6 +502,7 @@ function AppContent() {
   }, [sidebarCollapsed]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  const [selectedPeerHash, setSelectedPeerHash] = useState<string | null>(null);
   // Stable array ref from Map.get — safe for React 19 useSyncExternalStore (not latestPositionHistoryPoint).
   const selectedNodeHistoryPoints = usePositionHistoryStore(
     useCallback(
@@ -503,7 +530,11 @@ function AppContent() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
-  const [lastReadRevision, setLastReadRevision] = useState({ meshtastic: 0, meshcore: 0 });
+  const [lastReadRevision, setLastReadRevision] = useState({
+    meshtastic: 0,
+    meshcore: 0,
+    reticulum: 0,
+  });
   const [roomsLastReadRevision, setRoomsLastReadRevision] = useState(0);
   const [meshcoreMutedViewsRevision, setMeshcoreMutedViewsRevision] = useState(0);
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
@@ -620,12 +651,17 @@ function AppContent() {
     ensureOfflineProtocolIdentities();
   }, []);
 
+  useLayoutEffect(() => {
+    initNobleBleDualRadioStartup();
+  }, []);
+
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredMeshProtocol());
 
   const protocolConnect = useProtocolConnect();
   const protocolDisconnect = useProtocolDisconnect();
   const meshtasticConnection = useProtocolConnectionActions('meshtastic');
   const meshcoreConnection = useProtocolConnectionActions('meshcore');
+  const reticulumConnection = useProtocolConnectionActions('reticulum');
 
   usePowerRecovery({
     callbacksByProtocol: {
@@ -637,6 +673,10 @@ function AppContent() {
         onPowerSuspend: meshcoreRuntime.onPowerSuspend,
         onPowerResume: meshcoreRuntime.onPowerResume,
       },
+      reticulum: {
+        onPowerSuspend: reticulumRuntime.onPowerSuspend,
+        onPowerResume: reticulumRuntime.onPowerResume,
+      },
     },
   });
   useSerialServiceListeners();
@@ -645,6 +685,7 @@ function AppContent() {
   const allPanelActions = useAllProtocolPanelActions({
     meshtastic: meshtasticRuntime,
     meshcore: meshcoreRuntime,
+    reticulum: reticulumRuntime,
   });
   const meshtasticPanelActions = allPanelActions.meshtastic as ReturnType<
     typeof useMeshtasticPanelActions
@@ -652,10 +693,10 @@ function AppContent() {
   const meshcorePanelActions = allPanelActions.meshcore as ReturnType<
     typeof useMeshcorePanelActions
   >;
-  const activeFacade = useProtocolFacade(protocol, {
-    meshtastic: meshtasticPanelActions,
-    meshcore: meshcorePanelActions,
-  });
+  const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
+    typeof useReticulumPanelActions
+  >;
+  const activeFacade = useProtocolFacade(protocol, allPanelActions);
   const panelActions = allPanelActions[protocol];
   const {
     identityIdByProtocol,
@@ -664,6 +705,7 @@ function AppContent() {
   } = useActiveMeshIdentity(protocol);
   const meshtasticIdentityId = identityIdByProtocol.meshtastic;
   const meshcoreIdentityId = identityIdByProtocol.meshcore;
+  const reticulumIdentityId = identityIdByProtocol.reticulum;
   const meshtasticNodesById = useNodeStore((s) =>
     meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
   );
@@ -672,6 +714,7 @@ function AppContent() {
   );
   const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
   const meshcoreStoreMessages = useMessages(meshcoreIdentityId);
+  const reticulumStoreMessages = useMessages(reticulumIdentityId);
   const meshtasticUiMessages = useMemo(
     () => repairMeshtasticReplyPreviews(messageRecordsToChatMessages(meshtasticStoreMessages)),
     [meshtasticStoreMessages],
@@ -708,9 +751,22 @@ function AppContent() {
     if (!meshcoreNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
   }, [meshcoreNodesById]);
+  const reticulumUiMessages = useMemo(
+    () => messageRecordsToChatMessages(reticulumStoreMessages),
+    [reticulumStoreMessages],
+  );
+  const reticulumNodesById = useNodeStore((s) =>
+    reticulumIdentityId ? s.nodes[reticulumIdentityId] : undefined,
+  );
+  const reticulumUiNodes = useMemo(() => {
+    if (!reticulumNodesById) return new Map<number, MeshNode>();
+    return nodeRecordsToMeshNodeMap(Object.values(reticulumNodesById));
+  }, [reticulumNodesById]);
+  const reticulumPathPeerCount = useReticulumPeerStore((s) => s.peers.size);
 
   const meshtasticDbRefresh = useProtocolDbRefresh('meshtastic', meshtasticIdentityId);
   const meshcoreDbRefresh = useProtocolDbRefresh('meshcore', meshcoreIdentityId);
+  const reticulumDbRefresh = useProtocolDbRefresh('reticulum', reticulumIdentityId);
   const { refreshAllFromDb: refreshMeshtasticAllFromDb } = meshtasticDbRefresh;
   const { refreshAllFromDb: refreshMeshcoreAllFromDb } = meshcoreDbRefresh;
 
@@ -725,6 +781,11 @@ function AppContent() {
   }, [meshcoreIdentityId, refreshMeshcoreAllFromDb]);
 
   useEffect(() => {
+    if (!reticulumIdentityId) return;
+    void reticulumDbRefresh.refreshAllFromDb();
+  }, [reticulumIdentityId, reticulumDbRefresh]);
+
+  useEffect(() => {
     if (!meshcoreIdentityId) return;
     const selfNum = useIdentityStore.getState().identities[meshcoreIdentityId]?.selfNodeNum;
     if (selfNum != null && selfNum > 0) {
@@ -734,44 +795,90 @@ function AppContent() {
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
+  const reticulumConnectionView = useConnectionView(reticulumIdentityId);
 
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
+  const reticulumCapabilities = useRadioProvider('reticulum');
   const capabilitiesByProtocol = useMemo(
-    () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities),
-    [meshtasticCapabilities, meshcoreCapabilities],
+    () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities),
+    [meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
   );
   const tabsByProtocol = useMemo(
     () =>
       protocolRecord(
         computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
         computeTabMappings(t, 'meshcore', meshcoreCapabilities),
+        computeTabMappings(t, 'reticulum', reticulumCapabilities),
       ),
-    [t, meshtasticCapabilities, meshcoreCapabilities],
+    [t, meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
   );
   const uiNodesByProtocol = useMemo(
-    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes),
-    [meshtasticUiNodes, meshcoreUiNodes],
+    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes),
+    [meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes],
   );
   const uiMessagesByProtocol = useMemo(
-    () => protocolRecord(meshtasticUiMessages, meshcoreUiMessages),
-    [meshtasticUiMessages, meshcoreUiMessages],
+    () => protocolRecord(meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages),
+    [meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages],
   );
   const connectionViewByProtocol = useMemo(
-    () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView),
-    [meshtasticConnectionView, meshcoreConnectionView],
+    () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView),
+    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
   );
   const connectionActionsByProtocol = useMemo(
-    () => protocolRecord(meshtasticConnection, meshcoreConnection),
-    [meshtasticConnection, meshcoreConnection],
+    () => protocolRecord(meshtasticConnection, meshcoreConnection, reticulumConnection),
+    [meshtasticConnection, meshcoreConnection, reticulumConnection],
   );
   const panelActionsByProtocol = useMemo(
-    () => protocolRecord(meshtasticPanelActions, meshcorePanelActions),
-    [meshtasticPanelActions, meshcorePanelActions],
+    () => protocolRecord(meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions),
+    [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions],
   );
   const deviceStateByProtocol = useMemo(
-    () => protocolRecord(meshtasticRuntime.state, meshcoreRuntime.state),
-    [meshtasticRuntime.state, meshcoreRuntime.state],
+    () => protocolRecord(meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state),
+    [meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state],
+  );
+  const selfNodeIdByProtocol = useMemo(
+    () => protocolRecord(meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId, null),
+    [meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId],
+  );
+  const securityLocalNodeNumByProtocol = useMemo(
+    () => protocolRecord(meshtasticConnectionView.state.myNodeNum, undefined as number | undefined),
+    [meshtasticConnectionView.state.myNodeNum],
+  );
+  const securityLocalNodeLabelByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        meshtasticUiNodes.get(meshtasticConnectionView.state.myNodeNum)?.long_name ?? undefined,
+        meshcoreRuntime.selfInfo?.name,
+      ),
+    [meshtasticUiNodes, meshtasticConnectionView.state.myNodeNum, meshcoreRuntime.selfInfo?.name],
+  );
+  const securityMeshcoreNodeIdByProtocol = useMemo(
+    () => protocolRecord(undefined as number | undefined, meshcoreConnectionView.state.myNodeNum),
+    [meshcoreConnectionView.state.myNodeNum],
+  );
+  const normalizedMeshtasticDeviceLogs = useMemo(
+    () =>
+      meshtasticRuntime.deviceLogs.map((d) => ({
+        ts: d.time,
+        level:
+          d.level >= 40
+            ? 'error'
+            : d.level >= 30
+              ? 'warn'
+              : d.level >= 10
+                ? 'log'
+                : d.level > 0
+                  ? 'debug'
+                  : 'log',
+        source: d.source,
+        message: d.message,
+      })),
+    [meshtasticRuntime.deviceLogs],
+  );
+  const deviceLogsByProtocol = useMemo(
+    () => protocolRecord(normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs, []),
+    [normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs],
   );
   const nodesForUi = selectByProtocol(uiNodesByProtocol, protocol);
   const activeUiMessages = selectByProtocol(uiMessagesByProtocol, protocol);
@@ -814,8 +921,10 @@ function AppContent() {
     );
   }, [hasMeshtasticSendingRow, nowMs, activeFacade.messages, myNodeNumForQueue, sendingWindowMs]);
   const handleSend = useCallback(
-    (text: string, channel: number, destination?: number, replyId?: number) => {
-      sendMessage(text, channel, destination, replyId != null ? String(replyId) : undefined);
+    (text: string, channel: number, destination?: number, replyRef?: number | string) => {
+      const replyTo =
+        replyRef == null ? undefined : typeof replyRef === 'string' ? replyRef : String(replyRef);
+      sendMessage(text, channel, destination, replyTo);
     },
     [sendMessage],
   );
@@ -871,6 +980,20 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
     setLastReadRevision((prev) => ({ ...prev, meshcore: prev.meshcore + 1 }));
   }, [meshcoreIdentityId, meshcoreUiMessages]);
+
+  const reticulumLastReadSanitizedRef = useRef(false);
+  useEffect(() => {
+    if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
+    if (localStorage.getItem('mesh-client:lastReadSanitized:reticulum') === '1') {
+      reticulumLastReadSanitizedRef.current = true;
+      return;
+    }
+    if (reticulumUiMessages.length === 0) return;
+    ensureReticulumChatLastReadSanitized(reticulumUiMessages);
+    reticulumLastReadSanitizedRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
+    setLastReadRevision((prev) => ({ ...prev, reticulum: prev.reticulum + 1 }));
+  }, [reticulumIdentityId, reticulumUiMessages]);
 
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
@@ -963,6 +1086,16 @@ function AppContent() {
     meshcoreUiMessages,
   ]);
 
+  const reticulumChatUnread = useMemo(() => {
+    void lastReadRevision.reticulum;
+    const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages);
+    return computeReticulumChatUnread(
+      reticulumUiMessages,
+      reticulumConnectionView.state.status,
+      lastRead,
+    );
+  }, [lastReadRevision.reticulum, reticulumUiMessages, reticulumConnectionView.state.status]);
+
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
     void meshcoreMutedViewsRevision;
@@ -984,14 +1117,17 @@ function AppContent() {
     meshcoreRuntime.state.status,
   ]);
 
-  /** Meshtastic + MeshCore nodes for Diagnostics (foreign MeshCore sender labels/links). */
+  /** Protocol-scoped nodes for Diagnostics (Meshtastic merges MeshCore for foreign-LoRa labels). */
   const nodesForDiagnostics = useMemo(() => {
-    const merged = new Map(meshtasticUiNodes);
-    for (const [id, node] of meshcoreUiNodes) {
-      merged.set(id, node);
+    if (protocol === 'meshtastic') {
+      const merged = new Map(meshtasticUiNodes);
+      for (const [id, node] of meshcoreUiNodes) {
+        merged.set(id, node);
+      }
+      return merged;
     }
-    return merged;
-  }, [meshtasticUiNodes, meshcoreUiNodes]);
+    return nodesForUi;
+  }, [protocol, meshtasticUiNodes, meshcoreUiNodes, nodesForUi]);
   const rawPacketGetNodeLabel = useCallback(
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
     [nodesForUi, protocol],
@@ -1026,23 +1162,34 @@ function AppContent() {
   const capabilities = activeProtocolCapabilities;
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
-    : t('common.nodes');
+    : capabilities.nodeListTabUsesPeersLabel
+      ? t('common.peers')
+      : t('common.nodes');
+  const footerNodeCount =
+    protocol === 'reticulum' && reticulumPathPeerCount > 0
+      ? reticulumPathPeerCount
+      : nodesForUi.size;
 
   useNodeStatusNotifier(nodesForUi, capabilities);
 
   const chatUnreadByProtocol = useMemo(
-    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread),
-    [meshtasticChatUnread, meshcoreChatUnread],
+    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
+    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread],
   );
   const roomsUnreadByProtocol = useMemo(
-    () => protocolRecord(0, meshcoreRoomsUnread),
+    () => protocolRecord(0, meshcoreRoomsUnread, 0),
     [meshcoreRoomsUnread],
   );
   const chatUnread = selectByProtocol(chatUnreadByProtocol, protocol);
   const roomsUnread = selectByProtocol(roomsUnreadByProtocol, protocol);
   const storeMessageCountByProtocol = useMemo(
-    () => protocolRecord(meshtasticStoreMessages.length, meshcoreStoreMessages.length),
-    [meshtasticStoreMessages.length, meshcoreStoreMessages.length],
+    () =>
+      protocolRecord(
+        meshtasticStoreMessages.length,
+        meshcoreStoreMessages.length,
+        reticulumStoreMessages.length,
+      ),
+    [meshtasticStoreMessages.length, meshcoreStoreMessages.length, reticulumStoreMessages.length],
   );
   const meshtasticOwnNodeIdsForChat = useMemo(
     () =>
@@ -1053,13 +1200,29 @@ function AppContent() {
       ),
     [activeRuntime.selfNodeId, meshtasticRuntime.virtualNodeId, meshtasticRuntime.lastRfSelfNodeId],
   );
+  const reticulumOwnNodeIdsForChat = useMemo(() => {
+    const selfId =
+      typeof reticulumRuntime.selfNodeId === 'number'
+        ? reticulumRuntime.selfNodeId
+        : reticulumRuntime.state.myNodeNum;
+    return selfId > 0 ? [selfId >>> 0] : [];
+  }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
   const headerSelfNodeLabel = capabilities.prefersDeviceOwnerLongNameInHeader
     ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
       panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
     : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
   const sendReactionByProtocol = useMemo(
-    () => protocolRecord(meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction),
-    [meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction],
+    () =>
+      protocolRecord(
+        meshtasticPanelActions.sendReaction,
+        meshcoreRuntime.sendReaction,
+        reticulumPanelActions.sendReaction,
+      ),
+    [
+      meshtasticPanelActions.sendReaction,
+      meshcoreRuntime.sendReaction,
+      reticulumPanelActions.sendReaction,
+    ],
   );
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
@@ -1237,28 +1400,28 @@ function AppContent() {
     };
   }, [isRemoteConfigureTarget, meshtasticRuntime, meshtasticPanelActions]);
   const effectiveChannelConfigs = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.channelConfigs ?? [])
-    : activeRuntime.channelConfigs;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.channelConfigs ?? [])
+    : meshtasticRuntime.channelConfigs;
   const effectiveLoraConfig = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.loraConfig ?? null)
-    : activeRuntime.loraConfig;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.loraConfig ?? null)
+    : meshtasticRuntime.loraConfig;
   const effectiveModuleConfigs = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
-    : activeRuntime.moduleConfigs;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
+    : meshtasticRuntime.moduleConfigs;
   const effectiveMeshtasticConfigSlices = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.configSlices ?? {})
-    : activeRuntime.meshtasticConfigSlices;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.configSlices ?? {})
+    : meshtasticRuntime.meshtasticConfigSlices;
   const effectiveSecurityConfig = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.securityConfig ?? null)
-    : activeRuntime.securityConfig;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.securityConfig ?? null)
+    : meshtasticRuntime.securityConfig;
   const effectiveDeviceOwner = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
-    : activeRuntime.deviceOwner;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
+    : meshtasticRuntime.deviceOwner;
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
-    : activeRuntime.deviceFixedPosition;
+    ? (meshtasticRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
+    : meshtasticRuntime.deviceFixedPosition;
   const effectiveRemoteChannelFailedIndices = isRemoteConfigureTarget
-    ? (activeRuntime.remoteConfigSnapshot?.failedChannelIndices ?? [])
+    ? (meshtasticRuntime.remoteConfigSnapshot?.failedChannelIndices ?? [])
     : undefined;
   const handleRetryRemoteChannelsTail = useCallback(() => {
     if (meshtasticRuntime.configureTargetNodeNum == null) return;
@@ -1312,9 +1475,9 @@ function AppContent() {
   useEffect(() => {
     if (!isRemoteConfigureTarget || configureTargetNodeNum == null) return;
     if (!hasLocalMeshtasticRadio) return;
-    if (activePanelIndex === 5) {
+    if (activePanelIndex === MODULES_PANEL_INDEX) {
       void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'modules');
-    } else if (activePanelIndex === 9) {
+    } else if (activePanelIndex === SECURITY_PANEL_INDEX) {
       void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'security');
     }
   }, [
@@ -1382,12 +1545,9 @@ function AppContent() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
-      sendMessage(
-        msg.payload,
-        msg.channel,
-        msg.to ?? undefined,
-        msg.replyId != null ? String(msg.replyId) : undefined,
-      );
+      const replyTo =
+        msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined);
+      sendMessage(msg.payload, msg.channel, msg.to ?? undefined, replyTo);
     },
     [sendMessage],
   );
@@ -1412,9 +1572,16 @@ function AppContent() {
 
   /** MeshCore chat: only show configured channels (key !== all zeros). */
   const chatChannels = useMemo(() => {
-    if (!capabilities.nodeListTabUsesContactsLabel) return activeRuntime.channels;
-    return meshcoreConfiguredChatChannels(activeRuntime.channels);
-  }, [capabilities.nodeListTabUsesContactsLabel, activeRuntime.channels]);
+    if (capabilities.hasReticulumInterfaceConfig) return [];
+    if (capabilities.hasCompanionContactManagementConfig) {
+      return meshcoreConfiguredChatChannels(activeRuntime.channels);
+    }
+    return dedupeChannelPillsByIndex(activeRuntime.channels);
+  }, [
+    capabilities.hasReticulumInterfaceConfig,
+    capabilities.hasCompanionContactManagementConfig,
+    activeRuntime.channels,
+  ]);
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
@@ -1623,6 +1790,12 @@ function AppContent() {
         }
         continue;
       }
+      if (prot === 'meshcore' && !shouldAutoLaunchMeshcoreMqttAtStartup()) {
+        console.debug(
+          '[App] MeshCore MQTT auto-launch deferred: JWT identity not ready (will retry after RF connect)',
+        );
+        continue;
+      }
       void tryAutoLaunchMqtt(prot).catch((e: unknown) => {
         console.warn('[App] MQTT auto-launch connect failed ' + errLikeToLogString(e));
       });
@@ -1772,7 +1945,12 @@ function AppContent() {
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length, capabilitiesByProtocol]);
 
-  useAppTrayUnreadSync(meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread);
+  useAppTrayUnreadSync(
+    meshtasticChatUnread,
+    meshcoreChatUnread,
+    meshcoreRoomsUnread,
+    reticulumChatUnread,
+  );
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
   const advertSentRef = useRef(false);
@@ -2041,10 +2219,7 @@ function AppContent() {
             <div className="flex shrink-0 items-center pl-8">
               <ProtocolSwitcher
                 protocol={protocol}
-                chatUnreadByProtocol={{
-                  meshtastic: meshtasticChatUnread,
-                  meshcore: meshcoreChatUnread,
-                }}
+                chatUnreadByProtocol={chatUnreadByProtocol}
                 onProtocolChange={handleProtocolChange}
               />
             </div>
@@ -2066,21 +2241,31 @@ function AppContent() {
                   </span>
                 </div>
               )}
-              <div
-                role="group"
-                className="mr-3 flex shrink-0 items-center gap-1.5 border-r border-gray-700 pr-3"
-                title={mqttStatusLabel}
-                aria-label={mqttStatusLabel}
-              >
-                <HeaderMqttGlobeIcon variant={mqttVariant} />
-                <span
-                  aria-hidden="true"
-                  className={`hidden text-xs lg:inline ${headerTextClass(mqttVariant)}`}
+              {capabilities.hasMqttConnectionPanel && (
+                <div
+                  role="group"
+                  className="mr-3 flex shrink-0 items-center gap-1.5 border-r border-gray-700 pr-3"
+                  title={mqttStatusLabel}
+                  aria-label={mqttStatusLabel}
                 >
-                  {mqttStatusLabel}
-                </span>
-              </div>
+                  <HeaderMqttGlobeIcon variant={mqttVariant} />
+                  <span
+                    aria-hidden="true"
+                    className={`hidden text-xs lg:inline ${headerTextClass(mqttVariant)}`}
+                  >
+                    {mqttStatusLabel}
+                  </span>
+                </div>
+              )}
               <div className="flex shrink-0 items-center gap-2" title={deviceStatusText}>
+                {activeConnectionView.state.status === 'connecting' && (
+                  <ConnectIcon
+                    animated
+                    className={`h-4 w-4 ${headerIconClass('warn')}`}
+                    size={16}
+                    aria-hidden="true"
+                  />
+                )}
                 {isConnectedOrOperational && <LinkIcon className="h-4 w-4" aria-hidden="true" />}
                 <div
                   className={`h-2.5 w-2.5 rounded-full ${headerDotClass(deviceVariant)}`}
@@ -2213,7 +2398,7 @@ function AppContent() {
                     >
                       {/* Both panels are always mounted so each protocol auto-connects at startup */}
                       <Suspense fallback={<PanelSkeleton />}>
-                        <div hidden={capabilities.prefersDeviceOwnerLongNameInHeader}>
+                        <div hidden={!capabilities.hasChannelConfig}>
                           <ConnectionPanel
                             state={meshtasticConnection.state}
                             onConnect={meshtasticConnection.connect}
@@ -2282,6 +2467,28 @@ function AppContent() {
                             }
                           />
                         </div>
+                        <div hidden={!capabilities.hasReticulumInterfaceConfig}>
+                          <ConnectionPanel
+                            state={reticulumConnection.state}
+                            onConnect={reticulumConnection.connect}
+                            onAutoConnect={reticulumConnection.connectAutomatic}
+                            onDisconnect={reticulumConnection.disconnect}
+                            mqttStatus={reticulumConnection.mqttStatus}
+                            protocol="reticulum"
+                            onStartReticulumStack={() =>
+                              reticulumConnection.connectAutomatic('http')
+                            }
+                            onOpenReticulumRadioPanel={() => {
+                              const radioTabIndex = findFilteredTabIndexForPanel(
+                                selectByProtocol(tabsByProtocol, 'reticulum'),
+                                RADIO_TAB_PANEL_INDEX,
+                              );
+                              if (radioTabIndex >= 0) {
+                                setActiveTab(radioTabIndex);
+                              }
+                            }}
+                          />
+                        </div>
                       </Suspense>
                     </div>
                     {(activePanelIndex === 1 || chatTabVisited) && (
@@ -2300,14 +2507,20 @@ function AppContent() {
                             channels={chatChannelsForPanel}
                             meshcoreChannelSources={
                               capabilities.hasCompanionContactManagementConfig
-                                ? activeRuntime.channels
+                                ? meshcoreRuntime.channels
                                 : undefined
                             }
-                            myNodeNum={activeRuntime.selfNodeId}
+                            myNodeNum={
+                              typeof activeRuntime.selfNodeId === 'number'
+                                ? activeRuntime.selfNodeId
+                                : activeRuntime.state.myNodeNum
+                            }
                             ownNodeIds={
-                              capabilities.hasMqttHybrid
-                                ? meshtasticOwnNodeIdsForChat
-                                : Array.from(meshcoreOwnNodeIdSet)
+                              protocol === 'reticulum'
+                                ? reticulumOwnNodeIdsForChat
+                                : capabilities.hasMqttHybrid
+                                  ? meshtasticOwnNodeIdsForChat
+                                  : Array.from(meshcoreOwnNodeIdSet)
                             }
                             onSend={handleSend}
                             onReact={selectByProtocol(sendReactionByProtocol, protocol)}
@@ -2325,6 +2538,18 @@ function AppContent() {
                             onDmTargetConsumed={handleDmTargetConsumed}
                             isActive={activePanelIndex === 1}
                             protocol={protocol}
+                            dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
+                            showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
+                            showLxmfAttachmentLine={capabilities.hasLxmfAttachments}
+                            composerPayloadLimit={capabilities.lxmfPayloadLimit}
+                            lxmfReplyHashReplies={capabilities.hasLxmfDeliveryStatus}
+                            onSendAttachment={
+                              capabilities.hasLxmfAttachments
+                                ? (file, destination) =>
+                                    reticulumPanelActions.sendAttachment?.(file, destination) ??
+                                    Promise.resolve()
+                                : undefined
+                            }
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
@@ -2353,84 +2578,123 @@ function AppContent() {
                     <div
                       id="panel-2"
                       role="tabpanel"
-                      aria-labelledby="tab-2"
-                      hidden={activePanelIndex !== 2}
-                      className="w-full min-w-0"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NOMAD_NETWORK_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 2 ? (
-                        <Suspense fallback={<PanelSkeleton />}>
-                          <NodeListPanel
-                            nodes={nodesForUi}
-                            myNodeNum={activeRuntime.selfNodeId}
-                            onNodeClick={(node) => {
-                              setSelectedNodeId(node.node_id);
-                            }}
-                            mqttConnected={activeConnectionView.mqttStatus === 'connected'}
-                            radioConnected={isConnectedOrOperational}
-                            locationFilter={locationFilter}
-                            onToggleFavorite={panelActions.setNodeFavorited}
-                            mode={protocol}
-                            groups={contactGroups.groups}
-                            selectedGroupId={contactGroups.selectedGroupId}
-                            onGroupChange={contactGroups.setSelectedGroupId}
-                            onManageGroups={
-                              capabilities.hasUserManagedContactGroups
-                                ? () => {
-                                    setShowGroupsModal(true);
-                                  }
-                                : undefined
-                            }
-                            groupMemberIds={contactGroups.groupMemberIds}
-                            contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
-                            onImportContacts={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.importContacts
-                                : undefined
-                            }
-                            meshcoreShowRefreshControl={
-                              capabilities.hasContactImportExport
-                                ? meshcoreContactsShowRefreshControl
-                                : false
-                            }
-                            onRefreshContacts={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.refreshContacts
-                                : undefined
-                            }
-                            meshcoreShowPublicKeys={
-                              capabilities.hasContactImportExport
-                                ? meshcoreContactsShowPublicKeys
-                                : false
-                            }
-                            meshcorePublicKeyHexByNodeId={
-                              capabilities.hasContactImportExport
-                                ? meshcorePublicKeyHexByNodeId
-                                : undefined
-                            }
-                            onSendAdvert={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.sendAdvert
-                                : undefined
-                            }
-                            onOffloadContactsFromRadio={
-                              capabilities.hasContactImportExport
-                                ? meshcorePanelActions.offloadContactsFromRadio
-                                : undefined
-                            }
-                            meshcoreRadioOperational={isOperational}
-                            onShowOnMap={handleShowOnMap}
-                          />
-                        </Suspense>
+                      {activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
+                      capabilities.hasNomadNetworkPanel ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <NomadNetworkPanel />
+                          </Suspense>
+                        </ErrorBoundary>
                       ) : null}
                     </div>
                     <div
                       id="panel-3"
                       role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NODES_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== NODES_PANEL_INDEX}
+                      className="w-full min-w-0"
+                    >
+                      {activePanelIndex === NODES_PANEL_INDEX ? (
+                        <Suspense fallback={<PanelSkeleton />}>
+                          {capabilities.hasReticulumPeersList ? (
+                            <ReticulumPeerListPanel
+                              isConnected={isConnectedOrOperational}
+                              contactNodes={reticulumUiNodes}
+                              onPeerClick={setSelectedPeerHash}
+                              onSendMessage={handleMessageNode}
+                              onRefresh={reticulumPanelActions.requestRefresh}
+                              onToggleFavorite={reticulumPanelActions.setNodeFavorited}
+                              groups={contactGroups.groups}
+                              selectedGroupId={contactGroups.selectedGroupId}
+                              onGroupChange={contactGroups.setSelectedGroupId}
+                              onManageGroups={
+                                capabilities.hasUserManagedContactGroups
+                                  ? () => {
+                                      setShowGroupsModal(true);
+                                    }
+                                  : undefined
+                              }
+                              groupMemberIds={contactGroups.groupMemberIds}
+                              contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                            />
+                          ) : (
+                            <NodeListPanel
+                              nodes={nodesForUi}
+                              myNodeNum={activeRuntime.selfNodeId}
+                              onNodeClick={(node) => {
+                                setSelectedNodeId(node.node_id);
+                              }}
+                              mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+                              radioConnected={isConnectedOrOperational}
+                              locationFilter={locationFilter}
+                              onToggleFavorite={panelActions.setNodeFavorited}
+                              mode={protocol}
+                              groups={contactGroups.groups}
+                              selectedGroupId={contactGroups.selectedGroupId}
+                              onGroupChange={contactGroups.setSelectedGroupId}
+                              onManageGroups={
+                                capabilities.hasUserManagedContactGroups
+                                  ? () => {
+                                      setShowGroupsModal(true);
+                                    }
+                                  : undefined
+                              }
+                              groupMemberIds={contactGroups.groupMemberIds}
+                              contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                              onImportContacts={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.importContacts
+                                  : undefined
+                              }
+                              meshcoreShowRefreshControl={
+                                capabilities.hasContactImportExport
+                                  ? meshcoreContactsShowRefreshControl
+                                  : false
+                              }
+                              onRefreshContacts={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.refreshContacts
+                                  : undefined
+                              }
+                              meshcoreShowPublicKeys={
+                                capabilities.hasContactImportExport
+                                  ? meshcoreContactsShowPublicKeys
+                                  : false
+                              }
+                              meshcorePublicKeyHexByNodeId={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePublicKeyHexByNodeId
+                                  : undefined
+                              }
+                              onSendAdvert={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.sendAdvert
+                                  : undefined
+                              }
+                              onOffloadContactsFromRadio={
+                                capabilities.hasContactImportExport
+                                  ? meshcorePanelActions.offloadContactsFromRadio
+                                  : undefined
+                              }
+                              meshcoreRadioOperational={isOperational}
+                              onShowOnMap={handleShowOnMap}
+                            />
+                          )}
+                        </Suspense>
+                      ) : null}
+                    </div>
+                    <div
+                      id="panel-4"
+                      role="tabpanel"
                       aria-labelledby="tab-3"
-                      hidden={activePanelIndex !== 3}
+                      hidden={activePanelIndex !== 4}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 3 ? (
+                      {activePanelIndex === 4 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <MapPanel
@@ -2438,14 +2702,25 @@ function AppContent() {
                               myNodeNum={activeRuntime.selfNodeId}
                               locationFilter={locationFilter}
                               ourPosition={activeRuntime.ourPosition}
-                              onLocateMe={() =>
-                                panelActions
-                                  .refreshOurPosition()
-                                  .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
+                              onLocateMe={
+                                capabilities.hasFullPositionConfig
+                                  ? () =>
+                                      meshtasticPanelActions
+                                        .refreshOurPosition()
+                                        .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
+                                  : undefined
                               }
                               waypoints={activeRuntime.waypoints}
-                              onSendWaypoint={panelActions.sendWaypoint}
-                              onDeleteWaypoint={panelActions.deleteWaypoint}
+                              onSendWaypoint={
+                                capabilities.hasFullPositionConfig
+                                  ? meshtasticPanelActions.sendWaypoint
+                                  : undefined
+                              }
+                              onDeleteWaypoint={
+                                capabilities.hasFullPositionConfig
+                                  ? meshtasticPanelActions.deleteWaypoint
+                                  : undefined
+                              }
                               onNodeClick={setSelectedNodeId}
                               protocol={protocol}
                             />
@@ -2454,196 +2729,221 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-4"
+                      id="panel-5"
                       role="tabpanel"
                       aria-labelledby="tab-4"
-                      hidden={activePanelIndex !== 4}
+                      hidden={activePanelIndex !== 5}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 4 ? (
+                      {activePanelIndex === 5 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            {configureNodeSelector}
-                            <RadioPanel
-                              configTarget={configTarget}
-                              onSetConfig={panelActions.setConfig}
-                              onCommit={panelActions.commitConfig}
-                              onSetChannel={panelActions.setDeviceChannel}
-                              onClearChannel={panelActions.clearChannel}
-                              channelConfigs={effectiveChannelConfigs}
-                              remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
-                              remoteChannelsTailStatus={
-                                isRemoteConfigureTarget
-                                  ? activeRuntime.remoteConfigChannelsTailStatus
-                                  : undefined
-                              }
-                              onRetryRemoteChannelsTail={
-                                isRemoteConfigureTarget ? handleRetryRemoteChannelsTail : undefined
-                              }
-                              meshtasticLoraConfig={
-                                capabilities.hasChannelConfig ? effectiveLoraConfig : undefined
-                              }
-                              meshtasticConfigSlices={
-                                capabilities.hasChannelConfig
-                                  ? effectiveMeshtasticConfigSlices
-                                  : undefined
-                              }
-                              onApplyChannelSet={
-                                capabilities.hasChannelConfig
-                                  ? meshtasticPanelActions.applyChannelSet
-                                  : undefined
-                              }
-                              isConnected={isOperational}
-                              deviceFixedPosition={effectiveDeviceFixedPosition}
-                              ourPosition={activeRuntime.ourPosition}
-                              onSendPositionToDevice={panelActions.sendPositionToDevice}
-                              deviceOwner={effectiveDeviceOwner}
-                              onSetOwner={panelActions.setOwner}
-                              capabilities={capabilities}
-                              meshcoreChannels={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.channels
-                                  : undefined
-                              }
-                              onMeshcoreSetChannel={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.meshcoreSetChannel
-                                  : undefined
-                              }
-                              onMeshcoreDeleteChannel={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.meshcoreDeleteChannel
-                                  : undefined
-                              }
-                              onApplyLoraParams={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.setRadioParams
-                                  : undefined
-                              }
-                              loraConfig={
-                                capabilities.hasCompanionContactManagementConfig &&
-                                meshcoreRuntime.selfInfo
-                                  ? {
-                                      freq: meshcoreRuntime.selfInfo.radioFreq,
-                                      bw: meshcoreRuntime.selfInfo.radioBw,
-                                      sf: meshcoreRuntime.selfInfo.radioSf,
-                                      cr: meshcoreRuntime.selfInfo.radioCr,
-                                      txPower: meshcoreRuntime.selfInfo.txPower,
-                                    }
-                                  : undefined
-                              }
-                              meshcoreSelfInfo={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.selfInfo
-                                  : undefined
-                              }
-                              meshcoreContactsForTelemetry={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.meshcoreContactsForTelemetry
-                                  : undefined
-                              }
-                              onApplyMeshcoreTelemetryPrivacy={
-                                capabilities.hasCompanionTelemetryPrivacyConfig
-                                  ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
-                                  : undefined
-                              }
-                              meshcoreAutoadd={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcoreRuntime.meshcoreAutoadd
-                                  : undefined
-                              }
-                              onApplyMeshcoreContactAutoAdd={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.applyMeshcoreContactAutoAdd
-                                  : undefined
-                              }
-                              onRefreshMeshcoreAutoaddFromDevice={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
-                                  : undefined
-                              }
-                              meshcoreContactsShowPublicKeys={
-                                capabilities.hasContactImportExport
-                                  ? meshcoreContactsShowPublicKeys
-                                  : undefined
-                              }
-                              onMeshcoreContactsShowPublicKeysChange={
-                                capabilities.hasContactImportExport
-                                  ? onMeshcoreContactsShowPublicKeysChange
-                                  : undefined
-                              }
-                              meshcoreContactsShowRefreshControl={
-                                capabilities.hasContactImportExport
-                                  ? meshcoreContactsShowRefreshControl
-                                  : undefined
-                              }
-                              onMeshcoreContactsShowRefreshControlChange={
-                                capabilities.hasContactImportExport
-                                  ? onMeshcoreContactsShowRefreshControlChange
-                                  : undefined
-                              }
-                              onClearAllMeshcoreContacts={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.clearAllMeshcoreContacts
-                                  : undefined
-                              }
-                              onSendAdvert={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.sendAdvert
-                                  : undefined
-                              }
-                              onSendZeroHopAdvert={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.sendZeroHopAdvert
-                                  : undefined
-                              }
-                              onApplyMeshcoreFloodScopeHashtag={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
-                                  : undefined
-                              }
-                              meshcoreFloodScopeHashtag={
-                                capabilities.hasContactImportExport ? meshcoreFloodScopeHashtag : ''
-                              }
-                              onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
-                              onXmodemUpload={
-                                capabilities.hasXmodem && isOperational && !isRemoteConfigureTarget
-                                  ? meshtasticPanelActions.xmodemUpload
-                                  : undefined
-                              }
-                              onXmodemDownload={
-                                capabilities.hasXmodem && isOperational && !isRemoteConfigureTarget
-                                  ? meshtasticPanelActions.xmodemDownload
-                                  : undefined
-                              }
-                              onSyncClock={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.syncClock
-                                  : undefined
-                              }
-                              onRefreshContacts={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.refreshContacts
-                                  : undefined
-                              }
-                              onOffloadContactsFromRadio={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.offloadContactsFromRadio
-                                  : undefined
-                              }
-                            />
+                            {capabilities.hasReticulumRadioPanel ? (
+                              <ReticulumRadioPanel
+                                connecting={reticulumConnectionView.state.status === 'connecting'}
+                                onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                              />
+                            ) : (
+                              <>
+                                {configureNodeSelector}
+                                <RadioPanel
+                                  configTarget={configTarget}
+                                  onSetConfig={meshtasticPanelActions.setConfig}
+                                  onCommit={meshtasticPanelActions.commitConfig}
+                                  onSetChannel={meshtasticPanelActions.setDeviceChannel}
+                                  onClearChannel={meshtasticPanelActions.clearChannel}
+                                  channelConfigs={effectiveChannelConfigs}
+                                  remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
+                                  remoteChannelsTailStatus={
+                                    isRemoteConfigureTarget
+                                      ? meshtasticRuntime.remoteConfigChannelsTailStatus
+                                      : undefined
+                                  }
+                                  onRetryRemoteChannelsTail={
+                                    isRemoteConfigureTarget
+                                      ? handleRetryRemoteChannelsTail
+                                      : undefined
+                                  }
+                                  meshtasticLoraConfig={
+                                    capabilities.hasChannelConfig ? effectiveLoraConfig : undefined
+                                  }
+                                  meshtasticConfigSlices={
+                                    capabilities.hasChannelConfig
+                                      ? effectiveMeshtasticConfigSlices
+                                      : undefined
+                                  }
+                                  onApplyChannelSet={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.applyChannelSet
+                                      : undefined
+                                  }
+                                  isConnected={isOperational}
+                                  deviceFixedPosition={effectiveDeviceFixedPosition}
+                                  ourPosition={activeRuntime.ourPosition}
+                                  onSendPositionToDevice={
+                                    capabilities.hasFullPositionConfig
+                                      ? meshtasticPanelActions.sendPositionToDevice
+                                      : undefined
+                                  }
+                                  deviceOwner={effectiveDeviceOwner}
+                                  onSetOwner={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.setOwner
+                                      : undefined
+                                  }
+                                  capabilities={capabilities}
+                                  meshcoreChannels={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.channels
+                                      : undefined
+                                  }
+                                  onMeshcoreSetChannel={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.meshcoreSetChannel
+                                      : undefined
+                                  }
+                                  onMeshcoreDeleteChannel={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.meshcoreDeleteChannel
+                                      : undefined
+                                  }
+                                  onApplyLoraParams={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.setRadioParams
+                                      : undefined
+                                  }
+                                  loraConfig={
+                                    capabilities.hasCompanionContactManagementConfig &&
+                                    meshcoreRuntime.selfInfo
+                                      ? {
+                                          freq: meshcoreRuntime.selfInfo.radioFreq,
+                                          bw: meshcoreRuntime.selfInfo.radioBw,
+                                          sf: meshcoreRuntime.selfInfo.radioSf,
+                                          cr: meshcoreRuntime.selfInfo.radioCr,
+                                          txPower: meshcoreRuntime.selfInfo.txPower,
+                                        }
+                                      : undefined
+                                  }
+                                  meshcoreSelfInfo={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.selfInfo
+                                      : undefined
+                                  }
+                                  meshcoreContactsForTelemetry={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.meshcoreContactsForTelemetry
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreTelemetryPrivacy={
+                                    capabilities.hasCompanionTelemetryPrivacyConfig
+                                      ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
+                                      : undefined
+                                  }
+                                  meshcoreAutoadd={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.meshcoreAutoadd
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreContactAutoAdd={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcoreContactAutoAdd
+                                      : undefined
+                                  }
+                                  onRefreshMeshcoreAutoaddFromDevice={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
+                                      : undefined
+                                  }
+                                  meshcoreContactsShowPublicKeys={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreContactsShowPublicKeys
+                                      : undefined
+                                  }
+                                  onMeshcoreContactsShowPublicKeysChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreContactsShowPublicKeysChange
+                                      : undefined
+                                  }
+                                  meshcoreContactsShowRefreshControl={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreContactsShowRefreshControl
+                                      : undefined
+                                  }
+                                  onMeshcoreContactsShowRefreshControlChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreContactsShowRefreshControlChange
+                                      : undefined
+                                  }
+                                  onClearAllMeshcoreContacts={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.clearAllMeshcoreContacts
+                                      : undefined
+                                  }
+                                  onSendAdvert={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.sendAdvert
+                                      : undefined
+                                  }
+                                  onSendZeroHopAdvert={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.sendZeroHopAdvert
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreFloodScopeHashtag={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
+                                      : undefined
+                                  }
+                                  meshcoreFloodScopeHashtag={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreFloodScopeHashtag
+                                      : ''
+                                  }
+                                  onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
+                                  onXmodemUpload={
+                                    capabilities.hasXmodem &&
+                                    isOperational &&
+                                    !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.xmodemUpload
+                                      : undefined
+                                  }
+                                  onXmodemDownload={
+                                    capabilities.hasXmodem &&
+                                    isOperational &&
+                                    !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.xmodemDownload
+                                      : undefined
+                                  }
+                                  onSyncClock={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.syncClock
+                                      : undefined
+                                  }
+                                  onRefreshContacts={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.refreshContacts
+                                      : undefined
+                                  }
+                                  onOffloadContactsFromRadio={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.offloadContactsFromRadio
+                                      : undefined
+                                  }
+                                />
+                              </>
+                            )}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
                     </div>
                     <div
-                      id="panel-5"
+                      id="panel-6"
                       role="tabpanel"
                       aria-labelledby="tab-5"
-                      hidden={activePanelIndex !== 5}
+                      hidden={activePanelIndex !== 6}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel ? (
+                      {activePanelIndex === 6 && capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RepeatersPanel
@@ -2675,7 +2975,7 @@ function AppContent() {
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
-                      {activePanelIndex === 5 && !capabilities.modulesTabUsesRepeatersLabel ? (
+                      {activePanelIndex === 6 && !capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -2685,31 +2985,41 @@ function AppContent() {
                               onSetModuleConfig={meshtasticPanelActions.setModuleConfig}
                               onSetCannedMessages={meshtasticPanelActions.setCannedMessages}
                               onSetRingtone={meshtasticPanelActions.setRingtone}
-                              ringtone={activeRuntime.ringtone}
+                              ringtone={meshtasticRuntime.ringtone}
                               onCommit={meshtasticPanelActions.commitConfig}
                               isConnected={isOperational}
                               deviceNetwork={{
                                 hasWifi: meshtasticConnectionView.state.deviceHasWifi,
                                 hasEthernet: meshtasticConnectionView.state.deviceHasEthernet,
                               }}
-                              storeForwardMessages={activeRuntime.storeForwardMessages}
-                              rangeTestPackets={activeRuntime.rangeTestPackets}
-                              serialMessages={activeRuntime.serialMessages}
-                              remoteHardwareMessages={activeRuntime.remoteHardwareMessages}
+                              storeForwardMessages={meshtasticRuntime.storeForwardMessages}
+                              rangeTestPackets={meshtasticRuntime.rangeTestPackets}
+                              serialMessages={meshtasticRuntime.serialMessages}
+                              remoteHardwareMessages={meshtasticRuntime.remoteHardwareMessages}
                               ipTunnelMessages={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.ipTunnelMessages
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.ipTunnelMessages
                               }
                               audioMessages={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.audioMessages
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.audioMessages
                               }
                               simulatorPackets={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.simulatorPackets
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.simulatorPackets
                               }
                               privateMessages={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.privateMessages
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.privateMessages
                               }
                               pingResponses={
-                                isRemoteConfigureTarget ? undefined : activeRuntime.pingResponses
+                                isRemoteConfigureTarget
+                                  ? undefined
+                                  : meshtasticRuntime.pingResponses
                               }
                               hasAudio={capabilities.hasAudio}
                             />
@@ -2718,48 +3028,71 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-6"
+                      id="panel-7"
                       role="tabpanel"
                       aria-labelledby="tab-6"
-                      hidden={activePanelIndex !== 6}
+                      hidden={activePanelIndex !== 7}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 6 ? (
+                      {activePanelIndex === 7 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <AdminPanel
-                              configTarget={configTarget}
-                              capabilities={capabilities}
-                              isConnected={isOperational}
-                              onReboot={panelActions.reboot}
-                              onShutdown={panelActions.shutdown}
-                              onFactoryReset={panelActions.factoryReset}
-                              onResetNodeDb={panelActions.resetNodeDb}
-                              onRebootOta={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.rebootOta
-                                  : undefined
-                              }
-                              onEnterDfu={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.enterDfuMode
-                                  : undefined
-                              }
-                              onFactoryResetConfig={
-                                capabilities.hasNodeDbReset
-                                  ? meshtasticPanelActions.factoryResetConfig
-                                  : undefined
-                              }
-                            />
+                            {capabilities.hasReticulumAdminPanel ? (
+                              <ReticulumAdminPanel
+                                connecting={reticulumConnectionView.state.status === 'connecting'}
+                                onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                              />
+                            ) : (
+                              <AdminPanel
+                                configTarget={configTarget}
+                                capabilities={capabilities}
+                                isConnected={isOperational}
+                                onReboot={
+                                  capabilities.hasShutdown
+                                    ? meshtasticPanelActions.reboot
+                                    : async () => {}
+                                }
+                                onShutdown={
+                                  capabilities.hasShutdown
+                                    ? meshtasticPanelActions.shutdown
+                                    : async () => {}
+                                }
+                                onFactoryReset={
+                                  capabilities.hasFactoryReset
+                                    ? meshtasticPanelActions.factoryReset
+                                    : async () => {}
+                                }
+                                onResetNodeDb={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.resetNodeDb
+                                    : async () => {}
+                                }
+                                onRebootOta={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.rebootOta
+                                    : undefined
+                                }
+                                onEnterDfu={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.enterDfuMode
+                                    : undefined
+                                }
+                                onFactoryResetConfig={
+                                  capabilities.hasNodeDbReset
+                                    ? meshtasticPanelActions.factoryResetConfig
+                                    : undefined
+                                }
+                              />
+                            )}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
                     </div>
                     <div
-                      id="panel-7"
+                      id="panel-8"
                       role="tabpanel"
                       aria-labelledby="tab-7"
-                      hidden={activePanelIndex !== 7}
+                      hidden={activePanelIndex !== 8}
                       className="h-full w-full min-w-0"
                     >
                       {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
@@ -2800,13 +3133,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-8"
+                      id="panel-9"
                       role="tabpanel"
                       aria-labelledby="tab-8"
-                      hidden={activePanelIndex !== 8}
+                      hidden={activePanelIndex !== 9}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 8 ? (
+                      {activePanelIndex === 9 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TelemetryPanel
@@ -2829,50 +3162,56 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-9"
+                      id="panel-10"
                       role="tabpanel"
                       aria-labelledby="tab-9"
-                      hidden={activePanelIndex !== 9}
+                      hidden={activePanelIndex !== 10}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 9 ? (
+                      {activePanelIndex === 10 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
                             <SecurityPanel
                               configTarget={configTarget}
-                              onSetConfig={panelActions.setConfig}
-                              onCommit={panelActions.commitConfig}
+                              onSetConfig={
+                                capabilities.hasSecurityPanel
+                                  ? meshcorePanelActions.setConfig
+                                  : meshtasticPanelActions.setConfig
+                              }
+                              onCommit={
+                                capabilities.hasSecurityPanel
+                                  ? meshcorePanelActions.commitConfig
+                                  : meshtasticPanelActions.commitConfig
+                              }
                               isConnected={isOperational}
                               securityConfig={effectiveSecurityConfig}
                               protocol={protocol}
-                              localNodeNum={
-                                protocol === 'meshtastic'
-                                  ? meshtasticConnectionView.state.myNodeNum
-                                  : undefined
-                              }
-                              localNodeLabel={
-                                protocol === 'meshtastic'
-                                  ? (nodesForUi.get(meshtasticConnectionView.state.myNodeNum)
-                                      ?.long_name ?? undefined)
-                                  : meshcoreRuntime.selfInfo?.name
-                              }
+                              localNodeNum={selectByProtocol(
+                                securityLocalNodeNumByProtocol,
+                                protocol,
+                              )}
+                              localNodeLabel={selectByProtocol(
+                                securityLocalNodeLabelByProtocol,
+                                protocol,
+                              )}
                               meshcorePublicKey={meshcoreRuntime.selfInfo?.publicKey ?? null}
-                              meshcoreNodeId={
-                                protocol === 'meshcore'
-                                  ? meshcoreConnectionView.state.myNodeNum
-                                  : undefined
-                              }
+                              meshcoreNodeId={selectByProtocol(
+                                securityMeshcoreNodeIdByProtocol,
+                                protocol,
+                              )}
                               onSignData={
-                                protocol === 'meshcore' ? meshcorePanelActions.signData : undefined
+                                capabilities.hasCryptoOperations
+                                  ? meshcorePanelActions.signData
+                                  : undefined
                               }
                               onExportPrivateKey={
-                                protocol === 'meshcore'
+                                capabilities.hasCryptoOperations
                                   ? meshcorePanelActions.exportPrivateKey
                                   : undefined
                               }
                               onImportPrivateKey={
-                                protocol === 'meshcore'
+                                capabilities.hasCryptoOperations
                                   ? meshcorePanelActions.importPrivateKey
                                   : undefined
                               }
@@ -2882,17 +3221,17 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-10"
+                      id="panel-11"
                       role="tabpanel"
                       aria-labelledby="tab-10"
-                      hidden={activePanelIndex !== 10}
+                      hidden={activePanelIndex !== 11}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 10 ? (
+                      {activePanelIndex === 11 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TakServerPanel
-                              atakMessages={activeRuntime.atakMessages}
+                              atakMessages={meshtasticRuntime.atakMessages}
                               capabilities={capabilities}
                             />
                           </Suspense>
@@ -2900,13 +3239,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-11"
+                      id="panel-12"
                       role="tabpanel"
                       aria-labelledby="tab-11"
-                      hidden={activePanelIndex !== 11}
+                      hidden={activePanelIndex !== 12}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 11 ? (
+                      {activePanelIndex === 12 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <AppPanel
@@ -2931,13 +3270,17 @@ function AppContent() {
                               myNodeNum={activeRuntime.state.myNodeNum}
                               onLocationFilterChange={handleLocationFilterChange}
                               ourPosition={activeRuntime.ourPosition}
-                              onRefreshGps={panelActions.refreshOurPosition}
+                              onRefreshGps={
+                                capabilities.hasFullPositionConfig
+                                  ? meshtasticPanelActions.refreshOurPosition
+                                  : undefined
+                              }
                               gpsLoading={activeRuntime.gpsLoading}
                               onGpsIntervalChange={activeRuntime.updateGpsInterval}
                               onNodesPruned={refreshNodesFromDb}
                               onMessagesPruned={refreshMessagesFromDb}
                               onClearMeshcoreRepeaters={
-                                protocol === 'meshcore'
+                                capabilities.modulesTabUsesRepeatersLabel
                                   ? meshcorePanelActions.clearAllRepeaters
                                   : undefined
                               }
@@ -2945,45 +3288,60 @@ function AppContent() {
                               onAutoFloodAdvertTypeChange={setAutoFloodAdvertType}
                               onChatCompactModeChange={handleChatCompactModeChange}
                               deviceReportedPathHashMode={
-                                protocol === 'meshcore'
+                                capabilities.modulesTabUsesRepeatersLabel
                                   ? (meshcoreRuntime.state.pathHashMode ?? null)
                                   : null
                               }
                               isMeshcoreRadioConnected={
-                                protocol === 'meshcore' &&
+                                capabilities.modulesTabUsesRepeatersLabel &&
                                 (meshcoreRuntime.state.status === 'connected' ||
                                   meshcoreRuntime.state.status === 'configured')
                               }
                               onApplyMeshcorePathHashMode={
-                                protocol === 'meshcore'
+                                capabilities.modulesTabUsesRepeatersLabel
                                   ? meshcorePanelActions.applyMeshcorePathHashMode
                                   : undefined
                               }
+                              reticulumIdentityId={reticulumIdentityId}
+                              reticulumSidecarReady={
+                                reticulumRuntime.state.status !== 'disconnected'
+                              }
+                              reticulumControlsDisabled={!isConnectedOrOperational}
                             />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
                     </div>
                     <div
-                      id="panel-12"
+                      id="panel-13"
                       role="tabpanel"
                       aria-labelledby="tab-12"
-                      hidden={activePanelIndex !== 12}
+                      hidden={activePanelIndex !== 13}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 12 ? (
+                      {activePanelIndex === 13 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <DiagnosticsPanel
                               nodes={nodesForDiagnostics}
                               meshcoreNodes={meshcoreUiNodes}
-                              myNodeNum={activeRuntime.selfNodeId}
+                              myNodeNum={
+                                typeof activeRuntime.selfNodeId === 'number'
+                                  ? activeRuntime.selfNodeId
+                                  : 0
+                              }
                               meshtasticListenerNodeId={
                                 meshtasticRuntime.state.myNodeNum > 0
                                   ? meshtasticRuntime.state.myNodeNum
                                   : meshtasticRuntime.selfNodeId
                               }
-                              onTraceRoute={panelActions.traceRoute}
+                              onTraceRoute={
+                                capabilities.prefersDeviceOwnerLongNameInHeader
+                                  ? meshcorePanelActions.traceRoute
+                                  : capabilities.hasChannelConfig
+                                    ? meshtasticPanelActions.traceRoute
+                                    : async () => {}
+                              }
                               isConnected={isOperational}
                               traceRouteResults={activeRuntime.traceRouteResults}
                               getFullNodeLabel={panelActions.getFullNodeLabel}
@@ -2999,17 +3357,23 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-13"
+                      id="panel-14"
                       role="tabpanel"
                       aria-labelledby="tab-13"
-                      hidden={activePanelIndex !== 13}
+                      hidden={activePanelIndex !== 14}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 13 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === 14 && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="p-4">
-                              {capabilities.protocol === 'meshcore' ? (
+                              {protocol === 'reticulum' ? (
+                                <PacketDistributionPanel
+                                  variant="reticulum"
+                                  packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                />
+                              ) : capabilities.modulesTabUsesRepeatersLabel ? (
                                 <PacketDistributionPanel
                                   variant="meshcore"
                                   packets={meshcoreRuntime.rawPackets}
@@ -3022,42 +3386,11 @@ function AppContent() {
                                   getNodeLabel={rawPacketGetNodeLabel}
                                 />
                               )}
-                              {capabilities.protocol === 'meshtastic' && (
-                                <ChannelUtilizationChart nodes={nodesForUi} />
-                              )}
+                              {capabilities.hasRfStats &&
+                                !capabilities.modulesTabUsesRepeatersLabel && (
+                                  <ChannelUtilizationChart nodes={nodesForUi} />
+                                )}
                             </div>
-                          </Suspense>
-                        </ErrorBoundary>
-                      ) : null}
-                    </div>
-                    <div
-                      id="panel-14"
-                      role="tabpanel"
-                      aria-labelledby="tab-14"
-                      hidden={activePanelIndex !== 14}
-                      className="w-full min-w-0"
-                    >
-                      {activePanelIndex === 14 && capabilities.hasRawPacketLog ? (
-                        <ErrorBoundary>
-                          <Suspense fallback={<PanelSkeleton />}>
-                            {capabilities.protocol === 'meshcore' ? (
-                              <RawPacketLogPanel
-                                variant="meshcore"
-                                packets={meshcoreRuntime.rawPackets}
-                                onClear={meshcorePanelActions.clearRawPackets}
-                                getNodeLabel={rawPacketGetNodeLabel}
-                                onNodeClick={setSelectedNodeId}
-                                floodScopeHashtag={meshcoreFloodScopeHashtag}
-                              />
-                            ) : (
-                              <RawPacketLogPanel
-                                variant="meshtastic"
-                                packets={meshtasticRuntime.rawPackets}
-                                onClear={meshtasticPanelActions.clearRawPackets}
-                                getNodeLabel={rawPacketGetNodeLabel}
-                                onNodeClick={setSelectedNodeId}
-                              />
-                            )}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
@@ -3065,11 +3398,55 @@ function AppContent() {
                     <div
                       id="panel-15"
                       role="tabpanel"
-                      aria-labelledby="tab-15"
+                      aria-labelledby="tab-14"
                       hidden={activePanelIndex !== 15}
+                      className="h-full w-full min-w-0"
+                      style={{ height: 'calc(100vh - 140px)' }}
+                    >
+                      {activePanelIndex === 15 && capabilities.hasRawPacketLog ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <div className="flex h-full min-h-0 flex-col">
+                              {protocol === 'reticulum' ? (
+                                <RawPacketLogPanel
+                                  variant="reticulum"
+                                  packets={reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]}
+                                  onClear={() => {
+                                    reticulumPanelActions.clearRawPackets?.();
+                                  }}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                />
+                              ) : capabilities.modulesTabUsesRepeatersLabel ? (
+                                <RawPacketLogPanel
+                                  variant="meshcore"
+                                  packets={meshcoreRuntime.rawPackets}
+                                  onClear={meshcorePanelActions.clearRawPackets}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                  onNodeClick={setSelectedNodeId}
+                                  floodScopeHashtag={meshcoreFloodScopeHashtag}
+                                />
+                              ) : (
+                                <RawPacketLogPanel
+                                  variant="meshtastic"
+                                  packets={meshtasticRuntime.rawPackets}
+                                  onClear={meshtasticPanelActions.clearRawPackets}
+                                  getNodeLabel={rawPacketGetNodeLabel}
+                                  onNodeClick={setSelectedNodeId}
+                                />
+                              )}
+                            </div>
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id="panel-16"
+                      role="tabpanel"
+                      aria-labelledby="tab-15"
+                      hidden={activePanelIndex !== 16}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 15 ? (
+                      {activePanelIndex === 16 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RFHistogramsPanel nodes={nodesForUi} />
@@ -3078,14 +3455,16 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-16"
+                      id="panel-17"
                       role="tabpanel"
                       aria-labelledby="tab-16"
-                      hidden={activePanelIndex !== 16}
+                      hidden={activePanelIndex !== 17}
                       className="w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 16 ? (
+                      {activePanelIndex === 17 &&
+                      (capabilities.hasNeighborInfo ||
+                        capabilities.nodeListTabUsesContactsLabel) ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <PeerGraphPanel
@@ -3093,6 +3472,23 @@ function AppContent() {
                               myNodeId={activeRuntime.selfNodeId}
                               onNodeClick={setSelectedNodeId}
                             />
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id="panel-18"
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TOPOLOGY_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== TOPOLOGY_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                      style={{ height: 'calc(100vh - 140px)' }}
+                    >
+                      {activePanelIndex === TOPOLOGY_PANEL_INDEX &&
+                      capabilities.hasReticulumTopologyPanel ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <ReticulumTopologyPanel onPeerClick={setSelectedPeerHash} />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
@@ -3153,7 +3549,7 @@ function AppContent() {
               <span className="inline-flex flex-wrap items-center justify-end gap-2 justify-self-end text-right font-mono text-[10px] whitespace-nowrap tabular-nums">
                 <span>
                   {t('app.footerStats', {
-                    nodeCount: nodesForUi.size,
+                    nodeCount: footerNodeCount,
                     nodeLabel: nodeCountLabel,
                     messageCount: activeUiMessages.length,
                   })}
@@ -3182,25 +3578,7 @@ function AppContent() {
         <Suspense fallback={<DialogLazyFallback />}>
           <LogPanel
             protocol={protocol}
-            deviceLogs={
-              protocol === 'meshcore'
-                ? meshcoreRuntime.deviceLogs
-                : meshtasticRuntime.deviceLogs.map((d) => ({
-                    ts: d.time,
-                    level:
-                      d.level >= 40
-                        ? 'error'
-                        : d.level >= 30
-                          ? 'warn'
-                          : d.level >= 10
-                            ? 'log'
-                            : d.level > 0
-                              ? 'debug'
-                              : 'log',
-                    source: d.source,
-                    message: d.message,
-                  }))
-            }
+            deviceLogs={selectByProtocol(deviceLogsByProtocol, protocol)}
             variant="overlay"
             onClose={() => {
               setLogPanelVisible(false);
@@ -3219,10 +3597,8 @@ function AppContent() {
         <Suspense fallback={<DialogLazyFallback />}>
           <ContactGroupsModal
             groups={contactGroups.groups}
-            contacts={protocol === 'meshcore' ? meshcoreUiNodes : meshtasticUiNodes}
-            selfNodeId={
-              protocol === 'meshcore' ? meshcoreRuntime.selfNodeId : meshtasticRuntime.selfNodeId
-            }
+            contacts={nodesForUi}
+            selfNodeId={selectByProtocol(selfNodeIdByProtocol, protocol)}
             protocol={protocol}
             onClose={() => {
               setShowGroupsModal(false);
@@ -3247,13 +3623,29 @@ function AppContent() {
             onClose={() => {
               setSelectedNodeId(null);
             }}
-            onRequestPosition={detailModalPanelActions.requestPosition}
-            onTraceRoute={detailModalPanelActions.traceRoute}
+            onRequestPosition={
+              detailModalCapabilities.hasTraceRoute
+                ? detailModalProtocol === 'meshcore'
+                  ? meshcorePanelActions.requestPosition
+                  : meshtasticPanelActions.requestPosition
+                : undefined
+            }
+            onTraceRoute={
+              detailModalCapabilities.hasTraceRoute
+                ? detailModalProtocol === 'meshcore'
+                  ? meshcorePanelActions.traceRoute
+                  : meshtasticPanelActions.traceRoute
+                : undefined
+            }
             traceRouteHops={traceRouteHops}
-            onDeleteNode={async (nodeNum) => {
-              await detailModalPanelActions.deleteNode(nodeNum);
-              setSelectedNodeId(null);
-            }}
+            onDeleteNode={
+              detailModalCapabilities.hasCompanionContactManagementConfig
+                ? async (nodeNum) => {
+                    await meshcorePanelActions.deleteNode(nodeNum);
+                    setSelectedNodeId(null);
+                  }
+                : undefined
+            }
             onMessageNode={
               selectedNode?.node_id !== detailMyNodeNum && selectedNode?.hw_model !== 'Room'
                 ? handleMessageNode
@@ -3359,12 +3751,16 @@ function AppContent() {
                 : undefined
             }
             paxCounterData={
-              detailModalProtocol === 'meshtastic' ? activeRuntime.paxCounterData : undefined
+              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.paxCounterData : undefined
             }
             detectionSensorEvents={
-              detailModalProtocol === 'meshtastic' ? activeRuntime.detectionSensorEvents : undefined
+              detailModalProtocol === 'meshtastic'
+                ? meshtasticRuntime.detectionSensorEvents
+                : undefined
             }
-            mapReports={detailModalProtocol === 'meshtastic' ? activeRuntime.mapReports : undefined}
+            mapReports={
+              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.mapReports : undefined
+            }
             onExportContact={
               detailModalProtocol === 'meshcore' ? meshcoreRuntime.exportContact : undefined
             }
@@ -3384,6 +3780,18 @@ function AppContent() {
             }
             positionHistory={selectedNodeHistory}
             onShowOnMap={handleShowOnMap}
+          />
+        </Suspense>
+      )}
+
+      {capabilities.hasReticulumPeerDetailModal && selectedPeerHash !== null && (
+        <Suspense fallback={<DialogLazyFallback />}>
+          <ReticulumPeerDetailModal
+            peerHash={selectedPeerHash}
+            onClose={() => {
+              setSelectedPeerHash(null);
+            }}
+            onSendMessage={handleMessageNode}
           />
         </Suspense>
       )}

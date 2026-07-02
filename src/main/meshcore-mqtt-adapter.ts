@@ -12,6 +12,7 @@ import {
 } from '../shared/meshtasticMqttReconnect';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import { sanitizeLogMessage } from './log-service';
+import { forceEndMqttClient } from './mqtt-client-teardown';
 
 export type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
 
@@ -218,16 +219,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
     this.retryCount = 0;
     if (this.client) {
-      try {
-        this.client.removeAllListeners();
-        this.client.end(true);
-      } catch (e) {
-        console.warn(
-          '[MeshCore MQTT] disconnect',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
+      const stale = this.client;
       this.client = null;
+      forceEndMqttClient(stale);
     }
     this.lastSettings = null;
     this.setStatus('disconnected');
@@ -245,12 +239,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     // cannot tear down the new client 30s later (Bug 3 fix).
     this.clearConnectTimers();
     if (this.client) {
-      try {
-        this.client.removeAllListeners();
-        this.client.end(true);
-      } catch {
-        // catch-no-log-ok forced end before reconnect
-      }
+      forceEndMqttClient(this.client);
       this.client = null;
     }
     const isV1Username = /^v1_[0-9A-Fa-f]{64}$/i.test(settings.username ?? '');
@@ -322,6 +311,18 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.setStatus('connecting');
     this.connectAbortByWatchdog = false;
     this.client = mqtt.connect(connectOpts);
+    this.client.on('error', (err) => {
+      this.clearConnectTimers();
+      console.error(
+        '[MeshCore MQTT] client error',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      this.emit('error', err instanceof Error ? err.message : String(err));
+      // Unblock the UI immediately — 'close' may arrive many seconds later.
+      if (this.status === 'connecting') {
+        this.setStatus('disconnected');
+      }
+    });
     this.connectAckTimer = setTimeout(() => {
       this.connectAckTimer = null;
       if (this.status !== 'connecting' || !this.client) return;
@@ -329,13 +330,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       const msg = `MeshCore MQTT: timed out before MQTT session (no CONNACK within ${MESHCORE_MQTT_CONNECT_ACK_MS / 1000}s). Check host, port, WebSocket path /mqtt, TLS, and network (firewall, VPN, DNS).`;
       console.error('[MeshCore MQTT]', sanitizeLogMessage(msg));
       this.emit('error', msg);
-      try {
-        this.client.removeAllListeners();
-        this.client.end(true);
-      } catch {
-        // catch-no-log-ok forced end during stuck connect
-      }
+      const stale = this.client;
       this.client = null;
+      forceEndMqttClient(stale);
       this.setStatus('disconnected');
     }, MESHCORE_MQTT_CONNECT_ACK_MS);
     this.client.on('connect', () => {
@@ -436,18 +433,6 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         return;
       }
       this.emit('chatMessage', { topic, ...env });
-    });
-    this.client.on('error', (err) => {
-      this.clearConnectTimers();
-      console.error(
-        '[MeshCore MQTT] client error',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      this.emit('error', err instanceof Error ? err.message : String(err));
-      // Unblock the UI immediately — 'close' may arrive many seconds later.
-      if (this.status === 'connecting') {
-        this.setStatus('disconnected');
-      }
     });
     this.client.on('close', () => {
       this.clearWssPing();
@@ -646,8 +631,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
     this.pendingReconnect = false;
     if (this.client) {
-      this.client.removeAllListeners();
-      this.client.end(true);
+      forceEndMqttClient(this.client);
       this.client = null;
     }
     if (this.status === 'error') {

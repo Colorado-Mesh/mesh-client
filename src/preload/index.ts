@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 import type {
+  BlePeripheralOwner,
+  BleScanOwner,
   ElectronAPI,
   MeshNode,
   MeshProtocol,
@@ -16,6 +18,11 @@ import type {
   SpellcheckReplacePayload,
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
+import type {
+  ReticulumSidecarEvent,
+  ReticulumSidecarStartOptions,
+  ReticulumSidecarStatus,
+} from '../shared/reticulum-types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
 
 export type { NobleBleDevice, NobleBleSessionId, SerialPort };
@@ -104,6 +111,58 @@ contextBridge.exposeInMainWorld('electronAPI', {
       rx_hops?: number | null;
       room_server_id?: number | null;
     }) => ipcRenderer.invoke('db:saveMeshcoreMessage', message),
+    getReticulumMessages: (identityId: string, limit?: number) =>
+      ipcRenderer.invoke('db:getReticulumMessages', identityId, limit),
+    searchReticulumMessages: (identityId: string, query: string, limit?: number) =>
+      ipcRenderer.invoke('db:searchReticulumMessages', identityId, query, limit),
+    deleteReticulumMessage: (identityId: string, messageHash: string) =>
+      ipcRenderer.invoke('db:deleteReticulumMessage', identityId, messageHash),
+    clearReticulumMessages: (identityId: string) =>
+      ipcRenderer.invoke('db:clearReticulumMessages', identityId),
+    saveReticulumMessage: (message: {
+      identity_id: string;
+      sender_id: string;
+      sender_name?: string | null;
+      payload: string;
+      timestamp: number;
+      to_hash?: string | null;
+      reply_to_hash?: string | null;
+      message_hash?: string | null;
+      received_via?: string | null;
+      delivery_status?: string | null;
+      delivery_attempts?: number | null;
+      next_delivery_attempt_at?: number | null;
+      attachment_path?: string | null;
+    }) => ipcRenderer.invoke('db:saveReticulumMessage', message),
+    markStaleReticulumOutbound: (identityId: string, staleAfterMs?: number) =>
+      ipcRenderer.invoke('db:markStaleReticulumOutbound', identityId, staleAfterMs),
+    vacuumReticulumTables: () => ipcRenderer.invoke('db:vacuumReticulumTables'),
+    getReticulumDestinations: () => ipcRenderer.invoke('db:getReticulumDestinations'),
+    deleteReticulumDestination: (destinationHash: string) =>
+      ipcRenderer.invoke('db:deleteReticulumDestination', destinationHash),
+    upsertReticulumDestination: (row: {
+      destination_hash: string;
+      display_name?: string | null;
+      last_heard?: number | null;
+      favorited?: boolean | number | null;
+      icon_name?: string | null;
+      icon_color?: string | null;
+    }) => ipcRenderer.invoke('db:upsertReticulumDestination', row),
+    getBlockedContacts: (protocol: string, identityId: string) =>
+      ipcRenderer.invoke('db:getBlockedContacts', protocol, identityId),
+    blockContact: (protocol: string, identityId: string, blockedHash: string) =>
+      ipcRenderer.invoke('db:blockContact', protocol, identityId, blockedHash),
+    unblockContact: (protocol: string, identityId: string, blockedHash: string) =>
+      ipcRenderer.invoke('db:unblockContact', protocol, identityId, blockedHash),
+    getReticulumIdentityActivity: (destinationHash: string) =>
+      ipcRenderer.invoke('db:getReticulumIdentityActivity', destinationHash),
+    upsertReticulumIdentityActivity: (row: {
+      destination_hash: string;
+      aspect: string;
+      identity_hash?: string | null;
+      last_seen: number;
+      hops?: number | null;
+    }) => ipcRenderer.invoke('db:upsertReticulumIdentityActivity', row),
     saveMeshcoreContact: (contact: {
       node_id: number;
       public_key: string;
@@ -485,6 +544,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  bleCoexistence: {
+    register: (mac: string, owner: BlePeripheralOwner) =>
+      ipcRenderer.invoke('bleCoexistence:register', mac, owner),
+    unregister: (mac: string, owner: BlePeripheralOwner) =>
+      ipcRenderer.invoke('bleCoexistence:unregister', mac, owner),
+    assertCanConnect: (owner: BlePeripheralOwner, mac: string) =>
+      ipcRenderer.invoke('bleCoexistence:assertCanConnect', owner, mac),
+    getState: () => ipcRenderer.invoke('bleCoexistence:getState'),
+    acquireScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:acquireScan', owner),
+    releaseScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:releaseScan', owner),
+    pauseNobleScan: () => ipcRenderer.invoke('bleCoexistence:pauseNobleScan'),
+  },
+
   // ─── Noble BLE ──────────────────────────────────────────────────
   onNobleBleAdapterState: (cb: (state: string) => void) => {
     const handler = (_: unknown, state: string) => {
@@ -856,10 +928,65 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  // ─── Reticulum sidecar ───────────────────────────────────────────
+  reticulum: {
+    start: (opts?: ReticulumSidecarStartOptions): Promise<ReticulumSidecarStatus> =>
+      ipcRenderer.invoke('reticulum:start', opts),
+    stop: (): Promise<void> => ipcRenderer.invoke('reticulum:stop'),
+    getStatus: (): Promise<ReticulumSidecarStatus> => ipcRenderer.invoke('reticulum:getStatus'),
+    proxyGet: (apiPath: string): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyGet', apiPath),
+    proxyPost: (apiPath: string, body: unknown): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyPost', apiPath, body),
+    proxyPut: (apiPath: string, body: unknown): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyPut', apiPath, body),
+    proxyDelete: (apiPath: string): Promise<unknown> =>
+      ipcRenderer.invoke('reticulum:proxyDelete', apiPath),
+    readDefaultConfigFile: (): Promise<{ path: string | null; content: string | null }> =>
+      ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
+    showConfigImportDialog: (): Promise<{ path: string | null; content: string | null }> =>
+      ipcRenderer.invoke('reticulum:showConfigImportDialog'),
+    onEvent: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
+      const handler = (_: unknown, event: ReticulumSidecarEvent) => {
+        cb(event);
+      };
+      ipcRenderer.on('reticulum:event', handler);
+      return () => ipcRenderer.off('reticulum:event', handler);
+    },
+    onStatus: (cb: (status: ReticulumSidecarStatus) => void): (() => void) => {
+      const handler = (_: unknown, status: ReticulumSidecarStatus) => {
+        cb(status);
+      };
+      ipcRenderer.on('reticulum:status', handler);
+      return () => ipcRenderer.off('reticulum:status', handler);
+    },
+  },
+
+  // ─── Reticulum identity vault ────────────────────────────────────
+  vault: {
+    setPasscode: (passcode: string, secret: string) =>
+      ipcRenderer.invoke('vault:setPasscode', passcode, secret),
+    unlock: (passcode: string) => ipcRenderer.invoke('vault:unlock', passcode),
+    lock: () => ipcRenderer.invoke('vault:lock'),
+    status: () => ipcRenderer.invoke('vault:status'),
+  },
+
   // ─── Chat export ─────────────────────────────────────────────────
   chat: {
     export: (messages: unknown[]) =>
       ipcRenderer.invoke('chat:export', messages) as Promise<{ success: boolean; path?: string }>,
+    saveReticulumAttachment: (opts: {
+      fileName: string;
+      mimeType?: string;
+      dataBase64: string;
+      promptSave?: boolean;
+    }) =>
+      ipcRenderer.invoke('chat:saveReticulumAttachment', opts) as Promise<{
+        success: boolean;
+        path?: string;
+      }>,
+    showItemInFolder: (filePath: string) =>
+      ipcRenderer.invoke('chat:showItemInFolder', filePath) as Promise<{ ok: boolean }>,
     linkPreview: {
       fetch: (url: string) =>
         ipcRenderer.invoke('chat:fetchLinkPreview', url) as Promise<{
@@ -873,8 +1000,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('chat:outbox:list', protocol) as Promise<OutboxEntry[]>,
       add: (entry: OutboxEntryInput) =>
         ipcRenderer.invoke('chat:outbox:add', entry) as Promise<OutboxEntry>,
-      updateStatus: (id: number, status: OutboxStatus, error?: string, nextRetryAt?: number) =>
-        ipcRenderer.invoke('chat:outbox:updateStatus', id, status, error, nextRetryAt),
+      updateStatus: (
+        id: number,
+        status: OutboxStatus,
+        error?: string,
+        nextRetryAt?: number,
+        attemptCount?: number,
+      ) =>
+        ipcRenderer.invoke(
+          'chat:outbox:updateStatus',
+          id,
+          status,
+          error,
+          nextRetryAt,
+          attemptCount,
+        ),
       remove: (id: number) => ipcRenderer.invoke('chat:outbox:remove', id),
     },
   },

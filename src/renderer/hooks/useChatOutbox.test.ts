@@ -18,8 +18,8 @@ function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
     error: null,
     attemptCount: 0,
     nextRetryAt: null,
-    createdAt: 1000,
-    updatedAt: 1000,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     groupId: null,
     groupIndex: null,
     groupTotal: null,
@@ -116,6 +116,7 @@ describe('useChatOutbox', () => {
         'failed',
         'radio busy',
         expect.any(Number),
+        1,
       );
     });
     await waitFor(() => {
@@ -130,7 +131,13 @@ describe('useChatOutbox', () => {
     const sendFn = vi.fn().mockRejectedValue(new Error('no encryption key'));
     renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
     await waitFor(() => {
-      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(8, 'blocked', 'no encryption key');
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        8,
+        'blocked',
+        'no encryption key',
+        undefined,
+        1,
+      );
     });
   });
 
@@ -228,6 +235,7 @@ describe('useChatOutbox', () => {
         'failed',
         'sync boom',
         expect.any(Number),
+        1,
       );
     });
   });
@@ -238,8 +246,29 @@ describe('useChatOutbox', () => {
     const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
     renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
     await waitFor(() => {
-      // At MAX_ATTEMPTS: no nextRetryAt (undefined passed as 4th arg)
-      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(13, 'failed', 'radio busy');
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        13,
+        'failed',
+        'radio busy',
+        undefined,
+        5,
+      );
+    });
+  });
+
+  it('persists attemptCount to IPC on send failure', async () => {
+    const entry = makeEntry({ id: 14, attemptCount: 2 });
+    vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+    const sendFn = vi.fn().mockRejectedValue(new Error('timeout'));
+    renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+    await waitFor(() => {
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        14,
+        'failed',
+        'timeout',
+        expect.any(Number),
+        3,
+      );
     });
   });
 });

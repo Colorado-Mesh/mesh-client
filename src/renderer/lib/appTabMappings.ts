@@ -4,37 +4,67 @@ import type { ProtocolCapabilities } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
+export const NOMAD_NETWORK_PANEL_INDEX = TAB_SLOT_IDS.indexOf('NomadNetwork');
+export const TOPOLOGY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Topology');
+export const NODES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Nodes');
 export const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
 export const RADIO_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Radio');
+export const MODULES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Modules');
+export const SECURITY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Security');
 
-const TAB_CAPABILITY_REQUIREMENTS: (keyof ProtocolCapabilities | undefined)[] = [
+type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
+
+const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
+  'hasNomadNetworkPanel', // Nomad Network
   undefined, // Nodes/Contacts
-  undefined, // Map
-  undefined, // Radio
-  'modulesTabUsesRepeatersLabel', // Modules or Repeaters
-  'hasSecurityPanel', // Security
+  { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel'] }, // Map
+  { or: ['hasChannelConfig', 'hasReticulumRadioPanel', 'hasJsonRadioConfigImport'] }, // Radio
+  { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
+  { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
   'hasRoomServersPanel', // Rooms
+  'hasEnvironmentTelemetry', // Telemetry
+  'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
   undefined, // App
-  undefined, // Diagnostics
-  'hasRawPacketLog', // Distribution
+  'hasDiagnosticsPanel', // Diagnostics
+  'hasRawPacketLog', // Stats
   'hasRawPacketLog', // Sniffer
-  undefined, // RF
-  undefined, // Graph
+  'hasRfStats', // RF
+  { or: ['hasNeighborInfo', 'nodeListTabUsesContactsLabel'] }, // Graph
+  'hasReticulumTopologyPanel', // Topology
 ];
 
+function tabVisible(
+  capabilities: ProtocolCapabilities,
+  requirement: TabCapabilityRequirement,
+): boolean {
+  if (typeof requirement === 'object') {
+    return requirement.or.some((key) => capabilities[key]);
+  }
+  return Boolean(capabilities[requirement]);
+}
+
 function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `tabs.${string}` {
-  if (panelIndex === 2 && capabilities.nodeListTabUsesContactsLabel) return 'tabs.contacts';
-  if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'tabs.repeaters';
-  if (panelIndex === 7 && capabilities.hasRoomServersPanel) return 'tabs.rooms';
+  if (panelIndex === NOMAD_NETWORK_PANEL_INDEX) return 'tabs.nomadnetwork';
+  if (panelIndex === NODES_PANEL_INDEX && capabilities.nodeListTabUsesContactsLabel) {
+    return 'tabs.contacts';
+  }
+  if (panelIndex === NODES_PANEL_INDEX && capabilities.nodeListTabUsesPeersLabel)
+    return 'tabs.peers';
+  if (panelIndex === MODULES_PANEL_INDEX && capabilities.modulesTabUsesRepeatersLabel) {
+    return 'tabs.repeaters';
+  }
+  if (panelIndex === ROOMS_PANEL_INDEX && capabilities.hasRoomServersPanel) return 'tabs.rooms';
   return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
 }
 
 function tabIconSlotId(capabilities: ProtocolCapabilities, panelIndex: number): TabIconSlotId {
-  if (panelIndex === 5 && capabilities.modulesTabUsesRepeatersLabel) return 'Repeaters';
+  if (panelIndex === MODULES_PANEL_INDEX && capabilities.modulesTabUsesRepeatersLabel) {
+    return 'Repeaters';
+  }
   return TAB_SLOT_IDS[panelIndex];
 }
 
@@ -52,7 +82,7 @@ export function computeTabMappings(
   const filtered: { label: string; slotId: TabIconSlotId; panelIndex: number }[] = [];
   TAB_SLOT_IDS.forEach((_slot, panelIndex) => {
     const requiredCap = TAB_CAPABILITY_REQUIREMENTS[panelIndex];
-    if (requiredCap !== undefined && !targetCapabilities[requiredCap]) return;
+    if (requiredCap !== undefined && !tabVisible(targetCapabilities, requiredCap)) return;
     filtered.push({
       label: translate(tabLabelKey(targetCapabilities, panelIndex)),
       slotId: tabIconSlotId(targetCapabilities, panelIndex),

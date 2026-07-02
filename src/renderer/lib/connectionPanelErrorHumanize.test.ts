@@ -7,6 +7,7 @@ import {
   hostFromAddressInput,
   humanizeBleError,
   humanizeHttpError,
+  humanizeReticulumSidecarError,
   humanizeSerialError,
   isMeshtasticLocalAddress,
 } from './connectionPanelErrorHumanize';
@@ -230,5 +231,24 @@ describe('humanizeBleError', () => {
     const result = humanizeBleError(new Error(message), t);
     expect(result).toContain('macWakeRecoveryHint');
     expect(result.split('macWakeRecoveryHint').length - 1).toBe(1);
+  });
+});
+
+describe('humanizeReticulumSidecarError', () => {
+  const t = mockT();
+
+  it('maps missing sidecar binary to build hint', () => {
+    expect(
+      humanizeReticulumSidecarError(
+        new Error('Reticulum sidecar binary not found: /tmp/mesh-client-reticulum'),
+        t,
+      ),
+    ).toBe('connectionPanel.reticulumSidecarMissing');
+  });
+
+  it('maps missing cargo to rustup hint', () => {
+    expect(
+      humanizeReticulumSidecarError(new Error('RETICULUM_CARGO_MISSING: cargo not found'), t),
+    ).toBe('connectionPanel.reticulumSidecarCargoMissing');
   });
 });

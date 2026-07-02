@@ -1,5 +1,7 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
+import { RETICULUM_LXMF_PAYLOAD_LIMIT } from '../chatComposerLimits';
+
 /**
  * Protocol-agnostic capability descriptor. Each radio protocol adapter exposes
  * one of these so UI and diagnostic engines can branch on features rather than
@@ -13,6 +15,8 @@ export interface ProtocolCapabilities {
   hopLimitRange: [number, number];
   /** Whether MQTT hybrid / MQTT-only nodes can appear in the node list */
   hasMqttHybrid: boolean;
+  /** Whether the Connection panel exposes MQTT connect/disconnect UI and header status */
+  hasMqttConnectionPanel: boolean;
   /** Whether environment sensor telemetry (temp, humidity, pressure, IAQ) is available */
   hasEnvironmentTelemetry: boolean;
   /** Whether LocalStats RF diagnostics (channel_utilization, air_util_tx, rx_bad, rx_dupe) are available */
@@ -95,6 +99,8 @@ export interface ProtocolCapabilities {
   hasRawPacketLog: boolean;
   /** Node list tab label uses "Contacts" instead of "Nodes" */
   nodeListTabUsesContactsLabel: boolean;
+  /** Node list tab label uses "Peers" instead of "Nodes" (Reticulum) */
+  nodeListTabUsesPeersLabel: boolean;
   /** Modules tab shows repeater tooling (MeshCore "Repeaters" tab slot) */
   modulesTabUsesRepeatersLabel: boolean;
   /** Dedicated Rooms tab for MeshCore room server BBS */
@@ -111,6 +117,34 @@ export interface ProtocolCapabilities {
   dedupeQueueBadgeForLocalSending: boolean;
   /** Header self-node label prefers deviceOwner.longName over picker label */
   prefersDeviceOwnerLongNameInHeader: boolean;
+  /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
+  hasDiagnosticsPanel: boolean;
+  /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
+  hasReticulumInterfaceConfig: boolean;
+  /** Reticulum: network / peers visibility panel */
+  hasReticulumNetworkPanel: boolean;
+  /** Reticulum: Radio tab (identity, interfaces, config) */
+  hasReticulumRadioPanel: boolean;
+  /** Reticulum: LXMF file/image attachments in chat */
+  hasLxmfAttachments: boolean;
+  /** Reticulum: RNode firmware flasher on Radio tab */
+  hasRNodeFlasher: boolean;
+  /** Reticulum: dedicated Peers list panel on tab 2 */
+  hasReticulumPeersList: boolean;
+  /** Reticulum: ping panel on Diagnostics tab */
+  hasReticulumNativeDiagnostics: boolean;
+  /** Reticulum: dedicated network topology tab */
+  hasReticulumTopologyPanel: boolean;
+  /** Reticulum: LXMF delivery status badge on chat messages */
+  hasLxmfDeliveryStatus: boolean;
+  /** Reticulum: dedicated peer detail modal (hash-based peers) */
+  hasReticulumPeerDetailModal: boolean;
+  /** Reticulum: Nomad Network sidebar tab */
+  hasNomadNetworkPanel: boolean;
+  /** Reticulum: Administration tab (flasher, factory reset) */
+  hasReticulumAdminPanel: boolean;
+  /** DM composer payload limit (Reticulum LXMF only) */
+  lxmfPayloadLimit?: number;
 }
 
 export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
@@ -118,6 +152,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasHopCount: true,
   hopLimitRange: [1, 7],
   hasMqttHybrid: true,
+  hasMqttConnectionPanel: true,
   hasEnvironmentTelemetry: true,
   hasRfStats: true,
   hasNeighborInfo: true,
@@ -159,6 +194,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasCryptoOperations: true,
   hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: false,
+  nodeListTabUsesPeersLabel: false,
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
   hasJsonRadioConfigImport: false,
@@ -167,6 +203,19 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
+  hasDiagnosticsPanel: true,
+  hasReticulumInterfaceConfig: false,
+  hasReticulumNetworkPanel: false,
+  hasReticulumRadioPanel: false,
+  hasLxmfAttachments: false,
+  hasRNodeFlasher: false,
+  hasReticulumPeersList: false,
+  hasReticulumNativeDiagnostics: false,
+  hasReticulumTopologyPanel: false,
+  hasLxmfDeliveryStatus: false,
+  hasReticulumPeerDetailModal: false,
+  hasNomadNetworkPanel: false,
+  hasReticulumAdminPanel: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -175,6 +224,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hopLimitRange: [1, 64],
   /** MeshCore session is RF-first; MQTT bridge is optional and not shown as a node column. */
   hasMqttHybrid: false,
+  hasMqttConnectionPanel: true,
   hasEnvironmentTelemetry: true,
   hasRfStats: true,
   hasNeighborInfo: false,
@@ -216,6 +266,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasCryptoOperations: true,
   hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: true,
+  nodeListTabUsesPeersLabel: false,
   modulesTabUsesRepeatersLabel: true,
   hasRoomServersPanel: true,
   hasJsonRadioConfigImport: true,
@@ -224,4 +275,89 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
+  hasDiagnosticsPanel: true,
+  hasReticulumInterfaceConfig: false,
+  hasReticulumNetworkPanel: false,
+  hasReticulumRadioPanel: false,
+  hasLxmfAttachments: false,
+  hasRNodeFlasher: false,
+  hasReticulumPeersList: false,
+  hasReticulumNativeDiagnostics: false,
+  hasReticulumTopologyPanel: false,
+  hasLxmfDeliveryStatus: false,
+  hasReticulumPeerDetailModal: false,
+  hasNomadNetworkPanel: false,
+  hasReticulumAdminPanel: false,
+};
+
+export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
+  protocol: 'reticulum',
+  hasHopCount: false,
+  hopLimitRange: [1, 128],
+  hasMqttHybrid: false,
+  hasMqttConnectionPanel: false,
+  hasEnvironmentTelemetry: false,
+  hasRfStats: false,
+  hasNeighborInfo: false,
+  hasChannelConfig: false,
+  hasModemPresets: false,
+  hasTraceRoute: true,
+  hasPerHopSnr: false,
+  hasBatteryTelemetry: false,
+  hasRepeaterStatus: true,
+  hasOnDemandNodeStatus: false,
+  hasBluetoothConfig: false,
+  hasDeviceRoleConfig: false,
+  hasDisplayConfig: false,
+  hasPowerConfig: false,
+  hasWifiConfig: false,
+  hasTelemetryIntervalConfig: false,
+  hasUserManagedContactGroups: true,
+  hasCompanionContactManagementConfig: false,
+  hasCompanionTelemetryPrivacyConfig: false,
+  hasShutdown: false,
+  hasNodeDbReset: false,
+  hasFactoryReset: false,
+  hasFullPositionConfig: false,
+  hasSecurityPanel: false,
+  hasRemoteAdmin: false,
+  hasTakPanel: false,
+  hasRemoteHardware: false,
+  hasSerial: false,
+  hasRangeTest: false,
+  hasPaxCounter: false,
+  hasAudio: false,
+  hasIpTunnel: false,
+  hasDetectionSensor: false,
+  hasStoreForward: false,
+  hasAtakPlugin: false,
+  hasMapReport: false,
+  hasXmodem: false,
+  hasContactImportExport: false,
+  hasCryptoOperations: false,
+  hasRawPacketLog: true,
+  nodeListTabUsesContactsLabel: false,
+  nodeListTabUsesPeersLabel: true,
+  modulesTabUsesRepeatersLabel: false,
+  hasRoomServersPanel: false,
+  hasJsonRadioConfigImport: true,
+  nodeStaleThresholdMs: 7 * 24 * 60 * 60 * 1000,
+  nodeOfflineThresholdMs: 30 * 24 * 60 * 60 * 1000,
+  hasFirmwareUpdateCheck: false,
+  dedupeQueueBadgeForLocalSending: false,
+  prefersDeviceOwnerLongNameInHeader: false,
+  hasDiagnosticsPanel: true,
+  hasReticulumInterfaceConfig: true,
+  hasReticulumNetworkPanel: true,
+  hasReticulumRadioPanel: true,
+  hasLxmfAttachments: true,
+  hasRNodeFlasher: true,
+  hasReticulumPeersList: true,
+  hasReticulumNativeDiagnostics: true,
+  hasReticulumTopologyPanel: true,
+  hasLxmfDeliveryStatus: true,
+  hasReticulumPeerDetailModal: true,
+  hasNomadNetworkPanel: true,
+  hasReticulumAdminPanel: true,
+  lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

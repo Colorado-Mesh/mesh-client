@@ -101,20 +101,69 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[IpcNobleConnection:meshcore]')
     );
   }
+  if (protocol === 'reticulum') {
+    return (
+      entry.source.includes('reticulum') ||
+      entry.message.includes('[ReticulumSidecar]') ||
+      entry.message.includes('[ReticulumRadioPanel]') ||
+      entry.message.includes('[useReticulumRuntime]') ||
+      entry.message.includes('[useReticulumSidecarApi]') ||
+      entry.message.includes('[ReticulumIPC]') ||
+      entry.message.includes('[Reticulum]') ||
+      entry.message.includes('[reticulumSidecarReads]') ||
+      entry.message.includes('[IPC] reticulum')
+    );
+  }
   // No protocol: show all device entries (fallback)
   return (
     entry.source === 'sdk' ||
     entry.source.includes('meshtastic') ||
     entry.source.includes('meshcore') ||
+    entry.source.includes('reticulum') ||
     entry.message.includes('[useMeshtasticRuntime]') ||
     entry.message.includes('[iMeshDevice]') ||
     entry.message.includes('[useMeshcoreRuntime]') ||
+    entry.message.includes('[useReticulumRuntime]') ||
     entry.message.includes('[TransportNobleIpc]') ||
     entry.message.includes('[MeshCore MQTT]') ||
+    entry.message.includes('[ReticulumSidecar]') ||
+    entry.message.includes('[ReticulumRadioPanel]') ||
+    entry.message.includes('[ReticulumIPC]') ||
+    entry.message.includes('[Reticulum]') ||
+    entry.message.includes('[reticulumSidecarReads]') ||
+    entry.message.includes('[useReticulumSidecarApi]') ||
+    entry.message.includes('[IPC] reticulum') ||
     entry.message.includes('[NobleBleManager]') ||
     entry.message.includes('[BLE:') ||
     entry.message.includes('[BLE:meshcore]') ||
     entry.message.includes('[IpcNobleConnection:')
+  );
+}
+
+/** App-panel MQTT/infrastructure tags scoped to one protocol tab (not device/SDK traffic). */
+export function isProtocolExclusiveAppEntry(entry: LogEntry, protocol: MeshProtocol): boolean {
+  return protocol === 'meshtastic' && entry.message.includes('[Meshtastic MQTT]');
+}
+
+/** True when the line belongs to a protocol other than the active tab. */
+export function isOwnedByOtherProtocol(entry: LogEntry, activeProtocol: MeshProtocol): boolean {
+  for (const p of ['meshtastic', 'meshcore', 'reticulum'] as MeshProtocol[]) {
+    if (p === activeProtocol) continue;
+    if (isDeviceEntry(entry, p)) return true;
+    if (isProtocolExclusiveAppEntry(entry, p)) return true;
+  }
+  return false;
+}
+
+/** App log lines for the active protocol tab (or dual/triple fallback when unset). */
+export function isAppLogEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
+  if (protocol) {
+    return !isDeviceEntry(entry, protocol) && !isOwnedByOtherProtocol(entry, protocol);
+  }
+  return (
+    !isDeviceEntry(entry, 'meshtastic') &&
+    !isDeviceEntry(entry, 'meshcore') &&
+    !isDeviceEntry(entry, 'reticulum')
   );
 }
 
@@ -166,6 +215,12 @@ export default function LogPanel({
   const atBottomRef = useRef(true);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
+
+  useEffect(() => {
+    if (protocol === 'reticulum') {
+      setLogSource('device');
+    }
+  }, [protocol]);
 
   useEffect(() => {
     let off: (() => void) | null = null;
@@ -242,14 +297,17 @@ export default function LogPanel({
     () => entries.filter((e) => isDeviceEntry(e, protocol)),
     [entries, protocol],
   );
-  // Dual-mode: exclude device entries from BOTH protocols so neither leaks into the app view.
   const appEntries = useMemo(
-    () => entries.filter((e) => !isDeviceEntry(e, 'meshtastic') && !isDeviceEntry(e, 'meshcore')),
-    [entries],
+    () => entries.filter((e) => isAppLogEntry(e, protocol)),
+    [entries, protocol],
+  );
+  const scopedDeviceLogs = useMemo(
+    () => (deviceLogs ?? []).filter((e) => !protocol || isDeviceEntry(e, protocol)),
+    [deviceLogs, protocol],
   );
   const allDeviceLogs: LogEntry[] = useMemo(
-    () => [...(deviceLogs ?? []), ...libraryEntries].sort((a, b) => a.ts - b.ts),
-    [deviceLogs, libraryEntries],
+    () => [...scopedDeviceLogs, ...libraryEntries].sort((a, b) => a.ts - b.ts),
+    [scopedDeviceLogs, libraryEntries],
   );
 
   const visibleLines: LogEntry[] = useMemo(

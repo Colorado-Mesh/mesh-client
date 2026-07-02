@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 
 import { PROTOCOL_THEME, protocolHeaderBorderClass } from './protocolTheme';
+import { contrastRatio } from './wcagContrast';
 
 describe('protocolTheme', () => {
   it('defines theme for every registered protocol', () => {
@@ -25,5 +26,20 @@ describe('protocolTheme', () => {
     expect(protocolHeaderBorderClass('meshcore', true)).toBe(
       PROTOCOL_THEME.meshcore.headerBorderConfigured,
     );
+    expect(protocolHeaderBorderClass('reticulum', true)).toBe(
+      PROTOCOL_THEME.reticulum.headerBorderConfigured,
+    );
+  });
+
+  it('meshcore unread badge uses accessible cyan fill for contrast', () => {
+    expect(PROTOCOL_THEME.meshcore.unreadBadgeFillClass).toBe('bg-cyan-800 text-white');
+    expect(PROTOCOL_THEME.meshcore.pillActiveClass).toContain('cyan');
+    expect(contrastRatio('#ffffff', '#155e75')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('reticulum unread badge uses accessible amber fill for contrast', () => {
+    expect(PROTOCOL_THEME.reticulum.unreadBadgeFillClass).toBe('bg-amber-800 text-white');
+    expect(PROTOCOL_THEME.reticulum.pillActiveClass).toContain('amber');
+    expect(contrastRatio('#ffffff', '#92400e')).toBeGreaterThanOrEqual(4.5);
   });
 });

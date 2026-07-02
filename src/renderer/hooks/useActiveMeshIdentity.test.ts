@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
+  OFFLINE_RETICULUM_IDENTITY_ID,
 } from '../lib/offlineProtocolIdentities';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { addIdentity, setActiveIdentity, useIdentityStore } from '../stores/identityStore';
@@ -85,5 +86,20 @@ describe('useActiveMeshIdentity', () => {
     rerender();
 
     expect(result.current.identityIdByProtocol.meshcore).toBe(connectedId);
+  });
+
+  it('resolves reticulum to its own offline bucket, not meshcore', () => {
+    ensureOfflineProtocolIdentities();
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 1, longName: 'MeshCore node' });
+    upsertNode(OFFLINE_RETICULUM_IDENTITY_ID, { nodeId: 2, longName: 'Reticulum peer' });
+
+    const { result } = renderHook(() => useActiveMeshIdentity('reticulum'));
+
+    expect(result.current.identityIdByProtocol.reticulum).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
+    expect(result.current.identityIdByProtocol.meshcore).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
+    expect(result.current.focusedIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
+    expect(result.current.identityIdByProtocol.reticulum).not.toBe(
+      result.current.identityIdByProtocol.meshcore,
+    );
   });
 });

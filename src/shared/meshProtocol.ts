@@ -1,5 +1,5 @@
 /** Built-in protocols; extend when adding adapters (e.g. reticulum). */
-export const REGISTERED_MESH_PROTOCOLS = ['meshtastic', 'meshcore'] as const;
+export const REGISTERED_MESH_PROTOCOLS = ['meshtastic', 'meshcore', 'reticulum'] as const;
 
 export type MeshProtocol = (typeof REGISTERED_MESH_PROTOCOLS)[number];
 

@@ -109,7 +109,7 @@ Adding a cross-boundary feature:
 
 **Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`.
 
-> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency.
+> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency. `pnpm run update` also runs `rustup update` (or Homebrew `rust` on macOS without rustup) and `cargo build` in `reticulum-sidecar/` when `cargo` is on `PATH`.
 
 **Pre-commit hook order:**
 
@@ -131,6 +131,17 @@ Before PR: `pnpm run lint`, `typecheck`, `test:run`, plus any relevant `check:*`
 Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`). Remote: `Colorado-Mesh/mesh-client`. Pre-PR: refresh `README`/version metadata as needed; `gh pr create` descriptions must cover **all** commits on the branch (`git log origin/main..HEAD --oneline`), not only the last one.
 
 ## 8. Subsystem Quick Reference
+
+### Reticulum
+
+- **Sidecar:** `reticulum-sidecar/` (AGPL Rust binary `mesh-client-reticulum`); dev: `pnpm run reticulum:sidecar:dev`
+- **IPC:** `reticulum:*` main handlers (`proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`, config file read/import dialog); renderer uses `electronAPI.reticulum` proxy (no direct localhost from sandbox)
+- **Panels:** `ReticulumStackPanel` (Connection — stack lifecycle), `ReticulumRadioPanel` (Radio — identity, interfaces, stack/announce settings, propagation, config import), `ReticulumAdminPanel` (Admin — RNode flasher, factory reset), `ReticulumPeerListPanel` (Peers), `NomadNetworkPanel` (Nomad Network)
+- **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
+- **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
+- **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
+- **Multi-protocol BLE:** Meshtastic, MeshCore, and Reticulum (BLE Peer + `ble://` RNode) may connect to **different** BLE devices at once on all platforms. Coexistence: `ble-coexistence-coordinator.ts` (peripheral MAC registry + scan-only mutex); Linux mesh uses Web Bluetooth + sidecar `btleplug`. Same MAC rejected; scans serialized—never disconnect unrelated GATT for scans.
+- **Docs:** [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md)
 
 ### Diagnostics
 
@@ -186,6 +197,20 @@ Meshtastic BLE: `connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-m
 
 **Linux Web Bluetooth (Meshtastic):** `webbluetooth-ble-manager.ts` subscribes to **fromNum** GATT notify for unsolicited mesh traffic, runs a **3 s background fromRadio poll** between write cycles, and uses **multi-shot read probes** instead of a single post-write safety read (LoRa latency). MeshCore BLE echo filtering: `meshcoreCompanionTxEchoFilter.ts` (Noble + Web Bluetooth).
 
+**Dual-radio Noble BLE startup (macOS/Windows):** When both Meshtastic and MeshCore have **different** saved BLE peripherals, the renderer must serialize auto-connect and manual Noble connects. Coordinator: `src/renderer/lib/meshcoreDualNobleBleInit.ts`; UI wiring: `ConnectionPanel.tsx` (both panels stay mounted from `App.tsx`).
+
+| Rule               | Detail                                                                                                                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Init timing        | Call `initNobleBleDualRadioStartup()` from **`App.tsx` `useLayoutEffect`** (not `useEffect`). Child ConnectionPanel auto-connect `useEffect` runs after layout effects — initializing in parent `useEffect` races and leaves primary unset.                        |
+| Primary order      | `mesh-client:protocol` localStorage (`meshcore` / `meshtastic`; Reticulum or missing → Meshtastic). Single-radio installs skip peer deferral.                                                                                                                      |
+| Primary notify     | Primary calls `notifyNobleBlePrimaryRfLinkReady()` when GATT + handshake succeed (MeshCore transport + Meshtastic `createBleConnection`), or `notifyNobleBlePrimaryAutoConnectSettled()` on first attempt failure — **not** after full configure or scan fallback. |
+| Secondary wait     | Secondary waits only on `awaitNobleBlePrimaryAutoConnectSettled()` — do **not** add `awaitNobleBleProtocolSettle()` here (mutex + post-config defer handles configure overlap).                                                                                    |
+| Mutex              | All Noble IPC connects go through `withNobleBleConnectMutex()` (Meshtastic + MeshCore).                                                                                                                                                                            |
+| MeshCore reconnect | `useMeshcoreRuntime` must **not** start the reconnect loop on disconnect before the first successful configure — ConnectionPanel `reconnectBleWithScan` owns initial retries (`meshcoreEverConfiguredRef`).                                                        |
+| Tests              | Protocol-neutral unit tests: `meshcoreDualNobleBleInit.test.ts`. Meshtastic + MeshCore defer paths: `ConnectionPanel.test.tsx` (`active-protocol-first BLE auto-connect`).                                                                                         |
+
+Do **not** reintroduce Meshtastic-only startup gates, child-before-parent init, or runtime-side secondary auto-connect subscriptions — ConnectionPanel owns auto-connect for both protocols.
+
 ### Meshtastic channel URLs & Store & Forward
 
 - **Config apply (Radio / Modules / Security):** Firmware `setConfig` / `setModuleConfig` replace full protobuf structs. UI must merge cached device slices with form edits via `meshtasticConfigApply.ts` (`mergeMeshtasticConfigApplyValue`, `buildMeshtasticModuleApplyValue`); slices live in `deviceStore.meshtasticConfigSlices` and `moduleConfigs` (PacketRouter + `meshtasticLegacyWireSubscriptions`). Module-specific validation: `meshtasticMqttModuleApply.ts`, `meshtasticSerialModuleApply.ts`. Apply failures surface `clientNotification` text within 8s (`meshtasticClientNotification.ts` → `formatMeshtasticModuleApplyError`); inline status via `ConfigApplyNotice.tsx`. Forms re-sync after reboot via `useSyncFormFromConfig`.
@@ -212,9 +237,10 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Locale files:** `src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json` — English is source of truth (`pnpm run check:i18n` reports key count).
 - **Locale persistence:** `locale` key in `app_settings` SQLite table (canonical) and `mesh-client:appSettings` localStorage (fast startup read); reconciled in `App.tsx` on mount.
 - **Reduce motion:** `reduceMotion` boolean in the same `app_settings` / localStorage bundle; toggled in **App → Appearance** ([`AppPanel.tsx`](src/renderer/components/AppPanel.tsx)). When true, non-essential UI motion (animated icons, decorative CSS pulses) is suppressed; loading spinners and connection status pulses remain. Does not auto-sync to OS `prefers-reduced-motion` after first-run init — see [`docs/accessibility-checklist.md`](docs/accessibility-checklist.md).
-- **Adding strings:** add to `src/renderer/locales/en/translation.json`, use `t('your.key')` in components; `check:i18n` enforces all call sites resolve to English keys.
+- **Adding strings:** add to `src/renderer/locales/en/translation.json`, use `t('your.key')` in components; `check:i18n` enforces all call sites resolve to English keys and **fails on unused English keys** (no static `t()`, registered dynamic prefix, quoted literal in `src/`, or `tabs.*` from `TAB_SLOT_IDS`).
+- **Removing strings:** delete the key from `en/translation.json` and run `pnpm run i18n:prune-unused -- --write` to drop it from every locale (or remove manually). `check:i18n` blocks orphaned English keys.
 - **Auto-translate:** `pnpm run i18n:auto-translate` uses MyMemory (default) or LibreTranslate (`LIBRETRANSLATE_URL`). With git, the default run **only** fills keys that are **new in English vs `HEAD`** and still missing from each locale (pre-commit uses this). Use **`pnpm run i18n:auto-translate --all`** or **`I18N_TRANSLATE_ALL=1`** to backfill every key missing from a locale vs English. Use **`--audit`** (or `I18N_AUDIT=1`) to additionally retranslate any key whose locale value is still identical to English (i.e. never actually translated). Existing translated entries are never overwritten. MyMemory sends contact `info@coloradomesh.org` by default for the 50 k words/day quota; override with `MYMEMORY_EMAIL` if needed.
-- **Key check:** `pnpm run check:i18n` — hard fails on missing English keys; warns (does not fail) on incomplete locale coverage so rate-limit gaps don't block commits. Also runs locale quality rules via `scripts/check-i18n-quality.mjs` (mojibake, `meshtastic://` spacing, false friends).
+- **Key check:** `pnpm run check:i18n` — hard fails on missing English keys and unused English keys; warns (does not fail) on incomplete locale coverage so rate-limit gaps don't block commits. Also runs locale quality rules via `scripts/check-i18n-quality.mjs` (mojibake, `meshtastic://` spacing, false friends). Unused-key detection lives in `scripts/i18n-unused-keys.mjs`; `pnpm run check:i18n:branch` skips the unused pass and only runs quality rules on keys new/changed vs `HEAD`.
 - **Language selector:** `src/renderer/components/LanguageSelector.tsx` — globe-icon dropdown in the header; calls `i18n.changeLanguage()` + `mergeAppSetting('locale', ...)` + `electronAPI.appSettings.set('locale', ...)`.
 
 ### Chat Panel
@@ -254,6 +280,8 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 | Empty chat/nodes offline              | `hydrateIdentityStoresFromDb`, connect-time cache in runtimes, `useDbRefresh`; identity split — [troubleshooting](docs/troubleshooting.md#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) |
 | Chat stuck / badge moves, no new rows | `identityByProtocol`, `useActiveMeshIdentity`, `mergeOfflineIdentityStore`; **Copy Debug Snapshot** — [troubleshooting](docs/troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)            |
 | BLE timeout                           | `noble-ble-manager.ts`, `bleConnectErrors`                                                                                                                                                             |
+| Reticulum sidecar won't start         | `reticulum-sidecar-manager.ts`, `ipc/reticulum-handlers.ts`, [troubleshooting](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)                                          |
+| Reticulum interface CRUD fails        | `ReticulumRadioPanel.tsx`, `proxyPut`/`proxyDelete` — [troubleshooting](docs/troubleshooting.md#reticulum-interface-addeditdelete-fails)                                                               |
 | Serial missing                        | `serialPortSignature.ts`                                                                                                                                                                               |
 | MQTT loop                             | `mqtt-manager.ts`                                                                                                                                                                                      |
 | DB errors                             | `database.ts` migrations                                                                                                                                                                               |
