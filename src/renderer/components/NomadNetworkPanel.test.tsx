@@ -126,4 +126,39 @@ describe('NomadNetworkPanel', () => {
 
     expect(toggleFavorite).toHaveBeenCalledWith('abc1234567890', false);
   });
+
+  it('calls onOpenDm when Message button is clicked', async () => {
+    const user = userEvent.setup();
+    const onOpenDm = vi.fn();
+    isReticulumSidecarRunning.mockResolvedValue(true);
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: 'hello',
+      content_type: 'text/plain',
+    });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890abcdef1234567890ab',
+          {
+            destination_hash: 'abc1234567890abcdef1234567890ab',
+            display_name: 'Test Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel onOpenDm={onOpenDm} />);
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'nomadNetwork.sendMessageAria' }),
+      ).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.sendMessageAria' }));
+    expect(onOpenDm).toHaveBeenCalledWith('abc1234567890abcdef1234567890ab');
+  });
 });

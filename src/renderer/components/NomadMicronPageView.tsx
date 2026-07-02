@@ -7,6 +7,10 @@ import {
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
 } from '@/renderer/lib/nomad/micronParser';
+import {
+  isReticulumLxmfLink,
+  parseReticulumLxmfLinkUrl,
+} from '@/renderer/lib/reticulum/reticulumDestinationInput';
 
 interface NomadMicronPageViewProps {
   content: string;
@@ -14,6 +18,7 @@ interface NomadMicronPageViewProps {
   selectedHash: string;
   onNavigate: (hash: string, path: string) => void;
   onDownloadFile: (hash: string, path: string) => void;
+  onOpenDm?: (destinationHash: string) => void;
 }
 
 export default function NomadMicronPageView({
@@ -22,6 +27,7 @@ export default function NomadMicronPageView({
   selectedHash,
   onNavigate,
   onDownloadFile,
+  onOpenDm,
 }: NomadMicronPageViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +35,12 @@ export default function NomadMicronPageView({
     (destination: string) => {
       if (isExternalHttpUrl(destination)) {
         window.open(destination, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      const lxmfHash = parseReticulumLxmfLinkUrl(destination);
+      if (lxmfHash) {
+        onOpenDm?.(lxmfHash);
         return;
       }
 
@@ -42,7 +54,7 @@ export default function NomadMicronPageView({
       }
       onNavigate(hash, parsed.path);
     },
-    [defaultPagePath, onDownloadFile, onNavigate, selectedHash],
+    [defaultPagePath, onDownloadFile, onNavigate, onOpenDm, selectedHash],
   );
 
   useEffect(() => {
@@ -55,8 +67,12 @@ export default function NomadMicronPageView({
     for (const element of links) {
       const onActivate = (event: Event) => {
         event.preventDefault();
-        const destination =
-          element.getAttribute('data-destination') ?? element.getAttribute('href') ?? '';
+        const href = element.getAttribute('href') ?? '';
+        const title = element.getAttribute('title') ?? '';
+        const dataDestination = element.getAttribute('data-destination') ?? '';
+        // micron-parser strips lxmf:// from data-destination; href/title keep the scheme.
+        const lxmfSource = [href, title].find((v) => v && isReticulumLxmfLink(v));
+        const destination = (lxmfSource ?? dataDestination) || href;
         if (!destination) return;
         handleNomadLink(destination);
       };

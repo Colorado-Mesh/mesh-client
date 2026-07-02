@@ -48,6 +48,10 @@ import {
 import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
+import {
+  openReticulumDmFromHash,
+  parseReticulumDestinationInput,
+} from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -616,6 +620,8 @@ function ChatPanel({
   const openDmTabsRef = useRef(openDmTabs);
   openDmTabsRef.current = openDmTabs;
   const [activeDmNode, setActiveDmNode] = useState<number | null>(null);
+  const [dmAddressInput, setDmAddressInput] = useState('');
+  const [dmAddressError, setDmAddressError] = useState<string | null>(null);
   const [dismissedDmTabs, setDismissedDmTabs] = useState<Record<number, number>>(() => {
     const raw = localStorage.getItem(dismissedDmTabsStorageKey(protocol));
     const parsed = parseStoredJson<Record<string, number>>(raw, 'ChatPanel dismissedDmTabs');
@@ -1374,6 +1380,18 @@ function ChatPanel({
     setViewMode('dm');
   }, []);
 
+  const submitDmByAddress = useCallback(() => {
+    const parsed = parseReticulumDestinationInput(dmAddressInput);
+    if (!parsed) {
+      setDmAddressError(t('chatPanel.dmAddressInvalid'));
+      return;
+    }
+    setDmAddressError(null);
+    const nodeId = openReticulumDmFromHash(parsed);
+    setDmAddressInput('');
+    openDmTo(nodeId);
+  }, [dmAddressInput, openDmTo, t]);
+
   // Close a DM tab
   const closeDmTab = useCallback(
     (nodeNum: number) => {
@@ -1909,6 +1927,43 @@ function ChatPanel({
           })
         )}
       </div>
+
+      {protocol === 'reticulum' && dmOnlyChat ? (
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1">
+          <input
+            type="text"
+            value={dmAddressInput}
+            onChange={(e) => {
+              setDmAddressInput(e.target.value);
+              if (dmAddressError) setDmAddressError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                submitDmByAddress();
+              }
+            }}
+            placeholder={t('chatPanel.dmAddressPlaceholder')}
+            aria-label={t('chatPanel.dmAddressAria')}
+            aria-invalid={dmAddressError != null}
+            spellCheck={false}
+            className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded border border-gray-600/50 px-2 py-1 font-mono text-xs text-gray-200 focus:outline-none sm:max-w-md"
+          />
+          <button
+            type="button"
+            disabled={!dmAddressInput.trim()}
+            onClick={submitDmByAddress}
+            className="bg-secondary-dark text-muted shrink-0 rounded border border-gray-600/50 px-2.5 py-1 text-xs hover:text-gray-200 disabled:opacity-40"
+          >
+            {t('chatPanel.openDmByAddress')}
+          </button>
+          {dmAddressError ? (
+            <span className="w-full text-[10px] text-red-400" role="alert">
+              {dmAddressError}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Search bar */}
       {showSearch && (

@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "接続されていません - メッセージは読み取り専用です",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "提案について言及する"
+    "mentionSuggestionsAria": "提案について言及する",
+    "openDmByAddress": "開ける",
+    "dmAddressPlaceholder": "宛先ハッシュまたは lxmf://…",
+    "dmAddressAria": "レチクルの宛先アドレス",
+    "dmAddressInvalid": "有効な 32 文字の宛先ハッシュまたは lxmf:// アドレスを入力します。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2317,7 +2321,9 @@
     "hideSource": "フォーマットされたページを表示",
     "fileDownloading": "ファイルをダウンロード中…",
     "fileDownloadFailed": "ファイルのダウンロードに失敗しました: {{error}}",
-    "fileDownloadInProgress": "ファイルのダウンロードはすでに進行中です。"
+    "fileDownloadInProgress": "ファイルのダウンロードはすでに進行中です。",
+    "sendMessage": "メッセージ",
+    "sendMessageAria": "{{name}} にメッセージを送信"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

@@ -10,8 +10,11 @@ import type { ChatMessage, MeshNode } from '../lib/types';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
-async function waitForComposer(): Promise<HTMLElement> {
-  return screen.findByRole('textbox');
+async function waitForComposer(): Promise<HTMLTextAreaElement> {
+  const boxes = await screen.findAllByRole('textbox');
+  const textarea = boxes.find((el): el is HTMLTextAreaElement => el.tagName === 'TEXTAREA');
+  if (!textarea) throw new Error('Chat composer textarea not found');
+  return textarea;
 }
 
 vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
@@ -3555,7 +3558,9 @@ describe('ChatPanel reticulum dm-only chat', () => {
       </ToastProvider>,
     );
     expect(
-      screen.getByText('No conversations yet — open a contact from the Nodes tab.'),
+      screen.getByText(
+        'No conversations yet — enter an address or open a contact from the Nodes tab.',
+      ),
     ).toBeInTheDocument();
     const input = await waitForComposer();
     expect(input).toBeDisabled();
@@ -3564,9 +3569,48 @@ describe('ChatPanel reticulum dm-only chat', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+        'Reticulum chat is direct message only. Pick a contact above, enter an address, or open one from the Nodes tab.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('opens DM tab when a valid destination hash is entered', async () => {
+    const user = userEvent.setup();
+    const hash = '368f994c056de0d8882855eb0d627497';
+    const peerId = parseInt(hash.slice(0, 12), 16) >>> 0;
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} onSend={onSend} />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    const composer = await waitForComposer();
+    expect(composer).not.toBeDisabled();
+    await user.type(composer, 'hello');
+    await user.keyboard('{Enter}');
+    await waitFor(() => {
+      expect(onSend).toHaveBeenCalledWith('hello', 0, peerId, undefined);
+    });
+  });
+
+  it('shows validation error for invalid destination hash', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, 'not-a-valid-hash');
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    expect(
+      screen.getByText('Enter a valid 32-character destination hash or lxmf:// address.'),
+    ).toBeInTheDocument();
+    const composer = await waitForComposer();
+    expect(composer).toBeDisabled();
   });
 
   it('hides message history when no DM tab is selected', () => {
@@ -3592,7 +3636,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(screen.queryByText('prior hello')).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+        'Reticulum chat is direct message only. Pick a contact above, enter an address, or open one from the Nodes tab.',
       ),
     ).toBeInTheDocument();
   });

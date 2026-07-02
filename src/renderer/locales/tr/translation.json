@@ -478,7 +478,11 @@
     "readOnlyDisconnected": "Bağlı değil — mesajlar salt okunurdur",
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
-    "mentionSuggestionsAria": "Bahsetme önerileri"
+    "mentionSuggestionsAria": "Bahsetme önerileri",
+    "openDmByAddress": "Açık",
+    "dmAddressPlaceholder": "Hedef karması veya lxmf://…",
+    "dmAddressAria": "Retikulum hedef adresi",
+    "dmAddressInvalid": "32 karakterlik geçerli bir hedef karması veya lxmf:// adresi girin."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2317,7 +2321,9 @@
     "hideSource": "Biçimlendirilmiş sayfayı göster",
     "fileDownloading": "Dosya indiriliyor…",
     "fileDownloadFailed": "Dosya indirilemedi: {{error}}",
-    "fileDownloadInProgress": "Bir dosya indirme işlemi zaten devam ediyor."
+    "fileDownloadInProgress": "Bir dosya indirme işlemi zaten devam ediyor.",
+    "sendMessage": "Mesaj",
+    "sendMessageAria": "{{name}} adresine mesaj gönder"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

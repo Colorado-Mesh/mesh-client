@@ -178,6 +178,7 @@ import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
+import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
@@ -2075,6 +2076,14 @@ function AppContent() {
     setActiveTab(1); // Switch to Chat tab
   }, []);
 
+  const handleOpenReticulumDmByHash = useCallback(
+    (hash: string) => {
+      const nodeId = openReticulumDmFromHash(hash);
+      handleMessageNode(nodeId);
+    },
+    [handleMessageNode],
+  );
+
   const handleOpenRoom = useCallback(
     (nodeNum: number) => {
       setPendingRoomTarget(nodeNum);
@@ -2591,7 +2600,7 @@ function AppContent() {
                       capabilities.hasNomadNetworkPanel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <NomadNetworkPanel />
+                            <NomadNetworkPanel onOpenDm={handleOpenReticulumDmByHash} />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
