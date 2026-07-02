@@ -211,6 +211,15 @@ describe('isDeviceEntry — Reticulum protocol', () => {
     expect(isDeviceEntry(entry('main', '[ReticulumIPC] start'), 'reticulum')).toBe(true);
   });
 
+  it('classifies [Reticulum] BLE coexistence messages as Reticulum device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('renderer', '[Reticulum] bleCoexistence acquireScan failed'),
+        'reticulum',
+      ),
+    ).toBe(true);
+  });
+
   it('does NOT classify Meshtastic SDK source as Reticulum device entry', () => {
     expect(isDeviceEntry(entry('meshtastic-sdk', 'packet decoded'), 'reticulum')).toBe(false);
   });

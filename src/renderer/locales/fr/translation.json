@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Supprimer les contacts qui n'ont jamais été annoncés au démarrage",
     "meshcoreRemoveNeverAdvertisedHint": "Supprime les contacts d'espace réservé périmés sans historique publicitaire ; les contacts favoris sont conservés.",
     "messagesLoadLimitIntro": "Limitez le nombre de messages chargés en mémoire pour l'interface utilisateur et limitez le nombre de lignes restant dans SQLite. Charger moins réduit la RAM sur les réseaux occupés ; la base de données élague les messages plus anciens au démarrage de l'application (stockée par protocole).",
-    "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal.",
     "compactMessages": "Affichage compact des messages",
     "notificationsSection": "Notifications",
     "soundNotifications": "Notifications sonores",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "Effacer les messages {{count}}",
     "reticulumSection": "Reticulum — Empilement de réticulum",
     "reticulumAnnounceHelp": "La fréquence à laquelle votre identité est annoncée sur le réseau et les outils pour effacer les annonces stockées.",
-    "reticulumPropagationHelp": "Choisissez comment les nœuds de propagation sont synchronisés et extrayez les dernières données de propagation si nécessaire."
+    "reticulumPropagationHelp": "Choisissez comment les nœuds de propagation sont synchronisés et extrayez les dernières données de propagation si nécessaire.",
+    "logPanelHelp": "Lorsqu'il est activé, un flux de journaux en direct apparaît sur la droite. Dans l’onglet Reticulum, les lignes de périphériques incluent la sortie side-car et l’état de l’interface locale. Les lignes de débogage nécessitent la case à cocher dans le panneau de journal."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -660,7 +660,10 @@
       "seedAddresses": "Pairs de départ (facultatif)",
       "pickerBlePeerEmpty": "Aucun homologue du Reticulum BLE trouvé à proximité. Les pairs doivent faire de la publicité ; essayez Rescan ou entrez une adresse de départ manuellement.",
       "pickerBleRnodeEmpty": "Aucun RNode BLE trouvé à proximité. Assurez-vous que le RNode est sous tension et à portée, puis essayez de réanalyser.",
-      "bleUnavailable": "Bluetooth n'est pas disponible pour la numérisation Reticulum. Vérifiez le système Bluetooth et la construction du side-car (rns-ble)."
+      "bleUnavailable": "Bluetooth n'est pas disponible pour la numérisation Reticulum. Vérifiez le système Bluetooth et la construction du side-car (rns-ble).",
+      "restartStackFailed": "Échec du redémarrage de la pile : {{message}}",
+      "restartStackUnavailable": "Le redémarrage de la pile n'est pas disponible tant que le runtime Reticulum n'est pas prêt.",
+      "localOfflineRowBle": "Bluetooth RNode hors ligne : assurez-vous que l'appareil est allumé et à portée, puis redémarrez la pile."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Vérifiez le câble, libérez le port de Meshtastic/MeshCore, puis redémarrez la pile.",
       "openRadio": "Ouvrir la radio",
       "refreshPorts": "Ports d'actualisation",
-      "availablePorts": "Disponible : {{ports}}"
+      "availablePorts": "Disponible : {{ports}}",
+      "restartStack": "Redémarrer la pile",
+      "restartStackAria": "Redémarrez la pile Reticulum pour appliquer les modifications d'interface",
+      "connectingHeading": "Connexion des interfaces locales…",
+      "connectingRow": "{{name}} : connexion via Bluetooth",
+      "connectingHintBle": "Les liens BLE RNode peuvent prendre jusqu'à 30 secondes après le démarrage de la pile. Saisissez un code PIN de couplage si votre système d'exploitation vous y invite : c'est normal, ce n'est pas une erreur.",
+      "offlineHintBle": "Votre système d'exploitation peut vous demander un code PIN Bluetooth à 6 chiffres (macOS, Windows ou Linux). RNode génère un nouveau code à chaque appariement — il n'y a pas de code PIN par défaut. Radios sans tête : connectez USB → Reticulum Admin → Bluetooth → Démarrer l'appairage → entrez le code PIN affiché dans la boîte de dialogue du système d'exploitation. Radios avec écran : maintenez le bouton enfoncé pendant environ 7 s sur les appareils Heltec (le temps varie ; environ 10 s sur de nombreuses cartes activent le Wi-Fi AP à la place), lisez le code PIN à l'écran, puis saisissez-le dans la boîte de dialogue du système d'exploitation. Effacez les liaisons ayant échoué dans les paramètres Bluetooth de votre système d'exploitation avant de réessayer."
     },
     "autoConnectingTo": "Connexion automatique à {{deviceName}}…",
     "autoReconnectInProgress": "Reconnexion automatique en cours…",
@@ -971,7 +980,6 @@
     "readDisplay": "Lire l'affichage",
     "dumpEeprom": "Vider l'EEPROM pour se connecter",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Facultatif. Activez Bluetooth sur le matériel pris en charge, puis associez-le à partir des paramètres Bluetooth de votre système d'exploitation.",
     "enableBluetooth": "Activer Bluetooth",
     "disableBluetooth": "Désactiver Bluetooth",
     "startPairing": "Commencer l'appairage",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Provisionné",
     "firmwareHashRequiresProvision": "Provisionnez l'EEPROM avant de définir le hachage du micrologiciel.",
     "firmwareHashDone": "Ensemble de hachage du micrologiciel",
-    "flashDone": "Le micrologiciel a flashé"
+    "flashDone": "Le micrologiciel a flashé",
+    "bluetoothHint": "Activez Bluetooth sur l'appareil, puis utilisez Démarrer le couplage. Le code PIN à 6 chiffres apparaît ici via USB série : entrez ce même code PIN dans la boîte de dialogue Bluetooth de votre système d'exploitation (macOS, Windows ou Linux) lorsque Reticulum se connecte via BLE. Les appareils sans tête sans USB ne peuvent pas afficher de code PIN à l'écran."
   },
   "logAnalyzeModal": {
     "title": "Analyse des journaux",

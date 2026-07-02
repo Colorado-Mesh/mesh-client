@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   classifyReticulumLocalInterface,
   collectReticulumLocalInterfaceAlerts,
+  collectReticulumLocalInterfaceConnecting,
+  reticulumLocalOfflineDisplayKind,
 } from './reticulumLocalInterfaceHealth';
 
 const heltec: Parameters<typeof classifyReticulumLocalInterface>[0] = {
@@ -45,6 +47,28 @@ describe('reticulumLocalInterfaceHealth', () => {
     ).toBe('online');
   });
 
+  it('does not flag ble:// RNode URIs as stale USB serial ports', () => {
+    expect(
+      classifyReticulumLocalInterface(
+        { ...heltec, serial_port: 'ble://aa:bb:cc:dd:ee:ff', status: 'down' },
+        [],
+      ),
+    ).toBe('enabled_down');
+    expect(
+      classifyReticulumLocalInterface(
+        { ...heltec, serial_port: 'ble://RNode 0BB2', status: 'up' },
+        [],
+      ),
+    ).toBe('online');
+  });
+
+  it('classifies BLE vs serial offline display kind', () => {
+    expect(reticulumLocalOfflineDisplayKind({ serial_port: 'ble://aa:bb:cc:dd:ee:ff' })).toBe(
+      'ble',
+    );
+    expect(reticulumLocalOfflineDisplayKind({ serial_port: '/dev/cu.usbserial-1' })).toBe('serial');
+  });
+
   it('collectLocalInterfaceAlerts returns stale and offline entries', () => {
     const alerts = collectReticulumLocalInterfaceAlerts(
       [
@@ -72,5 +96,21 @@ describe('reticulumLocalInterfaceHealth', () => {
     expect(alerts[0]?.reason).toBe('stale_port');
     expect(alerts[0]?.iface.name).toBe('Heltec V3');
     expect(alerts[1]?.reason).toBe('enabled_down');
+  });
+
+  it('treats enabled BLE RNode as connecting during grace instead of an alert', () => {
+    const ble = {
+      ...heltec,
+      id: 'nv0n2',
+      name: 'NV0N2',
+      serial_port: 'ble://aa:bb:cc:dd:ee:ff',
+      status: 'down',
+    };
+    const grace = { bleConnectGraceExpiresAt: 10_000, now: 5_000 };
+    expect(collectReticulumLocalInterfaceConnecting([ble], [], grace)).toHaveLength(1);
+    expect(collectReticulumLocalInterfaceAlerts([ble], [], grace)).toHaveLength(0);
+    expect(collectReticulumLocalInterfaceAlerts([ble], [], { ...grace, now: 11_000 })).toHaveLength(
+      1,
+    );
   });
 });

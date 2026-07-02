@@ -107,7 +107,10 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[ReticulumSidecar]') ||
       entry.message.includes('[ReticulumRadioPanel]') ||
       entry.message.includes('[useReticulumRuntime]') ||
+      entry.message.includes('[useReticulumSidecarApi]') ||
       entry.message.includes('[ReticulumIPC]') ||
+      entry.message.includes('[Reticulum]') ||
+      entry.message.includes('[reticulumSidecarReads]') ||
       entry.message.includes('[IPC] reticulum')
     );
   }
@@ -126,6 +129,9 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[ReticulumSidecar]') ||
     entry.message.includes('[ReticulumRadioPanel]') ||
     entry.message.includes('[ReticulumIPC]') ||
+    entry.message.includes('[Reticulum]') ||
+    entry.message.includes('[reticulumSidecarReads]') ||
+    entry.message.includes('[useReticulumSidecarApi]') ||
     entry.message.includes('[IPC] reticulum') ||
     entry.message.includes('[NobleBleManager]') ||
     entry.message.includes('[BLE:') ||

@@ -108,6 +108,74 @@ describe('ReticulumRadioPanel', () => {
     });
   });
 
+  it('does not flag BLE RNode interface rows as stale USB serial ports', async () => {
+    mockReticulumProxyGet({
+      interfaces: [
+        {
+          id: 'rnode-ble',
+          name: 'RNode BLE',
+          type: 'rnode',
+          enabled: true,
+          status: 'down',
+          serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+        },
+      ],
+      serialPorts: [{ path: '/dev/cu.usbserial-1' }],
+    });
+
+    render(<ReticulumRadioPanel connecting={false} onStartStack={async () => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/RNode BLE \(rnode\)/)).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText('connectionPanel.reticulumInterfaces.localOfflineRowStale'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.localOfflineRowBle'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('connectionPanel.reticulumInterfaces.localOfflineRow'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('edit BLE RNode shows Bluetooth address instead of serial stale hint', async () => {
+    const user = userEvent.setup();
+    mockReticulumProxyGet({
+      interfaces: [
+        {
+          id: 'rnode-ble',
+          name: 'rnode-c74c3816',
+          type: 'rnode',
+          enabled: true,
+          status: 'down',
+          serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+        },
+      ],
+      serialPorts: [{ path: '/dev/cu.usbserial-1' }],
+      bleAvailable: true,
+    });
+
+    render(<ReticulumRadioPanel connecting={false} onStartStack={async () => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/rnode-c74c3816 \(rnode\)/)).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeTransportBle'),
+      ).toHaveValue('ble://AA:BB:CC:DD:EE:FF');
+    });
+    expect(
+      screen.queryByText('connectionPanel.reticulumLocalInterfaces.stalePortHint'),
+    ).not.toBeInTheDocument();
+  });
+
   it('opens serial device picker from add interface flow', async () => {
     const user = userEvent.setup();
     mockReticulumProxyGet({

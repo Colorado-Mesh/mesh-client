@@ -27,11 +27,20 @@ import {
   markStaleReticulumOutboundMessages,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
+import {
+  logReticulumInterfaceStateEvent,
+  logReticulumLocalInterfaceHealthChanges,
+} from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
+import {
+  pickReticulumLocalHealthPollMs,
+  scheduleReticulumLocalInterfaceBurst,
+} from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
   fetchReticulumSerialPorts,
+  invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -100,9 +109,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
     MAX_RAW_PACKET_LOG_ENTRIES,
   );
   const unsubEventRef = useRef<(() => void) | null>(null);
+  const connectRef = useRef<(() => Promise<void>) | null>(null);
+  const restartStackRef = useRef<(() => Promise<void>) | null>(null);
   const connectInFlightRef = useRef(false);
   const suppressReconnectRef = useRef(false);
   const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
+  const localInterfacePollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
@@ -203,19 +216,25 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [identityId, selfLxmfHash, syncSelfNodeFromIdentityStatus]);
 
   const refreshLocalInterfacesFromSidecar = useCallback(async () => {
-    localInterfacesRef.current = await fetchReticulumInterfaces();
+    invalidateReticulumInterfacesCache();
+    const [interfaces, osSerialPorts] = await Promise.all([
+      fetchReticulumInterfaces(),
+      fetchReticulumSerialPorts(),
+    ]);
+    localInterfacesRef.current = interfaces;
+    logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+    return { interfaces, osSerialPorts };
   }, []);
 
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
-      const [snapshot, interfaces, osSerialPorts] = await Promise.all([
+      const [snapshot, health] = await Promise.all([
         window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
           Parameters<typeof buildReticulumDiagnosticRows>[0]
         >,
-        fetchReticulumInterfaces(),
-        fetchReticulumSerialPorts(),
+        refreshLocalInterfacesFromSidecar(),
       ]);
-      localInterfacesRef.current = interfaces;
+      const { interfaces, osSerialPorts } = health;
       const rows = buildReticulumDiagnosticRows(snapshot, { interfaces, osSerialPorts });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
@@ -223,7 +242,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     } catch (e) {
       console.debug('[useReticulumRuntime] diagnostics ' + errLikeToLogString(e));
     }
-  }, []);
+  }, [refreshLocalInterfacesFromSidecar]);
+
+  const scheduleLocalInterfaceStatusBurst = useCallback(() => {
+    localInterfaceBurstCancelRef.current?.();
+    localInterfaceBurstCancelRef.current = scheduleReticulumLocalInterfaceBurst(() => {
+      void refreshLocalInterfacesFromSidecar();
+    });
+  }, [refreshLocalInterfacesFromSidecar]);
 
   const scheduleDebouncedSidecarRefresh = useCallback(() => {
     if (peerRefreshDebounceRef.current) {
@@ -232,10 +258,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     peerRefreshDebounceRef.current = setTimeout(() => {
       peerRefreshDebounceRef.current = null;
       void refreshContactsFromSidecar();
-      void refreshLocalInterfacesFromSidecar();
       void syncDiagnosticsFromSidecar();
     }, 2_000);
-  }, [refreshContactsFromSidecar, refreshLocalInterfacesFromSidecar, syncDiagnosticsFromSidecar]);
+  }, [refreshContactsFromSidecar, syncDiagnosticsFromSidecar]);
 
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
     rawPacketAppenderRef.current?.append(entry);
@@ -359,8 +384,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
         evt.type === 'announce.received' ||
         evt.type === 'peers_updated' ||
         evt.type === 'interface.state' ||
-        evt.type === 'stats_update'
+        evt.type === 'stats_update' ||
+        evt.type === 'stack_restart_requested'
       ) {
+        if (evt.type === 'interface.state') {
+          logReticulumInterfaceStateEvent(evt.payload);
+          invalidateReticulumInterfacesCache();
+          void refreshLocalInterfacesFromSidecar();
+        }
+        if (evt.type === 'stack_restart_requested') {
+          void restartStackRef.current?.().catch((e: unknown) => {
+            console.error(
+              '[useReticulumRuntime] stack_restart_requested failed ' + errLikeToLogString(e),
+            );
+          });
+        }
         scheduleDebouncedSidecarRefresh();
         if (evt.type === 'announce.received') {
           recordAnnounceActivity(evt.payload);
@@ -373,6 +411,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       identityId,
       ingestLxmfPayload,
       recordAnnounceActivity,
+      refreshLocalInterfacesFromSidecar,
       scheduleDebouncedSidecarRefresh,
     ],
   );
@@ -387,8 +426,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
-
-  const connectRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
@@ -452,6 +489,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         connectionType: null,
         myNodeNum: connectedNodeId,
       });
+      scheduleLocalInterfaceStatusBurst();
     } catch (e) {
       console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
       setState(INITIAL_STATE);
@@ -470,6 +508,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     hydrateRawPackets,
     identityId,
     syncConnectionStore,
+    scheduleLocalInterfaceStatusBurst,
   ]);
 
   const disconnect = useCallback(async () => {
@@ -485,9 +524,57 @@ export function useReticulumRuntime(): ProtocolRuntime {
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
 
+  const restartStack = useCallback(async () => {
+    if (connectInFlightRef.current) {
+      return;
+    }
+    connectInFlightRef.current = true;
+    console.warn('[useReticulumRuntime] restarting stack to reload interface config');
+    const priorSuppress = suppressReconnectRef.current;
+    suppressReconnectRef.current = true;
+    setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
+    syncConnectionStore({ status: 'connecting', connectionType: null });
+    try {
+      unsubEventRef.current?.();
+      unsubEventRef.current = null;
+      await window.electronAPI.reticulum.stop();
+      await window.electronAPI.reticulum.start({ reuseIfRunning: false });
+      unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
+      const lxmfHash = await refreshIdentityFromSidecar();
+      const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
+      await refreshContactsFromSidecar();
+      await refreshLocalInterfacesFromSidecar();
+      await syncDiagnosticsFromSidecar();
+      setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
+      syncConnectionStore({
+        status: 'configured',
+        connectionType: null,
+        myNodeNum: connectedNodeId,
+      });
+      scheduleLocalInterfaceStatusBurst();
+    } catch (e) {
+      console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
+      tearDownFromSidecarStop();
+      throw e instanceof Error ? e : new Error(String(e));
+    } finally {
+      suppressReconnectRef.current = priorSuppress;
+      connectInFlightRef.current = false;
+    }
+  }, [
+    handleSidecarEvent,
+    refreshContactsFromSidecar,
+    refreshIdentityFromSidecar,
+    refreshLocalInterfacesFromSidecar,
+    syncConnectionStore,
+    syncDiagnosticsFromSidecar,
+    tearDownFromSidecarStop,
+    scheduleLocalInterfaceStatusBurst,
+  ]);
+
   useEffect(() => {
     connectRef.current = connect;
-  }, [connect]);
+    restartStackRef.current = restartStack;
+  }, [connect, restartStack]);
 
   useEffect(() => {
     if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
@@ -503,6 +590,45 @@ export function useReticulumRuntime(): ProtocolRuntime {
       window.clearInterval(intervalId);
     };
   }, [state.status, refreshContactsFromSidecar, refreshSelfNodeDisplayNameFromSidecar]);
+
+  useEffect(() => {
+    if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
+      if (localInterfacePollTimeoutRef.current !== null) {
+        clearTimeout(localInterfacePollTimeoutRef.current);
+      }
+      localInterfacePollTimeoutRef.current = null;
+      localInterfaceBurstCancelRef.current?.();
+      localInterfaceBurstCancelRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+
+    const scheduleNextPoll = (delayMs: number) => {
+      if (cancelled) return;
+      localInterfacePollTimeoutRef.current = setTimeout(() => {
+        void tick();
+      }, delayMs);
+    };
+
+    const tick = async () => {
+      const health = await refreshLocalInterfacesFromSidecar();
+      if (cancelled) return;
+      scheduleNextPoll(pickReticulumLocalHealthPollMs(health.interfaces, health.osSerialPorts));
+    };
+
+    void tick();
+
+    return () => {
+      cancelled = true;
+      if (localInterfacePollTimeoutRef.current) {
+        clearTimeout(localInterfacePollTimeoutRef.current);
+        localInterfacePollTimeoutRef.current = null;
+      }
+      localInterfaceBurstCancelRef.current?.();
+      localInterfaceBurstCancelRef.current = null;
+    };
+  }, [state.status, refreshLocalInterfacesFromSidecar]);
 
   const connectAutomatic = useCallback(async () => {
     await connect();
@@ -687,6 +813,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connect,
       connectAutomatic,
       disconnect,
+      restartStack,
       onPowerSuspend: () => {},
       onPowerResume: () => {
         void connect();
@@ -718,6 +845,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connect,
       connectAutomatic,
       disconnect,
+      restartStack,
       clearRawPackets,
       rawPackets,
       sendMessage,
@@ -745,6 +873,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connect,
       connectAutomatic,
       disconnect,
+      restartStack,
       finalizeDriverDisconnect: disconnect,
       selfNodeId,
       getFullNodeLabel,
@@ -761,6 +890,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     connect,
     connectAutomatic,
     disconnect,
+    restartStack,
     selfNodeId,
     getFullNodeLabel,
     sendMessage,

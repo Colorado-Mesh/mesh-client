@@ -65,6 +65,9 @@ pub fn merge_live_interfaces_with_config(
             live_row.callsign = cfg.callsign.clone();
             live_row.id_interval = cfg.id_interval;
             live_row.mode = cfg.mode.clone();
+            // Config INI is the source of truth for user enable/disable; live stats only
+            // report carrier status (online), which must not flip `enabled` in the UI.
+            live_row.enabled = cfg.enabled;
             merged.push(live_row);
         } else {
             let mut row = cfg.clone();
@@ -267,5 +270,34 @@ mod tests {
         let heltec = merged.iter().find(|r| r.name == "Heltec V3").unwrap();
         assert_eq!(heltec.status, "down");
         assert_eq!(heltec.iface_type, "rnode");
+    }
+
+    #[test]
+    fn merge_live_interfaces_preserves_config_enabled_when_live_offline() {
+        let config = vec![sample_iface("nv0n2", "NV0N2", "rnode", true, "down")];
+        let live = vec![InterfaceRow {
+            id: "rns-0".into(),
+            name: "NV0N2".into(),
+            iface_type: "Full".into(),
+            enabled: false,
+            status: "down".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: Vec::new(),
+        }];
+        let merged = merge_live_interfaces_with_config(&config, live);
+        assert_eq!(merged.len(), 1);
+        assert!(merged[0].enabled);
+        assert_eq!(merged[0].status, "down");
     }
 }

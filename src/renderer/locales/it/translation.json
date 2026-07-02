@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Rimuovi i contatti che non hanno mai fatto pubblicità all'avvio",
     "meshcoreRemoveNeverAdvertisedHint": "Rimuove i contatti segnaposto obsoleti senza cronologia annunci; i contatti preferiti vengono mantenuti.",
     "messagesLoadLimitIntro": "Limita il numero di messaggi caricati in memoria per l'interfaccia utente e limita il numero di righe che rimangono in SQLite. Il caricamento di meno mantiene la RAM giù sulle reti occupate; il tappo del database elimina i messaggi più vecchi all'avvio dell'app (memorizzati per protocollo).",
-    "logPanelHelp": "Se abilitato, sulla destra viene visualizzato un flusso di registro in tempo reale. Le righe di debug richiedono la casella di controllo all'interno del pannello di registro.",
     "compactMessages": "Visualizzazione compatta dei messaggi",
     "notificationsSection": "Notifiche",
     "soundNotifications": "Notifiche sonore",
@@ -196,9 +195,10 @@
     "clearReticulumMessagesTitle": "Cancella messaggi diretti",
     "clearReticulumMessagesConfirm": "In questo modo verranno eliminati definitivamente tutti i messaggi diretti {{count}} memorizzati localmente su Reticulum. Questa operazione non può essere annullata.",
     "clearReticulumMessagesConfirmButton": "Cancella messaggi {{count}}",
-    "reticulumSection": "Reticulum — Stack reticolo",
+    "reticulumSection": "Reticulum — Stack Reticulum",
     "reticulumAnnounceHelp": "Con quale frequenza la tua identità viene annunciata sulla rete e gli strumenti per cancellare gli annunci memorizzati.",
-    "reticulumPropagationHelp": "Scegli come sincronizzare i nodi di propagazione e tira i dati di propagazione più recenti quando necessario."
+    "reticulumPropagationHelp": "Scegli come sincronizzare i nodi di propagazione e tira i dati di propagazione più recenti quando necessario.",
+    "logPanelHelp": "Se abilitato, sulla destra viene visualizzato un flusso di registro in tempo reale. Nella scheda Reticulum, le righe del dispositivo includono l'output collaterale e l'integrità dell'interfaccia locale. Le righe di debug richiedono la casella di controllo all'interno del pannello di registro."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -660,7 +660,10 @@
       "seedAddresses": "Coetanei seed (facoltativo)",
       "pickerBlePeerEmpty": "Nessun peer BLE Reticulum trovato nelle vicinanze. I peer devono fare pubblicità; prova a eseguire nuovamente la scansione o inserisci manualmente un indirizzo seed.",
       "pickerBleRnodeEmpty": "Nessun nodo BLE trovato nelle vicinanze. Assicurati che l'RNode sia acceso e nel raggio d'azione, quindi prova a ripetere la scansione.",
-      "bleUnavailable": "Il Bluetooth non è disponibile per la scansione Reticulum. Controlla il sistema Bluetooth e la build sidecar (rns-ble)."
+      "bleUnavailable": "Il Bluetooth non è disponibile per la scansione Reticulum. Controlla il sistema Bluetooth e la build sidecar (rns-ble).",
+      "restartStackFailed": "Riavvio dello stack non riuscito: {{message}}",
+      "restartStackUnavailable": "Il riavvio dello stack non è disponibile finché il runtime Reticulum non è pronto.",
+      "localOfflineRowBle": "Bluetooth RNode offline: assicurati che il dispositivo sia acceso e nel raggio di portata, quindi riavvia lo stack."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Controllare il cavo, rilasciare la porta da Meshtastic/MeshCore, quindi riavviare lo stack.",
       "openRadio": "Open Radio",
       "refreshPorts": "Aggiorna porte",
-      "availablePorts": "Disponibile: {{ports}}"
+      "availablePorts": "Disponibile: {{ports}}",
+      "restartStack": "Riavvia lo stack",
+      "restartStackAria": "Riavvia lo stack Reticulum per applicare le modifiche all'interfaccia",
+      "connectingHeading": "Collegamento delle interfacce locali…",
+      "connectingRow": "{{name}}: connessione tramite Bluetooth",
+      "connectingHintBle": "I collegamenti BLE RNode possono richiedere fino a 30 secondi dall'avvio dello stack. Inserisci un PIN di accoppiamento se richiesto dal sistema operativo: è normale, non si tratta di un errore.",
+      "offlineHintBle": "Il tuo sistema operativo potrebbe richiedere un PIN Bluetooth a 6 cifre (macOS, Windows o Linux). RNode genera un nuovo codice a ogni accoppiamento: non esiste un PIN predefinito. Radio headless: collega USB → Reticulum Admin → Bluetooth → Avvia accoppiamento → inserisci il PIN mostrato nella finestra di dialogo del sistema operativo. Radio con display: tieni premuto il pulsante per ~7 s sui dispositivi Heltec (la tempistica varia; ~10 s su molte schede abilita invece l'AP Wi-Fi), leggi il PIN sullo schermo, quindi inseriscilo nella finestra di dialogo del sistema operativo. Cancella i collegamenti non riusciti nelle impostazioni Bluetooth del tuo sistema operativo prima di riprovare."
     },
     "autoConnectingTo": "Connessione automatica a {{deviceName}}…",
     "autoReconnectInProgress": "Riconnessione automatica in corso…",
@@ -971,7 +980,6 @@
     "readDisplay": "Leggi il display",
     "dumpEeprom": "Scarica la EEPROM per accedere",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Opzionale. Abilita il Bluetooth sull'hardware supportato, quindi associalo dalle impostazioni Bluetooth del tuo sistema operativo.",
     "enableBluetooth": "Abilita Bluetooth",
     "disableBluetooth": "Disabilita Bluetooth",
     "startPairing": "Inizia l'accoppiamento",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Accantonato",
     "firmwareHashRequiresProvision": "Eseguire il provisioning della EEPROM prima di impostare l'hash del firmware.",
     "firmwareHashDone": "Set di hash del firmware",
-    "flashDone": "Il firmware è lampeggiato"
+    "flashDone": "Il firmware è lampeggiato",
+    "bluetoothHint": "Abilita il Bluetooth sul dispositivo, quindi utilizza Avvia accoppiamento. Il PIN di 6 cifre viene visualizzato qui sulla seriale USB: inserisci lo stesso PIN nella finestra di dialogo Bluetooth del tuo sistema operativo (macOS, Windows o Linux) quando Reticulum si connette tramite BLE. I dispositivi headless senza USB non possono mostrare un PIN sullo schermo."
   },
   "logAnalyzeModal": {
     "title": "Analisi del registro",

@@ -14,6 +14,7 @@ export interface ReticulumSessionApi {
   sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
   handleSidecarEvent?: (event: ReticulumSidecarEvent) => void;
   resolveOutboundVia?: (destinationHash: string) => MessageTransport;
+  restartStack?: () => Promise<void>;
 }
 
 let activeSession: ReticulumSessionApi | null = null;

@@ -1,12 +1,23 @@
 import { useTranslation } from 'react-i18next';
 
 import type { ReticulumLocalInterfaceAlert } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import { reticulumLocalOfflineDisplayKind } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+
+function alertNeedsSerialPortContext(alert: ReticulumLocalInterfaceAlert): boolean {
+  if (alert.reason === 'stale_port') {
+    return true;
+  }
+  return (
+    alert.reason === 'enabled_down' && reticulumLocalOfflineDisplayKind(alert.iface) === 'serial'
+  );
+}
 
 export interface ReticulumLocalInterfaceAlertsBlockProps {
   alerts: ReticulumLocalInterfaceAlert[];
   availablePorts: string[];
   onOpenRadio?: () => void;
   onRefreshPorts?: () => void;
+  onRestartStack?: () => void;
   compact?: boolean;
 }
 
@@ -16,6 +27,7 @@ export function ReticulumLocalInterfaceAlertsBlock({
   availablePorts,
   onOpenRadio,
   onRefreshPorts,
+  onRestartStack,
   compact = false,
 }: ReticulumLocalInterfaceAlertsBlockProps) {
   const { t } = useTranslation();
@@ -23,6 +35,8 @@ export function ReticulumLocalInterfaceAlertsBlock({
   if (alerts.length === 0) {
     return null;
   }
+
+  const showSerialPortContext = alerts.some(alertNeedsSerialPortContext);
 
   return (
     <div
@@ -49,13 +63,15 @@ export function ReticulumLocalInterfaceAlertsBlock({
               <p className="text-muted mt-0.5 text-[11px]">
                 {alert.reason === 'stale_port'
                   ? t('connectionPanel.reticulumLocalInterfaces.stalePortHint')
-                  : t('connectionPanel.reticulumLocalInterfaces.offlineHint')}
+                  : reticulumLocalOfflineDisplayKind(alert.iface) === 'ble'
+                    ? t('connectionPanel.reticulumLocalInterfaces.offlineHintBle')
+                    : t('connectionPanel.reticulumLocalInterfaces.offlineHint')}
               </p>
             ) : null}
           </li>
         ))}
       </ul>
-      {availablePorts.length > 0 ? (
+      {showSerialPortContext && availablePorts.length > 0 ? (
         <p className="text-muted mt-2 text-[11px]">
           {t('connectionPanel.reticulumLocalInterfaces.availablePorts', {
             ports: availablePorts.join(', '),
@@ -63,6 +79,16 @@ export function ReticulumLocalInterfaceAlertsBlock({
         </p>
       ) : null}
       <div className="mt-2 flex flex-wrap gap-2">
+        {onRestartStack ? (
+          <button
+            type="button"
+            onClick={onRestartStack}
+            className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600"
+            aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
+          >
+            {t('connectionPanel.reticulumLocalInterfaces.restartStack')}
+          </button>
+        ) : null}
         {onOpenRadio ? (
           <button
             type="button"
@@ -73,7 +99,7 @@ export function ReticulumLocalInterfaceAlertsBlock({
             {t('connectionPanel.reticulumLocalInterfaces.openRadio')}
           </button>
         ) : null}
-        {onRefreshPorts ? (
+        {onRefreshPorts && showSerialPortContext ? (
           <button
             type="button"
             onClick={onRefreshPorts}

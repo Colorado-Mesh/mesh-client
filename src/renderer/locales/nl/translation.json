@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Verwijder contacten die nog nooit hebben geadverteerd bij het opstarten",
     "meshcoreRemoveNeverAdvertisedHint": "Verwijdert verouderde tijdelijke contacten zonder advert-geschiedenis; favoriete contacten blijven behouden.",
     "messagesLoadLimitIntro": "Beperk het aantal berichten dat in het geheugen van de gebruikersinterface wordt geladen en beperk het aantal rijen dat in SQLite blijft. Door minder te laden, blijft het RAM-geheugen laag op drukke netwerken; de database cap verwijdert oudere berichten bij het opstarten van de app (opgeslagen per protocol).",
-    "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "compactMessages": "Compacte berichtweergave",
     "notificationsSection": "Meldingen",
     "soundNotifications": "Geluidsmeldingen",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen",
     "reticulumSection": "Reticulum stack",
     "reticulumAnnounceHelp": "Hoe vaak uw identiteit wordt aangekondigd op het netwerk en tools om opgeslagen aankondigingen te wissen.",
-    "reticulumPropagationHelp": "Kies hoe propagatieknooppunten worden gesynchroniseerd en haal de nieuwste propagatiegegevens op wanneer dat nodig is."
+    "reticulumPropagationHelp": "Kies hoe propagatieknooppunten worden gesynchroniseerd en haal de nieuwste propagatiegegevens op wanneer dat nodig is.",
+    "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Op het tabblad Reticulum omvatten apparaatregels zijspanuitvoer en lokale interfacestatus. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -660,7 +660,10 @@
       "pickerSerialTitle": "Selecteer seriële poort",
       "pickerBlePeerEmpty": "Geen Reticulum BLE-peers gevonden in de buurt. Peers moeten adverteren; probeer Opnieuw scannen of voer handmatig een zaadadres in.",
       "pickerBleRnodeEmpty": "Geen BLE RNodes gevonden in de buurt. Zorg ervoor dat de RNode is ingeschakeld en binnen bereik is, en probeer vervolgens Opnieuw scannen.",
-      "bleUnavailable": "Bluetooth is niet beschikbaar voor Reticulum-scannen. Controleer systeem Bluetooth en zijspanopbouw (rns-ble)."
+      "bleUnavailable": "Bluetooth is niet beschikbaar voor Reticulum-scannen. Controleer systeem Bluetooth en zijspanopbouw (rns-ble).",
+      "restartStackFailed": "Opnieuw opstarten van stapel mislukt: {{message}}",
+      "restartStackUnavailable": "Het opnieuw opstarten van de stapel is pas beschikbaar als de Reticulum-runtime gereed is.",
+      "localOfflineRowBle": "Bluetooth RNode offline: zorg ervoor dat het apparaat is ingeschakeld en binnen bereik is en start vervolgens de stapel opnieuw op."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Controleer de kabel, ontgrendel de poort van Meshtastic/MeshCore en start de stapel opnieuw.",
       "openRadio": "Open radio",
       "refreshPorts": "Poorten vernieuwen",
-      "availablePorts": "Beschikbaar: {{ports}}"
+      "availablePorts": "Beschikbaar: {{ports}}",
+      "restartStack": "Start de stapel opnieuw",
+      "restartStackAria": "Start de Reticulum-stapel opnieuw om interfacewijzigingen toe te passen",
+      "connectingHeading": "Lokale interface(s) aansluiten…",
+      "connectingRow": "{{name}}: verbinden via Bluetooth",
+      "connectingHintBle": "BLE RNode-koppelingen kunnen tot 30 seconden duren nadat de stapel is gestart. Voer een koppelingspincode in als uw besturingssysteem daarom vraagt. Dit is normaal en geen fout.",
+      "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert."
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
@@ -971,7 +980,6 @@
     "readDisplay": "Weergave lezen",
     "dumpEeprom": "Dump EEPROM om te loggen",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Optioneel. Schakel Bluetooth in op ondersteunde hardware en koppel vervolgens via de Bluetooth-instellingen van uw besturingssysteem.",
     "enableBluetooth": "Schakel Bluetooth in",
     "disableBluetooth": "Schakel Bluetooth uit",
     "startPairing": "Begin met koppelen",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Voorzien",
     "firmwareHashRequiresProvision": "Bepaal de EEPROM voordat u de firmware-hash instelt.",
     "firmwareHashDone": "Firmware-hashset",
-    "flashDone": "Firmware geflasht"
+    "flashDone": "Firmware geflasht",
+    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppelen starten. De zescijferige pincode verschijnt hier via USB-serieel. Voer dezelfde pincode in in het Bluetooth-dialoogvenster van uw besturingssysteem (macOS, Windows of Linux) wanneer Reticulum verbinding maakt via BLE. Headless-apparaten zonder USB kunnen geen pincode op het scherm weergeven."
   },
   "logAnalyzeModal": {
     "title": "Loganalyse",

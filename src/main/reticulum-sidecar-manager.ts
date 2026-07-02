@@ -150,7 +150,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       console.debug('[ReticulumSidecar]', sanitizeLogMessage(chunk.toString('utf8').trim()));
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
-      console.warn('[ReticulumSidecar]', sanitizeLogMessage(chunk.toString('utf8').trim()));
+      const text = sanitizeLogMessage(chunk.toString('utf8').trim());
+      console.warn('[ReticulumSidecar]', text);
     });
     proc.on('exit', (code, signal) => {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);

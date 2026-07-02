@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Kontakte entfernen, die beim Start noch nie beworben wurden",
     "meshcoreRemoveNeverAdvertisedHint": "Entfernt veraltete Platzhalterkontakte ohne Anzeigenverlauf; bevorzugte Kontakte werden beibehalten.",
     "messagesLoadLimitIntro": "Begrenzen Sie, wie viele Nachrichten in den Speicher für die Benutzeroberfläche geladen werden, und begrenzen Sie, wie viele Zeilen in SQLite verbleiben. Weniger Laden hält den Arbeitsspeicher in ausgelasteten Netzwerken niedrig; die Datenbankobergrenze beschneidet ältere Nachrichten beim App-Start (per Protokoll gespeichert).",
-    "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich.",
     "compactMessages": "Kompakte Nachrichtenansicht",
     "notificationsSection": "Benachrichtigungen",
     "soundNotifications": "Sound-Benachrichtigungen",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "{{count}} Nachrichten löschen",
     "reticulumSection": "Reticulum-Stack",
     "reticulumAnnounceHelp": "Wie oft Ihre Identität im Netzwerk bekannt gegeben wird, und Tools zum Löschen gespeicherter Ankündigungen.",
-    "reticulumPropagationHelp": "Wählen Sie aus, wie Ausbreitungsknoten synchronisiert werden, und ziehen Sie bei Bedarf die neuesten Ausbreitungsdaten ab."
+    "reticulumPropagationHelp": "Wählen Sie aus, wie Ausbreitungsknoten synchronisiert werden, und ziehen Sie bei Bedarf die neuesten Ausbreitungsdaten ab.",
+    "logPanelHelp": "Wenn diese Option aktiviert ist, wird rechts ein Live-Protokollstream angezeigt. Auf der Registerkarte „Reticulum“ umfassen die Gerätezeilen die Sidecar-Ausgabe und den Zustand der lokalen Schnittstelle. Für Debugzeilen ist das Kontrollkästchen im Protokollbereich erforderlich."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -660,7 +660,10 @@
       "seedAddresses": "Seed-Peers (optional)",
       "pickerBlePeerEmpty": "Keine Reticulum BLE-Peers in der Nähe gefunden. Gleichaltrige müssen Werbung machen; Versuchen Sie es mit einem erneuten Scan oder geben Sie manuell eine Seed-Adresse ein.",
       "pickerBleRnodeEmpty": "Keine BLE-RNodes in der Nähe gefunden. Stellen Sie sicher, dass der RNode eingeschaltet ist und sich in Reichweite befindet, und versuchen Sie dann einen erneuten Scan.",
-      "bleUnavailable": "Bluetooth ist für Reticulum-Scannen nicht verfügbar. Überprüfen Sie das System-Bluetooth und den Sidecar-Build (rns-ble)."
+      "bleUnavailable": "Bluetooth ist für Reticulum-Scannen nicht verfügbar. Überprüfen Sie das System-Bluetooth und den Sidecar-Build (rns-ble).",
+      "restartStackFailed": "Stack-Neustart fehlgeschlagen: {{message}}",
+      "restartStackUnavailable": "Der Stack-Neustart ist erst verfügbar, wenn die Reticulum-Laufzeitumgebung bereit ist.",
+      "localOfflineRowBle": "Bluetooth RNode offline – stellen Sie sicher, dass das Gerät eingeschaltet und in Reichweite ist, und starten Sie dann den Stack neu."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Überprüfen Sie das Kabel, lassen Sie den Anschluss von Meshtastic/MeshCore los und starten Sie den Stack neu.",
       "openRadio": "Öffne Radio",
       "refreshPorts": "Ports aktualisieren",
-      "availablePorts": "Verfügbar: {{ports}}"
+      "availablePorts": "Verfügbar: {{ports}}",
+      "restartStack": "Stapel neu starten",
+      "restartStackAria": "Starten Sie den Reticulum-Stack neu, um die Schnittstellenänderungen zu übernehmen",
+      "connectingHeading": "Lokale Schnittstelle(n) verbinden…",
+      "connectingRow": "{{name}}: Verbindung über Bluetooth",
+      "connectingHintBle": "BLE-RNode-Links können bis zu 30 Sekunden nach dem Start des Stapels dauern. Geben Sie eine Kopplungs-PIN ein, wenn Ihr Betriebssystem Sie dazu auffordert – das ist normal und kein Fehler.",
+      "offlineHintBle": "Ihr Betriebssystem fordert möglicherweise zur Eingabe einer 6-stelligen Bluetooth-PIN auf (macOS, Windows oder Linux). RNode generiert bei jedem Pairing einen neuen Code – es gibt keine Standard-PIN. Headless-Radios: USB anschließen → Reticulum Admin → Bluetooth → Kopplung starten → die angezeigte PIN in den OS-Dialog eingeben. Funkgeräte mit Display: Halten Sie die Taste bei Heltec-Geräten etwa 7 Sekunden lang gedrückt (die Zeitspanne variiert; bei vielen Karten wird stattdessen etwa 10 Sekunden lang Wi-Fi AP aktiviert), lesen Sie die PIN auf dem Bildschirm ab und geben Sie sie dann in das Betriebssystemdialogfeld ein. Löschen Sie fehlgeschlagene Verbindungen in den Bluetooth-Einstellungen Ihres Betriebssystems, bevor Sie es erneut versuchen."
     },
     "autoConnectingTo": "Automatische Verbindung mit {{deviceName}}…",
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
@@ -971,7 +980,6 @@
     "readDisplay": "Anzeige lesen",
     "dumpEeprom": "EEPROM zum Protokollieren sichern",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Optional. Aktivieren Sie Bluetooth auf unterstützter Hardware und koppeln Sie dann über die Bluetooth-Einstellungen Ihres Betriebssystems.",
     "enableBluetooth": "Aktivieren Sie Bluetooth",
     "disableBluetooth": "Deaktivieren Sie Bluetooth",
     "startPairing": "Beginnen Sie mit dem Pairing",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Bereitgestellt",
     "firmwareHashRequiresProvision": "Stellen Sie den EEPROM bereit, bevor Sie den Firmware-Hash setzen.",
     "firmwareHashDone": "Firmware-Hash-Set",
-    "flashDone": "Firmware geflasht"
+    "flashDone": "Firmware geflasht",
+    "bluetoothHint": "Aktivieren Sie Bluetooth auf dem Gerät und verwenden Sie dann „Kopplung starten“. Die 6-stellige PIN erscheint hier über USB seriell – geben Sie dieselbe PIN in den Bluetooth-Dialog Ihres Betriebssystems (macOS, Windows oder Linux) ein, wenn Reticulum über BLE eine Verbindung herstellt. Headless-Geräte ohne USB können keine PIN auf dem Bildschirm anzeigen."
   },
   "logAnalyzeModal": {
     "title": "Protokollanalyse",

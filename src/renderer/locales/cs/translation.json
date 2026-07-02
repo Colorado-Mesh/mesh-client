@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Při spuštění odstraňte kontakty, které nikdy neinzerovaly",
     "meshcoreRemoveNeverAdvertisedHint": "Odstraní zastaralé zástupné kontakty bez historie reklam; oblíbené kontakty jsou zachovány.",
     "messagesLoadLimitIntro": "Omezte počet zpráv, které se načítají do paměti pro uživatelské rozhraní, a omezte počet řádků, které zůstanou v SQLite. Menší zatížení udržuje RAM v rušných sítích; omezení databáze ořezává starší zprávy při spuštění aplikace (uložené podle protokolu).",
-    "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "compactMessages": "Kompaktní zobrazení zpráv",
     "notificationsSection": "Oznámení",
     "soundNotifications": "Zvuková upozornění",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
     "reticulumSection": "Reticulum — Zásobník retikula",
     "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
-    "reticulumPropagationHelp": "Zvolte způsob synchronizace propagačních uzlů a v případě potřeby vytáhněte nejnovější propagační data."
+    "reticulumPropagationHelp": "Zvolte způsob synchronizace propagačních uzlů a v případě potřeby vytáhněte nejnovější propagační data.",
+    "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Na kartě Reticulum řádky zařízení zahrnují výstup postranního vozíku a stav místního rozhraní. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -660,7 +660,10 @@
       "seedAddresses": "Seed peers (volitelné)",
       "pickerBlePeerEmpty": "V okolí nebyli nalezeni žádní kolegové Reticulum BLE. Peers musí inzerovat; zkuste znovu naskenovat nebo ručně zadejte adresu zdroje.",
       "pickerBleRnodeEmpty": "V okolí nebyly nalezeny žádné BLE RNody. Ujistěte se, že je RNode zapnutý a v dosahu, pak zkuste znovu prohledat.",
-      "bleUnavailable": "Bluetooth není k dispozici pro skenování Reticulum. Zkontrolujte systém Bluetooth a sestavení sidecar (rns-ble)."
+      "bleUnavailable": "Bluetooth není k dispozici pro skenování Reticulum. Zkontrolujte systém Bluetooth a sestavení sidecar (rns-ble).",
+      "restartStackFailed": "Restartování zásobníku se nezdařilo: {{message}}",
+      "restartStackUnavailable": "Restart zásobníku není dostupný, dokud nebude připraveno běhové prostředí Reticulum.",
+      "localOfflineRowBle": "Bluetooth RNode offline – ujistěte se, že je zařízení zapnuté a v dosahu, poté restartujte zásobník."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Zkontrolujte kabel, uvolněte port z Meshtastic/MeshCore a restartujte zásobník.",
       "openRadio": "Otevřít rádio",
       "refreshPorts": "Obnovit porty",
-      "availablePorts": "Dostupné: {{ports}}"
+      "availablePorts": "Dostupné: {{ports}}",
+      "restartStack": "Restartujte zásobník",
+      "restartStackAria": "Chcete-li použít změny rozhraní, restartujte zásobník Reticulum",
+      "connectingHeading": "Připojování místního rozhraní…",
+      "connectingRow": "{{name}}: připojení přes Bluetooth",
+      "connectingHintBle": "Odkazy BLE RNode mohou po spuštění zásobníku trvat až 30 sekund. Pokud vás váš operační systém vyzve, zadejte kód PIN pro párování – je to normální, nejedná se o chybu.",
+      "offlineHintBle": "Váš operační systém může vyžadovat zadání 6místného kódu PIN Bluetooth (macOS, Windows nebo Linux). RNode generuje nový kód při každém párování – neexistuje žádný výchozí PIN. Bezhlavá rádia: připojte USB → Reticulum Admin → Bluetooth → Zahájit párování → zadejte PIN zobrazený v dialogovém okně OS. Rádia s displejem: na zařízeních Heltec podržte tlačítko ~7 s (časování se liší; ~10 s na mnoha deskách místo toho umožňuje Wi-Fi AP), přečtěte si PIN na obrazovce a poté jej zadejte do dialogového okna OS. Než to zkusíte znovu, vymažte neúspěšná spojení v nastavení Bluetooth operačního systému."
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
@@ -971,7 +980,6 @@
     "readDisplay": "Číst displej",
     "dumpEeprom": "Vypište EEPROM do protokolu",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Volitelný. Povolte Bluetooth na podporovaném hardwaru a poté spárujte z nastavení Bluetooth operačního systému.",
     "enableBluetooth": "Povolit Bluetooth",
     "disableBluetooth": "Zakázat Bluetooth",
     "startPairing": "Spusťte párování",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Poskytnuté",
     "firmwareHashRequiresProvision": "Před nastavením hash firmwaru zajistěte EEPROM.",
     "firmwareHashDone": "Sada hash firmwaru",
-    "flashDone": "Firmware blikal"
+    "flashDone": "Firmware blikal",
+    "bluetoothHint": "Povolte na zařízení Bluetooth a poté použijte Spustit párování. Šestimístný kód PIN se zde zobrazuje přes sériové rozhraní USB – zadejte stejný kód PIN v dialogovém okně OS Bluetooth (macOS, Windows nebo Linux), když se Reticulum připojí přes BLE. Bezhlavá zařízení bez USB nemohou zobrazit PIN na obrazovce."
   },
   "logAnalyzeModal": {
     "title": "Analýza protokolu",

@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Hapus kontak yang tidak pernah beriklan saat startup",
     "meshcoreRemoveNeverAdvertisedHint": "Menghapus kontak placeholder basi tanpa riwayat iklan; kontak favorit disimpan.",
     "messagesLoadLimitIntro": "Batasi jumlah pesan yang dimuat ke dalam memori untuk UI, dan batasi jumlah baris yang disimpan di SQLite. Memuat lebih sedikit akan membuat RAM tetap rendah di jaringan yang sibuk; batas database memangkas pesan lama saat startup aplikasi (disimpan per protokol).",
-    "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Baris debug memerlukan kotak centang di dalam panel log.",
     "compactMessages": "Tampilan pesan ringkas",
     "notificationsSection": "Notifikasi",
     "soundNotifications": "Pemberitahuan suara",
@@ -196,9 +195,10 @@
     "clearReticulumMessagesTitle": "Hapus pesan langsung",
     "clearReticulumMessagesConfirm": "Ini akan menghapus semua {{count}} pesan langsung Reticulum yang disimpan secara lokal secara permanen. Ini tidak dapat diurungkan.",
     "clearReticulumMessagesConfirmButton": "Hapus pesan {{count}}",
-    "reticulumSection": "Reticulum — Tumpukan retikulum",
+    "reticulumSection": "Reticulum — Tumpukan Reticulum",
     "reticulumAnnounceHelp": "Seberapa sering identitas Anda diumumkan di jaringan, dan alat untuk menghapus pengumuman yang tersimpan.",
-    "reticulumPropagationHelp": "Pilih bagaimana node propagasi disinkronkan dan tarik data propagasi terbaru bila diperlukan."
+    "reticulumPropagationHelp": "Pilih bagaimana node propagasi disinkronkan dan tarik data propagasi terbaru bila diperlukan.",
+    "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Pada tab Reticulum, jalur perangkat menyertakan keluaran sespan dan kesehatan antarmuka lokal. Baris debug memerlukan kotak centang di dalam panel log."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -660,7 +660,10 @@
       "seedAddresses": "Rekan benih (opsional)",
       "pickerBlePeerEmpty": "Tidak ada peer Reticulum BLE yang ditemukan di dekatnya. Peer harus beriklan; coba Pindai ulang atau masukkan alamat seed secara manual.",
       "pickerBleRnodeEmpty": "Tidak ada BLE RNode yang ditemukan di sekitar. Pastikan RNode dihidupkan dan berada dalam jangkauan, lalu coba Pindai Ulang.",
-      "bleUnavailable": "Bluetooth tidak tersedia untuk pemindaian Reticulum. Periksa sistem Bluetooth dan build sidecar (rns-ble)."
+      "bleUnavailable": "Bluetooth tidak tersedia untuk pemindaian Reticulum. Periksa sistem Bluetooth dan build sidecar (rns-ble).",
+      "restartStackFailed": "Gagal memulai ulang tumpukan: {{message}}",
+      "restartStackUnavailable": "Mulai ulang tumpukan tidak tersedia hingga runtime Reticulum siap.",
+      "localOfflineRowBle": "Bluetooth RNode offline — pastikan perangkat aktif dan berada dalam jangkauan, lalu mulai ulang tumpukan."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Periksa kabel, lepaskan port dari Meshtastic/MeshCore, lalu mulai ulang tumpukan.",
       "openRadio": "Buka Radio",
       "refreshPorts": "Segarkan port",
-      "availablePorts": "Tersedia: {{ports}}"
+      "availablePorts": "Tersedia: {{ports}}",
+      "restartStack": "Mulai ulang tumpukan",
+      "restartStackAria": "Mulai ulang tumpukan Reticulum untuk menerapkan perubahan antarmuka",
+      "connectingHeading": "Menghubungkan antarmuka lokal…",
+      "connectingRow": "{{name}}: menghubungkan melalui Bluetooth",
+      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 30 detik setelah tumpukan dimulai. Masukkan PIN penyandingan jika OS Anda meminta — ini normal, bukan kesalahan.",
+      "offlineHintBle": "OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — tidak ada PIN default. Radio tanpa kepala: sambungkan USB → Reticulum Admin → Bluetooth → Mulai memasangkan → masukkan PIN yang ditampilkan ke dalam dialog OS. Radio dengan tampilan: tahan tombol ~7 detik pada perangkat Heltec (waktu bervariasi; ~10 detik di banyak papan mengaktifkan Wi-Fi AP), baca PIN di layar, lalu masukkan dalam dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS Anda sebelum mencoba lagi."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
@@ -971,7 +980,6 @@
     "readDisplay": "Baca tampilan",
     "dumpEeprom": "Buang EEPROM untuk mencatat",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Opsional. Aktifkan Bluetooth pada perangkat keras yang didukung, lalu pasangkan dari pengaturan Bluetooth OS Anda.",
     "enableBluetooth": "Aktifkan Bluetooth",
     "disableBluetooth": "Nonaktifkan Bluetooth",
     "startPairing": "Mulai memasangkan",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Disediakan",
     "firmwareHashRequiresProvision": "Sediakan EEPROM sebelum mengatur hash firmware.",
     "firmwareHashDone": "Kumpulan hash firmware",
-    "flashDone": "Firmware di-flash"
+    "flashDone": "Firmware di-flash",
+    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di sini melalui serial USB — masukkan PIN yang sama dalam dialog Bluetooth OS Anda (macOS, Windows, atau Linux) ketika Reticulum terhubung melalui BLE. Perangkat tanpa kepala tanpa USB tidak dapat menampilkan PIN di layar."
   },
   "logAnalyzeModal": {
     "title": "Analisis Log",

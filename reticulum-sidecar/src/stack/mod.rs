@@ -49,6 +49,10 @@ impl StackHandle {
             }
         }
 
+        if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
+            tracing::warn!("failed to repair RNode radio fields in config: {e}");
+        }
+
         let mut persisted = PersistedState::load(&config_dir, &storage_dir);
         persisted.ensure_defaults();
         if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {

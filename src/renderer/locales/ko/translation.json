@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "시작 시 광고한 적이 없는 연락처 제거",
     "meshcoreRemoveNeverAdvertisedHint": "광고 기록이 없는 오래된 자리 표시자 연락처를 제거합니다. 즐겨찾는 연락처가 유지됩니다.",
     "messagesLoadLimitIntro": "UI용 메모리에 로드되는 메시지 수를 제한하고 SQLite에 유지되는 행 수를 제한합니다. 더 적은 수의 로드를 사용하면 사용량이 많은 네트워크에서 RAM을 적게 사용할 수 있습니다. 데이터베이스 캡은 앱 시작 시 오래된 메시지를 정리합니다(프로토콜별로 저장됨).",
-    "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
     "compactMessages": "간결한 메시지 보기",
     "notificationsSection": "토",
     "soundNotifications": "소리 알림",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "메시지 {{count}} 개 지우기",
     "reticulumSection": "Reticulum — 레티큘럼 스택",
     "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
-    "reticulumPropagationHelp": "전파 노드의 동기화 방법을 선택하고 필요한 경우 최신 전파 데이터를 가져옵니다."
+    "reticulumPropagationHelp": "전파 노드의 동기화 방법을 선택하고 필요한 경우 최신 전파 데이터를 가져옵니다.",
+    "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -660,7 +660,10 @@
       "seedAddresses": "시드 피어(선택 사항)",
       "pickerBlePeerEmpty": "근처에서 Reticulum BLE 피어를 찾을 수 없습니다. 동료는 광고를 해야 합니다. 다시 스캔을 시도하거나 시드 주소를 수동으로 입력하세요.",
       "pickerBleRnodeEmpty": "근처에서 BLE RNode를 찾을 수 없습니다. Rnode의 전원이 켜져 있고 범위 내에 있는지 확인한 다음 다시 검색을 시도하십시오.",
-      "bleUnavailable": "Reticulum 스캔에는 Bluetooth를 사용할 수 없습니다. 시스템 Bluetooth 및 사이드카 빌드(rns-ble)를 확인하세요."
+      "bleUnavailable": "Reticulum 스캔에는 Bluetooth를 사용할 수 없습니다. 시스템 Bluetooth 및 사이드카 빌드(rns-ble)를 확인하세요.",
+      "restartStackFailed": "스택 다시 시작 실패: {{message}}",
+      "restartStackUnavailable": "Reticulum 런타임이 준비될 때까지 스택을 다시 시작할 수 없습니다.",
+      "localOfflineRowBle": "Bluetooth Rnode 오프라인 - 장치가 켜져 있고 범위 내에 있는지 확인한 다음 스택을 다시 시작합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "케이블을 확인하고 Meshtastic/MeshCore에서 포트를 분리한 다음 스택을 다시 시작하십시오.",
       "openRadio": "라디오 열기",
       "refreshPorts": "포트 새로 고침",
-      "availablePorts": "사용 가능: {{ports}}"
+      "availablePorts": "사용 가능: {{ports}}",
+      "restartStack": "스택 다시 시작",
+      "restartStackAria": "인터페이스 변경 사항을 적용하려면 Reticulum 스택을 다시 시작하세요.",
+      "connectingHeading": "로컬 인터페이스 연결 중...",
+      "connectingRow": "{{name}}: 블루투스를 통해 연결 중",
+      "connectingHintBle": "BLE Rnode 링크는 스택이 시작된 후 최대 30초가 걸릴 수 있습니다. OS에서 메시지가 표시되면 페어링 PIN을 입력하세요. 이는 오류가 아니라 정상입니다.",
+      "offlineHintBle": "OS에서 6자리 Bluetooth PIN을 요구할 수 있습니다(macOS, Windows 또는 Linux). Rnode는 페어링할 때마다 새 코드를 생성합니다. 기본 PIN은 없습니다. 헤드리스 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → OS 대화 상자에 표시된 PIN을 입력합니다. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 ~7초 동안 누르고(타이밍은 다양합니다. 대신 많은 보드에서 ~10초는 Wi-Fi AP를 활성화합니다) 화면에서 PIN을 읽은 다음 OS 대화 상자에 입력합니다. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 삭제하세요."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -971,7 +980,6 @@
     "readDisplay": "디스플레이 읽기",
     "dumpEeprom": "EEPROM을 덤프하여 기록",
     "bluetoothTitle": "블루투스",
-    "bluetoothHint": "선택 과목. 지원되는 하드웨어에서 Bluetooth를 활성화한 다음 OS Bluetooth 설정에서 페어링하세요.",
     "enableBluetooth": "블루투스 활성화",
     "disableBluetooth": "블루투스 비활성화",
     "startPairing": "페어링 시작",
@@ -1021,7 +1029,8 @@
     "provisionDone": "프로비저닝됨",
     "firmwareHashRequiresProvision": "펌웨어 해시를 설정하기 전에 EEPROM을 프로비저닝하십시오.",
     "firmwareHashDone": "펌웨어 해시 세트",
-    "flashDone": "펌웨어가 플래시되었습니다."
+    "flashDone": "펌웨어가 플래시되었습니다.",
+    "bluetoothHint": "장치에서 Bluetooth를 활성화한 다음 페어링 시작을 사용하십시오. 6자리 PIN은 USB 직렬을 통해 여기에 표시됩니다. Reticulum이 BLE를 통해 연결되면 OS Bluetooth 대화 상자(macOS, Windows 또는 Linux)에 동일한 PIN을 입력하세요. USB가 없는 헤드리스 장치는 화면에 PIN을 표시할 수 없습니다."
   },
   "logAnalyzeModal": {
     "title": "로그 분석",

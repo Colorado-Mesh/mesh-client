@@ -175,10 +175,7 @@ export function ReticulumInterfaceDevicePickerModal({
           ) : (
             devices.map((device) => {
               const displayName = device.name?.trim() || device.address;
-              const value =
-                mode === 'ble-rnode'
-                  ? `ble://${device.name?.trim() || device.address}`
-                  : device.address;
+              const value = mode === 'ble-rnode' ? `ble://${device.address}` : device.address;
               return (
                 <button
                   key={`${device.address}-${device.kind ?? 'ble'}`}

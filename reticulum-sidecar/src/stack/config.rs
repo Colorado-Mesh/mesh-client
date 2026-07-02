@@ -463,6 +463,8 @@ pub fn update_interface_in_config(
         row.seed_addresses = patch.seed_addresses.clone().unwrap_or_default();
     }
 
+    apply_preset_defaults(&mut row);
+
     parsed.interfaces[idx] = interface_row_to_block(&row);
     write_config(config_dir, &serialize_config(&parsed))?;
     Ok(row)
@@ -518,6 +520,43 @@ pub struct UpdateInterfacePatch {
     pub seed_addresses: Option<Vec<String>>,
 }
 
+/// Expand `preset` into concrete radio fields on disk when INI rows are incomplete.
+pub fn repair_rnode_radio_fields_in_config(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed = false;
+    for block in &mut parsed.interfaces {
+        let Some(mut row) = interface_block_to_row(block) else {
+            continue;
+        };
+        if !rnode_needs_preset_expansion(&row) {
+            continue;
+        }
+        apply_preset_defaults(&mut row);
+        *block = interface_row_to_block(&row);
+        changed = true;
+    }
+    if changed {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(changed)
+}
+
+fn rnode_needs_preset_expansion(row: &InterfaceRow) -> bool {
+    if row.iface_type != "rnode" {
+        return false;
+    }
+    let preset = row.preset.as_deref().unwrap_or("");
+    if !matches!(preset, "rnode_eu868" | "rnode_us915" | "rnode_generic") {
+        return false;
+    }
+    row.frequency.is_none()
+        || row.bandwidth.is_none()
+        || row.spreading_factor.is_none()
+        || row.coding_rate.is_none()
+        || row.txpower.is_none()
+}
+
 fn apply_preset_defaults(row: &mut InterfaceRow) {
     if row.iface_type != "rnode" {
         return;
@@ -529,12 +568,14 @@ fn apply_preset_defaults(row: &mut InterfaceRow) {
             row.bandwidth.get_or_insert(125_000);
             row.spreading_factor.get_or_insert(8);
             row.coding_rate.get_or_insert(5);
+            row.txpower.get_or_insert(17);
         }
         "rnode_us915" | "rnode_generic" => {
             row.frequency.get_or_insert(915_000_000);
             row.bandwidth.get_or_insert(125_000);
             row.spreading_factor.get_or_insert(8);
             row.coding_rate.get_or_insert(5);
+            row.txpower.get_or_insert(17);
         }
         _ => {}
     }
@@ -896,6 +937,103 @@ target_port = 5000
         import_config(&dir, extra, ImportMode::Merge).unwrap();
         let rows = interfaces_from_config_dir(&dir).unwrap();
         assert_eq!(rows.len(), 4);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_rnode_preset_writes_missing_radio_fields() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let content = r#"
+[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[BLE RNode]]
+type = RNodeInterface
+enabled = Yes
+port = ble://a399d3be-fa79-45ab-a394-7d9299682617
+preset = rnode_us915
+"#;
+        write_config(&dir, content).unwrap();
+        assert!(repair_rnode_radio_fields_in_config(&dir).unwrap());
+
+        let repaired = read_config(&dir).unwrap();
+        assert!(repaired.contains("frequency = 915000000"));
+        assert!(repaired.contains("bandwidth = 125000"));
+        assert!(repaired.contains("spreadingfactor = 8"));
+        assert!(repaired.contains("codingrate = 5"));
+        assert!(repaired.contains("txpower = 17"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_rnode_adds_txpower_when_only_frequency_present() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let content = r#"
+[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[BLE RNode]]
+type = RNodeInterface
+enabled = Yes
+port = ble://a399d3be-fa79-45ab-a394-7d9299682617
+preset = rnode_us915
+frequency = 915000000
+bandwidth = 125000
+spreadingfactor = 8
+codingrate = 5
+"#;
+        write_config(&dir, content).unwrap();
+        assert!(repair_rnode_radio_fields_in_config(&dir).unwrap());
+
+        let repaired = read_config(&dir).unwrap();
+        assert!(repaired.contains("txpower = 17"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_interface_applies_preset_defaults() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let content = r#"
+[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[BLE RNode]]
+type = RNodeInterface
+enabled = Yes
+port = ble://a399d3be-fa79-45ab-a394-7d9299682617
+"#;
+        write_config(&dir, content).unwrap();
+
+        let row = update_interface_in_config(
+            &dir,
+            "ble-rnode",
+            &UpdateInterfacePatch {
+                preset: Some("rnode_us915".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.frequency, Some(915_000_000));
+        assert_eq!(row.txpower, Some(17));
+
+        let updated = read_config(&dir).unwrap();
+        assert!(updated.contains("frequency = 915000000"));
         let _ = fs::remove_dir_all(&dir);
     }
 }

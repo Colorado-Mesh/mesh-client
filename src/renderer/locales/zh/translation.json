@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "删除从未在启动时发布广告的联系人",
     "meshcoreRemoveNeverAdvertisedHint": "删除没有广告历史记录的陈旧占位符联系人；保留收藏的联系人。",
     "messagesLoadLimitIntro": "限制UI加载到内存中的消息数，并限制SQLite中保留的行数。加载较少会降低繁忙网络上的RAM ；数据库CAP会在应用程序启动时修剪较旧的消息（按协议存储）。",
-    "logPanelHelp": "启用后，实时日志流将显示在右侧。调试行需要日志面板内的复选框。",
     "compactMessages": "紧凑的消息视图",
     "notificationsSection": "消息",
     "soundNotifications": "声音通知",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "清除{{count}}消息",
     "reticulumSection": "Reticulum — 网状堆栈",
     "reticulumAnnounceHelp": "您的身份在网络上公布的频率，以及清除存储的公告的工具。",
-    "reticulumPropagationHelp": "选择传播节点的同步方式，并在需要时提取最新传播数据。"
+    "reticulumPropagationHelp": "选择传播节点的同步方式，并在需要时提取最新传播数据。",
+    "logPanelHelp": "启用后，实时日志流将显示在右侧。在 Reticulum 选项卡上，设备行包括 sidecar 输出和本地接口运行状况。调试行需要日志面板内的复选框。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -660,7 +660,10 @@
       "seedAddresses": "种子同伴（可选）",
       "pickerBlePeerEmpty": "附近未发现 Reticulum BLE 对等点。同行必须做广告；尝试重新扫描或手动输入种子地址。",
       "pickerBleRnodeEmpty": "附近未发现 BLE RNode。确保 RNode 已开机且在范围内，然后尝试重新扫描。",
-      "bleUnavailable": "蓝牙不适用于 Reticulum 扫描。请检查系统蓝牙和 sidecar 构建 (rns-ble)。"
+      "bleUnavailable": "蓝牙不适用于 Reticulum 扫描。请检查系统蓝牙和 sidecar 构建 (rns-ble)。",
+      "restartStackFailed": "堆栈重启失败：{{message}}",
+      "restartStackUnavailable": "在 Reticulum 运行时准备就绪之前，堆栈重新启动不可用。",
+      "localOfflineRowBle": "蓝牙 RNode 离线 — 确保设备已开启且在范围内，然后重新启动堆栈。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "检查电缆，从Meshtastic/MeshCore释放端口，然后重新启动堆栈。",
       "openRadio": "打开收音机",
       "refreshPorts": "刷新端口",
-      "availablePorts": "可用： {{ports}}"
+      "availablePorts": "可用： {{ports}}",
+      "restartStack": "重启堆栈",
+      "restartStackAria": "重新启动 Reticulum 堆栈以应用接口更改",
+      "connectingHeading": "连接本地接口...",
+      "connectingRow": "{{name}}：通过蓝牙连接",
+      "connectingHintBle": "堆栈启动后，BLE RNode 链接最多可能需要 30 秒。如果操作系统出现提示，请输入配对 PIN — 这是正常现象，不是错误。",
+      "offlineHintBle": "您的操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。 RNode 每次配对都会生成一个新代码 - 没有默认 PIN。无头无线电：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 输入操作系统对话框中显示的 PIN。带显示屏的无线电：在 Heltec 设备上按住按钮约 7 秒（时间各不相同；许多板上约 10 秒启用 Wi-Fi AP），读取屏幕上的 PIN，然后将其输入到操作系统对话框中。重试之前，请清除操作系统蓝牙设置中失败的绑定。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -971,7 +980,6 @@
     "readDisplay": "读取显示",
     "dumpEeprom": "将 EEPROM 转储到日志",
     "bluetoothTitle": "蓝牙",
-    "bluetoothHint": "选修的。在支持的硬件上启用蓝牙，然后从操作系统蓝牙设置进行配对。",
     "enableBluetooth": "启用蓝牙",
     "disableBluetooth": "禁用蓝牙",
     "startPairing": "开始配对",
@@ -1021,7 +1029,8 @@
     "provisionDone": "已佈建",
     "firmwareHashRequiresProvision": "在设置固件哈希之前预配EEPROM。",
     "firmwareHashDone": "固件哈希集",
-    "flashDone": "固件刷写"
+    "flashDone": "固件刷写",
+    "bluetoothHint": "启用设备上的蓝牙，然后使用开始配对。 6 位 PIN 码通过 USB 串行显示在此处 — 当 Reticulum 通过 BLE 连接时，在操作系统蓝牙对话框（macOS、Windows 或 Linux）中输入相同的 PIN 码。没有 USB 的无头设备无法在屏幕上显示 PIN。"
   },
   "logAnalyzeModal": {
     "title": "日志分析",

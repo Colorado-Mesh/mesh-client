@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Usuń kontakty, które nigdy nie były reklamowane podczas uruchamiania",
     "meshcoreRemoveNeverAdvertisedHint": "Usuwa nieaktualne kontakty zastępcze bez historii ogłoszeń; ulubione kontakty zostaną zachowane.",
     "messagesLoadLimitIntro": "Ogranicz liczbę wiadomości ładowanych do pamięci interfejsu użytkownika i liczbę wierszy pozostających w SQLite. Ładowanie mniejszej liczby zmniejsza ilość pamięci RAM w obciążonych sieciach; limit bazy danych usuwa starsze wiadomości podczas uruchamiania aplikacji (przechowywane według protokołu).",
-    "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Linie debugowania wymagają pola wyboru w panelu dziennika.",
     "compactMessages": "Kompaktowy widok wiadomości",
     "notificationsSection": "Zawiadomienia",
     "soundNotifications": "Powiadomienia dźwiękowe",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "Wyczyść wiadomości: {{count}}",
     "reticulumSection": "Reticulum — Stos siateczkowy",
     "reticulumAnnounceHelp": "Jak często Twoja tożsamość jest ogłaszana w sieci i narzędzia do czyszczenia przechowywanych ogłoszeń.",
-    "reticulumPropagationHelp": "Wybierz sposób synchronizacji węzłów propagacji i w razie potrzeby pobierz najnowsze dane propagacji."
+    "reticulumPropagationHelp": "Wybierz sposób synchronizacji węzłów propagacji i w razie potrzeby pobierz najnowsze dane propagacji.",
+    "logPanelHelp": "Po włączeniu po prawej stronie pojawia się strumień dziennika na żywo. Na karcie Reticulum linie urządzeń obejmują wyjście wózka bocznego i stan interfejsu lokalnego. Linie debugowania wymagają pola wyboru w panelu dziennika."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -660,7 +660,10 @@
       "seedAddresses": "Partnerzy nasion (opcjonalnie)",
       "pickerBlePeerEmpty": "W pobliżu nie znaleziono żadnych urządzeń równorzędnych Reticulum BLE. Rówieśnicy muszą reklamować; spróbuj ponownie przeskanować lub wprowadź adres początkowy ręcznie.",
       "pickerBleRnodeEmpty": "W pobliżu nie znaleziono żadnych węzłów BLE RNode. Upewnij się, że RNode jest włączony i znajduje się w zasięgu, a następnie spróbuj ponownie przeskanować.",
-      "bleUnavailable": "Bluetooth nie jest dostępny do skanowania Reticulum. Sprawdź system Bluetooth i build sidecar (rns-ble)."
+      "bleUnavailable": "Bluetooth nie jest dostępny do skanowania Reticulum. Sprawdź system Bluetooth i build sidecar (rns-ble).",
+      "restartStackFailed": "Ponowne uruchomienie stosu nie powiodło się: {{message}}",
+      "restartStackUnavailable": "Ponowne uruchomienie stosu jest niedostępne, dopóki środowisko wykonawcze Reticulum nie będzie gotowe.",
+      "localOfflineRowBle": "Bluetooth RNode offline — upewnij się, że urządzenie jest włączone i znajduje się w zasięgu, a następnie uruchom ponownie stos."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Sprawdź kabel, uwolnij port z Meshtastic/MeshCore, a następnie uruchom ponownie stos.",
       "openRadio": "Otwórz radio",
       "refreshPorts": "Odśwież porty",
-      "availablePorts": "Dostępne: {{ports}}"
+      "availablePorts": "Dostępne: {{ports}}",
+      "restartStack": "Uruchom ponownie stos",
+      "restartStackAria": "Uruchom ponownie stos Reticulum, aby zastosować zmiany w interfejsie",
+      "connectingHeading": "Podłączanie lokalnych interfejsów…",
+      "connectingRow": "{{name}}: połączenie przez Bluetooth",
+      "connectingHintBle": "Łączenie węzła BLE RNode może zająć do 30 sekund po uruchomieniu stosu. Wprowadź kod PIN parowania, jeśli system operacyjny wyświetli monit — jest to normalne, a nie błąd.",
+      "offlineHintBle": "Twój system operacyjny może poprosić o 6-cyfrowy kod PIN Bluetooth (macOS, Windows lub Linux). RNode generuje nowy kod przy każdym parowaniu — nie ma domyślnego kodu PIN. Radiotelefony bezgłowe: podłącz USB → Reticulum Admin → Bluetooth → Rozpocznij parowanie → wprowadź kod PIN wyświetlony w oknie dialogowym systemu operacyjnego. Radia z wyświetlaczem: przytrzymaj przycisk ~7 s na urządzeniach Heltec (czas jest różny; ~10 s na wielu płytach zamiast tego włącza Wi-Fi AP), odczytaj PIN na ekranie, a następnie wprowadź go w oknie dialogowym systemu operacyjnego. Przed ponowną próbą usuń nieudane powiązania w ustawieniach Bluetooth systemu operacyjnego."
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
@@ -971,7 +980,6 @@
     "readDisplay": "Przeczytaj wyświetlacz",
     "dumpEeprom": "Zrzuć EEPROM, aby się zalogować",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "Fakultatywny. Włącz Bluetooth na obsługiwanym sprzęcie, a następnie sparuj z poziomu ustawień Bluetooth systemu operacyjnego.",
     "enableBluetooth": "Włącz Bluetooth",
     "disableBluetooth": "Wyłącz Bluetooth",
     "startPairing": "Rozpocznij parowanie",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Udostępniono",
     "firmwareHashRequiresProvision": "Przed ustawieniem skrótu oprogramowania sprzętowego należy zapewnić pamięć EEPROM.",
     "firmwareHashDone": "Ustawienie skrótu oprogramowania sprzętowego",
-    "flashDone": "Oprogramowanie sprzętowe błysnęło"
+    "flashDone": "Oprogramowanie sprzętowe błysnęło",
+    "bluetoothHint": "Włącz Bluetooth na urządzeniu, a następnie użyj opcji Rozpocznij parowanie. Tutaj pojawia się 6-cyfrowy PIN przez złącze USB — wprowadź ten sam PIN w oknie dialogowym Bluetooth systemu operacyjnego (macOS, Windows lub Linux), gdy Reticulum łączy się przez BLE. Urządzenia Headless bez USB nie mogą wyświetlać kodu PIN na ekranie."
   },
   "logAnalyzeModal": {
     "title": "Analiza dziennika",

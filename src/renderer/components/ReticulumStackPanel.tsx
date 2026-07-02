@@ -1,20 +1,32 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useNowMs } from '@/renderer/hooks/useNowMs';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   collectReticulumLocalInterfaceAlerts,
+  collectReticulumLocalInterfaceConnecting,
   type ReticulumLocalInterfaceAlert,
+  type ReticulumLocalInterfaceInput,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import { logReticulumLocalInterfaceHealthChanges } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
+import {
+  pickReticulumLocalHealthPollMs,
+  RETICULUM_BLE_CONNECT_GRACE_MS,
+  scheduleReticulumLocalInterfaceBurst,
+} from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import {
   fetchReticulumInterfaces,
   fetchReticulumSerialPorts,
   invalidateReticulumInterfacesCache,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
+import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
+import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfaceConnectingBlock';
 
 export interface ReticulumStackPanelProps {
   connecting: boolean;
@@ -33,9 +45,43 @@ export function ReticulumStackPanel({
   onOpenRadioPanel,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
-  const [localAlerts, setLocalAlerts] = useState<ReticulumLocalInterfaceAlert[]>([]);
-  const [availablePorts, setAvailablePorts] = useState<string[]>([]);
-  const refreshLocalHealthRef = useRef<(() => Promise<void>) | null>(null);
+  const [interfaceSnapshot, setInterfaceSnapshot] = useState<{
+    interfaces: ReticulumLocalInterfaceInput[];
+    ports: string[];
+  }>({ interfaces: [], ports: [] });
+  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
+  const [restartError, setRestartError] = useState<string | null>(null);
+  const refreshLocalHealthRef = useRef<
+    (() => Promise<{ interfaces: ReticulumLocalInterfaceInput[]; ports: string[] }>) | null
+  >(null);
+  const localHealthPollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localHealthBurstCancelRef = useRef<(() => void) | null>(null);
+
+  const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
+  const healthOptions = useMemo(
+    () => (bleConnectGraceExpiresAt > 0 ? { bleConnectGraceExpiresAt, now: nowMs } : undefined),
+    [bleConnectGraceExpiresAt, nowMs],
+  );
+
+  const localAlerts = useMemo(
+    (): ReticulumLocalInterfaceAlert[] =>
+      collectReticulumLocalInterfaceAlerts(
+        interfaceSnapshot.interfaces,
+        interfaceSnapshot.ports,
+        healthOptions,
+      ),
+    [interfaceSnapshot, healthOptions],
+  );
+  const connectingInterfaces = useMemo(
+    () =>
+      collectReticulumLocalInterfaceConnecting(
+        interfaceSnapshot.interfaces,
+        interfaceSnapshot.ports,
+        healthOptions,
+      ),
+    [interfaceSnapshot, healthOptions],
+  );
+  const availablePorts = interfaceSnapshot.ports;
 
   const refreshLocalHealth = useCallback(async () => {
     invalidateReticulumInterfacesCache();
@@ -43,19 +89,35 @@ export function ReticulumStackPanel({
       fetchReticulumInterfaces(),
       fetchReticulumSerialPorts(),
     ]);
-    setAvailablePorts(ports);
-    setLocalAlerts(collectReticulumLocalInterfaceAlerts(interfaces, ports));
+    logReticulumLocalInterfaceHealthChanges(interfaces, ports);
+    setInterfaceSnapshot({ interfaces, ports });
+    return { interfaces, ports };
   }, []);
 
   useEffect(() => {
     refreshLocalHealthRef.current = refreshLocalHealth;
   }, [refreshLocalHealth]);
 
-  const handleSidecarEvent = useCallback((evt: ReticulumSidecarEvent) => {
-    if (evt.type === 'interface.state' || evt.type === 'stats_update') {
-      void refreshLocalHealthRef.current?.();
-    }
+  const beginBleConnectGrace = useCallback(() => {
+    setBleConnectGraceExpiresAt(Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS);
   }, []);
+
+  const handleSidecarEvent = useCallback(
+    (evt: ReticulumSidecarEvent) => {
+      if (
+        evt.type === 'interface.state' ||
+        evt.type === 'stats_update' ||
+        evt.type === 'announce.received' ||
+        evt.type === 'stack_restart_requested'
+      ) {
+        if (evt.type === 'stack_restart_requested') {
+          beginBleConnectGrace();
+        }
+        void refreshLocalHealthRef.current?.();
+      }
+    },
+    [beginBleConnectGrace],
+  );
 
   const {
     sidecarStatus,
@@ -75,12 +137,60 @@ export function ReticulumStackPanel({
 
   useEffect(() => {
     if (!sidecarApiReady) {
-      setLocalAlerts([]);
-      setAvailablePorts([]);
+      setInterfaceSnapshot({ interfaces: [], ports: [] });
+      setBleConnectGraceExpiresAt(0);
+      localHealthBurstCancelRef.current?.();
+      localHealthBurstCancelRef.current = null;
       return;
     }
+    beginBleConnectGrace();
     void refreshLocalHealth();
-  }, [sidecarApiReady, refreshLocalHealth]);
+    localHealthBurstCancelRef.current?.();
+    localHealthBurstCancelRef.current = scheduleReticulumLocalInterfaceBurst(() => {
+      void refreshLocalHealthRef.current?.();
+    });
+    return () => {
+      localHealthBurstCancelRef.current?.();
+      localHealthBurstCancelRef.current = null;
+    };
+  }, [sidecarApiReady, refreshLocalHealth, beginBleConnectGrace]);
+
+  useEffect(() => {
+    if (!sidecarApiReady || !sidecarUiRunning) {
+      if (localHealthPollTimeoutRef.current) {
+        clearTimeout(localHealthPollTimeoutRef.current);
+        localHealthPollTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    let cancelled = false;
+
+    const scheduleNextPoll = (delayMs: number) => {
+      if (cancelled) return;
+      localHealthPollTimeoutRef.current = setTimeout(() => {
+        void tick();
+      }, delayMs);
+    };
+
+    const tick = async () => {
+      const health = await refreshLocalHealthRef.current?.();
+      if (cancelled || !health) return;
+      scheduleNextPoll(
+        pickReticulumLocalHealthPollMs(health.interfaces, health.ports, healthOptions),
+      );
+    };
+
+    void tick();
+
+    return () => {
+      cancelled = true;
+      if (localHealthPollTimeoutRef.current) {
+        clearTimeout(localHealthPollTimeoutRef.current);
+        localHealthPollTimeoutRef.current = null;
+      }
+    };
+  }, [sidecarApiReady, sidecarUiRunning, healthOptions]);
 
   return (
     <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
@@ -110,20 +220,54 @@ export function ReticulumStackPanel({
             {stackError}
           </p>
         ) : null}
+        {restartError ? (
+          <p className="text-sm text-red-400" role="alert">
+            {restartError}
+          </p>
+        ) : null}
         {sidecarUiRunning && sidecarStatus.port > 0 ? (
           <p className="text-muted text-xs" role="status">
             127.0.0.1:{sidecarStatus.port}
           </p>
         ) : null}
         {sidecarUiRunning ? (
-          <ReticulumLocalInterfaceAlertsBlock
-            alerts={localAlerts}
-            availablePorts={availablePorts}
-            onOpenRadio={onOpenRadioPanel}
-            onRefreshPorts={() => {
-              void refreshLocalHealth();
-            }}
-          />
+          <>
+            <ReticulumLocalInterfaceConnectingBlock interfaces={connectingInterfaces} />
+            <ReticulumLocalInterfaceAlertsBlock
+              alerts={localAlerts}
+              availablePorts={availablePorts}
+              onOpenRadio={onOpenRadioPanel}
+              onRefreshPorts={() => {
+                void refreshLocalHealth();
+              }}
+              onRestartStack={() => {
+                setRestartError(null);
+                void (async () => {
+                  const session = tryGetReticulumSession();
+                  if (!session?.restartStack) {
+                    setRestartError(
+                      t('connectionPanel.reticulumInterfaces.restartStackUnavailable'),
+                    );
+                    return;
+                  }
+                  try {
+                    await session.restartStack();
+                    beginBleConnectGrace();
+                    await refreshLocalHealth();
+                  } catch (e) {
+                    console.error(
+                      '[ReticulumStackPanel] restart stack failed ' + errLikeToLogString(e),
+                    );
+                    setRestartError(
+                      t('connectionPanel.reticulumInterfaces.restartStackFailed', {
+                        message: errLikeToLogString(e),
+                      }),
+                    );
+                  }
+                })();
+              }}
+            />
+          </>
         ) : null}
         {sidecarUiRunning ? (
           <button

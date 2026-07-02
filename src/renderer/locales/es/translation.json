@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Eliminar contactos que nunca se han anunciado en el inicio",
     "meshcoreRemoveNeverAdvertisedHint": "Elimina los contactos de marcador de posición obsoletos sin historial de anuncios; los contactos favoritos se mantienen.",
     "messagesLoadLimitIntro": "Limite la cantidad de mensajes que se cargan en la memoria para la interfaz de usuario y limite la cantidad de filas que permanecen en SQLite. Cargar menos mantiene la RAM baja en redes ocupadas; el límite de la base de datos elimina los mensajes más antiguos al iniciar la aplicación (almacenados por protocolo).",
-    "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "compactMessages": "Vista compacta de mensajes",
     "notificationsSection": "Notificaciones",
     "soundNotifications": "Notificaciones con Sonido",
@@ -196,9 +195,10 @@
     "clearReticulumMessagesTitle": "Perfeccionar mensajes claros y directos",
     "clearReticulumMessagesConfirm": "Esto eliminará de forma permanente todos los {{count}} mensajes directos de Reticulum almacenados localmente. Esto no se puede deshacer.",
     "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes",
-    "reticulumSection": "Reticulum — Pila de retículo",
+    "reticulumSection": "Reticulum — Pila de Reticulum",
     "reticulumAnnounceHelp": "Con qué frecuencia se anuncia su identidad en la red y herramientas para borrar los anuncios almacenados.",
-    "reticulumPropagationHelp": "Elija cómo se sincronizan los nodos de propagación y extraiga los últimos datos de propagación cuando sea necesario."
+    "reticulumPropagationHelp": "Elija cómo se sincronizan los nodos de propagación y extraiga los últimos datos de propagación cuando sea necesario.",
+    "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. En la pestaña Reticulum, las líneas de dispositivos incluyen la salida del sidecar y el estado de la interfaz local. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -660,7 +660,10 @@
       "seedAddresses": "Compañeros semilla (opcional)",
       "pickerBlePeerEmpty": "No se encontraron pares Reticulum BLE cerca. Los compañeros deben hacer publicidad; Intente volver a escanear o ingrese una dirección inicial manualmente.",
       "pickerBleRnodeEmpty": "No se encontraron BLE RNodes cerca. Asegúrese de que el RNode esté encendido y dentro del alcance, luego intente volver a escanear.",
-      "bleUnavailable": "Bluetooth no está disponible para el escaneo Reticulum. Verifique el sistema Bluetooth y la compilación del sidecar (rns-ble)."
+      "bleUnavailable": "Bluetooth no está disponible para el escaneo Reticulum. Verifique el sistema Bluetooth y la compilación del sidecar (rns-ble).",
+      "restartStackFailed": "Error al reiniciar la pila: {{message}}",
+      "restartStackUnavailable": "El reinicio de la pila no está disponible hasta que el tiempo de ejecución de Reticulum esté listo.",
+      "localOfflineRowBle": "Bluetooth RNode fuera de línea: asegúrese de que el dispositivo esté encendido y dentro del alcance, luego reinicie la pila."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Compruebe el cable, libere el puerto de Meshtastic/MeshCore y, a continuación, reinicie la pila.",
       "openRadio": "Radio abierta",
       "refreshPorts": "Actualizar puertos",
-      "availablePorts": "Disponible: {{ports}}"
+      "availablePorts": "Disponible: {{ports}}",
+      "restartStack": "Reiniciar pila",
+      "restartStackAria": "Reinicie la pila de Reticulum para aplicar cambios en la interfaz",
+      "connectingHeading": "Conectando interfaces locales...",
+      "connectingRow": "{{name}}: conexión a través de Bluetooth",
+      "connectingHintBle": "Los enlaces BLE RNode pueden tardar hasta 30 segundos después de que se inicia la pila. Ingrese un PIN de emparejamiento si su sistema operativo lo solicita; esto es normal, no un error.",
+      "offlineHintBle": "Es posible que su sistema operativo le solicite un PIN de Bluetooth de 6 dígitos (macOS, Windows o Linux). RNode genera un nuevo código en cada emparejamiento; no hay un PIN predeterminado. Radios sin cabeza: conecte USB → Reticulum Admin → Bluetooth → Iniciar emparejamiento → ingrese el PIN que se muestra en el cuadro de diálogo del sistema operativo. Radios con pantalla: mantenga presionado el botón ~7 s en dispositivos Heltec (el tiempo varía; ~10 s en muchas placas habilita Wi-Fi AP), lea el PIN en la pantalla y luego ingréselo en el cuadro de diálogo del sistema operativo. Borre los enlaces fallidos en la configuración de Bluetooth de su sistema operativo antes de volver a intentarlo."
     },
     "autoConnectingTo": "Conectando automáticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Reconexión automática en curso…",
@@ -971,7 +980,6 @@
     "readDisplay": "Leer pantalla",
     "dumpEeprom": "Volcar EEPROM al registro",
     "bluetoothTitle": "Bluetooth,",
-    "bluetoothHint": "Opcional. Habilite Bluetooth en el hardware compatible y, a continuación, empareje desde la configuración de Bluetooth de su sistema operativo.",
     "enableBluetooth": "Habilitar Bluetooth",
     "disableBluetooth": "Desactivar Bluetooth",
     "startPairing": "Iniciar emparejamiento",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Provisionado",
     "firmwareHashRequiresProvision": "Proporcione la EEPROM antes de configurar el hash del firmware.",
     "firmwareHashDone": "Conjunto de hash de firmware",
-    "flashDone": "firmware flasheado"
+    "flashDone": "firmware flasheado",
+    "bluetoothHint": "Habilite Bluetooth en el dispositivo, luego use Iniciar emparejamiento. El PIN de 6 dígitos aparece aquí a través de USB serial: ingrese ese mismo PIN en el cuadro de diálogo Bluetooth de su sistema operativo (macOS, Windows o Linux) cuando Reticulum se conecte a través de BLE. Los dispositivos sin cabeza y sin USB no pueden mostrar un PIN en la pantalla."
   },
   "logAnalyzeModal": {
     "title": "Análisis de registros",

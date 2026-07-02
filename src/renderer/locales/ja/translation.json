@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "起動時に一度もアドバタイズされていない連絡先を削除する",
     "meshcoreRemoveNeverAdvertisedHint": "広告履歴のない古いプレースホルダー連絡先を削除します。お気に入りの連絡先は保持されます。",
     "messagesLoadLimitIntro": "UI のメモリに読み込まれるメッセージの数を制限し、SQLite に保持される行の数を制限します。読み込みを少なくすると、混雑したネットワークで RAM の使用量が減ります。データベースの上限により、アプリの起動時に古いメッセージが削除されます (プロトコルごとに保存されます)。",
-    "logPanelHelp": "有効にすると、右側にライブ ログ ストリームが表示されます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
     "compactMessages": "コンパクトなメッセージビュー",
     "notificationsSection": "通知",
     "soundNotifications": "サウンド通知",
@@ -198,7 +197,8 @@
     "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去",
     "reticulumSection": "Reticulum — レティキュラム・スタック",
     "reticulumAnnounceHelp": "あなたの身元がネットワーク上で発表される頻度と、保存されているアナウンスをクリアするためのツール。",
-    "reticulumPropagationHelp": "伝播ノードの同期方法を選択し、必要に応じて最新の伝播データを取得します。"
+    "reticulumPropagationHelp": "伝播ノードの同期方法を選択し、必要に応じて最新の伝播データを取得します。",
+    "logPanelHelp": "有効にすると、ライブ ログ ストリームが右側に表示されます。 Reticulum タブのデバイス行には、サイドカー出力とローカル インターフェイスの状態が含まれます。デバッグ行では、ログ パネル内のチェックボックスが必要です。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -660,7 +660,10 @@
       "seedAddresses": "シードピア (オプション)",
       "pickerBlePeerEmpty": "近くに Reticulum BLE ピアが見つかりません。ピアは宣伝する必要があります。再スキャンを試すか、シード アドレスを手動で入力してください。",
       "pickerBleRnodeEmpty": "近くに BLE RNode が見つかりません。 RNode の電源が入っており、範囲内にあることを確認してから、再スキャンを試してください。",
-      "bleUnavailable": "Bluetooth は Reticulum スキャンには使用できません。システムの Bluetooth とサイドカー ビルド (rns-ble) を確認してください。"
+      "bleUnavailable": "Bluetooth は Reticulum スキャンには使用できません。システムの Bluetooth とサイドカー ビルド (rns-ble) を確認してください。",
+      "restartStackFailed": "スタックの再起動に失敗しました: {{message}}",
+      "restartStackUnavailable": "Reticulum ランタイムの準備が整うまで、スタックの再起動はできません。",
+      "localOfflineRowBle": "Bluetooth RNode オフライン — デバイスがオンで範囲内にあることを確認してから、スタックを再起動します。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "ケーブルを確認し、Meshtastic/MeshCoreからポートを解放してから、スタックを再起動します。",
       "openRadio": "ラジオを開く",
       "refreshPorts": "リフレッシュポート",
-      "availablePorts": "利用可能： {{ports}}"
+      "availablePorts": "利用可能： {{ports}}",
+      "restartStack": "スタックを再起動します",
+      "restartStackAria": "Reticulum スタックを再起動してインターフェースの変更を適用する",
+      "connectingHeading": "ローカルインターフェースを接続中…",
+      "connectingRow": "{{name}}: Bluetooth 経由で接続しています",
+      "connectingHintBle": "BLE RNode リンクは、スタックの開始後、最大 30 秒かかる場合があります。 OS のプロンプトが表示されたら、ペアリング PIN を入力します。これは正常であり、エラーではありません。",
+      "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -971,7 +980,6 @@
     "readDisplay": "表示を読む",
     "dumpEeprom": "EEPROMをダンプしてログに記録する",
     "bluetoothTitle": "ブルートゥース",
-    "bluetoothHint": "オプション。サポートされているハードウェアで Bluetooth を有効にし、OS の Bluetooth 設定からペアリングします。",
     "enableBluetooth": "Bluetooth を有効にする",
     "disableBluetooth": "Bluetoothを無効にする",
     "startPairing": "ペアリングを開始する",
@@ -1021,7 +1029,8 @@
     "provisionDone": "プロビジョニング済み",
     "firmwareHashRequiresProvision": "ファームウェアハッシュを設定する前に、EEPROMをプロビジョニングします。",
     "firmwareHashDone": "ファームウェアハッシュセット",
-    "flashDone": "ファームウェアがフラッシュされました"
+    "flashDone": "ファームウェアがフラッシュされました",
+    "bluetoothHint": "デバイスで Bluetooth を有効にし、[ペアリングの開始] を使用します。ここでは、USB シリアル経由で 6 桁の PIN が表示されます。Reticulum が BLE 経由で接続する場合は、OS の Bluetooth ダイアログ (macOS、Windows、または Linux) に同じ PIN を入力します。 USB のないヘッドレス デバイスでは、画面に PIN を表示できません。"
   },
   "logAnalyzeModal": {
     "title": "ログ分析",

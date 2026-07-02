@@ -161,7 +161,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Başlangıçta hiç reklam vermeyen kişileri kaldırın",
     "meshcoreRemoveNeverAdvertisedHint": "Reklam geçmişi olmayan eski yer tutucu kişileri kaldırır; favorilere eklenen kişiler korunur.",
     "messagesLoadLimitIntro": "Kullanıcı arayüzü için belleğe kaç mesajın yükleneceğini ve SQLite'ta kaç satırın kalacağını sınırlayın. Daha az yükleme, yoğun ağlarda RAM'in düşük kalmasını sağlar; veritabanı başlığı, uygulama başlangıcında eski mesajları siler (protokol başına saklanır).",
-    "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
     "compactMessages": "Kompakt mesaj görünümü",
     "notificationsSection": "Bildirimler",
     "soundNotifications": "Sesli Bildirimler",
@@ -196,9 +195,10 @@
     "clearReticulumMessagesTitle": "Doğrudan mesajları temizle",
     "clearReticulumMessagesConfirm": "Bu, yerel olarak depolanan tüm {{count}} Reticulum doğrudan mesajlarını kalıcı olarak silecektir. Bu işlem geri alınamaz.",
     "clearReticulumMessagesConfirmButton": "{{count}} mesajı temizle",
-    "reticulumSection": "Reticulum — Retikulum yığını",
+    "reticulumSection": "Reticulum — Reticulum yığını",
     "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
-    "reticulumPropagationHelp": "Yayılma düğümlerinin nasıl senkronize edileceğini seçin ve gerektiğinde en son yayılma verilerini çekin."
+    "reticulumPropagationHelp": "Yayılma düğümlerinin nasıl senkronize edileceğini seçin ve gerektiğinde en son yayılma verilerini çekin.",
+    "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -660,7 +660,10 @@
       "seedAddresses": "Tohum eşleri (isteğe bağlı)",
       "pickerBlePeerEmpty": "Yakınlarda Reticulum BLE eşi bulunamadı. Akranlar reklam yapıyor olmalı; Yeniden taramayı deneyin veya manuel olarak bir tohum adresi girin.",
       "pickerBleRnodeEmpty": "Yakınlarda BLE RNode'u bulunamadı. RNode'un açık ve menzil içinde olduğundan emin olun ve ardından Yeniden Taramayı deneyin.",
-      "bleUnavailable": "Reticulum taraması için Bluetooth kullanılamaz. Sistem Bluetooth'unu ve sepet yapısını (rns-ble) kontrol edin."
+      "bleUnavailable": "Reticulum taraması için Bluetooth kullanılamaz. Sistem Bluetooth'unu ve sepet yapısını (rns-ble) kontrol edin.",
+      "restartStackFailed": "Yığın yeniden başlatma başarısız oldu: {{message}}",
+      "restartStackUnavailable": "Reticulum çalışma zamanı hazır olana kadar yığının yeniden başlatılması kullanılamaz.",
+      "localOfflineRowBle": "Bluetooth RNode çevrimdışı — cihazın açık ve kapsama alanı içinde olduğundan emin olun, ardından yığını yeniden başlatın."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -681,7 +684,13 @@
       "offlineHint": "Kabloyu kontrol edin, Meshtastic/MeshCore'dan bağlantı noktasını serbest bırakın, ardından yığını yeniden başlatın.",
       "openRadio": "Açık Radyo",
       "refreshPorts": "Portları Yenile",
-      "availablePorts": "Mevcut: {{ports}}"
+      "availablePorts": "Mevcut: {{ports}}",
+      "restartStack": "Yığını yeniden başlat",
+      "restartStackAria": "Arayüz değişikliklerini uygulamak için Reticulum yığınını yeniden başlatın",
+      "connectingHeading": "Yerel arayüz(ler) bağlanıyor…",
+      "connectingRow": "{{name}}: Bluetooth üzerinden bağlanılıyor",
+      "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra 30 saniye kadar sürebilir. İşletim sisteminiz isterse bir eşleştirme PIN'i girin; bu normaldir, bir hata değil.",
+      "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -971,7 +980,6 @@
     "readDisplay": "Ekranı oku",
     "dumpEeprom": "Günlüğe kaydetmek için EEPROM'u boşaltın",
     "bluetoothTitle": "Bluetooth",
-    "bluetoothHint": "İsteğe bağlı. Desteklenen donanımda Bluetooth'u etkinleştirin, ardından işletim sisteminizin Bluetooth ayarlarıyla eşleştirin.",
     "enableBluetooth": "Bluetooth'u etkinleştir",
     "disableBluetooth": "Bluetooth'u devre dışı bırak",
     "startPairing": "Eşleştirmeyi başlat",
@@ -1021,7 +1029,8 @@
     "provisionDone": "Provizyonlu",
     "firmwareHashRequiresProvision": "Ürün yazılımı karmasını ayarlamadan önce EEPROM'u sağlayın.",
     "firmwareHashDone": "Aygıt yazılımı karma kümesi",
-    "flashDone": "Aygıt yazılımı yanıp söndü"
+    "flashDone": "Aygıt yazılımı yanıp söndü",
+    "bluetoothHint": "Cihazda Bluetooth'u etkinleştirin ve ardından Eşleştirmeyi başlat seçeneğini kullanın. 6 basamaklı PIN burada USB seri üzerinden görünür; Reticulum BLE üzerinden bağlandığında aynı PIN'i işletim sisteminizin Bluetooth iletişim kutusuna (macOS, Windows veya Linux) girin. USB'si olmayan başsız cihazlar ekranda PIN gösteremez."
   },
   "logAnalyzeModal": {
     "title": "Günlük Analizi",
