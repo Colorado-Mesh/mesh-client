@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Certifique-se de que seu dispositivo MeshCore esteja no modo Bluetooth Companion e emparelhado com seu computador usando um PIN. Remova qualquer emparelhamento existente e emparelhe novamente se os problemas de conexão persistirem.",
         "meshcoreHandshakeWindowsExtra": "No Windows, ative/desative o Bluetooth e atualize o driver do adaptador no Gerenciador de dispositivos se as desconexões persistirem.",
         "macWakeRecoveryHint": "Após a suspensão, saia do mesh-client (Cmd+Q), desligue e ligue o Bluetooth nas Configurações do Sistema, aguarde alguns segundos e conecte-se novamente. Com dois rádios, conecte o MeshCore antes do Meshtastic.",
-        "dualProtocolContentionHint": "O outro protocolo ainda pode estar se conectando via Bluetooth. Aguarde alguns segundos e tente novamente ou mude para a outra guia de protocolo para verificar o status da conexão."
+        "dualProtocolContentionHint": "O outro protocolo ainda pode estar se conectando via Bluetooth. Aguarde alguns segundos e tente novamente ou mude para a outra guia de protocolo para verificar o status da conexão.",
+        "scanBusy": "Outra varredura de Bluetooth está em andamento. Tente novamente em alguns instantes.",
+        "sameDeviceConflict": "Este dispositivo Bluetooth já está conectado a {{owner}}."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Transporte",
       "rnodeTransportSerial": "Serie USB",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Desative o Meshtastic ou MeshCore Bluetooth antes de ativar o Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Desative as interfaces Reticulum BLE antes de conectar Meshtastic ou MeshCore via Bluetooth.",
       "seedAddresses": "Pares de sementes (opcional)",
       "pickerBlePeerEmpty": "Nenhum par Reticulum BLE encontrado nas proximidades. Os pares devem estar anunciando; tente verificar novamente ou insira um endereço inicial manualmente.",
       "pickerBleRnodeEmpty": "Nenhum RNodes BLE encontrado nas proximidades. Certifique-se de que o RNode esteja ligado e dentro do alcance e tente verificar novamente.",

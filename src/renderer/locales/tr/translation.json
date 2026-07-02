@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "MeshCore cihazınızın Bluetooth Companion modunda olduğundan ve bir PIN kullanarak bilgisayarınızla eşleştirildiğinden emin olun. Bağlantı sorunları devam ederse mevcut tüm eşleştirmeleri kaldırın ve yeniden eşleştirin.",
         "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin.",
         "macWakeRecoveryHint": "Uykudan sonra mesh istemcisini (Cmd+Q) kapatın, Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar Bağlanın. Meshtastic'ten önce iki telsizle MeshCore'u bağlayın.",
-        "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin."
+        "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin.",
+        "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
+        "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Taşıma",
       "rnodeTransportSerial": "USB seri",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Reticulum BLE'yi etkinleştirmeden önce Meshtastic veya MeshCore Bluetooth'u devre dışı bırakın.",
-      "reticulumBleBlocksMesh": "Meshtastic veya MeshCore'u Bluetooth üzerinden bağlamadan önce Reticulum BLE arayüzlerini devre dışı bırakın.",
       "seedAddresses": "Tohum eşleri (isteğe bağlı)",
       "pickerBlePeerEmpty": "Yakınlarda Reticulum BLE eşi bulunamadı. Akranlar reklam yapıyor olmalı; Yeniden taramayı deneyin veya manuel olarak bir tohum adresi girin.",
       "pickerBleRnodeEmpty": "Yakınlarda BLE RNode'u bulunamadı. RNode'un açık ve menzil içinde olduğundan emin olun ve ardından Yeniden Taramayı deneyin.",

@@ -268,10 +268,14 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onClientConnected: noopUnsub,
       onClientDisconnected: noopUnsub,
     },
-    bleAdapter: {
-      acquire: async () => ({ owner: null }),
-      release: async () => ({ owner: null }),
-      getState: async () => ({ owner: null }),
+    bleCoexistence: {
+      register: async () => ({ connections: [], scanOwner: null }),
+      unregister: async () => ({ connections: [], scanOwner: null }),
+      assertCanConnect: async () => ({ connections: [], scanOwner: null }),
+      getState: async () => ({ connections: [], scanOwner: null }),
+      acquireScan: async () => ({ connections: [], scanOwner: null }),
+      releaseScan: async () => ({ connections: [], scanOwner: null }),
+      pauseNobleScan: async () => ({ connections: [], scanOwner: null }),
     },
     reticulum: {
       start: async () => ({ running: false, port: 0, pid: null }),

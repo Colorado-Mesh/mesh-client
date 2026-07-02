@@ -1,49 +1,32 @@
-import { getConnection } from '@/renderer/stores/connectionStore';
-import { useIdentityStore } from '@/renderer/stores/identityStore';
-import type { BleAdapterOwner } from '@/shared/electron-api.types';
+import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
 import {
-  acquireReticulumBleAdapter,
-  getBleAdapterOwner,
-  isNobleBleBlockedByReticulumLease,
-  isReticulumBleBusyErrorMessage,
-  releaseReticulumBleAdapter,
+  acquireReticulumBleScan,
+  isBlePeripheralConflictErrorMessage,
+  isBleScanBusyErrorMessage,
+  normalizeBleMac,
+  parseBleMacFromReticulumSerialPort,
+  registerReticulumBleMac,
+  releaseReticulumBleScan,
+  unregisterReticulumBleMac,
 } from './reticulumBleAdapterLease';
 
-export type { BleAdapterOwner };
+export type { BlePeripheralOwner };
 export {
-  acquireReticulumBleAdapter,
-  getBleAdapterOwner,
-  isNobleBleBlockedByReticulumLease,
-  isReticulumBleBusyErrorMessage,
-  releaseReticulumBleAdapter,
+  acquireReticulumBleScan,
+  isBlePeripheralConflictErrorMessage,
+  isBleScanBusyErrorMessage,
+  parseBleMacFromReticulumSerialPort,
+  registerReticulumBleMac,
+  releaseReticulumBleScan,
+  unregisterReticulumBleMac,
 };
 
 export interface ReticulumInterfaceBleRow {
   type: string;
   enabled: boolean;
   serial_port?: string | null;
-}
-
-/** BLE session statuses where the radio link is up or being established. */
-const MESH_BLE_ACTIVE_STATUSES = new Set([
-  'connecting',
-  'connected',
-  'configured',
-  'reconnecting',
-  'stale',
-]);
-
-/** True when any Meshtastic or MeshCore identity is on an active BLE connection. */
-export function isMeshBleConnected(): boolean {
-  const { identities } = useIdentityStore.getState();
-  for (const identity of Object.values(identities)) {
-    if (identity.protocol.type === 'reticulum') continue;
-    const conn = getConnection(identity.id);
-    if (conn?.connectionType !== 'ble') continue;
-    if (MESH_BLE_ACTIVE_STATUSES.has(conn.status)) return true;
-  }
-  return false;
+  seed_addresses?: string[] | null;
 }
 
 export function isReticulumBleInterfaceRow(row: ReticulumInterfaceBleRow): boolean {
@@ -62,15 +45,46 @@ export function hasEnabledReticulumBleInterface(
   return interfaces.some((iface) => iface.enabled && isReticulumBleInterfaceRow(iface));
 }
 
-export function meshBleBlockedByReticulum(
-  interfaces: readonly ReticulumInterfaceBleRow[],
-): boolean {
-  return hasEnabledReticulumBleInterface(interfaces);
+/** Collect BLE MACs from enabled Reticulum interface rows (RNode ble:// URIs and ble_peer seeds). */
+export function collectReticulumBleMacs(row: ReticulumInterfaceBleRow): string[] {
+  const macs: string[] = [];
+  if (typeof row.serial_port === 'string') {
+    const fromSerial = parseBleMacFromReticulumSerialPort(row.serial_port);
+    if (fromSerial) macs.push(fromSerial);
+  }
+  if (Array.isArray(row.seed_addresses)) {
+    for (const seed of row.seed_addresses) {
+      if (typeof seed === 'string' && seed.trim().length > 0) {
+        macs.push(seed.trim());
+      }
+    }
+  }
+  return macs;
 }
 
-export function reticulumBleBlockedByMesh(
+/** Register known Reticulum BLE MACs from interface config with the coexistence coordinator. */
+export async function syncReticulumBleRegistry(
   interfaces: readonly ReticulumInterfaceBleRow[],
-): boolean {
-  void interfaces;
-  return isMeshBleConnected();
+): Promise<void> {
+  const state = await window.electronAPI.bleCoexistence.getState();
+  const registeredReticulum = new Set(
+    state.connections.filter((c) => c.owner === 'reticulum').map((c) => c.mac),
+  );
+  const desired = new Set<string>();
+  for (const row of interfaces) {
+    if (!row.enabled || !isReticulumBleInterfaceRow(row)) continue;
+    for (const mac of collectReticulumBleMacs(row)) {
+      desired.add(normalizeBleMac(mac));
+    }
+  }
+  for (const mac of desired) {
+    if (!registeredReticulum.has(mac)) {
+      await registerReticulumBleMac(mac);
+    }
+  }
+  for (const mac of registeredReticulum) {
+    if (!desired.has(mac)) {
+      await unregisterReticulumBleMac(mac);
+    }
+  }
 }

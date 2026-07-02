@@ -1646,40 +1646,4 @@ describe('ConnectionPanel Reticulum', () => {
       localStorage.removeItem(lastConnKey);
     }
   });
-
-  it('skips mesh BLE auto-connect when Reticulum holds the Bluetooth adapter lease', async () => {
-    const noble = mockMacNoblePlatform();
-    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
-    localStorage.setItem(
-      lastConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'aa-bb-cc-dd-ee-ff' }),
-    );
-    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(window.electronAPI.bleAdapter.getState).mockResolvedValue({
-      owner: 'reticulum-sidecar',
-    });
-
-    try {
-      render(
-        <ConnectionPanel
-          state={disconnectedState}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="meshtastic"
-        />,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Radio Connection')).toBeInTheDocument();
-      });
-      expect(onAutoConnect).not.toHaveBeenCalled();
-      expect(screen.queryByText(/Auto-connecting/i)).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(lastConnKey);
-      noble.restore();
-      vi.mocked(window.electronAPI.bleAdapter.getState).mockResolvedValue({ owner: null });
-    }
-  });
 });

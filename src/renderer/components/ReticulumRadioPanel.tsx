@@ -5,12 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
-import {
-  acquireReticulumBleAdapter,
-  hasEnabledReticulumBleInterface,
-  isMeshBleConnected,
-  releaseReticulumBleAdapter,
-} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   classifyReticulumLocalInterface,
   reticulumLocalInterfaceTextClass,
@@ -53,18 +48,6 @@ type ReticulumRnodeTransport = 'serial' | 'ble';
 
 type ReticulumIfaceUiType =
   'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi' | 'ble_peer';
-
-function isReticulumBleInterfaceRow(
-  row: Pick<ReticulumInterfaceRow, 'type' | 'serial_port'>,
-): boolean {
-  const ui = row.type.toLowerCase();
-  if (ui === 'ble_peer' || ui.includes('blepeer')) return true;
-  return (
-    ui.includes('rnode') &&
-    typeof row.serial_port === 'string' &&
-    row.serial_port.startsWith('ble://')
-  );
-}
 
 function ReticulumCollapsibleSection({
   title,
@@ -158,6 +141,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         interfaces?: ReticulumInterfaceRow[];
       };
       setInterfaces(body.interfaces ?? []);
+      await syncReticulumBleRegistry(body.interfaces ?? []);
     } catch (e) {
       console.debug('[ReticulumRadioPanel] interfaces ' + errLikeToLogString(e));
     }
@@ -320,20 +304,6 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
 
   const handleAddInterface = async () => {
     try {
-      if (
-        (ifaceType === 'ble_peer' || (ifaceType === 'rnode' && rnodeTransport === 'ble')) &&
-        isMeshBleConnected()
-      ) {
-        setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
-        return;
-      }
-      if (ifaceType === 'ble_peer' || (ifaceType === 'rnode' && rnodeTransport === 'ble')) {
-        const acquired = await acquireReticulumBleAdapter();
-        if (!acquired) {
-          setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
-          return;
-        }
-      }
       const body: Record<string, unknown> = { type: ifaceType };
       if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
         body.host = ifaceHost.trim();
@@ -362,9 +332,6 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         error?: string;
       };
       if (res?.ok === false) {
-        if (ifaceType === 'ble_peer' || (ifaceType === 'rnode' && rnodeTransport === 'ble')) {
-          await releaseReticulumBleAdapter();
-        }
         setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.addFailed'));
         return;
       }
@@ -385,37 +352,14 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
 
   const toggleInterface = async (id: string, enabled: boolean) => {
     try {
-      const row = interfaces.find((i) => i.id === id);
-      if (enabled && row && isReticulumBleInterfaceRow(row)) {
-        if (isMeshBleConnected()) {
-          setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
-          return;
-        }
-        const acquired = await acquireReticulumBleAdapter();
-        if (!acquired) {
-          setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
-          return;
-        }
-      }
       const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
       const res = (await window.electronAPI.reticulum.proxyPost(path, {})) as {
         ok?: boolean;
         error?: string;
       };
       if (res?.ok === false) {
-        if (enabled && row && isReticulumBleInterfaceRow(row)) {
-          await releaseReticulumBleAdapter();
-        }
         setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.toggleFailed'));
         return;
-      }
-      if (!enabled && row && isReticulumBleInterfaceRow(row)) {
-        const stillEnabled = interfaces.some(
-          (i) => i.id !== id && i.enabled && isReticulumBleInterfaceRow(i),
-        );
-        if (!stillEnabled) {
-          await releaseReticulumBleAdapter();
-        }
       }
       await refreshInterfaces();
     } catch (e) {
@@ -426,7 +370,6 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
 
   const deleteInterface = async (id: string) => {
     try {
-      const row = interfaces.find((i) => i.id === id);
       const res = (await window.electronAPI.reticulum.proxyDelete(`/api/v1/interfaces/${id}`)) as {
         ok?: boolean;
         error?: string;
@@ -438,14 +381,6 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
       setPendingDeleteInterface(null);
       if (editingInterface?.id === id) {
         setEditingInterface(null);
-      }
-      if (row && isReticulumBleInterfaceRow(row)) {
-        const remaining = interfaces.filter(
-          (i) => i.id !== id && i.enabled && isReticulumBleInterfaceRow(i),
-        );
-        if (remaining.length === 0) {
-          await releaseReticulumBleAdapter();
-        }
       }
       await refreshInterfaces();
     } catch (e) {
@@ -733,11 +668,6 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
             {restartStackHint ? (
               <p className="mb-3 text-xs text-amber-300" role="status">
                 {t('connectionPanel.reticulumInterfaces.restartStackHint')}
-              </p>
-            ) : null}
-            {hasEnabledReticulumBleInterface(interfaces) && isMeshBleConnected() ? (
-              <p className="mb-3 text-xs text-amber-300" role="alert">
-                {t('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh')}
               </p>
             ) : null}
             <InterfacesSection

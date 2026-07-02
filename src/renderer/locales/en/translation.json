@@ -540,8 +540,6 @@
       "rnodeTransport": "Transport",
       "rnodeTransportSerial": "USB serial",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Disable Meshtastic or MeshCore Bluetooth before enabling Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Disable Reticulum BLE interfaces before connecting Meshtastic or MeshCore over Bluetooth.",
       "seedAddresses": "Seed peers (optional)",
       "host": "Host",
       "port": "Port",
@@ -675,7 +673,9 @@
         "meshcoreHandshakeHint": "Ensure your MeshCore device is in Bluetooth Companion mode and paired with your computer using a PIN. Remove any existing pairing and re-pair if connection issues persist.",
         "meshcoreHandshakeWindowsExtra": " On Windows, toggle Bluetooth off/on and update the adapter driver in Device Manager if disconnects persist.",
         "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
-        "dualProtocolContentionHint": "The other protocol may still be connecting over Bluetooth. Wait a few seconds and try again, or switch to the other protocol tab to check its connection status."
+        "dualProtocolContentionHint": "The other protocol may still be connecting over Bluetooth. Wait a few seconds and try again, or switch to the other protocol tab to check its connection status.",
+        "scanBusy": "Another Bluetooth scan is in progress. Try again in a moment.",
+        "sameDeviceConflict": "This Bluetooth device is already connected to {{owner}}."
       }
     },
     "error": {

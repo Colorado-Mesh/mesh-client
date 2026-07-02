@@ -76,10 +76,6 @@ import {
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import {
-  getBleAdapterOwner,
-  isNobleBleBlockedByReticulumLease,
-} from '../lib/reticulum/reticulumBleAdapterConflict';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -1098,13 +1094,6 @@ export default function ConnectionPanel({
     setConnectionStage('connectionPanel.stagePleaseWait');
 
     if (connectionType === 'ble') {
-      const adapterOwner = await getBleAdapterOwner();
-      if (adapterOwner === 'reticulum-sidecar') {
-        setError(t('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh'));
-        setConnecting(false);
-        setConnectionStage('');
-        return;
-      }
       if (isLinux) {
         console.debug('[ConnectionPanel] handleConnect Linux BLE path');
         setConnectionStage('connectionPanel.stageSelectBluetoothDots');
@@ -1380,13 +1369,6 @@ export default function ConnectionPanel({
         return false;
       }
       void (async () => {
-        if (await isNobleBleBlockedByReticulumLease()) {
-          console.debug(
-            `[ConnectionPanel] ${protocol} BLE auto-connect skipped — Reticulum holds Bluetooth adapter`,
-          );
-          maybeNotifyPrimaryBleAutoConnectSettled();
-          return;
-        }
         const bleTargetLabel = resolveBleAutoConnectLabel(
           lastBleId,
           lc,
@@ -1400,7 +1382,7 @@ export default function ConnectionPanel({
         setShowBlePicker(false);
         setConnectionStage('connectionPanel.stageConnecting');
         // Primary: notify secondary after the first connect attempt (not after scan fallback).
-        void reconnectBleWithScan(protocol, lastBleId, () => {
+        await reconnectBleWithScan(protocol, lastBleId, () => {
           const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
           if (
             dualNobleBleBothRadiosConfigured() &&
@@ -1409,15 +1391,12 @@ export default function ConnectionPanel({
             void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled);
           }
           return attempt;
-        })
-          .then(() => {
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            setConnecting(false);
-            setConnectionStage('');
-          })
-          .catch(onAutoConnectFailed);
-      })();
+        });
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setConnecting(false);
+        setConnectionStage('');
+      })().catch(onAutoConnectFailed);
       return true;
     };
 
@@ -1462,16 +1441,6 @@ export default function ConnectionPanel({
           : STAGE_WAITING_NOBLE_BLE_MESHCORE,
       );
       await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
-      if (await isNobleBleBlockedByReticulumLease()) {
-        console.debug(
-          `[ConnectionPanel] ${protocol} BLE auto-connect skipped — Reticulum holds Bluetooth adapter`,
-        );
-        isAutoConnectingRef.current = false;
-        setIsAutoConnecting(false);
-        setConnecting(false);
-        setConnectionStage('');
-        return;
-      }
       setConnectionStage('connectionPanel.stageConnecting');
       void reconnectBleWithScan(protocol, bleId, () =>
         onAutoConnectRef.current('ble', undefined, undefined, bleId),
@@ -1565,10 +1534,6 @@ export default function ConnectionPanel({
 
     if (lastConnection.type === 'ble') {
       void (async () => {
-        if (await isNobleBleBlockedByReticulumLease()) {
-          setError(t('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh'));
-          return;
-        }
         if (!lastConnection.bleDeviceId) return;
         setConnectionType('ble');
         setBleDevices([]);
@@ -1584,7 +1549,14 @@ export default function ConnectionPanel({
           setConnectionStage('connectionPanel.stageReconnecting');
           // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
           connectionTypeRef.current = 'ble';
-          void onConnect('ble', undefined).catch((err: unknown) => {
+          try {
+            await onConnect('ble', undefined);
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+          } catch (err: unknown) {
+            // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
             const bleErrMsg = humanizeBleError(err, t);
@@ -1604,27 +1576,27 @@ export default function ConnectionPanel({
               setManualPairingFallback(true);
               setPinInputValue('');
             }
-          });
+          }
         } else {
           const bleDeviceId = lastConnection.bleDeviceId;
           setConnectionStage('connectionPanel.stageConnecting');
-          void reconnectBleWithScan(protocol, bleDeviceId, () =>
-            onConnect('ble', undefined, bleDeviceId),
-          )
-            .then(() => {
-              isAutoConnectingRef.current = false;
-              setIsAutoConnecting(false);
-              setConnecting(false);
-              setConnectionStage('');
-            })
-            .catch((err: unknown) => {
-              isAutoConnectingRef.current = false;
-              setIsAutoConnecting(false);
-              const bleErrMsg = humanizeBleError(err, t);
-              if (bleErrMsg) setError(bleErrMsg);
-              setConnecting(false);
-              setConnectionStage('');
-            });
+          try {
+            await reconnectBleWithScan(protocol, bleDeviceId, () =>
+              onConnect('ble', undefined, bleDeviceId),
+            );
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+          } catch (err: unknown) {
+            // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            const bleErrMsg = humanizeBleError(err, t);
+            if (bleErrMsg) setError(bleErrMsg);
+            setConnecting(false);
+            setConnectionStage('');
+          }
         }
       })();
     } else if (lastConnection.type === 'http') {

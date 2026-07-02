@@ -1,10 +1,9 @@
 import { useCallback, useState } from 'react';
 
 import {
-  acquireReticulumBleAdapter,
-  isMeshBleConnected,
+  acquireReticulumBleScan,
   isReticulumBleInterfaceRow,
-  releaseReticulumBleAdapter,
+  releaseReticulumBleScan,
 } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   fetchReticulumInterfaces,
@@ -28,7 +27,7 @@ export interface ReticulumDevicePickerRequest {
 }
 
 const BLE_SCAN_INTERFACE_SETTLE_MS = 400;
-/** After Noble teardown, allow CoreBluetooth/btleplug to settle before scanning. */
+/** After pausing Noble scan, allow CoreBluetooth/btleplug to settle before scanning. */
 const BLE_ADAPTER_SETTLE_MS = 500;
 
 async function pauseEnabledReticulumBleInterfaces(): Promise<string[]> {
@@ -88,7 +87,7 @@ export function useReticulumInterfaceDevicePicker() {
     setScanning(false);
     setScanError(null);
     setOnSelectRef(null);
-    void releaseReticulumBleAdapter();
+    void releaseReticulumBleScan();
   }, []);
 
   const refreshSerial = useCallback(async () => {
@@ -101,14 +100,9 @@ export function useReticulumInterfaceDevicePicker() {
     setScanError(null);
     setDevices([]);
     let pausedInterfaceIds: string[] = [];
-    let adapterAcquired = false;
+    let scanAcquired = false;
     const scanMode = scanModeForPicker(pickerMode);
     try {
-      if (isMeshBleConnected()) {
-        setScanError('mesh_ble_active');
-        return;
-      }
-
       pausedInterfaceIds = await pauseEnabledReticulumBleInterfaces();
 
       const avail = (await window.electronAPI.reticulum.proxyGet('/api/v1/ble/availability')) as {
@@ -121,12 +115,12 @@ export function useReticulumInterfaceDevicePicker() {
         return;
       }
 
-      const acquired = await acquireReticulumBleAdapter();
+      const acquired = await acquireReticulumBleScan();
       if (!acquired) {
-        setScanError('adapter_busy');
+        setScanError('scan_busy');
         return;
       }
-      adapterAcquired = true;
+      scanAcquired = true;
 
       await new Promise<void>((resolve) => {
         setTimeout(resolve, BLE_ADAPTER_SETTLE_MS);
@@ -145,8 +139,8 @@ export function useReticulumInterfaceDevicePicker() {
       setScanError(err instanceof Error ? err.message : String(err));
     } finally {
       await resumeReticulumBleInterfaces(pausedInterfaceIds);
-      if (adapterAcquired) {
-        await releaseReticulumBleAdapter();
+      if (scanAcquired) {
+        await releaseReticulumBleScan();
       }
       setScanning(false);
     }

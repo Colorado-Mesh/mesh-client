@@ -38,7 +38,11 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
-import { bleAdapterCoordinator } from './ble-adapter-coordinator';
+import {
+  bleCoexistenceCoordinator,
+  type BlePeripheralOwner,
+  type BleScanOwner,
+} from './ble-coexistence-coordinator';
 import { formatChatExportLines } from './chatExportFormat';
 import {
   addContactToGroup,
@@ -207,7 +211,7 @@ function isWindowStateOnScreen(state: WindowState): boolean {
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
 const nobleBleManager = new NobleBleManager();
-bleAdapterCoordinator.setNobleManager(nobleBleManager);
+bleCoexistenceCoordinator.setNobleManager(nobleBleManager);
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -2533,21 +2537,67 @@ nobleBleManager.on(
 );
 
 // ─── Noble BLE: IPC command handlers ────────────────────────────────
-ipcMain.handle('bleAdapter:acquire', async (_event, owner: unknown) => {
-  if (owner !== 'noble' && owner !== 'reticulum-sidecar') {
-    throw new Error('bleAdapter:acquire: owner must be noble or reticulum-sidecar');
+const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
+  'noble:meshtastic',
+  'noble:meshcore',
+  'webbt:meshtastic',
+  'webbt:meshcore',
+  'reticulum',
+]);
+const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['noble', 'reticulum', 'webbt']);
+
+ipcMain.handle('bleCoexistence:register', (_event, mac: unknown, owner: unknown) => {
+  if (
+    typeof mac !== 'string' ||
+    typeof owner !== 'string' ||
+    !BLE_PERIPHERAL_OWNERS.has(owner as BlePeripheralOwner)
+  ) {
+    throw new Error('bleCoexistence:register: invalid mac or owner');
   }
-  await bleAdapterCoordinator.acquire(owner);
-  return bleAdapterCoordinator.getState();
+  bleCoexistenceCoordinator.register(mac, owner as BlePeripheralOwner);
+  return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleAdapter:release', (_event, owner: unknown) => {
-  if (owner !== 'noble' && owner !== 'reticulum-sidecar') {
-    throw new Error('bleAdapter:release: owner must be noble or reticulum-sidecar');
+ipcMain.handle('bleCoexistence:unregister', (_event, mac: unknown, owner: unknown) => {
+  if (
+    typeof mac !== 'string' ||
+    typeof owner !== 'string' ||
+    !BLE_PERIPHERAL_OWNERS.has(owner as BlePeripheralOwner)
+  ) {
+    throw new Error('bleCoexistence:unregister: invalid mac or owner');
   }
-  bleAdapterCoordinator.release(owner);
-  return bleAdapterCoordinator.getState();
+  bleCoexistenceCoordinator.unregister(mac, owner as BlePeripheralOwner);
+  return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleAdapter:getState', () => bleAdapterCoordinator.getState());
+ipcMain.handle('bleCoexistence:assertCanConnect', (_event, owner: unknown, mac: unknown) => {
+  if (
+    typeof mac !== 'string' ||
+    typeof owner !== 'string' ||
+    !BLE_PERIPHERAL_OWNERS.has(owner as BlePeripheralOwner)
+  ) {
+    throw new Error('bleCoexistence:assertCanConnect: invalid mac or owner');
+  }
+  bleCoexistenceCoordinator.assertCanConnect(owner as BlePeripheralOwner, mac);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:getState', () => bleCoexistenceCoordinator.getState());
+ipcMain.handle('bleCoexistence:acquireScan', async (_event, owner: unknown) => {
+  if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
+    throw new Error('bleCoexistence:acquireScan: owner must be noble, reticulum, or webbt');
+  }
+  await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:releaseScan', (_event, owner: unknown) => {
+  if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
+    throw new Error('bleCoexistence:releaseScan: owner must be noble, reticulum, or webbt');
+  }
+  bleCoexistenceCoordinator.releaseScan(owner as BleScanOwner);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:pauseNobleScan', async () => {
+  await bleCoexistenceCoordinator.pauseNobleScan();
+  return bleCoexistenceCoordinator.getState();
+});
 
 ipcMain.handle('noble-ble-start-scan', async (_event, sessionId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {

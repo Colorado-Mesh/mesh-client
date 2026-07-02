@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Stellen Sie sicher, dass sich Ihr MeshCore-Gerät im Bluetooth Companion-Modus befindet und über eine PIN mit Ihrem Computer gekoppelt ist. Entfernen Sie alle vorhandenen Kopplungen und koppeln Sie sie erneut, wenn die Verbindungsprobleme weiterhin bestehen.",
         "meshcoreHandshakeWindowsExtra": "Schalten Sie unter Windows Bluetooth aus/ein und aktualisieren Sie den Adaptertreiber im Geräte-Manager, wenn weiterhin Verbindungsabbrüche bestehen.",
         "macWakeRecoveryHint": "Beenden Sie nach dem Schlafengehen den Mesh-Client (Cmd+Q), schalten Sie Bluetooth in den Systemeinstellungen aus und ein, warten Sie einige Sekunden und stellen Sie dann erneut eine Verbindung her. Verbinden Sie MeshCore mit zwei Funkgeräten vor Meshtastic.",
-        "dualProtocolContentionHint": "Das andere Protokoll verbindet sich möglicherweise immer noch über Bluetooth. Warten Sie ein paar Sekunden und versuchen Sie es erneut, oder wechseln Sie zur anderen Protokollregisterkarte, um den Verbindungsstatus zu überprüfen."
+        "dualProtocolContentionHint": "Das andere Protokoll verbindet sich möglicherweise immer noch über Bluetooth. Warten Sie ein paar Sekunden und versuchen Sie es erneut, oder wechseln Sie zur anderen Protokollregisterkarte, um den Verbindungsstatus zu überprüfen.",
+        "scanBusy": "Ein weiterer Bluetooth-Scan wird durchgeführt. Versuchen Sie es gleich noch einmal.",
+        "sameDeviceConflict": "Dieses Bluetooth-Gerät ist bereits mit {{owner}} verbunden."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Transport",
       "rnodeTransportSerial": "USB seriell",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Deaktivieren Sie Meshtastic oder MeshCore Bluetooth, bevor Sie Reticulum BLE aktivieren.",
-      "reticulumBleBlocksMesh": "Deaktivieren Sie die Reticulum BLE-Schnittstellen, bevor Sie Meshtastic oder MeshCore über Bluetooth verbinden.",
       "seedAddresses": "Seed-Peers (optional)",
       "pickerBlePeerEmpty": "Keine Reticulum BLE-Peers in der Nähe gefunden. Gleichaltrige müssen Werbung machen; Versuchen Sie es mit einem erneuten Scan oder geben Sie manuell eine Seed-Adresse ein.",
       "pickerBleRnodeEmpty": "Keine BLE-RNodes in der Nähe gefunden. Stellen Sie sicher, dass der RNode eingeschaltet ist und sich in Reichweite befindet, und versuchen Sie dann einen erneuten Scan.",

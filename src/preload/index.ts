@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 import type {
+  BlePeripheralOwner,
+  BleScanOwner,
   ElectronAPI,
   MeshNode,
   MeshProtocol,
@@ -542,12 +544,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
-  bleAdapter: {
-    acquire: (owner: 'noble' | 'reticulum-sidecar') =>
-      ipcRenderer.invoke('bleAdapter:acquire', owner),
-    release: (owner: 'noble' | 'reticulum-sidecar') =>
-      ipcRenderer.invoke('bleAdapter:release', owner),
-    getState: () => ipcRenderer.invoke('bleAdapter:getState'),
+  bleCoexistence: {
+    register: (mac: string, owner: BlePeripheralOwner) =>
+      ipcRenderer.invoke('bleCoexistence:register', mac, owner),
+    unregister: (mac: string, owner: BlePeripheralOwner) =>
+      ipcRenderer.invoke('bleCoexistence:unregister', mac, owner),
+    assertCanConnect: (owner: BlePeripheralOwner, mac: string) =>
+      ipcRenderer.invoke('bleCoexistence:assertCanConnect', owner, mac),
+    getState: () => ipcRenderer.invoke('bleCoexistence:getState'),
+    acquireScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:acquireScan', owner),
+    releaseScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:releaseScan', owner),
+    pauseNobleScan: () => ipcRenderer.invoke('bleCoexistence:pauseNobleScan'),
   },
 
   // ─── Noble BLE ──────────────────────────────────────────────────

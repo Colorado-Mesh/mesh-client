@@ -157,10 +157,19 @@ export interface SpellcheckReplacePayload {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
-export type BleAdapterOwner = 'noble' | 'reticulum-sidecar';
+export type BlePeripheralOwner =
+  'noble:meshtastic' | 'noble:meshcore' | 'webbt:meshtastic' | 'webbt:meshcore' | 'reticulum';
 
-export interface BleAdapterState {
-  owner: BleAdapterOwner | null;
+export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
+
+export interface BleRegisteredConnection {
+  mac: string;
+  owner: BlePeripheralOwner;
+}
+
+export interface BleCoexistenceState {
+  connections: BleRegisteredConnection[];
+  scanOwner: BleScanOwner | null;
 }
 
 export interface ElectronAPI {
@@ -643,11 +652,15 @@ export interface ElectronAPI {
     onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
   };
 
-  // ─── BLE adapter lease (Noble vs Reticulum sidecar) ───────────────────────────
-  bleAdapter: {
-    acquire: (owner: BleAdapterOwner) => Promise<BleAdapterState>;
-    release: (owner: BleAdapterOwner) => Promise<BleAdapterState>;
-    getState: () => Promise<BleAdapterState>;
+  // ─── BLE coexistence (multi-protocol peripheral registry + scan mutex) ─────
+  bleCoexistence: {
+    register: (mac: string, owner: BlePeripheralOwner) => Promise<BleCoexistenceState>;
+    unregister: (mac: string, owner: BlePeripheralOwner) => Promise<BleCoexistenceState>;
+    assertCanConnect: (owner: BlePeripheralOwner, mac: string) => Promise<BleCoexistenceState>;
+    getState: () => Promise<BleCoexistenceState>;
+    acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
+    releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
+    pauseNobleScan: () => Promise<BleCoexistenceState>;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────

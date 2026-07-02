@@ -104,8 +104,8 @@ export function ReticulumInterfaceDevicePickerModal({
           <p className="border-b border-gray-700 px-4 py-2 text-xs text-amber-300" role="alert">
             {scanError === 'stack_required'
               ? t('connectionPanel.reticulumInterfaces.pickerStackRequired')
-              : scanError === 'adapter_busy' || scanError === 'mesh_ble_active'
-                ? t('connectionPanel.reticulumInterfaces.meshBleActive')
+              : scanError === 'scan_busy'
+                ? t('connectionPanel.humanize.ble.scanBusy')
                 : scanError === 'ble_unavailable'
                   ? t('connectionPanel.reticulumInterfaces.bleUnavailable')
                   : scanError}

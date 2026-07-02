@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "MeshCore デバイスが Bluetooth コンパニオン モードになっていて、PIN を使用してコンピュータとペアリングされていることを確認します。接続の問題が解決しない場合は、既存のペアリングを削除し、再度ペアリングします。",
         "meshcoreHandshakeWindowsExtra": "Windows では、切断が続く場合は、Bluetooth のオフ/オンを切り替え、デバイス マネージャーでアダプター ドライバーを更新します。",
         "macWakeRecoveryHint": "スリープ後、メッシュクライアント（ Command + Q ）を終了し、システム設定でBluetoothのオフとオンを切り替え、数秒待ってから再度接続します。2つのラジオで、Meshtasticの前にMeshCoreを接続します。",
-        "dualProtocolContentionHint": "他のプロトコルはまだBluetooth経由で接続している可能性があります。数秒待ってからもう一度お試しいただくか、他のプロトコルタブに切り替えて接続ステータスを確認してください。"
+        "dualProtocolContentionHint": "他のプロトコルはまだBluetooth経由で接続している可能性があります。数秒待ってからもう一度お試しいただくか、他のプロトコルタブに切り替えて接続ステータスを確認してください。",
+        "scanBusy": "別の Bluetooth スキャンが進行中です。しばらくしてからもう一度試してください。",
+        "sameDeviceConflict": "この Bluetooth デバイスはすでに {{owner}} に接続されています。"
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "輸送",
       "rnodeTransportSerial": "USBシリアル",
       "rnodeTransportBle": "ブルートゥース",
-      "meshBleActive": "Reticulum BLE を有効にする前に、Meshtastic または MeshCore Bluetooth を無効にします。",
-      "reticulumBleBlocksMesh": "Bluetooth 経由で Meshtastic または MeshCore を接続する前に、Reticulum BLE インターフェイスを無効にします。",
       "seedAddresses": "シードピア (オプション)",
       "pickerBlePeerEmpty": "近くに Reticulum BLE ピアが見つかりません。ピアは宣伝する必要があります。再スキャンを試すか、シード アドレスを手動で入力してください。",
       "pickerBleRnodeEmpty": "近くに BLE RNode が見つかりません。 RNode の電源が入っており、範囲内にあることを確認してから、再スキャンを試してください。",

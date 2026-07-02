@@ -1,23 +1,17 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
-
-import { setConnection, useConnectionStore } from '@/renderer/stores/connectionStore';
-import { useIdentityStore } from '@/renderer/stores/identityStore';
+import { describe, expect, it } from 'vitest';
 
 import {
+  collectReticulumBleMacs,
   hasEnabledReticulumBleInterface,
-  isMeshBleConnected,
-  isReticulumBleBusyErrorMessage,
   isReticulumBleInterfaceRow,
-  meshBleBlockedByReticulum,
 } from './reticulumBleAdapterConflict';
+import {
+  isBlePeripheralConflictErrorMessage,
+  isBleScanBusyErrorMessage,
+} from './reticulumBleAdapterLease';
 
 describe('reticulumBleAdapterConflict', () => {
-  beforeEach(() => {
-    useConnectionStore.setState({ connections: {} });
-    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
-  });
-
   it('detects enabled ble_peer and ble:// rnode interfaces', () => {
     expect(
       hasEnabledReticulumBleInterface([
@@ -36,9 +30,7 @@ describe('reticulumBleAdapterConflict', () => {
     ).toBe(true);
 
     expect(
-      hasEnabledReticulumBleInterface([
-        { type: 'ble_peer', enabled: true, seed_addresses: [] } as never,
-      ]),
+      hasEnabledReticulumBleInterface([{ type: 'ble_peer', enabled: true, seed_addresses: [] }]),
     ).toBe(true);
 
     expect(
@@ -52,94 +44,29 @@ describe('reticulumBleAdapterConflict', () => {
     ).toBe(true);
   });
 
-  it('detects active mesh BLE connections', () => {
-    useIdentityStore.setState({
-      identities: {
-        mt: {
-          id: 'mt',
-          protocol: { type: 'meshtastic' } as never,
-          signature: '1',
-          transports: [],
-          createdAt: 0,
-          lastSeenAt: 0,
-        },
-      },
-      activeIdentityId: 'mt',
-    });
-    setConnection('mt', {
-      status: 'connected',
-      connectionType: 'ble',
-      mqttStatus: 'disconnected',
-      reconnectAttempt: 0,
-      myNodeNum: 1,
-    });
+  it('collects MACs from ble:// serial ports and seed addresses', () => {
+    expect(
+      collectReticulumBleMacs({
+        type: 'rnode',
+        enabled: true,
+        serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+      }),
+    ).toEqual(['AA:BB:CC:DD:EE:FF']);
 
-    expect(isMeshBleConnected()).toBe(true);
-    expect(meshBleBlockedByReticulum([{ type: 'ble_peer', enabled: true }])).toBe(true);
+    expect(
+      collectReticulumBleMacs({
+        type: 'ble_peer',
+        enabled: true,
+        seed_addresses: ['11:22:33:44:55:66'],
+      }),
+    ).toEqual(['11:22:33:44:55:66']);
   });
 
-  it('treats configured BLE mesh sessions as active', () => {
-    useIdentityStore.setState({
-      identities: {
-        mt: {
-          id: 'mt',
-          protocol: { type: 'meshtastic' } as never,
-          signature: '1',
-          transports: [],
-          createdAt: 0,
-          lastSeenAt: 0,
-        },
-      },
-      activeIdentityId: 'mt',
-    });
-    setConnection('mt', {
-      status: 'configured',
-      connectionType: 'ble',
-      mqttStatus: 'disconnected',
-      reconnectAttempt: 0,
-      myNodeNum: 1,
-    });
-
-    expect(isMeshBleConnected()).toBe(true);
-  });
-
-  it('ignores reticulum identities and non-BLE transports', () => {
-    useIdentityStore.setState({
-      identities: {
-        ret: {
-          id: 'ret',
-          protocol: { type: 'reticulum' } as never,
-          signature: 'r',
-          transports: [],
-          createdAt: 0,
-          lastSeenAt: 0,
-        },
-        mt: {
-          id: 'mt',
-          protocol: { type: 'meshtastic' } as never,
-          signature: '1',
-          transports: [],
-          createdAt: 0,
-          lastSeenAt: 0,
-        },
-      },
-      activeIdentityId: null,
-    });
-    setConnection('mt', {
-      status: 'connected',
-      connectionType: 'serial',
-      mqttStatus: 'disconnected',
-      reconnectAttempt: 0,
-      myNodeNum: 1,
-    });
-
-    expect(isMeshBleConnected()).toBe(false);
-  });
-
-  it('detects reticulum adapter busy messages', () => {
-    expect(isReticulumBleBusyErrorMessage('Bluetooth adapter is in use by Reticulum BLE')).toBe(
-      true,
-    );
-    expect(isReticulumBleBusyErrorMessage('GATT Error')).toBe(false);
+  it('detects coexistence busy and conflict messages', () => {
+    expect(isBleScanBusyErrorMessage('Bluetooth scan in progress (reticulum)')).toBe(true);
+    expect(
+      isBlePeripheralConflictErrorMessage('Bluetooth device aa:bb is already in use by reticulum'),
+    ).toBe(true);
+    expect(isBleScanBusyErrorMessage('GATT Error')).toBe(false);
   });
 });

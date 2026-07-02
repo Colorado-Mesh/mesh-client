@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Pastikan perangkat MeshCore Anda dalam mode Bluetooth Companion dan dipasangkan dengan komputer Anda menggunakan PIN. Hapus semua pasangan yang ada dan pasangkan kembali jika masalah koneksi terus berlanjut.",
         "meshcoreHandshakeWindowsExtra": "Di Windows, matikan/hidupkan Bluetooth dan perbarui driver adaptor di Pengelola Perangkat jika pemutusan sambungan masih terjadi.",
         "macWakeRecoveryHint": "Setelah tidur, keluar dari mesh-client (Cmd+Q), matikan dan nyalakan Bluetooth di Pengaturan Sistem, tunggu beberapa detik, lalu Hubungkan lagi. Dengan dua radio, hubungkan MeshCore sebelum Meshtastic.",
-        "dualProtocolContentionHint": "Protokol lain mungkin masih terhubung melalui Bluetooth. Tunggu beberapa detik dan coba lagi, atau beralih ke tab protokol lain untuk memeriksa status koneksinya."
+        "dualProtocolContentionHint": "Protokol lain mungkin masih terhubung melalui Bluetooth. Tunggu beberapa detik dan coba lagi, atau beralih ke tab protokol lain untuk memeriksa status koneksinya.",
+        "scanBusy": "Pemindaian Bluetooth lainnya sedang berlangsung. Coba lagi sebentar lagi.",
+        "sameDeviceConflict": "Perangkat Bluetooth ini sudah terhubung ke {{owner}}."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Mengangkut",
       "rnodeTransportSerial": "serial USB",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Nonaktifkan Bluetooth Meshtastic atau MeshCore sebelum mengaktifkan Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Nonaktifkan antarmuka Reticulum BLE sebelum menghubungkan Meshtastic atau MeshCore melalui Bluetooth.",
       "seedAddresses": "Rekan benih (opsional)",
       "pickerBlePeerEmpty": "Tidak ada peer Reticulum BLE yang ditemukan di dekatnya. Peer harus beriklan; coba Pindai ulang atau masukkan alamat seed secara manual.",
       "pickerBleRnodeEmpty": "Tidak ada BLE RNode yang ditemukan di sekitar. Pastikan RNode dihidupkan dan berada dalam jangkauan, lalu coba Pindai Ulang.",

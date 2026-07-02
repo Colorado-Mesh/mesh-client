@@ -73,7 +73,7 @@ Interfaces are stored in the sidecar rnsd config under Electron `userData/reticu
 - **BLE Peer mesh:** optional seed peer addresses (sidecar spawns `BlePeerInterface` at runtime)
 - **Auto:** name only (minimal discovery interface)
 
-**Bluetooth adapter sharing:** Meshtastic/MeshCore Noble BLE and Reticulum sidecar `btleplug` cannot use the OS adapter at the same time. The app coordinates via a main-process adapter lease — disable one stack’s BLE before enabling the other.
+**Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth **simultaneously on different devices** (macOS, Windows, and Linux). The app tracks peripheral ownership by MAC address and serializes **active scans** only—connected GATT links are not torn down when another stack scans or connects elsewhere. Do not point two protocols at the same BLE MAC; the app rejects same-device conflicts. On Linux, mesh stacks use Web Bluetooth in the renderer while Reticulum uses the sidecar `btleplug` stack.
 
 For bulk changes or migrating from Ratspeak/rsReticulum, use **Config import** (merge or replace) on the Radio tab, or paste from a file picked via the system config paths below.
 

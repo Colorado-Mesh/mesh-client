@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Asegúrese de que su dispositivo MeshCore esté en modo Bluetooth Companion y esté emparejado con su computadora mediante un PIN. Elimine cualquier emparejamiento existente y vuelva a emparejarlo si persisten los problemas de conexión.",
         "meshcoreHandshakeWindowsExtra": "En Windows, active o desactive Bluetooth y actualice el controlador del adaptador en el Administrador de dispositivos si las desconexiones persisten.",
         "macWakeRecoveryHint": "Después de dormir, salga del cliente de malla (Cmd+Q), active y desactive Bluetooth en Configuración del sistema, espere unos segundos y vuelva a conectarse. Con dos radios, conecte MeshCore antes que Meshtastic.",
-        "dualProtocolContentionHint": "Es posible que el otro protocolo aún se esté conectando a través de Bluetooth. Espere unos segundos e inténtelo de nuevo, o cambie a la otra pestaña de protocolo para comprobar su estado de conexión."
+        "dualProtocolContentionHint": "Es posible que el otro protocolo aún se esté conectando a través de Bluetooth. Espere unos segundos e inténtelo de nuevo, o cambie a la otra pestaña de protocolo para comprobar su estado de conexión.",
+        "scanBusy": "Se está realizando otra exploración de Bluetooth. Inténtalo de nuevo en un momento.",
+        "sameDeviceConflict": "Este dispositivo Bluetooth ya está conectado a {{owner}}."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Transporte",
       "rnodeTransportSerial": "serie USB",
       "rnodeTransportBle": "bluetooth",
-      "meshBleActive": "Deshabilite Meshtastic o MeshCore Bluetooth antes de habilitar Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Deshabilite las interfaces Reticulum BLE antes de conectar Meshtastic o MeshCore a través de Bluetooth.",
       "seedAddresses": "Compañeros semilla (opcional)",
       "pickerBlePeerEmpty": "No se encontraron pares Reticulum BLE cerca. Los compañeros deben hacer publicidad; Intente volver a escanear o ingrese una dirección inicial manualmente.",
       "pickerBleRnodeEmpty": "No se encontraron BLE RNodes cerca. Asegúrese de que el RNode esté encendido y dentro del alcance, luego intente volver a escanear.",

@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Assurez-vous que votre appareil MeshCore est en mode Bluetooth Companion et couplé à votre ordinateur à l'aide d'un code PIN. Supprimez tout couplage existant et ré-appairez si les problèmes de connexion persistent.",
         "meshcoreHandshakeWindowsExtra": "Sous Windows, activez/désactivez Bluetooth et mettez à jour le pilote de l'adaptateur dans le Gestionnaire de périphériques si les déconnexions persistent.",
         "macWakeRecoveryHint": "Après le sommeil, quittez le client maillé (Cmd+Q), désactivez et activez Bluetooth dans les paramètres système, attendez quelques secondes, puis reconnectez-vous. Avec deux radios, connectez MeshCore avant Meshtastic.",
-        "dualProtocolContentionHint": "L'autre protocole peut toujours se connecter via Bluetooth. Attendez quelques secondes et réessayez, ou passez à l'autre onglet de protocole pour vérifier son état de connexion."
+        "dualProtocolContentionHint": "L'autre protocole peut toujours se connecter via Bluetooth. Attendez quelques secondes et réessayez, ou passez à l'autre onglet de protocole pour vérifier son état de connexion.",
+        "scanBusy": "Une autre analyse Bluetooth est en cours. Réessayez dans un instant.",
+        "sameDeviceConflict": "Cet appareil Bluetooth est déjà connecté à {{owner}}."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Transport",
       "rnodeTransportSerial": "Série USB",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Désactivez Meshtastic ou MeshCore Bluetooth avant d'activer Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Désactivez les interfaces Reticulum BLE avant de connecter Meshtastic ou MeshCore via Bluetooth.",
       "seedAddresses": "Pairs de départ (facultatif)",
       "pickerBlePeerEmpty": "Aucun homologue du Reticulum BLE trouvé à proximité. Les pairs doivent faire de la publicité ; essayez Rescan ou entrez une adresse de départ manuellement.",
       "pickerBleRnodeEmpty": "Aucun RNode BLE trouvé à proximité. Assurez-vous que le RNode est sous tension et à portée, puis essayez de réanalyser.",

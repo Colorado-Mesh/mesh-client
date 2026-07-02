@@ -1,5 +1,12 @@
 import type { Types } from '@meshtastic/core';
 
+import {
+  acquireWebBtScanLease,
+  assertWebBtCanConnect,
+  registerWebBtDevice,
+  releaseWebBtScanLease,
+  unregisterWebBtDevice,
+} from '@/renderer/lib/bleCoexistenceWebBt';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { BLE_TO_RADIO_PAYLOAD_CAP } from '@/shared/bleAttWriteLimit';
 import { markPairingRelatedError } from '@/shared/blePairingError';
@@ -133,6 +140,8 @@ export class WebBluetoothManager {
   private backgroundPollTimer: ReturnType<typeof setInterval> | null = null;
   /** Invoked when a GATT read/write succeeds — refreshes connection watchdog on quiet meshes. */
   private onGattLinkHealthy: (() => void) | null = null;
+  /** Device id registered with BleCoexistenceCoordinator while GATT is up. */
+  private registeredDeviceId: string | null = null;
 
   public readonly toDevice: WritableStream<Uint8Array>;
   public readonly fromDevice: ReadableStream<Types.DeviceOutput>;
@@ -177,7 +186,13 @@ export class WebBluetoothManager {
 
     console.debug(`[WebBluetooth:${this.sessionId}] requestDevice for service ${serviceUuid}`);
 
+    const scanAcquired = await acquireWebBtScanLease();
+    if (!scanAcquired) {
+      throw new Error('Bluetooth scan in progress (webbt)');
+    }
+
     if (!navigator.bluetooth) {
+      await releaseWebBtScanLease();
       console.error('[WebBluetooth] navigator.bluetooth is UNDEFINED!');
       throw new Error(
         'Web Bluetooth is not available. Ensure you are using a Chromium-based browser with Web Bluetooth enabled. Check chrome://flags for "Experimental Web Platform Features".',
@@ -229,9 +244,9 @@ export class WebBluetoothManager {
         this._rejectPendingDevice = undefined;
       });
 
-    // Set up listener for when device is resolved from the chooser
     this._pendingDevicePromise
-      .then((device) => {
+      .then(async (device) => {
+        await releaseWebBtScanLease();
         console.debug(
           `[WebBluetooth:${this.sessionId}] device selected: ${device.id} (${device.name ?? 'unnamed'})`,
         );
@@ -240,7 +255,8 @@ export class WebBluetoothManager {
           this.cleanup();
         });
       })
-      .catch((err: unknown) => {
+      .catch(async (err: unknown) => {
+        await releaseWebBtScanLease();
         console.error(
           `[WebBluetooth:${this.sessionId}] requestDevice failed:` + ' ' + errLikeToLogString(err),
         );
@@ -459,7 +475,10 @@ export class WebBluetoothManager {
 
     // Wrap all GATT operations to classify errors for better user guidance
     try {
+      await assertWebBtCanConnect(this.sessionId, this.device.id);
       this.server = await withGattTimeout(gatt.connect(), GATT_CONNECT_TIMEOUT_MS, 'GATT connect');
+      await registerWebBtDevice(this.sessionId, this.device.id);
+      this.registeredDeviceId = this.device.id;
     } catch (err) {
       const domErr = err as DOMException;
       const isPairing = isWebBluetoothPairingError(err);
@@ -658,6 +677,10 @@ export class WebBluetoothManager {
   }
 
   private cleanup(): void {
+    if (this.registeredDeviceId) {
+      void unregisterWebBtDevice(this.sessionId, this.registeredDeviceId);
+      this.registeredDeviceId = null;
+    }
     this.clearPostWriteSafetyReads();
     this.isReadPumpActive = false;
     this.stopGattKeepalive();

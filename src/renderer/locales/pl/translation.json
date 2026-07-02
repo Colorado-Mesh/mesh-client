@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Upewnij się, że urządzenie MeshCore działa w trybie Bluetooth Companion i jest sparowane z komputerem za pomocą kodu PIN. Usuń istniejące parowanie i sparuj ponownie, jeśli problemy z połączeniem będą się powtarzać.",
         "meshcoreHandshakeWindowsExtra": "W systemie Windows wyłącz/włącz Bluetooth i zaktualizuj sterownik karty w Menedżerze urządzeń, jeśli rozłączenia będą się utrzymywać.",
         "macWakeRecoveryHint": "Po uśpieniu zamknij mesh-client (Cmd+Q), wyłącz i włącz Bluetooth w ustawieniach systemu, odczekaj kilka sekund, a następnie połącz się ponownie. Za pomocą dwóch radiotelefonów podłącz MeshCore przed Meshtastic.",
-        "dualProtocolContentionHint": "Drugi protokół może nadal łączyć się przez Bluetooth. Odczekaj kilka sekund i spróbuj ponownie lub przejdź do karty innego protokołu, aby sprawdzić stan połączenia."
+        "dualProtocolContentionHint": "Drugi protokół może nadal łączyć się przez Bluetooth. Odczekaj kilka sekund i spróbuj ponownie lub przejdź do karty innego protokołu, aby sprawdzić stan połączenia.",
+        "scanBusy": "Trwa kolejne skanowanie Bluetooth. Spróbuj ponownie za chwilę.",
+        "sameDeviceConflict": "To urządzenie Bluetooth jest już połączone z {{owner}}."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Transport",
       "rnodeTransportSerial": "Serial USB",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Wyłącz Bluetooth Meshtastic lub MeshCore przed włączeniem Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Wyłącz interfejsy Reticulum BLE przed podłączeniem Meshtastic lub MeshCore przez Bluetooth.",
       "seedAddresses": "Partnerzy nasion (opcjonalnie)",
       "pickerBlePeerEmpty": "W pobliżu nie znaleziono żadnych urządzeń równorzędnych Reticulum BLE. Rówieśnicy muszą reklamować; spróbuj ponownie przeskanować lub wprowadź adres początkowy ręcznie.",
       "pickerBleRnodeEmpty": "W pobliżu nie znaleziono żadnych węzłów BLE RNode. Upewnij się, że RNode jest włączony i znajduje się w zasięgu, a następnie spróbuj ponownie przeskanować.",

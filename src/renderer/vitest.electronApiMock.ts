@@ -310,10 +310,14 @@ export function createElectronAPIMock(): ElectronAPI {
       onClientConnected: vi.fn().mockReturnValue(() => {}),
       onClientDisconnected: vi.fn().mockReturnValue(() => {}),
     },
-    bleAdapter: {
-      acquire: vi.fn().mockResolvedValue({ owner: 'reticulum-sidecar' }),
-      release: vi.fn().mockResolvedValue({ owner: null }),
-      getState: vi.fn().mockResolvedValue({ owner: null }),
+    bleCoexistence: {
+      register: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      unregister: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      assertCanConnect: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      getState: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      acquireScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' }),
+      releaseScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      pauseNobleScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
     },
     reticulum: {
       start: vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 }),

@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "MeshCore 장치가 Bluetooth Companion 모드에 있고 PIN을 사용하여 컴퓨터와 페어링되어 있는지 확인하세요. 연결 문제가 지속되면 기존 페어링을 제거하고 다시 페어링하세요.",
         "meshcoreHandshakeWindowsExtra": "Windows에서 Bluetooth를 끄거나 켜고 연결이 계속 끊어지면 장치 관리자에서 어댑터 드라이버를 업데이트하세요.",
         "macWakeRecoveryHint": "절전 모드가 끝나면 mesh-client (Cmd + Q) 를 종료하고 시스템 설정에서 블루투스를 껐다 켜고 몇 초 기다린 다음 다시 연결하십시오. 두 개의 라디오를 사용하여 Meshtastic 전에 MeshCore를 연결합니다.",
-        "dualProtocolContentionHint": "다른 프로토콜은 여전히 블루투스를 통해 연결될 수 있습니다. 몇 초 후 다시 시도하거나 다른 프로토콜 탭으로 전환하여 연결 상태를 확인하세요."
+        "dualProtocolContentionHint": "다른 프로토콜은 여전히 블루투스를 통해 연결될 수 있습니다. 몇 초 후 다시 시도하거나 다른 프로토콜 탭으로 전환하여 연결 상태를 확인하세요.",
+        "scanBusy": "다른 Bluetooth 검색이 진행 중입니다. 잠시 후에 다시 시도해 보세요.",
+        "sameDeviceConflict": "이 블루투스 장치는 이미 {{owner}}에 연결되어 있습니다."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "수송",
       "rnodeTransportSerial": "USB 시리얼",
       "rnodeTransportBle": "블루투스",
-      "meshBleActive": "Reticulum BLE를 활성화하기 전에 Meshtastic 또는 MeshCore Bluetooth를 비활성화하십시오.",
-      "reticulumBleBlocksMesh": "Bluetooth를 통해 Meshtastic 또는 MeshCore를 연결하기 전에 Reticulum BLE 인터페이스를 비활성화하십시오.",
       "seedAddresses": "시드 피어(선택 사항)",
       "pickerBlePeerEmpty": "근처에서 Reticulum BLE 피어를 찾을 수 없습니다. 동료는 광고를 해야 합니다. 다시 스캔을 시도하거나 시드 주소를 수동으로 입력하세요.",
       "pickerBleRnodeEmpty": "근처에서 BLE RNode를 찾을 수 없습니다. Rnode의 전원이 켜져 있고 범위 내에 있는지 확인한 다음 다시 검색을 시도하십시오.",

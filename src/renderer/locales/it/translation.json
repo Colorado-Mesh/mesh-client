@@ -560,7 +560,9 @@
         "meshcoreHandshakeHint": "Assicurati che il tuo dispositivo MeshCore sia in modalità Bluetooth Companion e associato al computer utilizzando un PIN. Rimuovere qualsiasi accoppiamento esistente e rieseguirlo se i problemi di connessione persistono.",
         "meshcoreHandshakeWindowsExtra": "Su Windows, attiva/disattiva il Bluetooth e aggiorna il driver dell'adattatore in Gestione dispositivi se le disconnessioni persistono.",
         "macWakeRecoveryHint": "Dopo il sonno, uscire da mesh-client (Cmd+Q), attivare e disattivare il Bluetooth in Impostazioni di sistema, attendere alcuni secondi, quindi riconnettersi. Con due radio, collega MeshCore prima di Meshtastic.",
-        "dualProtocolContentionHint": "L'altro protocollo potrebbe essere ancora connesso tramite Bluetooth. Attendi qualche secondo e riprova, oppure passa all'altra scheda del protocollo per verificare lo stato della connessione."
+        "dualProtocolContentionHint": "L'altro protocollo potrebbe essere ancora connesso tramite Bluetooth. Attendi qualche secondo e riprova, oppure passa all'altra scheda del protocollo per verificare lo stato della connessione.",
+        "scanBusy": "È in corso un'altra scansione Bluetooth. Riprova tra un attimo.",
+        "sameDeviceConflict": "Questo dispositivo Bluetooth è già connesso a {{owner}}."
       }
     },
     "error": {
@@ -655,8 +657,6 @@
       "rnodeTransport": "Trasporto",
       "rnodeTransportSerial": "seriale USB",
       "rnodeTransportBle": "Bluetooth",
-      "meshBleActive": "Disabilitare Meshtastic o MeshCore Bluetooth prima di abilitare Reticulum BLE.",
-      "reticulumBleBlocksMesh": "Disabilitare le interfacce Reticulum BLE prima di connettere Meshtastic o MeshCore tramite Bluetooth.",
       "seedAddresses": "Coetanei seed (facoltativo)",
       "pickerBlePeerEmpty": "Nessun peer BLE Reticulum trovato nelle vicinanze. I peer devono fare pubblicità; prova a eseguire nuovamente la scansione o inserisci manualmente un indirizzo seed.",
       "pickerBleRnodeEmpty": "Nessun nodo BLE trovato nelle vicinanze. Assicurati che l'RNode sia acceso e nel raggio d'azione, quindi prova a ripetere la scansione.",

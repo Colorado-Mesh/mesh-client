@@ -136,7 +136,7 @@ describe('ReticulumRadioPanel', () => {
     expect(screen.getByText('Radio USB')).toBeInTheDocument();
   });
 
-  it('shows mesh BLE conflict banner when Reticulum BLE is enabled', async () => {
+  it('does not show mesh BLE conflict banner when Reticulum BLE is enabled alongside mesh', async () => {
     mockReticulumProxyGet({
       bleAvailable: true,
       interfaces: [
@@ -176,8 +176,8 @@ describe('ReticulumRadioPanel', () => {
       expect(screen.getByText(/BLE Peer \(ble_peer\)/)).toBeInTheDocument();
     });
     expect(
-      screen.getByText('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh'),
-    ).toBeInTheDocument();
+      screen.queryByText('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh'),
+    ).not.toBeInTheDocument();
   });
 
   it('opens BLE RNode picker when transport is Bluetooth', async () => {

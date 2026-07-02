@@ -140,6 +140,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
 - **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
 - **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
+- **Multi-protocol BLE:** Meshtastic, MeshCore, and Reticulum (BLE Peer + `ble://` RNode) may connect to **different** BLE devices at once on all platforms. Coexistence: `ble-coexistence-coordinator.ts` (peripheral MAC registry + scan-only mutex); Linux mesh uses Web Bluetooth + sidecar `btleplug`. Same MAC rejected; scans serialized—never disconnect unrelated GATT for scans.
 - **Docs:** [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md)
 
 ### Diagnostics

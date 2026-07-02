@@ -2,23 +2,22 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { setConnection, useConnectionStore } from '@/renderer/stores/connectionStore';
-import { useIdentityStore } from '@/renderer/stores/identityStore';
-
 import { useReticulumInterfaceDevicePicker } from './useReticulumInterfaceDevicePicker';
 
 describe('useReticulumInterfaceDevicePicker', () => {
   beforeEach(() => {
-    useConnectionStore.setState({ connections: {} });
-    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     vi.mocked(window.electronAPI.reticulum.proxyGet).mockReset();
     vi.mocked(window.electronAPI.reticulum.proxyPost).mockReset();
-    vi.mocked(window.electronAPI.bleAdapter.acquire).mockReset();
-    vi.mocked(window.electronAPI.bleAdapter.release).mockReset();
-    vi.mocked(window.electronAPI.bleAdapter.acquire).mockResolvedValue({
-      owner: 'reticulum-sidecar',
+    vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockReset();
+    vi.mocked(window.electronAPI.bleCoexistence.releaseScan).mockReset();
+    vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
     });
-    vi.mocked(window.electronAPI.bleAdapter.release).mockResolvedValue({ owner: null });
+    vi.mocked(window.electronAPI.bleCoexistence.releaseScan).mockResolvedValue({
+      connections: [],
+      scanOwner: null,
+    });
     vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
       if (path === '/api/v1/ble/availability') {
         return Promise.resolve({ available: true, missing: [] });
@@ -35,28 +34,7 @@ describe('useReticulumInterfaceDevicePicker', () => {
     });
   });
 
-  it('does not acquire BLE adapter when Meshtastic is configured over BLE', async () => {
-    useIdentityStore.setState({
-      identities: {
-        mt: {
-          id: 'mt',
-          protocol: { type: 'meshtastic' } as never,
-          signature: '1',
-          transports: [],
-          createdAt: 0,
-          lastSeenAt: 0,
-        },
-      },
-      activeIdentityId: 'mt',
-    });
-    setConnection('mt', {
-      status: 'configured',
-      connectionType: 'ble',
-      mqttStatus: 'disconnected',
-      reconnectAttempt: 0,
-      myNodeNum: 1,
-    });
-
+  it('scans for BLE peers while mesh Web BT is connected (no mesh block)', async () => {
     const { result } = renderHook(() => useReticulumInterfaceDevicePicker());
 
     await act(async () => {
@@ -67,12 +45,14 @@ describe('useReticulumInterfaceDevicePicker', () => {
       });
     });
 
-    expect(window.electronAPI.bleAdapter.acquire).not.toHaveBeenCalled();
-    expect(result.current.scanError).toBe('mesh_ble_active');
-    expect(result.current.devices).toEqual([]);
+    expect(window.electronAPI.bleCoexistence.acquireScan).toHaveBeenCalledWith('reticulum');
+    expect(result.current.scanError).toBeNull();
+    expect(result.current.devices).toEqual([
+      { address: 'AA:BB:CC:DD:EE:FF', name: 'peer-hash', kind: 'peer' },
+    ]);
   });
 
-  it('releases BLE adapter after scan completes', async () => {
+  it('releases scan lease after scan completes', async () => {
     const { result } = renderHook(() => useReticulumInterfaceDevicePicker());
 
     await act(async () => {
@@ -84,11 +64,26 @@ describe('useReticulumInterfaceDevicePicker', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.scanning).toBe(false);
+      expect(window.electronAPI.bleCoexistence.releaseScan).toHaveBeenCalledWith('reticulum');
+    });
+  });
+
+  it('surfaces scan_busy when another scan holds the lease', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.acquireScan).mockRejectedValue(
+      new Error('Bluetooth scan in progress (webbt)'),
+    );
+
+    const { result } = renderHook(() => useReticulumInterfaceDevicePicker());
+
+    await act(async () => {
+      await result.current.openPicker({
+        mode: 'ble-peer',
+        sidecarReady: true,
+        onSelect: vi.fn(),
+      });
     });
 
-    expect(window.electronAPI.bleAdapter.acquire).toHaveBeenCalled();
-    expect(window.electronAPI.bleAdapter.release).toHaveBeenCalled();
-    expect(result.current.devices).toHaveLength(1);
+    expect(result.current.scanError).toBe('scan_busy');
+    expect(result.current.devices).toEqual([]);
   });
 });
