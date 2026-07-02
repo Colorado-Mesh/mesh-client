@@ -111,12 +111,14 @@ jobs:
       - name: Smoke test Flatpak install
         run: |
           set -euo pipefail
-          flatpak run --command=sh org.coloradomesh.MeshClient -c \
+          flatpak install --assumeyes ./org.coloradomesh.MeshClient.flatpak
+
+          flatpak run --branch=stable --command=sh org.coloradomesh.MeshClient -c \
             'test -x /app/lib/mesh-client/electron/electron;
             test -f /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'
 
           set +e
-          out=$(dbus-run-session xvfb-run -a timeout 20s flatpak run org.coloradomesh.MeshClient 2>&1)
+          out=$(dbus-run-session xvfb-run -a timeout 20s flatpak run --branch=stable org.coloradomesh.MeshClient 2>&1)
           code=$?
           set -e
           printf '%s\n' "$out"

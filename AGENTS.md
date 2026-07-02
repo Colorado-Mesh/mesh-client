@@ -110,6 +110,8 @@ Adding a cross-boundary feature:
 
 **Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`.
 
+**Local Linux CI (optional):** Container mode — `act:ci`, `act:tests`, `act:pr`, … (needs Docker + act). Host mode — `act:ci:native`, `act:tests:native`, … (no Docker). See [docs/ci-cd.md](docs/ci-cd.md). macOS/Windows packaging uses native `dist:mac` / `dist:win`.
+
 > **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency. `pnpm run update` also runs `rustup update` (or Homebrew `rust` on macOS without rustup) and `cargo build` in `reticulum-sidecar/` when `cargo` is on `PATH`.
 
 **Pre-commit hook order:**

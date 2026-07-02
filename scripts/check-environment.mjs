@@ -10,6 +10,8 @@ import { userInfo } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { resolveDockerSocket } from './run-act.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
 
@@ -378,15 +380,79 @@ function checkDocker() {
       status: 'warn',
       severity: 'optional',
       label: 'Docker not found (optional)',
-      hint: 'Needed to run act locally — see docs/development-environment.md § CI workflow tooling',
+      hint: 'For container CI (act): install Docker Desktop or engine. Or use host CI: pnpm run act:ci:native — see docs/ci-cd.md',
+    };
+  }
+
+  if (!commandOk('docker', ['info'])) {
+    return {
+      status: 'warn',
+      severity: 'optional',
+      label: 'Docker daemon not running (optional)',
+      detail: out.split('\n')[0],
+      hint: 'Start Docker Desktop for pnpm run act:* (container mode), or use pnpm run act:ci:native on the host',
+    };
+  }
+
+  const socket = resolveDockerSocket();
+  const socketNote = socket
+    ? `; act socket ${socket}`
+    : '; act socket not detected (set ACT_DOCKER_SOCKET if act fails with Docker Desktop)';
+
+  return {
+    status: 'pass',
+    severity: 'optional',
+    label: 'Docker',
+    detail: `${out.split('\n')[0]}${socketNote}`,
+  };
+}
+
+function checkAct() {
+  const out = commandOutput('act', ['--version']);
+  if (!out) {
+    return {
+      status: 'warn',
+      severity: 'optional',
+      label: 'act not found (optional)',
+      hint: 'For container CI: install act + Docker, then pnpm run act:pull-images. Or use host CI: pnpm run act:ci:native',
     };
   }
   return {
     status: 'pass',
     severity: 'optional',
-    label: 'Docker',
-    detail: out,
+    label: 'act',
+    detail: out.split('\n')[0],
   };
+}
+
+/**
+ * @param {CheckResult[]} checks
+ * @returns {string | null}
+ */
+export function formatLocalActDockerNote(checks) {
+  const docker = checks.find((c) => c.label.startsWith('Docker'));
+  const actCheck = checks.find((c) => c.label === 'act' || c.label.startsWith('act not found'));
+
+  if (!docker && !actCheck) {
+    return null;
+  }
+
+  const dockerReady = docker?.status === 'pass';
+  const actReady = actCheck?.status === 'pass';
+
+  if (dockerReady && actReady) {
+    return 'ℹ️  Container CI: pnpm run act:ci (act + Docker). Host CI (no Docker): pnpm run act:ci:native. See docs/ci-cd.md.';
+  }
+
+  if (actReady && !dockerReady) {
+    return 'ℹ️  act is installed but Docker is not ready — start Docker Desktop for act:* or use pnpm run act:ci:native on the host.';
+  }
+
+  if (dockerReady && !actReady) {
+    return 'ℹ️  Docker is ready; install act for container workflows (pnpm run act:ci) or use pnpm run act:ci:native on the host.';
+  }
+
+  return 'ℹ️  Local CI: pnpm run act:ci:native (host) or install act + Docker for container workflows. See docs/ci-cd.md.';
 }
 
 function checkLinuxDialout() {
@@ -444,6 +510,7 @@ export function runChecks(options = {}) {
     checkActionlint(),
     checkYamllint(),
     checkDocker(),
+    checkAct(),
     checkLinuxDialout(),
   ].filter(Boolean);
 
@@ -464,6 +531,12 @@ function printSummary(checks) {
     }
   } else {
     console.log('❌ Required checks failed. Fix items above, then re-run.');
+  }
+
+  const actDockerNote = formatLocalActDockerNote(checks);
+  if (actDockerNote) {
+    console.log('');
+    console.log(actDockerNote);
   }
 }
 

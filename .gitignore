@@ -23,6 +23,7 @@ test-results/
 coverage/
 .context-os
 .rtk
+.githooks/bin/
 flatpak/generated-sources.json
 
 # Rust reticulum sidecar (cargo build output)

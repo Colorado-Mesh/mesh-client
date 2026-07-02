@@ -120,29 +120,79 @@ Do not use `npm install`; it will create a `package-lock.json` and may not respe
 
 ## Running CI Locally with `act`
 
-Install [act](https://github.com/nektos/act) to run GitHub Actions workflows locally:
+**Optional tooling:** You can run local CI in two ways:
+
+| Mode                    | Command prefix                                  | Requires                                      | What it does                                                        |
+| ----------------------- | ----------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------- |
+| **Container** (default) | `pnpm run act:ci`, `act:tests`, …               | Docker + [act](https://github.com/nektos/act) | Runs GitHub Actions jobs inside Linux containers (closest to CI)    |
+| **Host / native**       | `pnpm run act:ci:native`, `act:tests:native`, … | Node/pnpm only                                | Runs the same pnpm/cargo steps directly on your machine (no Docker) |
+
+`pnpm run check:environment` warns if Docker or act is missing but does not block commits. Use **native** scripts when Docker Desktop is unavailable or act cannot reach the daemon.
+
+Install act (container mode only):
 
 ```bash
 # macOS
 brew install act
 
-# Linux
-# Download from https://github.com/nektos/act/releases
+# Linux / Windows
+# https://github.com/nektos/act/releases
 ```
 
-Run workflows locally:
+On Windows, use Docker Desktop with the WSL2 backend. On Apple Silicon, act uses `--container-architecture linux/amd64` automatically for x86_64 CI parity.
+
+**Docker Desktop:** `scripts/run-act.mjs` passes `--container-daemon-socket` to act (auto-detects `~/.docker/run/docker.sock` on macOS). If act still cannot connect, set `ACT_DOCKER_SOCKET` to your socket path or use native mode.
+
+### Package scripts
 
 ```bash
-# Run all workflows for push event
-act --container-architecture linux/amd64
+# One-time (container mode)
+pnpm run act:pull-images
 
-# Run specific workflow
-act -j build
+# List targets
+pnpm run act:list
+
+# PR parity — container (act + Docker)
+pnpm run act:ci
+pnpm run act:tests
+pnpm run act:pr
+
+# PR parity — host (no Docker)
+pnpm run act:ci:native
+pnpm run act:tests:native
+pnpm run act:pr:native
+
+# Linux packaging
+pnpm run act:build:linux        # container
+pnpm run act:build:linux:native # host (best on Linux)
+
+# Heavier workflows (container only unless noted)
+pnpm run act:reticulum
+pnpm run act:reticulum:native # stub sidecar cargo test/build on host
+pnpm run act:flatpak          # docker only
+
+# Override mode on one invocation
+node scripts/run-act.mjs ci --native
+node scripts/run-act.mjs ci --docker
+MESH_CLIENT_ACT_MODE=native pnpm run act:ci
+
+# Dry-run passthrough (container mode)
+node scripts/run-act.mjs ci -- -n
 ```
 
-The `--container-architecture linux/amd64` flag ensures Linux containers run correctly on macOS/Windows.
+### What runs locally vs native OS only
 
-Note: The test results artifact upload step is automatically skipped when running under `act` (detected by actor `nektos/act`).
+| Goal                                    | Container (`act:*`)    | Host (`act:*:native`)       | macOS host only        | Windows host only      |
+| --------------------------------------- | ---------------------- | --------------------------- | ---------------------- | ---------------------- |
+| PR checks (lint / test / build)         | `act:ci` + `act:tests` | `act:ci:native` + `:native` | same                   | same                   |
+| Linux installers (AppImage / deb / rpm) | `act:build:linux`      | `act:build:linux:native`    | cross-build may differ | cross-build may differ |
+| macOS `.dmg` / `.zip`                   | —                      | —                           | `pnpm run dist:mac`    | —                      |
+| Windows `.exe`                          | —                      | —                           | —                      | `pnpm run dist:win`    |
+| Flatpak x86_64                          | `act:flatpak`          | use local Flatpak docs      | same                   | same                   |
+
+**Not run locally via act:** `docs.yml` (`mkdocs gh-deploy`), release publish legs, `macos-latest` / `windows-latest` / `windows-11-arm` matrix jobs, and `ubuntu-24.04-arm` Flatpak builds (no faithful local emulation).
+
+Note: The test results artifact upload step is automatically skipped when running under `act` (detected by actor `nektos/act` in [`tests.yaml`](../.github/workflows/tests.yaml)).
 
 ---
 
