@@ -191,6 +191,31 @@ function checkManifestBranchAndElectronPayload(pkg) {
     });
   }
 
+  if (!yaml.includes('ELECTRON_OZONE_PLATFORM_HINT=auto')) {
+    violations.push({
+      file: rel,
+      message: 'manifest finish-args must set ELECTRON_OZONE_PLATFORM_HINT=auto for Wayland/X11',
+    });
+  }
+
+  return violations;
+}
+
+function checkManifestReticulumSidecarPayload() {
+  const violations = [];
+  if (!fs.existsSync(MANIFEST)) return violations;
+
+  const yaml = fs.readFileSync(MANIFEST, 'utf8');
+  const rel = path.relative(ROOT, MANIFEST);
+
+  if (!yaml.includes('cp -a dist dist-electron node_modules resources /app/lib/mesh-client/')) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest must copy resources/ into /app/lib/mesh-client/ (Reticulum sidecar under resources/reticulum-sidecar/)',
+    });
+  }
+
   return violations;
 }
 
@@ -207,11 +232,54 @@ function checkWrapperLaunchPaths() {
   if (!sh.includes(EXPECTED_MAIN)) {
     violations.push({
       file: rel,
-      message: `wrapper must launch ${EXPECTED_MAIN} (package.json "main")`,
+      message: `wrapper must reference ${EXPECTED_MAIN} (package.json "main") for preflight`,
     });
   }
 
-  if (!sh.includes(EXPECTED_ELECTRON)) {
+  if (!sh.includes('mkdir -p "$TMPDIR"')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must mkdir -p TMPDIR under XDG_RUNTIME_DIR/app/$FLATPAK_ID',
+    });
+  }
+
+  if (!sh.includes('CHROME_WRAPPER=/app/bin/mesh-client')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must set CHROME_WRAPPER=/app/bin/mesh-client for zypak re-exec',
+    });
+  }
+
+  if (!sh.includes('--disable-setuid-sandbox')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must pass --disable-setuid-sandbox (zypak owns Chromium sandboxing)',
+    });
+  }
+
+  if (!sh.includes('XDG_SESSION_TYPE') || !sh.includes('--ozone-platform-hint=wayland')) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must pass --ozone-platform-hint=wayland when XDG_SESSION_TYPE is wayland',
+    });
+  }
+
+  if (!/exec zypak-wrapper[^\n]* \. "\$@"/.test(sh)) {
+    violations.push({
+      file: rel,
+      message: 'wrapper must launch via zypak-wrapper … . "$@" from APP_ROOT (package.json dir)',
+    });
+  }
+
+  if (sh.includes('dist-electron/main/index.js "$@"')) {
+    violations.push({
+      file: rel,
+      message:
+        'wrapper must not pass dist-electron/main/index.js as argv; launch with "." from APP_ROOT',
+    });
+  }
+
+  if (!sh.includes(EXPECTED_ELECTRON) && !sh.includes('${APP_ROOT}/electron/electron')) {
     violations.push({
       file: rel,
       message: `wrapper must invoke bundled Chromium at ${EXPECTED_ELECTRON}`,
@@ -317,6 +385,7 @@ function main() {
     ...checkManifestAppId(),
     ...checkManifestPnpmVersion(PKG_JSON),
     ...checkManifestBranchAndElectronPayload(PKG_JSON),
+    ...checkManifestReticulumSidecarPayload(),
     ...checkWrapperLaunchPaths(),
     ...checkDesktopStartupWMClass(PKG_JSON),
   ];

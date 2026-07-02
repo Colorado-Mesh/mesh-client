@@ -14,6 +14,8 @@ jobs:
   flatpak:
     name: Flatpak (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    env:
+      RS_RETICULUM_REF: 6d2b28475321bc15c8f60796513d8878b47ed3ab
     permissions:
       contents: read
     strategy:
@@ -22,14 +24,42 @@ jobs:
         include:
           - arch: x86_64
             runner: ubuntu-latest
+            cargo_target: x86_64-unknown-linux-gnu
           - arch: aarch64
             runner: ubuntu-24.04-arm
+            cargo_target: aarch64-unknown-linux-gnu
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
       options: --privileged
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        run: |
+          RNS_DIR="${GITHUB_WORKSPACE}/../rsReticulum"
+          PATCH="${GITHUB_WORKSPACE}/reticulum-sidecar/patches/rsReticulum-packet-tap.patch"
+          git clone https://github.com/ratspeak/rsReticulum.git "${RNS_DIR}"
+          git -C "${RNS_DIR}" checkout "${RS_RETICULUM_REF}"
+          git -C "${RNS_DIR}" apply --check "${PATCH}"
+          git -C "${RNS_DIR}" apply "${PATCH}"
+          git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
+
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: ${{ matrix.cargo_target }}
+
+      - name: Install Reticulum sidecar Linux build deps
+        run: apt-get update && apt-get install -y libdbus-1-dev pkg-config
+
+      - name: Build Reticulum sidecar for Flatpak payload
+        working-directory: reticulum-sidecar
+        run: |
+          cargo build --release --target "${{ matrix.cargo_target }}" \
+            --features rns-stack,rns-ble,rns-rnode-tcp
+          install -Dm755 \
+            "target/${{ matrix.cargo_target }}/release/mesh-client-reticulum" \
+            "${GITHUB_WORKSPACE}/resources/reticulum-sidecar/mesh-client-reticulum"
 
       - name: Generate offline pnpm sources
         run: |
@@ -47,6 +77,31 @@ jobs:
           branch: stable
           cache-key: flatpak-builder-${{ matrix.arch }}-${{ github.sha }}
           upload-artifact: true
+
+      - name: Smoke test Flatpak install
+        run: |
+          set -euo pipefail
+          flatpak run --command=sh org.coloradomesh.MeshClient -c \
+            'test -x /app/lib/mesh-client/electron/electron;
+            test -f /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'
+
+          set +e
+          out=$(dbus-run-session xvfb-run -a timeout 20s flatpak run org.coloradomesh.MeshClient 2>&1)
+          code=$?
+          set -e
+          printf '%s\n' "$out"
+          echo "$out" | grep -q 'mesh-client: missing' && exit 1
+          echo "$out" | grep -qi 'No usable sandbox' && exit 1
+          echo "$out" | grep -qi 'zypak-wrapper: line' && exit 1
+          # 124 = timeout (app stayed alive long enough); other exits may occur on teardown
+          if [ "$code" -eq 124 ]; then
+            exit 0
+          fi
+          # Immediate wrapper/zypak failure usually exits in under 2s with code 1
+          if [ "$code" -eq 1 ] && [ "$(printf '%s' "$out" | wc -c)" -lt 200 ]; then
+            echo "Flatpak launch failed immediately (exit $code)" >&2
+            exit 1
+          fi
 
   publish:
     name: Publish to GitHub Release

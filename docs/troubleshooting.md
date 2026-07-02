@@ -205,6 +205,44 @@ flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak # or -x86_6
 flatpak run org.coloradomesh.MeshClient
 ```
 
+### Flatpak: immediate exit on Arch / CachyOS / Wayland (#598)
+
+**Symptom**: `flatpak run org.coloradomesh.MeshClient` prints `Command failed` right after `Running 'bwrap … -- mesh-client'` with no window. Common on **Arch, CachyOS, KDE Plasma 6, and Hyprland** (pure Wayland). The AppImage from the same release often works.
+
+**Cause**: The Flatpak sandbox mounts an empty `/tmp/.X11-unix`, so Electron cannot fall back to X11 unless the wrapper passes Wayland/Ozone flags. Older bundles also omitted Chromium sandbox flags and `TMPDIR` setup that zypak expects.
+
+The log line `F: /lib32 does not exist in runtime` is **harmless** on x86_64-only runtimes — not the failure cause.
+
+**Fix**:
+
+1. Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (bundles after the #598 fix include an updated wrapper).
+2. Run with debug logging if it still fails:
+   ```bash
+   ZYPAK_DEBUG=1 flatpak run org.coloradomesh.MeshClient
+   ```
+3. Inspect the installed payload:
+   ```bash
+   flatpak run --command=sh org.coloradomesh.MeshClient
+   # inside sandbox:
+   ls -l /app/lib/mesh-client/electron/electron
+   ls -l /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum
+   /app/bin/mesh-client --help 2>&1 | head
+   ```
+
+**Workarounds**:
+
+```bash
+MESH_CLIENT_DISABLE_GPU=1 flatpak run org.coloradomesh.MeshClient
+```
+
+**Reinstall**:
+
+```bash
+flatpak uninstall --user org.coloradomesh.MeshClient
+flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak
+flatpak run org.coloradomesh.MeshClient
+```
+
 ### Linux development: SIGILL during `pnpm install`
 
 **Symptom**: `electron exited with signal SIGILL` during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).
