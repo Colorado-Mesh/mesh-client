@@ -40,6 +40,16 @@ const UNLOCK_MAX_ATTEMPTS = 5;
 const UNLOCK_WINDOW_MS = 60_000;
 let unlockAttemptWindowStart = 0;
 let unlockAttemptCount = 0;
+let unlockMutexTail: Promise<void> = Promise.resolve();
+
+function withUnlockMutex<T>(fn: () => Promise<T>): Promise<T> {
+  const result = unlockMutexTail.then(fn, fn);
+  unlockMutexTail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
 
 function checkUnlockRateLimit(): string | null {
   const now = Date.now();
@@ -58,6 +68,7 @@ function checkUnlockRateLimit(): string | null {
 export function resetIdentityVaultUnlockRateLimitForTests(): void {
   unlockAttemptWindowStart = 0;
   unlockAttemptCount = 0;
+  unlockMutexTail = Promise.resolve();
 }
 
 /** Test hook: override vault file path (null restores default). */
@@ -211,22 +222,24 @@ export async function setIdentityVaultPasscode(
 }
 
 export async function unlockIdentityVault(passcode: string): Promise<IdentityVaultActionResult> {
-  const rateError = checkUnlockRateLimit();
-  if (rateError) return { ok: false, error: rateError };
-  const envelope = readEnvelopeFromDisk();
-  if (!envelope) return { ok: false, error: 'vault not configured' };
-  try {
-    unlockedSecret = await decryptVaultSecret(passcode, envelope);
-    unlockAttemptCount = 0;
-    return { ok: true };
-  } catch (err) {
-    unlockedSecret = null;
-    // catch-no-log-ok wrong passcode returned to IPC caller as { ok: false, error }
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
+  return withUnlockMutex(async () => {
+    const rateError = checkUnlockRateLimit();
+    if (rateError) return { ok: false, error: rateError };
+    const envelope = readEnvelopeFromDisk();
+    if (!envelope) return { ok: false, error: 'vault not configured' };
+    try {
+      unlockedSecret = await decryptVaultSecret(passcode, envelope);
+      unlockAttemptCount = 0;
+      return { ok: true };
+    } catch (err) {
+      unlockedSecret = null;
+      // catch-no-log-ok wrong passcode returned to IPC caller as { ok: false, error }
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
 }
 
 export function lockIdentityVault(): IdentityVaultActionResult {

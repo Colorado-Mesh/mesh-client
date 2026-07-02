@@ -69,18 +69,14 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
 /// When a relay is only referenced as `via` (not its own path-table row), link it to self.
 fn infer_self_to_via_edges(edges: &mut Vec<TopologyEdge>, edge_keys: &mut HashSet<(String, String)>) {
     let mut has_incoming = HashSet::new();
+    let mut non_self_sources = HashSet::new();
     for edge in edges.iter() {
         has_incoming.insert(edge.target.clone());
+        if edge.source != SELF_ID {
+            non_self_sources.insert(edge.source.clone());
+        }
     }
-    let vias: Vec<String> = edges
-        .iter()
-        .filter(|e| e.source != SELF_ID)
-        .map(|e| e.source.clone())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .filter(|via| !has_incoming.contains(via))
-        .collect();
-    for via in vias {
+    for via in non_self_sources.into_iter().filter(|via| !has_incoming.contains(via)) {
         let key = (SELF_ID.into(), via.clone());
         if edge_keys.insert(key) {
             edges.push(TopologyEdge {

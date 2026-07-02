@@ -21,7 +21,9 @@ function isReticulumTransportQueryGetPath(normalized: string): boolean {
   );
 }
 
-export function reticulumProxyGetTimeoutMs(apiPath: string): number {
+const proxyGetTimeoutCache = new Map<string, number>();
+
+function computeReticulumProxyGetTimeoutMs(apiPath: string): number {
   const trimmed = apiPath.trim();
   const pathOnly = trimmed.split('?')[0] ?? trimmed;
   const normalized = pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
@@ -35,6 +37,14 @@ export function reticulumProxyGetTimeoutMs(apiPath: string): number {
     return RETICULUM_TRANSPORT_QUERY_GET_TIMEOUT_MS;
   }
   return RETICULUM_PROXY_GET_TIMEOUT_MS;
+}
+
+export function reticulumProxyGetTimeoutMs(apiPath: string): number {
+  const cached = proxyGetTimeoutCache.get(apiPath);
+  if (cached !== undefined) return cached;
+  const timeout = computeReticulumProxyGetTimeoutMs(apiPath);
+  proxyGetTimeoutCache.set(apiPath, timeout);
+  return timeout;
 }
 
 /**
