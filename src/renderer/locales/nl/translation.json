@@ -23,7 +23,17 @@
       "reconnecting": "Opnieuw verbinding maken"
     },
     "nodeLabel": "Knooppunt: {{name}}",
-    "takClientLost": "TAK client verloren"
+    "takClientLost": "TAK client verloren",
+    "title": "Mesh-client",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Schakel het Colorado Mesh-bord uit",
+    "meshTubeSignOn": "Schakel het Colorado Mesh-bord in",
+    "queueBadge": "Vraag: {{used}}/{{max}}",
+    "telemetryDisabled": "Telemetrie is uitgeschakeld op dit apparaat. Het inschakelen van apparaatstatistieken helpt de mesh en deze app (diagnostiek, batterij, signaal). Schakel het in op het tabblad Radio.",
+    "scrollToTop": "↑ Bovenkant",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh op GitHub",
+    "footerWebsiteTitle": "Colorado Mesh-website"
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -109,17 +119,10 @@
     "colorScheme": "Kleurenschema",
     "dangerZoneSection": "Gevarenzone",
     "destructiveActions": "Destructieve acties",
-    "dangerZoneDesc": "Deze acties zijn permanent en kunnen niet ongedaan worden gemaakt. Bevestig elke stap zorgvuldig.",
-    "diagnosticsSection": "Diagnostiek",
     "pruneDistantNodesTitle": "Snoei verre knooppunten",
-    "pruneDistantNodesDesc": "Voorbij de afstandsdrempel in Kaart- en knooppuntfiltering. Vereist een geldige GPS-locatie.",
     "pruneOfflineNodesTitle": "Snoei offline knooppunten",
-    "pruneOfflineNodesDays": "Al meer dan {{days}} dagen niets gehoord. Favoriete knooppunten zijn uitgesloten.",
-    "clearAllNodesCount": "Wis alle knooppunten ({{count}})",
     "deleteContactsNoPubkeysTitle": "Contacten verwijderen zonder Pubkeys",
-    "deleteContactsNoPubkeysDesc": "Exclusief chatstubknooppunten die zijn gemaakt op basis van berichten.",
     "messagesSection": "Berichten",
-    "channelLabel": "Kanaal:",
     "allChannelsOption": "Alle kanalen",
     "clearMessagesCount": "Berichten wissen ({{count}})",
     "latLabel": "Lat:",
@@ -160,7 +163,6 @@
     "removeUnnamedNodesLabel": "Verwijder naamloze knooppunten bij het opstarten",
     "capTotalNodesLabel": "Beperk het totale aantal knooppunten, behoud de nieuwste",
     "autoPrunePositionHistoryLabel": "Positiegeschiedenis automatisch opschonen bij opstarten, ouder dan",
-    "removeContactsNeverAdvertisedLabel": "Verwijder contacten die nog nooit hebben geadverteerd bij het opstarten",
     "autoPruneUnheardContactsLabel": "Ongehoorde contacten automatisch opschonen bij het opstarten, ouder dan",
     "capTotalContactsLabel": "Beperk het totale aantal contacten, houd het meest recent gezien",
     "limitMessagesLoadedLabel": "Beperk het laden van berichten",
@@ -169,7 +171,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Verwijder contacten die nog nooit hebben geadverteerd bij het opstarten",
     "meshcoreRemoveNeverAdvertisedHint": "Verwijdert verouderde tijdelijke contacten zonder advert-geschiedenis; favoriete contacten blijven behouden.",
     "messagesLoadLimitIntro": "Beperk het aantal berichten dat in het geheugen van de gebruikersinterface wordt geladen en beperk het aantal rijen dat in SQLite blijft. Door minder te laden, blijft het RAM-geheugen laag op drukke netwerken; de database cap verwijdert oudere berichten bij het opstarten van de app (opgeslagen per protocol).",
-    "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
     "compactMessages": "Compacte berichtweergave",
     "notificationsSection": "Meldingen",
     "soundNotifications": "Geluidsmeldingen",
@@ -199,7 +200,124 @@
     "meshcorePathHashModeShort2": "3 bytes",
     "meshcorePathHashDeviceReported": "Verbonden radioreportages: {{mode}}",
     "meshcorePathHashModeHint": "Vereist begeleidende firmware v1.14.0+ en repeaters op v1.14+ langs het pad. Pre-1.14 repeaters laten geruisloos multibyte-pakketten vallen. Repeater- en roomservers kunnen ook CLI: set path.hash.mode {0|1|2} gebruiken.",
-    "meshcorePathHashApplyFailed": "Pad hash-modus mislukt: {{message}}"
+    "meshcorePathHashApplyFailed": "Pad hash-modus mislukt: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum-chat slaat alleen directe berichten op — er zijn geen kanalen om individueel te wissen.",
+    "clearReticulumMessagesTitle": "Directe berichten wissen",
+    "clearReticulumMessagesConfirm": "Hiermee worden alle {{count}} lokaal opgeslagen Reticulum-directe berichten permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearReticulumMessagesConfirmButton": "{{count}} berichten wissen",
+    "reticulumSection": "Reticulum stack",
+    "reticulumAnnounceHelp": "Hoe vaak uw identiteit wordt aangekondigd op het netwerk en tools om opgeslagen aankondigingen te wissen.",
+    "reticulumPropagationHelp": "Kies hoe propagatieknooppunten worden gesynchroniseerd en haal de nieuwste propagatiegegevens op wanneer dat nodig is.",
+    "logPanelHelp": "Indien ingeschakeld, verschijnt er aan de rechterkant een live logstream. Op het tabblad Reticulum omvatten apparaatregels zijspanuitvoer en lokale interfacestatus. Voor foutopsporingsregels is het selectievakje in het logpaneel vereist.",
+    "autoPruneUnheardContactsDaysAria": "Ongehoorde contacten automatisch opschonen bij het opstarten, ouder dan {{days}} dagen",
+    "capTotalContactsCountAria": "Beperk het totale aantal contacten, bewaar de meest recent geziene {{count}} contacten",
+    "unknownError": "Onbekende fout",
+    "resetDiagnosticsConfirm": "Hiermee worden alle routeringsafwijkingen, hopgeschiedenis en pakketstatistieken gewist. De engine wordt opnieuw opgebouwd op basis van nieuwe inkomende pakketten. Doorgaan?",
+    "clearGpsDataConfirm": "Hierdoor worden de opgeslagen GPS-coördinaten van alle knooppunten verwijderd. Knooppunten blijven bestaan, maar hun posities blijven leeg totdat er nieuwe gegevens worden ontvangen. Doorgaan?",
+    "clearPositionHistoryConfirm": "Hierdoor wordt alle opgeslagen positiegeschiedenis permanent uit de database verwijderd. Bewegingssporen worden niet meer getoond voor eerdere sessies. Doorgaan?",
+    "deleteOldNodesConfirm_one": "Hiermee worden alle knooppunten permanent verwijderd die de afgelopen {{days}} dag niet zijn gehoord. Ze zullen opnieuw ontdekt worden als ze weer uitzenden.",
+    "deleteOldNodesConfirm_other": "Hiermee worden alle knooppunten permanent verwijderd die de afgelopen {{days}} dagen niet zijn gehoord. Ze zullen opnieuw ontdekt worden als ze weer uitzenden.",
+    "pruneMqttOnlyNodesConfirm": "Hierdoor worden alle knooppunten die alleen via MQTT zijn ontdekt (nooit via RF gehoord) permanent verwijderd. Ze zullen opnieuw verschijnen als ze opnieuw worden gehoord via MQTT of RF.",
+    "pruneMqttNodesConfirmLabel": "Snoei MQTT-knooppunten",
+    "pruneUnnamedNodesConfirm": "Hiermee worden knooppunten zonder echte lange naam permanent verwijderd: lege namen, automatisch gegenereerde !hex tijdelijke aanduidingen, Node-HEX fallbacks gekoppeld aan het knooppunt-ID en identiteiten die alleen voor MQTT zijn en die nooit UserInfo hebben ontvangen. Favoriete knooppunten blijven behouden. Ze zullen opnieuw ontdekt worden als ze weer uitzenden.",
+    "pruneNoFixNodesConfirm_one": "Hierdoor wordt het {{count}}-knooppunt met nul- of bijna nul-coördinaten permanent verwijderd (geen GPS-fix of Zero Island). Dit kan niet ongedaan worden gemaakt.",
+    "pruneNoFixNodesConfirm_other": "Hierdoor worden {{count}}-knooppunten met nul- of bijna nul-coördinaten permanent verwijderd (geen GPS-fix of Zero Island). Dit kan niet ongedaan worden gemaakt.",
+    "pruneNoFixDeleteConfirm_one": "Verwijder {{count}} knooppunt",
+    "pruneNoFixDeleteConfirm_other": "Verwijder {{count}} knooppunten",
+    "pruneDistantNodesConfirm_one": "Hierdoor wordt het knooppunt {{count}} na {{distance}} {{unit}} definitief van uw apparaat verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "pruneDistantNodesConfirm_other": "Hiermee worden {{count}}-knooppunten na {{distance}} {{unit}} permanent van uw apparaat verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "pruneDistantDeleteConfirm_one": "Verwijder {{count}} knooppunt",
+    "pruneDistantDeleteConfirm_other": "Verwijder {{count}} knooppunten",
+    "pruneOfflineNodesConfirm_one": "Hierdoor wordt het {{count}}-knooppunt dat niet is gehoord in meer dan {{days}} {{daysLabel}} definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "pruneOfflineNodesConfirm_other": "Hierdoor worden {{count}} knooppunten die niet zijn gehoord in meer dan {{days}} {{daysLabel}} permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "pruneOfflineDeleteConfirm_one": "Verwijder {{count}} knooppunt",
+    "pruneOfflineDeleteConfirm_other": "Verwijder {{count}} knooppunten",
+    "clearNodesConfirm": "Hierdoor worden alle {{count}} lokaal opgeslagen knooppunten permanent verwijderd. Wanneer ze verbonden zijn, worden ze opnieuw ontdekt.",
+    "clearNodesConfirmLabel": "Wis {{count}} knooppunten",
+    "clearAllNodesButton": "Wis alle knooppunten ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "Hierdoor worden alle MeshCore-contacten die geen openbare sleutel hebben permanent uit de database verwijderd. Chat-stubknooppunten (gemaakt op basis van berichten) worden uitgesloten. Dit kan niet ongedaan worden gemaakt.",
+    "deleteContactsNoPubkeysConfirmButton": "Verwijderen",
+    "clearMessagesAllConfirm": "Hiermee worden alle {{count}} lokaal opgeslagen berichten op alle kanalen permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearMessagesChannelConfirm": "Hiermee worden alle berichten van {{channel}} definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearMessagesAllConfirmLabel": "Wis {{count}} berichten",
+    "clearMessagesChannelConfirmLabel": "Wissen {{channel}}",
+    "clearMessagesTitle": "Duidelijke berichten",
+    "clearAllRepeatersConfirm": "Hierdoor worden alle opgeslagen MeshCore-repeaters permanent uit de lokale database verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearAllLocalDataTitle": "⚠ Wis alle lokale gegevens",
+    "clearAllLocalDataConfirm": "Hierdoor worden ALLE lokale berichten, knooppunten en in de cache opgeslagen sessiegegevens permanent verwijderd. Deze actie kan NIET ongedaan worden gemaakt.",
+    "clearEverythingConfirmButton": "Alles wissen",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "Alles",
+    "deleteNodesOlderThanAria": "Verwijder knooppunten die meer dan {{days}} dagen voor het laatst zijn gehoord",
+    "daySingular": "dag",
+    "theme": {
+      "appBg": {
+        "label": "Achtergrond van het hoofdvenster",
+        "description": "Kijkvenster voor hoofdinhoud en achtergrond van app-venster: het donkere canvas achter alle panelen."
+      },
+      "sidebarActiveBg": {
+        "label": "Actief zijbalktabblad",
+        "description": "Achtergrond van het momenteel geselecteerde tabblad in de zijbalknavigatie."
+      },
+      "brandGreen": {
+        "label": "Indicatoren en grensmarkeringen",
+        "description": "Accent voor randen indien geconfigureerd, online/MQTT-indicatoren, hoogtepunten en voortgangsvullingen."
+      },
+      "brightGreen": {
+        "label": "App-titel, links en nadruk op knooppunten",
+        "description": "App-titel, nadruktekst, links in de voettekst en hop/self-highlights in de knooppuntenlijst."
+      },
+      "readableGreen": {
+        "label": "Actieknoppen en geselecteerde pillen",
+        "description": "Effen vullingen met witte tekst: geselecteerde kanaalpillen en primaire actieknoppen voor contrast."
+      },
+      "deepBlack": {
+        "label": "Zijbalk, koptekst en modale oppervlakken",
+        "description": "Zijbalknavigatie, koptekst, voettekst, modale shells en primaire donkere oppervlakken."
+      },
+      "secondaryDark": {
+        "label": "Paneel- en invoerachtergrond",
+        "description": "Paneelachtergronden, invoer, knoppen, zwevende tabelrijen en voortgangstrack."
+      },
+      "muted": {
+        "label": "Secundaire labels en bijschriften",
+        "description": "Secundaire labels, bijschriften, tabelkoppen en niet-benadrukte tekst."
+      },
+      "chatIncomingBg": {
+        "label": "Inkomend bericht vullen",
+        "description": "Achtergrondvulling voor inkomende kanaalberichten (toegepast bij een dekking van 38%)."
+      },
+      "chatIncomingBorder": {
+        "label": "Rand voor inkomend bericht",
+        "description": "Randkleur voor inkomende kanaalberichten."
+      }
+    },
+    "themePreset": {
+      "green300": "Groen 300",
+      "slate950": "Leisteen 950",
+      "slate900": "Leisteen 900",
+      "slate800": "Leisteen 800",
+      "slate700": "Leisteen 700",
+      "slate400": "Leisteen 400",
+      "white": "Wit",
+      "black": "Zwart",
+      "blue500": "Blauw 500",
+      "amber500": "Amberkleurig 500",
+      "red500": "Rood 500",
+      "emerald500": "Smaragd 500",
+      "green700": "Groen 700",
+      "violet500": "Violet 500",
+      "cyan400": "Cyaan 400",
+      "purple400": "Paars 400",
+      "pink400": "Roze 400",
+      "orange400": "Oranje 400",
+      "yellow400": "Geel 400"
+    },
+    "autoPruneNodesOlderThanAria": "Knooppunten automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
+    "autoPrunePositionHistoryDaysAria": "Positiegeschiedenis automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
+    "capTotalNodesCountAria": "Beperk het totale aantal knooppunten, behoud de nieuwste {{count}} knooppunten",
+    "limitMessagesLoadedCountAria": "Beperk het aantal geladen berichten {{count}} berichten",
+    "capStoredMessagesCountAria": "Beperk opgeslagen berichten, bewaar de nieuwste {{count}} berichten"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -212,7 +330,8 @@
     "protocolSwitcher": "Protocolwisselaar",
     "switchToMeshtastic": "Schakel over naar Meshtastic",
     "switchToMeshCore": "Schakel over naar MeshCore",
-    "backToTop": "Terug naar boven"
+    "backToTop": "Terug naar boven",
+    "switchToReticulum": "Overschakelen naar Reticulum"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -221,13 +340,11 @@
   "channelUtilization": {
     "title": "Kanaalgebruik",
     "noData": "Nog geen kanaalgebruiksgegevens beschikbaar",
-    "meshcoreNote": "MeshCore: alleen verbonden knooppunt weergeven",
     "tooltipLabel": "Kanaalgebruik"
   },
   "chatPanel": {
     "channels": "Kanalen",
     "searchMessages": "Berichten zoeken",
-    "searchAllChannels": "Zoek alle kanalen",
     "closeDmTab": "Sluit het DM-tabblad",
     "searchMessagesPlaceholder": "Berichten zoeken...",
     "searchResults_one": "{{count}} resultaat",
@@ -257,19 +374,14 @@
     "filterBySender": "Filteren op afzender",
     "clearSenderFilter": "Wis filter",
     "filteringBySender": "Filteren op {{name}}",
-    "muteNotifications": "Demp team notificaties",
-    "unmuteNotifications": "Meldingen dempen opheffen",
     "jumpToDate": "Ga naar datum",
-    "noMessagesOnDate": "Geen berichten op deze datum",
     "exportChat": "Chat exporteren",
-    "exportChatSuccess": "Chat geëxporteerd",
     "exportChatFailed": "Export mislukt",
     "dmNodeLastHeard": "Laatst gehoord {{time}}",
     "dmNodeBattery": "{{pct}}% accu",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} hop",
-    "quickDm": "Rechtstreeks bericht {{name}}",
     "muteConversation": "Dit gesprek dempen",
     "unmuteConversation": "Dempen van dit gesprek opheffen",
     "starMessage": "Bericht favoriet maken",
@@ -321,9 +433,6 @@
     "waitingMessagesSyncNow": "Synchroniseer nu",
     "jumpToUnread": "Ga naar Ongelezen",
     "jumpToLatest": "Spring naar de laatste",
-    "meshcoreReactionPickerLabel": "Kies een mesh-reactie",
-    "meshcoreReactionEmojiOption": "Reageer met {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Die emoji wordt niet ondersteund voor MeshCore mesh reacties.",
     "reactionFailed": "Reactie mislukt",
     "meshcoreGifButton": "Giphy gif invoegen",
     "meshcoreGifButtonHint": "Stuur een Giphy-GIF via MeshCore Open g: wire",
@@ -331,11 +440,48 @@
     "meshcoreGifHint": "Plak een Giphy-pagina-URL, media-URL, g:ID of kale GIF-ID.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… of g:ID",
     "meshcoreGifSend": "Verstuur gif",
-    "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in."
+    "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in.",
+    "attachFile": "Bestand bijvoegen",
+    "attachFileHint": "Een LXMF-bestandsbijlage verzenden (alleen DM)",
+    "attachDmOnly": "Open een direct bericht voordat u een bestand toevoegt.",
+    "composePlaceholderSelectDm": "Selecteer hierboven een contactpersoon om een DM te starten...",
+    "selectDmFirst": "Selecteer een DM-ontvanger voordat u deze verzendt.",
+    "emptySelectDm": "Reticulum-chat is alleen een direct bericht. Kies hierboven een contact of open er een op het tabblad Knooppunten.",
+    "noDmConversations": "Nog geen gesprekken.",
+    "noDmConversationsReticulum": "Nog geen gesprekken — open een contactpersoon op het tabblad Knooppunten.",
+    "dms": "DMs",
+    "receivedViaTcp": "Ontvangen via",
+    "receivedViaNetwork": "Ontvangen via netwerk",
+    "sentViaRf": "Verzonden via RF",
+    "sentViaTcp": "Verzonden via TCP",
+    "sentViaNetwork": "via Netwerk",
+    "reticulumSendSending": "Versturen...",
+    "reticulumSendDelivered": "Geleverd",
+    "reticulumSendFailed": "Versturen mislukt",
+    "reticulumImageAttachment": "Afbeelding: {{name}}",
+    "reticulumFileAttachment": "Bestand: {{name}}",
+    "reticulumShowInFolder": "Tonen in map",
+    "reticulumSendPropagated": "In de wachtrij geplaatst bij het voortplantingsknooppunt",
+    "reticulumNoPropagationNode": "Er is geen propagatieknooppunt geconfigureerd. Stel een voorkeurspropagatieknooppunt in op het tabblad Reticulum Radio.",
+    "sentViaPropagation": "Voortplantingsknooppunt",
+    "reticulumPropagationSyncActive": "Berichten van propagatieknooppunt synchroniseren...",
+    "reticulumAudioAttachment": "Stem: {{name}}",
+    "reticulumSaveAttachment": "Bijlage opslaan",
+    "recordVoice": "Spraakbericht opnemen",
+    "recordVoiceHint": "Neem een ​​spraakfragment op en verzend het als LXMF-bijlage (alleen DM)",
+    "stopVoiceRecording": "Stop met opnemen en verzend",
+    "voiceRecordingTooLong": "Het spraakfragment bereikte de limiet van 60 seconden en werd verzonden.",
+    "reticulumSendAttachmentFailed": "Kan bijlage niet verzenden",
+    "reticulumSendAttachmentNoIdentity": "Reticulum-identiteit niet gereed — verbind en configureer eerst de identiteit",
+    "dmPeerInfoAria": "DM peer-info",
+    "clearDateAria": "Duidelijke datum",
+    "readOnlyDisconnected": "Niet verbonden: berichten zijn alleen-lezen",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "Noem suggesties"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
-    "emptyMention": "Lege vermelding",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Openen op Giphy"
   },
@@ -345,36 +491,20 @@
     "save": "Redden",
     "yes": "Ja",
     "no": "Nee",
-    "apply": "Toepassen",
-    "ok": "OK",
-    "reset": "Opnieuw instellen",
     "clear": "Duidelijk",
-    "export": "Exporteren",
-    "import": "Importeren",
     "refresh": "Vernieuwen",
-    "delete": "Verwijderen",
     "edit": "Bewerking",
-    "add": "Toevoegen",
-    "remove": "Verwijderen",
-    "send": "Versturen",
-    "search": "Zoekopdracht",
     "loading": "Laden",
     "error": "Fout",
-    "success": "Succes",
     "warning": "Waarschuwing",
-    "enabled": "Ingeschakeld",
     "disabled": "Gehandicapt",
     "unknown": "Onbekend",
-    "none": "Geen",
     "never": "Nooit",
-    "always": "Altijd",
     "dismiss": "Afwijzen",
     "channel": "Kanaal",
     "nodes": "knooppunten",
     "contacts": "contacten",
     "messages": "berichten",
-    "connect": "Verbinden",
-    "disconnect": "Verbreek de verbinding",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Website",
@@ -388,7 +518,14 @@
     "daysAgo": "{{count}}d geleden",
     "days": "dagen",
     "emDash": "—",
-    "saving": "Opslaan..."
+    "saving": "Opslaan...",
+    "peers": "Collega's",
+    "colorGreen": "Groen",
+    "colorCyan": "Cyaan",
+    "colorAmber": "Amber",
+    "colorRed": "Rood",
+    "colorPurple": "Paars",
+    "delete": "Verwijderen"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
@@ -404,7 +541,6 @@
     "requiresLocalRadio": "Sluit een lokale Meshtastic-radio aan om extern beheer te gebruiken.",
     "sessionActive": "Beheersessie actief",
     "sessionStale": "Beheerderssessie verouderd — vernieuwen voordat u instellingen wijzigt",
-    "sessionNone": "Beheersessie niet ingesteld — lokale radio laden of verbinden",
     "establishingSession": "Beheerderssessie wordt opgezet..."
   },
   "connectionBanner": {
@@ -428,8 +564,6 @@
     "selectBluetoothDevice": "Selecteer Bluetooth-apparaat",
     "devicesFound": "{{count}} gevonden",
     "scanningDevices": "Scannen naar {{protocol}} apparaten...",
-    "adaDfuHint": "Als een apparaat op macOS wordt weergegeven als \"AdaDFU\", koppelt u het eerst in Systeeminstellingen → Bluetooth om de Meshtastic-naam te zien.",
-    "meshcorePairingNote": "Koppel uw MeshCore-apparaat in de Bluetooth-systeeminstellingen voordat u verbinding maakt. Gebruik een pincode als daarom wordt gevraagd. Als uw systeem niet om een ​​pincode vraagt, mislukt de verbinding en moet u mogelijk de koppeling verwijderen en opnieuw koppelen met een pincode.",
     "selectSerialPort": "Selecteer Seriële poort",
     "noSerialPorts": "Geen seriële poorten gevonden. Zorg ervoor dat uw apparaat is aangesloten.",
     "enterPin": "Voer de pincode in die op uw apparaat wordt weergegeven:",
@@ -491,7 +625,7 @@
     "hintMeshtasticHttp2": "Als de verbinding onbetrouwbaar is (bijvoorbeeld met meshtastic.local), probeer dan het IP-adres van het apparaat; desktop-mDNS kan slecht zijn.",
     "hintMeshcoreHttp": "Voer de hostnaam of het IP-adres van uw MeshCore begeleidende radio in. Het moet bereikbaar zijn op poort 5000.",
     "stageLinuxUnpaired": "Het opgeslagen apparaat is niet gekoppeld in Linux Bluetooth. Selecteer het hieronder om de pincode in te voeren en verbinding te maken.",
-    "liamServerNote": "De server van Liam is alleen uplink - uw knooppunt verschijnt op zijn kaart, maar u ontvangt er geen berichten van.",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Verbinden",
     "mqttStatusConnected": "aangesloten",
     "mqttStatusConnecting": "verbinden",
@@ -516,7 +650,6 @@
     "stagePairingFailed": "Koppelen is mislukt. Koppel uw apparaat opnieuw.",
     "stageCheckingPairing": "Bluetooth-koppeling controleren…",
     "stageEnterPinLinux": "Voer de pincode in die op uw apparaat wordt weergegeven (eerst koppelen met Linux)",
-    "stageScanningLast": "Scannen naar het laatste Bluetooth-apparaat...",
     "stageReconnecting": "Opnieuw verbinding maken met het laatste Bluetooth-apparaat…",
     "pinPlaceholder": "PIN",
     "humanize": {
@@ -555,7 +688,9 @@
         "meshcoreHandshakeHint": "Zorg ervoor dat uw MeshCore-apparaat in de Bluetooth Companion-modus staat en met uw computer is gekoppeld met behulp van een pincode. Verwijder eventuele bestaande koppelingen en koppel opnieuw als de verbindingsproblemen aanhouden.",
         "meshcoreHandshakeWindowsExtra": "In Windows schakelt u Bluetooth uit/aan en werkt u het adapterstuurprogramma bij in Apparaatbeheer als de verbinding blijft bestaan.",
         "macWakeRecoveryHint": "Sluit na de slaapstand de mesh-client (Cmd+Q), schakel Bluetooth uit en in in Systeeminstellingen, wacht een paar seconden en maak vervolgens opnieuw verbinding. Verbind MeshCore met twee radio's vóór Meshtastic.",
-        "dualProtocolContentionHint": "Het andere protocol maakt mogelijk nog steeds verbinding via Bluetooth. Wacht een paar seconden en probeer het opnieuw, of schakel over naar het andere protocoltabblad om de verbindingsstatus te controleren."
+        "dualProtocolContentionHint": "Het andere protocol maakt mogelijk nog steeds verbinding via Bluetooth. Wacht een paar seconden en probeer het opnieuw, of schakel over naar het andere protocoltabblad om de verbindingsstatus te controleren.",
+        "scanBusy": "Er wordt een nieuwe Bluetooth-scan uitgevoerd. Probeer het zo nog eens.",
+        "sameDeviceConflict": "Dit Bluetooth-apparaat is al verbonden met {{owner}}."
       }
     },
     "error": {
@@ -579,7 +714,212 @@
     "mqttTlsInsecure": "Sta onveilige TLS (zelfondertekend certificaat) toe. Standaard uitgeschakeld — alleen inschakelen als uw makelaar een niet-openbare CA gebruikt.",
     "channelPsksPrivateUplinkNote": "Kanaaluplink is AES-PSK-gecodeerd op /2/e/ (geen JSON-spiegel voor privésleutels). Broker-monitoren kunnen nog steeds ontsleutelingsfouten registreren voor PKI/DM-verkeer tussen andere knooppunten — dat is normaal en niet gerelateerd aan PSK's hier.",
     "sharedBleWithMeshtastic": "Dit Bluetooth-apparaat is al verbonden via Meshtastic. Schakel over naar het tabblad Meshtastic om het te gebruiken, of kies een andere radio of transport voor MeshCore.",
-    "sharedBleWithMeshtasticHint": "Eén fysieke radio kan niet tegelijkertijd afzonderlijke Meshtastic- en MeshCore Bluetooth-sessies houden."
+    "sharedBleWithMeshtasticHint": "Eén fysieke radio kan niet tegelijkertijd afzonderlijke Meshtastic- en MeshCore Bluetooth-sessies houden.",
+    "reticulumStackTitle": "Reticulum-stack",
+    "reticulumStackHint": "Start de lokale Reticulum/LXMF-sidecar (TCP- en Auto-interfaces).",
+    "reticulumStartStack": "Stack starten",
+    "reticulumNetworkEmpty": "Nog geen interfaces gemeld.",
+    "reticulumSidecarMissing": "Reticulum-sidecar niet gebouwd. Voer in de mesh-client-repo `pnpm run reticulum:sidecar:build` uit (vereist Rust).",
+    "reticulumSidecarCargoMissing": "Rust-toolchain (cargo) niet gevonden. Installeer via https://rustup.rs en voer daarna `pnpm run reticulum:sidecar:build` uit.",
+    "reticulumSidecarStartFailed": "Kon Reticulum-stack niet starten: {{message}}",
+    "reticulumStopStack": "Stack stoppen",
+    "reticulumAutostart": "Stack automatisch starten bij het openen van Verbinding",
+    "reticulumStackRunning": "Stack actief",
+    "reticulumIdentity": {
+      "title": "Reticulum-identiteit",
+      "hint": "Start de stapel hierboven en maak of importeer vervolgens een mnemonische identiteit.",
+      "startStackFirst": "Start de Reticulum-stack om de identiteit te configureren.",
+      "displayName": "Weergavenaam",
+      "generate": "Identiteit genereren",
+      "import": "Zin importeren",
+      "importLabel": "Herstelzin van 12 woorden",
+      "mnemonic": "Noteer deze zin en bewaar deze veilig.",
+      "confirmSaved": "IK HEB MIJN HERSTELZIN OPGESLAGEN",
+      "hashLabel": "LXMF-hash:",
+      "nameLabel": "Naam:",
+      "failed": "Identiteitsinstelling mislukt",
+      "export": "Back-up exporteren",
+      "exportPassphrase": "Back-up wachtwoordzin",
+      "exportPassphraseRequired": "Voer een back-upwachtzin in voordat u exporteert."
+    },
+    "reticulumInterfaces": {
+      "title": "Raakvlakken",
+      "type": "Type",
+      "add": "Interface toevoegen",
+      "enable": "Activeer",
+      "disable": "Onbruikbaar maken",
+      "serialPort": "Seriële poort",
+      "preset": "Vooraf ingesteld",
+      "bleAvailable": "BLE peering is beschikbaar op dit platform (toevoegen via zijspan indien geconfigureerd).",
+      "host": "Ontvanger",
+      "port": "Poort",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Interface verwijderen",
+      "deleteConfirmBody": "\"{{name}}\" verwijderen uit de stapelconfiguratie? Dit kan niet ongedaan worden gemaakt.",
+      "deleteConfirm": "Verwijderen",
+      "deleteFailed": "Interface verwijderen mislukt.",
+      "edit": "Bewerken",
+      "editTitle": "Interface bewerken",
+      "saveEdit": "Wijzigingen opslaan",
+      "cancelEdit": "Annuleren",
+      "name": "Naam",
+      "callsign": "Roepletters",
+      "editFailed": "Kan interface niet opslaan.",
+      "pipeCommand": "Pijpopdracht",
+      "addFailed": "Kan interface niet toevoegen.",
+      "toggleFailed": "Status wijzigen mislukt",
+      "restartStackHint": "Start de stapel opnieuw op het tabblad Verbinding om wijzigingen in de seriële interface van kracht te laten worden.",
+      "localOfflineRow": "Lokale interface offline — controleer de kabel- en poortcontentie en start de stapel opnieuw.",
+      "localOfflineRowStale": "Seriële poort {{port}} niet gevonden — USB-replug heeft mogelijk het pad gewijzigd.",
+      "blePeerType": "BLE Peer-mesh",
+      "pickDevice": "Kies apparaat",
+      "refreshPorts": "Vernieuwen",
+      "rescanBle": "Opnieuw scannen",
+      "pickerBlePeerTitle": "Selecteer BLE-peer",
+      "pickerBleRnodeTitle": "Selecteer BLE RNode",
+      "pickerSerialEmpty": "Geen seriële poorten gedetecteerd. Voer handmatig een pad in.",
+      "pickerBleEmpty": "Geen BLE-apparaten gevonden. Probeer opnieuw te scannen.",
+      "pickerStackRequired": "Start de Reticulum-stapel voordat u naar apparaten scant.",
+      "useManualPort": "Gebruik deze poort",
+      "rnodeTransport": "Vervoer",
+      "rnodeTransportSerial": "USB-serieel",
+      "rnodeTransportBle": "Bluetooth",
+      "seedAddresses": "Zaadpeers (optioneel)",
+      "pickerSerialTitle": "Selecteer seriële poort",
+      "pickerBlePeerEmpty": "Geen Reticulum BLE-peers gevonden in de buurt. Peers moeten adverteren; probeer Opnieuw scannen of voer handmatig een zaadadres in.",
+      "pickerBleRnodeEmpty": "Geen BLE RNodes gevonden in de buurt. Zorg ervoor dat de RNode is ingeschakeld en binnen bereik is, en probeer vervolgens Opnieuw scannen.",
+      "bleUnavailable": "Bluetooth is niet beschikbaar voor Reticulum-scannen. Controleer systeem Bluetooth en zijspanopbouw (rns-ble).",
+      "restartStackFailed": "Opnieuw opstarten van stapel mislukt: {{message}}",
+      "restartStackUnavailable": "Het opnieuw opstarten van de stapel is pas beschikbaar als de Reticulum-runtime gereed is.",
+      "localOfflineRowBle": "Bluetooth RNode offline: zorg ervoor dat het apparaat is ingeschakeld en binnen bereik is en start vervolgens de stapel opnieuw op.",
+      "rnodeTransportWifi": "Wifi",
+      "rnodeWifiHost": "Host of IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 of rnode.local",
+      "rnodeWifiPort": "TCP-poort",
+      "rnodeWifiSetupTitle": "Wi-Fi RNode instellen",
+      "rnodeWifiSetupHint": "Wi-Fi is uitgeschakeld na het knipperen — voorzie eerst de RNode (Reticulum → Admin → Wi-Fi, of sluit je aan bij de AP en open http://10.0.0.1). Vereist ESP32-S3 Wi-Fi-compatibele firmware.\n\nNa zendermodus: zoek het IP-adres op het OLED-alternatieve scherm, uw router-DHCP-lijst of Admin → Read-configuratie. Gebruik tcp://host (standaardpoort 7633) — niet het TCP Client-interfacetype.\n\n~10 s knop ingedrukt houden op veel Heltec-borden maakt Wi-Fi AP mogelijk (~7 s is Bluetooth-koppeling).",
+      "localOfflineRowWifi": "Wi-Fi RNode onbereikbaar — verifieer IP, poort 7633, hetzelfde LAN en stroom; opnieuw instellen in Admin als het DHCP-adres is gewijzigd.",
+      "rfFrequencyMhz": "Frequentie (MHz)",
+      "rfBandwidthKhz": "Bandbreedte (kHz)",
+      "rfSpreadingFactor": "Spreidingsfactor",
+      "rfCodingRate": "Codeersnelheid",
+      "rfTxPower": "TX-vermogen (dBm)",
+      "purposeAria": "Doel van interface {{name}}",
+      "runtimeBadge": "Looptijd",
+      "auditRepair": "Reparatie",
+      "auditDisable": "Uitzetten",
+      "auditRepairSuccess": "Configuratiereparatie toegepast.",
+      "auditRepairFailed": "Configuratieherstel is mislukt.",
+      "auditRepairNoChanges": "Voor deze reparatie waren geen configuratiewijzigingen nodig.",
+      "purpose": {
+        "auto": "Lokale LAN-multicast-detectie: vindt andere Reticulum-knooppunten op hetzelfde Wi-Fi- of subnet.",
+        "sharedInstance": "Localhost TCP-server wanneer Share-instantie is ingeschakeld: laat andere apps op deze machine deze stapel gebruiken.",
+        "tcp": "Uitgaande TCP-tunnel naar een externe Reticulum-hub of gateway.",
+        "rnodeUsb": "LoRa-mesh via USB RNode.",
+        "rnodeBle": "LoRa-mesh via Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp://host).",
+        "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
+        "generic": "Reticulum-netwerkinterface."
+      },
+      "rfProfile": {
+        "coordinated": "Regionaal gecoördineerd",
+        "fallback": "Mondiale terugval",
+        "legacy": "Verouderde voorinstellingen"
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "omhoog",
+        "down": "omlaag"
+      },
+      "pickerScanFailed": "BLE-scan mislukt. Probeer het opnieuw of voer handmatig een adres in.",
+      "pickerBleFeatureDisabled": "Bluetooth is niet beschikbaar in deze Reticulum-build (rns-ble-functie ontbreekt).",
+      "pickerScanFailedDetail": "Scanfout: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
+    },
+    "reticulumPeers": {
+      "hops": "Hops",
+      "actions": "Acties",
+      "path": "Pad",
+      "probe": "Sonde"
+    },
+    "reticulumPropagation": {
+      "title": "Propagatieknooppunten",
+      "enable": "Activeer",
+      "disable": "Onbruikbaar maken"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} lokale interface(s) hebben aandacht nodig",
+      "stalePort": "{{name}}: seriële poort {{port}} niet gevonden",
+      "stalePortHint": "USB-replug heeft mogelijk het pad gewijzigd. Update in Radio → Interfaces en start vervolgens de stapel opnieuw.",
+      "offline": "{{name}}: lokale interface is ingeschakeld, maar offline",
+      "offlineHint": "Controleer de kabel, ontgrendel de poort van Meshtastic/MeshCore en start de stapel opnieuw.",
+      "refreshPorts": "Poorten vernieuwen",
+      "availablePorts": "Beschikbaar: {{ports}}",
+      "restartStack": "Start de stapel opnieuw",
+      "restartStackAria": "Start de Reticulum-stapel opnieuw om interfacewijzigingen toe te passen",
+      "connectingHeading": "Lokale interface(s) aansluiten…",
+      "connectingRow": "{{name}}: verbinden via Bluetooth",
+      "connectingHintBle": "BLE RNode-koppelingen kunnen tot 30 seconden duren nadat de stapel is gestart. Voer een koppelingspincode in als uw besturingssysteem daarom vraagt. Dit is normaal en geen fout.",
+      "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert.",
+      "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin."
+    },
+    "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
+    "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
+    "stageAutoConnectingBle": "Verbinding maken met {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Wachten tot Meshtastic Bluetooth is voltooid - MeshCore zal automatisch verbinding maken met {{deviceName}} wanneer dit klaar is…",
+    "stageWaitingNobleBleMeshcore": "Wachten tot MeshCore Bluetooth is voltooid - Meshtastic zal automatisch verbinding maken met {{deviceName}} wanneer dit klaar is…",
+    "reticulumStats": {
+      "interfaces": "{{count}} interfaces",
+      "peers": "{{count}} collega's"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[Land]/[Staat], b.v. msh/CO/US",
+      "meshcoreLetsmesh": "meshcore/{IATA}, b.v. meshcore/DEN",
+      "meshcoreDefault": "MESHCORE/[Land]/[Staat], b.v. MESHCORE/US/CO"
+    },
+    "topicPrefixPlaceholder": "msh/VS/",
+    "maxRetriesHelp": {
+      "meshtastic": "Sluit de pogingen opnieuw aan (1–{{max}}) voordat u het opgeeft.",
+      "meshcore": "Sluit de pogingen (1–20) opnieuw aan voordat u het opgeeft."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT:1883",
+      "liam": "Liam's",
+      "custom": "Aangepast"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local of 192.168.1.x",
+    "meshcoreHostPlaceholder": "localhost of 192.168.1.x",
+    "meshcoreBlePairingHint": "Koppel uw MeshCore-apparaat in de <strong>Bluetooth-systeeminstellingen</strong> voordat u verbinding maakt. Gebruik een pincode als daarom wordt gevraagd. Als uw systeem niet om een ​​pincode vraagt, mislukt de verbinding en moet u mogelijk de koppeling verwijderen en opnieuw koppelen met een pincode.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "Aangepast"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh heeft WebSocket op poort 443 en server mqtt-us-v1.letsmesh.net of mqtt-eu-v1.letsmesh.net nodig. Gebruik Regio (VS/EU) of schakel over naar Aangepast voor andere makelaars.",
+      "coloradomesh": "Colorado Mesh heeft WebSocket nodig op poort 1883 met TLS ingeschakeld, server mqtt.meshcore.coloradomesh.org, pad /ws. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
+      "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.cc nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "Auth-token (meshcore-decoder-indeling) wordt gegenereerd wanneer u verbinding maakt. De gebruikersnaam is v1_ plus uw openbare sleutel van 64 tekens (hexadecimaal). JWT-doelgroep komt overeen met de hostnaam van de server.",
+      "noPrivateKey": "Geen volledige identiteit: importeer uw MeshCore-configuratie in het Radio-paneel (openbare en privésleutels), of plak de gebruikersnaam (v1_<openbare sleutel>) en token handmatig. JWT-doelgroep in het token moet overeenkomen met de hostnaam van de server.",
+      "publicKeyMissing": "Openbare sleutel ontbreekt in identiteit. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel (moet openbare en privésleutels bevatten) of plak een makelaartoken in het wachtwoordveld.",
+      "usernameBuildFailed": "Kon LetsMesh-gebruikersnaam niet opbouwen. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam (v1_<openbare sleutel>) en het token handmatig.",
+      "noIdentity": "Geen apparaatidentiteit gevonden. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam en het token handmatig."
+    },
+    "meshcorePacketLogger": {
+      "label": "Pakketlogger: wanneer verbonden met uw radio en MQTT, stuurt u RX-pakketsamenvattingen door naar {{topic}} in dezelfde JSON-vorm als meshcoretomqtt. Standaard uitgeschakeld; alleen inschakelen als u van plan bent om gehoord luchtverkeer te delen met een pakketanalysator."
+    },
+    "hintAdaDfuBle": "Als een apparaat op macOS wordt weergegeven als \"AdaDFU\", koppelt u het eerst in Systeeminstellingen → Bluetooth om de Meshtastic-naam te zien.",
+    "authTokenFailed": "Genereren van authenticatietoken mislukt: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -592,14 +932,16 @@
     "newGroupNamePlaceholder": "Nieuwe groepsnaam…",
     "manageMembers": "Leden beheren",
     "rename": "Hernoemen",
-    "deleteGroup": "Groep verwijderen"
+    "deleteGroup": "Groep verwijderen",
+    "noContactsYet": "Nog geen contacten.",
+    "noGroupsYet": "Nog geen groepen. Maak er hierboven één aan.",
+    "memberCount_one": "{{count}} lid",
+    "memberCount_other": "{{count}} leden"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",
     "dismissRow": "Afwijzen",
     "searchAnomalies": "Afwijkingen zoeken...",
-    "meshcoreInterferenceHeading": "MeshCore-nodes gehoord op frequentie ({{count}})",
-    "meshcoreInterferenceDescription": "Deze vermeldingen identificeren MeshCore-interferentie op de frequentie die door deze radio wordt gehoord. Ze kunnen bijdragen aan problemen met gebruik en nieuwe pogingen, maar zijn op zichzelf geen Meshtastic-routefoutdiagnose.",
     "otherCrossProtocolHeading": "Ander on-frequentie/cross-stack-verkeer ({{count}})",
     "removeMqttFilter": "Verwijder het MQTT-filter per knooppunt",
     "excludeMqttData": "Sluit de MQTT-gegevens van dit knooppunt uit van diagnostische gegevens",
@@ -731,10 +1073,6 @@
       "excessiveFlooding": "{{percent}}% van de transmissies wordt via een overstromingsrouter geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "MeshCore-knooppunt zeer dichtbij (RSSI {{rssi}} dBm) - veroorzaakt waarschijnlijk pakketbotsingen.",
-      "meshcoreNearby": "MeshCore-knooppunt gedetecteerd in de buurt (RSSI {{rssi}} dBm) — kan het verkeer verstoren.",
-      "meshcoreDistant": "MeshCore-activiteit op afstand op deze frequentie (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "MeshCore-knooppunt zendt uit op deze frequentie.",
       "meshtastic": "Meshtastic knooppunt dat op deze frequentie zendt. Afzender: {{sender}}. {{proximity}}Dit knooppunt bevindt zich mogelijk in uw MeshCore-repeatergebied.",
       "unknownLora": "Niet-herkend LoRa-signaal gedetecteerd (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Hoge MeshCore-pakketsnelheid gedetecteerd (>5/min). Een nabijgelegen MeshCore-repeater kan pakketbotsingen veroorzaken."
@@ -814,12 +1152,79 @@
     "meshcoreRepeaterConflictBanner": "Hoge MeshCore-pakketfrequentie (>5/min) — een repeater in de buurt kan botsingen veroorzaken op je Meshtastic-kanaal.",
     "meshcoreHeardByMeshtasticHeading": "MeshCore-knooppunten gehoord door je Meshtastic-radio ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "MeshCore-zenders afgeluisterd op lokale RF in de afgelopen 90 minuten (Meshtastic-apparaatlogboeken of MeshCore-radio RX). Bevat geen MeshCore repeater-contactsynchronisatie. Dit is niet je Meshtastic-knooppunt.",
-    "meshcoreHeardByMeshtasticEmpty": "Geen MeshCore-knooppunten gehoord op je Meshtastic-frequentie in de afgelopen 90 minuten.",
     "meshcoreHeardUnknownNode": "Ongeïdentificeerde MeshCore-zender",
     "meshcoreHeardNearbyEncrypted": "Nabij MeshCore RF (versleuteld)",
     "foreignLoraHeading": "Andere buitenlandse LoRa op je Meshtastic-frequentie ({{count}})",
     "foreignLoraDescription": "Meshtastic zenders en niet-herkende LoRa-signalen op uw frequentie in de afgelopen 90 minuten. MeshCore-knooppunten worden vermeld in het bovenstaande gedeelte.",
-    "foreignLoraEmpty": "Geen Meshtastic of onbekende LoRa-activiteit op je Meshtastic-frequentie in de afgelopen 90 minuten."
+    "reticulum": {
+      "sectionTitle": "Reticulum-interfaceconfiguratie",
+      "noIssues": "Er zijn geen problemen met de interfaceconfiguratie gedetecteerd.",
+      "summary": "{{errors}} fouten, {{warnings}} waarschuwingen",
+      "colInterface": "Interface",
+      "colIssue": "Probleem",
+      "colFix": "Repareren",
+      "colAction": "Actie",
+      "stackScope": "Stapel",
+      "repairFailed": "Configuratieherstel is mislukt.",
+      "repairSuccess": "Configuratiereparatie toegepast.",
+      "repairNoChanges": "Voor deze reparatie waren geen configuratiewijzigingen nodig.",
+      "disableSuccess": "Interface uitgeschakeld.",
+      "disableFailed": "Kan de interface niet uitschakelen.",
+      "remedy": {
+        "configuration": "Configuratie",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Reparatieconfiguratie",
+        "disable": "Uitzetten",
+        "apply_preset": "Voorinstelling toepassen",
+        "edit": "Bewerkingsinterface",
+        "restart_stack": "Start de stapel opnieuw",
+        "add_auto": "Automatische interface toevoegen"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP-interface \"{{name}}\" gebruikt de verkeerde inschakelsleutel - RNS zal deze niet laden.",
+        "tcp_missing_name": "TCP-interface \"{{name}}\" mist een naamveld in config.",
+        "tcp_unreachable": "TCP-interface \"{{name}}\" is onbereikbaar.",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF-parameters verschillen van de preset.",
+        "rf_cross_mismatch": "Meerdere ingeschakelde RNodes gebruiken verschillende RF-parameters.",
+        "rf_using_fallback": "RNode \"{{name}}\" gebruikt een globaal RF-fallback-profiel.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF-parameters komen overeen met geen bekend profiel.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" gebruikt een verouderde vooraf ingestelde ID. Overweeg om te migreren.",
+        "ghost_interface": "Interface \"{{name}}\" is ingeschakeld in de configuratie, maar niet geladen door RNS.",
+        "missing_auto_interface": "Geen ingeschakelde AutoInterface: lokale LAN-detectie is uitgeschakeld.",
+        "auto_interface_down": "AutoInterface \"{{name}}\" is ingeschakeld maar uitgeschakeld.",
+        "missing_shared_instance": "Share-instantie is ingeschakeld, maar SharedInstanceServer is niet actief.",
+        "shared_instance_unexpected": "SharedInstanceServer is live, maar share_instance is uitgeschakeld.",
+        "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie)."
+      },
+      "runtime": {
+        "rnsNotReady": "RNS-stack is niet gereed",
+        "lxmfNotReady": "LXMF-router is niet gereed",
+        "localStalePort": "Lokale interface \"{{name}}\" seriële poort {{port}} niet gevonden op dit systeem",
+        "localOffline": "Lokale interface \"{{name}}\" is ingeschakeld maar offline",
+        "interfaceDown": "{{type}}-interface \"{{name}}\" is ingeschakeld, maar {{status}}",
+        "noPeers": "Nog geen bekende peers in de padtabel"
+      }
+    },
+    "routingPort": {
+      "nodeInfo": "KnooppuntInfo",
+      "telemetry": "Telemetrie",
+      "neighborInfo": "Buurinfo",
+      "traceroute": "Traceroute",
+      "position": "Positie",
+      "remoteHardware": "Externe hardware",
+      "admin": "Beheerder",
+      "discoveryFlood": "OntdekkingOverstroming",
+      "roomAdvert": "RoomAdvert",
+      "generic": "Poort{{port}}"
+    },
+    "signalColumn": "Signaal",
+    "senderLabel": "Afzender",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB"
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -833,8 +1238,117 @@
     "updateAvailable": "Firmware-update beschikbaar",
     "updateAvailableVersion": "Firmware-update beschikbaar: v{{version}}"
   },
+  "flasher": {
+    "title": "RNode Firmware-flitser",
+    "portContentionWarning": "Stop de Reticulum-stack of schakel de actieve seriële RNode-interface uit voordat u gaat knipperen. Ontkoppel Meshtastic of MeshCore serieel op dezelfde poort.",
+    "selectProduct": "Product",
+    "selectModel": "Model",
+    "selectProductPlaceholder": "Selecteer een product…",
+    "selectModelPlaceholder": "Selecteer een model…",
+    "firmwareFile": "Firmwarebestand (.zip)",
+    "enterDfuMode": "Ga naar de DFU-modus",
+    "enterDfuHint": "Voor nRF52-kaarten: zet het apparaat in de USB DFU-bootloadermodus (1200 baud touch).",
+    "flashFirmware": "Flash-firmware",
+    "flashing": "Knipperend… {{progress}}%",
+    "dfuModeDone": "Het apparaat zou nu in de DFU-modus moeten staan.",
+    "flashSuccess": "Firmware is geflashed.",
+    "provisionTitle": "Voorzien van EEPROM",
+    "provisionHint": "Vereist voor nieuwe apparaten na het flashen. Schrijft de identiteit van het apparaat, de controlesom en de vergrendelingsbyte.",
+    "provision": "Voorraad",
+    "provisioning": "Voorzieningen…",
+    "provisionSuccess": "Apparaat is ingericht.",
+    "provisionAlreadyDone": "EEPROM is al ingericht. Veeg het eerst schoon om het opnieuw in te richten.",
+    "firmwareHashTitle": "Firmware-hash instellen",
+    "firmwareHashHint": "Uitvoeren na elke firmwareflash. Leest de doel-hash van het apparaat en schrijft deze naar EEPROM.",
+    "setFirmwareHash": "Firmware-hash instellen",
+    "settingFirmwareHash": "Firmware-hash instellen…",
+    "firmwareHashSuccess": "Firmware-hash is ingesteld.",
+    "firmwareHashNotProvisioned": "EEPROM is niet ingericht. Richt het apparaat eerst in.",
+    "advancedTitle": "Geavanceerde hulpmiddelen",
+    "detectDevice": "Apparaat detecteren",
+    "reboot": "Opnieuw opstarten",
+    "rebootSuccess": "Het bord wordt opnieuw opgestart.",
+    "wipeEeprom": "Wis EEPROM",
+    "wipeEepromConfirmTitle": "EEPROM wissen?",
+    "wipeEepromConfirmMessage": "Hiermee wordt de inrichting van het apparaat gewist en dit duurt ongeveer 30 seconden. Het apparaat zal opnieuw opstarten als u klaar bent.",
+    "wipeEepromConfirm": "Wis EEPROM",
+    "wipeEepromSuccess": "EEPROM is gewist.",
+    "readDisplay": "Weergave lezen",
+    "dumpEeprom": "Dump EEPROM om te loggen",
+    "bluetoothTitle": "Bluetooth",
+    "enableBluetooth": "Schakel Bluetooth in",
+    "disableBluetooth": "Schakel Bluetooth uit",
+    "startPairing": "Begin met koppelen",
+    "pairingPin": "Bluetooth-koppelingspincode: {{pin}}",
+    "tncTitle": "TNC-modus",
+    "tncHint": "KISS TNC via serieel voor amateurradio-apps. Laat uitgeschakeld wanneer u Reticulum- of mesh-chatclients gebruikt.",
+    "enableTnc": "Schakel de TNC-modus in",
+    "disableTnc": "Schakel de TNC-modus uit",
+    "displayTitle": "Weergave",
+    "displayHint": "Voor weergaverotatie is firmware v1.80+ vereist.",
+    "rotation0": "0°",
+    "rotation90": "90°",
+    "rotation180": "180°",
+    "rotation270": "270°",
+    "reconditionDisplay": "Reconditioneer het display",
+    "errors": {
+      "webSerialUnsupported": "Web Serial is niet beschikbaar in deze omgeving.",
+      "notRnode": "Het geselecteerde apparaat is geen RNode.",
+      "portSelectionCancelled": "Selectie van de seriële poort is geannuleerd.",
+      "portInUse": "Seriële poort is al open. Stop andere verbindingen en probeer het opnieuw.",
+      "generic": "Bewerking mislukt: {{message}}",
+      "selectProduct": "Selecteer eerst een product.",
+      "selectModel": "Selecteer eerst een model.",
+      "selectFirmware": "Selecteer eerst een firmwarebestand.",
+      "flashConfigMissing": "Flash-configuratie is niet beschikbaar voor dit apparaat.",
+      "blockedByStack": "Kan niet flitsen terwijl de Reticulum-stack de seriële RNode-poort bevat.",
+      "esp32SyncFailed": "Kan niet synchroniseren met de ESP32-opstartlader. Controleer de USB-kabel en poort, stop andere apps met behulp van de seriële poort en probeer het opnieuw.",
+      "flashTransferTooSmall": "Firmware-overdracht is niet voltooid — er zijn bijna geen gegevens geschreven. Bevestig dat u de juiste USB-poort hebt geselecteerd en dat het bord in de bootloader-modus is gegaan.",
+      "flashMd5Mismatch": "Firmwareverificatie mislukt na schrijven. Probeer het opnieuw met een andere USB-kabel of poort; als het aanhoudt, download dan de ZIP-firmware opnieuw.",
+      "portSelectionTimedOut": "Er is een time-out opgetreden bij de selectie van de seriële poort. Kies binnen twee minuten een poort uit de lijst of probeer opnieuw te knipperen om de laatste poort opnieuw te gebruiken.",
+      "noSerialPorts": "Geen seriële USB-poorten gevonden. Sluit uw bord aan via USB en probeer het opnieuw."
+    },
+    "selectSerialPort": "Seriële poort selecteren",
+    "noSerialPorts": "Geen USB seriële poorten gevonden.",
+    "noSerialPortsHint": "Sluit uw bord aan via USB. Bluetooth-apparaten in het logboek worden genegeerd; alleen USB-seriële poorten kunnen worden gebruikt om te knipperen.",
+    "stackStoppedHint": "Reticulum stack is gestopt — de seriële poort is vrij om te knipperen. Start de stapel opnieuw op het tabblad Verbinding wanneer u klaar bent.",
+    "lastUsedPort": "Laatst gebruikt",
+    "downloadFirmware": "Firmware downloaden",
+    "downloadLatestFirmware": "{{filename}} (laatste versie)",
+    "officialFirmware": "Officiële firmware",
+    "ceFirmware": "CE-firmware",
+    "transportNodeFirmware": "Firmware transportknooppunt",
+    "esp32BootHint": "Gebruik een data-USB-kabel (niet alleen opladen). Stop andere apps die dezelfde seriële poort gebruiken voordat ze knipperen.",
+    "flashSectionTitle": "Flash-firmware",
+    "esp32Syncing": "Verbinding maken met ESP32-opstartlader...",
+    "provisionRequiresFlash": "Flash-firmware succesvol voordat u deze stap gebruikt.",
+    "provisionDone": "Voorzien",
+    "firmwareHashRequiresProvision": "Bepaal de EEPROM voordat u de firmware-hash instelt.",
+    "firmwareHashDone": "Firmware-hashset",
+    "flashDone": "Firmware geflasht",
+    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppelen starten. De zescijferige pincode verschijnt hier via USB-serieel. Voer dezelfde pincode in in het Bluetooth-dialoogvenster van uw besturingssysteem (macOS, Windows of Linux) wanneer Reticulum verbinding maakt via BLE. Headless-apparaten zonder USB kunnen geen pincode op het scherm weergeven.",
+    "wifiTitle": "Wifi",
+    "wifiHint": "Wi-Fi is uitgeschakeld na het knipperen. Configureer hier de stationmodus (USB-serieel) en voeg vervolgens een Wi-Fi RNode-interface toe op Verbinding met tcp://host (poort 7633). Vereist ESP32-S3 Wi-Fi-compatibele firmware. Start het bord opnieuw op na het toepassen van wijzigingen.",
+    "wifiSsidLabel": "Wifi SSID",
+    "wifiPskLabel": "WiFi-wachtwoord",
+    "wifiChannelLabel": "Kanaal (optioneel)",
+    "wifiStaticIpLabel": "Statisch IP-adres (optioneel)",
+    "wifiStaticNetmaskLabel": "Netmasker (optioneel)",
+    "wifiDhcpPlaceholder": "Laat leeg voor DHCP",
+    "wifiOff": "Wi-Fi uit",
+    "wifiEnableAp": "AP inschakelen",
+    "wifiApplyStation": "Station toepassen",
+    "wifiReadConfig": "Lees configuratie",
+    "wifiAdvancedShow": "Geavanceerd",
+    "wifiAdvancedHide": "Verberg Geavanceerd",
+    "wifiAdvancedToggle": "Geavanceerde wifi-opties in-/uitschakelen",
+    "wifiOffSuccess": "Wi-Fi uitgeschakeld. Start het bord opnieuw op om wijzigingen door te voeren.",
+    "wifiApSuccess": "Toegangspuntmodus ingeschakeld. Sluit de RNode AP aan vanaf uw computer (standaard gateway 10.0.0.1) en configureer vervolgens de inloggegevens van het station of gebruik de bootstrapconsole.",
+    "wifiStationSuccess": "Stationmodus opgeslagen. Start het bord opnieuw op, zoek vervolgens het IP-adres (display, router DHCP of Read config) en voeg tcp://… toe aan de → verbindingsinterfaces.",
+    "wifiConfigEmpty": "Geen configuratiegegevens geretourneerd.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
   "logAnalyzeModal": {
-    "closeDialog": "Dialoogvenster sluiten",
     "title": "Loganalyse",
     "totalEntries": "{{count}} vermeldingen",
     "errorsShort": "{{count}} fouten",
@@ -929,16 +1443,12 @@
         "recommendation": "Chatgeschiedenis opslaan en doorsturen kon niet worden aangevraagd bij een router (vaak een korte race met ander radioverkeer). Als de chatachterstand leeg blijft, maak dan opnieuw verbinding of wacht op de volgende hartslag van de router."
       },
       "serial-reconnect": {
-        "label": "USB-serieel opnieuw verbinden",
-        "recommendation": "USB-serieel werd niet schoon vrijgegeven na het verbreken van de verbinding. Sluit de mesh-client af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de kabel opnieuw aan."
+        "label": "USB-serieel opnieuw verbinden"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Doe het ding."
-      },
-      "serial-reconnect": {
-        "recommendation": "USB-serieel werd niet schoon vrijgegeven na het verbreken van de verbinding. Sluit de mesh-client af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de kabel opnieuw aan."
       }
     }
   },
@@ -965,17 +1475,14 @@
     "logInfo": "Logboek / Info",
     "warnError": "Waarschuw / fout",
     "narrowLogPanel": "Smal houtpaneel",
-    "widenLogPanel": "Verbreed het houtpaneel"
+    "widenLogPanel": "Verbreed het houtpaneel",
+    "clearFailed": "Kan het logboek niet wissen"
   },
   "mapPanel": {
     "locationUnavailable": "Locatie niet beschikbaar.",
-    "gpsHardwareUnavailable": "GPS-hardware niet beschikbaar.",
-    "locationError": "Locatiefout: {{error}}",
     "locationRequestFailed": "Locatieverzoek mislukt.",
     "showMyLocation": "Toon mijn locatie",
     "networkMap": "Netwerkkaart met knooppuntposities",
-    "toggleRouteWeightLines": "Schakel routegewichtslijnen in of uit",
-    "routeWeights": "Routegewichten",
     "layerControls": "Lagen",
     "layerControlsAria": "Kaartlaagbesturingselementen in-/uitschakelen",
     "basemapHeading": "\"Basiskaart\"",
@@ -988,7 +1495,10 @@
     "layerWaypoints": "Routepunten",
     "layerRouteWeights": "Routegewichten",
     "layerAnomalyHalos": "Anomalie halo's",
-    "layerCongestionHalos": "Congestiehalo's"
+    "layerCongestionHalos": "Congestiehalo's",
+    "waypointDefaultName": "Waypoint",
+    "waypointDelete": "Waypoint verwijderen",
+    "noGpsNodes": "Nog geen knooppunten met GPS-posities"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -1068,7 +1578,6 @@
     "cannedMessagesApplied": "Standaardberichten toegepast.",
     "rtttlSaved": "RTTTL-beltoon opgeslagen.",
     "title": "Moduleconfiguratie",
-    "readOnly": "Alleen-lezen",
     "connectToDevice": "Maak verbinding met een apparaat om de moduleconfiguratie te wijzigen.",
     "waitingForModuleConfig": "Wachten op moduleconfiguratie vanaf apparaat…",
     "selectPreset": "Selecteer een voorinstelling...",
@@ -1221,14 +1730,7 @@
       "echoMode": "Echo-modus",
       "baudRate": "Baudsnelheid",
       "storeForwardEnabled": "Opslaan en doorsturen ingeschakeld",
-      "sfHeartbeat": "Hartslag verzenden",
-      "sfMaxStored": "Maximaal opgeslagen records",
-      "sfHistoryMax": "Geschiedenis rendement max",
-      "sfHistoryWindow": "Terugkeervenster geschiedenis",
       "sfHeartbeatDesc": "Zend periodiek de aanwezigheid uit, zodat klanten weten dat S&F beschikbaar is.",
-      "sfMaxStoredDesc": "Maximaal aantal records dat op het apparaat wordt bewaard.",
-      "sfHistoryMaxDesc": "Max. aantal berichten dat moet worden geretourneerd wanneer een knooppunt geschiedenis opvraagt.",
-      "sfHistoryWindowDesc": "Hoe ver terug in de tijd om berichten te retourneren (seconden).",
       "telDeviceTelemetryEnabled": "Apparaattelemetrie verzenden",
       "telDeviceTelemetryEnabledDesc": "Zend apparaatstatistieken (batterij, spanning, kanaalgebruik) uit naar de mesh via de telemetriemodule.",
       "telDeviceInterval": "Interval voor apparaatstatistieken",
@@ -1332,7 +1834,141 @@
     "debugPrivateAppMessages": "Privé app-berichten",
     "debugPingResponses": "Ping-antwoorden",
     "sectionMapReport": "Kaartrapport",
-    "sectionMapReportHint": "Publiceert positie naar de Meshtastic-kaart over MQTT. Vereist MQTT-relais ingeschakeld hierboven; instellingen worden opgeslagen in de configuratie van de MQTT-module van het apparaat."
+    "sectionMapReportHint": "Publiceert positie naar de Meshtastic-kaart over MQTT. Vereist MQTT-relais ingeschakeld hierboven; instellingen worden opgeslagen in de configuratie van de MQTT-module van het apparaat.",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "Geen"
+      },
+      "10": {
+        "label": "Selecteer (Invoeren)"
+      },
+      "17": {
+        "label": "Omhoog"
+      },
+      "18": {
+        "label": "Omlaag"
+      },
+      "19": {
+        "label": "Links"
+      },
+      "20": {
+        "label": "Rechts"
+      },
+      "24": {
+        "label": "Annuleren"
+      },
+      "27": {
+        "label": "Terug (Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "Standaard"
+      },
+      "1": {
+        "label": "Eenvoudig"
+      },
+      "2": {
+        "label": "Proto"
+      },
+      "3": {
+        "label": "Sms-bericht"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.Direct"
+      },
+      "8": {
+        "label": "MeshSolar-configuratie"
+      },
+      "9": {
+        "label": "Logboek (alle pakketten)"
+      },
+      "10": {
+        "label": "Logboek (alleen tekst)"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "Wit"
+      },
+      "2": {
+        "label": "Geel"
+      },
+      "3": {
+        "label": "Oranje"
+      },
+      "4": {
+        "label": "Magenta"
+      },
+      "5": {
+        "label": "Rood"
+      },
+      "6": {
+        "label": "Kastanjebruin"
+      },
+      "7": {
+        "label": "Paars"
+      },
+      "8": {
+        "label": "Donkerblauw"
+      },
+      "9": {
+        "label": "Blauw"
+      },
+      "10": {
+        "label": "Cyaan"
+      },
+      "11": {
+        "label": "Wintertaling"
+      },
+      "12": {
+        "label": "Groente"
+      },
+      "13": {
+        "label": "Donkergroen"
+      },
+      "14": {
+        "label": "Bruin"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "Teamlid"
+      },
+      "2": {
+        "label": "Teamleider"
+      },
+      "3": {
+        "label": "Hoofdkwartier"
+      },
+      "4": {
+        "label": "Sluipschutter"
+      },
+      "5": {
+        "label": "Medic"
+      },
+      "6": {
+        "label": "Voorwaartse waarnemer"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Verwijderen uit favorieten",
@@ -1479,7 +2115,21 @@
     "configureRemotelyHint": "Opent radio-instellingen voor dit knooppunt via de mesh (vereist lokale radio en opgeslagen admin-sleutel).",
     "openRoomButton": "🏠 Ruimte openen",
     "remoteAuthCancelled": "Toegang op afstand geannuleerd.",
-    "shareContactSent": "Contact delen verzonden via de radio."
+    "shareContactSent": "Contact delen verzonden via de radio.",
+    "blockContact": "Blok",
+    "unblockContact": "Deblokkeer",
+    "paxCounter": {
+      "heading": "Pax-teller",
+      "detectedCount": "Gedetecteerde telling",
+      "lastSeen": "Laatst gezien"
+    },
+    "detectionSensor": {
+      "heading": "Detectiesensor ({{count}})",
+      "lastDetection": "Laatste detectie",
+      "dataSize": "Gegevensgrootte",
+      "dataSizeBytes": "{{count}} bytes",
+      "rawDataHex": "Ruwe gegevens (hexadecimaal)"
+    }
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -1640,6 +2290,35 @@
     "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
     "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT"
   },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "toggleFavorite": "Favoriet in-/uitschakelen",
+    "favourites": "Favorieten",
+    "announces": "Kondigt aan",
+    "searchFavourites": "Zoek {{count}} Favorieten...",
+    "searchAnnounces": "Search {{count}} kondigt aan...",
+    "emptyFavourites": "No favourite Nomad Network nodes yet.",
+    "emptyAnnounces": "No announced Nomad Network nodes yet.",
+    "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw.",
+    "selectNode": "Selecteer een knooppunt uit de lijst om door de pagina's ervan te bladeren.",
+    "lastSeen": "Laatst gehoord {{time}}",
+    "hopsAway_one": "{{count}} spring weg",
+    "hopsAway_other": "{{count}} springt weg",
+    "openNode": "Blader door {{name}}",
+    "pagePath": "Paginapad",
+    "pagePathAria": "Nomadenpaginapad",
+    "homePage": "Startpagina",
+    "reloadPage": "Pagina opnieuw laden",
+    "closeViewer": "Paginaviewer sluiten",
+    "pageLoading": "Pagina laden…",
+    "pageFailed": "Kan pagina niet laden: {{error}}",
+    "pageTruncated": "Pagina ingekort voor weergave",
+    "showSource": "Paginabron weergeven",
+    "hideSource": "Toon opgemaakte pagina",
+    "fileDownloading": "Bestand downloaden…",
+    "fileDownloadFailed": "Kan bestand niet downloaden: {{error}}",
+    "fileDownloadInProgress": "Er wordt al een bestand gedownload."
+  },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
     "distributionByType": "Verdeling per type",
@@ -1659,6 +2338,29 @@
     "other": "Ander",
     "noSenderId": "Geen afzender-ID in onbewerkt frame"
   },
+  "peerDetailModal": {
+    "networkSection": "Netwerk",
+    "pathHash": "Pad hash",
+    "copyHash": "Bestemmingshash kopiëren",
+    "editNameAria": "Aangepaste weergavenaam",
+    "sendMessage": "Verstuur bericht",
+    "pathOk": "Padverzoek verzonden.",
+    "pathFailed": "Padverzoek mislukt: {{error}}",
+    "probeHops": "Sonde OK — {{hops}} hop(s).",
+    "probeLocal": "Sonde OK ({{mode}} modus).",
+    "probeFailed": "Sonde mislukt: {{error}}",
+    "iconColor": "Avatar kleur",
+    "iconColorAria": "Kleur peer-avatar",
+    "saveContact": "Opslaan als contactpersoon",
+    "removeContact": "Contact verwijderen",
+    "removeContactConfirmTitle": "Contact verwijderen",
+    "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit je lijst verwijderd. De chatgeschiedenis wordt bewaard; door ze opnieuw een bericht te sturen, wordt het contact opnieuw toegevoegd.",
+    "probeOk": "Sonde OK — pad bereikbaar.",
+    "blockContact": "Contactpersoon blokkeren",
+    "unblockContact": "Contactpersoon deblokkeren",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — laatst gezien {{seen}}"
+  },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
     "noNodes": "Nog geen knooppunten waargenomen",
@@ -1671,7 +2373,42 @@
     "me": "Dit onderdeel",
     "directLink": "Direct (0 hops)",
     "relayLink": "Via relais (1 hop)",
-    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (niet-verbonden knooppunten verborgen)"
+    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (niet-verbonden knooppunten verborgen)",
+    "noConnectedNodes": "Geen verbonden peers om weer te geven — pas filters aan of wacht op netwerkverkeer.",
+    "meShort": "Jij",
+    "relayHub": "Direct relais",
+    "relayCount": "{{count}} relaishubs",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Toon collega's op afstand",
+    "maxHopsFilter": "Max hops",
+    "maxHopsAll": "Alle hops",
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "Weergave opnieuw instellen (reset)",
+    "compactLeafCount": "{{count}} compacte directe collega's"
+  },
+  "peerListPanel": {
+    "heading": "Collega's",
+    "tabPeers": "Collega's",
+    "tabContacts": "Contact",
+    "searchPlaceholder": "Zoeken op naam of hash...",
+    "searchAria": "Collega's zoeken",
+    "colName": "Naam / hash",
+    "colLastSeen": "Laatst bekeken",
+    "colInterface": "Interface",
+    "colFavorite": "Favoriet",
+    "toggleFavorite": "Favoriet in-/uitschakelen",
+    "openChat": "Open chat",
+    "emptyPeers": "Nog geen collega's ontdekt. Stuur een aankondiging of wacht op netwerkverkeer.",
+    "emptyContacts": "Nog geen contacten — stuur een bericht naar een collega om ze hier toe te voegen.",
+    "groupFilterAria": "Contacten filteren op groep",
+    "allGroups": "Alle groepen",
+    "manageGroups": "Groepen beheren",
+    "colLastHeard": "Laatst gehoord",
+    "colContact": "Contact",
+    "contactYes": "Ja",
+    "contactNo": "Nee",
+    "tabFavorites": "Favorieten",
+    "emptyFavorites": "Nog geen favoriete collega's — geef een contactpersoon of collega een ster om ze hier vast te pinnen."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",
@@ -1715,19 +2452,14 @@
     "sectionLora": "LoRa / Radio",
     "sectionPositionGps": "Positie / GPS",
     "sectionPower": "Stroom",
-    "sectionTelemetry": "Telemetrie",
     "sectionWifi": "WiFi / netwerk",
-    "passwordPlaceholder": "Wachtwoord",
     "yourNamePlaceholder": "Jouw naam",
     "namePlaceholder": "NAAM",
     "networkNamePlaceholder": "Netwerknaam",
     "encryptionNone": "Geen (geen codering)",
     "encryptionSimple": "Eenvoudig (standaard Meshtastic-sleutel)",
     "generateRandomKey": "Genereer willekeurige sleutel",
-    "setKeyFromSha256": "Sleutel instellen van SHA-256(naam) eerste 16 bytes (MeshCore #channels)",
     "removeAllContactsTitle": "Verwijder alle contacten van de radio, bewaar ze in de database",
-    "contactsOnRadio": "{{count}} / {{max}} contacten op radio",
-    "aesEncrypted": "AES-versleuteld",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Sleutelgrootte",
@@ -1737,8 +2469,6 @@
     "connectToConfigure": "Maak verbinding met een apparaat om de configuratie te wijzigen.",
     "importConfigJson": "Importeer configuratie-JSON",
     "offloadContacts": "Ontladen",
-    "deviceMetricsDescription": "Mesh-uitzending: hoe vaak batterij-, spanning- en kanaalgebruik via LoRa worden verzonden. 0 = uitgeschakeld; standaard 1800 s (30 min). Verbonden app: wanneer gekoppeld via Bluetooth, serieel of Wi-Fi, stuurt de firmware vaak nog steeds ongeveer elke 60 seconden apparaatstatistieken naar deze client voor frisheid op het scherm - dat is niet hetzelfde als uw mesh-interval.",
-    "deviceMetricsTooltip": "Meshtastic-firmware verzendt apparaatstatistieken ongeveer één keer per minuut naar een verbonden client voor lokale monitoring, ongeacht het mesh-telemetrie-interval. Officiële referentie: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metrisch"
@@ -1802,18 +2532,6 @@
     "pairingPinDesc": "Vaste pincode van 6 cijfers voor Bluetooth-koppeling. Standaard: 123456.",
     "wifiPasswordLabel": "WiFi-wachtwoord",
     "wifiPasswordPlaceholder": "Wachtwoord",
-    "deviceUserIdentity": "Apparaatgebruiker/identiteit",
-    "displaySection": "Weergave",
-    "loraRadio": "LoRa / Radio",
-    "positionGps": "Positie / GPS",
-    "powerSection": "Stroom",
-    "telemetrySection": "Telemetrie",
-    "wifiNetwork": "WiFi / netwerk",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "NAAM",
-    "latPlaceholder": "0,000000",
-    "lonPlaceholder": "0,000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Primair",
     "channelNameSecondary": "Kanaalnaam",
     "resetChannelDefaults": "Terugzetten naar standaardwaarden",
@@ -1830,7 +2548,6 @@
     "channelSaveFailed": "Mislukt: {{message}}",
     "validationAes128": "AES-128-sleutel moet exact 16 bytes zijn (24 base64-tekens)",
     "validationAes256": "AES-256-sleutel moet exact 32 bytes zijn (44 base64-tekens)",
-    "factoryResetConfirmTitle": "Fabrieksreset",
     "factoryResetButton": "Fabrieksreset apparaat",
     "dangerZonePermanent": "Deze acties zijn permanent en kunnen niet ongedaan worden gemaakt.",
     "resetNodeDbName": "NodeDB opnieuw instellen",
@@ -1906,7 +2623,6 @@
     "lightSleepDurationDesc": "Duur van lichte slaapcycli. 0 = standaard gebruiken.",
     "batteryShutdownLabel": "Uitschakeling van de batterij na",
     "batteryShutdownDesc": "Schakel de batterij uit na zoveel seconden sinds de laatste mesh-activiteit. 0 = uitgeschakeld.",
-    "deviceMetricsIntervalLabel": "Update-interval voor apparaatstatistieken",
     "wifiEnabledLabel": "WiFi ingeschakeld",
     "ethernetEnabledLabel": "Ethernet ingeschakeld",
     "mqttUplinkLabel": "MQTT-uplink",
@@ -2164,7 +2880,103 @@
     "applyTxPowerSuccess": "TX-vermogen toegepast",
     "xmodemInvalidFilename": "Bestandsnaam bevat ongeldige tekens.",
     "validationInvalidPsk": "Ongeldige base64 PSK — controleer de sleutel en probeer het opnieuw",
-    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn"
+    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn",
+    "editChannelTitle": "Kanaal bewerken {{index}}",
+    "channelNameLabel": "Naam",
+    "channelRoleLabel": "Rol",
+    "channelsEditHint": "Selecteer een kanaal om te bewerken. AES-128/256-sleutels worden weergegeven in base64 (Meshtastic-conventie).",
+    "channelResetStatus": "Kanaal {{index}} opnieuw ingesteld!",
+    "meshcoreChannel": {
+      "defaultName": "Kanaal {{index}}",
+      "addTitle": "Kanaal toevoegen",
+      "editTitle": "Kanaal bewerken {{index}}",
+      "indexLabel": "Index (0–{{max}})",
+      "invalidHex": "Moet precies 32 hexadecimale tekens bevatten.",
+      "addButton": "+ Kanaal toevoegen",
+      "footerHelp": "Sleutels zijn 128-bits (16 bytes), weergegeven als 32 hexadecimale tekens. Kanaalnamen met maximaal {{nameMax}} tekens. Maximaal {{channelCount}} kanalen (index 0–{{indexMax}}). Voor #kanalen gebruikt u 'Afleiden van naam' (SHA-256 van de naam met een # ervoor)."
+    },
+    "regions": {
+      "0": {
+        "label": "Uitgeschakeld"
+      },
+      "1": {
+        "label": "ONS"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "JP"
+      },
+      "6": {
+        "label": "ANZ"
+      },
+      "7": {
+        "label": "KR"
+      },
+      "8": {
+        "label": "TW"
+      },
+      "9": {
+        "label": "RU"
+      },
+      "10": {
+        "label": "IN"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "E"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MIJN_433"
+      },
+      "16": {
+        "label": "MIJN_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "LORA_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "Lang snel"
+      },
+      "1": {
+        "label": "Lang langzaam"
+      },
+      "2": {
+        "label": "Lang Matig"
+      },
+      "3": {
+        "label": "Kort Snel"
+      },
+      "4": {
+        "label": "Kort Langzaam"
+      },
+      "5": {
+        "label": "Gemiddeld snel"
+      },
+      "6": {
+        "label": "Gemiddeld langzaam"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -2188,7 +3000,22 @@
     "meshtasticLegendHint": "Breid een rij uit: port- en hopdetails staan bovenaan. Hoptellingen gebruiken hopStart − hopLimit op RF-pakketten (niet MQTT).",
     "portLabel": "Poort",
     "transportSourceLabel": "Transport",
-    "hopsAbsentMqtt": "Geen RF-hoptelling (MQTT-pad)."
+    "hopsAbsentMqtt": "Geen RF-hoptelling (MQTT-pad).",
+    "reticulum": {
+      "legendHint": "Vouw een rij uit voor RNS-koptekstvelden. RX = ontvangen op een interface; TX = uitgaand van dit knooppunt.",
+      "direction": "Richting",
+      "interface": "Interface",
+      "packetType": "Pakkettype",
+      "headerType": "Header",
+      "destination": "Bestemming",
+      "rx": "RX",
+      "tx": "TX"
+    },
+    "pauseCapture": "Pauze",
+    "resumeCapture": "C.V.",
+    "resumeCaptureWithCount": "CV (+{{count}})",
+    "pausedPending": "{{count}} nieuw tijdens pauze",
+    "jumpToLatest": "Spring naar het laatste nieuws"
   },
   "remoteAdmin": {
     "errors": {
@@ -2291,7 +3118,90 @@
     "pathHashCliGet": "Hash-modus voor pad ophalen",
     "pathHashCliSet0": "Stel pad hash-modus 1-byte in",
     "pathHashCliSet1": "Stel pad hash-modus 2-byte in",
-    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes"
+    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes",
+    "pathLabel": "Pad:",
+    "hopMe": "● Ik",
+    "hopN": "● Hop {{n}}",
+    "noNeighborsReported": "Geen buren gemeld",
+    "fetchingTelemetry": "Telemetrie ophalen…",
+    "telemetryBattery": "Batterij: {{voltage}}V",
+    "telemetryTemp": "Temperatuur: {{temp}}°C",
+    "telemetryHumidity": "Vochtigheid: {{humidity}}%",
+    "telemetryPressure": "Druk: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "alt {{altitude}}m",
+    "cliSend": "Versturen",
+    "cliQuick": "Snel:"
+  },
+  "reticulumIdentity": {
+    "announceIntervalSec": "Aankondigingsinterval (seconden)",
+    "clearAnnounces": "Duidelijke aankondigingen",
+    "announceSaved": "Aankondigingsinterval opgeslagen.",
+    "announceSaveFailed": "Kan aankondigingsinterval niet opslaan: {{error}}",
+    "announceSaveSidecarStopped": "Start de Reticulum-stack voordat u de aankondigingsinstellingen opslaat.",
+    "clearAnnouncesDone": "Aankondigingen gewist.",
+    "clearAnnouncesFailed": "Kan aankondigingen niet wissen."
+  },
+  "reticulumPropagation": {
+    "preferred": "Voorkeur",
+    "setPreferred": "Voorkeur instellen",
+    "syncNow": "Berichten synchroniseren",
+    "cancelSync": "Sync annuleren",
+    "syncNowFor": "Synchroniseer berichten van {{name}}",
+    "addNode": "Knooppunt toevoegen",
+    "addNodeLabel": "Voeg voortplantingsknooppunt toe via hash",
+    "addNodePlaceholder": "LXMF-bestemmingshash van 32 tekens",
+    "localInboxStats": "{{count}} in wachtrij · {{bytes}} bytes",
+    "refreshing": "Verfrissend…",
+    "refreshAria": "Vernieuw de voortplantingsknooppunten",
+    "syncStatusEstablishing": "Verbinding tot stand brengen met voortplantingsknooppunt...",
+    "syncStatusNegotiating": "Onderhandelen over synchronisatie met het propagatieknooppunt...",
+    "syncStatusTransferring": "Berichten overbrengen van propagatieknooppunt...",
+    "syncFailed": "Doorgiftesynchronisatie mislukt: het knooppunt is mogelijk onbereikbaar.",
+    "syncTimedOut": "Er is een time-out opgetreden voor de propagatiesynchronisatie: het knooppunt is mogelijk niet bereikbaar.",
+    "autoSyncIntervalLabel": "Interval voor automatische synchronisatie",
+    "autoSyncIntervalAria": "Interval voor automatische synchronisatie van propagatie",
+    "autoSyncOptionDisabled": "Gehandicapt",
+    "autoSyncOption15m": "Elke 15 minuten",
+    "autoSyncOption30m": "Elke 30 minuten",
+    "autoSyncOption1h": "Elke 1 uur",
+    "autoSyncOption3h": "Elke 3 uur",
+    "autoSyncOption6h": "Elke 6 uur",
+    "autoSyncOption12h": "Elke 12 uur",
+    "autoSyncOption24h": "Elke 24 uur",
+    "lastSynced": "Laatst gesynchroniseerd: {{time}}",
+    "lastRefreshed": "Laatst bijgewerkt {{time}}"
+  },
+  "reticulumTopology": {
+    "title": "Netwerktopologie",
+    "self": "Jij",
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Reticulum-netwerktopologiegrafiek",
+    "noNodes": "Nog geen topologiegegevens: sluit de Reticulum-stack aan en vernieuw.",
+    "nodeCount": "{{count}} knooppunten",
+    "edgeCount": "{{count}}-koppelingen",
+    "hiddenCount": "Toont {{shown}} van {{total}} knooppunten (verre peers verborgen)",
+    "legendSelf": "Dit knooppunt",
+    "centerRns": "RNS",
+    "showDistantPeers": "Toon collega's op afstand",
+    "maxHopsFilter": "Max hops",
+    "maxHopsAll": "Alle hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "{{online}} online, {{offline}} offline interfaces",
+    "unassignedInterface": "Andere paden",
+    "legendInterfaceOnline": "Online web-interface",
+    "legendInterfaceOffline": "Interface offline",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nomad-knooppunt",
+    "interfaceLink": "Interface link",
+    "peerLink": "Collegiale link",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Wi-Fi-interface",
+    "glyphLora": "LoRa-interface",
+    "glyphTcp": "TCP-interface",
+    "glyphSerial": "Seriële interface"
   },
   "rfHistograms": {
     "title": "RF-signaalverdeling",
@@ -2402,7 +3312,6 @@
     "jumpToUnread": "Ga naar ongelezen",
     "newMessagesDivider": "Nieuwe berichten",
     "loggingInMarkerAria": "Inloggen op roomserver",
-    "savedPasswordNotLoggedIn": "Wachtwoord opgeslagen — open ruimte en log in",
     "favorite": "Favoriete ruimte",
     "unfavorite": "Verwijder van favorieten",
     "loginAllSaved": "Alles inloggen",
@@ -2447,16 +3356,17 @@
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",
-    "placeholder": "Zoek in alle berichten… (gebruiker:naam, kanaal:naam)"
+    "placeholder": "Zoek in alle berichten… (gebruiker:naam, kanaal:naam)",
+    "noResults": "Geen resultaten",
+    "hint": "Typ om in alle berichten te zoeken",
+    "resultCount": "{{count}} result(s) — klik om te navigeren"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
     "failed": "Mislukt: {{message}}",
     "adminKeysApplied": "Beheerderssleutels toegepast.",
     "adminSettingsApplied": "Beheerinstellingen toegepast.",
-    "keysBackedUp": "Sleutels waarvan een back-up is gemaakt naar de systeemsleutelhanger.",
     "backupFailed": "Back-up mislukt: {{message}}",
-    "keysRestored": "Sleutels hersteld vanaf een back-up.",
     "restoreFailed": "Herstellen mislukt: {{message}}",
     "dataSigned": "Gegevens succesvol ondertekend.",
     "signNoResult": "De tekenbewerking heeft geen resultaat opgeleverd.",
@@ -2500,8 +3410,6 @@
     "adminChannelDesc": "Geef binnenkomende apparaatcontrole over het onveilige, oude beheerderskanaal.",
     "keyBackupUnavailable": "Systeemsleutelhangerversleuteling is niet beschikbaar op dit platform. Back-up en herstel zijn uitgeschakeld.",
     "keyBackupDesc": "Maak een back-up van uw DM-sleutels in de systeemsleutelhanger (gecodeerd). U kunt ze op elk gewenst moment terugzetten op het apparaat.",
-    "backupAvailable": "Back-up beschikbaar",
-    "noBackupStored": "Geen back-up opgeslagen",
     "backupKeys": "Back-upsleutels",
     "restoreKeys": "Sleutels herstellen",
     "working": "Werken...",
@@ -2572,7 +3480,11 @@
     "rf": "RF",
     "graph": "Diagram",
     "rooms": "Ruimtes",
-    "admin": "Beheer"
+    "admin": "Beheer",
+    "peers": "Collega's",
+    "nomadnetwork": "Nomad Network",
+    "topology": "Netwerktopologie",
+    "network": "Netwerk"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -2664,5 +3576,156 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
+  },
+  "diagnosticsPing": {
+    "title": "Continue ping",
+    "reticulumHint": "Voert ping (RTT) en padsonde (hops) uit op elk interval terwijl de stapel draait.",
+    "hashLabel": "Bestemmingshash",
+    "hashPlaceholder": "Bestemmingshash van 32 tekens...",
+    "hashAria": "Bestemmingshash naar ping",
+    "intervalLabel": "Interval(len)",
+    "intervalAria": "Seconden tussen pingpogingen",
+    "start": "Beginnen",
+    "stop": "Stop",
+    "runOnce": "Eenmaal pingen",
+    "colSeq": "#",
+    "colRtt": "project voor regionale technologieoverdracht",
+    "colHops": "Hop",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Mislukt: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "huidige identiteit",
+    "active": "Actieve identiteit: {{name}}",
+    "activeBadge": "actief"
+  },
+  "identityVault": {
+    "title": "Identiteitskluis",
+    "hint": "Versleutel een lokale kopie van je identiteitsback-up met een kluiswachtwoordcode. Ontgrendel om toegang te krijgen tot beschermde identiteitsbewerkingen.",
+    "passcode": "Toegangscode kluis",
+    "confirmPasscode": "Toegangscode bevestigen",
+    "setPasscode": "Schakel kluis in",
+    "unlock": "Ontgrendel kluis",
+    "lock": "Kluis vergrendelen",
+    "statusNotConfigured": "Niet geconfigureerd",
+    "statusLocked": "Vastgezet",
+    "statusUnlocked": "Ontgrendeld",
+    "passcodeTooShort": "De toegangscode moet uit minimaal 4 tekens bestaan.",
+    "passcodeMismatch": "Ingevoerde toegangscodes komen niet overeen.",
+    "setSuccess": "Toegangscode kluis opgeslagen.",
+    "setFailed": "Kan kluistoegangscode niet opslaan.",
+    "unlockSuccess": "Kluis ontgrendeld",
+    "unlockFailed": "Onjuiste toegangscode of kluisfout.",
+    "lockSuccess": "Kluis vergrendeld."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "voortplantingsmodus",
+    "modeAria": "Voortplantingssynchronisatiemodus",
+    "modeAuto": "Auto",
+    "modeManual": "Handmatig",
+    "modeOff": "Off",
+    "sync": "Synchroniseren",
+    "syncAria": "Voortplantingsberichten synchroniseren",
+    "cancelSync": "Annuleren",
+    "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar-pictogram",
+    "iconNameAria": "Peer-avatarpictogram",
+    "iconCircle": "Cirkel",
+    "iconStar": "Ster",
+    "iconHeart": "Hart",
+    "iconShield": "Afscherming",
+    "iconUser": "Gebruiker"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Stapelinstellingen",
+      "enableTransport": "Transport inschakelen (route voor andere peers)",
+      "shareInstance": "Deel Reticulum-instantie",
+      "logLevel": "Logniveau",
+      "save": "Bewaar stapelinstellingen",
+      "saveFailed": "Kan stapelinstellingen niet opslaan."
+    },
+    "reticulumConfigImport": {
+      "title": "Importeer Reticulum-configuratie",
+      "hint": "Plak een configuratiebestand in rnsd-stijl of importeer vanaf schijf. Voeg interfaceblokken toe/bijwerken op naam; vervangen overschrijft alle interfaces.",
+      "pasteLabel": "Inhoud van configuratiebestand",
+      "fromFile": "Importeren uit bestand…",
+      "fromSystem": "Systeemstandaard importeren",
+      "merge": "Import samenvoegen",
+      "replace": "Vervang interfaces",
+      "confirmTitle": "Importeer Reticulum-configuratie",
+      "confirmMerge": "Geïmporteerde interfaces samenvoegen met de huidige configuratie?",
+      "confirmReplace": "Alle interfaces vervangen door de geïmporteerde configuratie? Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Importeren"
+    },
+    "reticulumConfigImportFailed": "Configuratie-import mislukt.",
+    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Fabrieksreset",
+      "hint": "Wist identiteit, contacten en berichten uit de zijspanstapel. Interfaceconfiguratie blijft behouden.",
+      "button": "Stapelgegevens opnieuw instellen",
+      "confirmTitle": "Reticulum stack resetten?",
+      "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
+      "confirm": "Opnieuw instellen"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Stel het beheerderswachtwoord van de repeater in of wijzig dit via het paneel Repeaters (alleen sessie).",
+      "connectionFailed": "Verbinding mislukt",
+      "notConnected": "Niet verbonden met apparaat",
+      "nodeNotFound": "Knooppunt niet gevonden (geen coderingssleutel)",
+      "authenticationFailed": "Authenticatie mislukt",
+      "requestFailed": "Mislukt: {{detail}}",
+      "requestTimedOut": "Time-out voor verzoek (tot ~{{seconds}}s)",
+      "requestTimedOutApprox": "Time-out voor verzoek (~{{seconds}}s)",
+      "pingNoRoute": "Nog geen route van de radio - multi-hop trace heeft een gesynchroniseerd pad nodig. Wacht op contactupdates of maak opnieuw verbinding.",
+      "bleNoDetails": "BLE-verbinding mislukt (geen foutdetails van apparaat). Probeer het opnieuw of gebruik Serieel/USB.",
+      "bleAlreadyInProgress": "Er is al een Bluetooth-verbinding actief. Wacht tot het klaar is of probeer in plaats daarvan Serieel/USB.",
+      "bleMissingServices": "Apparaat ondersteunt het MeshCore BLE-protocol niet. Zorg ervoor dat het apparaat MeshCore-firmware gebruikt.",
+      "blePeripheralInUse": "Dit apparaat is al verbonden via Meshtastic BLE. Koppel deze eerst los voordat u verbinding maakt als MeshCore.",
+      "bleTimeoutWebBtHandshake": "Time-out voor MeshCore-handshake (Web Bluetooth). Mogelijk heeft de radio eerst een pincode nodig die is gekoppeld aan Linux: gebruik Apparaat verwijderen en opnieuw koppelen en voer de pincode in die op het apparaat wordt weergegeven, of koppel met bluetoothctl en tik vervolgens opnieuw op Verbinden.",
+      "bleTimeoutWebBt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Web Bluetooth. Probeer het opnieuw, houd het apparaat wakker, schakel de BLE op de radio uit en weer in, of gebruik Serieel/TCP.",
+      "bleTimeoutHandshake": "Bluetooth verbonden, maar de handshake van het MeshCore-protocol is niet voltooid voordat de verbinding werd verbroken/time-out. Probeer het opnieuw, houd het apparaat wakker en in de buurt, schakel BLE uit en weer in, of gebruik Serieel/TCP.",
+      "bleTimeoutNoble": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Noble IPC. Probeer het opnieuw, schakel BLE op het apparaat uit of gebruik Serieel/TCP.",
+      "roomPost": {
+        "badState": "Kamerpost afgewezen (niet ingelogd op de radio). Meld u af, log opnieuw in en probeer het opnieuw.",
+        "illegalArg": "Kamerpost afgewezen (ongeldig berichtformaat).",
+        "notFound": "Kamerpost afgewezen (kamercontact niet gevonden op de radio).",
+        "unsupportedCmd": "Kamerpost afgewezen (niet-ondersteund berichttype op de radio). Log in op de kamer en probeer het opnieuw.",
+        "default": "Kamerpost afgewezen door de radio. Meld u af, log opnieuw in en probeer het opnieuw.",
+        "timeout": "Er is een time-out opgetreden in de kamerpost tijdens het wachten op de radio. Controleer het bereik of probeer het opnieuw."
+      },
+      "roomLogin": {
+        "noRoute": "Geen route naar deze roomserver. Traceer het knooppunt vanaf de kaart of wacht op padadvertenties en probeer het vervolgens opnieuw.",
+        "pathSyncFailed": "Kon de route niet programmeren op uw radio voordat u zich aanmeldde. Sluit het apparaat opnieuw aan en probeer het opnieuw.",
+        "pathSyncFailedDetail": "Kon de route niet programmeren op uw radio voordat u zich aanmeldde. Sluit het apparaat opnieuw aan en probeer het opnieuw.{{detail}}",
+        "rejectedBlankGuest": "Inloggen voor kamer afgewezen. Gebruik Doorgaan met alleen-lezen voor een blanco gastwachtwoord, of probeer gastwachtwoord \"hallo\".",
+        "rejectedDefaultGuest": "Inloggen voor kamer afgewezen. Als deze server geen gastwachtwoord heeft, gebruik dan Doorgaan met alleen-lezen in plaats van Inloggen. Controleer anders het gast- of beheerderswachtwoord.",
+        "rejectedCheckPassword": "Inloggen voor kamer afgewezen. Controleer het gast- of beheerderswachtwoord voor deze kamerserver.",
+        "timedOutBlankGuest": "Er is een time-out opgetreden voor het inloggen op de kamer. Gebruik Doorgaan met alleen-lezen voor een blanco gastwachtwoord, of probeer gastwachtwoord \"hallo\".",
+        "timedOutDefaultGuest": "Er is een time-out opgetreden voor het inloggen op de kamer. Als deze server geen gastwachtwoord heeft, gebruik dan Doorgaan met alleen-lezen in plaats van Inloggen.",
+        "timedOut": "Er is een time-out opgetreden voor het inloggen op de kamer. De kamer is mogelijk buiten bereik of reageert niet.",
+        "failed": "Inloggen in de kamer is mislukt"
+      },
+      "roomLogout": {
+        "timedOut": "Room logout timed out. De kamer is mogelijk buiten bereik of reageert niet.",
+        "rejected": "Uitloggen van kamer geweigerd via de radio.",
+        "failed": "Kon de kamer niet verlaten"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
+      "network": "Controleer netwerk, DNS, firewall en VPN.",
+      "connackTimeout": "Als u geen eerdere regel 'clientfout' ziet, loopt de TLS/WebSocket-handshake mogelijk vast (probeer een ander netwerk; de app geeft de voorkeur aan IPv4 voor WSS).",
+      "subscribeFailed": "De makelaar kan een wildcard-abonnement op dit onderwerp weigeren; berichten kunnen nog steeds binnenkomen als de makelaar dit toestaat.",
+      "keepalive": "De server reageert niet meer op MQTT-pings (time-out bij inactiviteit, netwerkuitval of makelaar heeft de sessie gesloten). Maak opnieuw verbinding of controleer uw link."
+    }
   }
 }

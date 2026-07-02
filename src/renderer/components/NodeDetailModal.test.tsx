@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
+import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 
 import {
   meshcoreApplyRepeaterSessionAuthSkip,
@@ -432,5 +433,61 @@ describe('NodeDetailModal MeshCore actions', () => {
     await user.click(screen.getByRole('button', { name: 'Confirm Delete' }));
 
     expect(onDeleteNode).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
+  });
+
+  it('shows translated MQTT delete failure when active identity is connected', async () => {
+    const user = userEvent.setup();
+    const onDeleteNode = vi
+      .fn()
+      .mockRejectedValue(
+        markDeleteActiveMqttIdentityError(
+          'Cannot delete active MQTT identity while MQTT is connected',
+        ),
+      );
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        protocol="meshtastic"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={onDeleteNode}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Delete Node' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm Delete' }));
+
+    const status = screen.getByText('Delete failed. Disconnect MQTT and try again.');
+    expect(status).toBeInTheDocument();
+    expect(status).toHaveClass('text-red-300');
+  });
+
+  it('renders Pax Counter section when data is present', () => {
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        protocol="meshtastic"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        paxCounterData={
+          new Map([
+            [mockNode.node_id, { from: mockNode.node_id, count: 12, timestamp: Date.now() }],
+          ])
+        }
+      />,
+    );
+
+    expect(screen.getByText('Pax Counter')).toBeInTheDocument();
+    expect(screen.getByText('Detected Count')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
   });
 });

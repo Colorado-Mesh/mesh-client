@@ -1,5 +1,5 @@
 import { MESHCORE_TXT_TYPE_PLAIN } from './meshcoreChannelText';
-import { meshcoreRadioErrMessage } from './meshcoreRadioErr';
+import { meshcoreRoomPostRadioErrStored } from './meshcoreRoomSentWait';
 import {
   computeRoomLoginExtraTimeoutMs,
   computeRoomLoginSentWaitMs,
@@ -133,20 +133,24 @@ export function runMeshcoreRoomPostSend(
       if (!acceptResponses) return;
       const r = response as { errCode?: number | null };
       const errCode = r.errCode ?? null;
-      fail(meshcoreRadioErrMessage(errCode));
+      fail(meshcoreRoomPostRadioErrStored(errCode));
     };
 
     conn.once(MC_RESP_SENT, onSent);
     conn.once(MC_RESP_ERR, onErr);
 
-    sentWaitTimer = setTimeout(() => {
-      fail('Room post timed out waiting for the radio. Check range or try again.');
-    }, sentWaitMs);
+    const startSentWaitTimer = (): void => {
+      if (settled || sentWaitTimer !== undefined) return;
+      sentWaitTimer = setTimeout(() => {
+        fail('meshcore.errors.roomPost.timeout');
+      }, sentWaitMs);
+    };
 
     void conn
       .sendToRadioFrame(frame)
       .then(() => {
         acceptResponses = true;
+        startSentWaitTimer();
       })
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);

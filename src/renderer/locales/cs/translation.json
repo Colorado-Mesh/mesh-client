@@ -23,7 +23,17 @@
       "reconnecting": "Opětovné připojení"
     },
     "nodeLabel": "Uzel: {{name}}",
-    "takClientLost": "Ztráta klienta TAK"
+    "takClientLost": "Ztráta klienta TAK",
+    "title": "Síťový klient",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Vypněte ceduli Colorado Mesh",
+    "meshTubeSignOn": "Zapněte ceduli Colorado Mesh",
+    "queueBadge": "Otázka: {{used}}/{{max}}",
+    "telemetryDisabled": "Telemetrie je na tomto zařízení zakázána. Povolení metrik zařízení pomáhá síti a této aplikaci (diagnostika, baterie, signál). Povolte jej na kartě Rádio.",
+    "scrollToTop": "↑ Nahoru",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh on GitHub",
+    "footerWebsiteTitle": "Webové stránky Colorado Mesh"
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",
@@ -109,17 +119,10 @@
     "colorScheme": "Barevné schéma",
     "dangerZoneSection": "Nebezpečná zóna",
     "destructiveActions": "Destruktivní akce",
-    "dangerZoneDesc": "Tyto akce jsou trvalé a nelze je vrátit zpět. Každý krok pečlivě potvrďte.",
-    "diagnosticsSection": "Diagnostika",
     "pruneDistantNodesTitle": "Prořezávat vzdálené uzly",
-    "pruneDistantNodesDesc": "Za prahem vzdálenosti v Map & Node Filtering. Vyžaduje platnou polohu GPS.",
     "pruneOfflineNodesTitle": "Prořezávat offline uzly",
-    "pruneOfflineNodesDays": "Nebylo slyšet více než {{days}} dní. Oblíbené uzly jsou vyloučeny.",
-    "clearAllNodesCount": "Vymazat všechny uzly ({{count}})",
     "deleteContactsNoPubkeysTitle": "Smazat kontakty bez Pubkeys",
-    "deleteContactsNoPubkeysDesc": "Nezahrnuje uzly chatu vytvořené ze zpráv.",
     "messagesSection": "Zprávy",
-    "channelLabel": "Kanál:",
     "allChannelsOption": "Všechny kanály",
     "clearMessagesCount": "Vymazat zprávy ({{count}})",
     "latLabel": "Šířka:",
@@ -160,7 +163,6 @@
     "removeUnnamedNodesLabel": "Odeberte nepojmenované uzly při spuštění",
     "capTotalNodesLabel": "Uzavřete celkový počet uzlů, ponechte nejnovější",
     "autoPrunePositionHistoryLabel": "Automatické prořezávání historie pozic při spuštění, starší než",
-    "removeContactsNeverAdvertisedLabel": "Při spuštění odstraňte kontakty, které nikdy neinzerovaly",
     "autoPruneUnheardContactsLabel": "Automaticky oříznout neslyšené kontakty při spuštění, starší než",
     "capTotalContactsLabel": "Uzavřete celkový počet kontaktů, ponechte naposledy zobrazené",
     "limitMessagesLoadedLabel": "Limit načtených zpráv",
@@ -169,7 +171,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Při spuštění odstraňte kontakty, které nikdy neinzerovaly",
     "meshcoreRemoveNeverAdvertisedHint": "Odstraní zastaralé zástupné kontakty bez historie reklam; oblíbené kontakty jsou zachovány.",
     "messagesLoadLimitIntro": "Omezte počet zpráv, které se načítají do paměti pro uživatelské rozhraní, a omezte počet řádků, které zůstanou v SQLite. Menší zatížení udržuje RAM v rušných sítích; omezení databáze ořezává starší zprávy při spuštění aplikace (uložené podle protokolu).",
-    "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
     "compactMessages": "Kompaktní zobrazení zpráv",
     "notificationsSection": "Oznámení",
     "soundNotifications": "Zvuková upozornění",
@@ -199,7 +200,124 @@
     "meshcorePathHashModeShort2": "3 bajty",
     "meshcorePathHashDeviceReported": "Připojené rádiové zprávy: {{mode}}",
     "meshcorePathHashModeHint": "Vyžaduje doprovodný firmware v1.14.0+ a opakovače na v1.14+ podél cesty. Pre-1.14 opakovače tiše upouštějí vícebajtové pakety. Servery opakovače a místnosti mohou také používat CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Režim hash cesty se nezdařil: {{message}}"
+    "meshcorePathHashApplyFailed": "Režim hash cesty se nezdařil: {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulum chat ukládá pouze přímé zprávy — neexistují žádné kanály, které by bylo možné individuálně vymazat.",
+    "clearReticulumMessagesTitle": "Vymazat přímé zprávy",
+    "clearReticulumMessagesConfirm": "Tím trvale odstraníte všechny {{count}} lokálně uložené přímé zprávy Reticulum. Tuto akci nelze vrátit zpět.",
+    "clearReticulumMessagesConfirmButton": "Vymazat {{count}} zprávy",
+    "reticulumSection": "Reticulum — Zásobník retikula",
+    "reticulumAnnounceHelp": "Jak často je vaše totožnost oznámena v síti a nástroje pro vymazání uložených oznámení.",
+    "reticulumPropagationHelp": "Zvolte způsob synchronizace propagačních uzlů a v případě potřeby vytáhněte nejnovější propagační data.",
+    "logPanelHelp": "Je-li povoleno, na pravé straně se zobrazí živý záznam protokolu. Na kartě Reticulum řádky zařízení zahrnují výstup postranního vozíku a stav místního rozhraní. Řádky ladění vyžadují zaškrtávací políčko na panelu protokolu.",
+    "autoPruneUnheardContactsDaysAria": "Automaticky oříznout neslyšené kontakty při spuštění, starší než {{days}} dnů",
+    "capTotalContactsCountAria": "Omezit celkový počet kontaktů, ponechat naposledy zobrazené {{count}} kontakty",
+    "unknownError": "Neznámá chyba",
+    "resetDiagnosticsConfirm": "Tím se vymažou všechny anomálie směrování, historie skoků a statistiky paketů. Motor se znovu sestaví z nových příchozích paketů. Pokračovat?",
+    "clearGpsDataConfirm": "Tím se odstraní uložené GPS souřadnice ze všech uzlů. Uzly zůstanou, ale jejich pozice budou prázdné, dokud nebudou přijata nová data. Pokračovat?",
+    "clearPositionHistoryConfirm": "Tím se z databáze natrvalo smaže celá uložená historie pozic. Trasy pohybu se již nebudou zobrazovat pro minulé relace. Pokračovat?",
+    "deleteOldNodesConfirm_one": "Tímto trvale smažete všechny uzly, které nebyly za poslední {{days}} den slyšet. Budou znovu objeveny, až budou znovu vysílat.",
+    "deleteOldNodesConfirm_other": "Tímto trvale smažete všechny uzly, které nebyly za posledních {{days}} dnů slyšet. Budou znovu objeveny, až budou znovu vysílat.",
+    "pruneMqttOnlyNodesConfirm": "Toto trvale odstraní všechny uzly objevené pouze přes MQTT (nikdy neslyšené přes RF). Znovu se objeví, pokud je znovu uslyšíte přes MQTT nebo RF.",
+    "pruneMqttNodesConfirmLabel": "Prořezat uzly MQTT",
+    "pruneUnnamedNodesConfirm": "Tím se trvale odstraní uzly bez skutečného dlouhého názvu: prázdné názvy, automaticky generované zástupné symboly !hex, nouzová řešení Node-HEX vázaná na ID uzlu a identity pouze MQTT, které nikdy neobdržely UserInfo. Oblíbené uzly jsou zachovány. Budou znovu objeveny, až budou znovu vysílat.",
+    "pruneNoFixNodesConfirm_one": "Tím trvale smažete uzel {{count}} s nulovými nebo téměř nulovými souřadnicemi (žádná GPS fix nebo Zero Island). Toto nelze vrátit zpět.",
+    "pruneNoFixNodesConfirm_other": "Tím trvale smažete {{count}} uzlů s nulovými nebo téměř nulovými souřadnicemi (žádná GPS fix nebo Zero Island). Toto nelze vrátit zpět.",
+    "pruneNoFixDeleteConfirm_one": "Smazat uzel {{count}}",
+    "pruneNoFixDeleteConfirm_other": "Smazat uzly {{count}}",
+    "pruneDistantNodesConfirm_one": "Touto akcí trvale smažete ze zařízení {{count}} uzel za {{distance}} {{unit}}. Toto nelze vrátit zpět.",
+    "pruneDistantNodesConfirm_other": "Tato akce trvale smaže ze zařízení {{count}} uzlů za {{distance}} {{unit}}. Toto nelze vrátit zpět.",
+    "pruneDistantDeleteConfirm_one": "Smazat uzel {{count}}",
+    "pruneDistantDeleteConfirm_other": "Smazat uzly {{count}}",
+    "pruneOfflineNodesConfirm_one": "Tím trvale smažete {{count}} uzel, který nebyl slyšet za více než {{days}} {{daysLabel}}. Toto nelze vrátit zpět.",
+    "pruneOfflineNodesConfirm_other": "Tím trvale smažete {{count}} uzlů, které nebyly slyšet za více než {{days}} {{daysLabel}}. Toto nelze vrátit zpět.",
+    "pruneOfflineDeleteConfirm_one": "Smazat uzel {{count}}",
+    "pruneOfflineDeleteConfirm_other": "Smazat uzly {{count}}",
+    "clearNodesConfirm": "Tím trvale smažete všechny {{count}} místně uložené uzly. Po připojení budou znovu objeveny.",
+    "clearNodesConfirmLabel": "Vymazat uzly {{count}}",
+    "clearAllNodesButton": "Vymazat všechny uzly ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "To trvale odstraní všechny kontakty MeshCore z databáze, které nemají veřejný klíč. Uzly chatu (vytvořené ze zpráv) budou vyloučeny. Toto nelze vrátit zpět.",
+    "deleteContactsNoPubkeysConfirmButton": "Vymazat",
+    "clearMessagesAllConfirm": "Tímto trvale smažete všechny {{count}} lokálně uložené zprávy ve všech kanálech. Toto nelze vrátit zpět.",
+    "clearMessagesChannelConfirm": "Tímto trvale smažete všechny zprávy z {{channel}}. Toto nelze vrátit zpět.",
+    "clearMessagesAllConfirmLabel": "Vymazat zprávy {{count}}",
+    "clearMessagesChannelConfirmLabel": "Vymazat {{channel}}",
+    "clearMessagesTitle": "Vymazat zprávy",
+    "clearAllRepeatersConfirm": "To trvale odstraní všechny uložené opakovače MeshCore z místní databáze. Toto nelze vrátit zpět.",
+    "clearAllLocalDataTitle": "⚠ Vymazat všechna místní data",
+    "clearAllLocalDataConfirm": "To trvale odstraní VŠECHNY místní zprávy, uzly a data relací uložená v mezipaměti. Tuto akci NELZE vrátit zpět.",
+    "clearEverythingConfirmButton": "Vymazat vše",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "Všechno",
+    "deleteNodesOlderThanAria": "Smazat uzly, které byly naposledy slyšeny déle než {{days}} dnů",
+    "daySingular": "den",
+    "theme": {
+      "appBg": {
+        "label": "Pozadí hlavního okna",
+        "description": "Výřez hlavního obsahu a pozadí okna aplikace – tmavé plátno za všemi panely."
+      },
+      "sidebarActiveBg": {
+        "label": "Aktivní karta postranního panelu",
+        "description": "Pozadí aktuálně vybrané karty v navigaci postranního panelu."
+      },
+      "brandGreen": {
+        "label": "Indikátory a zvýraznění hranic",
+        "description": "Zvýraznění okrajů při konfiguraci, indikátory online/MQTT, zvýraznění a vyplnění průběhu."
+      },
+      "brightGreen": {
+        "label": "Název aplikace, odkazy a zvýraznění uzlu",
+        "description": "Název aplikace, zdůrazněný text, odkazy v zápatí a zvýraznění skoků/samo v seznamu uzlů."
+      },
+      "readableGreen": {
+        "label": "Akční tlačítka a vybrané prášky",
+        "description": "Plné výplně s bílým textem – vybrané pilulky kanálu a tlačítka primární akce pro kontrast."
+      },
+      "deepBlack": {
+        "label": "Postranní panel, záhlaví a modální povrchy",
+        "description": "Navigace na postranním panelu, záhlaví, zápatí, modální shelly a primární tmavé povrchy."
+      },
+      "secondaryDark": {
+        "label": "Panel a vstupní pozadí",
+        "description": "Pozadí panelů, vstupy, tlačítka, umístění řádků tabulky a sledování průběhu."
+      },
+      "muted": {
+        "label": "Sekundární štítky a titulky",
+        "description": "Sekundární štítky, titulky, záhlaví tabulek a text bez zvýraznění."
+      },
+      "chatIncomingBg": {
+        "label": "Vyplnění příchozí zprávy",
+        "description": "Vyplnění pozadí pro příchozí zprávy kanálu (použito při 38% neprůhlednosti)."
+      },
+      "chatIncomingBorder": {
+        "label": "Hranice příchozí zprávy",
+        "description": "Barva ohraničení pro příchozí zprávy kanálu."
+      }
+    },
+    "themePreset": {
+      "green300": "Zelená 300",
+      "slate950": "Břidlice 950",
+      "slate900": "Břidlice 900",
+      "slate800": "Břidlice 800",
+      "slate700": "Břidlice 700",
+      "slate400": "Břidlice 400",
+      "white": "Bílý",
+      "black": "Černý",
+      "blue500": "Modrá 500",
+      "amber500": "Amber 500",
+      "red500": "Červená 500",
+      "emerald500": "Emerald 500",
+      "green700": "Zelená 700",
+      "violet500": "Fialová 500",
+      "cyan400": "Azurová 400",
+      "purple400": "Fialová 400",
+      "pink400": "Růžová 400",
+      "orange400": "Oranžová 400",
+      "yellow400": "Žlutá 400"
+    },
+    "autoPruneNodesOlderThanAria": "Automaticky ořezávat uzly při spuštění, starší než {{days}} dnů",
+    "autoPrunePositionHistoryDaysAria": "Automatické prořezávání historie pozic při spuštění, starší než {{days}} dnů",
+    "capTotalNodesCountAria": "Omezte celkový počet uzlů, ponechte nejnovější {{count}} uzly",
+    "limitMessagesLoadedCountAria": "Omezit počet načtených zpráv: {{count}} zpráv",
+    "capStoredMessagesCountAria": "Uzavřít uložené zprávy, ponechat nejnovější {{count}} zprávy"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -212,7 +330,8 @@
     "protocolSwitcher": "Přepínač protokolů",
     "switchToMeshtastic": "Přepněte na Meshtastic",
     "switchToMeshCore": "Přepněte na MeshCore",
-    "backToTop": "Zpět nahoru"
+    "backToTop": "Zpět nahoru",
+    "switchToReticulum": "Přepnout na Reticulum"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -221,13 +340,11 @@
   "channelUtilization": {
     "title": "Využití kanálu",
     "noData": "Zatím nejsou k dispozici žádné údaje o využití kanálu",
-    "meshcoreNote": "MeshCore: zobrazuje pouze připojený uzel",
     "tooltipLabel": "Využití kanálu"
   },
   "chatPanel": {
     "channels": "Kanály",
     "searchMessages": "Hledat zprávy",
-    "searchAllChannels": "Prohledejte všechny kanály",
     "closeDmTab": "Zavřít kartu DM",
     "searchMessagesPlaceholder": "Hledat zprávy...",
     "searchResults_one": "{{count}} výsledek",
@@ -257,19 +374,14 @@
     "filterBySender": "Filtrovat podle odesílatele",
     "clearSenderFilter": "Obnovit filtr",
     "filteringBySender": "Filtrování podle {{name}}",
-    "muteNotifications": "\"Vypnout zvuk oznámení\"",
-    "unmuteNotifications": "Zrušit ztlumení oznámení",
     "jumpToDate": "Přejít k aktuálnímu datu",
-    "noMessagesOnDate": "V tento den nejsou žádné zprávy",
     "exportChat": "Exportovat chat",
-    "exportChatSuccess": "Chat exportován",
     "exportChatFailed": "Export neuspěl",
     "dmNodeLastHeard": "Naposledy slyšeno {{time}}",
     "dmNodeBattery": "{{pct}}% baterie",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} chmel",
-    "quickDm": "Přímá zpráva {{name}}",
     "muteConversation": "Ztlumit tuto konverzaci",
     "unmuteConversation": "Zrušit ztlumení této konverzace",
     "starMessage": "Označit zprávu",
@@ -321,21 +433,55 @@
     "waitingMessagesSyncNow": "Synchronizovat nyní",
     "jumpToUnread": "Přejít na nepřečtené",
     "jumpToLatest": "Přejít na nejnovější",
-    "meshcoreReactionPickerLabel": "Zvolte reakci sítě",
-    "meshcoreReactionEmojiOption": "Reagovat s {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Tento emodži není podporován pro MeshCore mesh reakce.",
     "reactionFailed": "Reakce selhala",
-    "meshcoreGifButton": "Vložit GIPHY GIF",
+    "meshcoreGifButton": "Vložit Giphy GIF",
     "meshcoreGifButtonHint": "Odeslat Giphy GIF ve wire g: MeshCore Open",
-    "meshcoreGifTitle": "Odeslat GIPHY GIF",
+    "meshcoreGifTitle": "Odeslat Giphy GIF",
     "meshcoreGifHint": "Vložte URL stránky Giphy, URL média, g:ID nebo samotné ID GIFu.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… nebo g:ID",
     "meshcoreGifSend": "Odeslat gif",
-    "meshcoreGifInvalid": "Zadejte platnou adresu URL GIPHY nebo ID GIF."
+    "meshcoreGifInvalid": "Zadejte platnou Giphy URL nebo ID GIFu.",
+    "attachFile": "Přiložte přílohu",
+    "attachFileHint": "Odeslat přílohu souboru LXMF (pouze DM)",
+    "attachDmOnly": "Před připojením souboru otevřete přímou zprávu.",
+    "composePlaceholderSelectDm": "Vyberte kontakt výše a spusťte DM...",
+    "selectDmFirst": "Před odesláním vyberte příjemce DM.",
+    "emptySelectDm": "Reticulum chat je pouze přímá zpráva. Vyberte kontakt výše nebo jej otevřete na kartě Uzly.",
+    "noDmConversations": "Zatím žádné konverzace.",
+    "noDmConversationsReticulum": "Zatím žádné konverzace — otevřete kontakt na kartě Uzly.",
+    "dms": "DM",
+    "receivedViaTcp": "Přijato prostřednictvím TCP",
+    "receivedViaNetwork": "Přijato prostřednictvím sítě",
+    "sentViaRf": "Odesláno přes RF",
+    "sentViaTcp": "Odesláno prostřednictvím TCP",
+    "sentViaNetwork": "Odesláno prostřednictvím sítě",
+    "reticulumSendSending": "Odesílání...",
+    "reticulumSendDelivered": "Dodané",
+    "reticulumSendFailed": "Odeslání se nezdařilo",
+    "reticulumImageAttachment": "Obrázek: {{name}}",
+    "reticulumFileAttachment": "Soubor: {{name}}",
+    "reticulumShowInFolder": "Zobrazit ve složce",
+    "reticulumSendPropagated": "Ve frontě v uzlu propagace",
+    "reticulumNoPropagationNode": "Není nakonfigurován žádný uzel šíření. Nastavte preferovaný uzel šíření na kartě Reticulum Radio.",
+    "sentViaPropagation": "Uzel šíření",
+    "reticulumPropagationSyncActive": "Synchronizace zpráv z uzlu šíření…",
+    "reticulumAudioAttachment": "Hlas: {{name}}",
+    "reticulumSaveAttachment": "Uložit přílohu",
+    "recordVoice": "Nahrajte hlasovou zprávu",
+    "recordVoiceHint": "Nahrajte hlasový klip a odešlete jej jako přílohu LXMF (pouze DM)",
+    "stopVoiceRecording": "Zastavte nahrávání a odešlete",
+    "voiceRecordingTooLong": "Hlasový záznam dosáhl limitu 60 sekund a byl odeslán.",
+    "reticulumSendAttachmentFailed": "Nepodařilo se odeslat přílohu",
+    "reticulumSendAttachmentNoIdentity": "Identita Reticulum není připravena — nejprve připojte a nakonfigurujte identitu",
+    "dmPeerInfoAria": "Informace o vrstevníkovi DM",
+    "clearDateAria": "Vymazat datum",
+    "readOnlyDisconnected": "Nepřipojeno — zprávy jsou pouze pro čtení",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "Zmínit návrhy"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
-    "emptyMention": "Prázdná zmínka",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Otevřít na Giphy"
   },
@@ -345,36 +491,20 @@
     "save": "Uložit",
     "yes": "Ano",
     "no": "Žádný",
-    "apply": "Použít",
-    "ok": "OK",
-    "reset": "Resetovat",
     "clear": "Jasný",
-    "export": "Vývozní",
-    "import": "Importovat",
     "refresh": "Obnovit",
-    "delete": "Vymazat",
     "edit": "Upravit",
-    "add": "Přidat",
-    "remove": "Odstranit",
-    "send": "Poslat",
-    "search": "Vyhledávání",
     "loading": "Načítání",
     "error": "Chyba",
-    "success": "Úspěch",
     "warning": "Varování",
-    "enabled": "Povoleno",
     "disabled": "Zakázáno",
     "unknown": "Neznámý",
-    "none": "Žádný",
     "never": "Nikdy",
-    "always": "Vždy",
     "dismiss": "Propustit",
     "channel": "Kanál",
     "nodes": "uzly",
     "contacts": "kontakty",
     "messages": "zprávy",
-    "connect": "Připojit",
-    "disconnect": "Odpojit",
     "discord": "Discord",
     "github": "GitHub",
     "website": "webové stránky",
@@ -388,7 +518,14 @@
     "daysAgo": "před {{count}}d",
     "days": "dní",
     "emDash": "—",
-    "saving": "Ukládání…"
+    "saving": "Ukládání…",
+    "peers": "Vazby",
+    "colorGreen": "Zelené",
+    "colorCyan": "Azurová",
+    "colorAmber": "Žlutá",
+    "colorRed": "Červené",
+    "colorPurple": "Fialová",
+    "delete": "Vymazat"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
@@ -404,7 +541,6 @@
     "requiresLocalRadio": "Připojte místní rádio Meshtastic a použijte vzdálenou správu.",
     "sessionActive": "Administrátorská relace aktivní",
     "sessionStale": "Zastaralá relace správce — obnovte před změnou nastavení",
-    "sessionNone": "Administrativní relace nebyla vytvořena — načítání nebo připojení místního rádia",
     "establishingSession": "Vytváření relace administrátora..."
   },
   "connectionBanner": {
@@ -428,8 +564,6 @@
     "selectBluetoothDevice": "Vyberte Zařízení Bluetooth",
     "devicesFound": "{{count}} nalezeno",
     "scanningDevices": "Vyhledávání {{protocol}} zařízení...",
-    "adaDfuHint": "Pokud se v systému macOS zařízení zobrazuje jako „AdaDFU“, nejprve ho spárujte v Nastavení systému → Bluetooth, abyste viděli jeho název Meshtastic.",
-    "meshcorePairingNote": "Před připojením spárujte své zařízení MeshCore v systémovém nastavení Bluetooth. Pokud budete vyzváni, použijte PIN kód — pokud váš systém nepožádá o PIN, připojení se nezdaří a možná budete muset zrušit párování a znovu spárovat pomocí PIN.",
     "selectSerialPort": "Vyberte Sériový port",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty. Ujistěte se, že je vaše zařízení zapojeno.",
     "enterPin": "Zadejte PIN zobrazený na vašem zařízení:",
@@ -491,7 +625,7 @@
     "hintMeshtasticHttp2": "Pokud je připojení nespolehlivé (např. s meshtastic.local), zkuste místo toho IP adresu zařízení — desktop mDNS může být nestabilní.",
     "hintMeshcoreHttp": "Zadejte název hostitele nebo IP adresu vašeho doprovodného rádia MeshCore. Musí být dosažitelný na portu 5000.",
     "stageLinuxUnpaired": "Uložené zařízení není spárováno v Linuxu Bluetooth – vyberte jej níže, zadejte PIN a připojte se.",
-    "liamServerNote": "Liamův server je pouze uplink – váš uzel se objeví na jeho mapě, ale nebudete od něj dostávat zprávy.",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Připojit",
     "mqttStatusConnected": "připojeno",
     "mqttStatusConnecting": "spojovací",
@@ -516,7 +650,6 @@
     "stagePairingFailed": "Párování se nezdařilo. Prosím znovu spárujte své zařízení.",
     "stageCheckingPairing": "Kontrola párování Bluetooth…",
     "stageEnterPinLinux": "Zadejte PIN zobrazený na vašem zařízení (nejprve spárujte s Linuxem)",
-    "stageScanningLast": "Vyhledávání posledního zařízení Bluetooth…",
     "stageReconnecting": "Opětovné připojování k poslednímu zařízení Bluetooth…",
     "pinPlaceholder": "KOLÍK",
     "humanize": {
@@ -526,7 +659,7 @@
         "accessDeniedLinuxHint": "V systému Linux přidejte svého uživatele do skupiny dialout: sudo usermod -aG dialout $USER (pak se odhlaste a znovu přihlaste)",
         "disconnectedHint": "Ujistěte se, že je připojen kabel USB a zařízení je zapnuté.",
         "timeoutHint": "Pokud se port krátce objeví, zkuste znovu připojit kabel USB.",
-        "portStillOpenHint": "Sériový port USB se neuvolnil čistě. Úplně ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu připojte kabel USB a poté jej znovu připojte."
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "Ve Windows vyžaduje meshtastic.local Bonjour (nainstalovaný s iTunes). Místo toho použijte IP adresu zařízení.",
@@ -554,8 +687,10 @@
         "connectionAttemptFailedLinuxHint": "V systému Linux můžete spravovat párování pomocí systémového nastavení Bluetooth nebo nástroje „bluetoothctl“.",
         "meshcoreHandshakeHint": "Ujistěte se, že je vaše zařízení MeshCore v režimu Bluetooth Companion a je spárováno s počítačem pomocí kódu PIN. Pokud problémy s připojením přetrvávají, odstraňte veškeré stávající párování a znovu spárujte.",
         "meshcoreHandshakeWindowsExtra": "V systému Windows vypněte/zapněte Bluetooth a aktualizujte ovladač adaptéru ve Správci zařízení, pokud odpojení přetrvávají.",
-        "macWakeRecoveryHint": "Po spánku ukončete klientskou síť (Cmd+Q), vypněte a zapněte Bluetooth v Nastavení systému, počkejte několik sekund a poté se znovu připojte. Se dvěma rádii připojte MeshCore před Meshtastic.",
-        "dualProtocolContentionHint": "Druhý protokol se může stále připojovat přes Bluetooth. Počkejte několik sekund a zkuste to znovu, nebo přepněte na kartu druhého protokolu a zkontrolujte jeho stav připojení."
+        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
+        "dualProtocolContentionHint": "Druhý protokol se může stále připojovat přes Bluetooth. Počkejte několik sekund a zkuste to znovu, nebo přepněte na kartu druhého protokolu a zkontrolujte jeho stav připojení.",
+        "scanBusy": "Probíhá další skenování Bluetooth. Zkuste to znovu za chvíli.",
+        "sameDeviceConflict": "Toto zařízení Bluetooth je již připojeno k {{owner}}."
       }
     },
     "error": {
@@ -579,7 +714,212 @@
     "mqttTlsInsecure": "Povolit nezabezpečený TLS (self-signed certifikát). Vypnuto ve výchozím nastavení — povolte pouze v případě, že váš makléř používá neveřejnou CA.",
     "channelPsksPrivateUplinkNote": "Kanálový uplink je šifrován AES-PSK na /2/e/ (žádné zrcadlo JSON pro soukromé klíče). Monitory zprostředkovatelů mohou stále zaznamenávat chyby dešifrování pro provoz PKI/DM mezi jinými uzly — to je normální a nesouvisí s kanály PSK.",
     "sharedBleWithMeshtastic": "Toto zařízení Bluetooth je již připojeno přes Meshtastic. Chcete-li jej použít, přepněte na kartu Meshtastic, nebo si pro MeshCore vyberte jiné rádio nebo transport.",
-    "sharedBleWithMeshtasticHint": "Jedno fyzické rádio nemůže současně pořádat relace Meshtastic a MeshCore Bluetooth."
+    "sharedBleWithMeshtasticHint": "Jedno fyzické rádio nemůže současně pořádat relace Meshtastic a MeshCore Bluetooth.",
+    "reticulumStackTitle": "Zásobník Reticulum",
+    "reticulumStackHint": "Spustí lokální sidecar Reticulum/LXMF (rozhraní TCP a Auto).",
+    "reticulumStartStack": "Spustit zásobník",
+    "reticulumNetworkEmpty": "Zatím nebyla nahlášena žádná rozhraní.",
+    "reticulumSidecarMissing": "Sidecar Reticulum není sestaven. V repozitáři mesh-client spusťte `pnpm run reticulum:sidecar:build` (vyžaduje Rust).",
+    "reticulumSidecarCargoMissing": "Nástrojová sada Rust (cargo) nebyla nalezena. Nainstalujte z https://rustup.rs a spusťte `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "Nelze spustit zásobník Reticulum: {{message}}",
+    "reticulumStopStack": "Zastavit zásobník",
+    "reticulumAutostart": "Automatické spuštění zásobníku při otevření připojení",
+    "reticulumStackRunning": "Zásobník spuštěn",
+    "reticulumIdentity": {
+      "title": "Reticulum identita",
+      "hint": "Spusťte výše uvedený zásobník a poté vytvořte nebo importujte mnemotechnickou identitu.",
+      "startStackFirst": "Spusťte zásobník Reticulum pro konfiguraci identity.",
+      "displayName": "Zobrazované jméno",
+      "generate": "Vygenerovat identitu",
+      "import": "Importovat frázi",
+      "importLabel": "12-slovná obnovovací fráze",
+      "mnemonic": "Zapište si tuto větu a bezpečně ji uložte.",
+      "confirmSaved": "Uložil (a) jsem svou obnovovací frázi",
+      "hashLabel": "LXMF hash:",
+      "nameLabel": "Jméno:",
+      "failed": "Nastavení identity selhalo",
+      "export": "Exportovat zálohu",
+      "exportPassphrase": "Záložní přístupová fráze",
+      "exportPassphraseRequired": "Před exportem zadejte záložní přístupovou frázi."
+    },
+    "reticulumInterfaces": {
+      "title": "Rozhraní",
+      "type": "/Typ",
+      "add": "Přidat rozhraní",
+      "enable": "Povolit",
+      "disable": "Zakázat",
+      "serialPort": "Sériový port",
+      "preset": "Předvolby",
+      "bleAvailable": "Na této platformě je k dispozici peering ble (při konfiguraci přidejte pomocí postranního vozíku).",
+      "host": "Hostitel",
+      "port": "Port",
+      "delete": "Odstranit",
+      "deleteConfirmTitle": "Smazat rozhraní",
+      "deleteConfirmBody": "Odebrat „{{name}}“ z konfigurace zásobníku? Tuto akci nelze vrátit zpět.",
+      "deleteConfirm": "Odstranit",
+      "deleteFailed": "Odstranění rozhraní se nezdařilo.",
+      "edit": "Upravit",
+      "editTitle": "Upravit rozhraní",
+      "saveEdit": "Uložit změny",
+      "cancelEdit": "Zrušit",
+      "name": "Název",
+      "callsign": "Volací značka",
+      "editFailed": "Uložení rozhraní se nezdařilo.",
+      "pipeCommand": "Příkaz potrubí",
+      "addFailed": "Přidání rozhraní se nezdařilo.",
+      "toggleFailed": "Nepodařilo se změnit stav rozhraní.",
+      "restartStackHint": "Restartujte zásobník na kartě Připojení, aby se projevily sériové změny rozhraní.",
+      "localOfflineRow": "Místní rozhraní offline — zkontrolujte napětí kabelu a portu a poté restartujte zásobník.",
+      "localOfflineRowStale": "Sériový port {{port}} nebyl nalezen — USB replug mohl změnit cestu.",
+      "blePeerType": "BLE Peer síť",
+      "pickDevice": "Vyberte zařízení",
+      "refreshPorts": "Obnovit",
+      "rescanBle": "Znovu naskenujte",
+      "pickerSerialTitle": "Vyberte sériový port",
+      "pickerBlePeerTitle": "Vyberte peer BLE",
+      "pickerBleRnodeTitle": "Vyberte BLE RNode",
+      "pickerSerialEmpty": "Nebyly zjištěny žádné sériové porty. Zadejte cestu ručně.",
+      "pickerBleEmpty": "Nebyla nalezena žádná zařízení BLE. Zkuste znovu naskenovat.",
+      "pickerStackRequired": "Před skenováním zařízení spusťte zásobník Reticulum.",
+      "useManualPort": "Použijte tento port",
+      "rnodeTransport": "Doprava",
+      "rnodeTransportSerial": "sériové USB",
+      "rnodeTransportBle": "Bluetooth",
+      "seedAddresses": "Seed peers (volitelné)",
+      "pickerBlePeerEmpty": "V okolí nebyli nalezeni žádní kolegové Reticulum BLE. Peers musí inzerovat; zkuste znovu naskenovat nebo ručně zadejte adresu zdroje.",
+      "pickerBleRnodeEmpty": "V okolí nebyly nalezeny žádné BLE RNody. Ujistěte se, že je RNode zapnutý a v dosahu, pak zkuste znovu prohledat.",
+      "bleUnavailable": "Bluetooth není k dispozici pro skenování Reticulum. Zkontrolujte systém Bluetooth a sestavení sidecar (rns-ble).",
+      "restartStackFailed": "Restartování zásobníku se nezdařilo: {{message}}",
+      "restartStackUnavailable": "Restart zásobníku není dostupný, dokud nebude připraveno běhové prostředí Reticulum.",
+      "localOfflineRowBle": "Bluetooth RNode offline – ujistěte se, že je zařízení zapnuté a v dosahu, poté restartujte zásobník.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "Hostitel nebo IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 nebo rnode.local",
+      "rnodeWifiPort": "Síťový port",
+      "rnodeWifiSetupTitle": "Nastavení Wi-Fi RNode",
+      "rnodeWifiSetupHint": "Wi-Fi je po blikání vypnutá — nejprve poskytněte RNode (Reticulum → Admin → Wi-Fi, nebo se připojte k jeho AP a otevřete http://10.0.0.1). Vyžaduje firmware s podporou Wi-Fi ESP32-S3.\n\nPo režimu stanice: najděte IP adresu na alternativní obrazovce OLED, seznamu DHCP směrovače nebo konfiguraci Admin → Read. Použijte tcp://host (výchozí port 7633) — ne typ rozhraní TCP Client.\n\n~10 s podržení tlačítka na mnoha deskách Heltec umožňuje Wi-Fi AP (~7 s je párování Bluetooth).",
+      "localOfflineRowWifi": "Nedostupný Wi-Fi RNode — ověřte IP, port 7633, stejnou LAN a napájení; opětovné poskytnutí v administrátorovi, pokud se změnila adresa DHCP.",
+      "rfFrequencyMhz": "Frekvence (MHz)",
+      "rfBandwidthKhz": "Šířka pásma (kHz)",
+      "rfSpreadingFactor": "Rozptylovací faktor",
+      "rfCodingRate": "Rychlost kódování",
+      "rfTxPower": "TX výkon (dBm)",
+      "purposeAria": "Účel rozhraní {{name}}",
+      "runtimeBadge": "Doba běhu",
+      "auditRepair": "Opravit",
+      "auditDisable": "Zakázat",
+      "auditRepairSuccess": "Byla provedena oprava konfigurace.",
+      "auditRepairFailed": "Oprava konfigurace se nezdařila.",
+      "auditRepairNoChanges": "Pro tuto opravu nebyly potřeba žádné změny konfigurace.",
+      "purpose": {
+        "auto": "Místní vícesměrové vysílání LAN – najde další uzly Reticulum ve stejné Wi-Fi nebo podsíti.",
+        "sharedInstance": "Server TCP Localhost, když je instance sdílení zapnutá – umožňuje ostatním aplikacím na tomto počítači používat tento zásobník.",
+        "tcp": "Odchozí tunel TCP do vzdáleného uzlu Reticulum nebo brány.",
+        "rnodeUsb": "LoRa mesh přes USB RNode.",
+        "rnodeBle": "LoRa mesh přes Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh přes RNode Wi-Fi (tcp:// hostitel).",
+        "blePeer": "BLE peer mesh pomocí seed peer adres.",
+        "generic": "Síťové rozhraní Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Koordinované regionální",
+        "fallback": "Globální záložní",
+        "legacy": "Starší předvolby"
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "nahoru",
+        "down": "dolů"
+      },
+      "pickerScanFailed": "Skenování BLE se nezdařilo. Zkuste to znovu nebo zadejte adresu ručně.",
+      "pickerBleFeatureDisabled": "Bluetooth není v této sestavě Reticulum k dispozici (chybí funkce rns-ble).",
+      "pickerScanFailedDetail": "Chyba skenování: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
+    },
+    "reticulumPeers": {
+      "hops": "Hops",
+      "actions": "Akce",
+      "path": "Cesta",
+      "probe": "Sonda"
+    },
+    "reticulumPropagation": {
+      "title": "Propagační uzly",
+      "enable": "Povolit",
+      "disable": "Zakázat"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} místní rozhraní vyžadují pozornost",
+      "stalePort": "{{name}}: sériový port {{port}} nenalezen",
+      "stalePortHint": "Replug USB mohl změnit cestu. Aktualizujte v části Radio → Interfaces (Rádiová rozhraní) a poté restartujte zásobník.",
+      "offline": "{{name}}: místní rozhraní je povoleno, ale offline",
+      "offlineHint": "Zkontrolujte kabel, uvolněte port z Meshtastic/MeshCore a restartujte zásobník.",
+      "refreshPorts": "Obnovit porty",
+      "availablePorts": "Dostupné: {{ports}}",
+      "restartStack": "Restartujte zásobník",
+      "restartStackAria": "Chcete-li použít změny rozhraní, restartujte zásobník Reticulum",
+      "connectingHeading": "Připojování místního rozhraní…",
+      "connectingRow": "{{name}}: připojení přes Bluetooth",
+      "connectingHintBle": "Odkazy BLE RNode mohou po spuštění zásobníku trvat až 30 sekund. Pokud vás váš operační systém vyzve, zadejte kód PIN pro párování – je to normální, nejedná se o chybu.",
+      "offlineHintBle": "Váš operační systém může vyžadovat zadání 6místného kódu PIN Bluetooth (macOS, Windows nebo Linux). RNode generuje nový kód při každém párování – neexistuje žádný výchozí PIN. Bezhlavá rádia: připojte USB → Reticulum Admin → Bluetooth → Zahájit párování → zadejte PIN zobrazený v dialogovém okně OS. Rádia s displejem: na zařízeních Heltec podržte tlačítko ~7 s (časování se liší; ~10 s na mnoha deskách místo toho umožňuje Wi-Fi AP), přečtěte si PIN na obrazovce a poté jej zadejte do dialogového okna OS. Než to zkusíte znovu, vymažte neúspěšná spojení v nastavení Bluetooth operačního systému.",
+      "offlineHintWifi": "Zkontrolujte, zda je RNode v síti LAN, zapnutý a dosažitelný na nakonfigurované IP (výchozí port TCP 7633, nikoli 4242). Aktualizuj hostitele níže, pokud mu služba DHCP přidělila novou adresu nebo znovu poskytl Wi-Fi v → administraci Reticulum."
+    },
+    "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
+    "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
+    "stageAutoConnectingBle": "Připojení k {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Čekání na dokončení Meshtastic Bluetooth — MeshCore se po dokončení automaticky připojí k {{deviceName}}…",
+    "stageWaitingNobleBleMeshcore": "Čekání na dokončení MeshCore Bluetooth – Meshtastic se po dokončení automaticky připojí k {{deviceName}}…",
+    "reticulumStats": {
+      "interfaces": "{{count}} rozhraní",
+      "peers": "{{count}} kolegové"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[Země]/[Stát], např. msh/CO/US",
+      "meshcoreLetsmesh": "meshcore/{IATA}, např. meshcore/DEN",
+      "meshcoreDefault": "MESHCORE/[Země]/[Stát], např. MESHCORE/US/CO"
+    },
+    "topicPrefixPlaceholder": "msh/US/",
+    "maxRetriesHelp": {
+      "meshtastic": "Pokusy o připojení znovu (1–{{max}}), než se vzdáte.",
+      "meshcore": "Pokusy o připojení znovu (1–20), než to vzdáte."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT: 1883",
+      "liam": "Liam's",
+      "custom": "Zvyk"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local nebo 192.168.1.x",
+    "meshcoreHostPlaceholder": "localhost nebo 192.168.1.x",
+    "meshcoreBlePairingHint": "Před připojením spárujte své zařízení MeshCore v <strong>systémovém nastavení Bluetooth</strong>. Pokud budete vyzváni, použijte PIN kód — pokud váš systém nepožádá o PIN, připojení se nezdaří a možná budete muset zrušit párování a znovu spárovat pomocí PIN.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "Zvyk"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh potřebuje WebSocket na portu 443 a server mqtt-us-v1.letsmesh.net nebo mqtt-eu-v1.letsmesh.net. Použijte Region (US/EU), nebo přepněte na Custom pro ostatní brokery.",
+      "coloradomesh": "Colorado Mesh potřebuje WebSocket na portu 1883 s povoleným TLS, server mqtt.meshcore.coloradomesh.org, cestu /ws. Resetujte předvolbu nebo přepněte na Vlastní pro ostatní brokery.",
+      "meshmapper": "MeshMapper potřebuje WebSocket na portu 443 a server mqtt.meshmapper.cc. Resetujte předvolbu nebo přepněte na Vlastní pro ostatní brokery."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "Auth token (formát meshcore-decoder) bude vygenerován, když se připojíte. Uživatelské jméno je v1_ plus váš 64místný veřejný klíč (hex). Publikum JWT odpovídá názvu hostitele serveru.",
+      "noPrivateKey": "Žádná úplná identita – importujte svou konfiguraci MeshCore do panelu Rádio (veřejné a soukromé klíče) nebo vložte uživatelské jméno (v1_<veřejný klíč>) a token ručně. Publikum JWT v tokenu musí odpovídat názvu hostitele serveru.",
+      "publicKeyMissing": "V identitě chybí veřejný klíč. Importujte svůj JSON konfigurace MeshCore na panelu Rádio (musí obsahovat veřejný a soukromý klíč) nebo vložte token zprostředkovatele do pole hesla.",
+      "usernameBuildFailed": "Uživatelské jméno LetsMesh se nepodařilo vytvořit. Importujte svůj konfigurační JSON MeshCore do panelu Rádio nebo vložte uživatelské jméno (v1_<veřejný klíč>) a token ručně.",
+      "noIdentity": "Nebyla nalezena žádná identita zařízení. Importujte svůj JSON konfigurace MeshCore na panelu Rádio nebo vložte uživatelské jméno a token ručně."
+    },
+    "meshcorePacketLogger": {
+      "label": "Záznamník paketů – po připojení k rádiu a MQTT přepošle souhrny paketů RX do {{topic}} ve stejném tvaru JSON jako meshcoretomqtt. Ve výchozím nastavení vypnuto; povolit pouze v případě, že máte v úmyslu sdílet slyšený letový provoz s analyzátorem paketů."
+    },
+    "hintAdaDfuBle": "Pokud se v systému macOS zařízení zobrazuje jako „AdaDFU“, nejprve ho spárujte v Nastavení systému → Bluetooth, abyste viděli jeho název Meshtastic.",
+    "authTokenFailed": "Generování ověřovacího tokenu se nezdařilo: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -592,14 +932,16 @@
     "newGroupNamePlaceholder": "Nový název skupiny…",
     "manageMembers": "Spravovat členy",
     "rename": "Přejmenovat",
-    "deleteGroup": "Smazat skupinu"
+    "deleteGroup": "Smazat skupinu",
+    "noContactsYet": "Zatím žádné kontakty.",
+    "noGroupsYet": "Zatím žádné skupiny. Vytvořte si jeden výše.",
+    "memberCount_one": "Člen {{count}}",
+    "memberCount_other": "{{count}} členů"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Vypustit řádky směrování starší než {{hours}} hodin (1–168)",
     "dismissRow": "Propustit",
     "searchAnomalies": "Hledat anomálie...",
-    "meshcoreInterferenceHeading": "Uzly MeshCore slyšet na frekvenci ({{count}})",
-    "meshcoreInterferenceDescription": "Tyto položky identifikují rušení MeshCore na frekvenci, které toto rádio slyší. Mohou přispět k problémům s využitím a opakováním, ale samy o sobě nejsou diagnostikou selhání trasy Meshtastic.",
     "otherCrossProtocolHeading": "Jiný frekvenční / cross-stack provoz ({{count}})",
     "removeMqttFilter": "Odstraňte filtr MQTT pro každý uzel",
     "excludeMqttData": "Vyloučit data MQTT tohoto uzlu z diagnostiky",
@@ -731,10 +1073,6 @@
       "excessiveFlooding": "{{percent}}% přenosů je zaplaveno — přímé směrování nemusí být vytvořeno s blízkými uzly."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "Uzel MeshCore velmi blízko (RSSI {{rssi}} dBm) — pravděpodobně způsobuje kolize paketů.",
-      "meshcoreNearby": "V blízkosti byl zjištěn uzel MeshCore (RSSI {{rssi}} dBm) – může rušit provoz.",
-      "meshcoreDistant": "Vzdálená aktivita MeshCore na této frekvenci (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "MeshCore uzel vysílající na této frekvenci.",
       "meshtastic": "Meshtastic uzel vysílající na této frekvenci. Odesílatel: {{sender}}. {{proximity}}Tento uzel se může nacházet v oblasti opakovače MeshCore.",
       "unknownLora": "Detekován nerozpoznaný signál LoRa (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Zjištěna vysoká rychlost paketů MeshCore (>5/min). Nedaleký opakovač MeshCore může způsobovat kolize paketů."
@@ -814,12 +1152,79 @@
     "meshcoreRepeaterConflictBanner": "Vysoká rychlost paketů MeshCore (>5/min) — blízký opakovač může způsobovat kolize na vašem Meshtastic kanálu.",
     "meshcoreHeardByMeshtasticHeading": "Uzly MeshCore slyšené vaším Meshtastic rádiem ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "Vysílače MeshCore zaslechly v posledních 90 minutách místní RF (protokoly Meshtastic zařízení nebo MeshCore rádio RX). Nezahrnuje synchronizaci kontaktů opakovače MeshCore. Toto není váš Meshtastic uzel.",
-    "meshcoreHeardByMeshtasticEmpty": "Za posledních 90 minut nebyly na vaší Meshtastic frekvenci slyšet žádné uzly MeshCore.",
     "meshcoreHeardUnknownNode": "Neidentifikovaný vysílač MeshCore",
     "meshcoreHeardNearbyEncrypted": "Nedaleko MeshCore RF (šifrované)",
     "foreignLoraHeading": "Další cizí LoRa na vaší Meshtastic frekvenci ({{count}})",
     "foreignLoraDescription": "Meshtastic vysílače a nerozpoznané LoRa signály na vaší frekvenci za posledních 90 minut. Uzly MeshCore jsou uvedeny ve výše uvedené části.",
-    "foreignLoraEmpty": "Žádná Meshtastic nebo neznámá aktivita LoRa na vaší Meshtastic frekvenci za posledních 90 minut."
+    "reticulum": {
+      "sectionTitle": "Konfigurace rozhraní Reticulum",
+      "noIssues": "Nebyly zjištěny žádné problémy s konfigurací rozhraní.",
+      "summary": "{{errors}} chyb, {{warnings}} varování",
+      "colInterface": "Rozhraní",
+      "colIssue": "Problém",
+      "colFix": "Opravit",
+      "colAction": "Akce",
+      "stackScope": "Stoh",
+      "repairFailed": "Oprava konfigurace se nezdařila.",
+      "repairSuccess": "Byla provedena oprava konfigurace.",
+      "repairNoChanges": "Pro tuto opravu nebyly potřeba žádné změny konfigurace.",
+      "disableSuccess": "Rozhraní zakázáno.",
+      "disableFailed": "Rozhraní nelze zakázat.",
+      "remedy": {
+        "configuration": "Konfigurace",
+        "software": "Software",
+        "hardware": "Železářské zboží"
+      },
+      "action": {
+        "repair_config": "Opravit konfiguraci",
+        "disable": "Zakázat",
+        "apply_preset": "Použít předvolbu",
+        "edit": "Upravit rozhraní",
+        "restart_stack": "Restartujte zásobník",
+        "add_auto": "Přidat automatické rozhraní"
+      },
+      "audit": {
+        "tcp_enable_key": "Rozhraní TCP „{{name}}“ používá nesprávný povolovací klíč – RNS jej nenačte.",
+        "tcp_missing_name": "Rozhraní TCP „{{name}}“ v konfiguraci chybí pole názvu.",
+        "tcp_unreachable": "Rozhraní TCP \"{{name}}\" je nedostupné.",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF params differ from its preset.",
+        "rf_cross_mismatch": "Více povolených RNodů používá různé RF parametry.",
+        "rf_using_fallback": "RNode \"{{name}}\" používá globální záložní RF profil.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF parametry neodpovídají žádnému známému profilu.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" používá starší přednastavené ID – zvažte migraci.",
+        "ghost_interface": "Rozhraní „{{name}}“ je v konfiguraci povoleno, ale není načteno službou RNS.",
+        "missing_auto_interface": "Není povoleno automatické rozhraní – zjišťování místní sítě LAN je vypnuté.",
+        "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
+        "missing_shared_instance": "Sdílená instance je zapnutá, ale SharedInstanceServer není aktivní.",
+        "shared_instance_unexpected": "SharedInstanceServer je aktivní, ale share_instance je vypnutá.",
+        "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci)."
+      },
+      "runtime": {
+        "rnsNotReady": "Zásobník RNS není připraven",
+        "lxmfNotReady": "Router LXMF není připraven",
+        "localStalePort": "Sériový port {{port}} místního rozhraní \"{{name}}\" nebyl v tomto systému nalezen",
+        "localOffline": "Místní rozhraní „{{name}}“ je povoleno, ale offline",
+        "interfaceDown": "Rozhraní {{type}} „{{name}}“ je povoleno, ale {{status}}",
+        "noPeers": "V tabulce cest zatím nejsou žádní známí kolegové"
+      }
+    },
+    "routingPort": {
+      "nodeInfo": "NodeInfo",
+      "telemetry": "Telemetrie",
+      "neighborInfo": "NeighborInfo",
+      "traceroute": "Traceroute",
+      "position": "Pozice",
+      "remoteHardware": "RemoteHardware",
+      "admin": "Admin",
+      "discoveryFlood": "DiscoveryFlood",
+      "roomAdvert": "Reklama na pokoj",
+      "generic": "Port{{port}}"
+    },
+    "signalColumn": "Signál",
+    "senderLabel": "Odesílatel",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB"
   },
   "errorBoundary": {
     "title": "Něco se pokazilo",
@@ -833,8 +1238,117 @@
     "updateAvailable": "K dispozici je aktualizace firmwaru",
     "updateAvailableVersion": "Dostupná aktualizace firmwaru: v{{version}}"
   },
+  "flasher": {
+    "title": "RNode Firmware Flasher",
+    "portContentionWarning": "Před blikáním zastavte zásobník Reticulum nebo deaktivujte aktivní sériové rozhraní RNode. Odpojte sériový Meshtastic nebo MeshCore na stejném portu.",
+    "selectProduct": "Produkt",
+    "selectModel": "Model",
+    "selectProductPlaceholder": "Vyberte produkt…",
+    "selectModelPlaceholder": "Vyberte model…",
+    "firmwareFile": "Soubor firmwaru (.zip)",
+    "enterDfuMode": "Vstupte do režimu DFU",
+    "enterDfuHint": "Pro desky nRF52: přepne zařízení do režimu bootloaderu USB DFU (dotyk 1200 baudů).",
+    "flashFirmware": "Flash firmware",
+    "flashing": "Bliká… {{progress}}%",
+    "dfuModeDone": "Zařízení by nyní mělo být v režimu DFU.",
+    "flashSuccess": "Firmware byl flashován.",
+    "provisionTitle": "Poskytnutí EEPROM",
+    "provisionHint": "Vyžadováno pro nová zařízení po flashování. Zapisuje identitu zařízení, kontrolní součet a bajt zámku.",
+    "provision": "Ustanovení",
+    "provisioning": "Poskytování…",
+    "provisionSuccess": "Zařízení bylo zřízeno.",
+    "provisionAlreadyDone": "EEPROM je již zřízena. Nejprve jej otřete, aby bylo možné provést opravu.",
+    "firmwareHashTitle": "Nastavte hash firmwaru",
+    "firmwareHashHint": "Spusťte po každém flashování firmwaru. Přečte cílový hash ze zařízení a zapíše jej do EEPROM.",
+    "setFirmwareHash": "Nastavte hash firmwaru",
+    "settingFirmwareHash": "Nastavení hash firmwaru…",
+    "firmwareHashSuccess": "Firmware hash byl nastaven.",
+    "firmwareHashNotProvisioned": "EEPROM není k dispozici. Nejprve opatřete zařízení.",
+    "advancedTitle": "Pokročilé nástroje",
+    "detectDevice": "Detekce zařízení",
+    "reboot": "Restartujte",
+    "rebootSuccess": "Deska se restartuje.",
+    "wipeEeprom": "Vymazat EEPROM",
+    "wipeEepromConfirmTitle": "Vymazat EEPROM?",
+    "wipeEepromConfirmMessage": "Tím se vymaže zajišťování zařízení a trvá to asi 30 sekund. Po dokončení se zařízení restartuje.",
+    "wipeEepromConfirm": "Vymazat EEPROM",
+    "wipeEepromSuccess": "EEPROM byla vymazána.",
+    "readDisplay": "Číst displej",
+    "dumpEeprom": "Vypište EEPROM do protokolu",
+    "bluetoothTitle": "Bluetooth",
+    "enableBluetooth": "Povolit Bluetooth",
+    "disableBluetooth": "Zakázat Bluetooth",
+    "startPairing": "Spusťte párování",
+    "pairingPin": "PIN párování Bluetooth: {{pin}}",
+    "tncTitle": "Režim TNC",
+    "tncHint": "KISS TNC over serial pro amatérské rádiové aplikace. Pokud používáte klienty Reticulum nebo mesh chat, ponechte deaktivované.",
+    "enableTnc": "Povolit režim TNC",
+    "disableTnc": "Zakázat režim TNC",
+    "displayTitle": "Zobrazit",
+    "displayHint": "Otočení displeje vyžaduje firmware v1.80+.",
+    "rotation0": "0°",
+    "rotation90": "90°",
+    "rotation180": "180°",
+    "rotation270": "270°",
+    "reconditionDisplay": "Rekondiční displej",
+    "errors": {
+      "webSerialUnsupported": "Web Serial není v tomto prostředí dostupný.",
+      "notRnode": "Vybrané zařízení není RNode.",
+      "portSelectionCancelled": "Výběr sériového portu byl zrušen.",
+      "portInUse": "Sériový port je již otevřen. Zastavte ostatní připojení a zkuste to znovu.",
+      "generic": "Operace se nezdařila: {{message}}",
+      "selectProduct": "Nejprve vyberte produkt.",
+      "selectModel": "Nejprve vyberte model.",
+      "selectFirmware": "Nejprve vyberte soubor firmwaru.",
+      "flashConfigMissing": "Konfigurace Flash není pro toto zařízení k dispozici.",
+      "blockedByStack": "Nelze blikat, když zásobník Reticulum obsahuje sériový port RNode.",
+      "esp32SyncFailed": "Nelze synchronizovat se zavaděčem ESP32. Zkontrolujte kabel a port USB, zastavte ostatní aplikace používající sériový port a zkuste to znovu.",
+      "flashTransferTooSmall": "Přenos firmwaru nebyl dokončen — téměř žádná data nebyla zapsána. Potvrďte, že jste vybrali správný port USB a že deska vstoupila do režimu zavaděče.",
+      "flashMd5Mismatch": "Ověření firmwaru se po zápisu nezdařilo. Zkuste to znovu s jiným USB kabelem nebo portem; pokud přetrvává, znovu stáhněte firmware zip.",
+      "portSelectionTimedOut": "Časový limit výběru sériového portu vypršel. Vyberte port ze seznamu do dvou minut nebo opakujte flash pro opětovné použití posledního portu.",
+      "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB. Připojte desku přes USB a zkuste to znovu."
+    },
+    "selectSerialPort": "Výběr sériového portu",
+    "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
+    "noSerialPortsHint": "Připojte desku přes USB. Zařízení Bluetooth v protokolu jsou ignorována; pro blikání lze použít pouze sériové porty USB.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Naposledy použité",
+    "downloadFirmware": "Stáhnout firmware",
+    "downloadLatestFirmware": "{{filename}} (poslední verze)",
+    "officialFirmware": "Oficiální firmware",
+    "ceFirmware": "CE firmware",
+    "transportNodeFirmware": "Firmware dopravního uzlu",
+    "esp32BootHint": "Použijte datový kabel USB (ne pouze pro nabíjení). Před blikáním zastavte ostatní aplikace používající stejný sériový port.",
+    "flashSectionTitle": "Flash firmware",
+    "esp32Syncing": "Připojování k zavaděči ESP32...",
+    "provisionRequiresFlash": "Před použitím tohoto kroku úspěšně nainstalujte firmware Flash.",
+    "provisionDone": "Poskytnuté",
+    "firmwareHashRequiresProvision": "Před nastavením hash firmwaru zajistěte EEPROM.",
+    "firmwareHashDone": "Sada hash firmwaru",
+    "flashDone": "Firmware blikal",
+    "bluetoothHint": "Povolte na zařízení Bluetooth a poté použijte Spustit párování. Šestimístný kód PIN se zde zobrazuje přes sériové rozhraní USB – zadejte stejný kód PIN v dialogovém okně OS Bluetooth (macOS, Windows nebo Linux), když se Reticulum připojí přes BLE. Bezhlavá zařízení bez USB nemohou zobrazit PIN na obrazovce.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "Po blikání je Wi-Fi vypnuto. Zde nakonfigurujte režim stanice (sériový port USB) a poté přidejte rozhraní Wi-Fi RNode na Připojení pomocí tcp://host (port 7633). Vyžaduje firmware s podporou Wi-Fi ESP32-S3. Po provedení změn restartujte desku.",
+    "wifiSsidLabel": "Wi-Fi SSID",
+    "wifiPskLabel": "Heslo Wi-Fi",
+    "wifiChannelLabel": "Kanál (volitelné)",
+    "wifiStaticIpLabel": "Statická IP (volitelná)",
+    "wifiStaticNetmaskLabel": "Síťová maska (volitelné)",
+    "wifiDhcpPlaceholder": "Ponechte prázdné pro DHCP",
+    "wifiOff": "\"Rozhraní Wi-Fi je vypnuto\"",
+    "wifiEnableAp": "Povolit AP",
+    "wifiApplyStation": "Použít stanici",
+    "wifiReadConfig": "Číst konfiguraci",
+    "wifiAdvancedShow": "Advanced",
+    "wifiAdvancedHide": "Skrýt pokročilé",
+    "wifiAdvancedToggle": "Přepnout pokročilé možnosti Wi-Fi",
+    "wifiOffSuccess": "Wi-Fi zakázáno. Restartujte desku, aby se změny projevily.",
+    "wifiApSuccess": "Režim přístupového bodu povolen. Připojte se k přístupovému bodu RNode z počítače (výchozí brána 10.0.0.1), poté nakonfigurujte pověření stanice nebo použijte konzolu bootstrap.",
+    "wifiStationSuccess": "Režim stanice uložen. Restartujte desku, najděte její IP (displej, směrovač DHCP nebo Read config) a přidejte tcp://… na Připojovací → rozhraní.",
+    "wifiConfigEmpty": "Nebyla vrácena žádná konfigurační data.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
   "logAnalyzeModal": {
-    "closeDialog": "Zavřít dialog",
     "title": "Analýza protokolu",
     "totalEntries": "{{count}} záznamů",
     "errorsShort": "{{count}} chyb",
@@ -901,7 +1415,7 @@
         "label": "TAK-Server-Probleme"
       },
       "updater": {
-        "recommendation": "Chyba aktualizátoru aplikace. Zkontrolujte připojení k internetu nebo vyzkoušejte ruční aktualizaci z GitHubu.",
+        "recommendation": "App updater error. Check your internet connection or try a manual update from GitHub.",
         "label": "Chyby nástroje pro aktualizaci aplikací"
       },
       "meshcore-tcp": {
@@ -929,16 +1443,12 @@
         "recommendation": "Z routeru nebylo možné vyžádat historii chatu Store & Forward (často se jedná o krátký závod s jiným rádiovým provozem). Pokud nevyřízený chat zůstane prázdný, znovu se připojte nebo počkejte na další srdeční tep směrovače."
       },
       "serial-reconnect": {
-        "label": "Sériové připojení USB",
-        "recommendation": "USB sériový port se po odpojení neuvolnil čistě. Ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu zapojte kabel a poté jej znovu připojte."
+        "label": "Sériové připojení USB"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Udělej tu věc."
-      },
-      "serial-reconnect": {
-        "recommendation": "USB sériový port se po odpojení neuvolnil čistě. Ukončete síťového klienta a znovu jej otevřete, nebo odpojte a znovu zapojte kabel a poté jej znovu připojte."
       }
     }
   },
@@ -965,17 +1475,14 @@
     "appSource": "Aplikace ({{count}})",
     "deviceSource": "Zařízení ({{count}})",
     "narrowLogPanel": "Úzký panel protokolu",
-    "widenLogPanel": "Rozšířit panel protokolu"
+    "widenLogPanel": "Rozšířit panel protokolu",
+    "clearFailed": "Protokol nelze vymazat"
   },
   "mapPanel": {
     "locationUnavailable": "Poloha není k dispozici.",
-    "gpsHardwareUnavailable": "Hardware GPS není k dispozici.",
-    "locationError": "Chyba umístění: {{error}}",
     "locationRequestFailed": "Požadavek na polohu se nezdařil.",
     "showMyLocation": "Zobrazit moji polohu",
     "networkMap": "Mapa sítě zobrazující pozice uzlů",
-    "toggleRouteWeightLines": "Přepnout čáry hmotnosti trasy",
-    "routeWeights": "Váhy trasy",
     "layerControls": "Vrstvy",
     "layerControlsAria": "Přepnout ovládací prvky mapové vrstvy",
     "basemapHeading": "Podkladová mapa",
@@ -988,7 +1495,10 @@
     "layerWaypoints": "Trasové body",
     "layerRouteWeights": "Závaží trasy",
     "layerAnomalyHalos": "Anomálie halos",
-    "layerCongestionHalos": "Halo přetížení"
+    "layerCongestionHalos": "Halo přetížení",
+    "waypointDefaultName": "Trasový bod",
+    "waypointDelete": "Smazat trasový bod",
+    "noGpsNodes": "Zatím žádné uzly s pozicemi GPS"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -1068,7 +1578,6 @@
     "cannedMessagesApplied": "Byly použity předpřipravené zprávy.",
     "rtttlSaved": "RTTTL vyzváněcí tón uložen.",
     "title": "Konfigurace modulu",
-    "readOnly": "Pouze pro čtení",
     "connectToDevice": "Chcete-li upravit konfiguraci modulu, připojte se k zařízení.",
     "waitingForModuleConfig": "Čekání na konfiguraci modulu ze zařízení…",
     "selectPreset": "Vyberte předvolbu…",
@@ -1221,14 +1730,7 @@
       "echoMode": "Režim Echo",
       "baudRate": "Přenosová rychlost",
       "storeForwardEnabled": "Store & Forward povoleno",
-      "sfHeartbeat": "Odeslat tlukot srdce",
-      "sfMaxStored": "Maximální počet uložených záznamů",
-      "sfHistoryMax": "Návratnost historie max",
-      "sfHistoryWindow": "Návratové okno historie",
       "sfHeartbeatDesc": "Pravidelně vysílat přítomnost, aby klienti věděli, že S&F je k dispozici.",
-      "sfMaxStoredDesc": "Maximální počet záznamů uložených v zařízení.",
-      "sfHistoryMaxDesc": "Maximální počet zpráv, které se mají vrátit, když uzel požaduje historii.",
-      "sfHistoryWindowDesc": "Jak daleko zpět v čase vrátit zprávy (v sekundách).",
       "telDeviceTelemetryEnabled": "Odeslat telemetrii zařízení",
       "telDeviceTelemetryEnabledDesc": "Vysílejte metriky zařízení (baterie, napětí, využití kanálu) do sítě prostřednictvím telemetrického modulu.",
       "telDeviceInterval": "Interval metrik zařízení",
@@ -1290,7 +1792,7 @@
       "remoteHardwareEnabledDesc": "Umožňuje vzdáleným uzlům číst a zapisovat GPIO piny na tomto zařízení.",
       "remoteHardwareAllowUndefinedPins": "Povolit přístup k nedefinovaným pinům",
       "remoteHardwareAllowUndefinedPinsDesc": "Povoluje čtení/zápis pinů neuvedených v konfiguraci dostupných pinů.",
-      "mqttProxyGatewayHint": "S povoleným serverem proxy překlenuje síťový klient provoz zprostředkovatele prostřednictvím zprávy MqttClientProxyMessage. Povolit downlink na kanál na kartě Rádio pro MQTT→RF relé.",
+      "mqttProxyGatewayHint": "With proxy enabled, mesh-client bridges broker traffic via MqttClientProxyMessage. Enable per-channel downlink on the Radio tab for MQTT→RF relay.",
       "mapReportPublishInterval": "Interval hlášení mapy (sekundy)",
       "mapReportPublishIntervalDesc": "0 používá výchozí firmware. Jak často zařízení publikuje přehledy map, když je povoleno vytváření přehledů map.",
       "mapReportPositionPrecision": "Přesnost zprávy o poloze mapy",
@@ -1332,7 +1834,141 @@
     "debugPrivateAppMessages": "Soukromé zprávy v aplikaci",
     "debugPingResponses": "Odpovědi na ping",
     "sectionMapReport": "Zpráva o mapě",
-    "sectionMapReportHint": "Publikuje pozici na mapě Meshtastic nad MQTT. Vyžaduje MQTT Relay povoleno výše; nastavení jsou uložena v konfiguraci modulu MQTT zařízení."
+    "sectionMapReportHint": "Publikuje pozici na mapě Meshtastic nad MQTT. Vyžaduje MQTT Relay povoleno výše; nastavení jsou uložena v konfiguraci modulu MQTT zařízení.",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "Žádný"
+      },
+      "10": {
+        "label": "Vybrat (Enter)"
+      },
+      "17": {
+        "label": "Nahoru"
+      },
+      "18": {
+        "label": "Dolů"
+      },
+      "19": {
+        "label": "Vlevo"
+      },
+      "20": {
+        "label": "Právo"
+      },
+      "24": {
+        "label": "Zrušit"
+      },
+      "27": {
+        "label": "Zpět (Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "Výchozí"
+      },
+      "1": {
+        "label": "Jednoduchý"
+      },
+      "2": {
+        "label": "Proto"
+      },
+      "3": {
+        "label": "Textová zpráva"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.Direct"
+      },
+      "8": {
+        "label": "Konfigurace MeshSolar"
+      },
+      "9": {
+        "label": "Protokol (všechny pakety)"
+      },
+      "10": {
+        "label": "Protokol (pouze text)"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "Bílý"
+      },
+      "2": {
+        "label": "Žluť"
+      },
+      "3": {
+        "label": "Pomerančový"
+      },
+      "4": {
+        "label": "purpurová"
+      },
+      "5": {
+        "label": "Červený"
+      },
+      "6": {
+        "label": "Maroon"
+      },
+      "7": {
+        "label": "Fialová"
+      },
+      "8": {
+        "label": "Tmavě modrá"
+      },
+      "9": {
+        "label": "Modrý"
+      },
+      "10": {
+        "label": "azurová"
+      },
+      "11": {
+        "label": "Teal"
+      },
+      "12": {
+        "label": "Zelený"
+      },
+      "13": {
+        "label": "Tmavě zelená"
+      },
+      "14": {
+        "label": "Hnědý"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "Člen týmu"
+      },
+      "2": {
+        "label": "Vedoucí týmu"
+      },
+      "3": {
+        "label": "ústředí"
+      },
+      "4": {
+        "label": "Odstřelovač"
+      },
+      "5": {
+        "label": "Medik"
+      },
+      "6": {
+        "label": "Přední pozorovatel"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",
@@ -1479,7 +2115,21 @@
     "configureRemotelyHint": "Otevře nastavení rádia pro tento uzel přes síť (vyžaduje místní rádio a uložený klíč správce).",
     "openRoomButton": "🏠 Otevřít místnost",
     "remoteAuthCancelled": "Vzdálený přístup byl zrušen.",
-    "shareContactSent": "Sdílení kontaktu odesláno rádiem."
+    "shareContactSent": "Sdílení kontaktu odesláno rádiem.",
+    "blockContact": "Blokovací díl",
+    "unblockContact": "Odblokování",
+    "paxCounter": {
+      "heading": "Počítadlo počtu osob",
+      "detectedCount": "Zjištěný počet",
+      "lastSeen": "Naposledy viděno"
+    },
+    "detectionSensor": {
+      "heading": "Detekční senzor ({{count}})",
+      "lastDetection": "Poslední detekce",
+      "dataSize": "Velikost dat",
+      "dataSizeBytes": "{{count}} bajtů",
+      "rawDataHex": "Nezpracovaná data (hexadecimální)"
+    }
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -1640,6 +2290,35 @@
     "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
     "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
   },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "toggleFavorite": "Přepnout oblíbené",
+    "favourites": "Oblíbené",
+    "announces": "Oznámení",
+    "searchFavourites": "Hledat {{count}} Oblíbené…",
+    "searchAnnounces": "Hledat {{count}} oznamuje...",
+    "emptyFavourites": "Zatím žádné oblíbené uzly Nomad Network.",
+    "emptyAnnounces": "Zatím nebyly oznámeny žádné uzly Nomad Network.",
+    "unavailable": "Nomad Network API není k dispozici. Znovu sestavte postranní vozík Reticulum a restartujte zásobník.",
+    "selectNode": "Vyberte uzel ze seznamu pro procházení jeho stránek.",
+    "lastSeen": "Naposledy slyšet {{time}}",
+    "hopsAway_one": "{{count}} skočte pryč",
+    "hopsAway_other": "{{count}} odskočí pryč",
+    "openNode": "Procházet {{name}}",
+    "pagePath": "Cesta ke stránce",
+    "pagePathAria": "Cesta stránky Nomád",
+    "homePage": "Domovská stránka",
+    "reloadPage": "Znovu načíst stránku",
+    "closeViewer": "Zavřít prohlížeč stránek",
+    "pageLoading": "Načítání stránky…",
+    "pageFailed": "Nepodařilo se načíst stránku: {{error}}",
+    "pageTruncated": "Stránka zkrácena pro zobrazení",
+    "showSource": "Zobrazit zdroj stránky",
+    "hideSource": "Zobrazit naformátovanou stránku",
+    "fileDownloading": "Stahování souboru…",
+    "fileDownloadFailed": "Nepodařilo se stáhnout soubor: {{error}}",
+    "fileDownloadInProgress": "Stahování souboru již probíhá."
+  },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
     "distributionByType": "Distribuce podle typu",
@@ -1659,6 +2338,29 @@
     "other": "Ostatní",
     "noSenderId": "Žádné ID odesílatele v nezpracovaném rámci"
   },
+  "peerDetailModal": {
+    "networkSection": "Síť",
+    "pathHash": "Hash cesty",
+    "copyHash": "Kopírovat cílový hash",
+    "editNameAria": "Vlastní zobrazované jméno",
+    "sendMessage": "Odeslat zprávu",
+    "pathOk": "Žádost o trasu odeslána.",
+    "pathFailed": "Žádost o trasu se nezdařila: {{error}}",
+    "probeHops": "Sonda OK — {{hops}} hop(y).",
+    "probeLocal": "Sonda je v pořádku (režim {{mode}}).",
+    "probeFailed": "Sonda selhala: {{error}}",
+    "iconColor": "Barva avatara",
+    "iconColorAria": "Barva avatara vrstevníka",
+    "saveContact": "Uložit jako kontakt",
+    "removeContact": "Odstraňte kontaktní",
+    "removeContactConfirmTitle": "Odstraňte kontaktní",
+    "removeContactConfirmBody": "Tím se kontakt odstraní ze seznamu. Historie chatu je zachována; opětovné zaslání zprávy kontakt znovu přidá.",
+    "probeOk": "Sonda OK — cesta dosažitelná.",
+    "blockContact": "Zablokovat kontakt",
+    "unblockContact": "Odblokovat kontakt",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — naposledy viděn/a {{seen}}"
+  },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",
     "noNodes": "Zatím nebyly pozorovány žádné uzly",
@@ -1671,7 +2373,42 @@
     "me": "Tento uzel",
     "directLink": "Přímý (0 chmelů)",
     "relayLink": "Přes relé (1 hop)",
-    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (skryté nespojené uzly)"
+    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (skryté nespojené uzly)",
+    "noConnectedNodes": "Žádné připojené peery k zobrazení — upravte filtry nebo počkejte na síťový provoz.",
+    "meShort": "Vy",
+    "relayHub": "Přímé relé",
+    "relayCount": "{{count}} reléové rozbočovače",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Zobrazit vzdálené kolegy",
+    "maxHopsFilter": "Max. hops",
+    "maxHopsAll": "Všechny hops",
+    "maxHopsOption": "{{count}} hops",
+    "resetView": "PÅenastavit pohled",
+    "compactLeafCount": "{{count}} kompaktní přímé protějšky"
+  },
+  "peerListPanel": {
+    "heading": "Vazby",
+    "tabPeers": "Vazby",
+    "tabContacts": "Kontakty",
+    "searchPlaceholder": "Hledat podle jména nebo hashe…",
+    "searchAria": "Hledat kolegy",
+    "colName": "Jméno / hash",
+    "colLastSeen": "Naposledy zobrazeno",
+    "colInterface": "Rozhraní",
+    "colFavorite": "Oblíbený",
+    "toggleFavorite": "Přepnout oblíbené",
+    "openChat": "Otevřít chat",
+    "emptyPeers": "Zatím nebyly objeveny žádné protějšky. Odešlete oznámení nebo počkejte na síťový provoz.",
+    "emptyContacts": "Zatím žádné kontakty — pošlete zprávu kolegovi, aby je sem přidal.",
+    "groupFilterAria": "Filtrovat kontakty podle skupiny",
+    "allGroups": "Všechny skupiny",
+    "manageGroups": "Spravovat skupiny",
+    "colLastHeard": "Naposledy slyšeno",
+    "colContact": "Kontakt",
+    "contactYes": "Ano",
+    "contactNo": "Ne",
+    "tabFavorites": "Oblíbené",
+    "emptyFavorites": "Zatím žádní oblíbení kolegové — označte kontakt nebo kolegu a připněte je sem."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",
@@ -1715,19 +2452,14 @@
     "sectionLora": "LoRa / Rádio",
     "sectionPositionGps": "Poloha / GPS",
     "sectionPower": "Moc",
-    "sectionTelemetry": "Telemetrie",
     "sectionWifi": "WiFi / síť",
-    "passwordPlaceholder": "Heslo",
     "yourNamePlaceholder": "Vaše jméno",
     "namePlaceholder": "JMÉNO",
     "networkNamePlaceholder": "Název sítě",
     "encryptionNone": "Žádné (žádné šifrování)",
     "encryptionSimple": "Jednoduché (výchozí klíč Meshtastic)",
     "generateRandomKey": "Vygenerujte náhodný klíč",
-    "setKeyFromSha256": "Nastavit klíč z SHA-256(název) prvních 16 bajtů (MeshCore #channels)",
     "removeAllContactsTitle": "Odstraňte všechny kontakty z rádia, ponechte v databázi",
-    "contactsOnRadio": "{{count}} / {{max}} kontaktů v rádiu",
-    "aesEncrypted": "šifrováno AES",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Velikost klíče",
@@ -1737,8 +2469,6 @@
     "connectToConfigure": "Chcete-li upravit konfiguraci, připojte se k zařízení.",
     "importConfigJson": "Import konfigurace JSON",
     "offloadContacts": "Snižte zátěž",
-    "deviceMetricsDescription": "Mesh vysílání: jak často jsou baterie, napětí a využití kanálu odesílány přes LoRa. 0 = zakázáno; výchozí 1800 s (30 min). Připojená aplikace: při připojení přes Bluetooth, sériovou nebo Wi-Fi firmware často stále předává metriky zařízení tomuto klientovi přibližně každých 60 s, aby byla na obrazovce aktuálnost – to není stejné jako váš interval mesh.",
-    "deviceMetricsTooltip": "Firmware Meshtastic odesílá metriky zařízení připojenému klientovi zhruba jednou za minutu pro místní monitorování, bez ohledu na interval telemetrie sítě. Oficiální odkaz: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Metrický"
@@ -1802,18 +2532,6 @@
     "pairingPinDesc": "6místný pevný PIN pro spárování Bluetooth. Výchozí: 123456.",
     "wifiPasswordLabel": "Heslo WiFi",
     "wifiPasswordPlaceholder": "Heslo",
-    "deviceUserIdentity": "Uživatel / Identita zařízení",
-    "displaySection": "Zobrazit",
-    "loraRadio": "LoRa / Rádio",
-    "positionGps": "Poloha / GPS",
-    "powerSection": "Moc",
-    "telemetrySection": "Telemetrie",
-    "wifiNetwork": "WiFi / síť",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "JMÉNO",
-    "latPlaceholder": "0,000000",
-    "lonPlaceholder": "0,000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Primární",
     "channelNameSecondary": "Název kanálu",
     "resetChannelDefaults": "Obnovit výchozí nastavení",
@@ -1830,7 +2548,6 @@
     "channelSaveFailed": "Selhalo: {{message}}",
     "validationAes128": "Klíč AES-128 musí mít přesně 16 bajtů (24 base64 znaků)",
     "validationAes256": "Klíč AES-256 musí mít přesně 32 bajtů (44 base64 znaků)",
-    "factoryResetConfirmTitle": "Obnovení továrního nastavení",
     "factoryResetButton": "Obnovení továrního nastavení zařízení",
     "dangerZonePermanent": "Tyto akce jsou trvalé a nelze je vrátit zpět.",
     "resetNodeDbName": "Obnovte NodeDB",
@@ -1906,7 +2623,6 @@
     "lightSleepDurationDesc": "Délka cyklů lehkého spánku. 0 = použít výchozí.",
     "batteryShutdownLabel": "Po vypnutí baterie",
     "batteryShutdownDesc": "Vypněte baterii po tolika sekundách od poslední aktivity sítě. 0 = zakázáno.",
-    "deviceMetricsIntervalLabel": "Interval aktualizace metrik zařízení",
     "wifiEnabledLabel": "WiFi povoleno",
     "ethernetEnabledLabel": "Ethernet povolen",
     "mqttUplinkLabel": "Uplink MQTT",
@@ -2164,7 +2880,103 @@
     "applyTxPowerSuccess": "TX napájení použito",
     "xmodemInvalidFilename": "Název souboru obsahuje neplatné znaky",
     "validationInvalidPsk": "Neplatný base64 PSK — zkontrolujte klíč a zkuste to znovu",
-    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný"
+    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný",
+    "editChannelTitle": "Upravit kanál {{index}}",
+    "channelNameLabel": "Jméno",
+    "channelRoleLabel": "Role",
+    "channelsEditHint": "Vyberte kanál, který chcete upravit. Klávesy AES-128/256 jsou zobrazeny v base64 (Meshtastic konvence).",
+    "channelResetStatus": "Kanál {{index}} resetován!",
+    "meshcoreChannel": {
+      "defaultName": "Kanál {{index}}",
+      "addTitle": "Přidat kanál",
+      "editTitle": "Upravit kanál {{index}}",
+      "indexLabel": "Index (0–{{max}})",
+      "invalidHex": "Musí mít přesně 32 hexadecimálních znaků.",
+      "addButton": "+ Přidat kanál",
+      "footerHelp": "Klíče jsou 128bitové (16 bajtů) a zobrazují se jako 32 hexadecimálních znaků. Názvy kanálů až {{nameMax}} znaků. Až {{channelCount}} kanálů (indexy 0–{{indexMax}}). Pro #channels použijte \"Derive from name\" (SHA-256 názvu s úvodním #)."
+    },
+    "regions": {
+      "0": {
+        "label": "Nenastaveno"
+      },
+      "1": {
+        "label": "NÁS"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "JP"
+      },
+      "6": {
+        "label": "ANZ"
+      },
+      "7": {
+        "label": "KR"
+      },
+      "8": {
+        "label": "TW"
+      },
+      "9": {
+        "label": "RU"
+      },
+      "10": {
+        "label": "V"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MY_433"
+      },
+      "16": {
+        "label": "MY_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "LORA_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "Dlouho Rychle"
+      },
+      "1": {
+        "label": "Dlouho Pomalu"
+      },
+      "2": {
+        "label": "Dlouhé Střední"
+      },
+      "3": {
+        "label": "Krátké Rychlé"
+      },
+      "4": {
+        "label": "Krátké Pomalé"
+      },
+      "5": {
+        "label": "Středně rychlý"
+      },
+      "6": {
+        "label": "Středně pomalý"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -2188,7 +3000,22 @@
     "meshtasticLegendHint": "Rozbalte řádek: podrobnosti o portu a hopu jsou nahoře. Počet chmelů používá hopStart − hopLimit na RF paketech (ne MQTT).",
     "portLabel": "Port",
     "transportSourceLabel": "Přeprava",
-    "hopsAbsentMqtt": "Žádný počet RF hop (cesta MQTT)."
+    "hopsAbsentMqtt": "Žádný počet RF hop (cesta MQTT).",
+    "reticulum": {
+      "legendHint": "Rozbalte řádek pro pole záhlaví RNS. RX = přijato na rozhraní; TX = odchozí z tohoto uzlu.",
+      "direction": "Směr",
+      "interface": "Rozhraní",
+      "packetType": "Typ paketů",
+      "headerType": "Header",
+      "destination": "Cíl",
+      "rx": "RX",
+      "tx": "TX"
+    },
+    "pauseCapture": "Pozastavení",
+    "resumeCapture": "Pokračovat",
+    "resumeCaptureWithCount": "Pokračovat (+{{count}})",
+    "pausedPending": "{{count}} nové při pozastavení",
+    "jumpToLatest": "Přejít na nejnovější"
   },
   "remoteAdmin": {
     "errors": {
@@ -2291,7 +3118,90 @@
     "pathHashCliGet": "Získat režim hash cesty",
     "pathHashCliSet0": "Nastavit režim hash cesty 1 bajt",
     "pathHashCliSet1": "Nastavit režim hash cesty 2bajtový",
-    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt"
+    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt",
+    "pathLabel": "Cesta:",
+    "hopMe": "● Já",
+    "hopN": "● Hop {{n}}",
+    "noNeighborsReported": "Nehlásili se žádní sousedé",
+    "fetchingTelemetry": "Načítání telemetrie…",
+    "telemetryBattery": "Baterie: {{voltage}}V",
+    "telemetryTemp": "Teplota: {{temp}}°C",
+    "telemetryHumidity": "Vlhkost: {{humidity}}%",
+    "telemetryPressure": "Tlak: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "alt {{altitude}}m",
+    "cliSend": "Poslat",
+    "cliQuick": "Rychlý:"
+  },
+  "reticulumIdentity": {
+    "announceIntervalSec": "Interval oznamování (sekundy)",
+    "clearAnnounces": "Vymazat oznámení",
+    "announceSaved": "Interval oznámení uložen.",
+    "announceSaveFailed": "Interval oznámení se nepodařilo uložit: {{error}}",
+    "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
+    "clearAnnouncesDone": "Oznámení vymazána.",
+    "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení."
+  },
+  "reticulumPropagation": {
+    "preferred": "Preference",
+    "setPreferred": "Nastavit preferované",
+    "syncNow": "Synchronizovat zprávy",
+    "cancelSync": "\"Zrušit synchronizaci\"",
+    "syncNowFor": "Synchronizovat zprávy z {{name}}",
+    "addNode": "Přidat uzel",
+    "addNodeLabel": "Přidejte uzel šíření pomocí hash",
+    "addNodePlaceholder": "32znakový cílový hash LXMF",
+    "localInboxStats": "{{count}} ve frontě · {{bytes}} bajtů",
+    "refreshing": "Osvěžující…",
+    "refreshAria": "Obnovit uzly šíření",
+    "syncStatusEstablishing": "Navazování připojení k uzlu propagace…",
+    "syncStatusNegotiating": "Vyjednávání synchronizace s uzlem propagace…",
+    "syncStatusTransferring": "Přenos zpráv z uzlu šíření…",
+    "syncFailed": "Synchronizace šíření se nezdařila – uzel může být nedostupný.",
+    "syncTimedOut": "Časový limit synchronizace šíření vypršel – uzel může být nedostupný.",
+    "autoSyncIntervalLabel": "Interval automatické synchronizace",
+    "autoSyncIntervalAria": "Interval automatické synchronizace šíření",
+    "autoSyncOptionDisabled": "Zakázáno",
+    "autoSyncOption15m": "Každých 15 minut",
+    "autoSyncOption30m": "Každých 30 minut",
+    "autoSyncOption1h": "Každou 1 hodinu",
+    "autoSyncOption3h": "Každé 3 hodiny",
+    "autoSyncOption6h": "Každých 6 hodin",
+    "autoSyncOption12h": "Každých 12 hodin",
+    "autoSyncOption24h": "Každých 24 hodin",
+    "lastSynced": "Poslední synchronizace: {{time}}",
+    "lastRefreshed": "Poslední aktualizace {{time}}"
+  },
+  "reticulumTopology": {
+    "title": "topologie sítě",
+    "self": "Vy",
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Graf topologie sítě Reticulum",
+    "noNodes": "Zatím žádná data topologie – připojte zásobník Reticulum a obnovte jej.",
+    "nodeCount": "{{count}} uzly",
+    "edgeCount": "{{count}} odkazy",
+    "hiddenCount": "Zobrazeno {{shown}} z {{total}} uzlů (vzdálení kolegové skryti)",
+    "legendSelf": "Tento uzel",
+    "centerRns": "RNS",
+    "showDistantPeers": "Zobrazit vzdálené kolegy",
+    "maxHopsFilter": "Max. hops",
+    "maxHopsAll": "Všechny hops",
+    "maxHopsOption": "{{count}} hops",
+    "interfaceStatus": "{{online}} online, {{offline}} offline rozhraní",
+    "unassignedInterface": "Jiné cesty",
+    "legendInterfaceOnline": "Rozhraní online",
+    "legendInterfaceOffline": "Rozhraní offline",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nomádský uzel",
+    "interfaceLink": "Propojení rozhraní",
+    "peerLink": "Odkaz na protějšek",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "online",
+    "interfaceStatusOffline": "offline",
+    "glyphWifi": "Rozhraní Wi-Fi:",
+    "glyphLora": "Rozhraní LoRa",
+    "glyphTcp": "Rozhraní TCP",
+    "glyphSerial": "Sériové rozhraní"
   },
   "rfHistograms": {
     "title": "Distribuce vysokofrekvenčního signálu",
@@ -2402,7 +3312,6 @@
     "jumpToUnread": "Přejít na nepřečtené",
     "newMessagesDivider": "Nové zprávy",
     "loggingInMarkerAria": "Přihlášení na pokojový server",
-    "savedPasswordNotLoggedIn": "Heslo uloženo — otevřete místnost a přihlaste se",
     "favorite": "Oblíbený pokoj",
     "unfavorite": "Odebrat z oblíbených",
     "loginAllSaved": "Přihlásit vše",
@@ -2447,16 +3356,17 @@
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",
-    "placeholder": "Prohledat všechny zprávy… (uživatel:jméno, kanál:jméno)"
+    "placeholder": "Prohledat všechny zprávy… (uživatel:jméno, kanál:jméno)",
+    "noResults": "Žádné výsledky",
+    "hint": "Zadejte pro vyhledávání ve všech zprávách",
+    "resultCount": "{{count}} výsledky — klikni pro navigaci"
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
     "failed": "Selhalo: {{message}}",
     "adminKeysApplied": "Byly použity administrátorské klíče.",
     "adminSettingsApplied": "Bylo použito nastavení správy.",
-    "keysBackedUp": "Klíče zálohované do systémové klíčenky.",
     "backupFailed": "Zálohování se nezdařilo: {{message}}",
-    "keysRestored": "Klíče obnoveny ze zálohy.",
     "restoreFailed": "Obnovení se nezdařilo: {{message}}",
     "dataSigned": "Data byla úspěšně podepsána.",
     "signNoResult": "Operace znamení nevrátila žádný výsledek.",
@@ -2500,8 +3410,6 @@
     "adminChannelDesc": "Povolit ovládání příchozího zařízení nad nezabezpečeným starším kanálem správce.",
     "keyBackupUnavailable": "Systémové šifrování keychain není na této platformě dostupné. Zálohování a obnovení jsou zakázány.",
     "keyBackupDesc": "Zálohujte své DM klíče do systémové klíčenky (zašifrované). Do zařízení je můžete kdykoli obnovit.",
-    "backupAvailable": "Záloha k dispozici",
-    "noBackupStored": "Žádná záloha není uložena",
     "backupKeys": "Záložní klíče",
     "restoreKeys": "Obnovit klíče",
     "working": "Pracovní...",
@@ -2572,7 +3480,11 @@
     "rf": "regionální facilitátor",
     "graph": "Graf",
     "rooms": "Pokoje",
-    "admin": "Správa"
+    "admin": "Správa",
+    "peers": "Vazby",
+    "nomadnetwork": "Nomad Network",
+    "topology": "topologie sítě",
+    "network": "Síť"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -2664,5 +3576,156 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "diagnosticsPing": {
+    "title": "Kontinuální ping",
+    "reticulumHint": "Spustí ping (RTT) a dráhovou sondu (hops) v každém intervalu, když je zásobník spuštěn.",
+    "hashLabel": "Cílová hodnota hash",
+    "hashPlaceholder": "32znakový cílový hash…",
+    "hashAria": "Cílový hash na ping",
+    "intervalLabel": "Interval (y)",
+    "intervalAria": "Sekundy mezi pokusy o ping",
+    "start": "Začít",
+    "stop": "Zastavit",
+    "runOnce": "Ping jednou",
+    "colSeq": "č.",
+    "colRtt": "Rettova choroba",
+    "colHops": "Chmel",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Nezdařilo se: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktivní identita",
+    "active": "Aktivní identita: {{name}}",
+    "activeBadge": "aktivní"
+  },
+  "identityVault": {
+    "title": "Trezor identity",
+    "hint": "Zašifrujte místní kopii zálohy své identity pomocí hesla do trezoru. Odemkněte pro přístup k chráněným operacím identity.",
+    "passcode": "Heslo trezoru",
+    "confirmPasscode": "Potvrdit přístupový kód",
+    "setPasscode": "Povolit trezor",
+    "unlock": "Odemknout trezor",
+    "lock": "Uzamknout trezor",
+    "statusNotConfigured": "Nenastaveno",
+    "statusLocked": "Uzamčeno",
+    "statusUnlocked": "Odemčeno",
+    "passcodeTooShort": "Heslo musí mít alespoň 4 znaky.",
+    "passcodeMismatch": "Hesla se neshodují.",
+    "setSuccess": "Heslo trezoru uloženo.",
+    "setFailed": "Heslo trezoru se nepodařilo uložit.",
+    "unlockSuccess": "Trezor odemčen.",
+    "unlockFailed": "Nesprávný přístupový kód nebo chyba trezoru.",
+    "lockSuccess": "Trezor je uzamčen."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Režim propagace",
+    "modeAria": "Režim synchronizace propagace",
+    "modeAuto": "Auto",
+    "modeManual": "Manuální",
+    "modeOff": "Vypnuto",
+    "sync": "Synchronizace",
+    "syncAria": "Synchronizovat propagační zprávy",
+    "cancelSync": "Zrušit",
+    "cancelSyncAria": "Zrušit synchronizaci propagace"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikona avatara",
+    "iconNameAria": "Ikona avatara protějšku",
+    "iconCircle": "Kruh",
+    "iconStar": "Hvězdička",
+    "iconHeart": "Srdce",
+    "iconShield": "Štít",
+    "iconUser": "Uživatel"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Nastavení zásobníku",
+      "enableTransport": "Povolit přenos (trasa pro ostatní protějšky)",
+      "shareInstance": "Sdílet instanci Reticulum",
+      "logLevel": "Úroveň protokolu",
+      "save": "Uložte nastavení zásobníku",
+      "saveFailed": "Nastavení zásobníku se nepodařilo uložit."
+    },
+    "reticulumConfigImport": {
+      "title": "Import konfigurace Reticulum",
+      "hint": "Vložte konfigurační soubor ve stylu rnsd nebo importujte z disku. Merge přidává/aktualizuje bloky rozhraní podle názvu; nahradit přepíše všechna rozhraní.",
+      "pasteLabel": "Obsah konfiguračního souboru",
+      "fromFile": "Importovat ze souboru…",
+      "fromSystem": "Výchozí nastavení systému importu",
+      "merge": "Sloučit import",
+      "replace": "Vyměňte rozhraní",
+      "confirmTitle": "Import konfigurace Reticulum",
+      "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
+      "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Toto nelze vrátit zpět.",
+      "confirm": "Importovat"
+    },
+    "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
+    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Obnovení továrního nastavení",
+      "hint": "Vymaže identitu, kontakty a zprávy ze zásobníku postranního vozíku. Konfigurace rozhraní je zachována.",
+      "button": "Resetovat data zásobníku",
+      "confirmTitle": "Resetovat Reticulum stack?",
+      "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
+      "confirm": "Resetovat"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Nastavte nebo změňte heslo správce opakovače z panelu opakovače (pouze relace).",
+      "connectionFailed": "Připojení se nezdařilo",
+      "notConnected": "Není připojeno k zařízení",
+      "nodeNotFound": "Uzel nenalezen (žádný šifrovací klíč)",
+      "authenticationFailed": "Ověření se nezdařilo",
+      "requestFailed": "Selhalo: {{detail}}",
+      "requestTimedOut": "Časový limit požadavku vypršel (až ~{{seconds}}s)",
+      "requestTimedOutApprox": "Časový limit požadavku vypršel (~{{seconds}}s)",
+      "pingNoRoute": "Zatím žádná trasa z rádia — multi-hop trasování potřebuje synchronizovanou cestu. Počkejte na aktualizace kontaktů nebo se znovu připojte.",
+      "bleNoDetails": "Připojení BLE se nezdařilo (žádné podrobnosti o chybě ze zařízení). Zkuste to znovu nebo použijte sériové/USB.",
+      "bleAlreadyInProgress": "Připojení Bluetooth již probíhá. Počkejte na dokončení nebo zkuste místo toho sériové/USB.",
+      "bleMissingServices": "Zařízení nepodporuje protokol MeshCore BLE. Ujistěte se, že v zařízení běží firmware MeshCore.",
+      "blePeripheralInUse": "Toto zařízení je již připojeno přes Meshtastic BLE. Před připojením jako MeshCore jej nejprve odpojte.",
+      "bleTimeoutWebBtHandshake": "Vypršel časový limit pro navázání spojení MeshCore (Web Bluetooth). Rádio může nejprve potřebovat PIN spárovaný s Linuxem: použijte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený na zařízení, nebo spárujte s bluetoothctl a poté znovu klepněte na Připojit.",
+      "bleTimeoutWebBt": "Při otevírání MeshCore přes Web Bluetooth vypršel časový limit připojení Bluetooth. Zkuste to znovu, nechte zařízení v bdělém stavu, vypněte a zapněte BLE na rádiu nebo použijte sériové/TCP.",
+      "bleTimeoutHandshake": "Bluetooth je připojeno, ale před odpojením/vypršením časového limitu nebylo dokončeno navázání spojení protokolu MeshCore. Zkuste to znovu, udržujte zařízení v bdělém stavu a poblíž, vypněte a zapněte BLE nebo použijte sériové/TCP.",
+      "bleTimeoutNoble": "Při otevírání MeshCore přes Noble IPC vypršel časový limit připojení Bluetooth. Zkuste to znovu, vypněte a zapněte BLE na zařízení nebo použijte sériové/TCP.",
+      "roomPost": {
+        "badState": "Pokojový příspěvek zamítnut (nepřihlášen do rádia). Odhlaste se, přihlaste se znovu a zkuste to znovu.",
+        "illegalArg": "Příspěvek do místnosti zamítnut (neplatný formát zprávy).",
+        "notFound": "Příspěvek na pokoj zamítnut (kontakt na pokoj nebyl v rádiu nalezen).",
+        "unsupportedCmd": "Příspěvek do místnosti zamítnut (nepodporovaný typ zprávy v rádiu). Přihlaste se do místnosti a zkuste to znovu.",
+        "default": "Příspěvek na pokoj rádiem zamítnut. Odhlaste se, přihlaste se znovu a zkuste to znovu.",
+        "timeout": "Vypršel časový limit při čekání na rádio. Zkontrolujte dosah nebo to zkuste znovu."
+      },
+      "roomLogin": {
+        "noRoute": "Žádná cesta k tomuto pokojovému serveru. Vyhledejte uzel z mapy nebo počkejte na inzeráty cesty a zkuste to znovu.",
+        "pathSyncFailed": "Před přihlášením nebylo možné naprogramovat trasu na vašem rádiu. Znovu připojte zařízení a zkuste to znovu.",
+        "pathSyncFailedDetail": "Před přihlášením nebylo možné naprogramovat trasu na vašem rádiu. Znovu připojte zařízení a zkuste to znovu.{{detail}}",
+        "rejectedBlankGuest": "Přihlášení do místnosti zamítnuto. Pro prázdné heslo hosta použijte možnost Pokračovat pouze pro čtení nebo zkuste heslo hosta „ahoj“.",
+        "rejectedDefaultGuest": "Přihlášení do místnosti zamítnuto. Pokud tento server nemá heslo hosta, použijte místo přihlášení Pokračovat pouze pro čtení. Jinak zkontrolujte heslo hosta nebo správce.",
+        "rejectedCheckPassword": "Přihlášení do místnosti zamítnuto. Zkontrolujte heslo hosta nebo správce pro tento pokojový server.",
+        "timedOutBlankGuest": "Časový limit přihlášení do místnosti vypršel. Pro prázdné heslo hosta použijte možnost Pokračovat pouze pro čtení nebo zkuste heslo hosta „ahoj“.",
+        "timedOutDefaultGuest": "Časový limit přihlášení do místnosti vypršel. Pokud tento server nemá heslo hosta, použijte místo přihlášení Pokračovat pouze pro čtení.",
+        "timedOut": "Časový limit přihlášení do místnosti vypršel. Místnost může být mimo dosah nebo nereaguje.",
+        "failed": "Přihlášení do místnosti se nezdařilo"
+      },
+      "roomLogout": {
+        "timedOut": "Odhlášení z místnosti vypršelo. Místnost může být mimo dosah nebo nereaguje.",
+        "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
+        "failed": "Nelze opustit místnost"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
+      "network": "Zkontrolujte síť, DNS, firewall a VPN.",
+      "connackTimeout": "Pokud nevidíte žádný předchozí řádek „chyba klienta“, může se stát, že se navázání spojení TLS/WebSocket zasekává (zkuste jinou síť; aplikace preferuje IPv4 pro WSS).",
+      "subscribeFailed": "Makléř může odmítnout odběr zástupných znaků na toto téma; zprávy mohou stále docházet, pokud to broker dovolí.",
+      "keepalive": "Server přestal reagovat na pingy MQTT (časový limit nečinnosti, výpadek sítě nebo zprostředkovatel ukončil relaci). Znovu se připojte nebo zkontrolujte svůj odkaz."
+    }
   }
 }

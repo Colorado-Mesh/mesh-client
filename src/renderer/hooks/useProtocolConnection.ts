@@ -5,6 +5,7 @@ import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
+import { getReticulumSession } from '../lib/sessions/reticulumSession';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
 import { useConnect } from './useConnect';
 import { useConnectionByProtocol } from './useConnectionByProtocol';
@@ -79,6 +80,11 @@ export function useProtocolConnect(): (
         return;
       }
 
+      if (protocol === 'reticulum') {
+        await getReticulumSession().connect();
+        return;
+      }
+
       const meshtastic = getMeshtasticSession();
       await meshtastic.prepareRfConnect(type, httpAddress, blePeripheralId);
       let driverIdentityId: string | undefined;
@@ -99,6 +105,8 @@ export function useProtocolDisconnect() {
   return useCallback(async (protocol: MeshProtocol) => {
     if (protocol === 'meshcore') {
       await getMeshcoreSession().finalizeDriverDisconnect({ disconnectDriver: true });
+    } else if (protocol === 'reticulum') {
+      await getReticulumSession().finalizeDriverDisconnect();
     } else {
       await getMeshtasticSession().finalizeDriverDisconnect({ disconnectDriver: true });
     }
@@ -128,6 +136,9 @@ export function useProtocolConnectionActions(protocol: MeshProtocol): ProtocolCo
           httpAddress,
           lastSerialPortId ?? null,
         );
+      }
+      if (protocol === 'reticulum') {
+        return getReticulumSession().connectAutomatic();
       }
       return getMeshtasticSession().connectAutomatic(
         type,

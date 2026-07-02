@@ -4,10 +4,12 @@
  *
  * 1. Extracts all t('key') / t("key") call sites from renderer source.
  * 2. Verifies every key resolves to an existing path in en/translation.json.
- * 3. Verifies every key in en/translation.json exists in every other locale file (warn only).
- * 4. Fails on CAT/XLIFF/Memsource residue in non-English strings; fails if {{placeholder}}
+ * 3. Fails when en/translation.json contains keys with no usage (static t(), registered
+ *    dynamic prefixes, quoted key literals in src/, or tabs.* from TAB_SLOT_IDS).
+ * 4. Verifies every key in en/translation.json exists in every other locale file (warn only).
+ * 5. Fails on CAT/XLIFF/Memsource residue in non-English strings; fails if {{placeholder}}
  *    name sets differ from English for the same key.
- * 5. Fails on locale quality issues (mojibake, broken meshtastic://, false friends, etc.)
+ * 6. Fails on locale quality issues (mojibake, broken meshtastic://, false friends, etc.)
  *    via check-i18n-quality.mjs — including modulePanel.* strings still identical to English,
  *    appPanel.reduceMotionDesc loading-spinner false friends, appPanel.debugSnapshot*
  *    copied-toast false friends and mixed EN "snapshot" residue, rawPacketLog protocol tokens,
@@ -15,14 +17,27 @@
  *    wire / g: GIF composer strings (protocol tokens, companion-wire false friends, Open-aware),
  *    connectionBanner serialReselectAction MT garbage, meshcoreGifHint bare-id false friends,
  *    meshcoreReactionEmojiOption contact/fabric false friends, Ukrainian broken apostrophe spacing,
- *    and roomsPanel collapse/expand hotel-room wording; MeshCore path-hash hop-count brewing false
+ *    and roomsPanel collapse/expand hotel-room wording; connectionPanel Noble BLE wait/auto-connect
+ *    stage strings (Unicode ellipsis hygiene, autoReconnectInProgress reconnect false friends);
+ *    MeshCore path-hash hop-count brewing false
  *    friends, CAT/Qt plural-form residue (&apos;, "plural form:"), short label parenthesis garbage,
- *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}.
+ *    and meshcorePathHashModeHint CLI literal set path.hash.mode {0|1|2}; Reticulum identity/interface/
+ *    peer/propagation UI (must-translate stack/config strings, disable parallax false friends, peer/
+ *    probe/host/transport colleague false friends, sidecar build/Rust/cargo literals); peerDetailModal
+ *    probe toasts; CAT HTML entities, bracket
+ *    [Data] placeholders, bare PH N / <ph> / HTML tag residue, and sample-name garbage on nameLabel;
+ *    rawPacketLog.reticulum RX/TX verbatim tokens and destination punctuation garbage;
+ *    reticulumTopology.self pronoun and hopBadge {{count}} placeholder;
+ *    flasher.noSerialPorts French inverted "trouvé(s):" empty-state wording.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *
  * Branch-only quality pass (keys new/changed in en vs git HEAD):
  *   pnpm run check:i18n:branch
+ *
+ * Prune unused keys (dry-run by default):
+ *   pnpm run i18n:prune-unused
+ *   pnpm run i18n:prune-unused -- --write
  *
  * Add a comment  // i18n-ok <reason>  on the same line to suppress a dynamic-key warning.
  */
@@ -40,6 +55,7 @@ import {
   roomsSavedPasswordsCrossKeyIssues,
   roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
+import { collectUsedI18nKeys, DYNAMIC_T_PREFIXES } from './i18n-unused-keys.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR =
@@ -162,22 +178,6 @@ const T_STATIC_RE = /\bt\(\s*['"]([^'"]+)['"]\s*[),]/g;
 // Match t(`prefix.${expr}`) or t(`prefix.${expr}.suffix`) — dynamic keys with registered prefixes.
 const T_TEMPLATE_RE = /\bt\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
 
-/**
- * Known dynamic t() template prefixes. Each entry verifies English keys exist for every
- * variant the template can resolve to. Add a row when introducing a new t(`…${var}…`) site.
- */
-const DYNAMIC_T_PREFIXES = [
-  { prefix: 'chatPanel.fetchStoreForwardHistoryError.', leafKeys: true },
-  { prefix: 'radioPanel.deviceRoles.', suffixes: ['label', 'description'] },
-  { prefix: 'radioPanel.rebroadcastModes.', suffixes: ['label', 'description'] },
-  { prefix: 'radioPanel.displayUnits.', suffixes: ['label'] },
-  { prefix: 'radioPanel.oledTypes.', suffixes: ['label'] },
-  { prefix: 'radioPanel.displayModes.', suffixes: ['label'] },
-  { prefix: 'radioPanel.btPairingModes.', suffixes: ['label'] },
-  { prefix: 'meshcoreTelemetryPrivacy.', leafKeys: true },
-  { prefix: 'diagnosticsPanel.foreignLoraProximitySnippet.', leafKeys: true },
-];
-
 const en = flatten(readJson(EN_FILE));
 const enKeys = new Set(Object.keys(en));
 const branchEnglishKeys = BRANCH_ONLY ? resolveBranchEnglishKeys(en) : null;
@@ -286,7 +286,7 @@ for (const file of files) {
       const prefix = extractTemplatePrefix(m[1], m[2]);
       if (!prefix) {
         console.error(
-          `Unregistered dynamic t() template at ${relative(join(__dirname, '..'), file)}:${idx + 1} — add prefix to DYNAMIC_T_PREFIXES in check-i18n.mjs`,
+          `Unregistered dynamic t() template at ${relative(join(__dirname, '..'), file)}:${idx + 1} — add prefix to DYNAMIC_T_PREFIXES in i18n-unused-keys.mjs`,
         );
         errors++;
       }
@@ -294,7 +294,18 @@ for (const file of files) {
   });
 }
 
-// ── 2. Check completeness across locale files (warn only — rate limits can leave gaps) ──
+// ── 2. Unused English keys (no static/dynamic/literal usage in src/) ─────────
+if (!BRANCH_ONLY) {
+  const { unused: unusedEnKeys } = collectUsedI18nKeys(join(__dirname, '../src'), EN_FILE);
+  for (const key of unusedEnKeys) {
+    console.error(
+      `Unused key in en/translation.json: "${key}" — remove or add usage (see pnpm run i18n:prune-unused)`,
+    );
+    errors++;
+  }
+}
+
+// ── 3. Check completeness across locale files (warn only — rate limits can leave gaps) ──
 const localeDirs = readLocalesDirEntries().filter((d) => {
   const full = join(LOCALES_DIR, d);
   return statSync(full).isDirectory() && d !== 'en';
@@ -365,7 +376,7 @@ const FORBIDDEN_HOP_TOKENS = [
   '酒花',
 ];
 
-// ── 3. Locale string quality: no CAT/XML artifacts; {{name}} sets match English;
+// ── 4. Locale string quality: no CAT/XML artifacts; {{name}} sets match English;
 //      no leading/trailing whitespace or BOM that English lacks; brand names preserved.
 for (const dir of localeDirs) {
   const localePath = join(LOCALES_DIR, dir, 'translation.json');

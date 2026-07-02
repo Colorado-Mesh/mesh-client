@@ -205,6 +205,29 @@ export function findFirstMessageIndexByDayKey(
   return -1;
 }
 
+/** TanStack virtualizer key for chat message rows (includes list index for uniqueness). */
+export function getChatMessageVirtualizerKey(
+  msg: Pick<ChatMessage, 'id' | 'timestamp' | 'packetId'> | null | undefined,
+  index: number,
+): string {
+  if (!msg) return `msg-slot-${index}`;
+  return msg.id != null
+    ? `db-${msg.id}-${index}`
+    : `${msg.timestamp}-${msg.packetId ?? 'x'}-${index}`;
+}
+
+/** Stable content key for room BBS posts (starred jump, scroll-to-row). */
+export function roomPostRowKey(m: ChatMessage): string {
+  return m.roomServerId != null
+    ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}`
+    : `${m.timestamp}:${m.sender_id}:${m.payload}`;
+}
+
+/** Virtualizer key for room posts — appends index so same-second posts do not collide. */
+export function roomPostVirtualizerKey(m: ChatMessage, index: number): string {
+  return `${roomPostRowKey(m)}-${index}`;
+}
+
 /** Generic row-key lookup for virtualized lists (e.g. room posts). */
 export function findIndexByRowKey<T>(
   items: readonly T[],

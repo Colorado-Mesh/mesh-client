@@ -44,18 +44,75 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { HelpTooltip } from './HelpTooltip';
+import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
 import { useToast } from './Toast';
-
-const GPS_REFRESH_INTERVAL_LABELS: Record<number, string> = {
-  0: 'Manual only',
-  900: 'Every 15 min',
-  1800: 'Every 30 min',
-  3600: 'Every hour',
-  7200: 'Every 2 hours',
-};
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
 const CLEAR_ALL_CHANNELS_VALUE = -999_999;
+
+type DangerActionId =
+  | 'resetDiagnostics'
+  | 'clearGpsData'
+  | 'clearPositionHistory'
+  | 'deleteOldNodes'
+  | 'pruneMqttOnlyNodes'
+  | 'pruneUnnamedNodes'
+  | 'pruneNoFixNodes'
+  | 'pruneDistantNodes'
+  | 'pruneOfflineNodes'
+  | 'clearNodes'
+  | 'deleteContactsNoPubkeys'
+  | 'clearMessages'
+  | 'clearAllRepeaters'
+  | 'clearAllData';
+
+const NODE_PRUNE_ACTIONS: DangerActionId[] = [
+  'deleteOldNodes',
+  'pruneMqttOnlyNodes',
+  'pruneUnnamedNodes',
+  'pruneNoFixNodes',
+  'pruneDistantNodes',
+  'pruneOfflineNodes',
+  'clearNodes',
+  'clearAllData',
+  'clearGpsData',
+];
+
+const MESSAGE_PRUNE_ACTIONS: DangerActionId[] = ['clearMessages', 'clearAllData'];
+
+const DANGER_ACTION_LABEL_KEY: Record<DangerActionId, string> = {
+  resetDiagnostics: 'appPanel.resetDiagnostics',
+  clearGpsData: 'appPanel.clearGpsData',
+  clearPositionHistory: 'appPanel.clearPositionHistory',
+  deleteOldNodes: 'appPanel.deleteOldNodes',
+  pruneMqttOnlyNodes: 'appPanel.pruneMqttOnlyNodes',
+  pruneUnnamedNodes: 'appPanel.pruneUnnamedNodes',
+  pruneNoFixNodes: 'appPanel.pruneNoFixNodes',
+  pruneDistantNodes: 'appPanel.pruneDistantNodesTitle',
+  pruneOfflineNodes: 'appPanel.pruneOfflineNodesTitle',
+  clearNodes: 'appPanel.clearAllNodesButton',
+  deleteContactsNoPubkeys: 'appPanel.deleteContactsNoPubkeysTitle',
+  clearMessages: 'appPanel.clearMessagesTitle',
+  clearAllRepeaters: 'appPanel.clearAllRepeaters',
+  clearAllData: 'appPanel.clearAllLocalData',
+};
+
+function gpsIntervalLabel(t: (key: string) => string, secs: number): string {
+  switch (secs) {
+    case 0:
+      return t('appPanel.gpsIntervalManual');
+    case 900:
+      return t('appPanel.gpsInterval15min');
+    case 1800:
+      return t('appPanel.gpsInterval30min');
+    case 3600:
+      return t('appPanel.gpsIntervalHour');
+    case 7200:
+      return t('appPanel.gpsInterval2hours');
+    default:
+      return String(secs);
+  }
+}
 
 // ─── Confirmation Modal ─────────────────────────────────────────
 function ConfirmModal({
@@ -178,10 +235,14 @@ interface Props {
   deviceReportedPathHashMode?: 0 | 1 | 2 | null;
   isMeshcoreRadioConnected?: boolean;
   onApplyMeshcorePathHashMode?: (mode: 0 | 1 | 2) => Promise<void>;
+  /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
+  reticulumIdentityId?: string | null;
+  reticulumSidecarReady?: boolean;
+  reticulumControlsDisabled?: boolean;
 }
 
 interface PendingAction {
-  name: string;
+  actionId: DangerActionId;
   title: string;
   message: string;
   confirmLabel: string;
@@ -212,6 +273,9 @@ export default function AppPanel({
   deviceReportedPathHashMode,
   isMeshcoreRadioConnected = false,
   onApplyMeshcorePathHashMode,
+  reticulumIdentityId = null,
+  reticulumSidecarReady = false,
+  reticulumControlsDisabled = false,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') !== '1',
@@ -240,7 +304,9 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig } =
+    useRadioProvider(protocol);
+  const isReticulumDmOnly = hasReticulumInterfaceConfig;
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -507,7 +573,7 @@ export default function AppPanel({
       window.electronAPI.db
         .getMeshcoreMessageChannels()
         .then((rows) => {
-          setMsgChannels(rows.map((r) => r.channel));
+          setMsgChannels([...new Set(rows.map((r) => r.channel))].sort((a, b) => a - b));
         })
         .catch((e: unknown) => {
           console.debug('[AppPanel] getMeshcoreMessageChannels ' + errLikeToLogString(e));
@@ -516,7 +582,7 @@ export default function AppPanel({
       window.electronAPI.db
         .getMessageChannels()
         .then((rows) => {
-          setMsgChannels(rows.map((r) => r.channel));
+          setMsgChannels([...new Set(rows.map((r) => r.channel))].sort((a, b) => a - b));
         })
         .catch((e: unknown) => {
           console.debug('[AppPanel] getMessageChannels ' + errLikeToLogString(e));
@@ -549,32 +615,26 @@ export default function AppPanel({
 
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
-    const { name: actionName, action, messageClearMeta } = pendingAction;
+    const { actionId, action, messageClearMeta } = pendingAction;
     setPendingAction(null);
     try {
       await action();
-      const nodeActions = [
-        'Delete Old Nodes',
-        'Prune MQTT-only Nodes',
-        'Prune Unnamed Nodes',
-        'Prune Zero Island Nodes',
-        'Prune Distant Nodes',
-        'Clear Nodes',
-        'Clear All Data',
-        'Clear GPS Data',
-      ];
-      const messageActions = ['Clear Messages', 'Clear All Data'];
-      if (nodeActions.includes(actionName)) onNodesPruned?.();
-      if (messageActions.includes(actionName)) {
+      if (NODE_PRUNE_ACTIONS.includes(actionId)) onNodesPruned?.();
+      if (MESSAGE_PRUNE_ACTIONS.includes(actionId)) {
         onMessagesPruned?.(messageClearMeta);
         loadMsgChannels();
       }
-      addToast(t('appPanel.actionCompleted', { name: actionName }), 'success');
+      addToast(
+        t('appPanel.actionCompleted', {
+          name: t(DANGER_ACTION_LABEL_KEY[actionId]),
+        }),
+        'success',
+      );
     } catch (err) {
       console.warn('[AppPanel] pending action failed ' + errLikeToLogString(err));
       addToast(
         t('appPanel.actionFailed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: err instanceof Error ? err.message : t('appPanel.unknownError'),
         }),
         'error',
       );
@@ -655,6 +715,13 @@ export default function AppPanel({
           </div>
         </div>
       )}
+
+      {protocol === 'reticulum' ? (
+        <ReticulumAppPanelSection
+          sidecarReady={reticulumSidecarReady}
+          disabled={reticulumControlsDisabled}
+        />
+      ) : null}
 
       {/* GPS / Location */}
       <div className="space-y-3">
@@ -751,7 +818,7 @@ export default function AppPanel({
                 handleGpsIntervalChange(Number(e.target.value));
               }}
               disabled={hasStaticPosition}
-              aria-label={`${t('appPanel.autoRefreshInterval')} ${GPS_REFRESH_INTERVAL_LABELS[gpsRefreshInterval] ?? gpsRefreshInterval}`}
+              aria-label={`${t('appPanel.autoRefreshInterval')} ${gpsIntervalLabel(t, gpsRefreshInterval)}`}
               className={`bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none ${hasStaticPosition ? 'cursor-not-allowed opacity-40' : ''}`}
             >
               <option value={0}>{t('appPanel.gpsIntervalManual')}</option>
@@ -951,7 +1018,9 @@ export default function AppPanel({
                 }}
                 disabled={!settings.autoPruneEnabled}
                 aria-labelledby="apppanel-auto-prune-label"
-                aria-label={`Auto-prune nodes on startup, older than ${settings.autoPruneDays} days`}
+                aria-label={t('appPanel.autoPruneNodesOlderThanAria', {
+                  days: settings.autoPruneDays,
+                })}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
@@ -1009,7 +1078,7 @@ export default function AppPanel({
                 }}
                 disabled={!settings.nodeCapEnabled}
                 aria-labelledby="apppanel-node-cap-label"
-                aria-label={`Cap total nodes, keep newest ${settings.nodeCapCount} nodes`}
+                aria-label={t('appPanel.capTotalNodesCountAria', { count: settings.nodeCapCount })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.nodes')}</span>
@@ -1047,7 +1116,9 @@ export default function AppPanel({
                 }}
                 disabled={!settings.positionHistoryPruneEnabled}
                 aria-labelledby="apppanel-position-history-prune-label"
-                aria-label={`Auto-prune position history on startup, older than ${settings.positionHistoryPruneDays} days`}
+                aria-label={t('appPanel.autoPrunePositionHistoryDaysAria', {
+                  days: settings.positionHistoryPruneDays,
+                })}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
@@ -1115,7 +1186,9 @@ export default function AppPanel({
                 }}
                 disabled={!settings.meshcoreAutoPruneEnabled}
                 aria-labelledby="apppanel-meshcore-auto-prune-label"
-                aria-label={`Auto-prune unheard contacts on startup, older than ${settings.meshcoreAutoPruneDays} days`}
+                aria-label={t('appPanel.autoPruneUnheardContactsDaysAria', {
+                  days: settings.meshcoreAutoPruneDays,
+                })}
                 className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
@@ -1153,7 +1226,9 @@ export default function AppPanel({
                 }}
                 disabled={!settings.meshcoreContactCapEnabled}
                 aria-labelledby="apppanel-meshcore-contact-cap-label"
-                aria-label={`Cap total contacts, keep most recently seen ${settings.meshcoreContactCapCount} contacts`}
+                aria-label={t('appPanel.capTotalContactsCountAria', {
+                  count: settings.meshcoreContactCapCount,
+                })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.contacts')}</span>
@@ -1283,7 +1358,9 @@ export default function AppPanel({
               }}
               disabled={!settings.messageLimitEnabled}
               aria-labelledby="apppanel-message-limit-label"
-              aria-label={`Limit messages loaded ${settings.messageLimitCount} messages`}
+              aria-label={t('appPanel.limitMessagesLoadedCountAria', {
+                count: settings.messageLimitCount,
+              })}
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <span className="text-sm text-gray-300">{t('common.messages')}</span>
@@ -1321,7 +1398,9 @@ export default function AppPanel({
                 }}
                 disabled={!retention.meshtasticEnabled}
                 aria-labelledby="apppanel-message-retention-meshtastic-label"
-                aria-label={`Cap stored messages, keep newest ${retention.meshtasticCount} messages`}
+                aria-label={t('appPanel.capStoredMessagesCountAria', {
+                  count: retention.meshtasticCount,
+                })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
@@ -1359,7 +1438,9 @@ export default function AppPanel({
                 }}
                 disabled={!retention.meshcoreEnabled}
                 aria-labelledby="apppanel-message-retention-meshcore-label"
-                aria-label={`Cap stored messages, keep newest ${retention.meshcoreCount} messages`}
+                aria-label={t('appPanel.capStoredMessagesCountAria', {
+                  count: retention.meshcoreCount,
+                })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
@@ -1431,7 +1512,7 @@ export default function AppPanel({
                 console.warn('[AppPanel] export failed ' + errLikeToLogString(err));
                 addToast(
                   t('appPanel.exportFailed', {
-                    message: err instanceof Error ? err.message : 'Unknown error',
+                    message: err instanceof Error ? err.message : t('appPanel.unknownError'),
                   }),
                   'error',
                 );
@@ -1488,7 +1569,7 @@ export default function AppPanel({
                         appVersion: schemaTooNew.appVersion,
                       })
                     : t('appPanel.importFailed', {
-                        message: err instanceof Error ? err.message : 'Unknown error',
+                        message: err instanceof Error ? err.message : t('appPanel.unknownError'),
                       }),
                   'error',
                 );
@@ -1544,9 +1625,9 @@ export default function AppPanel({
                     id={`theme-color-heading-${meta.key}`}
                     className="max-w-[9rem] min-w-[6.5rem] shrink-0"
                   >
-                    <div className="text-sm font-medium text-gray-200">{meta.label}</div>
+                    <div className="text-sm font-medium text-gray-200">{t(meta.labelKey)}</div>
                     <div className="text-muted mt-0.5 text-[10px] leading-tight">
-                      {meta.description}
+                      {t(meta.descriptionKey)}
                     </div>
                   </div>
                   <div
@@ -1556,12 +1637,13 @@ export default function AppPanel({
                   >
                     {THEME_COLOR_PRESETS.map((p) => {
                       const selected = p.hex === hex;
+                      const presetLabel = t(p.labelKey);
                       return (
                         <button
                           key={`${meta.key}-${p.hex}`}
                           type="button"
-                          title={p.label}
-                          aria-label={`${p.label} ${p.hex}`}
+                          title={presetLabel}
+                          aria-label={`${presetLabel} ${p.hex}`}
                           aria-pressed={selected}
                           onClick={() => {
                             commitThemeColor(meta.key, p.hex);
@@ -1639,11 +1721,10 @@ export default function AppPanel({
                 aria-label={t('appPanel.resetDiagnostics')}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Reset Diagnostics',
-                    title: 'Reset Diagnostics',
-                    message:
-                      'This will clear all routing anomalies, hop history, and packet stats. The engine will rebuild from new incoming packets. Continue?',
-                    confirmLabel: 'Reset Diagnostics',
+                    actionId: 'resetDiagnostics',
+                    title: t('appPanel.resetDiagnostics'),
+                    message: t('appPanel.resetDiagnosticsConfirm'),
+                    confirmLabel: t('appPanel.resetDiagnostics'),
                     danger: true,
                     action: async () => {
                       await Promise.resolve();
@@ -1653,7 +1734,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Reset Diagnostics
+                {t('appPanel.resetDiagnostics')}
               </button>
             </div>
 
@@ -1669,11 +1750,10 @@ export default function AppPanel({
                 aria-label={t('appPanel.clearGpsData')}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Clear GPS Data',
-                    title: 'Clear GPS Data',
-                    message:
-                      'This will remove stored GPS coordinates from all nodes. Nodes will remain but their positions will be blank until new data is received. Continue?',
-                    confirmLabel: 'Clear GPS Data',
+                    actionId: 'clearGpsData',
+                    title: t('appPanel.clearGpsData'),
+                    message: t('appPanel.clearGpsDataConfirm'),
+                    confirmLabel: t('appPanel.clearGpsData'),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.clearNodePositions();
@@ -1682,7 +1762,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear GPS Data
+                {t('appPanel.clearGpsData')}
               </button>
             </div>
 
@@ -1698,11 +1778,10 @@ export default function AppPanel({
                 aria-label={t('appPanel.clearPositionHistory')}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Clear Position History',
-                    title: 'Clear Position History',
-                    message:
-                      'This will permanently delete all stored position history from the database. Movement trails will no longer be shown for past sessions. Continue?',
-                    confirmLabel: 'Clear Position History',
+                    actionId: 'clearPositionHistory',
+                    title: t('appPanel.clearPositionHistory'),
+                    message: t('appPanel.clearPositionHistoryConfirm'),
+                    confirmLabel: t('appPanel.clearPositionHistory'),
                     danger: true,
                     action: async () => {
                       await Promise.resolve();
@@ -1712,7 +1791,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear Position History
+                {t('appPanel.clearPositionHistory')}
               </button>
             </div>
 
@@ -1733,7 +1812,7 @@ export default function AppPanel({
                   onChange={(e) => {
                     setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
                   }}
-                  aria-label={`Delete nodes last heard more than ${deleteAgeDays} days`}
+                  aria-label={t('appPanel.deleteNodesOlderThanAria', { days: deleteAgeDays })}
                   className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
                 />
                 <span className="text-sm text-gray-300">{t('common.days')}</span>
@@ -1742,10 +1821,13 @@ export default function AppPanel({
                   aria-label={t('appPanel.deleteOldNodes')}
                   onClick={() => {
                     executeWithConfirmation({
-                      name: 'Delete Old Nodes',
-                      title: 'Delete Old Nodes',
-                      message: `This will permanently delete all nodes that haven't been heard in the last ${deleteAgeDays} day${deleteAgeDays !== 1 ? 's' : ''}. They will be re-discovered when they broadcast again.`,
-                      confirmLabel: 'Delete Old Nodes',
+                      actionId: 'deleteOldNodes',
+                      title: t('appPanel.deleteOldNodes'),
+                      message: t('appPanel.deleteOldNodesConfirm', {
+                        days: deleteAgeDays,
+                        count: deleteAgeDays,
+                      }),
+                      confirmLabel: t('appPanel.deleteOldNodes'),
                       danger: true,
                       action: async () => {
                         await window.electronAPI.db.deleteNodesByAge(deleteAgeDays);
@@ -1754,7 +1836,7 @@ export default function AppPanel({
                   }}
                   className="rounded border border-red-800 bg-red-900/50 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-red-300 transition-colors hover:bg-red-900/70"
                 >
-                  Delete Old Nodes
+                  {t('appPanel.deleteOldNodes')}
                 </button>
               </div>
               <button
@@ -1762,11 +1844,10 @@ export default function AppPanel({
                 aria-label={t('appPanel.pruneMqttOnlyNodes')}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Prune MQTT-only Nodes',
-                    title: 'Prune MQTT-only Nodes',
-                    message:
-                      'This will permanently delete all nodes discovered only via MQTT (never heard via RF). They will reappear if heard again via MQTT or RF.',
-                    confirmLabel: 'Prune MQTT Nodes',
+                    actionId: 'pruneMqttOnlyNodes',
+                    title: t('appPanel.pruneMqttOnlyNodes'),
+                    message: t('appPanel.pruneMqttOnlyNodesConfirm'),
+                    confirmLabel: t('appPanel.pruneMqttNodesConfirmLabel'),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBySource('mqtt');
@@ -1775,18 +1856,17 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Prune MQTT-only Nodes
+                {t('appPanel.pruneMqttOnlyNodes')}
               </button>
               <button
                 type="button"
                 aria-label={t('appPanel.pruneUnnamedNodes')}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Prune Unnamed Nodes',
-                    title: 'Prune Unnamed Nodes',
-                    message:
-                      'This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, Node-HEX fallbacks tied to the node id, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.',
-                    confirmLabel: 'Prune Unnamed Nodes',
+                    actionId: 'pruneUnnamedNodes',
+                    title: t('appPanel.pruneUnnamedNodes'),
+                    message: t('appPanel.pruneUnnamedNodesConfirm'),
+                    confirmLabel: t('appPanel.pruneUnnamedNodes'),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesWithoutLongname();
@@ -1795,7 +1875,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Prune Unnamed Nodes
+                {t('appPanel.pruneUnnamedNodes')}
               </button>
               <button
                 type="button"
@@ -1809,10 +1889,14 @@ export default function AppPanel({
                     return;
                   }
                   executeWithConfirmation({
-                    name: 'Prune No-Fix / Zero Island Nodes',
-                    title: 'Prune No-Fix / Zero Island Nodes',
-                    message: `This will permanently delete ${zeroIslandNodes.length} node${zeroIslandNodes.length !== 1 ? 's' : ''} with null or near-zero coordinates (no GPS fix or Zero Island). This cannot be undone.`,
-                    confirmLabel: `Delete ${zeroIslandNodes.length} Node${zeroIslandNodes.length !== 1 ? 's' : ''}`,
+                    actionId: 'pruneNoFixNodes',
+                    title: t('appPanel.pruneNoFixNodes'),
+                    message: t('appPanel.pruneNoFixNodesConfirm', {
+                      count: zeroIslandNodes.length,
+                    }),
+                    confirmLabel: t('appPanel.pruneNoFixDeleteConfirm', {
+                      count: zeroIslandNodes.length,
+                    }),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBatch(
@@ -1856,10 +1940,16 @@ export default function AppPanel({
                     return;
                   }
                   executeWithConfirmation({
-                    name: 'Prune Distant Nodes',
-                    title: 'Prune Distant Nodes',
-                    message: `This will permanently delete ${distantNodes.length} node${distantNodes.length !== 1 ? 's' : ''} beyond ${settings.distanceFilterMax} ${settings.distanceUnit} from your device. This cannot be undone.`,
-                    confirmLabel: `Delete ${distantNodes.length} Node${distantNodes.length !== 1 ? 's' : ''}`,
+                    actionId: 'pruneDistantNodes',
+                    title: t('appPanel.pruneDistantNodesTitle'),
+                    message: t('appPanel.pruneDistantNodesConfirm', {
+                      count: distantNodes.length,
+                      distance: settings.distanceFilterMax,
+                      unit: settings.distanceUnit,
+                    }),
+                    confirmLabel: t('appPanel.pruneDistantDeleteConfirm', {
+                      count: distantNodes.length,
+                    }),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBatch(
@@ -1892,10 +1982,16 @@ export default function AppPanel({
                   }
                   const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
                   executeWithConfirmation({
-                    name: 'Prune Offline Nodes',
-                    title: 'Prune Offline Nodes',
-                    message: `This will permanently delete ${offlineNodes.length} node${offlineNodes.length !== 1 ? 's' : ''} not heard in over ${offlineDays} day${offlineDays !== 1 ? 's' : ''}. This cannot be undone.`,
-                    confirmLabel: `Delete ${offlineNodes.length} Node${offlineNodes.length !== 1 ? 's' : ''}`,
+                    actionId: 'pruneOfflineNodes',
+                    title: t('appPanel.pruneOfflineNodesTitle'),
+                    message: t('appPanel.pruneOfflineNodesConfirm', {
+                      count: offlineNodes.length,
+                      days: offlineDays,
+                      daysLabel: offlineDays === 1 ? t('appPanel.daySingular') : t('common.days'),
+                    }),
+                    confirmLabel: t('appPanel.pruneOfflineDeleteConfirm', {
+                      count: offlineNodes.length,
+                    }),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.deleteNodesBatch(
@@ -1915,13 +2011,13 @@ export default function AppPanel({
               </button>
               <button
                 type="button"
-                aria-label={`Clear All Nodes (${nodes.size})`}
+                aria-label={t('appPanel.clearAllNodesButton', { count: nodes.size })}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Clear Nodes',
-                    title: 'Clear Nodes',
-                    message: `This will permanently delete all ${nodes.size} locally stored nodes. They will be re-discovered when connected.`,
-                    confirmLabel: `Clear ${nodes.size} Nodes`,
+                    actionId: 'clearNodes',
+                    title: t('appPanel.clearAllNodesButton', { count: nodes.size }),
+                    message: t('appPanel.clearNodesConfirm', { count: nodes.size }),
+                    confirmLabel: t('appPanel.clearNodesConfirmLabel', { count: nodes.size }),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.clearNodes();
@@ -1930,7 +2026,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear All Nodes ({nodes.size})
+                {t('appPanel.clearAllNodesButton', { count: nodes.size })}
               </button>
 
               {/* MeshCore contacts cleanup */}
@@ -1940,11 +2036,10 @@ export default function AppPanel({
                   aria-label={t('appPanel.deleteNodesWithoutPubkeys')}
                   onClick={() => {
                     executeWithConfirmation({
-                      name: 'Delete Contacts Without Pubkeys',
-                      title: 'Delete Contacts Without Pubkeys',
-                      message:
-                        'This will permanently delete all MeshCore contacts from the database that have no public key. Chat stub nodes (created from messages) will be excluded. This cannot be undone.',
-                      confirmLabel: 'Delete',
+                      actionId: 'deleteContactsNoPubkeys',
+                      title: t('appPanel.deleteContactsNoPubkeysTitle'),
+                      message: t('appPanel.deleteContactsNoPubkeysConfirm'),
+                      confirmLabel: t('appPanel.deleteContactsNoPubkeysConfirmButton'),
                       danger: true,
                       action: async () => {
                         const result =
@@ -1974,42 +2069,74 @@ export default function AppPanel({
               <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
                 {t('appPanel.messagesSection')}
               </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="apppanel-clear-channel" className="shrink-0 text-sm text-gray-400">
-                  {t('appPanel.clearChannelLabel')}
-                </label>
-                <select
-                  id="apppanel-clear-channel"
-                  value={clearChannelTarget}
-                  onChange={(e) => {
-                    setClearChannelTarget(parseInt(e.target.value, 10));
-                  }}
-                  aria-label={t('common.channel')}
-                  className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
-                >
-                  <option value={CLEAR_ALL_CHANNELS_VALUE}>
-                    {t('appPanel.allChannelsOption')}
-                  </option>
-                  {msgChannels.map((ch) => (
-                    <option key={ch} value={ch}>
-                      {getChannelLabel(ch)}
+              {isReticulumDmOnly ? (
+                <p className="text-muted text-xs leading-relaxed">
+                  {t('appPanel.reticulumDmOnlyMessagesHint')}
+                </p>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="apppanel-clear-channel"
+                    className="shrink-0 text-sm text-gray-400"
+                  >
+                    {t('appPanel.clearChannelLabel')}
+                  </label>
+                  <select
+                    id="apppanel-clear-channel"
+                    value={clearChannelTarget}
+                    onChange={(e) => {
+                      setClearChannelTarget(parseInt(e.target.value, 10));
+                    }}
+                    aria-label={t('common.channel')}
+                    className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                  >
+                    <option value={CLEAR_ALL_CHANNELS_VALUE}>
+                      {t('appPanel.allChannelsOption')}
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {msgChannels.map((ch) => (
+                      <option key={ch} value={ch}>
+                        {getChannelLabel(ch)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <button
                 type="button"
-                aria-label={`Clear Messages (${messageCount})`}
+                aria-label={t('appPanel.clearMessagesCount', { count: messageCount })}
                 onClick={() => {
+                  if (isReticulumDmOnly) {
+                    executeWithConfirmation({
+                      actionId: 'clearMessages',
+                      title: t('appPanel.clearReticulumMessagesTitle'),
+                      message: t('appPanel.clearReticulumMessagesConfirm', { count: messageCount }),
+                      confirmLabel: t('appPanel.clearReticulumMessagesConfirmButton', {
+                        count: messageCount,
+                      }),
+                      danger: true,
+                      messageClearMeta: {
+                        clearedAll: true,
+                        replaceFromDb: true,
+                        messagesMode: 'replace',
+                      },
+                      action: async () => {
+                        if (!reticulumIdentityId) return;
+                        await window.electronAPI.db.clearReticulumMessages(reticulumIdentityId);
+                      },
+                    });
+                    return;
+                  }
                   const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
                   const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
                   executeWithConfirmation({
-                    name: 'Clear Messages',
-                    title: 'Clear Messages',
+                    actionId: 'clearMessages',
+                    title: t('appPanel.clearMessagesTitle'),
                     message: isAll
-                      ? `This will permanently delete all ${messageCount} locally stored messages across all channels. This cannot be undone.`
-                      : `This will permanently delete all messages from ${channelName}. This cannot be undone.`,
-                    confirmLabel: isAll ? `Clear ${messageCount} Messages` : `Clear ${channelName}`,
+                      ? t('appPanel.clearMessagesAllConfirm', { count: messageCount })
+                      : t('appPanel.clearMessagesChannelConfirm', { channel: channelName }),
+                    confirmLabel: isAll
+                      ? t('appPanel.clearMessagesAllConfirmLabel', { count: messageCount })
+                      : t('appPanel.clearMessagesChannelConfirmLabel', { channel: channelName }),
                     danger: true,
                     messageClearMeta: isAll
                       ? { clearedAll: true, replaceFromDb: true, messagesMode: 'replace' }
@@ -2037,7 +2164,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear Messages ({messageCount})
+                {t('appPanel.clearMessagesCount', { count: messageCount })}
               </button>
             </div>
 
@@ -2045,25 +2172,24 @@ export default function AppPanel({
             {onClearMeshcoreRepeaters && (
               <div className="space-y-2 border-t border-red-900/50 pt-4">
                 <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
-                  MeshCore
+                  {t('appPanel.dangerZoneMeshcoreHeading')}
                 </div>
                 <button
                   type="button"
                   aria-label={t('appPanel.clearAllRepeaters')}
                   onClick={() => {
                     executeWithConfirmation({
-                      name: 'Clear All Repeaters',
-                      title: 'Clear All Repeaters',
-                      message:
-                        'This will permanently remove all saved MeshCore repeaters from the local database. This cannot be undone.',
-                      confirmLabel: 'Clear All Repeaters',
+                      actionId: 'clearAllRepeaters',
+                      title: t('appPanel.clearAllRepeaters'),
+                      message: t('appPanel.clearAllRepeatersConfirm'),
+                      confirmLabel: t('appPanel.clearAllRepeaters'),
                       danger: true,
                       action: onClearMeshcoreRepeaters,
                     });
                   }}
                   className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
                 >
-                  Clear All Repeaters
+                  {t('appPanel.clearAllRepeaters')}
                 </button>
               </div>
             )}
@@ -2071,18 +2197,17 @@ export default function AppPanel({
             {/* Everything */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
-                Everything
+                {t('appPanel.dangerZoneEverythingHeading')}
               </div>
               <button
                 type="button"
                 aria-label={t('appPanel.clearAllLocalData')}
                 onClick={() => {
                   executeWithConfirmation({
-                    name: 'Clear All Data',
-                    title: '⚠ Clear All Local Data',
-                    message:
-                      'This will permanently delete ALL local messages, nodes, and cached session data. This action CANNOT be undone.',
-                    confirmLabel: 'Clear Everything',
+                    actionId: 'clearAllData',
+                    title: t('appPanel.clearAllLocalDataTitle'),
+                    message: t('appPanel.clearAllLocalDataConfirm'),
+                    confirmLabel: t('appPanel.clearEverythingConfirmButton'),
                     danger: true,
                     messageClearMeta: {
                       clearedAll: true,
@@ -2103,7 +2228,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                Clear All Local Data &amp; Cache
+                {t('appPanel.clearAllLocalData')}
               </button>
             </div>
           </div>

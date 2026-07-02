@@ -47,13 +47,16 @@ import {
   getRecommendedAction,
   getRecommendedActionForRfCondition,
 } from '../lib/diagnostics/RemediationEngine';
+import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
+import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
+import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -145,6 +148,10 @@ interface Props {
   meshtasticListenerNodeId?: number;
   /** MeshCore contacts only — used for heard-by-Meshtastic links (not merged Meshtastic nodes). */
   meshcoreNodes?: Map<number, MeshNode>;
+  /** Reticulum: switch to Connection tab for interface edit actions. */
+  onNavigateToReticulumConnection?: () => void;
+  /** Reticulum: refresh config audit rows after repair/disable. */
+  onRefreshReticulumDiagnostics?: () => void;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -170,6 +177,8 @@ export default function DiagnosticsPanel({
   protocol,
   meshtasticListenerNodeId = 0,
   meshcoreNodes = new Map(),
+  onNavigateToReticulumConnection,
+  onRefreshReticulumDiagnostics,
 }: Props) {
   const { t } = useTranslation();
   const formatRowTime = useCallback(
@@ -180,12 +189,21 @@ export default function DiagnosticsPanel({
     [t],
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
+  const showLoRaMeshDiagnostics = capabilities?.hasHopCount !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
+  const visibleDiagnosticRows = useMemo(() => {
+    if (!showLoRaMeshDiagnostics) {
+      return diagnosticRows.filter(
+        (r) => isReticulumDiagnosticRow(r) || nodes.has(r.nodeId) || r.nodeId === myNodeNum,
+      );
+    }
+    return diagnosticRows;
+  }, [diagnosticRows, nodes, showLoRaMeshDiagnostics, myNodeNum]);
   const routingAnomaliesMap = useMemo(
-    () => diagnosticRowsToRoutingMap(diagnosticRows),
-    [diagnosticRows],
+    () => diagnosticRowsToRoutingMap(visibleDiagnosticRows),
+    [visibleDiagnosticRows],
   );
   const packetStats = useDiagnosticsStore((s) => s.packetStats);
   const packetCache = useDiagnosticsStore((s) => s.packetCache);
@@ -292,7 +310,12 @@ export default function DiagnosticsPanel({
   onTraceRouteRef.current = onTraceRoute;
 
   useEffect(() => {
-    if (!autoTracerouteEnabled || !isConnected) {
+    if (
+      !showLoRaMeshDiagnostics ||
+      !capabilities?.hasTraceRoute ||
+      !autoTracerouteEnabled ||
+      !isConnected
+    ) {
       stopDiscoveryRef.current?.();
       stopDiscoveryRef.current = null;
       return;
@@ -315,7 +338,7 @@ export default function DiagnosticsPanel({
       stop();
       stopDiscoveryRef.current = null;
     };
-  }, [autoTracerouteEnabled, isConnected]);
+  }, [showLoRaMeshDiagnostics, capabilities?.hasTraceRoute, autoTracerouteEnabled, isConnected]);
 
   /**
    * Match Node List Ch.Util / Air Tx columns: count nodes where at least one is non-null
@@ -337,12 +360,12 @@ export default function DiagnosticsPanel({
 
   /** Mesh-wide status from absolute counts only (no node-percentage; scales to large meshes). */
   const meshHealth = useMemo(() => {
-    const errors = diagnosticRows.filter(
+    const errors = visibleDiagnosticRows.filter(
       (r) => r.kind === 'routing' && r.severity === 'error',
     ).length;
     const warnings =
-      diagnosticRows.filter((r) => r.kind === 'routing' && r.severity === 'warning').length +
-      diagnosticRows.filter((r) => r.kind === 'rf' && r.severity === 'warning').length;
+      visibleDiagnosticRows.filter((r) => r.kind === 'routing' && r.severity === 'warning').length +
+      visibleDiagnosticRows.filter((r) => r.kind === 'rf' && r.severity === 'warning').length;
     if (errors >= DEGRADED_ERROR_THRESHOLD) {
       return {
         status: 'degraded' as const,
@@ -365,11 +388,13 @@ export default function DiagnosticsPanel({
       textColor: 'text-brand-green',
       bg: 'bg-brand-green/10 border-brand-green/30',
     };
-  }, [diagnosticRows, t]);
+  }, [visibleDiagnosticRows, t]);
 
   /** Connected node only — same threshold as mesh so small error counts stay attention/orange. */
   const connectedHealth = useMemo(() => {
-    const rows = diagnosticRows.filter((r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r));
+    const rows = visibleDiagnosticRows.filter(
+      (r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r),
+    );
     const errors = rows.filter((r) => r.kind === 'routing' && r.severity === 'error').length;
     const warnings =
       rows.filter((r) => r.kind === 'routing' && r.severity === 'warning').length +
@@ -405,7 +430,7 @@ export default function DiagnosticsPanel({
       warnings,
       infos,
     };
-  }, [diagnosticRows, myNodeNum, t]);
+  }, [visibleDiagnosticRows, myNodeNum, t]);
 
   const matchesSearchRow = (row: DiagnosticRow) => {
     if (!search.trim()) return true;
@@ -427,11 +452,11 @@ export default function DiagnosticsPanel({
     );
   };
 
-  const showRoutingAnomalyBanner = meshHasRoutingAnomaliesFromRows(diagnosticRows);
+  const showRoutingAnomalyBanner = meshHasRoutingAnomaliesFromRows(visibleDiagnosticRows);
 
   const meshCongestionBlock = useMemo(() => {
     if (!homeNode) return null;
-    const hasMeshCongestionRow = diagnosticRows.some(
+    const hasMeshCongestionRow = visibleDiagnosticRows.some(
       (r) => r.kind === 'rf' && r.nodeId === homeNode.node_id && r.condition === 'Mesh Congestion',
     );
     if (!hasMeshCongestionRow) return null;
@@ -442,9 +467,9 @@ export default function DiagnosticsPanel({
     const originators = packetCache.size > 0 ? summarizeRfDuplicateOriginators(packetCache) : [];
     if (lines.length === 0 && originators.length === 0) return null;
     return { lines, originators };
-  }, [homeNode, packetCache, routingAnomaliesMap, diagnosticRows]);
+  }, [homeNode, packetCache, routingAnomaliesMap, visibleDiagnosticRows]);
 
-  const anomalyList = diagnosticRows.filter(matchesSearchRow).sort((a, b) => {
+  const anomalyList = visibleDiagnosticRows.filter(matchesSearchRow).sort((a, b) => {
     const order = (s: string) => (s === 'error' ? 0 : s === 'warning' ? 1 : 2);
     const sevA = a.kind === 'routing' ? a.severity : a.severity;
     const sevB = b.kind === 'routing' ? b.severity : b.severity;
@@ -462,15 +487,15 @@ export default function DiagnosticsPanel({
   );
   const meshRows = anomalyList.filter((r) => r.nodeId !== myNodeNum);
 
-  const errorCount = diagnosticRows.filter(
+  const errorCount = visibleDiagnosticRows.filter(
     (r) => r.kind === 'routing' && r.severity === 'error',
   ).length;
   const warningCount =
-    diagnosticRows.filter((r) => r.kind === 'routing' && r.severity === 'warning').length +
-    diagnosticRows.filter((r) => r.kind === 'rf' && r.severity === 'warning').length;
+    visibleDiagnosticRows.filter((r) => r.kind === 'routing' && r.severity === 'warning').length +
+    visibleDiagnosticRows.filter((r) => r.kind === 'rf' && r.severity === 'warning').length;
   const infoCount =
-    diagnosticRows.filter((r) => r.kind === 'routing' && r.severity === 'info').length +
-    diagnosticRows.filter((r) => r.kind === 'rf' && r.severity === 'info').length;
+    visibleDiagnosticRows.filter((r) => r.kind === 'routing' && r.severity === 'info').length +
+    visibleDiagnosticRows.filter((r) => r.kind === 'rf' && r.severity === 'info').length;
 
   const handleTraceRoute = async (nodeId: number) => {
     // Clear any prior failure for this node
@@ -798,148 +823,174 @@ export default function DiagnosticsPanel({
         </a>
       </div>
 
-      {diagnosticRowsRestoredAt != null && diagnosticRows.length > 0 && (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
-          <span>
-            {t('diagnosticsPanel.restoredSessionBanner', {
-              time: formatIsoDateTime(diagnosticRowsRestoredAt),
-            })}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              clearDiagnosticRowsSnapshot();
-            }}
-            className="shrink-0 rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-100 hover:bg-blue-800/50"
-          >
-            {t('diagnosticsPanel.stopRestoringOnLaunch')}
-          </button>
-        </div>
-      )}
+      {capabilities?.hasReticulumNativeDiagnostics ? <DiagnosticsPingPanel /> : null}
 
-      {/* Network health: single band + counts; nodes count = telemetry only; tooltip for notes */}
-      <div
-        className={`rounded-xl border p-4 ${meshHealth.bg}`}
-        title={
-          infoCount > 0
-            ? t('diagnosticsPanel.heuristicNotesTooltip', { count: infoCount })
-            : undefined
-        }
-      >
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-muted text-sm">{t('diagnosticsPanel.networkHealthLabel')}</span>
-            <span className={`text-lg font-semibold ${meshHealth.textColor}`}>
-              {meshHealth.label}
+      {capabilities?.hasReticulumNativeDiagnostics ? (
+        <div className="space-y-2">
+          <h3 className="text-muted text-sm font-medium">
+            {t('diagnosticsPanel.reticulum.sectionTitle')}
+          </h3>
+          <ReticulumDiagnosticsSection
+            rows={diagnosticRows}
+            onNavigateToConnection={onNavigateToReticulumConnection}
+            onRefreshDiagnostics={onRefreshReticulumDiagnostics}
+          />
+        </div>
+      ) : null}
+
+      {diagnosticRowsRestoredAt != null &&
+        showLoRaMeshDiagnostics &&
+        visibleDiagnosticRows.length > 0 && (
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+            <span>
+              {t('diagnosticsPanel.restoredSessionBanner', {
+                time: formatIsoDateTime(diagnosticRowsRestoredAt),
+              })}
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                clearDiagnosticRowsSnapshot();
+              }}
+              className="shrink-0 rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-100 hover:bg-blue-800/50"
+            >
+              {t('diagnosticsPanel.stopRestoringOnLaunch')}
+            </button>
           </div>
-          <div className="text-sm text-gray-300">
-            <span className="text-muted">
-              {t('diagnosticsPanel.nodesWithTelemetry', { count: nodesWithTelemetryCount })}
-            </span>
-            {errorCount > 0 && (
-              <>
-                <span className="text-muted"> · </span>
-                <span className="text-red-400">
-                  {t('diagnosticsPanel.errorCount', { count: errorCount })}
+        )}
+
+      {showLoRaMeshDiagnostics && (
+        <>
+          {/* Network health: single band + counts; nodes count = telemetry only; tooltip for notes */}
+          <div
+            className={`rounded-xl border p-4 ${meshHealth.bg}`}
+            title={
+              infoCount > 0
+                ? t('diagnosticsPanel.heuristicNotesTooltip', { count: infoCount })
+                : undefined
+            }
+          >
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-muted text-sm">
+                  {t('diagnosticsPanel.networkHealthLabel')}
                 </span>
-              </>
-            )}
-            {warningCount > 0 && (
-              <>
-                <span className="text-muted"> · </span>
-                <span className="text-orange-400">
-                  {t('diagnosticsPanel.warningCount', { count: warningCount })}
+                <span className={`text-lg font-semibold ${meshHealth.textColor}`}>
+                  {meshHealth.label}
                 </span>
-              </>
-            )}
-            {errorCount === 0 && warningCount === 0 && diagnosticRows.length === 0 && (
-              <>
-                <span className="text-muted"> · </span>
-                <span className="text-brand-green">{t('diagnosticsPanel.noIssues')}</span>
-              </>
-            )}
-          </div>
-          {(connectedHealth.errors > 0 || connectedHealth.warnings > 0) &&
-            (connectedHealth.errors !== errorCount ||
-              connectedHealth.warnings !== warningCount) && (
-              <div className="text-muted border-t border-gray-700/40 pt-1 text-xs">
-                {t('diagnosticsPanel.thisNodePrefix')}{' '}
-                {connectedHealth.errors > 0 && (
-                  <span className="text-red-400">
-                    {t('diagnosticsPanel.errorCount', { count: connectedHealth.errors })}
-                  </span>
+              </div>
+              <div className="text-sm text-gray-300">
+                <span className="text-muted">
+                  {t('diagnosticsPanel.nodesWithTelemetry', { count: nodesWithTelemetryCount })}
+                </span>
+                {errorCount > 0 && (
+                  <>
+                    <span className="text-muted"> · </span>
+                    <span className="text-red-400">
+                      {t('diagnosticsPanel.errorCount', { count: errorCount })}
+                    </span>
+                  </>
                 )}
-                {connectedHealth.errors > 0 && connectedHealth.warnings > 0 && (
-                  <span className="text-muted">, </span>
+                {warningCount > 0 && (
+                  <>
+                    <span className="text-muted"> · </span>
+                    <span className="text-orange-400">
+                      {t('diagnosticsPanel.warningCount', { count: warningCount })}
+                    </span>
+                  </>
                 )}
-                {connectedHealth.warnings > 0 && (
-                  <span className="text-orange-400">
-                    {t('diagnosticsPanel.warningCount', { count: connectedHealth.warnings })}
-                  </span>
+                {errorCount === 0 && warningCount === 0 && visibleDiagnosticRows.length === 0 && (
+                  <>
+                    <span className="text-muted"> · </span>
+                    <span className="text-brand-green">{t('diagnosticsPanel.noIssues')}</span>
+                  </>
                 )}
               </div>
-            )}
-        </div>
-      </div>
-
-      {/* Channel utilization 24h timeline — connected node only */}
-      {isConnected &&
-        (() => {
-          const samples = cuHistory.get(myNodeNum) ?? [];
-          if (samples.length < 2) return null;
-          const now = Date.now();
-          const cutoff = now - 24 * 60 * 60 * 1000;
-          const chartData = samples
-            .filter((s) => s.t >= cutoff)
-            .map((s) => ({
-              time: new Date(s.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              cu: Math.round(s.cu * 10) / 10,
-            }));
-          if (chartData.length < 2) return null;
-          return (
-            <div className="mb-4 rounded-lg border border-gray-700/60 bg-gray-800/40 p-4">
-              <h3 className="mb-3 text-sm font-semibold text-gray-200">
-                {t('diagnosticsPanel.cuHistoryHeading')}
-              </h3>
-              <ResponsiveContainer height={140} width="100%">
-                <LineChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="#374151" strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="time"
-                    interval="preserveStartEnd"
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    tickLine={false}
-                    unit="%"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: '1px solid #374151',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                    }}
-                    formatter={(v) => [`${v}%`, t('diagnosticsPanel.cuHistoryTooltipLabel')]}
-                    labelStyle={{ color: '#9ca3af' }}
-                  />
-                  <Line
-                    dataKey="cu"
-                    dot={false}
-                    isAnimationActive={false}
-                    stroke="#34d399"
-                    strokeWidth={1.5}
-                    type="monotone"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {(connectedHealth.errors > 0 || connectedHealth.warnings > 0) &&
+                (connectedHealth.errors !== errorCount ||
+                  connectedHealth.warnings !== warningCount) && (
+                  <div className="text-muted border-t border-gray-700/40 pt-1 text-xs">
+                    {t('diagnosticsPanel.thisNodePrefix')}{' '}
+                    {connectedHealth.errors > 0 && (
+                      <span className="text-red-400">
+                        {t('diagnosticsPanel.errorCount', { count: connectedHealth.errors })}
+                      </span>
+                    )}
+                    {connectedHealth.errors > 0 && connectedHealth.warnings > 0 && (
+                      <span className="text-muted">, </span>
+                    )}
+                    {connectedHealth.warnings > 0 && (
+                      <span className="text-orange-400">
+                        {t('diagnosticsPanel.warningCount', { count: connectedHealth.warnings })}
+                      </span>
+                    )}
+                  </div>
+                )}
             </div>
-          );
-        })()}
+          </div>
+
+          {/* Channel utilization 24h timeline — connected node only */}
+          {isConnected &&
+            (() => {
+              const samples = cuHistory.get(myNodeNum) ?? [];
+              if (samples.length < 2) return null;
+              const now = Date.now();
+              const cutoff = now - 24 * 60 * 60 * 1000;
+              const chartData = samples
+                .filter((s) => s.t >= cutoff)
+                .map((s) => ({
+                  time: new Date(s.t).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                  cu: Math.round(s.cu * 10) / 10,
+                }));
+              if (chartData.length < 2) return null;
+              return (
+                <div className="mb-4 rounded-lg border border-gray-700/60 bg-gray-800/40 p-4">
+                  <h3 className="mb-3 text-sm font-semibold text-gray-200">
+                    {t('diagnosticsPanel.cuHistoryHeading')}
+                  </h3>
+                  <ResponsiveContainer height={140} width="100%">
+                    <LineChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
+                      <CartesianGrid stroke="#374151" strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="time"
+                        interval="preserveStartEnd"
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        tickLine={false}
+                        unit="%"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1f2937',
+                          border: '1px solid #374151',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                        }}
+                        formatter={(v) => [`${v}%`, t('diagnosticsPanel.cuHistoryTooltipLabel')]}
+                        labelStyle={{ color: '#9ca3af' }}
+                      />
+                      <Line
+                        dataKey="cu"
+                        dot={false}
+                        isAnimationActive={false}
+                        stroke="#34d399"
+                        strokeWidth={1.5}
+                        type="monotone"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
+        </>
+      )}
 
       {/* MeshCore nodes heard by Meshtastic radio (per transmitter) */}
       {showMeshtasticForeignLora && meshcoreHeardList.length > 0 && (
@@ -970,7 +1021,7 @@ export default function DiagnosticsPanel({
                   <th className="px-4 py-2.5 text-right">
                     {t('diagnosticsPanel.foreignCountColumn')}
                   </th>
-                  <th className="px-4 py-2.5 text-right">Signal</th>
+                  <th className="px-4 py-2.5 text-right">{t('diagnosticsPanel.signalColumn')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
@@ -1007,8 +1058,12 @@ export default function DiagnosticsPanel({
                       </td>
                       <td className="px-4 py-2.5 text-right text-gray-300">{d.count}×</td>
                       <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
-                        {d.rssi !== undefined ? `RSSI ${d.rssi}` : '—'}
-                        {d.snr !== undefined ? ` / SNR ${d.snr.toFixed(1)}` : ''}
+                        {d.rssi !== undefined
+                          ? t('diagnosticsPanel.rssiShort', { rssi: d.rssi })
+                          : '—'}
+                        {d.snr !== undefined
+                          ? ` / ${t('diagnosticsPanel.snrDb', { snr: d.snr.toFixed(1) })}`
+                          : ''}
                       </td>
                     </tr>
                   );
@@ -1070,17 +1125,21 @@ export default function DiagnosticsPanel({
                   <div className="text-gray-200">{d.count}×</div>
                   {(d.rssi !== undefined || d.snr !== undefined) && (
                     <>
-                      <div className="text-muted">Signal</div>
+                      <div className="text-muted">{t('diagnosticsPanel.signalColumn')}</div>
                       <div className="font-mono text-gray-200">
-                        {d.rssi !== undefined ? `RSSI ${d.rssi} dBm` : ''}
+                        {d.rssi !== undefined
+                          ? t('diagnosticsPanel.rssiDbm', { rssi: d.rssi })
+                          : ''}
                         {d.rssi !== undefined && d.snr !== undefined ? ', ' : ''}
-                        {d.snr !== undefined ? `SNR ${d.snr.toFixed(1)} dB` : ''}
+                        {d.snr !== undefined
+                          ? t('diagnosticsPanel.snrDb', { snr: d.snr.toFixed(1) })
+                          : ''}
                       </div>
                     </>
                   )}
                   {d.lastSenderId != null && (
                     <>
-                      <div className="text-muted">Sender</div>
+                      <div className="text-muted">{t('diagnosticsPanel.senderLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {formatMeshtasticNodeId(d.lastSenderId)}
                         {senderName ? ` (${senderName})` : ''}
@@ -1095,187 +1154,193 @@ export default function DiagnosticsPanel({
       )}
 
       {/* Settings */}
-      <div className="bg-secondary-dark rounded-lg p-4">
-        <h3 className="text-muted mb-3 text-sm font-medium">
-          {t('diagnosticsPanel.displaySettings')}
-        </h3>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="congestionHalos"
-              checked={congestionHalosEnabled}
-              onChange={(e) => {
-                setCongestionHalosEnabled(e.target.checked);
-              }}
-              className="accent-brand-green"
-            />
-            <label htmlFor="congestionHalos" className="cursor-pointer text-sm text-gray-300">
-              {t('diagnosticsPanel.showChannelUtilHalos')}
-            </label>
+      {showLoRaMeshDiagnostics && (
+        <>
+          <div className="bg-secondary-dark rounded-lg p-4">
+            <h3 className="text-muted mb-3 text-sm font-medium">
+              {t('diagnosticsPanel.displaySettings')}
+            </h3>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="congestionHalos"
+                  checked={congestionHalosEnabled}
+                  onChange={(e) => {
+                    setCongestionHalosEnabled(e.target.checked);
+                  }}
+                  className="accent-brand-green"
+                />
+                <label htmlFor="congestionHalos" className="cursor-pointer text-sm text-gray-300">
+                  {t('diagnosticsPanel.showChannelUtilHalos')}
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="anomalyHalos"
+                  checked={anomalyHalosEnabled}
+                  onChange={(e) => {
+                    setAnomalyHalosEnabled(e.target.checked);
+                  }}
+                  className="accent-brand-green"
+                />
+                <label htmlFor="anomalyHalos" className="cursor-pointer text-sm text-gray-300">
+                  {t('diagnosticsPanel.showRoutingAnomalyHalos')}
+                </label>
+              </div>
+              {showMqttControls && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="ignoreMqtt"
+                    checked={ignoreMqttEnabled}
+                    onChange={(e) => {
+                      setIgnoreMqttEnabled(e.target.checked);
+                    }}
+                    className="accent-brand-green"
+                  />
+                  <label htmlFor="ignoreMqtt" className="cursor-pointer text-sm text-gray-300">
+                    Ignore MQTT
+                  </label>
+                  <span className="text-muted text-xs">
+                    Gray out MQTT-only nodes and exclude them from diagnostics
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="autoTraceroute"
+                  checked={autoTracerouteEnabled}
+                  onChange={(e) => {
+                    setAutoTracerouteEnabled(protocol, e.target.checked);
+                  }}
+                  className="accent-brand-green"
+                />
+                <label htmlFor="autoTraceroute" className="cursor-pointer text-sm text-gray-300">
+                  {t('diagnosticsPanel.autoTraceroute')}
+                </label>
+                <span className="text-muted text-xs">
+                  {t('diagnosticsPanel.autoTracerouteHelp')}
+                  {lastDiscoveryTs !== null && <> · last: {formatRowTime(lastDiscoveryTs)}</>}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="text-sm text-gray-300">
+                  {t('diagnosticsPanel.environmentProfile')}
+                </div>
+                <div className="flex w-fit overflow-hidden rounded-lg border border-gray-600/50">
+                  {(
+                    [
+                      { mode: 'standard', label: t('diagnosticsPanel.environmentStandard') },
+                      { mode: 'city', label: t('diagnosticsPanel.environmentCity') },
+                      { mode: 'canyon', label: t('diagnosticsPanel.environmentCanyon') },
+                    ] as const
+                  ).map(({ mode, label }, i) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setEnvMode(mode);
+                      }}
+                      className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-gray-600/50' : ''} ${
+                        envMode === mode
+                          ? 'bg-brand-green/20 text-brand-green border-brand-green/50'
+                          : 'bg-secondary-dark text-gray-400 hover:text-gray-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-muted text-xs">
+                  {envMode === 'standard' && t('diagnosticsPanel.environmentStandardHint')}
+                  {envMode === 'city' && t('diagnosticsPanel.environmentCityHint')}
+                  {envMode === 'canyon' && t('diagnosticsPanel.environmentCanyonHint')}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5 border-t border-gray-700/50 pt-2">
+                <div className="text-sm text-gray-300">
+                  {t('diagnosticsPanel.staleRoutingDiagnostics')}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label htmlFor="diagnosticRowsMaxAgeHours" className="text-sm text-gray-400">
+                    {t('diagnosticsPanel.dropRoutingRowsLabel')}
+                  </label>
+                  <input
+                    id="diagnosticRowsMaxAgeHours"
+                    type="number"
+                    min={1}
+                    max={168}
+                    value={diagnosticRowsMaxAgeHours}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      if (Number.isFinite(v)) setDiagnosticRowsMaxAgeHours(v);
+                    }}
+                    aria-label={t('diagnosticsPanel.dropRoutingRows', {
+                      hours: diagnosticRowsMaxAgeHours,
+                    })}
+                    className="bg-deep-black focus:border-brand-green w-16 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
+                  />
+                  <span className="text-sm text-gray-400">{t('diagnosticsPanel.hoursRange')}</span>
+                </div>
+                <span className="text-muted text-xs">{t('diagnosticsPanel.staleRoutingHelp')}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="anomalyHalos"
-              checked={anomalyHalosEnabled}
-              onChange={(e) => {
-                setAnomalyHalosEnabled(e.target.checked);
-              }}
-              className="accent-brand-green"
-            />
-            <label htmlFor="anomalyHalos" className="cursor-pointer text-sm text-gray-300">
-              {t('diagnosticsPanel.showRoutingAnomalyHalos')}
-            </label>
-          </div>
-          {showMqttControls && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="ignoreMqtt"
-                checked={ignoreMqttEnabled}
-                onChange={(e) => {
-                  setIgnoreMqttEnabled(e.target.checked);
-                }}
-                className="accent-brand-green"
-              />
-              <label htmlFor="ignoreMqtt" className="cursor-pointer text-sm text-gray-300">
-                Ignore MQTT
-              </label>
-              <span className="text-muted text-xs">
-                Gray out MQTT-only nodes and exclude them from diagnostics
-              </span>
+
+          {/* Per-Node MQTT Filters */}
+          {showMqttControls && mqttIgnoredNodes.size > 0 && (
+            <div className="bg-secondary-dark rounded-lg p-3">
+              <h3 className="text-muted mb-2 text-xs font-medium">
+                {t('diagnosticsPanel.perNodeMqttFilters')}
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {[...mqttIgnoredNodes].map((nodeId) => {
+                  const n = nodes.get(nodeId);
+                  const label = n?.short_name || n?.long_name || formatMeshtasticNodeId(nodeId);
+                  return (
+                    <span
+                      key={nodeId}
+                      className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300"
+                    >
+                      {label}
+                      <button
+                        onClick={() => {
+                          setNodeMqttIgnored(nodeId, false);
+                        }}
+                        aria-label={t('diagnosticsPanel.dismissRow')}
+                        className="ml-0.5 leading-none hover:text-yellow-100"
+                        title={t('diagnosticsPanel.removeMqttFilter')}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="autoTraceroute"
-              checked={autoTracerouteEnabled}
-              onChange={(e) => {
-                setAutoTracerouteEnabled(protocol, e.target.checked);
-              }}
-              className="accent-brand-green"
+
+          {/* Mesh-wide routing stress (independent of packet path mix samples) */}
+          {showRoutingAnomalyBanner && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-200">
+              <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
+              <span>{t('meshCongestion.routingAnomalies')}</span>
+            </div>
+          )}
+
+          {/* Duplicate-traffic attribution heard at this client (same logic as home node detail) */}
+          {meshCongestionBlock && (
+            <MeshCongestionAttributionBlock
+              lines={meshCongestionBlock.lines}
+              originators={meshCongestionBlock.originators}
+              nodes={nodes}
+              scopeSubtitle={t('diagnosticsPanel.scopeSubtitle')}
+              className=""
             />
-            <label htmlFor="autoTraceroute" className="cursor-pointer text-sm text-gray-300">
-              {t('diagnosticsPanel.autoTraceroute')}
-            </label>
-            <span className="text-muted text-xs">
-              {t('diagnosticsPanel.autoTracerouteHelp')}
-              {lastDiscoveryTs !== null && <> · last: {formatRowTime(lastDiscoveryTs)}</>}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="text-sm text-gray-300">{t('diagnosticsPanel.environmentProfile')}</div>
-            <div className="flex w-fit overflow-hidden rounded-lg border border-gray-600/50">
-              {(
-                [
-                  { mode: 'standard', label: t('diagnosticsPanel.environmentStandard') },
-                  { mode: 'city', label: t('diagnosticsPanel.environmentCity') },
-                  { mode: 'canyon', label: t('diagnosticsPanel.environmentCanyon') },
-                ] as const
-              ).map(({ mode, label }, i) => (
-                <button
-                  key={mode}
-                  onClick={() => {
-                    setEnvMode(mode);
-                  }}
-                  className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-gray-600/50' : ''} ${
-                    envMode === mode
-                      ? 'bg-brand-green/20 text-brand-green border-brand-green/50'
-                      : 'bg-secondary-dark text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <span className="text-muted text-xs">
-              {envMode === 'standard' && t('diagnosticsPanel.environmentStandardHint')}
-              {envMode === 'city' && t('diagnosticsPanel.environmentCityHint')}
-              {envMode === 'canyon' && t('diagnosticsPanel.environmentCanyonHint')}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1.5 border-t border-gray-700/50 pt-2">
-            <div className="text-sm text-gray-300">
-              {t('diagnosticsPanel.staleRoutingDiagnostics')}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label htmlFor="diagnosticRowsMaxAgeHours" className="text-sm text-gray-400">
-                {t('diagnosticsPanel.dropRoutingRowsLabel')}
-              </label>
-              <input
-                id="diagnosticRowsMaxAgeHours"
-                type="number"
-                min={1}
-                max={168}
-                value={diagnosticRowsMaxAgeHours}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (Number.isFinite(v)) setDiagnosticRowsMaxAgeHours(v);
-                }}
-                aria-label={t('diagnosticsPanel.dropRoutingRows', {
-                  hours: diagnosticRowsMaxAgeHours,
-                })}
-                className="bg-deep-black focus:border-brand-green w-16 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
-              />
-              <span className="text-sm text-gray-400">{t('diagnosticsPanel.hoursRange')}</span>
-            </div>
-            <span className="text-muted text-xs">{t('diagnosticsPanel.staleRoutingHelp')}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Per-Node MQTT Filters */}
-      {showMqttControls && mqttIgnoredNodes.size > 0 && (
-        <div className="bg-secondary-dark rounded-lg p-3">
-          <h3 className="text-muted mb-2 text-xs font-medium">
-            {t('diagnosticsPanel.perNodeMqttFilters')}
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {[...mqttIgnoredNodes].map((nodeId) => {
-              const n = nodes.get(nodeId);
-              const label = n?.short_name || n?.long_name || formatMeshtasticNodeId(nodeId);
-              return (
-                <span
-                  key={nodeId}
-                  className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300"
-                >
-                  {label}
-                  <button
-                    onClick={() => {
-                      setNodeMqttIgnored(nodeId, false);
-                    }}
-                    aria-label={t('diagnosticsPanel.dismissRow')}
-                    className="ml-0.5 leading-none hover:text-yellow-100"
-                    title={t('diagnosticsPanel.removeMqttFilter')}
-                  >
-                    ✕
-                  </button>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Mesh-wide routing stress (independent of packet path mix samples) */}
-      {showRoutingAnomalyBanner && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-200">
-          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
-          <span>{t('meshCongestion.routingAnomalies')}</span>
-        </div>
-      )}
-
-      {/* Duplicate-traffic attribution heard at this client (same logic as home node detail) */}
-      {meshCongestionBlock && (
-        <MeshCongestionAttributionBlock
-          lines={meshCongestionBlock.lines}
-          originators={meshCongestionBlock.originators}
-          nodes={nodes}
-          scopeSubtitle={t('diagnosticsPanel.scopeSubtitle')}
-          className=""
-        />
+          )}
+        </>
       )}
 
       {/* IP Geolocation Accuracy Warning */}
@@ -1290,7 +1355,7 @@ export default function DiagnosticsPanel({
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-muted text-sm font-medium">
-            {t('diagnosticsPanel.diagnosticsHeading', { count: diagnosticRows.length })}
+            {t('diagnosticsPanel.diagnosticsHeading', { count: visibleDiagnosticRows.length })}
           </h3>
           <input
             type="text"
@@ -1306,7 +1371,7 @@ export default function DiagnosticsPanel({
 
         {anomalyList.length === 0 ? (
           <div className="bg-secondary-dark text-muted rounded-lg p-8 text-center text-sm">
-            {diagnosticRows.length === 0
+            {visibleDiagnosticRows.length === 0
               ? t('diagnosticsPanel.noDiagnosticsHealthy')
               : t('diagnosticsPanel.noAnomaliesMatchSearch')}
           </div>

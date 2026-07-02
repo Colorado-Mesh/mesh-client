@@ -25,6 +25,10 @@ export const DEFAULT_POWER_RESUME_SCHEDULE: readonly {
     protocol: 'meshcore',
     delayMs: POWER_RESUME_RECOVERY_DELAY_MS + POWER_RESUME_MESHCORE_STAGGER_MS,
   },
+  {
+    protocol: 'reticulum',
+    delayMs: POWER_RESUME_RECOVERY_DELAY_MS + POWER_RESUME_MESHCORE_STAGGER_MS + 4_000,
+  },
 ];
 
 export interface UsePowerRecoveryOptions {
@@ -40,10 +44,14 @@ interface LegacyPowerRecoveryOptions {
 export function usePowerRecovery(
   options: UsePowerRecoveryOptions | LegacyPowerRecoveryOptions,
 ): void {
-  const callbacksByProtocol =
+  const callbacksByProtocol: Record<MeshProtocol, PowerRecoveryCallbacks> =
     'callbacksByProtocol' in options
       ? options.callbacksByProtocol
-      : { meshtastic: options.meshtastic, meshcore: options.meshcore };
+      : {
+          meshtastic: options.meshtastic,
+          meshcore: options.meshcore,
+          reticulum: { onPowerSuspend: () => {}, onPowerResume: () => {} },
+        };
   const resumeSchedule =
     'resumeSchedule' in options && options.resumeSchedule
       ? options.resumeSchedule

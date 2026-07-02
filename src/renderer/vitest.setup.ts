@@ -8,10 +8,13 @@ import { afterEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
 import en from './locales/en/translation.json';
-import { createElectronAPIMock } from './vitest.electronApiMock';
+import { createElectronAPIMock, resetElectronAPIOutboxMock } from './vitest.electronApiMock';
 
 expect.extend(matchers);
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetElectronAPIOutboxMock();
+});
 
 // Node.js 25+ exposes a native localStorage global that emits a warning when accessed
 // without --localstorage-file. Always stub it unconditionally so no code path touches

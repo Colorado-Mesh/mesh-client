@@ -166,7 +166,9 @@ describe('meshcoreRoomSession', () => {
       sendToRadioFrame: vi.fn(),
     };
     const pubKey = new Uint8Array(32);
-    await expect(meshcoreRoomLogin(conn, 42, pubKey, '', {})).rejects.toThrow(/read-only/i);
+    await expect(meshcoreRoomLogin(conn, 42, pubKey, '', {})).rejects.toThrow(
+      /meshcore\.errors\.roomLogin\.timedOutBlankGuest/,
+    );
   });
 
   it('retries login up to two times with backoff', async () => {

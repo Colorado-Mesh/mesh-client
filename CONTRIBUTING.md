@@ -23,12 +23,14 @@ Thank you for your interest in contributing. See [docs/development-environment.m
 ## Quick Commands
 
 ```bash
+node scripts/check-environment.mjs # before pnpm install (fresh clone)
 pnpm install
-pnpm run dev      # Development mode
-pnpm run build    # Production build
-pnpm run lint     # ESLint
-pnpm run test:run # Run tests
-pnpm run update   # Update all deps, with update warnings for @meshtastic/core and @liamcottle/meshcore.js
+pnpm run check:environment # after install
+pnpm run dev               # Development mode
+pnpm run build             # Production build
+pnpm run lint              # ESLint
+pnpm run test:run          # Run tests
+pnpm run update            # Update all deps, with update warnings for @meshtastic/core and @liamcottle/meshcore.js
 ```
 
 ## Pre-commit Hook
@@ -42,7 +44,7 @@ Before each commit, the hook runs (order matters):
 5. `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/`
 6. `pnpm run lint`
 7. `pnpm run typecheck`
-8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` (includes `scripts/check-i18n-quality.mjs` locale rules), `check:licenses`
+8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` (missing keys, **unused English keys**, and `scripts/check-i18n-quality.mjs` locale rules), `check:licenses`
 9. `pnpm audit --audit-level=high`
 10. `actionlint`, `yamllint`
 11. `pnpm run test:run`

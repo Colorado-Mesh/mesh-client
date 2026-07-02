@@ -8,6 +8,7 @@ import {
   normalizeHex,
   sanitizeHexDraft,
   THEME_COLORS_STORAGE_KEY,
+  THEME_TOKEN_META,
 } from './themeColors';
 import { contrastRatio } from './wcagContrast';
 
@@ -62,6 +63,13 @@ describe('themeColors', () => {
   it('DEFAULT_THEME_COLORS has all keys as valid hex', () => {
     for (const hex of Object.values(DEFAULT_THEME_COLORS)) {
       expect(normalizeHex(hex)).toBe(hex.toLowerCase());
+    }
+  });
+
+  it('THEME_TOKEN_META uses i18n labelKey and descriptionKey for every token', () => {
+    for (const meta of THEME_TOKEN_META) {
+      expect(meta.labelKey).toMatch(/^appPanel\.theme\./);
+      expect(meta.descriptionKey).toMatch(/^appPanel\.theme\./);
     }
   });
 

@@ -52,86 +52,83 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
 
 export interface ThemeTokenMeta {
   key: ThemeColorKey;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
 }
 
 /** Preset hex values — Tailwind palette only. */
-export const THEME_COLOR_PRESETS: { label: string; hex: string }[] = [
-  { label: 'Green 300', hex: '#86efac' },
-  { label: 'Slate 950', hex: '#020617' },
-  { label: 'Slate 900', hex: '#0f172a' },
-  { label: 'Slate 800', hex: '#1e293b' },
-  { label: 'Slate 700', hex: '#334155' },
-  { label: 'Slate 400', hex: '#94a3b8' },
-  { label: 'White', hex: '#ffffff' },
-  { label: 'Black', hex: '#000000' },
-  { label: 'Blue 500', hex: '#3b82f6' },
-  { label: 'Amber 500', hex: '#f59e0b' },
-  { label: 'Red 500', hex: '#ef4444' },
-  { label: 'Emerald 500', hex: '#10b981' },
-  { label: 'Green 700', hex: '#15803d' },
-  { label: 'Violet 500', hex: '#8b5cf6' },
-  { label: 'Cyan 400', hex: '#22d3ee' },
-  { label: 'Purple 400', hex: '#c084fc' },
-  { label: 'Pink 400', hex: '#f472b6' },
-  { label: 'Orange 400', hex: '#fb923c' },
-  { label: 'Yellow 400', hex: '#facc15' },
+export const THEME_COLOR_PRESETS: { labelKey: string; hex: string }[] = [
+  { labelKey: 'appPanel.themePreset.green300', hex: '#86efac' },
+  { labelKey: 'appPanel.themePreset.slate950', hex: '#020617' },
+  { labelKey: 'appPanel.themePreset.slate900', hex: '#0f172a' },
+  { labelKey: 'appPanel.themePreset.slate800', hex: '#1e293b' },
+  { labelKey: 'appPanel.themePreset.slate700', hex: '#334155' },
+  { labelKey: 'appPanel.themePreset.slate400', hex: '#94a3b8' },
+  { labelKey: 'appPanel.themePreset.white', hex: '#ffffff' },
+  { labelKey: 'appPanel.themePreset.black', hex: '#000000' },
+  { labelKey: 'appPanel.themePreset.blue500', hex: '#3b82f6' },
+  { labelKey: 'appPanel.themePreset.amber500', hex: '#f59e0b' },
+  { labelKey: 'appPanel.themePreset.red500', hex: '#ef4444' },
+  { labelKey: 'appPanel.themePreset.emerald500', hex: '#10b981' },
+  { labelKey: 'appPanel.themePreset.green700', hex: '#15803d' },
+  { labelKey: 'appPanel.themePreset.violet500', hex: '#8b5cf6' },
+  { labelKey: 'appPanel.themePreset.cyan400', hex: '#22d3ee' },
+  { labelKey: 'appPanel.themePreset.purple400', hex: '#c084fc' },
+  { labelKey: 'appPanel.themePreset.pink400', hex: '#f472b6' },
+  { labelKey: 'appPanel.themePreset.orange400', hex: '#fb923c' },
+  { labelKey: 'appPanel.themePreset.yellow400', hex: '#facc15' },
 ];
 
 export const THEME_TOKEN_META: ThemeTokenMeta[] = [
   {
     key: 'appBg',
-    label: 'Main window background',
-    description:
-      'Main content viewport and app window background — the dark canvas behind all panels.',
+    labelKey: 'appPanel.theme.appBg.label',
+    descriptionKey: 'appPanel.theme.appBg.description',
   },
   {
     key: 'sidebarActiveBg',
-    label: 'Active sidebar tab',
-    description: 'Background of the currently selected tab in the sidebar navigation.',
+    labelKey: 'appPanel.theme.sidebarActiveBg.label',
+    descriptionKey: 'appPanel.theme.sidebarActiveBg.description',
   },
   {
     key: 'brandGreen',
-    label: 'Indicators & border highlights',
-    description:
-      'Accent for borders when configured, online/MQTT indicators, highlights, and progress fills.',
+    labelKey: 'appPanel.theme.brandGreen.label',
+    descriptionKey: 'appPanel.theme.brandGreen.description',
   },
   {
     key: 'brightGreen',
-    label: 'App title, links & node emphasis',
-    description: 'App title, emphasis text, links in footer, and hop/self highlights in node list.',
+    labelKey: 'appPanel.theme.brightGreen.label',
+    descriptionKey: 'appPanel.theme.brightGreen.description',
   },
   {
     key: 'readableGreen',
-    label: 'Action buttons & selected pills',
-    description:
-      'Solid fills with white text—selected channel pills and primary action buttons for contrast.',
+    labelKey: 'appPanel.theme.readableGreen.label',
+    descriptionKey: 'appPanel.theme.readableGreen.description',
   },
   {
     key: 'deepBlack',
-    label: 'Sidebar, header & modal surfaces',
-    description: 'Sidebar navigation, header, footer, modal shells, and primary dark surfaces.',
+    labelKey: 'appPanel.theme.deepBlack.label',
+    descriptionKey: 'appPanel.theme.deepBlack.description',
   },
   {
     key: 'secondaryDark',
-    label: 'Panel & input background',
-    description: 'Panel backgrounds, inputs, buttons, table row hovers, and progress track.',
+    labelKey: 'appPanel.theme.secondaryDark.label',
+    descriptionKey: 'appPanel.theme.secondaryDark.description',
   },
   {
     key: 'muted',
-    label: 'Secondary labels & captions',
-    description: 'Secondary labels, captions, table headers, and de-emphasized text.',
+    labelKey: 'appPanel.theme.muted.label',
+    descriptionKey: 'appPanel.theme.muted.description',
   },
   {
     key: 'chatIncomingBg',
-    label: 'Incoming message fill',
-    description: 'Background fill for incoming channel messages (applied at 38% opacity).',
+    labelKey: 'appPanel.theme.chatIncomingBg.label',
+    descriptionKey: 'appPanel.theme.chatIncomingBg.description',
   },
   {
     key: 'chatIncomingBorder',
-    label: 'Incoming message border',
-    description: 'Border color for incoming channel messages.',
+    labelKey: 'appPanel.theme.chatIncomingBorder.label',
+    descriptionKey: 'appPanel.theme.chatIncomingBorder.description',
   },
 ];
 

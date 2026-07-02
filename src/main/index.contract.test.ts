@@ -241,6 +241,43 @@ describe('MQTT IPC handlers (source contract)', () => {
   });
 });
 
+describe('Reticulum sidecar IPC handlers (source contract)', () => {
+  const RETICULUM_HANDLERS_SOURCE = readFileSync(
+    join(__dirname, 'ipc/reticulum-handlers.ts'),
+    'utf8',
+  );
+  const RETICULUM_DB_HANDLERS_SOURCE = readFileSync(
+    join(__dirname, 'ipc/reticulum-db-handlers.ts'),
+    'utf8',
+  );
+
+  it('registers reticulum lifecycle and proxy handlers', () => {
+    expect(INDEX_SOURCE).toContain('registerReticulumIpcHandlers');
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:start'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:stop'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPost'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPut'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyDelete'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:readDefaultConfigFile'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('reticulum:showConfigImportDialog'",
+    );
+    expect(INDEX_SOURCE).toContain('registerReticulumDbIpcHandlers');
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:deleteReticulumMessage'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:clearReticulumMessages'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getBlockedContacts'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getReticulumIdentityActivity'");
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('db:deleteReticulumDestination'",
+    );
+  });
+});
+
 describe('HTTP bridge IPC handlers (source contract)', () => {
   it('registers all four HTTP bridge handlers', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('http:preflight'");

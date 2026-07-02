@@ -6,11 +6,6 @@ import { REGISTERED_MESH_PROTOCOLS } from '@/renderer/lib/types';
 
 import { useToast } from './Toast';
 
-const PROTOCOL_DISPLAY_NAME: Record<MeshProtocol, string> = {
-  meshtastic: 'Meshtastic',
-  meshcore: 'MeshCore',
-};
-
 export interface InactiveProtocolNotifierProps {
   activeProtocol: MeshProtocol;
   messagesByProtocol: Record<MeshProtocol, ChatMessage[]>;
@@ -59,7 +54,7 @@ export function InactiveProtocolNotifier({
         if (realNew.length > 0) {
           addToast(
             t('toasts.newMessages', {
-              protocol: PROTOCOL_DISPLAY_NAME[inactiveProtocol],
+              protocol: t(`connectionPanel.bleOwner.${inactiveProtocol}`),
               count: realNew.length,
             }),
             'info',

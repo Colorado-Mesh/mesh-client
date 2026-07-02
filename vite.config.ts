@@ -102,6 +102,7 @@ export default defineConfig({
             return 'meshtastic';
           if (id.includes('node_modules/@liamcottle/meshcore')) return 'meshcore';
           if (id.includes('node_modules/@michaelhart/meshcore-decoder')) return 'meshcore-decoder';
+          if (id.includes('node_modules/esptool-js')) return 'esptool-js';
         },
       },
     },

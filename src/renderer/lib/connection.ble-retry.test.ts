@@ -6,6 +6,10 @@ vi.mock('@meshtastic/core', () => ({
   }),
 }));
 
+vi.mock('./meshcoreDualNobleBleInit', () => ({
+  notifyNobleBlePrimaryRfLinkReady: vi.fn(),
+}));
+
 vi.mock('./transportNobleIpc', () => ({
   TransportNobleIpc: vi.fn().mockImplementation(function TransportNobleIpc(sessionId: string) {
     return {

@@ -23,7 +23,17 @@
       "reconnecting": "再接続中"
     },
     "nodeLabel": "ノード: {{name}}",
-    "takClientLost": "TAKクライアントを失いました"
+    "takClientLost": "TAKクライアントを失いました",
+    "title": "メッシュクライアント",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Turn off Colorado Mesh sign",
+    "meshTubeSignOn": "Turn on Colorado Mesh sign",
+    "queueBadge": "Q: {{used}}/{{max}}",
+    "telemetryDisabled": "このデバイスではテレメトリが無効になっています。デバイス メトリクスを有効にすると、メッシュとこのアプリ (診断、バッテリー、信号) が向上します。 [ラジオ] タブで有効にします。",
+    "scrollToTop": "↑トップへ",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh on GitHub",
+    "footerWebsiteTitle": "Colorado Mesh website"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",
@@ -109,17 +119,10 @@
     "colorScheme": "配色",
     "dangerZoneSection": "危険地帯",
     "destructiveActions": "破壊的な行為",
-    "dangerZoneDesc": "これらの操作は永続的であり、元に戻すことはできません。各ステップを注意深く確認してください。",
-    "diagnosticsSection": "診断",
     "pruneDistantNodesTitle": "遠隔ノードのプルーニング",
-    "pruneDistantNodesDesc": "マップとノードのフィルタリングで距離のしきい値を超えています。有効な GPS 位置情報が必要です。",
     "pruneOfflineNodesTitle": "オフラインノードのプルーニング",
-    "pruneOfflineNodesDays": "{{days}}日以上連絡がありません。お気に入りのノードは除外されます。",
-    "clearAllNodesCount": "すべてのノードをクリア ({{count}})",
     "deleteContactsNoPubkeysTitle": "公開キーを使用せずに連絡先を削除する",
-    "deleteContactsNoPubkeysDesc": "メッセージから作成されたチャット スタブ ノードを除外します。",
     "messagesSection": "メッセージ",
-    "channelLabel": "チャネル：",
     "allChannelsOption": "すべてのチャンネル",
     "clearMessagesCount": "メッセージをクリア ({{count}})",
     "latLabel": "緯度:",
@@ -160,7 +163,6 @@
     "removeUnnamedNodesLabel": "起動時に名前のないノードを削除する",
     "capTotalNodesLabel": "合計ノード数を制限し、最新の状態に保つ",
     "autoPrunePositionHistoryLabel": "起動時に古いポジション履歴を自動プルーニング",
-    "removeContactsNeverAdvertisedLabel": "起動時に一度もアドバタイズされていない連絡先を削除する",
     "autoPruneUnheardContactsLabel": "起動時に未確認の連絡先を自動的に削除します。",
     "capTotalContactsLabel": "連絡先の合計を制限し、最近見たものを保持します",
     "limitMessagesLoadedLabel": "ロードされるメッセージを制限する",
@@ -169,7 +171,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "起動時に一度もアドバタイズされていない連絡先を削除する",
     "meshcoreRemoveNeverAdvertisedHint": "広告履歴のない古いプレースホルダー連絡先を削除します。お気に入りの連絡先は保持されます。",
     "messagesLoadLimitIntro": "UI のメモリに読み込まれるメッセージの数を制限し、SQLite に保持される行の数を制限します。読み込みを少なくすると、混雑したネットワークで RAM の使用量が減ります。データベースの上限により、アプリの起動時に古いメッセージが削除されます (プロトコルごとに保存されます)。",
-    "logPanelHelp": "有効にすると、右側にライブ ログ ストリームが表示されます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
     "compactMessages": "コンパクトなメッセージビュー",
     "notificationsSection": "通知",
     "soundNotifications": "サウンド通知",
@@ -199,7 +200,124 @@
     "meshcorePathHashModeShort2": "3 Byte",
     "meshcorePathHashDeviceReported": "接続された無線レポート： {{mode}}",
     "meshcorePathHashModeHint": "パス上にv1.14.0以降のコンパニオンファームウェアとv1.14以降のリピーターが必要です。v1.14未満のリピーターはマルチバイトパケットを黙って破棄します。リピーターとルームサーバーはCLIでも利用できます: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "パスハッシュモードに失敗しました： {{message}}"
+    "meshcorePathHashApplyFailed": "パスハッシュモードに失敗しました： {{message}}",
+    "reticulumDmOnlyMessagesHint": "Reticulumチャットはダイレクトメッセージのみを保存します。個別にクリアするチャンネルはありません。",
+    "clearReticulumMessagesTitle": "ダイレクトメッセージを消去",
+    "clearReticulumMessagesConfirm": "これにより、ローカルに保存されているすべての{{count}} Reticulumダイレクトメッセージが完全に削除されます。これは元に戻せません。",
+    "clearReticulumMessagesConfirmButton": "{{count}}メッセージを消去",
+    "reticulumSection": "Reticulum — レティキュラム・スタック",
+    "reticulumAnnounceHelp": "あなたの身元がネットワーク上で発表される頻度と、保存されているアナウンスをクリアするためのツール。",
+    "reticulumPropagationHelp": "伝播ノードの同期方法を選択し、必要に応じて最新の伝播データを取得します。",
+    "logPanelHelp": "有効にすると、ライブ ログ ストリームが右側に表示されます。 Reticulum タブのデバイス行には、サイドカー出力とローカル インターフェイスの状態が含まれます。デバッグ行では、ログ パネル内のチェックボックスが必要です。",
+    "autoPruneUnheardContactsDaysAria": "起動時に、{{days}} 日より古い、聞いていない連絡先を自動的に削除します",
+    "capTotalContactsCountAria": "連絡先の総数を制限し、最近確認された {{count}} 連絡先を保持します",
+    "unknownError": "不明なエラー",
+    "resetDiagnosticsConfirm": "これにより、ルーティングの異常、ホップ履歴、パケット統計がすべてクリアされます。エンジンは新しい受信パケットから再構築されます。続く？",
+    "clearGpsDataConfirm": "これにより、保存されている GPS 座標がすべてのノードから削除されます。ノードは残りますが、新しいデータが受信されるまでその位置は空白になります。続く？",
+    "clearPositionHistoryConfirm": "これにより、保存されているすべての位置履歴がデータベースから完全に削除されます。過去のセッションの移動軌跡は表示されなくなります。続く？",
+    "deleteOldNodesConfirm_one": "これにより、過去 {{days}} 日間に受信されなかったすべてのノードが完全に削除されます。再放送の際には再発見されることになるだろう。",
+    "deleteOldNodesConfirm_other": "これにより、過去 {{days}} 日間に受信されなかったすべてのノードが完全に削除されます。再放送の際には再発見されることになるだろう。",
+    "pruneMqttOnlyNodesConfirm": "これにより、MQTT 経由でのみ検出された (RF 経由では受信されない) すべてのノードが永久に削除されます。 MQTT または RF 経由で再度聞くと、再び表示されます。",
+    "pruneMqttNodesConfirmLabel": "MQTT ノードのプルーニング",
+    "pruneUnnamedNodesConfirm": "これにより、実際の長い名前のないノード (空の名前、自動生成された !hex プレースホルダー、ノード ID に関連付けられた Node-HEX フォールバック、および UserInfo を受信したことのない MQTT のみの ID) が永久に削除されます。お気に入りのノードは保持されます。再放送の際には再発見されることになるだろう。",
+    "pruneNoFixNodesConfirm_one": "これにより、ヌルまたはゼロに近い座標 (GPS 修正またはゼロ アイランドなし) を持つ {{count}} ノードが完全に削除されます。これを元に戻すことはできません。",
+    "pruneNoFixNodesConfirm_other": "これにより、ヌルまたはゼロに近い座標 (GPS 修正またはゼロ アイランドなし) を持つ {{count}} ノードが完全に削除されます。これを元に戻すことはできません。",
+    "pruneNoFixDeleteConfirm_one": "{{count}} ノードの削除",
+    "pruneNoFixDeleteConfirm_other": "{{count}} ノードの削除",
+    "pruneDistantNodesConfirm_one": "これにより、{{distance}} {{unit}} 以降の {{count}} ノードがデバイスから完全に削除されます。これを元に戻すことはできません。",
+    "pruneDistantNodesConfirm_other": "これにより、{{distance}} {{unit}} 以降の {{count}} ノードがデバイスから完全に削除されます。これを元に戻すことはできません。",
+    "pruneDistantDeleteConfirm_one": "{{count}} ノードの削除",
+    "pruneDistantDeleteConfirm_other": "{{count}} ノードの削除",
+    "pruneOfflineNodesConfirm_one": "これにより、{{days}} {{daysLabel}} 以降に聞こえなかった {{count}} ノードが完全に削除されます。これを元に戻すことはできません。",
+    "pruneOfflineNodesConfirm_other": "これにより、{{days}} {{daysLabel}} 以降で受信されなかった {{count}} ノードが完全に削除されます。これを元に戻すことはできません。",
+    "pruneOfflineDeleteConfirm_one": "{{count}} ノードの削除",
+    "pruneOfflineDeleteConfirm_other": "{{count}} ノードの削除",
+    "clearNodesConfirm": "これにより、ローカルに保存されたすべての {{count}} ノードが完全に削除されます。接続すると再検出されます。",
+    "clearNodesConfirmLabel": "{{count}} ノードをクリアする",
+    "clearAllNodesButton": "すべてのノードをクリア ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "これにより、公開キーを持たないすべての MeshCore 連絡先がデータベースから完全に削除されます。チャット スタブ ノード (メッセージから作成された) は除外されます。これを元に戻すことはできません。",
+    "deleteContactsNoPubkeysConfirmButton": "消去",
+    "clearMessagesAllConfirm": "これにより、ローカルに保存されたすべての {{count}} メッセージがすべてのチャネルにわたって完全に削除されます。これを元に戻すことはできません。",
+    "clearMessagesChannelConfirm": "これにより、{{channel}} からのすべてのメッセージが完全に削除されます。これを元に戻すことはできません。",
+    "clearMessagesAllConfirmLabel": "{{count}} メッセージをクリアする",
+    "clearMessagesChannelConfirmLabel": "{{channel}}をクリア",
+    "clearMessagesTitle": "メッセージをクリアする",
+    "clearAllRepeatersConfirm": "これにより、保存されているすべての MeshCore リピーターがローカル データベースから永久に削除されます。これを元に戻すことはできません。",
+    "clearAllLocalDataTitle": "⚠ ローカルデータをすべてクリア",
+    "clearAllLocalDataConfirm": "これにより、すべてのローカル メッセージ、ノード、キャッシュされたセッション データが完全に削除されます。この操作は元に戻すことができません。",
+    "clearEverythingConfirmButton": "すべてをクリア",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "すべて",
+    "deleteNodesOlderThanAria": "最後に {{days}} 日以上経過したノードの削除",
+    "daySingular": "日",
+    "theme": {
+      "appBg": {
+        "label": "メインウィンドウの背景",
+        "description": "メイン コンテンツ ビューポートとアプリ ウィンドウの背景 - すべてのパネルの背後にある暗いキャンバス。"
+      },
+      "sidebarActiveBg": {
+        "label": "アクティブなサイドバータブ",
+        "description": "サイドバー ナビゲーションで現在選択されているタブの背景。"
+      },
+      "brandGreen": {
+        "label": "インジケーターと境界線のハイライト",
+        "description": "設定時の境界線、オンライン/MQTT インジケーター、ハイライト、および進行状況の塗りつぶしのアクセント。"
+      },
+      "brightGreen": {
+        "label": "アプリのタイトル、リンク、ノードの強調",
+        "description": "アプリのタイトル、強調テキスト、フッター内のリンク、ノード リスト内のホップ/自己ハイライト。"
+      },
+      "readableGreen": {
+        "label": "アクションボタンと選択した錠剤",
+        "description": "白いテキストで塗りつぶされる塗りつぶし - 選択されたチャンネルの丸薬とコントラストのための主要なアクション ボタン。"
+      },
+      "deepBlack": {
+        "label": "サイドバー、ヘッダー、モーダル サーフェス",
+        "description": "サイドバー ナビゲーション、ヘッダー、フッター、モーダル シェル、およびプライマリ ダーク サーフェス。"
+      },
+      "secondaryDark": {
+        "label": "パネルと入力背景",
+        "description": "パネルの背景、入力、ボタン、テーブル行ホバー、および進行状況トラック。"
+      },
+      "muted": {
+        "label": "二次ラベルとキャプション",
+        "description": "二次ラベル、キャプション、表ヘッダー、および強調解除されたテキスト。"
+      },
+      "chatIncomingBg": {
+        "label": "受信メッセージの入力",
+        "description": "受信チャネル メッセージの背景塗りつぶし (38% の不透明度で適用)。"
+      },
+      "chatIncomingBorder": {
+        "label": "受信メッセージの境界線",
+        "description": "受信チャネルメッセージの境界線の色。"
+      }
+    },
+    "themePreset": {
+      "green300": "グリーン300",
+      "slate950": "スレート950",
+      "slate900": "スレート900",
+      "slate800": "スレート800",
+      "slate700": "スレート 700",
+      "slate400": "スレート400",
+      "white": "白",
+      "black": "黒",
+      "blue500": "ブルー500",
+      "amber500": "アンバー500",
+      "red500": "レッド500",
+      "emerald500": "エメラルド500",
+      "green700": "グリーン700",
+      "violet500": "バイオレット500",
+      "cyan400": "シアン 400",
+      "purple400": "パープル400",
+      "pink400": "ピンク400",
+      "orange400": "オレンジ400",
+      "yellow400": "イエロー400"
+    },
+    "autoPruneNodesOlderThanAria": "起動時に{{days}}日より古いノードを自動プルーニングします",
+    "autoPrunePositionHistoryDaysAria": "{{days}} 日より古い、起動時のポジション履歴の自動プルーニング",
+    "capTotalNodesCountAria": "合計ノード数を制限し、最新の {{count}} ノードを保持",
+    "limitMessagesLoadedCountAria": "読み込まれるメッセージを制限する {{count}} メッセージ",
+    "capStoredMessagesCountAria": "保存されたメッセージを制限し、最新の {{count}} メッセージを保持します"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -212,7 +330,8 @@
     "protocolSwitcher": "プロトコルスイッチャー",
     "switchToMeshtastic": "Meshtasticに切り替える",
     "switchToMeshCore": "MeshCore に切り替える",
-    "backToTop": "トップに戻る"
+    "backToTop": "トップに戻る",
+    "switchToReticulum": "Reticulumに切り替える"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -221,13 +340,11 @@
   "channelUtilization": {
     "title": "チャネル使用率",
     "noData": "利用可能なチャネル使用率データはまだありません",
-    "meshcoreNote": "MeshCore:接続されたノードのみを表示",
     "tooltipLabel": "チャネル使用率"
   },
   "chatPanel": {
     "channels": "チャンネル",
     "searchMessages": "メッセージを検索する",
-    "searchAllChannels": "すべてのチャンネルを検索",
     "closeDmTab": "DMタブを閉じる",
     "searchMessagesPlaceholder": "メッセージを検索...",
     "searchResults_one": "{{count}} 結果",
@@ -257,19 +374,14 @@
     "filterBySender": "送信者別フィルター",
     "clearSenderFilter": "フィルタをクリア",
     "filteringBySender": "{{name}}によるフィルタリング",
-    "muteNotifications": "通知をミュートする",
-    "unmuteNotifications": "通知のミュートを解除する",
     "jumpToDate": "日付に移動",
-    "noMessagesOnDate": "この日付にメッセージはありません",
     "exportChat": "チャットをエクスポート",
-    "exportChatSuccess": "チャットをエクスポートしました",
     "exportChatFailed": "書き出せませんでした",
     "dmNodeLastHeard": "最後に聞いたのは{{time}}",
     "dmNodeBattery": "{{pct}}%バッテリー",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}}ホップ",
     "dmNodeHopsPlural": "{{count}}ホップ",
-    "quickDm": "ダイレクトメッセージ{{name}}",
     "muteConversation": "この会話をミュートする",
     "unmuteConversation": "この会話のミュートを解除する",
     "starMessage": "スターメッセージ",
@@ -321,9 +433,6 @@
     "waitingMessagesSyncNow": "今すぐ同期",
     "jumpToUnread": "未読へジャンプ",
     "jumpToLatest": "最新へジャンプ",
-    "meshcoreReactionPickerLabel": "メッシュリアクションを選択",
-    "meshcoreReactionEmojiOption": "{{emoji}}で反応",
-    "meshcoreReactionNotInteroperable": "その絵文字は、MeshCoreメッシュリアクションではサポートされていません。",
     "reactionFailed": "リアクションに失敗しました",
     "meshcoreGifButton": "Giphy GIFを挿入",
     "meshcoreGifButtonHint": "Giphy GIFをMeshCore Open g: wireとして送信",
@@ -331,11 +440,48 @@
     "meshcoreGifHint": "GiphyページURL、メディアURL、g:ID、またはGIF IDのみを貼り付け。",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… または g:ID",
     "meshcoreGifSend": "GIFを送信",
-    "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。"
+    "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。",
+    "attachFile": "ファイルの添付",
+    "attachFileHint": "LXMFファイルの添付ファイルを送信する（ DMのみ）",
+    "attachDmOnly": "ファイルを添付する前にダイレクトメッセージを開きます。",
+    "composePlaceholderSelectDm": "上記の連絡先を選択してDMを開始してください…",
+    "selectDmFirst": "送信する前にDM受信者を選択してください。",
+    "emptySelectDm": "Reticulumチャットはダイレクトメッセージのみです。上記の連絡先を選択するか、[ノード]タブから連絡先を開きます。",
+    "noDmConversations": "会話はまだありません。",
+    "noDmConversationsReticulum": "会話はまだありません。[ノード]タブから連絡先を開きます。",
+    "dms": "DM",
+    "receivedViaTcp": "TCP経由で受信",
+    "receivedViaNetwork": "ネットワーク経由で受信",
+    "sentViaRf": "RF経由で送信",
+    "sentViaTcp": "TCP経由で送信",
+    "sentViaNetwork": "ネットワーク経由で送信",
+    "reticulumSendSending": "送信中・・・",
+    "reticulumSendDelivered": "配達済み",
+    "reticulumSendFailed": "送信に失敗しました。",
+    "reticulumImageAttachment": "画像： {{name}}",
+    "reticulumFileAttachment": "ファイル： {{name}}",
+    "reticulumShowInFolder": "フォルダを表示",
+    "reticulumSendPropagated": "伝播ノードでキューに入れられました",
+    "reticulumNoPropagationNode": "伝播ノードが構成されていません。 Reticulum Radio タブで優先伝播ノードを設定します。",
+    "sentViaPropagation": "伝播ノード",
+    "reticulumPropagationSyncActive": "伝播ノードからのメッセージを同期しています…",
+    "reticulumAudioAttachment": "音声: {{name}}",
+    "reticulumSaveAttachment": "添付ファイルを保存する",
+    "recordVoice": "音声メッセージを録音する",
+    "recordVoiceHint": "音声クリップを録音し、LXMF 添付ファイルとして送信します (DM のみ)",
+    "stopVoiceRecording": "録音を停止して送信する",
+    "voiceRecordingTooLong": "音声クリップが 60 秒の制限に達したため、送信されました。",
+    "reticulumSendAttachmentFailed": "添付ファイルの送信に失敗しました",
+    "reticulumSendAttachmentNoIdentity": "Reticulum IDが準備できていません — 先に接続してIDを設定してください",
+    "dmPeerInfoAria": "DMピア情報",
+    "clearDateAria": "クリア日付",
+    "readOnlyDisconnected": "接続されていません - メッセージは読み取り専用です",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "提案について言及する"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
-    "emptyMention": "空の言及",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Giphyで開く"
   },
@@ -345,36 +491,20 @@
     "save": "保存",
     "yes": "はい",
     "no": "いいえ",
-    "apply": "適用する",
-    "ok": "わかりました",
-    "reset": "リセット",
     "clear": "クリア",
-    "export": "輸出",
-    "import": "輸入",
     "refresh": "リフレッシュ",
-    "delete": "消去",
     "edit": "編集",
-    "add": "追加",
-    "remove": "取り除く",
-    "send": "送信",
-    "search": "検索",
     "loading": "読み込み中",
     "error": "エラー",
-    "success": "成功",
     "warning": "警告",
-    "enabled": "有効",
     "disabled": "無効",
     "unknown": "未知",
-    "none": "なし",
     "never": "一度もない",
-    "always": "いつも",
     "dismiss": "却下する",
     "channel": "チャネル",
     "nodes": "ノード",
     "contacts": "連絡先",
     "messages": "メッセージ",
-    "connect": "接続する",
-    "disconnect": "切断する",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Webサイト",
@@ -388,7 +518,14 @@
     "daysAgo": "{{count}}日前",
     "days": "日",
     "emDash": "—",
-    "saving": "保存中…"
+    "saving": "保存中…",
+    "peers": "ピア",
+    "colorGreen": "グリーン",
+    "colorCyan": "シアン",
+    "colorAmber": "アンバー",
+    "colorRed": "レッド",
+    "colorPurple": "紫",
+    "delete": "消去"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
@@ -404,7 +541,6 @@
     "requiresLocalRadio": "リモート管理を使用するには、ローカルのMeshtasticラジオを接続します。",
     "sessionActive": "管理セッションがアクティブです",
     "sessionStale": "管理セッションが古くなっています—設定を変更する前に更新してください",
-    "sessionNone": "管理セッションが確立されていません—ローカル無線を読み込んでいるか、接続しています",
     "establishingSession": "管理セッションを確立しています…"
   },
   "connectionBanner": {
@@ -428,8 +564,6 @@
     "selectBluetoothDevice": "Bluetooth デバイスの選択",
     "devicesFound": "{{count}} が見つかりました",
     "scanningDevices": "{{protocol}} デバイスをスキャンしています...",
-    "adaDfuHint": "macOS では、デバイスが「AdaDFU」と表示される場合は、まず [システム設定] → [Bluetooth] でデバイスをペアリングし、その Meshtastic 名を確認します。",
-    "meshcorePairingNote": "接続する前に、システムの Bluetooth 設定で MeshCore デバイスをペアリングします。プロンプトが表示されたら、PIN コードを使用します。システムが PIN を要求しない場合、接続は失敗し、ペアリングを削除して PIN を使用して再ペアリングする必要がある場合があります。",
     "selectSerialPort": "シリアルポートの選択",
     "noSerialPorts": "シリアルポートが見つかりません。デバイスが接続されていることを確認してください。",
     "enterPin": "デバイスに表示されている PIN を入力します。",
@@ -491,7 +625,7 @@
     "hintMeshtasticHttp2": "接続が信頼できない場合 (meshtastic.local など)、代わりにデバイスの IP アドレスを試してください。デスクトップの mDNS は不安定になる可能性があります。",
     "hintMeshcoreHttp": "MeshCore コンパニオン無線のホスト名または IP アドレスを入力します。ポート 5000 で到達可能である必要があります。",
     "stageLinuxUnpaired": "保存されたデバイスは Linux Bluetooth でペアリングされていません。下で選択して PIN を入力し、接続します。",
-    "liamServerNote": "リアムのサーバーはアップリンク専用です。あなたのノードは彼のマップ上に表示されますが、そこからメッセージを受信することはありません。",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "接続する",
     "mqttStatusConnected": "接続された",
     "mqttStatusConnecting": "接続する",
@@ -516,7 +650,6 @@
     "stagePairingFailed": "ペアリングに失敗しました。デバイスを再度ペアリングしてください。",
     "stageCheckingPairing": "Bluetooth のペアリングを確認しています…",
     "stageEnterPinLinux": "デバイスに表示されている PIN を入力します (最初に Linux とペアリングします)",
-    "stageScanningLast": "最後の Bluetooth デバイスをスキャンしています…",
     "stageReconnecting": "最後の Bluetooth デバイスに再接続しています…",
     "pinPlaceholder": "ピン",
     "humanize": {
@@ -526,7 +659,7 @@
         "accessDeniedLinuxHint": "Linux では、ユーザーをダイヤルアウト グループに追加します: sudo usermod -aG digialout $USER (その後、ログアウトして再度ログインします)",
         "disconnectedHint": "USB ケーブルが接続されており、デバイスの電源が入っていることを確認します。",
         "timeoutHint": "ポートが一時的に表示された場合は、USB ケーブルを再接続してみてください。",
-        "portStillOpenHint": "USBシリアルポートがきれいに解放されませんでした。メッシュクライアントを完全に終了して再度開くか、USBケーブルのプラグを抜いて再接続してから、もう一度接続します。"
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "Windows では、meshtastic.local には Bonjour (iTunes とともにインストールされる) が必要です。代わりにデバイスの IP アドレスを使用してください。",
@@ -554,8 +687,10 @@
         "connectionAttemptFailedLinuxHint": "Linux では、システムの Bluetooth 設定または「bluetoothctl」ツールを介してペアリングを管理できます。",
         "meshcoreHandshakeHint": "MeshCore デバイスが Bluetooth コンパニオン モードになっていて、PIN を使用してコンピュータとペアリングされていることを確認します。接続の問題が解決しない場合は、既存のペアリングを削除し、再度ペアリングします。",
         "meshcoreHandshakeWindowsExtra": "Windows では、切断が続く場合は、Bluetooth のオフ/オンを切り替え、デバイス マネージャーでアダプター ドライバーを更新します。",
-        "macWakeRecoveryHint": "スリープ後、メッシュクライアント（ Command + Q ）を終了し、システム設定でBluetoothのオフとオンを切り替え、数秒待ってから再度接続します。2つのラジオで、Meshtasticの前にMeshCoreを接続します。",
-        "dualProtocolContentionHint": "他のプロトコルはまだBluetooth経由で接続している可能性があります。数秒待ってからもう一度お試しいただくか、他のプロトコルタブに切り替えて接続ステータスを確認してください。"
+        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
+        "dualProtocolContentionHint": "他のプロトコルはまだBluetooth経由で接続している可能性があります。数秒待ってからもう一度お試しいただくか、他のプロトコルタブに切り替えて接続ステータスを確認してください。",
+        "scanBusy": "別の Bluetooth スキャンが進行中です。しばらくしてからもう一度試してください。",
+        "sameDeviceConflict": "この Bluetooth デバイスはすでに {{owner}} に接続されています。"
       }
     },
     "error": {
@@ -579,7 +714,212 @@
     "mqttTlsInsecure": "安全でないTLS （自己署名証明書）を許可します。デフォルトでオフ—ブローカーが非公開CAを使用している場合にのみ有効にします。",
     "channelPsksPrivateUplinkNote": "チャネルアップリンクは/2/e/でAES - PSK暗号化されています（秘密鍵のJSONミラーはありません）。ブローカーモニターは、他のノード間のPKI/DMトラフィックの復号化失敗を記録することがあります。これは正常であり、ここではチャネルPSKとは無関係です。",
     "sharedBleWithMeshtastic": "このBluetoothデバイスはすでにMeshtastic経由で接続されています。Meshtasticタブに切り替えて使用するか、MeshCoreの別のラジオまたはトランスポートを選択します。",
-    "sharedBleWithMeshtasticHint": "1つの物理ラジオは、MeshtasticとMeshCore Bluetoothセッションを同時に開催することはできません。"
+    "sharedBleWithMeshtasticHint": "1つの物理ラジオは、MeshtasticとMeshCore Bluetoothセッションを同時に開催することはできません。",
+    "reticulumStackTitle": "Reticulumスタック",
+    "reticulumStackHint": "ローカルのReticulum/LXMFサイドカー（TCPおよびAutoインターフェース）を起動します。",
+    "reticulumStartStack": "スタックを開始",
+    "reticulumNetworkEmpty": "まだインターフェースが報告されていません。",
+    "reticulumSidecarMissing": "Reticulumサイドカーがビルドされていません。mesh-clientリポジトリで `pnpm run reticulum:sidecar:build` を実行してください（Rustが必要です）。",
+    "reticulumSidecarCargoMissing": "Rustツールチェーン（cargo）が見つかりません。https://rustup.rs からインストールし、`pnpm run reticulum:sidecar:build` を実行してください。",
+    "reticulumSidecarStartFailed": "Reticulumスタックを開始できませんでした: {{message}}",
+    "reticulumStopStack": "スタックを停止",
+    "reticulumAutostart": "接続を開いたときにスタックを自動的に開始する",
+    "reticulumStackRunning": "スタック実行中",
+    "reticulumIdentity": {
+      "title": "Reticulum ID",
+      "hint": "上記のスタックを開始し、ニーモニックIDを作成またはインポートします。",
+      "startStackFirst": "Reticulumスタックを起動して、アイデンティティを設定します。",
+      "displayName": "表示名",
+      "generate": "アイデンティティを生成する",
+      "import": "フレーズをインポート",
+      "importLabel": "12ワードのリカバリフレーズ",
+      "mnemonic": "このフレーズを書き留めて、安全に保管してください。",
+      "confirmSaved": "回復フレーズを保存しました",
+      "hashLabel": "LXMFハッシュ：",
+      "nameLabel": "名前:",
+      "failed": "IDの設定に失敗しました",
+      "export": "バックアップをエクスポート",
+      "exportPassphrase": "バックアップパスフレーズ",
+      "exportPassphraseRequired": "エクスポートする前にバックアップパスフレーズを入力してください。"
+    },
+    "reticulumInterfaces": {
+      "title": "インターフェース",
+      "type": "タイプ",
+      "add": "VLAN インタフェースを追加",
+      "enable": "有効にする",
+      "disable": "無効にする",
+      "serialPort": "シリアルポート",
+      "preset": "プリセット",
+      "bleAvailable": "BLEピアリングはこのプラットフォームで利用できます（設定時にサイドカー経由で追加）。",
+      "host": "サーバ",
+      "port": "ポート",
+      "delete": "削除",
+      "deleteConfirmTitle": "インタフェースを削除",
+      "deleteConfirmBody": "スタック設定から「{{name}}」を削除しますか？これは元に戻せません。",
+      "deleteConfirm": "削除",
+      "deleteFailed": "インターフェースの削除に失敗しました。",
+      "edit": "編集",
+      "editTitle": "インターフェースを編集",
+      "saveEdit": "変更を保存する",
+      "cancelEdit": "取り消す",
+      "name": "名前",
+      "callsign": "識別信号",
+      "editFailed": "インターフェースの保存に失敗しました。",
+      "pipeCommand": "パイプコマンド",
+      "addFailed": "インターフェースの追加に失敗しました。",
+      "toggleFailed": "インターフェースの状態を変更できませんでした。",
+      "restartStackHint": "シリアルインターフェースの変更を有効にするには、[接続]タブでスタックを再起動します。",
+      "localOfflineRow": "ローカルインターフェイスオフライン—ケーブルとポートの競合を確認し、スタックを再起動します。",
+      "localOfflineRowStale": "シリアルポート{{port}}が見つかりません— USBレプラグがパスを変更した可能性があります。",
+      "blePeerType": "BLEピアメッシュ",
+      "pickDevice": "ピックデバイス",
+      "refreshPorts": "リフレッシュ",
+      "rescanBle": "再スキャン",
+      "pickerSerialTitle": "シリアルポートの選択",
+      "pickerBlePeerTitle": "BLE ピアを選択します",
+      "pickerBleRnodeTitle": "Select BLE RNode",
+      "pickerSerialEmpty": "シリアルポートが検出されませんでした。パスを手動で入力します。",
+      "pickerBleEmpty": "BLE デバイスが見つかりません。再スキャンしてみてください。",
+      "pickerStackRequired": "デバイスをスキャンする前に Reticulum スタックを開始します。",
+      "useManualPort": "このポートを使用します",
+      "rnodeTransport": "輸送",
+      "rnodeTransportSerial": "USBシリアル",
+      "rnodeTransportBle": "ブルートゥース",
+      "seedAddresses": "シードピア (オプション)",
+      "pickerBlePeerEmpty": "近くに Reticulum BLE ピアが見つかりません。ピアは宣伝する必要があります。再スキャンを試すか、シード アドレスを手動で入力してください。",
+      "pickerBleRnodeEmpty": "近くに BLE RNode が見つかりません。 RNode の電源が入っており、範囲内にあることを確認してから、再スキャンを試してください。",
+      "bleUnavailable": "Bluetooth は Reticulum スキャンには使用できません。システムの Bluetooth とサイドカー ビルド (rns-ble) を確認してください。",
+      "restartStackFailed": "スタックの再起動に失敗しました: {{message}}",
+      "restartStackUnavailable": "Reticulum ランタイムの準備が整うまで、スタックの再起動はできません。",
+      "localOfflineRowBle": "Bluetooth RNode オフライン — デバイスがオンで範囲内にあることを確認してから、スタックを再起動します。",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "ホストまたはIP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42またはrnode.local",
+      "rnodeWifiPort": "ポート番号",
+      "rnodeWifiSetupTitle": "Wi-Fi RNodeの設定",
+      "rnodeWifiSetupHint": "点滅後、Wi-Fiがオフになっています—最初にRNodeをプロビジョニングします（ Reticulum → Admin → Wi-Fi、またはそのAPに参加してhttp://10.0.0.1を開きます）。 ESP 32 - S 3 Wi-Fi対応ファームウェアが必要です。\n\nステーションモード後： OLED代替画面、ルーターDHCPリスト、または管理者→読み取り設定でIPを見つけます。 TCPクライアントインターフェイスタイプではなく、tcp :// host （デフォルトポート7633 ）を使用します。\n\n多くのHeltecボードで約10秒間のボタンホールドにより、Wi-Fi APが有効になります（約7秒間はBluetoothペアリング）。",
+      "localOfflineRowWifi": "Wi-Fi RNode到達不能— IP、ポート7633、同じLAN、および電源を確認します。DHCPアドレスが変更された場合は、管理者で再プロビジョニングします。",
+      "rfFrequencyMhz": "周波数(MHz)",
+      "rfBandwidthKhz": "帯域幅 (kHz)",
+      "rfSpreadingFactor": "拡散率",
+      "rfCodingRate": "符号化率",
+      "rfTxPower": "送信電力 (dBm)",
+      "purposeAria": "インターフェース {{name}} の目的",
+      "runtimeBadge": "ランタイム",
+      "auditRepair": "修理",
+      "auditDisable": "無効にする",
+      "auditRepairSuccess": "構成修復が適用されました。",
+      "auditRepairFailed": "構成の修復に失敗しました。",
+      "auditRepairNoChanges": "この修復には構成の変更は必要ありませんでした。",
+      "purpose": {
+        "auto": "ローカル LAN マルチキャスト検出 — 同じ Wi-Fi またはサブネット上の他の Reticulum ノードを検索します。",
+        "sharedInstance": "共有インスタンスがオンの場合、ローカルホスト TCP サーバー — このマシン上の他のアプリがこのスタックを使用できるようにします。",
+        "tcp": "リモート Reticulum ハブまたはゲートウェイへのアウトバウンド TCP トンネル。",
+        "rnodeUsb": "USB RNode 経由の LoRa メッシュ。",
+        "rnodeBle": "Bluetooth RNode 経由の LoRa メッシュ。",
+        "rnodeWifi": "RNode Wi-Fi (tcp:// ホスト) 経由の LoRa メッシュ。",
+        "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
+        "generic": "Reticulumネットワークインターフェース。"
+      },
+      "rfProfile": {
+        "coordinated": "地域連携",
+        "fallback": "グローバルフォールバック",
+        "legacy": "レガシープリセット"
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "上",
+        "down": "下"
+      },
+      "pickerScanFailed": "BLE スキャンに失敗しました。もう一度試すか、アドレスを手動で入力してください。",
+      "pickerBleFeatureDisabled": "この Reticulum ビルドでは Bluetooth は利用できません (rns-ble 機能がありません)。",
+      "pickerScanFailedDetail": "スキャン エラー: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
+    },
+    "reticulumPeers": {
+      "hops": "Hops",
+      "actions": "アクション",
+      "path": "パス",
+      "probe": "プローブ"
+    },
+    "reticulumPropagation": {
+      "title": "伝播ノード",
+      "enable": "有効にする",
+      "disable": "無効にする"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}}ローカルインターフェースに注意が必要です",
+      "stalePort": "{{name}} ：シリアルポート{{port}}が見つかりません",
+      "stalePortHint": "USBレプラグがパスを変更した可能性があります。Radio → Interfacesで更新し、スタックを再起動します。",
+      "offline": "{{name}} ：ローカルインターフェースは有効ですが、オフラインです",
+      "offlineHint": "ケーブルを確認し、Meshtastic/MeshCoreからポートを解放してから、スタックを再起動します。",
+      "refreshPorts": "リフレッシュポート",
+      "availablePorts": "利用可能： {{ports}}",
+      "restartStack": "スタックを再起動します",
+      "restartStackAria": "Reticulum スタックを再起動してインターフェースの変更を適用する",
+      "connectingHeading": "ローカルインターフェースを接続中…",
+      "connectingRow": "{{name}}: Bluetooth 経由で接続しています",
+      "connectingHintBle": "BLE RNode リンクは、スタックの開始後、最大 30 秒かかる場合があります。 OS のプロンプトが表示されたら、ペアリング PIN を入力します。これは正常であり、エラーではありません。",
+      "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。",
+      "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。"
+    },
+    "autoConnectingTo": "{{deviceName}} に自動接続中…",
+    "autoReconnectInProgress": "自動再接続中です…",
+    "stageAutoConnectingBle": "{{deviceName}} に接続中…",
+    "stageWaitingNobleBleMeshtastic": "Meshtastic Bluetooth が完了するのを待っています — 完了すると、MeshCore は自動的に {{deviceName}} に接続します…",
+    "stageWaitingNobleBleMeshcore": "MeshCore Bluetooth が完了するのを待っています — 完了すると、Meshtastic は自動的に {{deviceName}} に接続します…",
+    "reticulumStats": {
+      "interfaces": "{{count}}インターフェース",
+      "peers": "{{count}}同僚"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[国]/[州]、例: msh/コロラド州/米国",
+      "meshcoreLetsmesh": "メッシュコア/{IATA}、例:メッシュコア/DEN",
+      "meshcoreDefault": "MESHCORE/[国]/[州]、例:メッシュコア/米国/コロラド州"
+    },
+    "topicPrefixPlaceholder": "msh/米国/",
+    "maxRetriesHelp": {
+      "meshtastic": "諦める前に再接続を試みます (1–{{max}})。",
+      "meshcore": "諦める前に再接続を試みます (1 ～ 20)。"
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT:1883",
+      "liam": "Liam's",
+      "custom": "カスタム"
+    },
+    "deviceAddressPlaceholder": "Meshtastic.local または 192.168.1.x",
+    "meshcoreHostPlaceholder": "ローカルホストまたは192.168.1.x",
+    "meshcoreBlePairingHint": "接続する前に、<strong>システム Bluetooth 設定</strong>で MeshCore デバイスをペアリングします。プロンプトが表示されたら、PIN コードを使用します。システムが PIN を要求しない場合、接続は失敗し、ペアリングを削除して PIN を使用して再ペアリングする必要がある場合があります。",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "カスタム"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh には、ポート 443 とサーバー mqtt-us-v1.letsmesh.net または mqtt-eu-v1.letsmesh.net 上の WebSocket が必要です。地域 (US/EU) を使用するか、他のブローカーの場合はカスタムに切り替えてください。",
+      "coloradomesh": "Colorado Mesh には、TLS が有効になっているポート 1883、サーバー mqtt.meshcore.coloradomesh.org、パス /ws の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.cc 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "接続時に認証トークン(meshcore-decoder形式)が生成されます。ユーザー名は v1_ に 64 文字の公開キー (16 進数) を加えたものです。 JWT オーディエンスはサーバーのホスト名と一致します。",
+      "noPrivateKey": "完全な ID なし — MeshCore 設定を Radio パネル (公開キーと秘密キー) にインポートするか、ユーザー名 (v1_<公開キー>) とトークンを手動で貼り付けます。トークン内の JWT オーディエンスはサーバーのホスト名と一致する必要があります。",
+      "publicKeyMissing": "ID に公開キーがありません。 [Radio] パネルに MeshCore 構成 JSON をインポートするか (公開キーと秘密キーを含める必要があります)、パスワード フィールドにブローカー トークンを貼り付けます。",
+      "usernameBuildFailed": "LetsMesh ユーザー名を構築できませんでした。 MeshCore 設定 JSON を [Radio] パネルにインポートするか、ユーザー名 (v1_<public key>) とトークンを手動で貼り付けます。",
+      "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。"
+    },
+    "meshcorePacketLogger": {
+      "label": "パケット ロガー — 無線および MQTT に接続すると、RX パケットの概要を Meshcoretomqtt と同じ JSON 形式で {{topic}} に転送します。デフォルトではオフです。聞いた航空交通量をパケット アナライザーと共有する場合にのみ有効にします。"
+    },
+    "hintAdaDfuBle": "macOS では、デバイスが「AdaDFU」と表示される場合は、まず [システム設定] → [Bluetooth] でデバイスをペアリングし、その Meshtastic 名を確認します。",
+    "authTokenFailed": "認証トークンの生成に失敗しました: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -592,14 +932,16 @@
     "newGroupNamePlaceholder": "新しいグループ名…",
     "manageMembers": "メンバーを管理する",
     "rename": "名前の変更",
-    "deleteGroup": "グループの削除"
+    "deleteGroup": "グループの削除",
+    "noContactsYet": "まだ連絡先がありません。",
+    "noGroupsYet": "まだグループはありません。上に作成します。",
+    "memberCount_one": "{{count}} メンバー",
+    "memberCount_other": "{{count}} メンバー"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",
     "dismissRow": "却下する",
     "searchAnomalies": "異常を検索...",
-    "meshcoreInterferenceHeading": "MeshCore ノードの周波数 ({{count}}) を聞いた",
-    "meshcoreInterferenceDescription": "これらのエントリは、この無線で聞こえるオン周波数の MeshCore 干渉を識別します。これらは使用率や再試行の問題の原因となる可能性がありますが、それ自体では Meshtastic ルート障害診断にはなりません。",
     "otherCrossProtocolHeading": "その他のオン周波数/スタック間トラフィック ({{count}})",
     "removeMqttFilter": "ノードごとの MQTT フィルターを削除する",
     "excludeMqttData": "このノードの MQTT データを診断から除外します",
@@ -731,10 +1073,6 @@
       "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。"
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "MeshCore ノードが非常に近い (RSSI {{rssi}} dBm) - パケット衝突が発生する可能性があります。",
-      "meshcoreNearby": "近くで MeshCore ノードが検出されました (RSSI {{rssi}} dBm) — トラフィックに干渉する可能性があります。",
-      "meshcoreDistant": "この周波数 (RSSI {{rssi}} dBm) での遠方の MeshCore アクティビティ。",
-      "meshcoreGeneric": "MeshCore ノードはこの周波数で送信します。",
       "meshtastic": "Meshtastic ノードはこの周波数で送信します。送信者: {{sender}}。 {{proximity}}このノードは MeshCore リピーター エリア内にある可能性があります。",
       "unknownLora": "認識できない LoRa 信号が検出されました (RSSI {{rssi}} dBm、SNR {{snr}} dB)。",
       "potentialRepeaterConflict": "高い MeshCore パケット レートが検出されました (>5/分)。近くの MeshCore リピーターがパケット衝突を引き起こしている可能性があります。"
@@ -814,12 +1152,79 @@
     "meshcoreRepeaterConflictBanner": "高いMeshCoreパケットレート（> 5/分） —近くのリピーターがMeshtasticチャンネルで衝突を引き起こしている可能性があります。",
     "meshcoreHeardByMeshtasticHeading": "Meshtasticラジオで聞こえるMeshCoreノード（ {{count}} ）",
     "meshcoreHeardByMeshtasticDescription": "MeshCoreトランスミッタは、過去90分間にローカルRFで聞こえました（ MeshtasticデバイスログまたはMeshCoreラジオRX ）。MeshCoreリピーターコンタクト同期は含まれていません。これはあなたのMeshtasticノードではありません。",
-    "meshcoreHeardByMeshtasticEmpty": "過去90分間にMeshtastic周波数で聞こえたMeshCoreノードはありません。",
     "meshcoreHeardUnknownNode": "身元不明のMeshCore送信機",
     "meshcoreHeardNearbyEncrypted": "近くのMeshCore RF （暗号化）",
     "foreignLoraHeading": "あなたのMeshtastic周波数（ {{count}} ）の他の外国LoRa",
     "foreignLoraDescription": "過去90分間のあなたの周波数のMeshtastic送信機と認識できないLoRa信号。MeshCoreノードは、上記のセクションに記載されています。",
-    "foreignLoraEmpty": "過去90分間に、Meshtastic周波数でのMeshtasticまたは不明なLoRaアクティビティはありません。"
+    "reticulum": {
+      "sectionTitle": "Reticulumインターフェース構成",
+      "noIssues": "インターフェイス構成の問題は検出されませんでした。",
+      "summary": "{{errors}} エラー、{{warnings}} 警告",
+      "colInterface": "インタフェース",
+      "colIssue": "問題",
+      "colFix": "修理",
+      "colAction": "アクション",
+      "stackScope": "スタック",
+      "repairFailed": "構成の修復に失敗しました。",
+      "repairSuccess": "構成修復が適用されました。",
+      "repairNoChanges": "この修復には構成の変更は必要ありませんでした。",
+      "disableSuccess": "インターフェースが無効になっています。",
+      "disableFailed": "インターフェースを無効にできませんでした。",
+      "remedy": {
+        "configuration": "構成",
+        "software": "ソフトウェア",
+        "hardware": "ハードウェア"
+      },
+      "action": {
+        "repair_config": "構成を修復する",
+        "disable": "無効にする",
+        "apply_preset": "プリセットを適用する",
+        "edit": "編集インターフェース",
+        "restart_stack": "スタックを再起動します",
+        "add_auto": "自動インターフェースの追加"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP インターフェイス「{{name}}」は間違った有効化キーを使用しています。RNS はそれをロードしません。",
+        "tcp_missing_name": "TCP インターフェイス「{{name}}」には、構成に名前フィールドがありません。",
+        "tcp_unreachable": "TCP インターフェイス「{{name}}」に到達できません。",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF パラメータがプリセットと異なります。",
+        "rf_cross_mismatch": "複数の有効な RNode は異なる RF パラメータを使用します。",
+        "rf_using_fallback": "RNode \"{{name}}\" はグローバル フォールバック RF プロファイルを使用します。",
+        "rf_unknown_params": "RNode \"{{name}}\" RF パラメータは既知のプロファイルに一致しません。",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" は従来のプリセット ID を使用しています。移行を検討してください。",
+        "ghost_interface": "インターフェイス「{{name}}」は構成で有効になっていますが、RNS によってロードされていません。",
+        "missing_auto_interface": "有効な AutoInterface がありません - ローカル LAN 検出がオフになっています。",
+        "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
+        "missing_shared_instance": "共有インスタンスはオンですが、SharedInstanceServer が起動していません。",
+        "shared_instance_unexpected": "SharedInstanceServer はライブですが、share_instance はオフです。",
+        "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。"
+      },
+      "runtime": {
+        "rnsNotReady": "RNS スタックの準備ができていません",
+        "lxmfNotReady": "LXMFルーターの準備ができていません",
+        "localStalePort": "ローカル インターフェイス \"{{name}}\" シリアル ポート {{port}} がこのシステムに見つかりません",
+        "localOffline": "ローカル インターフェイス「{{name}}」は有効ですが、オフラインです",
+        "interfaceDown": "{{type}} インターフェース「{{name}}」は有効ですが、{{status}}",
+        "noPeers": "パステーブルに既知のピアがまだありません"
+      }
+    },
+    "routingPort": {
+      "nodeInfo": "ノード情報",
+      "telemetry": "テレメトリー",
+      "neighborInfo": "近隣情報",
+      "traceroute": "トレースルート",
+      "position": "位置",
+      "remoteHardware": "リモートハードウェア",
+      "admin": "管理者",
+      "discoveryFlood": "ディスカバリーフラッド",
+      "roomAdvert": "部屋の広告",
+      "generic": "ポート{{port}}"
+    },
+    "signalColumn": "信号",
+    "senderLabel": "送信者",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB"
   },
   "errorBoundary": {
     "title": "何か問題が発生しました",
@@ -833,8 +1238,117 @@
     "updateAvailable": "ファームウェアアップデートが利用可能",
     "updateAvailableVersion": "利用可能なファームウェアアップデート: v{{version}}"
   },
+  "flasher": {
+    "title": "RNode ファームウェア フラッシャー",
+    "portContentionWarning": "フラッシュする前に、Reticulum スタックを停止するか、アクティブな RNode シリアル インターフェイスを無効にします。同じポート上の Meshtastic または MeshCore シリアルを切断します。",
+    "selectProduct": "製品",
+    "selectModel": "モデル",
+    "selectProductPlaceholder": "製品を選択してください…",
+    "selectModelPlaceholder": "モデルを選択してください…",
+    "firmwareFile": "ファームウェアファイル(.zip)",
+    "enterDfuMode": "DFUモードに入る",
+    "enterDfuHint": "nRF52 ボードの場合: デバイスを USB DFU ブートローダー モード (1200 ボー タッチ) にします。",
+    "flashFirmware": "フラッシュファームウェア",
+    "flashing": "点滅中… {{progress}}%",
+    "dfuModeDone": "デバイスは DFU モードになっているはずです。",
+    "flashSuccess": "ファームウェアがフラッシュされました。",
+    "provisionTitle": "EEPROMのプロビジョニング",
+    "provisionHint": "フラッシュ後の新しいデバイスに必要です。デバイス ID、チェックサム、ロック バイトを書き込みます。",
+    "provision": "規定",
+    "provisioning": "プロビジョニング中…",
+    "provisionSuccess": "デバイスがプロビジョニングされました。",
+    "provisionAlreadyDone": "EEPROM はすでにプロビジョニングされています。再プロビジョニングするには、最初にそれをワイプします。",
+    "firmwareHashTitle": "ファームウェアのハッシュを設定する",
+    "firmwareHashHint": "ファームウェアがフラッシュされるたびに実行します。デバイスからターゲット ハッシュを読み取り、EEPROM に書き込みます。",
+    "setFirmwareHash": "ファームウェアのハッシュを設定する",
+    "settingFirmwareHash": "ファームウェアのハッシュを設定しています…",
+    "firmwareHashSuccess": "ファームウェアハッシュが設定されました。",
+    "firmwareHashNotProvisioned": "EEPROM がプロビジョニングされていません。まずデバイスをプロビジョニングします。",
+    "advancedTitle": "高度なツール",
+    "detectDevice": "デバイスの検出",
+    "reboot": "リブート",
+    "rebootSuccess": "ボードを再起動中です。",
+    "wipeEeprom": "EEPROMの消去",
+    "wipeEepromConfirmTitle": "EEPROMを消去しますか?",
+    "wipeEepromConfirmMessage": "これにより、デバイスのプロビジョニングが消去され、約 30 秒かかります。完了するとデバイスが再起動します。",
+    "wipeEepromConfirm": "EEPROMの消去",
+    "wipeEepromSuccess": "EEPROMが消去されました。",
+    "readDisplay": "表示を読む",
+    "dumpEeprom": "EEPROMをダンプしてログに記録する",
+    "bluetoothTitle": "ブルートゥース",
+    "enableBluetooth": "Bluetooth を有効にする",
+    "disableBluetooth": "Bluetoothを無効にする",
+    "startPairing": "ペアリングを開始する",
+    "pairingPin": "Bluetooth ペアリング PIN: {{pin}}",
+    "tncTitle": "TNCモード",
+    "tncHint": "アマチュア無線アプリ用のシリアル経由の KISS TNC。 Reticulum またはメッシュ チャット クライアントを使用する場合は無効のままにしてください。",
+    "enableTnc": "TNC モードを有効にする",
+    "disableTnc": "TNC モードを無効にする",
+    "displayTitle": "画面",
+    "displayHint": "ディスプレイの回転にはファームウェア v1.80 以降が必要です。",
+    "rotation0": "0°",
+    "rotation90": "90°",
+    "rotation180": "180°",
+    "rotation270": "270°",
+    "reconditionDisplay": "修理表示",
+    "errors": {
+      "webSerialUnsupported": "この環境ではWebシリアルは利用できません。",
+      "notRnode": "選択したデバイスは RNode ではありません。",
+      "portSelectionCancelled": "シリアルポートの選択がキャンセルされました。",
+      "portInUse": "シリアルポートはすでに開いています。他の接続を停止して、再試行してください。",
+      "generic": "操作が失敗しました: {{message}}",
+      "selectProduct": "まず製品を選択してください。",
+      "selectModel": "まずモデルを選択してください。",
+      "selectFirmware": "最初にファームウェア ファイルを選択します。",
+      "flashConfigMissing": "このデバイスではフラッシュ構成を使用できません。",
+      "blockedByStack": "Reticulum スタックが RNode シリアル ポートを保持している間はフラッシュできません。",
+      "esp32SyncFailed": "ESP 32ブートローダーと同期できませんでした。USBケーブルとポートを確認し、シリアルポートを使用して他のアプリを停止して、もう一度やり直してください。",
+      "flashTransferTooSmall": "ファームウェア転送が完了しませんでした—ほとんどデータが書き込まれませんでした。正しいUSBポートを選択し、ボードがブートローダーモードに入ったことを確認します。",
+      "flashMd5Mismatch": "書き込み後、ファームウェアの検証に失敗しました。別のUSBケーブルまたはポートでもう一度お試しください。問題が解決しない場合は、ファームウェアZIPを再ダウンロードしてください。",
+      "portSelectionTimedOut": "シリアルポートの選択がタイムアウトしました。2分以内にリストからポートを選択するか、フラッシュを再試行して最後のポートを再利用します。",
+      "noSerialPorts": "USB シリアル ポートが見つかりません。 USB 経由でボードを接続し、再試行してください。"
+    },
+    "selectSerialPort": "シリアルポートを選択",
+    "noSerialPorts": "USBシリアルポートが見つかりません。",
+    "noSerialPortsHint": "USB経由でボードを接続します。ログ内のBluetoothデバイスは無視されます。点滅に使用できるのはUSBシリアルポートのみです。",
+    "stackStoppedHint": "Reticulumスタックが停止しています—シリアルポートは点滅のために空いています。完了したら、[接続]タブでスタックを再起動します。",
+    "lastUsedPort": "前回使用",
+    "downloadFirmware": "ファームウェアをダウンロード",
+    "downloadLatestFirmware": "{{filename}} （最新リリース）",
+    "officialFirmware": "公式ファームウェア",
+    "ceFirmware": "CEファームウェア",
+    "transportNodeFirmware": "トランスポートノードのファームウェア",
+    "esp32BootHint": "データUSBケーブルを使用してください（充電のみではありません）。点滅する前に、同じシリアルポートを使用して他のアプリを停止してください。",
+    "flashSectionTitle": "フラッシュファームウェア",
+    "esp32Syncing": "ESP 32ブートローダーに接続しています…",
+    "provisionRequiresFlash": "この手順を使用する前に、ファームウェアを正常にフラッシュしてください。",
+    "provisionDone": "プロビジョニング済み",
+    "firmwareHashRequiresProvision": "ファームウェアハッシュを設定する前に、EEPROMをプロビジョニングします。",
+    "firmwareHashDone": "ファームウェアハッシュセット",
+    "flashDone": "ファームウェアがフラッシュされました",
+    "bluetoothHint": "デバイスで Bluetooth を有効にし、[ペアリングの開始] を使用します。ここでは、USB シリアル経由で 6 桁の PIN が表示されます。Reticulum が BLE 経由で接続する場合は、OS の Bluetooth ダイアログ (macOS、Windows、または Linux) に同じ PIN を入力します。 USB のないヘッドレス デバイスでは、画面に PIN を表示できません。",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "点滅後、Wi-Fiが無効になっています。ここでステーションモード（ USBシリアル）を設定し、tcp :// host （ポート7633 ）を使用して接続にWi-Fi RNodeインターフェースを追加します。ESP 32 - S 3 Wi-Fi対応ファームウェアが必要です。変更を適用した後、ボードを再起動します。",
+    "wifiSsidLabel": "Wi-Fi  SSID",
+    "wifiPskLabel": "Wi-Fiパスワード",
+    "wifiChannelLabel": "チャンネル（任意）",
+    "wifiStaticIpLabel": "静的IP （オプション）",
+    "wifiStaticNetmaskLabel": "ネットマスク（オプション）",
+    "wifiDhcpPlaceholder": "DHCPの場合は空白のままにします",
+    "wifiOff": "Wi-Fiオフ",
+    "wifiEnableAp": "APを有効にする",
+    "wifiApplyStation": "ステーションを適用",
+    "wifiReadConfig": "設定の読み取り",
+    "wifiAdvancedShow": "高度",
+    "wifiAdvancedHide": "詳細を非表示します",
+    "wifiAdvancedToggle": "高度なWi-Fiオプションを切り替える",
+    "wifiOffSuccess": "Wi-Fiが無効になっています。変更を有効にするには、ボードを再起動してください。",
+    "wifiApSuccess": "アクセスポイントモードが有効です。コンピュータ（デフォルトゲートウェイ10.0.0.1 ）からRNode APに参加し、ステーションの資格情報を設定するか、ブートストラップコンソールを使用します。",
+    "wifiStationSuccess": "ステーションモードが保存されました。ボードを再起動し、そのIP （ディスプレイ、ルーターDHCP、または設定の読み取り）を見つけて、接続→インターフェースにtcp ://...を追加します。",
+    "wifiConfigEmpty": "設定データが返されませんでした。",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
   "logAnalyzeModal": {
-    "closeDialog": "ダイアログを閉じる",
     "title": "ログ分析",
     "totalEntries": "{{count}} エントリ",
     "errorsShort": "{{count}} エラー",
@@ -890,11 +1404,11 @@
       },
       "database-chmod": {
         "label": "データベース chmod (致命的ではない)",
-        "recommendation": "データベース ファイルのアクセス許可の調整に失敗しました (Windows では多くの場合問題ありません)。他の場所で実際の DB エラーが発生した場合は、ウイルス対策とメッシュ クライアントの userData ディレクトリのフォルダー権限を確認してください。"
+        "recommendation": "Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory."
       },
       "database-writable": {
         "label": "データベースは書き込み不可です",
-        "recommendation": "アプリはデータベース フォルダーに書き込むことができません。メッシュ クライアントの userData ディレクトリのアクセス許可を修正します (トラブルシューティング: データベース ディレクトリが書き込み可能ではないを参照)。"
+        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
       },
       "tak-server": {
         "label": "TAK サーバーの問題",
@@ -929,16 +1443,12 @@
         "recommendation": "Store & Forwardチャット履歴をルーターから要求できませんでした（多くの場合、他の無線トラフィックとの短いレース）。チャットバックログが空のままの場合は、再接続するか、次のルーターのハートビートを待ちます。"
       },
       "serial-reconnect": {
-        "label": "USBシリアル再接続",
-        "recommendation": "USBシリアルは、切断後にきれいに解放されませんでした。メッシュクライアントを終了して再度開くか、ケーブルを抜いて再接続してから再度接続します。"
+        "label": "USBシリアル再接続"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "やるべきことをやれ。"
-      },
-      "serial-reconnect": {
-        "recommendation": "USBシリアルは、切断後にきれいに解放されませんでした。メッシュクライアントを終了して再度開くか、ケーブルを抜いて再接続してから再度接続します。"
       }
     }
   },
@@ -965,17 +1475,14 @@
     "logInfo": "ログ/情報",
     "warnError": "警告/エラー",
     "narrowLogPanel": "狭い丸太パネル",
-    "widenLogPanel": "ログパネルを広げる"
+    "widenLogPanel": "ログパネルを広げる",
+    "clearFailed": "ログをクリアできませんでした"
   },
   "mapPanel": {
     "locationUnavailable": "場所が利用できません。",
-    "gpsHardwareUnavailable": "GPS ハードウェアが利用できません。",
-    "locationError": "位置エラー: {{error}}",
     "locationRequestFailed": "位置情報リクエストが失敗しました。",
     "showMyLocation": "私の現在地を表示",
     "networkMap": "ノードの位置を示すネットワーク マップ",
-    "toggleRouteWeightLines": "ルートの重み線を切り替えます",
-    "routeWeights": "ルートの重み",
     "layerControls": "レイヤー",
     "layerControlsAria": "マップレイヤーコントロールの切り替え",
     "basemapHeading": "ベースマップ",
@@ -988,7 +1495,10 @@
     "layerWaypoints": "ウェイ ポイント",
     "layerRouteWeights": "ルートウェイト",
     "layerAnomalyHalos": "異常な光輪",
-    "layerCongestionHalos": "輻輳ハロー"
+    "layerCongestionHalos": "輻輳ハロー",
+    "waypointDefaultName": "ウェイポイント",
+    "waypointDelete": "ウェイポイントの削除",
+    "noGpsNodes": "GPS 位置を持つノードはまだありません"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -1068,7 +1578,6 @@
     "cannedMessagesApplied": "定型メッセージが適用されました。",
     "rtttlSaved": "RTTTL 着信音が保存されました。",
     "title": "モジュール構成",
-    "readOnly": "読み取り専用",
     "connectToDevice": "デバイスに接続してモジュール構成を変更します。",
     "waitingForModuleConfig": "デバイスからのモジュール構成を待機しています…",
     "selectPreset": "プリセットを選択してください…",
@@ -1221,14 +1730,7 @@
       "echoMode": "エコーモード",
       "baudRate": "ボーレート",
       "storeForwardEnabled": "ストア&フォワードが有効になっています",
-      "sfHeartbeat": "ハートビートを送信する",
-      "sfMaxStored": "最大保存レコード数",
-      "sfHistoryMax": "履歴リターン最大値",
-      "sfHistoryWindow": "履歴返却ウィンドウ",
       "sfHeartbeatDesc": "定期的にプレゼンスをブロードキャストして、クライアントに S&F が利用可能であることを知らせます。",
-      "sfMaxStoredDesc": "デバイス上に保持される最大レコード数。",
-      "sfHistoryMaxDesc": "ノードが履歴を要求したときに返される最大メッセージ数。",
-      "sfHistoryWindowDesc": "メッセージを返す時間をどれだけ遡るか (秒)。",
       "telDeviceTelemetryEnabled": "デバイステレメトリを送信する",
       "telDeviceTelemetryEnabledDesc": "テレメトリ モジュールを介してデバイス メトリクス (バッテリ、電圧、チャネル使用率) をメッシュにブロードキャストします。",
       "telDeviceInterval": "デバイスメトリック間隔",
@@ -1290,7 +1792,7 @@
       "remoteHardwareEnabledDesc": "リモートノードがこのデバイスのGPIOピンを読み書きできるようにします。",
       "remoteHardwareAllowUndefinedPins": "未定義ピンへのアクセスを許可",
       "remoteHardwareAllowUndefinedPinsDesc": "利用可能なピン設定に記載されていないピンの読み書きを許可します。",
-      "mqttProxyGatewayHint": "プロキシを有効にすると、メッシュクライアントブリッジはMqttClientProxyMessageを介してトラフィックをブローカーします。MQTT→ RFリレーのラジオタブでチャネルごとのダウンリンクを有効にします。",
+      "mqttProxyGatewayHint": "With proxy enabled, mesh-client bridges broker traffic via MqttClientProxyMessage. Enable per-channel downlink on the Radio tab for MQTT→RF relay.",
       "mapReportPublishInterval": "マップレポート間隔（秒）",
       "mapReportPublishIntervalDesc": "0はファームウェアのデフォルトを使用します。マップレポートが有効になっているときに、デバイスがマップレポートを発行する頻度。",
       "mapReportPositionPrecision": "マップレポートの位置精度",
@@ -1332,7 +1834,141 @@
     "debugPrivateAppMessages": "アプリからの非公開メッセージ",
     "debugPingResponses": "Ping応答",
     "sectionMapReport": "マップレポート",
-    "sectionMapReportHint": "MQTT上のMeshtasticマップに位置を公開します。上記で有効になっているMQTTリレーが必要です。設定はデバイスMQTTモジュール構成に保存されます。"
+    "sectionMapReportHint": "MQTT上のMeshtasticマップに位置を公開します。上記で有効になっているMQTTリレーが必要です。設定はデバイスMQTTモジュール構成に保存されます。",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "なし"
+      },
+      "10": {
+        "label": "選択（入力）"
+      },
+      "17": {
+        "label": "上"
+      },
+      "18": {
+        "label": "下"
+      },
+      "19": {
+        "label": "左"
+      },
+      "20": {
+        "label": "右"
+      },
+      "24": {
+        "label": "キャンセル"
+      },
+      "27": {
+        "label": "戻る (Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "デフォルト"
+      },
+      "1": {
+        "label": "単純"
+      },
+      "2": {
+        "label": "プロト"
+      },
+      "3": {
+        "label": "テキストメッセージ"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.ダイレクト"
+      },
+      "8": {
+        "label": "メッシュソーラー構成"
+      },
+      "9": {
+        "label": "ログ(全パケット)"
+      },
+      "10": {
+        "label": "ログ（テキストのみ）"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "白"
+      },
+      "2": {
+        "label": "黄色"
+      },
+      "3": {
+        "label": "オレンジ"
+      },
+      "4": {
+        "label": "マゼンタ"
+      },
+      "5": {
+        "label": "赤"
+      },
+      "6": {
+        "label": "マルーン"
+      },
+      "7": {
+        "label": "紫"
+      },
+      "8": {
+        "label": "ダークブルー"
+      },
+      "9": {
+        "label": "青"
+      },
+      "10": {
+        "label": "シアン"
+      },
+      "11": {
+        "label": "ティール"
+      },
+      "12": {
+        "label": "緑"
+      },
+      "13": {
+        "label": "ダークグリーン"
+      },
+      "14": {
+        "label": "茶色"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "チームメンバー"
+      },
+      "2": {
+        "label": "チームリーダー"
+      },
+      "3": {
+        "label": "本社"
+      },
+      "4": {
+        "label": "スナイパー"
+      },
+      "5": {
+        "label": "メディック"
+      },
+      "6": {
+        "label": "前線観測者"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",
@@ -1479,7 +2115,21 @@
     "configureRemotelyHint": "メッシュを介してこのノードのラジオ設定を開きます（ローカルラジオと保存された管理者キーが必要です）。",
     "openRoomButton": "🏠 ルームを開く",
     "remoteAuthCancelled": "リモートアクセスがキャンセルされました。",
-    "shareContactSent": "無線で送信されたコンタクトシェア。"
+    "shareContactSent": "無線で送信されたコンタクトシェア。",
+    "blockContact": "ブロック",
+    "unblockContact": "ブロック解除",
+    "paxCounter": {
+      "heading": "パックスカウンター",
+      "detectedCount": "検出数",
+      "lastSeen": "最後に見たもの"
+    },
+    "detectionSensor": {
+      "heading": "検出センサー ({{count}})",
+      "lastDetection": "最後の検出",
+      "dataSize": "データサイズ",
+      "dataSizeBytes": "{{count}}バイト",
+      "rawDataHex": "生データ (16 進数)"
+    }
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -1640,6 +2290,35 @@
     "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
     "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
   },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "toggleFavorite": "お気に入りを切り替える",
+    "favourites": "お気に入り",
+    "announces": "お知らせ",
+    "searchFavourites": "{{count}}のお気に入りを検索…",
+    "searchAnnounces": "検索{{count}}が発表します…",
+    "emptyFavourites": "No favourite Nomad Network nodes yet.",
+    "emptyAnnounces": "Nomad Networkノードはまだ発表されていません。",
+    "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。",
+    "selectNode": "リストからノードを選択して、そのページを参照します。",
+    "lastSeen": "最後に聞いたのは{{time}}",
+    "hopsAway_one": "{{count}} 飛び降りる",
+    "hopsAway_other": "{{count}} が飛び降りる",
+    "openNode": "{{name}}を参照",
+    "pagePath": "ページパス",
+    "pagePathAria": "ノマドページのパス",
+    "homePage": "ホームページ",
+    "reloadPage": "ページをリロードする",
+    "closeViewer": "ページビューアを閉じる",
+    "pageLoading": "ページを読み込み中…",
+    "pageFailed": "ページの読み込みに失敗しました: {{error}}",
+    "pageTruncated": "表示のためにページが切り詰められています",
+    "showSource": "ページのソースを表示",
+    "hideSource": "フォーマットされたページを表示",
+    "fileDownloading": "ファイルをダウンロード中…",
+    "fileDownloadFailed": "ファイルのダウンロードに失敗しました: {{error}}",
+    "fileDownloadInProgress": "ファイルのダウンロードはすでに進行中です。"
+  },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
     "distributionByType": "タイプ別の分布",
@@ -1659,6 +2338,29 @@
     "other": "他の",
     "noSenderId": "生のフレームに送信者 ID がありません"
   },
+  "peerDetailModal": {
+    "networkSection": "ネットワーク",
+    "pathHash": "パスハッシュ",
+    "copyHash": "コピー先ハッシュ",
+    "editNameAria": "手動インストール",
+    "sendMessage": "メッセージを送信",
+    "pathOk": "パスリクエストが送信されました。",
+    "pathFailed": "パスリクエストに失敗しました： {{error}}",
+    "probeHops": "プローブOK — {{hops}}ホップ。",
+    "probeLocal": "プローブOK （ {{mode}}モード）。",
+    "probeFailed": "プローブが失敗しました： {{error}}",
+    "iconColor": "アバターの色",
+    "iconColorAria": "ピアアバターの色",
+    "saveContact": "連絡用として保存）",
+    "removeContact": "連絡先を削除",
+    "removeContactConfirmTitle": "連絡先を削除",
+    "removeContactConfirmBody": "これにより、連絡先がリストから削除されます。チャット履歴は保持されます。再度メッセージを送信すると、連絡先が再度追加されます。",
+    "probeOk": "プローブOK —到達可能なパス。",
+    "blockContact": "連絡先をブロックする",
+    "unblockContact": "連絡先のブロックを解除する",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} —最終閲覧{{seen}}"
+  },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",
     "noNodes": "まだ観察されたノードはありません",
@@ -1671,7 +2373,42 @@
     "me": "このノード",
     "directLink": "ダイレクト（ 0ホップ）",
     "relayLink": "リレー経由（ 1ホップ）",
-    "hiddenCount": "{{shown}}/{{total}}ノードを表示しています（接続されていないノードは非表示）"
+    "hiddenCount": "{{shown}}/{{total}}ノードを表示しています（接続されていないノードは非表示）",
+    "noConnectedNodes": "表示する接続されたピアがありません—フィルタを調整するか、ネットワークトラフィックを待ちます。",
+    "meShort": "あなたは",
+    "relayHub": "ダイレクトリレー",
+    "relayCount": "{{count}}リレーハブ",
+    "hopBadge": "{{count}}時間",
+    "showDistantPeers": "遠隔地の同僚を表示",
+    "maxHopsFilter": "最大ホップ数",
+    "maxHopsAll": "すべてのホップ",
+    "maxHopsOption": "{{count}}ホップ",
+    "resetView": "ビューをリセット",
+    "compactLeafCount": "{{count}}コンパクトダイレクトピア"
+  },
+  "peerListPanel": {
+    "heading": "ピア",
+    "tabPeers": "ピア",
+    "tabContacts": "連絡先",
+    "searchPlaceholder": "名前またはハッシュで検索…",
+    "searchAria": "ピアを検索",
+    "colName": "名前/ハッシュ",
+    "colLastSeen": "最終表示",
+    "colInterface": "インターフェイス",
+    "colFavorite": "お気に入り",
+    "toggleFavorite": "お気に入りを切り替える",
+    "openChat": "チャットを開始",
+    "emptyPeers": "まだピアが見つかりません。アナウンスを送信するか、ネットワークトラフィックを待ちます。",
+    "emptyContacts": "連絡先はまだありません。ここに追加するには、同僚にメッセージを送信してください。",
+    "groupFilterAria": "グループで連絡先を絞り込む",
+    "allGroups": "すべてのグループ",
+    "manageGroups": "グループを管理",
+    "colLastHeard": "最後のヒアリング",
+    "colContact": "お問い合わせ",
+    "contactYes": "あり",
+    "contactNo": "なし",
+    "tabFavorites": "お気に入り",
+    "emptyFavorites": "お気に入りのピアはまだありません。連絡先またはピアに星を付けて、ここにピン留めします。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",
@@ -1715,19 +2452,14 @@
     "sectionLora": "LoRa / ラジオ",
     "sectionPositionGps": "位置/GPS",
     "sectionPower": "力",
-    "sectionTelemetry": "テレメトリー",
     "sectionWifi": "WiFi / ネットワーク",
-    "passwordPlaceholder": "パスワード",
     "yourNamePlaceholder": "あなたの名前",
     "namePlaceholder": "名前",
     "networkNamePlaceholder": "ネットワーク名",
     "encryptionNone": "なし (暗号化なし)",
     "encryptionSimple": "シンプル (デフォルトの Meshtastic キー)",
     "generateRandomKey": "ランダムキーを生成する",
-    "setKeyFromSha256": "SHA-256(名前)の最初の16バイトからキーを設定します(MeshCore #channels)",
     "removeAllContactsTitle": "無線からすべての連絡先を削除し、データベースに保存します",
-    "contactsOnRadio": "{{count}} / {{max}} の無線連絡先",
-    "aesEncrypted": "AES暗号化",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "キーのサイズ",
@@ -1737,8 +2469,6 @@
     "connectToConfigure": "デバイスに接続して構成を変更します。",
     "importConfigJson": "構成 JSON をインポートする",
     "offloadContacts": "オフロード",
-    "deviceMetricsDescription": "メッシュ ブロードキャスト: バッテリー、電圧、チャネル使用率が LoRa 経由で送信される頻度。 0 = 無効。デフォルトは 1800 秒 (30 分)。接続されたアプリ: Bluetooth、シリアル、または Wi-Fi 経由でリンクされている場合、ファームウェアは画面上の鮮度を維持するために、デバイス メトリックを約 60 秒ごとにこのクライアントにプッシュします。これはメッシュ間隔と同じではありません。",
-    "deviceMetricsTooltip": "Meshtastic ファームウェアは、メッシュ テレメトリ間隔に関係なく、ローカル監視のために、接続されているクライアントにデバイス メトリクスをおよそ 1 分に 1 回送信します。公式リファレンス: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "メトリック"
@@ -1802,18 +2532,6 @@
     "pairingPinDesc": "Bluetooth ペアリング用の 6 桁の固定 PIN。デフォルト: 123456。",
     "wifiPasswordLabel": "WiFiパスワード",
     "wifiPasswordPlaceholder": "パスワード",
-    "deviceUserIdentity": "デバイスのユーザー/ID",
-    "displaySection": "画面",
-    "loraRadio": "LoRa / ラジオ",
-    "positionGps": "位置/GPS",
-    "powerSection": "力",
-    "telemetrySection": "テレメトリー",
-    "wifiNetwork": "WiFi / ネットワーク",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "名前",
-    "latPlaceholder": "0.000000",
-    "lonPlaceholder": "0.000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "主要な",
     "channelNameSecondary": "チャンネル名",
     "resetChannelDefaults": "デフォルトにリセットする",
@@ -1830,7 +2548,6 @@
     "channelSaveFailed": "失敗しました: {{message}}",
     "validationAes128": "AES-128 キーは正確に 16 バイト (24 Base64 文字) である必要があります",
     "validationAes256": "AES-256 キーは正確に 32 バイト (44 Base64 文字) である必要があります",
-    "factoryResetConfirmTitle": "工場出荷時設定にリセット",
     "factoryResetButton": "工場出荷時設定にリセットしたデバイス",
     "dangerZonePermanent": "これらの操作は永続的であり、元に戻すことはできません。",
     "resetNodeDbName": "ノードDBをリセット",
@@ -1906,7 +2623,6 @@
     "lightSleepDurationDesc": "浅い睡眠サイクルの継続時間。 0 = デフォルトを使用します。",
     "batteryShutdownLabel": "バッテリーシャットダウン後の",
     "batteryShutdownDesc": "最後のメッシュ アクティビティからこの秒数が経過すると、バッテリでシャットダウンします。 0 = 無効。",
-    "deviceMetricsIntervalLabel": "デバイスメトリクスの更新間隔",
     "wifiEnabledLabel": "WiFi が有効になっている",
     "ethernetEnabledLabel": "イーサネット対応",
     "mqttUplinkLabel": "MQTT アップリンク",
@@ -2130,7 +2846,7 @@
     "applyStatusFailed": "失敗: {{message}}",
     "applyUserApplying": "ユーザーIDを適用しています…",
     "applyUserSuccess": "ユーザーIDが正常に適用されました！",
-    "applyLoraSuccess": "設定が適用されました。",
+    "applyLoraSuccess": "LoRa settings applied successfully!",
     "offloading": "オフロードしています…",
     "offloadingProgress": "{{total}}件中{{current}}件を削除しています…",
     "offloadCancelled": "オフロードがキャンセルされました。",
@@ -2164,7 +2880,103 @@
     "applyTxPowerSuccess": "TX電力が適用されました",
     "xmodemInvalidFilename": "％filename に無効な文字が含まれています。",
     "validationInvalidPsk": "無効なbase 64 PSK —キーを確認してもう一度やり直してください",
-    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません"
+    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません",
+    "editChannelTitle": "チャンネル {{index}} を編集",
+    "channelNameLabel": "名前",
+    "channelRoleLabel": "役割",
+    "channelsEditHint": "編集するチャンネルを選択します。 AES-128/256 キーは、base64 (Meshtastic 規則) で表示されます。",
+    "channelResetStatus": "チャンネル {{index}} をリセットしました!",
+    "meshcoreChannel": {
+      "defaultName": "チャンネル {{index}}",
+      "addTitle": "チャンネルを追加",
+      "editTitle": "チャンネル {{index}} を編集",
+      "indexLabel": "インデックス (0–{{max}})",
+      "invalidHex": "正確に 32 個の 16 進文字である必要があります。",
+      "addButton": "+ チャンネルを追加",
+      "footerHelp": "キーは 128 ビット (16 バイト) で、32 個の 16 進文字として表示されます。チャネル名は最大 {{nameMax}} 文字です。最大 {{channelCount}} チャネル (インデックス 0 ～ {{indexMax}})。 #channels の場合は、「名前から派生」(先頭に # が付いている名前の SHA-256) を使用します。"
+    },
+    "regions": {
+      "0": {
+        "label": "設定を解除する"
+      },
+      "1": {
+        "label": "私たち"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "日本"
+      },
+      "6": {
+        "label": "ニュージーランド"
+      },
+      "7": {
+        "label": "KR"
+      },
+      "8": {
+        "label": "TW"
+      },
+      "9": {
+        "label": "RU"
+      },
+      "10": {
+        "label": "で"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MY_433"
+      },
+      "16": {
+        "label": "MY_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "ロラ_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "長くて速い"
+      },
+      "1": {
+        "label": "ロングスロー"
+      },
+      "2": {
+        "label": "長い中程度"
+      },
+      "3": {
+        "label": "ショートファスト"
+      },
+      "4": {
+        "label": "ショートスロー"
+      },
+      "5": {
+        "label": "中速"
+      },
+      "6": {
+        "label": "中低速"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -2188,7 +3000,22 @@
     "meshtasticLegendHint": "行を展開：ポートとホップの詳細は上部にあります。ホップカウントは、RFパケットでhopStart - hopLimitを使用します（ MQTTではありません）。",
     "portLabel": "ポート",
     "transportSourceLabel": "持ち運び",
-    "hopsAbsentMqtt": "RFホップカウントなし（ MQTTパス）。"
+    "hopsAbsentMqtt": "RFホップカウントなし（ MQTTパス）。",
+    "reticulum": {
+      "legendHint": "RNSヘッダーフィールドの行を展開します。RX =インターフェースで受信。TX =このノードからのアウトバウンド。",
+      "direction": "方向",
+      "interface": "インターフェイス",
+      "packetType": "パケットタイプ",
+      "headerType": "ヘッダー",
+      "destination": "移動先",
+      "rx": "RX",
+      "tx": "TX"
+    },
+    "pauseCapture": "一時停止",
+    "resumeCapture": "レジュメ",
+    "resumeCaptureWithCount": "再開(+ {{count}})",
+    "pausedPending": "一時停止中の{{count}} NEW",
+    "jumpToLatest": "最新情報にジャンプ"
   },
   "remoteAdmin": {
     "errors": {
@@ -2291,7 +3118,90 @@
     "pathHashCliGet": "パスハッシュモードの取得",
     "pathHashCliSet0": "パスハッシュモード1バイトを設定",
     "pathHashCliSet1": "パスハッシュモード2バイトを設定",
-    "pathHashCliSet2": "パスハッシュモード3バイトを設定"
+    "pathHashCliSet2": "パスハッシュモード3バイトを設定",
+    "pathLabel": "パス：",
+    "hopMe": "●私",
+    "hopN": "● ホップ {{n}}",
+    "noNeighborsReported": "近隣住民は報告されていません",
+    "fetchingTelemetry": "テレメトリを取得中…",
+    "telemetryBattery": "バッテリー: {{voltage}}V",
+    "telemetryTemp": "温度: {{temp}}°C",
+    "telemetryHumidity": "湿度: {{humidity}}%",
+    "telemetryPressure": "圧力: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "alt {{altitude}}m",
+    "cliSend": "送信",
+    "cliQuick": "素早い："
+  },
+  "reticulumIdentity": {
+    "announceIntervalSec": "アナウンス間隔(秒)",
+    "clearAnnounces": "アナウンスをクリア",
+    "announceSaved": "アナウンス間隔が保存されました。",
+    "announceSaveFailed": "アナウンス間隔の保存に失敗しました： {{error}}",
+    "announceSaveSidecarStopped": "アナウンス設定を保存する前に、Reticulumスタックを起動します。",
+    "clearAnnouncesDone": "クリアをお知らせします。",
+    "clearAnnouncesFailed": "アナウンスをクリアできませんでした。"
+  },
+  "reticulumPropagation": {
+    "preferred": "推奨",
+    "setPreferred": "優先を設定",
+    "syncNow": "メッセージを同期",
+    "cancelSync": "同期をキャンセル",
+    "syncNowFor": "{{name}} からのメッセージを同期する",
+    "addNode": "ノードの追加",
+    "addNodeLabel": "ハッシュによる伝播ノードの追加",
+    "addNodePlaceholder": "32 文字の LXMF 宛先ハッシュ",
+    "localInboxStats": "{{count}} キューに入れられました · {{bytes}} バイト",
+    "refreshing": "爽やか…",
+    "refreshAria": "伝播ノードをリフレッシュする",
+    "syncStatusEstablishing": "伝播ノードへの接続を確立しています…",
+    "syncStatusNegotiating": "伝播ノードと同期をネゴシエートしています…",
+    "syncStatusTransferring": "伝播ノードからメッセージを転送中…",
+    "syncFailed": "伝播の同期に失敗しました - ノードに到達できない可能性があります。",
+    "syncTimedOut": "伝播同期がタイムアウトしました - ノードに到達できない可能性があります。",
+    "autoSyncIntervalLabel": "自動同期間隔",
+    "autoSyncIntervalAria": "伝播自動同期間隔",
+    "autoSyncOptionDisabled": "無効",
+    "autoSyncOption15m": "15分ごと",
+    "autoSyncOption30m": "30分ごと",
+    "autoSyncOption1h": "1時間ごと",
+    "autoSyncOption3h": "3時間ごと",
+    "autoSyncOption6h": "6時間ごと",
+    "autoSyncOption12h": "12時間ごと",
+    "autoSyncOption24h": "24時間ごと",
+    "lastSynced": "最終同期: {{time}}",
+    "lastRefreshed": "最終更新日 {{time}}"
+  },
+  "reticulumTopology": {
+    "title": "ネットワーク・トポロジー",
+    "self": "あなたは",
+    "hopBadge": "{{count}}時間",
+    "ariaLabel": "Reticulum ネットワーク トポロジー グラフ",
+    "noNodes": "トポロジ データがまだありません。Reticulum スタックに接続して更新します。",
+    "nodeCount": "{{count}} ノード",
+    "edgeCount": "{{count}} リンク",
+    "hiddenCount": "{{total}} ノードの {{shown}} を表示しています (遠くのピアは非表示)",
+    "legendSelf": "このノード",
+    "centerRns": "RNS",
+    "showDistantPeers": "遠隔地の同僚を表示",
+    "maxHopsFilter": "最大ホップ数",
+    "maxHopsAll": "すべてのホップ",
+    "maxHopsOption": "{{count}}ホップ",
+    "interfaceStatus": "{{online}}オンライン、{{offline}}オフラインインターフェイス",
+    "unassignedInterface": "その他のパス",
+    "legendInterfaceOnline": "インターフェースオンライン",
+    "legendInterfaceOffline": "オフラインインターフェース",
+    "legendPeerUser": "LXMFピア",
+    "legendPeerServer": "放浪者ノード",
+    "interfaceLink": "インターフェースリンク",
+    "peerLink": "ピアリンク",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "オンライン",
+    "interfaceStatusOffline": "オフライン",
+    "glyphWifi": "Wi-Fiインターフェース",
+    "glyphLora": "LoRaインターフェース",
+    "glyphTcp": "TCPインターフェース",
+    "glyphSerial": "シリアル通信"
   },
   "rfHistograms": {
     "title": "RF信号分布",
@@ -2402,7 +3312,6 @@
     "jumpToUnread": "未読へジャンプ",
     "newMessagesDivider": "新着メッセージ",
     "loggingInMarkerAria": "ルームサーバーにログインしています",
-    "savedPasswordNotLoggedIn": "パスワードを保存しました — ルームを開いてログイン",
     "favorite": "お気に入りのルーム",
     "unfavorite": "お気に入りから削除",
     "loginAllSaved": "すべてログイン",
@@ -2447,16 +3356,17 @@
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
-    "placeholder": "すべてのメッセージを検索… (ユーザー:名前、チャンネル:名前)"
+    "placeholder": "すべてのメッセージを検索… (ユーザー:名前、チャンネル:名前)",
+    "noResults": "見つかりませんでした",
+    "hint": "入力してすべてのメッセージを検索",
+    "resultCount": "{{count}}件の結果—クリックしてナビゲート"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",
     "failed": "失敗しました: {{message}}",
     "adminKeysApplied": "管理者キーが適用されました。",
     "adminSettingsApplied": "管理設定が適用されました。",
-    "keysBackedUp": "キーはシステム キーチェーンにバックアップされます。",
     "backupFailed": "バックアップに失敗しました: {{message}}",
-    "keysRestored": "バックアップから復元されたキー。",
     "restoreFailed": "復元に失敗しました: {{message}}",
     "dataSigned": "データは正常に署名されました。",
     "signNoResult": "署名操作により結果が返されませんでした。",
@@ -2500,8 +3410,6 @@
     "adminChannelDesc": "安全でない従来の管理チャネルを介した受信デバイスの制御を許可します。",
     "keyBackupUnavailable": "このプラットフォームではシステム キーチェーン暗号化は利用できません。バックアップと復元は無効になっています。",
     "keyBackupDesc": "DM キーをシステム キーチェーン (暗号化) にバックアップします。いつでもデバイスに復元できます。",
-    "backupAvailable": "バックアップが利用可能",
-    "noBackupStored": "バックアップは保存されていません",
     "backupKeys": "バックアップキー",
     "restoreKeys": "キーを復元する",
     "working": "働く...",
@@ -2572,7 +3480,11 @@
     "rf": "RF",
     "graph": "グラフ",
     "rooms": "客室数",
-    "admin": "管理"
+    "admin": "管理",
+    "peers": "ピア",
+    "nomadnetwork": "Nomad Network",
+    "topology": "ネットワーク・トポロジー",
+    "network": "ネットワーク"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -2664,5 +3576,156 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "diagnosticsPing": {
+    "title": "連続ping",
+    "reticulumHint": "スタックが実行されている間、各インターバルでping （ RTT ）およびパスプローブ（ホップ）を実行します。",
+    "hashLabel": "宛先ハッシュ",
+    "hashPlaceholder": "32文字の宛先ハッシュ…",
+    "hashAria": "Pingする宛先ハッシュ",
+    "intervalLabel": "間隔",
+    "intervalAria": "Ping試行間隔（秒）",
+    "start": "開始",
+    "stop": "停止",
+    "runOnce": "Pingを1回実行する",
+    "colSeq": "#",
+    "colRtt": "Rett症候群",
+    "colHops": "ホップ",
+    "colStatus": "ステータス",
+    "rttMs": "{{ms}}ミリ秒",
+    "statusOk": "OK",
+    "statusFailed": "失敗： {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "アクティブなアイデンティティ",
+    "active": "アクティブアイデンティティ： {{name}}",
+    "activeBadge": "活動中"
+  },
+  "identityVault": {
+    "title": "アイデンティティ保管庫",
+    "hint": "Vaultパスコードを使用して、IDバックアップのローカルコピーを暗号化します。ロックを解除して、保護されたID操作にアクセスします。",
+    "passcode": "Vaultのパスコード",
+    "confirmPasscode": "パスコードを確認",
+    "setPasscode": "ボールトを有効にする",
+    "unlock": "貯蔵庫のロックを解除",
+    "lock": "保管庫のロック",
+    "statusNotConfigured": "Not configured",
+    "statusLocked": "ロック",
+    "statusUnlocked": "ロック解除",
+    "passcodeTooShort": "少なくとも 4 文字必要です。",
+    "passcodeMismatch": "パスコードが一致しません。",
+    "setSuccess": "Vaultのパスコードが保存されました。",
+    "setFailed": "Vaultパスコードを保存できませんでした。",
+    "unlockSuccess": "ボールトがアンロックされました。",
+    "unlockFailed": "パスコードが正しくないか、Vaultエラーが発生しました。",
+    "lockSuccess": "ボールトがロックされています。"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "伝播モード",
+    "modeAria": "伝播同期モード",
+    "modeAuto": "自動",
+    "modeManual": "手動",
+    "modeOff": "OFF",
+    "sync": "同期",
+    "syncAria": "伝播メッセージを同期",
+    "cancelSync": "取り消す",
+    "cancelSyncAria": "伝播の同期をキャンセル"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "プレイヤーアイコンを見る",
+    "iconNameAria": "ピアアバターアイコン",
+    "iconCircle": "円",
+    "iconStar": "スター",
+    "iconHeart": "ハートマーク",
+    "iconShield": "シールド",
+    "iconUser": "ユーザー"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "スタック設定",
+      "enableTransport": "トランスポート (他のピアへのルート) を有効にする",
+      "shareInstance": "Reticulum インスタンスを共有する",
+      "logLevel": "ログレベル",
+      "save": "スタック設定の保存",
+      "saveFailed": "スタック設定の保存に失敗しました。"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum 構成をインポートする",
+      "hint": "rnsd スタイルの構成ファイルを貼り付けるか、ディスクからインポートします。 Merge はインターフェイス ブロックを名前で追加/更新します。 replace はすべてのインターフェイスを上書きします。",
+      "pasteLabel": "設定ファイルの内容",
+      "fromFile": "ファイルからインポート…",
+      "fromSystem": "システムのデフォルトをインポートする",
+      "merge": "マージインポート",
+      "replace": "インターフェースを置き換える",
+      "confirmTitle": "Reticulum 構成をインポートする",
+      "confirmMerge": "インポートされたインターフェイスを現在の構成にマージしますか?",
+      "confirmReplace": "すべてのインターフェイスをインポートされた構成で置き換えますか?これを元に戻すことはできません。",
+      "confirm": "輸入"
+    },
+    "reticulumConfigImportFailed": "構成のインポートに失敗しました。",
+    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。"
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "工場出荷時設定にリセット",
+      "hint": "ID、連絡先、メッセージをサイドカー スタックからクリアします。インターフェイス設定は保存されます。",
+      "button": "スタックデータをリセット",
+      "confirmTitle": "Reticulumスタックをリセットしますか？",
+      "confirmBody": "これにより、サイドカーから ID、連絡先、ローカル メッセージが削除されます。インターフェイス設定ファイルは保持されます。",
+      "confirm": "リセット"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "[リピーター] パネルからリピーター管理者パスワードを設定または変更します (セッションのみ)。",
+      "connectionFailed": "接続に失敗しました",
+      "notConnected": "デバイスに接続されていません",
+      "nodeNotFound": "ノードが見つかりません (暗号化キーがありません)",
+      "authenticationFailed": "認証に失敗しました",
+      "requestFailed": "失敗しました: {{detail}}",
+      "requestTimedOut": "リクエストがタイムアウトしました (最大 ~{{seconds}}s)",
+      "requestTimedOutApprox": "リクエストがタイムアウトしました (~{{seconds}}s)",
+      "pingNoRoute": "無線からのルートはまだありません。マルチホップ トレースには同期されたパスが必要です。連絡先の更新を待つか、再接続してください。",
+      "bleNoDetails": "BLE 接続に失敗しました (デバイスからエラーの詳細はありません)。もう一度試すか、シリアル/USB を使用してください。",
+      "bleAlreadyInProgress": "Bluetooth 接続はすでに進行中です。完了するまで待つか、代わりにシリアル/USB を試してください。",
+      "bleMissingServices": "デバイスは MeshCore BLE プロトコルをサポートしていません。デバイスが MeshCore ファームウェアを実行していることを確認してください。",
+      "blePeripheralInUse": "このデバイスはすでに Meshtastic BLE 経由で接続されています。 MeshCore として接続する前に、まず切断してください。",
+      "bleTimeoutWebBtHandshake": "MeshCore ハンドシェイクがタイムアウトしました (Web Bluetooth)。無線機では、最初に Linux とペアリングする PIN が必要な場合があります。[デバイスの削除と再ペアリング] を使用して、デバイスに表示されている PIN を入力するか、bluetoothctl とペアリングして、[接続] を再度タップします。",
+      "bleTimeoutWebBt": "Web Bluetooth 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスを起動したままにするか、無線で BLE の電源を入れ直すか、シリアル/TCP を使用します。",
+      "bleTimeoutHandshake": "Bluetooth は接続されましたが、切断/タイムアウトになる前に MeshCore プロトコルのハンドシェイクが完了しませんでした。再試行するか、デバイスを起動した状態で近くに置くか、BLE の電源を入れ直すか、シリアル/TCP を使用してください。",
+      "bleTimeoutNoble": "Noble IPC 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。",
+      "roomPost": {
+        "badState": "ルームの投稿が拒否されました (ラジオにログインしていません)。ログアウトし、再度ログインして、再試行してください。",
+        "illegalArg": "ルームの投稿が拒否されました (無効なメッセージ形式)。",
+        "notFound": "ルームの投稿が拒否されました (ルームの連絡先が無線で見つかりません)。",
+        "unsupportedCmd": "ルームの投稿が拒否されました (ラジオでサポートされていないメッセージ タイプ)。ルームにログインしてから再試行してください。",
+        "default": "部屋の投稿が無線で拒否されました。ログアウトし、再度ログインして、再試行してください。",
+        "timeout": "ラジオを待っている間に部屋の投稿がタイムアウトになりました。範囲を確認するか、再試行してください。"
+      },
+      "roomLogin": {
+        "noRoute": "このルームサーバーへのルートがありません。マップからノードをトレースするか、パスの通知を待ってから再試行してください。",
+        "pathSyncFailed": "ログインする前にラジオでルートをプログラムできませんでした。デバイスを再接続して、もう一度試してください。",
+        "pathSyncFailedDetail": "ログインする前にラジオでルートをプログラムできませんでした。デバイスを再接続して、もう一度試してください。{{detail}}",
+        "rejectedBlankGuest": "ルームへのログインが拒否されました。空のゲスト パスワードの場合は読み取り専用で続行を使用するか、ゲスト パスワード「hello」を試してください。",
+        "rejectedDefaultGuest": "ルームへのログインが拒否されました。このサーバーにゲスト パスワードがない場合は、ログインの代わりに読み取り専用で続行を使用します。それ以外の場合は、ゲストまたは管理者のパスワードを確認してください。",
+        "rejectedCheckPassword": "ルームへのログインが拒否されました。このルーム サーバーのゲスト パスワードまたは管理者パスワードを確認してください。",
+        "timedOutBlankGuest": "ルームへのログインがタイムアウトしました。空のゲスト パスワードの場合は読み取り専用で続行を使用するか、ゲスト パスワード「hello」を試してください。",
+        "timedOutDefaultGuest": "ルームへのログインがタイムアウトしました。このサーバーにゲスト パスワードがない場合は、ログインの代わりに読み取り専用で続行を使用します。",
+        "timedOut": "ルームへのログインがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
+        "failed": "ルームへのログインに失敗しました"
+      },
+      "roomLogout": {
+        "timedOut": "ルームのログアウトがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
+        "rejected": "ルームのログアウトが無線によって拒否されました。",
+        "failed": "部屋から出られませんでした"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
+      "network": "ネットワーク、DNS、ファイアウォール、VPN を確認してください。",
+      "connackTimeout": "前に「クライアント エラー」行が表示されない場合は、TLS/WebSocket ハンドシェイクが停止している可能性があります (別のネットワークを試してください。アプリは WSS に IPv4 を優先します)。",
+      "subscribeFailed": "ブローカーは、このトピックに対するワイルドカード サブスクライブを拒否する場合があります。ブローカーが許可している場合、メッセージは引き続き到着する可能性があります。",
+      "keepalive": "サーバーが MQTT ping に応答しなくなりました (アイドル タイムアウト、ネットワーク ドロップ、またはブローカーがセッションを閉じた)。再接続するか、リンクを確認してください。"
+    }
   }
 }

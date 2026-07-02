@@ -51,9 +51,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-1');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleTimeoutNoble');
 
     expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
@@ -66,7 +64,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutNoble","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -88,9 +86,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-2');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
     expect(handshakeAttempt).toBe(2);
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledWith('meshcore', 'ble-device-2');
@@ -126,9 +122,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-3');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
@@ -204,9 +198,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-5');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
     expect(warnSpy).toHaveBeenCalledWith('[IpcNobleConnection:meshcore] peripheral disconnected');
   });
@@ -224,9 +216,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-linux');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleTimeoutNoble');
 
     // Should retry once (main-process timeout is now recognized as a retryable timeout).
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
@@ -239,7 +229,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutNoble","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -271,9 +261,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-7');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleAlreadyInProgress');
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
@@ -303,9 +291,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-unreachable');
       }),
-    ).rejects.toThrow(
-      'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.',
-    );
+    ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(

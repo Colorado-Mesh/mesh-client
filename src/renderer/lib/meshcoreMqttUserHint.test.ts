@@ -1,38 +1,38 @@
 import { describe, expect, it } from 'vitest';
 
+import { meshcoreUserMessageKey } from './meshcore/meshcoreMessageI18n';
 import { meshcoreMqttUserFacingHint } from './meshcoreMqttUserHint';
 
 describe('meshcoreMqttUserFacingHint', () => {
-  it('appends auth hint for Not authorized', () => {
+  it('returns prefixed auth hint key for Not authorized', () => {
     const out = meshcoreMqttUserFacingHint('Connection refused: Not authorized');
-    expect(out).toContain('letsmesh-mqtt-auth.md');
-    expect(out).toContain('Connection refused: Not authorized');
-    expect(out).toContain('JWT audience');
+    expect(out).toEqual({
+      type: 'prefixed',
+      message: 'Connection refused: Not authorized',
+      hintKey: 'meshcore.mqttHints.notAuthorized',
+    });
   });
 
-  it('appends network hint for ECONNREFUSED', () => {
+  it('returns network hint key for ECONNREFUSED', () => {
     const out = meshcoreMqttUserFacingHint('connect ECONNREFUSED');
-    expect(out).toContain('firewall');
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.network');
   });
 
-  it('appends transport hint for connect-phase timeout', () => {
+  it('returns transport hint key for connect-phase timeout', () => {
     const out = meshcoreMqttUserFacingHint(
       'MeshCore MQTT: timed out before MQTT session (no CONNACK within 30s). …',
     );
-    expect(out).toContain('IPv4');
-    expect(out).toContain('CONNACK');
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.connackTimeout');
   });
 
-  it('appends subscribe hint for Subscribe to … failed', () => {
+  it('returns subscribe hint key for Subscribe to … failed', () => {
     const out = meshcoreMqttUserFacingHint('Subscribe to msh/# failed: denied');
-    expect(out).toContain('wildcard subscribe');
-    expect(out).toContain('Subscribe to msh/# failed');
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.subscribeFailed');
   });
 
-  it('appends hint for keepalive timeout', () => {
+  it('returns keepalive hint key for keepalive timeout', () => {
     const out = meshcoreMqttUserFacingHint('Keepalive timeout');
-    expect(out).toContain('MQTT pings');
-    expect(out).toContain('Keepalive timeout');
+    expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.keepalive');
   });
 
   it('passes through unrelated messages unchanged', () => {

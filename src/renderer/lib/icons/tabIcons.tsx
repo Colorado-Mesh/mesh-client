@@ -6,11 +6,13 @@ import {
   Crosshair,
   FileChartColumn,
   GitBranch,
+  Globe,
   House,
   Link2,
   Lock,
   MapPin,
   MessageCircle,
+  Network,
   Radio,
   Settings,
   Shield,
@@ -34,6 +36,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'NomadNetwork':
+      return <Globe {...p} />;
     case 'Nodes':
     case 'Contacts':
       return <Users {...p} />;
@@ -65,6 +69,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Wifi {...p} />;
     case 'Graph':
       return <GitBranch {...p} />;
+    case 'Topology':
+      return <Network {...p} />;
     case 'Admin':
       return <Shield {...p} />;
     default:

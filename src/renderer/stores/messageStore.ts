@@ -5,7 +5,7 @@ import { omitRecordKey } from './storeUtils';
 
 export type MessageStatus = 'sending' | 'acked' | 'failed';
 
-export type MessageTransport = 'rf' | 'mqtt' | 'both';
+export type MessageTransport = 'rf' | 'mqtt' | 'both' | 'tcp' | 'network';
 
 export interface MessageRecord {
   id: string;
@@ -29,6 +29,16 @@ export interface MessageRecord {
   error?: string;
   /** MeshCore room server posts (BBS); filters Rooms panel stream. */
   roomServerId?: number;
+  /** Reticulum LXMF message hash (hex) for reply/reaction threading. */
+  reticulumMessageHash?: string;
+  /** Reticulum sender destination hash (hex). */
+  reticulumSenderHash?: string;
+  /** Reticulum reply target message hash (hex). */
+  reticulumReplyToHash?: string;
+  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic). */
+  reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
+  /** Saved attachment path on disk (local saves). */
+  reticulumAttachmentPath?: string;
 }
 
 interface MessageStoreState {
@@ -62,6 +72,10 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'isHistory',
   'error',
   'roomServerId',
+  'reticulumMessageHash',
+  'reticulumSenderHash',
+  'reticulumReplyToHash',
+  'reticulumAttachmentPath',
 ];
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
@@ -105,6 +119,9 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
     const merged = existing ? { ...existing, ...message } : message;
+    if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
+      merged.to = existing.to;
+    }
     if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
       return s;
     }
@@ -125,6 +142,9 @@ export function upsertMessageRecordsForIdentity(
     for (const message of records) {
       const existing = byIdentity[message.id];
       const merged = existing ? { ...existing, ...message } : message;
+      if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
+        merged.to = existing.to;
+      }
       if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
         continue;
       }

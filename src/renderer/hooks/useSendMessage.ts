@@ -1,13 +1,25 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { useToast } from '../components/Toast';
 import { messageToDbRow } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import {
+  persistReticulumOutboundRecord,
+  resolveReticulumOutboundSenderHash,
+} from '../lib/ingest/reticulumIngest';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
+import { resolveReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
+import {
+  getReticulumSendMessage,
+  resolveReticulumOutboundVia,
+  tryGetReticulumSession,
+} from '../lib/sessions/reticulumSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
 import type { IdentityId } from '../lib/types';
 import { getConnection } from '../stores/connectionStore';
@@ -19,6 +31,7 @@ import {
   updateMessageStatus,
 } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
+import { reticulumHashForNodeId } from '../stores/reticulumPeerStore';
 
 function persistMeshcoreOutboundRow(
   record: MessageRecord,
@@ -40,6 +53,8 @@ function persistMeshcoreOutboundRow(
 export function useSendMessage(
   identityId: IdentityId | null,
 ): (text: string, channelIndex: number, destination?: number, replyTo?: string) => void {
+  const { addToast } = useToast();
+  const { t } = useTranslation();
   return useCallback(
     (text: string, channelIndex: number, destination?: number, replyTo?: string) => {
       if (!identityId) return;
@@ -48,6 +63,66 @@ export function useSendMessage(
         console.warn('[useSendMessage] no identity for', identityId);
         return;
       }
+      // Reticulum: sidecar LXMF send (no ConnectionDriver handle).
+      if (identity.protocol.type === 'reticulum') {
+        const session = tryGetReticulumSession();
+        const send = getReticulumSendMessage(session);
+        if (!send || !session) {
+          console.warn('[useSendMessage] Reticulum runtime not mounted');
+          return;
+        }
+        const destHash =
+          typeof destination === 'string'
+            ? destination
+            : (reticulumHashForNodeId(destination ?? 0) ??
+              resolveReticulumDestinationHash(destination));
+        if (!destHash) {
+          console.warn('[useSendMessage] no Reticulum destination hash for', destination);
+          return;
+        }
+        const selfNodeId = session.selfNodeId;
+        if (typeof selfNodeId !== 'number') {
+          console.warn('[useSendMessage] Reticulum self node id not ready');
+          return;
+        }
+        const pendingId = `reticulum-pending-${Date.now()}`;
+        const receivedVia = resolveReticulumOutboundVia(destHash);
+        const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
+        const senderName = session.getFullNodeLabel(selfNodeId);
+        const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
+        const record: MessageRecord = {
+          id: pendingId,
+          from: selfNodeId >>> 0,
+          senderName,
+          to: toNodeId,
+          payload: text,
+          channelIndex: channelIndex,
+          timestamp: Date.now(),
+          status: 'sending',
+          receivedVia,
+          ...(replyTo ? { reticulumReplyToHash: replyTo } : {}),
+        };
+        addMessage(identityId, record);
+        if (senderHash) {
+          persistReticulumOutboundRecord(
+            identityId,
+            record,
+            senderHash,
+            senderName,
+            destHash,
+            'sending',
+          );
+        }
+        void send(text, destHash, replyTo ?? undefined, pendingId).catch((e: unknown) => {
+          const err = errLikeToLogString(e);
+          if (err.includes('no_propagation_node')) {
+            addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
+          }
+          console.warn('[useSendMessage] reticulum send failed ' + err);
+        });
+        return;
+      }
+
       const handle = connectionDriver.getHandle(identityId);
 
       // Meshtastic: runtime TransportManager sends RF + MQTT concurrently (hybrid or MQTT-only).
@@ -208,6 +283,6 @@ export function useSendMessage(
           }
         });
     },
-    [identityId],
+    [identityId, addToast, t],
   );
 }

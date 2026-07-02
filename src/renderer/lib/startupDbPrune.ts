@@ -113,6 +113,12 @@ async function executeStartupDbPrune(): Promise<void> {
   }
 
   ops.push(
+    window.electronAPI.db.vacuumReticulumTables().catch((e: unknown) => {
+      console.warn('[App] startup vacuumReticulumTables failed ' + errLikeToLogString(e));
+    }),
+  );
+
+  ops.push(
     fetchMessageRetention()
       .then((r) => {
         const innerOps: Promise<unknown>[] = [];

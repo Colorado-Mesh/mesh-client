@@ -59,7 +59,7 @@ import { getNodeTypeIcon } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
-import type { MeshNode } from '../lib/types';
+import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useMapLayerStore } from '../stores/mapLayerStore';
@@ -151,7 +151,7 @@ interface Props {
   radioConnected?: boolean;
   locationFilter: LocationFilter;
   onToggleFavorite: (nodeId: number, favorited: boolean) => void;
-  mode?: 'meshtastic' | 'meshcore';
+  mode?: MeshProtocol;
   groups?: ContactGroup[];
   selectedGroupId?: number | null;
   onGroupChange?: (id: number | null) => void;

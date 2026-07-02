@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
 import type { MeshNode, MeshProtocol } from '../lib/types';
 
@@ -19,13 +21,14 @@ export default function MentionAutocomplete({
   onSelect,
   onSetSelectedIdx,
 }: Props) {
+  const { t } = useTranslation();
   if (candidates.length === 0) return null;
 
   return (
     <div
       className="absolute bottom-full left-0 z-50 mb-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-600 bg-slate-800 shadow-lg"
       role="listbox"
-      aria-label="Mention suggestions"
+      aria-label={t('chatPanel.mentionSuggestionsAria')}
     >
       {candidates.map((c, i) => (
         <button

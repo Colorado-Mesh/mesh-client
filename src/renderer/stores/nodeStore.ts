@@ -65,6 +65,8 @@ export interface NodeRecord {
   onRadio?: boolean;
   favorited?: boolean;
   lastPositionWarning?: string;
+  /** Reticulum LXMF destination hash (32 hex chars) when known. */
+  reticulumDestinationHash?: string;
   numPacketsRxBad?: number;
   numRxDupe?: number;
   numPacketsRx?: number;

@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 
 import { attMtuOrDefault, maxWriteRequestPayloadBytes } from '../shared/bleAttWriteLimit';
 import { withTimeout } from '../shared/withTimeout';
+import { bleCoexistenceCoordinator, type BlePeripheralOwner } from './ble-coexistence-coordinator';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
 // Only load noble on Mac/Windows — Linux uses Web Bluetooth in renderer instead
@@ -145,6 +146,8 @@ interface NobleBleSession {
   fromRadioUsedReadPumpFallback: boolean;
   /** Linux MeshCore early-read polling attempt count before first payload. */
   meshcoreLinuxEarlyReadPollAttempts: number;
+  /** MAC registered with BleCoexistenceCoordinator while connected. */
+  registeredMac: string | null;
   /**
    * MeshCore only: set after link-up while GATT discovery/subscribe is still running.
    * A second `connect(samePeripheral)` awaits this instead of calling `disconnect()` first,
@@ -263,6 +266,7 @@ export class NobleBleManager extends EventEmitter {
       connectStartedAtMs: null,
       fromRadioUsedReadPumpFallback: false,
       meshcoreLinuxEarlyReadPollAttempts: 0,
+      registeredMac: null,
       meshcoreGattInflight: null,
       writeQueue: Promise.resolve(),
       attMtuSanitized: attMtuOrDefault(null),
@@ -322,6 +326,7 @@ export class NobleBleManager extends EventEmitter {
     session.connectStartedAtMs = null;
     session.fromRadioUsedReadPumpFallback = false;
     session.meshcoreLinuxEarlyReadPollAttempts = 0;
+    session.registeredMac = null;
     session.writeQueue = Promise.resolve();
     session.attMtuSanitized = attMtuOrDefault(null);
     session.attMtuSuspiciousLogged = false;
@@ -535,6 +540,7 @@ export class NobleBleManager extends EventEmitter {
   }
 
   async startScanning(sessionId: NobleSessionId): Promise<void> {
+    await bleCoexistenceCoordinator.acquireScan('noble');
     // Clear known peripherals so every device is re-emitted as discovered on each new scan.
     // Without this, devices found in a previous scan are never re-emitted (isNew = false),
     // so the picker stays empty on second and subsequent scan attempts.
@@ -569,6 +575,7 @@ export class NobleBleManager extends EventEmitter {
     this.scanRequesters.delete(sessionId);
     if (this.scanRequesters.size === 0) {
       await this.doStopScanning();
+      bleCoexistenceCoordinator.releaseScan('noble');
     } else {
       // Other sessions still want to scan; restart with updated filter.
       // e.g. meshcore stopped → switch from open scan back to meshtastic-only filter.
@@ -578,8 +585,24 @@ export class NobleBleManager extends EventEmitter {
 
   /** Stop all scanning immediately — used for app quit and force-quit IPC. */
   async stopAllScanning(): Promise<void> {
+    if (this.sessions.size === 0) return;
     this.scanRequesters.clear();
     await this.doStopScanning();
+    bleCoexistenceCoordinator.releaseScan('noble');
+  }
+
+  /** Pause Noble scan for an external stack (Reticulum btleplug) without dropping GATT links. */
+  async pauseScanningForExternalScan(): Promise<void> {
+    if (this.scanningActive) {
+      await this.doStopScanning();
+    }
+  }
+
+  /** Resume Noble scan after external scan if mesh sessions still request discovery. */
+  async resumeScanningAfterExternalScan(): Promise<void> {
+    if (this.scanRequesters.size > 0 && this.adapterReady && !this.scanningActive) {
+      await this.doStartScanning();
+    }
   }
 
   /**
@@ -837,6 +860,8 @@ export class NobleBleManager extends EventEmitter {
     const session = this.getSession(sessionId);
     let peripheral: any = null;
     let connected = false;
+    const peripheralOwner: BlePeripheralOwner =
+      sessionId === 'meshcore' ? 'noble:meshcore' : 'noble:meshtastic';
     console.debug(
       `[BLE:${sessionId}] connect start — peripheralId=${peripheralId} adapterReady=${this.adapterReady} scanRequesters=[${[...this.scanRequesters].join(',')}]`,
     );
@@ -909,6 +934,10 @@ export class NobleBleManager extends EventEmitter {
       }
       console.debug(
         `[BLE:${sessionId}] peripheral info — address=${peripheral.address ?? 'unknown'} addressType=${peripheral.addressType ?? 'unknown'} rssi=${peripheral.rssi ?? 'unknown'} state=${peripheral.state} platform=${process.platform}`,
+      );
+      bleCoexistenceCoordinator.assertCanConnect(
+        peripheralOwner,
+        String(peripheral.address ?? peripheralId),
       );
       session.connectStartedAtMs = Date.now();
       session.firstPacketLogged = false;
@@ -1251,6 +1280,9 @@ export class NobleBleManager extends EventEmitter {
       logDeviceConnection(
         `transport=ble stack=${sessionId} peripheralId=${sanitizeLogMessage(peripheralId)} mac=${sanitizeLogMessage(String(peripheral.address ?? 'unknown'))}`,
       );
+      const registeredMac = String(peripheral.address ?? peripheralId);
+      bleCoexistenceCoordinator.register(registeredMac, peripheralOwner);
+      session.registeredMac = registeredMac;
       this.emit('connected', { sessionId });
     } catch (err) {
       console.warn(`[BLE:${sessionId}] connect failed:`, err instanceof Error ? err.message : err); // log-injection-ok noble internal error
@@ -1368,6 +1400,11 @@ export class NobleBleManager extends EventEmitter {
     const onFromNumData = session.fromNumDataHandler;
 
     if (!peripheral && !session.toRadioChar && !fromRadio && !fromNum) return;
+    const peripheralOwner: BlePeripheralOwner =
+      sessionId === 'meshcore' ? 'noble:meshcore' : 'noble:meshtastic';
+    if (session.registeredMac) {
+      bleCoexistenceCoordinator.unregister(session.registeredMac, peripheralOwner);
+    }
     this.clearSessionState(session);
 
     try {
@@ -1411,6 +1448,10 @@ export class NobleBleManager extends EventEmitter {
         this.emit('disconnected', { sessionId });
       }
     }
+  }
+
+  async disconnectAllSessions(): Promise<void> {
+    await this.disconnectAll();
   }
 
   async disconnectAll(): Promise<void> {

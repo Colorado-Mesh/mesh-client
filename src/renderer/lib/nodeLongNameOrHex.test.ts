@@ -5,6 +5,7 @@ import {
   nodeDisplayName,
   nodeLabelForRawPacket,
   nodeLongNameOrHexLabel,
+  reticulumDestinationColumnText,
 } from './nodeLongNameOrHex';
 import type { MeshNode } from './types';
 
@@ -58,5 +59,23 @@ describe('meshcoreRawPacketSenderColumnText', () => {
   it('shows name and 0x id when contact has a display name', () => {
     const getNodeLabel = () => 'Alice';
     expect(meshcoreRawPacketSenderColumnText(0xabc, getNodeLabel)).toBe('Alice · 0xABC');
+  });
+});
+
+describe('reticulumDestinationColumnText', () => {
+  it('shows hash prefix when no display name is known', () => {
+    const getNodeLabel = (id: number) => id.toString(16).toUpperCase();
+    expect(
+      reticulumDestinationColumnText('deadbeefcafebabe', getNodeLabel, (hash) =>
+        Number.parseInt(hash.slice(0, 8), 16),
+      ),
+    ).toBe('DEADBEEF');
+  });
+
+  it('shows name and hash prefix when destination is in node store', () => {
+    const getNodeLabel = () => 'Forum Node';
+    expect(reticulumDestinationColumnText('deadbeefcafebabe', getNodeLabel, () => 0xdeadbeef)).toBe(
+      'Forum Node · DEADBEEF',
+    );
   });
 });

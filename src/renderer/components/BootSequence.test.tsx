@@ -466,6 +466,15 @@ describe('BootSequence component', () => {
     expect(container.querySelector('canvas')).toBeInTheDocument();
   });
 
+  it('renders with Reticulum protocol', () => {
+    const { container } = renderBootSequence({
+      protocol: 'reticulum',
+      phraseSeed: 12,
+      identityId: null,
+    });
+    expect(container.querySelector('canvas')).toBeInTheDocument();
+  });
+
   it('renders with Meshtastic identityId', () => {
     const { container } = renderBootSequence({
       protocol: 'meshtastic',

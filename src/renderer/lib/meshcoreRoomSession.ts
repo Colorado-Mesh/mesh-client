@@ -1,5 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -23,6 +24,7 @@ import {
   MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
   type MeshcoreCompanionTransport,
 } from './timeConstants';
+import type { DiagnosticTextI18n } from './types';
 
 export { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE };
 
@@ -196,12 +198,11 @@ export function meshcoreApplyRoomSession(
 export const MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD = 'hello';
 
 /** Thrown when multi-hop login has no route bytes after resolve/trace. */
-export const MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE =
-  'No route to this room server. Trace the node from the map or wait for path adverts, then try again.';
+export const MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE = 'meshcore.errors.roomLogin.noRoute';
 
 /** Thrown when companion path programming (addOrUpdateContact) fails before SendLogin. */
 export const MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE =
-  'Could not program the route on your radio before login. Reconnect the device and try again.';
+  'meshcore.errors.roomLogin.pathSyncFailed';
 
 export function meshcoreRoomEffectiveGuestPassword(password: string): string {
   return password.trim() || MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
@@ -227,27 +228,30 @@ export function meshcoreRoomLoginErrorIsNoRoute(err: unknown): boolean {
   return errLikeToLogString(err) === MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE;
 }
 
-export function meshcoreRoomLoginFailureMessage(err: unknown, password: string): string {
+export function meshcoreRoomLoginFailureMessage(
+  err: unknown,
+  password: string,
+): DiagnosticTextI18n {
   const msg = errLikeToLogString(err).toLowerCase();
   if (meshcoreRoomLoginErrorIsAuthFailure(err)) {
     if (password.length === 0) {
-      return 'Room login rejected. Use Continue read-only for blank guest password, or try guest password "hello".';
+      return { key: 'meshcore.errors.roomLogin.rejectedBlankGuest' };
     }
     if (meshcoreRoomUsedDefaultGuestPassword(password)) {
-      return 'Room login rejected. If this server has no guest password, use Continue read-only instead of Login. Otherwise check the guest or admin password.';
+      return { key: 'meshcore.errors.roomLogin.rejectedDefaultGuest' };
     }
-    return 'Room login rejected. Check the guest or admin password for this room server.';
+    return { key: 'meshcore.errors.roomLogin.rejectedCheckPassword' };
   }
   if (msg.includes('timeout') || msg.includes('loginRoom') || msg.includes('program the route')) {
     if (password.length === 0) {
-      return 'Room login timed out. Use Continue read-only for blank guest password, or try guest password "hello".';
+      return { key: 'meshcore.errors.roomLogin.timedOutBlankGuest' };
     }
     if (meshcoreRoomUsedDefaultGuestPassword(password)) {
-      return 'Room login timed out. If this server has no guest password, use Continue read-only instead of Login.';
+      return { key: 'meshcore.errors.roomLogin.timedOutDefaultGuest' };
     }
-    return 'Room login timed out. The room may be out of range or not responding.';
+    return { key: 'meshcore.errors.roomLogin.timedOut' };
   }
-  return 'Room login failed';
+  return { key: 'meshcore.errors.roomLogin.failed' };
 }
 
 /**
@@ -316,7 +320,9 @@ export async function meshcoreRoomLogin(
           }
         }
       }
-      throw new Error(meshcoreRoomLoginFailureMessage(lastErr, password));
+      throw new Error(
+        serializeMeshcoreUserMessage(meshcoreRoomLoginFailureMessage(lastErr, password)),
+      );
     } finally {
       if (roomLoginAbortControllers.get(nodeId)?.signal === signal) {
         roomLoginAbortControllers.delete(nodeId);
@@ -328,15 +334,15 @@ export async function meshcoreRoomLogin(
 /** Minimal connection surface for room server logout. */
 export type MeshcoreRoomLogoutConn = MeshcoreRoomLogoutRpcConnection;
 
-export function meshcoreRoomLogoutFailureMessage(err: unknown): string {
+export function meshcoreRoomLogoutFailureMessage(err: unknown): DiagnosticTextI18n {
   const msg = errLikeToLogString(err).toLowerCase();
   if (msg.includes('timeout')) {
-    return 'Room logout timed out. The room may be out of range or not responding.';
+    return { key: 'meshcore.errors.roomLogout.timedOut' };
   }
   if (msg.includes('rejected')) {
-    return 'Room logout rejected by radio.';
+    return { key: 'meshcore.errors.roomLogout.rejected' };
   }
-  return 'Could not leave room';
+  return { key: 'meshcore.errors.roomLogout.failed' };
 }
 
 /**

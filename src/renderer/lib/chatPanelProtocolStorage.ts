@@ -28,11 +28,24 @@ export function dismissedDmTabsStorageKey(protocol: MeshProtocol): string {
  */
 export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
   const key = openDmTabsStorageKey(protocol);
+  const normalizeTabId = (id: number): number => (protocol === 'reticulum' ? id >>> 0 : id);
+  const normalizeList = (parsed: number[]): number[] => {
+    const out: number[] = [];
+    const seen = new Set<number>();
+    for (const id of parsed) {
+      if (typeof id !== 'number' || !Number.isFinite(id)) continue;
+      const normalized = normalizeTabId(id);
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      out.push(normalized);
+    }
+    return out;
+  };
   const specific = localStorage.getItem(key);
   if (specific != null) {
     const parsed = parseStoredJson<unknown>(specific, 'ChatPanel openDmTabs');
     if (Array.isArray(parsed) && parsed.every((n: unknown) => typeof n === 'number')) {
-      return parsed;
+      return normalizeList(parsed);
     }
   }
   if (protocol === 'meshtastic') {
@@ -48,7 +61,7 @@ export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
               errLikeToLogString(e),
           );
         }
-        return parsed;
+        return normalizeList(parsed);
       }
     }
   }
@@ -279,6 +292,7 @@ export function subscribePersistedLastRead(listener: (protocol: MeshProtocol) =>
 }
 
 const MESHCORE_LAST_READ_SANITIZED_KEY = 'mesh-client:lastReadSanitized:meshcore';
+const RETICULUM_LAST_READ_SANITIZED_KEY = 'mesh-client:lastReadSanitized:reticulum';
 
 export function roomsLastReadStorageKey(): string {
   return 'mesh-client:roomsLastRead:meshcore';
@@ -452,6 +466,13 @@ export function getSanitizedMeshcoreChatLastRead(
   return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('meshcore'), messages);
 }
 
+/** Ongoing sanitize for Reticulum LXMF chat lastRead (sidebar/tray badges). */
+export function getSanitizedReticulumChatLastRead(
+  messages: readonly ChatLastReadSanitizeMessage[],
+): Record<string, number> {
+  return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('reticulum'), messages);
+}
+
 /** Persist MeshCore chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
 export function ensureMeshcoreChatLastReadSanitized(
   messages: readonly ChatLastReadSanitizeMessage[],
@@ -473,6 +494,33 @@ export function ensureMeshcoreChatLastReadSanitized(
   } catch (e) {
     console.debug(
       '[chatPanelProtocolStorage] set meshcore lastRead sanitized flag failed ' +
+        errLikeToLogString(e),
+    );
+  }
+  return sanitized;
+}
+
+/** Persist Reticulum chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
+export function ensureReticulumChatLastReadSanitized(
+  messages: readonly ChatLastReadSanitizeMessage[],
+): Record<string, number> {
+  const loaded = loadPersistedLastReadInitial('reticulum');
+  const sanitized = sanitizeMeshcoreChatLastRead(loaded, messages);
+  if (sanitized !== loaded) {
+    try {
+      localStorage.setItem(lastReadStorageKey('reticulum'), JSON.stringify(sanitized));
+    } catch (e) {
+      console.debug(
+        '[chatPanelProtocolStorage] persist sanitized reticulum lastRead failed ' +
+          errLikeToLogString(e),
+      );
+    }
+  }
+  try {
+    localStorage.setItem(RETICULUM_LAST_READ_SANITIZED_KEY, '1');
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] set reticulum lastRead sanitized flag failed ' +
         errLikeToLogString(e),
     );
   }

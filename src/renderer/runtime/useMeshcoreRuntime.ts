@@ -3,6 +3,8 @@ import { CayenneLpp } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
+import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -116,6 +118,16 @@ import type {
   MeshcoreTraceResultEntry,
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
+import {
+  MESHCORE_ERR_NODE_NOT_FOUND,
+  MESHCORE_ERR_NOT_CONNECTED,
+  MESHCORE_ERR_REQUEST_FAILED,
+  meshcoreRepeaterRpcErrorMessage,
+  meshcoreStoredUserMessage,
+  type MeshcoreUserMessage,
+  meshcoreUserMessageKey,
+  serializeMeshcoreUserMessage,
+} from '../lib/meshcore/meshcoreMessageI18n';
 import { refreshMeshcoreOutPathAfterPathUpdated } from '../lib/meshcore/meshcorePathUpdatedRuntime';
 import {
   clearMeshcorePubKeyRegistry,
@@ -152,6 +164,7 @@ import {
   awaitDualNobleBleMeshtasticSettle,
   isRendererNobleBlePlatform,
   needsSequentialMeshcoreRadioInit,
+  withNobleBleConnectMutex,
 } from '../lib/meshcoreDualNobleBleInit';
 import { applyMeshcoreFloodScope } from '../lib/meshcoreFloodScope';
 import {
@@ -178,10 +191,12 @@ import {
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
 import { syncMeshcoreRoomContactPathBeforeLogin } from '../lib/meshcoreRoomLoginPathSync';
+import { meshcoreIsRoomLoginQueued } from '../lib/meshcoreRoomLoginQueue';
 import { resolveMeshcoreRoomLoginRouteBytes } from '../lib/meshcoreRoomLoginRouteResolve';
 import { applyMeshcoreRoomLoginFailure } from '../lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreRoomPostSendErrorMessage,
+  meshcoreRoomPostSendErrorStored,
   sendMeshcoreRoomPostWithSentWait,
 } from '../lib/meshcoreRoomSentWait';
 import {
@@ -238,7 +253,6 @@ import {
   MESHCORE_COORD_SCALE,
   MESHCORE_MAX_CONTACTS,
   MESHCORE_RPC_SNR_RAW_TO_DB,
-  meshcoreAppendRepeaterAuthHint,
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
@@ -291,6 +305,7 @@ import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
+  computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
   MESHCORE_ROOM_LOGIN_HOP_BASE_MS,
   MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS,
@@ -314,7 +329,7 @@ import type {
   MQTTStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { mirrorMqttStatusToConnection, setConnection } from '../stores/connectionStore';
+import { mirrorMqttStatusForProtocol, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { updateMessageStatus, useMessageStore } from '../stores/messageStore';
 import {
@@ -429,6 +444,8 @@ export function useMeshcoreRuntime() {
   const meshcoreDriverConnectedRef = useRef(false);
   const [meshcoreIdentityId, setMeshcoreIdentityId] = useState<string | null>(null);
   const bleConnectInProgressRef = useRef(false);
+  /** Set when Noble drops during an in-flight connect; reconnect runs after connect() settles. */
+  const meshcoreDeferredReconnectRef = useRef(false);
   const meshcoreConnectionParamsRef = useRef<{
     rfType: 'ble' | 'serial' | 'tcp';
     httpAddress?: string;
@@ -438,6 +455,8 @@ export function useMeshcoreRuntime() {
   } | null>(null);
   /** Cleared on successful connect; set when user explicitly disconnects (blocks auto-reconnect). */
   const meshcoreExplicitDisconnectRef = useRef(false);
+  /** True after at least one successful configure; blocks reconnect loop on first-connect failures. */
+  const meshcoreEverConfiguredRef = useRef(false);
   const meshcoreReconnectAttemptRef = useRef(0);
   const meshcoreReconnectGenerationRef = useRef(0);
   const meshcoreIsReconnectingRef = useRef(false);
@@ -794,7 +813,7 @@ export function useMeshcoreRuntime() {
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
-      mirrorMqttStatusToConnection(meshcoreIdentityIdRef.current, st);
+      mirrorMqttStatusForProtocol('meshcore', st);
       if (st === 'connected') {
         setMqttConnectionLoss(false);
       } else if (consumeMqttUserDisconnect()) {
@@ -807,8 +826,23 @@ export function useMeshcoreRuntime() {
 
   const maybeAutoLaunchMeshcoreMqttAfterIdentity = useCallback(() => {
     if (!readMeshcoreMqttSettingsFromStorage().autoLaunch) return;
-    if (mqttStatusRef.current !== 'disconnected') return;
-    void tryAutoLaunchMqtt('meshcore').catch((e: unknown) => {
+    void (async () => {
+      const st = mqttStatusRef.current;
+      if (st === 'connected') return;
+      // Startup may have opened MQTT before RF identity/JWT was ready — replace stale session.
+      if (st === 'connecting') {
+        await window.electronAPI.mqtt.disconnect('meshcore').catch((e: unknown) => {
+          console.debug(
+            '[useMeshcoreRuntime] MQTT stale connecting session disconnect ' +
+              errLikeToLogString(e),
+          );
+        });
+        mqttStatusRef.current = 'disconnected';
+        setMqttStatus('disconnected');
+      }
+      if (mqttStatusRef.current !== 'disconnected') return;
+      await tryAutoLaunchMqtt('meshcore');
+    })().catch((e: unknown) => {
       console.warn(
         '[useMeshcoreRuntime] MQTT auto-launch after identity persist failed ' +
           errLikeToLogString(e),
@@ -1381,6 +1415,7 @@ export function useMeshcoreRuntime() {
           meshcorePathUpdatePendingRef.current,
         );
       }
+      requestChatOutboxDrain('meshcore');
     },
     [],
   );
@@ -1550,6 +1585,13 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
+      if (bleConnectInProgressRef.current && !meshcoreDriverConnectedRef.current) {
+        meshcoreDeferredReconnectRef.current = true;
+        console.debug(
+          '[useMeshcoreRuntime] Noble BLE disconnected — defer reconnect until connect settles',
+        );
+        return;
+      }
       if (!meshcoreConnectionParamsRef.current) {
         if (meshcoreExplicitDisconnectRef.current) {
           console.debug(
@@ -1713,7 +1755,9 @@ export function useMeshcoreRuntime() {
           try {
             const rawChannels = await channelsPromise;
             setChannels(
-              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+              dedupeChannelPillsByIndex(
+                rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+              ),
             );
           } catch (e) {
             if (e instanceof DOMException && e.name === 'AbortError') return;
@@ -1880,7 +1924,9 @@ export function useMeshcoreRuntime() {
             withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
           );
           setChannels(
-            rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+            dedupeChannelPillsByIndex(
+              rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
+            ),
           );
           const getChannelsMs = Math.round(performance.now() - getChannelsStart);
           console.debug(
@@ -2032,19 +2078,17 @@ export function useMeshcoreRuntime() {
       // MQTT private key export runs after other init RPCs to avoid meshcore.js listener races
       // (Linux Web Bluetooth is especially sensitive).
       try {
-        const persisted = await awaitUnlessMeshcoreSetupCancelled(
+        await awaitUnlessMeshcoreSetupCancelled(
           setupGen,
           exportAndPersistMeshcoreMqttIdentity(conn, info.publicKey, transportType),
         );
-        if (persisted) {
-          maybeAutoLaunchMeshcoreMqttAfterIdentity();
-        }
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') throw e;
         console.warn(
           '[useMeshcoreRuntime] initConn MQTT identity export failed ' + errLikeToLogString(e),
         );
       }
+      maybeAutoLaunchMeshcoreMqttAfterIdentity();
 
       // Proactively fetch any messages that queued while disconnected.
       // Mirrors what event 131 does, but covers reconnects where the event was missed.
@@ -2088,9 +2132,10 @@ export function useMeshcoreRuntime() {
   const prepareRfConnect = useCallback(
     async (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
       if (type === 'ble' && bleConnectInProgressRef.current) {
-        throw new Error(
-          'Bluetooth connection already in progress. Wait for it to finish or cancel, then try again.',
-        );
+        console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
+        meshcoreSetupGenerationRef.current += 1;
+        bleConnectInProgressRef.current = false;
+        meshcoreDeferredReconnectRef.current = false;
       }
       const driverIdentity = meshcoreDriverConnectedRef.current
         ? (meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current)
@@ -2173,6 +2218,9 @@ export function useMeshcoreRuntime() {
           }
         }
       }
+      if (type === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
     },
     [initConn, setupEventListeners, startMeshcoreSerialWatchdog],
   );
@@ -2185,7 +2233,9 @@ export function useMeshcoreRuntime() {
         driverIdentityId,
       });
       connRef.current = null;
-      if (type === 'ble') bleConnectInProgressRef.current = false;
+      if (type === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
       return Promise.resolve();
     },
     [teardownMeshcoreConnEventListeners],
@@ -2329,14 +2379,28 @@ export function useMeshcoreRuntime() {
 
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
     const isBleReconnect = params.rfType === 'ble';
-    try {
+    const runReconnect = async () => {
       await prepareRfConnect(params.rfType);
-      opened = await openMeshCoreTransport(params.rfType, {
-        blePeripheralId: params.blePeripheralId,
-        host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
-        portSignature: params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
-      });
+      opened =
+        isBleReconnect && isRendererNobleBlePlatform()
+          ? await withNobleBleConnectMutex('meshcore', () =>
+              openMeshCoreTransport(params.rfType, {
+                blePeripheralId: params.blePeripheralId,
+                host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
+                portSignature:
+                  params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
+              }),
+            )
+          : await openMeshCoreTransport(params.rfType, {
+              blePeripheralId: params.blePeripheralId,
+              host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
+              portSignature:
+                params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
+            });
       await attachRfSession(opened.driverIdentityId, params.rfType);
+    };
+    try {
+      await runReconnect();
       if (meshcoreReconnectGenerationRef.current !== generation) {
         throw new Error('MeshCore reconnect superseded during attach');
       }
@@ -2376,6 +2440,16 @@ export function useMeshcoreRuntime() {
   attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
 
   const handleMeshcoreConnectionLost = useCallback(() => {
+    if (
+      !meshcoreEverConfiguredRef.current &&
+      meshcoreReconnectAttemptRef.current === 0 &&
+      !meshcoreIsReconnectingRef.current
+    ) {
+      console.debug(
+        '[useMeshcoreRuntime] Connection lost before first configure — skip reconnect (auto-connect owns retry)',
+      );
+      return;
+    }
     if (!meshcoreConnectionParamsRef.current) {
       if (meshcoreExplicitDisconnectRef.current) return;
       const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
@@ -2471,21 +2545,27 @@ export function useMeshcoreRuntime() {
 
   const connect = useCallback(
     async (type: 'ble' | 'serial' | 'tcp', tcpHost?: string, blePeripheralId?: string) => {
-      await prepareRfConnect(type);
-
       /** Linux MeshCore uses renderer Web Bluetooth (not Noble IPC) — timeout copy must match. */
       const meshcoreBleLinuxWebBluetooth =
         type === 'ble' && navigator.userAgent.toLowerCase().includes('linux');
 
+      await prepareRfConnect(type);
+
       let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
+      let connectSucceeded = false;
       try {
         if (type === 'ble' && !meshcoreBleLinuxWebBluetooth && !blePeripheralId) {
           throw new Error('BLE peripheral ID required');
         }
-        opened = await openMeshCoreTransport(type, {
-          blePeripheralId,
-          host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
-        });
+        const openTransport = () =>
+          openMeshCoreTransport(type, {
+            blePeripheralId,
+            host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
+          });
+        opened =
+          type === 'ble' && isRendererNobleBlePlatform()
+            ? await withNobleBleConnectMutex('meshcore', openTransport)
+            : await openTransport();
         await attachRfSession(opened.driverIdentityId, type);
         meshcoreConnectionParamsRef.current = {
           rfType: type,
@@ -2498,6 +2578,8 @@ export function useMeshcoreRuntime() {
         meshcoreReconnectAttemptRef.current = 0;
         meshcoreIsReconnectingRef.current = false;
         meshcoreReconnectGenerationRef.current += 1;
+        connectSucceeded = true;
+        meshcoreEverConfiguredRef.current = true;
       } catch (err) {
         const isSetupAbort =
           err instanceof DOMException &&
@@ -2507,8 +2589,8 @@ export function useMeshcoreRuntime() {
           await handleRfConnectFailure(type, opened?.driverIdentityId);
           throw err;
         }
-        const rawMessage = serializeErrorLike(err) || 'Connection failed';
-        const safeMessage = rawMessage.trim() || 'Connection failed';
+        const rawMessage = serializeErrorLike(err) || 'meshcore.errors.connectionFailed';
+        const safeMessage = rawMessage.trim() || 'meshcore.errors.connectionFailed';
         const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
           safeMessage,
         );
@@ -2517,26 +2599,28 @@ export function useMeshcoreRuntime() {
         const bleTimeoutStage =
           type === 'ble' ? classifyMeshcoreBleTimeoutStage(safeMessage) : 'unknown';
         const isBleConnectTimeout = bleTimeoutStage !== 'unknown';
-        // When err is missing (e.g. library rejected with no reason), use a BLE-specific hint if we were connecting via BLE
         const fallbackMessage =
           type === 'ble' && err == null
-            ? 'BLE connection failed (no error details from device). Try again or use Serial/USB.'
-            : 'Connection failed';
-        const displayMessage = safeMessage !== 'Connection failed' ? safeMessage : fallbackMessage;
+            ? 'meshcore.errors.bleNoDetails'
+            : 'meshcore.errors.connectionFailed';
+        const displayMessage =
+          safeMessage !== 'meshcore.errors.connectionFailed' && safeMessage !== 'Connection failed'
+            ? safeMessage
+            : fallbackMessage;
         const timeoutMessage = meshcoreBleLinuxWebBluetooth
           ? bleTimeoutStage === 'protocol-handshake'
-            ? 'MeshCore handshake timed out (Web Bluetooth). The radio may need a PIN paired with Linux first: use Remove & Re-pair Device and enter the PIN shown on the device, or pair with bluetoothctl, then tap Connect again.'
-            : 'Bluetooth connection timed out while opening MeshCore over Web Bluetooth. Retry, keep the device awake, power-cycle BLE on the radio, or use Serial/TCP.'
+            ? 'meshcore.errors.bleTimeoutWebBtHandshake'
+            : 'meshcore.errors.bleTimeoutWebBt'
           : bleTimeoutStage === 'protocol-handshake'
-            ? 'Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.'
-            : 'Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.';
+            ? 'meshcore.errors.bleTimeoutHandshake'
+            : 'meshcore.errors.bleTimeoutNoble';
         const normalizedErr = new Error(
           isAlreadyInProgress
-            ? 'Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.'
+            ? 'meshcore.errors.bleAlreadyInProgress'
             : isMissingServices
-              ? 'Device does not support the MeshCore BLE protocol. Make sure the device is running MeshCore firmware.'
+              ? 'meshcore.errors.bleMissingServices'
               : isPeripheralInUse
-                ? 'This device is already connected via Meshtastic BLE. Disconnect it first before connecting as MeshCore.'
+                ? 'meshcore.errors.blePeripheralInUse'
                 : isBleConnectTimeout
                   ? timeoutMessage
                   : displayMessage,
@@ -2565,7 +2649,16 @@ export function useMeshcoreRuntime() {
         await handleRfConnectFailure(type, opened?.driverIdentityId);
         throw normalizedErr;
       } finally {
-        if (type === 'ble') bleConnectInProgressRef.current = false;
+        if (type === 'ble') {
+          bleConnectInProgressRef.current = false;
+          if (meshcoreDeferredReconnectRef.current && !connectSucceeded) {
+            meshcoreDeferredReconnectRef.current = false;
+            console.debug(
+              '[useMeshcoreRuntime] connect settled — running deferred reconnect after Noble drop',
+            );
+            queueMicrotask(() => handleMeshcoreConnectionLostRef.current());
+          }
+        }
       }
     },
     [prepareRfConnect, attachRfSession, handleRfConnectFailure],
@@ -2656,6 +2749,7 @@ export function useMeshcoreRuntime() {
 
   const disconnect = useCallback(async () => {
     meshcoreExplicitDisconnectRef.current = true;
+    meshcoreEverConfiguredRef.current = false;
     meshcoreConnectionParamsRef.current = null;
     meshcoreIsReconnectingRef.current = false;
     meshcoreReconnectAttemptRef.current = 0;
@@ -2667,7 +2761,7 @@ export function useMeshcoreRuntime() {
     async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
       if (destNodeId !== undefined) {
         if (!connRef.current) {
-          throw new Error('Not connected to device');
+          throw new Error(MESHCORE_ERR_NOT_CONNECTED);
         }
         const pubKey = pubKeyMapRef.current.get(destNodeId);
         if (!pubKey) {
@@ -3410,7 +3504,7 @@ export function useMeshcoreRuntime() {
         clearMeshcorePingNoRouteExpiryTimer(nodeId);
         setMeshcorePingErrors((prev) => {
           const next = new Map(prev);
-          next.set(nodeId, 'Node not found (no encryption key)');
+          next.set(nodeId, MESHCORE_ERR_NODE_NOT_FOUND);
           return next;
         });
         return;
@@ -3419,7 +3513,7 @@ export function useMeshcoreRuntime() {
         clearMeshcorePingNoRouteExpiryTimer(nodeId);
         setMeshcorePingErrors((prev) => {
           const next = new Map(prev);
-          next.set(nodeId, 'Not connected to device');
+          next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
           return next;
         });
         return;
@@ -3435,7 +3529,7 @@ export function useMeshcoreRuntime() {
       try {
         const conn = connRef.current;
         if (!conn) {
-          throw new Error('Not connected to device');
+          throw new Error(MESHCORE_ERR_NOT_CONNECTED);
         }
         const hopsAway = nodesRef.current.get(nodeId)?.hops_away;
         let storedPath = outPathMapRef.current.get(nodeId);
@@ -3660,13 +3754,16 @@ export function useMeshcoreRuntime() {
         });
       } catch (e: unknown) {
         const rawErr = meshcoreTraceRouteRejectReason(e);
-        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
+        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
         const isTimeout =
           errMsg.toLowerCase().includes('timeout') || errMsg.toLowerCase().includes('timed out');
-        let friendlyErr = isTimeout
-          ? `Request timed out (up to ~${Math.round(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS / 1000)}s)`
-          : `Failed: ${errMsg}`;
-        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+        const friendlyRef: MeshcoreUserMessage = isTimeout
+          ? {
+              key: 'meshcore.errors.requestTimedOut',
+              params: { seconds: Math.round(MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS / 1000) },
+            }
+          : { key: MESHCORE_ERR_REQUEST_FAILED, params: { detail: errMsg } };
+        const friendlyErr = meshcoreStoredUserMessage(friendlyRef);
         if (tracePathHash) {
           usePathHistoryStore.getState().recordOutcome(nodeId, tracePathHash, false);
         }
@@ -3685,7 +3782,7 @@ export function useMeshcoreRuntime() {
     async (nodeId: number) => {
       const pubKey = await ensureNodePubKey(nodeId);
       if (!pubKey) {
-        const msg = 'Node not found (no encryption key)';
+        const msg = MESHCORE_ERR_NODE_NOT_FOUND;
         setMeshcoreStatusErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, msg);
@@ -3696,7 +3793,7 @@ export function useMeshcoreRuntime() {
       if (!connRef.current) {
         setMeshcoreStatusErrors((prev) => {
           const next = new Map(prev);
-          next.set(nodeId, 'Not connected to device');
+          next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
           return next;
         });
         return;
@@ -3710,7 +3807,7 @@ export function useMeshcoreRuntime() {
         await repeaterRemoteRpcRef.current(async () => {
           const conn = connRef.current;
           if (!conn) {
-            throw new Error('Not connected to device');
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           await meshcoreTryRemoteServerLogin(
             conn,
@@ -3764,13 +3861,10 @@ export function useMeshcoreRuntime() {
         });
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
-        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-        let friendlyErr = errMsg.toLowerCase().includes('timeout')
-          ? `Request timed out (~${Math.round(MESHCORE_STATUS_TIMEOUT_MS / 1000)}s)`
-          : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
-            ? 'Authentication failed'
-            : `Failed: ${errMsg}`;
-        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
+        const friendlyErr = meshcoreStoredUserMessage(
+          meshcoreRepeaterRpcErrorMessage(errMsg, MESHCORE_STATUS_TIMEOUT_MS),
+        );
         setMeshcoreStatusErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -3791,7 +3885,7 @@ export function useMeshcoreRuntime() {
       });
       const pubKey = await ensureNodePubKey(nodeId);
       if (!pubKey) {
-        const msg = 'Node not found (no encryption key)';
+        const msg = MESHCORE_ERR_NODE_NOT_FOUND;
         setMeshcoreTelemetryErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, msg);
@@ -3802,7 +3896,7 @@ export function useMeshcoreRuntime() {
       if (!connRef.current) {
         setMeshcoreTelemetryErrors((prev) => {
           const next = new Map(prev);
-          next.set(nodeId, 'Not connected to device');
+          next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
           return next;
         });
         return;
@@ -3811,7 +3905,7 @@ export function useMeshcoreRuntime() {
         await repeaterRemoteRpcRef.current(async () => {
           const conn = connRef.current;
           if (!conn) {
-            throw new Error('Not connected to device');
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           await meshcoreTryRemoteServerLogin(
             conn,
@@ -3890,13 +3984,10 @@ export function useMeshcoreRuntime() {
         });
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
-        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-        let friendlyErr = errMsg.toLowerCase().includes('timeout')
-          ? `Request timed out (~${Math.round(MESHCORE_TELEMETRY_TIMEOUT_MS / 1000)}s)`
-          : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
-            ? 'Authentication failed'
-            : `Failed: ${errMsg}`;
-        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
+        const friendlyErr = meshcoreStoredUserMessage(
+          meshcoreRepeaterRpcErrorMessage(errMsg, MESHCORE_TELEMETRY_TIMEOUT_MS),
+        );
         setMeshcoreTelemetryErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -3914,22 +4005,22 @@ export function useMeshcoreRuntime() {
     async (nodeId: number) => {
       const pubKey = await ensureNodePubKey(nodeId);
       if (!pubKey) {
-        const msg = meshcoreAppendRepeaterAuthHint('Node not found (no encryption key)');
+        const msg = meshcoreStoredUserMessage(MESHCORE_ERR_NODE_NOT_FOUND);
         setMeshcoreNeighborErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, msg);
           return next;
         });
-        throw new Error(msg);
+        throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
       }
       if (!connRef.current) {
-        const msg = meshcoreAppendRepeaterAuthHint('Not connected to device');
+        const msg = meshcoreStoredUserMessage(MESHCORE_ERR_NOT_CONNECTED);
         setMeshcoreNeighborErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, msg);
           return next;
         });
-        throw new Error(msg);
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
       }
       setMeshcoreNeighborErrors((prev) => {
         const next = new Map(prev);
@@ -3940,7 +4031,7 @@ export function useMeshcoreRuntime() {
         await repeaterRemoteRpcRef.current(async () => {
           const conn = connRef.current;
           if (!conn) {
-            throw new Error('Not connected to device');
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           await meshcoreRepeaterTryLogin(conn, pubKey);
           const neighbourPrefixLen = 6;
@@ -3987,13 +4078,10 @@ export function useMeshcoreRuntime() {
         });
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
-        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-        let friendlyErr = errMsg.toLowerCase().includes('timeout')
-          ? `Request timed out (~${Math.round(MESHCORE_NEIGHBORS_TIMEOUT_MS / 1000)}s)`
-          : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
-            ? 'Authentication failed'
-            : `Failed: ${errMsg}`;
-        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
+        const friendlyErr = meshcoreStoredUserMessage(
+          meshcoreRepeaterRpcErrorMessage(errMsg, MESHCORE_NEIGHBORS_TIMEOUT_MS),
+        );
         setMeshcoreNeighborErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -4012,18 +4100,18 @@ export function useMeshcoreRuntime() {
       if (!pubKey) {
         setMeshcoreCliErrors((prev) => {
           const next = new Map(prev);
-          next.set(nodeId, 'Node not found (no encryption key)');
+          next.set(nodeId, MESHCORE_ERR_NODE_NOT_FOUND);
           return next;
         });
-        throw new Error('Node not found (no encryption key)');
+        throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
       }
       if (!connRef.current) {
         setMeshcoreCliErrors((prev) => {
           const next = new Map(prev);
-          next.set(nodeId, 'Not connected to device');
+          next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
           return next;
         });
-        throw new Error('Not connected to device');
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
       }
 
       setMeshcoreCliErrors((prev) => {
@@ -4048,7 +4136,7 @@ export function useMeshcoreRuntime() {
         return await repeaterRemoteRpcRef.current(async () => {
           const conn = connRef.current;
           if (!conn) {
-            throw new Error('Not connected to device');
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           const { token, promise } = service.registerPendingCommand(command, path);
           const commandWithToken = service.formatCommandWithToken(command, token);
@@ -4078,13 +4166,10 @@ export function useMeshcoreRuntime() {
         });
       } catch (e: unknown) {
         const rawErr = e instanceof Error ? e.message : String(e);
-        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : 'request failed';
-        let friendlyErr = errMsg.toLowerCase().includes('timeout')
-          ? `Request timed out`
-          : errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('login')
-            ? 'Authentication failed'
-            : `Failed: ${errMsg}`;
-        friendlyErr = meshcoreAppendRepeaterAuthHint(friendlyErr);
+        const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
+        const friendlyErr = meshcoreStoredUserMessage(
+          meshcoreRepeaterRpcErrorMessage(errMsg, MESHCORE_TRACE_TIMEOUT_MS),
+        );
         setMeshcoreCliErrors((prev) => {
           const next = new Map(prev);
           next.set(nodeId, friendlyErr);
@@ -4200,7 +4285,7 @@ export function useMeshcoreRuntime() {
       }
       const conn = connRef.current;
       if (!conn) {
-        throw new Error('Not connected to device');
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
       }
       if (meshcoreIsRoomLoggedIn(nodeId) && !opts?.forceRelogin) {
         return;
@@ -4213,64 +4298,78 @@ export function useMeshcoreRuntime() {
       console.debug(
         `[useMeshcoreRuntime] loginRoom node=0x${nodeId.toString(16)} hopsAway=${hopsAway} uiHops=${String(uiHops ?? 'n/a')} outPathLen=${outPathLen}`,
       );
-      await withTimeout(
-        (async (): Promise<void> => {
-          const activeConn = connRef.current;
-          if (!activeConn) {
-            throw new Error('Not connected to device');
-          }
-          // Route prime can take 10s+ — do not hold repeaterRemoteRpc (SendLogin) mutex during flood/path wait.
-          const storedPath = await resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey);
-          if (hopsAway > 0 && (!storedPath || storedPath.length <= 1)) {
-            throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
-          }
-          const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
-            activeConn,
-            nodeId,
-            pubKey,
-            nodesRef.current.get(nodeId),
-            storedPath,
-            hopsAway,
-            (fn) => repeaterRemoteRpcRef.current(fn),
-          );
-          if (hopsAway > 0 && !pathSync.synced) {
-            const detail = pathSync.error ? ` (${pathSync.error})` : '';
-            throw new Error(
-              pathSync.reason === 'no_path'
-                ? MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE
-                : `${MESHCORE_ROOM_LOGIN_PATH_SYNC_FAILED_MESSAGE}${detail}`,
-            );
-          }
-          console.debug(
-            `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
-          );
-          await repeaterRemoteRpcRef.current(async () => {
-            const rpcConn = connRef.current;
-            if (!rpcConn) {
-              throw new Error('Not connected to device');
+      const loginAbort = new AbortController();
+      try {
+        await withTimeout(
+          (async (): Promise<void> => {
+            const activeConn = connRef.current;
+            if (!activeConn) {
+              throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
-            await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
-              adminPassword,
-              guestPassword,
+            // Route prime can take 10s+ — do not hold repeaterRemoteRpc (SendLogin) mutex during flood/path wait.
+            const storedPath = await resolveRoomLoginStoredPath(nodeId, hopsAway, pubKey);
+            if (hopsAway > 0 && (!storedPath || storedPath.length <= 1)) {
+              throw new Error(MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE);
+            }
+            const pathSync = await syncMeshcoreRoomContactPathBeforeLogin(
+              activeConn,
+              nodeId,
+              pubKey,
+              nodesRef.current.get(nodeId),
+              storedPath,
               hopsAway,
-              companionTransport: meshcoreConnectTypeRef.current,
-              forceRelogin: opts?.forceRelogin,
+              (fn) => repeaterRemoteRpcRef.current(fn),
+            );
+            if (hopsAway > 0 && !pathSync.synced) {
+              throw new Error(
+                serializeMeshcoreUserMessage(
+                  pathSync.reason === 'no_path'
+                    ? MESHCORE_ROOM_LOGIN_NO_ROUTE_MESSAGE
+                    : {
+                        key: 'meshcore.errors.roomLogin.pathSyncFailedDetail',
+                        params: { detail: pathSync.error ? ` (${pathSync.error})` : '' },
+                      },
+                ),
+              );
+            }
+            console.debug(
+              `[useMeshcoreRuntime] loginRoom pathSync node=0x${nodeId.toString(16)} ${JSON.stringify(pathSync)} storedPathLen=${storedPath?.length ?? 0}`,
+            );
+            await repeaterRemoteRpcRef.current(async () => {
+              const rpcConn = connRef.current;
+              if (!rpcConn) {
+                throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+              }
+              await meshcoreRoomLogin(rpcConn, nodeId, pubKey, password, {
+                adminPassword,
+                guestPassword,
+                hopsAway,
+                companionTransport: meshcoreConnectTypeRef.current,
+                forceRelogin: opts?.forceRelogin,
+                signal: loginAbort.signal,
+              });
             });
-          });
-          if (opts?.rememberPassword) {
-            await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
-            const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
-            await setMeshcoreRoomSyncConfig(nodeId, {
-              enabled: syncCfg.enabled,
-              intervalMinutes: syncCfg.intervalMinutes,
-              autoLoginOnConnect: true,
-            });
-          }
-          clearMeshcoreRoomAutoLoginFailure(nodeId);
-        })(),
-        MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
-        'loginRoom',
-      );
+            if (opts?.rememberPassword) {
+              await setMeshcoreRoomCredential(nodeId, { guestPassword, adminPassword });
+              const syncCfg = getMeshcoreRoomSyncConfig(nodeId);
+              await setMeshcoreRoomSyncConfig(nodeId, {
+                enabled: syncCfg.enabled,
+                intervalMinutes: syncCfg.intervalMinutes,
+                autoLoginOnConnect: true,
+              });
+            }
+            clearMeshcoreRoomAutoLoginFailure(nodeId);
+          })(),
+          MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS,
+          'loginRoom',
+        );
+      } catch (e: unknown) {
+        if (errLikeToLogString(e).includes('loginRoom timed out')) {
+          loginAbort.abort();
+          meshcoreCancelRoomLogin(nodeId);
+        }
+        throw e;
+      }
     },
     [resolveRoomLoginHopsForNode, resolveRoomLoginStoredPath],
   );
@@ -4312,22 +4411,21 @@ export function useMeshcoreRuntime() {
     }
     const conn = connRef.current;
     if (!conn) {
-      throw new Error('Not connected to device');
+      throw new Error(MESHCORE_ERR_NOT_CONNECTED);
     }
     try {
       await repeaterRemoteRpcRef.current(async () => {
         const activeConn = connRef.current;
         if (!activeConn) {
-          throw new Error('Not connected to device');
+          throw new Error(MESHCORE_ERR_NOT_CONNECTED);
         }
         await meshcoreRoomLogout(activeConn, nodeId, pubKey, {
           companionTransport: meshcoreConnectTypeRef.current,
         });
       });
     } catch (e: unknown) {
-      const friendlyErr = meshcoreRoomLogoutFailureMessage(e);
       console.warn('[useMeshcoreRuntime] leaveRoom failed ' + errLikeToLogString(e));
-      throw new Error(friendlyErr);
+      throw new Error(serializeMeshcoreUserMessage(meshcoreRoomLogoutFailureMessage(e)));
     }
   }, []);
 
@@ -4349,7 +4447,7 @@ export function useMeshcoreRuntime() {
   const loginAllSavedRooms = useCallback(
     async (roomNodeIds?: number[]): Promise<void> => {
       if (!connRef.current) {
-        throw new Error('Not connected to device');
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
       }
       const savedIds = new Set(listMeshcoreRoomCredentialNodeIds());
       const fromUi =
@@ -4631,7 +4729,10 @@ export function useMeshcoreRuntime() {
         throw new Error('Room not found (no encryption key)');
       }
       if (!conn) {
-        throw new Error('Not connected to device');
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+      }
+      if (meshcoreIsRoomLoginQueued(nodeId)) {
+        meshcoreCancelRoomLogin(nodeId);
       }
       if (!meshcoreRoomCanPost(nodeId)) {
         const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'post', {
@@ -4666,28 +4767,34 @@ export function useMeshcoreRuntime() {
           hopsAway,
           companionTransport: meshcoreConnectTypeRef.current,
         };
+        const postTimeoutMs = computeRoomPostTotalTimeoutMs(
+          hopsAway,
+          meshcoreConnectTypeRef.current,
+        );
+        const runPostRpc = <T>(fn: () => Promise<T>): Promise<T> =>
+          withTimeout(repeaterRemoteRpcRef.current(fn), postTimeoutMs, 'sendRoomPost');
         const sendOnce = async (): Promise<{ expectedAckCrc?: number; estTimeout?: number }> => {
           const activeConn = connRef.current;
           if (!activeConn) {
-            throw new Error('Not connected to device');
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           return sendMeshcoreRoomPostWithSentWait(activeConn, pubKey, text, postOpts);
         };
         let result: { expectedAckCrc?: number; estTimeout?: number };
         try {
-          result = await repeaterRemoteRpcRef.current(sendOnce);
+          result = await runPostRpc(sendOnce);
         } catch (first: unknown) {
-          const msg = meshcoreRoomPostSendErrorMessage(first);
+          const postErr = meshcoreRoomPostSendErrorMessage(first);
           const adminPassword = session?.adminPassword?.trim() ?? '';
           if (
             adminPassword.length > 0 &&
-            msg.includes('not logged in on the radio') &&
+            meshcoreUserMessageKey(postErr) === 'meshcore.errors.roomPost.badState' &&
             connRef.current
           ) {
             console.debug(
               `[useMeshcoreRuntime] sendRoomPost mode=admin-retry txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
             );
-            await repeaterRemoteRpcRef.current(async () => {
+            await runPostRpc(async () => {
               const activeConn = connRef.current;
               if (!activeConn) return;
               await meshcoreRoomLogin(activeConn, nodeId, pubKey, adminPassword, {
@@ -4698,7 +4805,7 @@ export function useMeshcoreRuntime() {
                 forceRelogin: true,
               });
             });
-            result = await repeaterRemoteRpcRef.current(sendOnce);
+            result = await runPostRpc(sendOnce);
           } else {
             throw first;
           }
@@ -4750,7 +4857,7 @@ export function useMeshcoreRuntime() {
         }
         void setMeshcoreRoomLastPostAt(nodeId, sentAt);
       } catch (e: unknown) {
-        const errMsg = meshcoreRoomPostSendErrorMessage(e);
+        const errMsg = meshcoreRoomPostSendErrorStored(e);
         const failed: ChatMessage = { ...tempMsg, status: 'failed', error: errMsg };
         if (storeId) {
           upsertMeshcoreMessageWithDedup(storeId, failed);
@@ -4781,7 +4888,7 @@ export function useMeshcoreRuntime() {
       }
       const conn = connRef.current;
       if (!conn) {
-        throw new Error('Not connected to device');
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
       }
       if (!meshcoreRoomCanAdmin(nodeId)) {
         const relogged = await meshcoreRoomTryRelogin(conn, nodeId, pubKey, 'admin', {
@@ -5799,8 +5906,9 @@ export function useMeshcoreRuntime() {
   }, [meshcoreIdentityId, nodes, meshcoreNodesFromStore]);
 
   useEffect(() => {
-    if (!meshcoreIdentityId) return;
-    setConnection(meshcoreIdentityId, {
+    const identityId = getIdentityIdForProtocol('meshcore') ?? meshcoreIdentityId;
+    if (!identityId) return;
+    setConnection(identityId, {
       status: state.status,
       connectionLoss: state.connectionLoss,
       serialNeedsReselect: state.serialNeedsReselect,

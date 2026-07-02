@@ -1,16 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+/**
+ * Protocol-neutral Noble BLE dual-radio coordinator (Meshtastic + MeshCore).
+ * Meshtastic-specific defer/auto-connect behavior is covered in ConnectionPanel.test.tsx
+ * (`ConnectionPanel active-protocol-first BLE auto-connect`).
+ */
 import { useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
   awaitDualNobleBleMeshtasticSettle,
+  awaitNobleBlePrimaryAutoConnectSettled,
   awaitNobleBleProtocolSettle,
+  dualNobleBleBothRadiosConfigured,
+  getNobleBleConnectMutexSnapshot,
+  getNobleBleDualRadioPrimaryProtocol,
+  initNobleBleDualRadioStartup,
   isRendererNobleBlePlatform,
   meshcoreNobleBleConfigureBusy,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   meshtasticNobleBleConfigureBusy,
   needsSequentialMeshcoreRadioInit,
   nobleBleConfigureBusyForProtocol,
+  notifyNobleBlePrimaryAutoConnectSettled,
+  notifyNobleBlePrimaryRfLinkReady,
+  resetNobleBleConnectMutexForTests,
+  resolveNobleBleDualRadioPrimaryProtocol,
+  withNobleBleConnectMutex,
 } from './meshcoreDualNobleBleInit';
 
 const meshtasticProtocol = { type: 'meshtastic' } as const;
@@ -21,6 +36,7 @@ describe('meshcoreDualNobleBleInit', () => {
     useConnectionStore.setState({ connections: {} });
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    resetNobleBleConnectMutexForTests();
   });
 
   it('detects Meshtastic Noble BLE still configuring', () => {
@@ -212,5 +228,125 @@ describe('meshcoreDualNobleBleInit', () => {
     expect(meshcoreTargetsSharedMeshtasticBlePeripheral('other-peripheral')).toBe(false);
     localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
     localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+  });
+
+  it('withNobleBleConnectMutex serializes concurrent Noble BLE connect work on darwin', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    const order: string[] = [];
+    let releaseFirst!: () => void;
+    const firstBlocked = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const first = withNobleBleConnectMutex('meshtastic', async () => {
+      order.push('first-start');
+      await firstBlocked;
+      order.push('first-end');
+    });
+    await Promise.resolve();
+    const second = withNobleBleConnectMutex('meshcore', () => {
+      order.push('second');
+      return Promise.resolve();
+    });
+    expect(getNobleBleConnectMutexSnapshot().queued).toBe('meshcore');
+    releaseFirst();
+    await Promise.all([first, second]);
+    expect(order).toEqual(['first-start', 'first-end', 'second']);
+  });
+
+  it('withNobleBleConnectMutex is a no-op on Linux Web Bluetooth', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const first = withNobleBleConnectMutex('meshtastic', async () => {
+      await gate;
+      return 1;
+    });
+    const second = withNobleBleConnectMutex('meshcore', () => Promise.resolve(2));
+    release();
+    await expect(Promise.all([first, second])).resolves.toEqual([1, 2]);
+  });
+
+  it('dualNobleBleBothRadiosConfigured when both stacks remember different BLE peripherals', () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    expect(dualNobleBleBothRadiosConfigured()).toBe(true);
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+  });
+
+  it('resolveNobleBleDualRadioPrimaryProtocol uses last active tab when dual-radio', () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshcore');
+    expect(resolveNobleBleDualRadioPrimaryProtocol()).toBe('meshcore');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    expect(resolveNobleBleDualRadioPrimaryProtocol()).toBe('meshtastic');
+    localStorage.setItem('mesh-client:protocol', 'reticulum');
+    expect(resolveNobleBleDualRadioPrimaryProtocol()).toBe('meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
+  });
+
+  it('initNobleBleDualRadioStartup is idempotent', () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshcore');
+    initNobleBleDualRadioStartup();
+    expect(getNobleBleDualRadioPrimaryProtocol()).toBe('meshcore');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    initNobleBleDualRadioStartup();
+    expect(getNobleBleDualRadioPrimaryProtocol()).toBe('meshcore');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
+  });
+
+  it('notifyNobleBlePrimaryRfLinkReady unblocks secondary without waiting for configure', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshcore');
+    initNobleBleDualRadioStartup();
+    let secondaryUnblocked = false;
+    const secondaryWait = awaitNobleBlePrimaryAutoConnectSettled(5000).then(() => {
+      secondaryUnblocked = true;
+    });
+    await Promise.resolve();
+    expect(secondaryUnblocked).toBe(false);
+    notifyNobleBlePrimaryRfLinkReady('meshcore');
+    await secondaryWait;
+    expect(secondaryUnblocked).toBe(true);
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
+  });
+
+  it('awaitNobleBlePrimaryAutoConnectSettled unblocks after primary notifies', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    initNobleBleDualRadioStartup();
+    let secondaryUnblocked = false;
+    const secondaryWait = awaitNobleBlePrimaryAutoConnectSettled(5000).then(() => {
+      secondaryUnblocked = true;
+    });
+    await Promise.resolve();
+    expect(secondaryUnblocked).toBe(false);
+    notifyNobleBlePrimaryAutoConnectSettled();
+    await secondaryWait;
+    expect(secondaryUnblocked).toBe(true);
+    expect(getNobleBleDualRadioPrimaryProtocol()).toBe('meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
   });
 });

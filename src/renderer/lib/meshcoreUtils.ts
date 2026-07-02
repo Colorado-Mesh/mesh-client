@@ -661,8 +661,10 @@ export function meshcoreSelfInfoBwToDisplayKhz(bw: number): number {
   return bw;
 }
 
-const REPEATER_AUTH_HINT =
-  'Set or change the repeater admin password from the Repeaters panel (session only).';
+export {
+  MESHCORE_REPEATER_AUTH_HINT_KEY,
+  meshcoreAppendRepeaterAuthHint,
+} from './meshcore/meshcoreMessageI18n';
 
 /**
  * Raw SNR quarter-dB to dB scale factor.
@@ -723,21 +725,6 @@ export function meshcoreApplyRepeaterSessionAuthSkip(): void {
 export function meshcoreClearRepeaterRemoteSessionAuth(): void {
   _repeaterAuthTouched = false;
   _repeaterPassword = '';
-}
-
-/** Append guidance when an error is likely auth-related. */
-export function meshcoreAppendRepeaterAuthHint(message: string): string {
-  const m = message.trim();
-  if (!m) return m;
-  if (m.includes(REPEATER_AUTH_HINT)) return m;
-  const lower = m.toLowerCase();
-  const authish =
-    lower.includes('authentication failed') ||
-    lower.includes('auth failed') ||
-    lower.includes('login failed') ||
-    (lower.includes('auth') && lower.includes('fail'));
-  if (!authish) return m;
-  return `${m} ${REPEATER_AUTH_HINT}`;
 }
 
 /**

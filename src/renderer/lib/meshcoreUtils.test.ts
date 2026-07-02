@@ -524,8 +524,11 @@ describe('meshcoreContactToMeshNode', () => {
 describe('meshcoreAppendRepeaterAuthHint', () => {
   it('appends hint for authentication failed', () => {
     const out = meshcoreAppendRepeaterAuthHint('Authentication failed');
-    expect(out).toContain('Authentication failed');
-    expect(out).toContain('Repeaters panel');
+    expect(out).toEqual({
+      type: 'prefixed',
+      message: 'Authentication failed',
+      hintKey: 'meshcore.errors.repeaterAuthHint',
+    });
   });
 
   it('leaves unrelated errors unchanged', () => {

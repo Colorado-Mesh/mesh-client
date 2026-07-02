@@ -176,8 +176,7 @@ export const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
 export const MESHCORE_TRACE_PRIME_WAIT_MS = 12_000;
 
 /** Shown when multi-hop trace cannot run until the radio reports a route; UI auto-clears after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}. */
-export const MESHCORE_PING_NO_ROUTE_ERROR_MSG =
-  'No route from radio yet — multi-hop trace needs a synced path. Wait for contact updates or reconnect.';
+export const MESHCORE_PING_NO_ROUTE_ERROR_MSG = 'meshcore.errors.pingNoRoute';
 export const MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS = 20_000;
 
 /** Clears {@link MESHCORE_PING_NO_ROUTE_ERROR_MSG} for `nodeId` if unchanged (traceRoute expiry). */

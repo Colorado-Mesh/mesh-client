@@ -5,11 +5,17 @@ import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
+import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
+import { registerReticulumDestinationHash } from '../lib/reticulum/destHash';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import {
   type MeshtasticSessionApi,
   registerMeshtasticSession,
 } from '../lib/sessions/meshtasticSession';
+import {
+  registerReticulumSession,
+  type ReticulumSessionApi,
+} from '../lib/sessions/reticulumSession';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import { addMessage, useMessageStore } from '../stores/messageStore';
@@ -21,6 +27,7 @@ import { useSendMessage } from './useSendMessage';
 
 const ID_MT = 'id-send-mt';
 const ID_MC = 'id-send-mc';
+const ID_RT = 'id-send-rt';
 
 vi.mock('../lib/drivers/ConnectionDriver', () => ({
   connectionDriver: {
@@ -44,6 +51,7 @@ describe('useSendMessage', () => {
     vi.mocked(connectionDriver.getHandle).mockClear();
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
+    registerReticulumSession(null);
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useMessageStore.setState({ messages: {} });
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
@@ -363,5 +371,46 @@ describe('useSendMessage', () => {
       expect(rows[0]?.error).toContain('rf down');
     });
     sendSpy.mockRestore();
+  });
+
+  it('persists optimistic Reticulum outbound to SQLite', () => {
+    const saveReticulum = vi
+      .spyOn(window.electronAPI.db, 'saveReticulumMessage')
+      .mockResolvedValue(undefined);
+    const sendMessage = vi.fn().mockResolvedValue(undefined);
+    registerReticulumSession({
+      connect: vi.fn(),
+      connectAutomatic: vi.fn(),
+      disconnect: vi.fn(),
+      finalizeDriverDisconnect: vi.fn(),
+      selfNodeId: 0xabcd,
+      getFullNodeLabel: () => 'Self',
+      sendMessage,
+    } satisfies ReticulumSessionApi);
+    registerReticulumDestinationHash(0xabcd, 'cc'.repeat(16));
+    registerReticulumDestinationHash(0x1234, 'dd'.repeat(16));
+    addIdentity({
+      id: ID_RT,
+      protocol: reticulumProtocol,
+      signature: 'sig-rt',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+
+    const { result } = renderHook(() => useSendMessage(ID_RT));
+    result.current('hello lxmf', 0, 0x1234);
+
+    const rows = Object.values(useMessageStore.getState().messages[ID_RT] ?? {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.status).toBe('sending');
+    expect(saveReticulum).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identity_id: ID_RT,
+        payload: 'hello lxmf',
+        delivery_status: 'sending',
+      }),
+    );
+    saveReticulum.mockRestore();
   });
 });

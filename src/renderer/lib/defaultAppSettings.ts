@@ -34,4 +34,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreOpenWireCompatEnabled: false,
   /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */
   meshcorePathHashMode: 0 as 0 | 1 | 2,
+  /** Start Reticulum sidecar automatically when opening the Reticulum tab. */
+  reticulumAutostart: false,
 };

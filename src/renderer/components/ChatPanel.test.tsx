@@ -395,6 +395,117 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByRole('img', { name: 'Received via MQTT' })).toBeInTheDocument();
   });
 
+  it('shows Reticulum RF/TCP/network transport badges for incoming messages', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Peer',
+              payload: 'RF hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'rf',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTitle('Received via RF')).toBeInTheDocument();
+    });
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Peer',
+              payload: 'TCP hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'tcp',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText('Received via TCP')).toHaveTextContent('TCP');
+    });
+
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Peer',
+              payload: 'Network hello',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'network',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTitle('Received via network')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Reticulum outbound transport status for own messages', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          isConnected
+          showLxmfDeliveryStatus
+          myNodeNum={42}
+          messages={[
+            {
+              sender_id: 42,
+              sender_name: 'Self',
+              payload: 'Outbound',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              receivedVia: 'tcp',
+              to: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText(/TCP/)).toBeInTheDocument();
+  });
+
   it('surfaces incoming DM conversations and renders them in DM view', async () => {
     const user = userEvent.setup();
     render(
@@ -511,7 +622,7 @@ describe('ChatPanel accessibility', () => {
     );
 
     expect(screen.queryByText('!ffffffff')).not.toBeInTheDocument();
-    expect(screen.getByText('No conversations')).toBeInTheDocument();
+    expect(screen.getByText('No conversations yet')).toBeInTheDocument();
   });
 
   it('allows closing inferred DM tab and resurfaces on subsequent message (even if timestamp is stale)', async () => {
@@ -796,7 +907,7 @@ describe('ChatPanel accessibility', () => {
     expect(screen.queryByRole('button', { name: 'Jump to Unread' })).not.toBeInTheDocument();
   });
 
-  it('shows role="alert" when onSend rejects', async () => {
+  it('queues failed send to outbox when onSend rejects', async () => {
     const user = userEvent.setup();
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const onSend = vi.fn().mockRejectedValue(new Error('send failed'));
@@ -810,8 +921,10 @@ describe('ChatPanel accessibility', () => {
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(onSend).toHaveBeenCalled();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('send failed');
+      expect(screen.getByText('hello')).toBeInTheDocument();
     });
+    expect(screen.getByText(/Failed|Queued/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringMatching(/\[ChatComposer\].*Send failed/s),
     );
@@ -3326,5 +3439,186 @@ describe('ChatPanel — notification sound on new messages', () => {
 
     await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatPanel reticulum dm-only chat', () => {
+  const reticulumProps = {
+    messages: [] as ChatMessage[],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map<number, MeshNode>(),
+    isActive: true,
+    protocol: 'reticulum' as const,
+    dmOnlyChat: true,
+  };
+
+  it('opens DM via initialDmTarget instead of listing all contacts', async () => {
+    const user = userEvent.setup();
+    const peerId = 0xabc123;
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: 'deadbeef',
+          long_name: 'Peer One',
+          short_name: 'P1',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} nodes={nodes} onSend={onSend} initialDmTarget={peerId} />
+      </ToastProvider>,
+    );
+    expect(screen.getByRole('button', { name: 'Peer One' })).toBeInTheDocument();
+    const input = await waitForComposer();
+    await user.type(input, 'hello');
+    await user.keyboard('{Enter}');
+    await waitFor(() => {
+      expect(onSend).toHaveBeenCalledWith('hello', 0, peerId, undefined);
+    });
+  });
+
+  it('does not list node-map contacts without message history', () => {
+    const peerId = 0xabc123;
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          reticulum_destination_hash: 'deadbeef',
+          long_name: 'Peer One',
+          short_name: 'P1',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ],
+    ]);
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} nodes={nodes} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'Peer One' })).not.toBeInTheDocument();
+  });
+
+  it('shows DM tab from message history and auto-focuses conversation', async () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'History Peer',
+        payload: 'prior hello',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('prior hello')).toBeInTheDocument();
+    const input = await waitForComposer();
+    expect(input).not.toBeDisabled();
+  });
+
+  it('prompts to select a DM when no contacts are known', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByText('No conversations yet — open a contact from the Nodes tab.'),
+    ).toBeInTheDocument();
+    const input = await waitForComposer();
+    expect(input).toBeDisabled();
+    expect(
+      screen.getByPlaceholderText('Select a contact above to start a DM…'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('hides message history when no DM tab is selected', () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'History Peer',
+        payload: 'prior hello',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    localStorage.setItem(`mesh-client:dismissedDmTabs:reticulum`, JSON.stringify({ [peerId]: 1 }));
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByText('prior hello')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Reticulum chat is direct message only. Pick a contact above or open one from the Nodes tab.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps closed DM tabs dismissed after remount', () => {
+    const peerId = parseInt('8fd7a9361aca', 16) >>> 0;
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'History Peer',
+        payload: 'prior hello',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: '8fd7a9361aca00000000000000000000',
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    localStorage.setItem(`mesh-client:openDmTabs:reticulum`, JSON.stringify([]));
+    localStorage.setItem(`mesh-client:dismissedDmTabs:reticulum`, JSON.stringify({ [peerId]: 1 }));
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} messages={messages} ownNodeIds={[1]} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'History Peer' })).not.toBeInTheDocument();
+    expect(screen.queryByText('prior hello')).not.toBeInTheDocument();
   });
 });

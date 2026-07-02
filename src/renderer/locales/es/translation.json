@@ -23,7 +23,17 @@
       "reconnecting": "Reconectando"
     },
     "nodeLabel": "Nodo: {{name}}",
-    "takClientLost": "Cliente TAK PERDIDO"
+    "takClientLost": "Cliente TAK PERDIDO",
+    "title": "Cliente de malla",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Apague el letrero Colorado Mesh",
+    "meshTubeSignOn": "Encienda el letrero Colorado Mesh",
+    "queueBadge": "P: {{used}}/{{max}}",
+    "telemetryDisabled": "La telemetría está deshabilitada en este dispositivo. Habilitar las métricas del dispositivo ayuda a la malla y a esta aplicación (diagnóstico, batería, señal). Habilítelo en la pestaña Radio.",
+    "scrollToTop": "↑ Arriba",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh on GitHub",
+    "footerWebsiteTitle": "Sitio web de Colorado Mesh"
   },
   "appPanel": {
     "failedSaveRetention": "Error al guardar la configuración de retención de mensajes.",
@@ -109,17 +119,10 @@
     "colorScheme": "esquema de color",
     "dangerZoneSection": "Zona de peligro",
     "destructiveActions": "Acciones destructivas",
-    "dangerZoneDesc": "Estas acciones son permanentes y no se pueden deshacer. Confirme cada paso con cuidado.",
-    "diagnosticsSection": "Diagnóstico",
     "pruneDistantNodesTitle": "Podar nodos distantes",
-    "pruneDistantNodesDesc": "Más allá del umbral de distancia en Filtrado de mapas y nodos. Requiere una ubicación GPS válida.",
     "pruneOfflineNodesTitle": "Podar nodos sin conexión",
-    "pruneOfflineNodesDays": "No se escuchó en más de {{days}} días. Los nodos favoritos están excluidos.",
-    "clearAllNodesCount": "Borrar todos los nodos ({{count}})",
     "deleteContactsNoPubkeysTitle": "Eliminar contactos sin Pubkeys",
-    "deleteContactsNoPubkeysDesc": "Excluye los nodos de chat creados a partir de mensajes.",
     "messagesSection": "Mensajes",
-    "channelLabel": "Canal:",
     "allChannelsOption": "Todos los canales",
     "clearMessagesCount": "Borrar mensajes ({{count}})",
     "latLabel": "Latitud:",
@@ -160,7 +163,6 @@
     "removeUnnamedNodesLabel": "Eliminar nodos sin nombre al iniciar",
     "capTotalNodesLabel": "Limitar el total de nodos, mantener los más nuevos",
     "autoPrunePositionHistoryLabel": "Historial de posiciones de Auto-Prune en el inicio, más antiguo que",
-    "removeContactsNeverAdvertisedLabel": "Eliminar contactos que nunca se han anunciado en el inicio",
     "autoPruneUnheardContactsLabel": "Recortar automáticamente los contactos no escuchados en el inicio, más antiguos que",
     "capTotalContactsLabel": "Límite de contactos totales, mantener vistos más recientemente",
     "limitMessagesLoadedLabel": "Limitar mensajes cargados",
@@ -169,7 +171,6 @@
     "meshcoreRemoveNeverAdvertisedLabel": "Eliminar contactos que nunca se han anunciado en el inicio",
     "meshcoreRemoveNeverAdvertisedHint": "Elimina los contactos de marcador de posición obsoletos sin historial de anuncios; los contactos favoritos se mantienen.",
     "messagesLoadLimitIntro": "Limite la cantidad de mensajes que se cargan en la memoria para la interfaz de usuario y limite la cantidad de filas que permanecen en SQLite. Cargar menos mantiene la RAM baja en redes ocupadas; el límite de la base de datos elimina los mensajes más antiguos al iniciar la aplicación (almacenados por protocolo).",
-    "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
     "compactMessages": "Vista compacta de mensajes",
     "notificationsSection": "Notificaciones",
     "soundNotifications": "Notificaciones con Sonido",
@@ -199,7 +200,124 @@
     "meshcorePathHashModeShort2": "3 byte",
     "meshcorePathHashDeviceReported": "Informes de radio conectados: {{mode}}",
     "meshcorePathHashModeHint": "Requiere firmware complementario v1.14.0+ y repetidores en v1.14+ a lo largo de la ruta. Los repetidores pre-1.14 dejan caer silenciosamente paquetes multibyte. Los servidores de sala y repetidores también pueden usar CLI: set path.hash.mode {0|1|2}.",
-    "meshcorePathHashApplyFailed": "Error en el modo hash de ruta: {{message}}"
+    "meshcorePathHashApplyFailed": "Error en el modo hash de ruta: {{message}}",
+    "reticulumDmOnlyMessagesHint": "El chat de Reticulum solo almacena mensajes directos: no hay canales que borrar individualmente.",
+    "clearReticulumMessagesTitle": "Perfeccionar mensajes claros y directos",
+    "clearReticulumMessagesConfirm": "Esto eliminará de forma permanente todos los {{count}} mensajes directos de Reticulum almacenados localmente. Esto no se puede deshacer.",
+    "clearReticulumMessagesConfirmButton": "Borrar {{count}} mensajes",
+    "reticulumSection": "Reticulum — Pila de Reticulum",
+    "reticulumAnnounceHelp": "Con qué frecuencia se anuncia su identidad en la red y herramientas para borrar los anuncios almacenados.",
+    "reticulumPropagationHelp": "Elija cómo se sincronizan los nodos de propagación y extraiga los últimos datos de propagación cuando sea necesario.",
+    "logPanelHelp": "Cuando está habilitado, aparece una transmisión de registro en vivo a la derecha. En la pestaña Reticulum, las líneas de dispositivos incluyen la salida del sidecar y el estado de la interfaz local. Las líneas de depuración requieren la casilla de verificación dentro del panel de registro.",
+    "autoPruneUnheardContactsDaysAria": "Eliminación automática de contactos no escuchados al inicio, con más de {{days}} días",
+    "capTotalContactsCountAria": "Limitar el total de contactos, mantener los contactos {{count}} vistos más recientemente",
+    "unknownError": "Error desconocido",
+    "resetDiagnosticsConfirm": "Esto borrará todas las anomalías de enrutamiento, el historial de saltos y las estadísticas de paquetes. El motor se reconstruirá a partir de nuevos paquetes entrantes. ¿Continuar?",
+    "clearGpsDataConfirm": "Esto eliminará las coordenadas GPS almacenadas de todos los nodos. Los nodos permanecerán pero sus posiciones estarán en blanco hasta que se reciban nuevos datos. ¿Continuar?",
+    "clearPositionHistoryConfirm": "Esto eliminará permanentemente todo el historial de posiciones almacenado en la base de datos. Los rastros de movimiento ya no se mostrarán en sesiones anteriores. ¿Continuar?",
+    "deleteOldNodesConfirm_one": "Esto eliminará permanentemente todos los nodos que no se hayan escuchado en el último {{days}} día. Serán redescubiertos cuando vuelvan a transmitirse.",
+    "deleteOldNodesConfirm_other": "Esto eliminará permanentemente todos los nodos que no se hayan escuchado en los últimos {{days}} días. Serán redescubiertos cuando vuelvan a transmitirse.",
+    "pruneMqttOnlyNodesConfirm": "Esto eliminará permanentemente todos los nodos descubiertos solo a través de MQTT (nunca escuchados a través de RF). Reaparecerán si se escuchan nuevamente a través de MQTT o RF.",
+    "pruneMqttNodesConfirmLabel": "Podar nodos MQTT",
+    "pruneUnnamedNodesConfirm": "Esto eliminará permanentemente los nodos sin un nombre largo real: nombres vacíos, marcadores de posición hexadecimales generados automáticamente, respaldos de Nodo-HEX vinculados a la identificación del nodo e identidades solo MQTT que nunca recibieron información de usuario. Los nodos favoritos se mantienen. Serán redescubiertos cuando vuelvan a transmitirse.",
+    "pruneNoFixNodesConfirm_one": "Esto eliminará permanentemente el nodo {{count}} con coordenadas nulas o cercanas a cero (sin posición de GPS ni isla cero). Esto no se puede deshacer.",
+    "pruneNoFixNodesConfirm_other": "Esto eliminará permanentemente {{count}} nodos con coordenadas nulas o cercanas a cero (sin posición de GPS o isla cero). Esto no se puede deshacer.",
+    "pruneNoFixDeleteConfirm_one": "Eliminar el nodo {{count}}",
+    "pruneNoFixDeleteConfirm_other": "Eliminar nodos {{count}}",
+    "pruneDistantNodesConfirm_one": "Esto eliminará permanentemente el nodo {{count}} más allá de {{distance}} {{unit}} de su dispositivo. Esto no se puede deshacer.",
+    "pruneDistantNodesConfirm_other": "Esto eliminará permanentemente {{count}} nodos más allá de {{distance}} {{unit}} de su dispositivo. Esto no se puede deshacer.",
+    "pruneDistantDeleteConfirm_one": "Eliminar el nodo {{count}}",
+    "pruneDistantDeleteConfirm_other": "Eliminar nodos {{count}}",
+    "pruneOfflineNodesConfirm_one": "Esto eliminará permanentemente el nodo {{count}} que no se escuchó en más de {{days}} {{daysLabel}}. Esto no se puede deshacer.",
+    "pruneOfflineNodesConfirm_other": "Esto eliminará permanentemente {{count}} nodos que no se escuchen en más de {{days}} {{daysLabel}}. Esto no se puede deshacer.",
+    "pruneOfflineDeleteConfirm_one": "Eliminar el nodo {{count}}",
+    "pruneOfflineDeleteConfirm_other": "Eliminar nodos {{count}}",
+    "clearNodesConfirm": "Esto eliminará permanentemente todos los {{count}} nodos almacenados localmente. Serán redescubiertos cuando estén conectados.",
+    "clearNodesConfirmLabel": "Borrar nodos {{count}}",
+    "clearAllNodesButton": "Borrar todos los nodos ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "Esto eliminará permanentemente todos los contactos de MeshCore de la base de datos que no tengan clave pública. Se excluirán los nodos auxiliares de chat (creados a partir de mensajes). Esto no se puede deshacer.",
+    "deleteContactsNoPubkeysConfirmButton": "Borrar",
+    "clearMessagesAllConfirm": "Esto eliminará permanentemente todos los {{count}} mensajes almacenados localmente en todos los canales. Esto no se puede deshacer.",
+    "clearMessagesChannelConfirm": "Esto eliminará permanentemente todos los mensajes de {{channel}}. Esto no se puede deshacer.",
+    "clearMessagesAllConfirmLabel": "Borrar mensajes {{count}}",
+    "clearMessagesChannelConfirmLabel": "Borrar {{channel}}",
+    "clearMessagesTitle": "Borrar mensajes",
+    "clearAllRepeatersConfirm": "Esto eliminará permanentemente todos los repetidores MeshCore guardados de la base de datos local. Esto no se puede deshacer.",
+    "clearAllLocalDataTitle": "⚠ Borrar todos los datos locales",
+    "clearAllLocalDataConfirm": "Esto eliminará permanentemente TODOS los mensajes locales, nodos y datos de sesión almacenados en caché. Esta acción NO se puede deshacer.",
+    "clearEverythingConfirmButton": "Borrar todo",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "Todo",
+    "deleteNodesOlderThanAria": "Eliminar nodos escuchados por última vez hace más de {{days}} días",
+    "daySingular": "día",
+    "theme": {
+      "appBg": {
+        "label": "Fondo de la ventana principal",
+        "description": "Ventana de contenido principal y fondo de la ventana de la aplicación: el lienzo oscuro detrás de todos los paneles."
+      },
+      "sidebarActiveBg": {
+        "label": "Pestaña de la barra lateral activa",
+        "description": "Fondo de la pestaña actualmente seleccionada en la navegación de la barra lateral."
+      },
+      "brandGreen": {
+        "label": "Indicadores y aspectos destacados de las fronteras",
+        "description": "Acento para los bordes cuando se configuran, indicadores en línea/MQTT, resaltados y rellenos de progreso."
+      },
+      "brightGreen": {
+        "label": "Título de la aplicación, enlaces y énfasis en los nodos",
+        "description": "Título de la aplicación, texto de énfasis, enlaces en el pie de página y resaltados de salto/auto en la lista de nodos."
+      },
+      "readableGreen": {
+        "label": "Botones de acción y pastillas seleccionadas",
+        "description": "Rellenos sólidos con texto blanco: píldoras de canales seleccionados y botones de acción principal para contrastar."
+      },
+      "deepBlack": {
+        "label": "Barra lateral, encabezado y superficies modales",
+        "description": "Navegación de barra lateral, encabezado, pie de página, estructuras modales y superficies oscuras primarias."
+      },
+      "secondaryDark": {
+        "label": "Panel y fondo de entrada",
+        "description": "Fondos de paneles, entradas, botones, desplazamientos de filas de tablas y seguimiento de progreso."
+      },
+      "muted": {
+        "label": "Etiquetas secundarias y subtítulos",
+        "description": "Etiquetas secundarias, leyendas, encabezados de tablas y texto sin énfasis."
+      },
+      "chatIncomingBg": {
+        "label": "Relleno de mensajes entrantes",
+        "description": "Relleno de fondo para mensajes entrantes del canal (aplicado con 38% de opacidad)."
+      },
+      "chatIncomingBorder": {
+        "label": "Borde del mensaje entrante",
+        "description": "Color del borde de los mensajes entrantes del canal."
+      }
+    },
+    "themePreset": {
+      "green300": "Verde 300",
+      "slate950": "Pizarra 950",
+      "slate900": "Pizarra 900",
+      "slate800": "Pizarra 800",
+      "slate700": "Pizarra 700",
+      "slate400": "Pizarra 400",
+      "white": "Blanco",
+      "black": "Negro",
+      "blue500": "Azul 500",
+      "amber500": "Ámbar 500",
+      "red500": "rojo 500",
+      "emerald500": "Esmeralda 500",
+      "green700": "Verde 700",
+      "violet500": "violeta 500",
+      "cyan400": "Cian 400",
+      "purple400": "Púrpura 400",
+      "pink400": "rosa 400",
+      "orange400": "naranja 400",
+      "yellow400": "Amarillo 400"
+    },
+    "autoPruneNodesOlderThanAria": "Nodos de poda automática al inicio, con más de {{days}} días",
+    "autoPrunePositionHistoryDaysAria": "Historial de posición de poda automática al inicio, anterior a {{days}} días",
+    "capTotalNodesCountAria": "Limitar el total de nodos, mantener los nodos {{count}} más nuevos",
+    "limitMessagesLoadedCountAria": "Limitar mensajes cargados {{count}} mensajes",
+    "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -212,7 +330,8 @@
     "protocolSwitcher": "Conmutador de protocolo",
     "switchToMeshtastic": "Cambiar a Meshtastic",
     "switchToMeshCore": "Cambiar a MeshCore",
-    "backToTop": "Volver al inicio"
+    "backToTop": "Volver al inicio",
+    "switchToReticulum": "Cambiar a Reticulum"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -221,13 +340,11 @@
   "channelUtilization": {
     "title": "Utilización del canal.",
     "noData": "Aún no hay datos de utilización del canal disponibles",
-    "meshcoreNote": "MeshCore: mostrando solo el nodo conectado",
     "tooltipLabel": "Utilización del canal."
   },
   "chatPanel": {
     "channels": "Canales",
     "searchMessages": "Buscar mensajes",
-    "searchAllChannels": "Buscar en todos los canales",
     "closeDmTab": "Cerrar pestaña DM",
     "searchMessagesPlaceholder": "Buscar mensajes...",
     "searchResults_one": "{{count}} resultado",
@@ -257,19 +374,14 @@
     "filterBySender": "Filtrar por remitente",
     "clearSenderFilter": "Borrar filtro",
     "filteringBySender": "Filtrado por {{name}}",
-    "muteNotifications": "Silenciar notificaciones",
-    "unmuteNotifications": "Desactivar el silencio de las notificaciones",
     "jumpToDate": "Ir a la fecha",
-    "noMessagesOnDate": "No hay mensajes en esta fecha",
     "exportChat": "Exportar chat",
-    "exportChatSuccess": "Chat exportado",
     "exportChatFailed": "Fallo en la exportación",
     "dmNodeLastHeard": "Escuchado por última vez {{time}}",
     "dmNodeBattery": "Batería {{pct}}%",
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops": "{{count}} hop",
     "dmNodeHopsPlural": "{{count}} saltos",
-    "quickDm": "Mensaje directo {{name}}",
     "muteConversation": "Silenciar esta conversación",
     "unmuteConversation": "Activar esta conversación",
     "starMessage": "Marcar mensaje",
@@ -321,9 +433,6 @@
     "waitingMessagesSyncNow": "Sincronizar ahora",
     "jumpToUnread": "Saltar a no leído",
     "jumpToLatest": "Saltar a lo último",
-    "meshcoreReactionPickerLabel": "Elige la reacción de malla",
-    "meshcoreReactionEmojiOption": "Reacciona con {{emoji}}",
-    "meshcoreReactionNotInteroperable": "Ese emoji no es compatible con las reacciones de malla de MeshCore.",
     "reactionFailed": "Reacción fallida",
     "meshcoreGifButton": "Insertar GIF Giphy",
     "meshcoreGifButtonHint": "Enviar un GIF de Giphy en wire g: de MeshCore Open",
@@ -331,11 +440,48 @@
     "meshcoreGifHint": "Pega una URL de página de Giphy, una URL de medios, g:ID o un id de GIF sin prefijo.",
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/... o g:ID",
     "meshcoreGifSend": "Enviar Gif",
-    "meshcoreGifInvalid": "Introduce una URL de Giphy o un ID de GIF válidos."
+    "meshcoreGifInvalid": "Introduce una URL de Giphy o un ID de GIF válidos.",
+    "attachFile": "Adjuntar archivo",
+    "attachFileHint": "Enviar un archivo adjunto LXMF (solo DM)",
+    "attachDmOnly": "Abra un mensaje directo antes de adjuntar un archivo.",
+    "composePlaceholderSelectDm": "Seleccione un contacto arriba para iniciar un DM...",
+    "selectDmFirst": "Seleccione un destinatario de DM antes de enviar.",
+    "emptySelectDm": "El chat de Reticulum es solo un mensaje directo. Elija un contacto arriba o abra uno en la pestaña Nodos.",
+    "noDmConversations": "Aún no hay conversaciones.",
+    "noDmConversationsReticulum": "Aún no hay conversaciones: abre un contacto desde la pestaña Nodos.",
+    "dms": "DM",
+    "receivedViaTcp": "Recibido a través de",
+    "receivedViaNetwork": "Recibido a través de la red",
+    "sentViaRf": "Enviado a través de RF",
+    "sentViaTcp": "Enviado a través de TCP",
+    "sentViaNetwork": "a traves de la red",
+    "reticulumSendSending": "Enviando",
+    "reticulumSendDelivered": "Entregado",
+    "reticulumSendFailed": "Error al enviar",
+    "reticulumImageAttachment": "Imagen: {{name}}",
+    "reticulumFileAttachment": "Archivo: {{name}}",
+    "reticulumShowInFolder": "Mostrar en la carpeta",
+    "reticulumSendPropagated": "En cola en el nodo de propagación",
+    "reticulumNoPropagationNode": "No hay ningún nodo de propagación configurado. Establezca un nodo de propagación preferido en la pestaña Reticulum Radio.",
+    "sentViaPropagation": "Nodo de propagación",
+    "reticulumPropagationSyncActive": "Sincronizando mensajes desde el nodo de propagación...",
+    "reticulumAudioAttachment": "Voz: {{name}}",
+    "reticulumSaveAttachment": "Guardar archivo adjunto",
+    "recordVoice": "Grabar mensaje de voz",
+    "recordVoiceHint": "Grabe un clip de voz y envíelo como un archivo adjunto LXMF (solo DM)",
+    "stopVoiceRecording": "Dejar de grabar y enviar",
+    "voiceRecordingTooLong": "El clip de voz alcanzó el límite de 60 segundos y se envió.",
+    "reticulumSendAttachmentFailed": "Error al enviar el archivo adjunto",
+    "reticulumSendAttachmentNoIdentity": "Identidad Reticulum no lista — conéctese y configure la identidad primero",
+    "dmPeerInfoAria": "Información de compañeros de DM",
+    "clearDateAria": "Borrar fecha",
+    "readOnlyDisconnected": "No conectado: los mensajes son de solo lectura",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "Mencionar sugerencias"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
-    "emptyMention": "Mención vacía",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Abrir en Giphy"
   },
@@ -345,36 +491,20 @@
     "save": "Guardar",
     "yes": "Sí",
     "no": "No",
-    "apply": "Aplicar",
-    "ok": "OK",
-    "reset": "Restablecimiento",
     "clear": "Borrar",
-    "export": "Exportar",
-    "import": "Importar",
     "refresh": "Actualizar",
-    "delete": "Eliminar",
     "edit": "Editar",
-    "add": "Añadir",
-    "remove": "Eliminar",
-    "send": "Enviar",
-    "search": "Buscar",
     "loading": "Cargando",
     "error": "Error",
-    "success": "Realizado con éxito",
     "warning": "Advertencia",
-    "enabled": "Habilitado",
     "disabled": "Deshabilitado",
     "unknown": "Desconocido",
-    "none": "Ninguno",
     "never": "Nunca",
-    "always": "Siempre",
     "dismiss": "Declarar sin lugar",
     "channel": "Canal",
     "nodes": "nodos",
     "contacts": "Contactos",
     "messages": "mensajes",
-    "connect": "Conectar",
-    "disconnect": "Desconectar",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Sitio web",
@@ -388,7 +518,14 @@
     "daysAgo": "Hace {{count}}d",
     "days": "días",
     "emDash": "—",
-    "saving": "Guardando..."
+    "saving": "Guardando...",
+    "peers": "Pares",
+    "colorGreen": "Verde",
+    "colorCyan": "Cian",
+    "colorAmber": "Ámbar",
+    "colorRed": "Rojo",
+    "colorPurple": "Morado",
+    "delete": "Borrar"
   },
   "configApplyNotice": {
     "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
@@ -404,7 +541,6 @@
     "requiresLocalRadio": "Conecte una radio Meshtastic local para utilizar la administración remota.",
     "sessionActive": "Sesión de administrador activa",
     "sessionStale": "Sesión de administrador obsoleta: actualice antes de cambiar la configuración",
-    "sessionNone": "Sesión de administrador no establecida — cargando o conectando la radio local",
     "establishingSession": "Estableciendo sesión de administrador..."
   },
   "connectionBanner": {
@@ -428,8 +564,6 @@
     "selectBluetoothDevice": "Seleccionar dispositivo Bluetooth",
     "devicesFound": "{{count}} encontrado",
     "scanningDevices": "Buscando dispositivos {{protocol}}...",
-    "adaDfuHint": "En macOS, si un dispositivo se muestra como \"AdaDFU\", emparéjelo primero en Configuración del sistema → Bluetooth para ver su nombre Meshtastic.",
-    "meshcorePairingNote": "Empareje su dispositivo MeshCore en la configuración Bluetooth del sistema antes de conectarse. Utilice un código PIN si se le solicita: si su sistema no solicita un PIN, la conexión fallará y es posible que deba eliminar el emparejamiento y volver a emparejarlo con un PIN.",
     "selectSerialPort": "Seleccionar puerto serie",
     "noSerialPorts": "No se encontraron puertos serie. Asegúrese de que su dispositivo esté enchufado.",
     "enterPin": "Ingrese el PIN que se muestra en su dispositivo:",
@@ -491,7 +625,7 @@
     "hintMeshtasticHttp2": "Si la conexión no es confiable (por ejemplo, con meshtastic.local), pruebe con la dirección IP del dispositivo; el mDNS del escritorio puede ser inestable.",
     "hintMeshcoreHttp": "Ingrese el nombre de host o la dirección IP de su radio complementaria MeshCore. Debe ser accesible en el puerto 5000.",
     "stageLinuxUnpaired": "El dispositivo guardado no está emparejado en Linux Bluetooth; selecciónelo a continuación para ingresar el PIN y conectarse.",
-    "liamServerNote": "El servidor de Liam es solo de enlace ascendente: tu nodo aparece en su mapa pero no recibirás mensajes de él.",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Conectar",
     "mqttStatusConnected": "conectado",
     "mqttStatusConnecting": "conectando",
@@ -516,7 +650,6 @@
     "stagePairingFailed": "El emparejamiento falló. Vuelva a emparejar su dispositivo.",
     "stageCheckingPairing": "Comprobando el emparejamiento de Bluetooth...",
     "stageEnterPinLinux": "Ingrese el PIN que se muestra en su dispositivo (empareje con Linux primero)",
-    "stageScanningLast": "Buscando el último dispositivo Bluetooth...",
     "stageReconnecting": "Reconectándose al último dispositivo Bluetooth...",
     "pinPlaceholder": "ALFILER",
     "humanize": {
@@ -526,7 +659,7 @@
         "accessDeniedLinuxHint": "En Linux, agregue su usuario al grupo de acceso telefónico: sudo usermod -aG dialout $USER (luego cierre sesión y vuelva a iniciarla)",
         "disconnectedHint": "Asegúrese de que el cable USB esté conectado y que el dispositivo esté encendido.",
         "timeoutHint": "Si el puerto apareció brevemente, intente volver a conectar el cable USB.",
-        "portStillOpenHint": "El puerto serie USB no se ha liberado correctamente. Salga del cliente de malla por completo y vuelva a abrirlo, o desenchufe y vuelva a conectar el cable USB, luego conéctelo de nuevo."
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "En Windows, meshtastic.local requiere Bonjour (instalado con iTunes). Utilice la dirección IP del dispositivo en su lugar.",
@@ -554,8 +687,10 @@
         "connectionAttemptFailedLinuxHint": "En Linux, puede administrar los emparejamientos a través de la configuración de Bluetooth del sistema o la herramienta 'bluetoothctl'.",
         "meshcoreHandshakeHint": "Asegúrese de que su dispositivo MeshCore esté en modo Bluetooth Companion y esté emparejado con su computadora mediante un PIN. Elimine cualquier emparejamiento existente y vuelva a emparejarlo si persisten los problemas de conexión.",
         "meshcoreHandshakeWindowsExtra": "En Windows, active o desactive Bluetooth y actualice el controlador del adaptador en el Administrador de dispositivos si las desconexiones persisten.",
-        "macWakeRecoveryHint": "Después de dormir, salga del cliente de malla (Cmd+Q), active y desactive Bluetooth en Configuración del sistema, espere unos segundos y vuelva a conectarse. Con dos radios, conecte MeshCore antes que Meshtastic.",
-        "dualProtocolContentionHint": "Es posible que el otro protocolo aún se esté conectando a través de Bluetooth. Espere unos segundos e inténtelo de nuevo, o cambie a la otra pestaña de protocolo para comprobar su estado de conexión."
+        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
+        "dualProtocolContentionHint": "Es posible que el otro protocolo aún se esté conectando a través de Bluetooth. Espere unos segundos e inténtelo de nuevo, o cambie a la otra pestaña de protocolo para comprobar su estado de conexión.",
+        "scanBusy": "Se está realizando otra exploración de Bluetooth. Inténtalo de nuevo en un momento.",
+        "sameDeviceConflict": "Este dispositivo Bluetooth ya está conectado a {{owner}}."
       }
     },
     "error": {
@@ -579,7 +714,212 @@
     "mqttTlsInsecure": "Permitir TLS (certificado autofirmado) inseguro. Desactivado de forma predeterminada: solo habilítalo si tu bróker utiliza una CA no pública.",
     "channelPsksPrivateUplinkNote": "El enlace ascendente del canal está cifrado AES-PSK en/2/e/ (sin espejo JSON para claves privadas). Los monitores de bróker aún pueden registrar fallas de descifrado para el tráfico PKI/DM entre otros nodos, lo que es normal y no está relacionado con los PSK de canal aquí.",
     "sharedBleWithMeshtastic": "Este dispositivo Bluetooth ya está conectado a través de Meshtastic. Cambia a la pestaña Meshtastic para usarla, o elige una radio o transporte diferente para MeshCore.",
-    "sharedBleWithMeshtasticHint": "Una radio física no puede mantener sesiones separadas de Meshtastic y MeshCore Bluetooth al mismo tiempo."
+    "sharedBleWithMeshtasticHint": "Una radio física no puede mantener sesiones separadas de Meshtastic y MeshCore Bluetooth al mismo tiempo.",
+    "reticulumStackTitle": "Pila Reticulum",
+    "reticulumStackHint": "Inicia el sidecar local Reticulum/LXMF (interfaces TCP y Auto).",
+    "reticulumStartStack": "Iniciar pila",
+    "reticulumNetworkEmpty": "Aún no se ha informado de ninguna interfaz.",
+    "reticulumSidecarMissing": "Sidecar de Reticulum no compilado. Desde el repositorio mesh-client ejecute `pnpm run reticulum:sidecar:build` (requiere Rust).",
+    "reticulumSidecarCargoMissing": "No se encontró la cadena de herramientas de Rust (cargo). Instale desde https://rustup.rs y luego ejecute `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarStartFailed": "No se pudo iniciar la pila Reticulum: {{message}}",
+    "reticulumStopStack": "Detener pila",
+    "reticulumAutostart": "Pila de arranque automático al abrir la conexión",
+    "reticulumStackRunning": "Pila en ejecución",
+    "reticulumIdentity": {
+      "title": "Identidad Reticulum",
+      "hint": "Inicie la pila anterior, luego cree o importe una identidad mnemotécnica.",
+      "startStackFirst": "Inicie la pila Reticulum para configurar la identidad.",
+      "displayName": "Nombre de la pantalla",
+      "generate": "Generar identidad",
+      "import": "Importar frase",
+      "importLabel": "Frase de recuperación de 12 palabras",
+      "mnemonic": "Escribe esta frase y guárdala de forma segura.",
+      "confirmSaved": "He guardado mi frase de recuperación",
+      "hashLabel": "LXMF hash:",
+      "nameLabel": "Nombre:",
+      "failed": "Error en la configuración de la identidad",
+      "export": "Exportar copia de seguridad",
+      "exportPassphrase": "Frase de contraseña de copia de seguridad",
+      "exportPassphraseRequired": "Introduzca una contraseña de copia de seguridad antes de exportar."
+    },
+    "reticulumInterfaces": {
+      "title": "Interfaces",
+      "type": "Tipo",
+      "add": "Agregar interfaz",
+      "enable": "Habilitar",
+      "disable": "Desactivar",
+      "serialPort": "Puerto serie",
+      "preset": "Preajuste",
+      "bleAvailable": "El peering ble está disponible en esta plataforma (añadir a través de sidecar cuando esté configurado).",
+      "host": "Acogida",
+      "port": "Puerto",
+      "delete": "Eliminar",
+      "deleteConfirmTitle": "¿Eliminar interfaz?",
+      "deleteConfirmBody": "¿Eliminar \"{{name}}\" de la configuración de la pila? Esto no se puede deshacer.",
+      "deleteConfirm": "Eliminar",
+      "deleteFailed": "Error al eliminar la interfaz.",
+      "edit": "Editar",
+      "editTitle": "Editar Interfaz",
+      "saveEdit": "Guardar cambios",
+      "cancelEdit": "Cancelar",
+      "name": "Nombre",
+      "callsign": "Señal de llamada",
+      "editFailed": "Error al guardar la interfaz.",
+      "pipeCommand": "Comando de tubería",
+      "addFailed": "Error al añadir la interfaz.",
+      "toggleFailed": "Error al cambiar el estado de la interfaz.",
+      "restartStackHint": "Reinicie la pila en la pestaña Conexión para que los cambios en la interfaz en serie surtan efecto.",
+      "localOfflineRow": "Interfaz local sin conexión: compruebe la contención de cables y puertos, luego reinicie la pila.",
+      "localOfflineRowStale": "No se ha encontrado el puerto serie {{port}}: es posible que el conector USB haya cambiado la ruta.",
+      "blePeerType": "Malla de pares BLE",
+      "pickDevice": "Dispositivo de selección",
+      "refreshPorts": "Refrescar",
+      "rescanBle": "Volver a escanear",
+      "pickerSerialTitle": "Seleccionar puerto serie",
+      "pickerBlePeerTitle": "Seleccione un par BLE",
+      "pickerBleRnodeTitle": "Seleccione BLE RNode",
+      "pickerSerialEmpty": "No se detectaron puertos serie. Introduzca una ruta manualmente.",
+      "pickerBleEmpty": "No se encontraron dispositivos BLE. Intente volver a escanear.",
+      "pickerStackRequired": "Inicie la pila Reticulum antes de buscar dispositivos.",
+      "useManualPort": "Utilice este puerto",
+      "rnodeTransport": "Transporte",
+      "rnodeTransportSerial": "serie USB",
+      "rnodeTransportBle": "bluetooth",
+      "seedAddresses": "Compañeros semilla (opcional)",
+      "pickerBlePeerEmpty": "No se encontraron pares Reticulum BLE cerca. Los compañeros deben hacer publicidad; Intente volver a escanear o ingrese una dirección inicial manualmente.",
+      "pickerBleRnodeEmpty": "No se encontraron BLE RNodes cerca. Asegúrese de que el RNode esté encendido y dentro del alcance, luego intente volver a escanear.",
+      "bleUnavailable": "Bluetooth no está disponible para el escaneo Reticulum. Verifique el sistema Bluetooth y la compilación del sidecar (rns-ble).",
+      "restartStackFailed": "Error al reiniciar la pila: {{message}}",
+      "restartStackUnavailable": "El reinicio de la pila no está disponible hasta que el tiempo de ejecución de Reticulum esté listo.",
+      "localOfflineRowBle": "Bluetooth RNode fuera de línea: asegúrese de que el dispositivo esté encendido y dentro del alcance, luego reinicie la pila.",
+      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeWifiHost": "Host o IP",
+      "rnodeWifiHostPlaceholder": "192.168.1.42 o rnode.local",
+      "rnodeWifiPort": "Puerto TCP",
+      "rnodeWifiSetupTitle": "Configuración del RNode Wi-Fi",
+      "rnodeWifiSetupHint": "Wi-Fi está apagado después de parpadear: aprovisione primero el RNode (Reticulum → Admin → Wi-Fi, o únase a su AP y abra http://10.0.0.1). Requiere firmware compatible con Wi-Fi ESP32-S3.\n\nDespués del modo de estación: busque la IP en la pantalla alternativa OLED, la lista DHCP de su router o la configuración de → lectura del administrador. Utilice tcp://host (puerto predeterminado 7633), no el tipo de interfaz TCP Client.\n\nLa retención del botón de ~10 s en muchas placas Heltec habilita el punto de acceso Wi-Fi (~7 s es el emparejamiento Bluetooth).",
+      "localOfflineRowWifi": "Wi-Fi RNode inalcanzable: verifique la IP, el puerto 7633, la misma LAN y la alimentación; vuelva a aprovisionar en Admin si la dirección DHCP cambió.",
+      "rfFrequencyMhz": "Frecuencia (MHz)",
+      "rfBandwidthKhz": "Ancho de banda (kHz)",
+      "rfSpreadingFactor": "factor de dispersión",
+      "rfCodingRate": "Tasa de codificación",
+      "rfTxPower": "Potencia de transmisión (dBm)",
+      "purposeAria": "Propósito de la interfaz {{name}}",
+      "runtimeBadge": "Tiempo de ejecución",
+      "auditRepair": "Reparar",
+      "auditDisable": "Desactivar",
+      "auditRepairSuccess": "Reparación de configuración aplicada.",
+      "auditRepairFailed": "Error en la reparación de la configuración.",
+      "auditRepairNoChanges": "No se necesitaron cambios de configuración para esta reparación.",
+      "purpose": {
+        "auto": "Descubrimiento de multidifusión de LAN local: encuentra otros nodos de Reticulum en la misma Wi-Fi o subred.",
+        "sharedInstance": "Servidor TCP localhost cuando la instancia compartida está activada: permite que otras aplicaciones en esta máquina usen esta pila.",
+        "tcp": "Túnel TCP saliente a un concentrador o puerta de enlace de Reticulum remoto.",
+        "rnodeUsb": "Malla LoRa a través de USB RNode.",
+        "rnodeBle": "Malla LoRa vía Bluetooth RNode.",
+        "rnodeWifi": "Malla LoRa a través de RNode Wi-Fi (tcp://host).",
+        "blePeer": "Malla de pares BLE que utiliza direcciones de pares iniciales.",
+        "generic": "Interfaz de red Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Regional coordinado",
+        "fallback": "Repliegue global",
+        "legacy": "Ajustes preestablecidos heredados"
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "arriba",
+        "down": "abajo"
+      },
+      "pickerScanFailed": "El escaneo BLE falló. Inténtalo de nuevo o ingresa una dirección manualmente.",
+      "pickerBleFeatureDisabled": "Bluetooth no está disponible en esta versión de Reticulum (falta la función rns-ble).",
+      "pickerScanFailedDetail": "Error de escaneo: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
+    },
+    "reticulumPeers": {
+      "hops": "Hops",
+      "actions": "Acciones",
+      "path": "Ruta",
+      "probe": "Sonda"
+    },
+    "reticulumPropagation": {
+      "title": "Nodos de propagación",
+      "enable": "Habilitar",
+      "disable": "Desactivar"
+    },
+    "reticulumLocalInterfaces": {
+      "needsAttention": "{{count}} interfaz(es) local (es) que necesita (n) atención",
+      "stalePort": "{{name}}: puerto serie {{port}} no encontrado",
+      "stalePortHint": "El conector USB puede haber cambiado la ruta. Actualice en → Interfaces de radio, luego reinicie la pila.",
+      "offline": "{{name}}: la interfaz local está habilitada pero sin conexión",
+      "offlineHint": "Compruebe el cable, libere el puerto de Meshtastic/MeshCore y, a continuación, reinicie la pila.",
+      "refreshPorts": "Actualizar puertos",
+      "availablePorts": "Disponible: {{ports}}",
+      "restartStack": "Reiniciar pila",
+      "restartStackAria": "Reinicie la pila de Reticulum para aplicar cambios en la interfaz",
+      "connectingHeading": "Conectando interfaces locales...",
+      "connectingRow": "{{name}}: conexión a través de Bluetooth",
+      "connectingHintBle": "Los enlaces BLE RNode pueden tardar hasta 30 segundos después de que se inicia la pila. Ingrese un PIN de emparejamiento si su sistema operativo lo solicita; esto es normal, no un error.",
+      "offlineHintBle": "Es posible que su sistema operativo le solicite un PIN de Bluetooth de 6 dígitos (macOS, Windows o Linux). RNode genera un nuevo código en cada emparejamiento; no hay un PIN predeterminado. Radios sin cabeza: conecte USB → Reticulum Admin → Bluetooth → Iniciar emparejamiento → ingrese el PIN que se muestra en el cuadro de diálogo del sistema operativo. Radios con pantalla: mantenga presionado el botón ~7 s en dispositivos Heltec (el tiempo varía; ~10 s en muchas placas habilita Wi-Fi AP), lea el PIN en la pantalla y luego ingréselo en el cuadro de diálogo del sistema operativo. Borre los enlaces fallidos en la configuración de Bluetooth de su sistema operativo antes de volver a intentarlo.",
+      "offlineHintWifi": "Compruebe que el RNode esté en su LAN, encendido y accesible en la IP configurada (puerto TCP predeterminado 7633, no 4242). Actualiza el host a continuación si DHCP asignó una nueva dirección o vuelve a proporcionar Wi-Fi en Reticulum → Admin."
+    },
+    "autoConnectingTo": "Conectando automáticamente a {{deviceName}}…",
+    "autoReconnectInProgress": "Reconexión automática en curso…",
+    "stageAutoConnectingBle": "Conectando a {{deviceName}}…",
+    "stageWaitingNobleBleMeshtastic": "Esperando a que termine el Bluetooth de Meshtastic — MeshCore se conectará a {{deviceName}} automáticamente cuando termine…",
+    "stageWaitingNobleBleMeshcore": "Esperando a que termine el Bluetooth MeshCore — Meshtastic se conectará a {{deviceName}} automáticamente cuando termine…",
+    "reticulumStats": {
+      "interfaces": "{{count}} interfaces",
+      "peers": "{{count}} compañeros"
+    },
+    "bleOwner": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[País]/[Estado], p.e. msh/CO/EE.UU.",
+      "meshcoreLetsmesh": "meshcore/{IATA}, p. núcleo de malla/DEN",
+      "meshcoreDefault": "MESHCORE/[País]/[Estado], p. MESHCORE/EE.UU./CO"
+    },
+    "topicPrefixPlaceholder": "msh/EE.UU./",
+    "maxRetriesHelp": {
+      "meshtastic": "Intentos de reconectar (1–{{max}}) antes de darse por vencido.",
+      "meshcore": "Vuelva a conectar los intentos (1 a 20) antes de darse por vencido."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT :1883",
+      "liam": "Liam's",
+      "custom": "Costumbre"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local o 192.168.1.x",
+    "meshcoreHostPlaceholder": "servidor local o 192.168.1.x",
+    "meshcoreBlePairingHint": "Empareje su dispositivo MeshCore en la <strong>configuración Bluetooth del sistema</strong> antes de realizar la conexión. Utilice un código PIN si se le solicita: si su sistema no solicita un PIN, la conexión fallará y es posible que deba eliminar el emparejamiento y volver a emparejarlo con un PIN.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "Costumbre"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh necesita WebSocket en el puerto 443 y el servidor mqtt-us-v1.letsmesh.net o mqtt-eu-v1.letsmesh.net. Utilice Región (EE. UU./UE) o cambie a Personalizado para otros corredores.",
+      "coloradomesh": "Colorado Mesh necesita WebSocket en el puerto 1883 con TLS habilitado, servidor mqtt.meshcore.coloradomesh.org, ruta /ws. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores.",
+      "meshmapper": "MeshMapper necesita WebSocket en el puerto 443 y el servidor mqtt.meshmapper.cc. Restablezca el ajuste preestablecido o cambie a Personalizado para otros corredores."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "El token de autenticación (formato meshcore-decoder) se generará cuando se conecte. El nombre de usuario es v1_ más su clave pública de 64 caracteres (hexadecimal). La audiencia de JWT coincide con el nombre de host del servidor.",
+      "noPrivateKey": "Sin identidad completa: importe su configuración de MeshCore en el panel Radio (claves públicas y privadas) o pegue el nombre de usuario (v1_<clave pública>) y el token manualmente. La audiencia JWT en el token debe coincidir con el nombre de host del servidor.",
+      "publicKeyMissing": "Falta clave pública en la identidad. Importe su JSON de configuración de MeshCore en el panel Radio (debe incluir claves públicas y privadas) o pegue un token de corredor en el campo de contraseña.",
+      "usernameBuildFailed": "No se pudo crear el nombre de usuario de LetsMesh. Importe su JSON de configuración de MeshCore en el panel Radio o pegue el nombre de usuario (v1_<clave pública>) y el token manualmente.",
+      "noIdentity": "No se encontró ninguna identidad del dispositivo. Importe su JSON de configuración de MeshCore en el panel Radio o pegue el nombre de usuario y el token manualmente."
+    },
+    "meshcorePacketLogger": {
+      "label": "Registrador de paquetes: cuando esté conectado a su radio y MQTT, reenvíe resúmenes de paquetes RX a {{topic}} en la misma forma JSON que meshcoretomqtt. Desactivado de forma predeterminada; habilítelo solo si tiene la intención de compartir el tráfico aéreo escuchado con un analizador de paquetes."
+    },
+    "hintAdaDfuBle": "En macOS, si un dispositivo se muestra como \"AdaDFU\", emparéjelo primero en Configuración del sistema → Bluetooth para ver su nombre Meshtastic.",
+    "authTokenFailed": "Error al generar el token de autenticación: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -592,14 +932,16 @@
     "newGroupNamePlaceholder": "Nuevo nombre del grupo...",
     "manageMembers": "Administrar miembros",
     "rename": "Rebautizar",
-    "deleteGroup": "Eliminar grupo"
+    "deleteGroup": "Eliminar grupo",
+    "noContactsYet": "Aún no hay contactos.",
+    "noGroupsYet": "Aún no hay grupos. Crea uno arriba.",
+    "memberCount_one": "{{count}} miembro",
+    "memberCount_other": "{{count}} miembros"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",
     "dismissRow": "Declarar sin lugar",
     "searchAnomalies": "Buscar anomalías...",
-    "meshcoreInterferenceHeading": "Nodos MeshCore escuchados en frecuencia ({{count}})",
-    "meshcoreInterferenceDescription": "Estas entradas identifican la interferencia MeshCore en frecuencia que escucha esta radio. Pueden contribuir a problemas de utilización y reintento, pero no son diagnósticos de fallas de ruta Meshtastic por sí solos.",
     "otherCrossProtocolHeading": "Otro tráfico en frecuencia/entre pilas ({{count}})",
     "removeMqttFilter": "Eliminar el filtro MQTT por nodo",
     "excludeMqttData": "Excluir los datos MQTT de este nodo del diagnóstico",
@@ -731,10 +1073,6 @@
       "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por inundación: es posible que no se establezca un enrutamiento directo con los nodos cercanos."
     },
     "foreignLoraCause": {
-      "meshcoreVeryClose": "Nodo MeshCore muy cerca (RSSI {{rssi}} dBm) — probablemente causando colisiones de paquetes.",
-      "meshcoreNearby": "Nodo MeshCore detectado cerca (RSSI {{rssi}} dBm) — puede interferir con el tráfico.",
-      "meshcoreDistant": "Actividad MeshCore distante en esta frecuencia (RSSI {{rssi}} dBm).",
-      "meshcoreGeneric": "El nodo MeshCore transmite en esta frecuencia.",
       "meshtastic": "Nodo Meshtastic que transmite en esta frecuencia. Remitente: {{sender}}. {{proximity}}Este nodo puede estar en tu zona de repetidores MeshCore.",
       "unknownLora": "Se ha detectado una señal LoRa no reconocida (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "Alta tasa de paquetes MeshCore detectada (>5/min). Un repetidor MeshCore cercano puede estar causando colisiones de paquetes."
@@ -814,12 +1152,79 @@
     "meshcoreRepeaterConflictBanner": "Alta velocidad de paquetes MeshCore (>5/min): un repetidor cercano puede estar causando colisiones en su canal Meshtastic.",
     "meshcoreHeardByMeshtasticHeading": "Nodos MeshCore escuchados por tu radio Meshtastic ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "Transmisores MeshCore escuchados en RF local en los últimos 90 minutos (registros de dispositivos Meshtastic o radio MeshCore RX). No incluye la sincronización de contactos del repetidor MeshCore. Estos no son tu nodo Meshtastic.",
-    "meshcoreHeardByMeshtasticEmpty": "No se han escuchado nodos MeshCore en su frecuencia Meshtastic en los últimos 90 minutos.",
     "meshcoreHeardUnknownNode": "Transmisor MeshCore no identificado",
     "meshcoreHeardNearbyEncrypted": "MeshCore RF cercano (cifrado)",
     "foreignLoraHeading": "Otro LoRa extranjero en tu frecuencia de Meshtastic ({{count}})",
     "foreignLoraDescription": "Transmisores Meshtastic y señales LoRa no reconocidas en tu frecuencia en los últimos 90 minutos. Los nodos MeshCore se enumeran en la sección anterior.",
-    "foreignLoraEmpty": "No hay actividad LoRa Meshtastic o desconocida en su frecuencia Meshtastic en los últimos 90 minutos."
+    "reticulum": {
+      "sectionTitle": "Configuración de la interfaz Reticulum",
+      "noIssues": "No se detectaron problemas de configuración de la interfaz.",
+      "summary": "{{errors}} errores, {{warnings}} advertencias",
+      "colInterface": "Interfaz",
+      "colIssue": "Asunto",
+      "colFix": "Arreglar",
+      "colAction": "Acción",
+      "stackScope": "Pila",
+      "repairFailed": "Error en la reparación de la configuración.",
+      "repairSuccess": "Reparación de configuración aplicada.",
+      "repairNoChanges": "No se necesitaron cambios de configuración para esta reparación.",
+      "disableSuccess": "Interfaz deshabilitada.",
+      "disableFailed": "No se pudo desactivar la interfaz.",
+      "remedy": {
+        "configuration": "Configuración",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Configuración de reparación",
+        "disable": "Desactivar",
+        "apply_preset": "Aplicar preajuste",
+        "edit": "Editar interfaz",
+        "restart_stack": "Reiniciar pila",
+        "add_auto": "Agregar interfaz automática"
+      },
+      "audit": {
+        "tcp_enable_key": "La interfaz TCP \"{{name}}\" utiliza la clave de habilitación incorrecta: RNS no la cargará.",
+        "tcp_missing_name": "A la interfaz TCP \"{{name}}\" le falta un campo de nombre en la configuración.",
+        "tcp_unreachable": "La interfaz TCP \"{{name}}\" es inalcanzable.",
+        "rf_preset_deviation": "Los parámetros de RF del RNode \"{{name}}\" difieren de sus ajustes preestablecidos.",
+        "rf_cross_mismatch": "Varios RNodes habilitados utilizan diferentes parámetros de RF.",
+        "rf_using_fallback": "RNode \"{{name}}\" utiliza un perfil de RF de reserva global.",
+        "rf_unknown_params": "Los parámetros de RF del RNode \"{{name}}\" no coinciden con ningún perfil conocido.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" utiliza una identificación preestablecida heredada; considere migrar.",
+        "ghost_interface": "La interfaz \"{{name}}\" está habilitada en la configuración pero no cargada por RNS.",
+        "missing_auto_interface": "No hay AutoInterface habilitada: la detección de LAN local está desactivada.",
+        "auto_interface_down": "La interfaz automática \"{{name}}\" está habilitada pero inactiva.",
+        "missing_shared_instance": "La instancia compartida está activada pero SharedInstanceServer no está activo.",
+        "shared_instance_unexpected": "SharedInstanceServer está activo pero share_instance está desactivado.",
+        "runtime_only_interface": "\"{{name}}\" es solo de tiempo de ejecución (no almacenado en la configuración)."
+      },
+      "runtime": {
+        "rnsNotReady": "La pila RNS no está lista",
+        "lxmfNotReady": "El enrutador LXMF no está listo",
+        "localStalePort": "Interfaz local \"{{name}}\" puerto serie {{port}} no encontrado en este sistema",
+        "localOffline": "La interfaz local \"{{name}}\" está habilitada pero fuera de línea",
+        "interfaceDown": "La interfaz {{type}} \"{{name}}\" está habilitada pero {{status}}",
+        "noPeers": "Aún no hay pares conocidos en la tabla de rutas"
+      }
+    },
+    "routingPort": {
+      "nodeInfo": "Información de nodo",
+      "telemetry": "Telemetria",
+      "neighborInfo": "Información del vecino",
+      "traceroute": "ruta de seguimiento",
+      "position": "Posición",
+      "remoteHardware": "Hardware remoto",
+      "admin": "Administración",
+      "discoveryFlood": "descubrimientoinundación",
+      "roomAdvert": "Anuncio de habitación",
+      "generic": "Puerto{{port}}"
+    },
+    "signalColumn": "Señal",
+    "senderLabel": "Remitente",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB"
   },
   "errorBoundary": {
     "title": "algo salió mal",
@@ -833,8 +1238,117 @@
     "updateAvailable": "Actualización de firmware disponible",
     "updateAvailableVersion": "Actualización de firmware disponible: v{{version}}"
   },
+  "flasher": {
+    "title": "RNode Firmware Flasher",
+    "portContentionWarning": "Detenga la pila Reticulum o deshabilite la interfaz serie RNode activa antes de parpadear. Desconecte Meshtastic o MeshCore serial en el mismo puerto.",
+    "selectProduct": "Producto",
+    "selectModel": "Modelo",
+    "selectProductPlaceholder": "Seleccionar un producto",
+    "selectModelPlaceholder": "Elige una serie de modelos",
+    "firmwareFile": "Archivo de firmware (.zip)",
+    "enterDfuMode": "Entrar en modo DFU",
+    "enterDfuHint": "Para placas nRF52: pone el dispositivo en modo de gestor de arranque USB DFU (1200 baudios táctiles).",
+    "flashFirmware": "Firmware flash",
+    "flashing": "Intermitente… {{progress}}%",
+    "dfuModeDone": "El dispositivo ahora debe estar en modo DFU.",
+    "flashSuccess": "El firmware ha sido parpadeado.",
+    "provisionTitle": "Provisión EEPROM",
+    "provisionHint": "Requerido para nuevos dispositivos después de parpadear. Escribe la identidad del dispositivo, la suma de comprobación y el byte de bloqueo.",
+    "provision": "Provisión",
+    "provisioning": "Aprovisionamiento",
+    "provisionSuccess": "El dispositivo ha sido aprovisionado.",
+    "provisionAlreadyDone": "EEPROM ya está aprovisionada. Límpielo primero para volver a aprovisionarlo.",
+    "firmwareHashTitle": "Establecer firmware",
+    "firmwareHashHint": "Ejecutar después de cada flash de firmware. Lee el hash de destino del dispositivo y lo escribe en la EEPROM.",
+    "setFirmwareHash": "Establecer firmware",
+    "settingFirmwareHash": "Configurando hash de firmware...",
+    "firmwareHashSuccess": "Se ha establecido el hash del firmware.",
+    "firmwareHashNotProvisioned": "EEPROM no está aprovisionada. Suministre el dispositivo primero.",
+    "advancedTitle": "avanzadas de LinkedIn,",
+    "detectDevice": "Detectar dispositivo",
+    "reboot": "Reiniciar",
+    "rebootSuccess": "El tablero se está reiniciando.",
+    "wipeEeprom": "Limpiar EEPROM",
+    "wipeEepromConfirmTitle": "¿Borrar EEPROM?",
+    "wipeEepromConfirmMessage": "Esto borra el aprovisionamiento del dispositivo y tarda unos 30 segundos. El dispositivo se reiniciará cuando haya terminado.",
+    "wipeEepromConfirm": "Limpiar EEPROM",
+    "wipeEepromSuccess": "Se ha borrado la EEPROM.",
+    "readDisplay": "Leer pantalla",
+    "dumpEeprom": "Volcar EEPROM al registro",
+    "bluetoothTitle": "Bluetooth,",
+    "enableBluetooth": "Habilitar Bluetooth",
+    "disableBluetooth": "Desactivar Bluetooth",
+    "startPairing": "Iniciar emparejamiento",
+    "pairingPin": "PIN de emparejamiento Bluetooth: {{pin}}",
+    "tncTitle": "Modo TNC",
+    "tncHint": "KISS TNC a través de serie para aplicaciones de radioaficionados. Déjelo deshabilitado cuando utilice Reticulum o clientes de chat en malla.",
+    "enableTnc": "Habilitar el modo TNC",
+    "disableTnc": "Desactivar el modo TNC",
+    "displayTitle": "Mostrar",
+    "displayHint": "La rotación de la pantalla requiere firmware v1.80+.",
+    "rotation0": "0°",
+    "rotation90": "90°",
+    "rotation180": "180°",
+    "rotation270": "270°",
+    "reconditionDisplay": "Pantalla de reacondicionamiento",
+    "errors": {
+      "webSerialUnsupported": "Web Serial no está disponible en este entorno.",
+      "notRnode": "El dispositivo seleccionado no es un RNode.",
+      "portSelectionCancelled": "Se canceló la selección del puerto serie.",
+      "portInUse": "El puerto serie ya está abierto. Detenga otras conexiones y vuelva a intentarlo.",
+      "generic": "Operación fallida: {{message}}",
+      "selectProduct": "Seleccione un producto primero.",
+      "selectModel": "Seleccione un modelo primero.",
+      "selectFirmware": "Primero seleccione un archivo de firmware.",
+      "flashConfigMissing": "La configuración flash no está disponible para este dispositivo.",
+      "blockedByStack": "No se puede flashear mientras la pila Reticulum contiene el puerto serie RNode.",
+      "esp32SyncFailed": "No se ha podido sincronizar con el gestor de arranque ESP32. Compruebe el cable y el puerto USB, detenga otras aplicaciones que utilicen el puerto serie e inténtelo de nuevo.",
+      "flashTransferTooSmall": "La transferencia de firmware no se completó: casi no se escribieron datos. Confirme que ha seleccionado el puerto USB correcto y que la placa ha entrado en el modo de gestor de arranque.",
+      "flashMd5Mismatch": "La verificación del firmware falló después de escribir. Inténtelo de nuevo con un cable o puerto USB diferente; si persiste, vuelva a descargar el zip del firmware.",
+      "portSelectionTimedOut": "Se ha agotado el tiempo de espera de la selección del puerto serie. Elige un puerto de la lista en dos minutos o vuelve a intentar Flash para reutilizar el último puerto.",
+      "noSerialPorts": "No se encontraron puertos serie USB. Conecte su placa a través de USB e inténtelo nuevamente."
+    },
+    "selectSerialPort": "Seleccionar porto serie",
+    "noSerialPorts": "No se han encontrado puertos serie USB.",
+    "noSerialPortsHint": "Conecte su placa a través de USB. Los dispositivos Bluetooth en el registro se ignoran; solo se pueden usar puertos serie USB para parpadear.",
+    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "lastUsedPort": "Usado por última vez",
+    "downloadFirmware": "Descargar firmware",
+    "downloadLatestFirmware": "{{filename}} (última versión)",
+    "officialFirmware": "Firmware oficial",
+    "ceFirmware": "firmware o microprograma",
+    "transportNodeFirmware": "Firmware del nodo de transporte",
+    "esp32BootHint": "Utilice un cable USB de datos (no solo de carga). Detenga otras aplicaciones que utilicen el mismo puerto serie antes de parpadear.",
+    "flashSectionTitle": "Firmware flash",
+    "esp32Syncing": "Conectando al gestor de arranque ESP32...",
+    "provisionRequiresFlash": "Firmeware de Flash correctamente antes de usar este paso.",
+    "provisionDone": "Provisionado",
+    "firmwareHashRequiresProvision": "Proporcione la EEPROM antes de configurar el hash del firmware.",
+    "firmwareHashDone": "Conjunto de hash de firmware",
+    "flashDone": "firmware flasheado",
+    "bluetoothHint": "Habilite Bluetooth en el dispositivo, luego use Iniciar emparejamiento. El PIN de 6 dígitos aparece aquí a través de USB serial: ingrese ese mismo PIN en el cuadro de diálogo Bluetooth de su sistema operativo (macOS, Windows o Linux) cuando Reticulum se conecte a través de BLE. Los dispositivos sin cabeza y sin USB no pueden mostrar un PIN en la pantalla.",
+    "wifiTitle": "Wi-Fi",
+    "wifiHint": "El wifi está desactivado después de parpadear. Configure el modo de estación aquí (serie USB), luego añada una interfaz Wi-Fi RNode en Conexión con tcp://host (puerto 7633). Requiere firmware compatible con Wi-Fi ESP32-S3. Reinicie el tablero después de aplicar los cambios.",
+    "wifiSsidLabel": "SSID de Wi-Fi",
+    "wifiPskLabel": "Contraseña Wi-Fi",
+    "wifiChannelLabel": "Nombre del canal (opcional):",
+    "wifiStaticIpLabel": "IP estática (opcional):",
+    "wifiStaticNetmaskLabel": "Máscara de red (opcional)",
+    "wifiDhcpPlaceholder": "dejar vacío para",
+    "wifiOff": "Wi-Fi está desactivado",
+    "wifiEnableAp": "Habilitar AP",
+    "wifiApplyStation": "Aplicar estación",
+    "wifiReadConfig": "LECTURA-CONFIG",
+    "wifiAdvancedShow": "Avanzado",
+    "wifiAdvancedHide": "ocultar avanzados",
+    "wifiAdvancedToggle": "Activa o desactiva las opciones avanzadas de wifi",
+    "wifiOffSuccess": "Wi-Fi desactivado. Reinicie la placa para que los cambios surtan efecto.",
+    "wifiApSuccess": "Modo de punto de acceso habilitado. Únase al RNode AP desde su ordenador (puerta de enlace predeterminada 10.0.0.1) y, a continuación, configure las credenciales de la estación o utilice la consola de arranque.",
+    "wifiStationSuccess": "Modo de estación guardado. Reinicie la placa, luego busque su IP (pantalla, enrutador DHCP o configuración de lectura) y agregue tcp://... en las → interfaces de conexión.",
+    "wifiConfigEmpty": "No se han devuelto datos de configuración.",
+    "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
   "logAnalyzeModal": {
-    "closeDialog": "Cerrar cuadro de diálogo",
     "title": "Análisis de registros",
     "totalEntries": "{{count}} entradas",
     "errorsShort": "{{count}} errores",
@@ -890,11 +1404,11 @@
       },
       "database-chmod": {
         "label": "Chmod de base de datos (no fatal)",
-        "recommendation": "Falló el ajuste de permisos del archivo de base de datos (a menudo benigno en Windows). Si ve errores reales de base de datos en otros lugares, verifique el antivirus y los permisos de carpeta para el directorio userData del cliente de malla."
+        "recommendation": "Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory."
       },
       "database-writable": {
         "label": "Base de datos no grabable",
-        "recommendation": "La aplicación no puede escribir su carpeta de base de datos. Corrija los permisos en el directorio de datos de usuario del cliente de malla (consulte la solución de problemas: No se puede escribir en el directorio de la base de datos)."
+        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
       },
       "tak-server": {
         "label": "Problemas con el servidor TAK",
@@ -929,16 +1443,12 @@
         "recommendation": "No se pudo solicitar el historial de chat de almacenamiento y reenvío desde un router (a menudo una breve carrera con otro tráfico de radio). Si el trabajo pendiente del chat permanece vacío, vuelva a conectarse o espere el próximo latido del router."
       },
       "serial-reconnect": {
-        "label": "Reconexión serie USB",
-        "recommendation": "El USB serial no se liberó limpiamente después de la desconexión. Salga del cliente de malla y vuelva a abrirlo, o desenchufe y vuelva a enchufar el cable, luego conéctelo de nuevo."
+        "label": "Reconexión serie USB"
       }
     },
     "recommendationGroups": {
       "__test_merged": {
         "recommendation": "Haz la cosa."
-      },
-      "serial-reconnect": {
-        "recommendation": "El USB serial no se liberó limpiamente después de la desconexión. Salga del cliente de malla y vuelva a abrirlo, o desenchufe y vuelva a enchufar el cable, luego conéctelo de nuevo."
       }
     }
   },
@@ -965,17 +1475,14 @@
     "appSource": "Aplicación ({{count}})",
     "deviceSource": "Dispositivo ({{count}})",
     "narrowLogPanel": "Panel de troncos estrecho",
-    "widenLogPanel": "Ampliar panel de registro"
+    "widenLogPanel": "Ampliar panel de registro",
+    "clearFailed": "No se pudo borrar el registro"
   },
   "mapPanel": {
     "locationUnavailable": "Ubicación no disponible.",
-    "gpsHardwareUnavailable": "Hardware GPS no disponible.",
-    "locationError": "Error de ubicación: {{error}}",
     "locationRequestFailed": "Error en la solicitud de ubicación.",
     "showMyLocation": "Mostrar automáticamente Mi ubicación",
     "networkMap": "Mapa de red que muestra las posiciones de los nodos",
-    "toggleRouteWeightLines": "Alternar líneas de peso de ruta",
-    "routeWeights": "Pesos de ruta",
     "layerControls": "Capas",
     "layerControlsAria": "Alternar controles de capa de mapa",
     "basemapHeading": "\"Mapa base\"",
@@ -988,7 +1495,10 @@
     "layerWaypoints": "Waypoints",
     "layerRouteWeights": "Pesos de ruta",
     "layerAnomalyHalos": "Halos de anomalía",
-    "layerCongestionHalos": "Halos de congestión"
+    "layerCongestionHalos": "Halos de congestión",
+    "waypointDefaultName": "Punto de referencia",
+    "waypointDelete": "Eliminar punto de ruta",
+    "noGpsNodes": "Aún no hay nodos con posiciones GPS"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -1068,7 +1578,6 @@
     "cannedMessagesApplied": "Mensajes enlatados aplicados.",
     "rtttlSaved": "Tono de llamada RTTTL guardado.",
     "title": "Configuración del módulo",
-    "readOnly": "Sólo lectura",
     "connectToDevice": "Conéctese a un dispositivo para modificar la configuración del módulo.",
     "waitingForModuleConfig": "Esperando la configuración del módulo desde el dispositivo...",
     "selectPreset": "Seleccione un preajuste...",
@@ -1221,14 +1730,7 @@
       "echoMode": "Modo eco",
       "baudRate": "Velocidad de baudios",
       "storeForwardEnabled": "Almacenar y reenviar habilitado",
-      "sfHeartbeat": "enviar latido del corazón",
-      "sfMaxStored": "Registros máximos almacenados",
-      "sfHistoryMax": "Máximo retorno histórico",
-      "sfHistoryWindow": "Ventana de retorno del historial",
       "sfHeartbeatDesc": "Transmitir presencia periódicamente para que los clientes sepan que S&F está disponible.",
-      "sfMaxStoredDesc": "Registros máximos retenidos en el dispositivo.",
-      "sfHistoryMaxDesc": "Número máximo de mensajes que se devolverán cuando un nodo solicite el historial.",
-      "sfHistoryWindowDesc": "Cuánto retroceder en el tiempo para devolver mensajes (segundos).",
       "telDeviceTelemetryEnabled": "Enviar telemetría del dispositivo",
       "telDeviceTelemetryEnabledDesc": "Transmita las métricas del dispositivo (batería, voltaje, utilización del canal) a la malla a través del módulo de telemetría.",
       "telDeviceInterval": "Intervalo de métricas del dispositivo",
@@ -1290,7 +1792,7 @@
       "remoteHardwareEnabledDesc": "Permite que nodos remotos lean y escriban pines GPIO en este dispositivo.",
       "remoteHardwareAllowUndefinedPins": "Permitir acceso a pines no definidos",
       "remoteHardwareAllowUndefinedPinsDesc": "Permite leer/escribir pines no listados en la configuración de pines disponibles.",
-      "mqttProxyGatewayHint": "Con proxy habilitado, los puentes de malla-cliente facilitan el tráfico a través de MqttClientProxyMessage. Habilite el enlace descendente por canal en la pestaña Radio para el relé→ de RF MQTT.",
+      "mqttProxyGatewayHint": "With proxy enabled, mesh-client bridges broker traffic via MqttClientProxyMessage. Enable per-channel downlink on the Radio tab for MQTT→RF relay.",
       "mapReportPublishInterval": "Intervalo del informe del mapa (segundos)",
       "mapReportPublishIntervalDesc": "0 utiliza el firmware predeterminado. Con qué frecuencia el dispositivo publica informes de mapas cuando los informes de mapas están habilitados.",
       "mapReportPositionPrecision": "Precisión de la posición del informe del mapa",
@@ -1332,7 +1834,141 @@
     "debugPrivateAppMessages": "Mensajes privados de la aplicación",
     "debugPingResponses": "Respuestas de ping",
     "sectionMapReport": "Informe de mapa",
-    "sectionMapReportHint": "Publica la posición en el mapa de Meshtastic a través de MQTT. Requiere el relé MQTT habilitado anteriormente; los ajustes se almacenan en la configuración del módulo MQTT del dispositivo."
+    "sectionMapReportHint": "Publica la posición en el mapa de Meshtastic a través de MQTT. Requiere el relé MQTT habilitado anteriormente; los ajustes se almacenan en la configuración del módulo MQTT del dispositivo.",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "Ninguno"
+      },
+      "10": {
+        "label": "Seleccionar (Entrar)"
+      },
+      "17": {
+        "label": "Arriba"
+      },
+      "18": {
+        "label": "Abajo"
+      },
+      "19": {
+        "label": "Izquierda"
+      },
+      "20": {
+        "label": "Bien"
+      },
+      "24": {
+        "label": "Cancelar"
+      },
+      "27": {
+        "label": "Atrás (Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "Por defecto"
+      },
+      "1": {
+        "label": "Simple"
+      },
+      "2": {
+        "label": "prototipo"
+      },
+      "3": {
+        "label": "mensaje de texto"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.Directo"
+      },
+      "8": {
+        "label": "Configuración de malla solar"
+      },
+      "9": {
+        "label": "Registro (todos los paquetes)"
+      },
+      "10": {
+        "label": "Registro (solo texto)"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "Blanco"
+      },
+      "2": {
+        "label": "Amarillo"
+      },
+      "3": {
+        "label": "Naranja"
+      },
+      "4": {
+        "label": "Magenta"
+      },
+      "5": {
+        "label": "Rojo"
+      },
+      "6": {
+        "label": "Granate"
+      },
+      "7": {
+        "label": "Púrpura"
+      },
+      "8": {
+        "label": "Azul oscuro"
+      },
+      "9": {
+        "label": "Azul"
+      },
+      "10": {
+        "label": "cian"
+      },
+      "11": {
+        "label": "verde azulado"
+      },
+      "12": {
+        "label": "Verde"
+      },
+      "13": {
+        "label": "verde oscuro"
+      },
+      "14": {
+        "label": "Marrón"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "Miembro del equipo"
+      },
+      "2": {
+        "label": "Líder del equipo"
+      },
+      "3": {
+        "label": "sede"
+      },
+      "4": {
+        "label": "Francotirador"
+      },
+      "5": {
+        "label": "Médico"
+      },
+      "6": {
+        "label": "Observador avanzado"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Eliminar de favoritos",
@@ -1479,7 +2115,21 @@
     "configureRemotelyHint": "Abre la configuración de radio para este nodo a través de la malla (requiere radio local y la clave de administrador guardada).",
     "openRoomButton": "🏠 Abrir sala",
     "remoteAuthCancelled": "Acceso remoto cancelado.",
-    "shareContactSent": "Contacto compartido enviado por radio."
+    "shareContactSent": "Contacto compartido enviado por radio.",
+    "blockContact": "Bloque",
+    "unblockContact": "Unblock",
+    "paxCounter": {
+      "heading": "Contador de pasajeros",
+      "detectedCount": "Recuento detectado",
+      "lastSeen": "Visto por última vez"
+    },
+    "detectionSensor": {
+      "heading": "Sensor de detección ({{count}})",
+      "lastDetection": "Última detección",
+      "dataSize": "Tamaño de datos",
+      "dataSizeBytes": "{{count}} bytes",
+      "rawDataHex": "Datos sin procesar (hexadecimal)"
+    }
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -1640,6 +2290,35 @@
     "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
     "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
   },
+  "nomadNetwork": {
+    "title": "Nomad Network",
+    "toggleFavorite": "Añadir a favoritos",
+    "favourites": "Favoritos",
+    "announces": "Apuestas anunciadas",
+    "searchFavourites": "Buscar {{count}} favoritos...",
+    "searchAnnounces": "Buscar {{count}} anuncia...",
+    "emptyFavourites": "Todavía no hay nodos favoritos de Nomad Network.",
+    "emptyAnnounces": "Aún no se han anunciado nodos de Nomad Network.",
+    "unavailable": "La API de Nomad Network no está disponible. Reconstruya el sidecar Reticulum y reinicie la pila.",
+    "selectNode": "Seleccione un nodo de la lista para explorar sus páginas.",
+    "lastSeen": "Escuchado por última vez {{time}}",
+    "hopsAway_one": "{{count}} salta lejos",
+    "hopsAway_other": "{{count}} se aleja saltando",
+    "openNode": "Explorar {{name}}",
+    "pagePath": "Ruta de la página",
+    "pagePathAria": "Ruta de la página nómada",
+    "homePage": "pagina de inicio",
+    "reloadPage": "Recargar página",
+    "closeViewer": "Cerrar visor de páginas",
+    "pageLoading": "Cargando página…",
+    "pageFailed": "No se pudo cargar la página: {{error}}",
+    "pageTruncated": "Página truncada para su visualización",
+    "showSource": "Mostrar fuente de la página",
+    "hideSource": "Mostrar página formateada",
+    "fileDownloading": "Descargando archivo…",
+    "fileDownloadFailed": "No se pudo descargar el archivo: {{error}}",
+    "fileDownloadInProgress": "Ya hay una descarga de archivos en curso."
+  },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
     "distributionByType": "Distribución por tipo",
@@ -1659,6 +2338,29 @@
     "other": "Otro",
     "noSenderId": "No hay identificación del remitente en el marco sin formato"
   },
+  "peerDetailModal": {
+    "networkSection": "Red",
+    "pathHash": "Hash de ruta",
+    "copyHash": "Copiar hash de destino",
+    "editNameAria": "Establecer nombre para mostrar personalizado",
+    "sendMessage": "Enviar mensaje",
+    "pathOk": "Solicitud enviada.",
+    "pathFailed": "Error en la solicitud de ruta: {{error}}",
+    "probeHops": "Sonda OK — {{hops}} hop(s).",
+    "probeLocal": "Sonda OK (modo {{mode}}).",
+    "probeFailed": "Sonda fallida: {{error}}",
+    "iconColor": "Color del avatar",
+    "iconColorAria": "Color del avatar",
+    "saveContact": "Guardar como contacto",
+    "removeContact": "Eliminar contacto",
+    "removeContactConfirmTitle": "Eliminar contacto",
+    "removeContactConfirmBody": "Esto elimina el contacto de su lista. El historial de chats se mantiene; enviarles un mensaje de nuevo volverá a añadir el contacto.",
+    "probeOk": "Sonda OK — ruta accesible.",
+    "blockContact": "Bloquear contacto",
+    "unblockContact": "Desbloquear contacto",
+    "serviceBadge": "{{service}}",
+    "serviceBadgeTitle": "{{aspect}} — visto por última vez {{seen}}"
+  },
   "peerGraph": {
     "title": "Gráfico de comunicación con los compañeros",
     "noNodes": "Aún no se han observado nodos",
@@ -1671,7 +2373,42 @@
     "me": "Este nodo",
     "directLink": "Directo (0 saltos)",
     "relayLink": "A través del relé (1 salto)",
-    "hiddenCount": "Mostrando {{shown}} de {{total}} nodos (nodos no conectados ocultos)"
+    "hiddenCount": "Mostrando {{shown}} de {{total}} nodos (nodos no conectados ocultos)",
+    "noConnectedNodes": "No hay pares conectados para mostrar: ajuste los filtros o espere el tráfico de red.",
+    "meShort": "Tú",
+    "relayHub": "Relé directo",
+    "relayCount": "Hubs de relés {{count}}",
+    "hopBadge": "{{count}}h",
+    "showDistantPeers": "Mostrar compañeros distantes",
+    "maxHopsFilter": "Máx. saltos",
+    "maxHopsAll": "Todos los saltos",
+    "maxHopsOption": "{{count}} saltos",
+    "resetView": "Reset view",
+    "compactLeafCount": "{{count}} compañeros directos compactos"
+  },
+  "peerListPanel": {
+    "heading": "Pares",
+    "tabPeers": "Pares",
+    "tabContacts": "Contactos",
+    "searchPlaceholder": "Buscar por nombre o hash...",
+    "searchAria": "Buscar compañeros",
+    "colName": "Nombre / Hash",
+    "colLastSeen": "Última vez visto",
+    "colInterface": "Interfaz",
+    "colFavorite": "Favorito",
+    "toggleFavorite": "Añadir a favoritos",
+    "openChat": "Abrir chat",
+    "emptyPeers": "Aún no se han descubierto compañeros. Envíe un anuncio o espere el tráfico de red.",
+    "emptyContacts": "Aún no hay contactos. Envía un mensaje a un compañero para añadirlos aquí.",
+    "groupFilterAria": "Filtrar contactos por grupo",
+    "allGroups": "Todos los grupos",
+    "manageGroups": "Gestionar grupos",
+    "colLastHeard": "Escuchado la Última Vez",
+    "colContact": "Contacto",
+    "contactYes": "Sí",
+    "contactNo": "No",
+    "tabFavorites": "Favoritos",
+    "emptyFavorites": "Todavía no hay compañeros favoritos: marca un contacto o un compañero para fijarlos aquí."
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",
@@ -1715,19 +2452,14 @@
     "sectionLora": "LoRa/Radio",
     "sectionPositionGps": "Posición / GPS",
     "sectionPower": "Fuerza",
-    "sectionTelemetry": "Telemetria",
     "sectionWifi": "Wi-Fi / Red",
-    "passwordPlaceholder": "Contraseña",
     "yourNamePlaceholder": "Su nombre",
     "namePlaceholder": "NOMBRE",
     "networkNamePlaceholder": "Nombre de la red",
     "encryptionNone": "Ninguno (sin cifrado)",
     "encryptionSimple": "Simple (tecla Meshtastic predeterminada)",
     "generateRandomKey": "Generar clave aleatoria",
-    "setKeyFromSha256": "Establezca la clave de SHA-256 (nombre) primeros 16 bytes (MeshCore #channels)",
     "removeAllContactsTitle": "Eliminar todos los contactos de la radio, mantenerlos en la base de datos",
-    "contactsOnRadio": "{{count}} / {{max}} contactos en radio",
-    "aesEncrypted": "cifrado AES",
     "encryptionAes128": "AES-128",
     "encryptionAes256": "AES-256",
     "keySizeLabel": "Tamaño de clave",
@@ -1737,8 +2469,6 @@
     "connectToConfigure": "Conéctese a un dispositivo para modificar la configuración.",
     "importConfigJson": "Importar configuración JSON",
     "offloadContacts": "Descargar",
-    "deviceMetricsDescription": "Transmisión en malla: con qué frecuencia se envía la batería, el voltaje y la utilización del canal a través de LoRa. 0 = deshabilitado; predeterminado 1800 s (30 min). Aplicación conectada: cuando se vincula a través de Bluetooth, serie o Wi-Fi, el firmware a menudo aún envía métricas del dispositivo a este cliente aproximadamente cada 60 segundos para mantener la frescura en la pantalla; eso no es lo mismo que el intervalo de malla.",
-    "deviceMetricsTooltip": "El firmware Meshtastic envía métricas del dispositivo a un cliente conectado aproximadamente una vez por minuto para el monitoreo local, independientemente del intervalo de telemetría de malla. Referencia oficial: https://meshtastic.org/docs/configuration/module/telemetry",
     "displayUnits": {
       "0": {
         "label": "Métrico"
@@ -1802,18 +2532,6 @@
     "pairingPinDesc": "PIN fijo de 6 dígitos para emparejamiento Bluetooth. Valor predeterminado: 123456.",
     "wifiPasswordLabel": "Contraseña WiFi",
     "wifiPasswordPlaceholder": "Contraseña",
-    "deviceUserIdentity": "Usuario/identidad del dispositivo",
-    "displaySection": "Mostrar",
-    "loraRadio": "LoRa/Radio",
-    "positionGps": "Posición / GPS",
-    "powerSection": "Fuerza",
-    "telemetrySection": "Telemetria",
-    "wifiNetwork": "Wi-Fi / Red",
-    "ntpPlaceholder": "0.pool.ntp.org",
-    "displayNamePlaceholder": "NOMBRE",
-    "latPlaceholder": "000000",
-    "lonPlaceholder": "000000",
-    "altPlaceholder": "0",
     "channelNamePrimary": "Primario",
     "channelNameSecondary": "Nombre del canal",
     "resetChannelDefaults": "Restablecer los valores predeterminados",
@@ -1830,7 +2548,6 @@
     "channelSaveFailed": "Error: {{message}}",
     "validationAes128": "La clave AES-128 debe tener exactamente 16 bytes (24 caracteres base64)",
     "validationAes256": "La clave AES-256 debe tener exactamente 32 bytes (44 caracteres base64)",
-    "factoryResetConfirmTitle": "Restablecimiento de fábrica",
     "factoryResetButton": "Dispositivo de restablecimiento de fábrica",
     "dangerZonePermanent": "Estas acciones son permanentes y no se pueden deshacer.",
     "resetNodeDbName": "Restablecer NodeDB",
@@ -1906,7 +2623,6 @@
     "lightSleepDurationDesc": "Duración de los ciclos de sueño ligero. 0 = uso predeterminado.",
     "batteryShutdownLabel": "Apagado de la batería después",
     "batteryShutdownDesc": "Apague la batería después de tantos segundos desde la última actividad de malla. 0 = desactivado.",
-    "deviceMetricsIntervalLabel": "Intervalo de actualización de métricas del dispositivo",
     "wifiEnabledLabel": "Wifi habilitado",
     "ethernetEnabledLabel": "Ethernet habilitado",
     "mqttUplinkLabel": "Enlace ascendente MQTT",
@@ -2164,7 +2880,103 @@
     "applyTxPowerSuccess": "Potencia TX aplicada",
     "xmodemInvalidFilename": "Contiene caracteres no válidos",
     "validationInvalidPsk": "PSK de base64 no válido: comprueba la clave e inténtalo de nuevo",
-    "meshcoreChannelNameRequired": "El nombre no debe estar vacío"
+    "meshcoreChannelNameRequired": "El nombre no debe estar vacío",
+    "editChannelTitle": "Editar canal {{index}}",
+    "channelNameLabel": "Nombre",
+    "channelRoleLabel": "Role",
+    "channelsEditHint": "Seleccione un canal para editar. Las claves AES-128/256 se muestran en base64 (convención Meshtastic).",
+    "channelResetStatus": "Canal {{index}} reseteado!",
+    "meshcoreChannel": {
+      "defaultName": "Canal {{index}}",
+      "addTitle": "Agregar canal",
+      "editTitle": "Editar canal {{index}}",
+      "indexLabel": "Índice (0–{{max}})",
+      "invalidHex": "Debe tener exactamente 32 caracteres hexadecimales.",
+      "addButton": "+ Agregar canal",
+      "footerHelp": "Las claves son de 128 bits (16 bytes) y se muestran como 32 caracteres hexadecimales. Nombres de canales de hasta {{nameMax}} caracteres. Hasta {{channelCount}} canales (índices 0–{{indexMax}}). Para #canales, utilice \"Derivar del nombre\" (SHA-256 del nombre con un # inicial)."
+    },
+    "regions": {
+      "0": {
+        "label": "Desarmado"
+      },
+      "1": {
+        "label": "A NOSOTROS"
+      },
+      "2": {
+        "label": "UE_433"
+      },
+      "3": {
+        "label": "UE_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "J.P."
+      },
+      "6": {
+        "label": "NZ"
+      },
+      "7": {
+        "label": "KR"
+      },
+      "8": {
+        "label": "tw"
+      },
+      "9": {
+        "label": "RU"
+      },
+      "10": {
+        "label": "EN"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MI_433"
+      },
+      "16": {
+        "label": "MI_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "lora_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "ayuno largo"
+      },
+      "1": {
+        "label": "largo lento"
+      },
+      "2": {
+        "label": "Largo Moderado"
+      },
+      "3": {
+        "label": "Corto rápido"
+      },
+      "4": {
+        "label": "Corto Lento"
+      },
+      "5": {
+        "label": "Medio Rápido"
+      },
+      "6": {
+        "label": "Medio lento"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",
@@ -2188,7 +3000,22 @@
     "meshtasticLegendHint": "Expande una fila: los detalles del puerto y el salto están en la parte superior. Los conteos de saltos utilizan hopStart − hopLimit en paquetes RF (no MQTT).",
     "portLabel": "Puerto",
     "transportSourceLabel": "Transporte",
-    "hopsAbsentMqtt": "Sin recuento de saltos de RF (ruta MQTT)."
+    "hopsAbsentMqtt": "Sin recuento de saltos de RF (ruta MQTT).",
+    "reticulum": {
+      "legendHint": "Expanda una fila para los campos de encabezado RNS. RX = recibido en una interfaz; TX = saliente de este nodo.",
+      "direction": "Dirección",
+      "interface": "Interfaz",
+      "packetType": "Tipo de paquete",
+      "headerType": "Cabecera",
+      "destination": "Destino",
+      "rx": "RX",
+      "tx": "TX"
+    },
+    "pauseCapture": "Pausa",
+    "resumeCapture": "Reanudar",
+    "resumeCaptureWithCount": "Currículum vitae (+{{count}})",
+    "pausedPending": "{{count}} nuevo mientras está en pausa",
+    "jumpToLatest": "Saltar a la última"
   },
   "remoteAdmin": {
     "errors": {
@@ -2291,7 +3118,90 @@
     "pathHashCliGet": "Obtener modo hash de ruta",
     "pathHashCliSet0": "Establecer modo hash de ruta de 1 byte",
     "pathHashCliSet1": "Establecer modo hash de ruta de 2 bytes",
-    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes"
+    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes",
+    "pathLabel": "Camino:",
+    "hopMe": "● Yo",
+    "hopN": "● Salto {{n}}",
+    "noNeighborsReported": "No hay vecinos reportados",
+    "fetchingTelemetry": "Obteniendo telemetría…",
+    "telemetryBattery": "Batería: {{voltage}}V",
+    "telemetryTemp": "Temperatura: {{temp}}°C",
+    "telemetryHumidity": "Humedad: {{humidity}}%",
+    "telemetryPressure": "Presión: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "alt {{altitude}}m",
+    "cliSend": "Enviar",
+    "cliQuick": "Rápido:"
+  },
+  "reticulumIdentity": {
+    "announceIntervalSec": "Intervalo de anuncio (segundos)",
+    "clearAnnounces": "Borrar anuncios",
+    "announceSaved": "Intervalo de anuncio guardado.",
+    "announceSaveFailed": "Error al guardar el intervalo de anuncio: {{error}}",
+    "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
+    "clearAnnouncesDone": "Anuncios borrados.",
+    "clearAnnouncesFailed": "No se han podido borrar los anuncios."
+  },
+  "reticulumPropagation": {
+    "preferred": "Preferido",
+    "setPreferred": "Establecer preferido",
+    "syncNow": "Sincronizar mensajes",
+    "cancelSync": "Cancelar sincronización",
+    "syncNowFor": "Sincronizar mensajes de {{name}}",
+    "addNode": "Agregar nodo",
+    "addNodeLabel": "Agregar nodo de propagación por hash",
+    "addNodePlaceholder": "Hash de destino LXMF de 32 caracteres",
+    "localInboxStats": "{{count}} en cola · {{bytes}} bytes",
+    "refreshing": "Refrescante…",
+    "refreshAria": "Actualizar nodos de propagación",
+    "syncStatusEstablishing": "Estableciendo conexión con el nodo de propagación...",
+    "syncStatusNegotiating": "Negociando sincronización con el nodo de propagación...",
+    "syncStatusTransferring": "Transfiriendo mensajes desde el nodo de propagación...",
+    "syncFailed": "Error en la sincronización de propagación: es posible que no se pueda acceder al nodo.",
+    "syncTimedOut": "Se agotó el tiempo de espera de la sincronización de propagación: es posible que no se pueda acceder al nodo.",
+    "autoSyncIntervalLabel": "Intervalo de sincronización automática",
+    "autoSyncIntervalAria": "Intervalo de sincronización automática de propagación",
+    "autoSyncOptionDisabled": "Desactivado",
+    "autoSyncOption15m": "Cada 15 minutos",
+    "autoSyncOption30m": "Cada 30 minutos",
+    "autoSyncOption1h": "Cada 1 hora",
+    "autoSyncOption3h": "Cada 3 horas",
+    "autoSyncOption6h": "Cada 6 horas",
+    "autoSyncOption12h": "Cada 12 horas",
+    "autoSyncOption24h": "Cada 24 horas",
+    "lastSynced": "Última sincronización: {{time}}",
+    "lastRefreshed": "Última actualización {{time}}"
+  },
+  "reticulumTopology": {
+    "title": "Topología de red",
+    "self": "Tú",
+    "hopBadge": "{{count}}h",
+    "ariaLabel": "Gráfico de topología de red Reticulum",
+    "noNodes": "Aún no hay datos de topología: conecte la pila de Reticulum y actualice.",
+    "nodeCount": "{{count}} nodos",
+    "edgeCount": "Enlaces {{count}}",
+    "hiddenCount": "Mostrando {{shown}} de {{total}} nodos (pares distantes ocultos)",
+    "legendSelf": "este nodo",
+    "showDistantPeers": "Mostrar compañeros distantes",
+    "maxHopsFilter": "Máx. saltos",
+    "maxHopsAll": "Todos los saltos",
+    "maxHopsOption": "{{count}} saltos",
+    "centerRns": "RSPG",
+    "interfaceStatus": "Interfaces {{online}} online, {{offline}} offline",
+    "unassignedInterface": "OTROS ITINERARIOS",
+    "legendInterfaceOnline": "Interfaz en línea",
+    "legendInterfaceOffline": "Interfaz sin conexión",
+    "legendPeerUser": "LXMF peer",
+    "legendPeerServer": "Nódulo nómada",
+    "interfaceLink": "Enlace de interfaces",
+    "peerLink": "Enlace de pares",
+    "interfaceTooltip": "{{name}} — {{status}}",
+    "interfaceStatusOnline": "En línea",
+    "interfaceStatusOffline": "fuera de línea",
+    "glyphWifi": "Interfaz Wi-Fi",
+    "glyphLora": "Interfaz LoRa",
+    "glyphTcp": "Interfaz TCP",
+    "glyphSerial": "Interfaz en serie"
   },
   "rfHistograms": {
     "title": "Distribución de señal de RF",
@@ -2402,7 +3312,6 @@
     "jumpToUnread": "Saltar a no leído",
     "newMessagesDivider": "Nuevos mensajes",
     "loggingInMarkerAria": "Iniciar sesión en el servidor de la sala",
-    "savedPasswordNotLoggedIn": "Contraseña guardada — abrir sala e iniciar sesión",
     "favorite": "Sala favorita",
     "unfavorite": "Eliminar de favoritos",
     "loginAllSaved": "Iniciar sesión en todo",
@@ -2447,16 +3356,17 @@
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",
-    "placeholder": "Buscar todos los mensajes… (usuario:nombre, canal:nombre)"
+    "placeholder": "Buscar todos los mensajes… (usuario:nombre, canal:nombre)",
+    "noResults": "Sin resultados",
+    "hint": "Escriba para buscar en todos los mensajes",
+    "resultCount": "{{count}} resultado(s) — haz clic para navegar"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",
     "failed": "Error: {{message}}",
     "adminKeysApplied": "Claves de administrador aplicadas.",
     "adminSettingsApplied": "Configuración de administración aplicada.",
-    "keysBackedUp": "Claves respaldadas en el llavero del sistema.",
     "backupFailed": "Error en la copia de seguridad: {{message}}",
-    "keysRestored": "Claves restauradas de la copia de seguridad.",
     "restoreFailed": "Error en la restauración: {{message}}",
     "dataSigned": "Datos firmados correctamente.",
     "signNoResult": "La operación de firma no devolvió ningún resultado.",
@@ -2500,8 +3410,6 @@
     "adminChannelDesc": "Permita el control del dispositivo entrante sobre el inseguro canal de administración heredado.",
     "keyBackupUnavailable": "El cifrado del llavero del sistema no está disponible en esta plataforma. La copia de seguridad y la restauración están deshabilitadas.",
     "keyBackupDesc": "Haga una copia de seguridad de sus claves DM en el llavero del sistema (encriptadas). Puede restaurarlos en el dispositivo en cualquier momento.",
-    "backupAvailable": "Copia de seguridad disponible",
-    "noBackupStored": "No hay copia de seguridad almacenada",
     "backupKeys": "Claves de respaldo",
     "restoreKeys": "Restaurar claves",
     "working": "Laboral...",
@@ -2572,7 +3480,11 @@
     "rf": "RF",
     "graph": "Gráfico",
     "rooms": "Salas",
-    "admin": "Administración"
+    "admin": "Administración",
+    "peers": "Pares",
+    "nomadnetwork": "Nomad Network",
+    "topology": "Topología de red",
+    "network": "Red"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -2664,5 +3576,156 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
+  },
+  "diagnosticsPing": {
+    "title": "Ping continuo",
+    "reticulumHint": "Ejecuta ping (RTT) y sonda de ruta (saltos) en cada intervalo mientras la pila se está ejecutando.",
+    "hashLabel": "Hash de destino",
+    "hashPlaceholder": "Hash de destino de 32 caracteres...",
+    "hashAria": "Hash de destino para hacer ping",
+    "intervalLabel": "intervalo de tiempo (en segundos)",
+    "intervalAria": "Segundos entre intentos de ping",
+    "start": "Comienzo",
+    "stop": "Parada",
+    "runOnce": "Hacer ping una vez",
+    "colSeq": "N.º",
+    "colRtt": "RTT",
+    "colHops": "Saltos",
+    "colStatus": "Sincronizar el estado de confirmación de la reserva con el pedido Woo correspondiente",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Error: {{error}}"
+  },
+  "reticulumIdentitySwitcher": {
+    "label": "Identidad del activo:",
+    "active": "Identidad activa: {{name}}",
+    "activeBadge": "activo"
+  },
+  "identityVault": {
+    "title": "Repositorio de Identidades",
+    "hint": "Cifre una copia local de su copia de seguridad de identidad con un código de acceso de bóveda. Desbloquear para acceder a operaciones de identidad protegidas.",
+    "passcode": "Código de acceso a la bóveda",
+    "confirmPasscode": "Confirma tu código de acceso",
+    "setPasscode": "Habilitar entorno de seguridad",
+    "unlock": "Desbloquear bóveda",
+    "lock": "Bloquear bóveda",
+    "statusNotConfigured": "Sin configurar",
+    "statusLocked": "Bloqueado",
+    "statusUnlocked": "Desbloqueado",
+    "passcodeTooShort": "debe tener al menos 4 caracteres",
+    "passcodeMismatch": "Los códigos de acceso no coinciden.",
+    "setSuccess": "Código de acceso de bóveda guardado.",
+    "setFailed": "No se ha podido guardar el código de acceso de la bóveda.",
+    "unlockSuccess": "Bóveda desbloqueada.",
+    "unlockFailed": "Código de acceso incorrecto o error de bóveda.",
+    "lockSuccess": "Bóveda bloqueada."
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "modo de propagación",
+    "modeAria": "Modo de sincronización de propagación",
+    "modeAuto": "Automático",
+    "modeManual": "Manual",
+    "modeOff": "Apagado",
+    "sync": "Sincronizar",
+    "syncAria": "Sincronizar mensajes de propagación",
+    "cancelSync": "Cancelar",
+    "cancelSyncAria": "Cancelar sincronización de propagación"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Icono del Avatar",
+    "iconNameAria": "Icono del Avatar",
+    "iconCircle": "Círculo",
+    "iconStar": "Estrella",
+    "iconHeart": "Corazón",
+    "iconShield": "Escudo",
+    "iconUser": "Usuario"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Configuración de pila",
+      "enableTransport": "Habilitar transporte (ruta para otros pares)",
+      "shareInstance": "Compartir instancia Reticulum",
+      "logLevel": "Nivel de registro",
+      "save": "Guardar configuración de pila",
+      "saveFailed": "No se pudo guardar la configuración de la pila."
+    },
+    "reticulumConfigImport": {
+      "title": "Importar config Reticulum",
+      "hint": "Pegue un archivo de configuración estilo rnsd o importe desde el disco. Fusionar agrega/actualiza bloques de interfaz por nombre; reemplazar sobrescribe todas las interfaces.",
+      "pasteLabel": "Contenido del archivo de configuración",
+      "fromFile": "Importar desde archivo…",
+      "fromSystem": "Importar valor predeterminado del sistema",
+      "merge": "Importación de fusión",
+      "replace": "Reemplazar interfaces",
+      "confirmTitle": "Importar config Reticulum",
+      "confirmMerge": "¿Fusionar interfaces importadas en la configuración actual?",
+      "confirmReplace": "¿Reemplazar todas las interfaces con la configuración importada? Esto no se puede deshacer.",
+      "confirm": "Importar"
+    },
+    "reticulumConfigImportFailed": "Error al importar la configuración.",
+    "reticulumConfigNotFound": "No se encontró ninguna configuración de Reticulum del sistema en las rutas predeterminadas."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Restablecimiento de fábrica",
+      "hint": "Borra identidades, contactos y mensajes de la pila del sidecar. Se conserva la configuración de la interfaz.",
+      "button": "Restablecer datos de la pila",
+      "confirmTitle": "¿Restablecer stack Reticulum?",
+      "confirmBody": "Esto elimina la identidad, los contactos y los mensajes locales del sidecar. Se conserva el archivo de configuración de su interfaz.",
+      "confirm": "Reiniciar"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Establezca o cambie la contraseña de administrador del repetidor desde el panel de Repetidores (solo sesión).",
+      "connectionFailed": "La conexión falló",
+      "notConnected": "No conectado al dispositivo",
+      "nodeNotFound": "Nodo no encontrado (sin clave de cifrado)",
+      "authenticationFailed": "Error de autenticación",
+      "requestFailed": "Error: {{detail}}",
+      "requestTimedOut": "Se agotó el tiempo de espera de la solicitud (hasta ~{{seconds}}s)",
+      "requestTimedOutApprox": "Se agotó el tiempo de espera de la solicitud (~{{seconds}}s)",
+      "pingNoRoute": "Aún no hay ruta desde la radio: el rastreo de múltiples saltos necesita una ruta sincronizada. Espere las actualizaciones de contactos o vuelva a conectarse.",
+      "bleNoDetails": "Error en la conexión BLE (no hay detalles de error del dispositivo). Inténtelo de nuevo o utilice Serial/USB.",
+      "bleAlreadyInProgress": "La conexión Bluetooth ya está en curso. Espere a que termine o pruebe con Serial/USB.",
+      "bleMissingServices": "El dispositivo no es compatible con el protocolo MeshCore BLE. Asegúrese de que el dispositivo esté ejecutando el firmware MeshCore.",
+      "blePeripheralInUse": "Este dispositivo ya está conectado a través de Meshtastic BLE. Desconéctelo primero antes de conectarse como MeshCore.",
+      "bleTimeoutWebBtHandshake": "Se agotó el tiempo de espera del protocolo de enlace MeshCore (Web Bluetooth). Es posible que la radio necesite un PIN emparejado con Linux primero: use Quitar y volver a emparejar dispositivo e ingrese el PIN que se muestra en el dispositivo, o empareje con bluetoothctl, luego toque Conectar nuevamente.",
+      "bleTimeoutWebBt": "Se agotó el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de Web Bluetooth. Vuelva a intentarlo, mantenga el dispositivo activo, reinicie BLE en la radio o use Serial/TCP.",
+      "bleTimeoutHandshake": "Bluetooth conectado pero el protocolo de enlace del protocolo MeshCore no se completó antes de la desconexión/tiempo de espera. Vuelva a intentarlo, mantenga el dispositivo activo y cerca, reinicie BLE o use Serial/TCP.",
+      "bleTimeoutNoble": "Se agotó el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de Noble IPC. Vuelva a intentarlo, apague y encienda BLE en el dispositivo o use Serial/TCP.",
+      "roomPost": {
+        "badState": "Publicación en la sala rechazada (no está conectado a la radio). Cierre sesión, inicie sesión nuevamente y vuelva a intentarlo.",
+        "illegalArg": "Publicación de sala rechazada (formato de mensaje no válido).",
+        "notFound": "Publicación de la sala rechazada (el contacto de la sala no se encuentra en la radio).",
+        "unsupportedCmd": "Publicación en sala rechazada (tipo de mensaje no admitido en la radio). Inicie sesión en la sala y vuelva a intentarlo.",
+        "default": "Publicación de la habitación rechazada por la radio. Cierre sesión, inicie sesión nuevamente y vuelva a intentarlo.",
+        "timeout": "Se agotó el tiempo de espera de la publicación de la sala esperando la radio. Verifique el rango o inténtelo nuevamente."
+      },
+      "roomLogin": {
+        "noRoute": "No hay ruta al servidor de esta sala. Rastrea el nodo desde el mapa o espera a que aparezcan anuncios de ruta y vuelve a intentarlo.",
+        "pathSyncFailed": "No se pudo programar la ruta en su radio antes de iniciar sesión. Vuelva a conectar el dispositivo e inténtelo de nuevo.",
+        "pathSyncFailedDetail": "No se pudo programar la ruta en su radio antes de iniciar sesión. Vuelva a conectar el dispositivo y vuelva a intentarlo.{{detail}}",
+        "rejectedBlankGuest": "Inicio de sesión rechazado. Utilice Continuar como solo lectura para la contraseña de invitado en blanco o pruebe con la contraseña de invitado \"hola\".",
+        "rejectedDefaultGuest": "Inicio de sesión rechazado. Si este servidor no tiene contraseña de invitado, utilice Continuar como solo lectura en lugar de Iniciar sesión. De lo contrario, verifique la contraseña de invitado o administrador.",
+        "rejectedCheckPassword": "Inicio de sesión rechazado. Verifique la contraseña de invitado o administrador para este servidor de sala.",
+        "timedOutBlankGuest": "Se agotó el tiempo de inicio de sesión en la sala. Utilice Continuar como solo lectura para la contraseña de invitado en blanco o pruebe con la contraseña de invitado \"hola\".",
+        "timedOutDefaultGuest": "Se agotó el tiempo de inicio de sesión en la sala. Si este servidor no tiene contraseña de invitado, utilice Continuar como solo lectura en lugar de Iniciar sesión.",
+        "timedOut": "Se agotó el tiempo de inicio de sesión en la sala. Es posible que la habitación esté fuera de alcance o no responda.",
+        "failed": "Error al iniciar sesión en la sala"
+      },
+      "roomLogout": {
+        "timedOut": "Se agotó el tiempo de cierre de sesión de la sala. Es posible que la habitación esté fuera de alcance o no responda.",
+        "rejected": "Cierre de sesión de sala rechazado por radio.",
+        "failed": "No se pudo salir de la habitación"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
+      "network": "Verifique la red, DNS, firewall y VPN.",
+      "connackTimeout": "Si no ve ninguna línea anterior de \"error del cliente\", es posible que el protocolo de enlace TLS/WebSocket se esté deteniendo (pruebe con otra red; la aplicación prefiere IPv4 para WSS).",
+      "subscribeFailed": "El corredor puede denegar la suscripción comodín sobre este tema; Es posible que aún lleguen mensajes si el corredor lo permite.",
+      "keepalive": "El servidor dejó de responder a los pings de MQTT (tiempo de espera de inactividad, caída de la red o el agente cerró la sesión). Vuelva a conectarse o verifique su enlace."
+    }
   }
 }

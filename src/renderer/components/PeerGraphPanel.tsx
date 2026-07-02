@@ -1,8 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { nodeHealthScore, nodeHealthTier } from '../lib/nodeHealthScore';
-import type { MeshNode } from '../lib/types';
+import {
+  buildMeshPeerTopologyGraph,
+  type MeshPeerTopologyGraph,
+  type MeshPeerTopologyGraphNode,
+} from '@/renderer/lib/buildMeshPeerTopologyGraph';
+import {
+  FORCE_GRAPH_DEFAULTS,
+  type ForceEdge,
+  type SimNodeState,
+  startForceSimulationLoop,
+} from '@/renderer/lib/forceDirectedGraphLayout';
+import type { MeshNode } from '@/renderer/lib/types';
+import { useSvgPanZoom } from '@/renderer/lib/useSvgPanZoom';
 
 interface PeerGraphPanelProps {
   nodes: Map<number, MeshNode>;
@@ -10,197 +21,177 @@ interface PeerGraphPanelProps {
   onNodeClick?: (nodeId: number) => void;
 }
 
-type HealthTier = ReturnType<typeof nodeHealthTier>;
-
-interface GraphNode {
-  id: number;
-  label: string;
-  tier: HealthTier;
-}
-
-interface GraphEdge {
-  source: number;
-  target: number;
-  /** 0 = direct link, 1 = one-hop link */
-  hops: number;
-}
-
-interface SimNode extends GraphNode {
+interface RenderNode extends MeshPeerTopologyGraphNode {
   x: number;
   y: number;
-  vx: number;
-  vy: number;
 }
 
 interface RenderSnapshot {
-  nodes: (GraphNode & { x: number; y: number })[];
-  edges: GraphEdge[];
+  nodes: RenderNode[];
+  edges: ForceEdge[];
+  hiddenCount: number;
+  totalNodeCount: number;
+  relayCount: number;
+  demotedDirectCount: number;
 }
 
-const TIER_FILL: Record<HealthTier, string> = {
+const TIER_FILL: Record<RenderNode['tier'], string> = {
   good: '#22c55e',
   warn: '#eab308',
   poor: '#ef4444',
 };
 
-/**
- * Build edges for both protocols using hops_away.
- * hops_away === 0 → direct link to my node (thick solid edge)
- * hops_away === 1 → one-hop link to my node (thin dashed edge)
- * Higher hops_away → no edge drawn (node still shown)
- */
-function buildEdges(myNodeId: number, nodes: Map<number, MeshNode>): GraphEdge[] {
-  const edges: GraphEdge[] = [];
-  for (const node of nodes.values()) {
-    if (node.node_id === myNodeId) continue;
-    const h = node.hops_away ?? null;
-    if (h === 0 || h === 1) {
-      edges.push({ source: myNodeId, target: node.node_id, hops: h });
-    }
-  }
-  return edges;
+function relaySpokeColor(online: boolean): string {
+  return online ? '#22c55e' : '#ef4444';
 }
 
-const NODE_RADIUS = 18;
-const REPULSION = 8000;
-const SPRING_LEN_DIRECT = 140;
-const SPRING_LEN_HOP = 220;
-const SPRING_K = 0.06;
-const DAMPING = 0.6;
-const MAX_V = 8;
-const RENDER_EVERY = 2;
+function graphSizes(nodeCount: number): {
+  centerR: number;
+  relayR: number;
+  peerR: number;
+  nodePadding: number;
+} {
+  if (nodeCount > 36) {
+    return { centerR: 18, relayR: 12, peerR: 7, nodePadding: 12 };
+  }
+  if (nodeCount > 20) {
+    return { centerR: 20, relayR: 14, peerR: 9, nodePadding: 14 };
+  }
+  return { centerR: 22, relayR: 18, peerR: 12, nodePadding: FORCE_GRAPH_DEFAULTS.nodePadding };
+}
+
+function stopPanZoomPointer(e: React.PointerEvent): void {
+  e.stopPropagation();
+}
 
 export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGraphPanelProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
-  const simRef = useRef<SimNode[]>([]);
-  const edgesRef = useRef<GraphEdge[]>([]);
-  const frameRef = useRef(0);
-  const animRef = useRef<number | null>(null);
-  const [snapshot, setSnapshot] = useState<RenderSnapshot>({ nodes: [], edges: [] });
+  const simRef = useRef<SimNodeState[]>([]);
+  const metaRef = useRef<Map<string, MeshPeerTopologyGraphNode>>(new Map());
+  const edgesRef = useRef<ForceEdge[]>([]);
+  const statsRef = useRef({
+    hiddenCount: 0,
+    totalNodeCount: 0,
+    relayCount: 0,
+    demotedDirectCount: 0,
+  });
+  const [snapshot, setSnapshot] = useState<RenderSnapshot>({
+    nodes: [],
+    edges: [],
+    hiddenCount: 0,
+    totalNodeCount: 0,
+    relayCount: 0,
+    demotedDirectCount: 0,
+  });
+  const [includeDistantPeers, setIncludeDistantPeers] = useState(false);
+  const [maxHops, setMaxHops] = useState<number | null>(2);
+  const { transform, resetView, bindSvgRef, onPointerDown, onPointerMove, onPointerUp } =
+    useSvgPanZoom();
 
-  const rebuild = useCallback(() => {
-    const width = svgRef.current?.clientWidth ?? 600;
-    const height = svgRef.current?.clientHeight ?? 400;
-    const cx = width / 2;
-    const cy = height / 2;
+  const setSvgRef = useCallback(
+    (el: SVGSVGElement | null) => {
+      svgRef.current = el;
+      bindSvgRef(el);
+    },
+    [bindSvgRef],
+  );
 
-    // Only include nodes with a known direct or relay connection, plus my own node.
-    // Nodes with hops_away >= 2 or null have no edge data and would just add O(n²) cost.
-    const connectedEdges = buildEdges(myNodeId, nodes);
-    const connectedIds = new Set<number>([myNodeId]);
-    for (const e of connectedEdges) {
-      connectedIds.add(e.source);
-      connectedIds.add(e.target);
-    }
-    const ids = [...connectedIds].filter((id) => nodes.has(id));
-
-    const existingById = new Map(simRef.current.map((n) => [n.id, n]));
-    simRef.current = ids.map((id, i) => {
-      const node = nodes.get(id)!;
-      const angle = (2 * Math.PI * i) / Math.max(1, ids.length);
-      const r = Math.min(cx, cy) * 0.55;
-      const existing = existingById.get(id);
-      return {
-        id,
-        label: node.short_name || `!${id.toString(16).slice(-4)}`,
-        tier: nodeHealthTier(nodeHealthScore(node).total),
-        x: existing?.x ?? cx + r * Math.cos(angle),
-        y: existing?.y ?? cy + r * Math.sin(angle),
-        vx: 0,
-        vy: 0,
-      };
+  const publishSnapshotFromSim = useCallback(() => {
+    const renderNodes = simRef.current
+      .map((sn) => {
+        const meta = metaRef.current.get(sn.id);
+        if (!meta) return null;
+        return { ...meta, x: sn.x, y: sn.y };
+      })
+      .filter((n): n is RenderNode => n != null);
+    setSnapshot({
+      nodes: renderNodes,
+      edges: [...edgesRef.current],
+      hiddenCount: statsRef.current.hiddenCount,
+      totalNodeCount: statsRef.current.totalNodeCount,
+      relayCount: statsRef.current.relayCount,
+      demotedDirectCount: statsRef.current.demotedDirectCount,
     });
+  }, []);
 
-    edgesRef.current = connectedEdges;
-  }, [nodes, myNodeId]);
-
-  useEffect(() => {
-    rebuild();
-  }, [rebuild]);
-
-  useEffect(() => {
-    let running = true;
-    frameRef.current = 0;
-
-    function step() {
-      if (!running) return;
-      const ns = simRef.current;
-      const es = edgesRef.current;
-      const width = svgRef.current?.clientWidth ?? 600;
-      const height = svgRef.current?.clientHeight ?? 400;
-
-      if (ns.length === 0) {
-        animRef.current = requestAnimationFrame(step);
-        return;
-      }
-
-      const fx = new Float64Array(ns.length);
-      const fy = new Float64Array(ns.length);
-
-      // Repulsion between all node pairs
-      for (let i = 0; i < ns.length; i++) {
-        for (let j = i + 1; j < ns.length; j++) {
-          const dx = ns[j].x - ns[i].x || 0.01;
-          const dy = ns[j].y - ns[i].y || 0.01;
-          const distSq = Math.max(1, dx * dx + dy * dy);
-          const dist = Math.sqrt(distSq);
-          const force = REPULSION / distSq;
-          fx[i] -= (force * dx) / dist;
-          fy[i] -= (force * dy) / dist;
-          fx[j] += (force * dx) / dist;
-          fy[j] += (force * dy) / dist;
-        }
-      }
-
-      // Spring attraction along edges
-      for (const edge of es) {
-        const si = ns.findIndex((n) => n.id === edge.source);
-        const ti = ns.findIndex((n) => n.id === edge.target);
-        if (si < 0 || ti < 0) continue;
-        const dx = ns[ti].x - ns[si].x;
-        const dy = ns[ti].y - ns[si].y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const targetLen = edge.hops === 0 ? SPRING_LEN_DIRECT : SPRING_LEN_HOP;
-        const force = SPRING_K * (dist - targetLen);
-        fx[si] += (force * dx) / dist;
-        fy[si] += (force * dy) / dist;
-        fx[ti] -= (force * dx) / dist;
-        fy[ti] -= (force * dy) / dist;
-      }
-
-      // Gentle centering pull
+  const applyGraph = useCallback(
+    (graph: MeshPeerTopologyGraph) => {
+      const width = svgRef.current?.clientWidth ?? 800;
+      const height = svgRef.current?.clientHeight ?? 600;
       const cx = width / 2;
       const cy = height / 2;
-      for (let i = 0; i < ns.length; i++) {
-        fx[i] += (cx - ns[i].x) * 0.003;
-        fy[i] += (cy - ns[i].y) * 0.003;
-      }
 
-      // Integrate
-      for (let i = 0; i < ns.length; i++) {
-        ns[i].vx = Math.max(-MAX_V, Math.min(MAX_V, (ns[i].vx + fx[i]) * DAMPING));
-        ns[i].vy = Math.max(-MAX_V, Math.min(MAX_V, (ns[i].vy + fy[i]) * DAMPING));
-        ns[i].x = Math.max(NODE_RADIUS, Math.min(width - NODE_RADIUS, ns[i].x + ns[i].vx));
-        ns[i].y = Math.max(NODE_RADIUS, Math.min(height - NODE_RADIUS, ns[i].y + ns[i].vy));
-      }
+      const existingById = new Map(simRef.current.map((n) => [n.id, n]));
+      const meta = new Map<string, MeshPeerTopologyGraphNode>();
 
-      frameRef.current++;
-      if (frameRef.current % RENDER_EVERY === 0) {
-        setSnapshot({
-          nodes: ns.map(({ id, label, tier, x, y }) => ({ id, label, tier, x, y })),
-          edges: [...es],
-        });
-      }
-      animRef.current = requestAnimationFrame(step);
-    }
+      simRef.current = graph.nodes.map((node) => {
+        meta.set(node.id, node);
+        const existing = existingById.get(node.id);
+        const seedX = node.kind === 'self' ? cx : node.seedX * (width / 800);
+        const seedY = node.kind === 'self' ? cy : node.seedY * (height / 600);
+        return {
+          id: node.id,
+          x: existing?.x ?? seedX,
+          y: existing?.y ?? seedY,
+          vx: 0,
+          vy: 0,
+        };
+      });
 
-    animRef.current = requestAnimationFrame(step);
-    return () => {
-      running = false;
-      if (animRef.current !== null) cancelAnimationFrame(animRef.current);
-    };
-  }, []);
+      metaRef.current = meta;
+      edgesRef.current = graph.edges;
+      statsRef.current = {
+        hiddenCount: graph.hiddenCount,
+        totalNodeCount: graph.totalNodeCount,
+        relayCount: graph.relayCount,
+        demotedDirectCount: graph.demotedDirectCount,
+      };
+      publishSnapshotFromSim();
+    },
+    [publishSnapshotFromSim],
+  );
+
+  const rebuildGraph = useCallback(() => {
+    const selfNode = nodes.get(myNodeId);
+    const selfLabel =
+      selfNode?.short_name?.trim() || selfNode?.long_name?.trim() || t('peerGraph.meShort');
+    const width = svgRef.current?.clientWidth ?? 800;
+    const height = svgRef.current?.clientHeight ?? 600;
+    const graph = buildMeshPeerTopologyGraph(nodes, {
+      myNodeId,
+      selfLabel,
+      cx: width / 2,
+      cy: height / 2,
+      filter: { includeDistantPeers, maxHops },
+    });
+    applyGraph(graph);
+  }, [applyGraph, includeDistantPeers, maxHops, myNodeId, nodes, t]);
+
+  useEffect(() => {
+    rebuildGraph();
+  }, [rebuildGraph]);
+
+  useEffect(() => {
+    resetView();
+  }, [includeDistantPeers, maxHops, resetView]);
+
+  const sizes = useMemo(() => graphSizes(snapshot.nodes.length), [snapshot.nodes.length]);
+
+  useEffect(() => {
+    return startForceSimulationLoop({
+      getSimNodes: () => simRef.current,
+      getEdges: () => edgesRef.current,
+      getDimensions: () => ({
+        width: svgRef.current?.clientWidth ?? 800,
+        height: svgRef.current?.clientHeight ?? 600,
+      }),
+      onFrame: () => {
+        publishSnapshotFromSim();
+      },
+      nodePadding: sizes.nodePadding,
+    });
+  }, [publishSnapshotFromSim, sizes.nodePadding]);
 
   const totalNodes = nodes.size;
 
@@ -212,99 +203,278 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
     );
   }
 
-  const { nodes: renderNodes, edges: renderEdges } = snapshot;
+  const {
+    nodes: renderNodes,
+    edges: renderEdges,
+    hiddenCount,
+    totalNodeCount,
+    relayCount,
+    demotedDirectCount,
+  } = snapshot;
+  const nodeById = new Map(renderNodes.map((n) => [n.id, n]));
+  const hasGraph = renderNodes.length > 0;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-4 px-4 py-2 text-xs text-slate-400">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-xs text-slate-400">
         <span className="font-medium text-slate-300">{t('peerGraph.title')}</span>
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <input
+            type="checkbox"
+            checked={includeDistantPeers}
+            onChange={(e) => {
+              setIncludeDistantPeers(e.target.checked);
+            }}
+            aria-label={t('peerGraph.showDistantPeers')}
+            className="accent-brand-green h-3.5 w-3.5 rounded"
+          />
+          {t('peerGraph.showDistantPeers')}
+        </label>
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <span>{t('peerGraph.maxHopsFilter')}</span>
+          <select
+            value={maxHops ?? 'all'}
+            onChange={(e) => {
+              const value = e.target.value;
+              setMaxHops(value === 'all' ? null : Number.parseInt(value, 10));
+            }}
+            aria-label={t('peerGraph.maxHopsFilter')}
+            className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
+          >
+            <option value="all">{t('peerGraph.maxHopsAll')}</option>
+            {[1, 2, 3, 5, 8].map((hops) => (
+              <option key={hops} value={hops}>
+                {t('peerGraph.maxHopsOption', { count: hops })}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="text-slate-400 hover:text-slate-200"
+          onClick={resetView}
+          aria-label={t('peerGraph.resetView')}
+        >
+          {t('peerGraph.resetView')}
+        </button>
+        {hasGraph && relayCount > 0 ? (
+          <span className="text-slate-500">{t('peerGraph.relayCount', { count: relayCount })}</span>
+        ) : null}
+        {hasGraph && demotedDirectCount > 0 ? (
+          <span className="text-slate-500">
+            {t('peerGraph.compactLeafCount', { count: demotedDirectCount })}
+          </span>
+        ) : null}
         <span className="ml-auto flex items-center gap-2">
-          {renderNodes.length < totalNodes && (
+          {hiddenCount > 0 && (
             <span className="text-slate-500">
-              {t('peerGraph.hiddenCount', { shown: renderNodes.length, total: totalNodes })}
+              {t('peerGraph.hiddenCount', {
+                shown: renderNodes.length,
+                total: totalNodeCount,
+              })}
             </span>
           )}
-          {t('peerGraph.nodeCount', { count: renderNodes.length })}
-          {' · '}
-          {t('peerGraph.edgeCount', { count: renderEdges.length })}
+          {hasGraph && (
+            <>
+              {t('peerGraph.nodeCount', { count: renderNodes.length })}
+              {' · '}
+              {t('peerGraph.edgeCount', { count: renderEdges.length })}
+            </>
+          )}
         </span>
       </div>
-      <svg ref={svgRef} className="min-h-0 flex-1" aria-label={t('peerGraph.ariaLabel')} role="img">
-        <defs>
-          <pattern id="graph-bg" width="40" height="40" patternUnits="userSpaceOnUse">
-            <circle cx="20" cy="20" r="0.5" fill="#334155" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#graph-bg)" />
+      {!hasGraph ? (
+        <div className="text-muted flex flex-1 items-center justify-center text-xs">
+          {t('peerGraph.noConnectedNodes')}
+        </div>
+      ) : (
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <svg
+            ref={setSvgRef}
+            className="h-full w-full cursor-grab active:cursor-grabbing"
+            aria-label={t('peerGraph.ariaLabel')}
+            role="img"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+            style={{ touchAction: 'none' }}
+          >
+            <defs>
+              <pattern id="peer-graph-bg" width="40" height="40" patternUnits="userSpaceOnUse">
+                <circle cx="20" cy="20" r="0.5" fill="#334155" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#peer-graph-bg)" />
 
-        {/* Edges */}
-        {renderEdges.map((edge, i) => {
-          const src = renderNodes.find((n) => n.id === edge.source);
-          const tgt = renderNodes.find((n) => n.id === edge.target);
-          if (!src || !tgt) return null;
-          return (
-            <line
-              key={i}
-              x1={src.x}
-              y1={src.y}
-              x2={tgt.x}
-              y2={tgt.y}
-              stroke={edge.hops === 0 ? '#64748b' : '#334155'}
-              strokeWidth={edge.hops === 0 ? 2 : 1}
-              strokeDasharray={edge.hops === 0 ? undefined : '4 4'}
-              strokeOpacity={edge.hops === 0 ? 0.8 : 0.5}
-            />
-          );
-        })}
+            <g transform={transform}>
+              {renderEdges.map((edge, i) => {
+                const a = nodeById.get(edge.source);
+                const b = nodeById.get(edge.target);
+                if (!a || !b) return null;
+                const isDirectSpoke = a.kind === 'self' && b.kind === 'relay';
+                const stroke = isDirectSpoke ? relaySpokeColor(b.online) : '#94a3b8';
+                const strokeWidth = isDirectSpoke ? 3 : 1;
+                return (
+                  <line
+                    key={`${edge.source}-${edge.target}-${i}`}
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={edge.kind === 'relay' && !isDirectSpoke ? '4 4' : undefined}
+                    strokeOpacity={isDirectSpoke ? 0.9 : 0.55}
+                  />
+                );
+              })}
 
-        {/* Nodes */}
-        {renderNodes.map((node) => {
-          const isSelf = node.id === myNodeId;
-          const fill = isSelf ? '#8b5cf6' : TIER_FILL[node.tier];
-          const r = isSelf ? NODE_RADIUS + 4 : NODE_RADIUS;
-          return (
-            <g
-              key={node.id}
-              transform={`translate(${node.x},${node.y})`}
-              onClick={() => onNodeClick?.(node.id)}
-              style={{ cursor: onNodeClick ? 'pointer' : undefined }}
-              role={onNodeClick ? 'button' : undefined}
-              aria-label={node.label}
-            >
-              {isSelf && (
-                <circle
-                  r={r + 6}
-                  fill="none"
-                  stroke="#c4b5fd"
-                  strokeWidth={1}
-                  strokeOpacity={0.4}
-                />
-              )}
-              <circle
-                r={r}
-                fill={fill}
-                fillOpacity={0.85}
-                stroke={isSelf ? '#c4b5fd' : '#0f172a'}
-                strokeWidth={1.5}
-              />
-              <text
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#f8fafc"
-                fontSize={isSelf ? 10 : 9}
-                fontWeight={isSelf ? 'bold' : 'normal'}
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
-              >
-                {node.label}
-              </text>
+              {renderNodes.map((node) => {
+                if (node.kind === 'self') {
+                  const fill = TIER_FILL[node.tier];
+                  return (
+                    <g
+                      key={node.id}
+                      transform={`translate(${node.x},${node.y})`}
+                      onPointerDown={stopPanZoomPointer}
+                      onClick={() => onNodeClick?.(node.nodeId)}
+                      style={{ cursor: onNodeClick ? 'pointer' : undefined }}
+                      role={onNodeClick ? 'button' : undefined}
+                      tabIndex={onNodeClick ? 0 : undefined}
+                      aria-label={node.label}
+                    >
+                      <circle
+                        r={sizes.centerR + 6}
+                        fill="none"
+                        stroke="#c4b5fd"
+                        strokeWidth={1}
+                        strokeOpacity={0.4}
+                      />
+                      <circle
+                        r={sizes.centerR}
+                        fill={fill}
+                        fillOpacity={0.9}
+                        stroke="#c4b5fd"
+                        strokeWidth={2}
+                      />
+                      <text
+                        y={4}
+                        textAnchor="middle"
+                        fill="#f8fafc"
+                        fontSize={11}
+                        fontWeight={600}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {t('peerGraph.meShort')}
+                      </text>
+                      <text
+                        y={sizes.centerR + 14}
+                        textAnchor="middle"
+                        fill="#e2e8f0"
+                        fontSize={10}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {node.label}
+                      </text>
+                    </g>
+                  );
+                }
+
+                if (node.kind === 'relay') {
+                  const r = sizes.relayR;
+                  const fill = TIER_FILL[node.tier];
+                  return (
+                    <g
+                      key={node.id}
+                      transform={`translate(${node.x},${node.y})`}
+                      onPointerDown={stopPanZoomPointer}
+                      onClick={() => onNodeClick?.(node.nodeId)}
+                      style={{ cursor: onNodeClick ? 'pointer' : undefined }}
+                      role={onNodeClick ? 'button' : undefined}
+                      tabIndex={0}
+                      aria-label={node.label}
+                    >
+                      <rect
+                        x={-r}
+                        y={-r}
+                        width={r * 2}
+                        height={r * 2}
+                        rx={4}
+                        fill={fill}
+                        fillOpacity={node.online ? 0.85 : 0.55}
+                        stroke={relaySpokeColor(node.online)}
+                        strokeWidth={1.5}
+                      />
+                      <text
+                        y={r + 12}
+                        textAnchor="middle"
+                        fill="#d1d5db"
+                        fontSize={10}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {node.label}
+                      </text>
+                    </g>
+                  );
+                }
+
+                const r = sizes.peerR;
+                const fill = node.online ? TIER_FILL[node.tier] : '#475569';
+                return (
+                  <g
+                    key={node.id}
+                    transform={`translate(${node.x},${node.y})`}
+                    onPointerDown={stopPanZoomPointer}
+                    onClick={() => onNodeClick?.(node.nodeId)}
+                    style={{ cursor: onNodeClick ? 'pointer' : undefined }}
+                    role={onNodeClick ? 'button' : undefined}
+                    tabIndex={0}
+                    aria-label={node.label}
+                  >
+                    <circle
+                      r={r + 2}
+                      fill="none"
+                      stroke={relaySpokeColor(node.online)}
+                      strokeWidth={1.5}
+                      strokeOpacity={node.online ? 0.9 : 0.5}
+                    />
+                    <circle r={r} fill={fill} fillOpacity={0.92} stroke="#1e293b" strokeWidth={1} />
+                    <text
+                      y={r + 12}
+                      textAnchor="middle"
+                      fill="#d1d5db"
+                      fontSize={10}
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                      {node.label}
+                    </text>
+                    {node.hops != null && node.hops > 1 ? (
+                      <text
+                        y={4}
+                        textAnchor="middle"
+                        fill="#fbbf24"
+                        fontSize={8}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {t('peerGraph.hopBadge', { count: node.hops })}
+                      </text>
+                    ) : null}
+                  </g>
+                );
+              })}
             </g>
-          );
-        })}
-      </svg>
-      <div className="flex flex-wrap gap-4 px-4 py-2 text-xs text-slate-500">
+          </svg>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 text-xs text-slate-500">
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-violet-500" />
           {t('peerGraph.me')}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-sm bg-green-500" />
+          {t('peerGraph.relayHub')}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
@@ -319,19 +489,19 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
           {t('peerGraph.poor')}
         </span>
         <span className="flex items-center gap-1.5">
-          <svg width="24" height="8">
-            <line x1="0" y1="4" x2="24" y2="4" stroke="#64748b" strokeWidth="2" />
+          <svg width="24" height="8" aria-hidden>
+            <line x1="0" y1="4" x2="24" y2="4" stroke="#22c55e" strokeWidth="3" />
           </svg>
           {t('peerGraph.directLink')}
         </span>
         <span className="flex items-center gap-1.5">
-          <svg width="24" height="8">
+          <svg width="24" height="8" aria-hidden>
             <line
               x1="0"
               y1="4"
               x2="24"
               y2="4"
-              stroke="#475569"
+              stroke="#94a3b8"
               strokeWidth="1"
               strokeDasharray="4 4"
             />

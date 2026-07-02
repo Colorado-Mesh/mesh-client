@@ -103,6 +103,8 @@ import {
   findIndexByRowKey,
   getChatDayKey,
   getDistFromChatBottom,
+  roomPostRowKey,
+  roomPostVirtualizerKey,
   scheduleVirtualRowRemeasure,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
@@ -189,12 +191,6 @@ function formatTimestamp(ts: number): string {
   return formatIsoDateTime(ts);
 }
 
-function roomPostRowKey(m: ChatMessage): string {
-  return m.roomServerId != null
-    ? `room:${m.roomServerId}:${Math.floor(m.timestamp / 1000)}:${m.sender_id}`
-    : `${m.timestamp}:${m.sender_id}:${m.payload}`;
-}
-
 function roomMsgStarId(m: ChatMessage): string {
   return roomPostRowKey(m);
 }
@@ -220,6 +216,7 @@ interface RecognizedPoster {
 function buildRecognizedPosters(
   roomPosts: ChatMessage[],
   nodes: Map<number, MeshNode>,
+  unknownLabel: string,
 ): RecognizedPoster[] {
   const byId = new Map<number, RecognizedPoster>();
   for (const m of roomPosts) {
@@ -228,7 +225,7 @@ function buildRecognizedPosters(
     if (!existing || m.timestamp > existing.lastPostAt) {
       byId.set(m.sender_id, {
         senderId: m.sender_id,
-        senderName: m.sender_name || nodes.get(m.sender_id)?.long_name || 'Unknown',
+        senderName: m.sender_name || nodes.get(m.sender_id)?.long_name || unknownLabel,
         lastPostAt: m.timestamp,
         node: nodes.get(m.sender_id),
       });
@@ -459,8 +456,8 @@ export default function RoomsPanel({
     overscan: 10,
     getItemKey: (index) => {
       const post = filteredRoomPosts[index];
-      if (!post) return index;
-      return roomPostRowKey(post);
+      if (!post) return `room-slot-${index}`;
+      return roomPostVirtualizerKey(post, index);
     },
     anchorTo: 'end',
     followOnAppend: true,
@@ -1100,8 +1097,8 @@ export default function RoomsPanel({
     [starred],
   );
   const recognizedPosters = useMemo(
-    () => buildRecognizedPosters(roomPosts, nodes),
-    [nodes, roomPosts],
+    () => buildRecognizedPosters(roomPosts, nodes, t('common.unknown')),
+    [nodes, roomPosts, t],
   );
   const canAdminRoom = selectedRoomId != null && meshcoreRoomCanAdmin(selectedRoomId);
 

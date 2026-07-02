@@ -48,6 +48,24 @@ export function getSignalPulseTheme(protocol: MeshProtocol): SignalPulseTheme {
       letterGlow: (a) => `rgba(103, 232, 249, ${Math.min(0.75, a * 0.85)})`,
     };
   }
+  if (protocol === 'reticulum') {
+    return {
+      illuminationStops: [
+        [0, 'rgba(245, 158, 11, 0)'],
+        [0.42, 'rgba(245, 158, 11, 0.045)'],
+        [0.52, 'rgba(252, 211, 77, 0.1)'],
+        [0.62, 'rgba(245, 158, 11, 0.04)'],
+        [1, 'rgba(245, 158, 11, 0)'],
+      ],
+      trailStroke: 'rgba(245, 158, 11, 0.22)',
+      trailShadow: 'rgba(251, 191, 36, 0.38)',
+      ringStroke: '#f59e0b',
+      ringShadow: '#fbbf24',
+      letterStroke: (a) => `rgba(35, 20, 5, ${Math.min(0.78, a * 0.8)})`,
+      letterFill: (a) => `rgba(253, 230, 138, ${Math.min(0.95, a)})`,
+      letterGlow: (a) => `rgba(251, 191, 36, ${Math.min(0.75, a * 0.85)})`,
+    };
+  }
   return {
     illuminationStops: [
       [0, 'rgba(0, 255, 0, 0)'],

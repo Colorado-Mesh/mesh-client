@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next';
+
 import { HelpTooltip } from '@/renderer/components/HelpTooltip';
+import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 
 export interface MessageStatusBadgeProps {
   status: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked';
@@ -16,6 +19,8 @@ export function MessageStatusBadge({
   error,
   context = 'dm',
 }: MessageStatusBadgeProps) {
+  const { t } = useTranslation();
+  const displayError = error ? translateMeshcoreUserMessage(t, error) : undefined;
   if (status === 'queued') {
     return (
       <HelpTooltip text="Queued \u2014 will send when connected">
@@ -25,7 +30,7 @@ export function MessageStatusBadge({
   }
   if (status === 'blocked') {
     return (
-      <HelpTooltip text={error ?? 'Blocked \u2014 no encryption key available'}>
+      <HelpTooltip text={displayError ?? 'Blocked \u2014 no encryption key available'}>
         <span className="text-[10px] text-amber-400">\uD83D\uDD12 Blocked</span>
       </HelpTooltip>
     );
@@ -58,10 +63,10 @@ export function MessageStatusBadge({
           : 'BT';
   const failedReason =
     status === 'failed' && context === 'room'
-      ? (error ?? 'Failed to post')
+      ? (displayError ?? 'Failed to post')
       : status === 'failed' && transport === 'device'
         ? 'No ACK (message may still have been broadcast; no other node in range to acknowledge)'
-        : error || 'Failed';
+        : displayError || 'Failed';
   const tooltip = `${transport === 'mqtt' ? 'MQTT' : 'Device'}: ${
     status === 'sending'
       ? 'Sending...'

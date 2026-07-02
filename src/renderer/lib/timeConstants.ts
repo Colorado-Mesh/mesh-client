@@ -108,6 +108,16 @@ export function computeRoomLoginSentWaitMs(
 /** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
 export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
 
+/** Wall clock for room post including repeater RPC queue wait behind a stuck login. */
+export function computeRoomPostTotalTimeoutMs(
+  hopsAway?: number | null,
+  companionTransport: MeshcoreCompanionTransport = 'ble',
+): number {
+  const sentWait =
+    computeRoomLoginSentWaitMs(companionTransport) + computeRoomLoginExtraTimeoutMs(hopsAway);
+  return sentWait + MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS;
+}
+
 /** RF vs MQTT duplicate merge for channel/DM text (delayed dual ingress). */
 export const MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 5 * MS_PER_MINUTE;
 
@@ -186,6 +196,9 @@ export const MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
 
 /** MeshCore BLE protocol handshake after Web Bluetooth connect. */
 export const MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
+
+/** Cap meshcore.js deviceQuery during Noble IPC handshake (onConnected otherwise hangs until outer timeout). */
+export const MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS = 8_000;
 
 /** Exponential backoff cap for RF auto-reconnect (2s × 2^attempt, max this value). */
 export const MESHCORE_MAX_RECONNECT_DELAY_MS = 32_000;

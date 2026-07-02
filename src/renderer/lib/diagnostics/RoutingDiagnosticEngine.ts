@@ -358,22 +358,20 @@ export function detectNoisyNode(
 
   if (exceedPorts.length === 0) return null;
 
-  const portLabels = exceedPorts
-    .map((p) => {
-      if (p === NOISY_PORTNUMS.NODEINFO_APP) return 'NodeInfo';
-      if (p === NOISY_PORTNUMS.TELEMETRY_APP) return 'Telemetry';
-      if (p === NOISY_PORTNUMS.NEIGHBOR_INFO_APP) return 'NeighborInfo';
-      if (p === NOISY_PORTNUMS.TRACEROUTE_APP) return 'Traceroute';
-      if (p === NOISY_PORTNUMS.POSITION_APP) return 'Position';
-      if (p === NOISY_PORTNUMS.REMOTE_HARDWARE_APP || p === NOISY_PORTNUMS.REMOTE_HARDWARE_APP_V2)
-        return 'RemoteHardware';
-      if (p === NOISY_PORTNUMS.ADMIN_APP) return 'Admin';
-      // MeshCore fake portnums
-      if (p === 1001) return 'DiscoveryFlood';
-      if (p === 1002) return 'RoomAdvert';
-      return `Port${p}`;
-    })
-    .join(', ');
+  const portLabelKeys = exceedPorts.map((p) => {
+    if (p === NOISY_PORTNUMS.NODEINFO_APP) return 'NodeInfo';
+    if (p === NOISY_PORTNUMS.TELEMETRY_APP) return 'Telemetry';
+    if (p === NOISY_PORTNUMS.NEIGHBOR_INFO_APP) return 'NeighborInfo';
+    if (p === NOISY_PORTNUMS.TRACEROUTE_APP) return 'Traceroute';
+    if (p === NOISY_PORTNUMS.POSITION_APP) return 'Position';
+    if (p === NOISY_PORTNUMS.REMOTE_HARDWARE_APP || p === NOISY_PORTNUMS.REMOTE_HARDWARE_APP_V2)
+      return 'RemoteHardware';
+    if (p === NOISY_PORTNUMS.ADMIN_APP) return 'Admin';
+    if (p === 1001) return 'DiscoveryFlood';
+    if (p === 1002) return 'RoomAdvert';
+    return `Port${p}`;
+  });
+  const portLabels = portLabelKeys.join(', ');
 
   const isError = errorPorts.length > 0;
 
@@ -385,7 +383,7 @@ export function detectNoisyNode(
     description: `Sending ${Math.round(maxExceed)}/hr on ${portLabels} — excessive traffic`,
     descriptionI18n: {
       key: 'diagnosticsPanel.routingDesc.noisyNode',
-      params: { ratePerHour: Math.round(maxExceed), ports: portLabels },
+      params: { ratePerHour: Math.round(maxExceed), portNums: exceedPorts.join(',') },
     },
     detectedAt: Date.now(),
   };

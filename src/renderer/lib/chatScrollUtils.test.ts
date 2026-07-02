@@ -11,6 +11,9 @@ import {
   findIndexByRowKey,
   findMessageIndexByKey,
   getChatDayKey,
+  getChatMessageVirtualizerKey,
+  roomPostRowKey,
+  roomPostVirtualizerKey,
   scrollElementWithinContainer,
 } from './chatScrollUtils';
 import type { ChatMessage } from './types';
@@ -151,6 +154,36 @@ describe('findIndexByRowKey', () => {
   it('finds item by custom row key', () => {
     const items = [{ id: 'a' }, { id: 'b' }];
     expect(findIndexByRowKey(items, 'b', (x) => x.id)).toBe(1);
+  });
+});
+
+describe('getChatMessageVirtualizerKey', () => {
+  it('keeps keys unique when timestamp and packetId match at different indices', () => {
+    const msg = makeMsg({ timestamp: 1000, packetId: 42 });
+    expect(getChatMessageVirtualizerKey(msg, 0)).not.toBe(getChatMessageVirtualizerKey(msg, 1));
+  });
+
+  it('uses db id prefix when message has SQLite id', () => {
+    const msg = makeMsg({ id: 7, timestamp: 1000, packetId: 42 });
+    expect(getChatMessageVirtualizerKey(msg, 3)).toBe('db-7-3');
+  });
+});
+
+describe('roomPostVirtualizerKey', () => {
+  it('content row key collides for same-second posts from same sender', () => {
+    const ts = 1_710_000_000_500;
+    const a = makeMsg({ timestamp: ts, sender_id: 99, payload: 'hi', roomServerId: 1 });
+    const b = makeMsg({ timestamp: ts + 100, sender_id: 99, payload: 'again', roomServerId: 1 });
+    expect(roomPostRowKey(a)).toBe(roomPostRowKey(b));
+  });
+
+  it('virtualizer keys stay unique for colliding content keys', () => {
+    const ts = 1_710_000_000_500;
+    const posts = [
+      makeMsg({ timestamp: ts, sender_id: 99, payload: 'hi', roomServerId: 1 }),
+      makeMsg({ timestamp: ts + 100, sender_id: 99, payload: 'again', roomServerId: 1 }),
+    ];
+    expect(roomPostVirtualizerKey(posts[0], 0)).not.toBe(roomPostVirtualizerKey(posts[1], 1));
   });
 });
 

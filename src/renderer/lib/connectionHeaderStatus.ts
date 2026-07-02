@@ -1,10 +1,13 @@
 import type { DeviceState, MQTTStatus } from './types';
 
-export const CONNECTION_HEADER_PULSE_RED_TEXT = 'animate-pulse text-red-400';
+/** Text stays fully opaque; pulse animation is on the status dot/icon only (contrast). */
+export const CONNECTION_HEADER_PULSE_RED_TEXT = 'text-red-400';
+export const CONNECTION_HEADER_PULSE_RED_ICON = 'animate-pulse text-red-400';
 export const CONNECTION_HEADER_PULSE_RED_DOT = 'bg-red-500 animate-pulse';
 export const CONNECTION_HEADER_IDLE_TEXT = 'text-gray-400';
 export const CONNECTION_HEADER_IDLE_DOT = 'bg-gray-500';
-export const CONNECTION_HEADER_WARN_TEXT = 'animate-pulse text-yellow-400';
+export const CONNECTION_HEADER_WARN_TEXT = 'text-yellow-400';
+export const CONNECTION_HEADER_WARN_ICON = 'animate-pulse text-yellow-400';
 export const CONNECTION_HEADER_WARN_DOT = 'bg-yellow-500 animate-pulse';
 export const CONNECTION_HEADER_OK_TEXT = 'text-brand-green';
 export const CONNECTION_HEADER_OK_DOT = 'bg-green-500';
@@ -84,7 +87,14 @@ export function headerTextClass(variant: ConnectionHeaderVariant): string {
 }
 
 export function headerIconClass(variant: ConnectionHeaderVariant): string {
-  return headerTextClass(variant);
+  switch (variant) {
+    case 'warn':
+      return CONNECTION_HEADER_WARN_ICON;
+    case 'error':
+      return CONNECTION_HEADER_PULSE_RED_ICON;
+    default:
+      return headerTextClass(variant);
+  }
 }
 
 export function headerDotClass(variant: ConnectionHeaderVariant): string {

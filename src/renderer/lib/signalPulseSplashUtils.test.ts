@@ -33,4 +33,10 @@ describe('getSignalPulseTheme', () => {
     const t = getSignalPulseTheme('meshtastic');
     expect(t.ringStroke.toLowerCase()).toBe('#00ff00');
   });
+
+  it('uses amber accents for Reticulum', () => {
+    const t = getSignalPulseTheme('reticulum');
+    expect(t.ringStroke).toBe('#f59e0b');
+    expect(t.trailStroke).toContain('245, 158, 11');
+  });
 });

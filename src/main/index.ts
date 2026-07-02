@@ -36,7 +36,13 @@ import type { MeshProtocol } from '../shared/meshProtocol';
 import { MESH_PROTOCOL_SET } from '../shared/meshProtocol';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
+import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import {
+  bleCoexistenceCoordinator,
+  type BlePeripheralOwner,
+  type BleScanOwner,
+} from './ble-coexistence-coordinator';
 import { formatChatExportLines } from './chatExportFormat';
 import {
   addContactToGroup,
@@ -83,6 +89,9 @@ import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fata
 import { fetchLinkPreview } from './fetchLinkPreview';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
+import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
+import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
   clearLogFile,
@@ -104,8 +113,11 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
+import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import type { TakServerManager } from './tak-server-manager';
 import { getCheckNowFromMenu, initUpdater } from './updater';
+import { assertIpcSender, validateIpcSender } from './validate-ipc-sender';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
@@ -201,9 +213,16 @@ function isWindowStateOnScreen(state: WindowState): boolean {
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
 const nobleBleManager = new NobleBleManager();
+bleCoexistenceCoordinator.setNobleManager(nobleBleManager);
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
+
+const IDLE_RETICULUM_STATUS: ReticulumSidecarStatus = {
+  running: false,
+  port: 0,
+  pid: null,
+};
 
 /** MAC address format: XX:XX:XX:XX:XX:XX */
 function isMacAddress(value: string): boolean {
@@ -214,6 +233,16 @@ function isMacAddress(value: string): boolean {
 
 let takServerManager: TakServerManager | null = null;
 let takServerManagerLoadPromise: Promise<TakServerManager> | null = null;
+
+let reticulumSidecarManager: ReticulumSidecarManager | null = null;
+
+function ensureReticulumSidecarManager(): ReticulumSidecarManager {
+  if (!reticulumSidecarManager) {
+    reticulumSidecarManager = new ReticulumSidecarManager();
+    wireReticulumSidecarBridge(reticulumSidecarManager, () => mainWindow);
+  }
+  return reticulumSidecarManager;
+}
 
 function attachTakForwarders(manager: TakServerManager): void {
   manager.on('status', (status) => {
@@ -275,6 +304,14 @@ async function shutdownAppResources(): Promise<void> {
   } catch (err) {
     console.debug(
       '[main] TAK server stop during shutdown (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
+  try {
+    void reticulumSidecarManager?.stop();
+  } catch (err) {
+    console.debug(
+      '[main] Reticulum sidecar stop during shutdown (ignored):',
       err instanceof Error ? err.message : err,
     ); // log-injection-ok internal cleanup
   }
@@ -359,6 +396,15 @@ function buildBadgePng(): Buffer {
 
 // Pending Serial callback
 let pendingSerialCallback: ((portId: string) => void) | null = null;
+let pendingSerialSelectionTimer: ReturnType<typeof setTimeout> | null = null;
+const SERIAL_PORT_SELECTION_TIMEOUT_MS = 120_000;
+
+function clearPendingSerialSelectionTimer(): void {
+  if (pendingSerialSelectionTimer) {
+    clearTimeout(pendingSerialSelectionTimer);
+    pendingSerialSelectionTimer = null;
+  }
+}
 // Last serial port discovery set: only allow selection IPC to resolve with ids from this set
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
@@ -448,29 +494,6 @@ function safeMeshcoreChannelIndex(value: unknown): number {
     throw new Error('Invalid MeshCore channel index');
   }
   return Math.trunc(n);
-}
-
-/** Validate IPC sender origin to prevent untrusted renderers from invoking privileged handlers. */
-function validateIpcSender(event: Electron.IpcMainInvokeEvent): boolean {
-  const frame = event.senderFrame;
-  if (!frame) return false;
-  try {
-    const url = new URL(frame.url);
-    const isDev = !app.isPackaged;
-    if (isDev) {
-      return (
-        url.protocol === 'file:' ||
-        url.protocol === 'mesh-client:' ||
-        (url.protocol === 'http:' &&
-          (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) ||
-        url.protocol === 'https:'
-      );
-    }
-    return url.protocol === 'file:' || url.protocol === 'mesh-client:';
-  } catch {
-    // catch-no-log-ok invalid URL in frame is expected; treat as untrusted
-    return false;
-  }
 }
 
 function validateSaveMessage(message: unknown): asserts message is Record<string, unknown> & {
@@ -1071,9 +1094,13 @@ function applyAboutPanelOptions(): void {
   const credits = [
     `Version ${version}`,
     '',
-    'Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, and routing diagnostics.',
+    'Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, and routing diagnostics.',
     '',
-    'License: MIT',
+    'Reticulum support uses a bundled AGPL-3.0 sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
+    '',
+    'Reticulum stack inspiration: Ratspeak (https://github.com/ratspeak/Ratspeak)',
+    '',
+    'License: MIT (application code). AGPL-3.0 applies to the bundled Reticulum sidecar binary.',
     'Author: Colorado Mesh',
     '',
     `Website:  ${HELP_URL_WEBSITE}`,
@@ -1628,18 +1655,22 @@ function createWindow() {
 
       // Store callback so we can resolve it when the user picks a port
       pendingSerialCallback = callback;
+      clearPendingSerialSelectionTimer();
 
       console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
 
-      // Auto-cancel after 60s to prevent indefinite block if renderer unmounts mid-flow
-      setTimeout(() => {
+      // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
+      pendingSerialSelectionTimer = setTimeout(() => {
         if (pendingSerialCallback === callback) {
-          console.warn('[IPC] Serial port selection callback stale after 60s — auto-cancelling');
+          console.warn(
+            '[IPC] Serial port selection callback stale after timeout — auto-cancelling',
+          );
           pendingSerialCallback('');
           pendingSerialCallback = null;
           lastSerialPortIds.clear();
         }
-      }, 60_000);
+        pendingSerialSelectionTimer = null;
+      }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
 
       lastSerialPortIds = new Set(portList.map((p) => p.portId));
       // Send port list to renderer for selection
@@ -1980,6 +2011,7 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
     return;
   }
   console.debug('[IPC] serial-port-selected:', sanitizeLogMessage(id || '(cancelled)'));
+  clearPendingSerialSelectionTimer();
   pendingSerialCallback(id);
   pendingSerialCallback = null;
   lastSerialPortIds.clear();
@@ -1987,6 +2019,7 @@ ipcMain.on('serial-port-selected', (_event, portId: unknown) => {
 
 // ─── IPC: Cancel Serial selection ───────────────────────────────────
 ipcMain.on('serial-port-cancelled', () => {
+  clearPendingSerialSelectionTimer();
   if (pendingSerialCallback) {
     pendingSerialCallback(''); // Empty string cancels the request
     pendingSerialCallback = null;
@@ -2483,6 +2516,77 @@ nobleBleManager.on(
 );
 
 // ─── Noble BLE: IPC command handlers ────────────────────────────────
+const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
+  'noble:meshtastic',
+  'noble:meshcore',
+  'webbt:meshtastic',
+  'webbt:meshcore',
+  'reticulum',
+]);
+const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['noble', 'reticulum', 'webbt']);
+
+ipcMain.handle('bleCoexistence:register', (event, mac: unknown, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:register');
+  if (
+    typeof mac !== 'string' ||
+    typeof owner !== 'string' ||
+    !BLE_PERIPHERAL_OWNERS.has(owner as BlePeripheralOwner)
+  ) {
+    throw new Error('bleCoexistence:register: invalid mac or owner');
+  }
+  bleCoexistenceCoordinator.register(mac, owner as BlePeripheralOwner);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:unregister', (event, mac: unknown, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:unregister');
+  if (
+    typeof mac !== 'string' ||
+    typeof owner !== 'string' ||
+    !BLE_PERIPHERAL_OWNERS.has(owner as BlePeripheralOwner)
+  ) {
+    throw new Error('bleCoexistence:unregister: invalid mac or owner');
+  }
+  bleCoexistenceCoordinator.unregister(mac, owner as BlePeripheralOwner);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:assertCanConnect', (event, owner: unknown, mac: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:assertCanConnect');
+  if (
+    typeof mac !== 'string' ||
+    typeof owner !== 'string' ||
+    !BLE_PERIPHERAL_OWNERS.has(owner as BlePeripheralOwner)
+  ) {
+    throw new Error('bleCoexistence:assertCanConnect: invalid mac or owner');
+  }
+  bleCoexistenceCoordinator.assertCanConnect(owner as BlePeripheralOwner, mac);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:getState', (event) => {
+  assertIpcSender(event, 'bleCoexistence:getState');
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:acquireScan');
+  if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
+    throw new Error('bleCoexistence:acquireScan: owner must be noble, reticulum, or webbt');
+  }
+  await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
+  assertIpcSender(event, 'bleCoexistence:releaseScan');
+  if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
+    throw new Error('bleCoexistence:releaseScan: owner must be noble, reticulum, or webbt');
+  }
+  bleCoexistenceCoordinator.releaseScan(owner as BleScanOwner);
+  return bleCoexistenceCoordinator.getState();
+});
+ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
+  assertIpcSender(event, 'bleCoexistence:pauseNobleScan');
+  await bleCoexistenceCoordinator.pauseNobleScan();
+  return bleCoexistenceCoordinator.getState();
+});
+
 ipcMain.handle('noble-ble-start-scan', async (_event, sessionId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-start-scan: sessionId must be meshtastic or meshcore');
@@ -3170,6 +3274,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
   'reduceMotion',
+  'reticulumAutostart',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);
@@ -4173,6 +4278,64 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   }
 });
 
+ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
+  const o = opts as Record<string, unknown>;
+  const fileName = typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment';
+  const dataBase64 = typeof o.dataBase64 === 'string' ? o.dataBase64 : '';
+  const promptSave = o.promptSave !== false;
+  if (!dataBase64 || dataBase64.length > 16 * 1024 * 1024) {
+    throw new Error('dataBase64 invalid or too large');
+  }
+  try {
+    const buf = Buffer.from(dataBase64, 'base64');
+    if (buf.length > 16 * 1024 * 1024) throw new Error('decoded attachment too large');
+    let targetPath: string;
+    if (promptSave) {
+      if (!mainWindow) return { success: false };
+      const ext = path.extname(fileName) || '';
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save attachment',
+        defaultPath: fileName,
+        filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
+      });
+      if (result.canceled || !result.filePath) return { success: false };
+      targetPath = result.filePath;
+    } else {
+      const dir = path.join(app.getPath('userData'), 'reticulum', 'attachments');
+      await fs.promises.mkdir(dir, { recursive: true });
+      const safeName = fileName.replace(/[^\w.-]+/g, '_').slice(0, 120) || 'attachment';
+      targetPath = path.join(dir, `${Date.now()}-${safeName}`);
+    }
+    await fs.promises.writeFile(targetPath, buf);
+    return { success: true, path: targetPath };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:saveReticulumAttachment failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (typeof filePath !== 'string' || !filePath.trim()) {
+    throw new Error('filePath must be a non-empty string');
+  }
+  try {
+    shell.showItemInFolder(assertReticulumAttachmentPathJailed(filePath));
+    return { ok: true };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:showItemInFolder failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   if (!mainWindow) return null;
@@ -4285,21 +4448,41 @@ ipcMain.handle('chat:outbox:add', (_event, entry: unknown) => {
 
 ipcMain.handle(
   'chat:outbox:updateStatus',
-  (_event, id: unknown, status: unknown, error?: unknown, nextRetryAt?: unknown) => {
+  (
+    _event,
+    id: unknown,
+    status: unknown,
+    error?: unknown,
+    nextRetryAt?: unknown,
+    attemptCount?: unknown,
+  ) => {
     if (typeof id !== 'number' || !Number.isInteger(id))
       throw new Error('chat:outbox:updateStatus: invalid id');
     if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
       throw new Error('chat:outbox:updateStatus: invalid status');
     const db = getDatabase();
-    db.prepareOnce(
-      'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
-    ).run(
-      status,
-      typeof error === 'string' ? error : null,
-      typeof nextRetryAt === 'number' ? nextRetryAt : null,
-      Date.now(),
-      id,
-    );
+    if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
+      db.prepareOnce(
+        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
+      ).run(
+        status,
+        typeof error === 'string' ? error : null,
+        typeof nextRetryAt === 'number' ? nextRetryAt : null,
+        attemptCount,
+        Date.now(),
+        id,
+      );
+    } else {
+      db.prepareOnce(
+        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+      ).run(
+        status,
+        typeof error === 'string' ? error : null,
+        typeof nextRetryAt === 'number' ? nextRetryAt : null,
+        Date.now(),
+        id,
+      );
+    }
   },
 );
 
@@ -5483,6 +5666,15 @@ registerTakIpcHandlers({
   validateTakSettings,
 });
 
+registerReticulumIpcHandlers({
+  idleStatus: IDLE_RETICULUM_STATUS,
+  ensureManager: ensureReticulumSidecarManager,
+  getManager: () => reticulumSidecarManager,
+  getMainWindow: () => mainWindow,
+});
+registerReticulumDbIpcHandlers({ ipcMain });
+registerReticulumIdentityIpcHandlers({ ipcMain });
+
 // ─── App lifecycle ─────────────────────────────────────────────────
 // ─── Second-instance handler ────────────────────────────────────────
 // Registered here (before whenReady) so it's ready before any second
@@ -5652,6 +5844,14 @@ app.on('will-quit', () => {
   } catch (err) {
     console.debug(
       '[main] TAK server stop during will-quit (ignored):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok internal cleanup
+  }
+  try {
+    void reticulumSidecarManager?.stop();
+  } catch (err) {
+    console.debug(
+      '[main] Reticulum sidecar stop during will-quit (ignored):',
       err instanceof Error ? err.message : err,
     ); // log-injection-ok internal cleanup
   }

@@ -1,20 +1,26 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
 import {
-  awaitNobleBleProtocolSettle,
+  awaitNobleBlePrimaryAutoConnectSettled,
+  dualNobleBleBothRadiosConfigured,
+  getNobleBleDualRadioPrimaryProtocol,
+  initNobleBleDualRadioStartup,
+  isNobleBleDualRadioSecondary,
   isRendererNobleBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
+  notifyNobleBlePrimaryAutoConnectSettled,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { mqttUsesTls } from '@/renderer/lib/mqttTls';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
+import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
@@ -24,15 +30,16 @@ import {
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
+import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
 import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
   humanizeHttpError,
+  humanizeReticulumSidecarError,
   humanizeSerialError,
 } from '../lib/connectionPanelErrorHumanize';
 import { runConnectionPanelStorageMigrations } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
-import { resolveLastBlePeripheralId } from '../lib/lastConnectionStorage';
 import {
   letsMeshPresetConfigurationDeviation,
   validateLetsMeshManualCredentials,
@@ -50,6 +57,7 @@ import {
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
+import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
@@ -69,6 +77,7 @@ import {
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS } from '../lib/timeConstants';
@@ -84,6 +93,7 @@ import type {
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
+import { ReticulumStackPanel } from './ReticulumStackPanel';
 // ─── Last Connection (localStorage) ───────────────────────────────
 interface LastConnection {
   type: ConnectionType;
@@ -139,6 +149,39 @@ function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
 }
 
 const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';
+const STAGE_WAITING_NOBLE_BLE_MESHTASTIC = 'connectionPanel.stageWaitingNobleBleMeshtastic';
+const STAGE_WAITING_NOBLE_BLE_MESHCORE = 'connectionPanel.stageWaitingNobleBleMeshcore';
+
+function resolveBleAutoConnectLabel(
+  bleId: string,
+  lc?: LastConnection | null,
+  fallbackName?: string | null,
+): string {
+  return lc?.bleDeviceName ?? getBleDeviceName(bleId) ?? fallbackName ?? bleId;
+}
+
+function resolveConnectionStageText(
+  stage: string,
+  autoConnectTarget: string | null,
+  t: (key: string, opts?: Record<string, string>) => string,
+): string {
+  if (!stage) return '';
+  if (autoConnectTarget) {
+    if (stage === STAGE_WAITING_NOBLE_BLE_MESHCORE) {
+      return t('connectionPanel.stageWaitingNobleBleMeshcore', { deviceName: autoConnectTarget });
+    }
+    if (stage === STAGE_WAITING_NOBLE_BLE_MESHTASTIC) {
+      return t('connectionPanel.stageWaitingNobleBleMeshtastic', { deviceName: autoConnectTarget });
+    }
+    if (
+      stage === 'connectionPanel.stageConnecting' ||
+      stage === 'connectionPanel.stageConnectingLast'
+    ) {
+      return t('connectionPanel.stageAutoConnectingBle', { deviceName: autoConnectTarget });
+    }
+  }
+  return t(stage);
+}
 
 function shouldForgetGrantedWebBluetoothDevice(
   device: BluetoothDevice,
@@ -229,15 +272,6 @@ function getBleDeviceName(deviceId: string): string | null {
   return cache[deviceId] ?? null;
 }
 
-function getSerialPortNodeName(portId: string): string | null {
-  const cache =
-    parseStoredJson<Record<string, string>>(
-      localStorage.getItem('mesh-client:serialPortNodeNames'),
-      'ConnectionPanel serialPortNodeNames',
-    ) ?? {};
-  return cache[portId] ?? null;
-}
-
 function MqttGlobeStatusIcon({ status }: { status: MQTTStatus }) {
   const color =
     status === 'connected'
@@ -294,6 +328,8 @@ interface Props {
   onOpenFirmwareReleases?: () => void;
   /** MeshCore: export private key from connected radio when MQTT identity cache is incomplete. */
   ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
+  /** Reticulum: start or restart the AGPL sidecar stack. */
+  onStartReticulumStack?: () => Promise<void>;
 }
 
 export default function ConnectionPanel({
@@ -309,10 +345,13 @@ export default function ConnectionPanel({
   firmwareCheckState,
   onOpenFirmwareReleases,
   ensureMeshcoreMqttIdentity,
+  onStartReticulumStack,
 }: Props) {
   const { t } = useTranslation();
+  const capabilities = useRadioProvider(protocol);
   const parentIconTrigger = useParentIconTrigger();
   const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [reticulumStackError, setReticulumStackError] = useState<string | null>(null);
 
   useEffect(() => {
     runConnectionPanelStorageMigrations();
@@ -341,6 +380,7 @@ export default function ConnectionPanel({
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStage, setConnectionStage] = useState('');
+  const nobleBleMutexWait = useNobleBleConnectMutexWait(protocol);
   const [showRePairButton, setShowRePairButton] = useState(false);
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const showPinPromptRef = useRef(false);
@@ -464,17 +504,21 @@ export default function ConnectionPanel({
       if (mqttProtocol !== protocol) return;
       setMqttError(
         protocol === 'meshcore'
-          ? meshcoreMqttUserFacingHint(error)
+          ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(error))
           : meshtasticMqttErrorUserHint(error),
       );
     });
-  }, [protocol]);
+  }, [protocol, t]);
   useEffect(() => {
     return window.electronAPI.mqtt.onWarning(({ warning, protocol: mqttProtocol }) => {
       if (mqttProtocol !== protocol) return;
-      setMqttWarning(protocol === 'meshcore' ? meshcoreMqttUserFacingHint(warning) : warning);
+      setMqttWarning(
+        protocol === 'meshcore'
+          ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(warning))
+          : warning,
+      );
     });
-  }, [protocol]);
+  }, [protocol, t]);
 
   // Clear MQTT error on successful connect; leave it visible on disconnect so the user can read it.
   useEffect(() => {
@@ -600,6 +644,7 @@ export default function ConnectionPanel({
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAutoConnectingRef = useRef(false);
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
+  const [autoConnectBleTarget, setAutoConnectBleTarget] = useState<string | null>(null);
   const [sharedBleNotice, setSharedBleNotice] = useState(false);
   // Tracks BLE device name at selection time, used when saving LastConnection
   const lastSelectedBleNameRef = useRef<string | null>(null);
@@ -672,6 +717,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
+      setAutoConnectBleTarget(null);
       if (autoConnectTimeoutRef.current) {
         clearTimeout(autoConnectTimeoutRef.current);
         autoConnectTimeoutRef.current = null;
@@ -751,26 +797,12 @@ export default function ConnectionPanel({
           return;
         }
         if (lastId && device.deviceId === lastId) {
-          if (autoConnectTimeoutRef.current) {
-            clearTimeout(autoConnectTimeoutRef.current);
-            autoConnectTimeoutRef.current = null;
-          }
-          void window.electronAPI.stopNobleBleScanning(protocol);
-          saveLastBleDevice(protocol, device.deviceId);
-          lastSelectedBleNameRef.current = device.deviceName ?? null;
-          setConnectionStage('connectionPanel.stageConnecting');
-          onConnect('ble', undefined, device.deviceId).catch((err: unknown) => {
-            isAutoConnectingRef.current = false;
-            setIsAutoConnecting(false);
-            const bleErrMsg = humanizeBleError(err, t);
-            if (bleErrMsg) setError(bleErrMsg);
-            setConnecting(false);
-            setConnectionStage('');
-          });
+          // reconnectBleWithScan + connectAutomatic already owns Noble auto-connect; a second
+          // onConnect here races prepareRfConnect / Noble IPC (dual-protocol startup).
           return;
         }
       }
-      if (connectionTypeRef.current === 'ble') {
+      if (connectionTypeRef.current === 'ble' && !isAutoConnectingRef.current) {
         setShowBlePicker(true);
         setConnectionStage('connectionPanel.stageScanning');
       }
@@ -1268,10 +1300,32 @@ export default function ConnectionPanel({
   // Serial and BLE use gesture-free reconnect when the platform remembers the device.
   // HTTP still uses the one-click reconnect card (no autoconnect on mount).
   useEffect(() => {
+    initNobleBleDualRadioStartup();
+
+    const notifyPrimaryAutoConnectSettledIfNeeded = () => {
+      if (
+        dualNobleBleBothRadiosConfigured() &&
+        getNobleBleDualRadioPrimaryProtocol() === protocol
+      ) {
+        notifyNobleBlePrimaryAutoConnectSettled();
+      }
+    };
+
+    if (capabilities.hasReticulumInterfaceConfig) {
+      notifyPrimaryAutoConnectSettledIfNeeded();
+      return;
+    }
+
     if (autoConnectFiredRef.current) return;
-    if (deviceStateRef.current.status !== 'disconnected') return;
+    if (deviceStateRef.current.status !== 'disconnected') {
+      notifyPrimaryAutoConnectSettledIfNeeded();
+      return;
+    }
     const lc = lastConnectionRef.current;
-    if (!lc) return;
+    if (!lc) {
+      notifyPrimaryAutoConnectSettledIfNeeded();
+      return;
+    }
 
     autoConnectFiredRef.current = true;
 
@@ -1283,6 +1337,7 @@ export default function ConnectionPanel({
         console.warn('[ConnectionPanel] auto-connect timed out after 30s');
         isAutoConnectingRef.current = false;
         setIsAutoConnecting(false);
+        setAutoConnectBleTarget(null);
         setError(t('connectionPanel.error.autoConnectTimeout'));
         setConnecting(false);
         setConnectionStage('');
@@ -1296,6 +1351,7 @@ export default function ConnectionPanel({
       }
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
+      setAutoConnectBleTarget(null);
       const errMsg =
         err instanceof Error
           ? transport === 'serial'
@@ -1307,24 +1363,42 @@ export default function ConnectionPanel({
       setConnectionStage('');
     };
 
+    const maybeNotifyPrimaryBleAutoConnectSettled = notifyPrimaryAutoConnectSettledIfNeeded;
+
     const startBleNobleAutoConnect = (): boolean => {
-      if (!lastBleId || isLinux) return false;
-      setConnectionType('ble');
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setConnectionStage('connectionPanel.stageConnecting');
-      // reconnectBleWithScan owns failure timing (wait + scan); do not use the 30s serial timeout here.
-      void reconnectBleWithScan(protocol, lastBleId, () =>
-        onAutoConnectRef.current('ble', undefined, undefined, lastBleId),
-      )
-        .then(() => {
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          setConnecting(false);
-          setConnectionStage('');
-        })
-        .catch(onAutoConnectFailed);
+      if (!lastBleId || isLinux) {
+        maybeNotifyPrimaryBleAutoConnectSettled();
+        return false;
+      }
+      void (async () => {
+        const bleTargetLabel = resolveBleAutoConnectLabel(
+          lastBleId,
+          lc,
+          lastConnectionBleDeviceNameFallbackRef.current,
+        );
+        setAutoConnectBleTarget(bleTargetLabel);
+        setConnectionType('ble');
+        isAutoConnectingRef.current = true;
+        setIsAutoConnecting(true);
+        setConnecting(true);
+        setShowBlePicker(false);
+        setConnectionStage('connectionPanel.stageConnecting');
+        // Primary: notify secondary after the first connect attempt (not after scan fallback).
+        await reconnectBleWithScan(protocol, lastBleId, () => {
+          const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
+          if (
+            dualNobleBleBothRadiosConfigured() &&
+            getNobleBleDualRadioPrimaryProtocol() === protocol
+          ) {
+            void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled);
+          }
+          return attempt;
+        });
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setConnecting(false);
+        setConnectionStage('');
+      })().catch(onAutoConnectFailed);
       return true;
     };
 
@@ -1343,27 +1417,67 @@ export default function ConnectionPanel({
       setIsAutoConnecting(false);
       setConnecting(false);
       setConnectionStage('');
+      maybeNotifyPrimaryBleAutoConnectSettled();
       if (getStoredMeshProtocol() === 'meshcore') {
         setSharedBleNotice(true);
       }
       return true;
     };
 
+    const runSecondaryBleAutoConnect = async (bleId: string) => {
+      const primary = getNobleBleDualRadioPrimaryProtocol();
+      const bleTargetLabel = resolveBleAutoConnectLabel(
+        bleId,
+        lc,
+        lastConnectionBleDeviceNameFallbackRef.current,
+      );
+      setAutoConnectBleTarget(bleTargetLabel);
+      setConnectionType('ble');
+      isAutoConnectingRef.current = true;
+      setIsAutoConnecting(true);
+      setConnecting(true);
+      setShowBlePicker(false);
+      setConnectionStage(
+        primary === 'meshtastic'
+          ? STAGE_WAITING_NOBLE_BLE_MESHTASTIC
+          : STAGE_WAITING_NOBLE_BLE_MESHCORE,
+      );
+      await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+      setConnectionStage('connectionPanel.stageConnecting');
+      void reconnectBleWithScan(protocol, bleId, () =>
+        onAutoConnectRef.current('ble', undefined, undefined, bleId),
+      )
+        .then(() => {
+          isAutoConnectingRef.current = false;
+          setIsAutoConnecting(false);
+          setConnecting(false);
+          setConnectionStage('');
+        })
+        .catch(onAutoConnectFailed);
+    };
+
     const runBleAutoConnectWithDefer = async () => {
       if (skipMeshcoreSharedMeshtasticBleAutoConnect()) return;
-      const activeProtocol = getStoredMeshProtocol();
-      const otherProtocol = protocol === 'meshtastic' ? 'meshcore' : 'meshtastic';
-      const otherHasNobleBle =
-        isRendererNobleBlePlatform() &&
-        loadLastConnection(otherProtocol)?.type === 'ble' &&
-        Boolean(resolveLastBlePeripheralId(otherProtocol));
-      if (protocol !== activeProtocol && otherHasNobleBle) {
-        await awaitNobleBleProtocolSettle(
-          activeProtocol,
-          POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
-        );
+      const bleId = lastBleId;
+      const secondary = isNobleBleDualRadioSecondary(protocol);
+      if (secondary) {
+        if (!bleId) {
+          console.warn(`[ConnectionPanel] ${protocol} dual-radio auto-connect skipped — no BLE id`);
+          return;
+        }
+        await runSecondaryBleAutoConnect(bleId);
+        return;
       }
-      startBleNobleAutoConnect();
+      const started = startBleNobleAutoConnect();
+      if (!started) {
+        console.warn(
+          `[ConnectionPanel] BLE auto-connect skipped for ${protocol} — no remembered device`,
+        );
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setConnecting(false);
+        setConnectionStage('');
+      }
     };
 
     const migrateLastConnectionToBle = (bleDeviceId: string) => {
@@ -1394,14 +1508,19 @@ export default function ConnectionPanel({
           return;
         }
         onAutoConnectFailed(err, 'serial');
+        maybeNotifyPrimaryBleAutoConnectSettled();
       });
     } else if (lc.type === 'ble') {
       if (lastBleId && !isLinux) {
         void runBleAutoConnectWithDefer();
+      } else {
+        maybeNotifyPrimaryBleAutoConnectSettled();
       }
+    } else {
+      maybeNotifyPrimaryBleAutoConnectSettled();
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-  }, [protocol, isLinux, t]);
+  }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -1416,7 +1535,8 @@ export default function ConnectionPanel({
     setError(null);
 
     if (lastConnection.type === 'ble') {
-      if (lastConnection.bleDeviceId) {
+      void (async () => {
+        if (!lastConnection.bleDeviceId) return;
         setConnectionType('ble');
         setBleDevices([]);
         setShowBlePicker(false);
@@ -1431,7 +1551,14 @@ export default function ConnectionPanel({
           setConnectionStage('connectionPanel.stageReconnecting');
           // Same-tick IPC: discovery may run before setConnectionType('ble') commits; picker gating uses connectionTypeRef.
           connectionTypeRef.current = 'ble';
-          void onConnect('ble', undefined).catch((err: unknown) => {
+          try {
+            await onConnect('ble', undefined);
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+          } catch (err: unknown) {
+            // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
             const bleErrMsg = humanizeBleError(err, t);
@@ -1451,29 +1578,29 @@ export default function ConnectionPanel({
               setManualPairingFallback(true);
               setPinInputValue('');
             }
-          });
+          }
         } else {
           const bleDeviceId = lastConnection.bleDeviceId;
           setConnectionStage('connectionPanel.stageConnecting');
-          void reconnectBleWithScan(protocol, bleDeviceId, () =>
-            onConnect('ble', undefined, bleDeviceId),
-          )
-            .then(() => {
-              isAutoConnectingRef.current = false;
-              setIsAutoConnecting(false);
-              setConnecting(false);
-              setConnectionStage('');
-            })
-            .catch((err: unknown) => {
-              isAutoConnectingRef.current = false;
-              setIsAutoConnecting(false);
-              const bleErrMsg = humanizeBleError(err, t);
-              if (bleErrMsg) setError(bleErrMsg);
-              setConnecting(false);
-              setConnectionStage('');
-            });
+          try {
+            await reconnectBleWithScan(protocol, bleDeviceId, () =>
+              onConnect('ble', undefined, bleDeviceId),
+            );
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+          } catch (err: unknown) {
+            // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            const bleErrMsg = humanizeBleError(err, t);
+            if (bleErrMsg) setError(bleErrMsg);
+            setConnecting(false);
+            setConnectionStage('');
+          }
         }
-      }
+      })();
     } else if (lastConnection.type === 'http') {
       const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
       const addr = lastConnection.httpAddress ?? fallbackAddress;
@@ -1518,6 +1645,42 @@ export default function ConnectionPanel({
     state.status === 'stale' ||
     state.status === 'reconnecting';
 
+  useEffect(() => {
+    const rfBusy =
+      connecting ||
+      isAutoConnecting ||
+      state.status === 'connecting' ||
+      state.status === 'reconnecting';
+    if (!rfBusy || !isRendererNobleBlePlatform()) return;
+
+    if (nobleBleMutexWait.waitingOnNobleBlePeer) {
+      const primary = nobleBleMutexWait.primaryProtocol;
+      if (primary === 'meshtastic') {
+        setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHTASTIC);
+      } else if (primary === 'meshcore') {
+        setConnectionStage(STAGE_WAITING_NOBLE_BLE_MESHCORE);
+      }
+      return;
+    }
+
+    if (
+      nobleBleMutexWait.active === protocol &&
+      (connectionStage === STAGE_WAITING_NOBLE_BLE_MESHTASTIC ||
+        connectionStage === STAGE_WAITING_NOBLE_BLE_MESHCORE)
+    ) {
+      setConnectionStage('connectionPanel.stageConnecting');
+    }
+  }, [
+    connecting,
+    isAutoConnecting,
+    state.status,
+    protocol,
+    nobleBleMutexWait.waitingOnNobleBlePeer,
+    nobleBleMutexWait.active,
+    nobleBleMutexWait.primaryProtocol,
+    connectionStage,
+  ]);
+
   const handleExitApp = useCallback(
     async (variant: 'connected' | 'idle' | 'connecting') => {
       if (variant === 'connecting') {
@@ -1558,10 +1721,40 @@ export default function ConnectionPanel({
   };
 
   // ─── Connecting Progress View ───────────────────────────────────
-  if (connecting && !isConnected) {
-    return (
+  const rfSessionPending =
+    connecting ||
+    isAutoConnecting ||
+    state.status === 'connecting' ||
+    state.status === 'reconnecting';
+  const showNobleBleWaitNotice =
+    nobleBleMutexWait.waitingOnNobleBlePeer && rfSessionPending && isRendererNobleBlePlatform();
+
+  const showAutoReconnectBanner =
+    isAutoConnecting ||
+    state.status === 'reconnecting' ||
+    connecting ||
+    nobleBleMutexWait.waitingForPrimaryAutoConnect;
+
+  const renderAutoReconnectBanner = (): ReactNode =>
+    showAutoReconnectBanner ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className="rounded-lg border border-cyan-700/45 bg-cyan-950/40 px-4 py-3 text-sm text-cyan-100"
+      >
+        {t('connectionPanel.autoReconnectInProgress')}
+      </div>
+    ) : null;
+
+  let connectingProgressView: ReactNode = null;
+  if (
+    !capabilities.hasReticulumInterfaceConfig &&
+    ((connecting && !isConnected) || (showNobleBleWaitNotice && state.status !== 'configured'))
+  ) {
+    connectingProgressView = (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
         <div className="w-full">{renderExitActions('connecting')}</div>
+        {renderAutoReconnectBanner()}
         <SpinnerIconLg className="text-bright-green" />
         <div className="space-y-2 text-center">
           <h2 className="text-xl font-semibold text-gray-200">
@@ -1569,9 +1762,11 @@ export default function ConnectionPanel({
               ? t('connectionPanel.pairWithDevice')
               : showBlePicker
                 ? t('connectionPanel.scanningBluetooth')
-                : isAutoConnecting
-                  ? t('connectionPanel.autoConnecting')
-                  : t('connectionPanel.connecting')}
+                : isAutoConnecting && autoConnectBleTarget
+                  ? t('connectionPanel.autoConnectingTo', { deviceName: autoConnectBleTarget })
+                  : isAutoConnecting
+                    ? t('connectionPanel.autoConnecting')
+                    : t('connectionPanel.connecting')}
           </h2>
           <div role="status" aria-live="polite" aria-atomic="true">
             <p
@@ -1581,7 +1776,7 @@ export default function ConnectionPanel({
                   : 'text-muted text-sm'
               }
             >
-              {connectionStage ? t(connectionStage) : ''}
+              {resolveConnectionStageText(connectionStage, autoConnectBleTarget, t)}
             </p>
             <p className="text-muted/80 mt-1 text-xs">{t('connectionPanel.stayOnTab')}</p>
           </div>
@@ -1650,15 +1845,15 @@ export default function ConnectionPanel({
             </div>
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
               <p className="text-muted border-t border-gray-700 px-4 py-2 text-xs">
-                On macOS, if a device shows as &quot;AdaDFU&quot;, pair it first in System Settings
-                → Bluetooth to see its Meshtastic name.
+                {t('connectionPanel.hintAdaDfuBle')}
               </p>
             )}
             {protocol === 'meshcore' && (
               <p className="border-t border-gray-700 px-4 py-2 text-xs text-yellow-400">
-                Pair your MeshCore device in <strong>system Bluetooth settings</strong> before
-                connecting. Use a PIN code if prompted — if your system does not ask for a PIN, the
-                connection will fail and you may need to remove the pairing and re-pair with a PIN.
+                <Trans
+                  i18nKey="connectionPanel.meshcoreBlePairingHint"
+                  components={{ strong: <strong /> }}
+                />
               </p>
             )}
           </div>
@@ -1806,7 +2001,7 @@ export default function ConnectionPanel({
               ? 'animate-pulse text-yellow-400'
               : mqttStatus === 'error'
                 ? 'text-red-400'
-                : 'text-gray-500'
+                : 'text-gray-300'
         }`}
         aria-live="polite"
       >
@@ -1937,11 +2132,14 @@ export default function ConnectionPanel({
               >
                 {(
                   [
-                    { id: 'official-plain' as const, label: 'MQTT :1883' },
-                    { id: 'liam' as const, label: "Liam's" },
-                    { id: 'custom' as const, label: 'Custom' },
+                    {
+                      id: 'official-plain' as const,
+                      labelKey: 'connectionPanel.meshtasticPreset.officialPlain',
+                    },
+                    { id: 'liam' as const, labelKey: 'connectionPanel.meshtasticPreset.liam' },
+                    { id: 'custom' as const, labelKey: 'connectionPanel.meshtasticPreset.custom' },
                   ] as const
-                ).map(({ id, label }) => (
+                ).map(({ id, labelKey }) => (
                   <button
                     key={id}
                     type="button"
@@ -1964,10 +2162,10 @@ export default function ConnectionPanel({
                     className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
                       meshtasticPreset === id
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
@@ -1988,13 +2186,13 @@ export default function ConnectionPanel({
               >
                 {(
                   [
-                    { id: 'letsmesh', label: 'LetsMesh' },
-                    { id: 'coloradomesh', label: 'Colorado Mesh' },
-                    { id: 'meshmapper', label: 'MeshMapper' },
-                    { id: 'ripple', label: 'Ripple Networks' },
-                    { id: 'custom', label: 'Custom' },
+                    { id: 'letsmesh', labelKey: 'connectionPanel.meshcorePreset.letsmesh' },
+                    { id: 'coloradomesh', labelKey: 'connectionPanel.meshcorePreset.coloradomesh' },
+                    { id: 'meshmapper', labelKey: 'connectionPanel.meshcorePreset.meshmapper' },
+                    { id: 'ripple', labelKey: 'connectionPanel.meshcorePreset.ripple' },
+                    { id: 'custom', labelKey: 'connectionPanel.meshcorePreset.custom' },
                   ] as const
-                ).map(({ id, label }) => (
+                ).map(({ id, labelKey }) => (
                   <button
                     key={id}
                     type="button"
@@ -2058,10 +2256,10 @@ export default function ConnectionPanel({
                     className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
                       meshcorePreset === id
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
@@ -2088,7 +2286,7 @@ export default function ConnectionPanel({
                     className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
                       meshcoreMqttSettings.server === LETSMESH_HOST_US
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
                     US
@@ -2109,7 +2307,7 @@ export default function ConnectionPanel({
                     className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
                       meshcoreMqttSettings.server === LETSMESH_HOST_EU
                         ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'
+                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
                     EU
@@ -2206,10 +2404,10 @@ export default function ConnectionPanel({
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
                 {meshcorePreset === 'letsmesh'
-                  ? 'LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.'
+                  ? t('connectionPanel.meshcorePresetDeviation.letsmesh')
                   : meshcorePreset === 'coloradomesh'
-                    ? 'Colorado Mesh needs WebSocket on port 1883 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.'
-                    : 'MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers.'}
+                    ? t('connectionPanel.meshcorePresetDeviation.coloradomesh')
+                    : t('connectionPanel.meshcorePresetDeviation.meshmapper')}
               </div>
             )}
           {protocol === 'meshcore' &&
@@ -2224,8 +2422,8 @@ export default function ConnectionPanel({
                 }`}
               >
                 {hasPrivateKey && readMeshcoreIdentity()?.public_key
-                  ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.'
-                  : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.'}
+                  ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
+                  : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
               </div>
             )}
           {protocol === 'meshcore' && (
@@ -2240,10 +2438,9 @@ export default function ConnectionPanel({
                 className="accent-brand-green mt-0.5 shrink-0"
               />
               <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
-                Packet logger — when connected to your radio and MQTT, forward RX packet summaries
-                to <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
-                same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
-                share heard air traffic with a packet analyzer.
+                {t('connectionPanel.meshcorePacketLogger.label', {
+                  topic: `{topicPrefix}/meshcore/packets`,
+                })}
               </label>
             </div>
           )}
@@ -2303,10 +2500,10 @@ export default function ConnectionPanel({
               <HelpTooltip
                 text={
                   protocol === 'meshtastic'
-                    ? 'msh/[Country]/[State], e.g. msh/CO/US'
+                    ? t('connectionPanel.topicPrefixHelp.meshtastic')
                     : meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper'
-                      ? 'meshcore/{IATA}, e.g. meshcore/DEN'
-                      : 'MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO'
+                      ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
+                      : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
                 }
               />
             </div>
@@ -2318,7 +2515,7 @@ export default function ConnectionPanel({
                 updateMqtt('topicPrefix', e.target.value, false);
               }}
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-              placeholder="msh/US/"
+              placeholder={t('connectionPanel.topicPrefixPlaceholder')}
             />
           </div>
           <div className="space-y-1">
@@ -2329,8 +2526,10 @@ export default function ConnectionPanel({
               <HelpTooltip
                 text={
                   protocol === 'meshcore'
-                    ? 'Reconnect attempts (1–20) before giving up.'
-                    : `Reconnect attempts (1–${MQTT_MAX_RECONNECT_ATTEMPTS}) before giving up.`
+                    ? t('connectionPanel.maxRetriesHelp.meshcore')
+                    : t('connectionPanel.maxRetriesHelp.meshtastic', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
                 }
               />
             </div>
@@ -2462,7 +2661,7 @@ export default function ConnectionPanel({
                       settings.tokenExpiresAt = expiresAt;
                     } catch (e) {
                       const msg = e instanceof Error ? e.message : String(e);
-                      setMqttError(`Auth token generation failed: ${msg}`);
+                      setMqttError(t('connectionPanel.authTokenFailed', { message: msg }));
                       console.warn(
                         '[ConnectionPanel] LetsMesh auth token generation failed ' +
                           errLikeToLogString(e),
@@ -2472,10 +2671,10 @@ export default function ConnectionPanel({
                   } else if (!settings.password) {
                     setMqttError(
                       identity?.private_key && !identity?.public_key
-                        ? 'Public key missing from identity. Import your MeshCore config JSON in the Radio panel (must include public and private keys), or paste a broker token in the password field.'
+                        ? t('connectionPanel.meshcoreMqttIdentity.publicKeyMissing')
                         : identity
-                          ? 'Could not build LetsMesh username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.'
-                          : 'No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually.',
+                          ? t('connectionPanel.meshcoreMqttIdentity.usernameBuildFailed')
+                          : t('connectionPanel.meshcoreMqttIdentity.noIdentity'),
                     );
                     return;
                   }
@@ -2487,7 +2686,7 @@ export default function ConnectionPanel({
                 });
               }}
               disabled={mqttStatus === 'connecting'}
-              className={`rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:opacity-40 ${mqttStatus === 'connecting' ? 'flex-1' : 'w-full'}`}
+              className={`bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-40 ${mqttStatus === 'connecting' ? 'flex-1' : 'w-full'}`}
             >
               {t('connectionPanel.connectMqtt')}
             </button>
@@ -2496,11 +2695,51 @@ export default function ConnectionPanel({
       </div>
     );
 
+  if (connectingProgressView) {
+    return (
+      <div className="w-full space-y-6">
+        {connectingProgressView}
+        {mqttSection}
+      </div>
+    );
+  }
+
+  if (capabilities.hasReticulumInterfaceConfig) {
+    const exitVariant = isConnected
+      ? 'connected'
+      : state.status === 'connecting'
+        ? 'connecting'
+        : 'idle';
+    return (
+      <div className="w-full space-y-6">
+        {renderExitActions(exitVariant)}
+        <ReticulumStackPanel
+          connecting={state.status === 'connecting'}
+          stackError={reticulumStackError}
+          onStartStack={async () => {
+            setReticulumStackError(null);
+            try {
+              await onStartReticulumStack?.();
+            } catch (err: unknown) {
+              setReticulumStackError(humanizeReticulumSidecarError(err, t));
+              throw err;
+            }
+          }}
+          onStopStack={async () => {
+            setReticulumStackError(null);
+            await onDisconnect();
+          }}
+        />
+      </div>
+    );
+  }
+
   // ─── Connected View ────────────────────────────────────────────
   if (isConnected) {
     return (
       <div className="w-full space-y-6">
         {renderExitActions('connected')}
+        {renderAutoReconnectBanner()}
 
         <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
           <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
@@ -2515,7 +2754,7 @@ export default function ConnectionPanel({
                 href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
                 target="_blank"
                 rel="noreferrer"
-                className="text-muted hover:text-brand-green text-xs transition-colors"
+                className="hover:text-brand-green text-xs text-gray-300 transition-colors"
               >
                 Docs ↗
               </a>
@@ -2623,6 +2862,7 @@ export default function ConnectionPanel({
   return (
     <div className="w-full space-y-6">
       {renderExitActions('idle')}
+      {renderAutoReconnectBanner()}
 
       {/* Last Connection — one-click reconnect card */}
       {lastConnection && !connecting && (
@@ -2644,7 +2884,7 @@ export default function ConnectionPanel({
             <button
               type="button"
               onClick={handleReconnect}
-              className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-400"
+              className="bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
             >
               {t('connectionPanel.reconnect')}
             </button>
@@ -2655,7 +2895,7 @@ export default function ConnectionPanel({
               clearLastConnection(protocol);
               setLastConnection(null);
             }}
-            className="text-xs text-gray-600 transition-colors hover:text-gray-400"
+            className="text-xs text-gray-400 transition-colors hover:text-gray-200"
           >
             {t('connectionPanel.forgetDevice')}
           </button>
@@ -2677,11 +2917,11 @@ export default function ConnectionPanel({
               href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
               target="_blank"
               rel="noreferrer"
-              className="text-muted hover:text-brand-green text-xs transition-colors"
+              className="hover:text-brand-green text-xs text-gray-300 transition-colors"
             >
               Docs ↗
             </a>
-            <span className="text-xs font-medium text-gray-500">
+            <span className="text-xs font-medium text-gray-400">
               {t('connectionPanel.disconnected')}
             </span>
           </div>
@@ -2700,6 +2940,11 @@ export default function ConnectionPanel({
         {error && (
           <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
             {error}
+          </div>
+        )}
+        {showAutoReconnectBanner && (
+          <div className="border-b border-cyan-800/60 bg-cyan-950/30 px-4 py-2 text-xs text-cyan-100">
+            {t('connectionPanel.autoReconnectInProgress')}
           </div>
         )}
 
@@ -2785,7 +3030,7 @@ export default function ConnectionPanel({
                     }}
                     className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
                       connectionType === type
-                        ? 'ring-bright-green bg-green-500 text-white ring-2'
+                        ? 'ring-bright-green bg-readable-green text-white ring-2'
                         : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
                     }`}
                   >
@@ -2841,7 +3086,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   setHttpAddress(e.target.value);
                 }}
-                placeholder="meshtastic.local or 192.168.1.x"
+                placeholder={t('connectionPanel.deviceAddressPlaceholder')}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
                 autoComplete="off"
               />
@@ -2865,7 +3110,7 @@ export default function ConnectionPanel({
                     onChange={(e) => {
                       setTcpHost(e.target.value);
                     }}
-                    placeholder="localhost or 192.168.1.x"
+                    placeholder={t('connectionPanel.meshcoreHostPlaceholder')}
                     className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
                     autoComplete="off"
                     aria-label={t('connectionPanel.meshcoreHost')}
@@ -2894,7 +3139,7 @@ export default function ConnectionPanel({
           )}
 
           {/* Connection hints */}
-          <div className="text-muted bg-secondary-dark space-y-1 rounded-lg p-3 text-xs">
+          <div className="bg-secondary-dark space-y-1 rounded-lg p-3 text-xs text-gray-300">
             {connectionType === 'ble' && protocol === 'meshtastic' && (
               <>
                 <p>{t('connectionPanel.hintMeshtasticBle1')}</p>
@@ -2940,7 +3185,7 @@ export default function ConnectionPanel({
                 state.status === 'connecting' ||
                 (connectionType === 'http' && !activeHostAddress.trim())
               }
-              className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('connectionPanel.connectButton')}
             </button>

@@ -35,14 +35,19 @@ export const VITEST_CORE_DEPS = [
 /** Additional deps only needed in server.deps.inline (renderer-ui / jsdom). */
 export const VITEST_SERVER_INLINE_EXTRA_DEPS = [
   '@jsr/meshtastic__transport-web-serial',
+  'dompurify',
   'i18next',
+  'micron-parser',
   'react-i18next',
   'leaflet',
   'react-leaflet',
   'vitest-axe',
+  'js-md5',
 ] as const;
 
 export const VITEST_SERVER_INLINE_DEPS = [
   ...VITEST_CORE_DEPS,
   ...VITEST_SERVER_INLINE_EXTRA_DEPS,
+  'esptool-js',
+  '@zip.js/zip.js',
 ] as const;

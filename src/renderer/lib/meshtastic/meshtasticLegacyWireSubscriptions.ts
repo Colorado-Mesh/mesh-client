@@ -3,6 +3,7 @@ import { type MeshDevice, Types } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
+import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   decodeStoreForwardTextPayload,
@@ -1473,9 +1474,9 @@ export function attachMeshtasticLegacyWireSubscriptions(
         if (existing >= 0) {
           const updated = [...prev];
           updated[existing] = entry;
-          return updated;
+          return dedupeChannelPillsByIndex(updated);
         }
-        return [...prev, entry].sort((a, b) => a.index - b.index);
+        return dedupeChannelPillsByIndex([...prev, entry]);
       });
     }
 

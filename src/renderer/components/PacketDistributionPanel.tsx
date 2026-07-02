@@ -4,11 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
+import type {
+  MeshtasticRawPacketEntry,
+  ReticulumRawPacketEntry,
+} from '../lib/rawPacketLogConstants';
+import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Variant = 'meshtastic' | 'meshcore';
+type Variant = 'meshtastic' | 'meshcore' | 'reticulum';
 
 type PacketDistributionPanelProps =
   | {
@@ -19,6 +23,11 @@ type PacketDistributionPanelProps =
   | {
       variant: 'meshcore';
       packets: RxPacketEntry[];
+      getNodeLabel: (id: number) => string;
+    }
+  | {
+      variant: 'reticulum';
+      packets: ReticulumRawPacketEntry[];
       getNodeLabel: (id: number) => string;
     };
 
@@ -32,6 +41,7 @@ interface NormalizedPacket {
   packetType: string;
   viaMqtt: boolean;
   isLocal?: boolean;
+  groupKey?: string;
 }
 
 interface SliceData {
@@ -69,8 +79,17 @@ const TOOLTIP_STYLE = {
 
 function normalize(
   variant: Variant,
-  packets: MeshtasticRawPacketEntry[] | RxPacketEntry[],
+  packets: MeshtasticRawPacketEntry[] | RxPacketEntry[] | ReticulumRawPacketEntry[],
 ): NormalizedPacket[] {
+  if (variant === 'reticulum') {
+    return (packets as ReticulumRawPacketEntry[]).map((p) => ({
+      ts: p.ts,
+      fromNodeId: null,
+      packetType: formatReticulumWireEnumLabel(p.packetType) || 'UNKNOWN',
+      viaMqtt: false,
+      groupKey: p.interfaceName || tFallbackInterface(p.interfaceId),
+    }));
+  }
   if (variant === 'meshtastic') {
     return (packets as MeshtasticRawPacketEntry[]).map((p) => ({
       ts: p.ts,
@@ -88,6 +107,10 @@ function normalize(
   }));
 }
 
+function tFallbackInterface(id: number): string {
+  return `iface_${id}`;
+}
+
 function applyTimeFilter(packets: NormalizedPacket[], filter: TimeFilter): NormalizedPacket[] {
   if (filter === 'all') return packets;
   const cutoff = filter === 'hour' ? Date.now() - 3_600_000 : Date.now() - 86_400_000;
@@ -99,7 +122,7 @@ function applySourceFilter(
   filter: SourceFilter,
   variant: Variant,
 ): NormalizedPacket[] {
-  if (variant === 'meshcore') return packets;
+  if (variant === 'meshcore' || variant === 'reticulum') return packets;
   const nonLocal = packets.filter((p) => !p.isLocal);
   if (filter === 'all') return nonLocal;
   if (filter === 'rf') return nonLocal.filter((p) => !p.viaMqtt);
@@ -149,6 +172,7 @@ function resolveNodeKey(
   variant: Variant,
   t: TFunction,
 ): string {
+  if (variant === 'reticulum') return k;
   const id = parseInt(k, 10);
   if (k === 'null' || isNaN(id)) {
     return variant === 'meshcore' ? t('packetDistribution.noSenderId') : t('common.unknown');
@@ -263,7 +287,8 @@ export default function PacketDistributionPanel({
   // ── Overall Distribution data ─────────────────────────────────────────────
 
   const deviceSlices = useMemo(() => {
-    const counts = countBy(filtered, 'fromNodeId');
+    const groupField: keyof NormalizedPacket = variant === 'reticulum' ? 'groupKey' : 'fromNodeId';
+    const counts = countBy(filtered, groupField);
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
@@ -299,7 +324,8 @@ export default function PacketDistributionPanel({
   const typeDeviceSlices = useMemo(() => {
     if (!effectiveType) return [];
     const subset = filtered.filter((p) => p.packetType === effectiveType);
-    const counts = countBy(subset, 'fromNodeId');
+    const groupField: keyof NormalizedPacket = variant === 'reticulum' ? 'groupKey' : 'fromNodeId';
+    const counts = countBy(subset, groupField);
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);

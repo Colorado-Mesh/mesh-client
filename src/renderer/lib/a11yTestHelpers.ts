@@ -3,7 +3,8 @@ import { applyThemeColors, loadThemeColors } from './themeColors';
 /** Tailwind badge fills used in axe tests — jsdom does not load styles.css. */
 const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
   'bg-readable-green': '--color-readable-green',
-  'bg-cyan-600': '#0891b2',
+  'bg-cyan-800': '#155e75',
+  'bg-amber-800': '#92400e',
 };
 
 const AXE_TEXT_CLASS_TO_CSS: Record<string, string> = {

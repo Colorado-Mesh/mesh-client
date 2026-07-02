@@ -49,6 +49,10 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
     const mcCols = db.prepare('PRAGMA table_info(meshcore_contacts)').all() as { name: string }[];
     expect(mcCols.some((c) => c.name === 'public_key')).toBe(true);
+    const reticulumCols = db.prepare('PRAGMA table_info(reticulum_messages)').all() as {
+      name: string;
+    }[];
+    expect(reticulumCols.some((c) => c.name === 'received_via')).toBe(true);
     db.close();
   });
 

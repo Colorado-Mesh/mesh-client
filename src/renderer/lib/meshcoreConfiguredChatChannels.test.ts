@@ -8,6 +8,18 @@ import {
 import type { ChatMessage } from './types';
 
 describe('meshcoreConfiguredChatChannels', () => {
+  it('dedupeChannelPillsByIndex keeps last entry per index', () => {
+    const channels = [
+      { index: 3, name: 'First', secret: new Uint8Array(16).fill(0x11) },
+      { index: 3, name: 'Second', secret: new Uint8Array(16).fill(0x22) },
+      { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x33) },
+    ];
+    expect(meshcoreConfiguredChatChannels(channels)).toEqual([
+      { index: 0, name: 'General' },
+      { index: 3, name: 'Second' },
+    ]);
+  });
+
   it('omits channels with all-zero secret', () => {
     const channels = [
       { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },

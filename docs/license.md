@@ -1,6 +1,18 @@
 # License
 
-Mesh-Client is released under the MIT License.
+Mesh-Client application source (Electron main, preload, renderer, and shared TypeScript) is released under the **MIT License** below.
+
+## Bundled Reticulum sidecar (AGPL-3.0)
+
+Release builds may bundle `mesh-client-reticulum`, a separate executable built from [`reticulum-sidecar/`](../reticulum-sidecar/) that links AGPL-licensed Reticulum/LXMF crates. That binary is **not** MIT-licensed; it is **AGPL-3.0**. It runs as a child process only — no AGPL source is compiled into the MIT application layers.
+
+- Sidecar source: [`reticulum-sidecar/`](../reticulum-sidecar/) in this repository
+- Architecture: [docs/reticulum.md](reticulum.md)
+- Attribution: [docs/credits.md](credits.md) (Ratspeak / rsReticulum / rsLXMF)
+
+If you distribute builds that include the sidecar, comply with AGPL-3.0 source-offer requirements for that component.
+
+## MIT License (application code)
 
 ```text
 MIT License

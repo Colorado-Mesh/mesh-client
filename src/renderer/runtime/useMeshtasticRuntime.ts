@@ -4,6 +4,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   buildStoreForwardHistoryToRadioBytes,
@@ -43,6 +44,7 @@ import {
   countFreeChannelSlots,
   findNextFreeChannelSlot,
 } from '@/shared/meshtasticChannelApply';
+import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import {
   MESHTASTIC_CHANNEL_ROLE,
   type MeshtasticLoraConfig,
@@ -83,6 +85,10 @@ import {
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
+import {
+  isRendererNobleBlePlatform,
+  withNobleBleConnectMutex,
+} from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import {
@@ -186,7 +192,7 @@ import type {
   TelemetryPoint,
 } from '../lib/types';
 import {
-  mirrorMqttStatusToConnection,
+  mirrorMqttStatusForProtocol,
   setConnection,
   useConnectionStore,
 } from '../stores/connectionStore';
@@ -963,11 +969,12 @@ export function useMeshtasticRuntime() {
       const prev = mqttStatusRef.current;
       mqttStatusRef.current = s;
       setMqttStatus(s);
-      mirrorMqttStatusToConnection(meshtasticIdentityIdRef.current, s);
+      mirrorMqttStatusForProtocol('meshtastic', s);
       if (s === 'connected') {
         setMqttConnectionLoss(false);
         if (prev !== 'connected') {
           mqttReconnectBacklogUntilRef.current = Date.now() + MQTT_RECONNECT_BACKLOG_MS;
+          requestChatOutboxDrain('meshtastic');
         }
         pushMqttChannelKeys();
       } else if (consumeMqttUserDisconnect()) {
@@ -2278,11 +2285,20 @@ export function useMeshtasticRuntime() {
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       try {
         console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
-        opened = await openMeshtasticTransport(type, {
-          httpAddress,
-          blePeripheralId,
-          lastSerialPortId: serialPortId,
-        });
+        opened =
+          type === 'ble' && isRendererNobleBlePlatform()
+            ? await withNobleBleConnectMutex('meshtastic', () =>
+                openMeshtasticTransport(type, {
+                  httpAddress,
+                  blePeripheralId,
+                  lastSerialPortId: serialPortId,
+                }),
+              )
+            : await openMeshtasticTransport(type, {
+                httpAddress,
+                blePeripheralId,
+                lastSerialPortId: serialPortId,
+              });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);
@@ -2312,11 +2328,20 @@ export function useMeshtasticRuntime() {
           type,
           httpAddress ?? blePeripheralId,
         );
-        opened = await openMeshtasticTransport(type, {
-          httpAddress,
-          blePeripheralId,
-          lastSerialPortId,
-        });
+        opened =
+          type === 'ble' && isRendererNobleBlePlatform()
+            ? await withNobleBleConnectMutex('meshtastic', () =>
+                openMeshtasticTransport(type, {
+                  httpAddress,
+                  blePeripheralId,
+                  lastSerialPortId,
+                }),
+              )
+            : await openMeshtasticTransport(type, {
+                httpAddress,
+                blePeripheralId,
+                lastSerialPortId,
+              });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);
@@ -3368,7 +3393,9 @@ export function useMeshtasticRuntime() {
     async (nodeId: number) => {
       const activeVirtualNodeId = virtualNodeIdRef.current;
       if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
-        throw new Error('Cannot delete active MQTT identity while MQTT is connected');
+        throw markDeleteActiveMqttIdentityError(
+          'Cannot delete active MQTT identity while MQTT is connected',
+        );
       }
       if (nodeId === activeVirtualNodeId) {
         clearVirtualNodeId();
@@ -3858,8 +3885,9 @@ export function useMeshtasticRuntime() {
   }, [meshtasticIdentityId, rawPackets, meshtasticDeviceRecord]);
 
   useEffect(() => {
-    if (!meshtasticIdentityId) return;
-    setConnection(meshtasticIdentityId, {
+    const identityId = getIdentityIdForProtocol('meshtastic') ?? meshtasticIdentityId;
+    if (!identityId) return;
+    setConnection(identityId, {
       status: state.status,
       connectionLoss: state.connectionLoss,
       serialNeedsReselect: state.serialNeedsReselect,
