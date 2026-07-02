@@ -137,6 +137,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            seed_addresses: Vec::new(),
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
@@ -162,6 +163,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            seed_addresses: Vec::new(),
         }];
         let live = vec![InterfaceRow {
             id: "rns-0".into(),
@@ -181,6 +183,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            seed_addresses: Vec::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(resolve_outbound_sent_via(&merged), "rf");
@@ -206,6 +209,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            seed_addresses: Vec::new(),
         }
     }
 
@@ -235,6 +239,7 @@ mod tests {
                 callsign: None,
                 id_interval: None,
                 mode: None,
+                seed_addresses: Vec::new(),
             },
             InterfaceRow {
                 id: "rns-1".into(),
@@ -254,6 +259,7 @@ mod tests {
                 callsign: None,
                 id_interval: None,
                 mode: None,
+                seed_addresses: Vec::new(),
             },
         ];
         let merged = merge_live_interfaces_with_config(&config, live);

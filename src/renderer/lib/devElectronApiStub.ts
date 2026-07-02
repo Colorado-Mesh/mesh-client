@@ -268,6 +268,24 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onClientConnected: noopUnsub,
       onClientDisconnected: noopUnsub,
     },
+    bleAdapter: {
+      acquire: async () => ({ owner: null }),
+      release: async () => ({ owner: null }),
+      getState: async () => ({ owner: null }),
+    },
+    reticulum: {
+      start: async () => ({ running: false, port: 0, pid: null }),
+      stop: noopAsync,
+      getStatus: async () => ({ running: false, port: 0, pid: null }),
+      proxyGet: async () => ({}),
+      proxyPost: async () => ({ ok: true }),
+      proxyPut: async () => ({ ok: true }),
+      proxyDelete: async () => ({ ok: true }),
+      readDefaultConfigFile: async () => ({ path: null, content: null }),
+      showConfigImportDialog: async () => ({ path: null, content: null }),
+      onEvent: noopUnsub,
+      onStatus: noopUnsub,
+    },
   } as unknown as typeof window.electronAPI;
 }
 

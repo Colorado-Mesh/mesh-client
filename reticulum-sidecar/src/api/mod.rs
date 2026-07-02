@@ -63,6 +63,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/ble/availability",
             get(interfaces::ble_availability),
         )
+        .route("/api/v1/ble/scan", get(interfaces::ble_scan))
         .route("/api/v1/lxmf/send", post(lxmf::lxmf_send))
         .route("/api/v1/lxmf/reaction", post(lxmf::lxmf_reaction))
         .route("/api/v1/lxmf/resource", post(lxmf::lxmf_send_resource))

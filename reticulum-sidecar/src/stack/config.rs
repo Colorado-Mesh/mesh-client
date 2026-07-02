@@ -19,7 +19,10 @@ const SUPPORTED_TYPES: &[&str] = &[
     "PipeInterface",
     "I2PInterface",
     "RNodeMultiInterface",
+    "BlePeerInterface",
 ];
+
+const SERIAL_PORT_IFACE_TYPES: &[&str] = &["rnode", "rnode_multi", "kiss"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
@@ -234,10 +237,24 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         (None, None)
     };
 
-    let serial_port = if iface_type == "rnode" {
+    let serial_port = if SERIAL_PORT_IFACE_TYPES.contains(&iface_type) {
         block.get("port").map(str::to_string)
     } else {
         None
+    };
+
+    let seed_addresses = if iface_type == "ble_peer" {
+        block
+            .get("seed_addresses")
+            .map(|s| {
+                s.split(',')
+                    .map(|p| p.trim().to_string())
+                    .filter(|p| !p.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default()
+    } else {
+        Vec::new()
     };
 
     Some(InterfaceRow {
@@ -261,6 +278,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         callsign: block.get("callsign").map(str::to_string),
         id_interval: block.get("id_interval").and_then(|v| v.parse().ok()),
         mode: block.get("mode").map(str::to_string),
+        seed_addresses,
     })
 }
 
@@ -283,39 +301,53 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     }
 
     if row.iface_type == "rnode" {
+        write_rnode_radio_fields(&mut block, row);
+    }
+
+    if SERIAL_PORT_IFACE_TYPES.contains(&row.iface_type.as_str()) && row.iface_type != "rnode" {
         if let Some(port) = &row.serial_port {
             block.set("port", port);
         }
-        if let Some(v) = row.frequency {
-            block.set("frequency", &v.to_string());
-        }
-        if let Some(v) = row.bandwidth {
-            block.set("bandwidth", &v.to_string());
-        }
-        if let Some(v) = row.txpower {
-            block.set("txpower", &v.to_string());
-        }
-        if let Some(v) = row.spreading_factor {
-            block.set("spreadingfactor", &v.to_string());
-        }
-        if let Some(v) = row.coding_rate {
-            block.set("codingrate", &v.to_string());
-        }
-        if let Some(v) = &row.callsign {
-            block.set("callsign", v);
-        }
-        if let Some(v) = row.id_interval {
-            block.set("id_interval", &v.to_string());
-        }
-        if let Some(v) = &row.mode {
-            block.set("mode", v);
-        }
-        if let Some(v) = &row.preset {
-            block.set("preset", v);
-        }
+    }
+
+    if row.iface_type == "ble_peer" && !row.seed_addresses.is_empty() {
+        block.set("seed_addresses", &row.seed_addresses.join(","));
     }
 
     block
+}
+
+fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
+    if let Some(port) = &row.serial_port {
+        block.set("port", port);
+    }
+    if let Some(v) = row.frequency {
+        block.set("frequency", &v.to_string());
+    }
+    if let Some(v) = row.bandwidth {
+        block.set("bandwidth", &v.to_string());
+    }
+    if let Some(v) = row.txpower {
+        block.set("txpower", &v.to_string());
+    }
+    if let Some(v) = row.spreading_factor {
+        block.set("spreadingfactor", &v.to_string());
+    }
+    if let Some(v) = row.coding_rate {
+        block.set("codingrate", &v.to_string());
+    }
+    if let Some(v) = &row.callsign {
+        block.set("callsign", v);
+    }
+    if let Some(v) = row.id_interval {
+        block.set("id_interval", &v.to_string());
+    }
+    if let Some(v) = &row.mode {
+        block.set("mode", v);
+    }
+    if let Some(v) = &row.preset {
+        block.set("preset", v);
+    }
 }
 
 pub fn add_interface_to_config(
@@ -346,6 +378,7 @@ pub fn add_interface_to_config(
         callsign: req.callsign.clone(),
         id_interval: req.id_interval,
         mode: req.mode.clone(),
+        seed_addresses: req.seed_addresses.clone(),
     };
 
     apply_preset_defaults(&mut row);
@@ -426,6 +459,9 @@ pub fn update_interface_in_config(
     if patch.mode.is_some() {
         row.mode = patch.mode.clone();
     }
+    if patch.seed_addresses.is_some() {
+        row.seed_addresses = patch.seed_addresses.clone().unwrap_or_default();
+    }
 
     parsed.interfaces[idx] = interface_row_to_block(&row);
     write_config(config_dir, &serialize_config(&parsed))?;
@@ -479,6 +515,7 @@ pub struct UpdateInterfacePatch {
     pub callsign: Option<String>,
     pub id_interval: Option<u32>,
     pub mode: Option<String>,
+    pub seed_addresses: Option<Vec<String>>,
 }
 
 fn apply_preset_defaults(row: &mut InterfaceRow) {
@@ -522,6 +559,7 @@ fn config_type_to_ui(raw: &str) -> Option<&'static str> {
         "PipeInterface" => Some("pipe"),
         "I2PInterface" => Some("i2p"),
         "RNodeMultiInterface" => Some("rnode_multi"),
+        "BlePeerInterface" => Some("ble_peer"),
         _ => None,
     }
 }
@@ -536,6 +574,7 @@ fn ui_type_to_config(ui: &str) -> String {
         "pipe" => "PipeInterface".into(),
         "i2p" => "I2PInterface".into(),
         "rnode_multi" => "RNodeMultiInterface".into(),
+        "ble_peer" => "BlePeerInterface".into(),
         other => other.to_string(),
     }
 }
@@ -781,6 +820,54 @@ codingrate = 5
         let reparsed = parse_config(&serialized).unwrap();
         let rows = interfaces_from_parsed(&reparsed);
         assert_eq!(rows.len(), 3);
+    }
+
+    #[test]
+    fn kiss_and_rnode_multi_serial_port_round_trip() {
+        let content = r#"
+[interfaces]
+[[KISS Radio]]
+type = KISSInterface
+enabled = Yes
+port = /dev/ttyUSB1
+
+[[Multi RNode]]
+type = RNodeMultiInterface
+enabled = Yes
+port = /dev/ttyACM0
+"#;
+        let parsed = parse_config(content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        let kiss = rows.iter().find(|r| r.iface_type == "kiss").unwrap();
+        assert_eq!(kiss.serial_port.as_deref(), Some("/dev/ttyUSB1"));
+        let multi = rows.iter().find(|r| r.iface_type == "rnode_multi").unwrap();
+        assert_eq!(multi.serial_port.as_deref(), Some("/dev/ttyACM0"));
+
+        let kiss_block = interface_row_to_block(kiss);
+        assert_eq!(kiss_block.get("port"), Some("/dev/ttyUSB1"));
+        let multi_block = interface_row_to_block(multi);
+        assert_eq!(multi_block.get("port"), Some("/dev/ttyACM0"));
+    }
+
+    #[test]
+    fn ble_peer_seed_addresses_round_trip() {
+        let content = r#"
+[interfaces]
+[[BLE Peer]]
+type = BlePeerInterface
+enabled = Yes
+seed_addresses = AA:BB:CC:DD:EE:FF,RNode 1234
+"#;
+        let parsed = parse_config(content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].iface_type, "ble_peer");
+        assert_eq!(
+            rows[0].seed_addresses,
+            vec!["AA:BB:CC:DD:EE:FF".to_string(), "RNode 1234".to_string()]
+        );
+        let serialized = serialize_config(&parsed);
+        assert!(serialized.contains("seed_addresses = AA:BB:CC:DD:EE:FF,RNode 1234"));
     }
 
     #[test]

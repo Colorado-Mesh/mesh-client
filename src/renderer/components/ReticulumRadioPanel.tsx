@@ -2,8 +2,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import {
+  acquireReticulumBleAdapter,
+  hasEnabledReticulumBleInterface,
+  isMeshBleConnected,
+  releaseReticulumBleAdapter,
+} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   classifyReticulumLocalInterface,
   reticulumLocalInterfaceTextClass,
@@ -18,6 +25,7 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { IdentityVaultPanel } from './IdentityVaultPanel';
+import { ReticulumInterfaceDevicePickerModal } from './reticulum/ReticulumInterfaceDevicePickerModal';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import { ReticulumIdentitySwitcher } from './ReticulumIdentitySwitcher';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
@@ -38,10 +46,25 @@ interface ReticulumInterfaceRow {
   coding_rate?: number | null;
   callsign?: string | null;
   preset?: string | null;
+  seed_addresses?: string[];
 }
 
+type ReticulumRnodeTransport = 'serial' | 'ble';
+
 type ReticulumIfaceUiType =
-  'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi';
+  'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi' | 'ble_peer';
+
+function isReticulumBleInterfaceRow(
+  row: Pick<ReticulumInterfaceRow, 'type' | 'serial_port'>,
+): boolean {
+  const ui = row.type.toLowerCase();
+  if (ui === 'ble_peer' || ui.includes('blepeer')) return true;
+  return (
+    ui.includes('rnode') &&
+    typeof row.serial_port === 'string' &&
+    row.serial_port.startsWith('ble://')
+  );
+}
 
 function ReticulumCollapsibleSection({
   title,
@@ -106,6 +129,9 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
   const [selectedPreset, setSelectedPreset] = useState('');
   const [serialPorts, setSerialPorts] = useState<{ path: string; label?: string }[]>([]);
   const [bleAvailable, setBleAvailable] = useState(false);
+  const [rnodeTransport, setRnodeTransport] = useState<ReticulumRnodeTransport>('serial');
+  const [seedAddresses, setSeedAddresses] = useState('');
+  const devicePicker = useReticulumInterfaceDevicePicker();
   const [exportJson, setExportJson] = useState<string | null>(null);
   const [exportPassphrase, setExportPassphrase] = useState('');
   const [configPaste, setConfigPaste] = useState('');
@@ -294,6 +320,20 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
 
   const handleAddInterface = async () => {
     try {
+      if (
+        (ifaceType === 'ble_peer' || (ifaceType === 'rnode' && rnodeTransport === 'ble')) &&
+        isMeshBleConnected()
+      ) {
+        setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
+        return;
+      }
+      if (ifaceType === 'ble_peer' || (ifaceType === 'rnode' && rnodeTransport === 'ble')) {
+        const acquired = await acquireReticulumBleAdapter();
+        if (!acquired) {
+          setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
+          return;
+        }
+      }
       const body: Record<string, unknown> = { type: ifaceType };
       if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
         body.host = ifaceHost.trim();
@@ -303,6 +343,13 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
       }
       if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
         body.serial_port = serialPort.trim();
+      }
+      if (ifaceType === 'ble_peer') {
+        const seeds = seedAddresses
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        body.seed_addresses = seeds;
       }
       if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
         body.preset = selectedPreset || null;
@@ -315,10 +362,18 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
         error?: string;
       };
       if (res?.ok === false) {
+        if (ifaceType === 'ble_peer' || (ifaceType === 'rnode' && rnodeTransport === 'ble')) {
+          await releaseReticulumBleAdapter();
+        }
         setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.addFailed'));
         return;
       }
-      if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
+      if (
+        ifaceType === 'rnode' ||
+        ifaceType === 'rnode_multi' ||
+        ifaceType === 'kiss' ||
+        ifaceType === 'ble_peer'
+      ) {
         setRestartStackHint(true);
       }
       await refreshInterfaces();
@@ -330,14 +385,37 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
 
   const toggleInterface = async (id: string, enabled: boolean) => {
     try {
+      const row = interfaces.find((i) => i.id === id);
+      if (enabled && row && isReticulumBleInterfaceRow(row)) {
+        if (isMeshBleConnected()) {
+          setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
+          return;
+        }
+        const acquired = await acquireReticulumBleAdapter();
+        if (!acquired) {
+          setIdentityError(t('connectionPanel.reticulumInterfaces.meshBleActive'));
+          return;
+        }
+      }
       const path = enabled ? `/api/v1/interfaces/${id}/enable` : `/api/v1/interfaces/${id}/disable`;
       const res = (await window.electronAPI.reticulum.proxyPost(path, {})) as {
         ok?: boolean;
         error?: string;
       };
       if (res?.ok === false) {
+        if (enabled && row && isReticulumBleInterfaceRow(row)) {
+          await releaseReticulumBleAdapter();
+        }
         setIdentityError(res.error ?? t('connectionPanel.reticulumInterfaces.toggleFailed'));
         return;
+      }
+      if (!enabled && row && isReticulumBleInterfaceRow(row)) {
+        const stillEnabled = interfaces.some(
+          (i) => i.id !== id && i.enabled && isReticulumBleInterfaceRow(i),
+        );
+        if (!stillEnabled) {
+          await releaseReticulumBleAdapter();
+        }
       }
       await refreshInterfaces();
     } catch (e) {
@@ -348,6 +426,7 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
 
   const deleteInterface = async (id: string) => {
     try {
+      const row = interfaces.find((i) => i.id === id);
       const res = (await window.electronAPI.reticulum.proxyDelete(`/api/v1/interfaces/${id}`)) as {
         ok?: boolean;
         error?: string;
@@ -359,6 +438,14 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
       setPendingDeleteInterface(null);
       if (editingInterface?.id === id) {
         setEditingInterface(null);
+      }
+      if (row && isReticulumBleInterfaceRow(row)) {
+        const remaining = interfaces.filter(
+          (i) => i.id !== id && i.enabled && isReticulumBleInterfaceRow(i),
+        );
+        if (remaining.length === 0) {
+          await releaseReticulumBleAdapter();
+        }
       }
       await refreshInterfaces();
     } catch (e) {
@@ -648,9 +735,15 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
                 {t('connectionPanel.reticulumInterfaces.restartStackHint')}
               </p>
             ) : null}
+            {hasEnabledReticulumBleInterface(interfaces) && isMeshBleConnected() ? (
+              <p className="mb-3 text-xs text-amber-300" role="alert">
+                {t('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh')}
+              </p>
+            ) : null}
             <InterfacesSection
               interfaces={interfaces}
               osSerialPortPaths={serialPorts.map((p) => p.path)}
+              sidecarReady={sidecarApiReady}
               ifaceType={ifaceType}
               ifaceHost={ifaceHost}
               ifacePort={ifacePort}
@@ -660,15 +753,23 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
               presets={presets}
               serialPorts={serialPorts}
               bleAvailable={bleAvailable}
-              onRefreshPorts={() => {
-                void refreshSerialPorts();
-              }}
+              rnodeTransport={rnodeTransport}
+              seedAddresses={seedAddresses}
               onIfaceTypeChange={setIfaceType}
               onIfaceHostChange={setIfaceHost}
               onIfacePortChange={setIfacePort}
               onSerialPortChange={setSerialPort}
               onPipeCommandChange={setPipeCommand}
               onSelectedPresetChange={setSelectedPreset}
+              onRnodeTransportChange={setRnodeTransport}
+              onSeedAddressesChange={setSeedAddresses}
+              onPickDevice={(mode, onSelect) => {
+                void devicePicker.openPicker({
+                  mode,
+                  sidecarReady: sidecarApiReady,
+                  onSelect,
+                });
+              }}
               onAdd={() => {
                 void handleAddInterface();
               }}
@@ -718,6 +819,23 @@ export function ReticulumRadioPanel({ connecting, onStartStack }: ReticulumRadio
           }}
         />
       ) : null}
+
+      <ReticulumInterfaceDevicePickerModal
+        open={devicePicker.open}
+        mode={devicePicker.mode}
+        devices={devicePicker.devices}
+        serialPorts={devicePicker.serialPorts}
+        scanning={devicePicker.scanning}
+        scanError={devicePicker.scanError}
+        manualPath={devicePicker.manualPath}
+        onManualPathChange={devicePicker.setManualPath}
+        onSelect={devicePicker.selectDevice}
+        onCancel={devicePicker.close}
+        onRefreshSerial={() => {
+          void devicePicker.refreshSerial();
+        }}
+        onRescanBle={devicePicker.rescanBle}
+      />
 
       {showImportConfirm ? (
         <ConfirmModal
@@ -889,6 +1007,7 @@ function uiTypeFromRow(type: string): ReticulumIfaceUiType {
   if (normalized === 'pipe' || normalized.includes('pipe')) return 'pipe';
   if (normalized === 'i2p' || normalized.includes('i2p')) return 'i2p';
   if (normalized === 'rnode_multi' || normalized.includes('rnodemulti')) return 'rnode_multi';
+  if (normalized === 'ble_peer' || normalized.includes('blepeer')) return 'ble_peer';
   if (normalized.includes('tcp') || normalized === 'tcpclient') return 'tcp';
   if (normalized.includes('rnode')) return 'rnode';
   return 'auto';
@@ -903,6 +1022,7 @@ function buildInterfaceEditPatch(draft: {
   preset: string;
   callsign: string;
   pipeCommand: string;
+  seedAddresses: string;
 }): Record<string, unknown> {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
   if (draft.type === 'tcp' || draft.type === 'udp' || draft.type === 'i2p') {
@@ -913,6 +1033,12 @@ function buildInterfaceEditPatch(draft: {
   }
   if (draft.type === 'rnode' || draft.type === 'rnode_multi' || draft.type === 'kiss') {
     body.serial_port = draft.serialPort.trim() || null;
+  }
+  if (draft.type === 'ble_peer') {
+    body.seed_addresses = draft.seedAddresses
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   if (draft.type === 'rnode' || draft.type === 'rnode_multi') {
     body.preset = draft.preset || null;
@@ -928,12 +1054,17 @@ function InterfaceEditPanel({
   iface,
   presets,
   serialPorts,
+  onPickDevice,
   onSave,
   onCancel,
 }: {
   iface: ReticulumInterfaceRow;
   presets: { id: string; label: string }[];
   serialPorts: { path: string; label?: string }[];
+  onPickDevice: (
+    mode: 'serial' | 'ble-peer' | 'ble-rnode',
+    onSelect: (value: string) => void,
+  ) => void;
   onSave: (patch: Record<string, unknown>) => void;
   onCancel: () => void;
 }) {
@@ -945,6 +1076,9 @@ function InterfaceEditPanel({
   const [serialPort, setSerialPort] = useState(iface.serial_port ?? '');
   const [preset, setPreset] = useState(iface.preset ?? '');
   const [callsign, setCallsign] = useState(iface.callsign ?? '');
+  const [seedAddresses, setSeedAddresses] = useState((iface.seed_addresses ?? []).join(', '));
+  const editUsesBleRnode =
+    uiType === 'rnode' && typeof serialPort === 'string' && serialPort.startsWith('ble://');
   const osSerialPaths = serialPorts.map((p) => p.path);
   const serialPortStale =
     serialPort.trim().length > 0 &&
@@ -1054,6 +1188,41 @@ function InterfaceEditPanel({
             </label>
           </>
         ) : null}
+        {uiType === 'ble_peer' ? (
+          <label className="text-xs text-gray-400">
+            {t('connectionPanel.reticulumInterfaces.seedAddresses')}
+            <input
+              value={seedAddresses}
+              onChange={(e) => {
+                setSeedAddresses(e.target.value);
+              }}
+              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+            />
+          </label>
+        ) : null}
+        {uiType === 'rnode' ||
+        uiType === 'rnode_multi' ||
+        uiType === 'kiss' ||
+        uiType === 'ble_peer' ? (
+          <button
+            type="button"
+            onClick={() => {
+              const mode =
+                uiType === 'ble_peer' ? 'ble-peer' : editUsesBleRnode ? 'ble-rnode' : 'serial';
+              onPickDevice(mode, (value) => {
+                if (uiType === 'ble_peer') {
+                  setSeedAddresses((prev) => (prev.trim() ? `${prev},${value}` : value));
+                } else {
+                  setSerialPort(value);
+                }
+              });
+            }}
+            className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40"
+            aria-label={t('connectionPanel.reticulumInterfaces.pickDevice')}
+          >
+            {t('connectionPanel.reticulumInterfaces.pickDevice')}
+          </button>
+        ) : null}
       </div>
       <div className="mt-3 flex gap-2">
         <button
@@ -1070,6 +1239,7 @@ function InterfaceEditPanel({
                 preset,
                 callsign,
                 pipeCommand: '',
+                seedAddresses,
               }),
             );
           }}
@@ -1092,6 +1262,7 @@ function InterfaceEditPanel({
 function InterfacesSection({
   interfaces,
   osSerialPortPaths,
+  sidecarReady,
   ifaceType,
   ifaceHost,
   ifacePort,
@@ -1101,13 +1272,17 @@ function InterfacesSection({
   presets,
   serialPorts,
   bleAvailable,
-  onRefreshPorts,
+  rnodeTransport,
+  seedAddresses,
   onIfaceTypeChange,
   onIfaceHostChange,
   onIfacePortChange,
   onSerialPortChange,
   onPipeCommandChange,
   onSelectedPresetChange,
+  onRnodeTransportChange,
+  onSeedAddressesChange,
+  onPickDevice,
   onAdd,
   onToggle,
   onDelete,
@@ -1118,6 +1293,7 @@ function InterfacesSection({
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
+  sidecarReady: boolean;
   ifaceType: ReticulumIfaceUiType;
   ifaceHost: string;
   ifacePort: string;
@@ -1127,13 +1303,20 @@ function InterfacesSection({
   presets: { id: string; label: string }[];
   serialPorts: { path: string; label?: string }[];
   bleAvailable: boolean;
-  onRefreshPorts: () => void;
+  rnodeTransport: ReticulumRnodeTransport;
+  seedAddresses: string;
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
   onIfaceHostChange: (v: string) => void;
   onIfacePortChange: (v: string) => void;
   onSerialPortChange: (v: string) => void;
   onPipeCommandChange: (v: string) => void;
   onSelectedPresetChange: (v: string) => void;
+  onRnodeTransportChange: (v: ReticulumRnodeTransport) => void;
+  onSeedAddressesChange: (v: string) => void;
+  onPickDevice: (
+    mode: 'serial' | 'ble-peer' | 'ble-rnode',
+    onSelect: (value: string) => void,
+  ) => void;
   onAdd: () => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string, name: string) => void;
@@ -1146,6 +1329,15 @@ function InterfacesSection({
   const showHostPort = ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p';
   const showSerial = ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss';
   const showRnodePreset = ifaceType === 'rnode' || ifaceType === 'rnode_multi';
+  const showBlePeer = ifaceType === 'ble_peer';
+  const showRnodeBle = ifaceType === 'rnode' && rnodeTransport === 'ble';
+  const needsDevicePicker = showSerial || showBlePeer || showRnodeBle;
+  const pickerMode =
+    ifaceType === 'ble_peer'
+      ? ('ble-peer' as const)
+      : showRnodeBle
+        ? ('ble-rnode' as const)
+        : ('serial' as const);
 
   const localRowReason = (iface: ReticulumInterfaceRow): string | null => {
     const health = classifyReticulumLocalInterface(iface, osSerialPortPaths);
@@ -1183,8 +1375,34 @@ function InterfacesSection({
             <option value="kiss">KISS</option>
             <option value="pipe">Pipe</option>
             <option value="i2p">I2P</option>
+            {bleAvailable ? (
+              <option value="ble_peer">
+                {t('connectionPanel.reticulumInterfaces.blePeerType')}
+              </option>
+            ) : null}
           </select>
         </label>
+        {ifaceType === 'rnode' ? (
+          <label className="text-xs text-gray-400">
+            {t('connectionPanel.reticulumInterfaces.rnodeTransport')}
+            <select
+              value={rnodeTransport}
+              onChange={(e) => {
+                onRnodeTransportChange(e.target.value as ReticulumRnodeTransport);
+              }}
+              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+            >
+              <option value="serial">
+                {t('connectionPanel.reticulumInterfaces.rnodeTransportSerial')}
+              </option>
+              {bleAvailable ? (
+                <option value="ble">
+                  {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
+                </option>
+              ) : null}
+            </select>
+          </label>
+        ) : null}
         {showHostPort ? (
           <>
             <label className="text-xs text-gray-400">
@@ -1223,7 +1441,7 @@ function InterfacesSection({
             />
           </label>
         ) : null}
-        {showSerial ? (
+        {showSerial && !(ifaceType === 'rnode' && rnodeTransport === 'ble') ? (
           <>
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.serialPort')}
@@ -1273,14 +1491,46 @@ function InterfacesSection({
             ) : null}
           </>
         ) : null}
-        {showSerial && serialPorts.length > 0 ? (
+        {showBlePeer ? (
+          <label className="text-xs text-gray-400">
+            {t('connectionPanel.reticulumInterfaces.seedAddresses')}
+            <input
+              value={seedAddresses}
+              onChange={(e) => {
+                onSeedAddressesChange(e.target.value);
+              }}
+              placeholder="AA:BB:CC:DD:EE:FF"
+              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+            />
+          </label>
+        ) : null}
+        {showRnodeBle ? (
+          <label className="text-xs text-gray-400">
+            {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
+            <input
+              value={serialPort}
+              readOnly
+              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+            />
+          </label>
+        ) : null}
+        {needsDevicePicker ? (
           <button
             type="button"
-            onClick={onRefreshPorts}
-            className="rounded border border-gray-600 px-2 py-1.5 text-xs text-gray-300 hover:bg-slate-800"
-            aria-label={t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
+            disabled={!sidecarReady && pickerMode !== 'serial'}
+            onClick={() => {
+              onPickDevice(pickerMode, (value) => {
+                if (ifaceType === 'ble_peer') {
+                  onSeedAddressesChange(seedAddresses.trim() ? `${seedAddresses},${value}` : value);
+                  return;
+                }
+                onSerialPortChange(value);
+              });
+            }}
+            className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
+            aria-label={t('connectionPanel.reticulumInterfaces.pickDevice')}
           >
-            {t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
+            {t('connectionPanel.reticulumInterfaces.pickDevice')}
           </button>
         ) : null}
         <button
@@ -1291,7 +1541,7 @@ function InterfacesSection({
           {t('connectionPanel.reticulumInterfaces.add')}
         </button>
       </div>
-      {bleAvailable ? (
+      {bleAvailable && ifaceType !== 'ble_peer' ? (
         <p className="text-muted mt-2 text-xs">
           {t('connectionPanel.reticulumInterfaces.bleAvailable')}
         </p>
@@ -1362,6 +1612,7 @@ function InterfacesSection({
           iface={editingInterface}
           presets={presets}
           serialPorts={serialPorts}
+          onPickDevice={onPickDevice}
           onSave={(patch) => {
             onSaveEdit(editingInterface.id, patch);
           }}

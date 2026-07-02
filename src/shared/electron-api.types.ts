@@ -157,6 +157,12 @@ export interface SpellcheckReplacePayload {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
+export type BleAdapterOwner = 'noble' | 'reticulum-sidecar';
+
+export interface BleAdapterState {
+  owner: BleAdapterOwner | null;
+}
+
 export interface ElectronAPI {
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
@@ -635,6 +641,13 @@ export interface ElectronAPI {
     ) => Promise<{ token: string; expiresAt: number } | null>;
     updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
     onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
+  };
+
+  // ─── BLE adapter lease (Noble vs Reticulum sidecar) ───────────────────────────
+  bleAdapter: {
+    acquire: (owner: BleAdapterOwner) => Promise<BleAdapterState>;
+    release: (owner: BleAdapterOwner) => Promise<BleAdapterState>;
+    getState: () => Promise<BleAdapterState>;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────

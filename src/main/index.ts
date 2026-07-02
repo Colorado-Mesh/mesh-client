@@ -38,6 +38,7 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import { bleAdapterCoordinator } from './ble-adapter-coordinator';
 import { formatChatExportLines } from './chatExportFormat';
 import {
   addContactToGroup,
@@ -206,6 +207,7 @@ function isWindowStateOnScreen(state: WindowState): boolean {
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
 const nobleBleManager = new NobleBleManager();
+bleAdapterCoordinator.setNobleManager(nobleBleManager);
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -2531,6 +2533,22 @@ nobleBleManager.on(
 );
 
 // ─── Noble BLE: IPC command handlers ────────────────────────────────
+ipcMain.handle('bleAdapter:acquire', async (_event, owner: unknown) => {
+  if (owner !== 'noble' && owner !== 'reticulum-sidecar') {
+    throw new Error('bleAdapter:acquire: owner must be noble or reticulum-sidecar');
+  }
+  await bleAdapterCoordinator.acquire(owner);
+  return bleAdapterCoordinator.getState();
+});
+ipcMain.handle('bleAdapter:release', (_event, owner: unknown) => {
+  if (owner !== 'noble' && owner !== 'reticulum-sidecar') {
+    throw new Error('bleAdapter:release: owner must be noble or reticulum-sidecar');
+  }
+  bleAdapterCoordinator.release(owner);
+  return bleAdapterCoordinator.getState();
+});
+ipcMain.handle('bleAdapter:getState', () => bleAdapterCoordinator.getState());
+
 ipcMain.handle('noble-ble-start-scan', async (_event, sessionId: unknown) => {
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-start-scan: sessionId must be meshtastic or meshcore');

@@ -542,6 +542,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  bleAdapter: {
+    acquire: (owner: 'noble' | 'reticulum-sidecar') =>
+      ipcRenderer.invoke('bleAdapter:acquire', owner),
+    release: (owner: 'noble' | 'reticulum-sidecar') =>
+      ipcRenderer.invoke('bleAdapter:release', owner),
+    getState: () => ipcRenderer.invoke('bleAdapter:getState'),
+  },
+
   // ─── Noble BLE ──────────────────────────────────────────────────
   onNobleBleAdapterState: (cb: (state: string) => void) => {
     const handler = (_: unknown, state: string) => {

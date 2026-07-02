@@ -1,9 +1,25 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 
 use crate::stack::{AddInterfaceRequest, StackHandle};
+
+#[derive(Debug, serde::Deserialize)]
+pub struct BleScanQuery {
+    #[serde(default = "default_ble_scan_timeout")]
+    pub timeout_secs: u64,
+    #[serde(default = "default_ble_scan_mode")]
+    pub mode: String,
+}
+
+fn default_ble_scan_timeout() -> u64 {
+    5
+}
+
+fn default_ble_scan_mode() -> String {
+    "all".into()
+}
 
 pub async fn list_interfaces(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     let interfaces = stack.list_interfaces().await;
@@ -50,4 +66,14 @@ pub async fn serial_ports(State(stack): State<Arc<StackHandle>>) -> Json<serde_j
 
 pub async fn ble_availability(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     Json(stack.ble_availability().await)
+}
+
+pub async fn ble_scan(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<BleScanQuery>,
+) -> Json<serde_json::Value> {
+    match stack.ble_scan(query.timeout_secs, &query.mode).await {
+        Ok(body) => Json(body),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e, "devices": [] })),
+    }
 }

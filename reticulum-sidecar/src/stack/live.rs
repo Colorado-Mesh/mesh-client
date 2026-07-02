@@ -24,6 +24,7 @@ use rns_transport::messages::{
 use tokio::sync::{RwLock, broadcast};
 
 use super::StackHandle;
+use super::config;
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_timeouts;
 use super::packet_log::PacketLogBuffer;
@@ -43,6 +44,12 @@ const TRANSPORT_QUERY_TIMEOUT: Duration = Duration::from_secs(8);
 /// Aspect Nomad Network nodes announce and serve page/file requests under.
 const NOMAD_NODE_ASPECT: &str = "nomadnetwork.node";
 
+#[cfg(feature = "rns-ble")]
+struct BlePeerRuntimeState {
+    spawned: HashMap<String, u64>,
+    foreground_wake: Arc<tokio::sync::Notify>,
+}
+
 pub struct LiveBridge {
     config_dir: PathBuf,
     storage_dir: PathBuf,
@@ -57,6 +64,8 @@ pub struct LiveBridge {
     propagation: Arc<PropagationBridge>,
     sync_cancel: Arc<std::sync::atomic::AtomicBool>,
     event_tx: broadcast::Sender<String>,
+    #[cfg(feature = "rns-ble")]
+    ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
 
 impl LiveBridge {
@@ -145,8 +154,24 @@ impl LiveBridge {
             emit_lxmf_event(&event_tx_cb, payload);
         });
 
+        #[cfg(feature = "rns-ble")]
+        let foreground_wake = Arc::new(tokio::sync::Notify::new());
+        #[cfg(feature = "rns-ble")]
+        {
+            let event_tx_ble = event_tx.clone();
+            let (ble_evt_tx, mut ble_evt_rx) = tokio::sync::mpsc::channel(64);
+            rns_interface::ble_peer::install_event_dispatcher(ble_evt_tx);
+            tokio::spawn(async move {
+                while let Some(evt) = ble_evt_rx.recv().await {
+                    let payload = serde_json::to_value(&evt).unwrap_or(serde_json::json!({}));
+                    let msg = serde_json::json!({ "type": "ble_peer", "payload": payload });
+                    let _ = event_tx_ble.send(msg.to_string());
+                }
+            });
+        }
+
         let bridge = Self {
-            config_dir,
+            config_dir: config_dir.clone(),
             storage_dir: storage_dir.clone(),
             handle: handle.clone(),
             _shutdown: shutdown,
@@ -168,6 +193,11 @@ impl LiveBridge {
             )?),
             sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             event_tx: event_tx.clone(),
+            #[cfg(feature = "rns-ble")]
+            ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
+                spawned: HashMap::new(),
+                foreground_wake: foreground_wake.clone(),
+            })),
         };
 
         let preferred_prop_hash = persisted
@@ -185,6 +215,10 @@ impl LiveBridge {
 
         if let Some(hash_hex) = preferred_prop_hash {
             bridge.set_outbound_propagation_node(Some(&hash_hex)).await;
+        }
+
+        if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {
+            let _ = bridge.sync_ble_peer_interfaces(&ifaces).await;
         }
 
         persisted.rns_ready = true;
@@ -498,6 +532,7 @@ impl LiveBridge {
                 callsign: None,
                 id_interval: None,
                 mode: None,
+                seed_addresses: Vec::new(),
             })
             .collect();
         Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
@@ -793,35 +828,105 @@ impl LiveBridge {
             "apply_interfaces: syncing {} interface(s) from config",
             interfaces.len()
         );
-        for iface in &interfaces {
-            tracing::debug!(
-                id = %iface.id,
-                name = %iface.name,
-                iface_type = %iface.iface_type,
-                enabled = iface.enabled,
-                "interface config entry"
-            );
+        self.sync_ble_peer_interfaces(&interfaces).await
+    }
+
+    #[cfg(feature = "rns-ble")]
+    async fn sync_ble_peer_interfaces(&self, interfaces: &[InterfaceRow]) -> Result<(), String> {
+        let desired: HashMap<String, &InterfaceRow> = interfaces
+            .iter()
+            .filter(|i| i.iface_type == "ble_peer" && i.enabled)
+            .map(|i| (i.id.clone(), i))
+            .collect();
+
+        let to_remove: Vec<String> = {
+            let state = self.ble_peer_state.lock().await;
+            state
+                .spawned
+                .keys()
+                .filter(|id| !desired.contains_key(*id))
+                .cloned()
+                .collect()
+        };
+
+        for id in to_remove {
+            self.teardown_ble_peer_by_config_id(&id).await;
         }
 
-        let config_path = stack.config_dir.join("config");
-        match std::fs::read_to_string(&config_path) {
-            Ok(content) => {
-                tracing::info!(
-                    path = %config_path.display(),
-                    bytes = content.len(),
-                    "apply_interfaces: config reload read OK (live rns-stack hot-reload not yet wired)"
-                );
+        for (id, row) in desired {
+            let already = self.ble_peer_state.lock().await.spawned.contains_key(&id);
+            if already {
+                continue;
             }
-            Err(e) => {
-                tracing::warn!(
-                    path = %config_path.display(),
-                    error = %e,
-                    "apply_interfaces: config reload read failed"
-                );
+            match self.spawn_ble_peer_for_row(row).await {
+                Ok(runtime_id) => {
+                    self.ble_peer_state
+                        .lock()
+                        .await
+                        .spawned
+                        .insert(id.clone(), runtime_id);
+                    self.emit_event(
+                        "interface.state",
+                        serde_json::json!({ "id": id, "action": "ble_peer_spawned" }),
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(interface_id = %id, error = %e, "BLE Peer spawn failed");
+                    self.emit_event(
+                        "interface.state",
+                        serde_json::json!({ "id": id, "action": "ble_peer_failed", "error": e }),
+                    );
+                }
             }
         }
 
         Ok(())
+    }
+
+    #[cfg(not(feature = "rns-ble"))]
+    async fn sync_ble_peer_interfaces(&self, _interfaces: &[InterfaceRow]) -> Result<(), String> {
+        Ok(())
+    }
+
+    #[cfg(feature = "rns-ble")]
+    async fn spawn_ble_peer_for_row(&self, row: &InterfaceRow) -> Result<u64, String> {
+        let identity_hash = self.identity.hash.to_vec();
+        let foreground_wake = {
+            self.ble_peer_state
+                .lock()
+                .await
+                .foreground_wake
+                .clone()
+        };
+        reticulum::spawn_ble_peer_runtime(
+            &self.handle,
+            &row.name,
+            identity_hash,
+            None,
+            foreground_wake,
+            row.seed_addresses.clone(),
+        )
+        .await
+    }
+
+    #[cfg(feature = "rns-ble")]
+    async fn teardown_ble_peer_by_config_id(&self, config_id: &str) {
+        let runtime_id = {
+            let mut state = self.ble_peer_state.lock().await;
+            state.spawned.remove(config_id)
+        };
+        if let Some(runtime_id) = runtime_id {
+            reticulum::teardown_ble_peer_interface(&self.handle, runtime_id).await;
+            self.emit_event(
+                "interface.state",
+                serde_json::json!({ "id": config_id, "action": "ble_peer_stopped" }),
+            );
+        }
+    }
+
+    fn emit_event(&self, event_type: &str, payload: serde_json::Value) {
+        let msg = serde_json::json!({ "type": event_type, "payload": payload });
+        let _ = self.event_tx.send(msg.to_string());
     }
 }
 

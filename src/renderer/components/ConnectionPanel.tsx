@@ -76,6 +76,7 @@ import {
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { getBleAdapterOwner } from '../lib/reticulum/reticulumBleAdapterConflict';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -1094,6 +1095,13 @@ export default function ConnectionPanel({
     setConnectionStage('connectionPanel.stagePleaseWait');
 
     if (connectionType === 'ble') {
+      const adapterOwner = await getBleAdapterOwner();
+      if (adapterOwner === 'reticulum-sidecar') {
+        setError(t('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh'));
+        setConnecting(false);
+        setConnectionStage('');
+        return;
+      }
       if (isLinux) {
         console.debug('[ConnectionPanel] handleConnect Linux BLE path');
         setConnectionStage('connectionPanel.stageSelectBluetoothDots');

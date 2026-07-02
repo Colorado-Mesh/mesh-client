@@ -1189,6 +1189,7 @@ dependencies = [
  "lxmf-core",
  "rmpv",
  "rns-identity",
+ "rns-interface",
  "rns-runtime",
  "rns-transport",
  "serde",

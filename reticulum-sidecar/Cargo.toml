@@ -22,7 +22,7 @@ rns-stack = [
     "dep:rmpv",
 ]
 rns-serial = ["rns-runtime/serial"]
-rns-ble = ["rns-runtime/ble"]
+rns-ble = ["rns-runtime/ble", "dep:rns-interface", "rns-interface/ble"]
 
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
@@ -61,3 +61,9 @@ optional = true
 package = "lxmf-core"
 path = "../../rsLXMF/crates/lxmf-core"
 optional = true
+
+[dependencies.rns-interface]
+package = "rns-interface"
+path = "../../rsReticulum/crates/rns-interface"
+optional = true
+features = ["ble"]

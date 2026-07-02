@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 
 import { attMtuOrDefault, maxWriteRequestPayloadBytes } from '../shared/bleAttWriteLimit';
 import { withTimeout } from '../shared/withTimeout';
+import { bleAdapterCoordinator } from './ble-adapter-coordinator';
 import { logDeviceConnection, sanitizeLogMessage } from './log-service';
 
 // Only load noble on Mac/Windows — Linux uses Web Bluetooth in renderer instead
@@ -535,6 +536,8 @@ export class NobleBleManager extends EventEmitter {
   }
 
   async startScanning(sessionId: NobleSessionId): Promise<void> {
+    bleAdapterCoordinator.assertNobleAllowed();
+    await bleAdapterCoordinator.acquire('noble');
     // Clear known peripherals so every device is re-emitted as discovered on each new scan.
     // Without this, devices found in a previous scan are never re-emitted (isNew = false),
     // so the picker stays empty on second and subsequent scan attempts.
@@ -569,6 +572,7 @@ export class NobleBleManager extends EventEmitter {
     this.scanRequesters.delete(sessionId);
     if (this.scanRequesters.size === 0) {
       await this.doStopScanning();
+      this.maybeReleaseNobleAdapterLease();
     } else {
       // Other sessions still want to scan; restart with updated filter.
       // e.g. meshcore stopped → switch from open scan back to meshtastic-only filter.
@@ -578,8 +582,10 @@ export class NobleBleManager extends EventEmitter {
 
   /** Stop all scanning immediately — used for app quit and force-quit IPC. */
   async stopAllScanning(): Promise<void> {
+    if (this.sessions.size === 0) return;
     this.scanRequesters.clear();
     await this.doStopScanning();
+    this.maybeReleaseNobleAdapterLease();
   }
 
   /**
@@ -837,6 +843,7 @@ export class NobleBleManager extends EventEmitter {
     const session = this.getSession(sessionId);
     let peripheral: any = null;
     let connected = false;
+    await bleAdapterCoordinator.acquire('noble');
     console.debug(
       `[BLE:${sessionId}] connect start — peripheralId=${peripheralId} adapterReady=${this.adapterReady} scanRequesters=[${[...this.scanRequesters].join(',')}]`,
     );
@@ -1410,7 +1417,21 @@ export class NobleBleManager extends EventEmitter {
       if (notify) {
         this.emit('disconnected', { sessionId });
       }
+      this.maybeReleaseNobleAdapterLease();
     }
+  }
+
+  private maybeReleaseNobleAdapterLease(): void {
+    if (this.scanRequesters.size > 0) return;
+    for (const session of this.sessions.values()) {
+      if (session.connectedPeripheral) return;
+    }
+    bleAdapterCoordinator.release('noble');
+  }
+
+  async disconnectAllSessions(): Promise<void> {
+    await this.disconnectAll();
+    this.maybeReleaseNobleAdapterLease();
   }
 
   async disconnectAll(): Promise<void> {

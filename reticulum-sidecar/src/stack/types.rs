@@ -41,6 +41,8 @@ pub struct InterfaceRow {
     pub callsign: Option<String>,
     pub id_interval: Option<u32>,
     pub mode: Option<String>,
+    #[serde(default)]
+    pub seed_addresses: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -113,6 +115,8 @@ pub struct AddInterfaceRequest {
     pub callsign: Option<String>,
     pub id_interval: Option<u32>,
     pub mode: Option<String>,
+    #[serde(default)]
+    pub seed_addresses: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

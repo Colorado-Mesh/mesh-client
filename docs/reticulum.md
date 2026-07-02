@@ -69,8 +69,11 @@ Interfaces are stored in the sidecar rnsd config under Electron `userData/reticu
 
 - **All:** display name
 - **TCP:** host, port
-- **RNode:** serial port (enumerated when available), LoRa preset, callsign
+- **RNode:** USB serial or **Bluetooth** (`ble://…` URI), LoRa preset, callsign — use **Pick device** for serial/BLE selection
+- **BLE Peer mesh:** optional seed peer addresses (sidecar spawns `BlePeerInterface` at runtime)
 - **Auto:** name only (minimal discovery interface)
+
+**Bluetooth adapter sharing:** Meshtastic/MeshCore Noble BLE and Reticulum sidecar `btleplug` cannot use the OS adapter at the same time. The app coordinates via a main-process adapter lease — disable one stack’s BLE before enabling the other.
 
 For bulk changes or migrating from Ratspeak/rsReticulum, use **Config import** (merge or replace) on the Radio tab, or paste from a file picked via the system config paths below.
 

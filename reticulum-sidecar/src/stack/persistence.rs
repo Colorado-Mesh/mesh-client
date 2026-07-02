@@ -249,6 +249,7 @@ impl PersistedState {
             callsign: req.callsign,
             id_interval: req.id_interval,
             mode: req.mode,
+            seed_addresses: req.seed_addresses,
         };
         self.interfaces.push(row.clone());
         self.rns_ready = true;

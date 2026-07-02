@@ -27,17 +27,18 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 ### Interfaces
 
-| Method | Path                              | Body / notes                                                      | Response                                      |
-| ------ | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------- |
-| GET    | `/api/v1/interfaces`              |                                                                   | `{ interfaces: [] }`                          |
-| POST   | `/api/v1/interfaces`              | `{ type, name?, host?, port?, preset?, serial_port?, callsign? }` | `{ ok, interface? }`                          |
-| PUT    | `/api/v1/interfaces/{id}`         | Partial patch (see below)                                         | `{ ok, interface? }`                          |
-| DELETE | `/api/v1/interfaces/{id}`         |                                                                   | `{ ok }`                                      |
-| POST   | `/api/v1/interfaces/{id}/enable`  |                                                                   | `{ ok }`                                      |
-| POST   | `/api/v1/interfaces/{id}/disable` |                                                                   | `{ ok }`                                      |
-| GET    | `/api/v1/rnode/presets`           |                                                                   | `{ presets: [] }`                             |
-| GET    | `/api/v1/serial/ports`            |                                                                   | `{ ports: [] }`                               |
-| GET    | `/api/v1/ble/availability`        |                                                                   | `{ available, missing, permissions_granted }` |
+| Method | Path                              | Body / notes                                                          | Response                                                                    |
+| ------ | --------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| GET    | `/api/v1/interfaces`              |                                                                       | `{ interfaces: [] }`                                                        |
+| POST   | `/api/v1/interfaces`              | `{ type, name?, host?, port?, preset?, serial_port?, callsign? }`     | `{ ok, interface? }`                                                        |
+| PUT    | `/api/v1/interfaces/{id}`         | Partial patch (see below)                                             | `{ ok, interface? }`                                                        |
+| DELETE | `/api/v1/interfaces/{id}`         |                                                                       | `{ ok }`                                                                    |
+| POST   | `/api/v1/interfaces/{id}/enable`  |                                                                       | `{ ok }`                                                                    |
+| POST   | `/api/v1/interfaces/{id}/disable` |                                                                       | `{ ok }`                                                                    |
+| GET    | `/api/v1/rnode/presets`           |                                                                       | `{ presets: [] }`                                                           |
+| GET    | `/api/v1/serial/ports`            |                                                                       | `{ ports: [] }`                                                             |
+| GET    | `/api/v1/ble/availability`        |                                                                       | `{ available, missing, permissions_granted, probe_failed? }`                |
+| GET    | `/api/v1/ble/scan`                | `timeout_secs` (1–30, default 5), `mode` (`peer` \| `rnode` \| `all`) | `{ devices: [{ address, name?, rssi?, kind? }] }` or `{ ok: false, error }` |
 
 **`PUT /api/v1/interfaces/{id}` patch fields** (all optional): `name`, `type`, `enabled`, `host`, `port`, `preset`, `serial_port`, `frequency`, `bandwidth`, `txpower`, `spreading_factor`, `coding_rate`, `callsign`, `id_interval`, `mode`.
 

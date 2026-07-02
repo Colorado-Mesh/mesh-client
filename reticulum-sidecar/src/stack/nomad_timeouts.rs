@@ -71,6 +71,7 @@ mod tests {
             callsign: None,
             id_interval: None,
             mode: None,
+            seed_addresses: Vec::new(),
         }
     }
 

@@ -1,6 +1,7 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
 pub mod config;
+mod ble;
 mod nomad_file;
 mod nomad_timeouts;
 mod packet_log;
@@ -637,12 +638,11 @@ impl StackHandle {
     }
 
     pub async fn ble_availability(&self) -> serde_json::Value {
-        serde_json::json!({
-            "available": cfg!(feature = "rns-ble"),
-            "missing": [],
-            "permissions_granted": true,
-            "probe_failed": false
-        })
+        ble::ble_availability().await
+    }
+
+    pub async fn ble_scan(&self, timeout_secs: u64, mode: &str) -> Result<serde_json::Value, String> {
+        ble::ble_scan(timeout_secs, mode).await
     }
 
     pub async fn lxmf_send_resource(
