@@ -682,7 +682,6 @@
       "stalePortHint": "Wtyczka USB mogła zmienić ścieżkę. Zaktualizuj → interfejsy radiowe, a następnie uruchom ponownie stos.",
       "offline": "{{name}}: interfejs lokalny jest włączony, ale offline",
       "offlineHint": "Sprawdź kabel, uwolnij port z Meshtastic/MeshCore, a następnie uruchom ponownie stos.",
-      "openRadio": "Otwórz radio",
       "refreshPorts": "Odśwież porty",
       "availablePorts": "Dostępne: {{ports}}",
       "restartStack": "Uruchom ponownie stos",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "Zastosowano zasilanie TX",
     "xmodemInvalidFilename": "zawiera niedozwolone znaki",
     "validationInvalidPsk": "Nieprawidłowy base64 PSK — sprawdź klucz i spróbuj ponownie",
-    "meshcoreChannelNameRequired": "Nazwa nie może być pusta",
-    "reticulumStackSettings": {
-      "title": "Ustawienia stosu",
-      "enableTransport": "Włącz transport (trasa dla innych peerów)",
-      "shareInstance": "Udostępnij instancję Reticulum",
-      "logLevel": "Poziom dziennika",
-      "save": "Zapisz ustawienia stosu",
-      "saveFailed": "Zapisywanie ustawień nie powiodło się."
-    },
-    "reticulumConfigImport": {
-      "title": "Importuj konfigurację Reticulum",
-      "hint": "Wklej plik konfiguracyjny w stylu rnsd lub zaimportuj z dysku. Scal dodaje/aktualizuje bloki interfejsu według nazwy; zastępuje nadpisuje wszystkie interfejsy.",
-      "pasteLabel": "Zawartość pliku konfiguracyjnego",
-      "fromFile": "Importuj z pliku",
-      "fromSystem": "Importuj domyślne ustawienia systemowe",
-      "merge": "Scal import",
-      "replace": "Wymień interfejsy",
-      "confirmTitle": "Importuj konfigurację Reticulum",
-      "confirmMerge": "Czy scalić zaimportowane interfejsy z bieżącą konfiguracją?",
-      "confirmReplace": "Zastąpić wszystkie interfejsy zaimportowaną konfiguracją? Tej czynności nie można cofnąć.",
-      "confirm": "Importuj"
-    },
-    "reticulumConfigImportFailed": "Import konfiguracji nie powiódł się.",
-    "reticulumConfigNotFound": "Nie znaleziono systemowej konfiguracji Reticulum w domyślnych ścieżkach.",
-    "reticulumFactoryReset": {
-      "title": "Przywracanie ustawień fabrycznych",
-      "hint": "Usuwa tożsamość, kontakty i wiadomości ze stosu wózków bocznych. Konfiguracja interfejsu jest zachowana.",
-      "button": "Resetuj dane stosu",
-      "confirmTitle": "Zresetować stos Reticulum?",
-      "confirmBody": "Usuwa to tożsamość, kontakty i lokalne wiadomości z wózka bocznego. Twój plik konfiguracyjny interfejsu jest przechowywany.",
-      "confirm": "Zresetuj"
-    }
+    "meshcoreChannelNameRequired": "Nazwa nie może być pusta"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -2921,7 +2889,8 @@
     "admin": "Administracja",
     "peers": "Partnerzy",
     "nomadnetwork": "Sieć Nomad",
-    "topology": "Topologia sieci"
+    "topology": "Topologia sieci",
+    "network": "Sieć"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Serce",
     "iconShield": "Tarcza",
     "iconUser": "Użytkownik"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Ustawienia stosu",
+      "enableTransport": "Włącz transport (trasa dla innych urządzeń równorzędnych)",
+      "shareInstance": "Udostępnij instancję Reticulum",
+      "logLevel": "Poziom dziennika",
+      "save": "Zapisz ustawienia stosu",
+      "saveFailed": "Nie udało się zapisać ustawień stosu."
+    },
+    "reticulumConfigImport": {
+      "title": "Importuj config Reticulum",
+      "hint": "Wklej plik konfiguracyjny w stylu rnsd lub zaimportuj z dysku. Merge dodaje/aktualizuje bloki interfejsu według nazwy; zamień zastępuje wszystkie interfejsy.",
+      "pasteLabel": "Skonfiguruj zawartość pliku",
+      "fromFile": "Importuj z pliku…",
+      "fromSystem": "Importuj ustawienia domyślne systemu",
+      "merge": "Połącz import",
+      "replace": "Wymień interfejsy",
+      "confirmTitle": "Importuj config Reticulum",
+      "confirmMerge": "Scalić zaimportowane interfejsy z bieżącą konfiguracją?",
+      "confirmReplace": "Zamienić wszystkie interfejsy zaimportowaną konfiguracją? Tego nie można cofnąć.",
+      "confirm": "Importuj"
+    },
+    "reticulumConfigImportFailed": "Import konfiguracji nie powiódł się.",
+    "reticulumConfigNotFound": "Nie znaleziono config Reticulum systemu w domyślnych ścieżkach."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Reset do ustawień fabrycznych",
+      "hint": "Usuwa tożsamość, kontakty i wiadomości ze stosu przyczepki. Konfiguracja interfejsu została zachowana.",
+      "button": "Zresetuj dane stosu",
+      "confirmTitle": "Zresetować stack Reticulum?",
+      "confirmBody": "Spowoduje to usunięcie tożsamości, kontaktów i wiadomości lokalnych z przyczepki. Twój plik konfiguracyjny interfejsu zostanie zachowany.",
+      "confirm": "Nastawić"
+    }
   }
 }

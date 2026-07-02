@@ -682,7 +682,6 @@
       "stalePortHint": "USB yeniden fişi yolu değiştirmiş olabilir. Radyo → Arayüzlerinde güncelleme yapın, ardından yığını yeniden başlatın.",
       "offline": "{{name}}: yerel arayüz etkin ancak çevrimdışı",
       "offlineHint": "Kabloyu kontrol edin, Meshtastic/MeshCore'dan bağlantı noktasını serbest bırakın, ardından yığını yeniden başlatın.",
-      "openRadio": "Açık Radyo",
       "refreshPorts": "Portları Yenile",
       "availablePorts": "Mevcut: {{ports}}",
       "restartStack": "Yığını yeniden başlat",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "TX gücü uygulandı",
     "xmodemInvalidFilename": "Dosya adı geçersiz karakterler içeriyor",
     "validationInvalidPsk": "Geçersiz base64 PSK — anahtarı kontrol edin ve tekrar deneyin",
-    "meshcoreChannelNameRequired": "Ad boş olamaz",
-    "reticulumStackSettings": {
-      "title": "Yığın ayarları",
-      "enableTransport": "Taşımayı etkinleştir (diğer akranlar için rota)",
-      "shareInstance": "Reticulum örneğini paylaş",
-      "logLevel": "Kayıt seviyesi",
-      "save": "Yığın ayarlarını kaydet",
-      "saveFailed": "Ayarlar kaydedilemedi."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum yapılandırmasını içe aktar",
-      "hint": "Rnsd tarzı bir yapılandırma dosyasını yapıştırın veya diskten içe aktarın. Merge, arayüz bloklarını ada göre ekler/günceller; replace, tüm arayüzlerin üzerine yazar.",
-      "pasteLabel": "Yapılandırma dosyası içeriği",
-      "fromFile": "Dosyadan içe aktar",
-      "fromSystem": "Sistem varsayılanını içe aktar",
-      "merge": "İçe aktarmayı birleştir",
-      "replace": "Arayüzleri değiştir",
-      "confirmTitle": "Reticulum yapılandırmasını içe aktar",
-      "confirmMerge": "İçe aktarılan arayüzler mevcut yapılandırmada birleştirilsin mi?",
-      "confirmReplace": "Tüm arayüzler içe aktarılan yapılandırmayla değiştirilsin mi? Bu işlem geri alınamaz.",
-      "confirm": "İthal"
-    },
-    "reticulumConfigImportFailed": "Yapılandırma içe aktarılamadı.",
-    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı.",
-    "reticulumFactoryReset": {
-      "title": "Fabrika ayarlarına dönme",
-      "hint": "Sidecar yığınından kimliği, kişileri ve mesajları temizler. Arabirim yapılandırması korunur.",
-      "button": "Yığın verilerini sıfırla",
-      "confirmTitle": "Reticulum yığını sıfırlansın mı?",
-      "confirmBody": "Bu, kimliği, kişileri ve yerel mesajları sepetten kaldırır. Arayüz yapılandırma dosyanız saklanır.",
-      "confirm": "Sıfırla"
-    }
+    "meshcoreChannelNameRequired": "Ad boş olamaz"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -2921,7 +2889,8 @@
     "admin": "Yönetim",
     "peers": "Meslektaşlar",
     "nomadnetwork": "Göçebe Ağı",
-    "topology": "Ağ topolojisi"
+    "topology": "Ağ topolojisi",
+    "network": "Ağ"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Kalp",
     "iconShield": "Koruma",
     "iconUser": "Kullanıcı"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Yığın ayarları",
+      "enableTransport": "Aktarımı etkinleştir (diğer eşler için rota)",
+      "shareInstance": "Reticulum örneğini paylaşın",
+      "logLevel": "Günlük düzeyi",
+      "save": "Yığın ayarlarını kaydet",
+      "saveFailed": "Yığın ayarları kaydedilemedi."
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum yapılandırmasını içe aktar",
+      "hint": "Rnsd tarzı bir yapılandırma dosyası yapıştırın veya diskten içe aktarın. Birleştirme, arayüz bloklarını ada göre ekler/günceller; değiştir tüm arayüzlerin üzerine yazar.",
+      "pasteLabel": "Yapılandırma dosyası içerikleri",
+      "fromFile": "Dosyadan içe aktar…",
+      "fromSystem": "Sistem varsayılanını içe aktar",
+      "merge": "İçe aktarmayı birleştir",
+      "replace": "Arayüzleri değiştirin",
+      "confirmTitle": "Reticulum yapılandırmasını içe aktar",
+      "confirmMerge": "İçe aktarılan arayüzler mevcut yapılandırmayla birleştirilsin mi?",
+      "confirmReplace": "Tüm arayüzler içe aktarılan yapılandırmayla değiştirilsin mi? Bu geri alınamaz.",
+      "confirm": "İçe aktarmak"
+    },
+    "reticulumConfigImportFailed": "Yapılandırma içe aktarımı başarısız oldu.",
+    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Fabrika ayarlarına sıfırlama",
+      "hint": "Sepet yığınındaki kimliği, kişileri ve mesajları temizler. Arayüz yapılandırması korunur.",
+      "button": "Yığın verilerini sıfırla",
+      "confirmTitle": "Reticulum stack sıfırlansın mı?",
+      "confirmBody": "Bu, sepetteki kimliği, kişileri ve yerel mesajları kaldırır. Arayüz yapılandırma dosyanız tutulur.",
+      "confirm": "Sıfırla"
+    }
   }
 }

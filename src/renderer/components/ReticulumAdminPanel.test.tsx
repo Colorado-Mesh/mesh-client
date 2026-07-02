@@ -50,7 +50,7 @@ describe('ReticulumAdminPanel', () => {
     expect(screen.getByText('tabs.admin')).toBeInTheDocument();
     expect(screen.getByTestId('flasher-mock')).toBeInTheDocument();
     expect(screen.getByText('radioPanel.dangerZone')).toBeInTheDocument();
-    expect(screen.getByText('radioPanel.reticulumFactoryReset.button')).toBeInTheDocument();
+    expect(screen.getByText('adminPanel.reticulumFactoryReset.button')).toBeInTheDocument();
   });
 
   it('passes portBlocked to flasher when enabled RNode interface is active', async () => {
@@ -77,9 +77,9 @@ describe('ReticulumAdminPanel', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByText('radioPanel.reticulumFactoryReset.button'));
+    await user.click(screen.getByText('adminPanel.reticulumFactoryReset.button'));
     await user.click(
-      screen.getByRole('button', { name: 'radioPanel.reticulumFactoryReset.confirm' }),
+      screen.getByRole('button', { name: 'adminPanel.reticulumFactoryReset.confirm' }),
     );
 
     await waitFor(() => {

@@ -682,7 +682,6 @@
       "stalePortHint": "Replug USB mungkin telah mengubah jalur. Perbarui di Radio → Interface, lalu mulai ulang tumpukan.",
       "offline": "{{name}}: antarmuka lokal diaktifkan tetapi offline",
       "offlineHint": "Periksa kabel, lepaskan port dari Meshtastic/MeshCore, lalu mulai ulang tumpukan.",
-      "openRadio": "Buka Radio",
       "refreshPorts": "Segarkan port",
       "availablePorts": "Tersedia: {{ports}}",
       "restartStack": "Mulai ulang tumpukan",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "Daya TX diterapkan",
     "xmodemInvalidFilename": "Nama file berisi karakter yang tidak valid",
     "validationInvalidPsk": "Base64 PSK tidak valid — periksa kuncinya dan coba lagi",
-    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong",
-    "reticulumStackSettings": {
-      "title": "Pengaturan tumpukan",
-      "enableTransport": "Aktifkan transport (rute untuk peer lain)",
-      "shareInstance": "Bagikan instansi Reticulum",
-      "logLevel": "Level log",
-      "save": "Simpan pengaturan tumpukan",
-      "saveFailed": "Gagal menyimpan pengaturan."
-    },
-    "reticulumConfigImport": {
-      "title": "Impor konfigurasi Reticulum",
-      "hint": "Tempel file konfigurasi bergaya rnsd atau impor dari disk. Gabungkan menambahkan/memperbarui blok antarmuka berdasarkan nama; ganti menimpa semua antarmuka.",
-      "pasteLabel": "Isi file konfigurasi",
-      "fromFile": "Impor dari file…",
-      "fromSystem": "Impor sistem default",
-      "merge": "Gabungkan impor",
-      "replace": "Ganti antarmuka",
-      "confirmTitle": "Impor konfigurasi Reticulum",
-      "confirmMerge": "Gabungkan antarmuka yang diimpor ke dalam konfigurasi saat ini?",
-      "confirmReplace": "Ganti semua antarmuka dengan konfigurasi yang diimpor? Ini tidak dapat diurungkan.",
-      "confirm": "Impor"
-    },
-    "reticulumConfigImportFailed": "Impor konfigurasi gagal.",
-    "reticulumConfigNotFound": "Tidak ada konfigurasi Reticulum sistem yang ditemukan di jalur default.",
-    "reticulumFactoryReset": {
-      "title": "Atur Ulang Pabrik",
-      "hint": "Menghapus identitas, kontak, dan pesan dari tumpukan sidecar. Konfigurasi antarmuka dipertahankan.",
-      "button": "Atur ulang data tumpukan",
-      "confirmTitle": "Atur ulang tumpukan Reticulum?",
-      "confirmBody": "Tindakan ini akan menghapus identitas, kontak, dan pesan lokal dari sidecar. File konfigurasi antarmuka Anda disimpan.",
-      "confirm": "Atur ulang"
-    }
+    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -2921,7 +2889,8 @@
     "admin": "Administrasi",
     "peers": "Peer",
     "nomadnetwork": "Nomad Network",
-    "topology": "Topologi jaringan"
+    "topology": "Topologi jaringan",
+    "network": "Jaringan"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Hati",
     "iconShield": "Perisai",
     "iconUser": "Pengguna"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Pengaturan tumpukan",
+      "enableTransport": "Aktifkan transportasi (rute untuk rekan lain)",
+      "shareInstance": "Bagikan instance Reticulum",
+      "logLevel": "tingkat log",
+      "save": "Simpan pengaturan tumpukan",
+      "saveFailed": "Gagal menyimpan pengaturan tumpukan."
+    },
+    "reticulumConfigImport": {
+      "title": "Impor config Reticulum",
+      "hint": "Tempel file konfigurasi bergaya rnsd atau impor dari disk. Gabungkan penambahan/perbarui blok antarmuka berdasarkan nama; replace menimpa semua antarmuka.",
+      "pasteLabel": "Konfigurasi isi file",
+      "fromFile": "Impor dari file…",
+      "fromSystem": "Impor default sistem",
+      "merge": "Gabungkan impor",
+      "replace": "Ganti antarmuka",
+      "confirmTitle": "Impor config Reticulum",
+      "confirmMerge": "Gabungkan antarmuka yang diimpor ke dalam konfigurasi saat ini?",
+      "confirmReplace": "Ganti semua antarmuka dengan konfigurasi yang diimpor? Hal ini tidak dapat dibatalkan.",
+      "confirm": "Impor"
+    },
+    "reticulumConfigImportFailed": "Impor konfigurasi gagal.",
+    "reticulumConfigNotFound": "Config Reticulum sistem tidak ditemukan di path default."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Reset pabrik",
+      "hint": "Menghapus identitas, kontak, dan pesan dari tumpukan sespan. Konfigurasi antarmuka dipertahankan.",
+      "button": "Setel ulang data tumpukan",
+      "confirmTitle": "Setel ulang stack Reticulum?",
+      "confirmBody": "Tindakan ini menghapus identitas, kontak, dan pesan lokal dari sespan. File konfigurasi antarmuka Anda disimpan.",
+      "confirm": "Mengatur ulang"
+    }
   }
 }

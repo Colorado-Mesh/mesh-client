@@ -682,7 +682,6 @@
       "stalePortHint": "USB-replug heeft mogelijk het pad gewijzigd. Update in Radio → Interfaces en start vervolgens de stapel opnieuw.",
       "offline": "{{name}}: lokale interface is ingeschakeld, maar offline",
       "offlineHint": "Controleer de kabel, ontgrendel de poort van Meshtastic/MeshCore en start de stapel opnieuw.",
-      "openRadio": "Open radio",
       "refreshPorts": "Poorten vernieuwen",
       "availablePorts": "Beschikbaar: {{ports}}",
       "restartStack": "Start de stapel opnieuw",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "TX-vermogen toegepast",
     "xmodemInvalidFilename": "Bestandsnaam bevat ongeldige tekens.",
     "validationInvalidPsk": "Ongeldige base64 PSK — controleer de sleutel en probeer het opnieuw",
-    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn",
-    "reticulumStackSettings": {
-      "title": "Stackinstellingen",
-      "enableTransport": "Transport inschakelen (route voor andere peers)",
-      "shareInstance": "Reticulum-instantie delen",
-      "logLevel": "Logniveau",
-      "save": "Stackinstellingen opslaan",
-      "saveFailed": "Kan instellingen niet opslaan."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum-configuratie importeren",
-      "hint": "Plak een rnsd-stijl configuratiebestand of importeer vanaf schijf. Samenvoegen voegt interfaceblokken op naam toe/werkt deze bij; vervangen overschrijft alle interfaces.",
-      "pasteLabel": "Inhoud configuratiebestand",
-      "fromFile": "Uit bestand importeren…",
-      "fromSystem": "Systeemstandaard importeren",
-      "merge": "Import samenvoegen",
-      "replace": "Interfaces vervangen",
-      "confirmTitle": "Reticulum-configuratie importeren",
-      "confirmMerge": "Geïmporteerde interfaces samenvoegen in de huidige configuratie?",
-      "confirmReplace": "Alle interfaces vervangen door de geïmporteerde configuratie? Dit kan niet ongedaan worden gemaakt.",
-      "confirm": "Importeren"
-    },
-    "reticulumConfigImportFailed": "Configuratie-import mislukt.",
-    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden.",
-    "reticulumFactoryReset": {
-      "title": "Reset naar fabrieksinstellingen",
-      "hint": "Wist identiteit, contacten en berichten van de zijspanstapel. Interfaceconfiguratie blijft behouden.",
-      "button": "Stackgegevens resetten",
-      "confirmTitle": "Reticulum-stack resetten?",
-      "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
-      "confirm": "Resetten"
-    }
+    "meshcoreChannelNameRequired": "Kanaalnaam mag niet leeg zijn"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -2921,7 +2889,8 @@
     "admin": "Beheer",
     "peers": "Collega's",
     "nomadnetwork": "Nomad-netwerk",
-    "topology": "Netwerktopologie"
+    "topology": "Netwerktopologie",
+    "network": "Netwerk"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Hart",
     "iconShield": "Afscherming",
     "iconUser": "Gebruiker"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Stapelinstellingen",
+      "enableTransport": "Transport inschakelen (route voor andere peers)",
+      "shareInstance": "Deel Reticulum-instantie",
+      "logLevel": "Logniveau",
+      "save": "Bewaar stapelinstellingen",
+      "saveFailed": "Kan stapelinstellingen niet opslaan."
+    },
+    "reticulumConfigImport": {
+      "title": "Importeer Reticulum-configuratie",
+      "hint": "Plak een configuratiebestand in rnsd-stijl of importeer vanaf schijf. Voeg interfaceblokken toe/bijwerken op naam; vervangen overschrijft alle interfaces.",
+      "pasteLabel": "Inhoud van configuratiebestand",
+      "fromFile": "Importeren uit bestand…",
+      "fromSystem": "Systeemstandaard importeren",
+      "merge": "Import samenvoegen",
+      "replace": "Vervang interfaces",
+      "confirmTitle": "Importeer Reticulum-configuratie",
+      "confirmMerge": "Geïmporteerde interfaces samenvoegen met de huidige configuratie?",
+      "confirmReplace": "Alle interfaces vervangen door de geïmporteerde configuratie? Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Importeren"
+    },
+    "reticulumConfigImportFailed": "Configuratie-import mislukt.",
+    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Fabrieksreset",
+      "hint": "Wist identiteit, contacten en berichten uit de zijspanstapel. Interfaceconfiguratie blijft behouden.",
+      "button": "Stapelgegevens opnieuw instellen",
+      "confirmTitle": "Reticulum stack resetten?",
+      "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
+      "confirm": "Opnieuw instellen"
+    }
   }
 }

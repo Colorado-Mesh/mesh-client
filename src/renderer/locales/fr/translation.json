@@ -682,7 +682,6 @@
       "stalePortHint": "La prise USB peut avoir changé le chemin. Mettez à jour dans → Interfaces radio, puis redémarrez la pile.",
       "offline": "{{name}} : l'interface locale est activée mais hors ligne",
       "offlineHint": "Vérifiez le câble, libérez le port de Meshtastic/MeshCore, puis redémarrez la pile.",
-      "openRadio": "Ouvrir la radio",
       "refreshPorts": "Ports d'actualisation",
       "availablePorts": "Disponible : {{ports}}",
       "restartStack": "Redémarrer la pile",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "Puissance TX appliquée",
     "xmodemInvalidFilename": "Názov súboru obsahuje neplatné znaky",
     "validationInvalidPsk": "PSK base64 non valide — vérifiez la clé et réessayez",
-    "meshcoreChannelNameRequired": "Le nom ne doit pas être vide",
-    "reticulumStackSettings": {
-      "title": "Paramètres de la pile",
-      "enableTransport": "Activer le transport (itinéraire pour les autres pairs)",
-      "shareInstance": "Partager l’instance Reticulum",
-      "logLevel": "Niveau du journal",
-      "save": "Enregistrer les paramètres de la pile",
-      "saveFailed": "Échec de l'enregistrement des paramètres."
-    },
-    "reticulumConfigImport": {
-      "title": "Importer la configuration du Reticulum",
-      "hint": "Collez un fichier de configuration de type rnsd ou importez-le à partir du disque. La fusion ajoute/met à jour des blocs d'interface par nom ; le remplacement écrase toutes les interfaces.",
-      "pasteLabel": "Contenu du fichier de configuration",
-      "fromFile": "Importer à partir d’un fichier…",
-      "fromSystem": "Importer le système par défaut",
-      "merge": "Fusionner l'importation",
-      "replace": "Remplacer les interfaces",
-      "confirmTitle": "Importer la configuration du Reticulum",
-      "confirmMerge": "Fusionner les interfaces importées dans la configuration actuelle ?",
-      "confirmReplace": "Remplacer toutes les interfaces par la configuration importée ? Cela ne peut pas être annulé.",
-      "confirm": "Importer"
-    },
-    "reticulumConfigImportFailed": "Échec de l’importation de la configuration :",
-    "reticulumConfigNotFound": "Aucune configuration de Reticulum système trouvée dans les chemins par défaut.",
-    "reticulumFactoryReset": {
-      "title": "Réinitialisation d’usine",
-      "hint": "Efface l'identité, les contacts et les messages de la pile de side-car. La configuration de l'interface est préservée.",
-      "button": "Réinitialiser les données de la pile",
-      "confirmTitle": "Réinitialiser la pile de Reticulum ?",
-      "confirmBody": "Cela supprime l'identité, les contacts et les messages locaux du side-car. Votre fichier de configuration d'interface est conservé.",
-      "confirm": "Réinitialiser"
-    }
+    "meshcoreChannelNameRequired": "Le nom ne doit pas être vide"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",
@@ -2921,7 +2889,8 @@
     "admin": "Administration",
     "peers": "Pairs",
     "nomadnetwork": "Nomad Network",
-    "topology": "Topologie de réseau"
+    "topology": "Topologie de réseau",
+    "network": "Réseau"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Cœur",
     "iconShield": "Bouclier",
     "iconUser": "Utilisateur"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Paramètres de la pile",
+      "enableTransport": "Activer le transport (itinéraire pour les autres pairs)",
+      "shareInstance": "Partager l'instance de Reticulum",
+      "logLevel": "Niveau de journalisation",
+      "save": "Enregistrer les paramètres de la pile",
+      "saveFailed": "Échec de l'enregistrement des paramètres de la pile."
+    },
+    "reticulumConfigImport": {
+      "title": "Importer la configuration du Reticulum",
+      "hint": "Collez un fichier de configuration de style rnsd ou importez-le depuis le disque. Fusionner ajoute/met à jour les blocs d'interface par nom ; replace écrase toutes les interfaces.",
+      "pasteLabel": "Contenu du fichier de configuration",
+      "fromFile": "Importer à partir d'un fichier…",
+      "fromSystem": "Importer le système par défaut",
+      "merge": "Fusionner l'importation",
+      "replace": "Remplacer les interfaces",
+      "confirmTitle": "Importer la configuration du Reticulum",
+      "confirmMerge": "Fusionner les interfaces importées dans la configuration actuelle ?",
+      "confirmReplace": "Remplacer toutes les interfaces par la configuration importée ? Cela ne peut pas être annulé.",
+      "confirm": "Importer"
+    },
+    "reticulumConfigImportFailed": "L'importation de la configuration a échoué.",
+    "reticulumConfigNotFound": "Aucune configuration système Reticulum trouvée dans les chemins par défaut."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Réinitialisation d'usine",
+      "hint": "Efface l’identité, les contacts et les messages de la pile side-car. La configuration de l'interface est conservée.",
+      "button": "Réinitialiser les données de la pile",
+      "confirmTitle": "Réinitialiser la pile Reticulum ?",
+      "confirmBody": "Cela supprime l'identité, les contacts et les messages locaux du side-car. Votre fichier de configuration d'interface est conservé.",
+      "confirm": "Réinitialiser"
+    }
   }
 }

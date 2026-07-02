@@ -329,8 +329,6 @@ interface Props {
   ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
   /** Reticulum: start or restart the AGPL sidecar stack. */
   onStartReticulumStack?: () => Promise<void>;
-  /** Reticulum: switch to Radio tab (local interface edit). */
-  onOpenReticulumRadioPanel?: () => void;
 }
 
 export default function ConnectionPanel({
@@ -347,7 +345,6 @@ export default function ConnectionPanel({
   onOpenFirmwareReleases,
   ensureMeshcoreMqttIdentity,
   onStartReticulumStack,
-  onOpenReticulumRadioPanel,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -2710,7 +2707,6 @@ export default function ConnectionPanel({
         <ReticulumStackPanel
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
-          onOpenRadioPanel={onOpenReticulumRadioPanel}
           onStartStack={async () => {
             setReticulumStackError(null);
             try {

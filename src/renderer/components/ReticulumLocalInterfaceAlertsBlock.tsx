@@ -15,7 +15,6 @@ function alertNeedsSerialPortContext(alert: ReticulumLocalInterfaceAlert): boole
 export interface ReticulumLocalInterfaceAlertsBlockProps {
   alerts: ReticulumLocalInterfaceAlert[];
   availablePorts: string[];
-  onOpenRadio?: () => void;
   onRefreshPorts?: () => void;
   onRestartStack?: () => void;
   compact?: boolean;
@@ -25,7 +24,6 @@ export interface ReticulumLocalInterfaceAlertsBlockProps {
 export function ReticulumLocalInterfaceAlertsBlock({
   alerts,
   availablePorts,
-  onOpenRadio,
   onRefreshPorts,
   onRestartStack,
   compact = false,
@@ -87,16 +85,6 @@ export function ReticulumLocalInterfaceAlertsBlock({
             aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
           >
             {t('connectionPanel.reticulumLocalInterfaces.restartStack')}
-          </button>
-        ) : null}
-        {onOpenRadio ? (
-          <button
-            type="button"
-            onClick={onOpenRadio}
-            className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600"
-            aria-label={t('connectionPanel.reticulumLocalInterfaces.openRadio')}
-          >
-            {t('connectionPanel.reticulumLocalInterfaces.openRadio')}
           </button>
         ) : null}
         {onRefreshPorts && showSerialPortContext ? (

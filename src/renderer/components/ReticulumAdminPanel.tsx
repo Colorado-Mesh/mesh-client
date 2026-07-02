@@ -68,7 +68,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       await refreshIdentity();
       await refreshInterfaces();
       addToast(
-        t('radioPanel.actionCompleted', { name: t('radioPanel.reticulumFactoryReset.title') }),
+        t('radioPanel.actionCompleted', { name: t('adminPanel.reticulumFactoryReset.title') }),
         'success',
       );
     } catch (e) {
@@ -107,7 +107,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-red-400">{t('radioPanel.dangerZone')}</h3>
         <div className="space-y-2 rounded-lg border border-red-900 p-4">
-          <p className="text-xs text-red-400/80">{t('radioPanel.reticulumFactoryReset.hint')}</p>
+          <p className="text-xs text-red-400/80">{t('adminPanel.reticulumFactoryReset.hint')}</p>
           <p className="text-xs text-red-400/80">{t('radioPanel.dangerZonePermanent')}</p>
           <button
             type="button"
@@ -117,16 +117,16 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
             }}
             className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:opacity-50"
           >
-            {t('radioPanel.reticulumFactoryReset.button')}
+            {t('adminPanel.reticulumFactoryReset.button')}
           </button>
         </div>
       </div>
 
       {showFactoryResetConfirm ? (
         <ConfirmModal
-          title={t('radioPanel.reticulumFactoryReset.confirmTitle')}
-          message={t('radioPanel.reticulumFactoryReset.confirmBody')}
-          confirmLabel={t('radioPanel.reticulumFactoryReset.confirm')}
+          title={t('adminPanel.reticulumFactoryReset.confirmTitle')}
+          message={t('adminPanel.reticulumFactoryReset.confirmBody')}
+          confirmLabel={t('adminPanel.reticulumFactoryReset.confirm')}
           confirmDisabled={resetInFlight}
           onConfirm={() => {
             void handleFactoryReset();

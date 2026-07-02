@@ -14,11 +14,11 @@ flowchart TB
     App[App.tsx]
     RT[useReticulumRuntime]
     Stack[ReticulumStackPanel]
-    Radio[ReticulumRadioPanel]
+    Network[ReticulumNetworkPanel]
     Admin[ReticulumAdminPanel]
     App --> RT
     App --> Stack
-    App --> Radio
+    App --> Network
     App --> Admin
   end
   subgraph main [Electron main MIT]
@@ -37,8 +37,8 @@ flowchart TB
 
 ## User flow
 
-1. **Reticulum → Connection** (`ReticulumStackPanel`): click **Start stack** (or enable **Auto-start** for next visit). **Stop stack** shuts down the sidecar without quitting the app; **Disconnect & quit** stops the sidecar (when running) and exits mesh-client.
-2. **Reticulum → Radio** (`ReticulumRadioPanel`): create or import identity; add/edit/delete/enable interfaces; import or export rnsd-style config; adjust stack settings and announce interval; manage peers and propagation.
+1. **Reticulum → Connection** (`ReticulumStackPanel`): click **Start stack** (or enable **Auto-start** for next visit). Add, edit, enable, or delete **Interfaces** here. **Stop stack** shuts down the sidecar without quitting the app; **Disconnect & quit** stops the sidecar (when running) and exits mesh-client.
+2. **Reticulum → Network** (`ReticulumNetworkPanel`): create or import identity; import or export rnsd-style config; adjust stack settings and announce interval; manage propagation.
 3. **Reticulum → Admin** (`ReticulumAdminPanel`): RNode firmware flasher and stack factory reset (danger zone).
 4. **Chat:** DM-only LXMF text, reactions, file attachments, and voice clips (recorded as LXMF attachments).
 
@@ -48,15 +48,15 @@ flowchart TB
 
 | Tab (sidebar) | Component                | Purpose                                                                                             |
 | ------------- | ------------------------ | --------------------------------------------------------------------------------------------------- |
-| Connection    | `ReticulumStackPanel`    | Stack start/stop, auto-start, disconnect & quit, connection status                                  |
+| Connection    | `ReticulumStackPanel`    | Stack start/stop, auto-start, interfaces CRUD, local interface health                               |
 | Nomad Network | `NomadNetworkPanel`      | Favourites / Announces list, search, favourite toggle (MeshChat-style)                              |
 | Peers         | `ReticulumPeerListPanel` | Network path-table peers and LXMF contacts (sub-tabs); path/probe; opens `ReticulumPeerDetailModal` |
-| Radio         | `ReticulumRadioPanel`    | Identity, interfaces, stack settings, announce controls, peer summary, propagation, config import   |
+| Network       | `ReticulumNetworkPanel`  | Identity, stack settings, announce controls, propagation, config import                             |
 | Admin         | `ReticulumAdminPanel`    | RNode firmware flasher; stack factory reset (danger zone)                                           |
 
-## Interface management (Radio tab)
+## Interface management (Connection tab)
 
-Interfaces are stored in the sidecar rnsd config under Electron `userData/reticulum/config/`. The Radio tab **Interfaces** section supports:
+Interfaces are stored in the sidecar rnsd config under Electron `userData/reticulum/config/`. The Connection tab **Interfaces** section supports:
 
 | Action           | UI                                                            | Sidecar API                      |
 | ---------------- | ------------------------------------------------------------- | -------------------------------- |
@@ -75,9 +75,9 @@ Interfaces are stored in the sidecar rnsd config under Electron `userData/reticu
 
 **Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth **simultaneously on different devices** (macOS, Windows, and Linux). The app tracks peripheral ownership by MAC address and serializes **active scans** only—connected GATT links are not torn down when another stack scans or connects elsewhere. Do not point two protocols at the same BLE MAC; the app rejects same-device conflicts. On Linux, mesh stacks use Web Bluetooth in the renderer while Reticulum uses the sidecar `btleplug` stack.
 
-For bulk changes or migrating from Ratspeak/rsReticulum, use **Config import** (merge or replace) on the Radio tab, or paste from a file picked via the system config paths below.
+For bulk changes or migrating from another rsReticulum install, use **Config import** (merge or replace) on the **Network** tab, or paste from a file picked via the system config paths below.
 
-## Stack settings and announces (Radio tab)
+## Stack settings and announces (Network tab)
 
 **Stack settings** (`enable_transport`, `share_instance`, `loglevel`) are saved via `PUT /api/v1/stack/settings`. The UI merge-reads current settings so `announce_interval_sec` is preserved when saving transport/log options.
 
@@ -99,7 +99,7 @@ Firmware `.zip` files are selected locally (in-app GitHub download is deferred).
 ## Peers and sidecar storage
 
 - **`GET /api/v1/peers`**: with **`rns-stack`**, returns the live RNS path table (including empty); the sidecar updates its in-memory cache on each successful fetch. On fetch failure, the last cached peers are returned. With the **stub** stack, peers come from persisted state.
-- **Your node is not listed as a peer:** the path table contains routes to **remote** destinations only. Your LXMF hash appears under **Radio → Identity**; the topology graph uses a synthetic **You** center node. The `interface` column on a peer row means “path learned via this interface,” not “peers attached to this serial port.”
+- **Your node is not listed as a peer:** the path table contains routes to **remote** destinations only. Your LXMF hash appears under **Network → Identity**; the topology graph uses a synthetic **You** center node. The `interface` column on a peer row means “path learned via this interface,” not “peers attached to this serial port.”
 - **Stub storage file:** `userData/reticulum/storage/mesh_client_stack.json` — identity (including mnemonic in plaintext for backup UX), stub peers, and local LXMF message cache. Treat this file as sensitive.
 
 ## LXMF outbound delivery (Chat DMs)
@@ -110,7 +110,7 @@ With **`rns-stack`**, `POST /api/v1/lxmf/send` chooses delivery method from the 
 | ----------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
 | Yes                                       | **Direct** (LinkDeliveryManager)              | RF/TCP/NET badge while sending; **Delivered** after link completion       |
 | No, preferred propagation node configured | **Propagated** (handoff to PN)                | **PN** badge, “Queued at propagation node” until sidecar reports delivery |
-| No, no propagation node                   | `{ ok: false, error: "no_propagation_node" }` | Toast prompts user to set a preferred propagation node on the Radio tab   |
+| No, no propagation node                   | `{ ok: false, error: "no_propagation_node" }` | Toast prompts user to set a preferred propagation node on the Network tab |
 
 The chat UI keeps outbound messages in **Sending** until the sidecar emits `lxmf_outbound_status` (`delivered` / `failed`). This follows Reticulum’s async LXMF model—no TCP-style “connection refused” when a contact is offline; configure a propagation node for store-and-forward instead.
 
@@ -118,13 +118,13 @@ The chat UI keeps outbound messages in **Sending** until the sidecar emits `lxmf
 
 - **Send:** Chat composer paperclip (files) or mic button (voice clip, max ~60 s) on Reticulum DMs. Outbound uses `POST /api/v1/lxmf/resource` with `FIELD_FILE_ATTACHMENTS` on the live stack.
 - **Receive:** Inbound attachments are cached under `userData/reticulum/attachments/`; chat shows playback for audio and **Save attachment** / **Show in folder** actions.
-- **Realtime voice calls (LXST/Codec2):** not in scope; the Radio tab no longer shows a voice-call stub.
+- **Realtime voice calls (LXST/Codec2):** not in scope; the Network tab no longer shows a voice-call stub.
 
 ## Propagation nodes
 
 - **Preferred node:** offline DMs route to the preferred propagation node when the destination is not in the path table.
-- **Sync:** Per-node **Sync messages** on the Radio tab; progress via `propagation_sync` WebSocket events (also surfaced in Chat while syncing).
-- **Local inbox:** Enable **Local propagation (offline inbox)** on the Radio tab to serve as a propagation node (`rns-stack`); stats show queued count and storage used.
+- **Sync:** Per-node **Sync messages** on the Network tab; progress via `propagation_sync` WebSocket events (also surfaced in Chat while syncing).
+- **Local inbox:** Enable **Local propagation (offline inbox)** on the Network tab to serve as a propagation node (`rns-stack`); stats show queued count and storage used.
 - **Add remote node:** Paste a 32-character destination hash in the propagation section to add a known MeshChat/Ratspeak propagation node.
 
 ## Building the sidecar

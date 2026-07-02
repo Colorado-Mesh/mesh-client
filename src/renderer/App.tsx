@@ -113,8 +113,8 @@ import {
   RawPacketLogPanel,
   RepeatersPanel,
   ReticulumAdminPanel,
+  ReticulumNetworkPanel,
   ReticulumPeerListPanel,
-  ReticulumRadioPanel,
   ReticulumTopologyPanel,
   RFHistogramsPanel,
   RoomsPanel,
@@ -2478,15 +2478,6 @@ function AppContent() {
                             onStartReticulumStack={() =>
                               reticulumConnection.connectAutomatic('http')
                             }
-                            onOpenReticulumRadioPanel={() => {
-                              const radioTabIndex = findFilteredTabIndexForPanel(
-                                selectByProtocol(tabsByProtocol, 'reticulum'),
-                                RADIO_TAB_PANEL_INDEX,
-                              );
-                              if (radioTabIndex >= 0) {
-                                setActiveTab(radioTabIndex);
-                              }
-                            }}
                           />
                         </div>
                       </Suspense>
@@ -2738,8 +2729,8 @@ function AppContent() {
                       {activePanelIndex === 5 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            {capabilities.hasReticulumRadioPanel ? (
-                              <ReticulumRadioPanel
+                            {capabilities.hasReticulumNetworkPanel ? (
+                              <ReticulumNetworkPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
                               />

@@ -7,7 +7,7 @@ export const DiagnosticsPanel = lazy(() => import('./components/DiagnosticsPanel
 export const MapPanel = lazy(() => import('./components/MapPanel'));
 export const ModulePanel = lazy(() => import('./components/ModulePanel'));
 export const RadioPanel = lazy(() => import('./components/RadioPanel'));
-export const ReticulumRadioPanel = lazy(() => import('./components/ReticulumRadioPanel'));
+export const ReticulumNetworkPanel = lazy(() => import('./components/ReticulumNetworkPanel'));
 export const ReticulumAdminPanel = lazy(() => import('./components/ReticulumAdminPanel'));
 export const NomadNetworkPanel = lazy(() => import('./components/NomadNetworkPanel'));
 export const ReticulumPeerListPanel = lazy(() => import('./components/ReticulumPeerListPanel'));

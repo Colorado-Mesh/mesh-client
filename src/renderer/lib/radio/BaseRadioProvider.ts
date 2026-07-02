@@ -121,10 +121,8 @@ export interface ProtocolCapabilities {
   hasDiagnosticsPanel: boolean;
   /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
   hasReticulumInterfaceConfig: boolean;
-  /** Reticulum: network / peers visibility panel */
+  /** Reticulum: Network tab (identity, stack config, propagation) */
   hasReticulumNetworkPanel: boolean;
-  /** Reticulum: Radio tab (identity, interfaces, config) */
-  hasReticulumRadioPanel: boolean;
   /** Reticulum: LXMF file/image attachments in chat */
   hasLxmfAttachments: boolean;
   /** Reticulum: RNode firmware flasher on Radio tab */
@@ -206,7 +204,6 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
-  hasReticulumRadioPanel: false,
   hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
@@ -278,7 +275,6 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
-  hasReticulumRadioPanel: false,
   hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
@@ -349,7 +345,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
-  hasReticulumRadioPanel: true,
   hasLxmfAttachments: true,
   hasRNodeFlasher: true,
   hasReticulumPeersList: true,

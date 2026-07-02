@@ -682,7 +682,6 @@
       "stalePortHint": "Replug USB mohl změnit cestu. Aktualizujte v části Radio → Interfaces (Rádiová rozhraní) a poté restartujte zásobník.",
       "offline": "{{name}}: místní rozhraní je povoleno, ale offline",
       "offlineHint": "Zkontrolujte kabel, uvolněte port z Meshtastic/MeshCore a restartujte zásobník.",
-      "openRadio": "Otevřít rádio",
       "refreshPorts": "Obnovit porty",
       "availablePorts": "Dostupné: {{ports}}",
       "restartStack": "Restartujte zásobník",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "TX napájení použito",
     "xmodemInvalidFilename": "Název souboru obsahuje neplatné znaky",
     "validationInvalidPsk": "Neplatný base64 PSK — zkontrolujte klíč a zkuste to znovu",
-    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný",
-    "reticulumStackSettings": {
-      "title": "Nastavení zásobníku",
-      "enableTransport": "Povolit přepravu (trasa pro ostatní protějšky)",
-      "shareInstance": "Sdílet instanci Reticulum",
-      "logLevel": "Úroveň záznamu",
-      "save": "Uložit nastavení zásobníku",
-      "saveFailed": "Uložení nastavení zásobníku se nezdařilo."
-    },
-    "reticulumConfigImport": {
-      "title": "Importovat konfiguraci Reticulum",
-      "hint": "Vložte konfigurační soubor ve stylu rnsd nebo importujte z disku. Sloučit přidává/aktualizuje bloky rozhraní podle názvu; nahradit přepíše všechna rozhraní.",
-      "pasteLabel": "Obsah konfiguračního souboru",
-      "fromFile": "Importuj ze souboru",
-      "fromSystem": "Importovat výchozí systém",
-      "merge": "Sloučit import",
-      "replace": "Nahradit rozhraní",
-      "confirmTitle": "Importovat konfiguraci Reticulum",
-      "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
-      "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Tuto akci nelze vrátit zpět.",
-      "confirm": "Importovat"
-    },
-    "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
-    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systémového Reticulum.",
-    "reticulumFactoryReset": {
-      "title": "Obnovení továrního nastavení",
-      "hint": "Vymaže identitu, kontakty a zprávy ze zásobníku postranních vozíků. Konfigurace rozhraní je zachována.",
-      "button": "Resetovat data zásobníku",
-      "confirmTitle": "Resetovat zásobník Reticulum?",
-      "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
-      "confirm": "Obnovit"
-    }
+    "meshcoreChannelNameRequired": "Název kanálu nesmí být prázdný"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -2921,7 +2889,8 @@
     "admin": "Správa",
     "peers": "Vazby",
     "nomadnetwork": "Nomad Network",
-    "topology": "topologie sítě"
+    "topology": "topologie sítě",
+    "network": "Síť"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Srdce",
     "iconShield": "Štít",
     "iconUser": "Uživatel"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Nastavení zásobníku",
+      "enableTransport": "Povolit přenos (trasa pro ostatní protějšky)",
+      "shareInstance": "Sdílet instanci Reticulum",
+      "logLevel": "Úroveň protokolu",
+      "save": "Uložte nastavení zásobníku",
+      "saveFailed": "Nastavení zásobníku se nepodařilo uložit."
+    },
+    "reticulumConfigImport": {
+      "title": "Import konfigurace Reticulum",
+      "hint": "Vložte konfigurační soubor ve stylu rnsd nebo importujte z disku. Merge přidává/aktualizuje bloky rozhraní podle názvu; nahradit přepíše všechna rozhraní.",
+      "pasteLabel": "Obsah konfiguračního souboru",
+      "fromFile": "Importovat ze souboru…",
+      "fromSystem": "Výchozí nastavení systému importu",
+      "merge": "Sloučit import",
+      "replace": "Vyměňte rozhraní",
+      "confirmTitle": "Import konfigurace Reticulum",
+      "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
+      "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Toto nelze vrátit zpět.",
+      "confirm": "Importovat"
+    },
+    "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
+    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Obnovení továrního nastavení",
+      "hint": "Vymaže identitu, kontakty a zprávy ze zásobníku postranního vozíku. Konfigurace rozhraní je zachována.",
+      "button": "Resetovat data zásobníku",
+      "confirmTitle": "Resetovat Reticulum stack?",
+      "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
+      "confirm": "Resetovat"
+    }
   }
 }

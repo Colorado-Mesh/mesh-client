@@ -682,7 +682,6 @@
       "stalePortHint": "Der USB-Anschluss hat möglicherweise den Pfad geändert. Aktualisieren Sie in den Funkschnittstellen → und starten Sie dann den Stack neu.",
       "offline": "{{name}}: Lokale Schnittstelle ist aktiviert, aber offline",
       "offlineHint": "Überprüfen Sie das Kabel, lassen Sie den Anschluss von Meshtastic/MeshCore los und starten Sie den Stack neu.",
-      "openRadio": "Öffne Radio",
       "refreshPorts": "Ports aktualisieren",
       "availablePorts": "Verfügbar: {{ports}}",
       "restartStack": "Stapel neu starten",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "TX-Leistung angelegt",
     "xmodemInvalidFilename": "Dateiname enthält unzulässige Zeichen.",
     "validationInvalidPsk": "Ungültiges base64 PSK — überprüfen Sie den Schlüssel und versuchen Sie es erneut",
-    "meshcoreChannelNameRequired": "Kanalname darf nicht leer sein",
-    "reticulumStackSettings": {
-      "title": "Stack-Einstellungen",
-      "enableTransport": "Transport aktivieren (Route für andere Peers)",
-      "shareInstance": "Reticulum-Instanz teilen",
-      "logLevel": "Log-Level",
-      "save": "Stack-Einstellungen speichern",
-      "saveFailed": "Einstellungen nicht gespeichert."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum-Konfiguration importieren",
-      "hint": "Fügen Sie eine Konfigurationsdatei im rnsd-Stil ein oder importieren Sie sie von der Festplatte. Merge fügt Schnittstellenblöcke namentlich hinzu/aktualisiert sie; replace überschreibt alle Schnittstellen.",
-      "pasteLabel": "Inhalt der Konfigurationsdatei",
-      "fromFile": "Aus Datei importieren …",
-      "fromSystem": "Systemstandard importieren",
-      "merge": "Import zusammenführen",
-      "replace": "Schnittstellen ersetzen",
-      "confirmTitle": "Reticulum-Konfiguration importieren",
-      "confirmMerge": "Importierte Schnittstellen in die aktuelle Konfiguration zusammenführen?",
-      "confirmReplace": "Alle Schnittstellen mit der importierten Konfiguration ersetzen? Dies kann nicht rückgängig gemacht werden.",
-      "confirm": "Importieren"
-    },
-    "reticulumConfigImportFailed": "Config Import fehlgeschlagen:",
-    "reticulumConfigNotFound": "Bei den Standardpfaden wurde keine System-Reticulum-Konfiguration gefunden.",
-    "reticulumFactoryReset": {
-      "title": "Zurücksetzen auf Werkseinstellungen",
-      "hint": "Löscht Identität, Kontakte und Nachrichten aus dem Sidecar-Stapel. Die Schnittstellenkonfiguration bleibt erhalten.",
-      "button": "Stack-Daten zurücksetzen",
-      "confirmTitle": "Reticulum-Stack zurücksetzen?",
-      "confirmBody": "Dadurch werden Identität, Kontakte und lokale Nachrichten aus dem Beiwagen entfernt. Ihre Schnittstellenkonfigurationsdatei wird aufbewahrt.",
-      "confirm": "Zurücksetzen"
-    }
+    "meshcoreChannelNameRequired": "Kanalname darf nicht leer sein"
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -2921,7 +2889,8 @@
     "admin": "Verwaltung",
     "peers": "Kollegen",
     "nomadnetwork": "Nomadennetzwerk",
-    "topology": "Netzwerk-Topologie"
+    "topology": "Netzwerk-Topologie",
+    "network": "Netzwerk"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Herz",
     "iconShield": "Schild",
     "iconUser": "Nutzer"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Stack-Einstellungen",
+      "enableTransport": "Transport aktivieren (Route für andere Peers)",
+      "shareInstance": "Teilen Sie die Reticulum-Instanz",
+      "logLevel": "Protokollebene",
+      "save": "Stapeleinstellungen speichern",
+      "saveFailed": "Stapeleinstellungen konnten nicht gespeichert werden."
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum-Konfiguration importieren",
+      "hint": "Fügen Sie eine Konfigurationsdatei im RNSD-Stil ein oder importieren Sie sie von der Festplatte. Durch Zusammenführen werden Schnittstellenblöcke nach Namen hinzugefügt/aktualisiert. Ersetzen überschreibt alle Schnittstellen.",
+      "pasteLabel": "Inhalt der Konfigurationsdatei",
+      "fromFile": "Aus Datei importieren…",
+      "fromSystem": "Systemstandard importieren",
+      "merge": "Import zusammenführen",
+      "replace": "Ersetzen Sie Schnittstellen",
+      "confirmTitle": "Reticulum-Konfiguration importieren",
+      "confirmMerge": "Importierte Schnittstellen in die aktuelle Konfiguration einbinden?",
+      "confirmReplace": "Alle Schnittstellen durch die importierte Konfiguration ersetzen? Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Importieren"
+    },
+    "reticulumConfigImportFailed": "Konfigurationsimport fehlgeschlagen.",
+    "reticulumConfigNotFound": "In den Standardpfaden wurde keine System-Reticulum-Konfiguration gefunden."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Werksreset",
+      "hint": "Löscht Identität, Kontakte und Nachrichten aus dem Sidecar-Stack. Die Schnittstellenkonfiguration bleibt erhalten.",
+      "button": "Stapeldaten zurücksetzen",
+      "confirmTitle": "Reticulum-Stapel zurücksetzen?",
+      "confirmBody": "Dadurch werden Identität, Kontakte und lokale Nachrichten aus dem Sidecar entfernt. Ihre Schnittstellenkonfigurationsdatei bleibt erhalten.",
+      "confirm": "Zurücksetzen"
+    }
   }
 }

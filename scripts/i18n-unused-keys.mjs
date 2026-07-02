@@ -70,6 +70,7 @@ function collectDynamicTabKeys(enKeys) {
     'tabs.peers',
     'tabs.repeaters',
     'tabs.rooms',
+    'tabs.network',
   ]);
   for (const slot of slots) {
     const key = `tabs.${slot}`;

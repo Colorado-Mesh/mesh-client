@@ -1,5 +1,4 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
@@ -175,26 +174,5 @@ describe('ReticulumStackPanel', () => {
     ).not.toBeInTheDocument();
 
     vi.useRealTimers();
-  });
-
-  it('calls onOpenRadioPanel when Open Radio is clicked', async () => {
-    const user = userEvent.setup();
-    const onOpenRadioPanel = vi.fn();
-    render(
-      <ReticulumStackPanel
-        connecting={false}
-        onStartStack={async () => {}}
-        onStopStack={async () => {}}
-        onOpenRadioPanel={onOpenRadioPanel}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('connectionPanel.reticulumLocalInterfaces.openRadio'),
-      ).toBeInTheDocument();
-    });
-    await user.click(screen.getByText('connectionPanel.reticulumLocalInterfaces.openRadio'));
-    expect(onOpenRadioPanel).toHaveBeenCalledTimes(1);
   });
 });

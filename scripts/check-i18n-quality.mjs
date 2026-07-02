@@ -382,8 +382,8 @@ export const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
   'reticulumSidecarStartFailed',
 ]);
 
-/** radioPanel.* top-level Reticulum keys (not nested objects). */
-export const RETICULUM_RADIO_PANEL_TOP_LEAF_KEYS = new Set([
+/** networkPanel.* top-level Reticulum keys (not nested objects). */
+export const RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS = new Set([
   'reticulumConfigImportFailed',
   'reticulumConfigNotFound',
 ]);
@@ -598,7 +598,8 @@ export const RETICULUM_IDENTICAL_OK_LEAF_KEYS = new Set([
 export function isReticulumUiFlatKey(flatKey) {
   if (flatKey === 'aria.switchToReticulum') return true;
   if (flatKey.startsWith('connectionPanel.reticulum')) return true;
-  if (flatKey.startsWith('radioPanel.reticulum')) return true;
+  if (flatKey.startsWith('networkPanel.reticulum')) return true;
+  if (flatKey.startsWith('adminPanel.reticulum')) return true;
   return false;
 }
 
@@ -730,14 +731,16 @@ function checkReticulumConnectionPanelIssues(ctx) {
 
   const isConnectionTopLevel =
     flatKey.startsWith('connectionPanel.') && RETICULUM_CONNECTION_PANEL_LEAF_KEYS.has(leafKey);
-  const isRadioTopLevel =
-    flatKey.startsWith('radioPanel.') && RETICULUM_RADIO_PANEL_TOP_LEAF_KEYS.has(leafKey);
+  const isNetworkTopLevel =
+    flatKey.startsWith('networkPanel.') && RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS.has(leafKey);
   const isNestedReticulum =
-    flatKey.startsWith('connectionPanel.reticulum') || flatKey.startsWith('radioPanel.reticulum');
+    flatKey.startsWith('connectionPanel.reticulum') ||
+    flatKey.startsWith('networkPanel.reticulum') ||
+    flatKey.startsWith('adminPanel.reticulum');
 
   if (
     !isConnectionTopLevel &&
-    !isRadioTopLevel &&
+    !isNetworkTopLevel &&
     !isNestedReticulum &&
     flatKey !== 'aria.switchToReticulum'
   ) {

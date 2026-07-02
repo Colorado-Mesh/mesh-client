@@ -21,7 +21,7 @@ describe('computeTabMappings', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const radioPanelIndex = TAB_SLOT_IDS.indexOf('Radio');
     const graphPanelIndex = TAB_SLOT_IDS.indexOf('Graph');
-    expect(RETICULUM_CAPABILITIES.hasReticulumRadioPanel).toBe(true);
+    expect(RETICULUM_CAPABILITIES.hasReticulumNetworkPanel).toBe(true);
     expect(RETICULUM_CAPABILITIES.hasNeighborInfo).toBe(false);
     expect(tabs.tabIndexToPanelIndex).toContain(radioPanelIndex);
     expect(tabs.tabIndexToPanelIndex).not.toContain(graphPanelIndex);
@@ -105,6 +105,13 @@ describe('computeTabMappings', () => {
     for (const slot of expectedSlots) {
       expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf(slot));
     }
+  });
+
+  it('uses Network tab label for Reticulum radio slot', () => {
+    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const radioTabIndex = findFilteredTabIndexForPanel(tabs, RADIO_TAB_PANEL_INDEX);
+    expect(radioTabIndex).toBeGreaterThanOrEqual(0);
+    expect(tabs.displayTabLabels[radioTabIndex]).toBe('tabs.network');
   });
 
   it('shows MeshCore sidebar panels including Radio, Map, and Repeaters', () => {

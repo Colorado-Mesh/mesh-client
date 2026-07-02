@@ -48,7 +48,7 @@ const DEVICE_FILES = {
     path.join(ROOT, 'src', 'main', 'reticulum-sidecar-path.ts'),
     path.join(ROOT, 'src', 'main', 'ipc', 'reticulum-handlers.ts'),
     path.join(ROOT, 'src', 'renderer', 'runtime', 'useReticulumRuntime.ts'),
-    path.join(ROOT, 'src', 'renderer', 'components', 'ReticulumRadioPanel.tsx'),
+    path.join(ROOT, 'src', 'renderer', 'components', 'ReticulumNetworkPanel.tsx'),
     path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumLocalInterfaceLogging.ts'),
     path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumBleAdapterLease.ts'),
     path.join(ROOT, 'src', 'renderer', 'lib', 'reticulum', 'reticulumSidecarReads.ts'),

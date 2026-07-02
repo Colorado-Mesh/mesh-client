@@ -682,7 +682,6 @@
       "stalePortHint": "O conector USB pode ter alterado o caminho. Atualize em → Interfaces de Rádio e reinicie a pilha.",
       "offline": "{{name}}: a interface local está ativada, mas offline",
       "offlineHint": "Verifique o cabo, libere a porta do Meshtastic/MeshCore e reinicie a pilha.",
-      "openRadio": "Open Radio",
       "refreshPorts": "Atualizar portas",
       "availablePorts": "Disponível: {{ports}}",
       "restartStack": "Reiniciar pilha",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "Potência TX aplicada",
     "xmodemInvalidFilename": "contém caracteres inválidos",
     "validationInvalidPsk": "PSK base64 inválido — verifique a chave e tente novamente",
-    "meshcoreChannelNameRequired": "O nome do canal não pode estar vazio",
-    "reticulumStackSettings": {
-      "title": "Configurações de pilha",
-      "enableTransport": "Ativar transporte (rota para outros pares)",
-      "shareInstance": "Compartilhar instância Reticulum",
-      "logLevel": "Registro de Nível",
-      "save": "Salvar configurações de pilha",
-      "saveFailed": "Erro ao salvar as configurações."
-    },
-    "reticulumConfigImport": {
-      "title": "Importar configuração Reticulum",
-      "hint": "Cole um arquivo de configuração no estilo rnsd ou importe do disco. Mesclar blocos de interface de adição/atualização por nome; substituir substitui todas as interfaces.",
-      "pasteLabel": "Configurar conteúdo do arquivo",
-      "fromFile": "Importar do arquivo",
-      "fromSystem": "Importar padrão do sistema",
-      "merge": "Mesclar importação",
-      "replace": "Substituir interfaces",
-      "confirmTitle": "Importar configuração Reticulum",
-      "confirmMerge": "Mesclar interfaces importadas na configuração atual?",
-      "confirmReplace": "Substituir todas as interfaces pela configuração importada? Isso não pode ser desfeito.",
-      "confirm": "Importação"
-    },
-    "reticulumConfigImportFailed": "Falha na importação da configuração.",
-    "reticulumConfigNotFound": "Nenhuma configuração Reticulum do sistema encontrada nos caminhos padrão.",
-    "reticulumFactoryReset": {
-      "title": "Reinicialização de fábrica",
-      "hint": "Limpa a identidade, os contatos e as mensagens da pilha de sidecar. A configuração da interface é preservada.",
-      "button": "Redefinir dados da pilha",
-      "confirmTitle": "Redefinir stack Reticulum?",
-      "confirmBody": "Isso remove a identidade, os contatos e as mensagens locais do sidecar. Seu arquivo de configuração de interface é mantido.",
-      "confirm": "Redefinir"
-    }
+    "meshcoreChannelNameRequired": "O nome do canal não pode estar vazio"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",
@@ -2921,7 +2889,8 @@
     "admin": "Administração",
     "peers": "Pares",
     "nomadnetwork": "Nomad Network",
-    "topology": "Topologia de rede"
+    "topology": "Topologia de rede",
+    "network": "Rede"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -3076,5 +3045,40 @@
     "iconHeart": "Coração",
     "iconShield": "Blindagem",
     "iconUser": "Usuário"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Configurações de pilha",
+      "enableTransport": "Habilitar transporte (rota para outros peers)",
+      "shareInstance": "Compartilhar instância do Reticulum",
+      "logLevel": "Nível de registro",
+      "save": "Salvar configurações de pilha",
+      "saveFailed": "Falha ao salvar as configurações da pilha."
+    },
+    "reticulumConfigImport": {
+      "title": "Importar config Reticulum",
+      "hint": "Cole um arquivo de configuração estilo rnsd ou importe do disco. Mesclar adiciona/atualiza blocos de interface por nome; substituir substitui todas as interfaces.",
+      "pasteLabel": "Conteúdo do arquivo de configuração",
+      "fromFile": "Importar do arquivo…",
+      "fromSystem": "Importar padrão do sistema",
+      "merge": "Mesclar importação",
+      "replace": "Substituir interfaces",
+      "confirmTitle": "Importar config Reticulum",
+      "confirmMerge": "Mesclar interfaces importadas na configuração atual?",
+      "confirmReplace": "Substituir todas as interfaces pela configuração importada? Isto não pode ser desfeito.",
+      "confirm": "Importar"
+    },
+    "reticulumConfigImportFailed": "Falha na importação de configuração.",
+    "reticulumConfigNotFound": "Nenhuma configuração do Reticulum do sistema encontrada nos caminhos padrão."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Redefinição de fábrica",
+      "hint": "Limpa identidade, contatos e mensagens da pilha secundária. A configuração da interface é preservada.",
+      "button": "Redefinir dados da pilha",
+      "confirmTitle": "Redefinir stack Reticulum?",
+      "confirmBody": "Isso remove identidade, contatos e mensagens locais do arquivo secundário. Seu arquivo de configuração da interface é mantido.",
+      "confirm": "Reiniciar"
+    }
   }
 }

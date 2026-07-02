@@ -42,7 +42,7 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 **`PUT /api/v1/interfaces/{id}` patch fields** (all optional): `name`, `type`, `enabled`, `host`, `port`, `preset`, `serial_port`, `frequency`, `bandwidth`, `txpower`, `spreading_factor`, `coding_rate`, `callsign`, `id_interval`, `mode`.
 
-The Radio tab UI edits a subset: **name** for all types; **host** / **port** for TCP; **serial_port**, **preset**, **callsign** for RNode. Enable/disable uses the dedicated POST routes.
+The Connection tab UI edits a subset: **name** for all types; **host** / **port** for TCP; **serial_port**, **preset**, **callsign** for RNode. Enable/disable uses the dedicated POST routes.
 
 ### Config and stack settings
 

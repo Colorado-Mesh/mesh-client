@@ -682,7 +682,6 @@
       "stalePortHint": "USB 리플러그가 경로를 변경했을 수 있습니다. 라디오 인터페이스에서 → 업데이트한 다음 스택을 다시 시작하십시오.",
       "offline": "{{name}}: 로컬 인터페이스가 활성화되어 있지만 오프라인 상태임",
       "offlineHint": "케이블을 확인하고 Meshtastic/MeshCore에서 포트를 분리한 다음 스택을 다시 시작하십시오.",
-      "openRadio": "라디오 열기",
       "refreshPorts": "포트 새로 고침",
       "availablePorts": "사용 가능: {{ports}}",
       "restartStack": "스택 다시 시작",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "TX 전원 적용됨",
     "xmodemInvalidFilename": "파일 이름에 유효하지 않은 문자가 포함되어 있습니다",
     "validationInvalidPsk": "유효하지 않은 base64 PSK — 키를 확인하고 다시 시도하십시오",
-    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다",
-    "reticulumStackSettings": {
-      "title": "스택 설정",
-      "enableTransport": "전송 활성화 (다른 피어에 대한 라우팅)",
-      "shareInstance": "Reticulum 인스턴스 공유",
-      "logLevel": "로그 레벨",
-      "save": "스택 설정 저장",
-      "saveFailed": "설정을 저장하지 못했습니다."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum 구성 가져오기",
-      "hint": "Rnsd 스타일의 구성 파일을 붙여 넣거나 디스크에서 가져옵니다. 병합은 이름별로 인터페이스 블록을 추가/업데이트합니다. 바꾸기는 모든 인터페이스를 덮어씁니다.",
-      "pasteLabel": "파일 내용 구성",
-      "fromFile": "파일에서 가져오기",
-      "fromSystem": "시스템 기본값 가져오기",
-      "merge": "가져오기 병합",
-      "replace": "인터페이스 교체",
-      "confirmTitle": "Reticulum 구성 가져오기",
-      "confirmMerge": "가져온 인터페이스를 현재 구성으로 병합하시겠습니까?",
-      "confirmReplace": "모든 인터페이스를 가져온 구성으로 교체하시겠습니까? 이 작업은 취소할 수 없습니다.",
-      "confirm": "가져오기"
-    },
-    "reticulumConfigImportFailed": "구성 가져오기에 실패했습니다.",
-    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다.",
-    "reticulumFactoryReset": {
-      "title": "공장 초기화",
-      "hint": "사이드카 스택에서 ID, 연락처 및 메시지를 지웁니다. 인터페이스 구성이 유지됩니다.",
-      "button": "스택 데이터 재설정",
-      "confirmTitle": "Reticulum 스택을 재설정하시겠습니까?",
-      "confirmBody": "이렇게 하면 사이드카에서 ID, 연락처 및 로컬 메시지가 제거됩니다. 인터페이스 설정 파일이 보관됩니다.",
-      "confirm": "초기화"
-    }
+    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다"
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -2921,7 +2889,8 @@
     "admin": "관리",
     "peers": "통신자",
     "nomadnetwork": "Nomad Network",
-    "topology": "네트워크 토폴로지"
+    "topology": "네트워크 토폴로지",
+    "network": "회로망"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -3076,5 +3045,40 @@
     "iconHeart": "심장",
     "iconShield": "실드",
     "iconUser": "사용자"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "스택 설정",
+      "enableTransport": "전송 활성화(다른 피어에 대한 경로)",
+      "shareInstance": "Reticulum 인스턴스 공유",
+      "logLevel": "로그 수준",
+      "save": "스택 설정 저장",
+      "saveFailed": "스택 설정을 저장하지 못했습니다."
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum config 가져오기",
+      "hint": "rnsd 스타일 구성 파일을 붙여넣거나 디스크에서 가져옵니다. 병합은 이름별로 인터페이스 블록을 추가/업데이트합니다. 교체는 모든 인터페이스를 덮어씁니다.",
+      "pasteLabel": "구성 파일 내용",
+      "fromFile": "파일에서 가져오기…",
+      "fromSystem": "가져오기 시스템 기본값",
+      "merge": "병합 가져오기",
+      "replace": "인터페이스 교체",
+      "confirmTitle": "Reticulum config 가져오기",
+      "confirmMerge": "가져온 인터페이스를 현재 구성에 병합하시겠습니까?",
+      "confirmReplace": "모든 인터페이스를 가져온 구성으로 바꾸시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "confirm": "수입"
+    },
+    "reticulumConfigImportFailed": "구성 가져오기에 실패했습니다.",
+    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다."
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "공장 초기화",
+      "hint": "사이드카 스택에서 ID, 연락처 및 메시지를 지웁니다. 인터페이스 구성이 유지됩니다.",
+      "button": "스택 데이터 재설정",
+      "confirmTitle": "Reticulum stack을 재설정하시겠습니까?",
+      "confirmBody": "이렇게 하면 사이드카에서 ID, 연락처 및 로컬 메시지가 제거됩니다. 인터페이스 구성 파일은 유지됩니다.",
+      "confirm": "다시 놓기"
+    }
   }
 }

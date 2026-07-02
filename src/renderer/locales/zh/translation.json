@@ -682,7 +682,6 @@
       "stalePortHint": "USB替换插头可能已更改路径。在无线→接口中更新，然后重新启动堆栈。",
       "offline": "{{name}} ：本地接口已启用但离线",
       "offlineHint": "检查电缆，从Meshtastic/MeshCore释放端口，然后重新启动堆栈。",
-      "openRadio": "打开收音机",
       "refreshPorts": "刷新端口",
       "availablePorts": "可用： {{ports}}",
       "restartStack": "重启堆栈",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "已应用TX功率",
     "xmodemInvalidFilename": "文件名包含无效字符",
     "validationInvalidPsk": "Base64 PSK无效—请检查密钥并重试",
-    "meshcoreChannelNameRequired": "频道名称不能为空",
-    "reticulumStackSettings": {
-      "title": "堆栈设置",
-      "enableTransport": "启用传输（为其他节点路由）",
-      "shareInstance": "分享Reticulum实例",
-      "logLevel": "日志级别",
-      "save": "保存堆栈设置",
-      "saveFailed": "無法儲存設定值。"
-    },
-    "reticulumConfigImport": {
-      "title": "导入Reticulum配置",
-      "hint": "粘贴rnsd样式的配置文件或从磁盘导入。Merge按名称添加/更新接口块； REPLACE覆盖所有接口。",
-      "pasteLabel": "配置文件内容",
-      "fromFile": "从文件导入…",
-      "fromSystem": "导入系统默认值",
-      "merge": "合并导入",
-      "replace": "替换接口",
-      "confirmTitle": "导入Reticulum配置",
-      "confirmMerge": "将导入的接口合并到当前配置中？",
-      "confirmReplace": "用导入的配置替换所有接口？此操作无法撤消。",
-      "confirm": "进口"
-    },
-    "reticulumConfigImportFailed": "导入设置失败.",
-    "reticulumConfigNotFound": "在默认路径下未找到系统Reticulum配置。",
-    "reticulumFactoryReset": {
-      "title": "恢复出厂设置",
-      "hint": "清除Sidecar堆栈中的身份、联系人和消息。接口配置被保留。",
-      "button": "重置堆栈数据",
-      "confirmTitle": "重置 Reticulum 堆栈？",
-      "confirmBody": "这将从Sidecar中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
-      "confirm": "一键复原"
-    }
+    "meshcoreChannelNameRequired": "频道名称不能为空"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -2921,7 +2889,8 @@
     "admin": "管理",
     "peers": "Pee对端",
     "nomadnetwork": "游牧网络",
-    "topology": "网络拓扑图"
+    "topology": "网络拓扑图",
+    "network": "网络"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -3076,5 +3045,40 @@
     "iconHeart": "倾心点",
     "iconShield": "防护罩",
     "iconUser": "用户"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "堆栈设置",
+      "enableTransport": "启用传输（其他对等点的路由）",
+      "shareInstance": "共享 Reticulum 实例",
+      "logLevel": "日志级别",
+      "save": "保存堆栈设置",
+      "saveFailed": "无法保存堆栈设置。"
+    },
+    "reticulumConfigImport": {
+      "title": "导入 Reticulum config",
+      "hint": "粘贴 rnsd 样式的配置文件或从磁盘导入。合并按名称添加/更新接口块；替换覆盖所有接口。",
+      "pasteLabel": "配置文件内容",
+      "fromFile": "从文件导入...",
+      "fromSystem": "导入系统默认值",
+      "merge": "合并导入",
+      "replace": "更换接口",
+      "confirmTitle": "导入 Reticulum config",
+      "confirmMerge": "将导入的接口合并到当前配置中？",
+      "confirmReplace": "用导入的配置替换所有接口？此操作无法撤消。",
+      "confirm": "进口"
+    },
+    "reticulumConfigImportFailed": "配置导入失败。",
+    "reticulumConfigNotFound": "在默认路径中未找到系统 Reticulum 配置。"
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "恢复出厂设置",
+      "hint": "从 sidecar 堆栈中清除身份、联系人和消息。接口配置被保留。",
+      "button": "重置堆栈数据",
+      "confirmTitle": "重置 Reticulum stack？",
+      "confirmBody": "这将从 sidecar 中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
+      "confirm": "重置"
+    }
   }
 }

@@ -198,10 +198,10 @@ describe('isDeviceEntry — Reticulum protocol', () => {
     ).toBe(true);
   });
 
-  it('classifies [ReticulumRadioPanel] message as Reticulum device entry', () => {
+  it('classifies [ReticulumNetworkPanel] message as Reticulum device entry', () => {
     expect(
       isDeviceEntry(
-        entry('main', '[ReticulumRadioPanel] identity status network error'),
+        entry('main', '[ReticulumNetworkPanel] identity status network error'),
         'reticulum',
       ),
     ).toBe(true);

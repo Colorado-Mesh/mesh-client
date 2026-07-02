@@ -682,7 +682,6 @@
       "stalePortHint": "USBレプラグがパスを変更した可能性があります。Radio → Interfacesで更新し、スタックを再起動します。",
       "offline": "{{name}} ：ローカルインターフェースは有効ですが、オフラインです",
       "offlineHint": "ケーブルを確認し、Meshtastic/MeshCoreからポートを解放してから、スタックを再起動します。",
-      "openRadio": "ラジオを開く",
       "refreshPorts": "リフレッシュポート",
       "availablePorts": "利用可能： {{ports}}",
       "restartStack": "スタックを再起動します",
@@ -2414,38 +2413,7 @@
     "applyTxPowerSuccess": "TX電力が適用されました",
     "xmodemInvalidFilename": "％filename に無効な文字が含まれています。",
     "validationInvalidPsk": "無効なbase 64 PSK —キーを確認してもう一度やり直してください",
-    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません",
-    "reticulumStackSettings": {
-      "title": "スタック設定",
-      "enableTransport": "トランスポートを有効にする（他のピアのルート）",
-      "shareInstance": "Reticulumインスタンスを共有",
-      "logLevel": "ログレベル",
-      "save": "スタック設定を保存",
-      "saveFailed": "スタック設定の保存に失敗しました。"
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum設定のインポート",
-      "hint": "Rnsdスタイルの設定ファイルを貼り付けるか、ディスクからインポートします。マージはインターフェースブロックを名前で追加/更新します。置き換えるとすべてのインターフェースが上書きされます。",
-      "pasteLabel": "設定ファイルの内容",
-      "fromFile": "ファイルから読み込む…",
-      "fromSystem": "システムのデフォルトをインポート",
-      "merge": "マージインポート",
-      "replace": "インターフェースを置き換える",
-      "confirmTitle": "Reticulum設定のインポート",
-      "confirmMerge": "インポートしたインターフェイスを現在の設定にマージしますか？",
-      "confirmReplace": "すべてのインターフェイスをインポートされた設定に置き換えますか？これは元に戻せません。",
-      "confirm": "インポート"
-    },
-    "reticulumConfigImportFailed": "設定のインポートに失敗しました。",
-    "reticulumConfigNotFound": "デフォルトパスにシステムReticulum設定が見つかりません。",
-    "reticulumFactoryReset": {
-      "title": "工場出荷時のリセット",
-      "hint": "サイドカースタックからID、連絡先、およびメッセージをクリアします。インターフェース構成は保持されます。",
-      "button": "スタックデータをリセット",
-      "confirmTitle": "Reticulum スタックをリセットしますか？",
-      "confirmBody": "これにより、サイドカーからID、連絡先、ローカルメッセージが削除されます。インターフェース設定ファイルが保持されます。",
-      "confirm": "リセット"
-    }
+    "meshcoreChannelNameRequired": "チャンネル名を空にすることはできません"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -2921,7 +2889,8 @@
     "admin": "管理",
     "peers": "ピア",
     "nomadnetwork": "ノマドネットワーク",
-    "topology": "ネットワーク・トポロジー"
+    "topology": "ネットワーク・トポロジー",
+    "network": "ネットワーク"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -3076,5 +3045,40 @@
     "iconHeart": "ハートマーク",
     "iconShield": "シールド",
     "iconUser": "ユーザー"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "スタック設定",
+      "enableTransport": "トランスポート (他のピアへのルート) を有効にする",
+      "shareInstance": "Reticulum インスタンスを共有する",
+      "logLevel": "ログレベル",
+      "save": "スタック設定の保存",
+      "saveFailed": "スタック設定の保存に失敗しました。"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum 構成をインポートする",
+      "hint": "rnsd スタイルの構成ファイルを貼り付けるか、ディスクからインポートします。 Merge はインターフェイス ブロックを名前で追加/更新します。 replace はすべてのインターフェイスを上書きします。",
+      "pasteLabel": "設定ファイルの内容",
+      "fromFile": "ファイルからインポート…",
+      "fromSystem": "システムのデフォルトをインポートする",
+      "merge": "マージインポート",
+      "replace": "インターフェースを置き換える",
+      "confirmTitle": "Reticulum 構成をインポートする",
+      "confirmMerge": "インポートされたインターフェイスを現在の構成にマージしますか?",
+      "confirmReplace": "すべてのインターフェイスをインポートされた構成で置き換えますか?これを元に戻すことはできません。",
+      "confirm": "輸入"
+    },
+    "reticulumConfigImportFailed": "構成のインポートに失敗しました。",
+    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。"
+  },
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "工場出荷時設定にリセット",
+      "hint": "ID、連絡先、メッセージをサイドカー スタックからクリアします。インターフェイス設定は保存されます。",
+      "button": "スタックデータをリセット",
+      "confirmTitle": "Reticulumスタックをリセットしますか？",
+      "confirmBody": "これにより、サイドカーから ID、連絡先、ローカル メッセージが削除されます。インターフェイス設定ファイルは保持されます。",
+      "confirm": "リセット"
+    }
   }
 }

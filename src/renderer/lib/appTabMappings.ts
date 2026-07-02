@@ -21,7 +21,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   'hasNomadNetworkPanel', // Nomad Network
   undefined, // Nodes/Contacts
   { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel'] }, // Map
-  { or: ['hasChannelConfig', 'hasReticulumRadioPanel', 'hasJsonRadioConfigImport'] }, // Radio
+  { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
   { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
   { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
   'hasRoomServersPanel', // Rooms
@@ -58,6 +58,9 @@ function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `t
     return 'tabs.repeaters';
   }
   if (panelIndex === ROOMS_PANEL_INDEX && capabilities.hasRoomServersPanel) return 'tabs.rooms';
+  if (panelIndex === RADIO_TAB_PANEL_INDEX && capabilities.hasReticulumNetworkPanel) {
+    return 'tabs.network';
+  }
   return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
 }
 
