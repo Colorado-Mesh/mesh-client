@@ -1021,7 +1021,7 @@ export default function DiagnosticsPanel({
                   <th className="px-4 py-2.5 text-right">
                     {t('diagnosticsPanel.foreignCountColumn')}
                   </th>
-                  <th className="px-4 py-2.5 text-right">Signal</th>
+                  <th className="px-4 py-2.5 text-right">{t('diagnosticsPanel.signalColumn')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
@@ -1058,8 +1058,12 @@ export default function DiagnosticsPanel({
                       </td>
                       <td className="px-4 py-2.5 text-right text-gray-300">{d.count}×</td>
                       <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
-                        {d.rssi !== undefined ? `RSSI ${d.rssi}` : '—'}
-                        {d.snr !== undefined ? ` / SNR ${d.snr.toFixed(1)}` : ''}
+                        {d.rssi !== undefined
+                          ? t('diagnosticsPanel.rssiShort', { rssi: d.rssi })
+                          : '—'}
+                        {d.snr !== undefined
+                          ? ` / ${t('diagnosticsPanel.snrDb', { snr: d.snr.toFixed(1) })}`
+                          : ''}
                       </td>
                     </tr>
                   );
@@ -1121,17 +1125,21 @@ export default function DiagnosticsPanel({
                   <div className="text-gray-200">{d.count}×</div>
                   {(d.rssi !== undefined || d.snr !== undefined) && (
                     <>
-                      <div className="text-muted">Signal</div>
+                      <div className="text-muted">{t('diagnosticsPanel.signalColumn')}</div>
                       <div className="font-mono text-gray-200">
-                        {d.rssi !== undefined ? `RSSI ${d.rssi} dBm` : ''}
+                        {d.rssi !== undefined
+                          ? t('diagnosticsPanel.rssiDbm', { rssi: d.rssi })
+                          : ''}
                         {d.rssi !== undefined && d.snr !== undefined ? ', ' : ''}
-                        {d.snr !== undefined ? `SNR ${d.snr.toFixed(1)} dB` : ''}
+                        {d.snr !== undefined
+                          ? t('diagnosticsPanel.snrDb', { snr: d.snr.toFixed(1) })
+                          : ''}
                       </div>
                     </>
                   )}
                   {d.lastSenderId != null && (
                     <>
-                      <div className="text-muted">Sender</div>
+                      <div className="text-muted">{t('diagnosticsPanel.senderLabel')}</div>
                       <div className="font-mono text-gray-200">
                         {formatMeshtasticNodeId(d.lastSenderId)}
                         {senderName ? ` (${senderName})` : ''}

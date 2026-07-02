@@ -7,6 +7,33 @@ import type {
   RfDiagnosticRow,
   RoutingDiagnosticRow,
 } from '../types';
+import { NOISY_PORTNUMS } from './RoutingDiagnosticEngine';
+
+const ROUTING_PORT_LABEL_KEY: Record<number, string> = {
+  [NOISY_PORTNUMS.NODEINFO_APP]: 'diagnosticsPanel.routingPort.nodeInfo',
+  [NOISY_PORTNUMS.TELEMETRY_APP]: 'diagnosticsPanel.routingPort.telemetry',
+  [NOISY_PORTNUMS.NEIGHBOR_INFO_APP]: 'diagnosticsPanel.routingPort.neighborInfo',
+  [NOISY_PORTNUMS.TRACEROUTE_APP]: 'diagnosticsPanel.routingPort.traceroute',
+  [NOISY_PORTNUMS.POSITION_APP]: 'diagnosticsPanel.routingPort.position',
+  [NOISY_PORTNUMS.REMOTE_HARDWARE_APP]: 'diagnosticsPanel.routingPort.remoteHardware',
+  [NOISY_PORTNUMS.REMOTE_HARDWARE_APP_V2]: 'diagnosticsPanel.routingPort.remoteHardware',
+  [NOISY_PORTNUMS.ADMIN_APP]: 'diagnosticsPanel.routingPort.admin',
+  1001: 'diagnosticsPanel.routingPort.discoveryFlood',
+  1002: 'diagnosticsPanel.routingPort.roomAdvert',
+};
+
+export function routingPortLabelKey(portnum: number): string {
+  return ROUTING_PORT_LABEL_KEY[portnum] ?? 'diagnosticsPanel.routingPort.generic';
+}
+
+export function translateRoutingPortLabel(t: TFunction, portnum: number): string {
+  const key = routingPortLabelKey(portnum);
+  return key === 'diagnosticsPanel.routingPort.generic' ? t(key, { port: portnum }) : t(key);
+}
+
+export function formatRoutingPortLabels(t: TFunction, portnums: number[]): string {
+  return portnums.map((portnum) => translateRoutingPortLabel(t, portnum)).join(', ');
+}
 
 const RF_CONDITION_LABEL_KEY: Record<string, string> = {
   'Utilization vs. TX': 'diagnosticsPanel.rfCondition.utilizationVsTx',
@@ -77,7 +104,22 @@ export function translateRFDiagnosisCause(
 
 export function translateRoutingRowDescription(t: TFunction, row: RoutingDiagnosticRow): string {
   if (row.descriptionI18n) {
-    return t(row.descriptionI18n.key, row.descriptionI18n.params);
+    const { key, params } = row.descriptionI18n;
+    if (
+      key === 'diagnosticsPanel.routingDesc.noisyNode' &&
+      params &&
+      typeof params.portNums === 'string'
+    ) {
+      const ports = formatRoutingPortLabels(
+        t,
+        params.portNums
+          .split(',')
+          .map((p) => Number.parseInt(p, 10))
+          .filter((n) => !Number.isNaN(n)),
+      );
+      return t(key, { ratePerHour: params.ratePerHour, ports });
+    }
+    return t(key, params ?? {});
   }
   return row.description;
 }

@@ -6,6 +6,7 @@ import type {
 } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { ConnectionIcon } from '@/renderer/lib/icons/connectionIcons';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
+import { reticulumPickerScanErrorI18nKey } from '@/renderer/lib/reticulum/reticulumPickerScanError';
 
 export interface ReticulumInterfaceDevicePickerModalProps {
   open: boolean;
@@ -102,13 +103,10 @@ export function ReticulumInterfaceDevicePickerModal({
 
         {scanError ? (
           <p className="border-b border-gray-700 px-4 py-2 text-xs text-amber-300" role="alert">
-            {scanError === 'stack_required'
-              ? t('connectionPanel.reticulumInterfaces.pickerStackRequired')
-              : scanError === 'scan_busy'
-                ? t('connectionPanel.humanize.ble.scanBusy')
-                : scanError === 'ble_unavailable'
-                  ? t('connectionPanel.reticulumInterfaces.bleUnavailable')
-                  : scanError}
+            {(() => {
+              const { key, params } = reticulumPickerScanErrorI18nKey(scanError);
+              return t(key, params);
+            })()}
           </p>
         ) : null}
 
@@ -162,7 +160,9 @@ export function ReticulumInterfaceDevicePickerModal({
           ) : scanning && devices.length === 0 ? (
             <div className="text-muted px-4 py-6 text-center text-sm">
               <SpinnerIcon className="text-muted mx-auto mb-2 h-5 w-5" />
-              {t('connectionPanel.scanningDevices', { protocol: 'Reticulum' })}
+              {t('connectionPanel.scanningDevices', {
+                protocol: t('connectionPanel.bleOwner.reticulum'),
+              })}
             </div>
           ) : devices.length === 0 ? (
             <p className="text-muted px-4 py-6 text-center text-sm">
@@ -180,7 +180,10 @@ export function ReticulumInterfaceDevicePickerModal({
                 <button
                   key={`${device.address}-${device.kind ?? 'ble'}`}
                   type="button"
-                  aria-label={`${displayName} ${device.address}`}
+                  aria-label={t('connectionPanel.reticulumInterfaces.pickerDeviceAria', {
+                    name: displayName,
+                    address: device.address,
+                  })}
                   onClick={() => {
                     onSelect(value);
                   }}

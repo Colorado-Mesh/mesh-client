@@ -23,7 +23,17 @@
       "reconnecting": "Menghubungkan kembali"
     },
     "nodeLabel": "Simpul: {{name}}",
-    "takClientLost": "Klien TAK HILANG"
+    "takClientLost": "Klien TAK HILANG",
+    "title": "Klien Jaring",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Matikan tanda Colorado Mesh",
+    "meshTubeSignOn": "Nyalakan tanda Colorado Mesh",
+    "queueBadge": "T: {{used}}/{{max}}",
+    "telemetryDisabled": "Telemetri dinonaktifkan pada perangkat ini. Mengaktifkan metrik perangkat membantu mesh dan aplikasi ini (diagnostik, baterai, sinyal). Aktifkan di tab Radio.",
+    "scrollToTop": "^ Atas",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh di GitHub",
+    "footerWebsiteTitle": "Laman web Colorado Mesh"
   },
   "appPanel": {
     "failedSaveRetention": "Gagal menyimpan setelan retensi pesan.",
@@ -198,7 +208,111 @@
     "reticulumSection": "Reticulum — Tumpukan Reticulum",
     "reticulumAnnounceHelp": "Seberapa sering identitas Anda diumumkan di jaringan, dan alat untuk menghapus pengumuman yang tersimpan.",
     "reticulumPropagationHelp": "Pilih bagaimana node propagasi disinkronkan dan tarik data propagasi terbaru bila diperlukan.",
-    "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Pada tab Reticulum, jalur perangkat menyertakan keluaran sespan dan kesehatan antarmuka lokal. Baris debug memerlukan kotak centang di dalam panel log."
+    "logPanelHelp": "Saat diaktifkan, streaming log langsung muncul di sebelah kanan. Pada tab Reticulum, jalur perangkat menyertakan keluaran sespan dan kesehatan antarmuka lokal. Baris debug memerlukan kotak centang di dalam panel log.",
+    "autoPruneUnheardContactsDaysAria": "Pangkas otomatis kontak yang belum pernah terdengar saat startup, lebih lama dari {{days}} hari",
+    "capTotalContactsCountAria": "Batasi total kontak, pertahankan kontak {{count}} yang terakhir dilihat",
+    "unknownError": "Kesalahan tidak diketahui",
+    "resetDiagnosticsConfirm": "Ini akan menghapus semua anomali perutean, riwayat hop, dan statistik paket. Mesin akan membangun kembali dari paket baru yang masuk. Melanjutkan?",
+    "clearGpsDataConfirm": "Ini akan menghapus koordinat GPS yang tersimpan dari semua node. Node akan tetap ada tetapi posisinya akan kosong sampai data baru diterima. Melanjutkan?",
+    "clearPositionHistoryConfirm": "Ini akan menghapus secara permanen semua riwayat posisi yang tersimpan dari database. Jejak pergerakan tidak lagi ditampilkan untuk sesi sebelumnya. Melanjutkan?",
+    "deleteOldNodesConfirm_one": "Ini akan menghapus secara permanen semua node yang belum terdengar dalam {{days}} hari terakhir. Mereka akan ditemukan kembali ketika ditayangkan lagi.",
+    "deleteOldNodesConfirm_other": "Ini akan menghapus secara permanen semua node yang belum terdengar dalam {{days}} hari terakhir. Mereka akan ditemukan kembali ketika ditayangkan lagi.",
+    "pruneMqttOnlyNodesConfirm": "Ini akan menghapus secara permanen semua node yang ditemukan hanya melalui MQTT (tidak pernah terdengar melalui RF). Mereka akan muncul kembali jika didengarkan lagi melalui MQTT atau RF.",
+    "pruneMqttNodesConfirmLabel": "Pangkas Node MQTT",
+    "pruneUnnamedNodesConfirm": "Ini akan menghapus secara permanen node tanpa nama panjang sebenarnya: nama kosong, placeholder !hex yang dibuat secara otomatis, fallback Node-HEX yang terkait dengan id node, dan identitas khusus MQTT yang tidak pernah menerima UserInfo. Node favorit disimpan. Mereka akan ditemukan kembali ketika ditayangkan lagi.",
+    "pruneNoFixNodesConfirm_one": "Ini akan menghapus node {{count}} secara permanen dengan koordinat nol atau mendekati nol (tidak ada perbaikan GPS atau Pulau Nol). Hal ini tidak dapat dibatalkan.",
+    "pruneNoFixNodesConfirm_other": "Ini akan menghapus secara permanen {{count}} node dengan koordinat nol atau mendekati nol (tidak ada perbaikan GPS atau Pulau Nol). Hal ini tidak dapat dibatalkan.",
+    "pruneNoFixDeleteConfirm_one": "Hapus {{count}} Node",
+    "pruneNoFixDeleteConfirm_other": "Hapus {{count}} Node",
+    "pruneDistantNodesConfirm_one": "Ini akan menghapus secara permanen {{count}} node di luar {{distance}} {{unit}} dari perangkat Anda. Hal ini tidak dapat dibatalkan.",
+    "pruneDistantNodesConfirm_other": "Ini akan menghapus secara permanen {{count}} node di luar {{distance}} {{unit}} dari perangkat Anda. Hal ini tidak dapat dibatalkan.",
+    "pruneDistantDeleteConfirm_one": "Hapus {{count}} Node",
+    "pruneDistantDeleteConfirm_other": "Hapus {{count}} Node",
+    "pruneOfflineNodesConfirm_one": "Ini akan menghapus secara permanen {{count}} node yang tidak terdengar di lebih dari {{days}} {{daysLabel}}. Hal ini tidak dapat dibatalkan.",
+    "pruneOfflineNodesConfirm_other": "Ini akan menghapus secara permanen {{count}} node yang tidak terdengar di lebih dari {{days}} {{daysLabel}}. Hal ini tidak dapat dibatalkan.",
+    "pruneOfflineDeleteConfirm_one": "Hapus {{count}} Node",
+    "pruneOfflineDeleteConfirm_other": "Hapus {{count}} Node",
+    "clearNodesConfirm": "Ini akan menghapus secara permanen semua {{count}} node yang disimpan secara lokal. Mereka akan ditemukan kembali saat terhubung.",
+    "clearNodesConfirmLabel": "Hapus {{count}} Node",
+    "clearAllNodesButton": "Hapus Semua Node ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "Ini akan menghapus secara permanen semua kontak MeshCore dari database yang tidak memiliki kunci publik. Node rintisan obrolan (dibuat dari pesan) akan dikecualikan. Hal ini tidak dapat dibatalkan.",
+    "deleteContactsNoPubkeysConfirmButton": "Menghapus",
+    "clearMessagesAllConfirm": "Ini akan menghapus secara permanen semua {{count}} pesan yang disimpan secara lokal di semua saluran. Hal ini tidak dapat dibatalkan.",
+    "clearMessagesChannelConfirm": "Ini akan menghapus secara permanen semua pesan dari {{channel}}. Hal ini tidak dapat dibatalkan.",
+    "clearMessagesAllConfirmLabel": "Hapus {{count}} Pesan",
+    "clearMessagesChannelConfirmLabel": "Hapus {{channel}}",
+    "clearMessagesTitle": "Hapus Pesan",
+    "clearAllRepeatersConfirm": "Ini akan menghapus secara permanen semua repeater MeshCore yang disimpan dari database lokal. Hal ini tidak dapat dibatalkan.",
+    "clearAllLocalDataTitle": "⚠ Hapus Semua Data Lokal",
+    "clearAllLocalDataConfirm": "Ini akan menghapus secara permanen SEMUA pesan lokal, node, dan data sesi cache. Tindakan ini TIDAK DAPAT dibatalkan.",
+    "clearEverythingConfirmButton": "Hapus Segalanya",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "Semuanya",
+    "deleteNodesOlderThanAria": "Hapus node yang terakhir terdengar lebih dari {{days}} hari",
+    "daySingular": "hari",
+    "theme": {
+      "appBg": {
+        "label": "Latar belakang jendela utama",
+        "description": "Area pandang konten utama dan latar belakang jendela aplikasi — kanvas gelap di belakang semua panel."
+      },
+      "sidebarActiveBg": {
+        "label": "Tab bilah sisi aktif",
+        "description": "Latar belakang tab yang dipilih saat ini di navigasi sidebar."
+      },
+      "brandGreen": {
+        "label": "Indikator & sorotan perbatasan",
+        "description": "Aksen untuk batas saat dikonfigurasi, indikator online/MQTT, sorotan, dan pengisian kemajuan."
+      },
+      "brightGreen": {
+        "label": "Judul aplikasi, tautan & penekanan simpul",
+        "description": "Judul aplikasi, teks penekanan, tautan di footer, dan sorotan hop/diri di daftar simpul."
+      },
+      "readableGreen": {
+        "label": "Tombol tindakan & pil yang dipilih",
+        "description": "Isian padat dengan teks putih—pil saluran yang dipilih dan tombol tindakan utama untuk kontras."
+      },
+      "deepBlack": {
+        "label": "Permukaan sidebar, header & modal",
+        "description": "Navigasi sidebar, header, footer, modal shell, dan permukaan gelap primer."
+      },
+      "secondaryDark": {
+        "label": "Panel & masukan latar belakang",
+        "description": "Latar belakang panel, input, tombol, baris tabel melayang, dan jalur kemajuan."
+      },
+      "muted": {
+        "label": "Label & keterangan sekunder",
+        "description": "Label sekunder, keterangan, header tabel, dan teks yang tidak diberi penekanan."
+      },
+      "chatIncomingBg": {
+        "label": "Isi pesan masuk",
+        "description": "Pengisian latar belakang untuk pesan saluran masuk (diterapkan pada opacity 38%)."
+      },
+      "chatIncomingBorder": {
+        "label": "Batas pesan masuk",
+        "description": "Warna batas untuk pesan saluran masuk."
+      }
+    },
+    "themePreset": {
+      "green300": "Hijau 300",
+      "slate950": "Batu tulis 950",
+      "slate900": "Batu tulis 900",
+      "slate800": "Batu tulis 800",
+      "slate700": "Batu tulis 700",
+      "slate400": "Batu tulis 400",
+      "white": "Putih",
+      "black": "Hitam",
+      "blue500": "Biru 500",
+      "amber500": "Kuning 500",
+      "red500": "Merah 500",
+      "emerald500": "Zamrud 500",
+      "green700": "Hijau 700",
+      "violet500": "ungu 500",
+      "cyan400": "Sian 400",
+      "purple400": "Ungu 400",
+      "pink400": "Merah Muda 400",
+      "orange400": "Oranye 400",
+      "yellow400": "Kuning 400"
+    }
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -353,7 +467,13 @@
     "stopVoiceRecording": "Berhenti merekam dan kirim",
     "voiceRecordingTooLong": "Klip suara mencapai batas 60 detik dan telah dikirim.",
     "reticulumSendAttachmentFailed": "Gagal mengirim lampiran",
-    "reticulumSendAttachmentNoIdentity": "Identitas Reticulum belum siap — hubungkan dan konfigurasikan identitas terlebih dahulu"
+    "reticulumSendAttachmentNoIdentity": "Identitas Reticulum belum siap — hubungkan dan konfigurasikan identitas terlebih dahulu",
+    "dmPeerInfoAria": "Info rekan DM",
+    "clearDateAria": "Hapus tanggal",
+    "readOnlyDisconnected": "Tidak tersambung — pesan hanya dapat dibaca",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "Sebutkan saran"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -399,7 +519,8 @@
     "colorCyan": "Cyan",
     "colorAmber": "Kuning sawo",
     "colorRed": "Merah",
-    "colorPurple": "Ungu"
+    "colorPurple": "Ungu",
+    "delete": "Menghapus"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
@@ -499,7 +620,7 @@
     "hintMeshtasticHttp2": "Jika koneksi tidak dapat diandalkan (misalnya dengan meshtastic.local), coba gunakan alamat IP perangkat — mDNS desktop mungkin tidak stabil.",
     "hintMeshcoreHttp": "Masukkan nama host atau alamat IP radio pendamping MeshCore Anda. Itu harus dapat dijangkau pada port 5000.",
     "stageLinuxUnpaired": "Perangkat yang disimpan tidak dipasangkan di Linux Bluetooth — pilih di bawah untuk memasukkan PIN dan menghubungkan.",
-    "liamServerNote": "Server Liam hanya uplink — node Anda muncul di petanya tetapi Anda tidak akan menerima pesan darinya.",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Menghubungkan",
     "mqttStatusConnected": "terhubung",
     "mqttStatusConnecting": "menghubungkan",
@@ -699,7 +820,17 @@
         "coordinated": "Daerah yang terkoordinasi",
         "fallback": "kemunduran global",
         "legacy": "Preset lama"
-      }
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "ke atas",
+        "down": "turun"
+      },
+      "pickerScanFailed": "Pemindaian BLE gagal. Coba lagi atau masukkan alamat secara manual.",
+      "pickerBleFeatureDisabled": "Bluetooth tidak tersedia di Reticulum build ini (fitur rns-ble tidak ada).",
+      "pickerScanFailedDetail": "Kesalahan pemindaian: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -741,7 +872,49 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum"
-    }
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[Negara]/[Negara Bagian], mis. msh/CO/AS",
+      "meshcoreLetsmesh": "meshcore/{IATA}, mis. inti jaring/DEN",
+      "meshcoreDefault": "MESHCORE/[Negara]/[Negara Bagian], mis. MESHCORE/AS/CO"
+    },
+    "topicPrefixPlaceholder": "msh/AS/",
+    "maxRetriesHelp": {
+      "meshtastic": "Hubungkan kembali upaya (1–{{max}}) sebelum menyerah.",
+      "meshcore": "Hubungkan kembali upaya (1–20) sebelum menyerah."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT :1883",
+      "liam": "Liam's",
+      "custom": "Kebiasaan"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local atau 192.168.1.x",
+    "meshcoreHostPlaceholder": "localhost atau 192.168.1.x",
+    "meshcoreBlePairingHint": "Pasangkan perangkat MeshCore Anda di <strong>setelan Bluetooth sistem</strong> sebelum menghubungkan. Gunakan kode PIN jika diminta — jika sistem Anda tidak meminta PIN, koneksi akan gagal dan Anda mungkin perlu menghapus pemasangan dan memasangkan kembali dengan PIN.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "Kebiasaan"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh memerlukan WebSocket pada port 443 dan server mqtt-us-v1.letsmesh.net atau mqtt-eu-v1.letsmesh.net. Gunakan Wilayah (AS/UE), atau beralih ke Kustom untuk broker lain.",
+      "coloradomesh": "Colorado Mesh memerlukan WebSocket pada port 1883 dengan TLS diaktifkan, server mqtt.meshcore.coloradomesh.org, jalur /ws. Reset preset atau alihkan ke Custom untuk broker lain.",
+      "meshmapper": "MeshMapper membutuhkan WebSocket pada port 443 dan server mqtt.meshmapper.cc. Reset preset atau alihkan ke Custom untuk broker lain."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "Token autentikasi (format meshcore-decoder) akan dibuat saat Anda terhubung. Nama pengguna adalah v1_ ditambah kunci publik 64 karakter Anda (hex). Audiens JWT cocok dengan nama host Server.",
+      "noPrivateKey": "Tidak ada identitas lengkap — impor konfigurasi MeshCore Anda di panel Radio (kunci publik dan pribadi), atau tempelkan nama pengguna (v1_<kunci publik>) dan beri token secara manual. Audiens JWT dalam token harus cocok dengan nama host Server.",
+      "publicKeyMissing": "Kunci publik hilang dari identitas. Impor JSON konfigurasi MeshCore Anda di panel Radio (harus menyertakan kunci publik dan pribadi), atau tempelkan token broker di bidang kata sandi.",
+      "usernameBuildFailed": "Tidak dapat membuat nama pengguna LetsMesh. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempelkan nama pengguna (v1_<kunci publik>) dan beri token secara manual.",
+      "noIdentity": "Tidak ada identitas perangkat yang ditemukan. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempelkan nama pengguna dan token secara manual."
+    },
+    "meshcorePacketLogger": {
+      "label": "Pencatat paket — saat terhubung ke radio dan MQTT Anda, teruskan ringkasan paket RX ke {{topic}} dalam bentuk JSON yang sama dengan meshcoretomqtt. Mati secara default; hanya aktifkan jika Anda ingin berbagi lalu lintas udara yang didengar dengan penganalisis paket."
+    },
+    "hintAdaDfuBle": "Di macOS, jika perangkat ditampilkan sebagai \"AdaDFU\", pasangkan terlebih dahulu di Pengaturan Sistem → Bluetooth untuk melihat nama Meshtastic-nya.",
+    "authTokenFailed": "Pembuatan token autentikasi gagal: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -754,7 +927,11 @@
     "newGroupNamePlaceholder": "Nama grup baru…",
     "manageMembers": "Kelola anggota",
     "rename": "Ganti nama",
-    "deleteGroup": "Hapus grup"
+    "deleteGroup": "Hapus grup",
+    "noContactsYet": "Belum ada kontak.",
+    "noGroupsYet": "Belum ada grup. Buat satu di atas.",
+    "memberCount_one": "{{count}} anggota",
+    "memberCount_other": "{{count}} anggota"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",
@@ -1016,8 +1193,33 @@
         "missing_shared_instance": "Bagikan instance aktif tetapi SharedInstanceServer tidak aktif.",
         "shared_instance_unexpected": "SharedInstanceServer aktif tetapi share_instance tidak aktif.",
         "runtime_only_interface": "\"{{name}}\" hanya runtime (tidak disimpan dalam konfigurasi)."
+      },
+      "runtime": {
+        "rnsNotReady": "Tumpukan RNS belum siap",
+        "lxmfNotReady": "Router LXMF belum siap",
+        "localStalePort": "Antarmuka lokal \"{{name}}\" port serial {{port}} tidak ditemukan pada sistem ini",
+        "localOffline": "Antarmuka lokal \"{{name}}\" diaktifkan tetapi offline",
+        "interfaceDown": "Antarmuka {{type}} \"{{name}}\" diaktifkan tetapi {{status}}",
+        "noPeers": "Belum ada rekan yang dikenal di tabel jalur"
       }
-    }
+    },
+    "routingPort": {
+      "nodeInfo": "Info Node",
+      "telemetry": "Telemetri",
+      "neighborInfo": "Info Tetangga",
+      "traceroute": "Traceroute",
+      "position": "Posisi",
+      "remoteHardware": "Perangkat Keras Jarak Jauh",
+      "admin": "Admin",
+      "discoveryFlood": "PenemuanBanjir",
+      "roomAdvert": "Iklan Kamar",
+      "generic": "Pelabuhan{{port}}"
+    },
+    "signalColumn": "Sinyal",
+    "senderLabel": "Pengirim",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB"
   },
   "errorBoundary": {
     "title": "Ada yang tidak beres",
@@ -1197,11 +1399,11 @@
       },
       "database-chmod": {
         "label": "Chmod basis data (tidak fatal)",
-        "recommendation": "Perubahan izin file database gagal (seringkali tidak berbahaya di Windows). Jika Anda melihat kesalahan DB nyata di tempat lain, periksa antivirus dan izin folder untuk direktori userData klien mesh."
+        "recommendation": "Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory."
       },
       "database-writable": {
         "label": "Basis Data Tidak Dapat Ditulis",
-        "recommendation": "Aplikasi tidak dapat menulis folder database-nya. Perbaiki izin pada direktori userData klien mesh (lihat pemecahan masalah: Direktori database tidak dapat ditulis)."
+        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
       },
       "tak-server": {
         "label": "Masalah Server TAK",
@@ -1268,7 +1470,8 @@
     "appSource": "Aplikasi ({{count}})",
     "deviceSource": "Perangkat ({{count}})",
     "narrowLogPanel": "Panel log sempit",
-    "widenLogPanel": "Perluas panel log"
+    "widenLogPanel": "Perluas panel log",
+    "clearFailed": "Tidak dapat menghapus log"
   },
   "mapPanel": {
     "locationUnavailable": "Lokasi tidak tersedia.",
@@ -1287,7 +1490,10 @@
     "layerWaypoints": "Waypoint",
     "layerRouteWeights": "Bobot rute",
     "layerAnomalyHalos": "Halo anomali",
-    "layerCongestionHalos": "Halo kemacetan"
+    "layerCongestionHalos": "Halo kemacetan",
+    "waypointDefaultName": "Titik jalan",
+    "waypointDelete": "Hapus Titik Jalan",
+    "noGpsNodes": "Belum ada node dengan posisi GPS"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -1623,7 +1829,141 @@
     "debugPrivateAppMessages": "Pesan aplikasi pribadi",
     "debugPingResponses": "Respons ping",
     "sectionMapReport": "Laporan Peta",
-    "sectionMapReportHint": "Mempublikasikan posisi ke peta Meshtastic melalui MQTT. Memerlukan MQTT Relay diaktifkan di atas; pengaturan disimpan dalam konfigurasi modul MQTT perangkat."
+    "sectionMapReportHint": "Mempublikasikan posisi ke peta Meshtastic melalui MQTT. Memerlukan MQTT Relay diaktifkan di atas; pengaturan disimpan dalam konfigurasi modul MQTT perangkat.",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "Tidak ada"
+      },
+      "10": {
+        "label": "Pilih (Masuk)"
+      },
+      "17": {
+        "label": "Ke atas"
+      },
+      "18": {
+        "label": "Turun"
+      },
+      "19": {
+        "label": "Kiri"
+      },
+      "20": {
+        "label": "Benar"
+      },
+      "24": {
+        "label": "Membatalkan"
+      },
+      "27": {
+        "label": "Kembali (Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "Bawaan"
+      },
+      "1": {
+        "label": "Sederhana"
+      },
+      "2": {
+        "label": "Proto"
+      },
+      "3": {
+        "label": "Pesan teks"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.Langsung"
+      },
+      "8": {
+        "label": "Konfigurasi MeshSolar"
+      },
+      "9": {
+        "label": "Log (semua paket)"
+      },
+      "10": {
+        "label": "Log (hanya teks)"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "Putih"
+      },
+      "2": {
+        "label": "Kuning"
+      },
+      "3": {
+        "label": "Oranye"
+      },
+      "4": {
+        "label": "ungu"
+      },
+      "5": {
+        "label": "Merah"
+      },
+      "6": {
+        "label": "Merah tua"
+      },
+      "7": {
+        "label": "Ungu"
+      },
+      "8": {
+        "label": "Biru tua"
+      },
+      "9": {
+        "label": "Biru"
+      },
+      "10": {
+        "label": "Sian"
+      },
+      "11": {
+        "label": "teal"
+      },
+      "12": {
+        "label": "Hijau"
+      },
+      "13": {
+        "label": "Hijau Tua"
+      },
+      "14": {
+        "label": "Cokelat"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "Anggota Tim"
+      },
+      "2": {
+        "label": "Ketua Tim"
+      },
+      "3": {
+        "label": "markas besar"
+      },
+      "4": {
+        "label": "Penembak jitu"
+      },
+      "5": {
+        "label": "Medis"
+      },
+      "6": {
+        "label": "Pengamat Maju"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",
@@ -1772,7 +2112,19 @@
     "remoteAuthCancelled": "Akses jarak jauh dibatalkan.",
     "shareContactSent": "Berbagi kontak yang dikirim melalui radio.",
     "blockContact": "Blokir",
-    "unblockContact": "Buka blokir"
+    "unblockContact": "Buka blokir",
+    "paxCounter": {
+      "heading": "Penghitung Pax",
+      "detectedCount": "Jumlah Terdeteksi",
+      "lastSeen": "Terakhir terlihat"
+    },
+    "detectionSensor": {
+      "heading": "Sensor Deteksi ({{count}})",
+      "lastDetection": "Deteksi Terakhir",
+      "dataSize": "Ukuran Data",
+      "dataSizeBytes": "{{count}} byte",
+      "rawDataHex": "Data Mentah (hex)"
+    }
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -2523,7 +2875,103 @@
     "applyTxPowerSuccess": "Daya TX diterapkan",
     "xmodemInvalidFilename": "Nama file berisi karakter yang tidak valid",
     "validationInvalidPsk": "Base64 PSK tidak valid — periksa kuncinya dan coba lagi",
-    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong"
+    "meshcoreChannelNameRequired": "Nama saluran tidak boleh kosong",
+    "editChannelTitle": "Sunting Saluran {{index}}",
+    "channelNameLabel": "Nama",
+    "channelRoleLabel": "Peran",
+    "channelsEditHint": "Pilih saluran yang akan diedit. Kunci AES-128/256 ditampilkan di base64 (konvensi Meshtastic).",
+    "channelResetStatus": "Saluran {{index}} disetel ulang!",
+    "meshcoreChannel": {
+      "defaultName": "Saluran {{index}}",
+      "addTitle": "Tambahkan Saluran",
+      "editTitle": "Sunting Saluran {{index}}",
+      "indexLabel": "Indeks (0–{{max}})",
+      "invalidHex": "Harus tepat 32 karakter hex.",
+      "addButton": "+ Tambahkan Saluran",
+      "footerHelp": "Kunci berukuran 128-bit (16 byte), ditampilkan sebagai 32 karakter hex. Nama saluran maksimal {{nameMax}} karakter. Hingga {{channelCount}} saluran (indeks 0–{{indexMax}}). Untuk #saluran, gunakan \"Berasal dari nama\" (SHA-256 dari nama dengan # di depannya)."
+    },
+    "regions": {
+      "0": {
+        "label": "Tidak disetel"
+      },
+      "1": {
+        "label": "KITA"
+      },
+      "2": {
+        "label": "UE_433"
+      },
+      "3": {
+        "label": "UE_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "JP"
+      },
+      "6": {
+        "label": "ANZ"
+      },
+      "7": {
+        "label": "KR"
+      },
+      "8": {
+        "label": "DUA"
+      },
+      "9": {
+        "label": "ru"
+      },
+      "10": {
+        "label": "DI DALAM"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "SAYA_433"
+      },
+      "16": {
+        "label": "SAYA_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "LORA_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "Cepat Panjang"
+      },
+      "1": {
+        "label": "Panjang Lambat"
+      },
+      "2": {
+        "label": "Panjang Sedang"
+      },
+      "3": {
+        "label": "Singkat Cepat"
+      },
+      "4": {
+        "label": "Pendek Lambat"
+      },
+      "5": {
+        "label": "Sedang Cepat"
+      },
+      "6": {
+        "label": "Sedang Lambat"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -2665,7 +3113,20 @@
     "pathHashCliGet": "Dapatkan mode hash jalur",
     "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
     "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
-    "pathHashCliSet2": "Atur mode hash jalur 3 - byte"
+    "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
+    "pathLabel": "Jalur:",
+    "hopMe": "● Saya",
+    "hopN": "● Lompat {{n}}",
+    "noNeighborsReported": "Tidak ada tetangga yang melaporkan",
+    "fetchingTelemetry": "Mengambil telemetri…",
+    "telemetryBattery": "Baterai: {{voltage}}V",
+    "telemetryTemp": "Suhu: {{temp}}°C",
+    "telemetryHumidity": "Kelembaban: {{humidity}}%",
+    "telemetryPressure": "Tekanan: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "alt {{altitude}}m",
+    "cliSend": "Mengirim",
+    "cliQuick": "Cepat:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -3189,6 +3650,59 @@
       "confirmTitle": "Setel ulang stack Reticulum?",
       "confirmBody": "Tindakan ini menghapus identitas, kontak, dan pesan lokal dari sespan. File konfigurasi antarmuka Anda disimpan.",
       "confirm": "Mengatur ulang"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Atur atau ubah kata sandi admin repeater dari panel Repeater (hanya sesi).",
+      "connectionFailed": "Koneksi gagal",
+      "notConnected": "Tidak terhubung ke perangkat",
+      "nodeNotFound": "Node tidak ditemukan (tidak ada kunci enkripsi)",
+      "authenticationFailed": "Otentikasi gagal",
+      "requestFailed": "Gagal: {{detail}}",
+      "requestTimedOut": "Waktu permintaan habis (hingga ~{{seconds}}s)",
+      "requestTimedOutApprox": "Waktu permintaan habis (~{{seconds}}s)",
+      "pingNoRoute": "Belum ada rute dari radio — pelacakan multi-hop memerlukan jalur yang disinkronkan. Tunggu pembaruan kontak atau sambungkan kembali.",
+      "bleNoDetails": "Koneksi BLE gagal (tidak ada detail kesalahan dari perangkat). Coba lagi atau gunakan Serial/USB.",
+      "bleAlreadyInProgress": "Koneksi Bluetooth sedang berlangsung. Tunggu hingga selesai atau coba Serial/USB saja.",
+      "bleMissingServices": "Perangkat tidak mendukung protokol MeshCore BLE. Pastikan perangkat menjalankan firmware MeshCore.",
+      "blePeripheralInUse": "Perangkat ini sudah terhubung melalui Meshtastic BLE. Putuskan sambungan terlebih dahulu sebelum menghubungkan sebagai MeshCore.",
+      "bleTimeoutWebBtHandshake": "Waktu jabat tangan MeshCore habis (Web Bluetooth). Radio mungkin memerlukan PIN yang dipasangkan dengan Linux terlebih dahulu: gunakan Hapus & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan pada perangkat, atau pasangkan dengan bluetoothctl, lalu ketuk Hubungkan lagi.",
+      "bleTimeoutWebBt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Web Bluetooth. Coba lagi, biarkan perangkat tetap aktif, matikan BLE di radio, atau gunakan Serial/TCP.",
+      "bleTimeoutHandshake": "Bluetooth terhubung tetapi jabat tangan protokol MeshCore tidak selesai sebelum pemutusan/batas waktu. Coba lagi, jaga agar perangkat tetap aktif dan berada di dekatnya, nyalakan BLE, atau gunakan Serial/TCP.",
+      "bleTimeoutNoble": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Noble IPC. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP.",
+      "roomPost": {
+        "badState": "Postingan ruangan ditolak (tidak login di radio). Keluar, masuk lagi, lalu coba lagi.",
+        "illegalArg": "Postingan ruangan ditolak (format pesan tidak valid).",
+        "notFound": "Postingan ruangan ditolak (kontak ruangan tidak ditemukan di radio).",
+        "unsupportedCmd": "Postingan ruangan ditolak (jenis pesan di radio tidak didukung). Masuk ke ruangan, lalu coba lagi.",
+        "default": "Postingan kamar ditolak oleh radio. Keluar, masuk lagi, lalu coba lagi.",
+        "timeout": "Waktu posting kamar habis menunggu radio. Periksa jangkauan atau coba lagi."
+      },
+      "roomLogin": {
+        "noRoute": "Tidak ada rute ke server ruangan ini. Lacak simpul dari peta atau tunggu iklan jalur, lalu coba lagi.",
+        "pathSyncFailed": "Tidak dapat memprogram rute di radio Anda sebelum login. Hubungkan kembali perangkat dan coba lagi.",
+        "pathSyncFailedDetail": "Tidak dapat memprogram rute di radio Anda sebelum login. Hubungkan kembali perangkat dan coba lagi.{{detail}}",
+        "rejectedBlankGuest": "Login ruangan ditolak. Gunakan Lanjutkan hanya-baca untuk kata sandi tamu kosong, atau coba kata sandi tamu \"halo\".",
+        "rejectedDefaultGuest": "Login ruangan ditolak. Jika server ini tidak memiliki kata sandi tamu, gunakan Lanjutkan hanya baca, bukan Login. Jika tidak, periksa kata sandi tamu atau admin.",
+        "rejectedCheckPassword": "Login ruangan ditolak. Periksa kata sandi tamu atau admin untuk server ruangan ini.",
+        "timedOutBlankGuest": "Waktu masuk ruangan habis. Gunakan Lanjutkan hanya-baca untuk kata sandi tamu kosong, atau coba kata sandi tamu \"halo\".",
+        "timedOutDefaultGuest": "Waktu masuk ruangan habis. Jika server ini tidak memiliki kata sandi tamu, gunakan Lanjutkan hanya baca, bukan Login.",
+        "timedOut": "Waktu masuk ruangan habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
+        "failed": "Gagal masuk ke ruang"
+      },
+      "roomLogout": {
+        "timedOut": "Waktu keluar ruangan telah habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
+        "rejected": "Logout ruangan ditolak oleh radio.",
+        "failed": "Tidak bisa meninggalkan ruangan"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
+      "network": "Periksa jaringan, DNS, firewall, dan VPN.",
+      "connackTimeout": "Jika Anda tidak melihat baris “kesalahan klien” sebelumnya, jabat tangan TLS/WebSocket mungkin terhenti (coba jaringan lain; aplikasi lebih memilih IPv4 untuk WSS).",
+      "subscribeFailed": "Broker mungkin menolak berlangganan wildcard pada topik ini; pesan mungkin masih sampai jika broker mengizinkannya.",
+      "keepalive": "Server berhenti merespons ping MQTT (waktu tunggu habis, jaringan terputus, atau broker menutup sesi). Hubungkan kembali atau periksa tautan Anda."
     }
   }
 }

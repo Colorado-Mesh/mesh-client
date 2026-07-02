@@ -6,6 +6,8 @@ import {
   localeStringQualityIssues,
   nodeListPanelConnectionCrossKeyIssues,
   protectedBrandIssues,
+  protectedProtocolTokenIssues,
+  RETICULUM_RUNTIME_PREFIX,
   roomsSavedPasswordsCrossKeyIssues,
   roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
@@ -1777,5 +1779,46 @@ describe('protectedBrandIssues', () => {
   it('flags missing GPIO brand when English has one', () => {
     const issues = protectedBrandIssues('GPIO pin — encoder A', 'Pin de codificador A');
     expectIssue(issues, 'Brand "GPIO" missing');
+  });
+
+  it('flags missing Colorado Mesh multi-word brand', () => {
+    const issues = protectedBrandIssues(
+      'Colorado Mesh needs WebSocket on port 1883.',
+      'Colorado necesita WebSocket en el puerto 1883.',
+    );
+    expectIssue(issues, 'Brand "Colorado Mesh" missing');
+  });
+
+  it('flags missing mesh-client hyphenated product name', () => {
+    const issues = protectedBrandIssues(
+      'Quit mesh-client completely and reopen it.',
+      'Cierre la aplicación por completo y vuelva a abrirla.',
+    );
+    expectIssue(issues, 'Brand "mesh-client" missing');
+  });
+});
+
+describe('protectedProtocolTokenIssues', () => {
+  it('flags missing RNS when English has one', () => {
+    const issues = protectedProtocolTokenIssues('RNS stack is not ready', 'La pila no está lista');
+    expectIssue(issues, 'Protocol token "RNS" missing');
+  });
+
+  it('passes when RNS is preserved', () => {
+    expect(
+      protectedProtocolTokenIssues('RNS stack is not ready', 'La pila RNS no está lista'),
+    ).toEqual([]);
+  });
+});
+
+describe('checkReticulumRuntimeAndRoutingPortIssues', () => {
+  it('flags missing RNS on reticulum runtime keys', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: `${RETICULUM_RUNTIME_PREFIX}rnsNotReady`,
+      enVal: 'RNS stack is not ready',
+      val: 'La pila no está lista',
+    });
+    expectIssue(issues, 'reticulum runtime copy must preserve protocol token "RNS"');
   });
 });

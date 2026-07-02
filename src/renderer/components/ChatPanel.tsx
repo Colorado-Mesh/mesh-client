@@ -193,7 +193,7 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
     <div
       className="mb-2 flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
       role="status"
-      aria-label="DM peer info"
+      aria-label={t('chatPanel.dmPeerInfoAria')}
     >
       {parts.join(' · ')}
     </div>
@@ -1967,7 +1967,7 @@ function ChatPanel({
                 setJumpDate('');
               }}
               className="text-muted text-xs hover:text-gray-300"
-              aria-label="Clear date"
+              aria-label={t('chatPanel.clearDateAria')}
             >
               ×
             </button>
@@ -2001,7 +2001,7 @@ function ChatPanel({
       {/* Disconnected overlay */}
       {!isConnected && (
         <div className="bg-deep-black/60 mb-2 rounded-xl border border-gray-700 p-4 text-center">
-          <p className="text-muted text-sm">Not connected — messages are read-only</p>
+          <p className="text-muted text-sm">{t('chatPanel.readOnlyDisconnected')}</p>
         </div>
       )}
 
@@ -2027,7 +2027,11 @@ function ChatPanel({
                 .sort((a, b) => b.starredAt - a.starredAt)
                 .map((s) => {
                   const sourceLabel =
-                    s.to != null ? `DM: ${s.sender_name || String(s.sender_id)}` : `ch${s.channel}`;
+                    s.to != null
+                      ? t('chatPanel.starredDm', {
+                          name: s.sender_name || String(s.sender_id),
+                        })
+                      : t('chatPanel.starredChannel', { channel: s.channel });
                   return (
                     <div
                       key={s.starId}

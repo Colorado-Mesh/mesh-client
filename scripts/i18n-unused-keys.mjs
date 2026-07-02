@@ -15,16 +15,27 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DYNAMIC_T_PREFIXES = [
   { prefix: 'chatPanel.fetchStoreForwardHistoryError.', leafKeys: true },
   { prefix: 'radioPanel.deviceRoles.', suffixes: ['label', 'description'] },
+  { prefix: 'radioPanel.regions.', suffixes: ['label'] },
+  { prefix: 'radioPanel.modemPresets.', suffixes: ['label'] },
   { prefix: 'radioPanel.rebroadcastModes.', suffixes: ['label', 'description'] },
+  { prefix: 'modulePanel.inputEvents.', suffixes: ['label'] },
+  { prefix: 'modulePanel.serialModes.', suffixes: ['label'] },
+  { prefix: 'modulePanel.takTeamColors.', suffixes: ['label'] },
+  { prefix: 'modulePanel.teamRoles.', suffixes: ['label'] },
   { prefix: 'radioPanel.displayUnits.', suffixes: ['label'] },
   { prefix: 'radioPanel.oledTypes.', suffixes: ['label'] },
   { prefix: 'radioPanel.displayModes.', suffixes: ['label'] },
   { prefix: 'radioPanel.btPairingModes.', suffixes: ['label'] },
   { prefix: 'meshcoreTelemetryPrivacy.', leafKeys: true },
+  { prefix: 'appPanel.theme.', suffixes: ['label', 'description'] },
+  { prefix: 'appPanel.themePreset.', leafKeys: true },
   { prefix: 'diagnosticsPanel.foreignLoraProximitySnippet.', leafKeys: true },
+  { prefix: 'diagnosticsPanel.routingPort.', leafKeys: true },
   { prefix: 'diagnosticsPanel.reticulum.action.', leafKeys: true },
   { prefix: 'diagnosticsPanel.reticulum.audit.', leafKeys: true },
   { prefix: 'diagnosticsPanel.reticulum.remedy.', leafKeys: true },
+  { prefix: 'diagnosticsPanel.reticulum.runtime.', leafKeys: true },
+  { prefix: 'connectionPanel.reticulumInterfaces.status.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

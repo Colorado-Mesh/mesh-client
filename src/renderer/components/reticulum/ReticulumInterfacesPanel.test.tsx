@@ -102,7 +102,7 @@ describe('ReticulumInterfacesPanel', () => {
       />,
     );
 
-    expect(screen.getByText(/RNode BLE \(rnode\)/)).toBeInTheDocument();
+    expect(screen.getByText('connectionPanel.reticulumInterfaces.rowSummary')).toBeInTheDocument();
     expect(
       screen.queryByText('connectionPanel.reticulumInterfaces.localOfflineRowStale'),
     ).not.toBeInTheDocument();
@@ -248,7 +248,7 @@ describe('ReticulumInterfacesPanel', () => {
       />,
     );
 
-    expect(screen.getByText(/RNode WiFi \(rnode\)/)).toBeInTheDocument();
+    expect(screen.getByText('connectionPanel.reticulumInterfaces.rowSummary')).toBeInTheDocument();
     expect(
       screen.queryByText('connectionPanel.reticulumInterfaces.localOfflineRowStale'),
     ).not.toBeInTheDocument();

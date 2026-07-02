@@ -2186,7 +2186,7 @@ function AppContent() {
           role="banner"
           className={`bg-deep-black relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-center border-b py-2 pr-4 ${protocolHeaderBorderClass(protocol, isConfigured)}`}
         >
-          <h1 className="sr-only">Mesh Client</h1>
+          <h1 className="sr-only">{t('app.title')}</h1>
           {/* Sidebar-area branding — top-left cell, matches sidebar width */}
           <div
             aria-hidden={false}
@@ -2205,7 +2205,7 @@ function AppContent() {
                   <ColoradoMeshWatermarkMark />
                 </button>
                 <span className="cm-watermark-text" aria-hidden>
-                  Colorado Mesh
+                  {t('app.brandName')}
                 </span>
               </div>
             ) : (
@@ -2213,9 +2213,7 @@ function AppContent() {
                 type="button"
                 aria-busy={meshTubePhase !== 'idle'}
                 aria-pressed={meshTubeLit}
-                aria-label={
-                  meshTubeLit ? 'Turn off Colorado Mesh sign' : 'Turn on Colorado Mesh sign'
-                }
+                aria-label={meshTubeLit ? t('app.meshTubeSignOff') : t('app.meshTubeSignOn')}
                 className={[
                   'cm-watermark cm-watermark-expanded cm-watermark-mesh-tube',
                   meshTubePhase === 'flicker-on' && 'cm-watermark-mesh-tube--flicker-on',
@@ -2227,7 +2225,7 @@ function AppContent() {
                 onClick={handleMeshTubeToggle}
               >
                 <ColoradoMeshWatermarkMark />
-                <span className="cm-watermark-text">Colorado Mesh</span>
+                <span className="cm-watermark-text">{t('app.brandName')}</span>
               </button>
             )}
           </div>
@@ -2328,10 +2326,13 @@ function AppContent() {
                   }
                 >
                   <div
-                    aria-label={`Q: ${queueUsed}/${activeQueue.maxlen}`}
+                    aria-label={t('app.queueBadge', {
+                      used: queueUsed,
+                      max: activeQueue.maxlen,
+                    })}
                     className={`flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${queueColorClass}`}
                   >
-                    Q: {queueUsed}/{activeQueue.maxlen}
+                    {t('app.queueBadge', { used: queueUsed, max: activeQueue.maxlen })}
                   </div>
                 </HelpTooltip>
               )}
@@ -2359,10 +2360,7 @@ function AppContent() {
             aria-live="polite"
             className="flex items-center justify-between gap-3 border-b border-gray-700 bg-gray-900 px-4 py-2 text-sm"
           >
-            <span className="text-gray-300">
-              Telemetry is disabled on this device. Enabling device metrics helps the mesh and this
-              app (diagnostics, battery, signal). Enable it in the Radio tab.
-            </span>
+            <span className="text-gray-300">{t('app.telemetryDisabled')}</span>
             <button
               type="button"
               onClick={() => {
@@ -3525,7 +3523,7 @@ function AppContent() {
                   title={t('aria.backToTop')}
                   aria-label={t('aria.backToTop')}
                 >
-                  ↑ Top
+                  {t('app.scrollToTop')}
                 </button>
               )}
 
@@ -3535,7 +3533,7 @@ function AppContent() {
                 {t('app.footerSlogan')}{' '}
                 <a
                   href="https://discord.com/invite/McChKR5NpS"
-                  title="Colorado Mesh Discord"
+                  title={t('app.footerDiscordTitle')}
                   className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -3545,7 +3543,7 @@ function AppContent() {
                 {' • '}
                 <a
                   href="https://github.com/Colorado-Mesh/mesh-client"
-                  title="Colorado Mesh on GitHub"
+                  title={t('app.footerGithubTitle')}
                   className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -3555,7 +3553,7 @@ function AppContent() {
                 {' • '}
                 <a
                   href="https://coloradomesh.org/"
-                  title="Colorado Mesh website"
+                  title={t('app.footerWebsiteTitle')}
                   className="text-slate-400 underline decoration-slate-600/80 underline-offset-2 transition-colors hover:text-slate-300"
                   target="_blank"
                   rel="noopener noreferrer"

@@ -1278,7 +1278,9 @@ export default function MapPanel({
             <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
               <Popup>
                 <div className="space-y-1 p-2">
-                  <div className="text-sm font-medium text-gray-100">{wp.name || 'Waypoint'}</div>
+                  <div className="text-sm font-medium text-gray-100">
+                    {wp.name || t('mapPanel.waypointDefaultName')}
+                  </div>
                   {wp.description && <div className="text-xs text-gray-400">{wp.description}</div>}
                   <div className="font-mono text-xs text-gray-500">
                     {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
@@ -1288,7 +1290,7 @@ export default function MapPanel({
                       onClick={() => onDeleteWaypoint(wp.id)}
                       className="mt-1 w-full rounded border border-red-800/50 bg-red-900/40 px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-900/60"
                     >
-                      Delete Waypoint
+                      {t('mapPanel.waypointDelete')}
                     </button>
                   )}
                 </div>
@@ -1300,7 +1302,7 @@ export default function MapPanel({
       {nodesToRender.length === 0 && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
-            No nodes with GPS positions yet
+            {t('mapPanel.noGpsNodes')}
           </div>
         </div>
       )}

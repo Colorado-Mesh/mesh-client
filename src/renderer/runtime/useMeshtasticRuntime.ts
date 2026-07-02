@@ -44,6 +44,7 @@ import {
   countFreeChannelSlots,
   findNextFreeChannelSlot,
 } from '@/shared/meshtasticChannelApply';
+import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import {
   MESHTASTIC_CHANNEL_ROLE,
   type MeshtasticLoraConfig,
@@ -3392,7 +3393,9 @@ export function useMeshtasticRuntime() {
     async (nodeId: number) => {
       const activeVirtualNodeId = virtualNodeIdRef.current;
       if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
-        throw new Error('Cannot delete active MQTT identity while MQTT is connected');
+        throw markDeleteActiveMqttIdentityError(
+          'Cannot delete active MQTT identity while MQTT is connected',
+        );
       }
       if (nodeId === activeVirtualNodeId) {
         clearVirtualNodeId();

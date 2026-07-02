@@ -289,9 +289,9 @@ export default function LogPanel({
       setEntries([]);
     } catch (e) {
       console.warn('[LogPanel] clear log failed ' + errLikeToLogString(e));
-      setLogClearError(e instanceof Error ? e.message : 'Could not clear log');
+      setLogClearError(e instanceof Error ? e.message : t('logPanel.clearFailed'));
     }
-  }, []);
+  }, [t]);
 
   const libraryEntries = useMemo(
     () => entries.filter((e) => isDeviceEntry(e, protocol)),

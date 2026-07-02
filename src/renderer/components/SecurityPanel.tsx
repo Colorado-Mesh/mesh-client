@@ -383,7 +383,7 @@ export default function SecurityPanel({
       console.warn('[SecurityPanel] handleSignData ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.signFailed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: err instanceof Error ? err.message : t('common.unknown'),
         }),
         'error',
       );
@@ -408,7 +408,7 @@ export default function SecurityPanel({
       console.warn('[SecurityPanel] handleExportPrivateKey ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.exportFailed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: err instanceof Error ? err.message : t('common.unknown'),
         }),
         'error',
       );
@@ -434,7 +434,7 @@ export default function SecurityPanel({
       console.warn('[SecurityPanel] handleImportPrivateKey ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.importFailedWithMessage', {
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: err instanceof Error ? err.message : t('common.unknown'),
         }),
         'error',
       );

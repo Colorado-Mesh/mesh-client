@@ -159,7 +159,7 @@ export default function SearchModal({
       const node = nodes.get(r.sender_id);
       if (node) return node.long_name;
     }
-    return r.sender_name ?? 'Unknown';
+    return r.sender_name ?? t('common.unknown');
   };
 
   const formatTs = (ts: number) => formatIsoDateTime(ts);

@@ -15,6 +15,7 @@ import type {
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
+import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreIsRepeaterRemoteAuthTouched,
@@ -915,8 +916,10 @@ export default function RepeatersPanel({
                         <tr className="bg-gray-900/60">
                           <td colSpan={10} className="px-4 py-2">
                             <div className="flex flex-wrap items-center gap-1 text-xs">
-                              <span className="mr-1 text-gray-400">Path:</span>
-                              <span className="text-brand-green">● Me</span>
+                              <span className="mr-1 text-gray-400">
+                                {t('repeatersPanel.pathLabel')}
+                              </span>
+                              <span className="text-brand-green">{t('repeatersPanel.hopMe')}</span>
                               {(Array.isArray(traceResult.pathSnrs)
                                 ? traceResult.pathSnrs
                                 : []
@@ -927,7 +930,9 @@ export default function RepeatersPanel({
                                     {hop > 0 ? '+' : ''}
                                     {hop.toFixed(2)} dB
                                   </span>
-                                  <span className="text-gray-500">● Hop {i + 1}</span>
+                                  <span className="text-gray-500">
+                                    {t('repeatersPanel.hopN', { n: i + 1 })}
+                                  </span>
                                 </span>
                               ))}
                               <span className="text-gray-600">→</span>
@@ -951,7 +956,9 @@ export default function RepeatersPanel({
                               })}
                             </p>
                             {neighborData.neighbours.length === 0 ? (
-                              <p className="text-xs text-gray-600">No neighbors reported</p>
+                              <p className="text-xs text-gray-600">
+                                {t('repeatersPanel.noNeighborsReported')}
+                              </p>
                             ) : (
                               <div className="flex flex-col gap-1">
                                 {neighborData.neighbours.map((nb, i) => {
@@ -983,40 +990,53 @@ export default function RepeatersPanel({
                         <tr className="bg-gray-900/60">
                           <td colSpan={10} className="px-4 py-2">
                             {isTelemetryLoading ? (
-                              <p className="text-xs text-gray-500">Fetching telemetry…</p>
+                              <p className="text-xs text-gray-500">
+                                {t('repeatersPanel.fetchingTelemetry')}
+                              </p>
                             ) : telemetryData ? (
                               <div className="flex flex-wrap items-center gap-4 text-xs">
                                 {telemetryData.voltage != null && (
                                   <span className="text-amber-300">
-                                    Battery: {telemetryData.voltage.toFixed(2)}V
+                                    {t('repeatersPanel.telemetryBattery', {
+                                      voltage: telemetryData.voltage.toFixed(2),
+                                    })}
                                   </span>
                                 )}
                                 {telemetryData.temperature != null && (
                                   <span className="text-blue-300">
-                                    Temp: {telemetryData.temperature.toFixed(1)}°C
+                                    {t('repeatersPanel.telemetryTemp', {
+                                      temp: telemetryData.temperature.toFixed(1),
+                                    })}
                                   </span>
                                 )}
                                 {telemetryData.relativeHumidity != null && (
                                   <span className="text-cyan-300">
-                                    Humidity: {telemetryData.relativeHumidity.toFixed(0)}%
+                                    {t('repeatersPanel.telemetryHumidity', {
+                                      humidity: telemetryData.relativeHumidity.toFixed(0),
+                                    })}
                                   </span>
                                 )}
                                 {telemetryData.barometricPressure != null && (
                                   <span className="text-gray-300">
-                                    Pressure: {telemetryData.barometricPressure.toFixed(1)} hPa
+                                    {t('repeatersPanel.telemetryPressure', {
+                                      pressure: telemetryData.barometricPressure.toFixed(1),
+                                    })}
                                   </span>
                                 )}
                                 {telemetryData.gps && (
                                   <span className="text-green-300">
-                                    GPS:{' '}
-                                    {formatCoordPair(
-                                      telemetryData.gps.latitude,
-                                      telemetryData.gps.longitude,
-                                      coordinateFormat,
-                                    )}
-                                    {telemetryData.gps.altitude
-                                      ? ` alt ${telemetryData.gps.altitude}m`
-                                      : ''}
+                                    {t('repeatersPanel.telemetryGps', {
+                                      coords: formatCoordPair(
+                                        telemetryData.gps.latitude,
+                                        telemetryData.gps.longitude,
+                                        coordinateFormat,
+                                      ),
+                                      alt: telemetryData.gps.altitude
+                                        ? t('repeatersPanel.telemetryGpsAlt', {
+                                            altitude: telemetryData.gps.altitude,
+                                          })
+                                        : '',
+                                    })}
                                   </span>
                                 )}
                                 {telemetryData.voltage == null &&
@@ -1035,7 +1055,11 @@ export default function RepeatersPanel({
                             ) : (
                               <div className="space-y-1 text-xs">
                                 {telemetryError ? (
-                                  <p className="text-red-400">{telemetryError}</p>
+                                  <p className="text-red-400">
+                                    {t('nodeDetailModal.telemetryFailed', {
+                                      message: translateMeshcoreUserMessage(t, telemetryError),
+                                    })}
+                                  </p>
                                 ) : (
                                   <p className="text-gray-500">
                                     {t('repeatersPanel.noTelemetryResponse')}
@@ -1099,12 +1123,14 @@ export default function RepeatersPanel({
                                   {isCliLoading ? (
                                     <span className="inline-block h-3 w-3 animate-spin rounded-full border border-cyan-400 border-t-transparent" />
                                   ) : (
-                                    'Send'
+                                    t('repeatersPanel.cliSend')
                                   )}
                                 </button>
                               </div>
                               <div className="flex flex-wrap gap-1">
-                                <span className="mr-1 text-xs text-gray-500">Quick:</span>
+                                <span className="mr-1 text-xs text-gray-500">
+                                  {t('repeatersPanel.cliQuick')}
+                                </span>
                                 {[
                                   'name',
                                   'radio',

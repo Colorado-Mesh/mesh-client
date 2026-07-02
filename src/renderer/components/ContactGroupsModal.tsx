@@ -249,10 +249,12 @@ export default function ContactGroupsModal({
             /* Member management view */
             <>
               <p className="text-muted text-xs">
-                {memberIds.size} member{memberIds.size !== 1 ? 's' : ''}
+                <p className="text-muted text-xs">
+                  {t('contactGroupsModal.memberCount', { count: memberIds.size })}
+                </p>
               </p>
               {sortedContacts.length === 0 ? (
-                <p className="text-muted text-sm">No contacts yet.</p>
+                <p className="text-muted text-sm">{t('contactGroupsModal.noContactsYet')}</p>
               ) : (
                 <ul className="flex flex-col gap-1">
                   {sortedContacts.map((contact) => (
@@ -265,7 +267,9 @@ export default function ContactGroupsModal({
                           disabled={busy}
                           className="accent-brand-green"
                         />
-                        <span className="truncate text-sm text-gray-200">{contact.long_name}</span>
+                        <span className="truncate text-sm text-gray-200">
+                          {contact.long_name || t('common.unknown')}
+                        </span>
                       </label>
                     </li>
                   ))}
@@ -303,7 +307,7 @@ export default function ContactGroupsModal({
 
               {/* Group list */}
               {groups.length === 0 ? (
-                <p className="text-muted text-sm">No groups yet. Create one above.</p>
+                <p className="text-muted text-sm">{t('contactGroupsModal.noGroupsYet')}</p>
               ) : (
                 <ul className="flex flex-col gap-1">
                   {groups.map((group) => (

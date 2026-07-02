@@ -26,6 +26,23 @@ export interface ReticulumDiagnosticsBuildOptions {
   auditIssues?: ReticulumConfigAuditIssue[];
 }
 
+function runtimeCauseI18n(
+  key: string,
+  params?: Record<string, string>,
+): { key: string; params?: Record<string, string> } {
+  return { key: `diagnosticsPanel.reticulum.runtime.${key}`, params };
+}
+
+/** Quoted for i18n unused-key audit — keys emitted via causeI18n at runtime. */
+export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
+  'diagnosticsPanel.reticulum.runtime.rnsNotReady',
+  'diagnosticsPanel.reticulum.runtime.lxmfNotReady',
+  'diagnosticsPanel.reticulum.runtime.localStalePort',
+  'diagnosticsPanel.reticulum.runtime.localOffline',
+  'diagnosticsPanel.reticulum.runtime.interfaceDown',
+  'diagnosticsPanel.reticulum.runtime.noPeers',
+] as const;
+
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
 export function buildReticulumDiagnosticRows(
   snapshot: ReticulumDiagnosticsSnapshot,
@@ -42,6 +59,7 @@ export function buildReticulumDiagnosticRows(
       nodeId: homeNodeId,
       condition: 'reticulum/rns-not-ready',
       cause: 'RNS stack is not ready',
+      causeI18n: runtimeCauseI18n('rnsNotReady'),
       severity: 'warning',
       detectedAt: now,
       reticulumRepairKind: 'restart_stack',
@@ -55,6 +73,7 @@ export function buildReticulumDiagnosticRows(
       nodeId: homeNodeId,
       condition: 'reticulum/lxmf-not-ready',
       cause: 'LXMF router is not ready',
+      causeI18n: runtimeCauseI18n('lxmfNotReady'),
       severity: 'warning',
       detectedAt: now,
       reticulumRepairKind: 'restart_stack',
@@ -75,6 +94,10 @@ export function buildReticulumDiagnosticRows(
         nodeId: homeNodeId,
         condition: 'reticulum/local-stale-port',
         cause: `Local interface "${alert.iface.name}" serial port ${port} not found on this system`,
+        causeI18n: runtimeCauseI18n('localStalePort', {
+          name: alert.iface.name,
+          port,
+        }),
         severity: 'warning',
         detectedAt: now,
         reticulumInterfaceId: alert.iface.id,
@@ -87,6 +110,7 @@ export function buildReticulumDiagnosticRows(
         nodeId: homeNodeId,
         condition: 'reticulum/local-offline',
         cause: `Local interface "${alert.iface.name}" is enabled but offline`,
+        causeI18n: runtimeCauseI18n('localOffline', { name: alert.iface.name }),
         severity: 'warning',
         detectedAt: now,
         reticulumInterfaceId: alert.iface.id,
@@ -109,6 +133,11 @@ export function buildReticulumDiagnosticRows(
         nodeId: homeNodeId,
         condition: 'reticulum/interface-down',
         cause: `${iface.type} interface "${iface.name}" is enabled but ${iface.status}`,
+        causeI18n: runtimeCauseI18n('interfaceDown', {
+          type: iface.type,
+          name: iface.name,
+          status: iface.status,
+        }),
         severity: 'warning',
         detectedAt: now,
         reticulumInterfaceId: iface.id,
@@ -124,6 +153,7 @@ export function buildReticulumDiagnosticRows(
       nodeId: homeNodeId,
       condition: 'reticulum/no-peers',
       cause: 'No known peers in path table yet',
+      causeI18n: runtimeCauseI18n('noPeers'),
       severity: 'info',
       detectedAt: now,
     });

@@ -1,5 +1,5 @@
 import { MESHCORE_TXT_TYPE_PLAIN } from './meshcoreChannelText';
-import { meshcoreRadioErrMessage } from './meshcoreRadioErr';
+import { meshcoreRoomPostRadioErrStored } from './meshcoreRoomSentWait';
 import {
   computeRoomLoginExtraTimeoutMs,
   computeRoomLoginSentWaitMs,
@@ -133,7 +133,7 @@ export function runMeshcoreRoomPostSend(
       if (!acceptResponses) return;
       const r = response as { errCode?: number | null };
       const errCode = r.errCode ?? null;
-      fail(meshcoreRadioErrMessage(errCode));
+      fail(meshcoreRoomPostRadioErrStored(errCode));
     };
 
     conn.once(MC_RESP_SENT, onSent);
@@ -142,7 +142,7 @@ export function runMeshcoreRoomPostSend(
     const startSentWaitTimer = (): void => {
       if (settled || sentWaitTimer !== undefined) return;
       sentWaitTimer = setTimeout(() => {
-        fail('Room post timed out waiting for the radio. Check range or try again.');
+        fail('meshcore.errors.roomPost.timeout');
       }, sentWaitMs);
     };
 

@@ -10,6 +10,7 @@ import {
   reticulumMeshHealthBand,
 } from '@/renderer/lib/diagnostics/diagnosticsPanelStyles';
 import { isReticulumDiagnosticRow } from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
+import { translateReticulumDiagnosticCause } from '@/renderer/lib/diagnostics/reticulumDiagnosticLabels';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import {
   repairReticulumConfig,
@@ -241,7 +242,7 @@ export function ReticulumDiagnosticsSection({
                         <td
                           className={`px-4 py-2.5 text-xs ${DIAGNOSTICS_SEVERITY_TEXT[severity]}`}
                         >
-                          {row.causeI18n ? t(row.causeI18n.key, row.causeI18n.params) : row.cause}
+                          {row.causeI18n ? translateReticulumDiagnosticCause(t, row) : row.cause}
                         </td>
                         <td className="px-4 py-2.5">
                           <span

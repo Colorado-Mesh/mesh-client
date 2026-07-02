@@ -5,6 +5,7 @@ import {
   isReticulumBleInterfaceRow,
   releaseReticulumBleScan,
 } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import { normalizeReticulumPickerScanError } from '@/renderer/lib/reticulum/reticulumPickerScanError';
 import {
   fetchReticulumInterfaces,
   fetchReticulumSerialPorts,
@@ -111,7 +112,9 @@ export function useReticulumInterfaceDevicePicker() {
       };
       if (!avail.available) {
         const reason = avail.missing?.[0];
-        setScanError(reason?.length ? reason : 'ble_unavailable');
+        setScanError(
+          reason?.length ? normalizeReticulumPickerScanError(reason) : 'ble_unavailable',
+        );
         return;
       }
 
@@ -130,7 +133,7 @@ export function useReticulumInterfaceDevicePicker() {
         `/api/v1/ble/scan?timeout_secs=8&mode=${scanMode}`,
       )) as { devices?: ReticulumPickerDevice[]; error?: string; ok?: boolean };
       if (body.error || body.ok === false) {
-        setScanError(body.error ?? 'scan_failed');
+        setScanError(normalizeReticulumPickerScanError(body.error ?? 'scan_failed'));
         return;
       }
       setDevices(body.devices ?? []);

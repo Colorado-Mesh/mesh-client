@@ -23,7 +23,17 @@
       "reconnecting": "重新连接"
     },
     "nodeLabel": "节点： {{name}}",
-    "takClientLost": "TAK客户丢失"
+    "takClientLost": "TAK客户丢失",
+    "title": "网状客户端",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Turn off Colorado Mesh sign",
+    "meshTubeSignOn": "Turn on Colorado Mesh sign",
+    "queueBadge": "问：{{used}}/{{max}}",
+    "telemetryDisabled": "此设备上禁用遥测。启用设备指标有助于网格和此应用程序（诊断、电池、信号）。在“无线电”选项卡中启用它。",
+    "scrollToTop": "↑ 顶部",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh on GitHub",
+    "footerWebsiteTitle": "Colorado Mesh website"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",
@@ -198,7 +208,111 @@
     "reticulumSection": "Reticulum — 网状堆栈",
     "reticulumAnnounceHelp": "您的身份在网络上公布的频率，以及清除存储的公告的工具。",
     "reticulumPropagationHelp": "选择传播节点的同步方式，并在需要时提取最新传播数据。",
-    "logPanelHelp": "启用后，实时日志流将显示在右侧。在 Reticulum 选项卡上，设备行包括 sidecar 输出和本地接口运行状况。调试行需要日志面板内的复选框。"
+    "logPanelHelp": "启用后，实时日志流将显示在右侧。在 Reticulum 选项卡上，设备行包括 sidecar 输出和本地接口运行状况。调试行需要日志面板内的复选框。",
+    "autoPruneUnheardContactsDaysAria": "启动时自动删除未听过的、超过 {{days}} 天的联系人",
+    "capTotalContactsCountAria": "联系人总数上限，保留最近查看的 {{count}} 联系人",
+    "unknownError": "未知错误",
+    "resetDiagnosticsConfirm": "这将清除所有路由异常、跃点历史记录和数据包统计信息。引擎将从新传入的数据包中重建。继续？",
+    "clearGpsDataConfirm": "这将从所有节点中删除存储的 GPS 坐标。节点将保留，但其位置将为空白，直到收到新数据为止。继续？",
+    "clearPositionHistoryConfirm": "这将从数据库中永久删除所有存储的位置历史记录。将不再显示过去会话的移动轨迹。继续？",
+    "deleteOldNodesConfirm_one": "这将永久删除过去 {{days}} 天未听到的所有节点。当他们再次播出时，他们将被重新发现。",
+    "deleteOldNodesConfirm_other": "这将永久删除过去 {{days}} 天内未听到的所有节点。当他们再次播出时，他们将被重新发现。",
+    "pruneMqttOnlyNodesConfirm": "这将永久删除仅通过 MQTT 发现的所有节点（从未通过 RF 听说过）。如果通过 MQTT 或 RF 再次听到它们，它们将会重新出现。",
+    "pruneMqttNodesConfirmLabel": "修剪 MQTT 节点",
+    "pruneUnnamedNodesConfirm": "这将永久删除没有真正长名称的节点：空名称、自动生成的 !hex 占位符、与节点 id 绑定的 Node-HEX 回退以及从未收到 UserInfo 的仅 MQTT 身份。保留收藏的节点。当他们再次播出时，他们将被重新发现。",
+    "pruneNoFixNodesConfirm_one": "这将永久删除具有空或接近零坐标（无 GPS 修复或零岛）的 {{count}} 节点。此操作无法撤消。",
+    "pruneNoFixNodesConfirm_other": "这将永久删除坐标为零或接近零的 {{count}} 节点（无 GPS 修复或零岛）。此操作无法撤消。",
+    "pruneNoFixDeleteConfirm_one": "删除 {{count}} 节点",
+    "pruneNoFixDeleteConfirm_other": "删除 {{count}} 节点",
+    "pruneDistantNodesConfirm_one": "这将从您的设备中永久删除 {{distance}} {{unit}} 之外的 {{count}} 节点。此操作无法撤消。",
+    "pruneDistantNodesConfirm_other": "这将从您的设备中永久删除 {{distance}} {{unit}} 之外的 {{count}} 节点。此操作无法撤消。",
+    "pruneDistantDeleteConfirm_one": "删除 {{count}} 节点",
+    "pruneDistantDeleteConfirm_other": "删除 {{count}} 节点",
+    "pruneOfflineNodesConfirm_one": "这将永久删除 {{days}} {{daysLabel}} 中未听到的 {{count}} 节点。此操作无法撤消。",
+    "pruneOfflineNodesConfirm_other": "这将永久删除 {{days}} {{daysLabel}} 中未听到的 {{count}} 节点。此操作无法撤消。",
+    "pruneOfflineDeleteConfirm_one": "删除 {{count}} 节点",
+    "pruneOfflineDeleteConfirm_other": "删除 {{count}} 节点",
+    "clearNodesConfirm": "这将永久删除所有 {{count}} 本地存储的节点。连接后将重新发现它们。",
+    "clearNodesConfirmLabel": "清除 {{count}} 节点",
+    "clearAllNodesButton": "清除所有节点 ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "这将从数据库中永久删除所有没有公钥的 MeshCore 联系人。聊天存根节点（从消息创建）将被排除。此操作无法撤消。",
+    "deleteContactsNoPubkeysConfirmButton": "删除",
+    "clearMessagesAllConfirm": "这将永久删除所有通道中本地存储的所有 {{count}} 消息。此操作无法撤消。",
+    "clearMessagesChannelConfirm": "这将永久删除 {{channel}} 中的所有消息。此操作无法撤消。",
+    "clearMessagesAllConfirmLabel": "清除 {{count}} 消息",
+    "clearMessagesChannelConfirmLabel": "清除 {{channel}}",
+    "clearMessagesTitle": "明确的信息",
+    "clearAllRepeatersConfirm": "这将从本地数据库中永久删除所有已保存的 MeshCore 中继器。此操作无法撤消。",
+    "clearAllLocalDataTitle": "⚠ 清除所有本地数据",
+    "clearAllLocalDataConfirm": "这将永久删除所有本地消息、节点和缓存的会话数据。此操作无法撤消。",
+    "clearEverythingConfirmButton": "清除一切",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "一切",
+    "deleteNodesOlderThanAria": "删除上次听到超过 {{days}} 天的节点",
+    "daySingular": "天",
+    "theme": {
+      "appBg": {
+        "label": "主窗口背景",
+        "description": "主要内容视口和应用程序窗口背景 - 所有面板后面的深色画布。"
+      },
+      "sidebarActiveBg": {
+        "label": "活动侧边栏选项卡",
+        "description": "侧边栏导航中当前选定选项卡的背景。"
+      },
+      "brandGreen": {
+        "label": "指标和边框亮点",
+        "description": "配置时强调边框、在线/MQTT 指示器、突出显示和进度填充。"
+      },
+      "brightGreen": {
+        "label": "应用程序标题、链接和节点重点",
+        "description": "应用程序标题、强调文本、页脚中的链接以及节点列表中的跳跃/自我突出显示。"
+      },
+      "readableGreen": {
+        "label": "操作按钮和选定的药丸",
+        "description": "实心填充白色文本 - 选定的通道药丸和主要操作按钮以进行对比。"
+      },
+      "deepBlack": {
+        "label": "侧边栏、标题和模态界面",
+        "description": "侧边栏导航、页眉、页脚、模式外壳和主要深色表面。"
+      },
+      "secondaryDark": {
+        "label": "面板和输入背景",
+        "description": "面板背景、输入、按钮、表格行悬停和进度跟踪。"
+      },
+      "muted": {
+        "label": "二级标签和标题",
+        "description": "辅助标签、标题、表格标题和弱化文本。"
+      },
+      "chatIncomingBg": {
+        "label": "传入消息填写",
+        "description": "传入通道消息的背景填充（以 38% 不透明度应用）。"
+      },
+      "chatIncomingBorder": {
+        "label": "传入消息边框",
+        "description": "传入通道消息的边框颜色。"
+      }
+    },
+    "themePreset": {
+      "green300": "绿色300",
+      "slate950": "板岩950",
+      "slate900": "板岩900",
+      "slate800": "板岩800",
+      "slate700": "板岩700",
+      "slate400": "板岩400",
+      "white": "白色的",
+      "black": "黑色的",
+      "blue500": "蓝色500",
+      "amber500": "琥珀500",
+      "red500": "红500",
+      "emerald500": "翡翠 500",
+      "green700": "绿色700",
+      "violet500": "紫罗兰500",
+      "cyan400": "青色400",
+      "purple400": "紫色400",
+      "pink400": "粉色400",
+      "orange400": "橙子400",
+      "yellow400": "黄400"
+    }
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -353,7 +467,13 @@
     "stopVoiceRecording": "停止录制并发送",
     "voiceRecordingTooLong": "语音片段达到 60 秒限制并已发送。",
     "reticulumSendAttachmentFailed": "发送附件失败",
-    "reticulumSendAttachmentNoIdentity": "Reticulum 身份未就绪 — 请先连接并配置身份"
+    "reticulumSendAttachmentNoIdentity": "Reticulum 身份未就绪 — 请先连接并配置身份",
+    "dmPeerInfoAria": "DM 对等信息",
+    "clearDateAria": "清除日期",
+    "readOnlyDisconnected": "未连接 — 消息是只读的",
+    "starredDm": "DM：{{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "提及建议"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -399,7 +519,8 @@
     "colorCyan": "青",
     "colorAmber": "琥珀色",
     "colorRed": "红色",
-    "colorPurple": "紫色"
+    "colorPurple": "紫色",
+    "delete": "删除"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
@@ -498,7 +619,7 @@
     "hintMeshtasticHttp2": "如果连接不可靠（例如，使用 meshtastic.local），请尝试使用设备的 IP 地址 — 桌面 mDNS 可能不稳定。",
     "hintMeshcoreHttp": "输入 MeshCore 配套无线电的主机名或 IP 地址。它必须可通过端口 5000 访问。",
     "stageLinuxUnpaired": "保存的设备未在 Linux 蓝牙中配对 - 在下面选择它以输入 PIN 码并连接。",
-    "liamServerNote": "利亚姆的服务器仅限上行链路 - 您的节点出现在他的地图上，但您不会收到来自它的消息。",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "连接",
     "manualContactApprovalDesc": "新联系人出现之前需要手动批准",
     "mqttStatusConnected": "已连接",
@@ -533,7 +654,7 @@
         "accessDeniedLinuxHint": "在 Linux 上，将您的用户添加到 dialout 组： sudo usermod -aG dialout $USER （然后注销并重新登录）",
         "disconnectedHint": "确保 USB 电缆已连接并且设备已开机。",
         "timeoutHint": "如果该端口短暂出现，请尝试重新连接 USB 电缆。",
-        "portStillOpenHint": "USB串行端口未完全释放。完全退出网状客户端并重新打开，或拔下并重新插入USB电缆，然后重新连接。"
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "在 Windows 上，meshtastic.local 需要 Bonjour（与 iTunes 一起安装）。请改用设备的 IP 地址。",
@@ -561,7 +682,7 @@
         "connectionAttemptFailedLinuxHint": "在 Linux 上，您可以通过系统蓝牙设置或“bluetoothctl”工具管理配对。",
         "meshcoreHandshakeHint": "确保您的 MeshCore 设备处于蓝牙伴侣模式并使用 PIN 与您的计算机配对。如果连接问题仍然存在，请删除所有现有配对并重新配对。",
         "meshcoreHandshakeWindowsExtra": "在 Windows 上，如果仍然断开连接，请关闭/打开蓝牙，并在设备管理器中更新适配器驱动程序。",
-        "macWakeRecoveryHint": "睡眠后，退出网状客户端（ Cmd + Q ） ，在“系统设置”中切换蓝牙开关，等待几秒钟，然后再次连接。使用两台收音机，在Meshtastic之前连接MeshCore。",
+        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
         "dualProtocolContentionHint": "另一个协议可能仍在通过蓝牙连接。请等待几秒钟，然后重试，或切换到其他协议选项卡以检查其连接状态。",
         "scanBusy": "另一次蓝牙扫描正在进行中。稍后再试一次。",
         "sameDeviceConflict": "该蓝牙设备已连接到 {{owner}}。"
@@ -699,7 +820,17 @@
         "coordinated": "区域协调",
         "fallback": "全局后备",
         "legacy": "旧版预设"
-      }
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "向上",
+        "down": "向下"
+      },
+      "pickerScanFailed": "BLE 扫描失败。请重试或手动输入地址。",
+      "pickerBleFeatureDisabled": "蓝牙在此 Reticulum 版本中不可用（缺少 rns-ble 功能）。",
+      "pickerScanFailedDetail": "扫描错误：{{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -741,7 +872,49 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum"
-    }
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[国家/地区]/[州]，例如msh/CO/美国",
+      "meshcoreLetsmesh": "meshcore/{IATA}，例如网状核心/DEN",
+      "meshcoreDefault": "MESHCORE/[国家/地区]/[州]，例如MESHCORE/美国/CO"
+    },
+    "topicPrefixPlaceholder": "msh/美国/",
+    "maxRetriesHelp": {
+      "meshtastic": "放弃之前重新尝试连接 (1–{{max}})。",
+      "meshcore": "放弃前重新连接尝试 (1-20)。"
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT：1883",
+      "liam": "Liam's",
+      "custom": "风俗"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local 或 192.168.1.x",
+    "meshcoreHostPlaceholder": "本地主机或 192.168.1.x",
+    "meshcoreBlePairingHint": "连接之前，请在<strong>系统蓝牙设置</strong>中对您的 MeshCore 设备进行配对。如果出现提示，请使用 PIN 码 - 如果您的系统不要求输入 PIN，连接将会失败，您可能需要删除配对并使用 PIN 重新配对。",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "风俗"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh 需要端口 443 上的 WebSocket 和服务器 mqtt-us-v1.letsmesh.net 或 mqtt-eu-v1.letsmesh.net。使用区域（美国/欧盟），或切换到其他经纪商的自定义。",
+      "coloradomesh": "Colorado Mesh 需要端口 1883 上的 WebSocket 且启用了 TLS，服务器 mqtt.meshcore.coloradomesh.org，路径 /ws。重置预设或切换到其他经纪商的自定义。",
+      "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.cc。重置预设或切换到其他经纪商的自定义。"
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "连接时将生成身份验证令牌（meshcore-decoder 格式）。用户名是 v1_ 加上您的 64 字符公钥（十六进制）。 JWT 受众与服务器主机名匹配。",
+      "noPrivateKey": "没有完整的身份 - 在无线电面板中导入您的 MeshCore 配置（公钥和私钥），或手动粘贴用户名 (v1_<公钥>) 和令牌。令牌中的 JWT 受众必须与服务器主机名匹配。",
+      "publicKeyMissing": "身份中缺少公钥。在无线电面板中导入 MeshCore 配置 JSON（必须包括公钥和私钥），或将代理令牌粘贴到密码字段中。",
+      "usernameBuildFailed": "无法构建 LetsMesh 用户名。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名 (v1_<public key>) 和令牌。",
+      "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。"
+    },
+    "meshcorePacketLogger": {
+      "label": "数据包记录器 — 当连接到无线电和 MQTT 时，将 RX 数据包摘要转发到 {{topic}}，其 JSON 形状与 meshcoretomqtt 相同。默认关闭；仅当您打算与数据包分析器共享听到的空中交通时才启用。"
+    },
+    "hintAdaDfuBle": "在 macOS 上，如果设备显示为“AdaDFU”，请首先在“系统设置”→“蓝牙”中将其配对以查看其 Meshtastic 名称。",
+    "authTokenFailed": "身份验证令牌生成失败：{{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -754,7 +927,11 @@
     "newGroupNamePlaceholder": "新组名...",
     "manageMembers": "管理会员",
     "rename": "重命名",
-    "deleteGroup": "删除群组"
+    "deleteGroup": "删除群组",
+    "noContactsYet": "还没有联系方式。",
+    "noGroupsYet": "还没有组。在上面创建一个。",
+    "memberCount_one": "{{count}} 成员",
+    "memberCount_other": "{{count}} 成员"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",
@@ -1016,8 +1193,33 @@
         "missing_shared_instance": "共享实例已开启，但 SharedInstanceServer 未启动。",
         "shared_instance_unexpected": "SharedInstanceServer 已启用，但 share_instance 已关闭。",
         "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。"
+      },
+      "runtime": {
+        "rnsNotReady": "RNS 堆栈尚未准备好",
+        "lxmfNotReady": "LXMF 路由器未准备好",
+        "localStalePort": "在此系统上找不到本地接口“{{name}}”串行端口 {{port}}",
+        "localOffline": "本地接口“{{name}}”已启用但离线",
+        "interfaceDown": "{{type}} 接口“{{name}}”已启用，但 {{status}}",
+        "noPeers": "路径表中还没有已知的对等点"
       }
-    }
+    },
+    "routingPort": {
+      "nodeInfo": "节点信息",
+      "telemetry": "遥测",
+      "neighborInfo": "邻居信息",
+      "traceroute": "路由追踪",
+      "position": "位置",
+      "remoteHardware": "远程硬件",
+      "admin": "行政",
+      "discoveryFlood": "发现洪水",
+      "roomAdvert": "房间广告",
+      "generic": "端口{{port}}"
+    },
+    "signalColumn": "信号",
+    "senderLabel": "发件人",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "信噪比{{snr}}分贝"
   },
   "errorBoundary": {
     "title": "出了点问题",
@@ -1196,11 +1398,11 @@
         "label": "数据库故障"
       },
       "database-chmod": {
-        "recommendation": "数据库文件权限调整失败（在 Windows 上通常是良性的）。如果您在其他地方看到真正的数据库错误，请检查网格客户端 userData 目录的防病毒和文件夹权限。",
+        "recommendation": "Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory.",
         "label": "数据库chmod （非致命）"
       },
       "database-writable": {
-        "recommendation": "该应用程序无法写入其数据库文件夹。修复网格客户端 userData 目录的权限（请参阅故障排除：数据库目录不可写）。",
+        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable).",
         "label": "数据库不可写"
       },
       "tak-server": {
@@ -1268,7 +1470,8 @@
     "appSource": "APP ({{count}})",
     "deviceSource": "器械（ {{count}} ）",
     "narrowLogPanel": "窄木板",
-    "widenLogPanel": "加宽原木面板"
+    "widenLogPanel": "加宽原木面板",
+    "clearFailed": "无法清除日志"
   },
   "mapPanel": {
     "locationUnavailable": "無法取得位置。",
@@ -1287,7 +1490,10 @@
     "layerWaypoints": "点",
     "layerRouteWeights": "工艺路线权重",
     "layerAnomalyHalos": "异常光晕",
-    "layerCongestionHalos": "拥堵光环"
+    "layerCongestionHalos": "拥堵光环",
+    "waypointDefaultName": "航路点",
+    "waypointDelete": "删除航点",
+    "noGpsNodes": "尚无具有 GPS 位置的节点"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -1581,7 +1787,7 @@
       "remoteHardwareEnabledDesc": "允许远程节点读取和写入此设备上的 GPIO 引脚。",
       "remoteHardwareAllowUndefinedPins": "允许访问未定义引脚",
       "remoteHardwareAllowUndefinedPinsDesc": "允许读取/写入未在可用引脚配置中列出的引脚。",
-      "mqttProxyGatewayHint": "启用代理后，网格客户端通过MqttClientProxyMessage桥接流量。在MQTT→射频中继的“无线电”选项卡上启用每通道下行链路。",
+      "mqttProxyGatewayHint": "With proxy enabled, mesh-client bridges broker traffic via MqttClientProxyMessage. Enable per-channel downlink on the Radio tab for MQTT→RF relay.",
       "mapReportPublishInterval": "映射报告间隔（秒）",
       "mapReportPublishIntervalDesc": "0使用固件默认值。启用地图报告后，设备发布地图报告的频率。",
       "mapReportPositionPrecision": "地图报告位置精度",
@@ -1623,7 +1829,141 @@
     "debugPrivateAppMessages": "私人应用消息",
     "debugPingResponses": "Ping响应",
     "sectionMapReport": "地图报告",
-    "sectionMapReportHint": "在MQTT上发布Meshtastic地图的位置。需要启用上面的MQTT中继；设置存储在设备MQTT模块配置中。"
+    "sectionMapReportHint": "在MQTT上发布Meshtastic地图的位置。需要启用上面的MQTT中继；设置存储在设备MQTT模块配置中。",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "没有任何"
+      },
+      "10": {
+        "label": "选择（输入）"
+      },
+      "17": {
+        "label": "向上"
+      },
+      "18": {
+        "label": "向下"
+      },
+      "19": {
+        "label": "左边"
+      },
+      "20": {
+        "label": "正确的"
+      },
+      "24": {
+        "label": "取消"
+      },
+      "27": {
+        "label": "返回（Esc）"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "默认"
+      },
+      "1": {
+        "label": "简单的"
+      },
+      "2": {
+        "label": "原型"
+      },
+      "3": {
+        "label": "短信"
+      },
+      "4": {
+        "label": "国家海洋环境局"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE直达"
+      },
+      "8": {
+        "label": "网格太阳能配置"
+      },
+      "9": {
+        "label": "日志（所有数据包）"
+      },
+      "10": {
+        "label": "日志（仅文本）"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "白色的"
+      },
+      "2": {
+        "label": "黄色的"
+      },
+      "3": {
+        "label": "橙子"
+      },
+      "4": {
+        "label": "品红"
+      },
+      "5": {
+        "label": "红色的"
+      },
+      "6": {
+        "label": "栗色"
+      },
+      "7": {
+        "label": "紫色的"
+      },
+      "8": {
+        "label": "深蓝色"
+      },
+      "9": {
+        "label": "蓝色的"
+      },
+      "10": {
+        "label": "青色"
+      },
+      "11": {
+        "label": "青色"
+      },
+      "12": {
+        "label": "绿色的"
+      },
+      "13": {
+        "label": "深绿色"
+      },
+      "14": {
+        "label": "棕色的"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "队员"
+      },
+      "2": {
+        "label": "团队负责人"
+      },
+      "3": {
+        "label": "总部"
+      },
+      "4": {
+        "label": "狙击手"
+      },
+      "5": {
+        "label": "军医"
+      },
+      "6": {
+        "label": "前方观察员"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "从收藏夹中移除",
@@ -1772,7 +2112,19 @@
     "remoteAuthCancelled": "远程访问已取消。",
     "shareContactSent": "通过无线电发送的联系人共享。",
     "blockContact": "物块",
-    "unblockContact": "取消屏蔽"
+    "unblockContact": "取消屏蔽",
+    "paxCounter": {
+      "heading": "客流量柜台",
+      "detectedCount": "检测数",
+      "lastSeen": "最后一次出现"
+    },
+    "detectionSensor": {
+      "heading": "检测传感器 ({{count}})",
+      "lastDetection": "最后一次检测",
+      "dataSize": "数据大小",
+      "dataSizeBytes": "{{count}} 字节",
+      "rawDataHex": "原始数据（十六进制）"
+    }
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -1934,7 +2286,7 @@
     "connectedViaRfAndMqttAria": "通过射频和MQTT连接"
   },
   "nomadNetwork": {
-    "title": "游牧网络",
+    "title": "Nomad Network",
     "toggleFavorite": "切换收藏夹",
     "favourites": "收藏夹",
     "announces": "宣布",
@@ -2523,7 +2875,103 @@
     "applyTxPowerSuccess": "已应用TX功率",
     "xmodemInvalidFilename": "文件名包含无效字符",
     "validationInvalidPsk": "Base64 PSK无效—请检查密钥并重试",
-    "meshcoreChannelNameRequired": "频道名称不能为空"
+    "meshcoreChannelNameRequired": "频道名称不能为空",
+    "editChannelTitle": "编辑频道 {{index}}",
+    "channelNameLabel": "姓名",
+    "channelRoleLabel": "角色",
+    "channelsEditHint": "选择要编辑的频道。 AES-128/256 密钥以 base64（Meshtastic 约定）显示。",
+    "channelResetStatus": "通道 {{index}} 重置！",
+    "meshcoreChannel": {
+      "defaultName": "频道 {{index}}",
+      "addTitle": "添加频道",
+      "editTitle": "编辑频道 {{index}}",
+      "indexLabel": "索引 (0–{{max}})",
+      "invalidHex": "必须正好是 32 个十六进制字符。",
+      "addButton": "+ 添加频道",
+      "footerHelp": "密钥为 128 位（16 字节），显示为 32 个十六进制字符。通道名称最多 {{nameMax}} 个字符。最多 {{channelCount}} 通道（索引 0–{{indexMax}}）。对于#channels，请使用“从名称派生”（带有前导 # 的名称的 SHA-256）。"
+    },
+    "regions": {
+      "0": {
+        "label": "取消设置"
+      },
+      "1": {
+        "label": "我们"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "中国"
+      },
+      "5": {
+        "label": "太平绅士"
+      },
+      "6": {
+        "label": "澳新银行"
+      },
+      "7": {
+        "label": "韩国"
+      },
+      "8": {
+        "label": "台湾"
+      },
+      "9": {
+        "label": "鲁"
+      },
+      "10": {
+        "label": "在"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MY_433"
+      },
+      "16": {
+        "label": "MY_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "洛拉_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "长快"
+      },
+      "1": {
+        "label": "长慢"
+      },
+      "2": {
+        "label": "长 中等"
+      },
+      "3": {
+        "label": "短快"
+      },
+      "4": {
+        "label": "短慢速"
+      },
+      "5": {
+        "label": "中快"
+      },
+      "6": {
+        "label": "中慢速"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -2665,7 +3113,20 @@
     "pathHashCliGet": "获取路径哈希模式",
     "pathHashCliSet0": "设置路径哈希模式1字节",
     "pathHashCliSet1": "设置路径哈希模式2字节",
-    "pathHashCliSet2": "设置路径哈希模式3字节"
+    "pathHashCliSet2": "设置路径哈希模式3字节",
+    "pathLabel": "小路：",
+    "hopMe": "● 我",
+    "hopN": "● 跳{{n}}",
+    "noNeighborsReported": "没有邻居报告",
+    "fetchingTelemetry": "正在获取遥测数据...",
+    "telemetryBattery": "电池：{{voltage}}V",
+    "telemetryTemp": "温度：{{temp}}°C",
+    "telemetryHumidity": "湿度：{{humidity}}%",
+    "telemetryPressure": "压力：{{pressure}} hPa",
+    "telemetryGps": "GPS：{{coords}}{{alt}}",
+    "telemetryGpsAlt": "替代 {{altitude}}m",
+    "cliSend": "发送",
+    "cliQuick": "快的："
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -2998,7 +3459,7 @@
     "rooms": "房间数",
     "admin": "管理",
     "peers": "Pee对端",
-    "nomadnetwork": "游牧网络",
+    "nomadnetwork": "Nomad Network",
     "topology": "网络拓扑图",
     "network": "网络"
   },
@@ -3189,6 +3650,59 @@
       "confirmTitle": "重置 Reticulum stack？",
       "confirmBody": "这将从 sidecar 中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
       "confirm": "重置"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "从中继器面板设置或更改中继器管理员密码（仅限会话）。",
+      "connectionFailed": "连接失败",
+      "notConnected": "未连接到设备",
+      "nodeNotFound": "未找到节点（无加密密钥）",
+      "authenticationFailed": "认证失败",
+      "requestFailed": "失败：{{detail}}",
+      "requestTimedOut": "请求超时（最多~{{seconds}}s）",
+      "requestTimedOutApprox": "请求超时 (~{{seconds}}s)",
+      "pingNoRoute": "还没有来自无线电的路由 - 多跳跟踪需要同步路径。等待联系人更新或重新连接。",
+      "bleNoDetails": "BLE 连接失败（设备没有错误详细信息）。再试一次或使用串行/USB。",
+      "bleAlreadyInProgress": "蓝牙连接已在进行中。等待它完成或尝试串行/USB。",
+      "bleMissingServices": "设备不支持 MeshCore BLE 协议。确保设备正在运行 MeshCore 固件。",
+      "blePeripheralInUse": "该设备已通过 Meshtastic BLE 连接。在作为 MeshCore 连接之前先断开它。",
+      "bleTimeoutWebBtHandshake": "MeshCore 握手超时（网络蓝牙）。无线电可能需要首先与 Linux 配对的 PI​​N：使用“删除并重新配对设备”并输入设备上显示的 PIN，或与 bluetoothctl 配对，然后再次点击“连接”。",
+      "bleTimeoutWebBt": "通过网络蓝牙打开 MeshCore 时蓝牙连接超时。重试、保持设备唤醒、重新启动无线电上的 BLE，或使用串行/TCP。",
+      "bleTimeoutHandshake": "蓝牙已连接，但在断开/超时之前 MeshCore 协议握手未完成。重试、保持设备处于唤醒状态并在附近、重新启动 BLE 或使用串行/TCP。",
+      "bleTimeoutNoble": "通过 Noble IPC 打开 MeshCore 时蓝牙连接超时。重试、重新启动设备上的 BLE，或使用串行/TCP。",
+      "roomPost": {
+        "badState": "房间帖子被拒绝（未登录收音机）。注销，重新登录，然后重试。",
+        "illegalArg": "房间帖子被拒绝（消息格式无效）。",
+        "notFound": "房间帖子被拒绝（在收音机上找不到房间联系方式）。",
+        "unsupportedCmd": "房间帖子被拒绝（无线电上不支持的消息类型）。登录房间，然后重试。",
+        "default": "房间帖子被无线电拒绝。注销，重新登录，然后重试。",
+        "timeout": "房间帖子等待广播超时。检查范围或重试。"
+      },
+      "roomLogin": {
+        "noRoute": "没有到该房间服务器的路由。从地图上追踪节点或等待路径广告，然后重试。",
+        "pathSyncFailed": "登录前无法在对讲机上编程路线。重新连接设备并重试。",
+        "pathSyncFailedDetail": "登录前无法在对讲机上编程路线。重新连接设备并重试.{{detail}}",
+        "rejectedBlankGuest": "房间登录被拒绝。对空白访客密码使用“继续只读”，或尝试访客密码“hello”。",
+        "rejectedDefaultGuest": "房间登录被拒绝。如果该服务器没有访客密码，请使用“继续只读”而不是“登录”。否则请检查访客或管理员密码。",
+        "rejectedCheckPassword": "房间登录被拒绝。检查该房间服务器的访客或管理员密码。",
+        "timedOutBlankGuest": "房间登录超时。对空白访客密码使用“继续只读”，或尝试访客密码“hello”。",
+        "timedOutDefaultGuest": "房间登录超时。如果该服务器没有访客密码，请使用“继续只读”而不是“登录”。",
+        "timedOut": "房间登录超时。房间可能超出范围或没有响应。",
+        "failed": "房间登录失败"
+      },
+      "roomLogout": {
+        "timedOut": "房间注销超时。房间可能超出范围或没有响应。",
+        "rejected": "房间注销被无线电拒绝。",
+        "failed": "无法离开房间"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
+      "network": "检查网络、DNS、防火墙和 VPN。",
+      "connackTimeout": "如果您之前没有看到“客户端错误”行，则 TLS/WebSocket 握手可能会停止（尝试另一个网络；应用程序更喜欢使用 IPv4 作为 WSS）。",
+      "subscribeFailed": "经纪商可能会拒绝通配符订阅该主题；如果代理允许，消息仍然可能到达。",
+      "keepalive": "服务器停止响应 MQTT ping（空闲超时、网络中断或代理关闭会话）。重新连接或检查您的链接。"
     }
   }
 }

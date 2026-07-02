@@ -23,7 +23,17 @@
     },
     "nodeLabel": "Node: {{name}}",
     "footerSlogan": "For everyone, everywhere. Join us:",
-    "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} messages"
+    "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} messages",
+    "title": "Mesh Client",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Turn off Colorado Mesh sign",
+    "meshTubeSignOn": "Turn on Colorado Mesh sign",
+    "queueBadge": "Q: {{used}}/{{max}}",
+    "telemetryDisabled": "Telemetry is disabled on this device. Enabling device metrics helps the mesh and this app (diagnostics, battery, signal). Enable it in the Radio tab.",
+    "scrollToTop": "↑ Top",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh on GitHub",
+    "footerWebsiteTitle": "Colorado Mesh website"
   },
   "appPanel": {
     "failedSaveRetention": "Failed to save message retention setting.",
@@ -170,6 +180,8 @@
     "capTotalNodesLabel": "Cap total nodes, keep newest",
     "autoPrunePositionHistoryLabel": "Auto-prune position history on startup, older than",
     "autoPruneUnheardContactsLabel": "Auto-prune unheard contacts on startup, older than",
+    "autoPruneUnheardContactsDaysAria": "Auto-prune unheard contacts on startup, older than {{days}} days",
+    "capTotalContactsCountAria": "Cap total contacts, keep most recently seen {{count}} contacts",
     "capTotalContactsLabel": "Cap total contacts, keep most recently seen",
     "limitMessagesLoadedLabel": "Limit messages loaded",
     "capStoredMessagesLabel": "Cap stored messages, keep newest",
@@ -198,7 +210,109 @@
     "storeForwardAutoFetchHistory": "Automatically fetch Store & Forward chat history on connect",
     "storeForwardAutoFetchHistoryHint": "On RF connect, request up to 50 messages (15 min cooldown between fetches). Turn off if your gateway MQTT bridge is overloaded.",
     "notificationsSection": "Notifications",
-    "soundNotifications": "Sound notifications"
+    "soundNotifications": "Sound notifications",
+    "unknownError": "Unknown error",
+    "resetDiagnosticsConfirm": "This will clear all routing anomalies, hop history, and packet stats. The engine will rebuild from new incoming packets. Continue?",
+    "clearGpsDataConfirm": "This will remove stored GPS coordinates from all nodes. Nodes will remain but their positions will be blank until new data is received. Continue?",
+    "clearPositionHistoryConfirm": "This will permanently delete all stored position history from the database. Movement trails will no longer be shown for past sessions. Continue?",
+    "deleteOldNodesConfirm_one": "This will permanently delete all nodes that haven't been heard in the last {{days}} day. They will be re-discovered when they broadcast again.",
+    "deleteOldNodesConfirm_other": "This will permanently delete all nodes that haven't been heard in the last {{days}} days. They will be re-discovered when they broadcast again.",
+    "pruneMqttOnlyNodesConfirm": "This will permanently delete all nodes discovered only via MQTT (never heard via RF). They will reappear if heard again via MQTT or RF.",
+    "pruneMqttNodesConfirmLabel": "Prune MQTT Nodes",
+    "pruneUnnamedNodesConfirm": "This will permanently delete nodes with no real long name: empty names, auto-generated !hex placeholders, Node-HEX fallbacks tied to the node id, and MQTT-only identities that never received UserInfo. Favorited nodes are kept. They will be re-discovered when they broadcast again.",
+    "pruneNoFixNodesConfirm_one": "This will permanently delete {{count}} node with null or near-zero coordinates (no GPS fix or Zero Island). This cannot be undone.",
+    "pruneNoFixNodesConfirm_other": "This will permanently delete {{count}} nodes with null or near-zero coordinates (no GPS fix or Zero Island). This cannot be undone.",
+    "pruneNoFixDeleteConfirm_one": "Delete {{count}} Node",
+    "pruneNoFixDeleteConfirm_other": "Delete {{count}} Nodes",
+    "pruneDistantNodesConfirm_one": "This will permanently delete {{count}} node beyond {{distance}} {{unit}} from your device. This cannot be undone.",
+    "pruneDistantNodesConfirm_other": "This will permanently delete {{count}} nodes beyond {{distance}} {{unit}} from your device. This cannot be undone.",
+    "pruneDistantDeleteConfirm_one": "Delete {{count}} Node",
+    "pruneDistantDeleteConfirm_other": "Delete {{count}} Nodes",
+    "pruneOfflineNodesConfirm_one": "This will permanently delete {{count}} node not heard in over {{days}} {{daysLabel}}. This cannot be undone.",
+    "pruneOfflineNodesConfirm_other": "This will permanently delete {{count}} nodes not heard in over {{days}} {{daysLabel}}. This cannot be undone.",
+    "pruneOfflineDeleteConfirm_one": "Delete {{count}} Node",
+    "pruneOfflineDeleteConfirm_other": "Delete {{count}} Nodes",
+    "clearNodesConfirm": "This will permanently delete all {{count}} locally stored nodes. They will be re-discovered when connected.",
+    "clearNodesConfirmLabel": "Clear {{count}} Nodes",
+    "clearAllNodesButton": "Clear All Nodes ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "This will permanently delete all MeshCore contacts from the database that have no public key. Chat stub nodes (created from messages) will be excluded. This cannot be undone.",
+    "deleteContactsNoPubkeysConfirmButton": "Delete",
+    "clearMessagesAllConfirm": "This will permanently delete all {{count}} locally stored messages across all channels. This cannot be undone.",
+    "clearMessagesChannelConfirm": "This will permanently delete all messages from {{channel}}. This cannot be undone.",
+    "clearMessagesAllConfirmLabel": "Clear {{count}} Messages",
+    "clearMessagesChannelConfirmLabel": "Clear {{channel}}",
+    "clearMessagesTitle": "Clear Messages",
+    "clearAllRepeatersConfirm": "This will permanently remove all saved MeshCore repeaters from the local database. This cannot be undone.",
+    "clearAllLocalDataTitle": "⚠ Clear All Local Data",
+    "clearAllLocalDataConfirm": "This will permanently delete ALL local messages, nodes, and cached session data. This action CANNOT be undone.",
+    "clearEverythingConfirmButton": "Clear Everything",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "Everything",
+    "deleteNodesOlderThanAria": "Delete nodes last heard more than {{days}} days",
+    "daySingular": "day",
+    "theme": {
+      "appBg": {
+        "label": "Main window background",
+        "description": "Main content viewport and app window background — the dark canvas behind all panels."
+      },
+      "sidebarActiveBg": {
+        "label": "Active sidebar tab",
+        "description": "Background of the currently selected tab in the sidebar navigation."
+      },
+      "brandGreen": {
+        "label": "Indicators & border highlights",
+        "description": "Accent for borders when configured, online/MQTT indicators, highlights, and progress fills."
+      },
+      "brightGreen": {
+        "label": "App title, links & node emphasis",
+        "description": "App title, emphasis text, links in footer, and hop/self highlights in node list."
+      },
+      "readableGreen": {
+        "label": "Action buttons & selected pills",
+        "description": "Solid fills with white text—selected channel pills and primary action buttons for contrast."
+      },
+      "deepBlack": {
+        "label": "Sidebar, header & modal surfaces",
+        "description": "Sidebar navigation, header, footer, modal shells, and primary dark surfaces."
+      },
+      "secondaryDark": {
+        "label": "Panel & input background",
+        "description": "Panel backgrounds, inputs, buttons, table row hovers, and progress track."
+      },
+      "muted": {
+        "label": "Secondary labels & captions",
+        "description": "Secondary labels, captions, table headers, and de-emphasized text."
+      },
+      "chatIncomingBg": {
+        "label": "Incoming message fill",
+        "description": "Background fill for incoming channel messages (applied at 38% opacity)."
+      },
+      "chatIncomingBorder": {
+        "label": "Incoming message border",
+        "description": "Border color for incoming channel messages."
+      }
+    },
+    "themePreset": {
+      "green300": "Green 300",
+      "slate950": "Slate 950",
+      "slate900": "Slate 900",
+      "slate800": "Slate 800",
+      "slate700": "Slate 700",
+      "slate400": "Slate 400",
+      "white": "White",
+      "black": "Black",
+      "blue500": "Blue 500",
+      "amber500": "Amber 500",
+      "red500": "Red 500",
+      "emerald500": "Emerald 500",
+      "green700": "Green 700",
+      "violet500": "Violet 500",
+      "cyan400": "Cyan 400",
+      "purple400": "Purple 400",
+      "pink400": "Pink 400",
+      "orange400": "Orange 400",
+      "yellow400": "Yellow 400"
+    }
   },
   "aria": {
     "closeDialog": "Close dialog",
@@ -353,7 +467,13 @@
     "emptyNoSearchMatches": "No messages match your search.",
     "emptyNoDmMessages": "No messages with {{name}} yet.",
     "emptyNoMessagesYet": "No messages yet. Send one or wait for incoming messages.",
-    "emptyConnectFirst": "Connect to a device to start chatting."
+    "emptyConnectFirst": "Connect to a device to start chatting.",
+    "dmPeerInfoAria": "DM peer info",
+    "clearDateAria": "Clear date",
+    "readOnlyDisconnected": "Not connected — messages are read-only",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "Mention suggestions"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -372,6 +492,7 @@
     "hide": "Hide",
     "refresh": "Refresh",
     "edit": "Edit",
+    "delete": "Delete",
     "loading": "Loading",
     "saving": "Saving...",
     "error": "Error",
@@ -466,7 +587,22 @@
     "username": "Username",
     "password": "Password",
     "topicPrefix": "Topic Prefix",
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[Country]/[State], e.g. msh/CO/US",
+      "meshcoreLetsmesh": "meshcore/{IATA}, e.g. meshcore/DEN",
+      "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO"
+    },
+    "topicPrefixPlaceholder": "msh/US/",
     "maxRetries": "Max Retries",
+    "maxRetriesHelp": {
+      "meshtastic": "Reconnect attempts (1–{{max}}) before giving up.",
+      "meshcore": "Reconnect attempts (1–20) before giving up."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT :1883",
+      "liam": "Liam's",
+      "custom": "Custom"
+    },
     "channelPsks": "Channel PSKs",
     "channelPsksHelp": "AES-128 (16-byte) or AES-256 (32-byte) base64 keys, one per line or comma-separated. Default public LongFast (AQ==) is always tried — omit legacy default channels unless needed for publish. Include your upgraded primary 256-bit key when MQTT-only. Bare base64 = decrypt-only; ChannelName=base64 = named publish; ChannelName@index=base64 maps chat tabs when no radio is connected. Radio connected: keys and indexes sync from the Radio tab.",
     "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
@@ -564,6 +700,16 @@
       "rnodeWifiSetupTitle": "Wi-Fi RNode setup",
       "rnodeWifiSetupHint": "Wi-Fi is off after flashing — provision the RNode first (Reticulum → Admin → Wi-Fi, or join its AP and open http://10.0.0.1). Requires ESP32-S3 Wi-Fi-capable firmware.\n\nAfter station mode: find the IP on the OLED alternate screen, your router DHCP list, or Admin → Read config. Use tcp://host (default port 7633) — not the TCP Client interface type.\n\n~10 s button hold on many Heltec boards enables Wi-Fi AP (~7 s is Bluetooth pairing).",
       "seedAddresses": "Seed peers (optional)",
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "up",
+        "down": "down"
+      },
+      "pickerScanFailed": "BLE scan failed. Try again or enter an address manually.",
+      "pickerBleFeatureDisabled": "Bluetooth is not available in this Reticulum build (rns-ble feature missing).",
+      "pickerScanFailedDetail": "Scan error: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}",
       "host": "Host",
       "port": "Port",
       "delete": "Delete",
@@ -648,11 +794,36 @@
     "wifiHttp": "WiFi/HTTP",
     "tcpIp": "TCP/IP",
     "deviceAddress": "Device Address",
+    "deviceAddressPlaceholder": "meshtastic.local or 192.168.1.x",
     "deviceAddressHint": "Enter hostname or IP address (without http://)",
     "windowsMdnsNote": "On Windows, meshtastic.local may not resolve — use the device's IP address instead.",
     "meshcoreHost": "Host",
     "meshcoreHostHint": "MeshCore companion radio TCP host and port",
+    "meshcoreHostPlaceholder": "localhost or 192.168.1.x",
     "meshcorePort": "Port",
+    "meshcoreBlePairingHint": "Pair your MeshCore device in <strong>system Bluetooth settings</strong> before connecting. Use a PIN code if prompted — if your system does not ask for a PIN, the connection will fail and you may need to remove the pairing and re-pair with a PIN.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "Custom"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.",
+      "coloradomesh": "Colorado Mesh needs WebSocket on port 1883 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.",
+      "meshmapper": "MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.",
+      "noPrivateKey": "No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.",
+      "publicKeyMissing": "Public key missing from identity. Import your MeshCore config JSON in the Radio panel (must include public and private keys), or paste a broker token in the password field.",
+      "usernameBuildFailed": "Could not build LetsMesh username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.",
+      "noIdentity": "No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually."
+    },
+    "meshcorePacketLogger": {
+      "label": "Packet logger — when connected to your radio and MQTT, forward RX packet summaries to {{topic}} in the same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to share heard air traffic with a packet analyzer."
+    },
     "hintMeshtasticBle1": "Ensure your Meshtastic device has Bluetooth enabled and is in range.",
     "hintMeshtasticBle2": "Click Connect to scan — a device picker will appear with discovered Meshtastic devices.",
     "hintMeshcoreBle1": "Ensure your MeshCore device has Bluetooth enabled and is in range.",
@@ -664,6 +835,8 @@
     "hintMeshtasticHttp1": "Enter the IP address or hostname of a WiFi-connected Meshtastic node. The device must have WiFi enabled in its config.",
     "hintMeshtasticHttp2": "If connection is unreliable (e.g. with meshtastic.local), try the device's IP address instead — desktop mDNS can be flaky.",
     "hintMeshcoreHttp": "Enter the hostname or IP address of your MeshCore companion radio. It must be reachable on port 5000.",
+    "hintAdaDfuBle": "On macOS, if a device shows as \"AdaDFU\", pair it first in System Settings → Bluetooth to see its Meshtastic name.",
+    "authTokenFailed": "Auth token generation failed: {{message}}",
     "stageLinuxUnpaired": "Saved device is not paired in Linux Bluetooth — select it below to enter PIN and connect.",
     "stageSelectDevice": "Select your device below",
     "stageSelectSerial": "Select a serial port below",
@@ -754,7 +927,11 @@
     "newGroupNamePlaceholder": "New group name…",
     "manageMembers": "Manage members",
     "rename": "Rename",
-    "deleteGroup": "Delete group"
+    "deleteGroup": "Delete group",
+    "noContactsYet": "No contacts yet.",
+    "noGroupsYet": "No groups yet. Create one above.",
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Drop routing rows older than {{hours}} hours (1–168)",
@@ -866,6 +1043,23 @@
       "weakLink": "Weak link at hop {{hop}} (SNR {{snr}} dB) — low-signal relay on traced path",
       "noisyNode": "Sending {{ratePerHour}}/hr on {{ports}} — excessive traffic"
     },
+    "routingPort": {
+      "nodeInfo": "NodeInfo",
+      "telemetry": "Telemetry",
+      "neighborInfo": "NeighborInfo",
+      "traceroute": "Traceroute",
+      "position": "Position",
+      "remoteHardware": "RemoteHardware",
+      "admin": "Admin",
+      "discoveryFlood": "DiscoveryFlood",
+      "roomAdvert": "RoomAdvert",
+      "generic": "Port{{port}}"
+    },
+    "signalColumn": "Signal",
+    "senderLabel": "Sender",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB",
     "rfCondition": {
       "utilizationVsTx": "Utilization vs. TX",
       "nonLoraNoiseRfi": "Non-LoRa Noise / RFI",
@@ -1000,6 +1194,14 @@
         "edit": "Edit interface",
         "restart_stack": "Restart stack",
         "add_auto": "Add Auto interface"
+      },
+      "runtime": {
+        "rnsNotReady": "RNS stack is not ready",
+        "lxmfNotReady": "LXMF router is not ready",
+        "localStalePort": "Local interface \"{{name}}\" serial port {{port}} not found on this system",
+        "localOffline": "Local interface \"{{name}}\" is enabled but offline",
+        "interfaceDown": "{{type}} interface \"{{name}}\" is enabled but {{status}}",
+        "noPeers": "No known peers in path table yet"
       },
       "audit": {
         "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",
@@ -1268,7 +1470,8 @@
     "appSource": "App ({{count}})",
     "deviceSource": "Device ({{count}})",
     "narrowLogPanel": "Narrow log panel",
-    "widenLogPanel": "Widen log panel"
+    "widenLogPanel": "Widen log panel",
+    "clearFailed": "Could not clear log"
   },
   "mapPanel": {
     "locationUnavailable": "Location unavailable.",
@@ -1287,7 +1490,10 @@
     "layerWaypoints": "Waypoints",
     "layerRouteWeights": "Route weights",
     "layerAnomalyHalos": "Anomaly halos",
-    "layerCongestionHalos": "Congestion halos"
+    "layerCongestionHalos": "Congestion halos",
+    "waypointDefaultName": "Waypoint",
+    "waypointDelete": "Delete Waypoint",
+    "noGpsNodes": "No nodes with GPS positions yet"
   },
   "meshCongestion": {
     "blockTitle": "Why you're seeing duplicate traffic",
@@ -1302,6 +1508,59 @@
     "extraRfReceptions": "extra RF receptions",
     "originatorPacket": "packet",
     "originatorPackets": "packets"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Set or change the repeater admin password from the Repeaters panel (session only).",
+      "connectionFailed": "Connection failed",
+      "notConnected": "Not connected to device",
+      "nodeNotFound": "Node not found (no encryption key)",
+      "authenticationFailed": "Authentication failed",
+      "requestFailed": "Failed: {{detail}}",
+      "requestTimedOut": "Request timed out (up to ~{{seconds}}s)",
+      "requestTimedOutApprox": "Request timed out (~{{seconds}}s)",
+      "pingNoRoute": "No route from radio yet — multi-hop trace needs a synced path. Wait for contact updates or reconnect.",
+      "bleNoDetails": "BLE connection failed (no error details from device). Try again or use Serial/USB.",
+      "bleAlreadyInProgress": "Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.",
+      "bleMissingServices": "Device does not support the MeshCore BLE protocol. Make sure the device is running MeshCore firmware.",
+      "blePeripheralInUse": "This device is already connected via Meshtastic BLE. Disconnect it first before connecting as MeshCore.",
+      "bleTimeoutWebBtHandshake": "MeshCore handshake timed out (Web Bluetooth). The radio may need a PIN paired with Linux first: use Remove & Re-pair Device and enter the PIN shown on the device, or pair with bluetoothctl, then tap Connect again.",
+      "bleTimeoutWebBt": "Bluetooth connection timed out while opening MeshCore over Web Bluetooth. Retry, keep the device awake, power-cycle BLE on the radio, or use Serial/TCP.",
+      "bleTimeoutHandshake": "Bluetooth connected but MeshCore protocol handshake did not complete before disconnect/timeout. Retry, keep the device awake and nearby, power-cycle BLE, or use Serial/TCP.",
+      "bleTimeoutNoble": "Bluetooth connection timed out while opening MeshCore over Noble IPC. Retry, power-cycle BLE on the device, or use Serial/TCP.",
+      "roomPost": {
+        "badState": "Room post rejected (not logged in on the radio). Log out, log in again, then retry.",
+        "illegalArg": "Room post rejected (invalid message format).",
+        "notFound": "Room post rejected (room contact not found on the radio).",
+        "unsupportedCmd": "Room post rejected (unsupported message type on the radio). Log in to the room, then retry.",
+        "default": "Room post rejected by the radio. Log out, log in again, then retry.",
+        "timeout": "Room post timed out waiting for the radio. Check range or try again."
+      },
+      "roomLogin": {
+        "noRoute": "No route to this room server. Trace the node from the map or wait for path adverts, then try again.",
+        "pathSyncFailed": "Could not program the route on your radio before login. Reconnect the device and try again.",
+        "pathSyncFailedDetail": "Could not program the route on your radio before login. Reconnect the device and try again.{{detail}}",
+        "rejectedBlankGuest": "Room login rejected. Use Continue read-only for blank guest password, or try guest password \"hello\".",
+        "rejectedDefaultGuest": "Room login rejected. If this server has no guest password, use Continue read-only instead of Login. Otherwise check the guest or admin password.",
+        "rejectedCheckPassword": "Room login rejected. Check the guest or admin password for this room server.",
+        "timedOutBlankGuest": "Room login timed out. Use Continue read-only for blank guest password, or try guest password \"hello\".",
+        "timedOutDefaultGuest": "Room login timed out. If this server has no guest password, use Continue read-only instead of Login.",
+        "timedOut": "Room login timed out. The room may be out of range or not responding.",
+        "failed": "Room login failed"
+      },
+      "roomLogout": {
+        "timedOut": "Room logout timed out. The room may be out of range or not responding.",
+        "rejected": "Room logout rejected by radio.",
+        "failed": "Could not leave room"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "Verify v1_ username, token signature, and JWT audience vs broker; see docs/letsmesh-mqtt-auth.md. Use Custom to paste an operator-issued token if needed.",
+      "network": "Check network, DNS, firewall, and VPN.",
+      "connackTimeout": "If you see no prior “client error” line, the TLS/WebSocket handshake may be stalling (try another network; the app prefers IPv4 for WSS).",
+      "subscribeFailed": "The broker may deny wildcard subscribe on this topic; messages may still arrive if the broker allows it.",
+      "keepalive": "The server stopped responding to MQTT pings (idle timeout, network drop, or broker closed the session). Reconnect or check your link."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "All contacts cleared.",
@@ -1611,6 +1870,58 @@
     },
     "applySection": "Apply {{section}}",
     "applyingButton": "Applying...",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": { "label": "None" },
+      "10": { "label": "Select (Enter)" },
+      "17": { "label": "Up" },
+      "18": { "label": "Down" },
+      "19": { "label": "Left" },
+      "20": { "label": "Right" },
+      "27": { "label": "Back (Esc)" },
+      "24": { "label": "Cancel" }
+    },
+    "serialModes": {
+      "0": { "label": "Default" },
+      "1": { "label": "Simple" },
+      "2": { "label": "Proto" },
+      "3": { "label": "Text message" },
+      "4": { "label": "NMEA" },
+      "5": { "label": "CalTopo" },
+      "6": { "label": "WS85" },
+      "7": { "label": "VE.Direct" },
+      "8": { "label": "MeshSolar config" },
+      "9": { "label": "Log (all packets)" },
+      "10": { "label": "Log (text only)" }
+    },
+    "takTeamColors": {
+      "1": { "label": "White" },
+      "2": { "label": "Yellow" },
+      "3": { "label": "Orange" },
+      "4": { "label": "Magenta" },
+      "5": { "label": "Red" },
+      "6": { "label": "Maroon" },
+      "7": { "label": "Purple" },
+      "8": { "label": "Dark Blue" },
+      "9": { "label": "Blue" },
+      "10": { "label": "Cyan" },
+      "11": { "label": "Teal" },
+      "12": { "label": "Green" },
+      "13": { "label": "Dark Green" },
+      "14": { "label": "Brown" }
+    },
+    "teamRoles": {
+      "1": { "label": "Team Member" },
+      "2": { "label": "Team Lead" },
+      "3": { "label": "HQ" },
+      "4": { "label": "Sniper" },
+      "5": { "label": "Medic" },
+      "6": { "label": "Forward Observer" },
+      "7": { "label": "RTO" },
+      "8": { "label": "K9" }
+    },
     "statusLabels": {
       "serial": "Serial",
       "ipTunnel": "IP Tunnel",
@@ -1767,6 +2078,18 @@
     "cancel": "Cancel",
     "confirmDelete": "Confirm Delete",
     "deleteFailedMqtt": "Delete failed. Disconnect MQTT and try again.",
+    "paxCounter": {
+      "heading": "Pax Counter",
+      "detectedCount": "Detected Count",
+      "lastSeen": "Last Seen"
+    },
+    "detectionSensor": {
+      "heading": "Detection Sensor ({{count}})",
+      "lastDetection": "Last Detection",
+      "dataSize": "Data Size",
+      "dataSizeBytes": "{{count}} bytes",
+      "rawDataHex": "Raw Data (hex)"
+    },
     "packetsLocalHeading": "Packets (Local)",
     "sentFloodDirectLabel": "Sent (Flood / Direct)",
     "recvFloodDirectLabel": "Recv (Flood / Direct)",
@@ -2278,6 +2601,11 @@
     "wifiPasswordPlaceholder": "Password",
     "channelNamePrimary": "Primary",
     "channelNameSecondary": "Channel name",
+    "editChannelTitle": "Edit Channel {{index}}",
+    "channelNameLabel": "Name",
+    "channelRoleLabel": "Role",
+    "channelsEditHint": "Select a channel to edit. AES-128/256 keys are shown in base64 (Meshtastic convention).",
+    "channelResetStatus": "Channel {{index}} reset!",
     "resetChannelDefaults": "Reset to defaults",
     "disableChannel": "Disable channel",
     "hideKey": "Hide key",
@@ -2363,6 +2691,15 @@
     "meshcoreDeriving": "Deriving…",
     "meshcoreGenerateRandomKey": "Generate random",
     "meshcoreChannelNameLabel": "Name",
+    "meshcoreChannel": {
+      "defaultName": "Channel {{index}}",
+      "addTitle": "Add Channel",
+      "editTitle": "Edit Channel {{index}}",
+      "indexLabel": "Index (0–{{max}})",
+      "invalidHex": "Must be exactly 32 hex characters.",
+      "addButton": "+ Add Channel",
+      "footerHelp": "Keys are 128-bit (16 bytes), shown as 32 hex characters. Channel names up to {{nameMax}} characters. Up to {{channelCount}} channels (indices 0–{{indexMax}}). For #channels, use \"Derive from name\" (SHA-256 of the name with a leading #)."
+    },
     "roleFieldLabel": "Role",
     "rebroadcastModeLabel": "Rebroadcast Mode",
     "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
@@ -2380,6 +2717,36 @@
     "tzdefLabel": "Timezone (POSIX)",
     "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
     "tzdefPlaceholder": "e.g. EST5EDT,M3.2.0,M11.1.0",
+    "regions": {
+      "0": { "label": "Unset" },
+      "1": { "label": "US" },
+      "2": { "label": "EU_433" },
+      "3": { "label": "EU_868" },
+      "4": { "label": "CN" },
+      "5": { "label": "JP" },
+      "6": { "label": "ANZ" },
+      "7": { "label": "KR" },
+      "8": { "label": "TW" },
+      "9": { "label": "RU" },
+      "10": { "label": "IN" },
+      "11": { "label": "NZ_865" },
+      "12": { "label": "TH" },
+      "13": { "label": "UA_433" },
+      "14": { "label": "UA_868" },
+      "15": { "label": "MY_433" },
+      "16": { "label": "MY_919" },
+      "17": { "label": "SG_923" },
+      "18": { "label": "LORA_24" }
+    },
+    "modemPresets": {
+      "0": { "label": "Long Fast" },
+      "1": { "label": "Long Slow" },
+      "2": { "label": "Long Moderate" },
+      "3": { "label": "Short Fast" },
+      "4": { "label": "Short Slow" },
+      "5": { "label": "Medium Fast" },
+      "6": { "label": "Medium Slow" }
+    },
     "rebroadcastModes": {
       "0": {
         "label": "All",
@@ -2700,7 +3067,20 @@
     "rssiFromStatusTooltip": "RSSI from repeater status",
     "rssiContactTooltip": "Contact RSSI — use Status for live reading",
     "pingLastFailedTooltip": "Last ping failed: {{error}}",
-    "neighborsHeading": "Neighbors ({{count}} total):"
+    "neighborsHeading": "Neighbors ({{count}} total):",
+    "pathLabel": "Path:",
+    "hopMe": "● Me",
+    "hopN": "● Hop {{n}}",
+    "noNeighborsReported": "No neighbors reported",
+    "fetchingTelemetry": "Fetching telemetry…",
+    "telemetryBattery": "Battery: {{voltage}}V",
+    "telemetryTemp": "Temp: {{temp}}°C",
+    "telemetryHumidity": "Humidity: {{humidity}}%",
+    "telemetryPressure": "Pressure: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": " alt {{altitude}}m",
+    "cliSend": "Send",
+    "cliQuick": "Quick:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Announce interval (seconds)",

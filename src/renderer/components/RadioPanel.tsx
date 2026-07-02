@@ -159,37 +159,9 @@ interface Props {
   onRetryRemoteChannelsTail?: () => void;
 }
 
-const REGIONS = [
-  { value: 0, label: 'Unset' },
-  { value: 1, label: 'US' },
-  { value: 2, label: 'EU_433' },
-  { value: 3, label: 'EU_868' },
-  { value: 4, label: 'CN' },
-  { value: 5, label: 'JP' },
-  { value: 6, label: 'ANZ' },
-  { value: 7, label: 'KR' },
-  { value: 8, label: 'TW' },
-  { value: 9, label: 'RU' },
-  { value: 10, label: 'IN' },
-  { value: 11, label: 'NZ_865' },
-  { value: 12, label: 'TH' },
-  { value: 13, label: 'UA_433' },
-  { value: 14, label: 'UA_868' },
-  { value: 15, label: 'MY_433' },
-  { value: 16, label: 'MY_919' },
-  { value: 17, label: 'SG_923' },
-  { value: 18, label: 'LORA_24' },
-];
+const REGION_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] as const;
 
-const MODEM_PRESETS = [
-  { value: 0, label: 'Long Fast' },
-  { value: 1, label: 'Long Slow' },
-  { value: 2, label: 'Long Moderate' },
-  { value: 3, label: 'Short Fast' },
-  { value: 4, label: 'Short Slow' },
-  { value: 5, label: 'Medium Fast' },
-  { value: 6, label: 'Medium Slow' },
-];
+const MODEM_PRESET_VALUES = [0, 1, 2, 3, 4, 5, 6] as const;
 
 const DEVICE_ROLES = [
   { value: 0, label: 'Client', description: 'Normal client mode' },
@@ -494,6 +466,7 @@ function ConfigSection({
   disabled: boolean;
   hideApply?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
@@ -508,7 +481,9 @@ function ConfigSection({
             disabled={disabled || applying}
             className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
           >
-            {applying ? 'Applying...' : `Apply ${title}`}
+            {applying
+              ? t('modulePanel.applyingButton')
+              : t('modulePanel.applySection', { section: title })}
           </button>
         )}
       </div>
@@ -913,6 +888,22 @@ export default function RadioPanel({
       })),
     [t],
   );
+  const regionOptions = useMemo(
+    () =>
+      REGION_VALUES.map((value) => ({
+        value,
+        label: t(`radioPanel.regions.${value}.label`),
+      })),
+    [t],
+  );
+  const modemPresetOptions = useMemo(
+    () =>
+      MODEM_PRESET_VALUES.map((value) => ({
+        value,
+        label: t(`radioPanel.modemPresets.${value}.label`),
+      })),
+    [t],
+  );
 
   const oledTypeOptions = useMemo(
     () =>
@@ -1231,7 +1222,7 @@ export default function RadioPanel({
           console.error('[RadioPanel] config import error: ' + errLikeToLogString(err));
           addToast(
             t('radioPanel.configParseFailed', {
-              message: err instanceof Error ? err.message : 'Invalid JSON',
+              message: err instanceof Error ? err.message : t('common.unknown'),
             }),
             'error',
           );
@@ -1587,7 +1578,7 @@ export default function RadioPanel({
           <ConfigSelect
             label={t('radioPanel.regionLabel')}
             value={region}
-            options={REGIONS}
+            options={regionOptions}
             onChange={setRegion}
             disabled={loraDisabled || applyingSection !== null}
           />
@@ -1602,7 +1593,7 @@ export default function RadioPanel({
             <ConfigSelect
               label={t('radioPanel.modemPresetLabel')}
               value={modemPreset}
-              options={MODEM_PRESETS}
+              options={modemPresetOptions}
               onChange={setModemPreset}
               disabled={loraDisabled || applyingSection !== null}
             />
@@ -2138,10 +2129,10 @@ export default function RadioPanel({
                   addToast(
                     capabilities?.hasCompanionContactManagementConfig
                       ? t('radioPanel.meshcoreGpsFailed', {
-                          message: err instanceof Error ? err.message : 'unknown',
+                          message: err instanceof Error ? err.message : t('common.unknown'),
                         })
                       : t('radioPanel.actionFailed', {
-                          message: err instanceof Error ? err.message : 'Unknown error',
+                          message: err instanceof Error ? err.message : t('common.unknown'),
                         }),
                     'error',
                   );
@@ -3110,10 +3101,14 @@ function ChannelSection({
         await onClearChannel(selectedIndex);
       }
       await onCommit();
-      setStatus(`Channel ${selectedIndex} reset!`);
+      setStatus(t('radioPanel.channelResetStatus', { index: selectedIndex }));
     } catch (err) {
       console.warn('[RadioPanel] reset channel failed ' + errLikeToLogString(err));
-      setStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+      setStatus(
+        t('radioPanel.channelSaveFailed', {
+          message: err instanceof Error ? err.message : t('common.unknown'),
+        }),
+      );
     } finally {
       setSaving(false);
     }
@@ -3237,13 +3232,15 @@ function ChannelSection({
         {/* ── Edit Form ── */}
         {selectedIndex !== null && (
           <div className="bg-deep-black/60 mt-3 space-y-3 rounded-lg border border-gray-600 p-3">
-            <h4 className="text-sm font-medium text-gray-200">Edit Channel {selectedIndex}</h4>
+            <h4 className="text-sm font-medium text-gray-200">
+              {t('radioPanel.editChannelTitle', { index: selectedIndex })}
+            </h4>
 
             {/* Name */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label htmlFor="radio-mt-ch-name" className="text-muted text-xs">
-                  Name
+                  {t('radioPanel.channelNameLabel')}
                 </label>
                 <span className="text-muted text-xs">{editName.length}/11</span>
               </div>
@@ -3269,7 +3266,7 @@ function ChannelSection({
             {selectedIndex !== 0 && (
               <div className="space-y-1">
                 <label htmlFor="radio-mt-ch-role" className="text-muted text-xs">
-                  Role
+                  {t('radioPanel.channelRoleLabel')}
                 </label>
                 <select
                   id="radio-mt-ch-role"
@@ -3406,15 +3403,15 @@ function ChannelSection({
                     : t('radioPanel.disableChannel')
                 }
               >
-                Reset
+                {selectedIndex === 0
+                  ? t('radioPanel.resetChannelDefaults')
+                  : t('radioPanel.disableChannel')}
               </button>
             </div>
           </div>
         )}
 
-        <p className="text-muted text-xs">
-          Select a channel to edit. AES-128/256 keys are shown in base64 (Meshtastic convention).
-        </p>
+        <p className="text-muted text-xs">{t('radioPanel.channelsEditHint')}</p>
 
         <ChannelUrlImportExport
           channelConfigs={channelConfigs}
@@ -3587,7 +3584,7 @@ function MeshcoreChannelSection({
                   {ch.index}
                 </span>
                 <span className="flex-1 text-sm text-gray-200">
-                  {ch.name || `Channel ${ch.index}`}
+                  {ch.name || t('radioPanel.meshcoreChannel.defaultName', { index: ch.index })}
                 </span>
                 <span className="text-muted font-mono text-xs">
                   {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
@@ -3604,7 +3601,7 @@ function MeshcoreChannelSection({
                   className="text-muted px-1 text-xs hover:text-gray-300"
                   title={revealed ? t('radioPanel.hideKey') : t('radioPanel.revealKey')}
                 >
-                  {revealed ? 'Hide' : 'Show'}
+                  {revealed ? t('common.hide') : t('common.show')}
                 </button>
                 <button
                   type="button"
@@ -3615,7 +3612,7 @@ function MeshcoreChannelSection({
                   disabled={disabled}
                   className="px-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
                 >
-                  Edit
+                  {t('common.edit')}
                 </button>
                 {confirmDeleteIdx === ch.index ? (
                   <span className="flex items-center gap-1">
@@ -3643,7 +3640,7 @@ function MeshcoreChannelSection({
                     disabled={disabled || saving}
                     className="px-1 text-xs text-red-500 hover:text-red-400 disabled:opacity-50"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 )}
               </div>
@@ -3658,13 +3655,17 @@ function MeshcoreChannelSection({
             className="bg-deep-black/60 mt-3 space-y-3 rounded-lg border border-gray-600 p-3"
           >
             <h4 className="text-sm font-medium text-gray-200">
-              {addingNew ? 'Add Channel' : `Edit Channel ${editingIdx}`}
+              {addingNew
+                ? t('radioPanel.meshcoreChannel.addTitle')
+                : t('radioPanel.meshcoreChannel.editTitle', { index: editingIdx })}
             </h4>
 
             {addingNew && (
               <div className="space-y-1">
                 <label htmlFor="radio-mc-ch-idx" className="text-muted text-xs">
-                  Index (0–{MESHCORE_CHANNEL_INDEX_MAX})
+                  {t('radioPanel.meshcoreChannel.indexLabel', {
+                    max: MESHCORE_CHANNEL_INDEX_MAX,
+                  })}
                 </label>
                 <input
                   id="radio-mc-ch-idx"
@@ -3748,7 +3749,7 @@ function MeshcoreChannelSection({
                 }`}
               />
               {editKeyHex.length > 0 && !isValidHex && (
-                <p className="text-xs text-red-400">Must be exactly 32 hex characters.</p>
+                <p className="text-xs text-red-400">{t('radioPanel.meshcoreChannel.invalidHex')}</p>
               )}
             </div>
 
@@ -3779,15 +3780,16 @@ function MeshcoreChannelSection({
             disabled={disabled}
             className="text-muted w-full rounded border border-dashed border-gray-600 px-3 py-1.5 text-xs transition-colors hover:border-gray-400 hover:text-gray-300 disabled:opacity-50"
           >
-            + Add Channel
+            {t('radioPanel.meshcoreChannel.addButton')}
           </button>
         )}
 
         <p className="text-muted text-xs">
-          Keys are 128-bit (16 bytes), shown as 32 hex characters. Channel names up to{' '}
-          {MESHCORE_CHANNEL_NAME_MAX_LEN} characters. Up to {MESHCORE_CHANNEL_INDEX_MAX + 1}{' '}
-          channels (indices 0–{MESHCORE_CHANNEL_INDEX_MAX}). For #channels, use &quot;Derive from
-          name&quot; (SHA-256 of the name with a leading #).
+          {t('radioPanel.meshcoreChannel.footerHelp', {
+            nameMax: MESHCORE_CHANNEL_NAME_MAX_LEN,
+            channelCount: MESHCORE_CHANNEL_INDEX_MAX + 1,
+            indexMax: MESHCORE_CHANNEL_INDEX_MAX,
+          })}
         </p>
       </div>
     </details>

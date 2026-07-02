@@ -216,6 +216,7 @@ interface RecognizedPoster {
 function buildRecognizedPosters(
   roomPosts: ChatMessage[],
   nodes: Map<number, MeshNode>,
+  unknownLabel: string,
 ): RecognizedPoster[] {
   const byId = new Map<number, RecognizedPoster>();
   for (const m of roomPosts) {
@@ -224,7 +225,7 @@ function buildRecognizedPosters(
     if (!existing || m.timestamp > existing.lastPostAt) {
       byId.set(m.sender_id, {
         senderId: m.sender_id,
-        senderName: m.sender_name || nodes.get(m.sender_id)?.long_name || 'Unknown',
+        senderName: m.sender_name || nodes.get(m.sender_id)?.long_name || unknownLabel,
         lastPostAt: m.timestamp,
         node: nodes.get(m.sender_id),
       });
@@ -1096,8 +1097,8 @@ export default function RoomsPanel({
     [starred],
   );
   const recognizedPosters = useMemo(
-    () => buildRecognizedPosters(roomPosts, nodes),
-    [nodes, roomPosts],
+    () => buildRecognizedPosters(roomPosts, nodes, t('common.unknown')),
+    [nodes, roomPosts, t],
   );
   const canAdminRoom = selectedRoomId != null && meshcoreRoomCanAdmin(selectedRoomId);
 

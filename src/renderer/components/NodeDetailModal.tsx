@@ -12,6 +12,7 @@ import {
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
+import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
@@ -236,6 +237,7 @@ export default function NodeDetailModal({
 
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [actionStatusIsDeleteMqttError, setActionStatusIsDeleteMqttError] = useState(false);
   const [adminKeyStatus, setAdminKeyStatus] = useState<string | null>(null);
   const [adminKeyDraft, setAdminKeyDraft] = useState('');
   const [adminKeyError, setAdminKeyError] = useState<string | null>(null);
@@ -319,6 +321,7 @@ export default function NodeDetailModal({
   // Reset all state when node changes
   useEffect(() => {
     setActionStatus(null);
+    setActionStatusIsDeleteMqttError(false);
     setAdminKeyStatus(null);
     setPositionRequestedAt(null);
     setTraceRoutePending(false);
@@ -1199,12 +1202,14 @@ export default function NodeDetailModal({
                   return (
                     <div className="space-y-2 px-5 pb-2">
                       <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                        Pax Counter
+                        {t('nodeDetailModal.paxCounter.heading')}
                       </h4>
                       <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                        <div className="text-muted">Detected Count</div>
+                        <div className="text-muted">
+                          {t('nodeDetailModal.paxCounter.detectedCount')}
+                        </div>
                         <div className="font-mono text-gray-200">{paxData.count}</div>
-                        <div className="text-muted">Last Seen</div>
+                        <div className="text-muted">{t('nodeDetailModal.paxCounter.lastSeen')}</div>
                         <div className="font-mono text-gray-200">
                           {formatSecondsAgo(
                             Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
@@ -1226,21 +1231,31 @@ export default function NodeDetailModal({
                   return (
                     <div className="space-y-2 px-5 pb-2">
                       <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-                        Detection Sensor ({sensorEvents.length})
+                        {t('nodeDetailModal.detectionSensor.heading', {
+                          count: sensorEvents.length,
+                        })}
                       </h4>
                       <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                        <div className="text-muted">Last Detection</div>
+                        <div className="text-muted">
+                          {t('nodeDetailModal.detectionSensor.lastDetection')}
+                        </div>
                         <div className="font-mono text-gray-200">
                           {formatSecondsAgo(
                             Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
                             t,
                           )}
                         </div>
-                        <div className="text-muted">Data Size</div>
-                        <div className="font-mono text-gray-200">
-                          {latestEvent.data.length} bytes
+                        <div className="text-muted">
+                          {t('nodeDetailModal.detectionSensor.dataSize')}
                         </div>
-                        <div className="text-muted col-span-2">Raw Data (hex)</div>
+                        <div className="font-mono text-gray-200">
+                          {t('nodeDetailModal.detectionSensor.dataSizeBytes', {
+                            count: latestEvent.data.length,
+                          })}
+                        </div>
+                        <div className="text-muted col-span-2">
+                          {t('nodeDetailModal.detectionSensor.rawDataHex')}
+                        </div>
                         <div className="col-span-2 font-mono text-[10px] break-all text-gray-200">
                           {Array.from(latestEvent.data)
                             .map((b) => b.toString(16).padStart(2, '0'))
@@ -1836,9 +1851,7 @@ export default function NodeDetailModal({
               <div className="shrink-0 px-5 pb-3">
                 <div
                   className={`text-center text-xs ${
-                    actionStatus.includes('Cannot delete active MQTT identity')
-                      ? 'text-red-300'
-                      : 'text-muted'
+                    actionStatusIsDeleteMqttError ? 'text-red-300' : 'text-muted'
                   }`}
                 >
                   {actionStatus}
@@ -1903,10 +1916,13 @@ export default function NodeDetailModal({
                         onDeleteNode?.(node.node_id)
                           .then(onClose)
                           .catch((e: unknown) => {
+                            setActionStatusIsDeleteMqttError(isDeleteActiveMqttIdentityError(e));
                             setActionStatus(
-                              e instanceof Error
-                                ? e.message
-                                : t('nodeDetailModal.deleteFailedMqtt'),
+                              isDeleteActiveMqttIdentityError(e)
+                                ? t('nodeDetailModal.deleteFailedMqtt')
+                                : e instanceof Error
+                                  ? e.message
+                                  : t('nodeDetailModal.deleteFailedMqtt'),
                             );
                             setShowDeleteConfirm(false);
                           });

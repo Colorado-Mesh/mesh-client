@@ -15,6 +15,10 @@ import {
   type ReticulumConfigRepairKind,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
+import {
+  formatReticulumInterfaceRowSummary,
+  RETICULUM_IFACE_TYPE_LABELS,
+} from '@/renderer/lib/reticulum/reticulumInterfaceLabels';
 import { reticulumInterfaceChangeRequiresStackRestart } from '@/renderer/lib/reticulum/reticulumInterfaceStackRestart';
 import {
   classifyReticulumLocalInterface,
@@ -561,7 +565,7 @@ function RnodePresetSelect({
       className={className}
       aria-label={ariaLabel}
     >
-      <option value="">—</option>
+      <option value="">{t('common.emDash')}</option>
       {grouped ? (
         <>
           <optgroup label={t('connectionPanel.reticulumInterfaces.rfProfile.coordinated')}>
@@ -727,7 +731,7 @@ function InterfaceEditPanel({
                     }}
                     className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
                   >
-                    <option value="">—</option>
+                    <option value="">{t('common.emDash')}</option>
                     {serialPorts.map((p) => (
                       <option key={p.path} value={p.path}>
                         {p.label ?? p.path}
@@ -799,6 +803,8 @@ function InterfaceEditPanel({
               onChange={(e) => {
                 setSeedAddresses(e.target.value);
               }}
+              placeholder={t('connectionPanel.reticulumInterfaces.seedAddressesPlaceholder')}
+              aria-label={t('connectionPanel.reticulumInterfaces.seedAddresses')}
               className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
             />
           </label>
@@ -1008,14 +1014,14 @@ function InterfacesSection({
               className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
               aria-label={t('connectionPanel.reticulumInterfaces.type')}
             >
-              <option value="tcp">TCP</option>
-              <option value="udp">UDP</option>
-              <option value="auto">Auto</option>
-              <option value="rnode">RNode</option>
-              <option value="rnode_multi">RNode Multi</option>
-              <option value="kiss">KISS</option>
-              <option value="pipe">Pipe</option>
-              <option value="i2p">I2P</option>
+              <option value="tcp">{RETICULUM_IFACE_TYPE_LABELS.tcp}</option>
+              <option value="udp">{RETICULUM_IFACE_TYPE_LABELS.udp}</option>
+              <option value="auto">{RETICULUM_IFACE_TYPE_LABELS.auto}</option>
+              <option value="rnode">{RETICULUM_IFACE_TYPE_LABELS.rnode}</option>
+              <option value="rnode_multi">{RETICULUM_IFACE_TYPE_LABELS.rnode_multi}</option>
+              <option value="kiss">{RETICULUM_IFACE_TYPE_LABELS.kiss}</option>
+              <option value="pipe">{RETICULUM_IFACE_TYPE_LABELS.pipe}</option>
+              <option value="i2p">{RETICULUM_IFACE_TYPE_LABELS.i2p}</option>
               {bleAvailable ? (
                 <option value="ble_peer">
                   {t('connectionPanel.reticulumInterfaces.blePeerType')}
@@ -1156,7 +1162,7 @@ function InterfacesSection({
                     }}
                     className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
                   >
-                    <option value="">—</option>
+                    <option value="">{t('common.emDash')}</option>
                     {serialPorts.map((p) => (
                       <option key={p.path} value={p.path}>
                         {p.label ?? p.path}
@@ -1198,7 +1204,8 @@ function InterfacesSection({
                 onChange={(e) => {
                   onSeedAddressesChange(e.target.value);
                 }}
-                placeholder="AA:BB:CC:DD:EE:FF"
+                placeholder={t('connectionPanel.reticulumInterfaces.seedAddressesPlaceholder')}
+                aria-label={t('connectionPanel.reticulumInterfaces.seedAddresses')}
                 className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
               />
             </label>
@@ -1273,7 +1280,7 @@ function InterfacesSection({
                   <span className="min-w-0 flex-1">
                     <span className="inline-flex flex-wrap items-center gap-1.5">
                       <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
-                        {iface.name} ({iface.type}) — {iface.status}
+                        {formatReticulumInterfaceRowSummary(t, iface)}
                       </span>
                       <HelpTooltip
                         text={t(help.purposeKey)}

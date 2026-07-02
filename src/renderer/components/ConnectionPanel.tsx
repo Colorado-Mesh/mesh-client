@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -57,6 +57,7 @@ import {
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
+import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
@@ -503,17 +504,21 @@ export default function ConnectionPanel({
       if (mqttProtocol !== protocol) return;
       setMqttError(
         protocol === 'meshcore'
-          ? meshcoreMqttUserFacingHint(error)
+          ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(error))
           : meshtasticMqttErrorUserHint(error),
       );
     });
-  }, [protocol]);
+  }, [protocol, t]);
   useEffect(() => {
     return window.electronAPI.mqtt.onWarning(({ warning, protocol: mqttProtocol }) => {
       if (mqttProtocol !== protocol) return;
-      setMqttWarning(protocol === 'meshcore' ? meshcoreMqttUserFacingHint(warning) : warning);
+      setMqttWarning(
+        protocol === 'meshcore'
+          ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(warning))
+          : warning,
+      );
     });
-  }, [protocol]);
+  }, [protocol, t]);
 
   // Clear MQTT error on successful connect; leave it visible on disconnect so the user can read it.
   useEffect(() => {
@@ -1840,15 +1845,15 @@ export default function ConnectionPanel({
             </div>
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
               <p className="text-muted border-t border-gray-700 px-4 py-2 text-xs">
-                On macOS, if a device shows as &quot;AdaDFU&quot;, pair it first in System Settings
-                → Bluetooth to see its Meshtastic name.
+                {t('connectionPanel.hintAdaDfuBle')}
               </p>
             )}
             {protocol === 'meshcore' && (
               <p className="border-t border-gray-700 px-4 py-2 text-xs text-yellow-400">
-                Pair your MeshCore device in <strong>system Bluetooth settings</strong> before
-                connecting. Use a PIN code if prompted — if your system does not ask for a PIN, the
-                connection will fail and you may need to remove the pairing and re-pair with a PIN.
+                <Trans
+                  i18nKey="connectionPanel.meshcoreBlePairingHint"
+                  components={{ strong: <strong /> }}
+                />
               </p>
             )}
           </div>
@@ -2127,11 +2132,14 @@ export default function ConnectionPanel({
               >
                 {(
                   [
-                    { id: 'official-plain' as const, label: 'MQTT :1883' },
-                    { id: 'liam' as const, label: "Liam's" },
-                    { id: 'custom' as const, label: 'Custom' },
+                    {
+                      id: 'official-plain' as const,
+                      labelKey: 'connectionPanel.meshtasticPreset.officialPlain',
+                    },
+                    { id: 'liam' as const, labelKey: 'connectionPanel.meshtasticPreset.liam' },
+                    { id: 'custom' as const, labelKey: 'connectionPanel.meshtasticPreset.custom' },
                   ] as const
-                ).map(({ id, label }) => (
+                ).map(({ id, labelKey }) => (
                   <button
                     key={id}
                     type="button"
@@ -2157,7 +2165,7 @@ export default function ConnectionPanel({
                         : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
@@ -2178,13 +2186,13 @@ export default function ConnectionPanel({
               >
                 {(
                   [
-                    { id: 'letsmesh', label: 'LetsMesh' },
-                    { id: 'coloradomesh', label: 'Colorado Mesh' },
-                    { id: 'meshmapper', label: 'MeshMapper' },
-                    { id: 'ripple', label: 'Ripple Networks' },
-                    { id: 'custom', label: 'Custom' },
+                    { id: 'letsmesh', labelKey: 'connectionPanel.meshcorePreset.letsmesh' },
+                    { id: 'coloradomesh', labelKey: 'connectionPanel.meshcorePreset.coloradomesh' },
+                    { id: 'meshmapper', labelKey: 'connectionPanel.meshcorePreset.meshmapper' },
+                    { id: 'ripple', labelKey: 'connectionPanel.meshcorePreset.ripple' },
+                    { id: 'custom', labelKey: 'connectionPanel.meshcorePreset.custom' },
                   ] as const
-                ).map(({ id, label }) => (
+                ).map(({ id, labelKey }) => (
                   <button
                     key={id}
                     type="button"
@@ -2251,7 +2259,7 @@ export default function ConnectionPanel({
                         : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
                     }`}
                   >
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
@@ -2396,10 +2404,10 @@ export default function ConnectionPanel({
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
               <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
                 {meshcorePreset === 'letsmesh'
-                  ? 'LetsMesh needs WebSocket on port 443 and server mqtt-us-v1.letsmesh.net or mqtt-eu-v1.letsmesh.net. Use Region (US/EU), or switch to Custom for other brokers.'
+                  ? t('connectionPanel.meshcorePresetDeviation.letsmesh')
                   : meshcorePreset === 'coloradomesh'
-                    ? 'Colorado Mesh needs WebSocket on port 1883 with TLS enabled, server mqtt.meshcore.coloradomesh.org, path /ws. Reset the preset or switch to Custom for other brokers.'
-                    : 'MeshMapper needs WebSocket on port 443 and server mqtt.meshmapper.cc. Reset the preset or switch to Custom for other brokers.'}
+                    ? t('connectionPanel.meshcorePresetDeviation.coloradomesh')
+                    : t('connectionPanel.meshcorePresetDeviation.meshmapper')}
               </div>
             )}
           {protocol === 'meshcore' &&
@@ -2414,8 +2422,8 @@ export default function ConnectionPanel({
                 }`}
               >
                 {hasPrivateKey && readMeshcoreIdentity()?.public_key
-                  ? 'Auth token (meshcore-decoder format) will be generated when you connect. Username is v1_ plus your 64-character public key (hex). JWT audience matches the Server hostname.'
-                  : 'No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.'}
+                  ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
+                  : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
               </div>
             )}
           {protocol === 'meshcore' && (
@@ -2430,10 +2438,9 @@ export default function ConnectionPanel({
                 className="accent-brand-green mt-0.5 shrink-0"
               />
               <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
-                Packet logger — when connected to your radio and MQTT, forward RX packet summaries
-                to <code className="text-gray-400">{`{topicPrefix}/meshcore/packets`}</code> in the
-                same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to
-                share heard air traffic with a packet analyzer.
+                {t('connectionPanel.meshcorePacketLogger.label', {
+                  topic: `{topicPrefix}/meshcore/packets`,
+                })}
               </label>
             </div>
           )}
@@ -2493,10 +2500,10 @@ export default function ConnectionPanel({
               <HelpTooltip
                 text={
                   protocol === 'meshtastic'
-                    ? 'msh/[Country]/[State], e.g. msh/CO/US'
+                    ? t('connectionPanel.topicPrefixHelp.meshtastic')
                     : meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper'
-                      ? 'meshcore/{IATA}, e.g. meshcore/DEN'
-                      : 'MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO'
+                      ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
+                      : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
                 }
               />
             </div>
@@ -2508,7 +2515,7 @@ export default function ConnectionPanel({
                 updateMqtt('topicPrefix', e.target.value, false);
               }}
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-              placeholder="msh/US/"
+              placeholder={t('connectionPanel.topicPrefixPlaceholder')}
             />
           </div>
           <div className="space-y-1">
@@ -2519,8 +2526,10 @@ export default function ConnectionPanel({
               <HelpTooltip
                 text={
                   protocol === 'meshcore'
-                    ? 'Reconnect attempts (1–20) before giving up.'
-                    : `Reconnect attempts (1–${MQTT_MAX_RECONNECT_ATTEMPTS}) before giving up.`
+                    ? t('connectionPanel.maxRetriesHelp.meshcore')
+                    : t('connectionPanel.maxRetriesHelp.meshtastic', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
                 }
               />
             </div>
@@ -2652,7 +2661,7 @@ export default function ConnectionPanel({
                       settings.tokenExpiresAt = expiresAt;
                     } catch (e) {
                       const msg = e instanceof Error ? e.message : String(e);
-                      setMqttError(`Auth token generation failed: ${msg}`);
+                      setMqttError(t('connectionPanel.authTokenFailed', { message: msg }));
                       console.warn(
                         '[ConnectionPanel] LetsMesh auth token generation failed ' +
                           errLikeToLogString(e),
@@ -2662,10 +2671,10 @@ export default function ConnectionPanel({
                   } else if (!settings.password) {
                     setMqttError(
                       identity?.private_key && !identity?.public_key
-                        ? 'Public key missing from identity. Import your MeshCore config JSON in the Radio panel (must include public and private keys), or paste a broker token in the password field.'
+                        ? t('connectionPanel.meshcoreMqttIdentity.publicKeyMissing')
                         : identity
-                          ? 'Could not build LetsMesh username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.'
-                          : 'No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually.',
+                          ? t('connectionPanel.meshcoreMqttIdentity.usernameBuildFailed')
+                          : t('connectionPanel.meshcoreMqttIdentity.noIdentity'),
                     );
                     return;
                   }
@@ -3077,7 +3086,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   setHttpAddress(e.target.value);
                 }}
-                placeholder="meshtastic.local or 192.168.1.x"
+                placeholder={t('connectionPanel.deviceAddressPlaceholder')}
                 className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
                 autoComplete="off"
               />
@@ -3101,7 +3110,7 @@ export default function ConnectionPanel({
                     onChange={(e) => {
                       setTcpHost(e.target.value);
                     }}
-                    placeholder="localhost or 192.168.1.x"
+                    placeholder={t('connectionPanel.meshcoreHostPlaceholder')}
                     className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
                     autoComplete="off"
                     aria-label={t('connectionPanel.meshcoreHost')}

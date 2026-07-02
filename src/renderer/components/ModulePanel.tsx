@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
@@ -383,16 +383,13 @@ function ModuleStatus({
   );
 }
 
-const INPUT_EVENT_OPTIONS = [
-  { value: 0, label: 'None' },
-  { value: 10, label: 'Select (Enter)' },
-  { value: 17, label: 'Up' },
-  { value: 18, label: 'Down' },
-  { value: 19, label: 'Left' },
-  { value: 20, label: 'Right' },
-  { value: 27, label: 'Back (Esc)' },
-  { value: 24, label: 'Cancel' },
-];
+const INPUT_EVENT_VALUES = [0, 10, 17, 18, 19, 20, 27, 24] as const;
+
+const SERIAL_MODE_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+
+const TAK_TEAM_COLOR_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
+
+const TAK_TEAM_ROLE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 export default function ModulePanel({
   configTarget,
@@ -418,6 +415,42 @@ export default function ModulePanel({
   const { addToast } = useToast();
   const { t } = useTranslation();
   const secondsUnit = t('radioPanel.secondsUnit');
+  const inputEventOptions = useMemo(
+    () =>
+      INPUT_EVENT_VALUES.map((value) => ({
+        value,
+        label: t(`modulePanel.inputEvents.${value}.label`),
+      })),
+    [t],
+  );
+  const serialModeOptions = useMemo(
+    () =>
+      SERIAL_MODE_VALUES.map((value) => ({
+        value,
+        label: t(`modulePanel.serialModes.${value}.label`),
+      })),
+    [t],
+  );
+  const takTeamColorOptions = useMemo(
+    () => [
+      { value: 0, label: t('modulePanel.fields.takTeamUnspecified') },
+      ...TAK_TEAM_COLOR_VALUES.map((value) => ({
+        value,
+        label: t(`modulePanel.takTeamColors.${value}.label`),
+      })),
+    ],
+    [t],
+  );
+  const takTeamRoleOptions = useMemo(
+    () => [
+      { value: 0, label: t('modulePanel.fields.takRoleUnspecified') },
+      ...TAK_TEAM_ROLE_VALUES.map((value) => ({
+        value,
+        label: t(`modulePanel.teamRoles.${value}.label`),
+      })),
+    ],
+    [t],
+  );
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const remoteTarget = configTarget?.mode === 'remote';
   const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(moduleConfigs[key]);
@@ -1156,19 +1189,7 @@ export default function ModulePanel({
           value={serialMode}
           onChange={setSerialMode}
           disabled={disabled || !serialEnabled}
-          options={[
-            { value: 0, label: 'Default' },
-            { value: 1, label: 'Simple' },
-            { value: 2, label: 'Proto' },
-            { value: 3, label: 'Text message' },
-            { value: 4, label: 'NMEA' },
-            { value: 5, label: 'CalTopo' },
-            { value: 6, label: 'WS85' },
-            { value: 7, label: 'VE.Direct' },
-            { value: 8, label: 'MeshSolar config' },
-            { value: 9, label: 'Log (all packets)' },
-            { value: 10, label: 'Log (text only)' },
-          ]}
+          options={serialModeOptions}
           description={t('modulePanel.fields.serialModeDesc')}
         />
         <ConfigToggle
@@ -1637,7 +1658,7 @@ export default function ModulePanel({
           value={cannedEventCw}
           onChange={setCannedEventCw}
           disabled={disabled || !cannedRotary1Enabled}
-          options={INPUT_EVENT_OPTIONS}
+          options={inputEventOptions}
           description={t('modulePanel.fields.cannedEventCwDesc')}
         />
         <ConfigSelect
@@ -1645,7 +1666,7 @@ export default function ModulePanel({
           value={cannedEventCcw}
           onChange={setCannedEventCcw}
           disabled={disabled || !cannedRotary1Enabled}
-          options={INPUT_EVENT_OPTIONS}
+          options={inputEventOptions}
           description={t('modulePanel.fields.cannedEventCcwDesc')}
         />
         <ConfigSelect
@@ -1653,7 +1674,7 @@ export default function ModulePanel({
           value={cannedEventPress}
           onChange={setCannedEventPress}
           disabled={disabled || !cannedRotary1Enabled}
-          options={INPUT_EVENT_OPTIONS}
+          options={inputEventOptions}
           description={t('modulePanel.fields.cannedEventPressDesc')}
         />
         <ConfigToggle
@@ -1786,7 +1807,11 @@ export default function ModulePanel({
             />
             <span className="font-mono text-sm text-gray-400">{ambientHex.toUpperCase()}</span>
             <span className="text-muted text-xs">
-              R:{ambientRed} G:{ambientGreen} B:{ambientBlue}
+              {t('modulePanel.ambientColors.rgbComponents', {
+                red: ambientRed,
+                green: ambientGreen,
+                blue: ambientBlue,
+              })}
             </span>
           </div>
         </div>
@@ -2114,23 +2139,7 @@ export default function ModulePanel({
             onChange={setTakTeam}
             disabled={disabled}
             description={t('modulePanel.fields.takTeamDesc')}
-            options={[
-              { value: 0, label: t('modulePanel.fields.takTeamUnspecified') },
-              { value: 1, label: 'White' },
-              { value: 2, label: 'Yellow' },
-              { value: 3, label: 'Orange' },
-              { value: 4, label: 'Magenta' },
-              { value: 5, label: 'Red' },
-              { value: 6, label: 'Maroon' },
-              { value: 7, label: 'Purple' },
-              { value: 8, label: 'Dark Blue' },
-              { value: 9, label: 'Blue' },
-              { value: 10, label: 'Cyan' },
-              { value: 11, label: 'Teal' },
-              { value: 12, label: 'Green' },
-              { value: 13, label: 'Dark Green' },
-              { value: 14, label: 'Brown' },
-            ]}
+            options={takTeamColorOptions}
           />
           <ConfigSelect
             label={t('modulePanel.fields.takRole')}
@@ -2138,17 +2147,7 @@ export default function ModulePanel({
             onChange={setTakRole}
             disabled={disabled}
             description={t('modulePanel.fields.takRoleDesc')}
-            options={[
-              { value: 0, label: t('modulePanel.fields.takRoleUnspecified') },
-              { value: 1, label: 'Team Member' },
-              { value: 2, label: 'Team Lead' },
-              { value: 3, label: 'HQ' },
-              { value: 4, label: 'Sniper' },
-              { value: 5, label: 'Medic' },
-              { value: 6, label: 'Forward Observer' },
-              { value: 7, label: 'RTO' },
-              { value: 8, label: 'K9' },
-            ]}
+            options={takTeamRoleOptions}
           />
         </ModuleSection>
       )}

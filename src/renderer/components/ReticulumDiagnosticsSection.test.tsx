@@ -10,7 +10,7 @@ import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, unknown>) =>
-      params ? `${key}:${JSON.stringify(params)}` : key,
+      params && Object.keys(params).length > 0 ? `${key}:${JSON.stringify(params)}` : key,
   }),
 }));
 
@@ -43,6 +43,21 @@ const reticulumRow: RfDiagnosticRow = {
 };
 
 describe('ReticulumDiagnosticsSection', () => {
+  it('renders runtime row via translateReticulumDiagnosticCause', () => {
+    const runtimeRow: RfDiagnosticRow = {
+      kind: 'rf',
+      id: 'rf:1:reticulum/rns-not-ready',
+      nodeId: 1,
+      condition: 'reticulum/rns-not-ready',
+      cause: 'RNS stack is not ready',
+      severity: 'warning',
+      detectedAt: Date.now(),
+      causeI18n: { key: 'diagnosticsPanel.reticulum.runtime.rnsNotReady' },
+    };
+    render(<ReticulumDiagnosticsSection rows={[runtimeRow]} />);
+    expect(screen.getByText('diagnosticsPanel.reticulum.runtime.rnsNotReady')).toBeInTheDocument();
+  });
+
   it('renders audit rows with repair action', () => {
     render(<ReticulumDiagnosticsSection rows={[reticulumRow]} />);
     expect(screen.getByText('diagnosticsPanel.reticulum.action.repair_config')).toBeInTheDocument();

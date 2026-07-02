@@ -23,7 +23,17 @@
       "reconnecting": "다시 연결하는 중"
     },
     "nodeLabel": "노드: {{name}}",
-    "takClientLost": "TAK 클라이언트 연결 끊김"
+    "takClientLost": "TAK 클라이언트 연결 끊김",
+    "title": "메시 클라이언트",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Turn off Colorado Mesh sign",
+    "meshTubeSignOn": "Turn on Colorado Mesh sign",
+    "queueBadge": "질문: {{used}}/{{max}}",
+    "telemetryDisabled": "이 기기에서는 원격 측정이 비활성화되어 있습니다. 장치 측정항목을 활성화하면 메시와 이 앱(진단, 배터리, 신호)에 도움이 됩니다. 라디오 탭에서 활성화하세요.",
+    "scrollToTop": "↑ 맨 위로",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "Colorado Mesh on GitHub",
+    "footerWebsiteTitle": "Colorado Mesh website"
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",
@@ -198,7 +208,111 @@
     "reticulumSection": "Reticulum — 레티큘럼 스택",
     "reticulumAnnounceHelp": "귀하의 신원이 네트워크에 공지되는 빈도 및 저장된 공지 사항을 지우는 도구.",
     "reticulumPropagationHelp": "전파 노드의 동기화 방법을 선택하고 필요한 경우 최신 전파 데이터를 가져옵니다.",
-    "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다."
+    "logPanelHelp": "활성화되면 실시간 로그 스트림이 오른쪽에 나타납니다. Reticulum 탭의 장치 라인에는 사이드카 출력 및 로컬 인터페이스 상태가 포함됩니다. 디버그 라인에는 로그 패널 내부의 확인란이 필요합니다.",
+    "autoPruneUnheardContactsDaysAria": "시작 시 {{days}}일 이상 경과한 확인되지 않은 연락처 자동 정리",
+    "capTotalContactsCountAria": "총 연락처 수를 제한하고 가장 최근에 본 연락처를 {{count}}개로 유지합니다.",
+    "unknownError": "알 수 없는 오류",
+    "resetDiagnosticsConfirm": "이렇게 하면 모든 라우팅 이상, 홉 기록 및 패킷 통계가 지워집니다. 엔진은 새로 들어오는 패킷에서 재구축됩니다. 계속하다?",
+    "clearGpsDataConfirm": "그러면 모든 노드에서 저장된 GPS 좌표가 제거됩니다. 노드는 그대로 유지되지만 새 데이터가 수신될 때까지 해당 위치는 비어 있습니다. 계속하다?",
+    "clearPositionHistoryConfirm": "이렇게 하면 데이터베이스에서 저장된 모든 위치 기록이 영구적으로 삭제됩니다. 지난 세션의 이동 경로는 더 이상 표시되지 않습니다. 계속하다?",
+    "deleteOldNodesConfirm_one": "지난 {{days}}일 동안 듣지 못한 모든 노드가 영구적으로 삭제됩니다. 다시 방송을 하면 재발견될 예정이다.",
+    "deleteOldNodesConfirm_other": "지난 {{days}}일 동안 듣지 못한 모든 노드가 영구적으로 삭제됩니다. 다시 방송을 하면 재발견될 예정이다.",
+    "pruneMqttOnlyNodesConfirm": "MQTT를 통해서만 검색된 모든 노드가 영구적으로 삭제됩니다(RF를 통해 들어본 적이 없음). MQTT 또는 RF를 통해 다시 들으면 다시 나타납니다.",
+    "pruneMqttNodesConfirmLabel": "MQTT 노드 정리",
+    "pruneUnnamedNodesConfirm": "이렇게 하면 빈 이름, 자동 생성된 !hex 자리 표시자, 노드 ID에 연결된 Node-HEX 폴백, UserInfo를 수신하지 않은 MQTT 전용 ID 등 실제 긴 이름이 없는 노드가 영구적으로 삭제됩니다. 즐겨찾는 노드가 유지됩니다. 다시 방송을 하면 재발견될 예정이다.",
+    "pruneNoFixNodesConfirm_one": "이렇게 하면 좌표가 null이거나 거의 0에 가까운(GPS 수정 또는 Zero Island 없음) {{count}} 노드가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "pruneNoFixNodesConfirm_other": "이렇게 하면 좌표가 null이거나 거의 0에 가까운(GPS 수정 또는 Zero Island 없음) {{count}} 노드가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "pruneNoFixDeleteConfirm_one": "{{count}} 노드 삭제",
+    "pruneNoFixDeleteConfirm_other": "{{count}} 노드 삭제",
+    "pruneDistantNodesConfirm_one": "이렇게 하면 기기에서 {{distance}} {{unit}} 이외의 {{count}} 노드가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "pruneDistantNodesConfirm_other": "이렇게 하면 기기에서 {{distance}} {{unit}} 이외의 {{count}} 노드가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "pruneDistantDeleteConfirm_one": "{{count}} 노드 삭제",
+    "pruneDistantDeleteConfirm_other": "{{count}} 노드 삭제",
+    "pruneOfflineNodesConfirm_one": "{{days}} {{daysLabel}} 이상에서 들리지 않은 {{count}} 노드가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "pruneOfflineNodesConfirm_other": "이렇게 하면 {{days}} {{daysLabel}} 이상에서 들리지 않은 {{count}} 노드가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "pruneOfflineDeleteConfirm_one": "{{count}} 노드 삭제",
+    "pruneOfflineDeleteConfirm_other": "{{count}} 노드 삭제",
+    "clearNodesConfirm": "이렇게 하면 로컬에 저장된 모든 {{count}} 노드가 영구적으로 삭제됩니다. 연결되면 다시 검색됩니다.",
+    "clearNodesConfirmLabel": "{{count}} 노드 지우기",
+    "clearAllNodesButton": "모든 노드 지우기({{count}})",
+    "deleteContactsNoPubkeysConfirm": "공개 키가 없는 데이터베이스에서 모든 MeshCore 연락처가 영구적으로 삭제됩니다. 메시지에서 생성된 채팅 스텁 노드는 제외됩니다. 이 작업은 취소할 수 없습니다.",
+    "deleteContactsNoPubkeysConfirmButton": "삭제",
+    "clearMessagesAllConfirm": "이렇게 하면 모든 채널에서 로컬에 저장된 모든 {{count}} 메시지가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "clearMessagesChannelConfirm": "{{channel}}의 모든 메시지가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "clearMessagesAllConfirmLabel": "{{count}} 메시지 지우기",
+    "clearMessagesChannelConfirmLabel": "{{channel}} 지우기",
+    "clearMessagesTitle": "메시지 지우기",
+    "clearAllRepeatersConfirm": "이렇게 하면 저장된 모든 MeshCore 리피터가 로컬 데이터베이스에서 영구적으로 제거됩니다. 이 작업은 취소할 수 없습니다.",
+    "clearAllLocalDataTitle": "⚠ 모든 로컬 데이터 지우기",
+    "clearAllLocalDataConfirm": "이렇게 하면 모든 로컬 메시지, 노드 및 캐시된 세션 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+    "clearEverythingConfirmButton": "모두 지우기",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "모든 것",
+    "deleteNodesOlderThanAria": "{{days}}일 이상 지난 노드 삭제",
+    "daySingular": "낮",
+    "theme": {
+      "appBg": {
+        "label": "메인 창 배경",
+        "description": "기본 콘텐츠 뷰포트 및 앱 창 배경 - 모든 패널 뒤에 있는 어두운 캔버스입니다."
+      },
+      "sidebarActiveBg": {
+        "label": "활성 사이드바 탭",
+        "description": "사이드바 탐색에서 현재 선택된 탭의 배경입니다."
+      },
+      "brandGreen": {
+        "label": "표시기 및 테두리 하이라이트",
+        "description": "구성된 경우 테두리에 대한 강조, 온라인/MQTT 표시기, 하이라이트 및 진행률 채우기."
+      },
+      "brightGreen": {
+        "label": "앱 제목, 링크 및 노드 강조",
+        "description": "앱 제목, 강조 텍스트, 바닥글의 링크, 노드 목록의 홉/자체 강조 표시."
+      },
+      "readableGreen": {
+        "label": "작업 버튼 및 선택한 알약",
+        "description": "흰색 텍스트로 채워진 단색 - 선택된 채널 알약과 대비를 위한 기본 작업 버튼."
+      },
+      "deepBlack": {
+        "label": "사이드바, 헤더 및 모달 표면",
+        "description": "사이드바 탐색, 머리글, 바닥글, 모달 쉘 및 기본 어두운 표면."
+      },
+      "secondaryDark": {
+        "label": "패널 및 입력 배경",
+        "description": "패널 배경, 입력, 버튼, 테이블 행 가리키기 및 진행률 트랙."
+      },
+      "muted": {
+        "label": "보조 라벨 및 캡션",
+        "description": "보조 라벨, 캡션, 표 헤더, 강조되지 않은 텍스트."
+      },
+      "chatIncomingBg": {
+        "label": "수신 메시지 채우기",
+        "description": "수신 채널 메시지의 배경 채우기(불투명도 38%로 적용)"
+      },
+      "chatIncomingBorder": {
+        "label": "수신 메시지 테두리",
+        "description": "수신 채널 메시지의 테두리 색상입니다."
+      }
+    },
+    "themePreset": {
+      "green300": "그린 300",
+      "slate950": "슬레이트 950",
+      "slate900": "슬레이트 900",
+      "slate800": "슬레이트 800",
+      "slate700": "슬레이트 700",
+      "slate400": "슬레이트 400",
+      "white": "하얀색",
+      "black": "검은색",
+      "blue500": "블루 500",
+      "amber500": "호박색 500",
+      "red500": "레드 500",
+      "emerald500": "에메랄드 500",
+      "green700": "그린 700",
+      "violet500": "바이올렛 500",
+      "cyan400": "청록색 400",
+      "purple400": "보라색 400",
+      "pink400": "핑크 400",
+      "orange400": "오렌지 400",
+      "yellow400": "노란색 400"
+    }
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -353,7 +467,13 @@
     "stopVoiceRecording": "녹음을 중지하고 보내기",
     "voiceRecordingTooLong": "음성 클립이 60초 제한에 도달하여 전송되었습니다.",
     "reticulumSendAttachmentFailed": "첨부 파일 전송 실패",
-    "reticulumSendAttachmentNoIdentity": "Reticulum ID가 준비되지 않았습니다 — 먼저 연결하고 ID를 구성하세요"
+    "reticulumSendAttachmentNoIdentity": "Reticulum ID가 준비되지 않았습니다 — 먼저 연결하고 ID를 구성하세요",
+    "dmPeerInfoAria": "DM 동료 정보",
+    "clearDateAria": "날짜 지우기",
+    "readOnlyDisconnected": "연결되지 않음 — 메시지는 읽기 전용입니다.",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "멘션 제안"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -399,7 +519,8 @@
     "colorCyan": "시안",
     "colorAmber": "애쉬틴",
     "colorRed": "빨간색",
-    "colorPurple": "자색"
+    "colorPurple": "자색",
+    "delete": "삭제"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
@@ -499,7 +620,7 @@
     "hintMeshtasticHttp2": "연결이 불안정한 경우(예: meshtastic.local 사용) 대신 장치의 IP 주소를 사용해 보세요. 데스크톱 mDNS가 불안정할 수 있습니다.",
     "hintMeshcoreHttp": "MeshCore 컴패니언 라디오의 호스트 이름이나 IP 주소를 입력하세요. 포트 5000에서 연결할 수 있어야 합니다.",
     "stageLinuxUnpaired": "저장된 장치는 Linux Bluetooth에 페어링되어 있지 않습니다. 아래에서 선택하여 PIN을 입력하고 연결하세요.",
-    "liamServerNote": "Liam의 서버는 업링크 전용입니다. 귀하의 노드가 Liam의 지도에 표시되지만 그로부터 메시지를 받을 수는 없습니다.",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "연결하다",
     "mqttStatusConnected": "연결됨",
     "mqttStatusConnecting": "연결",
@@ -533,7 +654,7 @@
         "accessDeniedLinuxHint": "Linux에서는 다이얼아웃 그룹에 사용자를 추가합니다. sudo usermod -aG 다이얼아웃 $USER(그런 다음 로그아웃했다가 다시 로그인)",
         "disconnectedHint": "USB 케이블이 연결되어 있고 장치의 전원이 켜져 있는지 확인하세요.",
         "timeoutHint": "포트가 잠시 나타나는 경우 USB 케이블을 다시 연결해 보세요.",
-        "portStillOpenHint": "USB 직렬 포트가 깨끗하게 해제되지 않았습니다. 메시 클라이언트를 완전히 종료하고 다시 열거나 USB 케이블을 뽑았다가 다시 연결합니다."
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "Windows의 경우 meshtastic.local에는 Bonjour(iTunes와 함께 설치)가 필요합니다. 대신 장치의 IP 주소를 사용하십시오.",
@@ -651,7 +772,7 @@
       "rescanBle": "다시 스캔",
       "pickerSerialTitle": "직렬 포트 선택",
       "pickerBlePeerTitle": "BLE 피어 선택",
-      "pickerBleRnodeTitle": "BLE R노드 선택",
+      "pickerBleRnodeTitle": "Select BLE RNode",
       "pickerSerialEmpty": "직렬 포트가 감지되지 않았습니다. 경로를 수동으로 입력하세요.",
       "pickerBleEmpty": "BLE 장치를 찾을 수 없습니다. 다시 스캔해 보세요.",
       "pickerStackRequired": "장치를 검색하기 전에 Reticulum 스택을 시작하십시오.",
@@ -665,7 +786,7 @@
       "bleUnavailable": "Reticulum 스캔에는 Bluetooth를 사용할 수 없습니다. 시스템 Bluetooth 및 사이드카 빌드(rns-ble)를 확인하세요.",
       "restartStackFailed": "스택 다시 시작 실패: {{message}}",
       "restartStackUnavailable": "Reticulum 런타임이 준비될 때까지 스택을 다시 시작할 수 없습니다.",
-      "localOfflineRowBle": "Bluetooth Rnode 오프라인 - 장치가 켜져 있고 범위 내에 있는지 확인한 다음 스택을 다시 시작합니다.",
+      "localOfflineRowBle": "Bluetooth RNode needs pairing or is still connecting — enter the 6-digit PIN in your OS Bluetooth dialog when prompted (see hint below).",
       "rnodeTransportWifi": "Wi-Fi",
       "rnodeWifiHost": "호스트 또는 IP",
       "rnodeWifiHostPlaceholder": "192.168.1.42 또는 rnode.local",
@@ -689,9 +810,9 @@
         "auto": "로컬 LAN 멀티캐스트 검색 — 동일한 Wi-Fi 또는 서브넷에서 다른 Reticulum 노드를 찾습니다.",
         "sharedInstance": "공유 인스턴스가 켜져 있을 때 Localhost TCP 서버 - 이 컴퓨터의 다른 앱이 이 스택을 사용할 수 있습니다.",
         "tcp": "원격 Reticulum 허브 또는 게이트웨이에 대한 아웃바운드 TCP 터널입니다.",
-        "rnodeUsb": "USB Rnode를 통한 LoRa 메시.",
-        "rnodeBle": "Bluetooth Rnode를 통한 LoRa 메시.",
-        "rnodeWifi": "Rnode Wi-Fi(tcp://host)를 통한 LoRa 메시.",
+        "rnodeUsb": "LoRa mesh via USB RNode.",
+        "rnodeBle": "LoRa mesh via Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp:// host).",
         "blePeer": "시드 피어 주소를 사용하는 BLE 피어 메시.",
         "generic": "Reticulum 네트워크 인터페이스."
       },
@@ -699,7 +820,17 @@
         "coordinated": "지역별 조정",
         "fallback": "전역 폴백",
         "legacy": "레거시 사전 설정"
-      }
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "위로",
+        "down": "아래에"
+      },
+      "pickerScanFailed": "BLE 스캔에 실패했습니다. 다시 시도하거나 주소를 수동으로 입력하세요.",
+      "pickerBleFeatureDisabled": "이 Reticulum 빌드에서는 Bluetooth를 사용할 수 없습니다(rns-ble 기능 누락).",
+      "pickerScanFailedDetail": "스캔 오류: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -724,8 +855,8 @@
       "restartStackAria": "인터페이스 변경 사항을 적용하려면 Reticulum 스택을 다시 시작하세요.",
       "connectingHeading": "로컬 인터페이스 연결 중...",
       "connectingRow": "{{name}}: 블루투스를 통해 연결 중",
-      "connectingHintBle": "BLE Rnode 링크는 스택이 시작된 후 최대 30초가 걸릴 수 있습니다. OS에서 메시지가 표시되면 페어링 PIN을 입력하세요. 이는 오류가 아니라 정상입니다.",
-      "offlineHintBle": "OS에서 6자리 Bluetooth PIN을 요구할 수 있습니다(macOS, Windows 또는 Linux). Rnode는 페어링할 때마다 새 코드를 생성합니다. 기본 PIN은 없습니다. 헤드리스 라디오: USB 연결 → Reticulum Admin → Bluetooth → 페어링 시작 → OS 대화 상자에 표시된 PIN을 입력합니다. 디스플레이가 있는 라디오: Heltec 장치에서 버튼을 ~7초 동안 누르고(타이밍은 다양합니다. 대신 많은 보드에서 ~10초는 Wi-Fi AP를 활성화합니다) 화면에서 PIN을 읽은 다음 OS 대화 상자에 입력합니다. 다시 시도하기 전에 OS Bluetooth 설정에서 실패한 연결을 삭제하세요.",
+      "connectingHintBle": "BLE RNode links can take up to 30 seconds after the stack starts. Enter a pairing PIN if your OS prompts — this is normal, not an error.",
+      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — there is no default PIN. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
       "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
@@ -741,7 +872,49 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum"
-    }
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[국가]/[주], 예: msh/CO/미국",
+      "meshcoreLetsmesh": "meshcore/{IATA}, 예: 메쉬코어/덴",
+      "meshcoreDefault": "MESHCORE/[국가]/[주], 예: 메쉬코어/미국/CO"
+    },
+    "topicPrefixPlaceholder": "msh/미국/",
+    "maxRetriesHelp": {
+      "meshtastic": "포기하기 전에 시도(1~{{max}})를 다시 연결하세요.",
+      "meshcore": "포기하기 전에 시도(1~20)를 다시 연결하세요."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT:1883",
+      "liam": "Liam's",
+      "custom": "관습"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local 또는 192.168.1.x",
+    "meshcoreHostPlaceholder": "로컬 호스트 또는 192.168.1.x",
+    "meshcoreBlePairingHint": "연결하기 전에 <strong>시스템 블루투스 설정</strong>에서 MeshCore 장치를 페어링하세요. 메시지가 나타나면 PIN 코드를 사용하십시오. 시스템에서 PIN을 요청하지 않으면 연결이 실패하므로 페어링을 제거하고 PIN으로 다시 페어링해야 할 수도 있습니다.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "관습"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh에는 포트 443 및 서버 mqtt-us-v1.letsmesh.net 또는 mqtt-eu-v1.letsmesh.net에 WebSocket이 필요합니다. 지역(US/EU)을 사용하거나 다른 브로커의 경우 사용자 정의로 전환하세요.",
+      "coloradomesh": "Colorado Mesh는 TLS가 활성화된 포트 1883, 서버 mqtt.meshcore.coloradomesh.org, 경로 /ws에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
+      "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.cc에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "연결 시 인증 토큰(meshcore-decoder 형식)이 생성됩니다. 사용자 이름은 v1_에 64자 공개 키(16진수)를 더한 것입니다. JWT 대상은 서버 호스트 이름과 일치합니다.",
+      "noPrivateKey": "전체 ID 없음 - 라디오 패널(공개 및 개인 키)에서 MeshCore 구성을 가져오거나 사용자 이름(v1_<공개 키>)과 토큰을 수동으로 붙여넣습니다. 토큰의 JWT 대상은 서버 호스트 이름과 일치해야 합니다.",
+      "publicKeyMissing": "ID에서 공개 키가 누락되었습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나(공개 및 개인 키를 포함해야 함) 비밀번호 필드에 브로커 토큰을 붙여넣습니다.",
+      "usernameBuildFailed": "LetsMesh 사용자 이름을 만들 수 없습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나 사용자 이름(v1_<공개 키>)과 토큰을 수동으로 붙여넣습니다.",
+      "noIdentity": "장치 ID를 찾을 수 없습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나 사용자 이름과 토큰을 수동으로 붙여넣습니다."
+    },
+    "meshcorePacketLogger": {
+      "label": "패킷 로거 — 라디오 및 MQTT에 연결되면 RX 패킷 요약을 meshcoretomqtt와 동일한 JSON 형태로 {{topic}}에 전달합니다. 기본적으로 꺼져 있습니다. 수신된 항공 트래픽을 패킷 분석기와 공유하려는 경우에만 활성화하십시오."
+    },
+    "hintAdaDfuBle": "macOS에서 장치가 \"AdaDFU\"로 표시되면 먼저 시스템 설정 → Bluetooth에서 페어링하여 Meshtastic 이름을 확인하세요.",
+    "authTokenFailed": "인증 토큰 생성 실패: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -754,7 +927,11 @@
     "newGroupNamePlaceholder": "새 그룹 이름…",
     "manageMembers": "회원 관리",
     "rename": "이름 바꾸기",
-    "deleteGroup": "그룹 삭제"
+    "deleteGroup": "그룹 삭제",
+    "noContactsYet": "아직 연락처가 없습니다.",
+    "noGroupsYet": "아직 그룹이 없습니다. 위에서 하나를 만듭니다.",
+    "memberCount_one": "{{count}} 회원",
+    "memberCount_other": "{{count}} 회원"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",
@@ -1005,7 +1182,7 @@
         "tcp_enable_key": "TCP 인터페이스 \"{{name}}\"이 잘못된 활성화 키를 사용합니다. RNS가 이를 로드하지 않습니다.",
         "tcp_missing_name": "TCP 인터페이스 \"{{name}}\"에 구성의 이름 필드가 없습니다.",
         "tcp_unreachable": "TCP 인터페이스 \"{{name}}\"에 연결할 수 없습니다.",
-        "rf_preset_deviation": "Rnode \"{{name}}\" RF 매개변수가 사전 설정과 다릅니다.",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF params differ from its preset.",
         "rf_cross_mismatch": "여러 개의 활성화된 RNode는 서로 다른 RF 매개변수를 사용합니다.",
         "rf_using_fallback": "RNode \"{{name}}\"은 글로벌 폴백 RF 프로필을 사용합니다.",
         "rf_unknown_params": "RNode \"{{name}}\" RF 매개변수가 알려진 프로필과 일치하지 않습니다.",
@@ -1016,8 +1193,33 @@
         "missing_shared_instance": "공유 인스턴스가 켜져 있지만 SharedInstanceServer가 작동하지 않습니다.",
         "shared_instance_unexpected": "SharedInstanceServer가 활성화되어 있지만 share_instance가 꺼져 있습니다.",
         "runtime_only_interface": "\"{{name}}\"은 런타임 전용입니다(구성에 저장되지 않음)."
+      },
+      "runtime": {
+        "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
+        "lxmfNotReady": "LXMF 라우터가 준비되지 않았습니다.",
+        "localStalePort": "로컬 인터페이스 \"{{name}}\" 직렬 포트 {{port}}을(를) 이 시스템에서 찾을 수 없습니다.",
+        "localOffline": "로컬 인터페이스 \"{{name}}\"이(가) 활성화되었지만 오프라인입니다.",
+        "interfaceDown": "{{type}} 인터페이스 \"{{name}}\"이 활성화되었지만 {{status}}",
+        "noPeers": "아직 경로 테이블에 알려진 피어가 없습니다."
       }
-    }
+    },
+    "routingPort": {
+      "nodeInfo": "노드정보",
+      "telemetry": "원격 측정",
+      "neighborInfo": "이웃 정보",
+      "traceroute": "경로 추적",
+      "position": "위치",
+      "remoteHardware": "원격하드웨어",
+      "admin": "관리자",
+      "discoveryFlood": "발견홍수",
+      "roomAdvert": "방광고",
+      "generic": "포트{{port}}"
+    },
+    "signalColumn": "신호",
+    "senderLabel": "보내는 사람",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}}dBm",
+    "snrDb": "SNR {{snr}}dB"
   },
   "errorBoundary": {
     "title": "문제가 발생했습니다.",
@@ -1032,8 +1234,8 @@
     "updateAvailableVersion": "사용 가능한 펌웨어 업데이트: v{{version}}"
   },
   "flasher": {
-    "title": "Rnode 펌웨어 플래셔",
-    "portContentionWarning": "플래시하기 전에 Reticulum 스택을 중지하거나 활성 Rnode 직렬 인터페이스를 비활성화하십시오. 동일한 포트에서 Meshtastic 또는 MeshCore 직렬 연결을 끊습니다.",
+    "title": "RNode Firmware Flasher",
+    "portContentionWarning": "Stop the Reticulum stack or disable the active RNode serial interface before flashing. Disconnect Meshtastic or MeshCore serial on the same port.",
     "selectProduct": "제품",
     "selectModel": "모델",
     "selectProductPlaceholder": "제품을 선택하세요…",
@@ -1086,7 +1288,7 @@
     "reconditionDisplay": "디스플레이 재생",
     "errors": {
       "webSerialUnsupported": "이 환경에서는 웹 시리얼을 사용할 수 없습니다.",
-      "notRnode": "선택한 장치는 Rnode가 아닙니다.",
+      "notRnode": "Could not detect RNode firmware on the selected port. Wait a few seconds after flashing, then try Provision again on the same USB port.",
       "portSelectionCancelled": "직렬 포트 선택이 취소되었습니다.",
       "portInUse": "직렬 포트가 이미 열려 있습니다. 다른 연결을 중지하고 다시 시도하십시오.",
       "generic": "작업 실패: {{message}}",
@@ -1094,7 +1296,7 @@
       "selectModel": "먼저 모델을 선택하세요.",
       "selectFirmware": "먼저 펌웨어 파일을 선택하세요.",
       "flashConfigMissing": "이 장치에서는 플래시 구성을 사용할 수 없습니다.",
-      "blockedByStack": "Reticulum 스택이 Rnode 직렬 포트를 보유하고 있는 동안에는 플래시할 수 없습니다.",
+      "blockedByStack": "Cannot flash while the Reticulum stack holds the RNode serial port.",
       "esp32SyncFailed": "ESP32 부트로더와 동기화할 수 없습니다. USB 케이블과 포트를 확인하고 직렬 포트를 사용하여 다른 앱을 중지한 다음 다시 시도하십시오.",
       "flashTransferTooSmall": "펌웨어 전송이 완료되지 않았습니다. 데이터가 거의 작성되지 않았습니다. 올바른 USB 포트를 선택하고 보드가 부트로더 모드로 들어갔는지 확인하십시오.",
       "flashMd5Mismatch": "작성 후 펌웨어 확인에 실패했습니다. 다른 USB 케이블 또는 포트로 다시 시도하십시오. 계속되면 펌웨어 ZIP을 다시 다운로드하십시오.",
@@ -1268,7 +1470,8 @@
     "appSource": "앱({{count}})",
     "deviceSource": "기기({{count}})",
     "narrowLogPanel": "좁은 로그 패널",
-    "widenLogPanel": "로그 패널 확대"
+    "widenLogPanel": "로그 패널 확대",
+    "clearFailed": "로그를 지울 수 없습니다."
   },
   "mapPanel": {
     "locationUnavailable": "위치를 확인할 수 없습니다.",
@@ -1287,7 +1490,10 @@
     "layerWaypoints": "중간지점",
     "layerRouteWeights": "경로 가중치",
     "layerAnomalyHalos": "이상 후광",
-    "layerCongestionHalos": "혼잡 후광"
+    "layerCongestionHalos": "혼잡 후광",
+    "waypointDefaultName": "웨이포인트",
+    "waypointDelete": "웨이포인트 삭제",
+    "noGpsNodes": "아직 GPS 위치가 있는 노드가 없습니다."
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -1581,7 +1787,7 @@
       "remoteHardwareEnabledDesc": "원격 노드가 이 장치의 GPIO 핀을 읽고 쓸 수 있도록 허용합니다.",
       "remoteHardwareAllowUndefinedPins": "정의되지 않은 핀 접근 허용",
       "remoteHardwareAllowUndefinedPinsDesc": "사용 가능한 핀 구성에 나열되지 않은 핀의 읽기/쓰기를 허용합니다.",
-      "mqttProxyGatewayHint": "프록시가 활성화된 상태에서 메시-클라이언트는 MqttClientProxyMessage를 통해 트래픽을 중개합니다. MQTT→ RF 릴레이의 라디오 탭에서 채널별 다운링크를 활성화합니다.",
+      "mqttProxyGatewayHint": "With proxy enabled, mesh-client bridges broker traffic via MqttClientProxyMessage. Enable per-channel downlink on the Radio tab for MQTT→RF relay.",
       "mapReportPublishInterval": "보고 간격(초)",
       "mapReportPublishIntervalDesc": "0은 펌웨어 기본값을 사용합니다. 지도 보고가 활성화된 경우 장치가 지도 보고서를 게시하는 빈도입니다.",
       "mapReportPositionPrecision": "지도 보고서 위치 정밀도",
@@ -1623,7 +1829,141 @@
     "debugPrivateAppMessages": "비공개 앱 메시지",
     "debugPingResponses": "Ping 응답",
     "sectionMapReport": "지도 보고서",
-    "sectionMapReportHint": "MQTT를 통해 Meshtastic 맵에 위치를 게시합니다. 위에서 활성화된 MQTT 릴레이가 필요합니다. 설정은 장치 MQTT 모듈 구성에 저장됩니다."
+    "sectionMapReportHint": "MQTT를 통해 Meshtastic 맵에 위치를 게시합니다. 위에서 활성화된 MQTT 릴레이가 필요합니다. 설정은 장치 MQTT 모듈 구성에 저장됩니다.",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "없음"
+      },
+      "10": {
+        "label": "선택(엔터)"
+      },
+      "17": {
+        "label": "위로"
+      },
+      "18": {
+        "label": "아래에"
+      },
+      "19": {
+        "label": "왼쪽"
+      },
+      "20": {
+        "label": "오른쪽"
+      },
+      "24": {
+        "label": "취소"
+      },
+      "27": {
+        "label": "뒤로(Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "기본"
+      },
+      "1": {
+        "label": "단순한"
+      },
+      "2": {
+        "label": "프로토"
+      },
+      "3": {
+        "label": "문자 메시지"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.다이렉트"
+      },
+      "8": {
+        "label": "MeshSolar 구성"
+      },
+      "9": {
+        "label": "로그(모든 패킷)"
+      },
+      "10": {
+        "label": "로그(텍스트만)"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "하얀색"
+      },
+      "2": {
+        "label": "노란색"
+      },
+      "3": {
+        "label": "주황색"
+      },
+      "4": {
+        "label": "마젠타"
+      },
+      "5": {
+        "label": "빨간색"
+      },
+      "6": {
+        "label": "적갈색"
+      },
+      "7": {
+        "label": "보라"
+      },
+      "8": {
+        "label": "진한 파란색"
+      },
+      "9": {
+        "label": "파란색"
+      },
+      "10": {
+        "label": "청록색"
+      },
+      "11": {
+        "label": "물오리"
+      },
+      "12": {
+        "label": "녹색"
+      },
+      "13": {
+        "label": "암록색"
+      },
+      "14": {
+        "label": "갈색"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "팀원"
+      },
+      "2": {
+        "label": "팀 리더"
+      },
+      "3": {
+        "label": "본사"
+      },
+      "4": {
+        "label": "저격병"
+      },
+      "5": {
+        "label": "위생병"
+      },
+      "6": {
+        "label": "전방 관찰자"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "즐겨찾기에서 제거",
@@ -1772,7 +2112,19 @@
     "remoteAuthCancelled": "원격 액세스가 취소되었습니다.",
     "shareContactSent": "라디오를 통해 전송된 연락처 공유.",
     "blockContact": "차단",
-    "unblockContact": "차단 해제"
+    "unblockContact": "차단 해제",
+    "paxCounter": {
+      "heading": "팍스 카운터",
+      "detectedCount": "감지된 개수",
+      "lastSeen": "마지막으로 본"
+    },
+    "detectionSensor": {
+      "heading": "감지 센서({{count}})",
+      "lastDetection": "마지막 감지",
+      "dataSize": "데이터 크기",
+      "dataSizeBytes": "{{count}}바이트",
+      "rawDataHex": "원시 데이터(16진수)"
+    }
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -2523,7 +2875,103 @@
     "applyTxPowerSuccess": "TX 전원 적용됨",
     "xmodemInvalidFilename": "파일 이름에 유효하지 않은 문자가 포함되어 있습니다",
     "validationInvalidPsk": "유효하지 않은 base64 PSK — 키를 확인하고 다시 시도하십시오",
-    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다"
+    "meshcoreChannelNameRequired": "이름은 비워둘 수 없습니다",
+    "editChannelTitle": "채널 편집 {{index}}",
+    "channelNameLabel": "이름",
+    "channelRoleLabel": "역할",
+    "channelsEditHint": "편집할 채널을 선택하세요. AES-128/256 키는 base64(Meshtastic 규칙)로 표시됩니다.",
+    "channelResetStatus": "채널 {{index}} 재설정!",
+    "meshcoreChannel": {
+      "defaultName": "채널 {{index}}",
+      "addTitle": "채널 추가",
+      "editTitle": "채널 편집 {{index}}",
+      "indexLabel": "인덱스(0–{{max}})",
+      "invalidHex": "정확히 32자의 16진수 문자여야 합니다.",
+      "addButton": "+ 채널 추가",
+      "footerHelp": "키는 128비트(16바이트)이며 32개의 16진수 문자로 표시됩니다. 채널 이름은 최대 {{nameMax}}자입니다. 최대 {{channelCount}} 채널(인덱스 0~{{indexMax}}). #채널의 경우 \"이름에서 파생\"(#이 앞에 오는 이름의 SHA-256)을 사용합니다."
+    },
+    "regions": {
+      "0": {
+        "label": "설정되지 않음"
+      },
+      "1": {
+        "label": "우리를"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "중국"
+      },
+      "5": {
+        "label": "일본"
+      },
+      "6": {
+        "label": "ANZ"
+      },
+      "7": {
+        "label": "한국"
+      },
+      "8": {
+        "label": "대만"
+      },
+      "9": {
+        "label": "러시아"
+      },
+      "10": {
+        "label": "안에"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "일"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MY_433"
+      },
+      "16": {
+        "label": "MY_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "LORA_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "오랫동안 빠르게"
+      },
+      "1": {
+        "label": "길고 느린"
+      },
+      "2": {
+        "label": "장기 보통"
+      },
+      "3": {
+        "label": "짧고 빠르다"
+      },
+      "4": {
+        "label": "짧고 느림"
+      },
+      "5": {
+        "label": "중간 빠름"
+      },
+      "6": {
+        "label": "중간 느림"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -2665,7 +3113,20 @@
     "pathHashCliGet": "경로 해시 모드 가져오기",
     "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
     "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
-    "pathHashCliSet2": "경로 해시 모드 3바이트 설정"
+    "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
+    "pathLabel": "길:",
+    "hopMe": "● 나",
+    "hopN": "● 홉 {{n}}",
+    "noNeighborsReported": "신고된 이웃 없음",
+    "fetchingTelemetry": "원격 분석을 가져오는 중…",
+    "telemetryBattery": "배터리: {{voltage}}V",
+    "telemetryTemp": "온도: {{temp}}°C",
+    "telemetryHumidity": "습도: {{humidity}}%",
+    "telemetryPressure": "압력: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "대체 {{altitude}}m",
+    "cliSend": "보내다",
+    "cliQuick": "빠른:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -3189,6 +3650,59 @@
       "confirmTitle": "Reticulum stack을 재설정하시겠습니까?",
       "confirmBody": "이렇게 하면 사이드카에서 ID, 연락처 및 로컬 메시지가 제거됩니다. 인터페이스 구성 파일은 유지됩니다.",
       "confirm": "다시 놓기"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "리피터 패널에서 리피터 관리자 비밀번호를 설정하거나 변경하십시오(세션에만 해당).",
+      "connectionFailed": "연결 실패",
+      "notConnected": "기기에 연결되지 않음",
+      "nodeNotFound": "노드를 찾을 수 없음(암호화 키 없음)",
+      "authenticationFailed": "인증 실패",
+      "requestFailed": "실패: {{detail}}",
+      "requestTimedOut": "요청 시간이 초과되었습니다(최대 ~{{seconds}}s).",
+      "requestTimedOutApprox": "요청 시간 초과(~{{seconds}}s)",
+      "pingNoRoute": "아직 무선으로부터의 경로가 없습니다. 다중 홉 추적에는 동기화된 경로가 필요합니다. 연락처 업데이트를 기다리거나 다시 연결하세요.",
+      "bleNoDetails": "BLE 연결에 실패했습니다(장치의 오류 세부정보 없음). 다시 시도하거나 직렬/USB를 사용하십시오.",
+      "bleAlreadyInProgress": "블루투스 연결이 이미 진행 중입니다. 완료될 때까지 기다리거나 대신 직렬/USB를 사용해 보세요.",
+      "bleMissingServices": "장치가 MeshCore BLE 프로토콜을 지원하지 않습니다. 장치가 MeshCore 펌웨어를 실행하고 있는지 확인하십시오.",
+      "blePeripheralInUse": "이 장치는 이미 Meshtastic BLE를 통해 연결되어 있습니다. MeshCore로 연결하기 전에 먼저 연결을 끊으세요.",
+      "bleTimeoutWebBtHandshake": "MeshCore 핸드셰이크 시간이 초과되었습니다(웹 블루투스). 라디오에는 먼저 Linux와 페어링된 PIN이 필요할 수 있습니다. 장치 제거 및 재페어링을 사용하고 장치에 표시된 PIN을 입력하거나 bluetoothctl과 페어링한 다음 연결을 다시 탭하세요.",
+      "bleTimeoutWebBt": "웹 블루투스를 통해 MeshCore를 여는 동안 블루투스 연결 시간이 초과되었습니다. 다시 시도하고, 장치를 깨운 상태로 유지하고, 라디오에서 BLE의 전원을 껐다 켜거나, 직렬/TCP를 사용하세요.",
+      "bleTimeoutHandshake": "Bluetooth가 연결되었지만 연결 해제/시간 초과 전에 MeshCore 프로토콜 핸드셰이크가 완료되지 않았습니다. 다시 시도하고 장치를 활성화된 상태로 근처에 두거나 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
+      "bleTimeoutNoble": "Noble IPC를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
+      "roomPost": {
+        "badState": "방 게시물이 거부되었습니다(라디오에 로그인되지 않음). 로그아웃했다가 다시 로그인한 후 다시 시도하세요.",
+        "illegalArg": "회의실 게시물이 거부되었습니다(잘못된 메시지 형식).",
+        "notFound": "방 게시물이 거부되었습니다(라디오에서 방 연락처를 찾을 수 없음).",
+        "unsupportedCmd": "방 게시물이 거부되었습니다(라디오에서 지원되지 않는 메시지 유형). 회의실에 로그인한 후 다시 시도하세요.",
+        "default": "라디오에서 방 게시물을 거부했습니다. 로그아웃했다가 다시 로그인한 후 다시 시도하세요.",
+        "timeout": "라디오를 기다리는 동안 방 게시물의 시간이 초과되었습니다. 범위를 확인하거나 다시 시도하세요."
+      },
+      "roomLogin": {
+        "noRoute": "이 룸 서버에 대한 경로가 없습니다. 지도에서 노드를 추적하거나 경로 광고를 기다린 후 다시 시도하세요.",
+        "pathSyncFailed": "로그인하기 전에 라디오에서 경로를 프로그래밍할 수 없습니다. 장치를 다시 연결하고 다시 시도하십시오.",
+        "pathSyncFailedDetail": "로그인하기 전에 라디오에서 경로를 프로그래밍할 수 없습니다. 기기를 다시 연결하고 다시 시도해 보세요.{{detail}}",
+        "rejectedBlankGuest": "회의실 로그인이 거부되었습니다. 게스트 비밀번호가 비어 있는 경우 계속 읽기 전용을 사용하거나 게스트 비밀번호 \"hello\"를 사용해 보세요.",
+        "rejectedDefaultGuest": "회의실 로그인이 거부되었습니다. 이 서버에 게스트 비밀번호가 없으면 로그인 대신 계속 읽기 전용을 사용하십시오. 그렇지 않은 경우 게스트 또는 관리자 비밀번호를 확인하세요.",
+        "rejectedCheckPassword": "회의실 로그인이 거부되었습니다. 이 룸 서버의 게스트 또는 관리자 비밀번호를 확인하세요.",
+        "timedOutBlankGuest": "회의실 로그인 시간이 초과되었습니다. 게스트 비밀번호가 비어 있는 경우 계속 읽기 전용을 사용하거나 게스트 비밀번호 \"hello\"를 사용해 보세요.",
+        "timedOutDefaultGuest": "회의실 로그인 시간이 초과되었습니다. 이 서버에 게스트 비밀번호가 없으면 로그인 대신 계속 읽기 전용을 사용하십시오.",
+        "timedOut": "회의실 로그인 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
+        "failed": "회의실 로그인 실패"
+      },
+      "roomLogout": {
+        "timedOut": "회의실 로그아웃 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
+        "rejected": "무선으로 룸 로그아웃이 거부되었습니다.",
+        "failed": "회의실에서 나갈 수 없습니다."
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
+      "network": "네트워크, DNS, 방화벽, VPN을 확인하세요.",
+      "connackTimeout": "이전의 \"클라이언트 오류\" 줄이 표시되지 않으면 TLS/WebSocket 핸드셰이크가 중단된 것일 수 있습니다(다른 네트워크를 사용해 보십시오. 앱은 WSS에 대해 IPv4를 선호합니다).",
+      "subscribeFailed": "브로커는 이 주제에 대한 와일드카드 구독을 거부할 수 있습니다. 브로커가 허용하는 경우 메시지가 계속 도착할 수 있습니다.",
+      "keepalive": "서버가 MQTT 핑(유휴 시간 초과, 네트워크 중단 또는 브로커가 세션을 닫음)에 대한 응답을 중지했습니다. 링크를 다시 연결하거나 확인하세요."
     }
   }
 }

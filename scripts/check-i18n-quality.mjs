@@ -1516,6 +1516,18 @@ export const CAT_BARE_PH_PLACEHOLDER_RE = /\bPH\s*\d+\b/;
 /** HTML tags leaked from CAT export (e.g. <span>…</span>). */
 export const HTML_TAG_RESIDUE_RE = /<\/?[a-z][\w-]*\b/i;
 
+/** Keys rendered via react-i18next <Trans> — allowed to contain markup like <strong>. */
+export const I18N_TRANS_HTML_KEYS = new Set(['connectionPanel.meshcoreBlePairingHint']);
+
+/**
+ * Keys where <placeholder> angle brackets are wire-format notation (e.g. v1_<public key>),
+ * not HTML tags.
+ */
+export const I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS = new Set([
+  'connectionPanel.meshcoreMqttIdentity.noPrivateKey',
+  'connectionPanel.meshcoreMqttIdentity.usernameBuildFailed',
+]);
+
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
 const placeholderNameSetCache = new Map();
 
@@ -1586,6 +1598,19 @@ export const PROTECTED_BRANDS = [
   'MQTT',
   'GPIO',
   'Reticulum',
+  'Colorado Mesh',
+  'LetsMesh',
+  "Liam's",
+  'MeshMapper',
+  'Ripple Networks',
+  'Nomad Network',
+  'mesh-client',
+  'Giphy',
+  'GitHub',
+  'RNode',
+  'Heltec',
+  'CalTopo',
+  'LoRa',
 ];
 
 const BRAND_WORD_RES = new Map([
@@ -1596,7 +1621,65 @@ const BRAND_WORD_RES = new Map([
   ['MQTT', /\bMQTT\b/g],
   ['GPIO', /\bGPIO\b/g],
   ['Reticulum', /\bReticulum\b/g],
+  ['Colorado Mesh', /Colorado Mesh/g],
+  ['LetsMesh', /\bLetsMesh\b/g],
+  ["Liam's", /Liam['\u2019]s/g],
+  ['MeshMapper', /\bMeshMapper\b/g],
+  ['Ripple Networks', /Ripple Networks/g],
+  ['Nomad Network', /Nomad Network/g],
+  ['mesh-client', /mesh-client/g],
+  ['Giphy', /\bGiphy\b/g],
+  ['GitHub', /\bGitHub\b/g],
+  ['RNode', /\bRNode\b/g],
+  ['Heltec', /\bHeltec\b/g],
+  ['CalTopo', /\bCalTopo\b/g],
+  ['LoRa', /\bLoRa\b/g],
 ]);
+
+/** Protocol/stack tokens preserved when present in English (not brand names). */
+export const PROTECTED_PROTOCOL_TOKENS = [
+  'RNS',
+  'LXMF',
+  'TCP',
+  'UDP',
+  'I2P',
+  'KISS',
+  'BLE',
+  'USB',
+  'HTTP',
+  'Wi-Fi',
+  'macOS',
+  'Windows',
+  'Linux',
+];
+
+const PROTOCOL_TOKEN_RES = new Map([
+  ['RNS', /\bRNS\b/g],
+  ['LXMF', /\bLXMF\b/g],
+  ['TCP', /\bTCP\b/g],
+  ['UDP', /\bUDP\b/g],
+  ['I2P', /\bI2P\b/g],
+  ['KISS', /\bKISS\b/g],
+  ['BLE', /\bBLE\b/g],
+  ['USB', /\bUSB\b/g],
+  ['HTTP', /\bHTTP\b/g],
+  ['Wi-Fi', /Wi-Fi/g],
+  ['macOS', /\bmacOS\b/g],
+  ['Windows', /\bWindows\b/g],
+  ['Linux', /\bLinux\b/g],
+]);
+
+export const RETICULUM_RUNTIME_PREFIX = 'diagnosticsPanel.reticulum.runtime.';
+export const RETICULUM_RUNTIME_PROTOCOL_TOKENS = ['RNS', 'LXMF'];
+
+export const ROUTING_PORT_PREFIX = 'diagnosticsPanel.routingPort.';
+export const ROUTING_PORT_TOKENS = [
+  'NodeInfo',
+  'Telemetry',
+  'NeighborInfo',
+  'DiscoveryFlood',
+  'RoomAdvert',
+];
 
 // UTF-8 Cyrillic (etc.) misread as Latin-1 in JSON.
 const MOJIBAKE_RE = /Ð[\u0080-\u00FF]{2,}|Ã[\u0080-\u00BF]{2,}|Â[\u0080-\u00BF]{2,}/;
@@ -1687,6 +1770,61 @@ export function protectedBrandIssues(enVal, val, brands = PROTECTED_BRANDS) {
   return issues;
 }
 
+function protocolTokenOccurrenceCount(text, token) {
+  const re = PROTOCOL_TOKEN_RES.get(token);
+  if (!re) return 0;
+  return (text.match(re) || []).length;
+}
+
+/**
+ * @param {string} enVal
+ * @param {string} val
+ * @param {string[]} [tokens]
+ * @returns {string[]}
+ */
+export function protectedProtocolTokenIssues(enVal, val, tokens = PROTECTED_PROTOCOL_TOKENS) {
+  const issues = [];
+  for (const token of tokens) {
+    const enCount = protocolTokenOccurrenceCount(enVal, token);
+    if (enCount === 0) continue;
+    const locCount = protocolTokenOccurrenceCount(val, token);
+    if (locCount < enCount) {
+      issues.push(
+        `Protocol token "${token}" missing: English has ${enCount} occurrence(s), locale has ${locCount}`,
+      );
+    }
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumRuntimeAndRoutingPortIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (flatKey.startsWith(RETICULUM_RUNTIME_PREFIX)) {
+    for (const token of RETICULUM_RUNTIME_PROTOCOL_TOKENS) {
+      if (!enVal.includes(token)) continue;
+      if (!val.includes(token)) {
+        issues.push(`reticulum runtime copy must preserve protocol token "${token}"`);
+      }
+    }
+    issues.push(...protectedProtocolTokenIssues(enVal, val, RETICULUM_RUNTIME_PROTOCOL_TOKENS));
+  }
+  if (flatKey.startsWith('connectionPanel.reticulumInterfaces.picker')) {
+    issues.push(...protectedProtocolTokenIssues(enVal, val, ['BLE', 'RNode']));
+  }
+  if (flatKey.startsWith(ROUTING_PORT_PREFIX)) {
+    const leaf = flatKey.slice(ROUTING_PORT_PREFIX.length);
+    if (ROUTING_PORT_TOKENS.includes(leaf) && val !== enVal) {
+      issues.push(`routingPort.${leaf} must equal English protocol identifier verbatim`);
+    }
+  }
+  return issues;
+}
+
 /**
  * @typedef {{ locale: string, flatKey: string, val: string, enVal: string, leafKey: string }} LocaleQualityCtx
  */
@@ -1707,7 +1845,9 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
   }
 
   if (HTML_TAG_RESIDUE_RE.test(val)) {
-    issues.push('HTML tag residue is not allowed in locale strings');
+    if (!I18N_TRANS_HTML_KEYS.has(flatKey) && !I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS.has(flatKey)) {
+      issues.push('HTML tag residue is not allowed in locale strings');
+    }
   }
 
   for (const re of LOCALE_ARTIFACT_RES) {
@@ -2774,6 +2914,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,
+  checkReticulumRuntimeAndRoutingPortIssues,
 ];
 
 /**

@@ -27,6 +27,10 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/rns-not-ready')).toBe(
       true,
     );
+    const rnsRow = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/rns-not-ready',
+    );
+    expect(rnsRow?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.rnsNotReady');
     expect(rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/interface-down')).toBe(
       true,
     );

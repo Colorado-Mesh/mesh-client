@@ -23,7 +23,17 @@
       "reconnecting": "Yeniden bağlanılıyor"
     },
     "nodeLabel": "Düğüm: {{name}}",
-    "takClientLost": "TAK müşterisi kaybetti"
+    "takClientLost": "TAK müşterisi kaybetti",
+    "title": "Örgü İstemcisi",
+    "brandName": "Colorado Mesh",
+    "meshTubeSignOff": "Colorado Mesh tabelasını kapat",
+    "meshTubeSignOn": "Colorado Mesh işaretini açın",
+    "queueBadge": "S: {{used}}/{{max}}",
+    "telemetryDisabled": "Bu cihazda telemetri devre dışı. Cihaz ölçümlerinin etkinleştirilmesi ağa ve bu uygulamaya (tanılama, pil, sinyal) yardımcı olur. Radyo sekmesinde etkinleştirin.",
+    "scrollToTop": "↑ Üst",
+    "footerDiscordTitle": "Colorado Mesh Discord",
+    "footerGithubTitle": "GitHub'da Colorado Mesh",
+    "footerWebsiteTitle": "Colorado Mesh web sitesi"
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",
@@ -198,7 +208,111 @@
     "reticulumSection": "Reticulum — Reticulum yığını",
     "reticulumAnnounceHelp": "Kimliğinizin ağda ne sıklıkta duyurulduğu ve saklanan duyuruları temizleme araçları.",
     "reticulumPropagationHelp": "Yayılma düğümlerinin nasıl senkronize edileceğini seçin ve gerektiğinde en son yayılma verilerini çekin.",
-    "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir."
+    "logPanelHelp": "Etkinleştirildiğinde sağda canlı bir günlük akışı görünür. Reticulum sekmesinde, cihaz hatları sepet çıkışını ve yerel arayüz durumunu içerir. Hata ayıklama satırları, günlük panelinin içindeki onay kutusunun işaretlenmesini gerektirir.",
+    "autoPruneUnheardContactsDaysAria": "Başlangıçta {{days}} günden eski, duyulmamış kişileri otomatik olarak buda",
+    "capTotalContactsCountAria": "Toplam kişileri sınırlandırın, en son görülen {{count}} kişileri koruyun",
+    "unknownError": "Bilinmeyen hata",
+    "resetDiagnosticsConfirm": "Bu, tüm yönlendirme anormalliklerini, atlama geçmişini ve paket istatistiklerini temizleyecektir. Motor yeni gelen paketlerden yeniden oluşturulacak. Devam etmek?",
+    "clearGpsDataConfirm": "Bu, depolanan GPS koordinatlarını tüm düğümlerden kaldıracaktır. Düğümler kalacak ancak yeni veriler alınana kadar konumları boş kalacak. Devam etmek?",
+    "clearPositionHistoryConfirm": "Bu, saklanan tüm konum geçmişini veritabanından kalıcı olarak silecektir. Artık geçmiş oturumlar için hareket izleri gösterilmeyecek. Devam etmek?",
+    "deleteOldNodesConfirm_one": "Bu, son {{days}} günde duyulmayan tüm düğümleri kalıcı olarak silecektir. Tekrar yayınlandıklarında yeniden keşfedilecekler.",
+    "deleteOldNodesConfirm_other": "Bu, son {{days}} gün içinde duyulmayan tüm düğümleri kalıcı olarak silecektir. Tekrar yayınlandıklarında yeniden keşfedilecekler.",
+    "pruneMqttOnlyNodesConfirm": "Bu, yalnızca MQTT aracılığıyla keşfedilen tüm düğümleri kalıcı olarak silecektir (RF yoluyla asla duyulmaz). MQTT veya RF yoluyla tekrar duyulursa yeniden ortaya çıkacaklar.",
+    "pruneMqttNodesConfirmLabel": "MQTT Düğümlerini Budama",
+    "pruneUnnamedNodesConfirm": "Bu, gerçek uzun adı olmayan düğümleri kalıcı olarak silecektir: boş adlar, otomatik olarak oluşturulan !hex yer tutucuları, düğüm kimliğine bağlı Node-HEX geri dönüşleri ve UserInfo'yu hiçbir zaman almayan yalnızca MQTT kimlikleri. Favori düğümler tutulur. Tekrar yayınlandıklarında yeniden keşfedilecekler.",
+    "pruneNoFixNodesConfirm_one": "Bu, boş veya sıfıra yakın koordinatlara sahip (GPS sabitlemesi veya Sıfır Adası yok) {{count}} düğümünü kalıcı olarak silecektir. Bu geri alınamaz.",
+    "pruneNoFixNodesConfirm_other": "Bu, boş veya sıfıra yakın koordinatlara sahip (GPS sabitlemesi veya Sıfır Adası yok) {{count}} düğümlerini kalıcı olarak silecektir. Bu geri alınamaz.",
+    "pruneNoFixDeleteConfirm_one": "{{count}} Düğümünü Sil",
+    "pruneNoFixDeleteConfirm_other": "{{count}} Düğümlerini Sil",
+    "pruneDistantNodesConfirm_one": "Bu, {{distance}} {{unit}} ötesindeki {{count}} düğümünü cihazınızdan kalıcı olarak silecektir. Bu geri alınamaz.",
+    "pruneDistantNodesConfirm_other": "Bu, {{distance}} {{unit}} ötesindeki {{count}} düğümlerini cihazınızdan kalıcı olarak silecektir. Bu geri alınamaz.",
+    "pruneDistantDeleteConfirm_one": "{{count}} Düğümünü Sil",
+    "pruneDistantDeleteConfirm_other": "{{count}} Düğümlerini Sil",
+    "pruneOfflineNodesConfirm_one": "Bu, {{days}} {{daysLabel}} üzerinden duyulmayan {{count}} düğümünü kalıcı olarak silecektir. Bu geri alınamaz.",
+    "pruneOfflineNodesConfirm_other": "Bu, {{days}} {{daysLabel}} üzerinden duyulmayan {{count}} düğümlerini kalıcı olarak silecektir. Bu geri alınamaz.",
+    "pruneOfflineDeleteConfirm_one": "{{count}} Düğümünü Sil",
+    "pruneOfflineDeleteConfirm_other": "{{count}} Düğümlerini Sil",
+    "clearNodesConfirm": "Bu, yerel olarak depolanan tüm {{count}} düğümlerini kalıcı olarak silecektir. Bağlanıldığında yeniden keşfedilecekler.",
+    "clearNodesConfirmLabel": "{{count}} Düğümlerini Temizle",
+    "clearAllNodesButton": "Tüm Düğümleri Temizle ({{count}})",
+    "deleteContactsNoPubkeysConfirm": "Bu, ortak anahtarı olmayan tüm MeshCore kişilerini veritabanından kalıcı olarak silecektir. Sohbet koçanı düğümleri (mesajlardan oluşturulan) hariç tutulacaktır. Bu geri alınamaz.",
+    "deleteContactsNoPubkeysConfirmButton": "Silmek",
+    "clearMessagesAllConfirm": "Bu, tüm kanallarda yerel olarak saklanan tüm {{count}} mesajlarını kalıcı olarak silecektir. Bu geri alınamaz.",
+    "clearMessagesChannelConfirm": "Bu, {{channel}} adresinden gelen tüm mesajları kalıcı olarak silecektir. Bu geri alınamaz.",
+    "clearMessagesAllConfirmLabel": "{{count}} Mesajlarını Temizle",
+    "clearMessagesChannelConfirmLabel": "{{channel}} öğesini temizle",
+    "clearMessagesTitle": "Mesajları Temizle",
+    "clearAllRepeatersConfirm": "Bu, kayıtlı tüm MeshCore tekrarlayıcıları yerel veritabanından kalıcı olarak kaldıracaktır. Bu geri alınamaz.",
+    "clearAllLocalDataTitle": "⚠ Tüm Yerel Verileri Temizle",
+    "clearAllLocalDataConfirm": "Bu, TÜM yerel mesajları, düğümleri ve önbelleğe alınmış oturum verilerini kalıcı olarak silecektir. Bu eylem geri alınamaz.",
+    "clearEverythingConfirmButton": "Herşeyi Temizle",
+    "dangerZoneMeshcoreHeading": "MeshCore",
+    "dangerZoneEverythingHeading": "Her şey",
+    "deleteNodesOlderThanAria": "En son {{days}} günden fazla duyulan düğümleri sil",
+    "daySingular": "gün",
+    "theme": {
+      "appBg": {
+        "label": "Ana pencere arka planı",
+        "description": "Ana içerik görünüm alanı ve uygulama penceresi arka planı — tüm panellerin arkasındaki karanlık tuval."
+      },
+      "sidebarActiveBg": {
+        "label": "Aktif kenar çubuğu sekmesi",
+        "description": "Kenar çubuğu gezintisinde o anda seçili olan sekmenin arka planı."
+      },
+      "brandGreen": {
+        "label": "Göstergeler ve kenar vurguları",
+        "description": "Yapılandırıldığında kenarlıklar için vurgu, çevrimiçi/MQTT göstergeleri, vurgular ve ilerleme doldurmaları."
+      },
+      "brightGreen": {
+        "label": "Uygulama başlığı, bağlantılar ve düğüm vurgusu",
+        "description": "Uygulama başlığı, vurgu metni, alt bilgideki bağlantılar ve düğüm listesinde atlama/kendini vurgulama."
+      },
+      "readableGreen": {
+        "label": "Eylem düğmeleri ve seçilen haplar",
+        "description": "Beyaz metinle dolu dolgular; kontrast için seçilen kanal hapları ve birincil eylem düğmeleri."
+      },
+      "deepBlack": {
+        "label": "Kenar çubuğu, başlık ve modal yüzeyler",
+        "description": "Kenar çubuğu gezintisi, üst bilgi, alt bilgi, modal kabuklar ve birincil koyu yüzeyler."
+      },
+      "secondaryDark": {
+        "label": "Panel ve giriş arka planı",
+        "description": "Panel arka planları, girişler, düğmeler, tablo satırlarında gezinme ve ilerleme izleme."
+      },
+      "muted": {
+        "label": "İkincil etiketler ve başlıklar",
+        "description": "İkincil etiketler, başlıklar, tablo başlıkları ve vurgusu kaldırılmış metin."
+      },
+      "chatIncomingBg": {
+        "label": "Gelen mesaj dolgusu",
+        "description": "Gelen kanal mesajları için arka plan dolgusu (%38 opaklıkta uygulanır)."
+      },
+      "chatIncomingBorder": {
+        "label": "Gelen mesaj sınırı",
+        "description": "Gelen kanal mesajları için kenarlık rengi."
+      }
+    },
+    "themePreset": {
+      "green300": "Yeşil 300",
+      "slate950": "Arduvaz 950",
+      "slate900": "Arduvaz 900",
+      "slate800": "Arduvaz 800",
+      "slate700": "Arduvaz 700",
+      "slate400": "Arduvaz 400",
+      "white": "Beyaz",
+      "black": "Siyah",
+      "blue500": "Mavi 500",
+      "amber500": "kehribar 500",
+      "red500": "Kırmızı 500",
+      "emerald500": "Zümrüt 500",
+      "green700": "Yeşil 700",
+      "violet500": "Menekşe 500",
+      "cyan400": "Camgöbeği 400",
+      "purple400": "Mor 400",
+      "pink400": "Pembe 400",
+      "orange400": "Turuncu 400",
+      "yellow400": "Sarı 400"
+    }
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -353,7 +467,13 @@
     "stopVoiceRecording": "Kaydı durdur ve gönder",
     "voiceRecordingTooLong": "Ses klibi 60 saniye sınırına ulaştı ve gönderildi.",
     "reticulumSendAttachmentFailed": "Ek gönderilemedi",
-    "reticulumSendAttachmentNoIdentity": "Reticulum kimliği hazır değil — önce bağlanın ve kimliği yapılandırın"
+    "reticulumSendAttachmentNoIdentity": "Reticulum kimliği hazır değil — önce bağlanın ve kimliği yapılandırın",
+    "dmPeerInfoAria": "DM akran bilgisi",
+    "clearDateAria": "Tarihi temizle",
+    "readOnlyDisconnected": "Bağlı değil — mesajlar salt okunurdur",
+    "starredDm": "DM: {{name}}",
+    "starredChannel": "ch{{channel}}",
+    "mentionSuggestionsAria": "Bahsetme önerileri"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -399,7 +519,8 @@
     "colorCyan": "Açık mavi",
     "colorAmber": "Sarı",
     "colorRed": "Kırmızı",
-    "colorPurple": "Mor"
+    "colorPurple": "Mor",
+    "delete": "Silmek"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
@@ -499,7 +620,7 @@
     "hintMeshtasticHttp2": "Bağlantı güvenilir değilse (ör. meshtastic.local ile), bunun yerine cihazın IP adresini deneyin; masaüstü mDNS kesintili olabilir.",
     "hintMeshcoreHttp": "MeshCore yardımcı radyonuzun ana bilgisayar adını veya IP adresini girin. 5000 numaralı bağlantı noktasından ulaşılabilir olması gerekir.",
     "stageLinuxUnpaired": "Kaydedilen cihaz Linux Bluetooth'ta eşleştirilmemiş; PIN'i girmek ve bağlanmak için aşağıdan seçin.",
-    "liamServerNote": "Liam'ın sunucusu yalnızca yukarı bağlantıya yöneliktir; düğümünüz onun haritasında görünür ancak ondan mesaj almazsınız.",
+    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Bağlamak",
     "mqttStatusConnected": "bağlı",
     "mqttStatusConnecting": "bağlanıyor",
@@ -533,7 +654,7 @@
         "accessDeniedLinuxHint": "Linux'ta kullanıcınızı arama grubuna ekleyin: sudo usermod -aG dialout $USER (sonra oturumu kapatıp tekrar açın)",
         "disconnectedHint": "USB kablosunun bağlı olduğundan ve cihazın açık olduğundan emin olun.",
         "timeoutHint": "Bağlantı noktası kısa süreliğine belirirse USB kablosunu yeniden bağlamayı deneyin.",
-        "portStillOpenHint": "USB seri bağlantı noktası temiz bir şekilde serbest bırakılmadı. Mesh istemcisinden tamamen çıkın ve yeniden açın veya USB kablosunu çıkarıp yeniden takın, ardından tekrar bağlayın."
+        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
       },
       "http": {
         "timeoutMdnsWindows": "Windows'ta meshtastic.local, Bonjour'u (iTunes ile birlikte yüklenir) gerektirir. Bunun yerine cihazın IP adresini kullanın.",
@@ -561,7 +682,7 @@
         "connectionAttemptFailedLinuxHint": "Linux'ta eşleştirmeleri sistem Bluetooth ayarları veya 'bluetoothctl' aracı aracılığıyla yönetebilirsiniz.",
         "meshcoreHandshakeHint": "MeshCore cihazınızın Bluetooth Companion modunda olduğundan ve bir PIN kullanarak bilgisayarınızla eşleştirildiğinden emin olun. Bağlantı sorunları devam ederse mevcut tüm eşleştirmeleri kaldırın ve yeniden eşleştirin.",
         "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin.",
-        "macWakeRecoveryHint": "Uykudan sonra mesh istemcisini (Cmd+Q) kapatın, Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar Bağlanın. Meshtastic'ten önce iki telsizle MeshCore'u bağlayın.",
+        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
         "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin.",
         "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
         "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı."
@@ -699,7 +820,17 @@
         "coordinated": "Koordineli bölgesel",
         "fallback": "Küresel geri dönüş",
         "legacy": "Eski ön ayarlar"
-      }
+      },
+      "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
+      "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "status": {
+        "up": "yukarı",
+        "down": "aşağı"
+      },
+      "pickerScanFailed": "BLE taraması başarısız oldu. Tekrar deneyin veya adresi manuel olarak girin.",
+      "pickerBleFeatureDisabled": "Bu Reticulum yapısında Bluetooth mevcut değil (rns-ble özelliği eksik).",
+      "pickerScanFailedDetail": "Tarama hatası: {{detail}}",
+      "pickerDeviceAria": "{{name}} {{address}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -741,7 +872,49 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum"
-    }
+    },
+    "topicPrefixHelp": {
+      "meshtastic": "msh/[Ülke]/[Eyalet], ör. msh/CO/ABD",
+      "meshcoreLetsmesh": "meshcore/{IATA}, ör. ağ puanı/DEN",
+      "meshcoreDefault": "MESHCORE/[Ülke]/[Eyalet], ör. MESHCORE/ABD/CO"
+    },
+    "topicPrefixPlaceholder": "msh/ABD/",
+    "maxRetriesHelp": {
+      "meshtastic": "Vazgeçmeden önce yeniden bağlanma denemeleri yapın (1–{{max}}).",
+      "meshcore": "Vazgeçmeden önce yeniden bağlanma girişimlerini (1-20) yapın."
+    },
+    "meshtasticPreset": {
+      "officialPlain": "MQTT :1883",
+      "liam": "Liam's",
+      "custom": "Gelenek"
+    },
+    "deviceAddressPlaceholder": "meshtastic.local veya 192.168.1.x",
+    "meshcoreHostPlaceholder": "localhost veya 192.168.1.x",
+    "meshcoreBlePairingHint": "MeshCore cihazınızı bağlanmadan önce <strong>sistem Bluetooth ayarlarında</strong> eşleştirin. İstendiğinde bir PIN kodu kullanın; sisteminiz bir PIN sormazsa bağlantı başarısız olur ve eşleştirmeyi kaldırıp bir PIN ile yeniden eşleştirmeniz gerekebilir.",
+    "meshcorePreset": {
+      "letsmesh": "LetsMesh",
+      "coloradomesh": "Colorado Mesh",
+      "meshmapper": "MeshMapper",
+      "ripple": "Ripple Networks",
+      "custom": "Gelenek"
+    },
+    "meshcorePresetDeviation": {
+      "letsmesh": "LetsMesh'in 443 numaralı bağlantı noktasında WebSocket'e ve mqtt-us-v1.letsmesh.net veya mqtt-eu-v1.letsmesh.net sunucusuna ihtiyacı vardır. Bölge'yi (ABD/AB) kullanın veya diğer aracılar için Özel'e geçin.",
+      "coloradomesh": "Colorado Mesh'in TLS etkinleştirilmiş 1883 numaralı bağlantı noktasında WebSocket'e ihtiyacı var, sunucu mqtt.meshcore.coloradomesh.org, yol /ws. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin.",
+      "meshmapper": "MeshMapper'ın 443 numaralı bağlantı noktasında WebSocket'e ve mqtt.meshmapper.cc sunucusuna ihtiyacı vardır. Ön ayarı sıfırlayın veya diğer aracılar için Özel'e geçin."
+    },
+    "meshcoreMqttIdentity": {
+      "hasPrivateKey": "Bağlandığınızda kimlik doğrulama jetonu (meshcore-kod çözücü formatı) oluşturulacaktır. Kullanıcı adı v1_ artı 64 karakterlik genel anahtarınızdan (onaltılık) oluşur. JWT izleyicisi Sunucu ana bilgisayar adıyla eşleşir.",
+      "noPrivateKey": "Tam kimlik yok — MeshCore yapılandırmanızı Radyo paneline (genel ve özel anahtarlar) içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın. Belirteçteki JWT hedef kitlesi, Sunucu ana bilgisayar adıyla eşleşmelidir.",
+      "publicKeyMissing": "Kimlikte genel anahtar eksik. MeshCore config JSON'unuzu Radyo paneline içe aktarın (genel ve özel anahtarlar içermelidir) veya şifre alanına bir aracı belirteci yapıştırın.",
+      "usernameBuildFailed": "LetsMesh kullanıcı adı oluşturulamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın.",
+      "noIdentity": "Cihaz kimliği bulunamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını ve belirteci manuel olarak yapıştırın."
+    },
+    "meshcorePacketLogger": {
+      "label": "Paket kaydedici — radyonuza ve MQTT'nize bağlandığında, RX paket özetlerini meshcoretomqtt ile aynı JSON biçiminde {{topic}}'ye iletin. Varsayılan olarak kapalı; yalnızca duyulan hava trafiğini bir paket analizörüyle paylaşmak istiyorsanız etkinleştirin."
+    },
+    "hintAdaDfuBle": "MacOS'ta bir cihaz \"AdaDFU\" olarak görünüyorsa, Meshtastic adını görmek için önce onu Sistem Ayarları → Bluetooth'ta eşleştirin.",
+    "authTokenFailed": "Kimlik doğrulama jetonu oluşturulamadı: {{message}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -754,7 +927,11 @@
     "newGroupNamePlaceholder": "Yeni grup adı…",
     "manageMembers": "Üyeleri yönet",
     "rename": "Yeniden isimlendirmek",
-    "deleteGroup": "Grubu sil"
+    "deleteGroup": "Grubu sil",
+    "noContactsYet": "Henüz kişi yok.",
+    "noGroupsYet": "Henüz grup yok. Yukarıda bir tane oluşturun.",
+    "memberCount_one": "{{count}} üye",
+    "memberCount_other": "{{count}} üyeler"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",
@@ -1016,8 +1193,33 @@
         "missing_shared_instance": "Paylaşım örneği açık ancak SharedInstanceServer çalışmıyor.",
         "shared_instance_unexpected": "SharedInstanceServer yayında ancak share_instance kapalı.",
         "runtime_only_interface": "\"{{name}}\" yalnızca çalışma zamanıdır (yapılandırmada saklanmaz)."
+      },
+      "runtime": {
+        "rnsNotReady": "RNS yığını hazır değil",
+        "lxmfNotReady": "LXMF yönlendirici hazır değil",
+        "localStalePort": "Yerel arayüz \"{{name}}\" seri bağlantı noktası {{port}} bu sistemde bulunamadı",
+        "localOffline": "Yerel arayüz \"{{name}}\" etkin ancak çevrimdışı",
+        "interfaceDown": "{{type}} arayüzü \"{{name}}\" etkin ancak {{status}}",
+        "noPeers": "Henüz yol tablosunda bilinen eş yok"
       }
-    }
+    },
+    "routingPort": {
+      "nodeInfo": "Düğüm Bilgisi",
+      "telemetry": "Telemetri",
+      "neighborInfo": "Komşu Bilgileri",
+      "traceroute": "Traceroute",
+      "position": "Konum",
+      "remoteHardware": "UzakDonanım",
+      "admin": "Yönetici",
+      "discoveryFlood": "KeşifSel",
+      "roomAdvert": "Oda İlanı",
+      "generic": "Bağlantı Noktası{{port}}"
+    },
+    "signalColumn": "Sinyal",
+    "senderLabel": "Gönderen",
+    "rssiShort": "RSSI {{rssi}}",
+    "rssiDbm": "RSSI {{rssi}} dBm",
+    "snrDb": "SNR {{snr}} dB"
   },
   "errorBoundary": {
     "title": "Bir şeyler ters gitti",
@@ -1201,7 +1403,7 @@
       },
       "database-writable": {
         "label": "Veritabanı Yazılabilir Değil",
-        "recommendation": "Uygulama, veritabanı klasörünü yazamıyor. Mesh-istemci userData dizinindeki izinleri düzeltin (bkz. sorun giderme: Veritabanı dizini yazılabilir değil)."
+        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
       },
       "tak-server": {
         "label": "TAK Sunucu Sorunları",
@@ -1268,7 +1470,8 @@
     "appSource": "Uygulama ({{count}})",
     "deviceSource": "Cihaz ({{count}})",
     "narrowLogPanel": "Dar günlük paneli",
-    "widenLogPanel": "Günlük panelini genişlet"
+    "widenLogPanel": "Günlük panelini genişlet",
+    "clearFailed": "Günlük temizlenemedi"
   },
   "mapPanel": {
     "locationUnavailable": "Konum kullanılamıyor.",
@@ -1287,7 +1490,10 @@
     "layerWaypoints": "Ara noktalar",
     "layerRouteWeights": "Güzergah ağırlıkları",
     "layerAnomalyHalos": "Anomali haleleri",
-    "layerCongestionHalos": "Tıkanıklık haleleri"
+    "layerCongestionHalos": "Tıkanıklık haleleri",
+    "waypointDefaultName": "Yol noktası",
+    "waypointDelete": "Yol Noktasını Sil",
+    "noGpsNodes": "Henüz GPS konumu olan düğüm yok"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -1623,7 +1829,141 @@
     "debugPrivateAppMessages": "Özel uygulama mesajları",
     "debugPingResponses": "Ping yanıtları",
     "sectionMapReport": "Harita Raporu",
-    "sectionMapReportHint": "MQTT üzerinden Meshtastic haritasına pozisyon yayınlar. Yukarıda etkinleştirilen MQTT Rölesini gerektirir; ayarlar cihaz MQTT modülü yapılandırmasında saklanır."
+    "sectionMapReportHint": "MQTT üzerinden Meshtastic haritasına pozisyon yayınlar. Yukarıda etkinleştirilen MQTT Rölesini gerektirir; ayarlar cihaz MQTT modülü yapılandırmasında saklanır.",
+    "ambientColors": {
+      "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
+    },
+    "inputEvents": {
+      "0": {
+        "label": "Hiçbiri"
+      },
+      "10": {
+        "label": "(Giriş) seçeneğini seçin"
+      },
+      "17": {
+        "label": "Yukarı"
+      },
+      "18": {
+        "label": "Aşağı"
+      },
+      "19": {
+        "label": "Sol"
+      },
+      "20": {
+        "label": "Sağ"
+      },
+      "24": {
+        "label": "İptal etmek"
+      },
+      "27": {
+        "label": "Geri (Esc)"
+      }
+    },
+    "serialModes": {
+      "0": {
+        "label": "Varsayılan"
+      },
+      "1": {
+        "label": "Basit"
+      },
+      "2": {
+        "label": "Proto"
+      },
+      "3": {
+        "label": "Kısa mesaj"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.Direct"
+      },
+      "8": {
+        "label": "MeshSolar yapılandırması"
+      },
+      "9": {
+        "label": "Günlük (tüm paketler)"
+      },
+      "10": {
+        "label": "Günlük (yalnızca metin)"
+      }
+    },
+    "takTeamColors": {
+      "1": {
+        "label": "Beyaz"
+      },
+      "2": {
+        "label": "Sarı"
+      },
+      "3": {
+        "label": "Turuncu"
+      },
+      "4": {
+        "label": "Macenta"
+      },
+      "5": {
+        "label": "Kırmızı"
+      },
+      "6": {
+        "label": "Bordo"
+      },
+      "7": {
+        "label": "Mor"
+      },
+      "8": {
+        "label": "Koyu Mavi"
+      },
+      "9": {
+        "label": "Mavi"
+      },
+      "10": {
+        "label": "Camgöbeği"
+      },
+      "11": {
+        "label": "turkuaz"
+      },
+      "12": {
+        "label": "Yeşil"
+      },
+      "13": {
+        "label": "Koyu Yeşil"
+      },
+      "14": {
+        "label": "Kahverengi"
+      }
+    },
+    "teamRoles": {
+      "1": {
+        "label": "Ekip Üyesi"
+      },
+      "2": {
+        "label": "Takım Lideri"
+      },
+      "3": {
+        "label": "Genel merkez"
+      },
+      "4": {
+        "label": "Keskin nişancı"
+      },
+      "5": {
+        "label": "Doktor"
+      },
+      "6": {
+        "label": "İleri Gözlemci"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",
@@ -1772,7 +2112,19 @@
     "remoteAuthCancelled": "Uzaktan erişim iptal edildi.",
     "shareContactSent": "İletişim paylaşımı telsiz üzerinden gönderilir.",
     "blockContact": "Blok",
-    "unblockContact": "Engellemeyi kaldır"
+    "unblockContact": "Engellemeyi kaldır",
+    "paxCounter": {
+      "heading": "Yolcu Sayacı",
+      "detectedCount": "Tespit Edilen Sayım",
+      "lastSeen": "Son Görülme"
+    },
+    "detectionSensor": {
+      "heading": "Algılama Sensörü ({{count}})",
+      "lastDetection": "Son Tespit",
+      "dataSize": "Veri Boyutu",
+      "dataSizeBytes": "{{count}} bayt",
+      "rawDataHex": "Ham Veri (onaltılık)"
+    }
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -1934,7 +2286,7 @@
     "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı"
   },
   "nomadNetwork": {
-    "title": "Göçebe Ağı",
+    "title": "Nomad Network",
     "toggleFavorite": "Favorileri aç/kapat",
     "favourites": "Favoriler",
     "announces": "Duyurular",
@@ -2523,7 +2875,103 @@
     "applyTxPowerSuccess": "TX gücü uygulandı",
     "xmodemInvalidFilename": "Dosya adı geçersiz karakterler içeriyor",
     "validationInvalidPsk": "Geçersiz base64 PSK — anahtarı kontrol edin ve tekrar deneyin",
-    "meshcoreChannelNameRequired": "Ad boş olamaz"
+    "meshcoreChannelNameRequired": "Ad boş olamaz",
+    "editChannelTitle": "Kanalı Düzenle {{index}}",
+    "channelNameLabel": "İsim",
+    "channelRoleLabel": "Rol",
+    "channelsEditHint": "Düzenlemek için bir kanal seçin. AES-128/256 anahtarları base64'te (Meshtastic kuralı) gösterilmektedir.",
+    "channelResetStatus": "Kanal {{index}} sıfırlandı!",
+    "meshcoreChannel": {
+      "defaultName": "Kanal {{index}}",
+      "addTitle": "Kanal Ekle",
+      "editTitle": "Kanalı Düzenle {{index}}",
+      "indexLabel": "Dizin (0–{{max}})",
+      "invalidHex": "Tam olarak 32 onaltılık karakter olmalıdır.",
+      "addButton": "+ Kanal Ekle",
+      "footerHelp": "Anahtarlar 128 bittir (16 bayt), 32 onaltılık karakter olarak gösterilir. {{nameMax}} karaktere kadar kanal adları. {{channelCount}} kanala kadar (0–{{indexMax}} indeksleri). #Kanallar için \"Addan türet\" seçeneğini kullanın (önde # ile ismin SHA-256'sı)."
+    },
+    "regions": {
+      "0": {
+        "label": "Ayarlanmadı"
+      },
+      "1": {
+        "label": "BİZ"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "Japonya"
+      },
+      "6": {
+        "label": "ANZ"
+      },
+      "7": {
+        "label": "Kore"
+      },
+      "8": {
+        "label": "TW"
+      },
+      "9": {
+        "label": "RU"
+      },
+      "10": {
+        "label": "İÇİNDE"
+      },
+      "11": {
+        "label": "Yeni Zelanda_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MY_433"
+      },
+      "16": {
+        "label": "MY_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "LORA_24"
+      }
+    },
+    "modemPresets": {
+      "0": {
+        "label": "Uzun Hızlı"
+      },
+      "1": {
+        "label": "Uzun Yavaş"
+      },
+      "2": {
+        "label": "Uzun Orta"
+      },
+      "3": {
+        "label": "Kısa Hızlı"
+      },
+      "4": {
+        "label": "Kısa Yavaş"
+      },
+      "5": {
+        "label": "Orta Hızlı"
+      },
+      "6": {
+        "label": "Orta Yavaş"
+      }
+    }
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -2665,7 +3113,20 @@
     "pathHashCliGet": "Yol karma modunu al",
     "pathHashCliSet0": "Yol karma modunu 1 bayt olarak ayarla",
     "pathHashCliSet1": "Yol karma modunu 2 bayt olarak ayarla",
-    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt"
+    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt",
+    "pathLabel": "Yol:",
+    "hopMe": "● Ben",
+    "hopN": "● Atla {{n}}",
+    "noNeighborsReported": "Hiçbir komşu bildirilmedi",
+    "fetchingTelemetry": "Telemetri getiriliyor…",
+    "telemetryBattery": "Pil: {{voltage}}V",
+    "telemetryTemp": "Sıcaklık: {{temp}}°C",
+    "telemetryHumidity": "Nem: %{{humidity}}",
+    "telemetryPressure": "Basınç: {{pressure}} hPa",
+    "telemetryGps": "GPS: {{coords}}{{alt}}",
+    "telemetryGpsAlt": "alt {{altitude}}m",
+    "cliSend": "Göndermek",
+    "cliQuick": "Hızlı:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -2998,7 +3459,7 @@
     "rooms": "Oda",
     "admin": "Yönetim",
     "peers": "Meslektaşlar",
-    "nomadnetwork": "Göçebe Ağı",
+    "nomadnetwork": "Nomad Network",
     "topology": "Ağ topolojisi",
     "network": "Ağ"
   },
@@ -3189,6 +3650,59 @@
       "confirmTitle": "Reticulum stack sıfırlansın mı?",
       "confirmBody": "Bu, sepetteki kimliği, kişileri ve yerel mesajları kaldırır. Arayüz yapılandırma dosyanız tutulur.",
       "confirm": "Sıfırla"
+    }
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Tekrarlayıcı yönetici şifresini Tekrarlayıcılar panelinden ayarlayın veya değiştirin (yalnızca oturum).",
+      "connectionFailed": "Bağlantı başarısız oldu",
+      "notConnected": "Cihaza bağlı değil",
+      "nodeNotFound": "Düğüm bulunamadı (şifreleme anahtarı yok)",
+      "authenticationFailed": "Kimlik doğrulama başarısız oldu",
+      "requestFailed": "Başarısız: {{detail}}",
+      "requestTimedOut": "İstek zaman aşımına uğradı (en fazla ~{{seconds}}s)",
+      "requestTimedOutApprox": "İstek zaman aşımına uğradı (~{{seconds}}s)",
+      "pingNoRoute": "Henüz radyodan rota yok; çok atlamalı izlemenin senkronize bir yola ihtiyacı var. Kişi güncellemelerini bekleyin veya yeniden bağlanın.",
+      "bleNoDetails": "BLE bağlantısı başarısız oldu (cihazda hata ayrıntıları yok). Tekrar deneyin veya Seri/USB kullanın.",
+      "bleAlreadyInProgress": "Bluetooth bağlantısı zaten devam ediyor. Bitmesini bekleyin veya bunun yerine Seri/USB'yi deneyin.",
+      "bleMissingServices": "Cihaz MeshCore BLE protokolünü desteklemiyor. Cihazın MeshCore ürün yazılımını çalıştırdığından emin olun.",
+      "blePeripheralInUse": "Bu cihaz zaten Meshtastic BLE aracılığıyla bağlı. MeshCore olarak bağlanmadan önce ilk olarak bağlantısını kesin.",
+      "bleTimeoutWebBtHandshake": "MeshCore anlaşması zaman aşımına uğradı (Web Bluetooth). Telsizin öncelikle Linux ile eşleştirilmiş bir PIN'e ihtiyacı olabilir: Cihazı Kaldır ve Yeniden Eşleştir'i kullanın ve cihazda gösterilen PIN'i girin veya bluetoothctl ile eşleştirin ve ardından tekrar Bağlan'a dokunun.",
+      "bleTimeoutWebBt": "MeshCore'u Web Bluetooth üzerinden açarken Bluetooth bağlantısı zaman aşımına uğradı. Tekrar deneyin, cihazı uyanık tutun, radyoda BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "bleTimeoutHandshake": "Bluetooth bağlandı ancak MeshCore protokolü anlaşması bağlantı kesmeden/zaman aşımına uğramadan tamamlanmadı. Tekrar deneyin, cihazı uyanık ve yakında tutun, BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "bleTimeoutNoble": "Noble IPC üzerinden MeshCore açılırken Bluetooth bağlantısı zaman aşımına uğradı. Yeniden deneyin, cihazdaki BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "roomPost": {
+        "badState": "Oda mesajı reddedildi (radyoda oturum açılmadı). Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
+        "illegalArg": "Oda gönderimi reddedildi (geçersiz mesaj biçimi).",
+        "notFound": "Oda mesajı reddedildi (radyoda oda iletişim bilgisi bulunamadı).",
+        "unsupportedCmd": "Oda gönderisi reddedildi (radyoda desteklenmeyen mesaj türü). Odada oturum açın ve yeniden deneyin.",
+        "default": "Oda yazısı radyo tarafından reddedildi. Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
+        "timeout": "Oda gönderisi radyo beklenirken zaman aşımına uğradı. Aralığı kontrol edin veya tekrar deneyin."
+      },
+      "roomLogin": {
+        "noRoute": "Bu oda sunucusuna giden yol yok. Düğümü haritadan takip edin veya yol reklamlarını bekleyin, ardından tekrar deneyin.",
+        "pathSyncFailed": "Oturum açmadan önce radyonuzda rota programlanamadı. Cihazı tekrar bağlayın ve tekrar deneyin.",
+        "pathSyncFailedDetail": "Oturum açmadan önce radyonuzda rota programlanamadı. Cihazı yeniden bağlayın ve tekrar deneyin.{{detail}}",
+        "rejectedBlankGuest": "Oda girişi reddedildi. Boş konuk parolası için Salt okunur devam et seçeneğini kullanın veya konuk parolası \"merhaba\"yı deneyin.",
+        "rejectedDefaultGuest": "Oda girişi reddedildi. Bu sunucunun konuk parolası yoksa Oturum Açma yerine Salt okunura devam et seçeneğini kullanın. Aksi halde misafir veya yönetici şifresini kontrol edin.",
+        "rejectedCheckPassword": "Oda girişi reddedildi. Bu oda sunucusunun misafir veya yönetici şifresini kontrol edin.",
+        "timedOutBlankGuest": "Odaya giriş zaman aşımına uğradı. Boş konuk parolası için Salt okunur devam et seçeneğini kullanın veya konuk parolası \"merhaba\"yı deneyin.",
+        "timedOutDefaultGuest": "Odaya giriş zaman aşımına uğradı. Bu sunucunun konuk parolası yoksa Oturum Açma yerine Salt okunura devam et seçeneğini kullanın.",
+        "timedOut": "Odaya giriş zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
+        "failed": "Oda girişi başarısız oldu"
+      },
+      "roomLogout": {
+        "timedOut": "Odadan çıkış zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
+        "rejected": "Odadan çıkış radyo tarafından reddedildi.",
+        "failed": "Odadan çıkılamadı"
+      }
+    },
+    "mqttHints": {
+      "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
+      "network": "Ağı, DNS'yi, güvenlik duvarını ve VPN'yi kontrol edin.",
+      "connackTimeout": "Önceden bir \"istemci hatası\" satırı görmüyorsanız TLS/WebSocket anlaşması duruyor olabilir (başka bir ağ deneyin; uygulama, WSS için IPv4'ü tercih ediyor).",
+      "subscribeFailed": "Broker bu konuda joker karakter aboneliğini reddedebilir; aracı izin verirse mesajlar yine de gelebilir.",
+      "keepalive": "Sunucu, MQTT ping'lerine yanıt vermeyi durdurdu (boşta kalma zaman aşımı, ağ kesintisi veya aracı oturumu kapattı). Bağlantınızı yeniden bağlayın veya kontrol edin."
     }
   }
 }

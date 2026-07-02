@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next';
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
+import { isMeshcoreI18nKey } from './meshcore/meshcoreMessageI18n';
 import {
   bleOwnerI18nKey,
   isBlePeripheralConflictErrorMessage,
@@ -130,6 +131,9 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
               return String(err);
             }
           })();
+  if (isMeshcoreI18nKey(msg)) {
+    return t(msg);
+  }
   const platform = runtimePlatform();
   const isWindows = platform === 'win32';
   const isLinux = platform === 'linux';
