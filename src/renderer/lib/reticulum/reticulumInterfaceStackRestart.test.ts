@@ -13,6 +13,9 @@ describe('reticulumInterfaceChangeRequiresStackRestart', () => {
     expect(
       reticulumInterfaceChangeRequiresStackRestart(undefined, { serial_port: 'ble://aa' }),
     ).toBe(true);
+    expect(
+      reticulumInterfaceChangeRequiresStackRestart(undefined, { frequency: 914_875_000 }),
+    ).toBe(true);
     expect(reticulumInterfaceChangeRequiresStackRestart(undefined, { name: 'new' })).toBe(false);
   });
 });

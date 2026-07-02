@@ -672,7 +672,34 @@
       "rnodeWifiPort": "ポート番号",
       "rnodeWifiSetupTitle": "Wi-Fi RNodeの設定",
       "rnodeWifiSetupHint": "点滅後、Wi-Fiがオフになっています—最初にRNodeをプロビジョニングします（ Reticulum → Admin → Wi-Fi、またはそのAPに参加してhttp://10.0.0.1を開きます）。 ESP 32 - S 3 Wi-Fi対応ファームウェアが必要です。\n\nステーションモード後： OLED代替画面、ルーターDHCPリスト、または管理者→読み取り設定でIPを見つけます。 TCPクライアントインターフェイスタイプではなく、tcp :// host （デフォルトポート7633 ）を使用します。\n\n多くのHeltecボードで約10秒間のボタンホールドにより、Wi-Fi APが有効になります（約7秒間はBluetoothペアリング）。",
-      "localOfflineRowWifi": "Wi-Fi RNode到達不能— IP、ポート7633、同じLAN、および電源を確認します。DHCPアドレスが変更された場合は、管理者で再プロビジョニングします。"
+      "localOfflineRowWifi": "Wi-Fi RNode到達不能— IP、ポート7633、同じLAN、および電源を確認します。DHCPアドレスが変更された場合は、管理者で再プロビジョニングします。",
+      "rfFrequencyMhz": "周波数(MHz)",
+      "rfBandwidthKhz": "帯域幅 (kHz)",
+      "rfSpreadingFactor": "拡散率",
+      "rfCodingRate": "符号化率",
+      "rfTxPower": "送信電力 (dBm)",
+      "purposeAria": "インターフェース {{name}} の目的",
+      "runtimeBadge": "ランタイム",
+      "auditRepair": "修理",
+      "auditDisable": "無効にする",
+      "auditRepairSuccess": "構成修復が適用されました。",
+      "auditRepairFailed": "構成の修復に失敗しました。",
+      "auditRepairNoChanges": "この修復には構成の変更は必要ありませんでした。",
+      "purpose": {
+        "auto": "ローカル LAN マルチキャスト検出 — 同じ Wi-Fi またはサブネット上の他の Reticulum ノードを検索します。",
+        "sharedInstance": "共有インスタンスがオンの場合、ローカルホスト TCP サーバー — このマシン上の他のアプリがこのスタックを使用できるようにします。",
+        "tcp": "リモート Reticulum ハブまたはゲートウェイへのアウトバウンド TCP トンネル。",
+        "rnodeUsb": "USB RNode 経由の LoRa メッシュ。",
+        "rnodeBle": "Bluetooth RNode 経由の LoRa メッシュ。",
+        "rnodeWifi": "RNode Wi-Fi (tcp:// ホスト) 経由の LoRa メッシュ。",
+        "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
+        "generic": "Reticulumネットワークインターフェース。"
+      },
+      "rfProfile": {
+        "coordinated": "地域連携",
+        "fallback": "グローバルフォールバック",
+        "legacy": "レガシープリセット"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "身元不明のMeshCore送信機",
     "meshcoreHeardNearbyEncrypted": "近くのMeshCore RF （暗号化）",
     "foreignLoraHeading": "あなたのMeshtastic周波数（ {{count}} ）の他の外国LoRa",
-    "foreignLoraDescription": "過去90分間のあなたの周波数のMeshtastic送信機と認識できないLoRa信号。MeshCoreノードは、上記のセクションに記載されています。"
+    "foreignLoraDescription": "過去90分間のあなたの周波数のMeshtastic送信機と認識できないLoRa信号。MeshCoreノードは、上記のセクションに記載されています。",
+    "reticulum": {
+      "sectionTitle": "Reticulumインターフェース構成",
+      "noIssues": "インターフェイス構成の問題は検出されませんでした。",
+      "summary": "{{errors}} エラー、{{warnings}} 警告",
+      "colInterface": "インタフェース",
+      "colIssue": "問題",
+      "colFix": "修理",
+      "colAction": "アクション",
+      "stackScope": "スタック",
+      "repairFailed": "構成の修復に失敗しました。",
+      "repairSuccess": "構成修復が適用されました。",
+      "repairNoChanges": "この修復には構成の変更は必要ありませんでした。",
+      "disableSuccess": "インターフェースが無効になっています。",
+      "disableFailed": "インターフェースを無効にできませんでした。",
+      "remedy": {
+        "configuration": "構成",
+        "software": "ソフトウェア",
+        "hardware": "ハードウェア"
+      },
+      "action": {
+        "repair_config": "構成を修復する",
+        "disable": "無効にする",
+        "apply_preset": "プリセットを適用する",
+        "edit": "編集インターフェース",
+        "restart_stack": "スタックを再起動します",
+        "add_auto": "自動インターフェースの追加"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP インターフェイス「{{name}}」は間違った有効化キーを使用しています。RNS はそれをロードしません。",
+        "tcp_missing_name": "TCP インターフェイス「{{name}}」には、構成に名前フィールドがありません。",
+        "tcp_unreachable": "TCP インターフェイス「{{name}}」に到達できません。",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF パラメータがプリセットと異なります。",
+        "rf_cross_mismatch": "複数の有効な RNode は異なる RF パラメータを使用します。",
+        "rf_using_fallback": "RNode \"{{name}}\" はグローバル フォールバック RF プロファイルを使用します。",
+        "rf_unknown_params": "RNode \"{{name}}\" RF パラメータは既知のプロファイルに一致しません。",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" は従来のプリセット ID を使用しています。移行を検討してください。",
+        "ghost_interface": "インターフェイス「{{name}}」は構成で有効になっていますが、RNS によってロードされていません。",
+        "missing_auto_interface": "有効な AutoInterface がありません - ローカル LAN 検出がオフになっています。",
+        "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
+        "missing_shared_instance": "共有インスタンスはオンですが、SharedInstanceServer が起動していません。",
+        "shared_instance_unexpected": "SharedInstanceServer はライブですが、share_instance はオフです。",
+        "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。"
+      }
+    }
   },
   "errorBoundary": {
     "title": "何か問題が発生しました",

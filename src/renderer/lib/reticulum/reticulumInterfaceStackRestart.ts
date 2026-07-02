@@ -12,6 +12,14 @@ export function reticulumInterfaceChangeRequiresStackRestart(
     return false;
   }
   return (
-    'serial_port' in patch || 'preset' in patch || 'callsign' in patch || 'seed_addresses' in patch
+    'serial_port' in patch ||
+    'preset' in patch ||
+    'callsign' in patch ||
+    'seed_addresses' in patch ||
+    'frequency' in patch ||
+    'bandwidth' in patch ||
+    'spreading_factor' in patch ||
+    'coding_rate' in patch ||
+    'txpower' in patch
   );
 }

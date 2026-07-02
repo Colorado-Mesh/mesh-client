@@ -672,7 +672,34 @@
       "rnodeWifiPort": "TCP 포트:",
       "rnodeWifiSetupTitle": "Wi-Fi RNode 설정",
       "rnodeWifiSetupHint": "깜박인 후 Wi-Fi가 꺼져 있음 — RNode를 먼저 프로비저닝합니다 (Reticulum → Admin → Wi-Fi 또는 AP에 연결하고 http://10.0.0.1을 엽니다). ESP32-S3 Wi-Fi 지원 펌웨어가 필요합니다.\n\n스테이션 모드 후: OLED 대체 화면, 라우터 DHCP 목록 또는 관리자 → 읽기 구성에서 IP를 찾습니다. TCP 클라이언트 인터페이스 유형이 아닌 tcp://host (기본 포트 7633) 를 사용하십시오.\n\n많은 Heltec 보드의 ~ 10 초 버튼 홀드는 Wi-Fi AP를 활성화합니다 (~ 7 초는 블루투스 페어링입니다).",
-      "localOfflineRowWifi": "Wi-Fi RNode에 연결할 수 없음 — IP, 포트 7633, 동일한 LAN 및 전원을 확인하고 DHCP 주소가 변경된 경우 관리자에게 다시 프로비저닝합니다."
+      "localOfflineRowWifi": "Wi-Fi RNode에 연결할 수 없음 — IP, 포트 7633, 동일한 LAN 및 전원을 확인하고 DHCP 주소가 변경된 경우 관리자에게 다시 프로비저닝합니다.",
+      "rfFrequencyMhz": "주파수(MHz)",
+      "rfBandwidthKhz": "대역폭(kHz)",
+      "rfSpreadingFactor": "확산 인자",
+      "rfCodingRate": "코딩율",
+      "rfTxPower": "송신 전력(dBm)",
+      "purposeAria": "인터페이스의 목적 {{name}}",
+      "runtimeBadge": "실행 시간",
+      "auditRepair": "수리하다",
+      "auditDisable": "장애를 입히다",
+      "auditRepairSuccess": "구성 복구가 적용되었습니다.",
+      "auditRepairFailed": "구성 복구에 실패했습니다.",
+      "auditRepairNoChanges": "이 수리에는 구성 변경이 필요하지 않았습니다.",
+      "purpose": {
+        "auto": "로컬 LAN 멀티캐스트 검색 — 동일한 Wi-Fi 또는 서브넷에서 다른 Reticulum 노드를 찾습니다.",
+        "sharedInstance": "공유 인스턴스가 켜져 있을 때 Localhost TCP 서버 - 이 컴퓨터의 다른 앱이 이 스택을 사용할 수 있습니다.",
+        "tcp": "원격 Reticulum 허브 또는 게이트웨이에 대한 아웃바운드 TCP 터널입니다.",
+        "rnodeUsb": "USB Rnode를 통한 LoRa 메시.",
+        "rnodeBle": "Bluetooth Rnode를 통한 LoRa 메시.",
+        "rnodeWifi": "Rnode Wi-Fi(tcp://host)를 통한 LoRa 메시.",
+        "blePeer": "시드 피어 주소를 사용하는 BLE 피어 메시.",
+        "generic": "Reticulum 네트워크 인터페이스."
+      },
+      "rfProfile": {
+        "coordinated": "지역별 조정",
+        "fallback": "전역 폴백",
+        "legacy": "레거시 사전 설정"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "미확인 MeshCore 송신기",
     "meshcoreHeardNearbyEncrypted": "근처 MeshCore RF (암호화)",
     "foreignLoraHeading": "Meshtastic 주파수의 다른 외국 LoRa ({{count}})",
-    "foreignLoraDescription": "지난 90분 동안 주파수에서 Meshtastic 송신기 및 인식할 수 없는 LoRa 신호. MeshCore 노드는 위 섹션에 나열되어 있습니다."
+    "foreignLoraDescription": "지난 90분 동안 주파수에서 Meshtastic 송신기 및 인식할 수 없는 LoRa 신호. MeshCore 노드는 위 섹션에 나열되어 있습니다.",
+    "reticulum": {
+      "sectionTitle": "Reticulum 인터페이스 구성",
+      "noIssues": "인터페이스 구성 문제가 감지되지 않았습니다.",
+      "summary": "{{errors}} 오류, {{warnings}} 경고",
+      "colInterface": "인터페이스",
+      "colIssue": "문제",
+      "colFix": "고치다",
+      "colAction": "행동",
+      "stackScope": "스택",
+      "repairFailed": "구성 복구에 실패했습니다.",
+      "repairSuccess": "구성 복구가 적용되었습니다.",
+      "repairNoChanges": "이 수리에는 구성 변경이 필요하지 않았습니다.",
+      "disableSuccess": "인터페이스가 비활성화되었습니다.",
+      "disableFailed": "인터페이스를 비활성화할 수 없습니다.",
+      "remedy": {
+        "configuration": "구성",
+        "software": "소프트웨어",
+        "hardware": "하드웨어"
+      },
+      "action": {
+        "repair_config": "구성 수리",
+        "disable": "장애를 입히다",
+        "apply_preset": "사전 설정 적용",
+        "edit": "인터페이스 수정",
+        "restart_stack": "스택 다시 시작",
+        "add_auto": "자동 인터페이스 추가"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP 인터페이스 \"{{name}}\"이 잘못된 활성화 키를 사용합니다. RNS가 이를 로드하지 않습니다.",
+        "tcp_missing_name": "TCP 인터페이스 \"{{name}}\"에 구성의 이름 필드가 없습니다.",
+        "tcp_unreachable": "TCP 인터페이스 \"{{name}}\"에 연결할 수 없습니다.",
+        "rf_preset_deviation": "Rnode \"{{name}}\" RF 매개변수가 사전 설정과 다릅니다.",
+        "rf_cross_mismatch": "여러 개의 활성화된 RNode는 서로 다른 RF 매개변수를 사용합니다.",
+        "rf_using_fallback": "RNode \"{{name}}\"은 글로벌 폴백 RF 프로필을 사용합니다.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF 매개변수가 알려진 프로필과 일치하지 않습니다.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\"은 레거시 사전 설정 ID를 사용합니다. 마이그레이션을 고려하세요.",
+        "ghost_interface": "인터페이스 \"{{name}}\"은 구성에서는 활성화되어 있지만 RNS에서는 로드되지 않습니다.",
+        "missing_auto_interface": "활성화된 AutoInterface 없음 — 로컬 LAN 검색이 꺼져 있습니다.",
+        "auto_interface_down": "AutoInterface \"{{name}}\"이(가) 활성화되었지만 작동 중지되었습니다.",
+        "missing_shared_instance": "공유 인스턴스가 켜져 있지만 SharedInstanceServer가 작동하지 않습니다.",
+        "shared_instance_unexpected": "SharedInstanceServer가 활성화되어 있지만 share_instance가 꺼져 있습니다.",
+        "runtime_only_interface": "\"{{name}}\"은 런타임 전용입니다(구성에 저장되지 않음)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "문제가 발생했습니다.",

@@ -47,6 +47,7 @@ import {
   getRecommendedAction,
   getRecommendedActionForRfCondition,
 } from '../lib/diagnostics/RemediationEngine';
+import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
@@ -55,6 +56,7 @@ import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
+import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -146,6 +148,10 @@ interface Props {
   meshtasticListenerNodeId?: number;
   /** MeshCore contacts only — used for heard-by-Meshtastic links (not merged Meshtastic nodes). */
   meshcoreNodes?: Map<number, MeshNode>;
+  /** Reticulum: switch to Connection tab for interface edit actions. */
+  onNavigateToReticulumConnection?: () => void;
+  /** Reticulum: refresh config audit rows after repair/disable. */
+  onRefreshReticulumDiagnostics?: () => void;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -171,6 +177,8 @@ export default function DiagnosticsPanel({
   protocol,
   meshtasticListenerNodeId = 0,
   meshcoreNodes = new Map(),
+  onNavigateToReticulumConnection,
+  onRefreshReticulumDiagnostics,
 }: Props) {
   const { t } = useTranslation();
   const formatRowTime = useCallback(
@@ -187,10 +195,12 @@ export default function DiagnosticsPanel({
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
   const visibleDiagnosticRows = useMemo(() => {
     if (!showLoRaMeshDiagnostics) {
-      return diagnosticRows.filter((r) => nodes.has(r.nodeId));
+      return diagnosticRows.filter(
+        (r) => isReticulumDiagnosticRow(r) || nodes.has(r.nodeId) || r.nodeId === myNodeNum,
+      );
     }
     return diagnosticRows;
-  }, [diagnosticRows, nodes, showLoRaMeshDiagnostics]);
+  }, [diagnosticRows, nodes, showLoRaMeshDiagnostics, myNodeNum]);
   const routingAnomaliesMap = useMemo(
     () => diagnosticRowsToRoutingMap(visibleDiagnosticRows),
     [visibleDiagnosticRows],
@@ -814,6 +824,19 @@ export default function DiagnosticsPanel({
       </div>
 
       {capabilities?.hasReticulumNativeDiagnostics ? <DiagnosticsPingPanel /> : null}
+
+      {capabilities?.hasReticulumNativeDiagnostics ? (
+        <div className="space-y-2">
+          <h3 className="text-muted text-sm font-medium">
+            {t('diagnosticsPanel.reticulum.sectionTitle')}
+          </h3>
+          <ReticulumDiagnosticsSection
+            rows={diagnosticRows}
+            onNavigateToConnection={onNavigateToReticulumConnection}
+            onRefreshDiagnostics={onRefreshReticulumDiagnostics}
+          />
+        </div>
+      ) : null}
 
       {diagnosticRowsRestoredAt != null &&
         showLoRaMeshDiagnostics &&

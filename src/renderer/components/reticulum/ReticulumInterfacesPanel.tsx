@@ -1,10 +1,20 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { Info } from 'lucide-react-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useToast } from '@/renderer/components/Toast';
 import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import {
+  fetchReticulumConfigAudit,
+  repairReticulumConfig,
+  type ReticulumConfigAuditIssue,
+  type ReticulumConfigRepairKind,
+} from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import { reticulumInterfaceChangeRequiresStackRestart } from '@/renderer/lib/reticulum/reticulumInterfaceStackRestart';
 import {
   classifyReticulumLocalInterface,
@@ -24,11 +34,48 @@ import type {
   ReticulumSerialPortOption,
 } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
+import { useReticulumUiStore } from '@/renderer/stores/reticulumUiStore';
+import { forceApplyReticulumRnodePresetDefaults } from '@/shared/reticulumRnodeRfProfiles';
 
 import { ConfirmModal } from '../ConfirmModal';
+import { HelpTooltip } from '../HelpTooltip';
 import { ReticulumInterfaceDevicePickerModal } from './ReticulumInterfaceDevicePickerModal';
+import {
+  hzToKhzFieldValue,
+  hzToMhzFieldValue,
+  parseKhzFieldToHz,
+  parseMhzFieldToHz,
+  type RnodeRfFieldValues,
+  RnodeRfParamFields,
+} from './RnodeRfParamFields';
 
 type ReticulumRnodeTransport = ReticulumRnodeTransportKind;
+
+interface ReticulumRnodePreset {
+  id: string;
+  label: string;
+}
+
+interface ReticulumRnodePresetGroups {
+  flat: ReticulumRnodePreset[];
+  coordinated: ReticulumRnodePreset[];
+  fallback: ReticulumRnodePreset[];
+  legacy: ReticulumRnodePreset[];
+}
+
+function parseRnodePresetWire(body: unknown): ReticulumRnodePresetGroups {
+  const wire = body as {
+    presets?: ReticulumRnodePreset[];
+    coordinated?: ReticulumRnodePreset[];
+    fallback?: ReticulumRnodePreset[];
+    legacy?: ReticulumRnodePreset[];
+  };
+  const coordinated = wire.coordinated ?? [];
+  const fallback = wire.fallback ?? [];
+  const legacy = wire.legacy ?? [];
+  const flat = wire.presets ?? [...coordinated, ...fallback, ...legacy];
+  return { flat, coordinated, fallback, legacy };
+}
 
 type ReticulumIfaceUiType =
   'tcp' | 'auto' | 'rnode' | 'udp' | 'kiss' | 'pipe' | 'i2p' | 'rnode_multi' | 'ble_peer';
@@ -54,13 +101,24 @@ export function ReticulumInterfacesPanel({
   onBeginBleConnectGrace,
 }: ReticulumInterfacesPanelProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
   const [ifaceHost, setIfaceHost] = useState('');
   const [ifacePort, setIfacePort] = useState('4242');
   const [serialPort, setSerialPort] = useState('');
   const [pipeCommand, setPipeCommand] = useState('');
-  const [presets, setPresets] = useState<{ id: string; label: string }[]>([]);
+  const [presets, setPresets] = useState<ReticulumRnodePresetGroups>({
+    flat: [],
+    coordinated: [],
+    fallback: [],
+    legacy: [],
+  });
   const [selectedPreset, setSelectedPreset] = useState('');
+  const [auditByInterfaceId, setAuditByInterfaceId] = useState<
+    Map<string, ReticulumConfigAuditIssue[]>
+  >(() => new Map());
+  const pendingInterfaceEditId = useReticulumUiStore((s) => s.pendingInterfaceEditId);
+  const clearPendingInterfaceEdit = useReticulumUiStore((s) => s.clearPendingInterfaceEdit);
   const [bleAvailable, setBleAvailable] = useState(false);
   const [rnodeTransport, setRnodeTransport] = useState<ReticulumRnodeTransport>('serial');
   const [rnodeWifiHost, setRnodeWifiHost] = useState('');
@@ -83,8 +141,7 @@ export function ReticulumInterfacesPanel({
     void window.electronAPI.reticulum
       .proxyGet('/api/v1/rnode/presets')
       .then((body) => {
-        const presetsBody = body as { presets?: { id: string; label: string }[] };
-        setPresets(presetsBody.presets ?? []);
+        setPresets(parseRnodePresetWire(body));
       })
       .catch(() => {}); // catch-no-log-ok optional RNode presets prefetch; empty presets is safe default
     void window.electronAPI.reticulum
@@ -95,6 +152,39 @@ export function ReticulumInterfacesPanel({
       })
       .catch(() => {}); // catch-no-log-ok optional BLE availability probe; false default is safe
   }, [sidecarApiReady]);
+
+  const refreshAuditIssues = useCallback(async () => {
+    if (!sidecarApiReady) {
+      setAuditByInterfaceId(new Map());
+      return;
+    }
+    try {
+      const issues = await fetchReticulumConfigAudit();
+      const map = new Map<string, ReticulumConfigAuditIssue[]>();
+      for (const issue of issues) {
+        if (!issue.interface_id) continue;
+        const list = map.get(issue.interface_id) ?? [];
+        list.push(issue);
+        map.set(issue.interface_id, list);
+      }
+      setAuditByInterfaceId(map);
+    } catch {
+      // catch-no-log-ok audit is optional UI enrichment on Connection tab
+    }
+  }, [sidecarApiReady]);
+
+  useEffect(() => {
+    void refreshAuditIssues();
+  }, [refreshAuditIssues, interfaces]);
+
+  useEffect(() => {
+    if (!pendingInterfaceEditId) return;
+    const iface = interfaces.find((row) => row.id === pendingInterfaceEditId);
+    if (iface) {
+      setEditingInterface(iface);
+      clearPendingInterfaceEdit();
+    }
+  }, [pendingInterfaceEditId, interfaces, clearPendingInterfaceEdit]);
 
   const restartStackForInterfaceChange = useCallback(async () => {
     const session = tryGetReticulumSession();
@@ -117,6 +207,33 @@ export function ReticulumInterfacesPanel({
       setRestartStackHint(true);
     }
   }, [onBeginBleConnectGrace, onRefresh, t]);
+
+  const runInterfaceAuditRepair = useCallback(
+    async (repairKind: ReticulumConfigRepairKind) => {
+      try {
+        const res = await repairReticulumConfig([repairKind]);
+        if (!res.ok) {
+          addToast(t('connectionPanel.reticulumInterfaces.auditRepairFailed'), 'error');
+          return;
+        }
+        if (!res.repaired?.length) {
+          addToast(t('connectionPanel.reticulumInterfaces.auditRepairNoChanges'), 'warning');
+          await refreshAuditIssues();
+          return;
+        }
+        addToast(t('connectionPanel.reticulumInterfaces.auditRepairSuccess'), 'success');
+        if (res.restart_required) {
+          await restartStackForInterfaceChange();
+        }
+        await onRefresh();
+        await refreshAuditIssues();
+      } catch (e) {
+        addToast(t('connectionPanel.reticulumInterfaces.auditRepairFailed'), 'error');
+        console.debug('[ReticulumInterfacesPanel] audit repair', e);
+      }
+    },
+    [onRefresh, refreshAuditIssues, restartStackForInterfaceChange, t, addToast],
+  );
 
   const handleAddInterface = async () => {
     setInterfaceError(null);
@@ -302,6 +419,14 @@ export function ReticulumInterfacesPanel({
         onSaveEdit={(id, patch) => {
           void saveEditInterface(id, patch);
         }}
+        auditByInterfaceId={auditByInterfaceId}
+        onAuditRepair={(kind) => {
+          void runInterfaceAuditRepair(kind);
+        }}
+        onAuditDisable={async (id) => {
+          await toggleInterface(id, false);
+          await refreshAuditIssues();
+        }}
       />
       {pendingDeleteInterface ? (
         <ConfirmModal
@@ -361,6 +486,7 @@ function buildInterfaceEditPatch(draft: {
   callsign: string;
   pipeCommand: string;
   seedAddresses: string;
+  rf: RnodeRfFieldValues;
 }): Record<string, unknown> {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
   if (draft.type === 'tcp' || draft.type === 'udp' || draft.type === 'i2p') {
@@ -381,11 +507,94 @@ function buildInterfaceEditPatch(draft: {
   if (draft.type === 'rnode' || draft.type === 'rnode_multi') {
     body.preset = draft.preset || null;
     body.callsign = draft.callsign.trim() || null;
+    const frequency = parseMhzFieldToHz(draft.rf.frequencyMhz);
+    const bandwidth = parseKhzFieldToHz(draft.rf.bandwidthKhz);
+    const spreadingFactor = Number.parseInt(draft.rf.spreadingFactor, 10);
+    const codingRate = Number.parseInt(draft.rf.codingRate, 10);
+    const txpower = Number.parseInt(draft.rf.txpower, 10);
+    if (frequency != null) body.frequency = frequency;
+    if (bandwidth != null) body.bandwidth = bandwidth;
+    if (Number.isFinite(spreadingFactor)) body.spreading_factor = spreadingFactor;
+    if (Number.isFinite(codingRate)) body.coding_rate = codingRate;
+    if (Number.isFinite(txpower)) body.txpower = txpower;
   }
   if (draft.type === 'pipe') {
     body.command = draft.pipeCommand.trim() || null;
   }
   return body;
+}
+
+function rfFieldsFromInterface(iface: ReticulumInterfaceRow): RnodeRfFieldValues {
+  return {
+    frequencyMhz: hzToMhzFieldValue(iface.frequency),
+    bandwidthKhz: hzToKhzFieldValue(iface.bandwidth),
+    spreadingFactor: iface.spreading_factor != null ? String(iface.spreading_factor) : '',
+    codingRate: iface.coding_rate != null ? String(iface.coding_rate) : '5',
+    txpower: iface.txpower != null ? String(iface.txpower) : '17',
+  };
+}
+
+function RnodePresetSelect({
+  value,
+  onChange,
+  presets,
+  disabled,
+  className,
+  ariaLabel,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  presets: ReticulumRnodePresetGroups;
+  disabled?: boolean;
+  className?: string;
+  ariaLabel: string;
+}) {
+  const { t } = useTranslation();
+  const grouped = presets.coordinated.length > 0;
+  return (
+    <select
+      value={value}
+      disabled={disabled}
+      onChange={(e) => {
+        onChange(e.target.value);
+      }}
+      className={className}
+      aria-label={ariaLabel}
+    >
+      <option value="">—</option>
+      {grouped ? (
+        <>
+          <optgroup label={t('connectionPanel.reticulumInterfaces.rfProfile.coordinated')}>
+            {presets.coordinated.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={t('connectionPanel.reticulumInterfaces.rfProfile.fallback')}>
+            {presets.fallback.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={t('connectionPanel.reticulumInterfaces.rfProfile.legacy')}>
+            {presets.legacy.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </optgroup>
+        </>
+      ) : (
+        presets.flat.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
+        ))
+      )}
+    </select>
+  );
 }
 
 function InterfaceEditPanel({
@@ -397,7 +606,7 @@ function InterfaceEditPanel({
   onCancel,
 }: {
   iface: ReticulumInterfaceRow;
-  presets: { id: string; label: string }[];
+  presets: ReticulumRnodePresetGroups;
   serialPorts: ReticulumSerialPortOption[];
   onPickDevice: (
     mode: 'serial' | 'ble-peer' | 'ble-rnode',
@@ -419,6 +628,7 @@ function InterfaceEditPanel({
   );
   const [preset, setPreset] = useState(iface.preset ?? '');
   const [callsign, setCallsign] = useState(iface.callsign ?? '');
+  const [rfFields, setRfFields] = useState<RnodeRfFieldValues>(() => rfFieldsFromInterface(iface));
   const [seedAddresses, setSeedAddresses] = useState((iface.seed_addresses ?? []).join(', '));
   const editUsesBleRnode = uiType === 'rnode' && isReticulumBleRnodeSerialPort(serialPort);
   const editUsesWifiRnode = uiType === 'rnode' && isReticulumTcpRnodeSerialPort(serialPort);
@@ -542,21 +752,33 @@ function InterfaceEditPanel({
             ) : null}
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.preset')}
-              <select
+              <RnodePresetSelect
                 value={preset}
-                onChange={(e) => {
-                  setPreset(e.target.value);
+                onChange={(value) => {
+                  setPreset(value);
+                  if (!value) return;
+                  const defaults = forceApplyReticulumRnodePresetDefaults(value);
+                  if (!defaults) return;
+                  setRfFields({
+                    frequencyMhz: hzToMhzFieldValue(defaults.frequency),
+                    bandwidthKhz: hzToKhzFieldValue(defaults.bandwidth),
+                    spreadingFactor: String(defaults.spreading_factor),
+                    codingRate: String(defaults.coding_rate),
+                    txpower: String(defaults.txpower),
+                  });
                 }}
+                presets={presets}
                 className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
-              >
-                <option value="">—</option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+                ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
+              />
             </label>
+            <RnodeRfParamFields
+              idPrefix={`edit-${iface.id}`}
+              values={rfFields}
+              onChange={(patch) => {
+                setRfFields((prev) => ({ ...prev, ...patch }));
+              }}
+            />
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.callsign')}
               <input
@@ -628,6 +850,7 @@ function InterfaceEditPanel({
                 callsign,
                 pipeCommand: '',
                 seedAddresses,
+                rf: rfFields,
               }),
             );
           }}
@@ -683,6 +906,9 @@ function InterfacesSection({
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
+  auditByInterfaceId,
+  onAuditRepair,
+  onAuditDisable,
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
@@ -694,7 +920,7 @@ function InterfacesSection({
   serialPort: string;
   pipeCommand: string;
   selectedPreset: string;
-  presets: { id: string; label: string }[];
+  presets: ReticulumRnodePresetGroups;
   serialPorts: ReticulumSerialPortOption[];
   bleAvailable: boolean;
   rnodeTransport: ReticulumRnodeTransport;
@@ -722,8 +948,12 @@ function InterfacesSection({
   onStartEdit: (iface: ReticulumInterfaceRow) => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string, patch: Record<string, unknown>) => void;
+  auditByInterfaceId: Map<string, ReticulumConfigAuditIssue[]>;
+  onAuditRepair: (kind: ReticulumConfigRepairKind) => void;
+  onAuditDisable: (id: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const purposeIconTrigger = useIconTrigger();
   const showHostPort = ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p';
   const showSerial = ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss';
   const showRnodePreset = ifaceType === 'rnode' || ifaceType === 'rnode_multi';
@@ -861,21 +1091,14 @@ function InterfacesSection({
           {showRnodePreset && showRnodeWifi ? (
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.preset')}
-              <select
+              <RnodePresetSelect
                 value={selectedPreset}
+                onChange={onSelectedPresetChange}
+                presets={presets}
                 disabled={actionsDisabled}
-                onChange={(e) => {
-                  onSelectedPresetChange(e.target.value);
-                }}
                 className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-              >
-                <option value="">—</option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+                ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
+              />
             </label>
           ) : null}
           {showHostPort ? (
@@ -954,21 +1177,14 @@ function InterfacesSection({
               {showRnodePreset ? (
                 <label className="text-xs text-gray-400">
                   {t('connectionPanel.reticulumInterfaces.preset')}
-                  <select
+                  <RnodePresetSelect
                     value={selectedPreset}
+                    onChange={onSelectedPresetChange}
+                    presets={presets}
                     disabled={actionsDisabled}
-                    onChange={(e) => {
-                      onSelectedPresetChange(e.target.value);
-                    }}
                     className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                  >
-                    <option value="">—</option>
-                    {presets.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
+                    ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
+                  />
                 </label>
               ) : null}
             </>
@@ -1038,59 +1254,138 @@ function InterfacesSection({
           ) : (
             interfaces.map((iface) => {
               const rowReason = localRowReason(iface);
-              const rowBorder = rowReason != null ? 'border-red-800/60' : 'border-gray-700/60';
+              const help = getReticulumInterfaceHelp(iface);
+              const auditIssues = auditByInterfaceId.get(iface.id) ?? [];
+              const primaryAudit =
+                auditIssues.find((issue) => issue.severity !== 'info') ?? auditIssues[0];
+              const rowBorder =
+                rowReason != null || primaryAudit?.severity === 'error'
+                  ? 'border-red-800/60'
+                  : primaryAudit?.severity === 'warning'
+                    ? 'border-amber-700/50'
+                    : 'border-gray-700/60';
+              const repairKind = primaryAudit?.repair_kind as ReticulumConfigRepairKind | undefined;
               return (
                 <li
                   key={iface.id}
                   className={`flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 ${rowBorder}`}
                 >
-                  <span>
-                    <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
-                      {iface.name} ({iface.type}) — {iface.status}
+                  <span className="min-w-0 flex-1">
+                    <span className="inline-flex flex-wrap items-center gap-1.5">
+                      <span className={reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)}>
+                        {iface.name} ({iface.type}) — {iface.status}
+                      </span>
+                      <HelpTooltip
+                        text={t(help.purposeKey)}
+                        ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {
+                          name: iface.name,
+                        })}
+                        className="text-muted hover:text-gray-200"
+                      >
+                        <Info
+                          aria-hidden
+                          className="h-3.5 w-3.5"
+                          trigger={purposeIconTrigger}
+                          size={14}
+                        />
+                      </HelpTooltip>
+                      {help.isRuntimeOnly ? (
+                        <span className="text-muted text-[10px] tracking-wide uppercase">
+                          {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
+                        </span>
+                      ) : null}
                     </span>
                     {rowReason ? (
                       <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
                     ) : null}
+                    {primaryAudit ? (
+                      <span
+                        className={`mt-0.5 block text-xs ${
+                          primaryAudit.severity === 'error'
+                            ? 'text-red-300/90'
+                            : primaryAudit.severity === 'warning'
+                              ? 'text-amber-300/90'
+                              : 'text-blue-300/80'
+                        }`}
+                      >
+                        {t(`diagnosticsPanel.reticulum.audit.${primaryAudit.kind}`, {
+                          name: primaryAudit.interface_name ?? iface.name,
+                          message: primaryAudit.message,
+                        })}
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={actionsDisabled}
-                      onClick={() => {
-                        onStartEdit(iface);
-                      }}
-                      className="text-xs text-sky-400 hover:underline disabled:opacity-40"
-                      aria-label={t('connectionPanel.reticulumInterfaces.edit', {
-                        name: iface.name,
-                      })}
-                    >
-                      {t('connectionPanel.reticulumInterfaces.edit')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionsDisabled}
-                      onClick={() => {
-                        onToggle(iface.id, !iface.enabled, iface.type);
-                      }}
-                      className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                    >
-                      {iface.enabled
-                        ? t('connectionPanel.reticulumInterfaces.disable')
-                        : t('connectionPanel.reticulumInterfaces.enable')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionsDisabled}
-                      onClick={() => {
-                        onDelete(iface.id, iface.name);
-                      }}
-                      className="text-xs text-red-400 hover:underline disabled:opacity-40"
-                      aria-label={t('connectionPanel.reticulumInterfaces.delete', {
-                        name: iface.name,
-                      })}
-                    >
-                      {t('connectionPanel.reticulumInterfaces.delete')}
-                    </button>
+                  <span className="flex flex-wrap items-center gap-3">
+                    {repairKind === 'repair_config' ||
+                    repairKind === 'apply_preset' ||
+                    repairKind === 'add_auto' ? (
+                      <button
+                        type="button"
+                        disabled={actionsDisabled}
+                        onClick={() => {
+                          onAuditRepair(repairKind);
+                        }}
+                        className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                      >
+                        {t('connectionPanel.reticulumInterfaces.auditRepair')}
+                      </button>
+                    ) : null}
+                    {repairKind === 'disable' ? (
+                      <button
+                        type="button"
+                        disabled={actionsDisabled}
+                        onClick={() => {
+                          void onAuditDisable(iface.id);
+                        }}
+                        className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                      >
+                        {t('connectionPanel.reticulumInterfaces.auditDisable')}
+                      </button>
+                    ) : null}
+                    {!help.isSystemManaged ? (
+                      <button
+                        type="button"
+                        disabled={actionsDisabled}
+                        onClick={() => {
+                          onStartEdit(iface);
+                        }}
+                        className="text-xs text-sky-400 hover:underline disabled:opacity-40"
+                        aria-label={t('connectionPanel.reticulumInterfaces.edit', {
+                          name: iface.name,
+                        })}
+                      >
+                        {t('connectionPanel.reticulumInterfaces.edit')}
+                      </button>
+                    ) : null}
+                    {!help.isSystemManaged ? (
+                      <button
+                        type="button"
+                        disabled={actionsDisabled}
+                        onClick={() => {
+                          onToggle(iface.id, !iface.enabled, iface.type);
+                        }}
+                        className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                      >
+                        {iface.enabled
+                          ? t('connectionPanel.reticulumInterfaces.disable')
+                          : t('connectionPanel.reticulumInterfaces.enable')}
+                      </button>
+                    ) : null}
+                    {!help.isSystemManaged ? (
+                      <button
+                        type="button"
+                        disabled={actionsDisabled}
+                        onClick={() => {
+                          onDelete(iface.id, iface.name);
+                        }}
+                        className="text-xs text-red-400 hover:underline disabled:opacity-40"
+                        aria-label={t('connectionPanel.reticulumInterfaces.delete', {
+                          name: iface.name,
+                        })}
+                      >
+                        {t('connectionPanel.reticulumInterfaces.delete')}
+                      </button>
+                    ) : null}
                   </span>
                 </li>
               );

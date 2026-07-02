@@ -672,7 +672,34 @@
       "rnodeWifiPort": "port TCP",
       "rnodeWifiSetupTitle": "Configuration Wi-Fi RNode",
       "rnodeWifiSetupHint": "Le Wi-Fi est désactivé après avoir clignoté — provisionnez d'abord le RNode (→Wi-Fi Reticulum → Admin, ou rejoignez son AP et ouvrez http://10.0.0.1). Nécessite un micrologiciel compatible Wi-Fi ESP32-S3.\n\nAprès le mode station : recherchez l'adresse IP sur l'écran de remplacement OLED, la liste DHCP de votre routeur ou la configuration Admin → Read. Utilisez tcp ://host (port par défaut 7633) — pas le type d'interface client TCP.\n\n~10 s de maintien de bouton sur de nombreuses cartes Heltec permettent le Wi-Fi AP (~7 s est l'appairage Bluetooth).",
-      "localOfflineRowWifi": "Noeud RNoeud Wi-Fi inaccessible — vérifiez l'IP, le port 7633, le même LAN et l'alimentation ; réapprovisionnez dans Admin si l'adresse DHCP a changé."
+      "localOfflineRowWifi": "Noeud RNoeud Wi-Fi inaccessible — vérifiez l'IP, le port 7633, le même LAN et l'alimentation ; réapprovisionnez dans Admin si l'adresse DHCP a changé.",
+      "rfFrequencyMhz": "Fréquence (MHz)",
+      "rfBandwidthKhz": "Bande passante (kHz)",
+      "rfSpreadingFactor": "Facteur de propagation",
+      "rfCodingRate": "Taux de codage",
+      "rfTxPower": "Puissance d'émission (dBm)",
+      "purposeAria": "Objectif de l'interface {{name}}",
+      "runtimeBadge": "Durée d'exécution",
+      "auditRepair": "Réparation",
+      "auditDisable": "Désactiver",
+      "auditRepairSuccess": "Réparation de la configuration appliquée.",
+      "auditRepairFailed": "La réparation de la configuration a échoué.",
+      "auditRepairNoChanges": "Aucune modification de configuration n’a été nécessaire pour cette réparation.",
+      "purpose": {
+        "auto": "Découverte de multidiffusion LAN local : recherche d'autres nœuds Reticulum sur le même Wi-Fi ou sous-réseau.",
+        "sharedInstance": "Serveur TCP Localhost lorsque l'instance de partage est activée : permet aux autres applications sur cette machine d'utiliser cette pile.",
+        "tcp": "Tunnel TCP sortant vers un hub ou une passerelle Reticulum distant.",
+        "rnodeUsb": "Maille LoRa via USB RNode.",
+        "rnodeBle": "Maillage LoRa via Bluetooth RNode.",
+        "rnodeWifi": "Maillage LoRa via RNode Wi-Fi (hôte tcp://).",
+        "blePeer": "Maillage d’homologues BLE utilisant des adresses d’homologues de départ.",
+        "generic": "Interface réseau Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Coordination régionale",
+        "fallback": "Repli global",
+        "legacy": "Préréglages hérités"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Émetteur MeshCore non identifié",
     "meshcoreHeardNearbyEncrypted": "RF MeshCore à proximité (crypté)",
     "foreignLoraHeading": "Autre LoRa étrangère sur votre fréquence Meshtastic ({{count}})",
-    "foreignLoraDescription": "Émetteurs Meshtastic et signaux LoRa non reconnus sur votre fréquence au cours des 90 dernières minutes. Les nœuds MeshCore sont répertoriés dans la section ci-dessus."
+    "foreignLoraDescription": "Émetteurs Meshtastic et signaux LoRa non reconnus sur votre fréquence au cours des 90 dernières minutes. Les nœuds MeshCore sont répertoriés dans la section ci-dessus.",
+    "reticulum": {
+      "sectionTitle": "Configuration de l'interface Reticulum",
+      "noIssues": "Aucun problème de configuration d'interface détecté.",
+      "summary": "Erreurs {{errors}}, avertissements {{warnings}}",
+      "colInterface": "Interface",
+      "colIssue": "Problème",
+      "colFix": "Réparer",
+      "colAction": "Action",
+      "stackScope": "Empiler",
+      "repairFailed": "La réparation de la configuration a échoué.",
+      "repairSuccess": "Réparation de la configuration appliquée.",
+      "repairNoChanges": "Aucune modification de configuration n’a été nécessaire pour cette réparation.",
+      "disableSuccess": "Interface désactivée.",
+      "disableFailed": "Impossible de désactiver l'interface.",
+      "remedy": {
+        "configuration": "Configuration",
+        "software": "Logiciel",
+        "hardware": "Matériel"
+      },
+      "action": {
+        "repair_config": "Réparer la configuration",
+        "disable": "Désactiver",
+        "apply_preset": "Appliquer le préréglage",
+        "edit": "Modifier l'interface",
+        "restart_stack": "Redémarrer la pile",
+        "add_auto": "Ajouter une interface automatique"
+      },
+      "audit": {
+        "tcp_enable_key": "L'interface TCP \"{{name}}\" utilise la mauvaise clé d'activation — RNS ne la chargera pas.",
+        "tcp_missing_name": "Il manque un champ de nom dans l'interface TCP \"{{name}}\" dans la configuration.",
+        "tcp_unreachable": "L'interface TCP \"{{name}}\" est inaccessible.",
+        "rf_preset_deviation": "Les paramètres RF du RNode \"{{name}}\" diffèrent de son préréglage.",
+        "rf_cross_mismatch": "Plusieurs RNodes activés utilisent différents paramètres RF.",
+        "rf_using_fallback": "Le RNode « {{name}} » utilise un profil RF de repli global.",
+        "rf_unknown_params": "Les paramètres RF du RNode \"{{name}}\" ne correspondent à aucun profil connu.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" utilise un identifiant prédéfini existant : envisagez de migrer.",
+        "ghost_interface": "L'interface \"{{name}}\" est activée dans la configuration mais n'est pas chargée par RNS.",
+        "missing_auto_interface": "Aucune interface automatique activée : la découverte du réseau local local est désactivée.",
+        "auto_interface_down": "L'interface automatique \"{{name}}\" est activée mais désactivée.",
+        "missing_shared_instance": "L'instance de partage est activée mais SharedInstanceServer n'est pas activé.",
+        "shared_instance_unexpected": "SharedInstanceServer est en ligne mais share_instance est désactivé.",
+        "runtime_only_interface": "\"{{name}}\" est uniquement destiné à l'exécution (non stocké dans la configuration)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Quelque chose s'est mal passé",

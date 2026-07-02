@@ -672,7 +672,34 @@
       "rnodeWifiPort": "TCP-poort",
       "rnodeWifiSetupTitle": "Wi-Fi RNode instellen",
       "rnodeWifiSetupHint": "Wi-Fi is uitgeschakeld na het knipperen — voorzie eerst de RNode (Reticulum → Admin → Wi-Fi, of sluit je aan bij de AP en open http://10.0.0.1). Vereist ESP32-S3 Wi-Fi-compatibele firmware.\n\nNa zendermodus: zoek het IP-adres op het OLED-alternatieve scherm, uw router-DHCP-lijst of Admin → Read-configuratie. Gebruik tcp://host (standaardpoort 7633) — niet het TCP Client-interfacetype.\n\n~10 s knop ingedrukt houden op veel Heltec-borden maakt Wi-Fi AP mogelijk (~7 s is Bluetooth-koppeling).",
-      "localOfflineRowWifi": "Wi-Fi RNode onbereikbaar — verifieer IP, poort 7633, hetzelfde LAN en stroom; opnieuw instellen in Admin als het DHCP-adres is gewijzigd."
+      "localOfflineRowWifi": "Wi-Fi RNode onbereikbaar — verifieer IP, poort 7633, hetzelfde LAN en stroom; opnieuw instellen in Admin als het DHCP-adres is gewijzigd.",
+      "rfFrequencyMhz": "Frequentie (MHz)",
+      "rfBandwidthKhz": "Bandbreedte (kHz)",
+      "rfSpreadingFactor": "Spreidingsfactor",
+      "rfCodingRate": "Codeersnelheid",
+      "rfTxPower": "TX-vermogen (dBm)",
+      "purposeAria": "Doel van interface {{name}}",
+      "runtimeBadge": "Looptijd",
+      "auditRepair": "Reparatie",
+      "auditDisable": "Uitzetten",
+      "auditRepairSuccess": "Configuratiereparatie toegepast.",
+      "auditRepairFailed": "Configuratieherstel is mislukt.",
+      "auditRepairNoChanges": "Voor deze reparatie waren geen configuratiewijzigingen nodig.",
+      "purpose": {
+        "auto": "Lokale LAN-multicast-detectie: vindt andere Reticulum-knooppunten op hetzelfde Wi-Fi- of subnet.",
+        "sharedInstance": "Localhost TCP-server wanneer Share-instantie is ingeschakeld: laat andere apps op deze machine deze stapel gebruiken.",
+        "tcp": "Uitgaande TCP-tunnel naar een externe Reticulum-hub of gateway.",
+        "rnodeUsb": "LoRa-mesh via USB RNode.",
+        "rnodeBle": "LoRa-mesh via Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp://host).",
+        "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
+        "generic": "Reticulum-netwerkinterface."
+      },
+      "rfProfile": {
+        "coordinated": "Regionaal gecoördineerd",
+        "fallback": "Mondiale terugval",
+        "legacy": "Verouderde voorinstellingen"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Ongeïdentificeerde MeshCore-zender",
     "meshcoreHeardNearbyEncrypted": "Nabij MeshCore RF (versleuteld)",
     "foreignLoraHeading": "Andere buitenlandse LoRa op je Meshtastic-frequentie ({{count}})",
-    "foreignLoraDescription": "Meshtastic zenders en niet-herkende LoRa-signalen op uw frequentie in de afgelopen 90 minuten. MeshCore-knooppunten worden vermeld in het bovenstaande gedeelte."
+    "foreignLoraDescription": "Meshtastic zenders en niet-herkende LoRa-signalen op uw frequentie in de afgelopen 90 minuten. MeshCore-knooppunten worden vermeld in het bovenstaande gedeelte.",
+    "reticulum": {
+      "sectionTitle": "Reticulum-interfaceconfiguratie",
+      "noIssues": "Er zijn geen problemen met de interfaceconfiguratie gedetecteerd.",
+      "summary": "{{errors}} fouten, {{warnings}} waarschuwingen",
+      "colInterface": "Interface",
+      "colIssue": "Probleem",
+      "colFix": "Repareren",
+      "colAction": "Actie",
+      "stackScope": "Stapel",
+      "repairFailed": "Configuratieherstel is mislukt.",
+      "repairSuccess": "Configuratiereparatie toegepast.",
+      "repairNoChanges": "Voor deze reparatie waren geen configuratiewijzigingen nodig.",
+      "disableSuccess": "Interface uitgeschakeld.",
+      "disableFailed": "Kan de interface niet uitschakelen.",
+      "remedy": {
+        "configuration": "Configuratie",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Reparatieconfiguratie",
+        "disable": "Uitzetten",
+        "apply_preset": "Voorinstelling toepassen",
+        "edit": "Bewerkingsinterface",
+        "restart_stack": "Start de stapel opnieuw",
+        "add_auto": "Automatische interface toevoegen"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP-interface \"{{name}}\" gebruikt de verkeerde inschakelsleutel - RNS zal deze niet laden.",
+        "tcp_missing_name": "TCP-interface \"{{name}}\" mist een naamveld in config.",
+        "tcp_unreachable": "TCP-interface \"{{name}}\" is onbereikbaar.",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF-parameters verschillen van de preset.",
+        "rf_cross_mismatch": "Meerdere ingeschakelde RNodes gebruiken verschillende RF-parameters.",
+        "rf_using_fallback": "RNode \"{{name}}\" gebruikt een globaal RF-fallback-profiel.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF-parameters komen overeen met geen bekend profiel.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" gebruikt een verouderde vooraf ingestelde ID. Overweeg om te migreren.",
+        "ghost_interface": "Interface \"{{name}}\" is ingeschakeld in de configuratie, maar niet geladen door RNS.",
+        "missing_auto_interface": "Geen ingeschakelde AutoInterface: lokale LAN-detectie is uitgeschakeld.",
+        "auto_interface_down": "AutoInterface \"{{name}}\" is ingeschakeld maar uitgeschakeld.",
+        "missing_shared_instance": "Share-instantie is ingeschakeld, maar SharedInstanceServer is niet actief.",
+        "shared_instance_unexpected": "SharedInstanceServer is live, maar share_instance is uitgeschakeld.",
+        "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",

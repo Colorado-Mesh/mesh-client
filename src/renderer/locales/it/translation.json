@@ -672,7 +672,34 @@
       "rnodeWifiPort": "Porta TCP",
       "rnodeWifiSetupTitle": "Configurazione Wi-Fi RNode",
       "rnodeWifiSetupHint": "Il Wi-Fi è spento dopo il lampeggio: eseguire prima il provisioning dell'RNode (Reticulum → Admin → Wi-Fi, o unirsi al suo AP e aprire http://10.0.0.1). Richiede firmware con funzionalità Wi-Fi ESP32-S3.\n\nDopo la modalità stazione: trova l'IP sullo schermo alternativo OLED, l'elenco DHCP del router o la configurazione di → lettura amministratore. Utilizzare tcp://host (porta predefinita 7633) — non il tipo di interfaccia TCP Client.\n\nIl pulsante ~10 s su molte schede Heltec abilita l'AP Wi-Fi (~7 s è l'accoppiamento Bluetooth).",
-      "localOfflineRowWifi": "Wi-Fi RNode non raggiungibile: verificare IP, porta 7633, stessa LAN e alimentazione; eseguire nuovamente il provisioning in Admin se l'indirizzo DHCP è cambiato."
+      "localOfflineRowWifi": "Wi-Fi RNode non raggiungibile: verificare IP, porta 7633, stessa LAN e alimentazione; eseguire nuovamente il provisioning in Admin se l'indirizzo DHCP è cambiato.",
+      "rfFrequencyMhz": "Frequenza (MHz)",
+      "rfBandwidthKhz": "Larghezza di banda (kHz)",
+      "rfSpreadingFactor": "Fattore di diffusione",
+      "rfCodingRate": "Tasso di codifica",
+      "rfTxPower": "Potenza TX (dBm)",
+      "purposeAria": "Scopo dell'interfaccia {{name}}",
+      "runtimeBadge": "Durata",
+      "auditRepair": "Riparazione",
+      "auditDisable": "Disabilita",
+      "auditRepairSuccess": "Riparazione della configurazione applicata.",
+      "auditRepairFailed": "La riparazione della configurazione non è riuscita.",
+      "auditRepairNoChanges": "Non sono state necessarie modifiche alla configurazione per questa riparazione.",
+      "purpose": {
+        "auto": "Rilevamento multicast LAN locale: trova altri nodi Reticulum sulla stessa Wi-Fi o sottorete.",
+        "sharedInstance": "Server TCP localhost quando l'istanza di condivisione è attiva: consente ad altre app su questo computer di utilizzare questo stack.",
+        "tcp": "Tunnel TCP in uscita verso un hub o gateway Reticulum remoto.",
+        "rnodeUsb": "Mesh LoRa tramite USB RNode.",
+        "rnodeBle": "Mesh LoRa tramite Bluetooth RNode.",
+        "rnodeWifi": "Mesh LoRa tramite RNode Wi-Fi (tcp:// host).",
+        "blePeer": "Mesh peer BLE che utilizza indirizzi peer seed.",
+        "generic": "Interfaccia di rete Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Coordinamento regionale",
+        "fallback": "Ripiego globale",
+        "legacy": "Preimpostazioni legacy"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Trasmettitore MeshCore non identificato",
     "meshcoreHeardNearbyEncrypted": "MeshCore RF nelle vicinanze (crittografato)",
     "foreignLoraHeading": "Altri LoRa stranieri sulla tua frequenza Meshtastic ({{count}})",
-    "foreignLoraDescription": "Trasmettitori Meshtastic e segnali LoRa non riconosciuti sulla tua frequenza negli ultimi 90 minuti. I nodi MeshCore sono elencati nella sezione precedente."
+    "foreignLoraDescription": "Trasmettitori Meshtastic e segnali LoRa non riconosciuti sulla tua frequenza negli ultimi 90 minuti. I nodi MeshCore sono elencati nella sezione precedente.",
+    "reticulum": {
+      "sectionTitle": "Configurazione interfaccia Reticulum",
+      "noIssues": "Nessun problema di configurazione dell'interfaccia rilevato.",
+      "summary": "{{errors}} errori, {{warnings}} avvisi",
+      "colInterface": "Interfaccia",
+      "colIssue": "Problema",
+      "colFix": "Aggiustare",
+      "colAction": "Azione",
+      "stackScope": "Pila",
+      "repairFailed": "La riparazione della configurazione non è riuscita.",
+      "repairSuccess": "Riparazione della configurazione applicata.",
+      "repairNoChanges": "Non sono state necessarie modifiche alla configurazione per questa riparazione.",
+      "disableSuccess": "Interfaccia disabilitata.",
+      "disableFailed": "Impossibile disattivare l'interfaccia.",
+      "remedy": {
+        "configuration": "Configurazione",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Ripara configurazione",
+        "disable": "Disabilita",
+        "apply_preset": "Applica preimpostazione",
+        "edit": "Modifica interfaccia",
+        "restart_stack": "Riavvia lo stack",
+        "add_auto": "Aggiungi l'interfaccia automatica"
+      },
+      "audit": {
+        "tcp_enable_key": "L'interfaccia TCP \"{{name}}\" utilizza la chiave di abilitazione errata: RNS non la caricherà.",
+        "tcp_missing_name": "Nell'interfaccia TCP \"{{name}}\" manca un campo nome nella configurazione.",
+        "tcp_unreachable": "L'interfaccia TCP \"{{name}}\" non è raggiungibile.",
+        "rf_preset_deviation": "I parametri RF del nodo \"{{name}}\" differiscono da quelli preimpostati.",
+        "rf_cross_mismatch": "Più RNodi abilitati utilizzano parametri RF diversi.",
+        "rf_using_fallback": "Il nodo \"{{name}}\" utilizza un profilo RF di fallback globale.",
+        "rf_unknown_params": "I parametri RF del nodo \"{{name}}\" non corrispondono ad alcun profilo noto.",
+        "rf_legacy_preset_id": "Il nodo \"{{name}}\" utilizza un ID preimpostato legacy: considera la migrazione.",
+        "ghost_interface": "L'interfaccia \"{{name}}\" è abilitata nella configurazione ma non caricata da RNS.",
+        "missing_auto_interface": "Nessuna interfaccia automatica abilitata: il rilevamento della LAN locale è disattivato.",
+        "auto_interface_down": "AutoInterface \"{{name}}\" è abilitata ma inattiva.",
+        "missing_shared_instance": "L'istanza di condivisione è attiva ma SharedInstanceServer non è attivo.",
+        "shared_instance_unexpected": "SharedInstanceServer è attivo ma share_instance è disattivato.",
+        "runtime_only_interface": "\"{{name}}\" è solo runtime (non memorizzato nella configurazione)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Qualcosa è andato storto",

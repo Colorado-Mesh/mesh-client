@@ -672,7 +672,34 @@
       "rnodeWifiPort": "Порт TCP",
       "rnodeWifiSetupTitle": "Налаштування Wi-Fi RNode",
       "rnodeWifiSetupHint": "Wi-Fi вимкнено після миготіння — спочатку налаштуйте RNode (Reticulum → Admin → Wi-Fi або приєднайтеся до його точки доступу та відкрийте http://10.0.0.1). Потрібна прошивка з підтримкою Wi-Fi ESP32-S3.\n\nПісля режиму станції: знайдіть IP-адресу на альтернативному екрані OLED, списку DHCP маршрутизатора або Admin → Read config. Використовуйте tcp://host (порт за замовчуванням 7633) — не тип інтерфейсу TCP Client.\n\n~10 с утримування кнопки на багатьох платах Heltec вмикає Wi-Fi AP (~7 с — це з'єднання Bluetooth).",
-      "localOfflineRowWifi": "Вузол Wi-Fi RNode недоступний — перевірте IP-адресу, порт 7633, таку саму локальну мережу та живлення; повторно надайте в Адміністраторі, якщо адреса DHCP змінилася."
+      "localOfflineRowWifi": "Вузол Wi-Fi RNode недоступний — перевірте IP-адресу, порт 7633, таку саму локальну мережу та живлення; повторно надайте в Адміністраторі, якщо адреса DHCP змінилася.",
+      "rfFrequencyMhz": "Частота (МГц)",
+      "rfBandwidthKhz": "Смуга пропускання (кГц)",
+      "rfSpreadingFactor": "Фактор поширення",
+      "rfCodingRate": "Швидкість кодування",
+      "rfTxPower": "Потужність передачі (дБм)",
+      "purposeAria": "Призначення інтерфейсу {{name}}",
+      "runtimeBadge": "Час виконання",
+      "auditRepair": "Ремонт",
+      "auditDisable": "Вимкнути",
+      "auditRepairSuccess": "Застосовано відновлення конфігурації.",
+      "auditRepairFailed": "Помилка відновлення конфігурації.",
+      "auditRepairNoChanges": "Для цього ремонту не потрібно було змінювати конфігурацію.",
+      "purpose": {
+        "auto": "Виявлення групової розсилки локальної локальної мережі — знаходить інші вузли Reticulum у тій самій Wi-Fi або підмережі.",
+        "sharedInstance": "TCP-сервер Localhost, коли екземпляр Share увімкнено — дозволяє іншим програмам на цій машині використовувати цей стек.",
+        "tcp": "Вихідний тунель TCP до віддаленого концентратора або шлюзу Reticulum.",
+        "rnodeUsb": "Сітка LoRa через USB RNode.",
+        "rnodeBle": "Сітка LoRa через Bluetooth RNode.",
+        "rnodeWifi": "Сітка LoRa через RNode Wi-Fi (tcp:// host).",
+        "blePeer": "Однорангова сітка BLE з використанням початкових однорангових адрес.",
+        "generic": "Мережевий інтерфейс Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Узгоджена обл",
+        "fallback": "Глобальний запасний варіант",
+        "legacy": "Застарілі пресети"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Неідентифікований передавач MeshCore",
     "meshcoreHeardNearbyEncrypted": "Поруч MeshCore RF (зашифровано)",
     "foreignLoraHeading": "Інший іноземний LoRa на вашій частоті Meshtastic ({{count}})",
-    "foreignLoraDescription": "Meshtastic передавачі та нерозпізнані сигнали LoRa на вашій частоті за останні 90 хвилин. Вузли MeshCore перераховані в розділі вище."
+    "foreignLoraDescription": "Meshtastic передавачі та нерозпізнані сигнали LoRa на вашій частоті за останні 90 хвилин. Вузли MeshCore перераховані в розділі вище.",
+    "reticulum": {
+      "sectionTitle": "Конфігурація інтерфейсу Reticulum",
+      "noIssues": "Проблем із конфігурацією інтерфейсу не виявлено.",
+      "summary": "{{errors}} помилок, {{warnings}} попереджень",
+      "colInterface": "Інтерфейс",
+      "colIssue": "Випуск",
+      "colFix": "Виправити",
+      "colAction": "Дія",
+      "stackScope": "Стек",
+      "repairFailed": "Помилка відновлення конфігурації.",
+      "repairSuccess": "Застосовано відновлення конфігурації.",
+      "repairNoChanges": "Для цього ремонту не потрібно було змінювати конфігурацію.",
+      "disableSuccess": "Інтерфейс вимкнено.",
+      "disableFailed": "Не вдалося вимкнути інтерфейс.",
+      "remedy": {
+        "configuration": "Конфігурація",
+        "software": "програмне забезпечення",
+        "hardware": "Обладнання"
+      },
+      "action": {
+        "repair_config": "Ремонт конфігурації",
+        "disable": "Вимкнути",
+        "apply_preset": "Застосувати попередні налаштування",
+        "edit": "Редагувати інтерфейс",
+        "restart_stack": "Перезапустити стек",
+        "add_auto": "Додати автоматичний інтерфейс"
+      },
+      "audit": {
+        "tcp_enable_key": "Інтерфейс TCP \"{{name}}\" використовує неправильний ключ увімкнення — RNS не завантажить його.",
+        "tcp_missing_name": "У конфігурації інтерфейсу TCP \"{{name}}\" відсутнє поле імені.",
+        "tcp_unreachable": "Інтерфейс TCP \"{{name}}\" недоступний.",
+        "rf_preset_deviation": "РЧ-параметри RNode \"{{name}}\" відрізняються від попередньо встановлених.",
+        "rf_cross_mismatch": "Кілька включених RNodes використовують різні радіочастотні параметри.",
+        "rf_using_fallback": "RNode \"{{name}}\" використовує глобальний резервний RF-профіль.",
+        "rf_unknown_params": "РЧ-параметри RNode \"{{name}}\" не відповідають відомому профілю.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" використовує застарілий попередньо встановлений ідентифікатор — розгляньте можливість міграції.",
+        "ghost_interface": "Інтерфейс \"{{name}}\" увімкнено в конфігурації, але не завантажується RNS.",
+        "missing_auto_interface": "Автоінтерфейс не ввімкнено — виявлення локальної мережі вимкнено.",
+        "auto_interface_down": "Автоінтерфейс \"{{name}}\" увімкнено, але не працює.",
+        "missing_shared_instance": "Спільний екземпляр увімкнено, але SharedInstanceServer не працює.",
+        "shared_instance_unexpected": "SharedInstanceServer працює, але share_instance вимкнено.",
+        "runtime_only_interface": "\"{{name}}\" лише для виконання (не зберігається в конфігурації)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Щось пішло не так",

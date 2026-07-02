@@ -293,9 +293,14 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         order: Vec::new(),
     };
     block.set("type", &ui_type_to_config(&row.iface_type));
-    block.set("enabled", &bool_to_ini(row.enabled));
+    if row.iface_type == "tcp" || row.iface_type == "udp" {
+        block.set("interface_enabled", &bool_to_ini(row.enabled));
+        block.set("name", &row.name);
+    } else {
+        block.set("enabled", &bool_to_ini(row.enabled));
+    }
 
-    if row.iface_type == "tcp" {
+    if row.iface_type == "tcp" || row.iface_type == "udp" {
         if let Some(host) = &row.host {
             block.set("target_host", host);
         }
@@ -417,6 +422,8 @@ pub fn update_interface_in_config(
     let mut row = interface_block_to_row(&parsed.interfaces[idx])
         .ok_or_else(|| format!("interface not found or unsupported: {id}"))?;
 
+    let preset_before = row.preset.clone();
+
     if let Some(v) = &patch.name {
         row.name = v.clone();
     }
@@ -467,7 +474,12 @@ pub fn update_interface_in_config(
         row.seed_addresses = patch.seed_addresses.clone().unwrap_or_default();
     }
 
-    apply_preset_defaults(&mut row);
+    let preset_changed = patch.preset.is_some() && patch.preset != preset_before;
+    if preset_changed {
+        crate::stack::rf_profiles::force_apply_profile_defaults_to_row(&mut row);
+    } else {
+        apply_preset_defaults(&mut row);
+    }
 
     parsed.interfaces[idx] = interface_row_to_block(&row);
     write_config(config_dir, &serialize_config(&parsed))?;
@@ -551,7 +563,7 @@ fn rnode_needs_preset_expansion(row: &InterfaceRow) -> bool {
         return false;
     }
     let preset = row.preset.as_deref().unwrap_or("");
-    if !matches!(preset, "rnode_eu868" | "rnode_us915" | "rnode_generic") {
+    if !crate::stack::rf_profiles::known_preset_ids().iter().any(|id| id == preset) {
         return false;
     }
     row.frequency.is_none()
@@ -562,30 +574,150 @@ fn rnode_needs_preset_expansion(row: &InterfaceRow) -> bool {
 }
 
 fn apply_preset_defaults(row: &mut InterfaceRow) {
-    if row.iface_type != "rnode" {
-        return;
-    }
-    let preset = row.preset.as_deref().unwrap_or("");
-    match preset {
-        "rnode_eu868" => {
-            row.frequency.get_or_insert(868_000_000);
-            row.bandwidth.get_or_insert(125_000);
-            row.spreading_factor.get_or_insert(8);
-            row.coding_rate.get_or_insert(5);
-            row.txpower.get_or_insert(17);
-        }
-        "rnode_us915" | "rnode_generic" => {
-            row.frequency.get_or_insert(915_000_000);
-            row.bandwidth.get_or_insert(125_000);
-            row.spreading_factor.get_or_insert(8);
-            row.coding_rate.get_or_insert(5);
-            row.txpower.get_or_insert(17);
-        }
-        _ => {}
-    }
+    crate::stack::rf_profiles::apply_profile_defaults_to_row(row);
 }
 
-fn interface_id_from_name(name: &str) -> String {
+/// INI block metadata for config audit (TCP enable-key checks).
+#[derive(Debug, Clone)]
+pub struct ConfigAuditIniBlock {
+    pub name: String,
+    pub iface_type: Option<String>,
+    pub has_enabled_key: bool,
+    pub has_interface_enabled_key: bool,
+    pub enabled: bool,
+    pub has_name_field: bool,
+}
+
+pub fn list_interface_ini_blocks_for_audit(config_dir: &Path) -> Result<Vec<ConfigAuditIniBlock>, String> {
+    let content = read_config(config_dir)?;
+    let parsed = parse_config(&content)?;
+    Ok(parsed
+        .interfaces
+        .iter()
+        .map(|block| ConfigAuditIniBlock {
+            name: block.name.clone(),
+            iface_type: block.get("type").map(str::to_string),
+            has_enabled_key: block.get("enabled").is_some(),
+            has_interface_enabled_key: block.get("interface_enabled").is_some(),
+            enabled: block
+                .get_bool("enabled")
+                .or_else(|| block.get_bool("interface_enabled"))
+                .unwrap_or(false),
+            has_name_field: block.get("name").is_some(),
+        })
+        .collect())
+}
+
+pub fn repair_tcp_blocks_in_config(config_dir: &Path) -> Result<Vec<String>, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut repaired = Vec::new();
+    for block in &mut parsed.interfaces {
+        if block.get("type") != Some("TCPClientInterface") {
+            continue;
+        }
+        let enabled = block
+            .get_bool("enabled")
+            .or_else(|| block.get_bool("interface_enabled"))
+            .unwrap_or(false);
+        block.set("interface_enabled", &bool_to_ini(enabled));
+        if block.get("name").is_none() {
+            let section_name = block.name.clone();
+            block.set("name", &section_name);
+        }
+        if block.values.contains_key("enabled") {
+            block.values.remove("enabled");
+            block.order.retain(|k| k != "enabled");
+        }
+        repaired.push(block.name.clone());
+    }
+    if !repaired.is_empty() {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(repaired)
+}
+
+pub fn add_default_auto_interface(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    if parsed
+        .interfaces
+        .iter()
+        .any(|b| b.get("type") == Some("AutoInterface"))
+    {
+        return Ok(false);
+    }
+    let mut block = IniBlock::new("Default Interface");
+    block.set("type", "AutoInterface");
+    block.set("enabled", "Yes");
+    block.set("name", "Default Interface");
+    parsed.interfaces.insert(0, block);
+    write_config(config_dir, &serialize_config(&parsed))?;
+    Ok(true)
+}
+
+pub fn normalize_legacy_preset_ids(config_dir: &Path) -> Result<Vec<String>, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed_names = Vec::new();
+    for block in &mut parsed.interfaces {
+        let Some(mut row) = interface_block_to_row(block) else {
+            continue;
+        };
+        let Some(preset) = row.preset.clone() else {
+            continue;
+        };
+        let Some(profile) = crate::stack::rf_profiles::rf_profile_by_id(&preset) else {
+            continue;
+        };
+        let Some(canonical) = profile.canonical_id.clone() else {
+            continue;
+        };
+        row.preset = Some(canonical);
+        crate::stack::rf_profiles::force_apply_profile_defaults_to_row(&mut row);
+        *block = interface_row_to_block(&row);
+        changed_names.push(row.name);
+    }
+    if !changed_names.is_empty() {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(changed_names)
+}
+
+pub fn apply_preset_defaults_to_config_rnodes(config_dir: &Path) -> Result<Vec<String>, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed_names = Vec::new();
+    for block in &mut parsed.interfaces {
+        let Some(mut row) = interface_block_to_row(block) else {
+            continue;
+        };
+        if row.iface_type != "rnode" {
+            continue;
+        }
+        let Some(preset) = row.preset.clone() else {
+            continue;
+        };
+        let Some(profile) = crate::stack::rf_profiles::rf_profile_by_id(&preset) else {
+            continue;
+        };
+        if crate::stack::rf_profiles::row_params_match_preset(&row) {
+            continue;
+        }
+        if let Some(canonical) = profile.canonical_id.clone() {
+            row.preset = Some(canonical);
+        }
+        crate::stack::rf_profiles::force_apply_profile_defaults_to_row(&mut row);
+        *block = interface_row_to_block(&row);
+        changed_names.push(row.name);
+    }
+    if !changed_names.is_empty() {
+        write_config(config_dir, &serialize_config(&parsed))?;
+    }
+    Ok(changed_names)
+}
+
+pub fn interface_id_from_name(name: &str) -> String {
     let slug: String = name
         .to_lowercase()
         .chars()
@@ -1030,7 +1162,7 @@ preset = rnode_us915
         assert!(repair_rnode_radio_fields_in_config(&dir).unwrap());
 
         let repaired = read_config(&dir).unwrap();
-        assert!(repaired.contains("frequency = 915000000"));
+        assert!(repaired.contains("frequency = 914875000"));
         assert!(repaired.contains("bandwidth = 125000"));
         assert!(repaired.contains("spreadingfactor = 8"));
         assert!(repaired.contains("codingrate = 5"));
@@ -1097,11 +1229,82 @@ port = ble://a399d3be-fa79-45ab-a394-7d9299682617
             },
         )
         .unwrap();
-        assert_eq!(row.frequency, Some(915_000_000));
+        assert_eq!(row.frequency, Some(914_875_000));
         assert_eq!(row.txpower, Some(17));
 
         let updated = read_config(&dir).unwrap();
-        assert!(updated.contains("frequency = 915000000"));
+        assert!(updated.contains("frequency = 914875000"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apply_preset_repair_overwrites_deviating_rnode_frequency() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let content = r#"
+[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[NV0N2]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/cu.usbserial-test
+preset = rnode_us915
+frequency = 915000000
+bandwidth = 125000
+spreadingfactor = 8
+codingrate = 5
+"#;
+        write_config(&dir, content).unwrap();
+        let repaired = apply_preset_defaults_to_config_rnodes(&dir).unwrap();
+        assert_eq!(repaired, vec!["NV0N2"]);
+
+        let updated = read_config(&dir).unwrap();
+        assert!(updated.contains("frequency = 914875000"));
+        assert!(updated.contains("preset = rnode_us"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_interface_keeps_custom_frequency_when_preset_unchanged() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let content = r#"
+[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[NV0N2]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/cu.usbserial-test
+preset = rnode_us
+frequency = 914875000
+bandwidth = 125000
+spreadingfactor = 8
+codingrate = 5
+txpower = 17
+"#;
+        write_config(&dir, content).unwrap();
+
+        let row = update_interface_in_config(
+            &dir,
+            "nv0n2",
+            &UpdateInterfacePatch {
+                preset: Some("rnode_us".into()),
+                frequency: Some(915_000_000),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.frequency, Some(915_000_000));
         let _ = fs::remove_dir_all(&dir);
     }
 }

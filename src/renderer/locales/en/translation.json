@@ -579,6 +579,11 @@
       "cancelEdit": "Cancel",
       "name": "Name",
       "callsign": "Callsign",
+      "rfFrequencyMhz": "Frequency (MHz)",
+      "rfBandwidthKhz": "Bandwidth (kHz)",
+      "rfSpreadingFactor": "Spreading factor",
+      "rfCodingRate": "Coding rate",
+      "rfTxPower": "TX power (dBm)",
       "pipeCommand": "Pipe command",
       "editFailed": "Failed to save interface.",
       "restartStackHint": "Restart the stack on the Connection tab for interface changes to take effect.",
@@ -587,7 +592,29 @@
       "localOfflineRow": "Local interface offline — check cable and port contention, then restart the stack.",
       "localOfflineRowBle": "Bluetooth RNode needs pairing or is still connecting — enter the 6-digit PIN in your OS Bluetooth dialog when prompted (see hint below).",
       "localOfflineRowWifi": "Wi-Fi RNode unreachable — verify IP, port 7633, same LAN, and power; re-provision in Admin if the DHCP address changed.",
-      "localOfflineRowStale": "Serial port {{port}} not found — USB replug may have changed the path."
+      "localOfflineRowStale": "Serial port {{port}} not found — USB replug may have changed the path.",
+      "purposeAria": "Purpose of interface {{name}}",
+      "runtimeBadge": "Runtime",
+      "auditRepair": "Repair",
+      "auditDisable": "Disable",
+      "auditRepairSuccess": "Config repair applied.",
+      "auditRepairFailed": "Config repair failed.",
+      "auditRepairNoChanges": "No config changes were needed for this repair.",
+      "purpose": {
+        "auto": "Local LAN multicast discovery — finds other Reticulum nodes on the same Wi-Fi or subnet.",
+        "sharedInstance": "Localhost TCP server when Share instance is on — lets other apps on this machine use this stack.",
+        "tcp": "Outbound TCP tunnel to a remote Reticulum hub or gateway.",
+        "rnodeUsb": "LoRa mesh via USB RNode.",
+        "rnodeBle": "LoRa mesh via Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp:// host).",
+        "blePeer": "BLE peer mesh using seed peer addresses.",
+        "generic": "Reticulum network interface."
+      },
+      "rfProfile": {
+        "coordinated": "Coordinated regional",
+        "fallback": "Global fallback",
+        "legacy": "Legacy presets"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
       }
     },
     "noDiagnosticsHealthy": "No diagnostics detected. The mesh looks healthy!",
-    "noAnomaliesMatchSearch": "No anomalies match your search."
+    "noAnomaliesMatchSearch": "No anomalies match your search.",
+    "reticulum": {
+      "sectionTitle": "Reticulum interface config",
+      "noIssues": "No interface configuration issues detected.",
+      "summary": "{{errors}} errors, {{warnings}} warnings",
+      "colInterface": "Interface",
+      "colIssue": "Issue",
+      "colFix": "Fix",
+      "colAction": "Action",
+      "stackScope": "Stack",
+      "repairFailed": "Config repair failed.",
+      "repairSuccess": "Config repair applied.",
+      "repairNoChanges": "No config changes were needed for this repair.",
+      "disableSuccess": "Interface disabled.",
+      "disableFailed": "Could not disable interface.",
+      "remedy": {
+        "configuration": "Configuration",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Repair config",
+        "disable": "Disable",
+        "apply_preset": "Apply preset",
+        "edit": "Edit interface",
+        "restart_stack": "Restart stack",
+        "add_auto": "Add Auto interface"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",
+        "tcp_missing_name": "TCP interface \"{{name}}\" is missing a name field in config.",
+        "tcp_unreachable": "TCP interface \"{{name}}\" is unreachable.",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF params differ from its preset.",
+        "rf_cross_mismatch": "Multiple enabled RNodes use different RF parameters.",
+        "rf_using_fallback": "RNode \"{{name}}\" uses a global fallback RF profile.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF params match no known profile.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" uses a legacy preset id — consider migrating.",
+        "ghost_interface": "Interface \"{{name}}\" is enabled in config but not loaded by RNS.",
+        "missing_auto_interface": "No enabled AutoInterface — local LAN discovery is off.",
+        "auto_interface_down": "AutoInterface \"{{name}}\" is enabled but down.",
+        "missing_shared_instance": "Share instance is on but SharedInstanceServer is not up.",
+        "shared_instance_unexpected": "SharedInstanceServer is live but share_instance is off.",
+        "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Something went wrong",

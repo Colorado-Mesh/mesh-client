@@ -672,7 +672,34 @@
       "rnodeWifiPort": "порт TCP",
       "rnodeWifiSetupTitle": "Настройка Wi-Fi RNode",
       "rnodeWifiSetupHint": "Wi-Fi выключен после мигания — сначала предоставьте RNode (Reticulum → Admin → Wi-Fi или присоединитесь к его AP и откройте http://10.0.0.1). Требуется встроенное программное обеспечение ESP32-S3 с поддержкой Wi-Fi.\n\nПосле режима станции: найдите IP-адрес на альтернативном экране OLED, в списке DHCP маршрутизатора или в конфигурации → чтения администратором. Используйте tcp://host (порт по умолчанию 7633) — не тип интерфейса TCP-клиента.\n\nУдерживание кнопки ~10 с на многих платах Heltec позволяет использовать Wi-Fi AP (~7 с - это сопряжение Bluetooth).",
-      "localOfflineRowWifi": "Wi-Fi RNode недоступен — проверьте IP-адрес, порт 7633, ту же локальную сеть и питание; повторно предоставьте в Admin, если адрес DHCP изменился."
+      "localOfflineRowWifi": "Wi-Fi RNode недоступен — проверьте IP-адрес, порт 7633, ту же локальную сеть и питание; повторно предоставьте в Admin, если адрес DHCP изменился.",
+      "rfFrequencyMhz": "Частота (МГц)",
+      "rfBandwidthKhz": "Полоса пропускания (кГц)",
+      "rfSpreadingFactor": "Фактор распространения",
+      "rfCodingRate": "Скорость кодирования",
+      "rfTxPower": "Мощность передачи (дБм)",
+      "purposeAria": "Назначение интерфейса {{name}}",
+      "runtimeBadge": "Время выполнения",
+      "auditRepair": "Ремонт",
+      "auditDisable": "Запрещать",
+      "auditRepairSuccess": "Исправление конфигурации применено.",
+      "auditRepairFailed": "Восстановление конфигурации не удалось.",
+      "auditRepairNoChanges": "Для этого ремонта не потребовалось никаких изменений конфигурации.",
+      "purpose": {
+        "auto": "Обнаружение многоадресной рассылки в локальной сети — находит другие узлы Reticulum в том же Wi-Fi или подсети.",
+        "sharedInstance": "Локальный TCP-сервер при включенном экземпляре Share — позволяет другим приложениям на этом компьютере использовать этот стек.",
+        "tcp": "Исходящий TCP-туннель к удаленному концентратору или шлюзу Reticulum.",
+        "rnodeUsb": "Сетка LoRa через USB RNode.",
+        "rnodeBle": "Сетка LoRa через Bluetooth RNode.",
+        "rnodeWifi": "Сетка LoRa через RNode Wi-Fi (хост tcp://).",
+        "blePeer": "Одноранговая сеть BLE с использованием начальных одноранговых адресов.",
+        "generic": "Сетевой интерфейс Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Скоординированная региональная",
+        "fallback": "Глобальный резервный вариант",
+        "legacy": "Устаревшие пресеты"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Неопознанный передатчик MeshCore",
     "meshcoreHeardNearbyEncrypted": "Близлежащий MeshCore RF (зашифрованный)",
     "foreignLoraHeading": "Другие иностранные LoRa на вашей частоте Meshtastic ({{count}})",
-    "foreignLoraDescription": "Meshtastic передатчики и нераспознанные сигналы LoRa на вашей частоте за последние 90 минут. Узлы MeshCore перечислены в разделе выше."
+    "foreignLoraDescription": "Meshtastic передатчики и нераспознанные сигналы LoRa на вашей частоте за последние 90 минут. Узлы MeshCore перечислены в разделе выше.",
+    "reticulum": {
+      "sectionTitle": "Конфигурация интерфейса Reticulum",
+      "noIssues": "Проблем с настройкой интерфейса не обнаружено.",
+      "summary": "{{errors}} ошибок, {{warnings}} предупреждений",
+      "colInterface": "Интерфейс",
+      "colIssue": "Проблема",
+      "colFix": "Исправить",
+      "colAction": "Действие",
+      "stackScope": "Куча",
+      "repairFailed": "Восстановление конфигурации не удалось.",
+      "repairSuccess": "Исправление конфигурации применено.",
+      "repairNoChanges": "Для этого ремонта не потребовалось никаких изменений конфигурации.",
+      "disableSuccess": "Интерфейс отключен.",
+      "disableFailed": "Не удалось отключить интерфейс.",
+      "remedy": {
+        "configuration": "Конфигурация",
+        "software": "Программное обеспечение",
+        "hardware": "Аппаратное обеспечение"
+      },
+      "action": {
+        "repair_config": "Восстановить конфигурацию",
+        "disable": "Запрещать",
+        "apply_preset": "Применить пресет",
+        "edit": "Редактировать интерфейс",
+        "restart_stack": "Перезапустить стек",
+        "add_auto": "Добавить автоматический интерфейс"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP-интерфейс «{{name}}» использует неверный ключ включения — RNS не загрузит его.",
+        "tcp_missing_name": "В интерфейсе TCP «{{name}}» отсутствует поле имени в конфигурации.",
+        "tcp_unreachable": "TCP-интерфейс «{{name}}» недоступен.",
+        "rf_preset_deviation": "Радиочастотные параметры RNode \"{{name}}\" отличаются от заданных.",
+        "rf_cross_mismatch": "Несколько включенных RNodes используют разные параметры RF.",
+        "rf_using_fallback": "RNode «{{name}}» использует глобальный резервный RF-профиль.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF-параметры не соответствуют ни одному известному профилю.",
+        "rf_legacy_preset_id": "RNode «{{name}}» использует устаревший идентификатор предустановки — рассмотрите возможность перехода.",
+        "ghost_interface": "Интерфейс «{{name}}» включен в конфигурации, но не загружается RNS.",
+        "missing_auto_interface": "Не включен AutoInterface — обнаружение локальной сети отключено.",
+        "auto_interface_down": "Автоинтерфейс «{{name}}» включен, но не работает.",
+        "missing_shared_instance": "Экземпляр общего ресурса включен, но SharedInstanceServer не работает.",
+        "shared_instance_unexpected": "SharedInstanceServer активен, но ресурс Share_instance отключен.",
+        "runtime_only_interface": "«{{name}}» используется только во время выполнения (не хранится в конфигурации)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Что-то пошло не так",

@@ -503,4 +503,40 @@ describe('DiagnosticsPanel reticulum scope', () => {
     expect(screen.getByText(/no diagnostics detected/i)).toBeInTheDocument();
     expect(screen.queryByText(/network health/i)).not.toBeInTheDocument();
   });
+
+  it('shows Reticulum config diagnostics rows on the Reticulum tab', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'rf',
+        id: 'rf:1:reticulum/audit/ghost_interface/tcp-1',
+        nodeId: 1,
+        condition: 'reticulum/audit/ghost_interface',
+        cause: 'Interface "Dublin" enabled in config but not loaded by RNS',
+        severity: 'error',
+        detectedAt: Date.now(),
+        causeI18n: {
+          key: 'diagnosticsPanel.reticulum.audit.ghost_interface',
+          params: { name: 'Dublin', message: 'ghost' },
+        },
+        reticulumInterfaceId: 'tcp-1',
+        reticulumRepairKind: 'repair_config',
+      },
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="reticulum"
+        capabilities={RETICULUM_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.getByText('Reticulum interface config')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Repair config' })).toBeInTheDocument();
+  });
 });

@@ -77,6 +77,28 @@ Interfaces are stored in the sidecar rnsd config under Electron `userData/reticu
 
 For bulk changes or migrating from another rsReticulum install, use **Config import** (merge or replace) on the **Network** tab, or paste from a file picked via the system config paths below.
 
+### Config audit and repair
+
+The sidecar compares parsed config to the live interface list:
+
+- **Ghost TCP interfaces:** enabled in config but not loaded by RNS (often wrong `enabled` vs `interface_enabled` key).
+- **Unreachable TCP hubs:** live interface down while enabled.
+- **RF mismatches:** enabled RNodes on different coordinated/fallback profiles.
+
+Use **Diagnostics → Reticulum interface config** or inline hints on **Connection → Interfaces**. **Repair config** normalizes TCP blocks and legacy preset ids; **Apply preset** writes coordinated defaults from the selected preset id.
+
+### RNode RF presets (coordinated + fallback)
+
+Preset picker groups:
+
+| Tier                 | Examples                                                                        | Notes                            |
+| -------------------- | ------------------------------------------------------------------------------- | -------------------------------- |
+| Coordinated regional | `rnode_us` (914.875 MHz), `rnode_uk`, `rnode_au`, …                             | Community-agreed offsets         |
+| Global fallback      | `rnode_eu_fallback` (867.2 MHz), `rnode_eu_high_fallback`, `rnode_2g4_fallback` | Early Reticulum guide defaults   |
+| Legacy aliases       | `rnode_us915` → `rnode_us`, `rnode_eu868` → `rnode_eu_fallback`                 | Migrated automatically on repair |
+
+Canonical data: [`src/shared/reticulumRnodeRfProfiles.json`](../src/shared/reticulumRnodeRfProfiles.json).
+
 ## RNode over Wi-Fi
 
 RNode Wi-Fi is **not** a separate interface type. It stays **`RNodeInterface`** with `port = tcp://host[:7633]` (default TCP port **7633**). Do **not** use the **TCP Client** interface type (default mesh port **4242**) for RNode Wi-Fi.

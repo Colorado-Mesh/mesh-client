@@ -22,6 +22,9 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'radioPanel.btPairingModes.', suffixes: ['label'] },
   { prefix: 'meshcoreTelemetryPrivacy.', leafKeys: true },
   { prefix: 'diagnosticsPanel.foreignLoraProximitySnippet.', leafKeys: true },
+  { prefix: 'diagnosticsPanel.reticulum.action.', leafKeys: true },
+  { prefix: 'diagnosticsPanel.reticulum.audit.', leafKeys: true },
+  { prefix: 'diagnosticsPanel.reticulum.remedy.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

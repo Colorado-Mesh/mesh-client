@@ -28,6 +28,7 @@ import {
   markStaleReticulumOutboundMessages,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
+import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
   logReticulumInterfaceStateEvent,
   logReticulumLocalInterfaceHealthChanges,
@@ -240,21 +241,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
-      const [snapshot, health] = await Promise.all([
+      const [snapshot, health, auditIssues] = await Promise.all([
         window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
           Parameters<typeof buildReticulumDiagnosticRows>[0]
         >,
         refreshLocalInterfacesFromSidecar(),
+        fetchReticulumConfigAudit().catch(() => []),
       ]);
       const { interfaces, osSerialPorts } = health;
-      const rows = buildReticulumDiagnosticRows(snapshot, { interfaces, osSerialPorts });
+      const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
+      const rows = buildReticulumDiagnosticRows(snapshot, {
+        selfNodeId,
+        interfaces,
+        osSerialPorts,
+        auditIssues,
+      });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
       }));
     } catch (e) {
       console.debug('[useReticulumRuntime] diagnostics ' + errLikeToLogString(e));
     }
-  }, [refreshLocalInterfacesFromSidecar]);
+  }, [refreshLocalInterfacesFromSidecar, selfLxmfHash]);
 
   const scheduleLocalInterfaceStatusBurst = useCallback(() => {
     localInterfaceBurstCancelRef.current?.();
@@ -880,6 +888,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       refreshNodesFromDb,
       refreshMessagesFromDb,
       requestRefresh: refreshContactsFromSidecar,
+      syncDiagnostics: syncDiagnosticsFromSidecar,
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,
@@ -904,6 +913,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       refreshNodesFromDb,
       refreshMessagesFromDb,
       refreshContactsFromSidecar,
+      syncDiagnosticsFromSidecar,
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,

@@ -672,7 +672,34 @@
       "rnodeWifiPort": "Puerto TCP",
       "rnodeWifiSetupTitle": "Configuración del RNode Wi-Fi",
       "rnodeWifiSetupHint": "Wi-Fi está apagado después de parpadear: aprovisione primero el RNode (Reticulum → Admin → Wi-Fi, o únase a su AP y abra http://10.0.0.1). Requiere firmware compatible con Wi-Fi ESP32-S3.\n\nDespués del modo de estación: busque la IP en la pantalla alternativa OLED, la lista DHCP de su router o la configuración de → lectura del administrador. Utilice tcp://host (puerto predeterminado 7633), no el tipo de interfaz TCP Client.\n\nLa retención del botón de ~10 s en muchas placas Heltec habilita el punto de acceso Wi-Fi (~7 s es el emparejamiento Bluetooth).",
-      "localOfflineRowWifi": "Wi-Fi RNode inalcanzable: verifique la IP, el puerto 7633, la misma LAN y la alimentación; vuelva a aprovisionar en Admin si la dirección DHCP cambió."
+      "localOfflineRowWifi": "Wi-Fi RNode inalcanzable: verifique la IP, el puerto 7633, la misma LAN y la alimentación; vuelva a aprovisionar en Admin si la dirección DHCP cambió.",
+      "rfFrequencyMhz": "Frecuencia (MHz)",
+      "rfBandwidthKhz": "Ancho de banda (kHz)",
+      "rfSpreadingFactor": "factor de dispersión",
+      "rfCodingRate": "Tasa de codificación",
+      "rfTxPower": "Potencia de transmisión (dBm)",
+      "purposeAria": "Propósito de la interfaz {{name}}",
+      "runtimeBadge": "Tiempo de ejecución",
+      "auditRepair": "Reparar",
+      "auditDisable": "Desactivar",
+      "auditRepairSuccess": "Reparación de configuración aplicada.",
+      "auditRepairFailed": "Error en la reparación de la configuración.",
+      "auditRepairNoChanges": "No se necesitaron cambios de configuración para esta reparación.",
+      "purpose": {
+        "auto": "Descubrimiento de multidifusión de LAN local: encuentra otros nodos de Reticulum en la misma Wi-Fi o subred.",
+        "sharedInstance": "Servidor TCP localhost cuando la instancia compartida está activada: permite que otras aplicaciones en esta máquina usen esta pila.",
+        "tcp": "Túnel TCP saliente a un concentrador o puerta de enlace de Reticulum remoto.",
+        "rnodeUsb": "Malla LoRa a través de USB RNode.",
+        "rnodeBle": "Malla LoRa vía Bluetooth RNode.",
+        "rnodeWifi": "Malla LoRa a través de RNode Wi-Fi (tcp://host).",
+        "blePeer": "Malla de pares BLE que utiliza direcciones de pares iniciales.",
+        "generic": "Interfaz de red Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Regional coordinado",
+        "fallback": "Repliegue global",
+        "legacy": "Ajustes preestablecidos heredados"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Transmisor MeshCore no identificado",
     "meshcoreHeardNearbyEncrypted": "MeshCore RF cercano (cifrado)",
     "foreignLoraHeading": "Otro LoRa extranjero en tu frecuencia de Meshtastic ({{count}})",
-    "foreignLoraDescription": "Transmisores Meshtastic y señales LoRa no reconocidas en tu frecuencia en los últimos 90 minutos. Los nodos MeshCore se enumeran en la sección anterior."
+    "foreignLoraDescription": "Transmisores Meshtastic y señales LoRa no reconocidas en tu frecuencia en los últimos 90 minutos. Los nodos MeshCore se enumeran en la sección anterior.",
+    "reticulum": {
+      "sectionTitle": "Configuración de la interfaz Reticulum",
+      "noIssues": "No se detectaron problemas de configuración de la interfaz.",
+      "summary": "{{errors}} errores, {{warnings}} advertencias",
+      "colInterface": "Interfaz",
+      "colIssue": "Asunto",
+      "colFix": "Arreglar",
+      "colAction": "Acción",
+      "stackScope": "Pila",
+      "repairFailed": "Error en la reparación de la configuración.",
+      "repairSuccess": "Reparación de configuración aplicada.",
+      "repairNoChanges": "No se necesitaron cambios de configuración para esta reparación.",
+      "disableSuccess": "Interfaz deshabilitada.",
+      "disableFailed": "No se pudo desactivar la interfaz.",
+      "remedy": {
+        "configuration": "Configuración",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Configuración de reparación",
+        "disable": "Desactivar",
+        "apply_preset": "Aplicar preajuste",
+        "edit": "Editar interfaz",
+        "restart_stack": "Reiniciar pila",
+        "add_auto": "Agregar interfaz automática"
+      },
+      "audit": {
+        "tcp_enable_key": "La interfaz TCP \"{{name}}\" utiliza la clave de habilitación incorrecta: RNS no la cargará.",
+        "tcp_missing_name": "A la interfaz TCP \"{{name}}\" le falta un campo de nombre en la configuración.",
+        "tcp_unreachable": "La interfaz TCP \"{{name}}\" es inalcanzable.",
+        "rf_preset_deviation": "Los parámetros de RF del RNode \"{{name}}\" difieren de sus ajustes preestablecidos.",
+        "rf_cross_mismatch": "Varios RNodes habilitados utilizan diferentes parámetros de RF.",
+        "rf_using_fallback": "RNode \"{{name}}\" utiliza un perfil de RF de reserva global.",
+        "rf_unknown_params": "Los parámetros de RF del RNode \"{{name}}\" no coinciden con ningún perfil conocido.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" utiliza una identificación preestablecida heredada; considere migrar.",
+        "ghost_interface": "La interfaz \"{{name}}\" está habilitada en la configuración pero no cargada por RNS.",
+        "missing_auto_interface": "No hay AutoInterface habilitada: la detección de LAN local está desactivada.",
+        "auto_interface_down": "La interfaz automática \"{{name}}\" está habilitada pero inactiva.",
+        "missing_shared_instance": "La instancia compartida está activada pero SharedInstanceServer no está activo.",
+        "shared_instance_unexpected": "SharedInstanceServer está activo pero share_instance está desactivado.",
+        "runtime_only_interface": "\"{{name}}\" es solo de tiempo de ejecución (no almacenado en la configuración)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "algo salió mal",

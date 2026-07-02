@@ -13,6 +13,10 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+vi.mock('@/renderer/components/Toast', () => ({
+  useToast: () => ({ addToast: vi.fn() }),
+}));
+
 vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   tryGetReticulumSession: () => ({
     restartStack: vi.fn().mockResolvedValue(undefined),
@@ -47,6 +51,9 @@ describe('ReticulumInterfacesPanel', () => {
       }
       if (path === '/api/v1/rnode/presets') {
         return Promise.resolve({ presets: [] });
+      }
+      if (path === '/api/v1/config/audit') {
+        return Promise.resolve({ issues: [] });
       }
       return Promise.resolve({});
     });
@@ -146,6 +153,9 @@ describe('ReticulumInterfacesPanel', () => {
       }
       if (path === '/api/v1/rnode/presets') {
         return Promise.resolve({ presets: [] });
+      }
+      if (path === '/api/v1/config/audit') {
+        return Promise.resolve({ issues: [] });
       }
       return Promise.resolve({});
     });
@@ -304,5 +314,32 @@ describe('ReticulumInterfacesPanel', () => {
         screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeWifiPort'),
       ).toHaveValue(String(7633));
     });
+  });
+
+  it('shows runtime badge and hides edit/delete for SharedInstanceServer', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'shared',
+            name: 'SharedInstanceServer',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.runtimeBadge'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'connectionPanel.reticulumInterfaces.delete' }),
+    ).not.toBeInTheDocument();
   });
 });

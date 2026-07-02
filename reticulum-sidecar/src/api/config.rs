@@ -98,3 +98,33 @@ pub async fn delete_interface(
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }
+
+pub async fn config_audit(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.config_audit().await {
+        Ok(issues) => Json(serde_json::json!({ "issues": issues })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConfigRepairBody {
+    #[serde(default)]
+    pub repair_kinds: Vec<String>,
+}
+
+pub async fn config_repair(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<ConfigRepairBody>,
+) -> Json<serde_json::Value> {
+    let request = crate::stack::config_audit::ConfigRepairRequest {
+        repair_kinds: body.repair_kinds,
+    };
+    match stack.config_repair(request).await {
+        Ok((repaired, restart_required)) => Json(serde_json::json!({
+            "ok": true,
+            "repaired": repaired,
+            "restart_required": restart_required,
+        })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}

@@ -1,6 +1,8 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
 pub mod config;
+pub mod config_audit;
+pub mod rf_profiles;
 mod ble;
 mod nomad_file;
 mod nomad_timeouts;
@@ -19,6 +21,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
+pub use config_audit::{ConfigAuditIssue, ConfigRepairRequest};
 use packet_log::{PacketLogBuffer, WirePacketRow, MAX_WIRE_PACKET_LOG};
 use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
@@ -649,13 +652,7 @@ impl StackHandle {
     }
 
     pub async fn rnode_presets(&self) -> serde_json::Value {
-        serde_json::json!({
-            "presets": [
-                { "id": "rnode_generic", "label": "Generic RNode", "frequency": 915000000, "bandwidth": 125000, "spreading_factor": 8, "coding_rate": 5 },
-                { "id": "rnode_eu868", "label": "EU868", "frequency": 868000000, "bandwidth": 125000, "spreading_factor": 8, "coding_rate": 5 },
-                { "id": "rnode_us915", "label": "US915", "frequency": 915000000, "bandwidth": 125000, "spreading_factor": 8, "coding_rate": 5 }
-            ]
-        })
+        rf_profiles::presets_wire_json()
     }
 
     pub async fn serial_ports(&self) -> serde_json::Value {
@@ -716,8 +713,8 @@ impl StackHandle {
 
     pub async fn diagnostics_snapshot(&self) -> serde_json::Value {
         let inner = self.inner.read().await;
-        let interfaces: Vec<serde_json::Value> = inner
-            .interfaces
+        let live_interfaces = self.list_interfaces().await;
+        let interfaces: Vec<serde_json::Value> = live_interfaces
             .iter()
             .map(|i| {
                 serde_json::json!({
@@ -726,18 +723,38 @@ impl StackHandle {
                     "type": i.iface_type,
                     "enabled": i.enabled,
                     "status": i.status,
+                    "host": i.host,
+                    "port": i.port,
+                    "preset": i.preset,
+                    "serial_port": i.serial_port,
+                    "frequency": i.frequency,
                 })
             })
             .collect();
         serde_json::json!({
             "rns_ready": inner.rns_ready,
             "lxmf_ready": inner.lxmf_ready,
-            "interface_count": inner.interfaces.len(),
+            "interface_count": live_interfaces.len(),
             "contact_count": inner.contacts.len(),
             "peer_count": inner.peers.len(),
             "message_count": inner.messages.len(),
             "interfaces": interfaces,
         })
+    }
+
+    pub async fn config_audit(&self) -> Result<Vec<config_audit::ConfigAuditIssue>, String> {
+        let settings = config::get_stack_settings(&self.config_dir)?;
+        let live = self.list_interfaces().await;
+        let inner = self.inner.read().await;
+        let stack_running = inner.rns_ready;
+        config_audit::audit_config(&self.config_dir, &live, &settings, stack_running)
+    }
+
+    pub async fn config_repair(
+        &self,
+        request: config_audit::ConfigRepairRequest,
+    ) -> Result<(Vec<String>, bool), String> {
+        config_audit::repair_config(&self.config_dir, &request)
     }
 
     pub async fn voice_status(&self) -> serde_json::Value {

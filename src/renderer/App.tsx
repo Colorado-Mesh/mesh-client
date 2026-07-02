@@ -64,6 +64,7 @@ import ChannelUtilizationChart from './components/ChannelUtilizationChart';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
+import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
@@ -1338,6 +1339,20 @@ function AppContent() {
     [protocol, tabsByProtocol],
   );
 
+  const handleNavigateToReticulumConnection = useCallback(() => {
+    const connectionTabIndex = findFilteredTabIndexForPanel(
+      selectByProtocol(tabsByProtocol, 'reticulum'),
+      0,
+    );
+    if (connectionTabIndex >= 0) {
+      setActiveTab(connectionTabIndex);
+    }
+  }, [tabsByProtocol]);
+
+  const handleRefreshReticulumDiagnostics = useCallback(() => {
+    void reticulumRuntime.syncDiagnostics?.();
+  }, [reticulumRuntime]);
+
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const envMode = useDiagnosticsStore((s) => s.envMode);
@@ -2136,6 +2151,7 @@ function AppContent() {
 
   return (
     <ToastProvider>
+      <GlobalInstantTooltip />
       {/* Global assertive live region for critical announcements */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only" id="app-announcer" />
       {/* Passive notifications for inactive protocol activity */}
@@ -3342,6 +3358,16 @@ function AppContent() {
                               }}
                               capabilities={capabilities}
                               protocol={protocol}
+                              onNavigateToReticulumConnection={
+                                protocol === 'reticulum'
+                                  ? handleNavigateToReticulumConnection
+                                  : undefined
+                              }
+                              onRefreshReticulumDiagnostics={
+                                protocol === 'reticulum'
+                                  ? handleRefreshReticulumDiagnostics
+                                  : undefined
+                              }
                             />
                           </Suspense>
                         </ErrorBoundary>

@@ -74,6 +74,10 @@ export interface ProtocolRuntime {
   refreshNodesFromDb: () => Promise<void>;
   refreshMessagesFromDb: () => Promise<void>;
   requestRefresh: () => Promise<void>;
+  /** Reticulum: refresh config audit diagnostic rows from sidecar. */
+  syncDiagnostics?: () => Promise<void>;
+  /** Reticulum: restart rsReticulum stack after config repair. */
+  restartStack?: () => Promise<void>;
   getNodes: () => MeshNode[];
   getFullNodeLabel: (nodeId: number) => string;
   getPickerStyleNodeLabel: (nodeId: number) => string;

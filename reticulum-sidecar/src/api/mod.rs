@@ -55,6 +55,8 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         )
         .route("/api/v1/config/import", post(config::import_config))
         .route("/api/v1/config/export", get(config::export_config))
+        .route("/api/v1/config/audit", get(config::config_audit))
+        .route("/api/v1/config/repair", post(config::config_repair))
         .route(
             "/api/v1/stack/settings",
             get(config::get_stack_settings).put(config::put_stack_settings),

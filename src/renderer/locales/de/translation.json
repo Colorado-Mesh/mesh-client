@@ -672,7 +672,34 @@
       "rnodeWifiPort": "TCP- Port",
       "rnodeWifiSetupTitle": "WLAN-RNode-Einrichtung",
       "rnodeWifiSetupHint": "WLAN ist nach dem Blinken ausgeschaltet — stellen Sie zuerst den RNode bereit (Reticulum → Admin → Wi-Fi, oder schließen Sie sich seinem AP an und öffnen Sie http://10.0.0.1). Benötigt ESP32-S3 Wi-Fi-fähige Firmware.\n\nNach dem Stationsmodus: Suchen Sie die IP auf dem alternativen OLED-Bildschirm, der DHCP-Liste Ihres Routers oder → der Administrator-Lesekonfiguration. Verwenden Sie tcp://host (Standardport 7633) — nicht den Typ der TCP-Clientschnittstelle.\n\nDas Halten der ~10 s -Taste auf vielen Heltec-Boards ermöglicht Wi-Fi AP (~7 s ist Bluetooth-Kopplung).",
-      "localOfflineRowWifi": "Wi-Fi RNode nicht erreichbar — überprüfen Sie IP, Port 7633, gleiches LAN und Stromversorgung; erneute Bereitstellung im Admin, wenn sich die DHCP-Adresse geändert hat."
+      "localOfflineRowWifi": "Wi-Fi RNode nicht erreichbar — überprüfen Sie IP, Port 7633, gleiches LAN und Stromversorgung; erneute Bereitstellung im Admin, wenn sich die DHCP-Adresse geändert hat.",
+      "rfFrequencyMhz": "Frequenz (MHz)",
+      "rfBandwidthKhz": "Bandbreite (kHz)",
+      "rfSpreadingFactor": "Spreading-Faktor",
+      "rfCodingRate": "Codierungsrate",
+      "rfTxPower": "Sendeleistung (dBm)",
+      "purposeAria": "Zweck der Schnittstelle {{name}}",
+      "runtimeBadge": "Laufzeit",
+      "auditRepair": "Reparieren",
+      "auditDisable": "Deaktivieren",
+      "auditRepairSuccess": "Konfigurationsreparatur angewendet.",
+      "auditRepairFailed": "Konfigurationsreparatur fehlgeschlagen.",
+      "auditRepairNoChanges": "Für diese Reparatur waren keine Konfigurationsänderungen erforderlich.",
+      "purpose": {
+        "auto": "Lokale LAN-Multicast-Erkennung – findet andere Reticulum-Knoten im selben WLAN oder Subnetz.",
+        "sharedInstance": "Localhost-TCP-Server, wenn „Instanz teilen“ aktiviert ist – ermöglicht anderen Apps auf diesem Computer die Nutzung dieses Stacks.",
+        "tcp": "Ausgehender TCP-Tunnel zu einem Remote-Reticulum-Hub oder -Gateway.",
+        "rnodeUsb": "LoRa-Mesh über USB RNode.",
+        "rnodeBle": "LoRa-Mesh über Bluetooth RNode.",
+        "rnodeWifi": "LoRa-Mesh über RNode Wi-Fi (tcp:// host).",
+        "blePeer": "BLE-Peer-Mesh unter Verwendung von Seed-Peer-Adressen.",
+        "generic": "Reticulum-Netzwerkschnittstelle."
+      },
+      "rfProfile": {
+        "coordinated": "Regional koordiniert",
+        "fallback": "Globaler Rückfall",
+        "legacy": "Legacy-Voreinstellungen"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Nicht identifizierter MeshCore-Sender",
     "meshcoreHeardNearbyEncrypted": "In der Nähe MeshCore RF (verschlüsselt)",
     "foreignLoraHeading": "Andere fremde LoRa auf Ihrer Meshtastic-Frequenz ({{count}})",
-    "foreignLoraDescription": "Meshtastic Sender und nicht erkannte LoRa-Signale auf Ihrer Frequenz in den letzten 90 Minuten. MeshCore-Knoten sind im obigen Abschnitt aufgeführt."
+    "foreignLoraDescription": "Meshtastic Sender und nicht erkannte LoRa-Signale auf Ihrer Frequenz in den letzten 90 Minuten. MeshCore-Knoten sind im obigen Abschnitt aufgeführt.",
+    "reticulum": {
+      "sectionTitle": "Konfiguration der Reticulum-Schnittstelle",
+      "noIssues": "Es wurden keine Probleme mit der Schnittstellenkonfiguration festgestellt.",
+      "summary": "{{errors}} Fehler, {{warnings}} Warnungen",
+      "colInterface": "Schnittstelle",
+      "colIssue": "Ausgabe",
+      "colFix": "Fix",
+      "colAction": "Aktion",
+      "stackScope": "Stapel",
+      "repairFailed": "Konfigurationsreparatur fehlgeschlagen.",
+      "repairSuccess": "Konfigurationsreparatur angewendet.",
+      "repairNoChanges": "Für diese Reparatur waren keine Konfigurationsänderungen erforderlich.",
+      "disableSuccess": "Schnittstelle deaktiviert.",
+      "disableFailed": "Die Schnittstelle konnte nicht deaktiviert werden.",
+      "remedy": {
+        "configuration": "Konfiguration",
+        "software": "Software",
+        "hardware": "Hardware"
+      },
+      "action": {
+        "repair_config": "Konfiguration reparieren",
+        "disable": "Deaktivieren",
+        "apply_preset": "Voreinstellung anwenden",
+        "edit": "Schnittstelle bearbeiten",
+        "restart_stack": "Stapel neu starten",
+        "add_auto": "Automatische Schnittstelle hinzufügen"
+      },
+      "audit": {
+        "tcp_enable_key": "Die TCP-Schnittstelle „{{name}}“ verwendet den falschen Aktivierungsschlüssel – RNS lädt ihn nicht.",
+        "tcp_missing_name": "Bei der TCP-Schnittstelle „{{name}}“ fehlt in der Konfiguration ein Namensfeld.",
+        "tcp_unreachable": "Die TCP-Schnittstelle „{{name}}“ ist nicht erreichbar.",
+        "rf_preset_deviation": "RNode „{{name}}“ RF-Parameter weichen von der Voreinstellung ab.",
+        "rf_cross_mismatch": "Mehrere aktivierte RNodes verwenden unterschiedliche RF-Parameter.",
+        "rf_using_fallback": "RNode „{{name}}“ verwendet ein globales Fallback-RF-Profil.",
+        "rf_unknown_params": "RNode „{{name}}“ RF-Parameter stimmen mit keinem bekannten Profil überein.",
+        "rf_legacy_preset_id": "RNode „{{name}}“ verwendet eine ältere voreingestellte ID – erwägen Sie eine Migration.",
+        "ghost_interface": "Die Schnittstelle „{{name}}“ ist in der Konfiguration aktiviert, wird jedoch nicht von RNS geladen.",
+        "missing_auto_interface": "Kein aktiviertes AutoInterface – lokale LAN-Erkennung ist deaktiviert.",
+        "auto_interface_down": "AutoInterface „{{name}}“ ist aktiviert, aber nicht verfügbar.",
+        "missing_shared_instance": "Die Share-Instanz ist aktiviert, aber SharedInstanceServer ist nicht aktiv.",
+        "shared_instance_unexpected": "SharedInstanceServer ist aktiv, aber share_instance ist ausgeschaltet.",
+        "runtime_only_interface": "„{{name}}“ ist nur zur Laufzeit gültig (wird nicht in der Konfiguration gespeichert)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Etwas ist schief gelaufen",

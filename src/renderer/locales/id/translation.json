@@ -672,7 +672,34 @@
       "rnodeWifiPort": "Port TCP",
       "rnodeWifiSetupTitle": "Pengaturan Wi-Fi RNode",
       "rnodeWifiSetupHint": "Wi-Fi mati setelah berkedip — sediakan RNode terlebih dahulu (Reticulum → Admin → Wi-Fi, atau bergabung dengan AP - nya dan buka http://10.0.0.1). Membutuhkan firmware berkemampuan Wi-Fi ESP32 - S3.\n\nSetelah mode stasiun: temukan IP di layar alternatif OLED, daftar DHCP router Anda, atau konfigurasi → Baca Admin. Gunakan tcp :// host (port default 7633) — bukan jenis antarmuka Klien TCP.\n\n~10 detik menahan tombol pada banyak papan Heltec memungkinkan Wi-Fi AP (~7 detik adalah pasangan Bluetooth).",
-      "localOfflineRowWifi": "Wi-Fi RNode tidak dapat dijangkau — verifikasi IP, port 7633, Lan yang sama, dan daya; sediakan kembali di Admin jika alamat DHCP berubah."
+      "localOfflineRowWifi": "Wi-Fi RNode tidak dapat dijangkau — verifikasi IP, port 7633, Lan yang sama, dan daya; sediakan kembali di Admin jika alamat DHCP berubah.",
+      "rfFrequencyMhz": "Frekuensi (MHz)",
+      "rfBandwidthKhz": "Bandwidth (kHz)",
+      "rfSpreadingFactor": "Faktor penyebaran",
+      "rfCodingRate": "Tingkat pengkodean",
+      "rfTxPower": "Daya TX (dBm)",
+      "purposeAria": "Tujuan antarmuka {{name}}",
+      "runtimeBadge": "Waktu proses",
+      "auditRepair": "Memperbaiki",
+      "auditDisable": "Cacat",
+      "auditRepairSuccess": "Perbaikan konfigurasi diterapkan.",
+      "auditRepairFailed": "Perbaikan konfigurasi gagal.",
+      "auditRepairNoChanges": "Tidak diperlukan perubahan konfigurasi untuk perbaikan ini.",
+      "purpose": {
+        "auto": "Penemuan multicast LAN lokal — menemukan node Reticulum lain di Wi-Fi atau subnet yang sama.",
+        "sharedInstance": "Server TCP Localhost saat instance Berbagi aktif — memungkinkan aplikasi lain di mesin ini menggunakan tumpukan ini.",
+        "tcp": "Terowongan TCP keluar ke hub atau gateway Reticulum jarak jauh.",
+        "rnodeUsb": "LoRa mesh melalui USB RNode.",
+        "rnodeBle": "LoRa mesh melalui Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh melalui RNode Wi-Fi (tcp:// host).",
+        "blePeer": "Mesh rekan BLE menggunakan alamat rekan benih.",
+        "generic": "Antarmuka jaringan Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Daerah yang terkoordinasi",
+        "fallback": "kemunduran global",
+        "legacy": "Preset lama"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Pemancar MeshCore tak dikenal",
     "meshcoreHeardNearbyEncrypted": "RF MeshCore terdekat (terenkripsi)",
     "foreignLoraHeading": "LoRa asing lainnya pada frekuensi Meshtastic Anda ({{count}})",
-    "foreignLoraDescription": "Pemancar Meshtastic dan sinyal LoRa yang tidak dikenal pada frekuensi Anda dalam 90 menit terakhir. Simpul MeshCore tercantum di bagian di atas."
+    "foreignLoraDescription": "Pemancar Meshtastic dan sinyal LoRa yang tidak dikenal pada frekuensi Anda dalam 90 menit terakhir. Simpul MeshCore tercantum di bagian di atas.",
+    "reticulum": {
+      "sectionTitle": "Konfigurasi antarmuka Reticulum",
+      "noIssues": "Tidak ada masalah konfigurasi antarmuka yang terdeteksi.",
+      "summary": "{{errors}} kesalahan, {{warnings}} peringatan",
+      "colInterface": "Antarmuka",
+      "colIssue": "Masalah",
+      "colFix": "Memperbaiki",
+      "colAction": "Tindakan",
+      "stackScope": "Tumpukan",
+      "repairFailed": "Perbaikan konfigurasi gagal.",
+      "repairSuccess": "Perbaikan konfigurasi diterapkan.",
+      "repairNoChanges": "Tidak diperlukan perubahan konfigurasi untuk perbaikan ini.",
+      "disableSuccess": "Antarmuka dinonaktifkan.",
+      "disableFailed": "Tidak dapat menonaktifkan antarmuka.",
+      "remedy": {
+        "configuration": "Konfigurasi",
+        "software": "Perangkat lunak",
+        "hardware": "Perangkat keras"
+      },
+      "action": {
+        "repair_config": "Perbaiki konfigurasi",
+        "disable": "Cacat",
+        "apply_preset": "Terapkan preset",
+        "edit": "Sunting antarmuka",
+        "restart_stack": "Mulai ulang tumpukan",
+        "add_auto": "Tambahkan antarmuka Otomatis"
+      },
+      "audit": {
+        "tcp_enable_key": "Antarmuka TCP \"{{name}}\" menggunakan kunci pengaktifan yang salah — RNS tidak akan memuatnya.",
+        "tcp_missing_name": "Antarmuka TCP \"{{name}}\" tidak memiliki bidang nama di konfigurasi.",
+        "tcp_unreachable": "Antarmuka TCP \"{{name}}\" tidak dapat dijangkau.",
+        "rf_preset_deviation": "Parameter RF RNode \"{{name}}\" berbeda dari presetnya.",
+        "rf_cross_mismatch": "Beberapa RNode yang diaktifkan menggunakan parameter RF yang berbeda.",
+        "rf_using_fallback": "RNode \"{{name}}\" menggunakan profil RF cadangan global.",
+        "rf_unknown_params": "RNode \"{{name}}\" Param RF tidak cocok dengan profil yang diketahui.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" menggunakan id preset lama — pertimbangkan untuk bermigrasi.",
+        "ghost_interface": "Antarmuka \"{{name}}\" diaktifkan di konfigurasi tetapi tidak dimuat oleh RNS.",
+        "missing_auto_interface": "Tidak ada AutoInterface yang diaktifkan — penemuan LAN lokal tidak aktif.",
+        "auto_interface_down": "AutoInterface \"{{name}}\" diaktifkan tetapi tidak aktif.",
+        "missing_shared_instance": "Bagikan instance aktif tetapi SharedInstanceServer tidak aktif.",
+        "shared_instance_unexpected": "SharedInstanceServer aktif tetapi share_instance tidak aktif.",
+        "runtime_only_interface": "\"{{name}}\" hanya runtime (tidak disimpan dalam konfigurasi)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Ada yang tidak beres",

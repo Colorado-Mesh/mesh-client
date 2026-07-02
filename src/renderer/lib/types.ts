@@ -87,12 +87,17 @@ export interface RfDiagnosticRow {
   nodeId: number;
   condition: string;
   cause: string;
-  severity: 'warning' | 'info';
+  severity: 'error' | 'warning' | 'info';
   detectedAt: number;
   isLastHop?: boolean;
   causeI18n?: DiagnosticTextI18n;
   /** Foreign transmitter when this row is cross-protocol / Foreign LoRa (not `nodeId`). */
   foreignSenderId?: number;
+  /** Reticulum interface audit: target row in Connection panel. */
+  reticulumInterfaceId?: string;
+  /** Reticulum in-app repair action key. */
+  reticulumRepairKind?:
+    'repair_config' | 'disable' | 'apply_preset' | 'edit' | 'restart_stack' | 'add_auto';
 }
 
 export type DiagnosticRow = RoutingDiagnosticRow | RfDiagnosticRow;

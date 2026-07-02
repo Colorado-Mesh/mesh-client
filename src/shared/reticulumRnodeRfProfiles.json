@@ -1,0 +1,193 @@
+{
+  "profiles": [
+    {
+      "id": "rnode_us",
+      "tier": "coordinated",
+      "label": "United States",
+      "region": "us",
+      "frequency": 914875000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Chicago, Portsmouth NH, Olympia WA hubs"
+    },
+    {
+      "id": "rnode_au",
+      "tier": "coordinated",
+      "label": "Australia",
+      "region": "au",
+      "frequency": 925875000,
+      "bandwidth": 250000,
+      "spreading_factor": 9,
+      "coding_rate": 5,
+      "notes": "MBUG, Sydney, Western Sydney; 5+ MHz above Meshtastic"
+    },
+    {
+      "id": "rnode_uk",
+      "tier": "coordinated",
+      "label": "United Kingdom",
+      "region": "uk",
+      "frequency": 867500000,
+      "bandwidth": 125000,
+      "spreading_factor": 9,
+      "coding_rate": 5,
+      "notes": "St Helens, Edinburgh"
+    },
+    {
+      "id": "rnode_de_berlin",
+      "tier": "coordinated",
+      "label": "Germany (Berlin)",
+      "region": "de",
+      "frequency": 869475000,
+      "bandwidth": 125000,
+      "spreading_factor": 7,
+      "coding_rate": 5,
+      "notes": "Chaos Mesh"
+    },
+    {
+      "id": "rnode_de_frankfurt",
+      "tier": "coordinated",
+      "label": "Germany (Frankfurt/Wiesbaden)",
+      "region": "de",
+      "frequency": 869525000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Frankfurt/Wiesbaden groups"
+    },
+    {
+      "id": "rnode_fi",
+      "tier": "coordinated",
+      "label": "Finland",
+      "region": "fi",
+      "frequency": 869420000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Turku, southern Finland"
+    },
+    {
+      "id": "rnode_no",
+      "tier": "coordinated",
+      "label": "Norway",
+      "region": "no",
+      "frequency": 869431000,
+      "bandwidth": 62500,
+      "spreading_factor": 7,
+      "coding_rate": 5,
+      "notes": "Oslo/Nittedal narrowband"
+    },
+    {
+      "id": "rnode_es",
+      "tier": "coordinated",
+      "label": "Spain",
+      "region": "es",
+      "frequency": 868200000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Madrid (Quixote Radio Shack)"
+    },
+    {
+      "id": "rnode_cn_beijing",
+      "tier": "coordinated",
+      "label": "China (Beijing)",
+      "region": "cn",
+      "frequency": 470300000,
+      "bandwidth": 125000,
+      "spreading_factor": 9,
+      "coding_rate": 5,
+      "notes": "470 MHz ISM"
+    },
+    {
+      "id": "rnode_cn_guangzhou",
+      "tier": "coordinated",
+      "label": "China (Guangzhou)",
+      "region": "cn",
+      "frequency": 472700000,
+      "bandwidth": 250000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "470 MHz ISM"
+    },
+    {
+      "id": "rnode_my_sg",
+      "tier": "coordinated",
+      "label": "Malaysia / Singapore",
+      "region": "my_sg",
+      "frequency": 920500000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Regional standard"
+    },
+    {
+      "id": "rnode_eu_fallback",
+      "tier": "fallback",
+      "label": "EU/UK base fallback",
+      "region": "eu",
+      "frequency": 867200000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Legacy/unconfigured nodes in Italy, Belgium, Netherlands"
+    },
+    {
+      "id": "rnode_eu_high_fallback",
+      "tier": "fallback",
+      "label": "EU/UK high fallback",
+      "region": "eu",
+      "frequency": 869400000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Standalone Western Europe gateways (duty-cycle bands)"
+    },
+    {
+      "id": "rnode_2g4_fallback",
+      "tier": "fallback",
+      "label": "2.4 GHz LoRa fallback",
+      "region": "global",
+      "frequency": 2427000000,
+      "bandwidth": 812500,
+      "spreading_factor": 7,
+      "coding_rate": 5,
+      "notes": "UK/Europe 2.4 GHz LoRa hardware baseline"
+    },
+    {
+      "id": "rnode_us915",
+      "tier": "legacy",
+      "label": "US915 (legacy)",
+      "region": "us",
+      "frequency": 914875000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Alias for rnode_us",
+      "canonical_id": "rnode_us"
+    },
+    {
+      "id": "rnode_eu868",
+      "tier": "legacy",
+      "label": "EU868 (legacy)",
+      "region": "eu",
+      "frequency": 867200000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Alias for rnode_eu_fallback",
+      "canonical_id": "rnode_eu_fallback"
+    },
+    {
+      "id": "rnode_generic",
+      "tier": "legacy",
+      "label": "Generic RNode",
+      "region": "global",
+      "frequency": 915000000,
+      "bandwidth": 125000,
+      "spreading_factor": 8,
+      "coding_rate": 5,
+      "notes": "Ad-hoc generic; prefer a coordinated or fallback profile"
+    }
+  ]
+}

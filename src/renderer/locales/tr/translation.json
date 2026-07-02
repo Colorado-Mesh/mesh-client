@@ -672,7 +672,34 @@
       "rnodeWifiPort": "TCP bağlantı noktası",
       "rnodeWifiSetupTitle": "Wi-Fi RNode kurulumu",
       "rnodeWifiSetupHint": "Wi-Fi yanıp söndükten sonra kapalıdır — önce RNode'u sağlayın (Reticulum → Admin → Wi-Fi veya AP'ye katılın ve http://10.0.0.1 adresini açın). ESP32 - S3 Wi-Fi özellikli ürün yazılımı gerektirir.\n\nİstasyon modundan sonra: IP'yi OLED alternatif ekranında, yönlendirici DHCP listenizde veya Yönetici → Okuma yapılandırmasında bulun. TCP İstemcisi arayüz türünü değil, tcp :// host (varsayılan bağlantı noktası 7633) kullanın.\n\nBirçok Heltec kartında ~10 saniye düğme basılı tutma, Wi-Fi AP'yi etkinleştirir (~7 saniye Bluetooth eşleştirmesidir).",
-      "localOfflineRowWifi": "Wi — Fi RNode'a erişilemiyor — IP, bağlantı noktası 7633, aynı lan ve gücü doğrulayın; DHCP adresi değişirse Yöneticide yeniden provizyon."
+      "localOfflineRowWifi": "Wi — Fi RNode'a erişilemiyor — IP, bağlantı noktası 7633, aynı lan ve gücü doğrulayın; DHCP adresi değişirse Yöneticide yeniden provizyon.",
+      "rfFrequencyMhz": "Frekans (MHz)",
+      "rfBandwidthKhz": "Bant genişliği (kHz)",
+      "rfSpreadingFactor": "Yayılma faktörü",
+      "rfCodingRate": "Kodlama oranı",
+      "rfTxPower": "TX gücü (dBm)",
+      "purposeAria": "Arayüzün amacı {{name}}",
+      "runtimeBadge": "Çalışma zamanı",
+      "auditRepair": "Tamirat",
+      "auditDisable": "Devre dışı bırakmak",
+      "auditRepairSuccess": "Yapılandırma onarımı uygulandı.",
+      "auditRepairFailed": "Yapılandırma onarımı başarısız oldu.",
+      "auditRepairNoChanges": "Bu onarım için herhangi bir yapılandırma değişikliğine gerek yoktu.",
+      "purpose": {
+        "auto": "Yerel LAN çoklu yayın keşfi — aynı Wi-Fi veya alt ağdaki diğer Reticulum düğümlerini bulur.",
+        "sharedInstance": "Paylaşım örneği açıkken Localhost TCP sunucusu, bu makinedeki diğer uygulamaların bu yığını kullanmasına izin verir.",
+        "tcp": "Uzak bir Reticulum hub'ına veya ağ geçidine giden TCP tüneli.",
+        "rnodeUsb": "USB RNode aracılığıyla LoRa ağı.",
+        "rnodeBle": "Bluetooth RNode aracılığıyla LoRa ağı.",
+        "rnodeWifi": "RNode Wi-Fi (tcp:// ana bilgisayarı) aracılığıyla LoRa ağı.",
+        "blePeer": "Çekirdek eş adreslerini kullanan BLE eş ağı.",
+        "generic": "Reticulum ağ arayüzü."
+      },
+      "rfProfile": {
+        "coordinated": "Koordineli bölgesel",
+        "fallback": "Küresel geri dönüş",
+        "legacy": "Eski ön ayarlar"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Tanımsız MeshCore verici",
     "meshcoreHeardNearbyEncrypted": "Yakınlardaki MeshCore RF (şifreli)",
     "foreignLoraHeading": "Meshtastic frekansınızdaki diğer yabancı LoRa ({{count}})",
-    "foreignLoraDescription": "Son 90 dakika içinde frekansınızda Meshtastic vericiler ve tanınmayan LoRa sinyalleri. MeshCore düğümleri yukarıdaki bölümde listelenmiştir."
+    "foreignLoraDescription": "Son 90 dakika içinde frekansınızda Meshtastic vericiler ve tanınmayan LoRa sinyalleri. MeshCore düğümleri yukarıdaki bölümde listelenmiştir.",
+    "reticulum": {
+      "sectionTitle": "Reticulum arayüzü yapılandırması",
+      "noIssues": "Arayüz yapılandırma sorunu algılanmadı.",
+      "summary": "{{errors}} hataları, {{warnings}} uyarıları",
+      "colInterface": "Arayüz",
+      "colIssue": "Sorun",
+      "colFix": "Düzeltmek",
+      "colAction": "Aksiyon",
+      "stackScope": "Yığın",
+      "repairFailed": "Yapılandırma onarımı başarısız oldu.",
+      "repairSuccess": "Yapılandırma onarımı uygulandı.",
+      "repairNoChanges": "Bu onarım için herhangi bir yapılandırma değişikliğine gerek yoktu.",
+      "disableSuccess": "Arayüz devre dışı.",
+      "disableFailed": "Arayüz devre dışı bırakılamadı.",
+      "remedy": {
+        "configuration": "Yapılandırma",
+        "software": "Yazılım",
+        "hardware": "Donanım"
+      },
+      "action": {
+        "repair_config": "Yapılandırmayı onar",
+        "disable": "Devre dışı bırakmak",
+        "apply_preset": "Ön ayarı uygula",
+        "edit": "Arayüzü düzenle",
+        "restart_stack": "Yığını yeniden başlat",
+        "add_auto": "Otomatik arayüz ekle"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP arayüzü \"{{name}}\" yanlış etkinleştirme anahtarını kullanıyor — RNS bunu yüklemeyecek.",
+        "tcp_missing_name": "\"{{name}}\" TCP arayüzünde yapılandırmada bir ad alanı eksik.",
+        "tcp_unreachable": "\"{{name}}\" TCP arayüzüne erişilemiyor.",
+        "rf_preset_deviation": "RNode \"{{name}}\" RF parametreleri, ön ayarından farklıdır.",
+        "rf_cross_mismatch": "Birden fazla etkinleştirilmiş RNode, farklı RF parametrelerini kullanır.",
+        "rf_using_fallback": "RNode \"{{name}}\" genel bir geri dönüş RF profili kullanır.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF parametreleri bilinen hiçbir profille eşleşmiyor.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" eski bir ön ayar kimliğini kullanıyor; taşımayı düşünün.",
+        "ghost_interface": "\"{{name}}\" arayüzü yapılandırmada etkinleştirildi ancak RNS tarafından yüklenmedi.",
+        "missing_auto_interface": "Etkin Otomatik Arayüz yok — yerel LAN keşfi kapalı.",
+        "auto_interface_down": "Otomatik Arayüz \"{{name}}\" etkin ancak çalışmıyor.",
+        "missing_shared_instance": "Paylaşım örneği açık ancak SharedInstanceServer çalışmıyor.",
+        "shared_instance_unexpected": "SharedInstanceServer yayında ancak share_instance kapalı.",
+        "runtime_only_interface": "\"{{name}}\" yalnızca çalışma zamanıdır (yapılandırmada saklanmaz)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Bir şeyler ters gitti",

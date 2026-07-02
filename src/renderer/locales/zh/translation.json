@@ -672,7 +672,34 @@
       "rnodeWifiPort": "TCP埠",
       "rnodeWifiSetupTitle": "Wi-Fi RNode设置",
       "rnodeWifiSetupHint": "闪烁后Wi-Fi关闭—首先设置RNode （ Reticulum → Admin → Wi-Fi ，或加入其AP并打开http://10.0.0.1 ）。 需要ESP32-S3支持Wi-Fi的固件。\n\n站模式后：在OLED备用屏幕、路由器DHCP列表或管理员→读取配置中找到IP。 使用tcp://host （默认端口7633 ） —不是TCP客户端接口类型。\n\n在许多Heltec板上按住约10秒的按钮可启用Wi-Fi AP （约7秒为蓝牙配对）。",
-      "localOfflineRowWifi": "Wi-Fi RNode不可达—验证IP、端口7633、相同的LAN和电源；如果DHCP地址发生更改，则在管理员中重新配置。"
+      "localOfflineRowWifi": "Wi-Fi RNode不可达—验证IP、端口7633、相同的LAN和电源；如果DHCP地址发生更改，则在管理员中重新配置。",
+      "rfFrequencyMhz": "频率（兆赫）",
+      "rfBandwidthKhz": "带宽（kHz）",
+      "rfSpreadingFactor": "扩频因子",
+      "rfCodingRate": "编码率",
+      "rfTxPower": "发射功率（dBm）",
+      "purposeAria": "接口 {{name}} 的用途",
+      "runtimeBadge": "运行时",
+      "auditRepair": "维修",
+      "auditDisable": "禁用",
+      "auditRepairSuccess": "已应用配置修复。",
+      "auditRepairFailed": "配置修复失败。",
+      "auditRepairNoChanges": "此修复无需更改配置。",
+      "purpose": {
+        "auto": "本地 LAN 多播发现 — 查找同一 Wi-Fi 或子网上的其他 Reticulum 节点。",
+        "sharedInstance": "共享实例打开时的本地主机 TCP 服务器 — 允许该计算机上的其他应用程序使用此堆栈。",
+        "tcp": "到远程 Reticulum 集线器或网关的出站 TCP 隧道。",
+        "rnodeUsb": "通过 USB RNode 的 LoRa 网格。",
+        "rnodeBle": "通过蓝牙 RNode 的 LoRa 网格。",
+        "rnodeWifi": "通过 RNode Wi-Fi (tcp:// 主机) 的 LoRa 网格。",
+        "blePeer": "使用种子对等地址的 BLE 对等网格。",
+        "generic": "Reticulum 网络接口。"
+      },
+      "rfProfile": {
+        "coordinated": "区域协调",
+        "fallback": "全局后备",
+        "legacy": "旧版预设"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "未识别的MeshCore变送器",
     "meshcoreHeardNearbyEncrypted": "附近的MeshCore RF （加密）",
     "foreignLoraHeading": "您Meshtastic频率上的其他外来LoRa （ {{count}} ）",
-    "foreignLoraDescription": "在过去90分钟内，您的频率上有Meshtastic发射器和无法识别的LoRa信号。上面的部分列出了MeshCore节点。"
+    "foreignLoraDescription": "在过去90分钟内，您的频率上有Meshtastic发射器和无法识别的LoRa信号。上面的部分列出了MeshCore节点。",
+    "reticulum": {
+      "sectionTitle": "Reticulum 接口配置",
+      "noIssues": "未检测到接口配置问题。",
+      "summary": "{{errors}} 错误，{{warnings}} 警告",
+      "colInterface": "界面",
+      "colIssue": "问题",
+      "colFix": "使固定",
+      "colAction": "行动",
+      "stackScope": "堆",
+      "repairFailed": "配置修复失败。",
+      "repairSuccess": "已应用配置修复。",
+      "repairNoChanges": "此修复无需更改配置。",
+      "disableSuccess": "接口已禁用。",
+      "disableFailed": "无法禁用接口。",
+      "remedy": {
+        "configuration": "配置",
+        "software": "软件",
+        "hardware": "硬件"
+      },
+      "action": {
+        "repair_config": "修复配置",
+        "disable": "禁用",
+        "apply_preset": "应用预设",
+        "edit": "编辑界面",
+        "restart_stack": "重启堆栈",
+        "add_auto": "添加自动接口"
+      },
+      "audit": {
+        "tcp_enable_key": "TCP 接口“{{name}}”使用了错误的启用密钥 — RNS 将不会加载它。",
+        "tcp_missing_name": "TCP 接口“{{name}}”在配置中缺少名称字段。",
+        "tcp_unreachable": "TCP 接口“{{name}}”无法访问。",
+        "rf_preset_deviation": "RNode“{{name}}”RF 参数与其预设不同。",
+        "rf_cross_mismatch": "多个启用的 RNode 使用不同的 RF 参数。",
+        "rf_using_fallback": "RNode“{{name}}”使用全局回退 RF 配置文件。",
+        "rf_unknown_params": "RNode“{{name}}”RF 参数与已知配置文件不匹配。",
+        "rf_legacy_preset_id": "RNode“{{name}}”使用旧的预设 ID — 考虑迁移。",
+        "ghost_interface": "接口“{{name}}”在配置中启用，但 RNS 未加载。",
+        "missing_auto_interface": "未启用自动接口 — 本地 LAN 发现已关闭。",
+        "auto_interface_down": "自动接口“{{name}}”已启用但已关闭。",
+        "missing_shared_instance": "共享实例已开启，但 SharedInstanceServer 未启动。",
+        "shared_instance_unexpected": "SharedInstanceServer 已启用，但 share_instance 已关闭。",
+        "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。"
+      }
+    }
   },
   "errorBoundary": {
     "title": "出了点问题",

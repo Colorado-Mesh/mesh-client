@@ -672,7 +672,34 @@
       "rnodeWifiPort": "Síťový port",
       "rnodeWifiSetupTitle": "Nastavení Wi-Fi RNode",
       "rnodeWifiSetupHint": "Wi-Fi je po blikání vypnutá — nejprve poskytněte RNode (Reticulum → Admin → Wi-Fi, nebo se připojte k jeho AP a otevřete http://10.0.0.1). Vyžaduje firmware s podporou Wi-Fi ESP32-S3.\n\nPo režimu stanice: najděte IP adresu na alternativní obrazovce OLED, seznamu DHCP směrovače nebo konfiguraci Admin → Read. Použijte tcp://host (výchozí port 7633) — ne typ rozhraní TCP Client.\n\n~10 s podržení tlačítka na mnoha deskách Heltec umožňuje Wi-Fi AP (~7 s je párování Bluetooth).",
-      "localOfflineRowWifi": "Nedostupný Wi-Fi RNode — ověřte IP, port 7633, stejnou LAN a napájení; opětovné poskytnutí v administrátorovi, pokud se změnila adresa DHCP."
+      "localOfflineRowWifi": "Nedostupný Wi-Fi RNode — ověřte IP, port 7633, stejnou LAN a napájení; opětovné poskytnutí v administrátorovi, pokud se změnila adresa DHCP.",
+      "rfFrequencyMhz": "Frekvence (MHz)",
+      "rfBandwidthKhz": "Šířka pásma (kHz)",
+      "rfSpreadingFactor": "Rozptylovací faktor",
+      "rfCodingRate": "Rychlost kódování",
+      "rfTxPower": "TX výkon (dBm)",
+      "purposeAria": "Účel rozhraní {{name}}",
+      "runtimeBadge": "Doba běhu",
+      "auditRepair": "Opravit",
+      "auditDisable": "Zakázat",
+      "auditRepairSuccess": "Byla provedena oprava konfigurace.",
+      "auditRepairFailed": "Oprava konfigurace se nezdařila.",
+      "auditRepairNoChanges": "Pro tuto opravu nebyly potřeba žádné změny konfigurace.",
+      "purpose": {
+        "auto": "Místní vícesměrové vysílání LAN – najde další uzly Reticulum ve stejné Wi-Fi nebo podsíti.",
+        "sharedInstance": "Server TCP Localhost, když je instance sdílení zapnutá – umožňuje ostatním aplikacím na tomto počítači používat tento zásobník.",
+        "tcp": "Odchozí tunel TCP do vzdáleného uzlu Reticulum nebo brány.",
+        "rnodeUsb": "LoRa mesh přes USB RNode.",
+        "rnodeBle": "LoRa mesh přes Bluetooth RNode.",
+        "rnodeWifi": "LoRa mesh přes RNode Wi-Fi (tcp:// hostitel).",
+        "blePeer": "BLE peer mesh pomocí seed peer adres.",
+        "generic": "Síťové rozhraní Reticulum."
+      },
+      "rfProfile": {
+        "coordinated": "Koordinované regionální",
+        "fallback": "Globální záložní",
+        "legacy": "Starší předvolby"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -946,7 +973,51 @@
     "meshcoreHeardUnknownNode": "Neidentifikovaný vysílač MeshCore",
     "meshcoreHeardNearbyEncrypted": "Nedaleko MeshCore RF (šifrované)",
     "foreignLoraHeading": "Další cizí LoRa na vaší Meshtastic frekvenci ({{count}})",
-    "foreignLoraDescription": "Meshtastic vysílače a nerozpoznané LoRa signály na vaší frekvenci za posledních 90 minut. Uzly MeshCore jsou uvedeny ve výše uvedené části."
+    "foreignLoraDescription": "Meshtastic vysílače a nerozpoznané LoRa signály na vaší frekvenci za posledních 90 minut. Uzly MeshCore jsou uvedeny ve výše uvedené části.",
+    "reticulum": {
+      "sectionTitle": "Konfigurace rozhraní Reticulum",
+      "noIssues": "Nebyly zjištěny žádné problémy s konfigurací rozhraní.",
+      "summary": "{{errors}} chyb, {{warnings}} varování",
+      "colInterface": "Rozhraní",
+      "colIssue": "Problém",
+      "colFix": "Opravit",
+      "colAction": "Akce",
+      "stackScope": "Stoh",
+      "repairFailed": "Oprava konfigurace se nezdařila.",
+      "repairSuccess": "Byla provedena oprava konfigurace.",
+      "repairNoChanges": "Pro tuto opravu nebyly potřeba žádné změny konfigurace.",
+      "disableSuccess": "Rozhraní zakázáno.",
+      "disableFailed": "Rozhraní nelze zakázat.",
+      "remedy": {
+        "configuration": "Konfigurace",
+        "software": "Software",
+        "hardware": "Železářské zboží"
+      },
+      "action": {
+        "repair_config": "Opravit konfiguraci",
+        "disable": "Zakázat",
+        "apply_preset": "Použít předvolbu",
+        "edit": "Upravit rozhraní",
+        "restart_stack": "Restartujte zásobník",
+        "add_auto": "Přidat automatické rozhraní"
+      },
+      "audit": {
+        "tcp_enable_key": "Rozhraní TCP „{{name}}“ používá nesprávný povolovací klíč – RNS jej nenačte.",
+        "tcp_missing_name": "Rozhraní TCP „{{name}}“ v konfiguraci chybí pole názvu.",
+        "tcp_unreachable": "Rozhraní TCP \"{{name}}\" je nedostupné.",
+        "rf_preset_deviation": "Parametry RF uzlu \"{{name}}\" se liší od přednastavených.",
+        "rf_cross_mismatch": "Více povolených RNodů používá různé RF parametry.",
+        "rf_using_fallback": "RNode \"{{name}}\" používá globální záložní RF profil.",
+        "rf_unknown_params": "RNode \"{{name}}\" RF parametry neodpovídají žádnému známému profilu.",
+        "rf_legacy_preset_id": "RNode \"{{name}}\" používá starší přednastavené ID – zvažte migraci.",
+        "ghost_interface": "Rozhraní „{{name}}“ je v konfiguraci povoleno, ale není načteno službou RNS.",
+        "missing_auto_interface": "Není povoleno automatické rozhraní – zjišťování místní sítě LAN je vypnuté.",
+        "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
+        "missing_shared_instance": "Sdílená instance je zapnutá, ale SharedInstanceServer není aktivní.",
+        "shared_instance_unexpected": "SharedInstanceServer je aktivní, ale share_instance je vypnutá.",
+        "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci)."
+      }
+    }
   },
   "errorBoundary": {
     "title": "Něco se pokazilo",
