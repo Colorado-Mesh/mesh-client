@@ -7,7 +7,6 @@ export function readUtf8FileBounded(
   filePath: string,
   maxBytes = RETICULUM_CONFIG_MAX_READ_BYTES,
 ): string {
-  // codeql[js/insecure-temporary-file] -- skip; filePath is user-selected config via dialog, not temp
   const fd = fs.openSync(filePath, 'r');
   try {
     const buf = Buffer.alloc(maxBytes + 1);

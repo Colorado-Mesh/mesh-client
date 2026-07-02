@@ -4,6 +4,8 @@
  * are covered without fixed long-interval steps (cap 45 minutes) or JWT "machine-gun" retries.
  */
 
+import type { MeshProtocol } from './meshProtocol';
+
 /** First long-wait step: 60s → 120s → … capped. */
 export const MQTT_RECONNECT_EXPONENTIAL_BASE_MS = 60_000;
 
@@ -35,8 +37,6 @@ export function computeMqttExponentialReconnectDelayMs(attempt: number): number 
   );
   return applyPositiveJitterMs(raw);
 }
-
-import type { MeshProtocol } from './meshProtocol';
 
 export interface ComputeMqttReconnectDelayParams {
   protocol: MeshProtocol;
