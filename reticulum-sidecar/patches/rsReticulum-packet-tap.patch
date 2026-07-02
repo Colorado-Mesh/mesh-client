@@ -1,0 +1,234 @@
+diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
+index c0568e6..5e73442 100644
+--- a/crates/rns-runtime/src/reticulum.rs
++++ b/crates/rns-runtime/src/reticulum.rs
+@@ -172,6 +172,17 @@ impl ReticulumHandle {
+         result
+     }
+ 
++    /// Register a wire packet tap on the local transport actor (sniffer/debug).
++    pub async fn register_packet_tap(
++        &self,
++        tap_tx: tokio::sync::broadcast::Sender<rns_transport::messages::PacketTapEvent>,
++    ) {
++        let _ = self
++            .transport_tx
++            .send(TransportMessage::SetPacketTap { tap_tx })
++            .await;
++    }
++
+     /// Query the authoritative control plane.
+     ///
+     /// In client mode, Python proxies Reticulum control methods to the local
+diff --git a/crates/rns-transport/src/actor/inbound.rs b/crates/rns-transport/src/actor/inbound.rs
+index 68e1fa3..232795f 100644
+--- a/crates/rns-transport/src/actor/inbound.rs
++++ b/crates/rns-transport/src/actor/inbound.rs
+@@ -35,6 +35,15 @@ impl TransportActor {
+             packet.raw.clone()
+         };
+ 
++        self.emit_packet_tap(
++            crate::messages::PacketTapDirection::Rx,
++            packet.interface_id,
++            &raw,
++            packet.rssi,
++            packet.snr,
++            packet.q,
++        );
++
+         let (mut parsed, data_offset) = match rns_wire::header::PacketHeader::unpack(&raw) {
+             Ok((header, offset)) => (header, offset),
+             Err(e) => {
+diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
+index 3973969..f888cae 100644
+--- a/crates/rns-transport/src/actor/mod.rs
++++ b/crates/rns-transport/src/actor/mod.rs
+@@ -145,6 +145,9 @@ pub struct TransportActor {
+     /// background switches the maintenance tick to the long interval so the
+     /// actor stops burning CPU (and battery) while the app is suspended.
+     pub is_foreground: Arc<AtomicBool>,
++
++    /// Optional wire packet tap — emits RX/TX frames for sniffer UIs.
++    packet_tap: Option<tokio::sync::broadcast::Sender<crate::messages::PacketTapEvent>>,
+ }
+ 
+ /// Cached announce metadata for diagnostics + CacheRequest replay. Raw
+@@ -269,6 +272,7 @@ impl TransportActor {
+             channel_drops: 0,
+             announce_handlers: Vec::new(),
+             is_foreground: Arc::new(AtomicBool::new(true)),
++            packet_tap: None,
+         };
+ 
+         (actor, tx)
+@@ -616,6 +620,9 @@ impl TransportActor {
+                     debug!(dest = hex::encode(dest), "registered path waiter");
+                 }
+             }
++            TransportMessage::SetPacketTap { tap_tx } => {
++                self.packet_tap = Some(tap_tx);
++            }
+             TransportMessage::Shutdown => unreachable!(),
+         }
+     }
+@@ -955,6 +962,35 @@ impl TransportActor {
+     ///
+     /// `try_send` failures: `Full` bumps `tx_drops`; `Closed` auto-deregisters
+     /// (zombie interface — receiver dropped without DeregisterInterface).
++    fn emit_packet_tap(
++        &self,
++        direction: crate::messages::PacketTapDirection,
++        interface_id: InterfaceId,
++        raw: &[u8],
++        rssi: Option<f32>,
++        snr: Option<f32>,
++        q: Option<f32>,
++    ) {
++        let Some(tap) = self.packet_tap.as_ref() else {
++            return;
++        };
++        let interface_name = self
++            .interfaces
++            .get(&interface_id)
++            .map(|e| e.name.clone())
++            .unwrap_or_else(|| format!("interface_{interface_id}"));
++        let event = crate::messages::PacketTapEvent::from_wire(
++            direction,
++            interface_id,
++            interface_name,
++            raw,
++            rssi,
++            snr,
++            q,
++        );
++        let _ = tap.send(event);
++    }
++
+     #[tracing::instrument(
+         level = "trace",
+         name = "actor.send_to_interface",
+@@ -985,8 +1021,17 @@ impl TransportActor {
+         } else {
+             Bytes::copy_from_slice(raw)
+         };
+-        match entry.tx.try_send(data) {
+-            Ok(()) => {}
++        match entry.tx.try_send(data.clone()) {
++            Ok(()) => {
++                self.emit_packet_tap(
++                    crate::messages::PacketTapDirection::Tx,
++                    id,
++                    &data,
++                    None,
++                    None,
++                    None,
++                );
++            }
+             Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {
+                 let tx_drops = entry
+                     .tx_drops
+diff --git a/crates/rns-transport/src/messages.rs b/crates/rns-transport/src/messages.rs
+index 045aa0f..8756378 100644
+--- a/crates/rns-transport/src/messages.rs
++++ b/crates/rns-transport/src/messages.rs
+@@ -212,7 +212,71 @@ pub struct AnnounceHandlerEvent {
+     pub name_hash: [u8; 10],
+ }
+ 
+-/// Every mutation of transport state enters through this enum — the actor
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum PacketTapDirection {
++    Rx,
++    Tx,
++}
++
++/// Wire-level packet observation event for debug/sniffer UIs.
++#[derive(Debug, Clone)]
++pub struct PacketTapEvent {
++    pub direction: PacketTapDirection,
++    pub interface_id: InterfaceId,
++    pub interface_name: String,
++    pub raw: Vec<u8>,
++    pub rssi: Option<f32>,
++    pub snr: Option<f32>,
++    pub q: Option<f32>,
++    pub packet_type: Option<String>,
++    pub header_type: Option<String>,
++    pub destination_hash: Option<[u8; 16]>,
++    pub transport_type: Option<String>,
++    pub context: Option<String>,
++}
++
++const PACKET_TAP_RAW_CAP: usize = 4096;
++
++impl PacketTapEvent {
++    pub fn from_wire(
++        direction: PacketTapDirection,
++        interface_id: InterfaceId,
++        interface_name: String,
++        raw: &[u8],
++        rssi: Option<f32>,
++        snr: Option<f32>,
++        q: Option<f32>,
++    ) -> Self {
++        let capped = if raw.len() > PACKET_TAP_RAW_CAP {
++            raw[..PACKET_TAP_RAW_CAP].to_vec()
++        } else {
++            raw.to_vec()
++        };
++        let mut event = Self {
++            direction,
++            interface_id,
++            interface_name,
++            raw: capped,
++            rssi,
++            snr,
++            q,
++            packet_type: None,
++            header_type: None,
++            destination_hash: None,
++            transport_type: None,
++            context: None,
++        };
++        if let Ok((header, _)) = rns_wire::header::PacketHeader::unpack(&event.raw) {
++            event.packet_type = Some(format!("{:?}", header.flags.packet_type));
++            event.header_type = Some(format!("{:?}", header.flags.header_type));
++            event.destination_hash = Some(header.destination_hash);
++            event.transport_type = Some(format!("{:?}", header.flags.transport_type));
++            event.context = Some(format!("{:?}", header.context));
++        }
++        event
++    }
++}
++
+ /// dispatches on the variant, so adding a new operation is a matter of adding
+ /// a variant and a match arm rather than exposing a new lock or shared type.
+ // This is the transport actor's public message surface. Boxing individual
+@@ -321,6 +385,10 @@ pub enum TransportMessage {
+         dest: [u8; 16],
+         reply: tokio::sync::oneshot::Sender<bool>,
+     },
++    /// Optional wire packet tap for debug/sniffer consumers.
++    SetPacketTap {
++        tap_tx: tokio::sync::broadcast::Sender<PacketTapEvent>,
++    },
+     Shutdown,
+ }
+ 
+@@ -353,6 +421,7 @@ pub fn msg_variant_name(msg: &TransportMessage) -> &'static str {
+         TransportMessage::RegisterLink { .. } => "RegisterLink",
+         TransportMessage::ActivateLink { .. } => "ActivateLink",
+         TransportMessage::AwaitPath { .. } => "AwaitPath",
++        TransportMessage::SetPacketTap { .. } => "SetPacketTap",
+         TransportMessage::Shutdown => "Shutdown",
+     }
+ }
+@@ -733,6 +802,7 @@ impl std::fmt::Debug for TransportMessage {
+             Self::AwaitPath { dest, .. } => {
+                 f.debug_struct("AwaitPath").field("dest", dest).finish()
+             }
++            Self::SetPacketTap { .. } => f.debug_struct("SetPacketTap").finish(),
+             Self::Shutdown => write!(f, "Shutdown"),
+         }
+     }

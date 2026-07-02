@@ -51,6 +51,8 @@ jobs:
           retention-days: 14
 
   build-rns-stack:
+    env:
+      RS_RETICULUM_REF: 6d2b28475321bc15c8f60796513d8878b47ed3ab
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +72,12 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
         shell: bash
         run: |
-          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          RNS_DIR="${GITHUB_WORKSPACE}/../rsReticulum"
+          PATCH="${GITHUB_WORKSPACE}/reticulum-sidecar/patches/rsReticulum-packet-tap.patch"
+          git clone https://github.com/ratspeak/rsReticulum.git "${RNS_DIR}"
+          git -C "${RNS_DIR}" checkout "${RS_RETICULUM_REF}"
+          git -C "${RNS_DIR}" apply --check "${PATCH}"
+          git -C "${RNS_DIR}" apply "${PATCH}"
           git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -118,6 +125,8 @@ jobs:
           retention-days: 14
 
   build-windows-arm64-rns-stack:
+    env:
+      RS_RETICULUM_REF: 6d2b28475321bc15c8f60796513d8878b47ed3ab
     permissions:
       contents: read
     runs-on: windows-latest
@@ -126,7 +135,12 @@ jobs:
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
         shell: bash
         run: |
-          git clone --depth 1 https://github.com/ratspeak/rsReticulum.git "${GITHUB_WORKSPACE}/../rsReticulum"
+          RNS_DIR="${GITHUB_WORKSPACE}/../rsReticulum"
+          PATCH="${GITHUB_WORKSPACE}/reticulum-sidecar/patches/rsReticulum-packet-tap.patch"
+          git clone https://github.com/ratspeak/rsReticulum.git "${RNS_DIR}"
+          git -C "${RNS_DIR}" checkout "${RS_RETICULUM_REF}"
+          git -C "${RNS_DIR}" apply --check "${PATCH}"
+          git -C "${RNS_DIR}" apply "${PATCH}"
           git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${GITHUB_WORKSPACE}/../rsLXMF"
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:

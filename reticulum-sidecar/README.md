@@ -23,6 +23,14 @@ parent/
   mesh-client/reticulum-sidecar/
 ```
 
+Apply the packet-tap overlay (required for wire sniffer / `rns-stack` until upstream merges):
+
+```bash
+./scripts/apply-rsReticulum-packet-tap.sh
+```
+
+See [patches/README.md](patches/README.md) for base SHA and regen steps.
+
 ```bash
 cd reticulum-sidecar
 cargo build --release --features rns-stack

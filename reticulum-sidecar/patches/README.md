@@ -1,0 +1,46 @@
+# rsReticulum overlays
+
+Patches applied on top of pinned [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum) checkouts for mesh-client `rns-stack` builds.
+
+## rsReticulum-packet-tap.patch
+
+Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSocket events, `GET /api/v1/packets`).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/10 |
+
+**Adds (4 files):**
+
+- `crates/rns-transport/src/messages.rs` — `PacketTapDirection`, `PacketTapEvent`, `SetPacketTap`
+- `crates/rns-transport/src/actor/mod.rs` — tap storage, RX/TX emit
+- `crates/rns-transport/src/actor/inbound.rs` — RX tap on inbound
+- `crates/rns-runtime/src/reticulum.rs` — `ReticulumHandle::register_packet_tap`
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsReticulum` required):
+
+```bash
+./scripts/apply-rsReticulum-packet-tap.sh
+```
+
+### Regenerate
+
+```bash
+cd ../rsReticulum
+git fetch origin
+git diff 6d2b28475321bc15c8f60796513d8878b47ed3ab -- \
+  crates/rns-runtime/src/reticulum.rs \
+  crates/rns-transport/src/messages.rs \
+  crates/rns-transport/src/actor/mod.rs \
+  crates/rns-transport/src/actor/inbound.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+git -C /tmp/rsReticulum-patch-test checkout 6d2b28475321bc15c8f60796513d8878b47ed3ab
+git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+```
+
+### Sunset
+
+When the upstream PR merges, remove this patch, drop the CI apply step, and clone `ratspeak/rsReticulum` `main` directly in `build-rns-stack` jobs.
