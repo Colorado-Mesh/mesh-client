@@ -8,9 +8,11 @@ const onEvent = vi.fn();
 const onStartStack = vi.fn();
 
 vi.mock('@/renderer/lib/appSettingsStorage', () => ({
-  isReticulumAutostartEnabled: () => false,
+  isReticulumAutostartEnabled: vi.fn(() => false),
   setReticulumAutostartEnabled: vi.fn(),
 }));
+
+import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 
 import { useReticulumSidecarApi } from './useReticulumSidecarApi';
 
@@ -87,6 +89,43 @@ describe('useReticulumSidecarApi', () => {
 
     await waitFor(() => {
       expect(result.current.sidecarUiRunning).toBe(false);
+    });
+  });
+
+  it('autostart calls onStartStack once when status flickers during in-flight start', async () => {
+    vi.mocked(isReticulumAutostartEnabled).mockReturnValue(true);
+
+    let statusHandler:
+      ((status: { running: boolean; port: number; pid: number | null }) => void) | undefined;
+    let resolveStart: (() => void) | undefined;
+    const startPromise = new Promise<void>((resolve) => {
+      resolveStart = resolve;
+    });
+    onStartStack.mockReturnValue(startPromise);
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+    onStatus.mockImplementation((handler) => {
+      statusHandler = handler;
+      return () => {};
+    });
+
+    renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        enableAutostart: true,
+        onStartStack,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(onStartStack).toHaveBeenCalledTimes(1);
+    });
+
+    statusHandler?.({ running: false, port: 0, pid: null });
+    statusHandler?.({ running: false, port: 0, pid: null });
+
+    resolveStart?.();
+    await waitFor(() => {
+      expect(onStartStack).toHaveBeenCalledTimes(1);
     });
   });
 });

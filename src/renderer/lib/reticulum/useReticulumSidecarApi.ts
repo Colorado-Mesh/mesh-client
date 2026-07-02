@@ -36,6 +36,7 @@ export function useReticulumSidecarApi({
   });
   const [autoStart, setAutoStart] = useState(isReticulumAutostartEnabled);
   const autostartAttemptedRef = useRef(false);
+  const startInFlightRef = useRef(false);
   const manualStopSuppressRef = useRef(false);
   const [identity, setIdentity] = useState<ReticulumIdentityStatus | null>(null);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export function useReticulumSidecarApi({
     void refreshSidecarStatus();
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       setSidecarStatus(status);
-      if (!status.running && !manualStopSuppressRef.current) {
+      if (!status.running && !manualStopSuppressRef.current && !startInFlightRef.current) {
         autostartAttemptedRef.current = false;
       }
     });
@@ -103,12 +104,17 @@ export function useReticulumSidecarApi({
   useEffect(() => {
     if (!enableAutostart || !autoStart || autostartAttemptedRef.current) return;
     if (manualStopSuppressRef.current) return;
-    if (sidecarStatus.running || connecting) return;
+    if (sidecarStatus.running || connecting || startInFlightRef.current) return;
     autostartAttemptedRef.current = true;
-    void onStartStack().catch((e: unknown) => {
-      console.warn('[useReticulumSidecarApi] autostart failed ' + errLikeToLogString(e));
-      autostartAttemptedRef.current = false;
-    });
+    startInFlightRef.current = true;
+    void onStartStack()
+      .catch((e: unknown) => {
+        console.warn('[useReticulumSidecarApi] autostart failed ' + errLikeToLogString(e));
+        autostartAttemptedRef.current = false;
+      })
+      .finally(() => {
+        startInFlightRef.current = false;
+      });
   }, [enableAutostart, autoStart, connecting, onStartStack, sidecarStatus.running]);
 
   const notifyManualStackStop = useCallback(() => {

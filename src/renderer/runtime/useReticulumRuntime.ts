@@ -393,7 +393,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       if (status.running) return;
-      const wasActive = stateRef.current.status !== 'disconnected';
+      if (connectInFlightRef.current) return;
+      const wasActive =
+        stateRef.current.status === 'configured' ||
+        stateRef.current.status === 'connected' ||
+        stateRef.current.status === 'stale';
       if (wasActive) {
         tearDownFromSidecarStop();
         if (isReticulumAutostartEnabled() && !suppressReconnectRef.current) {

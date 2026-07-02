@@ -840,6 +840,14 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Fix**: Current dev builds **preserve** the sidecar across HMR remounts. If you still see this on an older build, click **Start stack** again on Connection. Explicit **Disconnect** / app quit still stops the sidecar.
 
+### Reticulum `proxyGet` fetch failed / many `[ReticulumIPC] start` lines
+
+**Symptoms**: Device log or devtools shows `Error occurred in handler for 'reticulum:proxyGet': TypeError: fetch failed`, often in bursts of three or more at once. The app log may also show dozens of `[ReticulumIPC] start` entries within a few seconds while Nomad/Radio/Peers panels stay empty or stale.
+
+**Cause**: Overlapping sidecar start attempts restart the process before its HTTP server is ready (start/reconnect storm). Panels keep calling `proxyGet` against a dead or stale localhost port during the churn.
+
+**Fix**: Current builds serialize sidecar start in the main process and suppress autostart/reconnect feedback loops during an in-flight start. If you still see this: disable **Autostart stack** on Connection, click **Start stack** once, wait up to ~30s for the health poll, then reopen other Reticulum tabs.
+
 ### Reticulum announce interval resets after saving stack settings
 
 **Symptoms**: You set an announce interval on the Radio tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.

@@ -62,6 +62,7 @@ async function pollSidecarHealth(port: number): Promise<ReticulumStatusResponse>
 export class ReticulumSidecarManager extends EventEmitter {
   private proc: ChildProcess | null = null;
   private ws: { close: () => void } | null = null;
+  private startPromise: Promise<ReticulumSidecarStatus> | null = null;
   private _status: ReticulumSidecarStatus = {
     running: false,
     port: 0,
@@ -81,18 +82,30 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async start(opts: ReticulumSidecarStartOptions = {}): Promise<ReticulumSidecarStatus> {
+    if (this.startPromise) {
+      return this.startPromise;
+    }
+    this.startPromise = this.startOnce(opts).finally(() => {
+      this.startPromise = null;
+    });
+    return this.startPromise;
+  }
+
+  private async startOnce(
+    opts: ReticulumSidecarStartOptions = {},
+  ): Promise<ReticulumSidecarStatus> {
     if (opts.reuseIfRunning && this._status.running && this.proc) {
       try {
         await pollSidecarHealth(this._status.port);
         return this.getStatus();
       } catch {
         // catch-no-log-ok: reuseIfRunning health failed — stop stale process and start fresh
-        await this.stop();
+        await this.stopProc();
       }
     }
 
     if (this.proc) {
-      await this.stop();
+      await this.stopProc();
     }
 
     const configDir = this.reticulumUserDir('config');
@@ -156,7 +169,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       await pollSidecarHealth(port);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      await this.stop();
+      await this.stopProc();
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);
     }
@@ -172,6 +185,15 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   async stop(): Promise<void> {
+    if (this.startPromise) {
+      await this.startPromise.catch(() => {
+        // catch-no-log-ok: in-flight start may fail; explicit stop still runs afterward
+      });
+    }
+    await this.stopProc();
+  }
+
+  private async stopProc(): Promise<void> {
     this.teardownWs();
     const proc = this.proc;
     this.proc = null;
