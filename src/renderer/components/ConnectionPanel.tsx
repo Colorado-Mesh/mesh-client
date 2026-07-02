@@ -76,7 +76,10 @@ import {
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import { getBleAdapterOwner } from '../lib/reticulum/reticulumBleAdapterConflict';
+import {
+  getBleAdapterOwner,
+  isNobleBleBlockedByReticulumLease,
+} from '../lib/reticulum/reticulumBleAdapterConflict';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
@@ -1317,6 +1320,11 @@ export default function ConnectionPanel({
       }
     };
 
+    if (capabilities.hasReticulumInterfaceConfig) {
+      notifyPrimaryAutoConnectSettledIfNeeded();
+      return;
+    }
+
     if (autoConnectFiredRef.current) return;
     if (deviceStateRef.current.status !== 'disconnected') {
       notifyPrimaryAutoConnectSettledIfNeeded();
@@ -1371,36 +1379,45 @@ export default function ConnectionPanel({
         maybeNotifyPrimaryBleAutoConnectSettled();
         return false;
       }
-      const bleTargetLabel = resolveBleAutoConnectLabel(
-        lastBleId,
-        lc,
-        lastConnectionBleDeviceNameFallbackRef.current,
-      );
-      setAutoConnectBleTarget(bleTargetLabel);
-      setConnectionType('ble');
-      isAutoConnectingRef.current = true;
-      setIsAutoConnecting(true);
-      setConnecting(true);
-      setShowBlePicker(false);
-      setConnectionStage('connectionPanel.stageConnecting');
-      // Primary: notify secondary after the first connect attempt (not after scan fallback).
-      void reconnectBleWithScan(protocol, lastBleId, () => {
-        const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
-        if (
-          dualNobleBleBothRadiosConfigured() &&
-          getNobleBleDualRadioPrimaryProtocol() === protocol
-        ) {
-          void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled);
+      void (async () => {
+        if (await isNobleBleBlockedByReticulumLease()) {
+          console.debug(
+            `[ConnectionPanel] ${protocol} BLE auto-connect skipped — Reticulum holds Bluetooth adapter`,
+          );
+          maybeNotifyPrimaryBleAutoConnectSettled();
+          return;
         }
-        return attempt;
-      })
-        .then(() => {
-          isAutoConnectingRef.current = false;
-          setIsAutoConnecting(false);
-          setConnecting(false);
-          setConnectionStage('');
+        const bleTargetLabel = resolveBleAutoConnectLabel(
+          lastBleId,
+          lc,
+          lastConnectionBleDeviceNameFallbackRef.current,
+        );
+        setAutoConnectBleTarget(bleTargetLabel);
+        setConnectionType('ble');
+        isAutoConnectingRef.current = true;
+        setIsAutoConnecting(true);
+        setConnecting(true);
+        setShowBlePicker(false);
+        setConnectionStage('connectionPanel.stageConnecting');
+        // Primary: notify secondary after the first connect attempt (not after scan fallback).
+        void reconnectBleWithScan(protocol, lastBleId, () => {
+          const attempt = onAutoConnectRef.current('ble', undefined, undefined, lastBleId);
+          if (
+            dualNobleBleBothRadiosConfigured() &&
+            getNobleBleDualRadioPrimaryProtocol() === protocol
+          ) {
+            void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled);
+          }
+          return attempt;
         })
-        .catch(onAutoConnectFailed);
+          .then(() => {
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            setConnecting(false);
+            setConnectionStage('');
+          })
+          .catch(onAutoConnectFailed);
+      })();
       return true;
     };
 
@@ -1445,6 +1462,16 @@ export default function ConnectionPanel({
           : STAGE_WAITING_NOBLE_BLE_MESHCORE,
       );
       await awaitNobleBlePrimaryAutoConnectSettled(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+      if (await isNobleBleBlockedByReticulumLease()) {
+        console.debug(
+          `[ConnectionPanel] ${protocol} BLE auto-connect skipped — Reticulum holds Bluetooth adapter`,
+        );
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setConnecting(false);
+        setConnectionStage('');
+        return;
+      }
       setConnectionStage('connectionPanel.stageConnecting');
       void reconnectBleWithScan(protocol, bleId, () =>
         onAutoConnectRef.current('ble', undefined, undefined, bleId),
@@ -1522,7 +1549,7 @@ export default function ConnectionPanel({
       maybeNotifyPrimaryBleAutoConnectSettled();
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-  }, [protocol, isLinux, t]);
+  }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig]);
 
   // Cleanup timeout on unmount
   useEffect(
@@ -1537,7 +1564,12 @@ export default function ConnectionPanel({
     setError(null);
 
     if (lastConnection.type === 'ble') {
-      if (lastConnection.bleDeviceId) {
+      void (async () => {
+        if (await isNobleBleBlockedByReticulumLease()) {
+          setError(t('connectionPanel.reticulumInterfaces.reticulumBleBlocksMesh'));
+          return;
+        }
+        if (!lastConnection.bleDeviceId) return;
         setConnectionType('ble');
         setBleDevices([]);
         setShowBlePicker(false);
@@ -1594,7 +1626,7 @@ export default function ConnectionPanel({
               setConnectionStage('');
             });
         }
-      }
+      })();
     } else if (lastConnection.type === 'http') {
       const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
       const addr = lastConnection.httpAddress ?? fallbackAddress;
@@ -1741,7 +1773,10 @@ export default function ConnectionPanel({
     ) : null;
 
   let connectingProgressView: ReactNode = null;
-  if ((connecting && !isConnected) || (showNobleBleWaitNotice && state.status !== 'configured')) {
+  if (
+    !capabilities.hasReticulumInterfaceConfig &&
+    ((connecting && !isConnected) || (showNobleBleWaitNotice && state.status !== 'configured'))
+  ) {
     connectingProgressView = (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
         <div className="w-full">{renderExitActions('connecting')}</div>

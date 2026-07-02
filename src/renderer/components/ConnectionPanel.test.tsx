@@ -1613,3 +1613,73 @@ describe('ConnectionPanel LetsMesh username sync', () => {
     }
   });
 });
+
+describe('ConnectionPanel Reticulum', () => {
+  it('shows Reticulum stack panel instead of BLE spinner while sidecar is connecting', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:reticulum';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'saved-reticulum-ble' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={{ ...disconnectedState, status: 'connecting' }}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="reticulum"
+          onStartReticulumStack={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Reticulum stack')).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/Scanning for Bluetooth devices/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Auto-connecting/i)).not.toBeInTheDocument();
+      expect(onAutoConnect).not.toHaveBeenCalled();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('skips mesh BLE auto-connect when Reticulum holds the Bluetooth adapter lease', async () => {
+    const noble = mockMacNoblePlatform();
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'ble', bleDeviceId: 'aa-bb-cc-dd-ee-ff' }),
+    );
+    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.bleAdapter.getState).mockResolvedValue({
+      owner: 'reticulum-sidecar',
+    });
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshtastic"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Radio Connection')).toBeInTheDocument();
+      });
+      expect(onAutoConnect).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Auto-connecting/i)).not.toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      noble.restore();
+      vi.mocked(window.electronAPI.bleAdapter.getState).mockResolvedValue({ owner: null });
+    }
+  });
+});

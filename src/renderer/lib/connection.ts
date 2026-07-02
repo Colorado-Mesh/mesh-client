@@ -12,6 +12,10 @@ import {
   logMeshtasticSerialStreamDiagnostics,
 } from './connectionWebStreams';
 import { notifyNobleBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
+import {
+  isNobleBleBlockedByReticulumLease,
+  isReticulumBleBusyErrorMessage,
+} from './reticulum/reticulumBleAdapterLease';
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
@@ -186,9 +190,15 @@ export async function createBleConnection(
   const transport = new TransportNobleIpc(sessionId);
   let lastError: unknown = null;
   return withNobleBleConnectLock(sessionId, async () => {
+    if (await isNobleBleBlockedByReticulumLease()) {
+      throw new Error('Bluetooth adapter is in use by Reticulum BLE');
+    }
     for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
       const attemptStartedAt = Date.now();
       try {
+        if (await isNobleBleBlockedByReticulumLease()) {
+          throw new Error('Bluetooth adapter is in use by Reticulum BLE');
+        }
         const connectResult = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
         if (!connectResult.ok) {
           throw new Error(connectResult.error || 'BLE connect failed');
@@ -213,6 +223,7 @@ export async function createBleConnection(
         lastError = err;
         const message = err instanceof Error ? err.message : String(err);
         const isTimeout = isMainProcessBleTimeoutMessage(message) || /timed out/i.test(message);
+        const reticulumAdapterBusy = isReticulumBleBusyErrorMessage(message);
         console.warn(
           `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
             sessionId,
@@ -225,7 +236,7 @@ export async function createBleConnection(
             message,
           })}`,
         );
-        if (!isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
+        if (reticulumAdapterBusy || !isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
           break;
         }
         await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));

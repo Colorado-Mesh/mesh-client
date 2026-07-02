@@ -7,6 +7,8 @@ import { useIdentityStore } from '@/renderer/stores/identityStore';
 import {
   hasEnabledReticulumBleInterface,
   isMeshBleConnected,
+  isReticulumBleBusyErrorMessage,
+  isReticulumBleInterfaceRow,
   meshBleBlockedByReticulum,
 } from './reticulumBleAdapterConflict';
 
@@ -23,6 +25,15 @@ describe('reticulumBleAdapterConflict', () => {
         { type: 'ble_peer', enabled: false },
       ]),
     ).toBe(false);
+
+    expect(isReticulumBleInterfaceRow({ type: 'ble_peer', enabled: true })).toBe(true);
+    expect(
+      isReticulumBleInterfaceRow({
+        type: 'rnode',
+        enabled: true,
+        serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+      }),
+    ).toBe(true);
 
     expect(
       hasEnabledReticulumBleInterface([
@@ -98,5 +109,12 @@ describe('reticulumBleAdapterConflict', () => {
     });
 
     expect(isMeshBleConnected()).toBe(false);
+  });
+
+  it('detects reticulum adapter busy messages', () => {
+    expect(isReticulumBleBusyErrorMessage('Bluetooth adapter is in use by Reticulum BLE')).toBe(
+      true,
+    );
+    expect(isReticulumBleBusyErrorMessage('GATT Error')).toBe(false);
   });
 });

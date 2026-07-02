@@ -2,6 +2,23 @@ import { getConnection } from '@/renderer/stores/connectionStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 import type { BleAdapterOwner } from '@/shared/electron-api.types';
 
+import {
+  acquireReticulumBleAdapter,
+  getBleAdapterOwner,
+  isNobleBleBlockedByReticulumLease,
+  isReticulumBleBusyErrorMessage,
+  releaseReticulumBleAdapter,
+} from './reticulumBleAdapterLease';
+
+export type { BleAdapterOwner };
+export {
+  acquireReticulumBleAdapter,
+  getBleAdapterOwner,
+  isNobleBleBlockedByReticulumLease,
+  isReticulumBleBusyErrorMessage,
+  releaseReticulumBleAdapter,
+};
+
 export interface ReticulumInterfaceBleRow {
   type: string;
   enabled: boolean;
@@ -20,45 +37,20 @@ export function isMeshBleConnected(): boolean {
   return false;
 }
 
-export function hasEnabledReticulumBleInterface(
-  interfaces: readonly ReticulumInterfaceBleRow[],
-): boolean {
-  return interfaces.some(
-    (iface) =>
-      iface.enabled &&
-      (iface.type === 'ble_peer' ||
-        (iface.type === 'rnode' &&
-          typeof iface.serial_port === 'string' &&
-          iface.serial_port.startsWith('ble://'))),
+export function isReticulumBleInterfaceRow(row: ReticulumInterfaceBleRow): boolean {
+  const normalized = row.type.toLowerCase();
+  if (normalized === 'ble_peer' || normalized.includes('blepeer')) return true;
+  return (
+    normalized === 'rnode' &&
+    typeof row.serial_port === 'string' &&
+    row.serial_port.startsWith('ble://')
   );
 }
 
-export async function acquireReticulumBleAdapter(): Promise<boolean> {
-  try {
-    await window.electronAPI.bleAdapter.acquire('reticulum-sidecar');
-    return true;
-  } catch (err) {
-    console.warn('[Reticulum] bleAdapter acquire failed:', err);
-    return false;
-  }
-}
-
-export async function releaseReticulumBleAdapter(): Promise<void> {
-  try {
-    await window.electronAPI.bleAdapter.release('reticulum-sidecar');
-  } catch (err) {
-    console.warn('[Reticulum] bleAdapter release failed:', err);
-  }
-}
-
-export async function getBleAdapterOwner(): Promise<BleAdapterOwner | null> {
-  try {
-    const state = await window.electronAPI.bleAdapter.getState();
-    return state.owner;
-  } catch {
-    // catch-no-log-ok getState failure treated as no lease holder
-    return null;
-  }
+export function hasEnabledReticulumBleInterface(
+  interfaces: readonly ReticulumInterfaceBleRow[],
+): boolean {
+  return interfaces.some((iface) => iface.enabled && isReticulumBleInterfaceRow(iface));
 }
 
 export function meshBleBlockedByReticulum(
