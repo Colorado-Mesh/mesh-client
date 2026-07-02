@@ -782,7 +782,9 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Queue badge stuck at `Q: 255/256`**:
 
-- Usually means the companion radio outbound queue is nearly full, or (on older builds) CORE stats were mis-parsed. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.
+- Usually means the companion radio outbound queue is nearly full. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.
+- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel). mesh-client treats that signature as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge is red with `rawHex` ending in `0000ff`, upgrade to a build that includes this fix ([#600](https://github.com/Colorado-Mesh/mesh-client/issues/600)).
+- On older builds, CORE stats could also be mis-parsed (false `Q: 255/256` with normal traffic).
 
 **Windows packaged updater: `Cannot find module 'semver'`**:
 

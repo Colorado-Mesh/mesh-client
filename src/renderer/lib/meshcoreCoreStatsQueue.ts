@@ -12,6 +12,10 @@ export function queueLenFromMeshCoreCoreStatsRaw(
     return meshcoreJsParsedQueueLen;
   }
   if (raw.length >= 9) {
+    // HTTP/TCP companions may pad 7-byte CORE stats; byte 8 is 0xff sentinel, queue at byte 6.
+    if (raw[8] === 0xff && raw[7] === 0 && raw[6] === meshcoreJsParsedQueueLen) {
+      return raw[6];
+    }
     return raw[8];
   }
   if (raw.length >= 7) {
