@@ -97,7 +97,7 @@ export function resolveChatDmPeer(
   if (isOwn(msg.sender_id) && !isOwn(effectiveTo)) peer = effectiveTo;
   else if (isOwn(effectiveTo) && !isOwn(msg.sender_id)) peer = msg.sender_id;
   if (
-    peer == null &&
+    peer === undefined &&
     protocol === 'meshcore' &&
     msg.channel === -1 &&
     msg.sender_id > 0 &&
@@ -105,7 +105,7 @@ export function resolveChatDmPeer(
   ) {
     peer = msg.sender_id;
   }
-  if (peer == null && protocol === 'reticulum') {
+  if (peer === undefined && protocol === 'reticulum') {
     const fromU = msg.sender_id >>> 0;
     const toU = effectiveTo >>> 0;
     const isOwnU32 = (id: number) => ownNodeIds.has(id >>> 0);
@@ -124,7 +124,7 @@ export function resolveChatDmPeer(
       peer = toU;
     }
   }
-  if (peer == null) return undefined;
+  if (peer === undefined) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
   const peerU32 = peer >>> 0;
   if (options?.excludeDmPeer?.(peerU32)) return undefined;

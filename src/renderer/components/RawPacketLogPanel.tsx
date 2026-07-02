@@ -52,6 +52,14 @@ const ROUTE_LABEL: Record<string, string> = {
 /** Sender column: Meshtastic long names can be ~36 chars; flex so the row shares space without a 120px cap. */
 const RAW_PACKET_NAME_COL = 'min-w-0 flex-1 max-w-[min(28rem,50vw)]';
 
+function formatReticulumDestinationLabel(
+  destinationHash: string | null | undefined,
+  getNodeLabel: (nodeId: number) => string,
+): string | null {
+  if (typeof reticulumDestinationColumnText !== 'function') return null;
+  return reticulumDestinationColumnText(destinationHash, getNodeLabel, reticulumHashToNodeId);
+}
+
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -329,11 +337,7 @@ function ReticulumExpandedDetails({
   getNodeLabel: (nodeId: number) => string;
 }) {
   const { t } = useTranslation();
-  const destinationLabel = reticulumDestinationColumnText(
-    p.destinationHash,
-    getNodeLabel,
-    reticulumHashToNodeId,
-  );
+  const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
   return (
     <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
       <p>
@@ -378,11 +382,7 @@ function ReticulumRow({
   const typeLabel = formatReticulumWireEnumLabel(p.packetType);
   const dirLabel =
     p.direction === 'tx' ? t('rawPacketLog.reticulum.tx') : t('rawPacketLog.reticulum.rx');
-  const destinationLabel = reticulumDestinationColumnText(
-    p.destinationHash,
-    getNodeLabel,
-    reticulumHashToNodeId,
-  );
+  const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
   return (
     <>
       <span className="text-muted w-[90px] shrink-0 text-[10px] tabular-nums">
@@ -496,11 +496,7 @@ export default function RawPacketLogPanel(props: Props) {
         isPaused && pausedPackets != null ? (pausedPackets as ReticulumRawPacketEntry[]) : packets;
       if (!filter.trim()) return list;
       return list.filter((p) => {
-        const destinationLabel = reticulumDestinationColumnText(
-          p.destinationHash,
-          getNodeLabel,
-          reticulumHashToNodeId,
-        );
+        const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
         if (p.destinationHash) {
           registerReticulumDestinationHash(
             reticulumHashToNodeId(p.destinationHash),

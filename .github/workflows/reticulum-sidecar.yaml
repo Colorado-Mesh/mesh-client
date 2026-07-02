@@ -92,6 +92,8 @@ jobs:
           retention-days: 14
 
   build-windows-arm64:
+    permissions:
+      contents: read
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -116,6 +118,8 @@ jobs:
           retention-days: 14
 
   build-windows-arm64-rns-stack:
+    permissions:
+      contents: read
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6

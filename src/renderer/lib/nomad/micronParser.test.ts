@@ -32,6 +32,17 @@ describe('renderNomadMicronPage', () => {
     expect(plainText).toContain('link text');
     expect(plainText).toContain('Libretranslate');
     expect(html).toContain('https://libretranslate.com/');
+    expect(html.toLowerCase()).not.toContain('<script');
+  });
+});
+
+describe('renderNomadMicronPage XSS', () => {
+  it('strips script markup from malicious micron input', () => {
+    const html = renderNomadMicronPage('`<script>alert(1)</script>Hello`');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    expect(container.querySelector('script')).toBeNull();
+    expect(container.textContent).toContain('Hello');
   });
 });
 
