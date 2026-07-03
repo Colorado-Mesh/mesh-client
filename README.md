@@ -116,11 +116,13 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 **Network Diagnostics**
 
+- **Protocol-scoped rows**: The shared Diagnostics tab filters findings to the **active protocol** — Meshtastic/MeshCore show LoRa routing + RF rows only; Reticulum shows `reticulum/*` interface/path/LXMF rows only (Reticulum interface-down alerts no longer bleed onto LoRa tabs). Map halos, node-list badges, and node detail routing sections use the same filter.
 - **Network health**: status band **Healthy / Attention / Degraded** plus error and warning counts. **Degraded** applies only when routing error count ≥ 3; fewer errors use **Attention** so small issues don't paint the whole panel red
 - **Single table** from `diagnosticRows` (routing trace rows + RF rows), searchable; rows persist across sessions with an optional restore banner; **max age** (1–168 hours) trims stale routing (24 h default) and RF (1 h default) rows
+- **Foreign LoRa overhear** (Meshtastic tab): MeshCore-heard, Reticulum RNS, other-Meshtastic, and unknown LoRa classes from decode-fail logs and dual-radio RX; 90-minute window; MeshCore repeater conflict escalation above 5 pkt/min
 - **Mesh congestion attribution**: orange banner when mesh-wide routing stress is present; duplicate-traffic block in node detail when relevant
 - Routing anomaly detection: **hop_goblin** (distance-proven over-hopping), **bad_route** (high duplication), **route_flapping** / **path_instability** (MeshCore PathUpdated events), **impossible_hop**, **weak_link** (MeshCore per-hop SNR from trace); with remediation suggestions and severity levels
-- **Channel Utilization History**: 24h CU timeline chart for the connected node in DiagnosticsPanel
+- **Channel Utilization History**: 24h CU timeline chart for the connected node in DiagnosticsPanel (fed by LocalStats / device-metrics ingest, not only NodeInfo)
 - Anomaly badges inline in node list; status aura circles on the map; congestion halos toggle; global and per-node MQTT ignore
 - **Environment Profile** segmented control; Standard (3 km), City (1.6× threshold), Canyon (2.6× threshold)
 
@@ -191,7 +193,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 **Node Management**
 
 - Node list with SNR, battery, GPS, **last heard** (any live RF packet—position, telemetry, traceroute, text—not only chat); **signal bars** appear only for direct (0-hop) RF neighbors; multi-hop and MQTT-only paths omit bars; SNR in traces and neighbor views uses **color-coded quality** (good / marginal / poor)
-- **Cross-Protocol Signal Analyzer**: foreign LoRa traffic detection (non-mesh packets); shown in Node Detail when present
+- **Cross-Protocol Signal Analyzer**: foreign LoRa traffic detection (MeshCore, Reticulum RNS, other Meshtastic, unknown) on the **Meshtastic** Diagnostics tab and in node detail when RF rows are present; not shown on MeshCore/Reticulum tabs
 - Distance filter, favorite/pin nodes, device role icons
 - Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **channel utilization** (Meshtastic), **export/share contact** (MeshCore), **node notes** (free-text, SQLite-persisted), **watch / notify** (OS desktop notification on online/offline transition)
 - **Node Health Score**: composite 0–100 badge on each node row (signal 40 pts, recency 30 pts, load 20 pts, battery 10 pts); color-coded green / yellow / red with tooltip breakdown
@@ -322,6 +324,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 **Diagnostics**
 
 - Reticulum-native interface, path, and LXMF health rows — **not** Meshtastic Hop Goblins or MeshCore repeater noise-floor findings
+- LoRa routing/RF findings from other protocols are **hidden** on the Reticulum tab (`filterDiagnosticRowsForProtocol`)
 
 **Transport notes**
 
@@ -337,7 +340,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 - **MQTT → RF (MeshCore JSON)**: Not supported; MeshCore MQTT is chat ingest only.
 - **Meshtastic - PKC remote admin**: Configure-node-over-MQTT is not supported; a connected local RF radio is required to reach remote nodes (firmware 2.5+).
 - **MeshCore - MQTT (JSON v1)**: The Connection tab can connect to an MQTT broker in MeshCore mode using a small JSON chat envelope (see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md)). This is separate from Meshtastic's protobuf MQTT pipeline.
-- **MeshCore - partial routing diagnostics**: MeshCore now supports `route_flapping` / `path_instability` (PathUpdated events), `hop_goblin` / `bad_route` (when `hasHopCount`), and `weak_link` (when `hasPerHopSnr` and a trace is completed). Full hop-anomaly detection and Meshtastic-style LocalStats RF findings require Meshtastic packets; MeshCore provides its own RF findings (Elevated Noise Floor, Excessive Flooding) from Repeater Status packet stats.
+- **MeshCore - partial routing diagnostics**: MeshCore now supports `route_flapping` / `path_instability` (PathUpdated events), `hop_goblin` / `bad_route` (when `hasHopCount`), and `weak_link` (when `hasPerHopSnr` and a trace is completed). Full hop-anomaly detection and Meshtastic-style LocalStats RF findings require Meshtastic packets; MeshCore provides its own RF findings (Elevated Noise Floor, Excessive Flooding) from Repeater Status packet stats. **Foreign LoRa** tables render on the Meshtastic tab only (MeshCore may record overhear internally).
 - **MeshCore - channel editing**: Can add/edit/delete channels (name + PSK) via the Radio tab, but does not expose Meshtastic-style full protobuf config. Radio parameters (frequency, bandwidth, spreading factor, coding rate, TX power) can be set via the Radio tab.
 - **MeshCore - remote telemetry availability**: `getTelemetry` requires the remote node to have environment sensors. A timeout is returned if the node has no sensor data.
 - **MeshCore - neighbor info availability**: `getNeighbours` is supported only by Repeater-type nodes running firmware v1.9.0+. The button is hidden for Chat and Room contacts.

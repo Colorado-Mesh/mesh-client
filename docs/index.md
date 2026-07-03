@@ -64,7 +64,7 @@ For development setup and local build/test workflow, see:
   - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
   - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 - **Support**
-  - [Diagnostics](diagnostics.md) (Meshtastic/MeshCore routing + Reticulum interface audit)
+  - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic tab), Reticulum interface audit; protocol-scoped row filtering
   - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
   - Copy Debug Snapshot / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)

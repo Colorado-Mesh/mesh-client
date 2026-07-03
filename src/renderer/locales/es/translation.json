@@ -1068,7 +1068,8 @@
       "unknownLoraTraffic": "Tráfico LoRa desconocido",
       "potentialMeshcoreRepeaterConflict": "Conflicto potencial del repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de ruido elevado",
-      "excessiveFlooding": "Inundaciones excesivas"
+      "excessiveFlooding": "Inundaciones excesivas",
+      "reticulumTrafficDetected": "Tráfico Reticulum detectado"
     },
     "rfCause": {
       "channelUtilizationSpike": "El {{current}}% actual supera en más de 2veces la media reciente ({{average}}%) — posible congestión o aumento de interferencias.",
@@ -1087,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Nodo Meshtastic que transmite en esta frecuencia. Remitente: {{sender}}. {{proximity}}Este nodo puede estar en tu zona de repetidores MeshCore.",
       "unknownLora": "Se ha detectado una señal LoRa no reconocida (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Alta tasa de paquetes MeshCore detectada (>5/min). Un repetidor MeshCore cercano puede estar causando colisiones de paquetes."
+      "potentialRepeaterConflict": "Alta tasa de paquetes MeshCore detectada (>5/min). Un repetidor MeshCore cercano puede estar causando colisiones de paquetes.",
+      "reticulum": "Tráfico Reticulum (RNode/RNS) en esta frecuencia. {{proximity}}Puede ser un nodo Reticulum cercano en la misma banda LoRa."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Muy vinculados",

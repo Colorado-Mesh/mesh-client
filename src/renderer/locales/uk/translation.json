@@ -1068,7 +1068,8 @@
       "unknownLoraTraffic": "Невідомий трафік LoRa",
       "potentialMeshcoreRepeaterConflict": "Потенційний конфлікт ретранслятора MeshCore",
       "elevatedNoiseFloor": "Підвищена шумова підлога",
-      "excessiveFlooding": "Надмірна повінь"
+      "excessiveFlooding": "Надмірна повінь",
+      "reticulumTrafficDetected": "Виявлено трафік Reticulum"
     },
     "rfCause": {
       "channelUtilizationSpike": "Поточний {{current}}% перевищує 2рази останній середній показник ({{average}}%) — можливі затори або перешкоди.",
@@ -1087,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic вузол, що передає на цій частоті. Відправник: {{sender}}. {{proximity}}Цей вузол може знаходитися в області повторювача MeshCore.",
       "unknownLora": "Виявлено нерозпізнаний сигнал LoRa (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Виявлено високу швидкість передачі пакетів MeshCore (>5/хв). Приблизний повторювач MeshCore може спричиняти колізії пакетів."
+      "potentialRepeaterConflict": "Виявлено високу швидкість передачі пакетів MeshCore (>5/хв). Приблизний повторювач MeshCore може спричиняти колізії пакетів.",
+      "reticulum": "Трафік Reticulum (RNode/RNS) на цій частоті. {{proximity}}Може бути сусіднім вузлом Reticulum на тій же смузі LoRa."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Дуже близько",

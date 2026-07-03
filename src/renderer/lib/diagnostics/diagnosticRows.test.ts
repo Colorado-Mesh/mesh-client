@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
   DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS,
+  filterDiagnosticRowsForProtocol,
   pruneDiagnosticRowsByAge,
   replaceRfRowsForNode,
 } from './diagnosticRows';
@@ -35,6 +36,41 @@ const foreignLoraRfRow = (nodeId: number, detectedAt: number) => ({
   cause: 'non-Meshtastic traffic',
   severity: 'info' as const,
   detectedAt,
+});
+
+const reticulumRfRow = (nodeId: number, detectedAt: number) => ({
+  kind: 'rf' as const,
+  id: `rf:${nodeId}:reticulum/interface-down/eth0`,
+  nodeId,
+  condition: 'reticulum/interface-down',
+  cause: 'Interface is down',
+  severity: 'error' as const,
+  detectedAt,
+});
+
+describe('filterDiagnosticRowsForProtocol', () => {
+  const t = 1_000_000;
+
+  it('excludes Reticulum-native rows on Meshtastic tab', () => {
+    const rows = [routingRow(1, t), reticulumRfRow(1, t)];
+    const out = filterDiagnosticRowsForProtocol(rows, 'meshtastic');
+    expect(out).toHaveLength(1);
+    expect(out[0].kind).toBe('routing');
+  });
+
+  it('excludes Reticulum-native rows on MeshCore tab', () => {
+    const rows = [rfRow(2, t), reticulumRfRow(2, t)];
+    const out = filterDiagnosticRowsForProtocol(rows, 'meshcore');
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ kind: 'rf', condition: 'Mesh Congestion' });
+  });
+
+  it('keeps only Reticulum-native rows on Reticulum tab', () => {
+    const rows = [routingRow(3, t), reticulumRfRow(3, t), rfRow(3, t)];
+    const out = filterDiagnosticRowsForProtocol(rows, 'reticulum');
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ kind: 'rf', condition: 'reticulum/interface-down' });
+  });
 });
 
 describe('replaceRfRowsForNode', () => {

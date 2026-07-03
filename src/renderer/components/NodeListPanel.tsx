@@ -30,7 +30,10 @@ import {
   latestPositionHistoryPoint,
   resolveNodeMapPosition,
 } from '../lib/coordUtils';
-import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
+import {
+  filterDiagnosticRowsForProtocol,
+  getRoutingRowForNode,
+} from '../lib/diagnostics/diagnosticRows';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { downloadBlob } from '../lib/downloadBlob';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
@@ -209,6 +212,10 @@ export default function NodeListPanel({
   const staleLegendColor = getMapOverlayColors(MAP_BASEMAPS[basemapId].isDark).stale;
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
+  const protocolDiagnosticRows = useMemo(
+    () => filterDiagnosticRowsForProtocol(diagnosticRows, mode),
+    [diagnosticRows, mode],
+  );
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy);
   const [sortField, setSortField] = useState<SortField>('last_heard');
@@ -1270,7 +1277,7 @@ export default function NodeListPanel({
                             {!isSelf &&
                               (() => {
                                 const routingRow = getRoutingRowForNode(
-                                  diagnosticRows,
+                                  protocolDiagnosticRows,
                                   node.node_id,
                                 );
                                 if (!routingRow) return null;

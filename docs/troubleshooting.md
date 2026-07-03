@@ -736,11 +736,27 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 **Fix**: This is expected; rows refresh as new packets arrive. Use **Stop restoring on next launch** on the banner to clear the snapshot, or use **App** tab → **Reset Diagnostics** to clear in-memory rows and related state.
 
+**Note**: On startup, restored rows stay visible until the node list hydrates from SQLite. An early `runReanalysis` with an empty node map no longer clears the snapshot (fixed in `diagnosticsStore.runReanalysis`). Rows still refresh once live telemetry arrives.
+
 ### Diagnostics look stale or overcrowded
 
 **Cause**: RF rows age out faster (default 1 h) than routing rows (default 24 h); very old rows are pruned by timestamp.
 
 **Fix**: In **Network Diagnostics** → Display Settings, adjust **diagnostic row max age** (hours). Or reset diagnostics from the App tab and let the mesh repopulate.
+
+### Diagnostics: health band OK but anomaly table empty
+
+**Symptoms**: Network health shows **Healthy** (or low warning count) and foreign-LoRa / settings sections render, but the main routing/RF anomaly table has no rows.
+
+**Cause**: Often expected when the mesh has no active hop or RF findings for the **current protocol tab**. LoRa rows are recomputed from that tab's nodes only; switching tabs clears routing/RF state and re-runs analysis. Reticulum interface rows do not appear on Meshtastic/MeshCore tabs (and vice versa).
+
+**Fix**: Confirm you are on the protocol tab that owns the finding (e.g. Reticulum interface-down on **Reticulum**). For Meshtastic CU timeline / connected-node RF rows, ensure the radio is configured and sending LocalStats telemetry. See [Diagnostics Reference](diagnostics.md#multi-protocol-tab-scoping).
+
+### Diagnostics: foreign LoRa only on Meshtastic tab
+
+**Symptoms**: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.
+
+**Fix**: By design — foreign-LoRa overhear tables render on the **Meshtastic** Diagnostics tab only. MeshCore may still record overhear internally when raw RX bytes are available. Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
 
 ### No signal bars on some nodes
 

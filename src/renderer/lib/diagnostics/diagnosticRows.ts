@@ -1,11 +1,19 @@
-import type { DiagnosticRow, NodeAnomaly, RfDiagnosticRow, RoutingDiagnosticRow } from '../types';
+import type {
+  DiagnosticRow,
+  MeshProtocol,
+  NodeAnomaly,
+  RfDiagnosticRow,
+  RoutingDiagnosticRow,
+} from '../types';
 import { nodeAnomalyToRoutingRow, rfRowId, routingRowToNodeAnomaly } from '../types';
+import { isReticulumDiagnosticRow } from './ReticulumDiagnosticEngine';
 import type { RFDiagnosis } from './RFDiagnosticEngine';
 
 /** Foreign LoRa RF row conditions — preserved when replacing telemetry-driven RF rows per node. */
 export const FOREIGN_LORA_RF_CONDITIONS = new Set([
   'MeshCore Activity Detected',
   'Meshtastic Traffic Detected',
+  'Reticulum Traffic Detected',
   'Unknown LoRa Traffic',
   'Potential MeshCore Repeater Conflict',
 ]);
@@ -14,6 +22,23 @@ export const FOREIGN_LORA_RF_CONDITIONS = new Set([
 export const DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** RF findings are telemetry snapshots — shorter TTL reduces stale Mesh Congestion etc. */
 export const DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS = 60 * 60 * 1000;
+
+/**
+ * Scope diagnostic rows to the active protocol tab.
+ * - Reticulum tab: only `reticulum/*` native rows (interface/LXMF audit).
+ * - Meshtastic/MeshCore tabs: LoRa routing/RF rows only (no `reticulum/*`).
+ * LoRa rows are also cleared on protocol switch; `runReanalysis` uses the active tab's node map.
+ * Foreign LoRa overhear tables are Meshtastic-tab-only (see DiagnosticsPanel).
+ */
+export function filterDiagnosticRowsForProtocol(
+  rows: DiagnosticRow[],
+  protocol: MeshProtocol,
+): DiagnosticRow[] {
+  if (protocol === 'reticulum') {
+    return rows.filter((r) => isReticulumDiagnosticRow(r));
+  }
+  return rows.filter((r) => !isReticulumDiagnosticRow(r));
+}
 
 /**
  * Drop rows whose detectedAt is older than max age. Routing rows refresh detectedAt on each

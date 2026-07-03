@@ -24,21 +24,21 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## What is included
 
-| Area            | Shipped behavior                                                                                       |
-| --------------- | ------------------------------------------------------------------------------------------------------ |
-| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                           |
-| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                     |
-| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab |
-| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                         |
-| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline  |
-| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                       |
-| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                               |
-| Nomad Network   | Favourites / announces list (MeshChat-style search and favourite toggle)                               |
-| Propagation     | Preferred node, per-node sync, optional local propagation inbox                                        |
-| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (not LoRa Hop Goblins)                |
-| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                               |
-| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                  |
-| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                   |
+| Area            | Shipped behavior                                                                                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                    |
+| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                                                                                              |
+| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                          |
+| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                  |
+| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                           |
+| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                |
+| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                        |
+| Nomad Network   | Favourites / announces list (MeshChat-style search and favourite toggle)                                                                                                        |
+| Propagation     | Preferred node, per-node sync, optional local propagation inbox                                                                                                                 |
+| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped) |
+| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                        |
+| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                           |
+| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                                                                                            |
 
 **Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, LoRa map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
 
@@ -46,18 +46,18 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## Sidebar tabs
 
-| Tab             | Role                                                                                   |
-| --------------- | -------------------------------------------------------------------------------------- |
-| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health                        |
-| Chat            | LXMF DMs (only chat mode for Reticulum)                                                |
-| Nomad Network   | Favourites and announces                                                               |
-| Peers           | Path-table peers and LXMF contacts                                                     |
-| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault |
-| Admin           | RNode firmware flasher; factory reset (danger zone)                                    |
-| Diagnostics     | Reticulum runtime rows + interface config audit/repair                                 |
-| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                               |
-| Stats / Sniffer | Packet log views                                                                       |
-| App             | Shared app settings, DB tools, appearance                                              |
+| Tab             | Role                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------- |
+| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health                                          |
+| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                  |
+| Nomad Network   | Favourites and announces                                                                                 |
+| Peers           | Path-table peers and LXMF contacts                                                                       |
+| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault                   |
+| Admin           | RNode firmware flasher; factory reset (danger zone)                                                      |
+| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden |
+| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                 |
+| Stats / Sniffer | Packet log views                                                                                         |
+| App             | Shared app settings, DB tools, appearance                                                                |
 
 Hidden tabs (Meshtastic/MeshCore only): Map, Modules, Rooms, Telemetry, Security, TAK, RF, Graph.
 

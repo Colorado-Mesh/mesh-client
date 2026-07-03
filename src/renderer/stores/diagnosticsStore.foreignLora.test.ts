@@ -13,6 +13,10 @@ describe('foreignLoraSenderKey', () => {
     expect(foreignLoraSenderKey('meshcore')).toBe('meshcore:unknown');
     expect(foreignLoraSenderKey('meshcore', undefined, 'deadbeef')).toBe('meshcore:fp:deadbeef');
   });
+
+  it('uses a stable key for reticulum overhear', () => {
+    expect(foreignLoraSenderKey('reticulum')).toBe('reticulum');
+  });
 });
 
 describe('foreign lora persist filters', () => {

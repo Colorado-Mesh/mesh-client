@@ -1068,7 +1068,8 @@
       "unknownLoraTraffic": "未知的LoRa流量",
       "potentialMeshcoreRepeaterConflict": "潜在的MeshCore中继器冲突",
       "elevatedNoiseFloor": "高架噪音地板",
-      "excessiveFlooding": "洪水泛滥"
+      "excessiveFlooding": "洪水泛滥",
+      "reticulumTrafficDetected": "检测到 Reticulum 流量"
     },
     "rfCause": {
       "channelUtilizationSpike": "当前的{{current}} %是近期平均值（ {{average}} % ）的2倍以上—可能是拥堵或干扰浪涌。",
@@ -1087,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "在此频率上传输的Meshtastic节点。发件人： {{sender}}. {{proximity}}此节点可能位于您的MeshCore中继器区域。",
       "unknownLora": "检测到无法识别的LoRa信号（ RSSI {{rssi}} dBm ， SNR {{snr}} dB ）。",
-      "potentialRepeaterConflict": "检测到高MeshCore数据包速率（ > 5/min ）。附近的MeshCore中继器可能导致数据包冲突。"
+      "potentialRepeaterConflict": "检测到高MeshCore数据包速率（ > 5/min ）。附近的MeshCore中继器可能导致数据包冲突。",
+      "reticulum": "此频率上的 Reticulum（RNode/RNS）流量。{{proximity}}可能是同一 LoRa 波段上附近的 Reticulum 节点。"
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "非常密切",

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import {
+  classifyMeshtasticForeignOverhear,
   classifyPayload,
   classifyProximity,
   containsMeshCorePattern,
@@ -11,6 +12,7 @@ import {
   extractRssiSnr,
   isDecodeFail,
   isForeignLoraLogCandidate,
+  looksLikeReticulumPayload,
   matchForeignLoraFromMeshtasticLog,
   meshtasticSenderIdForRawLogFallback,
   RollingRateCounter,
@@ -286,6 +288,21 @@ describe('classifyPayload', () => {
     // 2 bytes: MeshCore path decode fails (transport flood needs more bytes); not 0x3c; Meshtastic needs 8+.
     expect(classifyPayload(new Uint8Array([0x08, 0x00]))).toBe('unknown-lora');
     expect(classifyPayload(new Uint8Array([]))).toBe('unknown-lora');
+  });
+
+  it('classifies Reticulum HEADER_1-shaped payloads from Meshtastic decode-fail overhear', () => {
+    const packet = new Uint8Array(20);
+    packet[0] = 0x00; // DATA / SINGLE / HEADER_1
+    packet[1] = 0x02; // hops
+    packet.fill(0xab, 2, 18); // destination hash
+    packet[4] = 0;
+    packet[5] = 0;
+    packet[6] = 0;
+    packet[7] = 0; // not a Meshtastic sender-id layout
+    packet[18] = 0x01; // context
+    packet[19] = 0xff; // payload byte
+    expect(looksLikeReticulumPayload(packet)).toBe(true);
+    expect(classifyMeshtasticForeignOverhear(packet)).toBe('reticulum');
   });
 });
 

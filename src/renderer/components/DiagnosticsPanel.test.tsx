@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import { setMeshtasticConnectedMyNodeNum } from '../lib/meshtasticConnectedNodeRef';
-import { RETICULUM_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
+import { MESHTASTIC_CAPABILITIES, RETICULUM_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, RoutingDiagnosticRow } from '../lib/types';
 import type { ForeignLoraDetection } from '../stores/diagnosticsStore';
 import DiagnosticsPanel from './DiagnosticsPanel';
@@ -473,6 +473,38 @@ describe('DiagnosticsPanel cross-protocol RF', () => {
 });
 
 describe('DiagnosticsPanel reticulum scope', () => {
+  it('does not surface Reticulum interface-down rows on the Meshtastic tab', () => {
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'rf',
+        id: 'rf:1:reticulum/interface-down/eth0',
+        nodeId: 1,
+        condition: 'reticulum/interface-down',
+        cause: 'Reticulum interface Ethernet is down',
+        severity: 'error',
+        detectedAt: Date.now(),
+      },
+    ];
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[1, minimalNode(1)]])}
+        myNodeNum={1}
+        meshtasticListenerNodeId={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Home')}
+        protocol="meshtastic"
+        capabilities={MESHTASTIC_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.queryByText('Reticulum interface Ethernet is down')).not.toBeInTheDocument();
+    expect(screen.getByText(/no diagnostics detected/i)).toBeInTheDocument();
+    expect(screen.getByText(/no issues/i)).toBeInTheDocument();
+  });
+
   it('does not surface Meshtastic routing rows on the Reticulum tab', () => {
     diagnosticsStoreState.diagnosticRows = [
       {

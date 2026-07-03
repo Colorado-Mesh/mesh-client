@@ -119,7 +119,7 @@ export function isLocallyDisplayableMeshcoreForeignLora(d: ForeignLoraDetection)
 
 export function isPersistableForeignLoraDetection(d: ForeignLoraDetection): boolean {
   if (!isRfForeignLoraHeard(d)) return false;
-  if (d.packetClass === 'meshtastic') return true;
+  if (d.packetClass === 'meshtastic' || d.packetClass === 'reticulum') return true;
   return isLocallyDisplayableMeshcoreForeignLora(d);
 }
 
@@ -127,7 +127,7 @@ export function isPersistableForeignLoraDetection(d: ForeignLoraDetection): bool
  * Allows nearby/very-close meshcore:unknown entries to survive until a senderId arrives. */
 function isInMemoryRetainableForeignLora(d: ForeignLoraDetection): boolean {
   if (!isRfForeignLoraHeard(d)) return false;
-  if (d.packetClass === 'meshtastic') return true;
+  if (d.packetClass === 'meshtastic' || d.packetClass === 'reticulum') return true;
   if (d.packetClass !== 'meshcore') return false;
   return d.proximity === 'very-close' || d.proximity === 'nearby';
 }
@@ -138,13 +138,14 @@ function pruneForeignLoraBySender(bySender: Map<string, ForeignLoraDetection>): 
   }
 }
 
-/** Key for per-sender detection: "meshtastic:<id>", "meshcore:<id>", "meshcore:fp:*", or "unknown". */
+/** Key for per-sender detection: "meshtastic:<id>", "meshcore:<id>", "reticulum", or "unknown". */
 export function foreignLoraSenderKey(
   packetClass: PacketClass,
   senderId?: number,
   rfFingerprint?: string,
 ): string {
   if (packetClass === 'meshtastic' && senderId != null) return `meshtastic:${senderId}`;
+  if (packetClass === 'reticulum') return 'reticulum';
   if (packetClass === 'meshcore') {
     if (senderId != null) return `meshcore:${senderId}`;
     if (rfFingerprint) return `meshcore:fp:${rfFingerprint}`;
@@ -1187,6 +1188,29 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         key: 'diagnosticsPanel.foreignLoraCause.meshtastic',
         params: { sender: senderLabel, proximityKey },
       };
+    } else if (packetClass === 'reticulum') {
+      condition = 'Reticulum Traffic Detected';
+      const proxLabel =
+        proximity === 'very-close'
+          ? 'Very close'
+          : proximity === 'nearby'
+            ? 'Nearby'
+            : proximity === 'distant'
+              ? 'Distant'
+              : '';
+      const proximityKey =
+        proximity === 'very-close'
+          ? 'veryClose'
+          : proximity === 'nearby'
+            ? 'nearby'
+            : proximity === 'distant'
+              ? 'distant'
+              : '';
+      cause = `Reticulum (RNode/RNS) traffic on this frequency. ${proxLabel ? proxLabel + '. ' : ''}May be a nearby Reticulum node on the same LoRa band.`;
+      causeI18n = {
+        key: 'diagnosticsPanel.foreignLoraCause.reticulum',
+        params: { proximityKey },
+      };
     } else {
       condition = 'Unknown LoRa Traffic';
       cause = `Unrecognized LoRa signal detected (RSSI ${rssi ?? '?'} dBm, SNR ${snr ?? '?'} dB).`;
@@ -1281,12 +1305,26 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       }
       const state = get();
       const nodes = getNodes();
+      const restoredAt = state.diagnosticRowsRestoredAt;
+      let remoteNodeCount = 0;
+      for (const nodeId of nodes.keys()) {
+        if (nodeId !== myNodeNum) remoteNodeCount++;
+      }
+      // Startup: snapshot rows load before nodeStore hydration — defer wipe until nodes exist.
+      if (restoredAt != null && remoteNodeCount === 0) {
+        return;
+      }
       const homeNode = nodes.get(myNodeNum) ?? null;
       const isLowAccuracy = !!(
         state.ourPositionSource && isLowAccuracyPosition(state.ourPositionSource)
       );
       const { distanceMultiplier, hopsThreshold } = getEnvParams(state.envMode, isLowAccuracy);
       const newAnomalies = new Map<number, NodeAnomaly>();
+      if (restoredAt != null) {
+        for (const [id, anomaly] of diagnosticRowsToRoutingMap(state.diagnosticRows)) {
+          newAnomalies.set(id, anomaly);
+        }
+      }
       for (const [nodeId, node] of nodes) {
         if (nodeId === myNodeNum) continue;
         const history = state.hopHistory.get(nodeId) ?? [];
@@ -1311,8 +1349,10 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           pathUpdatedTs,
         );
         if (anomaly) newAnomalies.set(nodeId, anomaly);
+        else newAnomalies.delete(nodeId);
       }
       let diagnosticRows = replaceRoutingRowsFromMap(state.diagnosticRows, newAnomalies);
+      const preserveRestoredRf = restoredAt != null;
       const selfNode = nodes.get(myNodeNum);
       if (selfNode && (hasLocalStatsData(selfNode) || selfNode.channel_utilization != null)) {
         const baseline =
@@ -1354,7 +1394,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         });
         if (findings.length > 0) {
           diagnosticRows = replaceRfRowsForNode(diagnosticRows, myNodeNum, findings);
-        } else {
+        } else if (!preserveRestoredRf) {
           diagnosticRows = diagnosticRows.filter(
             (r) =>
               r.kind !== 'rf' ||
@@ -1372,7 +1412,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         });
         if (findings && findings.length > 0) {
           diagnosticRows = replaceRfRowsForNode(diagnosticRows, nodeId, findings);
-        } else {
+        } else if (!preserveRestoredRf) {
           diagnosticRows = diagnosticRows.filter(
             (r) =>
               r.kind !== 'rf' || r.nodeId !== nodeId || FOREIGN_LORA_RF_CONDITIONS.has(r.condition),

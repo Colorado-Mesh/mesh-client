@@ -1068,7 +1068,8 @@
       "unknownLoraTraffic": "不明な LoRa トラフィック",
       "potentialMeshcoreRepeaterConflict": "MeshCore リピーターの潜在的な競合",
       "elevatedNoiseFloor": "高所ノイズフロア",
-      "excessiveFlooding": "過度の洪水"
+      "excessiveFlooding": "過度の洪水",
+      "reticulumTrafficDetected": "Reticulumトラフィックを検出"
     },
     "rfCause": {
       "channelUtilizationSpike": "現在の {{current}}% は最近の平均 ({{average}}%) の 2 倍を超えています。輻輳または干渉サージの可能性があります。",
@@ -1087,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic ノードはこの周波数で送信します。送信者: {{sender}}。 {{proximity}}このノードは MeshCore リピーター エリア内にある可能性があります。",
       "unknownLora": "認識できない LoRa 信号が検出されました (RSSI {{rssi}} dBm、SNR {{snr}} dB)。",
-      "potentialRepeaterConflict": "高い MeshCore パケット レートが検出されました (>5/分)。近くの MeshCore リピーターがパケット衝突を引き起こしている可能性があります。"
+      "potentialRepeaterConflict": "高い MeshCore パケット レートが検出されました (>5/分)。近くの MeshCore リピーターがパケット衝突を引き起こしている可能性があります。",
+      "reticulum": "この周波数のReticulum（RNode/RNS）トラフィック。{{proximity}}同じLoRaバンド上の近くのReticulumノードの可能性があります。"
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "とても近い",

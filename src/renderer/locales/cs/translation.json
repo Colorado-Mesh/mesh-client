@@ -1068,7 +1068,8 @@
       "unknownLoraTraffic": "Neznámý provoz LoRa",
       "potentialMeshcoreRepeaterConflict": "Potenciální konflikt MeshCore Repeater",
       "elevatedNoiseFloor": "Zvýšená hluková podlaha",
-      "excessiveFlooding": "Nadměrné záplavy"
+      "excessiveFlooding": "Nadměrné záplavy",
+      "reticulumTrafficDetected": "Zjištěn provoz Reticulum"
     },
     "rfCause": {
       "channelUtilizationSpike": "Aktuální {{current}}% je více než 2× nedávný průměr ({{average}}%) – možné přetížení nebo nárůst rušení.",
@@ -1087,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic uzel vysílající na této frekvenci. Odesílatel: {{sender}}. {{proximity}}Tento uzel se může nacházet v oblasti opakovače MeshCore.",
       "unknownLora": "Detekován nerozpoznaný signál LoRa (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Zjištěna vysoká rychlost paketů MeshCore (>5/min). Nedaleký opakovač MeshCore může způsobovat kolize paketů."
+      "potentialRepeaterConflict": "Zjištěna vysoká rychlost paketů MeshCore (>5/min). Nedaleký opakovač MeshCore může způsobovat kolize paketů.",
+      "reticulum": "Provoz Reticulum (RNode/RNS) na této frekvenci. {{proximity}}Může jít o nedaleký Reticulum uzel na stejném pásmu LoRa."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Velmi blízko",

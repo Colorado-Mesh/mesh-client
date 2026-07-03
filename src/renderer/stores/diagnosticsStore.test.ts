@@ -149,6 +149,68 @@ describe('diagnosticsStore analysis timers', () => {
     expect(useDiagnosticsStore.getState().diagnosticRowsRestoredAt).toBeNull();
   });
 
+  it('runReanalysis preserves restored rows when node map is not hydrated yet', () => {
+    const store = useDiagnosticsStore.getState();
+    const restoredAt = Date.now() - 3 * 60 * 1000;
+    useDiagnosticsStore.setState({
+      diagnosticRows: [
+        {
+          kind: 'routing',
+          id: 'routing:5',
+          nodeId: 5,
+          type: 'hop_goblin',
+          severity: 'error',
+          description: 'restored hop goblin',
+          detectedAt: restoredAt,
+        },
+        {
+          kind: 'rf',
+          id: 'rf:0x1234:mesh_congestion',
+          nodeId: 0x1234,
+          condition: 'Mesh Congestion',
+          cause: 'dupes',
+          severity: 'warning',
+          detectedAt: restoredAt,
+        },
+      ],
+      diagnosticRowsRestoredAt: restoredAt,
+    });
+    store.runReanalysis(() => new Map(), 0x1234);
+    vi.advanceTimersByTime(2000);
+    const state = useDiagnosticsStore.getState();
+    expect(state.diagnosticRows).toHaveLength(2);
+    expect(state.diagnosticRowsRestoredAt).toBe(restoredAt);
+  });
+
+  it('runReanalysis preserves restored RF rows when nodes hydrate before live telemetry', () => {
+    const store = useDiagnosticsStore.getState();
+    const restoredAt = Date.now() - 3 * 60 * 1000;
+    const remote = sampleNode(5);
+    useDiagnosticsStore.setState({
+      diagnosticRows: [
+        {
+          kind: 'rf',
+          id: 'rf:5:channel_utilization_spike',
+          nodeId: 5,
+          condition: 'Channel Utilization Spike',
+          cause: 'restored spike',
+          severity: 'warning',
+          detectedAt: restoredAt,
+        },
+      ],
+      diagnosticRowsRestoredAt: restoredAt,
+    });
+    store.runReanalysis(() => new Map([[5, remote]]), 1);
+    vi.advanceTimersByTime(2000);
+    const state = useDiagnosticsStore.getState();
+    expect(
+      state.diagnosticRows.some(
+        (r) => r.kind === 'rf' && r.condition === 'Channel Utilization Spike',
+      ),
+    ).toBe(true);
+    expect(state.diagnosticRowsRestoredAt).toBeNull();
+  });
+
   it('clearDiagnostics cancels both pending analysis timers', () => {
     const store = useDiagnosticsStore.getState();
     store.processNodeUpdate(sampleNode(1), null);
@@ -156,6 +218,19 @@ describe('diagnosticsStore analysis timers', () => {
     expect(vi.getTimerCount()).toBe(2);
     store.clearDiagnostics();
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('processNodeUpdate records channel_utilization in cuHistory', () => {
+    const store = useDiagnosticsStore.getState();
+    const node: MeshNode = {
+      ...sampleNode(7),
+      channel_utilization: 18.5,
+    };
+    store.processNodeUpdate(node, null);
+    const samples = useDiagnosticsStore.getState().cuHistory.get(7);
+    expect(samples).toBeDefined();
+    expect(samples!.length).toBe(1);
+    expect(samples![0].cu).toBe(18.5);
   });
 });
 
