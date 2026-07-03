@@ -482,7 +482,13 @@
     "openDmByAddress": "Abrir",
     "dmAddressPlaceholder": "Hash de destino ou lxmf://…",
     "dmAddressAria": "Endereço de destino do retículo",
-    "dmAddressInvalid": "Insira um hash de destino válido de 32 caracteres ou um endereço lxmf://."
+    "dmAddressInvalid": "Insira um hash de destino válido de 32 caracteres ou um endereço lxmf://.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Não foi possível enviar a mensagem criptografada — a chave pública do destinatário está ausente do NodeDB.",
+      "pkiFailed": "A criptografia PKI falhou para esta mensagem.",
+      "noChannel": "Nenhum canal disponível para encaminhar esta mensagem.",
+      "timeout": "Mensagem expirou no rádio."
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Interface local \"{{name}}\" porta serial {{port}} não encontrada neste sistema",
         "localOffline": "A interface local \"{{name}}\" está habilitada, mas offline",
         "interfaceDown": "A interface {{type}} \"{{name}}\" está habilitada, mas {{status}}",
-        "noPeers": "Ainda não há peers conhecidos na tabela de caminhos"
+        "noPeers": "Ainda não há peers conhecidos na tabela de caminhos",
+        "autoBeaconTunnelOnly": "AutoInterface beacon TX está falhando na(s) interface(s) de túnel VPN {{ifaces}}. Reconstrua o sidecar Reticulum ou desative temporariamente AutoInterface se os registros estiverem inundados.",
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX está falhando em {{ifaces}} — a descoberta de LAN local pode não funcionar até que isso seja corrigido."
       }
     },
     "routingPort": {

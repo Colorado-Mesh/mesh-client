@@ -74,7 +74,12 @@ describe('ReticulumSidecarManager', () => {
 
   it('reports idle status before start', () => {
     const manager = new ReticulumSidecarManager();
-    expect(manager.getStatus()).toEqual({ running: false, port: 0, pid: null });
+    expect(manager.getStatus()).toEqual({
+      running: false,
+      port: 0,
+      pid: null,
+      autoBeaconAlert: null,
+    });
   });
 
   it('resolveBinaryPath returns dev target when bundled binary missing', () => {
@@ -99,8 +104,18 @@ describe('ReticulumSidecarManager', () => {
 
     await manager.stop();
 
-    expect(manager.getStatus()).toEqual({ running: false, port: 0, pid: null });
-    expect(statusListener).toHaveBeenCalledWith({ running: false, port: 0, pid: null });
+    expect(manager.getStatus()).toEqual({
+      running: false,
+      port: 0,
+      pid: null,
+      autoBeaconAlert: null,
+    });
+    expect(statusListener).toHaveBeenCalledWith({
+      running: false,
+      port: 0,
+      pid: null,
+      autoBeaconAlert: null,
+    });
   });
 
   it('stop emits idle status even when already idle', async () => {
@@ -110,8 +125,18 @@ describe('ReticulumSidecarManager', () => {
 
     await manager.stop();
 
-    expect(manager.getStatus()).toEqual({ running: false, port: 0, pid: null });
-    expect(statusListener).toHaveBeenCalledWith({ running: false, port: 0, pid: null });
+    expect(manager.getStatus()).toEqual({
+      running: false,
+      port: 0,
+      pid: null,
+      autoBeaconAlert: null,
+    });
+    expect(statusListener).toHaveBeenCalledWith({
+      running: false,
+      port: 0,
+      pid: null,
+      autoBeaconAlert: null,
+    });
   });
 
   it('coalesces concurrent start() into a single spawn', async () => {

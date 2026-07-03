@@ -44,3 +44,46 @@ git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sideca
 ### Sunset
 
 When the upstream PR merges, remove this patch, drop the CI apply step, and clone `ratspeak/rsReticulum` `main` directly in `build-rns-stack` jobs.
+
+## rsReticulum-auto-beacon-utun.patch
+
+Skip macOS/iOS VPN tunnel interfaces (`utun*`, `ipsec*`, `ppp*`) for AutoInterface link-local enumeration; per-interface exponential backoff and WARN→DEBUG downgrade on repeated beacon TX failures (fixes ENOBUFS log spam on macOS VPN utun).
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` |
+| **Upstream PR** | _(open against [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum))_ |
+
+**Modifies (1 file):**
+
+- `crates/rns-interface/src/auto.rs` — tunnel iface filter, beacon TX backoff, log downgrade
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsReticulum` required):
+
+```bash
+./scripts/apply-rsReticulum-auto-beacon-utun.sh
+```
+
+Apply after the packet-tap patch when both overlays are needed:
+
+```bash
+./scripts/apply-rsReticulum-packet-tap.sh
+./scripts/apply-rsReticulum-auto-beacon-utun.sh
+```
+
+### Regenerate
+
+```bash
+cd ../rsReticulum
+# after implementing on top of RS_RETICULUM_REF
+git diff 6d2b28475321bc15c8f60796513d8878b47ed3ab -- crates/rns-interface/src/auto.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
+git -C /tmp/rsReticulum-patch-test checkout 6d2b28475321bc15c8f60796513d8878b47ed3ab
+git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sidecar/patches/rsReticulum-auto-beacon-utun.patch
+```
+
+### Sunset
+
+When the upstream PR merges, remove this patch and drop the CI apply step (same as packet-tap).

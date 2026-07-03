@@ -8,6 +8,7 @@ import {
   type ReticulumLocalInterfaceInput,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
+import type { ReticulumAutoBeaconAlert } from '@/shared/reticulum-types';
 
 export interface ReticulumDiagnosticsSnapshot {
   rns_ready?: boolean;
@@ -24,6 +25,7 @@ export interface ReticulumDiagnosticsBuildOptions {
   interfaces?: ReticulumLocalInterfaceInput[];
   osSerialPorts?: string[];
   auditIssues?: ReticulumConfigAuditIssue[];
+  autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
 }
 
 function runtimeCauseI18n(
@@ -41,6 +43,8 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.localOffline',
   'diagnosticsPanel.reticulum.runtime.interfaceDown',
   'diagnosticsPanel.reticulum.runtime.noPeers',
+  'diagnosticsPanel.reticulum.runtime.autoBeaconTunnelOnly',
+  'diagnosticsPanel.reticulum.runtime.autoBeaconPhysicalFailures',
 ] as const;
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
@@ -161,6 +165,36 @@ export function buildReticulumDiagnosticRows(
 
   if (options?.auditIssues?.length) {
     rows.push(...auditIssuesToDiagnosticRows(options.auditIssues, homeNodeId));
+  }
+
+  const autoBeacon = options?.autoBeaconAlert;
+  if (autoBeacon?.kind === 'physical_failures') {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/auto-beacon-physical'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/auto-beacon-physical',
+      cause: `AutoInterface beacon TX failing on ${autoBeacon.ifaceNames.join(', ')}`,
+      causeI18n: runtimeCauseI18n('autoBeaconPhysicalFailures', {
+        ifaces: autoBeacon.ifaceNames.join(', '),
+      }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumRepairKind: 'restart_stack',
+    });
+  } else if (autoBeacon?.kind === 'tunnel_only') {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/auto-beacon-tunnel'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/auto-beacon-tunnel',
+      cause: `AutoInterface beacon TX failing on VPN tunnel ${autoBeacon.ifaceNames.join(', ')} — update mesh-client or disable AutoInterface if log spam persists`,
+      causeI18n: runtimeCauseI18n('autoBeaconTunnelOnly', {
+        ifaces: autoBeacon.ifaceNames.join(', '),
+      }),
+      severity: 'info',
+      detectedAt: now,
+    });
   }
 
   return rows;

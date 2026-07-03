@@ -419,6 +419,12 @@
     "dmAddressAria": "Destination address",
     "dmAddressInvalid": "Enter a valid 32-character destination hash or lxmf:// address.",
     "sendFailed": "Send failed",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Could not send encrypted message — recipient public key is missing from NodeDB.",
+      "pkiFailed": "PKI encryption failed for this message.",
+      "noChannel": "No channel available to route this message.",
+      "timeout": "Message timed out on the radio."
+    },
     "queueButton": "Queue",
     "replyingTo": "Replying to",
     "composeLimit": {
@@ -1210,7 +1216,9 @@
         "localStalePort": "Local interface \"{{name}}\" serial port {{port}} not found on this system",
         "localOffline": "Local interface \"{{name}}\" is enabled but offline",
         "interfaceDown": "{{type}} interface \"{{name}}\" is enabled but {{status}}",
-        "noPeers": "No known peers in path table yet"
+        "noPeers": "No known peers in path table yet",
+        "autoBeaconTunnelOnly": "AutoInterface beacon TX is failing on VPN tunnel interface(s) {{ifaces}}. Rebuild the Reticulum sidecar or temporarily disable AutoInterface if logs are flooded.",
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX is failing on {{ifaces}} — local LAN discovery may not work until this is fixed."
       },
       "audit": {
         "tcp_enable_key": "TCP interface \"{{name}}\" uses the wrong enable key — RNS will not load it.",

@@ -482,7 +482,13 @@
     "openDmByAddress": "Offen",
     "dmAddressPlaceholder": "Ziel-Hash oder lxmf://…",
     "dmAddressAria": "Retikulum-Zieladresse",
-    "dmAddressInvalid": "Geben Sie einen gültigen 32-stelligen Ziel-Hash oder eine lxmf://-Adresse ein."
+    "dmAddressInvalid": "Geben Sie einen gültigen 32-stelligen Ziel-Hash oder eine lxmf://-Adresse ein.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Verschlüsselte Nachricht konnte nicht gesendet werden — öffentlicher Schlüssel des Empfängers fehlt in NodeDB.",
+      "pkiFailed": "PKI-Verschlüsselung für diese Nachricht fehlgeschlagen.",
+      "noChannel": "Kein Kanal verfügbar, um diese Nachricht weiterzuleiten.",
+      "timeout": "Zeitüberschreitung der Nachricht im Funkgerät."
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Der serielle Port {{port}} der lokalen Schnittstelle „{{name}}“ wurde auf diesem System nicht gefunden",
         "localOffline": "Die lokale Schnittstelle „{{name}}“ ist aktiviert, aber offline",
         "interfaceDown": "{{type}}-Schnittstelle „{{name}}“ ist aktiviert, aber {{status}}",
-        "noPeers": "Noch keine bekannten Peers in der Pfadtabelle"
+        "noPeers": "Noch keine bekannten Peers in der Pfadtabelle",
+        "autoBeaconTunnelOnly": "AutoInterface-Beacon TX schlägt auf VPN-Tunnelschnittstelle (n) {{ifaces}} fehl. Bauen Sie den Reticulum Sidecar wieder auf oder deaktivieren Sie die AutoInterface vorübergehend, wenn die Protokolle überflutet sind.",
+        "autoBeaconPhysicalFailures": "AutoInterface-Beacon TX schlägt auf {{ifaces}} fehl — die lokale LAN-Erkennung funktioniert möglicherweise nicht, bis dies behoben ist."
       }
     },
     "routingPort": {

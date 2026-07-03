@@ -97,6 +97,7 @@ import { recordMeshtasticClientNotification } from './meshtasticClientNotificati
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
+import { applyMeshtasticOutboundRoutingErrorFromLog } from './meshtasticSdkRoutingErrorLog';
 
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
@@ -1853,12 +1854,25 @@ export function attachMeshtasticLegacyWireSubscriptions(
   // Device logs → deviceStore via protocol; legacy handler only for foreign LoRa parsing.
   const unsubLog = device.events.onLogRecord.subscribe((record) => {
     applyMeshtasticForeignLoraFromLog(record.message);
+    applyMeshtasticOutboundRoutingErrorFromLog(record.message, {
+      myNodeNum: myNodeNumRef.current,
+      identityId: meshtasticIdentityIdRef.current,
+      messagesRef,
+      setMessages,
+    });
   });
   unsubscribesRef.current.push(unsubLog);
 
   const unsubForeignLoraLogLine = window.electronAPI.log.onLine((entry) => {
-    if (!isForeignLoraLogCandidate(entry.message)) return;
-    applyMeshtasticForeignLoraFromLog(entry.message);
+    if (isForeignLoraLogCandidate(entry.message)) {
+      applyMeshtasticForeignLoraFromLog(entry.message);
+    }
+    applyMeshtasticOutboundRoutingErrorFromLog(entry.message, {
+      myNodeNum: myNodeNumRef.current,
+      identityId: meshtasticIdentityIdRef.current,
+      messagesRef,
+      setMessages,
+    });
   });
   unsubscribesRef.current.push(unsubForeignLoraLogLine);
 

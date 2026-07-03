@@ -97,6 +97,38 @@ describe('ReticulumDiagnosticEngine', () => {
     ).toBe(true);
   });
 
+  it('adds auto-beacon diagnostic rows from sidecar alert', () => {
+    const physical = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 0 },
+      {
+        autoBeaconAlert: {
+          kind: 'physical_failures',
+          ifaceNames: ['en0'],
+          suppressedCount: 0,
+          lastAtMs: Date.now(),
+        },
+      },
+    );
+    expect(
+      physical.some((r) => r.kind === 'rf' && r.condition === 'reticulum/auto-beacon-physical'),
+    ).toBe(true);
+
+    const tunnel = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 0 },
+      {
+        autoBeaconAlert: {
+          kind: 'tunnel_only',
+          ifaceNames: ['utun4'],
+          suppressedCount: 12,
+          lastAtMs: Date.now(),
+        },
+      },
+    );
+    expect(
+      tunnel.some((r) => r.kind === 'rf' && r.condition === 'reticulum/auto-beacon-tunnel'),
+    ).toBe(true);
+  });
+
   it('mergeReticulumDiagnosticRows replaces prior reticulum rows', () => {
     const merged = mergeReticulumDiagnosticRows(
       [

@@ -858,6 +858,26 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
 
+### Reticulum AutoInterface log spam on macOS (VPN utun / ENOBUFS)
+
+**Symptoms**: Log panel floods with `[ReticulumSidecar] auto: beacon TX failed` on `utun0`, `utun4`, or similar every ~1.6 s. Error text may include `No buffer space available (os error 55)`. Diagnostics may show an **AutoInterface beacon** info row for VPN tunnel interfaces.
+
+**Cause**: Reticulum **AutoInterface** discovers link-local IPv6 on macOS VPN tunnel interfaces (`utun*`). Those interfaces often cannot transmit IPv6 multicast beacons, so the sidecar retries indefinitely and fills `mesh-client.log`.
+
+**Fix**:
+
+1. **Update mesh-client** to a build that includes the rsReticulum overlay `rsReticulum-auto-beacon-utun.patch` (skips `utun*` during enumeration and backs off repeated TX failures).
+2. **Dev rebuild**: from repo root, apply overlays then rebuild:
+   ```bash
+   ./scripts/apply-rsReticulum-packet-tap.sh
+   ./scripts/apply-rsReticulum-auto-beacon-utun.sh
+   pnpm run reticulum:sidecar:build
+   ```
+3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
+4. **Physical NIC failures** (`en0`, `wlan0`, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.
+
+Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
+
 ### Reticulum Nomad Network or topology API returns 404
 
 **Symptoms**: Device log shows `sidecar GET /api/v1/nomadnetwork/nodes failed: 404` or `/api/v1/topology` **404** while the sidecar process is running. Nomad Network tab may show **API unavailable**.

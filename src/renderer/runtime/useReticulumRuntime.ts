@@ -243,12 +243,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
-      const [snapshot, health, auditIssues] = await Promise.all([
+      const [snapshot, health, auditIssues, sidecarStatus] = await Promise.all([
         window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
           Parameters<typeof buildReticulumDiagnosticRows>[0]
         >,
         refreshLocalInterfacesFromSidecar(),
         fetchReticulumConfigAudit().catch(() => []),
+        window.electronAPI.reticulum.getStatus(),
       ]);
       const { interfaces, osSerialPorts } = health;
       const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
@@ -257,6 +258,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         interfaces,
         osSerialPorts,
         auditIssues,
+        autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
       });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),

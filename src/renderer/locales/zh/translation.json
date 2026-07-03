@@ -482,7 +482,13 @@
     "openDmByAddress": "打开",
     "dmAddressPlaceholder": "目标哈希或 lxmf://...",
     "dmAddressAria": "网状目标地址",
-    "dmAddressInvalid": "输入有效的 32 字符目标哈希或 lxmf:// 地址。"
+    "dmAddressInvalid": "输入有效的 32 字符目标哈希或 lxmf:// 地址。",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "无法发送加密邮件— NodeDB中缺少收件人公钥。",
+      "pkiFailed": "此邮件的PKI加密失败。",
+      "noChannel": "没有可用于路由此消息的渠道。",
+      "timeout": "收音机消息超时。"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "在此系统上找不到本地接口“{{name}}”串行端口 {{port}}",
         "localOffline": "本地接口“{{name}}”已启用但离线",
         "interfaceDown": "{{type}} 接口“{{name}}”已启用，但 {{status}}",
-        "noPeers": "路径表中还没有已知的对等点"
+        "noPeers": "路径表中还没有已知的对等点",
+        "autoBeaconTunnelOnly": "自动接口信标TX在VPN隧道接口{{ifaces}}上失败。如果日志被洪水淹没，请重建Reticulum侧车或暂时禁用自动接口。",
+        "autoBeaconPhysicalFailures": "自动接口信标TX在{{ifaces}}失败—在修复此问题之前，本地局域网发现可能无法正常工作。"
       }
     },
     "routingPort": {
