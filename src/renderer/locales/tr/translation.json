@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Henüz arayüz bildirilmedi.",
     "reticulumSidecarMissing": "Reticulum sidecar derlenmedi. mesh-client deposunda `pnpm run reticulum:sidecar:build` çalıştırın (Rust gerekir).",
     "reticulumSidecarCargoMissing": "Rust toolchain (cargo) bulunamadı. https://rustup.rs adresinden yükleyin ve ardından `pnpm run reticulum:sidecar:build` çalıştırın.",
+    "reticulumSidecarPatchMissing": "Reticulum sidecar derlemesi rsReticulum packet-tap overlay gerektirir. mesh-client deposunda `pnpm run reticulum:sidecar:build` çalıştırın (yamaları otomatik uygular).",
     "reticulumSidecarStartFailed": "Reticulum yığını başlatılamadı: {{message}}",
     "reticulumStopStack": "Yığını durdur",
     "reticulumAutostart": "Bağlantı açılırken yığını otomatik olarak başlat",

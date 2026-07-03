@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Aucune interface n'a encore été signalée.",
     "reticulumSidecarMissing": "Sidecar Reticulum non compilé. Depuis le dépôt mesh-client, exécutez `pnpm run reticulum:sidecar:build` (nécessite Rust).",
     "reticulumSidecarCargoMissing": "Chaîne d'outils Rust (cargo) introuvable. Installez depuis https://rustup.rs puis exécutez `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarPatchMissing": "La compilation du sidecar Reticulum nécessite l'overlay rsReticulum packet-tap. Depuis la racine du dépôt mesh-client, exécutez `pnpm run reticulum:sidecar:build` (applique les correctifs automatiquement).",
     "reticulumSidecarStartFailed": "Impossible de démarrer la pile Reticulum : {{message}}",
     "reticulumStopStack": "Arrêt de la pile",
     "reticulumAutostart": "Pile de démarrage automatique lors de l'ouverture de la connexion",

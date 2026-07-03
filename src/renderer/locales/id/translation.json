@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Belum ada antarmuka yang dilaporkan.",
     "reticulumSidecarMissing": "Sidecar Reticulum belum dibangun. Dari repo mesh-client jalankan `pnpm run reticulum:sidecar:build` (memerlukan Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) tidak ditemukan. Instal dari https://rustup.rs lalu jalankan `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarPatchMissing": "Build sidecar Reticulum membutuhkan overlay rsReticulum packet-tap. Dari root repo mesh-client jalankan `pnpm run reticulum:sidecar:build` (menerapkan patch secara otomatis).",
     "reticulumSidecarStartFailed": "Tidak dapat memulai stack Reticulum: {{message}}",
     "reticulumStopStack": "Hentikan tumpukan",
     "reticulumAutostart": "Mulai otomatis tumpukan saat membuka Koneksi",

@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Nie zgłoszono jeszcze interfejsów.",
     "reticulumSidecarMissing": "Sidecar Reticulum nie został zbudowany. W repozytorium mesh-client uruchom `pnpm run reticulum:sidecar:build` (wymaga Rust).",
     "reticulumSidecarCargoMissing": "Nie znaleziono toolchain Rust (cargo). Zainstaluj z https://rustup.rs, a następnie uruchom `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarPatchMissing": "Budowa sidecaru Reticulum wymaga nakładki rsReticulum packet-tap. W repozytorium mesh-client uruchom `pnpm run reticulum:sidecar:build` (automatycznie nakłada łaty).",
     "reticulumSidecarStartFailed": "Nie można uruchomić stosu Reticulum: {{message}}",
     "reticulumStopStack": "Zatrzymaj stos",
     "reticulumAutostart": "Automatyczny start stosu po otwarciu połączenia",

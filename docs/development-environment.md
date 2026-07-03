@@ -117,6 +117,8 @@ pnpm run reticulum:sidecar:build
 
 This writes `reticulum-sidecar/target/debug/mesh-client-reticulum` (macOS/Linux) or `.exe` on Windows.
 
+When sibling checkouts `../rsReticulum` and `../rsLXMF` exist, the build script applies required rsReticulum overlays automatically (`scripts/ensure-rsReticulum-patches.sh`) before compiling with `rns-stack,rns-ble,rns-rnode-tcp`. See [`reticulum-sidecar/patches/README.md`](../reticulum-sidecar/patches/README.md) for overlay details.
+
 **First run in Electron dev:** **Reticulum** → **Connection** → **Start stack** will run `cargo build` automatically if that binary is missing (first compile can take a few minutes). Pre-build with the command above to avoid waiting on the first click.
 
 #### Run and verify

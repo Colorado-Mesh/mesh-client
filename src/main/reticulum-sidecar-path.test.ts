@@ -24,9 +24,11 @@ vi.mock('child_process', () => ({
 
 import {
   findReticulumSidecarProjectDir,
+  formatReticulumCargoBuildError,
   hasRnsStackSiblings,
   newestReticulumSidecarSourceMtimeMs,
   resolveSidecarBinaryPath,
+  reticulumCargoStderrMissingPacketTap,
   sidecarBinaryIsStale,
   sidecarBinaryLacksRnsBle,
   sidecarBinaryLacksRnsStack,
@@ -134,5 +136,29 @@ describe('reticulum-sidecar-path', () => {
     expect(sidecarBinaryLacksRnsStack(binary)).toBe(true);
     fs.writeFileSync(binary, 'stub-sidecar-with-rns_runtime-linked');
     expect(sidecarBinaryLacksRnsStack(binary)).toBe(false);
+  });
+
+  it('reticulumCargoStderrMissingPacketTap detects register_packet_tap build failures', () => {
+    expect(
+      reticulumCargoStderrMissingPacketTap(
+        'error[E0599]: method `register_packet_tap` not found in `ReticulumHandle`',
+      ),
+    ).toBe(true);
+    expect(reticulumCargoStderrMissingPacketTap('error: could not compile')).toBe(false);
+  });
+
+  it('formatReticulumCargoBuildError maps packet-tap stderr to RETICULUM_RNS_PATCH_MISSING', () => {
+    const msg = formatReticulumCargoBuildError(
+      101,
+      'error[E0432]: unresolved import `PacketTapEvent`',
+    );
+    expect(msg).toContain('RETICULUM_RNS_PATCH_MISSING');
+    expect(msg).toContain('pnpm run reticulum:sidecar:build');
+  });
+
+  it('formatReticulumCargoBuildError keeps generic RETICULUM_CARGO_BUILD_FAILED for other errors', () => {
+    const msg = formatReticulumCargoBuildError(101, 'error: linker command failed');
+    expect(msg).toContain('RETICULUM_CARGO_BUILD_FAILED');
+    expect(msg).not.toContain('RETICULUM_RNS_PATCH_MISSING');
   });
 });

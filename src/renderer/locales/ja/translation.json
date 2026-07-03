@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "まだインターフェースが報告されていません。",
     "reticulumSidecarMissing": "Reticulumサイドカーがビルドされていません。mesh-clientリポジトリで `pnpm run reticulum:sidecar:build` を実行してください（Rustが必要です）。",
     "reticulumSidecarCargoMissing": "Rustツールチェーン（cargo）が見つかりません。https://rustup.rs からインストールし、`pnpm run reticulum:sidecar:build` を実行してください。",
+    "reticulumSidecarPatchMissing": "ReticulumサイドカーのビルドにはrsReticulum packet-tapオーバーレイが必要です。mesh-clientリポジトリで `pnpm run reticulum:sidecar:build` を実行してください（パッチは自動適用されます）。",
     "reticulumSidecarStartFailed": "Reticulumスタックを開始できませんでした: {{message}}",
     "reticulumStopStack": "スタックを停止",
     "reticulumAutostart": "接続を開いたときにスタックを自動的に開始する",

@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "尚未报告任何接口。",
     "reticulumSidecarMissing": "Reticulum 侧车未构建。请在 mesh-client 仓库中运行 `pnpm run reticulum:sidecar:build`（需要 Rust）。",
     "reticulumSidecarCargoMissing": "未找到 Rust 工具链（cargo）。请从 https://rustup.rs 安装，然后运行 `pnpm run reticulum:sidecar:build`。",
+    "reticulumSidecarPatchMissing": "Reticulum 侧车构建需要 rsReticulum packet-tap 覆盖。请在 mesh-client 仓库中运行 `pnpm run reticulum:sidecar:build`（自动应用补丁）。",
     "reticulumSidecarStartFailed": "无法启动 Reticulum 堆栈：{{message}}",
     "reticulumStopStack": "停止堆栈",
     "reticulumAutostart": "打开连接时自动启动堆栈",

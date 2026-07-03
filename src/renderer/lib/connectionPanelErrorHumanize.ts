@@ -240,6 +240,12 @@ export function humanizeReticulumSidecarError(err: unknown, t: TFunction): strin
     return t('connectionPanel.reticulumSidecarCargoMissing');
   }
   if (
+    msg.includes('RETICULUM_RNS_PATCH_MISSING') ||
+    msg.includes('RETICULUM_RNS_PATCH_APPLY_FAILED')
+  ) {
+    return t('connectionPanel.reticulumSidecarPatchMissing');
+  }
+  if (
     msg.includes('RETICULUM_SIDECAR') ||
     msg.includes('sidecar binary not found') ||
     msg.includes('RETICULUM_CARGO_BUILD_FAILED')

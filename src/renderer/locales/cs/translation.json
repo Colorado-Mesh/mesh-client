@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Zatím nebyla nahlášena žádná rozhraní.",
     "reticulumSidecarMissing": "Sidecar Reticulum není sestaven. V repozitáři mesh-client spusťte `pnpm run reticulum:sidecar:build` (vyžaduje Rust).",
     "reticulumSidecarCargoMissing": "Nástrojová sada Rust (cargo) nebyla nalezena. Nainstalujte z https://rustup.rs a spusťte `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarPatchMissing": "Sestavení sidecaru Reticulum vyžaduje overlay rsReticulum packet-tap. V repozitáři mesh-client spusťte `pnpm run reticulum:sidecar:build` (záplaty se aplikují automaticky).",
     "reticulumSidecarStartFailed": "Nelze spustit zásobník Reticulum: {{message}}",
     "reticulumStopStack": "Zastavit zásobník",
     "reticulumAutostart": "Automatické spuštění zásobníku při otevření připojení",

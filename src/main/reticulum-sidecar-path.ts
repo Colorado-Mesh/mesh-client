@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
@@ -99,6 +99,68 @@ export function sidecarBinaryLacksRnsBle(binaryPath: string): boolean {
 
 let devBuildInFlight: Promise<void> | null = null;
 
+/** Repo root containing `reticulum-sidecar/` (parent of project dir). */
+export function reticulumSidecarRepoRoot(projectDir: string): string {
+  return path.dirname(projectDir);
+}
+
+/** True when cargo stderr indicates the rsReticulum packet-tap overlay is missing. */
+export function reticulumCargoStderrMissingPacketTap(stderr: string): boolean {
+  return (
+    stderr.includes('register_packet_tap') ||
+    stderr.includes('PacketTapEvent') ||
+    stderr.includes('method not found in `ReticulumHandle`')
+  );
+}
+
+/** Format a failed sidecar cargo build into a user-actionable error message. */
+export function formatReticulumCargoBuildError(code: number | null, stderr: string): string {
+  if (reticulumCargoStderrMissingPacketTap(stderr)) {
+    return (
+      'RETICULUM_RNS_PATCH_MISSING: rsReticulum packet-tap overlay not applied. ' +
+      'From the mesh-client repo root run `pnpm run reticulum:sidecar:build` ' +
+      '(applies patches automatically) or `./scripts/ensure-rsReticulum-patches.sh`.'
+    );
+  }
+  return `RETICULUM_CARGO_BUILD_FAILED: cargo build exited ${code ?? 'null'}: ${stderr.trim().slice(-400)}`;
+}
+
+export function ensureRsReticulumPatchesScriptPath(projectDir: string): string {
+  return path.join(
+    reticulumSidecarRepoRoot(projectDir),
+    'scripts',
+    'ensure-rsReticulum-patches.sh',
+  );
+}
+
+/** Apply rsReticulum overlays when Ratspeak siblings exist (no-op for stub builds). */
+export function ensureRsReticulumPatches(projectDir: string): void {
+  if (!hasRnsStackSiblings(projectDir)) return;
+
+  const repoRoot = reticulumSidecarRepoRoot(projectDir);
+  const scriptPath = ensureRsReticulumPatchesScriptPath(projectDir);
+  if (!fs.existsSync(scriptPath)) {
+    throw new Error(
+      `RETICULUM_RNS_PATCH_SCRIPT_MISSING: expected ${scriptPath}. Run \`pnpm run reticulum:sidecar:build\` from the mesh-client repo root.`,
+    );
+  }
+
+  const result = spawnSync('bash', [scriptPath], {
+    cwd: repoRoot,
+    env: process.env,
+    encoding: 'utf8',
+  });
+  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
+  if (output) {
+    console.debug('[ReticulumSidecar] patches:', sanitizeLogMessage(output));
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `RETICULUM_RNS_PATCH_APPLY_FAILED: ${output || `ensure-rsReticulum-patches.sh exited ${result.status ?? 'null'}`}`,
+    );
+  }
+}
+
 function runCargoBuild(projectDir: string): Promise<void> {
   const cargoArgs = sidecarCargoBuildArgs(projectDir);
   return new Promise((resolve, reject) => {
@@ -132,11 +194,7 @@ function runCargoBuild(projectDir: string): Promise<void> {
         resolve();
         return;
       }
-      reject(
-        new Error(
-          `RETICULUM_CARGO_BUILD_FAILED: cargo build exited ${code ?? 'null'}: ${stderr.trim().slice(-400)}`,
-        ),
-      );
+      reject(new Error(formatReticulumCargoBuildError(code, stderr)));
     });
   });
 }
@@ -175,9 +233,14 @@ export function sidecarBinaryIsStale(binaryPath: string, projectDir: string): bo
 async function runDevSidecarCargoBuild(projectDir: string, reason: string): Promise<void> {
   if (!devBuildInFlight) {
     console.debug(`[ReticulumSidecar] ${reason}; running cargo build…`);
-    devBuildInFlight = runCargoBuild(projectDir).finally(() => {
-      devBuildInFlight = null;
-    });
+    devBuildInFlight = Promise.resolve()
+      .then(() => {
+        ensureRsReticulumPatches(projectDir);
+      })
+      .then(() => runCargoBuild(projectDir))
+      .finally(() => {
+        devBuildInFlight = null;
+      });
   }
   await devBuildInFlight;
 }
