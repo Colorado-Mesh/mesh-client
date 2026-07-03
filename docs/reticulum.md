@@ -1,223 +1,272 @@
 # Reticulum in mesh-client
 
-Tracking: [#593](https://github.com/Colorado-Mesh/mesh-client/issues/593)
+Reticulum is a **shipped third protocol** in mesh-client (amber header pill). It runs alongside Meshtastic and MeshCore in the same Electron app: switch tabs without stopping the other stacks.
 
-mesh-client ships Reticulum as a **third protocol tab** (amber chrome). The stack is an **AGPL Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the MIT renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and contacts persist in the main-process SQLite database.
+The MIT TypeScript UI talks to an **AGPL Rust sidecar** (`mesh-client-reticulum`) over localhost HTTP/WebSocket via `electronAPI.reticulum`. LXMF chat history and contacts persist in the main-process SQLite database. Packaged releases bundle the sidecar binary; see [License](license.md) and [Credits — bundled binaries](credits.md#bundled-binaries).
 
-**Primary interop target:** [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on rsReticulum/rsLXMF.
+**Primary interop:** [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on [rsReticulum](https://github.com/ratspeak/rsReticulum) / [rsLXMF](https://github.com/ratspeak/rsLXMF).
+
+Related docs: [README — Reticulum Features](../README.md#reticulum-features), [Sidecar IPC contract](reticulum-sidecar-ipc.md), [Development — Reticulum sidecar](development-environment.md#reticulum-sidecar-optional), [Troubleshooting — Reticulum](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
+
+---
+
+## Quick start
+
+1. Select the **Reticulum** pill (amber) in the header.
+2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
+3. **Network** → generate or import your LXMF identity (stack must be running).
+4. **Connection → Interfaces** → add and enable transports (TCP hub, Auto, or RNode over USB / BLE / Wi‑Fi).
+5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** for announce favourites.
+
+After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
+
+---
+
+## What is included
+
+| Area            | Shipped behavior                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                           |
+| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                     |
+| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab |
+| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                         |
+| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline  |
+| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                       |
+| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                               |
+| Nomad Network   | Favourites / announces list (MeshChat-style search and favourite toggle)                               |
+| Propagation     | Preferred node, per-node sync, optional local propagation inbox                                        |
+| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (not LoRa Hop Goblins)                |
+| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                               |
+| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                  |
+| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                   |
+
+**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, LoRa map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
+
+---
+
+## Sidebar tabs
+
+| Tab             | Role                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------- |
+| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health                        |
+| Chat            | LXMF DMs (only chat mode for Reticulum)                                                |
+| Nomad Network   | Favourites and announces                                                               |
+| Peers           | Path-table peers and LXMF contacts                                                     |
+| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault |
+| Admin           | RNode firmware flasher; factory reset (danger zone)                                    |
+| Diagnostics     | Reticulum runtime rows + interface config audit/repair                                 |
+| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                               |
+| Stats / Sniffer | Packet log views                                                                       |
+| App             | Shared app settings, DB tools, appearance                                              |
+
+Hidden tabs (Meshtastic/MeshCore only): Map, Modules, Rooms, Telemetry, Security, TAK, RF, Graph.
+
+---
 
 ## Architecture
 
 ```mermaid
-flowchart TB
+flowchart LR
   subgraph ui [Renderer MIT]
-    App[App.tsx]
     RT[useReticulumRuntime]
-    Stack[ReticulumStackPanel]
-    Network[ReticulumNetworkPanel]
-    Admin[ReticulumAdminPanel]
-    App --> RT
-    App --> Stack
-    App --> Network
-    App --> Admin
+    Panels[Stack / Network / Admin / Chat panels]
+    RT --> Panels
   end
   subgraph main [Electron main MIT]
-    IPC[reticulum:* IPC]
+    IPC[reticulum:* IPC proxy]
     DB[(SQLite reticulum_* tables)]
     IPC --> DB
   end
-  subgraph rust [Sidecar AGPL]
-    Daemon[mesh-client-reticulum]
-    StackH[StackHandle + optional LiveBridge]
-    Daemon --> StackH
+  subgraph sidecar [Sidecar AGPL]
+    Bin[mesh-client-reticulum]
+    RNS[rsReticulum + rsLXMF]
+    Bin --> RNS
   end
-  RT <-->|electronAPI| IPC
-  IPC <-->|localhost| Daemon
+  ui <-->|electronAPI| IPC
+  IPC <-->|127.0.0.1| Bin
 ```
 
-## User flow
+The renderer **must not** call the sidecar URL directly (sandbox). All HTTP/WS goes through main-process `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`. Paths must start with `/api/v1/`. Full route list: [reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md).
 
-1. **Reticulum → Connection** (`ReticulumStackPanel`): click **Start stack** (or enable **Auto-start** for next visit). Add, edit, enable, or delete **Interfaces** here. **Stop stack** shuts down the sidecar without quitting the app; **Disconnect & quit** stops the sidecar (when running) and exits mesh-client.
-2. **Reticulum → Network** (`ReticulumNetworkPanel`): create or import identity; import or export rnsd-style config; adjust stack settings and announce interval; manage propagation.
-3. **Reticulum → Admin** (`ReticulumAdminPanel`): RNode firmware flasher and stack factory reset (danger zone).
-4. **Chat:** DM-only LXMF text, reactions, file attachments, and voice clips (recorded as LXMF attachments).
+---
 
-**Diagnostics tab** shows Reticulum-native interface/path/LXMF health (not Meshtastic Hop Goblins). **Topology tab** builds a best-effort graph from the RNS path table: each row supplies one immediate next-hop (`via_hash`, a transport relay id that may differ from a hub’s destination hash). The sidecar infers `self → relay` links when a relay is only referenced as `via`. Layout uses BFS over edges with a `hops` fallback when a node is not reachable from `self`. This is not a full multi-hop trace—RNS exposes only the next hop per destination. Sidebar **Peers** tab ([`ReticulumPeerListPanel`](src/renderer/components/ReticulumPeerListPanel.tsx)) lists network path-table peers and LXMF contacts in separate sub-tabs.
+## Interfaces (Connection tab)
 
-## Panels
+Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab supports add, edit, enable/disable, and delete:
 
-| Tab (sidebar) | Component                | Purpose                                                                                             |
-| ------------- | ------------------------ | --------------------------------------------------------------------------------------------------- |
-| Connection    | `ReticulumStackPanel`    | Stack start/stop, auto-start, interfaces CRUD, local interface health                               |
-| Nomad Network | `NomadNetworkPanel`      | Favourites / Announces list, search, favourite toggle (MeshChat-style)                              |
-| Peers         | `ReticulumPeerListPanel` | Network path-table peers and LXMF contacts (sub-tabs); path/probe; opens `ReticulumPeerDetailModal` |
-| Network       | `ReticulumNetworkPanel`  | Identity, stack settings, announce controls, propagation, config import                             |
-| Admin         | `ReticulumAdminPanel`    | RNode firmware flasher; stack factory reset (danger zone)                                           |
+| Action           | Sidecar API                      |
+| ---------------- | -------------------------------- |
+| Add              | `POST /api/v1/interfaces`        |
+| Edit             | `PUT /api/v1/interfaces/{id}`    |
+| Enable / disable | `POST …/enable` or `…/disable`   |
+| Delete           | `DELETE /api/v1/interfaces/{id}` |
 
-## Interface management (Connection tab)
-
-Interfaces are stored in the sidecar rnsd config under Electron `userData/reticulum/config/`. The Connection tab **Interfaces** section supports:
-
-| Action           | UI                                                            | Sidecar API                      |
-| ---------------- | ------------------------------------------------------------- | -------------------------------- |
-| Add              | Type selector (TCP / Auto / RNode) + form + **Add interface** | `POST /api/v1/interfaces`        |
-| Edit             | **Edit** on a row → inline form                               | `PUT /api/v1/interfaces/{id}`    |
-| Enable / disable | Per-row toggle                                                | `POST …/enable` or `…/disable`   |
-| Delete           | **Delete** + confirmation modal                               | `DELETE /api/v1/interfaces/{id}` |
-
-**Edit fields by type:**
+**Fields by type**
 
 - **All:** display name
-- **TCP:** host, port
-- **RNode:** USB serial, **Bluetooth** (`ble://…` URI), or **Wi-Fi** (`tcp://host[:7633]`, default port **7633**), LoRa preset, callsign — use **Pick device** for serial/BLE selection; Wi-Fi uses host + port fields
-- **BLE Peer mesh:** optional seed peer addresses (sidecar spawns `BlePeerInterface` at runtime)
-- **Auto:** name only (minimal discovery interface)
+- **TCP client:** host, port (mesh hub — default port **4242**)
+- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign — **Pick device** for serial/BLE; Wi‑Fi uses host + port fields
+- **BLE Peer mesh:** optional seed peer addresses
+- **Auto:** name only (link-local discovery)
 
-**Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth **simultaneously on different devices** (macOS, Windows, and Linux). The app tracks peripheral ownership by MAC address and serializes **active scans** only—connected GATT links are not torn down when another stack scans or connects elsewhere. Do not point two protocols at the same BLE MAC; the app rejects same-device conflicts. On Linux, mesh stacks use Web Bluetooth in the renderer while Reticulum uses the sidecar `btleplug` stack.
+**RNode Wi‑Fi:** stays type **RNode** with `port = tcp://host:7633`. Do **not** use the TCP Client type for RNode Wi‑Fi. Provision Wi‑Fi over USB from **Admin → Wi‑Fi** (or RNode AP bootstrap) before adding the interface. Packaged sidecars include `rns-rnode-tcp`. See [RNode over Wi-Fi](#rnode-over-wi-fi) below.
 
-For bulk changes or migrating from another rsReticulum install, use **Config import** (merge or replace) on the **Network** tab, or paste from a file picked via the system config paths below.
+**Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth on **different devices** at once. Same MAC is rejected. Only **active scans** are serialized; connected GATT links are not torn down for another protocol’s scan. On Linux, LoRa stacks use Web Bluetooth in the renderer; Reticulum uses the sidecar `btleplug` stack.
+
+**Bulk migration:** **Network → Config import** (merge or replace), or import from standard system paths (see [Config import paths](#config-import-paths-system)).
 
 ### Config audit and repair
 
-The sidecar compares parsed config to the live interface list:
+**Diagnostics → Reticulum interface config** (and inline Connection hints) compare rnsd config to the live interface list:
 
-- **Ghost TCP interfaces:** enabled in config but not loaded by RNS (often wrong `enabled` vs `interface_enabled` key).
-- **Unreachable TCP hubs:** live interface down while enabled.
-- **RF mismatches:** enabled RNodes on different coordinated/fallback profiles.
+- Ghost TCP rows (enabled in config but not loaded by RNS)
+- Unreachable TCP hubs
+- RNode RF preset mismatches
 
-Use **Diagnostics → Reticulum interface config** or inline hints on **Connection → Interfaces**. **Repair config** normalizes TCP blocks and legacy preset ids; **Apply preset** writes coordinated defaults from the selected preset id.
+**Repair config** normalizes TCP blocks and legacy preset ids; **Apply preset** writes coordinated defaults. Preset data: [`src/shared/reticulumRnodeRfProfiles.json`](../src/shared/reticulumRnodeRfProfiles.json) (coordinated regional, global fallback, legacy aliases such as `rnode_us915` → `rnode_us`).
 
-### RNode RF presets (coordinated + fallback)
+---
 
-Preset picker groups:
+## Network tab
 
-| Tier                 | Examples                                                                        | Notes                            |
-| -------------------- | ------------------------------------------------------------------------------- | -------------------------------- |
-| Coordinated regional | `rnode_us` (914.875 MHz), `rnode_uk`, `rnode_au`, …                             | Community-agreed offsets         |
-| Global fallback      | `rnode_eu_fallback` (867.2 MHz), `rnode_eu_high_fallback`, `rnode_2g4_fallback` | Early Reticulum guide defaults   |
-| Legacy aliases       | `rnode_us915` → `rnode_us`, `rnode_eu868` → `rnode_eu_fallback`                 | Migrated automatically on repair |
+- **Identity:** generate, import mnemonic, export with passphrase, display name
+- **Identity vault:** optional passcode (minimum 8 characters) to encrypt secrets in the main process; unlock is rate-limited
+- **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally)
+- **Announces:** interval (`announce_interval_sec`, 0–86400) and **Clear announces** (`DELETE /api/v1/announces`) — live networks may repopulate the path table on the next peer refresh
+- **Propagation:** preferred node for offline DMs, per-node **Sync messages**, optional **local propagation inbox**, add remote nodes by 32-character hash
 
-Canonical data: [`src/shared/reticulumRnodeRfProfiles.json`](../src/shared/reticulumRnodeRfProfiles.json).
+---
+
+## Chat (LXMF)
+
+- **DM-only** — no RF channel pills
+- Text, emoji reactions, file attachments (paperclip), voice clips (mic, max ~60 s)
+- Outbound **Sending** until sidecar emits `lxmf_outbound_status` (`delivered` / `failed`)
+- Inbound attachments cached under `userData/reticulum/attachments/`; main process jails paths for save/show-in-folder
+
+### Delivery modes
+
+| Path table          | Propagation node | Result                                                         |
+| ------------------- | ---------------- | -------------------------------------------------------------- |
+| Destination present | —                | **Direct** (link delivery); RF/TCP/NET badge → **Delivered**   |
+| Destination absent  | Preferred PN set | **Propagated**; **PN** badge until sidecar confirms            |
+| Destination absent  | None             | Error `no_propagation_node`; set preferred node on Network tab |
+
+Reticulum is async — offline peers need a propagation node, not a TCP-style immediate refusal.
+
+---
+
+## Peers and topology
+
+- **`GET /api/v1/peers`:** live RNS path table when the sidecar is built with the full stack; cached on fetch failure
+- **Your node** does not appear as a peer row; identity hash is under **Network → Identity**; topology uses a synthetic **You** center node
+- **`interface` column:** path learned via that interface, not “devices on this serial port”
+- **Topology:** one next hop per destination (`via_hash`); sidecar infers `self → relay` when needed; BFS layout with hop fallback
+
+---
 
 ## RNode over Wi-Fi
 
-RNode Wi-Fi is **not** a separate interface type. It stays **`RNodeInterface`** with `port = tcp://host[:7633]` (default TCP port **7633**). Do **not** use the **TCP Client** interface type (default mesh port **4242**) for RNode Wi-Fi.
+| Step      | Action                                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
+| Provision | USB → **Admin → Wi‑Fi**, or join RNode AP → `http://10.0.0.1`, or `rnodeconf`        |
+| Interface | **Connection → Interfaces → RNode → Wi‑Fi** → host/IP, port **7633**, LoRa preset    |
+| Hardware  | ESP32-S3 Wi‑Fi boards; stock firmware disables plain ESP32 Wi‑Fi                     |
+| Pitfall   | Wi‑Fi off until provisioned; find station IP on OLED, DHCP, or Admin **Read config** |
+| IPv6      | Use bracketed literals: `tcp://[2001:db8::1]:7633`                                   |
 
-| Step      | Action                                                                                                                                                            |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Provision | USB → **Admin → Wi-Fi** (station SSID/PSK, or AP mode), **or** ~10 s button hold → join RNode AP → bootstrap console at `http://10.0.0.1`, **or** `rnodeconf` CLI |
-| Interface | **Connection → Interfaces** → type **RNode** → transport **Wi-Fi** → host/IP + port (7633) + LoRa preset                                                          |
-| Hardware  | ESP32-S3 Wi-Fi-capable boards; plain ESP32 Wi-Fi is disabled in stock firmware                                                                                    |
-| Pitfall   | Wi-Fi is **off after flash** until provisioned; find the station IP on the OLED alternate page, router DHCP, or Admin **Read config**                             |
+Stop the stack (or disable the RNode interface) before flashing the same device over USB — the sidecar holds the serial port.
 
-The sidecar must be built with **`rns-rnode-tcp`** (included in mesh-client release builds) for `tcp://` RNode interfaces to connect at runtime.
+---
 
-## Stack settings and announces (Network tab)
+## Admin (RNode flasher)
 
-**Stack settings** (`enable_transport`, `share_instance`, `loglevel`) are saved via `PUT /api/v1/stack/settings`. The UI merge-reads current settings so `announce_interval_sec` is preserved when saving transport/log options.
+Collapsible **RNode Firmware Flasher** (available even before the stack starts). Uses Web Serial in the renderer:
 
-**Announce controls** ([`ReticulumAnnounceControls`](src/renderer/components/ReticulumAnnounceControls.tsx)): set announce interval (`announce_interval_sec`, 0–86400) and **Clear announces** (`DELETE /api/v1/announces`). With the **stub** sidecar, clear announces empties the persisted peer cache. With **`rns-stack`**, the live path table may repopulate on the next refresh until RNS path-table clear is wired.
+1. Flash nRF52 (DFU + zip) or ESP32 (`esptool-js`)
+2. Provision EEPROM (device info, checksum, lock)
+3. Set firmware hash after flash
+4. Optional: Bluetooth, Wi‑Fi provisioning, TNC, display, EEPROM wipe
 
-## RNode firmware flasher (Admin tab)
+Firmware `.zip` files are selected locally (no in-app GitHub download). Disconnect Meshtastic/MeshCore USB on the same port before flashing.
 
-The **Reticulum → Admin** tab lists **RNode Firmware Flasher** as a collapsible section (visible before the stack starts). It uses the renderer **Web Serial API** to:
+**Factory reset** in the danger zone clears stack state (destructive).
 
-1. Flash nRF52 devices (DFU touch + zip manifest) or ESP32 devices (`esptool-js`).
-2. **Provision** EEPROM on new hardware (device info, MD5 checksum, lock byte).
-3. **Set firmware hash** after each flash (reads hash from device).
-4. Optional advanced tools: Bluetooth, **Wi-Fi** (station/AP provisioning), TNC mode, display read/rotation, EEPROM wipe.
+---
 
-**Serial port contention:** stop the Reticulum stack (or disable the active RNode interface) before flashing—the sidecar holds the serial port when an RNode interface is enabled. Disconnect Meshtastic or MeshCore USB serial on the same device.
+## Data storage
 
-Firmware `.zip` files are selected locally (in-app GitHub download is deferred).
+### SQLite (main process)
 
-## Peers and sidecar storage
+| Table                    | Contents                                                             |
+| ------------------------ | -------------------------------------------------------------------- |
+| `reticulum_destinations` | Contact rows (hash, display name, favorited)                         |
+| `reticulum_messages`     | LXMF history (`message_hash`, `reply_to_hash` for threads/reactions) |
 
-- **`GET /api/v1/peers`**: with **`rns-stack`**, returns the live RNS path table (including empty); the sidecar updates its in-memory cache on each successful fetch. On fetch failure, the last cached peers are returned. With the **stub** stack, peers come from persisted state.
-- **Your node is not listed as a peer:** the path table contains routes to **remote** destinations only. Your LXMF hash appears under **Network → Identity**; the topology graph uses a synthetic **You** center node. The `interface` column on a peer row means “path learned via this interface,” not “peers attached to this serial port.”
-- **Stub storage file:** `userData/reticulum/storage/mesh_client_stack.json` — identity (including mnemonic in plaintext for backup UX), stub peers, and local LXMF message cache. Treat this file as sensitive.
+### Sidecar `userData`
 
-## LXMF outbound delivery (Chat DMs)
+| Path                                       | Contents                                                                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `reticulum/config/`                        | Active rnsd INI                                                                                                    |
+| `reticulum/attachments/`                   | Inbound LXMF attachment files                                                                                      |
+| `reticulum/storage/mesh_client_stack.json` | Stub/dev file-backed stack state when not using live RNS — **treat as sensitive** (may hold mnemonic in stub mode) |
 
-With **`rns-stack`**, `POST /api/v1/lxmf/send` chooses delivery method from the path table:
-
-| Destination in path table?                | Delivery method                               | UI                                                                        |
-| ----------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
-| Yes                                       | **Direct** (LinkDeliveryManager)              | RF/TCP/NET badge while sending; **Delivered** after link completion       |
-| No, preferred propagation node configured | **Propagated** (handoff to PN)                | **PN** badge, “Queued at propagation node” until sidecar reports delivery |
-| No, no propagation node                   | `{ ok: false, error: "no_propagation_node" }` | Toast prompts user to set a preferred propagation node on the Network tab |
-
-The chat UI keeps outbound messages in **Sending** until the sidecar emits `lxmf_outbound_status` (`delivered` / `failed`). This follows Reticulum’s async LXMF model—no TCP-style “connection refused” when a contact is offline; configure a propagation node for store-and-forward instead.
-
-## LXMF attachments and voice clips
-
-- **Send:** Chat composer paperclip (files) or mic button (voice clip, max ~60 s) on Reticulum DMs. Outbound uses `POST /api/v1/lxmf/resource` with `FIELD_FILE_ATTACHMENTS` on the live stack.
-- **Receive:** Inbound attachments are cached under `userData/reticulum/attachments/`; chat shows playback for audio and **Save attachment** / **Show in folder** actions. Paths are jailed to that directory in the main process — arbitrary `attachment_path` values in SQLite are rejected at save time and **Show in folder** only opens jailed paths.
-- **Realtime voice calls (LXST/Codec2):** not in scope; the Network tab no longer shows a voice-call stub.
-
-## Propagation nodes
-
-- **Preferred node:** offline DMs route to the preferred propagation node when the destination is not in the path table.
-- **Sync:** Per-node **Sync messages** on the Network tab; progress via `propagation_sync` WebSocket events (also surfaced in Chat while syncing).
-- **Local inbox:** Enable **Local propagation (offline inbox)** on the Network tab to serve as a propagation node (`rns-stack`); stats show queued count and storage used.
-- **Add remote node:** Paste a 32-character destination hash in the propagation section to add a known MeshChat/Ratspeak propagation node.
-
-## Building the sidecar
-
-### Stub (CI / no siblings)
-
-```bash
-cd reticulum-sidecar && cargo test && cargo build
-```
-
-Uses a file-backed local stack (full API surface for dev/UI).
-
-### Full rsReticulum stack (dev)
-
-Sibling layout (same as Ratspeak):
-
-```
-parent/
-  rsReticulum/          # git clone https://github.com/ratspeak/rsReticulum
-  rsLXMF/               # git clone https://github.com/ratspeak/rsLXMF
-  mesh-client/
-    reticulum-sidecar/
-```
-
-```bash
-pnpm run reticulum:sidecar:build -- --features rns-stack
-# or: cd reticulum-sidecar && cargo build --features rns-stack
-```
-
-Optional: `rns-serial`, `rns-ble`, `rns-rnode-tcp` features for RNode USB serial, BLE, and Wi-Fi (`tcp://`) transports.
-
-CI builds both **stub** and **`rns-stack`** matrix jobs on linux x64, macOS arm64, and Windows x64/arm64 (see `.github/workflows/reticulum-sidecar.yaml`). Each job runs `cargo test` before release build.
-
-## IPC contract
-
-See [reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md). Renderer must not call localhost directly (sandbox). Main-process proxy paths must start with `/api/v1/`.
-
-## SQLite
-
-- `reticulum_destinations` — contact rows (hash, display name, favorited).
-- `reticulum_messages` — LXMF chat history (`message_hash`, `reply_to_hash` for threads/reactions).
-
-## Config import
-
-Default system paths (main process reads; renderer imports via sidecar):
+### Config import paths (system)
 
 | Platform      | Paths                                                                          |
 | ------------- | ------------------------------------------------------------------------------ |
 | macOS / Linux | `~/.reticulum/config`, `~/.config/rsReticulum/config`, `~/.rsReticulum/config` |
 | Windows       | `%APPDATA%\Reticulum\config`, `%APPDATA%\rsReticulum\config`                   |
 
-The sidecar stores the active config under Electron `userData/reticulum/config/` (rnsd INI format).
+---
 
-## Out of scope / in progress
+## Building the sidecar (development)
 
-- **LXST voice** and **LRGP games**: API status endpoints exist; full rsLXST/lrgp-rs integration is tracked separately.
-- **Hardware identity (YubiKey/PIV)**: not yet wired.
-- **Interface hot-reload** under `rns-stack`: CRUD updates config on disk; **restart the stack** after add, edit, or **delete** so live RNS drops stale transports.
-- **RNode Wi-Fi (`tcp://`)**: use bracketed IPv6 literals (`tcp://[2001:db8::1]:7633`); unbracketed IPv6 with an explicit port is rejected by the UI parser.
-- **Identity vault**: minimum 8-character passcode; unlock is rate-limited in the main process. Sidecar stub mode may return a one-time mnemonic on generate — it is **not** written to `mesh_client_stack.json` on disk.
-- **Meshtastic/MeshCore RF paths**: ConnectionDriver, MQTT hybrid, channel config, Rooms BBS, Hop Goblins diagnostics.
+End users of **GitHub Releases** or **Flatpak** do not need Rust. Developers and contributors do.
+
+**One command** (from repo root; requires [Rust](https://rustup.rs/)):
+
+```bash
+pnpm run reticulum:sidecar:build
+```
+
+When sibling checkouts `../rsReticulum` and `../rsLXMF` exist, the build script applies required patches and compiles with **`rns-stack,rns-ble,rns-rnode-tcp`** (live path table, BLE, RNode USB/Wi‑Fi). Without siblings, Cargo builds the **stub** stack (file-backed API for UI/tests — not for real mesh I/O).
+
+**Electron dev:** **Start stack** auto-runs `cargo build` when the debug binary is missing, stale, or stub-only while siblings exist. First compile can take several minutes — pre-build with the command above.
+
+**Run sidecar alone:**
+
+```bash
+pnpm run reticulum:sidecar:dev
+curl -s http://127.0.0.1:19437/api/v1/status
+```
+
+CI matrix (stub + full stack): [`.github/workflows/reticulum-sidecar.yaml`](../.github/workflows/reticulum-sidecar.yaml). Flatpak release builds bundle the full-stack binary into `resources/reticulum-sidecar/`.
+
+Patch overlays (packet tap, AutoInterface utun fix): [`reticulum-sidecar/patches/README.md`](../reticulum-sidecar/patches/README.md).
+
+---
+
+## Limitations
+
+- **No LoRa companion parity** — no `ConnectionDriver`, MQTT hybrid, channel chat, Rooms, or Meshtastic-style diagnostics
+- **Interface changes need restart** — CRUD writes config on disk; restart stack after add/edit/delete on live `rns-stack` builds
+- **Clear announces** — path table may refill from the live network on the next refresh
+- **Topology** — next-hop only; not a full end-to-end trace
+- **AGPL sidecar** — separate process and license from the MIT Electron shell
+- **LXST voice calls** and **LRGP games** — not integrated (status endpoints may exist in sidecar; no UI)
+- **Hardware identity (YubiKey/PIV)** — not wired
+- **In-app firmware download** — local `.zip` pick only
+
+---
+
+## Troubleshooting
+
+| Symptom                                    | Doc                                                                                                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sidecar won't start / health timeout       | [troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)               |
+| `register_packet_tap` / cargo build failed | [troubleshooting.md#reticulum-sidecar-cargo-build-fails](troubleshooting.md#reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed) |
+| AutoInterface utun log spam (macOS VPN)    | [troubleshooting.md#reticulum-autointerface-log-spam-on-macos](troubleshooting.md#reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs)                     |
+| Interface add/edit/delete fails            | [troubleshooting.md#reticulum-interface-addeditdelete-fails](troubleshooting.md#reticulum-interface-addeditdelete-fails)                                           |
+| Nomad / topology 404                       | [troubleshooting.md#reticulum-nomad-network-or-topology-api-returns-404](troubleshooting.md#reticulum-nomad-network-or-topology-api-returns-404)                   |
+| RNode Wi‑Fi won't connect                  | [troubleshooting.md#rnode-wi-fi-interface-offline-or-wont-connect](troubleshooting.md#rnode-wi-fi-interface-offline-or-wont-connect)                               |

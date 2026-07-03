@@ -29,9 +29,9 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 **Package manager:** `pnpm` only.
 
-## Dual protocol (Meshtastic + MeshCore)
+## Multi-protocol (Meshtastic + MeshCore + Reticulum)
 
-Both stacks can run at once: independent connections, header switcher for focus, inactive protocol stays connected, per-protocol unread badges (Meshtastic green, MeshCore cyan for Chat; MeshCore **Rooms** has a separate sidebar badge). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS, contact groups, MeshCore MQTT adapter). Sidebar tab slots are fixed in `App.tsx` (`TAB_SLOT_IDS`); **Rooms** requires `hasRoomServersPanel`, **Security**/`TAK` require capability flags (~16 visible tabs per protocol; MeshCore hides TAK and Meshtastic-only Security sections).
+All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`, no Noble/MQTT on that tab). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, Topology). Sidebar tab slots are fixed in `App.tsx` (`TAB_SLOT_IDS`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
 
 **Feature gating:** use `ProtocolCapabilities` via `useRadioProvider(protocol)` from `src/renderer/lib/radio/providerFactory.ts`; do not branch on raw `protocol === 'meshcore'` strings.
 
@@ -73,12 +73,13 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 **First places to look:** `runtime/useMeshtasticRuntime.ts` / `runtime/useMeshcoreRuntime.ts` (protocol side effects); `hooks/useProtocolConnection.ts` (connect); `stores/*` (UI state); `src/main/index.ts` (IPC).
 
-**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types), `stores/` (identity-scoped UI: `identityStore`, `nodeStore`, `messageStore`, `connectionStore`). Prefer `useProtocolFacade(protocol)` in App for new wiring. Hook/runtime boundaries: [AGENTS.md](AGENTS.md#renderer-hook-architecture-dual-protocol) ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)).
+**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types), `stores/` (identity-scoped UI: `identityStore`, `nodeStore`, `messageStore`, `connectionStore`). Prefer `useProtocolFacade(protocol)` in App for new wiring. Hook/runtime boundaries: [AGENTS.md](AGENTS.md#renderer-hook-architecture-multi-protocol) ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)).
 
 ### Protocols
 
 - **Meshtastic:** `runtime/useMeshtasticRuntime.ts`, `lib/protocols/MeshtasticProtocol.ts`, `lib/connection.ts` (`createConnection`).
 - **MeshCore:** `runtime/useMeshcoreRuntime.ts`, `lib/protocols/MeshCoreProtocol.ts`, `@liamcottle/meshcore.js`.
+- **Reticulum:** `runtime/useReticulumRuntime.ts`, `lib/reticulum/reticulumSession.ts`, `reticulum-sidecar/` (AGPL `mesh-client-reticulum`); IPC `reticulum:*` in main; docs [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md).
 
 ### Database
 
@@ -87,7 +88,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### BLE and serial
 
-- Meshtastic BLE: `lib/connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Serial: `lib/connection.ts`, `serialPortSignature.ts`. Errors: `humanize*` in `lib/connection.ts`. Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
+- Meshtastic BLE: `lib/connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Reticulum BLE: sidecar `btleplug` (RNode `ble://`, BLE Peer mesh) — coexistence via `ble-coexistence-coordinator.ts` (different MACs only; scan mutex). Serial: `lib/connection.ts`, `serialPortSignature.ts`. Errors: `humanize*` in `lib/connection.ts`. Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
 - **ATT MTU:** Noble sessions chunk `toRadio` writes from `peripheral.mtu` / `mtu` events (`bleAttWriteLimit.ts` for spec-safe defaults). Web Bluetooth (Linux) chunks only when Chromium exposes `BluetoothRemoteGATTCharacteristic.maximumWriteValueLength`; otherwise a single `writeValue` per payload (no portable negotiated-MTU API in the web spec).
 
 ### MQTT

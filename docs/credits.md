@@ -14,7 +14,7 @@
 
 ## Colorado Mesh
 
-Thanks to the [Colorado Mesh](https://coloradomesh.org) community for fostering open-source Meshtastic and MeshCore development in Colorado.
+Thanks to the [Colorado Mesh](https://coloradomesh.org) community for fostering open-source Meshtastic, MeshCore, and Reticulum development in Colorado.
 
 ## Acknowledgements
 
@@ -22,6 +22,7 @@ We were inspired by features from these projects:
 
 - [Meshtastic](https://github.com/meshtastic): Open-source, off-grid mesh communication ecosystem
 - [MeshCore](https://github.com/meshcore-dev): Lightweight hybrid routing mesh protocol for packet radios
+- [Reticulum](https://reticulum.network/): Cryptographic mesh networking stack; mesh-client integrates via rsReticulum/rsLXMF sidecar
 - [meshcore-open](https://github.com/zjs81/meshcore-open): Flutter client for MeshCore devices
 - [meshtastic-cli](https://github.com/statico/meshtastic-cli): Terminal UI for monitoring Meshtastic mesh networks
 - [Mesh Monitor](https://meshmonitor.org/): Web-based mesh network monitoring dashboard

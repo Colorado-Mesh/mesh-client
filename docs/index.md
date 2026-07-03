@@ -1,8 +1,8 @@
 # Mesh-Client
 
-Cross-platform **Electron** desktop client for **Meshtastic** and **MeshCore**
+Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)**
 on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**,
-**MQTT**, local **SQLite** history, **routing diagnostics**, and **keyboard-first**
+**MQTT** (Meshtastic/MeshCore), local **SQLite** history, **routing diagnostics**, and **keyboard-first**
 workflows.
 
 This page is the docs landing view based on the project README. For the full
@@ -12,15 +12,15 @@ repository version, see [README on GitHub](https://github.com/Colorado-Mesh/mesh
 
 ## Why
 
-Mesh-Client provides one desktop workflow for Meshtastic, MeshCore, and Reticulum (LXMF via AGPL sidecar)
+Mesh-Client provides one desktop workflow for **Meshtastic**, **MeshCore**, and **Reticulum** (LXMF via AGPL sidecar)
 with persistent local storage, keyboard-first UX, and protocol-specific
 diagnostic tooling.
 
 Key outcomes:
 
 - True message persistence with SQLite-backed history.
-- Unified interface across Meshtastic, MeshCore, and Reticulum.
-- Advanced mesh visibility via diagnostics, map overlays, and routing insights.
+- Unified interface across Meshtastic, MeshCore, and Reticulum (tri-protocol switcher: green / cyan / amber).
+- Advanced mesh visibility via diagnostics, map/topology overlays, and routing insights.
 - Multi-language support (16+ languages) with offline static bundles.
 - Cross-platform desktop support for macOS, Linux, and Windows.
 
@@ -44,6 +44,8 @@ For development setup and local build/test workflow, see:
 - [Troubleshooting](troubleshooting.md)
 - [Contributing](contributing.md)
 
+**Reticulum tab:** packaged builds include the `mesh-client-reticulum` sidecar. Dev builds need Rust and `pnpm run reticulum:sidecar:build` — see [Reticulum in mesh-client](reticulum.md) and [Reticulum sidecar (optional)](development-environment.md#reticulum-sidecar-optional).
+
 ---
 
 ## Docs Guide
@@ -52,13 +54,17 @@ For development setup and local build/test workflow, see:
   - [Development Guide](development-environment.md)
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
-  - Renderer hook/runtime/store boundaries — see [AGENTS.md](../AGENTS.md#renderer-hook-architecture-dual-protocol) and [ARCHITECTURE.md](../ARCHITECTURE.md)
-- **MeshCore**
+  - Renderer hook/runtime/store boundaries — see [AGENTS.md](../AGENTS.md#renderer-hook-architecture-multi-protocol) and [ARCHITECTURE.md](../ARCHITECTURE.md)
+- **Meshtastic & MeshCore**
   - [Feature Parity](meshcore-meshtastic-parity.md) (includes **Rooms** BBS and shared **ChatComposer**)
   - [MQTT Auth](letsmesh-mqtt-auth.md)
   - Room login/posts — [Troubleshooting](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
+- **Reticulum**
+  - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, propagation)
+  - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
+  - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 - **Support**
-  - [Diagnostics](diagnostics.md)
+  - [Diagnostics](diagnostics.md) (Meshtastic/MeshCore routing + Reticulum interface audit)
   - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
   - Copy Debug Snapshot / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)
@@ -75,3 +81,7 @@ For development setup and local build/test workflow, see:
 ### Is there a way to add a hashtag channel?
 
 Yes. When adding or editing a channel in the **Radio** tab, click **"Derive from name"** and make sure the channel name includes the `#` prefix (e.g., `#general`). This generates the PSK from the SHA-256 hash of the name with the leading `#`.
+
+### How do I use Reticulum?
+
+Select the **Reticulum** pill (amber) in the header → **Connection** → **Start stack** → **Network** to create or import identity → add **Interfaces** (TCP, Auto, or RNode). Chat is **DM-only** over LXMF. See [reticulum.md](reticulum.md) for RNode Wi‑Fi, propagation nodes, and sidecar build steps.

@@ -1,8 +1,10 @@
 # Meshtastic vs MeshCore feature parity
 
-This document summarizes which client features are **Meshtastic-only**, **MeshCore-only**, or **shared**, and whether gaps are **app wiring**, **post-MQTT**, or **blocked by protocol**.
+This document summarizes which client features are **Meshtastic-only**, **MeshCore-only**, or **shared** between the two LoRa companion-radio stacks, and whether gaps are **app wiring**, **post-MQTT**, or **blocked by protocol**.
 
-See also [CONTRIBUTING.md](../CONTRIBUTING.md) (dual-protocol architecture).
+**Reticulum** is the third protocol tab (amber pill, AGPL Rust sidecar, LXMF DMs). It is documented separately in [reticulum.md](reticulum.md) and [reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md) — not in the matrix below.
+
+See also [CONTRIBUTING.md](../CONTRIBUTING.md) (multi-protocol architecture).
 
 ## Capability flags
 
