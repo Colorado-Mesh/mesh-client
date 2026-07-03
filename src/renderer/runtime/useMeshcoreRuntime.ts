@@ -180,6 +180,8 @@ import {
   setMeshcorePathHashModeOnRadio,
 } from '../lib/meshcorePathHashMode';
 import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
+import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
+import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
   clearMeshcoreRoomAutoLoginFailure,
   getMeshcoreRoomAutoLoginFailure,
@@ -262,6 +264,7 @@ import {
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcoreRemoveContactErrorMessage,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
@@ -3159,7 +3162,9 @@ export function useMeshcoreRuntime() {
       try {
         await connRef.current.removeContact(pubKey);
       } catch (e) {
-        console.warn('[useMeshcoreRuntime] removeContact error ' + errLikeToLogString(e));
+        console.warn(
+          '[useMeshcoreRuntime] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
+        );
       }
     } else if (meshcoreIsChatStubNodeId(nodeId)) {
       // stub node: skip radio removal
@@ -3213,7 +3218,7 @@ export function useMeshcoreRuntime() {
           await conn.removeContact(c.publicKey).catch((e: unknown) => {
             console.warn(
               '[useMeshcoreRuntime] clearAllMeshcoreContacts removeContact error ' +
-                errLikeToLogString(e),
+                meshcoreRemoveContactErrorMessage(e),
             );
           });
         }
@@ -3303,7 +3308,7 @@ export function useMeshcoreRuntime() {
           }
           console.warn(
             '[useMeshcoreRuntime] offloadContactsFromRadio removeContact error ' +
-              errLikeToLogString(e),
+              meshcoreRemoveContactErrorMessage(e),
           );
         }
       }
@@ -3815,7 +3820,11 @@ export function useMeshcoreRuntime() {
             pubKey,
             nodesRef.current.get(nodeId)?.hw_model,
           );
-          const raw = await conn.getStatus(pubKey, MESHCORE_STATUS_TIMEOUT_MS);
+          const raw = await runMeshcoreRepeaterStatusRequest(
+            conn,
+            pubKey,
+            MESHCORE_STATUS_TIMEOUT_MS,
+          );
           const lastSnrDb = raw.last_snr * MESHCORE_RPC_SNR_RAW_TO_DB;
           const status: MeshCoreRepeaterStatus = {
             battMilliVolts: raw.batt_milli_volts,
@@ -3913,15 +3922,22 @@ export function useMeshcoreRuntime() {
             pubKey,
             nodesRef.current.get(nodeId)?.hw_model,
           );
-          const raw = await conn.getTelemetry(pubKey, MESHCORE_TELEMETRY_TIMEOUT_MS);
+          const raw = await runMeshcoreRepeaterTelemetryRequest(
+            conn,
+            pubKey,
+            MESHCORE_TELEMETRY_TIMEOUT_MS,
+          );
           let entries: CayenneLppEntry[] = [];
-          try {
-            entries = CayenneLpp.parse(raw.lppSensorData) as CayenneLppEntry[];
-          } catch (parseErr: unknown) {
-            console.warn(
-              '[useMeshcoreRuntime] requestTelemetry CayenneLpp.parse error ' +
-                errLikeToLogString(parseErr),
-            );
+          const lppSensorData = raw.lppSensorData;
+          if (lppSensorData) {
+            try {
+              entries = CayenneLpp.parse(lppSensorData) as CayenneLppEntry[];
+            } catch (parseErr: unknown) {
+              console.warn(
+                '[useMeshcoreRuntime] requestTelemetry CayenneLpp.parse error ' +
+                  errLikeToLogString(parseErr),
+              );
+            }
           }
           const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
           for (const entry of entries) {

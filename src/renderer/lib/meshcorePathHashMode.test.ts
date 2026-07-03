@@ -28,11 +28,11 @@ describe('meshcorePathHashMode', () => {
 
   it('sets path hash mode and waits for Ok', async () => {
     const conn = {
-      on: vi.fn(),
-      off: vi.fn(),
-      once: vi.fn((event: string | number, cb: () => void) => {
+      on: vi.fn((event: string | number, cb: () => void) => {
         if (event === 0) queueMicrotask(cb);
       }),
+      off: vi.fn(),
+      once: vi.fn(),
       sendToRadioFrame: vi.fn().mockResolvedValue(undefined),
     };
     await setMeshcorePathHashModeOnRadio(conn, 1);

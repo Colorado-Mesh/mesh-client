@@ -1,3 +1,5 @@
+import { MAX_MESHTASTIC_TRACE_ROUTE_RESULTS, trimMapToMaxSize } from './sessionMemoryCaps';
+
 /** Stored traceroute row for the node detail modal / diagnostics */
 export interface MeshtasticTraceRouteEntry {
   route: number[];
@@ -31,10 +33,16 @@ export function mergeMeshtasticTraceRouteIntoResultsMap(
   const lookupKeys = [
     ...new Set([...baseKeys, ...(additionalLookupKeys ?? []).map((k) => k >>> 0)]),
   ];
-  const next = new Map(prev);
-  for (const k of lookupKeys) {
-    next.set(k, entry);
-  }
+  const next = trimMapToMaxSize(
+    (() => {
+      const map = new Map(prev);
+      for (const k of lookupKeys) {
+        map.set(k, entry);
+      }
+      return map;
+    })(),
+    MAX_MESHTASTIC_TRACE_ROUTE_RESULTS,
+  );
   return next;
 }
 

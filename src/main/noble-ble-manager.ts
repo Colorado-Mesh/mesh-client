@@ -526,6 +526,21 @@ export class NobleBleManager extends EventEmitter {
     return false;
   }
 
+  /** Snapshot for long-session main-process health logs. */
+  getLongSessionHealthSnapshot(): {
+    meshcoreConnected: boolean;
+    meshtasticConnected: boolean;
+    bleSessionActive: boolean;
+    scanningActive: boolean;
+  } {
+    return {
+      meshcoreConnected: this.isConnected('meshcore'),
+      meshtasticConnected: this.isConnected('meshtastic'),
+      bleSessionActive: this.isBleSessionActive(),
+      scanningActive: this.scanningActive,
+    };
+  }
+
   /**
    * Returns the scan filter for the current set of requesters.
    * - meshtastic only → filter by known Meshtastic service UUID (cleaner results)

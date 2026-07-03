@@ -20,6 +20,11 @@ import type {
   TraceRouteEvent,
   WaypointEvent,
 } from '../lib/protocols/Protocol';
+import {
+  MAX_MESHCORE_CLI_HISTORY_ENTRIES,
+  MAX_TRACE_ROUTES_PER_IDENTITY,
+  trimArrayTail,
+} from '../lib/sessionMemoryCaps';
 import type { IdentityId, MeshCoreLocalStats, MeshNeighbor } from '../lib/types';
 import { getConnection } from './connectionStore';
 import { getIdentity } from './identityStore';
@@ -420,7 +425,10 @@ export function addTraceRoute(identityId: IdentityId, event: TraceRouteEvent): v
   useNodeStore.setState((s) => ({
     traceRoutes: {
       ...s.traceRoutes,
-      [identityId]: [...(s.traceRoutes[identityId] ?? []), event],
+      [identityId]: trimArrayTail(
+        [...(s.traceRoutes[identityId] ?? []), event],
+        MAX_TRACE_ROUTES_PER_IDENTITY,
+      ),
     },
   }));
 }
@@ -473,7 +481,10 @@ export function appendMeshcoreCliEntry(
   useNodeStore.setState((s) => {
     const byId = s.nodes[identityId] ?? {};
     const existing = byId[nodeId];
-    const next = [...(existing?.meshcoreCliHistory ?? []), entry];
+    const next = trimArrayTail(
+      [...(existing?.meshcoreCliHistory ?? []), entry],
+      MAX_MESHCORE_CLI_HISTORY_ENTRIES,
+    );
     return {
       nodes: {
         ...s.nodes,

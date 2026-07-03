@@ -1,8 +1,24 @@
+diff --git a/src/buffer_reader.js b/src/buffer_reader.js
+index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9ad89545d4 100644
+--- a/src/buffer_reader.js
++++ b/src/buffer_reader.js
+@@ -24,7 +24,10 @@ class BufferReader {
+     }
+ 
+     readString() {
+-        return new TextDecoder().decode(this.readRemainingBytes());
++        const bytes = this.readRemainingBytes();
++        const nullIdx = bytes.indexOf(0);
++        const slice = nullIdx >= 0 ? bytes.subarray(0, nullIdx) : bytes;
++        return new TextDecoder().decode(slice);
+     }
+ 
+     readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index af6f6d670adc0948d3453df34acbbde46c1b4250..0000000000000000000000000000000000000000 100644
+index af6f6d670adc0948d3453df34acbbde46c1b4250..337c18dbf16796a21c9834578589a583a6364f42 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
-@@ -231,7 +231,10 @@
+@@ -231,7 +231,10 @@ class Connection extends EventEmitter {
          const data = new BufferWriter();
          data.writeByte(Constants.CommandCodes.SendLogin);
          data.writeBytes(publicKey); // 32 bytes - id of repeater or room server
@@ -14,11 +30,10 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          await this.sendToRadioFrame(data.toBytes());
      }
  
-@@ -338,6 +341,14 @@
-         data.writeByte(manualAddContacts); // 0 or 1
+@@ -338,6 +341,14 @@ class Connection extends EventEmitter {
          await this.sendToRadioFrame(data.toBytes());
      }
-+
+ 
 +    async sendCommandSetPathHashMode(mode) {
 +        const data = new BufferWriter();
 +        data.writeByte(61); // CMD_SET_PATH_HASH_MODE (companion_radio v1.14+)
@@ -26,10 +41,11 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
 +        data.writeByte(mode);
 +        await this.sendToRadioFrame(data.toBytes());
 +    }
- 
++
      onFrameReceived(frame) {
  
-@@ -400,6 +411,8 @@
+         // emit received frame
+@@ -400,6 +411,8 @@ class Connection extends EventEmitter {
              this.onRawDataPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LoginSuccess){
              this.onLoginSuccessPush(bufferReader);
@@ -38,7 +54,21 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          } else if(responseCode === Constants.PushCodes.StatusResponse){
              this.onStatusResponsePush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LogRxData){
-@@ -459,6 +472,13 @@
+@@ -412,8 +425,12 @@ class Connection extends EventEmitter {
+             this.onNewAdvertPush(bufferReader);
+         } else if(responseCode === Constants.PushCodes.BinaryResponse){
+             this.onBinaryResponsePush(bufferReader);
++        } else if(responseCode === 25){
++            // AUTOADD_CONFIG — handled in mesh-client app rx path; ignore in library
++        } else if(responseCode === 0x8F){
++            // Unknown push (0x8F) — firmware ahead of library; drop silently
+         } else {
+-            console.log(`unhandled frame: code=${responseCode}`, frame);
++            console.debug(`unhandled frame: code=${responseCode}`);
+         }
+ 
+     }
+@@ -459,6 +476,13 @@ class Connection extends EventEmitter {
          });
      }
  
@@ -52,7 +82,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
      onStatusResponsePush(bufferReader) {
          this.emit(Constants.PushCodes.StatusResponse, {
              reserved: bufferReader.readByte(), // reserved
-@@ -494,15 +514,25 @@
+@@ -494,15 +518,25 @@ class Connection extends EventEmitter {
      onTraceDataPush(bufferReader) {
          const reserved = bufferReader.readByte();
          const pathLen = bufferReader.readUInt8();
@@ -84,7 +114,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          });
      }
  
-@@ -582,11 +612,30 @@
+@@ -582,11 +616,30 @@ class Connection extends EventEmitter {
      }
  
      onDeviceInfoResponse(bufferReader) {
@@ -119,7 +149,7 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
          });
      }
  
-@@ -2375,6 +2424,33 @@
+@@ -2375,6 +2428,33 @@ class Connection extends EventEmitter {
          });
      }
  
@@ -153,19 +183,3 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..00000000000000000000000000000000
      async setAutoAddContacts() {
          return await this.setOtherParams(false);
      }
-diff --git a/src/buffer_reader.js b/src/buffer_reader.js
-index 9142fbc9fda24c07082d63ced24117a35b29dc93..0000000000000000000000000000000000000000 100644
---- a/src/buffer_reader.js
-+++ b/src/buffer_reader.js
-@@ -24,7 +24,10 @@
-     }
- 
-     readString() {
--        return new TextDecoder().decode(this.readRemainingBytes());
-+        const bytes = this.readRemainingBytes();
-+        const nullIdx = bytes.indexOf(0);
-+        const slice = nullIdx >= 0 ? bytes.subarray(0, nullIdx) : bytes;
-+        return new TextDecoder().decode(slice);
-     }
- 
-     readCString(maxLength) {

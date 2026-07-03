@@ -1,15 +1,11 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
+import type { MeshcoreRepeaterRpcConnection } from './meshcoreRepeaterRpcCommon';
 import { meshcoreGetRepeaterSessionPassword } from './meshcoreUtils';
 
-/** Minimal connection surface for repeater admin `login`. */
-export interface MeshcoreRepeaterLoginConn {
-  login(
-    contactPublicKey: Uint8Array,
-    password: string,
-    extraTimeoutMillis?: number,
-  ): Promise<unknown>;
-}
+/** Minimal connection surface for repeater admin login RPC. */
+export type MeshcoreRepeaterLoginConn = MeshcoreRepeaterRpcConnection;
 
 /**
  * Best-effort repeater admin login when a session password is set.
@@ -22,7 +18,7 @@ export async function meshcoreRepeaterTryLogin(
   const password = meshcoreGetRepeaterSessionPassword().trim();
   if (!password) return;
   try {
-    await conn.login(pubKey, password, 10000);
+    await runMeshcoreRepeaterLogin(conn, pubKey, password);
   } catch (e) {
     console.warn(
       '[meshcoreRepeaterSession] repeater login failed (continuing) ' + errLikeToLogString(e),

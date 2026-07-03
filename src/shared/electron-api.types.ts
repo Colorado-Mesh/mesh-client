@@ -214,6 +214,7 @@ export interface ElectronAPI {
     pruneNodesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneReticulumMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     clearMessagesByChannel: (channel: number) => Promise<void>;

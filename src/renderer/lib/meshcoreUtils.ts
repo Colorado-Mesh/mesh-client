@@ -6,6 +6,7 @@ import {
   meshcoreUnpackPathLenByte,
 } from '../../shared/meshcorePathHash';
 import { isPlaceholderLongName } from '../../shared/nodeNameUtils';
+import { errLikeToLogString } from './errLikeToLogString';
 import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
 
@@ -745,4 +746,13 @@ export function coerceMeshcoreExportPrivateKeyResult(result: unknown): Uint8Arra
     return pk.byteLength > 0 ? pk : null;
   }
   return null;
+}
+
+/** Map meshcore.js bare `reject()` from removeContact to a user-visible message. */
+export function meshcoreRemoveContactErrorMessage(e: unknown): string {
+  const msg = errLikeToLogString(e);
+  if (!msg || msg === 'undefined') {
+    return 'radio rejected removeContact (no detail from radio)';
+  }
+  return msg;
 }

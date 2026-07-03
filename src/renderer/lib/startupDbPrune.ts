@@ -3,9 +3,15 @@ import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { errLikeToLogString } from './errLikeToLogString';
 import { fetchMessageRetention } from './messageRetention';
 import { parseStoredJson } from './parseStoredJson';
+import {
+  RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT,
+  SESSION_DB_PRUNE_INTERVAL_MS,
+} from './sessionMemoryCaps';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
 
 let startupDbPrunePromise: Promise<void> | null = null;
+
+export { SESSION_DB_PRUNE_INTERVAL_MS };
 
 /**
  * One-shot startup DB maintenance (node/message retention, migrations).
@@ -13,8 +19,13 @@ let startupDbPrunePromise: Promise<void> | null = null;
  */
 export function runStartupDbPrune(): Promise<void> {
   if (startupDbPrunePromise) return startupDbPrunePromise;
-  startupDbPrunePromise = executeStartupDbPrune();
+  startupDbPrunePromise = executeDbPrune('startup');
   return startupDbPrunePromise;
+}
+
+/** Periodic maintenance while the app stays connected (same ops as startup prune). */
+export function runSessionDbPrune(): Promise<void> {
+  return executeDbPrune('session');
 }
 
 /** @internal Vitest only — resets single-flight guard between tests. */
@@ -22,7 +33,7 @@ export function resetStartupDbPruneForTests(): void {
   startupDbPrunePromise = null;
 }
 
-async function executeStartupDbPrune(): Promise<void> {
+async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
   const startupProtocol = getStoredMeshProtocol();
   const raw =
     parseStoredJson<Record<string, unknown>>(getAppSettingsRaw(), 'App startup node pruning') ?? {};
@@ -110,6 +121,16 @@ async function executeStartupDbPrune(): Promise<void> {
         }),
       );
     }
+  } else if (startupProtocol === 'reticulum') {
+    ops.push(
+      window.electronAPI.db
+        .pruneReticulumMessagesByCount(RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT)
+        .catch((e: unknown) => {
+          console.warn(
+            `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
+          );
+        }),
+    );
   }
 
   ops.push(
@@ -135,11 +156,20 @@ async function executeStartupDbPrune(): Promise<void> {
               .pruneMeshcoreMessagesByCount(r.meshcoreCount)
               .catch((e: unknown) => {
                 console.warn(
-                  '[App] startup pruneMeshcoreMessagesByCount failed ' + errLikeToLogString(e),
+                  `[App] ${label} pruneMeshcoreMessagesByCount failed ` + errLikeToLogString(e),
                 );
               }),
           );
         }
+        innerOps.push(
+          window.electronAPI.db
+            .pruneReticulumMessagesByCount(RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT)
+            .catch((e: unknown) => {
+              console.warn(
+                `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
+              );
+            }),
+        );
         return Promise.all(innerOps);
       })
       .catch((e: unknown) => {

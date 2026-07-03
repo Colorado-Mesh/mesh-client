@@ -110,6 +110,18 @@ After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and
 - **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 
+### Long-running sessions (multi-day uptime)
+
+If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
+
+- **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
+- **MeshCore:** enable **contact cap** (~500) and **auto-prune by age** in App settings; avoid bulk repeater status/neighbors refresh when not needed.
+- **Meshtastic:** enable **node cap** and **auto-prune** in App settings.
+- **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
+- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
+
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and BLE session state.
+
 ### Windows sleep / wake and auto-reconnect
 
 After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE over Noble IPC).

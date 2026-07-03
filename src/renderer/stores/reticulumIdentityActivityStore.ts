@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import {
+  MAX_RETICULUM_IDENTITY_DESTINATIONS,
+  trimMapToMaxSize,
+} from '@/renderer/lib/sessionMemoryCaps';
 
 export interface ReticulumIdentityActivityRow {
   destination_hash: string;
@@ -34,7 +38,7 @@ export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivit
         set((s) => {
           const next = new Map(s.byDestination);
           next.set(key, rows);
-          return { byDestination: next };
+          return { byDestination: trimMapToMaxSize(next, MAX_RETICULUM_IDENTITY_DESTINATIONS) };
         });
         return rows;
       } catch (e) {
@@ -60,7 +64,7 @@ export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivit
         const prev = next.get(key) ?? [];
         const filtered = prev.filter((r) => r.aspect !== normalized.aspect);
         next.set(key, [normalized, ...filtered]);
-        return { byDestination: next };
+        return { byDestination: trimMapToMaxSize(next, MAX_RETICULUM_IDENTITY_DESTINATIONS) };
       });
     },
 
