@@ -65,6 +65,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:pruneMessagesByCount', maxCount),
     pruneMeshcoreMessagesByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneMeshcoreMessagesByCount', maxCount),
+    pruneReticulumMessagesByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneReticulumMessagesByCount', maxCount),
     deleteNodesBatch: (nodeIds: number[]) => ipcRenderer.invoke('db:deleteNodesBatch', nodeIds),
     clearMessagesByChannel: (channel: number) =>
       ipcRenderer.invoke('db:clearMessagesByChannel', channel),

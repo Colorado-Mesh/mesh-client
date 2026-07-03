@@ -29,6 +29,12 @@ import type { GpsSource } from '../lib/gpsSource';
 import { isLowAccuracyPosition } from '../lib/gpsSource';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
+import {
+  LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS,
+  LARGE_MESH_NODE_THRESHOLD,
+  MAX_DIAGNOSTICS_TRACKED_NODES,
+  trimMapToMaxSizeKeeping,
+} from '../lib/sessionMemoryCaps';
 import type {
   DiagnosticRow,
   HopHistoryPoint,
@@ -539,6 +545,35 @@ const diagnosticsDebounce = {
   pendingAnalyses: new Map<number, { node: MeshNode; homeNode: MeshNode | null }>(),
 };
 
+function capDiagnosticsNodeMaps<
+  T extends {
+    hopHistory: Map<number, HopHistoryPoint[]>;
+    cuHistory: Map<number, CuSample[]>;
+    packetStats: Map<number, { total: number; duplicates: number }>;
+    pathUpdatedTimestamps: Map<number, number[]>;
+  },
+>(maps: T, keepNodeIds: Iterable<number>): T {
+  return {
+    ...maps,
+    hopHistory: trimMapToMaxSizeKeeping(
+      maps.hopHistory,
+      MAX_DIAGNOSTICS_TRACKED_NODES,
+      keepNodeIds,
+    ),
+    cuHistory: trimMapToMaxSizeKeeping(maps.cuHistory, MAX_DIAGNOSTICS_TRACKED_NODES, keepNodeIds),
+    packetStats: trimMapToMaxSizeKeeping(
+      maps.packetStats,
+      MAX_DIAGNOSTICS_TRACKED_NODES,
+      keepNodeIds,
+    ),
+    pathUpdatedTimestamps: trimMapToMaxSizeKeeping(
+      maps.pathUpdatedTimestamps,
+      MAX_DIAGNOSTICS_TRACKED_NODES,
+      keepNodeIds,
+    ),
+  };
+}
+
 /** Test-only: clear debounce state to prevent timer leakage across vitest cases. */
 export function resetDiagnosticsDebounceStateForTests(): void {
   if (diagnosticsDebounce.incrementalAnalysisTimer) {
@@ -852,7 +887,15 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       const newPacketStats = new Map(state.packetStats);
       newPacketStats.set(node.node_id, { ...stats, total: stats.total + 1 });
 
-      return { hopHistory: newHopHistory, cuHistory: newCuHistory, packetStats: newPacketStats };
+      return capDiagnosticsNodeMaps(
+        {
+          hopHistory: newHopHistory,
+          cuHistory: newCuHistory,
+          packetStats: newPacketStats,
+          pathUpdatedTimestamps: state.pathUpdatedTimestamps,
+        },
+        [node.node_id],
+      );
     });
 
     // Buffer this node for debounced analysis
@@ -1226,6 +1269,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     diagnosticsDebounce.pendingAnalyses.clear();
     if (diagnosticsDebounce.fullReanalysisTimer)
       clearTimeout(diagnosticsDebounce.fullReanalysisTimer);
+    const nodes = getNodes();
+    const reanalysisDelayMs =
+      nodes.size > LARGE_MESH_NODE_THRESHOLD ? LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS : 2000;
     diagnosticsDebounce.fullReanalysisTimer = setTimeout(() => {
       diagnosticsDebounce.fullReanalysisTimer = null;
       if (capabilities?.hasHopCount === false) {
@@ -1342,7 +1388,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       );
       set({ diagnosticRows, diagnosticRowsRestoredAt: null });
       schedulePersistDiagnosticRows(() => get().diagnosticRows);
-    }, 2000);
+    }, reanalysisDelayMs);
   },
 
   setCongestionHalosEnabled(enabled: boolean) {

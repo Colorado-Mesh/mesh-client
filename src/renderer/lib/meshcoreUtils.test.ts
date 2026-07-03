@@ -29,6 +29,7 @@ import {
   meshcoreMergeContactHopsAwayFromPrevious,
   meshcoreMilliVoltsToApproximateBatteryPercent,
   meshcoreMinimalNodeFromAdvertEvent,
+  meshcoreRemoveContactErrorMessage,
   meshcoreResolvedTxPowerMax,
   meshcoreScaledAdvLatLonToDeg,
   meshcoreSelfInfoBwToDisplayKhz,
@@ -699,5 +700,15 @@ describe('coerceMeshcoreExportPrivateKeyResult', () => {
     expect(coerceMeshcoreExportPrivateKeyResult(new Uint8Array(0))).toBeNull();
     expect(coerceMeshcoreExportPrivateKeyResult({ privateKey: new Uint8Array(0) })).toBeNull();
     expect(coerceMeshcoreExportPrivateKeyResult({})).toBeNull();
+  });
+});
+
+describe('meshcoreRemoveContactErrorMessage', () => {
+  it('maps bare reject to a friendly message', () => {
+    expect(meshcoreRemoveContactErrorMessage(undefined)).toContain('no detail from radio');
+  });
+
+  it('passes through Error messages', () => {
+    expect(meshcoreRemoveContactErrorMessage(new Error('table full'))).toBe('table full');
   });
 });

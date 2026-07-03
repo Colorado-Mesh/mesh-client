@@ -5754,6 +5754,17 @@ void app.whenReady().then(() => {
     }
     createWindow();
 
+    const MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS = 60 * 60 * 1000;
+    const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
+    setInterval(() => {
+      if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
+      const mem = process.memoryUsage();
+      const ble = nobleBleManager.getLongSessionHealthSnapshot();
+      console.debug(
+        `[main] long-session health uptimeSec=${Math.floor(process.uptime())} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
+      );
+    }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
+
     setupAppMenu();
 
     // ─── Power monitor: notify renderer on suspend/resume ──────────

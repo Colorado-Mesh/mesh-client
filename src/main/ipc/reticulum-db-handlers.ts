@@ -311,6 +311,31 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
+  ipcMain.handle('db:pruneReticulumMessagesByCount', (event, maxCount: number) => {
+    try {
+      assertIpcSender(event, 'db:pruneReticulumMessagesByCount');
+      const db = getDbForIpc('db:pruneReticulumMessagesByCount');
+      if (!db) return { changes: 0 };
+      if (typeof maxCount !== 'number' || maxCount < 100 || !Number.isFinite(maxCount)) {
+        return { changes: 0 };
+      }
+      const cap = Math.floor(maxCount);
+      const result = db
+        .prepareOnce(
+          'DELETE FROM reticulum_messages WHERE id NOT IN (SELECT id FROM reticulum_messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
+        )
+        .run(cap);
+      if (result.changes > 0) {
+        console.debug(
+          `[IPC] db:pruneReticulumMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+        );
+      }
+      return { changes: Number(result.changes) };
+    } catch (err) {
+      finishDbIpcHandler('db:pruneReticulumMessagesByCount', err);
+    }
+  });
+
   ipcMain.handle('db:vacuumReticulumTables', (event) => {
     try {
       assertIpcSender(event, 'db:vacuumReticulumTables');

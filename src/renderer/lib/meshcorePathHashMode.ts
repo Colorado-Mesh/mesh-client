@@ -27,21 +27,29 @@ export function setMeshcorePathHashModeOnRadio(
   mode: MeshcorePathHashMode,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const onOk = () => {
+    let settled = false;
+    const cleanup = (): void => {
       conn.off(MC_RESP_OK, onOk);
       conn.off(MC_RESP_ERR, onErr);
+    };
+    const onOk = (): void => {
+      if (settled) return;
+      settled = true;
+      cleanup();
       resolve();
     };
-    const onErr = () => {
-      conn.off(MC_RESP_OK, onOk);
-      conn.off(MC_RESP_ERR, onErr);
+    const onErr = (): void => {
+      if (settled) return;
+      settled = true;
+      cleanup();
       reject(new Error('radio rejected path hash mode'));
     };
-    conn.once(MC_RESP_OK, onOk);
-    conn.once(MC_RESP_ERR, onErr);
+    conn.on(MC_RESP_OK, onOk);
+    conn.on(MC_RESP_ERR, onErr);
     void conn.sendToRadioFrame(buildSetPathHashModeFrame(mode)).catch((err: unknown) => {
-      conn.off(MC_RESP_OK, onOk);
-      conn.off(MC_RESP_ERR, onErr);
+      if (settled) return;
+      settled = true;
+      cleanup();
       reject(err instanceof Error ? err : new Error(String(err)));
     });
   });
