@@ -128,7 +128,10 @@ async function main() {
       `Expand-Archive -LiteralPath '${archivePath}' -DestinationPath '${tmpBase}' -Force`,
     ];
     const x = spawnSync('powershell', ps, { stdio: 'inherit' });
-    if (x.status !== 0) process.exit(x.status ?? 1);
+    if (x.status !== 0) {
+      console.error(`Failed to extract ${asset.name} with Expand-Archive (exit ${x.status ?? 1}).`);
+      process.exit(x.status ?? 1);
+    }
   } else {
     const x = spawnSync('tar', ['-xzf', archivePath, '-C', tmpBase], {
       stdio: 'inherit',

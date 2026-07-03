@@ -15,7 +15,17 @@ const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
 const EXPECTED_MAIN = 'dist-electron/main/index.js';
 const EXPECTED_ELECTRON = '/app/lib/mesh-client/electron/electron';
 const SEMVER_PATTERN = /(\d+\.\d+\.\d+)/;
-const PNPM_VERSION_PATTERN = /^pnpm@(\d+\.\d+\.\d+)/;
+
+/** Corepack `pnpm@VERSION[+sha512…]` — pre-release suffixes allowed; + integrity hash stripped. */
+function pnpmVersionFromPackage(pkg) {
+  if (!pkg) return null;
+  const spec = pkg.packageManager;
+  if (typeof spec !== 'string' || !spec.startsWith('pnpm@')) return null;
+  const raw = spec.slice('pnpm@'.length);
+  const version = raw.split('+', 1)[0];
+  if (!/^\d+\.\d+\.\d+/.test(version)) return null;
+  return version;
+}
 
 function loadPackageJson() {
   if (!fs.existsSync(PKG)) return null;
@@ -111,14 +121,6 @@ function electronVersionFromPackage(pkg) {
   const spec = pkg.devDependencies?.electron ?? pkg.dependencies?.electron;
   if (typeof spec !== 'string') return null;
   const m = spec.match(SEMVER_PATTERN);
-  return m?.[1] ?? null;
-}
-
-function pnpmVersionFromPackage(pkg) {
-  if (!pkg) return null;
-  const spec = pkg.packageManager;
-  if (typeof spec !== 'string') return null;
-  const m = spec.match(PNPM_VERSION_PATTERN);
   return m?.[1] ?? null;
 }
 

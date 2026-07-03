@@ -26,7 +26,16 @@ if [ "${MESH_CLIENT_ENABLE_GPU:-}" != "1" ] && [ "${MESH_CLIENT_DISABLE_GPU:-}" 
   case "${MESH_CLIENT_DISABLE_GPU:-}" in
     1) ;;
     *)
-      if grep -rq 'DRIVER=vmwgfx' /sys/class/drm/card*/device/uevent 2> /dev/null; then
+      # Check each DRM card uevent explicitly (avoid recursive grep over many cards).
+      vmwgfx=0
+      for uevent in /sys/class/drm/card*/device/uevent; do
+        [ -f "$uevent" ] || continue
+        if grep -Fq 'DRIVER=vmwgfx' "$uevent" 2> /dev/null; then
+          vmwgfx=1
+          break
+        fi
+      done
+      if [ "$vmwgfx" = 1 ]; then
         export MESH_CLIENT_DISABLE_GPU=1
       fi
       ;;
