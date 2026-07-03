@@ -482,7 +482,13 @@
     "openDmByAddress": "Ouvrir",
     "dmAddressPlaceholder": "Hachage de destination ou lxmf://…",
     "dmAddressAria": "Adresse de destination du réticulum",
-    "dmAddressInvalid": "Entrez un hachage de destination valide de 32 caractères ou une adresse lxmf://."
+    "dmAddressInvalid": "Entrez un hachage de destination valide de 32 caractères ou une adresse lxmf://.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Impossible d'envoyer un message chiffré — la clé publique du destinataire est manquante dans NodeDB.",
+      "pkiFailed": "Le cryptage PKI a échoué pour ce message.",
+      "noChannel": "Aucun canal disponible pour acheminer ce message.",
+      "timeout": "Le message a expiré à la radio."
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Interface locale \"{{name}}\" port série {{port}} introuvable sur ce système",
         "localOffline": "L'interface locale \"{{name}}\" est activée mais hors ligne",
         "interfaceDown": "L'interface {{type}} \"{{name}}\" est activée mais {{status}}",
-        "noPeers": "Aucun homologue connu dans la table des chemins pour l'instant"
+        "noPeers": "Aucun homologue connu dans la table des chemins pour l'instant",
+        "autoBeaconTunnelOnly": "La balise AutoInterface TX échoue sur les interfaces de tunnel VPN {{ifaces}}. Reconstruisez le sidecar Reticulum ou désactivez temporairement AutoInterface si les journaux sont inondés.",
+        "autoBeaconPhysicalFailures": "La balise AutoInterface TX échoue sur {{ifaces}} — la découverte du LAN local peut ne pas fonctionner tant que cela n'est pas corrigé."
       }
     },
     "routingPort": {

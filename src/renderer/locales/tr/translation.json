@@ -482,7 +482,13 @@
     "openDmByAddress": "Açık",
     "dmAddressPlaceholder": "Hedef karması veya lxmf://…",
     "dmAddressAria": "Retikulum hedef adresi",
-    "dmAddressInvalid": "32 karakterlik geçerli bir hedef karması veya lxmf:// adresi girin."
+    "dmAddressInvalid": "32 karakterlik geçerli bir hedef karması veya lxmf:// adresi girin.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Şifrelenmiş mesaj gönderilemedi — NodeDB'de alıcı genel anahtarı eksik.",
+      "pkiFailed": "Bu mesaj için PKI şifrelemesi başarısız oldu.",
+      "noChannel": "Bu mesajı yönlendirmek için kullanılabilir kanal yok.",
+      "timeout": "Mesaj radyoda zaman aşımına uğradı."
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Yerel arayüz \"{{name}}\" seri bağlantı noktası {{port}} bu sistemde bulunamadı",
         "localOffline": "Yerel arayüz \"{{name}}\" etkin ancak çevrimdışı",
         "interfaceDown": "{{type}} arayüzü \"{{name}}\" etkin ancak {{status}}",
-        "noPeers": "Henüz yol tablosunda bilinen eş yok"
+        "noPeers": "Henüz yol tablosunda bilinen eş yok",
+        "autoBeaconTunnelOnly": "AutoInterface beacon TX, VPN tünel arayüzlerinde başarısız oluyor {{ifaces}}. Reticulum sepetini yeniden oluşturun veya günlükler doluysa AutoInterface'i geçici olarak devre dışı bırakın.",
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX {{ifaces}} üzerinde başarısız oluyor — bu düzeltilinceye kadar yerel lan keşfi çalışmayabilir."
       }
     },
     "routingPort": {

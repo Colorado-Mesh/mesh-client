@@ -482,7 +482,13 @@
     "openDmByAddress": "Aprire",
     "dmAddressPlaceholder": "Hash di destinazione o lxmf://…",
     "dmAddressAria": "Indirizzo di destinazione del reticolo",
-    "dmAddressInvalid": "Inserisci un hash di destinazione valido di 32 caratteri o un indirizzo lxmf://."
+    "dmAddressInvalid": "Inserisci un hash di destinazione valido di 32 caratteri o un indirizzo lxmf://.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Impossibile inviare un messaggio crittografato — la chiave pubblica del destinatario manca da NodeDB.",
+      "pkiFailed": "Crittografia PKI non riuscita per questo messaggio.",
+      "noChannel": "Nessun canale disponibile per instradare questo messaggio.",
+      "timeout": "Messaggio scaduto alla radio."
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Interfaccia locale \"{{name}}\" porta seriale {{port}} non trovata su questo sistema",
         "localOffline": "L'interfaccia locale \"{{name}}\" è abilitata ma offline",
         "interfaceDown": "L'interfaccia {{type}} \"{{name}}\" è abilitata ma {{status}}",
-        "noPeers": "Nessun peer noto ancora nella tabella dei percorsi"
+        "noPeers": "Nessun peer noto ancora nella tabella dei percorsi",
+        "autoBeaconTunnelOnly": "Il beacon AutoInterface TX non funziona sulle interfaccedel tunnel VPN {{ifaces}}. Ricostruisci il sidecar Reticulum o disabilita temporaneamente l'interfaccia automatica se i registri sono allagati.",
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX non funziona su {{ifaces}} — il rilevamento della LAN locale potrebbe non funzionare fino a quando questo problema non viene risolto."
       }
     },
     "routingPort": {

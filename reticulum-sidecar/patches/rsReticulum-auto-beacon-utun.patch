@@ -1,0 +1,239 @@
+diff --git a/crates/rns-interface/src/auto.rs b/crates/rns-interface/src/auto.rs
+index 3d0db69..479026e 100644
+--- a/crates/rns-interface/src/auto.rs
++++ b/crates/rns-interface/src/auto.rs
+@@ -35,7 +35,7 @@ pub const MULTI_IF_DEQUE_TTL: f64 = 0.75;
+ // Per-platform ignores: loopback, Apple AWDL, cellular RIL, VPN tunnels.
+ 
+ #[cfg(target_os = "macos")]
+-const IGNORED_IFACES: &[&str] = &["awdl0", "llw0", "lo0", "en5"];
++const IGNORED_IFACES: &[&str] = &["awdl0", "llw0", "lo0", "en5", "ipsec0"];
+ 
+ #[cfg(target_os = "linux")]
+ const IGNORED_IFACES: &[&str] = &["lo"];
+@@ -568,12 +568,33 @@ pub fn list_network_interfaces() -> Result<Vec<NetworkInterfaceInfo>, String> {
+     Ok(by_name.into_values().collect())
+ }
+ 
++/// VPN/tunnel NICs that may enumerate link-local addresses but cannot TX IPv6
++/// multicast beacons (macOS `utun*` often returns ENOBUFS / os error 55).
++fn is_builtin_ignored_iface(iface_name: &str) -> bool {
++    if IGNORED_IFACES.contains(&iface_name) {
++        return true;
++    }
++    #[cfg(any(target_os = "macos", target_os = "ios"))]
++    {
++        if iface_name.starts_with("utun") || iface_name.starts_with("ipsec") {
++            return true;
++        }
++    }
++    #[cfg(target_os = "macos")]
++    {
++        if iface_name.starts_with("ppp") {
++            return true;
++        }
++    }
++    false
++}
++
+ fn iface_passes_filters(
+     iface_name: &str,
+     devices: Option<&[String]>,
+     ignored_devices: &[String],
+ ) -> bool {
+-    if IGNORED_IFACES.contains(&iface_name) {
++    if is_builtin_ignored_iface(iface_name) {
+         return false;
+     }
+     if ignored_devices.iter().any(|n| n == iface_name) {
+@@ -587,6 +608,33 @@ fn iface_passes_filters(
+     true
+ }
+ 
++const BEACON_TX_MAX_BACKOFF_SECS: f64 = 60.0;
++
++#[derive(Debug, Clone, Copy)]
++struct BeaconIfaceTxState {
++    consecutive_failures: u32,
++    backoff_until: Option<Instant>,
++    logged_warn: bool,
++}
++
++impl Default for BeaconIfaceTxState {
++    fn default() -> Self {
++        Self {
++            consecutive_failures: 0,
++            backoff_until: None,
++            logged_warn: false,
++        }
++    }
++}
++
++fn beacon_tx_backoff_secs(consecutive_failures: u32) -> f64 {
++    if consecutive_failures == 0 {
++        return BEACON_INTERVAL;
++    }
++    let mult = 2f64.powi(consecutive_failures.saturating_sub(1).min(6) as i32);
++    (BEACON_INTERVAL * mult).min(BEACON_TX_MAX_BACKOFF_SECS)
++}
++
+ /// Enumerate link-local IPv6 addresses, applying device/ignore filters.
+ /// Drops addresses with unresolvable scope id — `scope_id = 0` silently
+ /// routes via the default NIC, which is wrong on multi-homed hosts.
+@@ -1125,6 +1173,7 @@ pub async fn spawn_auto_interface(
+     tokio::spawn(async move {
+         let mut interval =
+             tokio::time::interval(std::time::Duration::from_secs_f64(BEACON_INTERVAL));
++        let mut tx_states: HashMap<String, BeaconIfaceTxState> = HashMap::new();
+         #[cfg(feature = "mobile-throttle")]
+         let mut was_foreground = true;
+         #[cfg(not(feature = "mobile-throttle"))]
+@@ -1151,40 +1200,94 @@ pub async fn spawn_auto_interface(
+             }
+             // Snapshot adopted set; jobs task may have replaced it on link flap.
+             let snapshot = { beacon_link_locals.lock().await.clone() };
++            let now = Instant::now();
+             for (_name, ll_addr, scope_id) in &snapshot {
++                let state = tx_states.entry(_name.clone()).or_default();
++                if state
++                    .backoff_until
++                    .is_some_and(|until| now < until)
++                {
++                    continue;
++                }
+                 let beacon = make_beacon(&group_id, ll_addr);
+                 let dest = SocketAddrV6::new(mcast_group, disc_port, 0, *scope_id);
+                 if let Err(e) = set_multicast_if_v6(disc_sock_send.as_ref(), *scope_id) {
+-                    tracing::warn!(
+-                        iface = %_name,
+-                        ll = %ll_addr,
+-                        scope_id,
+-                        error = %e,
+-                        raw_os_error = ?e.raw_os_error(),
+-                        "auto: failed to select multicast outbound interface"
+-                    );
++                    if !state.logged_warn {
++                        tracing::warn!(
++                            iface = %_name,
++                            ll = %ll_addr,
++                            scope_id,
++                            error = %e,
++                            raw_os_error = ?e.raw_os_error(),
++                            "auto: failed to select multicast outbound interface"
++                        );
++                        state.logged_warn = true;
++                    } else {
++                        tracing::debug!(
++                            iface = %_name,
++                            ll = %ll_addr,
++                            scope_id,
++                            error = %e,
++                            raw_os_error = ?e.raw_os_error(),
++                            "auto: failed to select multicast outbound interface"
++                        );
++                    }
+                 }
+                 let res = disc_sock_send.send_to(&beacon, dest).await;
+                 match res {
+-                    Ok(n) => tracing::debug!(
+-                        iface = %_name,
+-                        ll = %ll_addr,
+-                        scope_id,
+-                        dst = %dest,
+-                        hash = %hex32(&beacon),
+-                        sent_bytes = n,
+-                        "auto-instr beacon TX"
+-                    ),
+-                    Err(e) => tracing::warn!(
+-                        iface = %_name,
+-                        ll = %ll_addr,
+-                        scope_id,
+-                        dst = %dest,
+-                        hash = %hex32(&beacon),
+-                        error = %e,
+-                        raw_os_error = ?e.raw_os_error(),
+-                        "auto: beacon TX failed"
+-                    ),
++                    Ok(n) => {
++                        tx_states.insert(
++                            _name.clone(),
++                            BeaconIfaceTxState {
++                                consecutive_failures: 0,
++                                backoff_until: None,
++                                logged_warn: false,
++                            },
++                        );
++                        tracing::debug!(
++                            iface = %_name,
++                            ll = %ll_addr,
++                            scope_id,
++                            dst = %dest,
++                            hash = %hex32(&beacon),
++                            sent_bytes = n,
++                            "auto-instr beacon TX"
++                        );
++                    }
++                    Err(e) => {
++                        state.consecutive_failures = state.consecutive_failures.saturating_add(1);
++                        let backoff_secs = beacon_tx_backoff_secs(state.consecutive_failures);
++                        state.backoff_until =
++                            Some(now + std::time::Duration::from_secs_f64(backoff_secs));
++                        if !state.logged_warn {
++                            tracing::warn!(
++                                iface = %_name,
++                                ll = %ll_addr,
++                                scope_id,
++                                dst = %dest,
++                                hash = %hex32(&beacon),
++                                error = %e,
++                                raw_os_error = ?e.raw_os_error(),
++                                backoff_secs,
++                                consecutive_failures = state.consecutive_failures,
++                                "auto: beacon TX failed"
++                            );
++                            state.logged_warn = true;
++                        } else {
++                            tracing::debug!(
++                                iface = %_name,
++                                ll = %ll_addr,
++                                scope_id,
++                                dst = %dest,
++                                hash = %hex32(&beacon),
++                                error = %e,
++                                raw_os_error = ?e.raw_os_error(),
++                                backoff_secs,
++                                consecutive_failures = state.consecutive_failures,
++                                "auto: beacon TX failed"
++                            );
++                        }
++                    }
+                 }
+             }
+         }
+@@ -2035,4 +2138,26 @@ mod tests {
+         let expected = BEACON_INTERVAL * 3.25;
+         assert!((REVERSE_PEERING_INTERVAL - expected).abs() < 0.001);
+     }
++
++    #[test]
++    fn test_beacon_tx_backoff_caps_at_max() {
++        assert!((beacon_tx_backoff_secs(1) - BEACON_INTERVAL).abs() < 0.001);
++        assert!(beacon_tx_backoff_secs(10) <= BEACON_TX_MAX_BACKOFF_SECS);
++    }
++
++    #[test]
++    fn test_is_builtin_ignored_iface_utun_prefix() {
++        assert!(is_builtin_ignored_iface("utun0"));
++        assert!(is_builtin_ignored_iface("utun4"));
++        assert!(is_builtin_ignored_iface("ipsec0"));
++        #[cfg(target_os = "macos")]
++        assert!(is_builtin_ignored_iface("ppp0"));
++        assert!(!is_builtin_ignored_iface("en0"));
++    }
++
++    #[test]
++    fn test_iface_passes_filters_skips_utun() {
++        assert!(!iface_passes_filters("utun4", None, &[]));
++        assert!(iface_passes_filters("en0", None, &[]));
++    }
+ }

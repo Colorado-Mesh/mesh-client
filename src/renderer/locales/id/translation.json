@@ -482,7 +482,13 @@
     "openDmByAddress": "Membuka",
     "dmAddressPlaceholder": "Hash tujuan atau lxmf://…",
     "dmAddressAria": "Alamat tujuan retikulum",
-    "dmAddressInvalid": "Masukkan hash tujuan 32 karakter atau alamat lxmf:// yang valid."
+    "dmAddressInvalid": "Masukkan hash tujuan 32 karakter atau alamat lxmf:// yang valid.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Tidak dapat mengirim pesan terenkripsi — kunci publik penerima hilang dari NodeDB.",
+      "pkiFailed": "Enkripsi PKI gagal untuk pesan ini.",
+      "noChannel": "Tidak ada saluran yang tersedia untuk merutekan pesan ini.",
+      "timeout": "Waktu pesan habis di radio."
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Antarmuka lokal \"{{name}}\" port serial {{port}} tidak ditemukan pada sistem ini",
         "localOffline": "Antarmuka lokal \"{{name}}\" diaktifkan tetapi offline",
         "interfaceDown": "Antarmuka {{type}} \"{{name}}\" diaktifkan tetapi {{status}}",
-        "noPeers": "Belum ada rekan yang dikenal di tabel jalur"
+        "noPeers": "Belum ada rekan yang dikenal di tabel jalur",
+        "autoBeaconTunnelOnly": "Suar Antarmuka Otomatis TX gagal pada antarmuka terowongan VPN {{ifaces}}. Bangun kembali sidecar Reticulum atau nonaktifkan sementara AutoInterface jika log terendam banjir.",
+        "autoBeaconPhysicalFailures": "Suar Antarmuka Otomatis TX gagal pada {{ifaces}} — penemuan Lan lokal mungkin tidak berfungsi sampai ini diperbaiki."
       }
     },
     "routingPort": {

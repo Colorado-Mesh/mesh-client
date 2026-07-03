@@ -5,6 +5,16 @@ export interface ReticulumSidecarStatus {
   port: number;
   pid: number | null;
   lastError?: string;
+  autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
+}
+
+export type ReticulumAutoBeaconAlertKind = 'tunnel_only' | 'physical_failures';
+
+export interface ReticulumAutoBeaconAlert {
+  kind: ReticulumAutoBeaconAlertKind;
+  ifaceNames: string[];
+  suppressedCount: number;
+  lastAtMs: number;
 }
 
 export interface ReticulumSidecarStartOptions {

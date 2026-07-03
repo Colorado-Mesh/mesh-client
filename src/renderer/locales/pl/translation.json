@@ -482,7 +482,13 @@
     "openDmByAddress": "Otwarte",
     "dmAddressPlaceholder": "Hash docelowy lub lxmf://…",
     "dmAddressAria": "Adres docelowy siateczki",
-    "dmAddressInvalid": "Wprowadź prawidłowy 32-znakowy skrót docelowy lub adres lxmf://."
+    "dmAddressInvalid": "Wprowadź prawidłowy 32-znakowy skrót docelowy lub adres lxmf://.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Nie można wysłać zaszyfrowanej wiadomości — brak klucza publicznego odbiorcy w NodeDB.",
+      "pkiFailed": "Szyfrowanie PKI dla tej wiadomości nie powiodło się.",
+      "noChannel": "Brak dostępnego kanału do przekierowania tej wiadomości.",
+      "timeout": "Upłynął limit czasu wiadomości w radiu."
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "W tym systemie nie znaleziono lokalnego interfejsu „{{name}}” portu szeregowego {{port}}",
         "localOffline": "Interfejs lokalny „{{name}}” jest włączony, ale jest offline",
         "interfaceDown": "Interfejs {{type}} „{{name}}” jest włączony, ale {{status}}",
-        "noPeers": "Nie ma jeszcze znanych elementów równorzędnych w tabeli ścieżek"
+        "noPeers": "Nie ma jeszcze znanych elementów równorzędnych w tabeli ścieżek",
+        "autoBeaconTunnelOnly": "Sygnalizator nawigacyjny AutoInterface TX nie działa na interfejsach tunelu VPN {{ifaces}}. Odbuduj wózek boczny Reticulum lub tymczasowo wyłącz AutoInterface, jeśli dzienniki są zalane.",
+        "autoBeaconPhysicalFailures": "Lampa sygnalizacyjna AutoInterface TX nie działa w {{ifaces}} — lokalne wykrywanie sieci LAN może nie działać, dopóki nie zostanie to naprawione."
       }
     },
     "routingPort": {

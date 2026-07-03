@@ -482,7 +482,13 @@
     "openDmByAddress": "開ける",
     "dmAddressPlaceholder": "宛先ハッシュまたは lxmf://…",
     "dmAddressAria": "レチクルの宛先アドレス",
-    "dmAddressInvalid": "有効な 32 文字の宛先ハッシュまたは lxmf:// アドレスを入力します。"
+    "dmAddressInvalid": "有効な 32 文字の宛先ハッシュまたは lxmf:// アドレスを入力します。",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "暗号化されたメッセージを送信できませんでした— NodeDBに受信者の公開鍵がありません。",
+      "pkiFailed": "このメッセージのPKI暗号化に失敗しました。",
+      "noChannel": "このメッセージをルーティングするチャンネルはありません。",
+      "timeout": "ラジオでメッセージがタイムアウトしました。"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1209,7 +1215,9 @@
         "localStalePort": "ローカル インターフェイス \"{{name}}\" シリアル ポート {{port}} がこのシステムに見つかりません",
         "localOffline": "ローカル インターフェイス「{{name}}」は有効ですが、オフラインです",
         "interfaceDown": "{{type}} インターフェース「{{name}}」は有効ですが、{{status}}",
-        "noPeers": "パステーブルに既知のピアがまだありません"
+        "noPeers": "パステーブルに既知のピアがまだありません",
+        "autoBeaconTunnelOnly": "自動インターフェースビーコンTXがVPNトンネルインターフェース{{ifaces}}で失敗しています。ログが氾濫している場合は、Reticulumサイドカーを再構築するか、自動インターフェースを一時的に無効にします。",
+        "autoBeaconPhysicalFailures": "オートインターフェイスビーコンTXが{{ifaces}}で失敗しています—これが修正されるまで、ローカルLAN検出が機能しない可能性があります。"
       }
     },
     "routingPort": {

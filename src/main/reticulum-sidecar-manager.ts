@@ -16,6 +16,11 @@ import { MS_PER_SECOND } from '../shared/timeConstants';
 import { sanitizeLogMessage } from './log-service';
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
+import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
+import {
+  logReticulumSidecarStderrLine,
+  ReticulumSidecarStderrDedupe,
+} from './reticulumSidecarStderrLog';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
@@ -88,6 +93,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   private proc: ChildProcess | null = null;
   private ws: { close: () => void } | null = null;
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
+  private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
+  private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private _status: ReticulumSidecarStatus = {
     running: false,
     port: 0,
@@ -99,7 +106,10 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   getStatus(): ReticulumSidecarStatus {
-    return { ...this._status };
+    return {
+      ...this._status,
+      autoBeaconAlert: this.autoBeaconTracker.getAlert(),
+    };
   }
 
   private reticulumUserDir(...segments: string[]): string {
@@ -176,7 +186,19 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
       const text = sanitizeLogMessage(chunk.toString('utf8').trim());
-      console.warn('[ReticulumSidecar]', text);
+      logReticulumSidecarStderrLine(
+        text,
+        this.stderrDedupe,
+        {
+          warn: (message) => {
+            console.warn('[ReticulumSidecar]', message);
+          },
+          debug: (message) => {
+            console.debug('[ReticulumSidecar]', message);
+          },
+        },
+        this.autoBeaconTracker,
+      );
     });
     proc.on('exit', (code, signal) => {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);

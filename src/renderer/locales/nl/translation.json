@@ -482,7 +482,13 @@
     "openDmByAddress": "Open",
     "dmAddressPlaceholder": "Bestemmingshash of lxmf://…",
     "dmAddressAria": "Bestemmingsadres van Reticulum",
-    "dmAddressInvalid": "Voer een geldig bestemmingshash- of lxmf://-adres van 32 tekens in."
+    "dmAddressInvalid": "Voer een geldig bestemmingshash- of lxmf://-adres van 32 tekens in.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Kan gecodeerd bericht niet verzenden — de openbare sleutel van de ontvanger ontbreekt in NodeDB.",
+      "pkiFailed": "PKI-codering mislukt voor dit bericht.",
+      "noChannel": "Geen kanaal beschikbaar om dit bericht te routeren.",
+      "timeout": "Er is een time-out opgetreden op de radio."
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Lokale interface \"{{name}}\" seriële poort {{port}} niet gevonden op dit systeem",
         "localOffline": "Lokale interface \"{{name}}\" is ingeschakeld maar offline",
         "interfaceDown": "{{type}}-interface \"{{name}}\" is ingeschakeld, maar {{status}}",
-        "noPeers": "Nog geen bekende peers in de padtabel"
+        "noPeers": "Nog geen bekende peers in de padtabel",
+        "autoBeaconTunnelOnly": "AutoInterface-beacon TX faalt op VPN-tunnelinterface(s) {{ifaces}}. Herbouw de Reticulum sidecar of schakel AutoInterface tijdelijk uit als logboeken worden overstroomd.",
+        "autoBeaconPhysicalFailures": "AutoInterface-baken TX faalt op {{ifaces}} — lokale LAN-detectie werkt mogelijk niet totdat dit is opgelost."
       }
     },
     "routingPort": {

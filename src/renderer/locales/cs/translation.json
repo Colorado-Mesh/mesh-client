@@ -482,7 +482,13 @@
     "openDmByAddress": "OTEVŘENO",
     "dmAddressPlaceholder": "Cílový hash nebo lxmf://…",
     "dmAddressAria": "Cílová adresa retikula",
-    "dmAddressInvalid": "Zadejte platný 32znakový cílový hash nebo adresu lxmf://."
+    "dmAddressInvalid": "Zadejte platný 32znakový cílový hash nebo adresu lxmf://.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "Nelze odeslat šifrovanou zprávu — v NodeDB chybí veřejný klíč příjemce.",
+      "pkiFailed": "Šifrování PKI pro tuto zprávu selhalo.",
+      "noChannel": "Pro směrování této zprávy není k dispozici žádný kanál.",
+      "timeout": "Časový limit zprávy v rádiu vypršel."
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Sériový port {{port}} místního rozhraní \"{{name}}\" nebyl v tomto systému nalezen",
         "localOffline": "Místní rozhraní „{{name}}“ je povoleno, ale offline",
         "interfaceDown": "Rozhraní {{type}} „{{name}}“ je povoleno, ale {{status}}",
-        "noPeers": "V tabulce cest zatím nejsou žádní známí kolegové"
+        "noPeers": "V tabulce cest zatím nejsou žádní známí kolegové",
+        "autoBeaconTunnelOnly": "Beacon AutoInterface TX selhává na rozhraní tunelu VPN {{ifaces}}. Znovu sestavte postranní vozík Reticulum nebo dočasně vypněte automatické rozhraní, pokud jsou protokoly zaplaveny.",
+        "autoBeaconPhysicalFailures": "Beacon AutoInterface TX selhává na {{ifaces}} — lokální zjišťování LAN nemusí fungovat, dokud to nebude opraveno."
       }
     },
     "routingPort": {

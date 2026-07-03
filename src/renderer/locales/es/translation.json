@@ -482,7 +482,13 @@
     "openDmByAddress": "Abierto",
     "dmAddressPlaceholder": "Hash de destino o lxmf://…",
     "dmAddressAria": "Dirección de destino del retículo",
-    "dmAddressInvalid": "Introduzca un hash de destino válido de 32 caracteres o una dirección lxmf://."
+    "dmAddressInvalid": "Introduzca un hash de destino válido de 32 caracteres o una dirección lxmf://.",
+    "routingErrors": {
+      "pkiMissingRecipientKey": "No se ha podido enviar el mensaje cifrado: falta la clave pública del destinatario de NodeDB.",
+      "pkiFailed": "El cifrado PKI ha fallado para este mensaje.",
+      "noChannel": "No hay ningún canal disponible para enrutar este mensaje.",
+      "timeout": "El mensaje ha caducado en la radio."
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1209,7 +1215,9 @@
         "localStalePort": "Interfaz local \"{{name}}\" puerto serie {{port}} no encontrado en este sistema",
         "localOffline": "La interfaz local \"{{name}}\" está habilitada pero fuera de línea",
         "interfaceDown": "La interfaz {{type}} \"{{name}}\" está habilitada pero {{status}}",
-        "noPeers": "Aún no hay pares conocidos en la tabla de rutas"
+        "noPeers": "Aún no hay pares conocidos en la tabla de rutas",
+        "autoBeaconTunnelOnly": "La baliza AutoInterface TX está fallando en las interfacesde túnel VPN {{ifaces}}. Reconstruya el sidecar Reticulum o desactive temporalmente AutoInterface si los registros están inundados.",
+        "autoBeaconPhysicalFailures": "La baliza de interfaz automática TX está fallando en {{ifaces}}; es posible que el descubrimiento de LAN local no funcione hasta que se solucione."
       }
     },
     "routingPort": {
