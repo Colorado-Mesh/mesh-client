@@ -31,6 +31,7 @@ describe('LanguageSelector', () => {
     const button = screen.getByLabelText(/language/i);
     expect(button).toBeInTheDocument();
     expect(container.querySelector('svg.text-cyan-300')).toBeInTheDocument();
+    expect(button).toHaveAttribute('title', 'Click to select language');
   });
 
   it('lists all supported languages when parent has overflow clipping', async () => {

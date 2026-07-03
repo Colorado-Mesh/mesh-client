@@ -331,7 +331,8 @@
     "switchToMeshtastic": "切换到Meshtastic",
     "switchToMeshCore": "切换到MeshCore",
     "backToTop": "返回顶部",
-    "switchToReticulum": "切换到 Reticulum"
+    "switchToReticulum": "切换到 Reticulum",
+    "languageSelectorHint": "单击以选择语言"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",

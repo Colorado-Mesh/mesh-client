@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Přepněte na Meshtastic",
     "switchToMeshCore": "Přepněte na MeshCore",
     "backToTop": "Zpět nahoru",
-    "switchToReticulum": "Přepnout na Reticulum"
+    "switchToReticulum": "Přepnout na Reticulum",
+    "languageSelectorHint": "Kliknutím vyberte jazyk"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",

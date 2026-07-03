@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Schakel over naar Meshtastic",
     "switchToMeshCore": "Schakel over naar MeshCore",
     "backToTop": "Terug naar boven",
-    "switchToReticulum": "Overschakelen naar Reticulum"
+    "switchToReticulum": "Overschakelen naar Reticulum",
+    "languageSelectorHint": "Klik om de taal te selecteren"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",

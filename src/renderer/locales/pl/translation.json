@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Przełącz na Meshtastic",
     "switchToMeshCore": "Przełącz na MeshCore",
     "backToTop": "Powrót do góry",
-    "switchToReticulum": "Przełącz na Reticulum"
+    "switchToReticulum": "Przełącz na Reticulum",
+    "languageSelectorHint": "Kliknij, aby wybrać język"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",

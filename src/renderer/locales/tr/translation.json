@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Meshtastic'e geç",
     "switchToMeshCore": "MeshCore'a geç",
     "backToTop": "Başa dön",
-    "switchToReticulum": "Reticulum'a geç"
+    "switchToReticulum": "Reticulum'a geç",
+    "languageSelectorHint": "Dili seçmek için tıklayın"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",

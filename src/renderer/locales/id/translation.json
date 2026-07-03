@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Beralih ke Meshtastic",
     "switchToMeshCore": "Beralih ke MeshCore",
     "backToTop": "Kembali ke atas",
-    "switchToReticulum": "Beralih ke Reticulum"
+    "switchToReticulum": "Beralih ke Reticulum",
+    "languageSelectorHint": "Klik untuk memilih bahasa"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",

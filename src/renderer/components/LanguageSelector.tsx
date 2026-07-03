@@ -93,10 +93,6 @@ export default function LanguageSelector() {
     })();
   };
 
-  const currentLabel =
-    SUPPORTED_LANGUAGES.find((l) => l.code === i18n.language)?.label ??
-    SUPPORTED_LANGUAGES.find((l) => l.code === 'en')!.label;
-
   const menu =
     isOpen && menuPos
       ? createPortal(
@@ -157,7 +153,8 @@ export default function LanguageSelector() {
             ? 'bg-secondary-dark text-gray-100 ring-1 ring-cyan-400/50'
             : 'text-muted hover:bg-secondary-dark hover:text-gray-200'
         }`}
-        title={currentLabel}
+        title={isOpen ? undefined : t('aria.languageSelectorHint')}
+        {...(isOpen ? { 'data-no-instant-tooltip': '' } : {})}
       >
         <Globe
           aria-hidden

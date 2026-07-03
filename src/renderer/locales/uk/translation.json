@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Перейти на Meshtastic",
     "switchToMeshCore": "Перемкнутися на MeshCore",
     "backToTop": "Догори",
-    "switchToReticulum": "Перемкнутися на Reticulum"
+    "switchToReticulum": "Перемкнутися на Reticulum",
+    "languageSelectorHint": "Натисніть, щоб вибрати мову"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",

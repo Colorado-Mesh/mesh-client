@@ -324,6 +324,7 @@
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
     "languageSelector": "Select language",
+    "languageSelectorHint": "Click to select language",
     "applicationPanels": "Application panels",
     "applicationLog": "Application log",
     "playAnimation": "Play mesh signal pulse animation",

@@ -46,6 +46,24 @@ describe('GlobalInstantTooltip', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
+  it('hides the tooltip when the host is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <GlobalInstantTooltip />
+        <button type="button" title="Open menu">
+          Menu
+        </button>
+      </>,
+    );
+    const button = screen.getByRole('button', { name: 'Menu' });
+    await user.hover(button);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Open menu');
+    await user.click(button);
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    expect(button.getAttribute('title')).toBe('Open menu');
+  });
+
   it('does not intercept HelpTooltip-managed triggers', async () => {
     const user = userEvent.setup();
     render(

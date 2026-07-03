@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Meshtastic으로 전환",
     "switchToMeshCore": "MeshCore로 전환",
     "backToTop": "맨 위로 돌아가기",
-    "switchToReticulum": "Reticulum으로 전환"
+    "switchToReticulum": "Reticulum으로 전환",
+    "languageSelectorHint": "언어를 선택하려면 클릭하세요."
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
