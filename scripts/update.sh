@@ -87,6 +87,7 @@ rebuild_reticulum_sidecar() {
   local sidecar_dir='reticulum-sidecar'
   local rns_runtime='../rsReticulum/crates/rns-runtime/Cargo.toml'
   local lxmf_core='../rsLXMF/crates/lxmf-core/Cargo.toml'
+  bash scripts/ensure-rsReticulum-patches.sh
   if [ -f "${sidecar_dir}/${rns_runtime}" ] && [ -f "${sidecar_dir}/${lxmf_core}" ]; then
     (cd reticulum-sidecar && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
   else

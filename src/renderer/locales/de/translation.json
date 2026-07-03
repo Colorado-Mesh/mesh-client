@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Noch keine Schnittstellen gemeldet.",
     "reticulumSidecarMissing": "Reticulum-Sidecar nicht gebaut. Im mesh-client-Repository `pnpm run reticulum:sidecar:build` ausführen (erfordert Rust).",
     "reticulumSidecarCargoMissing": "Rust-Toolchain (cargo) nicht gefunden. Von https://rustup.rs installieren und dann `pnpm run reticulum:sidecar:build` ausführen.",
+    "reticulumSidecarPatchMissing": "Der Reticulum-Sidecar-Build benötigt das rsReticulum packet-tap-Overlay. Im mesh-client-Repository `pnpm run reticulum:sidecar:build` ausführen (wendet Patches automatisch an).",
     "reticulumSidecarStartFailed": "Reticulum-Stack konnte nicht gestartet werden: {{message}}",
     "reticulumStopStack": "Stack stoppen",
     "reticulumAutostart": "Stack beim Öffnen der Verbindung automatisch starten",

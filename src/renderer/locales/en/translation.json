@@ -655,6 +655,7 @@
     "reticulumNetworkEmpty": "No interfaces reported yet.",
     "reticulumSidecarMissing": "Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).",
     "reticulumSidecarCargoMissing": "Rust toolchain (cargo) not found. Install from https://rustup.rs then run `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarPatchMissing": "Reticulum sidecar build needs the rsReticulum packet-tap overlay. From the mesh-client repo root run `pnpm run reticulum:sidecar:build` (applies patches automatically).",
     "reticulumSidecarStartFailed": "Could not start Reticulum stack: {{message}}",
     "reticulumStats": {
       "interfaces": "{{count}} interfaces",

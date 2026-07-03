@@ -858,6 +858,28 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
 
+### Reticulum sidecar cargo build fails (`register_packet_tap` / `RETICULUM_CARGO_BUILD_FAILED`)
+
+**Symptoms**: **Start stack** fails; logs show `RETICULUM_CARGO_BUILD_FAILED` or Rust errors such as `method not found in ReticulumHandle`, `register_packet_tap`, or `PacketTapEvent`. Electron may surface `RETICULUM_RNS_PATCH_MISSING` after upgrading mesh-client.
+
+**Cause**: Full-stack (`rns-stack`) dev builds call `register_packet_tap` in the sidecar, but that API lives in a local rsReticulum overlay ([`reticulum-sidecar/patches/rsReticulum-packet-tap.patch`](../reticulum-sidecar/patches/rsReticulum-packet-tap.patch)) until [ratspeak/rsReticulum#10](https://github.com/ratspeak/rsReticulum/pull/10) merges. CI applies it automatically; a sibling `../rsReticulum` checkout without the overlay fails to compile.
+
+**Fix**:
+
+1. From mesh-client repo root (requires sibling `../rsReticulum` and `../rsLXMF`):
+   ```bash
+   pnpm run reticulum:sidecar:build
+   ```
+   This runs `scripts/ensure-rsReticulum-patches.sh` before `cargo build`.
+2. **Manual apply** (when you prefer not to use the npm script):
+   ```bash
+   git -C ../rsReticulum apply reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+   pnpm run reticulum:sidecar:build
+   ```
+3. On **newer rsReticulum** checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — `apply-rsReticulum-auto-beacon-utun.sh` is a no-op.
+
+Quit mesh-client fully, reopen, and click **Start stack** again.
+
 ### Reticulum AutoInterface log spam on macOS (VPN utun / ENOBUFS)
 
 **Symptoms**: Log panel floods with `[ReticulumSidecar] auto: beacon TX failed` on `utun0`, `utun4`, or similar every ~1.6 s. Error text may include `No buffer space available (os error 55)`. Diagnostics may show an **AutoInterface beacon** info row for VPN tunnel interfaces.

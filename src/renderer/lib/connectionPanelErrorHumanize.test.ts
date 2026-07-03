@@ -251,4 +251,13 @@ describe('humanizeReticulumSidecarError', () => {
       humanizeReticulumSidecarError(new Error('RETICULUM_CARGO_MISSING: cargo not found'), t),
     ).toBe('connectionPanel.reticulumSidecarCargoMissing');
   });
+
+  it('maps missing rsReticulum packet-tap overlay to patch hint', () => {
+    expect(
+      humanizeReticulumSidecarError(
+        new Error('RETICULUM_RNS_PATCH_MISSING: register_packet_tap not found'),
+        t,
+      ),
+    ).toBe('connectionPanel.reticulumSidecarPatchMissing');
+  });
 });

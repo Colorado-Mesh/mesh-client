@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "아직 보고된 인터페이스가 없습니다.",
     "reticulumSidecarMissing": "Reticulum 사이드카가 빌드되지 않았습니다. mesh-client 저장소에서 `pnpm run reticulum:sidecar:build`을(를) 실행하세요(Rust 필요).",
     "reticulumSidecarCargoMissing": "Rust 툴체인(cargo)을 찾을 수 없습니다. https://rustup.rs에서 설치한 다음 `pnpm run reticulum:sidecar:build`을(를) 실행하세요.",
+    "reticulumSidecarPatchMissing": "Reticulum 사이드카 빌드에는 rsReticulum packet-tap 오버레이가 필요합니다. mesh-client 저장소에서 `pnpm run reticulum:sidecar:build`를 실행하세요(패치가 자동 적용됩니다).",
     "reticulumSidecarStartFailed": "Reticulum 스택을 시작할 수 없습니다: {{message}}",
     "reticulumStopStack": "스택 중지",
     "reticulumAutostart": "연결을 열 때 스택 자동 시작",

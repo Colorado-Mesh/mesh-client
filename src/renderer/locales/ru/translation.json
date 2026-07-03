@@ -731,6 +731,7 @@
     "reticulumNetworkEmpty": "Интерфейсы пока не сообщались.",
     "reticulumSidecarMissing": "Sidecar Reticulum не собран. В репозитории mesh-client выполните `pnpm run reticulum:sidecar:build` (требуется Rust).",
     "reticulumSidecarCargoMissing": "Toolchain Rust (cargo) не найден. Установите с https://rustup.rs, затем выполните `pnpm run reticulum:sidecar:build`.",
+    "reticulumSidecarPatchMissing": "Сборка sidecar Reticulum требует overlay rsReticulum packet-tap. В репозитории mesh-client выполните `pnpm run reticulum:sidecar:build` (автоматически применяет патчи).",
     "reticulumSidecarStartFailed": "Не удалось запустить стек Reticulum: {{message}}",
     "reticulumStopStack": "Остановить стек",
     "reticulumAutostart": "Автоматический запуск стека при открытии соединения",
