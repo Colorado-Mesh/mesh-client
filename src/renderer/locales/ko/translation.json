@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Meshtastic으로 전환",
     "switchToMeshCore": "MeshCore로 전환",
     "backToTop": "맨 위로 돌아가기",
-    "switchToReticulum": "Reticulum으로 전환"
+    "switchToReticulum": "Reticulum으로 전환",
+    "languageSelectorHint": "언어를 선택하려면 클릭하세요."
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "알 수 없는 LoRa 트래픽",
       "potentialMeshcoreRepeaterConflict": "잠재적인 MeshCore 리피터 충돌",
       "elevatedNoiseFloor": "높은 소음층",
-      "excessiveFlooding": "과도한 홍수"
+      "excessiveFlooding": "과도한 홍수",
+      "reticulumTrafficDetected": "Reticulum 트래픽 감지됨"
     },
     "rfCause": {
       "channelUtilizationSpike": "현재 {{current}}%는 최근 평균({{average}}%)의 2배를 초과합니다. 혼잡 또는 간섭 급증이 발생할 수 있습니다.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "이 주파수로 전송되는 Meshtastic 노드입니다. 발신자: {{sender}}. {{proximity}}이 노드는 MeshCore 리피터 영역에 있을 수 있습니다.",
       "unknownLora": "인식할 수 없는 LoRa 신호가 감지되었습니다(RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "높은 MeshCore 패킷 속도가 감지되었습니다(>5/분). 근처의 MeshCore 중계기가 패킷 충돌을 일으킬 수 있습니다."
+      "potentialRepeaterConflict": "높은 MeshCore 패킷 속도가 감지되었습니다(>5/분). 근처의 MeshCore 중계기가 패킷 충돌을 일으킬 수 있습니다.",
+      "reticulum": "이 주파수에서 Reticulum (RNode/RNS) 트래픽. {{proximity}} 동일한 LoRa 대역에서 가까운 Reticulum 노드일 수 있습니다."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "매우 가깝다",

@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Zu Meshtastic wechseln",
     "switchToMeshCore": "Zu MeshCore wechseln",
     "backToTop": "Zum Seitenanfang",
-    "switchToReticulum": "Zu Reticulum wechseln"
+    "switchToReticulum": "Zu Reticulum wechseln",
+    "languageSelectorHint": "Klicken Sie hier, um die Sprache auszuwählen"
   },
   "battery": {
     "percentCharging": "Akku {{percent}} Prozent, Laden",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "Unbekannter LoRa-Verkehr",
       "potentialMeshcoreRepeaterConflict": "Potenzieller MeshCore-Repeater-Konflikt",
       "elevatedNoiseFloor": "Boden mit erhöhtem Geräuschpegel",
-      "excessiveFlooding": "Übermäßige Überschwemmungen"
+      "excessiveFlooding": "Übermäßige Überschwemmungen",
+      "reticulumTrafficDetected": "Reticulum-Verkehr erkannt"
     },
     "rfCause": {
       "channelUtilizationSpike": "Der aktuelle Wert von {{current}}% liegt über dem Zweifachen des aktuellen Durchschnitts ({{average}}%) — mögliche Stau- oder Störungsüberlastung.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic Knoten, der auf dieser Frequenz sendet. Absender: {{sender}}. {{proximity}}Dieser Knoten kann sich in deinem MeshCore-Repeater-Bereich befinden.",
       "unknownLora": "Nicht erkanntes LoRa-Signal erkannt (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Hohe MeshCore-Paketrate erkannt (>5/min). Ein nahegelegener MeshCore-Repeater kann Paketkollisionen verursachen."
+      "potentialRepeaterConflict": "Hohe MeshCore-Paketrate erkannt (>5/min). Ein nahegelegener MeshCore-Repeater kann Paketkollisionen verursachen.",
+      "reticulum": "Reticulum (RNode/RNS)-Verkehr auf dieser Frequenz. {{proximity}}Kann ein nahegelegener Reticulum-Knoten auf demselben LoRa-Band sein."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Ganz nah dran",

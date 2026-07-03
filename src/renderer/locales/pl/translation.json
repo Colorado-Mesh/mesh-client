@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Przełącz na Meshtastic",
     "switchToMeshCore": "Przełącz na MeshCore",
     "backToTop": "Powrót do góry",
-    "switchToReticulum": "Przełącz na Reticulum"
+    "switchToReticulum": "Przełącz na Reticulum",
+    "languageSelectorHint": "Kliknij, aby wybrać język"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "Nieznany ruch LoRa",
       "potentialMeshcoreRepeaterConflict": "Potencjalny konflikt wzmacniaków MeshCore",
       "elevatedNoiseFloor": "Podwyższona podłoga hałasu",
-      "excessiveFlooding": "Nadmierne powodzie"
+      "excessiveFlooding": "Nadmierne powodzie",
+      "reticulumTrafficDetected": "Wykryto ruch Reticulum"
     },
     "rfCause": {
       "channelUtilizationSpike": "Prąd {{current}}% jest ponad 2 razy większy od ostatniej średniej ({{average}}%) — możliwe przeciążenie lub wzrost zakłóceń.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Węzeł Meshtastic nadający na tej częstotliwości. Nadawca: {{sender}}. {{proximity}}Ten węzeł może znajdować się w obszarze wzmacniacza MeshCore.",
       "unknownLora": "Wykryto nierozpoznany sygnał LoRa (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Wykryto wysoką szybkość pakietów MeshCore (>5/min). Pobliski wzmacniacz MeshCore może powodować kolizje pakietów."
+      "potentialRepeaterConflict": "Wykryto wysoką szybkość pakietów MeshCore (>5/min). Pobliski wzmacniacz MeshCore może powodować kolizje pakietów.",
+      "reticulum": "Ruch Reticulum (RNode/RNS) na tej częstotliwości. {{proximity}}Może być pobliskim węzłem Reticulum w tym samym paśmie LoRa."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Bardzo blisko",

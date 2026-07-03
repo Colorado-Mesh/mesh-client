@@ -37,7 +37,11 @@ import {
   latestPositionHistoryPoint,
   resolveNodeMapPosition,
 } from '../lib/coordUtils';
-import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
+import {
+  filterDiagnosticRowsForProtocol,
+  getRoutingRowForNode,
+  routingAnomalyNodeIds,
+} from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
@@ -812,7 +816,14 @@ export default function MapPanel({
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
-  const routingNodeIds = useMemo(() => routingAnomalyNodeIds(diagnosticRows), [diagnosticRows]);
+  const protocolDiagnosticRows = useMemo(
+    () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
+    [diagnosticRows, protocol],
+  );
+  const routingNodeIds = useMemo(
+    () => routingAnomalyNodeIds(protocolDiagnosticRows),
+    [protocolDiagnosticRows],
+  );
 
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const positionHistory = usePositionHistoryStore((s) => s.history);
@@ -1021,11 +1032,11 @@ export default function MapPanel({
   const nodesWithStatus = useMemo(
     () =>
       nodesToRender.map((node) => {
-        const routingRow = getRoutingRowForNode(diagnosticRows, node.node_id);
+        const routingRow = getRoutingRowForNode(protocolDiagnosticRows, node.node_id);
         const anomaly: NodeAnomaly | null = routingRow ? routingRowToNodeAnomaly(routingRow) : null;
         return { node, anomaly };
       }),
-    [nodesToRender, diagnosticRows],
+    [nodesToRender, protocolDiagnosticRows],
   );
 
   const nodesWithStatusAndHaloOffset = useMemo(() => {

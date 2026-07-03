@@ -97,10 +97,19 @@ export function attachGlobalInstantTooltipListeners(
     if (activeHost) callbacks.onReposition(activeHost);
   };
 
+  const onClick = (event: MouseEvent): void => {
+    if (!activeHost) return;
+    const target = event.target;
+    if (target instanceof Node && (target === activeHost || activeHost.contains(target))) {
+      hide();
+    }
+  };
+
   document.addEventListener('mouseover', onMouseOver, true);
   document.addEventListener('mouseout', onMouseOut, true);
   document.addEventListener('focusin', onFocusIn, true);
   document.addEventListener('focusout', onFocusOut, true);
+  document.addEventListener('click', onClick, true);
   window.addEventListener('scroll', onReposition, true);
   window.addEventListener('resize', onReposition);
 
@@ -110,6 +119,7 @@ export function attachGlobalInstantTooltipListeners(
     document.removeEventListener('mouseout', onMouseOut, true);
     document.removeEventListener('focusin', onFocusIn, true);
     document.removeEventListener('focusout', onFocusOut, true);
+    document.removeEventListener('click', onClick, true);
     window.removeEventListener('scroll', onReposition, true);
     window.removeEventListener('resize', onReposition);
   };

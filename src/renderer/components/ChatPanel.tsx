@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/incompatible-library */
+/* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import 'emoji-picker-element';
 
 import { useVirtualizer } from '@tanstack/react-virtual';

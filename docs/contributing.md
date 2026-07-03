@@ -34,6 +34,8 @@ To approximate **Linux CI** from any host, use container mode (`pnpm run act:ci`
 - Build docs: `pnpm run docs:build`
 - Preview docs: `pnpm run docs:serve`
 
+Reticulum-specific docs: [reticulum.md](reticulum.md), [reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md). Meshtastic/MeshCore parity: [meshcore-meshtastic-parity.md](meshcore-meshtastic-parity.md).
+
 ## Pull Requests
 
 - Keep changes scoped and describe both what changed and why.

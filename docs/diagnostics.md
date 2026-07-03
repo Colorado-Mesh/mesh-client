@@ -4,12 +4,32 @@ This document is the authoritative reference for every diagnostic output in Mesh
 
 **Where diagnostics appear:**
 
-- **DiagnosticsPanel**: network health status, anomaly table, halos toggles, environment profile, max-age settings, 24h CU timeline chart
+- **DiagnosticsPanel** (sidebar tab): network health status, anomaly table, halos toggles, environment profile, max-age settings, 24h CU timeline chart
 - **NodeDetailModal**: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle, node notes, watch toggle
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
 - **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
 - **Peer Graph panel**: SVG force-directed graph of directly connected nodes (hops 0–1)
+
+All three protocols share one **Diagnostics** sidebar tab; sections differ by `ProtocolCapabilities` (see **Multi-protocol tab scoping** below).
+
+---
+
+## Multi-protocol tab scoping
+
+`diagnosticsStore.diagnosticRows` is global, but the UI and reanalysis scope rows to the **active protocol tab**:
+
+| Tab            | Anomaly table / health band                                                                | Native audit section                 |
+| -------------- | ------------------------------------------------------------------------------------------ | ------------------------------------ |
+| **Meshtastic** | LoRa routing + RF rows only (`reticulum/*` excluded via `filterDiagnosticRowsForProtocol`) | Hidden                               |
+| **MeshCore**   | LoRa routing + RF rows only (same filter)                                                  | Hidden                               |
+| **Reticulum**  | `reticulum/*` rows only (LoRa hop/CU findings hidden)                                      | `ReticulumDiagnosticsSection` + ping |
+
+**LoRa routing/RF per protocol:** Switching tabs calls `clearDiagnostics({ preserveForeignLora: true })` and `runReanalysis` with that tab's `nodesForUi` and capabilities — Meshtastic anomalies are computed from Meshtastic nodes only; MeshCore from MeshCore contacts only.
+
+**Foreign LoRa overhear UI:** The MeshCore-heard and other-foreign-LoRa tables render on the **Meshtastic** tab only (`protocol === 'meshtastic'`). MeshCore may record foreign traffic internally when raw RX bytes are available, but the Diagnostics panel does not show those tables on the MeshCore tab. Reticulum RNode foreign overhear is not wired yet (sidecar packet tap exposes RNS-parsed frames only).
+
+**Other surfaces:** `NodeListPanel`, `MapPanel`, and `NodeInfoBody` also call `filterDiagnosticRowsForProtocol` so inline badges and halos match the active tab.
 
 ---
 
@@ -156,7 +176,9 @@ These findings use packet-stats data from a MeshCore device's Repeater Status re
 
 ## 4. Foreign LoRa Detection
 
-Foreign LoRa detection identifies non-Meshtastic LoRa traffic observed by your connected device's radio. The detection window is the **last 90 minutes**.
+Foreign LoRa detection identifies **non-Meshtastic** LoRa traffic observed by your connected device's radio (or, in dual-radio setups, by a MeshCore companion overheard on the Meshtastic frequency). The detection window is the **last 90 minutes**.
+
+**Diagnostics UI:** Foreign-LoRa tables appear on the **Meshtastic** protocol tab only (see **Multi-protocol tab scoping**).
 
 **Signal classes:**
 
@@ -164,7 +186,19 @@ Foreign LoRa detection identifies non-Meshtastic LoRa traffic observed by your c
 | -------------- | ------------------- | -------- |
 | `meshcore`     | MeshCore Activity   | Info     |
 | `meshtastic`   | Meshtastic Traffic  | Info     |
+| `reticulum`    | Reticulum Traffic   | Info     |
 | `unknown-lora` | Unknown LoRa Signal | Info     |
+
+`reticulum` is detected when a Meshtastic radio logs a decode failure whose hex dump matches the [Reticulum RNS wire format](https://reticulum.network/manual/understanding.html) (HEADER_1 / HEADER_2). This indicates a nearby RNode or other Reticulum LoRa node on the same band — not traffic your Meshtastic node can decode.
+
+**Ingress paths:**
+
+| Source                     | When recorded                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Meshtastic firmware logs   | Decode-failure / CRC lines with RSSI/SNR (`applyMeshtasticForeignLoraFromLog`)                                                                                |
+| MeshCore RF RX (event 136) | Dual-radio: MeshCore heard on Meshtastic listener node; also foreign `meshtastic` / `reticulum` / `unknown-lora` when on MeshCore tab and `raw` bytes present |
+
+**Not implemented:** RNode promiscuous foreign-LoRa from the Reticulum sidecar (packet tap delivers RNS-parsed frames only).
 
 **Proximity classification** (from RSSI/SNR):
 
@@ -412,19 +446,19 @@ Sidecar APIs: `GET /api/v1/config/audit`, `POST /api/v1/config/repair` (see [`re
 
 For contributors who want to modify or extend the diagnostics system:
 
-| File                                                                                                                     | Purpose                                                                           |
-| ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| [`src/renderer/stores/diagnosticsStore.ts`](src/renderer/stores/diagnosticsStore.ts)                                     | Zustand store: anomaly state, persistence, MQTT ignore sets, foreign LoRa records |
-| [`src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts)     | Hop anomaly detection (hop_goblin, bad_route, impossible_hop, route_flapping)     |
-| [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RFDiagnosticEngine.ts)               | RF signal analysis (connected node + remote node findings)                        |
-| [`src/renderer/lib/diagnostics/diagnosticRows.ts`](src/renderer/lib/diagnostics/diagnosticRows.ts)                       | Row merge/prune utilities, default max-age values                                 |
-| [`src/renderer/lib/foreignLoraDetection.ts`](src/renderer/lib/foreignLoraDetection.ts)                                   | Foreign LoRa packet classification and proximity scoring                          |
-| [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx)                           | Tab 8 UI: health band + counts, anomaly table, settings                           |
-| [`src/renderer/components/ReticulumDiagnosticsSection.tsx`](src/renderer/components/ReticulumDiagnosticsSection.tsx)     | Reticulum config audit table + repair actions                                     |
-| [`src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts`](src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts) | Reticulum-native diagnostic rows (interfaces, audit merge)                        |
-| [`src/renderer/lib/reticulum/reticulumConfigAudit.ts`](src/renderer/lib/reticulum/reticulumConfigAudit.ts)               | Config audit/repair IPC client                                                    |
-| [`src/renderer/components/NodeDetailModal.tsx`](src/renderer/components/NodeDetailModal.tsx)                             | Per-node detail overlay: routing health, MQTT ignore toggle                       |
-| [`src/renderer/components/NodeInfoBody.tsx`](src/renderer/components/NodeInfoBody.tsx)                                   | RF findings section, redundancy path history, congestion block                    |
+| File                                                                                                                     | Purpose                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [`src/renderer/stores/diagnosticsStore.ts`](src/renderer/stores/diagnosticsStore.ts)                                     | Zustand store: anomaly state, persistence, MQTT ignore sets, foreign LoRa records      |
+| [`src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RoutingDiagnosticEngine.ts)     | Hop anomaly detection (hop_goblin, bad_route, impossible_hop, route_flapping)          |
+| [`src/renderer/lib/diagnostics/RFDiagnosticEngine.ts`](src/renderer/lib/diagnostics/RFDiagnosticEngine.ts)               | RF signal analysis (connected node + remote node findings)                             |
+| [`src/renderer/lib/diagnostics/diagnosticRows.ts`](src/renderer/lib/diagnostics/diagnosticRows.ts)                       | Row merge/prune utilities, `filterDiagnosticRowsForProtocol`, default max-age values   |
+| [`src/renderer/lib/foreignLoraDetection.ts`](src/renderer/lib/foreignLoraDetection.ts)                                   | Foreign LoRa packet classification, Reticulum overhear heuristic, proximity scoring    |
+| [`src/renderer/components/DiagnosticsPanel.tsx`](src/renderer/components/DiagnosticsPanel.tsx)                           | Diagnostics tab UI: health band + counts, anomaly table, foreign LoRa tables, settings |
+| [`src/renderer/components/ReticulumDiagnosticsSection.tsx`](src/renderer/components/ReticulumDiagnosticsSection.tsx)     | Reticulum config audit table + repair actions                                          |
+| [`src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts`](src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts) | Reticulum-native diagnostic rows (interfaces, audit merge)                             |
+| [`src/renderer/lib/reticulum/reticulumConfigAudit.ts`](src/renderer/lib/reticulum/reticulumConfigAudit.ts)               | Config audit/repair IPC client                                                         |
+| [`src/renderer/components/NodeDetailModal.tsx`](src/renderer/components/NodeDetailModal.tsx)                             | Per-node detail overlay: routing health, MQTT ignore toggle                            |
+| [`src/renderer/components/NodeInfoBody.tsx`](src/renderer/components/NodeInfoBody.tsx)                                   | RF findings section, redundancy path history, congestion block                         |
 
 ---
 
@@ -482,7 +516,7 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 **Trigger:** Current `channel_utilization > 2×` 30-minute rolling average, with gates: ≥ 12 samples, ≥ 30-minute span, rolling average ≥ 1%. 15-minute cooldown per node before re-firing.
 
-**Mechanism:** The detector maintains a rolling 24-hour history of `channel_utilization` samples in `diagnosticsStore.cuHistory` (one entry per NodeInfo update). `computeCuStats24h` computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (`cuSpikeLastFired` map in `RFDiagnosticEngine`) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by `clearDiagnostics()`.
+**Mechanism:** The detector maintains a rolling 24-hour history of `channel_utilization` samples in `diagnosticsStore.cuHistory` (entries from LocalStats / device-metrics telemetry and NodeInfo updates via `processNodeUpdate`). `computeCuStats24h` computes the rolling average over the pruned sample window. A spike fires when current CU exceeds 2× that baseline. The 15-minute cooldown (`cuSpikeLastFired` map in `RFDiagnosticEngine`) prevents the same node from re-firing while CU remains elevated. Cooldown state is cleared by `clearDiagnostics()`.
 
 **Fields:** Current `channel_utilization` vs. stored per-node `CuSample[]` history in diagnosticsStore.
 
@@ -618,20 +652,30 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 ### 17.4 Foreign LoRa Detection
 
-#### Packet classification (`foreignLoraDetection.classifyPayload()`)
+#### Packet classification
 
-The classifier operates on raw LoRa payload bytes received by the radio before any decryption:
+**General path** (`foreignLoraDetection.classifyPayload()`): operates on raw LoRa payload bytes (MeshCore RF RX, packet log):
+
+| Order | Rule                                                            | Classification |
+| ----- | --------------------------------------------------------------- | -------------- |
+| 1     | `parseMeshCoreRfPacket(raw).ok`                                 | `meshcore`     |
+| 2     | `raw[0] === 0x3c`                                               | `meshcore`     |
+| 3     | Meshtastic dest/sender ID + hop flags (see below)               | `meshtastic`   |
+| 4     | `looksLikeReticulumPayload(raw)` (RNS HEADER_1/2, 19–500 bytes) | `reticulum`    |
+| 5     | Fallback                                                        | `unknown-lora` |
+
+**Meshtastic decode-fail overhear** (`classifyMeshtasticForeignOverhear()`): used when Meshtastic firmware already rejected the frame. Checks `0x3c` → MeshCore, then Reticulum structure **before** the permissive MeshCore parser, then falls back to `classifyPayload()`.
+
+Meshtastic short/full header rules (unchanged):
 
 | Rule                    | Byte condition                                                                                                                                        | Classification |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| MeshCore frame-start    | `raw[0] === 0x3c` (`<` in ASCII)                                                                                                                      | `meshcore`     |
 | Meshtastic short packet | `raw.length` 8–15 AND bytes 0–3 = valid destId AND bytes 4–7 = valid senderId (both non-zero, non-broadcast `0xFFFFFFFF`)                             | `meshtastic`   |
 | Meshtastic full header  | `raw.length >= 16` AND bytes 0–3 = valid destId AND bytes 4–7 = valid senderId AND byte 12 flags: `hop_limit` (bits [2:0]) ≤ `hop_start` (bits [7:5]) | `meshtastic`   |
-| Fallback                | everything else                                                                                                                                       | `unknown-lora` |
 
-Short packets (8–15 bytes) pass on ID checks alone: MeshCore frames always begin with `0x3c`, so any non-0x3c payload of this length with valid IDs reliably indicates Meshtastic. For full 16-byte headers, the flags byte (byte 12) is also validated: `hop_limit` (bits [2:0]) must be ≤ `hop_start` (bits [7:5]). This structural invariant holds for all Meshtastic packets including direct-only devices (`hop_start=0, hop_limit=0`), and filters out MeshCore encrypted packets whose first 8 bytes happen to look like valid Meshtastic node IDs.
+#### Connected-node telemetry ingest (Meshtastic)
 
-**MeshCore log-pattern detection** (`containsMeshCorePattern()`): Device log messages mentioning decode failures and containing `0x3c` (or `<`) are matched via regex; this catches MeshCore traffic even when only the log stream is available (no raw packet data).
+`meshtasticLegacyWireSubscriptions` calls `processNodeUpdate` on **LocalStats** telemetry and on RF mesh packets that update `hops_away`/SNR so `cuHistory`, hop history, and incremental RF analysis stay live (previously only device-metrics / NodeInfo paths fed the store).
 
 #### Proximity classification (`classifyProximity()`)
 
@@ -643,6 +687,8 @@ RSSI is the primary signal; SNR is used as fallback when RSSI is unavailable.
 | −95 to −80 dBm    | 2–8 dB            | Nearby           |
 | < −95 dBm         | < 2 dB            | Distant          |
 | neither available | neither available | Unknown Distance |
+
+**MeshCore log-pattern detection** (`containsMeshCorePattern()`): Device log messages mentioning decode failures and containing `0x3c` (or `<`) are matched via regex; this catches MeshCore traffic even when only the log stream is available (no raw packet data).
 
 #### MeshCore rate escalation
 

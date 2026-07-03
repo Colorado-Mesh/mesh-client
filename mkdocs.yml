@@ -32,7 +32,9 @@ nav:
       - Accessibility: accessibility-checklist.md
       - CI/CD: ci-cd.md
       - Release Process: release-process.md
-      - Feature Parity: meshcore-meshtastic-parity.md
+      - Meshtastic & MeshCore Parity: meshcore-meshtastic-parity.md
+      - Reticulum: reticulum.md
+      - Reticulum Sidecar IPC: reticulum-sidecar-ipc.md
       - LetsMesh MQTT Auth: letsmesh-mqtt-auth.md
   - Support:
       - Diagnostics: diagnostics.md

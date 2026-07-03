@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Beralih ke Meshtastic",
     "switchToMeshCore": "Beralih ke MeshCore",
     "backToTop": "Kembali ke atas",
-    "switchToReticulum": "Beralih ke Reticulum"
+    "switchToReticulum": "Beralih ke Reticulum",
+    "languageSelectorHint": "Klik untuk memilih bahasa"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "Lalu Lintas LoRa Tidak Diketahui",
       "potentialMeshcoreRepeaterConflict": "Potensi Konflik Pengulang MeshCore",
       "elevatedNoiseFloor": "Lantai Kebisingan Tinggi",
-      "excessiveFlooding": "Banjir Berlebihan"
+      "excessiveFlooding": "Banjir Berlebihan",
+      "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi"
     },
     "rfCause": {
       "channelUtilizationSpike": "{{current}}% saat ini lebih dari 2× rata-rata terkini ({{average}}%) — kemungkinan kemacetan atau lonjakan gangguan.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Node Meshtastic mentransmisikan pada frekuensi ini. Pengirim: {{sender}}. {{proximity}}Node ini mungkin berada di area repeater MeshCore Anda.",
       "unknownLora": "Sinyal LoRa yang tidak dikenal terdeteksi (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Kecepatan paket MeshCore tinggi terdeteksi (>5/mnt). Repeater MeshCore terdekat mungkin menyebabkan tabrakan paket."
+      "potentialRepeaterConflict": "Kecepatan paket MeshCore tinggi terdeteksi (>5/mnt). Repeater MeshCore terdekat mungkin menyebabkan tabrakan paket.",
+      "reticulum": "Lalu lintas Reticulum (RNode/RNS) pada frekuensi ini. {{proximity}}Mungkin simpul Reticulum terdekat pada pita LoRa yang sama."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Sangat dekat",

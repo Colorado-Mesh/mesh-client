@@ -324,6 +324,7 @@
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
     "languageSelector": "Select language",
+    "languageSelectorHint": "Click to select language",
     "applicationPanels": "Application panels",
     "applicationLog": "Application log",
     "playAnimation": "Play mesh signal pulse animation",
@@ -1089,6 +1090,7 @@
       "fringeWeakCoverage": "Fringe / Weak Coverage",
       "meshcoreActivityDetected": "MeshCore Activity Detected",
       "meshtasticTrafficDetected": "Meshtastic Traffic Detected",
+      "reticulumTrafficDetected": "Reticulum Traffic Detected",
       "unknownLoraTraffic": "Unknown LoRa Traffic",
       "potentialMeshcoreRepeaterConflict": "Potential MeshCore Repeater Conflict",
       "elevatedNoiseFloor": "Elevated Noise Floor",
@@ -1110,6 +1112,7 @@
     },
     "foreignLoraCause": {
       "meshtastic": "Meshtastic node transmitting on this frequency. Sender: {{sender}}. {{proximity}}This node may be in your MeshCore repeater area.",
+      "reticulum": "Reticulum (RNode/RNS) traffic on this frequency. {{proximity}}May be a nearby Reticulum node on the same LoRa band.",
       "unknownLora": "Unrecognized LoRa signal detected (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
       "potentialRepeaterConflict": "High MeshCore packet rate detected (>5/min). A nearby MeshCore repeater may be causing packet collisions."
     },

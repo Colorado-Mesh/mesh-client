@@ -27,6 +27,7 @@ import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/share
 
 import {
   diagnosticRowsToRoutingMap,
+  filterDiagnosticRowsForProtocol,
   FOREIGN_LORA_RF_CONDITIONS,
   meshHasRoutingAnomaliesFromRows,
 } from '../lib/diagnostics/diagnosticRows';
@@ -47,7 +48,6 @@ import {
   getRecommendedAction,
   getRecommendedActionForRfCondition,
 } from '../lib/diagnostics/RemediationEngine';
-import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
@@ -193,14 +193,10 @@ export default function DiagnosticsPanel({
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
-  const visibleDiagnosticRows = useMemo(() => {
-    if (!showLoRaMeshDiagnostics) {
-      return diagnosticRows.filter(
-        (r) => isReticulumDiagnosticRow(r) || nodes.has(r.nodeId) || r.nodeId === myNodeNum,
-      );
-    }
-    return diagnosticRows;
-  }, [diagnosticRows, nodes, showLoRaMeshDiagnostics, myNodeNum]);
+  const visibleDiagnosticRows = useMemo(
+    () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
+    [diagnosticRows, protocol],
+  );
   const routingAnomaliesMap = useMemo(
     () => diagnosticRowsToRoutingMap(visibleDiagnosticRows),
     [visibleDiagnosticRows],

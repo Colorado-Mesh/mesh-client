@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Meshtastic'e geç",
     "switchToMeshCore": "MeshCore'a geç",
     "backToTop": "Başa dön",
-    "switchToReticulum": "Reticulum'a geç"
+    "switchToReticulum": "Reticulum'a geç",
+    "languageSelectorHint": "Dili seçmek için tıklayın"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "Bilinmeyen LoRa Trafiği",
       "potentialMeshcoreRepeaterConflict": "Potansiyel MeshCore Tekrarlayıcı Çatışması",
       "elevatedNoiseFloor": "Yükseltilmiş Gürültü Zemini",
-      "excessiveFlooding": "Aşırı Su Baskını"
+      "excessiveFlooding": "Aşırı Su Baskını",
+      "reticulumTrafficDetected": "Reticulum Trafiği Algılandı"
     },
     "rfCause": {
       "channelUtilizationSpike": "Mevcut {{current}}%, yakın zamandaki ortalamanın ({{average}}%) 2 katının üzerinde; olası tıkanıklık veya parazit dalgalanması.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic düğüm bu frekansta iletim yapıyor. Gönderen: {{sender}}. {{proximity}}Bu düğüm MeshCore tekrarlayıcı alanınızda olabilir.",
       "unknownLora": "Tanınmayan LoRa sinyali algılandı (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Yüksek MeshCore paket hızı algılandı (>5/dak). Yakındaki bir MeshCore yineleyici paket çarpışmalarına neden oluyor olabilir."
+      "potentialRepeaterConflict": "Yüksek MeshCore paket hızı algılandı (>5/dak). Yakındaki bir MeshCore yineleyici paket çarpışmalarına neden oluyor olabilir.",
+      "reticulum": "Bu frekansta Reticulum (RNode/RNS) trafiği. {{proximity}} Aynı LoRa bandında yakındaki bir Reticulum düğümü olabilir."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Çok yakın",

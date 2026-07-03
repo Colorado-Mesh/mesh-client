@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Переключиться на Meshtastic",
     "switchToMeshCore": "Переключиться на MeshCore",
     "backToTop": "Вернуться наверх",
-    "switchToReticulum": "Переключиться на Reticulum"
+    "switchToReticulum": "Переключиться на Reticulum",
+    "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "Неизвестный трафик LoRa",
       "potentialMeshcoreRepeaterConflict": "Потенциальный конфликт повторителей MeshCore",
       "elevatedNoiseFloor": "Пол с повышенным уровнем шума",
-      "excessiveFlooding": "Чрезмерное затопление"
+      "excessiveFlooding": "Чрезмерное затопление",
+      "reticulumTrafficDetected": "Обнаружен трафик Reticulum"
     },
     "rfCause": {
       "channelUtilizationSpike": "Текущее значение {{current}}% более чем в 2 раза превышает недавнее среднее значение ({{average}}%) — возможна перегрузка или всплеск помех.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic узел передает на этой частоте. Отправитель: {{sender}}. {{proximity}}Этот узел может находиться в зоне повторителя MeshCore.",
       "unknownLora": "Обнаружен нераспознанный сигнал LoRa (RSSI {{rssi}} дБм, SNR {{snr}} дБ).",
-      "potentialRepeaterConflict": "Обнаружена высокая скорость передачи пакетов MeshCore (>5/мин). Близлежащий ретранслятор MeshCore может вызывать конфликты пакетов."
+      "potentialRepeaterConflict": "Обнаружена высокая скорость передачи пакетов MeshCore (>5/мин). Близлежащий ретранслятор MeshCore может вызывать конфликты пакетов.",
+      "reticulum": "Трафик Reticulum (RNode/RNS) на этой частоте. {{proximity}}Может быть соседним узлом Reticulum в той же полосе LoRa."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Очень близко",

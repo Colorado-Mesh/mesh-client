@@ -8,7 +8,7 @@ const VAULT_VERSION = 1;
 const MIN_PASSCODE_LENGTH = 8;
 const MAX_PASSCODE_LENGTH = 256;
 const MAX_SECRET_BYTES = 512 * 1024;
-/** scrypt params (~64 MiB) — Node crypto only; avoids argon2 native Electron ABI rebuilds. */
+/** scrypt params (~67 MiB: 128 * N * r, N=65536, r=8) — Node crypto only; avoids argon2 native Electron ABI rebuilds. */
 const SCRYPT_N = 65536;
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;

@@ -1,6 +1,6 @@
 # Development Environment Setup
 
-This guide covers local development setup for Mesh Client, including cloning, prerequisites, and test harness tooling. For runtime errors, connection issues, and packaged-app problems, see [troubleshooting.md](troubleshooting.md).
+This guide covers local development setup for Mesh Client (Meshtastic, MeshCore, and Reticulum), including cloning, prerequisites, and test harness tooling. For runtime errors, connection issues, and packaged-app problems, see [troubleshooting.md](troubleshooting.md).
 
 ## Shared Requirements and Tooling
 

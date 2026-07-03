@@ -331,7 +331,8 @@
     "switchToMeshtastic": "Schakel over naar Meshtastic",
     "switchToMeshCore": "Schakel over naar MeshCore",
     "backToTop": "Terug naar boven",
-    "switchToReticulum": "Overschakelen naar Reticulum"
+    "switchToReticulum": "Overschakelen naar Reticulum",
+    "languageSelectorHint": "Klik om de taal te selecteren"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -1067,7 +1068,8 @@
       "unknownLoraTraffic": "Onbekend LoRa-verkeer",
       "potentialMeshcoreRepeaterConflict": "Potentieel MeshCore Repeater-conflict",
       "elevatedNoiseFloor": "Verhoogde geluidsvloer",
-      "excessiveFlooding": "Overmatige overstromingen"
+      "excessiveFlooding": "Overmatige overstromingen",
+      "reticulumTrafficDetected": "Reticulum-verkeer gedetecteerd"
     },
     "rfCause": {
       "channelUtilizationSpike": "De huidige {{current}}% is meer dan 2x het recente gemiddelde ({{average}}%) – mogelijke congestie of interferentiepiek.",
@@ -1086,7 +1088,8 @@
     "foreignLoraCause": {
       "meshtastic": "Meshtastic knooppunt dat op deze frequentie zendt. Afzender: {{sender}}. {{proximity}}Dit knooppunt bevindt zich mogelijk in uw MeshCore-repeatergebied.",
       "unknownLora": "Niet-herkend LoRa-signaal gedetecteerd (RSSI {{rssi}} dBm, SNR {{snr}} dB).",
-      "potentialRepeaterConflict": "Hoge MeshCore-pakketsnelheid gedetecteerd (>5/min). Een nabijgelegen MeshCore-repeater kan pakketbotsingen veroorzaken."
+      "potentialRepeaterConflict": "Hoge MeshCore-pakketsnelheid gedetecteerd (>5/min). Een nabijgelegen MeshCore-repeater kan pakketbotsingen veroorzaken.",
+      "reticulum": "Reticulum (RNode/RNS)-verkeer op deze frequentie. {{proximity}}Kan een nabijgelegen Reticulum-knooppunt op dezelfde LoRa-band zijn."
     },
     "foreignLoraProximitySnippet": {
       "veryClose": "Heel dichtbij",

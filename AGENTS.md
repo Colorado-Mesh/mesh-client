@@ -20,7 +20,7 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 
 ## 2. Architecture & Domain
 
-Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Dual-protocol:** meshtastic and meshcore; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc.). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
+Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Multi-protocol:** Meshtastic, MeshCore, and Reticulum; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc. for LoRa; Reticulum uses `ReticulumDiagnosticEngine.ts`). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
 
 **Colors:** Use Tailwind CSS utility classes (e.g., `text-green-400`, `bg-slate-700`). Custom theme colors via CSS custom properties in `styles.css` (`--color-brand-green`, etc.). Avoid inline hex colors in JSX.
 
@@ -41,17 +41,17 @@ Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.ts
 
 ### Renderer: hooks vs runtime vs lib
 
-| Layer        | Path                    | Role                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **runtime/** | `src/renderer/runtime/` | Protocol side effects (`useMeshtasticRuntime`, `useMeshcoreRuntime`). Mount **once** from `App.tsx` via context providers; do not remount in child components or hooks. Large runtimes are legacy; **new** protocol logic belongs in `lib/` + thin runtime wiring — do not grow monolithic return objects without grouping related fields into sub-objects when extending the public API. |
-| **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic.                                                                                                                                                                                                             |
-| **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                                                                                                                                                                                                                                    |
+| Layer        | Path                    | Role                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **runtime/** | `src/renderer/runtime/` | Protocol side effects (`useMeshtasticRuntime`, `useMeshcoreRuntime`, `useReticulumRuntime`). Mount **once** from `App.tsx` via context providers; do not remount in child components or hooks. Large runtimes are legacy; **new** protocol logic belongs in `lib/` + thin runtime wiring — do not grow monolithic return objects without grouping related fields into sub-objects when extending the public API. |
+| **hooks/**   | `src/renderer/hooks/`   | React composition: `useProtocolFacade`, store selectors (`useMessages`, `useConnectionView`), panel action bundles, feature hooks (`useChatOutbox`). No large protocol logic.                                                                                                                                                                                                                                    |
+| **lib/**     | `src/renderer/lib/`     | Pure logic, drivers (`ConnectionDriver`), sessions, ingest, protocol types (e.g. `lib/meshcore/meshcoreHookTypes.ts`).                                                                                                                                                                                                                                                                                           |
 
-**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use per-protocol `useProtocolConnectionActions('meshtastic' \| 'meshcore')` only when both protocol tabs need separate ConnectionPanel props. **`usePowerRecovery`** mounts once from `App.tsx` — coordinates sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, and runtime `onPowerResume` (Meshtastic ~4s after wake, MeshCore ~8s stagger after Meshtastic, plus up to 30s dual-Noble BLE settle when both protocols use BLE).
+**App wiring:** Prefer `useProtocolFacade(protocol)` for connection state, panel actions, nodes, and messages. Use per-protocol `useProtocolConnectionActions('meshtastic' | 'meshcore' | 'reticulum')` when ConnectionPanel props differ per tab. **`usePowerRecovery`** mounts once from `App.tsx` — coordinates sleep/wake IPC, MQTT `powerSuspend`/`powerResume`, and runtime `onPowerResume` (Meshtastic ~4s after wake, MeshCore ~8s stagger after Meshtastic, Reticulum sidecar resume, plus up to 30s dual-Noble BLE settle when Meshtastic and MeshCore both use BLE).
 
-### Dual protocol
+### Multi-protocol
 
-Both stacks can run simultaneously. Feature-gate with `ProtocolCapabilities`:
+Meshtastic, MeshCore, and Reticulum stacks can run simultaneously. Feature-gate with `ProtocolCapabilities`:
 
 ```typescript
 import { useRadioProvider } from '@/lib/radio/providerFactory';
@@ -150,22 +150,23 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 - **Engines:** `src/renderer/lib/diagnostics/`; `RoutingDiagnosticEngine.ts`, `RFDiagnosticEngine.ts`, `RemediationEngine.ts`.
 - **Store:** `src/renderer/stores/diagnosticsStore.ts`; routing/RF rows, foreign LoRa, MQTT ignore, redundancy.
+- **Tab scoping:** `filterDiagnosticRowsForProtocol()` — Meshtastic/MeshCore tabs show LoRa rows only; Reticulum tab shows `reticulum/*` only. Foreign-LoRa tables UI is Meshtastic-tab-only.
 - **Extend:** adjust `DiagnosticRow` in `src/renderer/lib/types.ts`, add detector, wire `replaceRoutingRowsFromMap` / `replaceRfRowsForNode`; TTL defaults in `diagnosticRows.ts` (routing 24h, RF 1h).
 - **Full reference:** [docs/diagnostics.md](docs/diagnostics.md).
 
-### Renderer hook architecture (dual protocol)
+### Renderer hook architecture (multi-protocol)
 
 See **Renderer: hooks vs runtime vs lib** (layout map above). Legacy `useDevice` / `useMeshCore` are removed ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)). Default rules for new UI:
 
-| Concern                                               | Use                                                                                                                                                         |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Orchestration (App tab)                               | `useProtocolFacade(protocol)` — connection, `useConnectionView`, panel bundle, nodes, messages                                                              |
-| Active protocol identity                              | `useActiveMeshIdentity(protocol)` — focused `identityId` per tab; prefer `capabilities` over `protocol ===`                                                 |
-| Dual-protocol panel bundles (App)                     | `useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime)` — single hook site for both protocols                                                     |
-| Reads (nodes, messages, connection fields)            | Zustand stores + `useNodes` / `useMessages` / `useConnectionView` / `useConnectionStatus`                                                                   |
-| Writes (configure, send, admin, panel callbacks)      | `usePanelActions(protocol, identityId, …)` / `useProtocolFacade(protocol).panel` or `useSendMessage(identityId)`                                            |
-| Connect / disconnect / auto-connect                   | `useProtocolConnectionActions(protocol)` (`useProtocolConnect` + `useProtocolDisconnect` + `lib/sessions/*Session.ts`); driver-first via `ConnectionDriver` |
-| Wire subscriptions, MQTT IPC, reconnect, DB hydration | `useMeshtasticRuntime` / `useMeshcoreRuntime` in `runtime/` — mount **once** from `App.tsx` via context providers                                           |
+| Concern                                               | Use                                                                                                                                                                                                  |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Orchestration (App tab)                               | `useProtocolFacade(protocol)` — connection, `useConnectionView`, panel bundle, nodes, messages                                                                                                       |
+| Active protocol identity                              | `useActiveMeshIdentity(protocol)` — focused `identityId` per tab; prefer `capabilities` over `protocol ===`                                                                                          |
+| LoRa dual-protocol panel bundles (App)                | `useDualProtocolPanelActions(meshtasticRuntime, meshcoreRuntime)` — Meshtastic + MeshCore hook site; Reticulum uses `useReticulumRuntime` panel actions separately                                   |
+| Reads (nodes, messages, connection fields)            | Zustand stores + `useNodes` / `useMessages` / `useConnectionView` / `useConnectionStatus`                                                                                                            |
+| Writes (configure, send, admin, panel callbacks)      | `usePanelActions(protocol, identityId, …)` / `useProtocolFacade(protocol).panel` or `useSendMessage(identityId)`                                                                                     |
+| Connect / disconnect / auto-connect                   | `useProtocolConnectionActions(protocol)` (`useProtocolConnect` + `useProtocolDisconnect` + `lib/sessions/*Session.ts`); Meshtastic/MeshCore via `ConnectionDriver`; Reticulum via sidecar start/stop |
+| Wire subscriptions, MQTT IPC, reconnect, DB hydration | `useMeshtasticRuntime` / `useMeshcoreRuntime` / `useReticulumRuntime` in `runtime/` — mount **once** from `App.tsx` via context providers                                                            |
 
 Do **not** remount protocol runtimes in child components. Do **not** compare `protocol === 'meshcore'` for feature gates; use `ProtocolCapabilities` / `useRadioProvider(protocol)`.
 

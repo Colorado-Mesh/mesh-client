@@ -48,6 +48,7 @@ const RF_CONDITION_LABEL_KEY: Record<string, string> = {
   'Fringe / Weak Coverage': 'diagnosticsPanel.rfCondition.fringeWeakCoverage',
   'MeshCore Activity Detected': 'diagnosticsPanel.rfCondition.meshcoreActivityDetected',
   'Meshtastic Traffic Detected': 'diagnosticsPanel.rfCondition.meshtasticTrafficDetected',
+  'Reticulum Traffic Detected': 'diagnosticsPanel.rfCondition.reticulumTrafficDetected',
   'Unknown LoRa Traffic': 'diagnosticsPanel.rfCondition.unknownLoraTraffic',
   'Potential MeshCore Repeater Conflict':
     'diagnosticsPanel.rfCondition.potentialMeshcoreRepeaterConflict',
@@ -85,6 +86,16 @@ function translateCauseI18n(t: TFunction, cause: string, causeI18n?: DiagnosticT
     const proximity =
       pk === '' ? '' : `${t(`diagnosticsPanel.foreignLoraProximitySnippet.${pk}`)}. `;
     return t(key, { sender: params.sender, proximity });
+  }
+  if (
+    key === 'diagnosticsPanel.foreignLoraCause.reticulum' &&
+    params &&
+    typeof params.proximityKey === 'string'
+  ) {
+    const pk = params.proximityKey;
+    const proximity =
+      pk === '' ? '' : `${t(`diagnosticsPanel.foreignLoraProximitySnippet.${pk}`)}. `;
+    return t(key, { proximity });
   }
   return t(key, params ?? {});
 }

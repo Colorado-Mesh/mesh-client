@@ -1,7 +1,41 @@
 import { parseMeshCoreRfPacket } from '../../shared/meshcoreRfPacketParse';
 import { meshcoreRawPacketResolveFromParsed } from './meshcoreRawPacketSender';
 
-export type PacketClass = 'meshcore' | 'meshtastic' | 'unknown-lora';
+export type PacketClass = 'meshcore' | 'meshtastic' | 'reticulum' | 'unknown-lora';
+
+const RETICULUM_RAW_PACKET_MTU = 500;
+
+/**
+ * Structural heuristic for Reticulum RNS wire format (HEADER_1 / HEADER_2).
+ * Used when a Meshtastic radio logs undecodable LoRa or MeshCore RX carries raw bytes.
+ * @see https://reticulum.network/manual/understanding.html (Wire Format)
+ */
+export function looksLikeReticulumPayload(raw: Uint8Array): boolean {
+  if (raw.length < 19 || raw.length > RETICULUM_RAW_PACKET_MTU) return false;
+  if (raw[0] === 0x3c) return false;
+
+  const flags = raw[0];
+  const hdr = (flags >> 6) & 0x01;
+  const hops = raw[1];
+  if (hops > 64) return false;
+
+  const minLen = hdr === 0 ? 19 : 35;
+  if (raw.length < minLen) return false;
+
+  // Reject confident Meshtastic header layout (bytes 0–7 IDs + byte 12 hop flags).
+  if (raw.length >= 16) {
+    const destId = (raw[0] | (raw[1] << 8) | (raw[2] << 16) | (raw[3] << 24)) >>> 0;
+    const senderId = (raw[4] | (raw[5] << 8) | (raw[6] << 16) | (raw[7] << 24)) >>> 0;
+    const BROADCAST = 0xffffffff;
+    if (destId !== 0 && destId !== BROADCAST && senderId !== 0 && senderId !== BROADCAST) {
+      const hopLimit = raw[12] & 0x07;
+      const hopStart = (raw[12] >> 5) & 0x07;
+      if (hopLimit <= hopStart) return false;
+    }
+  }
+
+  return true;
+}
 
 /**
  * Fingerprint a raw LoRa payload into a packet class.
@@ -27,10 +61,6 @@ export function classifyPayload(raw: Uint8Array): PacketClass {
     const BROADCAST = 0xffffffff;
     if (destId !== 0 && destId !== BROADCAST && senderId !== 0 && senderId !== BROADCAST) {
       if (raw.length >= 16) {
-        // Full 16-byte Meshtastic header available: validate the flags byte (byte 12) to reduce
-        // false positives from MeshCore encrypted packets whose first 8 bytes resemble node IDs.
-        // hop_limit (bits [2:0]) must be <= hop_start (bits [7:5]); hop_start=0 is valid for
-        // direct-only devices (hop_limit=0).
         const flags = raw[12];
         const hopLimit = flags & 0x07;
         const hopStart = (flags >> 5) & 0x07;
@@ -41,7 +71,22 @@ export function classifyPayload(raw: Uint8Array): PacketClass {
     }
   }
 
+  if (looksLikeReticulumPayload(raw)) {
+    return 'reticulum';
+  }
+
   return 'unknown-lora';
+}
+
+/**
+ * Classify foreign LoRa overhear from Meshtastic firmware decode-failure logs.
+ * When Meshtastic already rejected the frame, prefer Reticulum structure over permissive MeshCore parse.
+ */
+export function classifyMeshtasticForeignOverhear(raw: Uint8Array): PacketClass {
+  if (raw.length === 0) return 'unknown-lora';
+  if (raw[0] === 0x3c) return 'meshcore';
+  if (looksLikeReticulumPayload(raw)) return 'reticulum';
+  return classifyPayload(raw);
 }
 
 /**
@@ -72,6 +117,8 @@ export function containsMeshCorePattern(message: string): boolean {
 
 export type ForeignLoraLogMatch =
   | { packetClass: 'meshcore'; rssi?: number; snr?: number; senderId?: number }
+  | { packetClass: 'meshtastic'; rssi?: number; snr?: number; senderId?: number }
+  | { packetClass: 'reticulum'; rssi?: number; snr?: number }
   | { packetClass: 'unknown-lora'; rssi?: number; snr?: number };
 
 function parseHexByteTokens(fragment: string): Uint8Array | null {
@@ -145,6 +192,21 @@ export function matchForeignLoraFromMeshtasticLog(message: string): ForeignLoraL
     return { packetClass: 'meshcore', rssi, snr, senderId };
   }
   if (isDecodeFail(message) && (rssi !== undefined || snr !== undefined)) {
+    const raw = extractHexPayloadFromMeshtasticLog(message);
+    if (raw) {
+      const packetClass = classifyMeshtasticForeignOverhear(raw);
+      if (packetClass === 'meshcore') {
+        const senderId = extractMeshCoreSenderIdFromMeshtasticLog(message) ?? undefined;
+        return { packetClass: 'meshcore', rssi, snr, senderId };
+      }
+      if (packetClass === 'reticulum') {
+        return { packetClass: 'reticulum', rssi, snr };
+      }
+      if (packetClass === 'meshtastic') {
+        const senderId = extractMeshtasticSenderId(raw) ?? undefined;
+        return { packetClass: 'meshtastic', rssi, snr, senderId };
+      }
+    }
     return { packetClass: 'unknown-lora', rssi, snr };
   }
   return null;

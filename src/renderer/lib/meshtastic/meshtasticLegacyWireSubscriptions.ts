@@ -1373,27 +1373,32 @@ export function attachMeshtasticLegacyWireSubscriptions(
       packet.from === myNodeNumRef.current
     ) {
       const ls = tel.variant.value;
-      updateNodes((prev) => {
-        const updated = new Map(prev);
-        const existing = updated.get(myNodeNumRef.current);
-        if (existing) {
-          const node: MeshNode = {
-            ...existing,
-            channel_utilization: ls.channelUtilization ?? existing.channel_utilization,
-            air_util_tx: ls.airUtilTx ?? existing.air_util_tx,
-            num_packets_rx_bad: ls.numPacketsRxBad ?? existing.num_packets_rx_bad,
-            num_rx_dupe: ls.numRxDupe ?? existing.num_rx_dupe,
-            num_packets_rx: ls.numPacketsRx ?? existing.num_packets_rx,
-            num_packets_tx: ls.numPacketsTx ?? existing.num_packets_tx,
-            source: 'rf',
-            heard_via_mqtt_only: false,
-            via_mqtt: false,
-          };
+      const existing = nodesRef.current.get(myNodeNumRef.current);
+      if (existing) {
+        const node: MeshNode = {
+          ...existing,
+          channel_utilization: ls.channelUtilization ?? existing.channel_utilization,
+          air_util_tx: ls.airUtilTx ?? existing.air_util_tx,
+          num_packets_rx_bad: ls.numPacketsRxBad ?? existing.num_packets_rx_bad,
+          num_rx_dupe: ls.numRxDupe ?? existing.num_rx_dupe,
+          num_packets_rx: ls.numPacketsRx ?? existing.num_packets_rx,
+          num_packets_tx: ls.numPacketsTx ?? existing.num_packets_tx,
+          source: 'rf',
+          heard_via_mqtt_only: false,
+          via_mqtt: false,
+        };
+        updateNodes((prev) => {
+          const updated = new Map(prev);
           updated.set(myNodeNumRef.current, node);
           void window.electronAPI.db.saveNode(node);
+          return updated;
+        });
+        if (getStoredMeshProtocol() === 'meshtastic') {
+          useDiagnosticsStore
+            .getState()
+            .processNodeUpdate(node, node, myNodeNumRef.current, MESHTASTIC_CAPABILITIES);
         }
-        return updated;
-      });
+      }
       return;
     }
 
@@ -1571,39 +1576,49 @@ export function attachMeshtasticLegacyWireSubscriptions(
     const hasHopUpdate = computedHopsAway !== undefined && mp.from !== myNodeNumRef.current;
 
     if (hasSignal || hasHopUpdate) {
-      updateNodes((prev) => {
-        const updated = new Map(prev);
-        const existing = updated.get(mp.from!);
-        if (existing) {
-          const node: MeshNode = {
-            ...existing,
-            ...(mp.rxSnr ? { snr: mp.rxSnr } : {}),
-            ...(mp.rxRssi ? { rssi: mp.rxRssi } : {}),
-            ...(hasSignal
-              ? {
-                  last_heard: mergeMeshtasticLivePacketLastHeard(
-                    existing.last_heard || 0,
-                    Date.now(),
-                    isConfiguringRef.current,
-                  ),
-                }
-              : {}),
-            ...(hasHopUpdate &&
-            !(
-              existing.last_heard > 0 &&
-              Date.now() - existing.last_heard > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs
-            )
-              ? { hops_away: computedHopsAway }
-              : {}),
-            source: 'rf',
-            heard_via_mqtt_only: false,
-            via_mqtt: mp.viaMqtt ?? false,
-          };
+      const existing = nodesRef.current.get(mp.from);
+      if (existing) {
+        const node: MeshNode = {
+          ...existing,
+          ...(mp.rxSnr ? { snr: mp.rxSnr } : {}),
+          ...(mp.rxRssi ? { rssi: mp.rxRssi } : {}),
+          ...(hasSignal
+            ? {
+                last_heard: mergeMeshtasticLivePacketLastHeard(
+                  existing.last_heard || 0,
+                  Date.now(),
+                  isConfiguringRef.current,
+                ),
+              }
+            : {}),
+          ...(hasHopUpdate &&
+          !(
+            existing.last_heard > 0 &&
+            Date.now() - existing.last_heard > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs
+          )
+            ? { hops_away: computedHopsAway }
+            : {}),
+          source: 'rf',
+          heard_via_mqtt_only: false,
+          via_mqtt: mp.viaMqtt ?? false,
+        };
+        updateNodes((prev) => {
+          const updated = new Map(prev);
           updated.set(mp.from!, node);
           void window.electronAPI.db.saveNode(node);
+          return updated;
+        });
+        if (getStoredMeshProtocol() === 'meshtastic') {
+          useDiagnosticsStore
+            .getState()
+            .processNodeUpdate(
+              node,
+              nodesRef.current.get(myNodeNumRef.current) ?? null,
+              myNodeNumRef.current,
+              MESHTASTIC_CAPABILITIES,
+            );
         }
-        return updated;
-      });
+      }
     }
 
     if (mp.rxSnr || mp.rxRssi) {
