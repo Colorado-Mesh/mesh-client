@@ -23,7 +23,12 @@ fn default_ble_scan_mode() -> String {
 
 pub async fn list_interfaces(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     let interfaces = stack.list_interfaces().await;
-    Json(serde_json::json!({ "interfaces": interfaces }))
+    let (stored, effective) = stack.primary_local_serial_interface_ids().await;
+    Json(serde_json::json!({
+        "interfaces": interfaces,
+        "primary_local_serial_interface_id": stored,
+        "effective_primary_local_serial_interface_id": effective,
+    }))
 }
 
 pub async fn add_interface(
@@ -75,5 +80,24 @@ pub async fn ble_scan(
     match stack.ble_scan(query.timeout_secs, &query.mode).await {
         Ok(body) => Json(body),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e, "devices": [] })),
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct SetPrimaryLocalRnodeRequest {
+    pub id: String,
+}
+
+pub async fn set_primary_local_rnode(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<SetPrimaryLocalRnodeRequest>,
+) -> Json<serde_json::Value> {
+    match stack.set_primary_local_serial_interface(&body.id).await {
+        Ok((reordered, effective_id)) => Json(serde_json::json!({
+            "ok": true,
+            "reordered": reordered,
+            "effective_id": effective_id,
+        })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

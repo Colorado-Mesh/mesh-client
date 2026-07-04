@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "Bluetooth tidak tersedia di Reticulum build ini (fitur rns-ble tidak ada).",
       "pickerScanFailedDetail": "Kesalahan pemindaian: {{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "Masukkan nama host atau alamat IP yang valid (gunakan [tanda kurung] untuk IPv6)."
+      "invalidHost": "Masukkan nama host atau alamat IP yang valid (gunakan [tanda kurung] untuk IPv6).",
+      "primaryLocalSummary": "RNode lokal utama: {{name}}",
+      "primaryLocalBadge": "Primer",
+      "setPrimaryLocal": "Tetapkan sebagai utama",
+      "setPrimaryLocalAria": "Tetapkan {{name}} sebagai RNode lokal utama",
+      "setPrimarySuccess": "RNode lokal utama diperbarui.",
+      "setPrimaryFailed": "Gagal mengatur RNode lokal utama."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "이 Reticulum 빌드에서는 Bluetooth를 사용할 수 없습니다(rns-ble 기능 누락).",
       "pickerScanFailedDetail": "스캔 오류: {{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "유효한 호스트 이름 또는 IP 주소를 입력하십시오 (IPv6의 경우 [brackets] 사용)."
+      "invalidHost": "유효한 호스트 이름 또는 IP 주소를 입력하십시오 (IPv6의 경우 [brackets] 사용).",
+      "primaryLocalSummary": "기본 로컬 RNode: {{name}}",
+      "primaryLocalBadge": "1차",
+      "setPrimaryLocal": "주 그룹으로 설정",
+      "setPrimaryLocalAria": "{{name}} 을 (를) 기본 로컬 RNode로 설정",
+      "setPrimarySuccess": "기본 로컬 RNode가 업데이트되었습니다.",
+      "setPrimaryFailed": "기본 로컬 RNode를 설정하지 못했습니다."
     },
     "reticulumPeers": {
       "hops": "Hops",

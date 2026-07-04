@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "この Reticulum ビルドでは Bluetooth は利用できません (rns-ble 機能がありません)。",
       "pickerScanFailedDetail": "スキャン エラー: {{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "有効なホスト名またはIPアドレスを入力してください（ IPv 6には[括弧]を使用してください）。"
+      "invalidHost": "有効なホスト名またはIPアドレスを入力してください（ IPv 6には[括弧]を使用してください）。",
+      "primaryLocalSummary": "プライマリローカルRNode ： {{name}}",
+      "primaryLocalBadge": "プライマリー",
+      "setPrimaryLocal": "主として設定する",
+      "setPrimaryLocalAria": "{{name}}をプライマリローカルRNodeとして設定",
+      "setPrimarySuccess": "プライマリローカルRNodeが更新されました。",
+      "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。"
     },
     "reticulumPeers": {
       "hops": "Hops",

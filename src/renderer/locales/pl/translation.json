@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "Bluetooth nie jest dostępny w tej wersji Reticulum (brak funkcji rns-ble).",
       "pickerScanFailedDetail": "Błąd skanowania: {{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "Wprowadź prawidłową nazwę hosta lub adres IP (użyj [nawiasów] dla IPv6)."
+      "invalidHost": "Wprowadź prawidłową nazwę hosta lub adres IP (użyj [nawiasów] dla IPv6).",
+      "primaryLocalSummary": "Główny lokalny RNode: {{name}}",
+      "primaryLocalBadge": "Podstawowe",
+      "setPrimaryLocal": "Ustaw jako podstawowy",
+      "setPrimaryLocalAria": "Ustaw {{name}} jako główny lokalny RNode",
+      "setPrimarySuccess": "Zaktualizowano główny lokalny RNode.",
+      "setPrimaryFailed": "Nie udało się ustawić głównego lokalnego RNode."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -57,6 +57,7 @@ export function ReticulumStackPanel({
     interfaces,
     serialPorts,
     serialPortPaths,
+    effectivePrimaryLocalSerialInterfaceId,
     healthOptions,
     refresh,
     beginBleConnectGrace,
@@ -167,6 +168,7 @@ export function ReticulumStackPanel({
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}
+              effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
               onRefresh={refresh}
               onBeginBleConnectGrace={beginBleConnectGrace}
             />

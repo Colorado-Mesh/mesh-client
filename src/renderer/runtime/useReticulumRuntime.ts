@@ -43,6 +43,7 @@ import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
   fetchReticulumSerialPorts,
+  getCachedReticulumEffectivePrimaryLocalSerialInterfaceId,
   invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
@@ -677,7 +678,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, [connect]);
 
   const resolveOutboundVia = useCallback(() => {
-    return resolveReticulumOutboundViaFromInterfaces(localInterfacesRef.current);
+    return resolveReticulumOutboundViaFromInterfaces(
+      localInterfacesRef.current,
+      getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
+    );
   }, []);
 
   const sendMessage = useCallback(

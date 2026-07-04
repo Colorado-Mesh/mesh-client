@@ -4,6 +4,7 @@ pub mod config;
 pub mod config_audit;
 pub mod rf_profiles;
 mod ble;
+mod local_rnode_primary;
 mod nomad_file;
 mod nomad_timeouts;
 mod packet_log;
@@ -136,7 +137,113 @@ impl StackHandle {
         if let Ok(ifaces) = config::interfaces_from_config_dir(&self.config_dir) {
             let mut inner = self.inner.write().await;
             inner.interfaces = ifaces;
+            drop(inner);
         }
+        let _ = self.ensure_primary_local_serial_order().await;
+    }
+
+    async fn ensure_primary_local_serial_order(&self) -> Result<(), String> {
+        let interfaces = match config::interfaces_from_config_dir(&self.config_dir) {
+            Ok(rows) => rows,
+            Err(e) => return Err(e),
+        };
+        let stored = {
+            let inner = self.inner.read().await;
+            inner.primary_local_serial_interface_id.clone()
+        };
+        let effective = local_rnode_primary::resolve_effective_primary_local_serial_interface_id(
+            &interfaces,
+            stored.as_deref(),
+        );
+        if let Some(effective_id) = effective {
+            let _ = local_rnode_primary::ensure_primary_local_serial_order(
+                &self.config_dir,
+                &effective_id,
+            );
+        }
+        Ok(())
+    }
+
+    async fn reconcile_primary_after_interface_change(&self) {
+        let interfaces = match config::interfaces_from_config_dir(&self.config_dir) {
+            Ok(rows) => rows,
+            Err(_) => return,
+        };
+        let stored = {
+            let inner = self.inner.read().await;
+            inner.primary_local_serial_interface_id.clone()
+        };
+        let effective = local_rnode_primary::resolve_effective_primary_local_serial_interface_id(
+            &interfaces,
+            stored.as_deref(),
+        );
+        let mut inner = self.inner.write().await;
+        inner.primary_local_serial_interface_id = effective.clone();
+        let _ = inner.save(&self.config_dir, &self.storage_dir);
+        drop(inner);
+        if let Some(effective_id) = effective {
+            let _ = local_rnode_primary::ensure_primary_local_serial_order(
+                &self.config_dir,
+                &effective_id,
+            );
+        }
+    }
+
+    pub async fn primary_local_serial_interface_ids(
+        &self,
+    ) -> (Option<String>, Option<String>) {
+        let interfaces = match config::interfaces_from_config_dir(&self.config_dir) {
+            Ok(rows) => rows,
+            Err(_) => self.inner.read().await.interfaces.clone(),
+        };
+        let stored = self
+            .inner
+            .read()
+            .await
+            .primary_local_serial_interface_id
+            .clone();
+        let effective = local_rnode_primary::resolve_effective_primary_local_serial_interface_id(
+            &interfaces,
+            stored.as_deref(),
+        );
+        (stored, effective)
+    }
+
+    pub async fn resolve_outbound_sent_via_for_interfaces(
+        &self,
+        interfaces: &[InterfaceRow],
+    ) -> &'static str {
+        let (_, effective) = self.primary_local_serial_interface_ids().await;
+        via::resolve_outbound_sent_via_with_primary(interfaces, effective.as_deref())
+    }
+
+    pub async fn set_primary_local_serial_interface(
+        &self,
+        id: &str,
+    ) -> Result<(bool, Option<String>), String> {
+        let interfaces = match config::interfaces_from_config_dir(&self.config_dir) {
+            Ok(rows) => rows,
+            Err(e) => return Err(e),
+        };
+        let row = interfaces
+            .iter()
+            .find(|row| row.id == id)
+            .ok_or_else(|| format!("interface not found: {id}"))?;
+        if !row.enabled {
+            return Err("primary interface must be enabled".into());
+        }
+        if !local_rnode_primary::is_locally_connected_serial_interface(row) {
+            return Err("interface is not a locally connected serial interface".into());
+        }
+        let reordered =
+            local_rnode_primary::reorder_primary_local_serial_interface(&self.config_dir, id)?;
+        {
+            let mut inner = self.inner.write().await;
+            inner.primary_local_serial_interface_id = Some(id.to_string());
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        self.sync_interfaces_from_config().await;
+        Ok((reordered, Some(id.to_string())))
     }
 
     pub async fn emit_stats(&self) {
@@ -263,6 +370,7 @@ impl StackHandle {
     pub async fn delete_interface(&self, id: &str) -> Result<(), String> {
         config::delete_interface_from_config(&self.config_dir, id)?;
         self.sync_interfaces_from_config().await;
+        self.reconcile_primary_after_interface_change().await;
         self.emit_event(
             "interface.state",
             serde_json::json!({ "id": id, "action": "deleted" }),
@@ -277,6 +385,7 @@ impl StackHandle {
     pub async fn set_interface_enabled(&self, id: &str, enabled: bool) -> Result<(), String> {
         config::set_interface_enabled_in_config(&self.config_dir, id, enabled)?;
         self.sync_interfaces_from_config().await;
+        self.reconcile_primary_after_interface_change().await;
         self.emit_event(
             "interface.state",
             serde_json::json!({ "id": id, "enabled": enabled }),

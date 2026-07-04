@@ -50,6 +50,8 @@ export function useReticulumInterfaceSnapshot({
 }: UseReticulumInterfaceSnapshotOptions) {
   const [interfaces, setInterfaces] = useState<ReticulumInterfaceRow[]>([]);
   const [serialPorts, setSerialPorts] = useState<ReticulumSerialPortOption[]>([]);
+  const [effectivePrimaryLocalSerialInterfaceId, setEffectivePrimaryLocalSerialInterfaceId] =
+    useState<string | null>(null);
   const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
   const refreshRef = useRef<
     (() => Promise<{ interfaces: ReticulumInterfaceRow[]; paths: string[] } | undefined>) | null
@@ -76,6 +78,7 @@ export function useReticulumInterfaceSnapshot({
       const [body, portsBody] = await Promise.all([
         window.electronAPI.reticulum.proxyGet('/api/v1/interfaces') as Promise<{
           interfaces?: ReticulumInterfaceRow[];
+          effective_primary_local_serial_interface_id?: string | null;
         }>,
         window.electronAPI.reticulum.proxyGet('/api/v1/serial/ports') as Promise<{
           ports?: ReticulumSerialPortOption[];
@@ -86,6 +89,9 @@ export function useReticulumInterfaceSnapshot({
       const paths = ports.map((p) => p.path);
       setInterfaces(rows);
       setSerialPorts(ports);
+      setEffectivePrimaryLocalSerialInterfaceId(
+        body.effective_primary_local_serial_interface_id ?? null,
+      );
       logReticulumLocalInterfaceHealthChanges(rows, paths);
       await syncReticulumBleRegistry(rows);
       return { interfaces: rows, paths };
@@ -120,6 +126,7 @@ export function useReticulumInterfaceSnapshot({
     if (!sidecarApiReady) {
       setInterfaces([]);
       setSerialPorts([]);
+      setEffectivePrimaryLocalSerialInterfaceId(null);
       setBleConnectGraceExpiresAt(0);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
@@ -178,6 +185,7 @@ export function useReticulumInterfaceSnapshot({
     interfaces,
     serialPorts,
     serialPortPaths,
+    effectivePrimaryLocalSerialInterfaceId,
     healthOptions,
     refresh,
     beginBleConnectGrace,

@@ -50,6 +50,18 @@ describe('classifyReticulumVia', () => {
     ).toBe('tcp');
   });
 
+  it('resolveReticulumOutboundViaFromInterfaces prefers primary local serial RNode', () => {
+    expect(
+      resolveReticulumOutboundViaFromInterfaces(
+        [
+          { id: 'first', type: 'rnode', enabled: true },
+          { id: 'second', type: 'rnode', enabled: true },
+        ],
+        'second',
+      ),
+    ).toBe('rf');
+  });
+
   it('resolveReticulumOutboundViaFromInterfaces falls back to network', () => {
     expect(resolveReticulumOutboundViaFromInterfaces([{ type: 'auto', enabled: true }])).toBe(
       'network',

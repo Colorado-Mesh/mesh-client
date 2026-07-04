@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "Bluetooth není v této sestavě Reticulum k dispozici (chybí funkce rns-ble).",
       "pickerScanFailedDetail": "Chyba skenování: {{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "Zadejte platný název hostitele nebo adresu IP (pro IPv6 použijte [závorky])."
+      "invalidHost": "Zadejte platný název hostitele nebo adresu IP (pro IPv6 použijte [závorky]).",
+      "primaryLocalSummary": "Primární místní RNode: {{name}}",
+      "primaryLocalBadge": "Primární",
+      "setPrimaryLocal": "Nastavit jako primární",
+      "setPrimaryLocalAria": "Nastavit {{name}} jako primární místní RNode",
+      "setPrimarySuccess": "Primární místní RNode aktualizován.",
+      "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo."
     },
     "reticulumPeers": {
       "hops": "Hops",

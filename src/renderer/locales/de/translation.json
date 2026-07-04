@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "Bluetooth ist in diesem Reticulum-Build nicht verfügbar (rns-ble-Funktion fehlt).",
       "pickerScanFailedDetail": "Scanfehler: {{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "Geben Sie einen gültigen Hostnamen oder eine gültige IP-Adresse ein (verwenden Sie [Klammern] für IPv6)."
+      "invalidHost": "Geben Sie einen gültigen Hostnamen oder eine gültige IP-Adresse ein (verwenden Sie [Klammern] für IPv6).",
+      "primaryLocalSummary": "Primärer lokaler RNode: {{name}}",
+      "primaryLocalBadge": "Primär",
+      "setPrimaryLocal": "Als Primär verwenden",
+      "setPrimaryLocalAria": "Legen Sie {{name}} als primären lokalen RNode fest",
+      "setPrimarySuccess": "Primärer lokaler RNode aktualisiert.",
+      "setPrimaryFailed": "Fehler beim Festlegen des primären lokalen RNode."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -31,6 +31,7 @@ const defaultProps = {
   interfaces: [] as ReticulumInterfaceRow[],
   serialPorts: [] as ReticulumSerialPortOption[],
   serialPortPaths: [] as string[],
+  effectivePrimaryLocalSerialInterfaceId: null as string | null,
   onRefresh: vi.fn().mockResolvedValue(undefined),
   onBeginBleConnectGrace: vi.fn(),
 };
@@ -395,6 +396,68 @@ describe('ReticulumInterfacesPanel', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'connectionPanel.reticulumInterfaces.delete' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows primary controls when two enabled local serial interfaces exist', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        effectivePrimaryLocalSerialInterfaceId="usb-rnode"
+        interfaces={[
+          {
+            id: 'usb-rnode',
+            name: 'USB RNode',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: '/dev/ttyUSB0',
+          },
+          {
+            id: 'ble-rnode',
+            name: 'BLE RNode',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://aa:bb:cc:dd:ee:ff',
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.primaryLocalSummary'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.primaryLocalBadge'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.setPrimaryLocalAria',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides primary controls with only one enabled local serial interface', () => {
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        effectivePrimaryLocalSerialInterfaceId="usb-rnode"
+        interfaces={[
+          {
+            id: 'usb-rnode',
+            name: 'USB RNode',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: '/dev/ttyUSB0',
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.queryByText('connectionPanel.reticulumInterfaces.primaryLocalSummary'),
     ).not.toBeInTheDocument();
   });
 });

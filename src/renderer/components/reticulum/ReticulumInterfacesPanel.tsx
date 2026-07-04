@@ -26,6 +26,7 @@ import {
   reticulumLocalInterfaceTextClass,
   reticulumLocalOfflineDisplayKind,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import { setReticulumPrimaryLocalSerialInterface } from '@/renderer/lib/reticulum/reticulumLocalRnodePrimary';
 import {
   buildReticulumRnodeTcpPort,
   isReticulumTcpRnodeSerialPort,
@@ -44,6 +45,10 @@ import {
   isValidConnectHost,
   stripConnectHostBrackets,
 } from '@/shared/connectHost';
+import {
+  countEnabledLocallyConnectedSerialInterfaces,
+  isReticulumLocallyConnectedSerialInterface,
+} from '@/shared/reticulumLocalRnodePrimary';
 import { forceApplyReticulumRnodePresetDefaults } from '@/shared/reticulumRnodeRfProfiles';
 import { clampTcpPort } from '@/shared/tcpPort';
 
@@ -107,6 +112,7 @@ export interface ReticulumInterfacesPanelProps {
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
+  effectivePrimaryLocalSerialInterfaceId: string | null;
   onRefresh: () => Promise<unknown>;
   onBeginBleConnectGrace: () => void;
 }
@@ -118,6 +124,7 @@ export function ReticulumInterfacesPanel({
   interfaces,
   serialPorts,
   serialPortPaths,
+  effectivePrimaryLocalSerialInterfaceId,
   onRefresh,
   onBeginBleConnectGrace,
 }: ReticulumInterfacesPanelProps) {
@@ -228,6 +235,27 @@ export function ReticulumInterfacesPanel({
       setRestartStackHint(true);
     }
   }, [onBeginBleConnectGrace, onRefresh, t]);
+
+  const handleSetPrimaryLocalSerial = useCallback(
+    async (id: string) => {
+      if (!sidecarApiReady) return;
+      setInterfaceError(null);
+      try {
+        const res = await setReticulumPrimaryLocalSerialInterface(id);
+        if (!res.ok) {
+          addToast(res.error ?? t('connectionPanel.reticulumInterfaces.setPrimaryFailed'), 'error');
+          return;
+        }
+        addToast(t('connectionPanel.reticulumInterfaces.setPrimarySuccess'), 'success');
+        setRestartStackHint(true);
+        await onRefresh();
+      } catch (e) {
+        // catch-no-log-ok set-primary failure surfaced via interfaceError toast area
+        setInterfaceError(errLikeToLogString(e));
+      }
+    },
+    [addToast, onRefresh, sidecarApiReady, t],
+  );
 
   const runInterfaceAuditRepair = useCallback(
     async (repairKind: ReticulumConfigRepairKind) => {
@@ -418,6 +446,7 @@ export function ReticulumInterfacesPanel({
       <InterfacesSection
         interfaces={interfaces}
         osSerialPortPaths={serialPortPaths}
+        effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
         sidecarReady={sidecarApiReady}
         actionsDisabled={actionsDisabled}
         ifaceType={ifaceType}
@@ -474,6 +503,9 @@ export function ReticulumInterfacesPanel({
         onAuditDisable={async (id) => {
           await toggleInterface(id, false);
           await refreshAuditIssues();
+        }}
+        onSetPrimaryLocalSerial={(id) => {
+          void handleSetPrimaryLocalSerial(id);
         }}
       />
       {pendingDeleteInterface ? (
@@ -924,6 +956,7 @@ function InterfaceEditPanel({
 function InterfacesSection({
   interfaces,
   osSerialPortPaths,
+  effectivePrimaryLocalSerialInterfaceId,
   sidecarReady,
   actionsDisabled,
   ifaceType,
@@ -960,9 +993,11 @@ function InterfacesSection({
   auditByInterfaceId,
   onAuditRepair,
   onAuditDisable,
+  onSetPrimaryLocalSerial,
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
+  effectivePrimaryLocalSerialInterfaceId: string | null;
   sidecarReady: boolean;
   actionsDisabled: boolean;
   ifaceType: ReticulumIfaceUiType;
@@ -1002,9 +1037,14 @@ function InterfacesSection({
   auditByInterfaceId: Map<string, ReticulumConfigAuditIssue[]>;
   onAuditRepair: (kind: ReticulumConfigRepairKind) => void;
   onAuditDisable: (id: string) => Promise<void>;
+  onSetPrimaryLocalSerial: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
+  const enabledLocalSerialCount = countEnabledLocallyConnectedSerialInterfaces(interfaces);
+  const showPrimaryControls = enabledLocalSerialCount >= 2;
+  const primaryInterfaceName =
+    interfaces.find((row) => row.id === effectivePrimaryLocalSerialInterfaceId)?.name ?? '';
   const showHostPort = ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p';
   const showSerial = ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss';
   const showRnodePreset = ifaceType === 'rnode' || ifaceType === 'rnode_multi';
@@ -1300,6 +1340,13 @@ function InterfacesSection({
             {t('connectionPanel.reticulumInterfaces.bleAvailable')}
           </p>
         ) : null}
+        {showPrimaryControls ? (
+          <p className="text-muted mt-2 text-xs" role="status">
+            {t('connectionPanel.reticulumInterfaces.primaryLocalSummary', {
+              name: primaryInterfaceName,
+            })}
+          </p>
+        ) : null}
         <ul className="mt-3 space-y-2 text-sm">
           {interfaces.length === 0 ? (
             <li className="text-muted">{t('connectionPanel.reticulumNetworkEmpty')}</li>
@@ -1317,6 +1364,12 @@ function InterfacesSection({
                     ? 'border-amber-700/50'
                     : 'border-gray-700/60';
               const repairKind = primaryAudit?.repair_kind as ReticulumConfigRepairKind | undefined;
+              const isLocalSerialRow =
+                iface.enabled && isReticulumLocallyConnectedSerialInterface(iface);
+              const isPrimaryRow =
+                showPrimaryControls &&
+                effectivePrimaryLocalSerialInterfaceId != null &&
+                iface.id === effectivePrimaryLocalSerialInterfaceId;
               return (
                 <li
                   key={iface.id}
@@ -1346,6 +1399,11 @@ function InterfacesSection({
                           {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
                         </span>
                       ) : null}
+                      {isPrimaryRow ? (
+                        <span className="text-readable-green text-[10px] tracking-wide uppercase">
+                          {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
+                        </span>
+                      ) : null}
                     </span>
                     {rowReason ? (
                       <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
@@ -1368,6 +1426,21 @@ function InterfacesSection({
                     ) : null}
                   </span>
                   <span className="flex flex-wrap items-center gap-3">
+                    {showPrimaryControls && isLocalSerialRow && !isPrimaryRow ? (
+                      <button
+                        type="button"
+                        disabled={actionsDisabled}
+                        onClick={() => {
+                          onSetPrimaryLocalSerial(iface.id);
+                        }}
+                        className="text-xs text-emerald-400 hover:underline disabled:opacity-40"
+                        aria-label={t('connectionPanel.reticulumInterfaces.setPrimaryLocalAria', {
+                          name: iface.name,
+                        })}
+                      >
+                        {t('connectionPanel.reticulumInterfaces.setPrimaryLocal')}
+                      </button>
+                    ) : null}
                     {repairKind === 'repair_config' ||
                     repairKind === 'apply_preset' ||
                     repairKind === 'add_auto' ? (

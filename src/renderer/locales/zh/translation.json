@@ -848,7 +848,13 @@
       "pickerBleFeatureDisabled": "蓝牙在此 Reticulum 版本中不可用（缺少 rns-ble 功能）。",
       "pickerScanFailedDetail": "扫描错误：{{detail}}",
       "pickerDeviceAria": "{{name}} {{address}}",
-      "invalidHost": "输入有效的主机名或IP地址（ IPv6使用[括号] ）。"
+      "invalidHost": "输入有效的主机名或IP地址（ IPv6使用[括号] ）。",
+      "primaryLocalSummary": "主要本地RNode ： {{name}}",
+      "primaryLocalBadge": "一级",
+      "setPrimaryLocal": "设为主要",
+      "setPrimaryLocalAria": "将{{name}}设置为主要本地RNode",
+      "setPrimarySuccess": "主本地RNode已更新。",
+      "setPrimaryFailed": "设置主本地RNode失败。"
     },
     "reticulumPeers": {
       "hops": "Hops",

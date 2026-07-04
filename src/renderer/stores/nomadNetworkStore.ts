@@ -7,6 +7,7 @@ import {
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   fetchReticulumInterfaces,
+  getCachedReticulumEffectivePrimaryLocalSerialInterfaceId,
   isReticulumSidecar404Error,
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
@@ -28,7 +29,10 @@ async function resolveNomadEgress(): Promise<ReticulumVia> {
     // Fallback: do not cache `network` — retry on the next page fetch.
     return cachedNomadEgressAt > 0 ? cachedNomadEgress : 'network';
   }
-  cachedNomadEgress = resolveReticulumOutboundViaFromInterfaces(interfaces);
+  cachedNomadEgress = resolveReticulumOutboundViaFromInterfaces(
+    interfaces,
+    getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
+  );
   cachedNomadEgressAt = Date.now();
   return cachedNomadEgress;
 }
