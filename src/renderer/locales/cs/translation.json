@@ -874,7 +874,9 @@
       "connectingRow": "{{name}}: připojení přes Bluetooth",
       "connectingHintBle": "Odkazy BLE RNode mohou po spuštění zásobníku trvat až 30 sekund. Pokud vás váš operační systém vyzve, zadejte kód PIN pro párování – je to normální, nejedná se o chybu.",
       "offlineHintBle": "Váš operační systém může vyžadovat zadání 6místného kódu PIN Bluetooth (macOS, Windows nebo Linux). RNode generuje nový kód při každém párování – neexistuje žádný výchozí PIN. Bezhlavá rádia: připojte USB → Reticulum Admin → Bluetooth → Zahájit párování → zadejte PIN zobrazený v dialogovém okně OS. Rádia s displejem: na zařízeních Heltec podržte tlačítko ~7 s (časování se liší; ~10 s na mnoha deskách místo toho umožňuje Wi-Fi AP), přečtěte si PIN na obrazovce a poté jej zadejte do dialogového okna OS. Než to zkusíte znovu, vymažte neúspěšná spojení v nastavení Bluetooth operačního systému.",
-      "offlineHintWifi": "Zkontrolujte, zda je RNode v síti LAN, zapnutý a dosažitelný na nakonfigurované IP (výchozí port TCP 7633, nikoli 4242). Aktualizuj hostitele níže, pokud mu služba DHCP přidělila novou adresu nebo znovu poskytl Wi-Fi v → administraci Reticulum."
+      "offlineHintWifi": "Zkontrolujte, zda je RNode v síti LAN, zapnutý a dosažitelný na nakonfigurované IP (výchozí port TCP 7633, nikoli 4242). Aktualizuj hostitele níže, pokud mu služba DHCP přidělila novou adresu nebo znovu poskytl Wi-Fi v → administraci Reticulum.",
+      "tcpUnreachable": "{{name}}: Nedosažitelné centrum TCP ({{host}}:{{port}})",
+      "tcpUnreachableHint": "Vzdálená instance Reticulum může být offline nebo blokovat připojení. Zakažte toto rozhraní nebo ověřte hostitele a port."
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
@@ -931,7 +933,15 @@
       "label": "Záznamník paketů – po připojení k rádiu a MQTT přepošle souhrny paketů RX do {{topic}} ve stejném tvaru JSON jako meshcoretomqtt. Ve výchozím nastavení vypnuto; povolit pouze v případě, že máte v úmyslu sdílet slyšený letový provoz s analyzátorem paketů."
     },
     "hintAdaDfuBle": "Pokud se v systému macOS zařízení zobrazuje jako „AdaDFU“, nejprve ho spárujte v Nastavení systému → Bluetooth, abyste viděli jeho název Meshtastic.",
-    "authTokenFailed": "Generování ověřovacího tokenu se nezdařilo: {{message}}"
+    "authTokenFailed": "Generování ověřovacího tokenu se nezdařilo: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} zjištěny problémy s rozhraním postranního vozíku",
+      "tcpConnectFailed": "{{name}}: Připojení TCP bylo odmítnuto nebo vypršel časový limit",
+      "tcpConnectFailedHint": "Zakažte toto rozhraní v níže uvedeném seznamu nebo potvrďte, že je spuštěn vzdálený rozbočovač.",
+      "txQueueDrops": "{{name}}: odchozí pakety byly vyhozeny ({{count}} ve frontě)",
+      "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
+      "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1221,7 +1231,10 @@
         "interfaceDown": "Rozhraní {{type}} „{{name}}“ je povoleno, ale {{status}}",
         "noPeers": "V tabulce cest zatím nejsou žádní známí kolegové",
         "autoBeaconTunnelOnly": "Beacon AutoInterface TX selhává na rozhraní tunelu VPN {{ifaces}}. Znovu sestavte postranní vozík Reticulum nebo dočasně vypněte automatické rozhraní, pokud jsou protokoly zaplaveny.",
-        "autoBeaconPhysicalFailures": "Beacon AutoInterface TX selhává na {{ifaces}} — lokální zjišťování LAN nemusí fungovat, dokud to nebude opraveno."
+        "autoBeaconPhysicalFailures": "Beacon AutoInterface TX selhává na {{ifaces}} — lokální zjišťování LAN nemusí fungovat, dokud to nebude opraveno.",
+        "tcpUnreachable": "Centrum TCP „{{name}}“ je nedosažitelné ({{host}}:{{port}})",
+        "tcpConnectFailed": "Připojení TCP hub „{{name}}“ bylo odmítnuto nebo vypršel časový limit",
+        "txQueueDrops": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná)"
       }
     },
     "routingPort": {

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  collectReticulumLocalInterfaceAlerts,
+  collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
   type ReticulumLocalInterfaceAlert,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
@@ -15,6 +15,7 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfaceConnectingBlock';
+import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
 
 export interface ReticulumStackPanelProps {
   connecting: boolean;
@@ -69,9 +70,15 @@ export function ReticulumStackPanel({
     sidecarEventRef.current = handleSidecarEvent;
   }, [handleSidecarEvent]);
 
+  useEffect(() => {
+    if (sidecarApiReady && sidecarUiRunning) {
+      void refreshSidecarStatus();
+    }
+  }, [interfaces, sidecarApiReady, sidecarUiRunning, refreshSidecarStatus]);
+
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
-      collectReticulumLocalInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
+      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
     [interfaces, serialPortPaths, healthOptions],
   );
   const connectingInterfaces = useMemo(
@@ -143,6 +150,9 @@ export function ReticulumStackPanel({
         {sidecarUiRunning ? (
           <>
             <ReticulumLocalInterfaceConnectingBlock interfaces={connectingInterfaces} />
+            {sidecarStatus.interfaceIssueAlert ? (
+              <ReticulumSidecarIssueAlertsBlock alert={sidecarStatus.interfaceIssueAlert} />
+            ) : null}
             <ReticulumLocalInterfaceAlertsBlock
               alerts={localAlerts}
               availablePorts={serialPortPaths}

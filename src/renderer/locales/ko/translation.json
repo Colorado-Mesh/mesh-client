@@ -874,7 +874,9 @@
       "connectingRow": "{{name}}: 블루투스를 통해 연결 중",
       "connectingHintBle": "BLE RNode links can take up to 30 seconds after the stack starts. Enter a pairing PIN if your OS prompts — this is normal, not an error.",
       "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — there is no default PIN. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다."
+      "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다.",
+      "tcpUnreachable": "{{name}}: TCP 허브에 연결할 수 없음 ({{host}}: {{port}})",
+      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인 또는 차단 연결일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -931,7 +933,15 @@
       "label": "패킷 로거 — 라디오 및 MQTT에 연결되면 RX 패킷 요약을 meshcoretomqtt와 동일한 JSON 형태로 {{topic}}에 전달합니다. 기본적으로 꺼져 있습니다. 수신된 항공 트래픽을 패킷 분석기와 공유하려는 경우에만 활성화하십시오."
     },
     "hintAdaDfuBle": "macOS에서 장치가 \"AdaDFU\"로 표시되면 먼저 시스템 설정 → Bluetooth에서 페어링하여 Meshtastic 이름을 확인하세요.",
-    "authTokenFailed": "인증 토큰 생성 실패: {{message}}"
+    "authTokenFailed": "인증 토큰 생성 실패: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} 사이드카 인터페이스 문제 감지됨",
+      "tcpConnectFailed": "{{name}}: TCP 연결 거부 또는 시간 초과",
+      "tcpConnectFailedHint": "아래 목록에서 이 인터페이스를 비활성화하거나 원격 허브가 실행 중인지 확인하십시오.",
+      "txQueueDrops": "{{name}}: 아웃바운드 패킷이 삭제됨 ({{count}} 대기 중)",
+      "txQueueDropsHint": "일반적으로 죽은 TCP 인터페이스가 여전히 활성화되어 있기 때문에 발생합니다. 연결할 수 없는 허브를 비활성화하여 대기열 오버플로를 중지합니다.",
+      "suppressed": "{{count}} 최근 유사한 사이드카 로그 라인이 억제되었습니다."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1221,7 +1231,10 @@
         "interfaceDown": "{{type}} 인터페이스 \"{{name}}\"이 활성화되었지만 {{status}}",
         "noPeers": "아직 경로 테이블에 알려진 피어가 없습니다.",
         "autoBeaconTunnelOnly": "VPN 터널 인터페이스 {{ifaces}} 에서 AutoInterface Beacon TX가 실패하고 있습니다. 로그가 침수된 경우 Reticulum 사이드카를 재구축하거나 AutoInterface를 일시적으로 비활성화하십시오.",
-        "autoBeaconPhysicalFailures": "AutoInterface 비콘 TX가 {{ifaces}} 에서 실패하고 있습니다. 이 문제가 해결될 때까지 로컬 LAN 검색이 작동하지 않을 수 있습니다."
+        "autoBeaconPhysicalFailures": "AutoInterface 비콘 TX가 {{ifaces}} 에서 실패하고 있습니다. 이 문제가 해결될 때까지 로컬 LAN 검색이 작동하지 않을 수 있습니다.",
+        "tcpUnreachable": "TCP 허브 \"{{name}}\" 에 연결할 수 없습니다 ({{host}}: {{port}})",
+        "tcpConnectFailed": "TCP 허브 \"{{name}}\" 연결이 거부되었거나 시간이 초과되었습니다",
+        "txQueueDrops": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참)"
       }
     },
     "routingPort": {

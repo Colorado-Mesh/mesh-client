@@ -4,11 +4,17 @@ import {
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
   collectReticulumLocalInterfaceAlerts,
+  collectReticulumRemoteInterfaceAlerts,
+  isReticulumInterfaceOnlineStatus,
   isReticulumLocalSerialInterface,
+  isReticulumRemoteInterfaceType,
   type ReticulumLocalInterfaceInput,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { type DiagnosticRow, rfRowId } from '@/renderer/lib/types';
-import type { ReticulumAutoBeaconAlert } from '@/shared/reticulum-types';
+import type {
+  ReticulumAutoBeaconAlert,
+  ReticulumInterfaceIssueAlert,
+} from '@/shared/reticulum-types';
 
 export interface ReticulumDiagnosticsSnapshot {
   rns_ready?: boolean;
@@ -26,6 +32,7 @@ export interface ReticulumDiagnosticsBuildOptions {
   osSerialPorts?: string[];
   auditIssues?: ReticulumConfigAuditIssue[];
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
+  interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
 }
 
 function runtimeCauseI18n(
@@ -41,7 +48,10 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.lxmfNotReady',
   'diagnosticsPanel.reticulum.runtime.localStalePort',
   'diagnosticsPanel.reticulum.runtime.localOffline',
+  'diagnosticsPanel.reticulum.runtime.tcpUnreachable',
   'diagnosticsPanel.reticulum.runtime.interfaceDown',
+  'diagnosticsPanel.reticulum.runtime.tcpConnectFailed',
+  'diagnosticsPanel.reticulum.runtime.txQueueDrops',
   'diagnosticsPanel.reticulum.runtime.noPeers',
   'diagnosticsPanel.reticulum.runtime.autoBeaconTunnelOnly',
   'diagnosticsPanel.reticulum.runtime.autoBeaconPhysicalFailures',
@@ -88,6 +98,8 @@ export function buildReticulumDiagnosticRows(
   const osSerialPorts = options?.osSerialPorts ?? [];
   const localAlerts = collectReticulumLocalInterfaceAlerts(healthInterfaces, osSerialPorts);
   const localAlertIds = new Set(localAlerts.map((a) => a.iface.id));
+  const remoteAlerts = collectReticulumRemoteInterfaceAlerts(healthInterfaces);
+  const remoteAlertIds = new Set(remoteAlerts.map((a) => a.iface.id));
 
   for (const alert of localAlerts) {
     const port = alert.iface.serial_port ?? '';
@@ -123,14 +135,35 @@ export function buildReticulumDiagnosticRows(
     }
   }
 
+  for (const alert of remoteAlerts) {
+    const host = alert.iface.host ?? '';
+    const port = alert.iface.port != null && alert.iface.port > 0 ? String(alert.iface.port) : '';
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, `reticulum/tcp-unreachable/${alert.iface.id}`),
+      nodeId: homeNodeId,
+      condition: 'reticulum/tcp-unreachable',
+      cause: `TCP interface "${alert.iface.name}" is unreachable`,
+      causeI18n: runtimeCauseI18n('tcpUnreachable', {
+        name: alert.iface.name,
+        host,
+        port,
+      }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumInterfaceId: alert.iface.id,
+      reticulumRepairKind: 'disable',
+    });
+  }
+
   for (const iface of healthInterfaces) {
-    if (localAlertIds.has(iface.id)) {
+    if (localAlertIds.has(iface.id) || remoteAlertIds.has(iface.id)) {
       continue;
     }
-    if (isReticulumLocalSerialInterface(iface.type)) {
+    if (isReticulumLocalSerialInterface(iface.type) || isReticulumRemoteInterfaceType(iface.type)) {
       continue;
     }
-    if (iface.enabled && iface.status !== 'up') {
+    if (iface.enabled && !isReticulumInterfaceOnlineStatus(iface.status)) {
       rows.push({
         kind: 'rf',
         id: rfRowId(homeNodeId, `reticulum/iface-down/${iface.id}`),
@@ -145,7 +178,48 @@ export function buildReticulumDiagnosticRows(
         severity: 'warning',
         detectedAt: now,
         reticulumInterfaceId: iface.id,
-        reticulumRepairKind: iface.type === 'tcp' ? 'disable' : 'edit',
+        reticulumRepairKind: 'edit',
+      });
+    }
+  }
+
+  const interfaceIssueAlert = options?.interfaceIssueAlert;
+  if (interfaceIssueAlert) {
+    const ifaceByName = new Map(healthInterfaces.map((iface) => [iface.name, iface]));
+    for (const name of interfaceIssueAlert.tcpConnectFailed) {
+      if (remoteAlerts.some((alert) => alert.iface.name === name)) {
+        continue;
+      }
+      const iface = ifaceByName.get(name);
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, `reticulum/tcp-connect-failed/${name}`),
+        nodeId: homeNodeId,
+        condition: 'reticulum/tcp-connect-failed',
+        cause: `TCP interface "${name}" connection refused or timed out`,
+        causeI18n: runtimeCauseI18n('tcpConnectFailed', { name }),
+        severity: 'warning',
+        detectedAt: now,
+        reticulumInterfaceId: iface?.id,
+        reticulumRepairKind: 'disable',
+      });
+    }
+    for (const drop of interfaceIssueAlert.txQueueDrops) {
+      const iface = ifaceByName.get(drop.name);
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, `reticulum/tx-queue-drops/${drop.name}`),
+        nodeId: homeNodeId,
+        condition: 'reticulum/tx-queue-drops',
+        cause: `Interface "${drop.name}" dropped ${drop.dropCount} outbound packets (TX queue full)`,
+        causeI18n: runtimeCauseI18n('txQueueDrops', {
+          name: drop.name,
+          count: String(drop.dropCount),
+        }),
+        severity: 'error',
+        detectedAt: now,
+        reticulumInterfaceId: iface?.id,
+        reticulumRepairKind: 'disable',
       });
     }
   }

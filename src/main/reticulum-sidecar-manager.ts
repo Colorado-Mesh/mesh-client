@@ -17,6 +17,7 @@ import { sanitizeLogMessage } from './log-service';
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
+import { ReticulumSidecarInterfaceIssueTracker } from './reticulumSidecarIssueTracker';
 import {
   logReticulumSidecarStderrLine,
   ReticulumSidecarStderrDedupe,
@@ -95,6 +96,8 @@ export class ReticulumSidecarManager extends EventEmitter {
   private startPromise: Promise<ReticulumSidecarStatus> | null = null;
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
+  private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
+  private lastIssueStatusEmitAt = 0;
   private _status: ReticulumSidecarStatus = {
     running: false,
     port: 0,
@@ -109,7 +112,19 @@ export class ReticulumSidecarManager extends EventEmitter {
     return {
       ...this._status,
       autoBeaconAlert: this.autoBeaconTracker.getAlert(),
+      interfaceIssueAlert: this.interfaceIssueTracker.getAlert(),
     };
+  }
+
+  private recordSidecarOutputLine(text: string): void {
+    const before = JSON.stringify(this.interfaceIssueTracker.getAlert());
+    this.interfaceIssueTracker.recordLine(text);
+    const after = JSON.stringify(this.interfaceIssueTracker.getAlert());
+    const now = Date.now();
+    if (before !== after || now - this.lastIssueStatusEmitAt >= 5_000) {
+      this.lastIssueStatusEmitAt = now;
+      this.emit('status', this.getStatus());
+    }
   }
 
   private reticulumUserDir(...segments: string[]): string {
@@ -182,10 +197,13 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.proc = proc;
 
     proc.stdout?.on('data', (chunk: Buffer) => {
-      console.debug('[ReticulumSidecar]', sanitizeLogMessage(chunk.toString('utf8').trim()));
+      const text = sanitizeLogMessage(chunk.toString('utf8').trim());
+      this.recordSidecarOutputLine(text);
+      console.debug('[ReticulumSidecar]', text);
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
       const text = sanitizeLogMessage(chunk.toString('utf8').trim());
+      this.recordSidecarOutputLine(text);
       logReticulumSidecarStderrLine(
         text,
         this.stderrDedupe,

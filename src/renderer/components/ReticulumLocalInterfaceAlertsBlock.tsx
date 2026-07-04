@@ -53,24 +53,32 @@ export function ReticulumLocalInterfaceAlertsBlock({
                     name: alert.iface.name,
                     port: alert.iface.serial_port ?? '',
                   })
-                : t('connectionPanel.reticulumLocalInterfaces.offline', {
-                    name: alert.iface.name,
-                  })}
+                : alert.reason === 'tcp_unreachable'
+                  ? t('connectionPanel.reticulumLocalInterfaces.tcpUnreachable', {
+                      name: alert.iface.name,
+                      host: alert.iface.host ?? '',
+                      port: alert.iface.port ?? '',
+                    })
+                  : t('connectionPanel.reticulumLocalInterfaces.offline', {
+                      name: alert.iface.name,
+                    })}
             </p>
             {!compact ? (
               <p className="text-muted mt-0.5 text-[11px]">
                 {alert.reason === 'stale_port'
                   ? t('connectionPanel.reticulumLocalInterfaces.stalePortHint')
-                  : (() => {
-                      const kind = reticulumLocalOfflineDisplayKind(alert.iface);
-                      if (kind === 'ble') {
-                        return t('connectionPanel.reticulumLocalInterfaces.offlineHintBle');
-                      }
-                      if (kind === 'wifi') {
-                        return t('connectionPanel.reticulumLocalInterfaces.offlineHintWifi');
-                      }
-                      return t('connectionPanel.reticulumLocalInterfaces.offlineHint');
-                    })()}
+                  : alert.reason === 'tcp_unreachable'
+                    ? t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')
+                    : (() => {
+                        const kind = reticulumLocalOfflineDisplayKind(alert.iface);
+                        if (kind === 'ble') {
+                          return t('connectionPanel.reticulumLocalInterfaces.offlineHintBle');
+                        }
+                        if (kind === 'wifi') {
+                          return t('connectionPanel.reticulumLocalInterfaces.offlineHintWifi');
+                        }
+                        return t('connectionPanel.reticulumLocalInterfaces.offlineHint');
+                      })()}
               </p>
             ) : null}
           </li>

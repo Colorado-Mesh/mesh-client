@@ -79,6 +79,7 @@ describe('ReticulumSidecarManager', () => {
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
   });
 
@@ -109,12 +110,14 @@ describe('ReticulumSidecarManager', () => {
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
     expect(statusListener).toHaveBeenCalledWith({
       running: false,
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
   });
 
@@ -130,12 +133,14 @@ describe('ReticulumSidecarManager', () => {
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
     expect(statusListener).toHaveBeenCalledWith({
       running: false,
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
   });
 
@@ -162,5 +167,19 @@ describe('ReticulumSidecarManager', () => {
 
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
+  });
+
+  it('surfaces interface issue alert from sidecar stdout lines', () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = (
+      manager as unknown as {
+        interfaceIssueTracker: {
+          recordLine: (line: string, nowMs?: number) => void;
+        };
+      }
+    ).interfaceIssueTracker;
+    const line = 'TCP connect failed name = RNS HAM RADIO error = Connection refused (os error 61)';
+    tracker.recordLine(line, Date.now());
+    expect(manager.getStatus().interfaceIssueAlert?.tcpConnectFailed).toEqual(['RNS HAM RADIO']);
   });
 });

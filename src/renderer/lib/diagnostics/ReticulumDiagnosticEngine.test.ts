@@ -31,9 +31,72 @@ describe('ReticulumDiagnosticEngine', () => {
       (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/rns-not-ready',
     );
     expect(rnsRow?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.rnsNotReady');
-    expect(rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/interface-down')).toBe(
+    expect(rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/tcp-unreachable')).toBe(
       true,
     );
+  });
+
+  it('flags unreachable TCP hubs with tcp-unreachable condition', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        interfaces: [
+          {
+            id: 'ham',
+            name: 'RNS HAM RADIO',
+            type: 'tcp',
+            enabled: true,
+            status: 'down',
+            host: '135.125.238.229',
+            port: 4242,
+          },
+        ],
+      },
+    );
+    const row = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/tcp-unreachable',
+    );
+    expect(row).toBeDefined();
+    expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.tcpUnreachable');
+    expect(row?.reticulumRepairKind).toBe('disable');
+    expect(rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/interface-down')).toBe(
+      false,
+    );
+  });
+
+  it('adds sidecar interface issue rows for tcp failures and tx drops', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        interfaces: [
+          {
+            id: 'ham',
+            name: 'RNS HAM RADIO',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+            host: '135.125.238.229',
+            port: 4242,
+          },
+        ],
+        interfaceIssueAlert: {
+          tcpConnectFailed: ['RNS HAM RADIO'],
+          txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 128 }],
+          suppressedCount: 0,
+          lastAtMs: Date.now(),
+        },
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/tcp-connect-failed'),
+    ).toBe(true);
+    expect(rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/tx-queue-drops')).toBe(
+      true,
+    );
+    const dropRow = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/tx-queue-drops',
+    );
+    expect(dropRow?.severity).toBe('error');
   });
 
   it('flags stale local serial port separately from generic interface-down', () => {

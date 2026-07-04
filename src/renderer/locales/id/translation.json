@@ -874,7 +874,9 @@
       "connectingRow": "{{name}}: menghubungkan melalui Bluetooth",
       "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 30 detik setelah tumpukan dimulai. Masukkan PIN penyandingan jika OS Anda meminta — ini normal, bukan kesalahan.",
       "offlineHintBle": "OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — tidak ada PIN default. Radio tanpa kepala: sambungkan USB → Reticulum Admin → Bluetooth → Mulai memasangkan → masukkan PIN yang ditampilkan ke dalam dialog OS. Radio dengan tampilan: tahan tombol ~7 detik pada perangkat Heltec (waktu bervariasi; ~10 detik di banyak papan mengaktifkan Wi-Fi AP), baca PIN di layar, lalu masukkan dalam dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS Anda sebelum mencoba lagi.",
-      "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum."
+      "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum.",
+      "tcpUnreachable": "{{name}}: Hub TCP tidak dapat dijangkau ({{host}}:{{port}})",
+      "tcpUnreachableHint": "Instansi Reticulum jarak jauh mungkin offline atau memblokir koneksi. Nonaktifkan antarmuka ini atau verifikasi host dan port."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
@@ -931,7 +933,15 @@
       "label": "Pencatat paket — saat terhubung ke radio dan MQTT Anda, teruskan ringkasan paket RX ke {{topic}} dalam bentuk JSON yang sama dengan meshcoretomqtt. Mati secara default; hanya aktifkan jika Anda ingin berbagi lalu lintas udara yang didengar dengan penganalisis paket."
     },
     "hintAdaDfuBle": "Di macOS, jika perangkat ditampilkan sebagai \"AdaDFU\", pasangkan terlebih dahulu di Pengaturan Sistem → Bluetooth untuk melihat nama Meshtastic-nya.",
-    "authTokenFailed": "Pembuatan token autentikasi gagal: {{message}}"
+    "authTokenFailed": "Pembuatan token autentikasi gagal: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} masalah antarmuka sespan terdeteksi",
+      "tcpConnectFailed": "{{name}}: Koneksi TCP ditolak atau waktu habis",
+      "tcpConnectFailedHint": "Nonaktifkan antarmuka ini dalam daftar di bawah ini atau konfirmasikan bahwa hub jarak jauh sedang berjalan.",
+      "txQueueDrops": "{{name}}: paket keluar dijatuhkan (antrean {{count}})",
+      "txQueueDropsHint": "Biasanya disebabkan oleh antarmuka TCP mati yang masih diaktifkan. Nonaktifkan hub yang tidak dapat dijangkau untuk menghentikan overflow antrean.",
+      "suppressed": "{{count}} garis log sespan serupa baru - baru ini ditekan."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1221,7 +1231,10 @@
         "interfaceDown": "Antarmuka {{type}} \"{{name}}\" diaktifkan tetapi {{status}}",
         "noPeers": "Belum ada rekan yang dikenal di tabel jalur",
         "autoBeaconTunnelOnly": "Suar Antarmuka Otomatis TX gagal pada antarmuka terowongan VPN {{ifaces}}. Bangun kembali sidecar Reticulum atau nonaktifkan sementara AutoInterface jika log terendam banjir.",
-        "autoBeaconPhysicalFailures": "Suar Antarmuka Otomatis TX gagal pada {{ifaces}} — penemuan Lan lokal mungkin tidak berfungsi sampai ini diperbaiki."
+        "autoBeaconPhysicalFailures": "Suar Antarmuka Otomatis TX gagal pada {{ifaces}} — penemuan Lan lokal mungkin tidak berfungsi sampai ini diperbaiki.",
+        "tcpUnreachable": "Hub TCP \"{{name}}\" tidak dapat dijangkau ({{host}}:{{port}})",
+        "tcpConnectFailed": "Koneksi hub TCP \"{{name}}\" ditolak atau kehabisan waktu",
+        "txQueueDrops": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh)"
       }
     },
     "routingPort": {
