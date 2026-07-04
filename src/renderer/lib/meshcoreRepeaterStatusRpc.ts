@@ -3,7 +3,7 @@ import {
   MC_PUSH_STATUS_RESPONSE,
   MC_RESP_ERR,
   MC_RESP_SENT,
-  type MeshcoreRepeaterRpcConnection,
+  type MeshcoreRadioConnection,
   type MeshcoreRepeaterStats,
   type MeshcoreRepeaterStatusPush,
   normalizePubKeyPrefix,
@@ -18,7 +18,7 @@ import {
  * Replaces meshcore.js `getStatus()` which uses `once(StatusResponse)` and drops mismatched pushes.
  */
 export function runMeshcoreRepeaterStatusRequest(
-  conn: MeshcoreRepeaterRpcConnection,
+  conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   extraTimeoutMs: number,
 ): Promise<MeshcoreRepeaterStats> {

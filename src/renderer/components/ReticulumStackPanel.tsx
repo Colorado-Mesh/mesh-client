@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
-  collectReticulumLocalInterfaceAlerts,
+  collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
   type ReticulumLocalInterfaceAlert,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { useReticulumInterfaceSnapshot } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
-import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfaceConnectingBlock';
+import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
 
 export interface ReticulumStackPanelProps {
   connecting: boolean;
@@ -56,6 +56,7 @@ export function ReticulumStackPanel({
     interfaces,
     serialPorts,
     serialPortPaths,
+    effectivePrimaryLocalSerialInterfaceId,
     healthOptions,
     refresh,
     beginBleConnectGrace,
@@ -69,9 +70,15 @@ export function ReticulumStackPanel({
     sidecarEventRef.current = handleSidecarEvent;
   }, [handleSidecarEvent]);
 
+  useEffect(() => {
+    if (sidecarApiReady && sidecarUiRunning) {
+      void refreshSidecarStatus();
+    }
+  }, [interfaces, sidecarApiReady, sidecarUiRunning, refreshSidecarStatus]);
+
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
-      collectReticulumLocalInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
+      collectReticulumInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
     [interfaces, serialPortPaths, healthOptions],
   );
   const connectingInterfaces = useMemo(
@@ -82,20 +89,19 @@ export function ReticulumStackPanel({
   const handleRestartStack = useCallback(() => {
     setRestartError(null);
     void (async () => {
-      const session = tryGetReticulumSession();
-      if (!session?.restartStack) {
+      const result = await restartReticulumStack({
+        onBeginBleConnectGrace: beginBleConnectGrace,
+        onRefresh: refresh,
+        logTag: 'ReticulumStackPanel',
+      });
+      if (result.ok && !result.restarted && result.unavailable) {
         setRestartError(t('connectionPanel.reticulumInterfaces.restartStackUnavailable'));
         return;
       }
-      try {
-        await session.restartStack();
-        beginBleConnectGrace();
-        await refresh();
-      } catch (e) {
-        console.error('[ReticulumStackPanel] restart stack failed ' + errLikeToLogString(e));
+      if (!result.ok) {
         setRestartError(
           t('connectionPanel.reticulumInterfaces.restartStackFailed', {
-            message: errLikeToLogString(e),
+            message: result.message,
           }),
         );
       }
@@ -143,6 +149,9 @@ export function ReticulumStackPanel({
         {sidecarUiRunning ? (
           <>
             <ReticulumLocalInterfaceConnectingBlock interfaces={connectingInterfaces} />
+            {sidecarStatus.interfaceIssueAlert ? (
+              <ReticulumSidecarIssueAlertsBlock alert={sidecarStatus.interfaceIssueAlert} />
+            ) : null}
             <ReticulumLocalInterfaceAlertsBlock
               alerts={localAlerts}
               availablePorts={serialPortPaths}
@@ -157,6 +166,7 @@ export function ReticulumStackPanel({
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}
+              effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
               onRefresh={refresh}
               onBeginBleConnectGrace={beginBleConnectGrace}
             />

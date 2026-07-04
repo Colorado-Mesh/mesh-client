@@ -388,6 +388,20 @@ export const RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS = new Set([
   'reticulumConfigNotFound',
 ]);
 
+/** Leaf keys that must not remain identical to English in Reticulum peer/interface table headers. */
+export const RETICULUM_PEER_TABLE_MUST_TRANSLATE_LEAF_KEYS = new Set([
+  'actions',
+  'hops',
+  'path',
+  'probe',
+  'host',
+]);
+
+/** modulePanel field labels that must be translated (not left as English product tokens). */
+export const MODULE_PANEL_MUST_TRANSLATE_IDENTICAL_KEYS = new Set([
+  'modulePanel.fields.remoteHardware',
+]);
+
 /** Leaf keys that must not remain identical to English in Reticulum UI copy. */
 export const RETICULUM_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'reticulumStackRunning',
@@ -404,6 +418,13 @@ export const RETICULUM_MUST_TRANSLATE_LEAF_KEYS = new Set([
  */
 export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
   if (RETICULUM_MUST_TRANSLATE_LEAF_KEYS.has(leafKey)) return true;
+  if (
+    flatKey.startsWith('connectionPanel.reticulumPeers.') &&
+    RETICULUM_PEER_TABLE_MUST_TRANSLATE_LEAF_KEYS.has(leafKey)
+  ) {
+    return true;
+  }
+  if (flatKey === 'connectionPanel.reticulumInterfaces.host' && enVal === 'Host') return true;
   if (leafKey === 'confirmTitle' && /Reticulum stack/i.test(enVal)) return true;
   if (leafKey === 'title' && /Import Reticulum config/i.test(enVal)) return true;
   if (leafKey === 'confirm' && enVal === 'Import') return true;
@@ -1964,6 +1985,10 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   const issues = [];
   if (locale !== 'en' && MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
+  }
+
+  if (locale !== 'en' && MODULE_PANEL_MUST_TRANSLATE_IDENTICAL_KEYS.has(flatKey) && val === enVal) {
+    issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
   }
 
   if (

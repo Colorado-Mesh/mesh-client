@@ -589,7 +589,9 @@ Alternatively, enter the device's **IP address** directly instead of its `.local
 
 **IPv6 address format:**
 
-Bare IPv6 addresses (e.g. `fe80::1`) must be wrapped in brackets when entered in the HTTP address field: `[fe80::1]`. The app normalises bare addresses automatically, but entering `[fe80::1]:443` (with port) is the most reliable form.
+IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi‑Fi. Use bracket form when a port is included: `[fe80::1]:4403` or `[fd00::1]:7633`. Bare IPv6 (e.g. `::1` or `fd00::1`) is accepted; the app normalizes bracket form for HTTP URLs automatically.
+
+Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`), RFC4193 ULA (`fd00::/8`), link-local IPv6 (`fe80::/10`), loopback, and `.local` mDNS names.
 
 ### MQTT: "Connection lost after N reconnect attempts"
 

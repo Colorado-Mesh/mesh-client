@@ -2,6 +2,7 @@ import { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { isPairingRelatedError } from '@/shared/blePairingError';
+import { formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import {
@@ -323,26 +324,27 @@ export async function createConnection(
 
     case 'http': {
       if (!httpAddress) throw new Error('HTTP address required');
-      let host = httpAddress.trim();
-      const useTls = host.startsWith('https://');
-      host = host.replace(/^https?:\/\//, '');
-      host = host.replace(/\/+$/, '');
-      if (host.includes(':') && !host.startsWith('[')) {
-        host = `[${host}]`;
-      }
-      console.debug(`[connection] createConnection: http address=${host} tls=${useTls}`);
-      const transport = new TransportHttpIpc(host, useTls);
+      let rawAddress = httpAddress.trim();
+      const useTls = rawAddress.startsWith('https://');
+      rawAddress = rawAddress.replace(/^https?:\/\//, '');
+      rawAddress = rawAddress.replace(/\/+$/, '');
+      const { host, port } = parseConnectHostPort(rawAddress, useTls ? 443 : 80);
+      const urlHost = formatHostForUrl(host, port);
+      console.debug(`[connection] createConnection: http address=${urlHost} tls=${useTls}`);
+      const transport = new TransportHttpIpc(urlHost, useTls);
       const connectPromise = transport.connect();
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => {
           reject(
-            new Error(`Connection to ${host} timed out after ${HTTP_CONNECT_TIMEOUT_MS / 1000}s`),
+            new Error(
+              `Connection to ${urlHost} timed out after ${HTTP_CONNECT_TIMEOUT_MS / 1000}s`,
+            ),
           );
         }, HTTP_CONNECT_TIMEOUT_MS),
       );
       await Promise.race([connectPromise, timeoutPromise]);
       logMeshtasticDeviceConnection(
-        `transport=http stack=meshtastic host=${host} tls=${useTls} port=${useTls ? 443 : 80}`,
+        `transport=http stack=meshtastic host=${urlHost} tls=${useTls} port=${port}`,
       );
       assertTransportReadyForMeshDevice(transport, 'Meshtastic HTTP');
       return new MeshDevice(transport);

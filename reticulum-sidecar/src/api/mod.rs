@@ -46,6 +46,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(interfaces::enable_interface),
         )
         .route(
+            "/api/v1/interfaces/primary-local-rnode",
+            post(interfaces::set_primary_local_rnode),
+        )
+        .route(
             "/api/v1/interfaces/{id}/disable",
             post(interfaces::disable_interface),
         )

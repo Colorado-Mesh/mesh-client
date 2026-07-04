@@ -7,6 +7,7 @@ import { isValidHttpHostname } from './httpHostValidation';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
+const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
 
 // ─── http:preflight / http:connect hostname validation ──────────────
 
@@ -42,6 +43,12 @@ describe('validateHttpHost (source contract)', () => {
     expect(isValidHttpHostname('trailing-hyphen-.com')).toBe(false);
     expect(isValidHttpHostname('')).toBe(false);
     expect(isValidHttpHostname('has..double.dot')).toBe(false);
+  });
+
+  it('accepts IPv6 bare and bracketed hosts', () => {
+    expect(isValidHttpHostname('::1')).toBe(true);
+    expect(isValidHttpHostname('[::1]')).toBe(true);
+    expect(isValidHttpHostname('fd00::1')).toBe(true);
   });
 });
 
@@ -152,6 +159,41 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     // The old pattern was: typeof host !== 'string' || host.length === 0 || host.length > MAX_TCP_HOST_LENGTH
     // It should now delegate entirely to validateHttpHost which applies isValidHttpHostname
     expect(INDEX_SOURCE).not.toContain('MAX_TCP_HOST_LENGTH');
+  });
+
+  it('normalizes bracketed IPv6 before net.Socket.connect', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
+    expect(handlerBody).toContain('formatHostForSocket(');
+  });
+});
+
+// ─── IPC sender validation (gps / tak) ──────────────────────────────
+
+describe('GPS/TAK IPC sender validation (source contract)', () => {
+  const takChannels = [
+    'tak:start',
+    'tak:stop',
+    'tak:getStatus',
+    'tak:getConnectedClients',
+    'tak:generateDataPackage',
+    'tak:regenerateCertificates',
+    'tak:pushNodeUpdate',
+  ] as const;
+
+  it.each(takChannels)('tak handler %s calls assertIpcSender', (channel) => {
+    const handlerIdx = TAK_IPC_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = TAK_IPC_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain('assertIpcSender(event');
+  });
+
+  it('gps:getFix calls assertIpcSender', () => {
+    const handlerIdx = GPS_IPC_SOURCE.indexOf("ipcMain.handle('gps:getFix'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = GPS_IPC_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(handlerBody).toContain("assertIpcSender(event, 'gps:getFix')");
   });
 });
 

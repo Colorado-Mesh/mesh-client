@@ -16,11 +16,13 @@ export interface ReticulumLocalInterfaceInput {
   enabled: boolean;
   status: string;
   serial_port?: string | null;
+  host?: string | null;
+  port?: number | null;
 }
 
 export interface ReticulumLocalInterfaceAlert {
   iface: ReticulumLocalInterfaceInput;
-  reason: 'stale_port' | 'enabled_down';
+  reason: 'stale_port' | 'enabled_down' | 'tcp_unreachable';
 }
 
 export interface ReticulumLocalInterfaceHealthOptions {
@@ -54,6 +56,26 @@ function isBleEnabledDownInGrace(
 
 export function isReticulumLocalSerialInterface(type: string): boolean {
   return RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES.has(type.toLowerCase());
+}
+
+export function isReticulumRemoteInterfaceType(type: string): boolean {
+  const normalized = type.trim().toLowerCase();
+  return normalized === 'tcp' || normalized === 'tcpclient' || normalized.includes('tcp');
+}
+
+export function classifyReticulumRemoteInterface(
+  iface: ReticulumLocalInterfaceInput,
+): ReticulumLocalInterfaceHealth {
+  if (!isReticulumRemoteInterfaceType(iface.type)) {
+    return null;
+  }
+  if (!iface.enabled) {
+    return 'disabled';
+  }
+  if (!isReticulumInterfaceOnlineStatus(iface.status)) {
+    return 'enabled_down';
+  }
+  return 'online';
 }
 
 export function isReticulumInterfaceOnlineStatus(status: string): boolean {
@@ -119,6 +141,31 @@ export function collectReticulumLocalInterfaceAlerts(
     }
   }
   return alerts;
+}
+
+/** Enabled TCP hub interfaces that are unreachable (connection refused, etc.). */
+export function collectReticulumRemoteInterfaceAlerts(
+  interfaces: readonly ReticulumLocalInterfaceInput[],
+): ReticulumLocalInterfaceAlert[] {
+  const alerts: ReticulumLocalInterfaceAlert[] = [];
+  for (const iface of interfaces) {
+    const health = classifyReticulumRemoteInterface(iface);
+    if (health === 'enabled_down') {
+      alerts.push({ iface, reason: 'tcp_unreachable' });
+    }
+  }
+  return alerts;
+}
+
+export function collectReticulumInterfaceAlerts(
+  interfaces: readonly ReticulumLocalInterfaceInput[],
+  osSerialPorts: readonly string[],
+  options?: ReticulumLocalInterfaceHealthOptions,
+): ReticulumLocalInterfaceAlert[] {
+  return [
+    ...collectReticulumLocalInterfaceAlerts(interfaces, osSerialPorts, options),
+    ...collectReticulumRemoteInterfaceAlerts(interfaces),
+  ];
 }
 
 /** Enabled BLE RNodes still linking after stack start (within grace window). */

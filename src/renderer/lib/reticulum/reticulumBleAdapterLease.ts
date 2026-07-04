@@ -1,4 +1,7 @@
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
+import { normalizeBleMac } from '@/shared/normalizeBleMac';
+
+export { normalizeBleMac };
 
 export function isBleScanBusyErrorMessage(message: string): boolean {
   return /Bluetooth scan in progress/i.test(message);
@@ -47,17 +50,6 @@ export async function unregisterReticulumBleMac(mac: string): Promise<void> {
   } catch (err) {
     console.warn('[Reticulum] bleCoexistence unregister failed:', err);
   }
-}
-
-/** Normalize MAC / BLE address for registry keys (case-insensitive, colon-separated). */
-export function normalizeBleMac(mac: string): string {
-  const trimmed = mac.trim();
-  if (!trimmed) return trimmed;
-  const hex = trimmed.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
-  if (hex.length === 12) {
-    return hex.match(/.{1,2}/g)!.join(':');
-  }
-  return trimmed.toLowerCase();
 }
 
 export function parseBleMacFromReticulumSerialPort(serialPort: string): string | null {

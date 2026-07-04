@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classifyReticulumLocalInterface,
+  collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
+  collectReticulumRemoteInterfaceAlerts,
   reticulumLocalOfflineDisplayKind,
 } from './reticulumLocalInterfaceHealth';
 
@@ -122,5 +124,45 @@ describe('reticulumLocalInterfaceHealth', () => {
     expect(collectReticulumLocalInterfaceAlerts([ble], [], { ...grace, now: 11_000 })).toHaveLength(
       1,
     );
+  });
+
+  it('flags enabled TCP hubs that are down as tcp_unreachable', () => {
+    const alerts = collectReticulumRemoteInterfaceAlerts([
+      {
+        id: 'ham',
+        name: 'RNS HAM RADIO',
+        type: 'tcp',
+        enabled: true,
+        status: 'down',
+        host: '135.125.238.229',
+        port: 4242,
+      },
+    ]);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]?.reason).toBe('tcp_unreachable');
+  });
+
+  it('collectInterfaceAlerts merges local and remote alerts', () => {
+    const alerts = collectReticulumInterfaceAlerts(
+      [
+        {
+          ...heltec,
+          serial_port: '/dev/cu.usbserial-0001',
+          status: 'down',
+        },
+        {
+          id: 'ham',
+          name: 'RNS HAM RADIO',
+          type: 'tcp',
+          enabled: true,
+          status: 'down',
+          host: '135.125.238.229',
+          port: 4242,
+        },
+      ],
+      ['/dev/cu.usbserial-0001'],
+    );
+    expect(alerts).toHaveLength(2);
+    expect(alerts.map((a) => a.reason).sort()).toEqual(['enabled_down', 'tcp_unreachable']);
   });
 });

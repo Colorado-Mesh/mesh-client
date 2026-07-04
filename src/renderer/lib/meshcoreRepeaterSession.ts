@@ -1,11 +1,11 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
-import type { MeshcoreRepeaterRpcConnection } from './meshcoreRepeaterRpcCommon';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { meshcoreGetRepeaterSessionPassword } from './meshcoreUtils';
 
 /** Minimal connection surface for repeater admin login RPC. */
-export type MeshcoreRepeaterLoginConn = MeshcoreRepeaterRpcConnection;
+export type MeshcoreRepeaterLoginConn = MeshcoreRadioConnection;
 
 /**
  * Best-effort repeater admin login when a session password is set.

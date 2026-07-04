@@ -847,7 +847,14 @@
       "pickerScanFailed": "BLE スキャンに失敗しました。もう一度試すか、アドレスを手動で入力してください。",
       "pickerBleFeatureDisabled": "この Reticulum ビルドでは Bluetooth は利用できません (rns-ble 機能がありません)。",
       "pickerScanFailedDetail": "スキャン エラー: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "有効なホスト名またはIPアドレスを入力してください（ IPv 6には[括弧]を使用してください）。",
+      "primaryLocalSummary": "プライマリローカルRNode ： {{name}}",
+      "primaryLocalBadge": "プライマリー",
+      "setPrimaryLocal": "主として設定する",
+      "setPrimaryLocalAria": "{{name}}をプライマリローカルRNodeとして設定",
+      "setPrimarySuccess": "プライマリローカルRNodeが更新されました。",
+      "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}}: Bluetooth 経由で接続しています",
       "connectingHintBle": "BLE RNode リンクは、スタックの開始後、最大 30 秒かかる場合があります。 OS のプロンプトが表示されたら、ペアリング PIN を入力します。これは正常であり、エラーではありません。",
       "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。",
-      "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。"
+      "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。",
+      "tcpUnreachable": "{{name}} ： TCPハブに到達できません（ {{host}} ： {{port}} ）",
+      "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -931,7 +940,15 @@
       "label": "パケット ロガー — 無線および MQTT に接続すると、RX パケットの概要を Meshcoretomqtt と同じ JSON 形式で {{topic}} に転送します。デフォルトではオフです。聞いた航空交通量をパケット アナライザーと共有する場合にのみ有効にします。"
     },
     "hintAdaDfuBle": "macOS では、デバイスが「AdaDFU」と表示される場合は、まず [システム設定] → [Bluetooth] でデバイスをペアリングし、その Meshtastic 名を確認します。",
-    "authTokenFailed": "認証トークンの生成に失敗しました: {{message}}"
+    "authTokenFailed": "認証トークンの生成に失敗しました: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}}サイドカーインターフェースの問題が検出されました",
+      "tcpConnectFailed": "{{name}}: TCP接続が拒否またはタイムアウトしました",
+      "tcpConnectFailedHint": "以下のリストでこのインターフェースを無効にするか、リモートハブが実行されていることを確認します。",
+      "txQueueDrops": "{{name}} ：送信パケットがドロップされました（ {{count}}がキューに入れられました）",
+      "txQueueDropsHint": "通常は、デッドTCPインターフェイスがまだ有効になっていることが原因です。キューオーバーフローを停止するには、到達不能なハブを無効にします。",
+      "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "{{type}} インターフェース「{{name}}」は有効ですが、{{status}}",
         "noPeers": "パステーブルに既知のピアがまだありません",
         "autoBeaconTunnelOnly": "自動インターフェースビーコンTXがVPNトンネルインターフェース{{ifaces}}で失敗しています。ログが氾濫している場合は、Reticulumサイドカーを再構築するか、自動インターフェースを一時的に無効にします。",
-        "autoBeaconPhysicalFailures": "オートインターフェイスビーコンTXが{{ifaces}}で失敗しています—これが修正されるまで、ローカルLAN検出が機能しない可能性があります。"
+        "autoBeaconPhysicalFailures": "オートインターフェイスビーコンTXが{{ifaces}}で失敗しています—これが修正されるまで、ローカルLAN検出が機能しない可能性があります。",
+        "tcpUnreachable": "TCPハブ\"{{name}}\"に到達できません({{host}}: {{port}})",
+        "tcpConnectFailed": "TCPハブ\"{{name}}\"接続が拒否されたか、タイムアウトしました",
+        "txQueueDrops": "インターフェース「{{name}}」が{{count}}個のアウトバウンドパケットをドロップしました（ TXキューがいっぱいです）"
       }
     },
     "routingPort": {

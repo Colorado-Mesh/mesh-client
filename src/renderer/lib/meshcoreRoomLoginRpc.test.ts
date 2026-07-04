@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import {
   buildSendLoginFrame,
   MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
-  type MeshcoreRoomLoginRpcConnection,
   runMeshcoreRoomLogin,
 } from './meshcoreRoomLoginRpc';
+import {
+  MC_PUSH_LOGIN_FAIL,
+  MC_PUSH_LOGIN_SUCCESS,
+  MC_RESP_ERR,
+  MC_RESP_SENT,
+} from './meshcoreWireCodes';
 import {
   computeRoomLoginExtraTimeoutMs,
   computeRoomLoginResponseWaitMs,
@@ -17,11 +23,6 @@ import {
   MESHCORE_ROOM_LOGIN_SENT_WAIT_MS,
 } from './timeConstants';
 
-const MC_RESP_ERR = 1;
-const MC_RESP_SENT = 6;
-const MC_PUSH_LOGIN_SUCCESS = 0x85;
-const MC_PUSH_LOGIN_FAIL = 0x86;
-
 function makePubKey(seed: number): Uint8Array {
   const key = new Uint8Array(32);
   key[0] = seed & 0xff;
@@ -32,7 +33,7 @@ function makePubKey(seed: number): Uint8Array {
   return key;
 }
 
-function createMockConn(): MeshcoreRoomLoginRpcConnection & {
+function createMockConn(): MeshcoreRadioConnection & {
   emit(event: string | number, payload?: unknown): void;
   sentFrames: Uint8Array[];
 } {
@@ -40,7 +41,7 @@ function createMockConn(): MeshcoreRoomLoginRpcConnection & {
   const onceHandlers = new Map<string | number, Set<(...args: unknown[]) => void>>();
   const sentFrames: Uint8Array[] = [];
 
-  const conn: MeshcoreRoomLoginRpcConnection & {
+  const conn: MeshcoreRadioConnection & {
     emit(event: string | number, payload?: unknown): void;
     sentFrames: Uint8Array[];
   } = {

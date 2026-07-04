@@ -515,6 +515,35 @@ pub fn set_interface_enabled_in_config(
     Ok(())
 }
 
+/// Move an interface INI block to `target_index` (0-based among interface blocks).
+pub fn move_interface_block_to_index(
+    config_dir: &Path,
+    id: &str,
+    target_index: usize,
+) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let current_idx = parsed
+        .interfaces
+        .iter()
+        .position(|b| interface_id_from_name(&b.name) == id)
+        .ok_or_else(|| format!("interface not found: {id}"))?;
+    if current_idx == target_index {
+        return Ok(false);
+    }
+    let block = parsed.interfaces.remove(current_idx);
+    let insert_at = if current_idx < target_index {
+        target_index.saturating_sub(1)
+    } else {
+        target_index
+    };
+    parsed
+        .interfaces
+        .insert(insert_at.min(parsed.interfaces.len()), block);
+    write_config(config_dir, &serialize_config(&parsed))?;
+    Ok(true)
+}
+
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct UpdateInterfacePatch {
     pub name: Option<String>,

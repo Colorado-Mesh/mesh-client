@@ -6,13 +6,15 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow       | Trigger                         | Purpose                                     |
-| -------------- | ------------------------------- | ------------------------------------------- |
-| `ci.yaml`      | Push/PR to `main`               | Lint, typecheck, build                      |
-| `tests.yaml`   | Push/PR to `main`               | Run unit tests, upload results              |
-| `release.yaml` | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm) |
-| `flatpak.yaml` | Push/PR to `main`, tags, manual | Build Flatpak; publish to release on tags   |
-| `docs.yml`     | Push to `main`                  | Deploy MkDocs to GitHub Pages               |
+| Workflow                 | Trigger                         | Purpose                                             |
+| ------------------------ | ------------------------------- | --------------------------------------------------- |
+| `ci.yaml`                | Push/PR to `main`               | Lint, typecheck, build, Flatpak manifest validation |
+| `tests.yaml`             | Push/PR to `main`               | Coverage tests + Cobertura upload                   |
+| `build.yaml`             | Manual `workflow_dispatch`      | Native 3-OS packaging smoke build                   |
+| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main` | Sidecar Rust matrix build/test                      |
+| `release.yaml`           | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm)         |
+| `flatpak.yaml`           | Version tags (`v*`), manual     | Build Flatpak; publish to release on tags           |
+| `docs.yml`               | Push to `main`                  | Deploy MkDocs to GitHub Pages                       |
 
 ---
 
@@ -27,6 +29,8 @@ Runs on every push and pull request to `main`:
 5. Run lint (`pnpm run lint`)
 6. Run typecheck (`pnpm run typecheck`)
 7. Run build (`pnpm run build`)
+8. Run `yamllint` on workflow/config YAML
+9. Run `check:flatpak`, `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
 
 All steps must pass before a PR can be merged.
 
@@ -40,8 +44,9 @@ Runs on every push and pull request to `main`:
 2. Setup pnpm
 3. Setup Node 22
 4. Install dependencies
-5. Run tests (`pnpm run test:run`)
-6. Upload test results artifact (retained 7 days)
+5. Run coverage (`pnpm run test:coverage`)
+6. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes)
+7. Upload test results artifact (retained 7 days)
 
 Test results are available as a downloadable artifact from the workflow run.
 
@@ -203,7 +208,7 @@ All PRs to `main` must pass:
 - Lint (`pnpm run lint`)
 - Typecheck (`pnpm run typecheck`)
 - Build (`pnpm run build`)
-- Tests (`pnpm run test:run`)
+- Tests with coverage (`pnpm run test:coverage` — same as CI; `locale-quality.test.ts` runs `check:i18n` as part of the Vitest suite)
 
 Branch protection is configured to require these checks before merging.
 
@@ -211,17 +216,16 @@ Branch protection is configured to require these checks before merging.
 
 ## Pre-commit Hook
 
-The pre-commit hook runs additional checks that CI does not:
+The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Actions runs directly:
 
-- Format (`pnpm run format`)
-- Log injection check (`pnpm run check:log-injection`)
-- URL hostname substring check (`pnpm run check:url-hostname-sanitization`) — mirrors CodeQL `js/incomplete-url-substring-sanitization`
-- DB migration check (`pnpm run check:db-migrations`)
-- IPC contract check (`pnpm run check:ipc-contract`)
-- Security audit (`pnpm audit --audit-level=high`)
-- Workflow lint (`actionlint`)
+- **Staged-file** Prettier + markdownlint (not a full-tree `pnpm run format` / `lint:md`)
+- `pnpm dedupe` when any files are staged
+- `pnpm run i18n:auto-translate` (fills new English keys vs `HEAD`) + re-stages locales
+- `pnpm run lint`, `typecheck`, and the full `check:*` chain (including `check:i18n`, `check:electron-security`, `check:flatpak`, `check:db-migrations`, `check:ipc-contract`, `check:silent-catches`, `check:xss-patterns`, and others)
+- `pnpm audit --audit-level=high`, `actionlint`, `yamllint`
+- `pnpm run test:run -- --bail 1`
 
-These checks are enforced locally before commits land. CI focuses on build, lint, typecheck, and tests.
+CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 
 ---
 

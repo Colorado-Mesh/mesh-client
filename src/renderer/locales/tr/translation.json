@@ -847,7 +847,14 @@
       "pickerScanFailed": "BLE taraması başarısız oldu. Tekrar deneyin veya adresi manuel olarak girin.",
       "pickerBleFeatureDisabled": "Bu Reticulum yapısında Bluetooth mevcut değil (rns-ble özelliği eksik).",
       "pickerScanFailedDetail": "Tarama hatası: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Geçerli bir ana bilgisayar adı veya IP adresi girin (IPv6 için [parantez] kullanın).",
+      "primaryLocalSummary": "Birincil yerel RNode: {{name}}",
+      "primaryLocalBadge": "Birincil",
+      "setPrimaryLocal": "Birincil olarak Ata",
+      "setPrimaryLocalAria": "{{name}} öğesini birincil yerel RNode olarak ayarlayın",
+      "setPrimarySuccess": "Birincil yerel RNode güncellendi.",
+      "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}}: Bluetooth üzerinden bağlanılıyor",
       "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra 30 saniye kadar sürebilir. İşletim sisteminiz isterse bir eşleştirme PIN'i girin; bu normaldir, bir hata değil.",
       "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin.",
-      "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın."
+      "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın.",
+      "tcpUnreachable": "{{name}}: TCP göbeğine ulaşılamıyor ({{host}}:{{port}})",
+      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -931,7 +940,15 @@
       "label": "Paket kaydedici — radyonuza ve MQTT'nize bağlandığında, RX paket özetlerini meshcoretomqtt ile aynı JSON biçiminde {{topic}}'ye iletin. Varsayılan olarak kapalı; yalnızca duyulan hava trafiğini bir paket analizörüyle paylaşmak istiyorsanız etkinleştirin."
     },
     "hintAdaDfuBle": "MacOS'ta bir cihaz \"AdaDFU\" olarak görünüyorsa, Meshtastic adını görmek için önce onu Sistem Ayarları → Bluetooth'ta eşleştirin.",
-    "authTokenFailed": "Kimlik doğrulama jetonu oluşturulamadı: {{message}}"
+    "authTokenFailed": "Kimlik doğrulama jetonu oluşturulamadı: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} sepet arabirimi sorunu algılandı",
+      "tcpConnectFailed": "{{name}}: TCP bağlantısı reddedildi veya zaman aşımına uğradı",
+      "tcpConnectFailedHint": "Aşağıdaki listeden bu arayüzü devre dışı bırakın veya uzak hub'ın çalıştığını onaylayın.",
+      "txQueueDrops": "{{name}}: giden paketler düştü ({{count}} kuyruğa alındı)",
+      "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
+      "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "{{type}} arayüzü \"{{name}}\" etkin ancak {{status}}",
         "noPeers": "Henüz yol tablosunda bilinen eş yok",
         "autoBeaconTunnelOnly": "AutoInterface beacon TX, VPN tünel arayüzlerinde başarısız oluyor {{ifaces}}. Reticulum sepetini yeniden oluşturun veya günlükler doluysa AutoInterface'i geçici olarak devre dışı bırakın.",
-        "autoBeaconPhysicalFailures": "AutoInterface beacon TX {{ifaces}} üzerinde başarısız oluyor — bu düzeltilinceye kadar yerel lan keşfi çalışmayabilir."
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX {{ifaces}} üzerinde başarısız oluyor — bu düzeltilinceye kadar yerel lan keşfi çalışmayabilir.",
+        "tcpUnreachable": "TCP merkezi \"{{name}}\" ulaşılamıyor ({{host}}:{{port}})",
+        "tcpConnectFailed": "TCP hub \"{{name}}\" bağlantısı reddedildi veya zaman aşımına uğradı",
+        "txQueueDrops": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu)"
       }
     },
     "routingPort": {

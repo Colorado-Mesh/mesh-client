@@ -18,6 +18,27 @@ pub fn classify_interface(name_or_type: &str) -> &'static str {
 
 /// Pick the primary outbound transport from enabled stub interfaces.
 pub fn resolve_stub_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
+    resolve_outbound_sent_via_with_primary(interfaces, None)
+}
+
+/// Outbound LXMF transport: local egress interface (RNode → RF), not the peer path-table label.
+pub fn resolve_outbound_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
+    resolve_outbound_sent_via_with_primary(interfaces, None)
+}
+
+/// When multiple enabled RF interfaces exist, prefer the effective primary local serial interface.
+pub fn resolve_outbound_sent_via_with_primary(
+    interfaces: &[InterfaceRow],
+    primary_local_serial_id: Option<&str>,
+) -> &'static str {
+    if let Some(primary_id) = primary_local_serial_id {
+        if let Some(iface) = interfaces.iter().find(|i| i.id == primary_id && i.enabled) {
+            if classify_interface(&iface.iface_type) == "rf" {
+                return "rf";
+            }
+        }
+    }
+
     let mut fallback = "network";
     for iface in interfaces.iter().filter(|i| i.enabled) {
         match classify_interface(&iface.iface_type) {
@@ -27,11 +48,6 @@ pub fn resolve_stub_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
         }
     }
     fallback
-}
-
-/// Outbound LXMF transport: local egress interface (RNode → RF), not the peer path-table label.
-pub fn resolve_outbound_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
-    resolve_stub_sent_via(interfaces)
 }
 
 fn live_matches_config(live_row: &InterfaceRow, cfg: &InterfaceRow) -> bool {

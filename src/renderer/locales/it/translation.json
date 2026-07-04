@@ -847,7 +847,14 @@
       "pickerScanFailed": "Scansione BLE non riuscita. Riprova o inserisci un indirizzo manualmente.",
       "pickerBleFeatureDisabled": "Il Bluetooth non è disponibile in questa build di Reticulum (manca la funzionalità rns-ble).",
       "pickerScanFailedDetail": "Errore di scansione: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Immettere un nome host o un indirizzo IP valido (utilizzare [parentesi] per IPv6).",
+      "primaryLocalSummary": "RNode locale primario: {{name}}",
+      "primaryLocalBadge": "Primarie",
+      "setPrimaryLocal": "Imposta come primario",
+      "setPrimaryLocalAria": "Imposta {{name}} come RNode locale principale",
+      "setPrimarySuccess": "RNode locale primario aggiornato.",
+      "setPrimaryFailed": "Impossibile impostare l'RNode locale primario."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}}: connessione tramite Bluetooth",
       "connectingHintBle": "I collegamenti BLE RNode possono richiedere fino a 30 secondi dall'avvio dello stack. Inserisci un PIN di accoppiamento se richiesto dal sistema operativo: è normale, non si tratta di un errore.",
       "offlineHintBle": "Il tuo sistema operativo potrebbe richiedere un PIN Bluetooth a 6 cifre (macOS, Windows o Linux). RNode genera un nuovo codice a ogni accoppiamento: non esiste un PIN predefinito. Radio headless: collega USB → Reticulum Admin → Bluetooth → Avvia accoppiamento → inserisci il PIN mostrato nella finestra di dialogo del sistema operativo. Radio con display: tieni premuto il pulsante per ~7 s sui dispositivi Heltec (la tempistica varia; ~10 s su molte schede abilita invece l'AP Wi-Fi), leggi il PIN sullo schermo, quindi inseriscilo nella finestra di dialogo del sistema operativo. Cancella i collegamenti non riusciti nelle impostazioni Bluetooth del tuo sistema operativo prima di riprovare.",
-      "offlineHintWifi": "Verificare che l'RNode sia sulla LAN, acceso e raggiungibile all'IP configurato (porta TCP predefinita 7633, non 4242). Aggiorna l'host di seguito se il DHCP ha assegnato un nuovo indirizzo o effettua nuovamente il provisioning del Wi-Fi in Reticulum → Admin."
+      "offlineHintWifi": "Verificare che l'RNode sia sulla LAN, acceso e raggiungibile all'IP configurato (porta TCP predefinita 7633, non 4242). Aggiorna l'host di seguito se il DHCP ha assegnato un nuovo indirizzo o effettua nuovamente il provisioning del Wi-Fi in Reticulum → Admin.",
+      "tcpUnreachable": "{{name}}: hub TCP non raggiungibile ({{host}}:{{port}})",
+      "tcpUnreachableHint": "L'istanza Reticulum remota potrebbe essere offline o bloccare le connessioni. Disabilita questa interfaccia o verifica l'host e la porta."
     },
     "autoConnectingTo": "Connessione automatica a {{deviceName}}…",
     "autoReconnectInProgress": "Riconnessione automatica in corso…",
@@ -931,7 +940,15 @@
       "label": "Registratore di pacchetti: quando sei connesso alla radio e a MQTT, inoltra i riepiloghi dei pacchetti RX a {{topic}} nella stessa forma JSON di meshcoretomqtt. Disattivato per impostazione predefinita; abilitalo solo se intendi condividere il traffico aereo ascoltato con un analizzatore di pacchetti."
     },
     "hintAdaDfuBle": "Su macOS, se un dispositivo viene visualizzato come \"AdaDFU\", associalo prima in Impostazioni di sistema → Bluetooth per vedere il suo nome Meshtastic.",
-    "authTokenFailed": "Generazione del token di autenticazione non riuscita: {{message}}"
+    "authTokenFailed": "Generazione del token di autenticazione non riuscita: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} problema/i dell'interfaccia del sidecar rilevato/i",
+      "tcpConnectFailed": "{{name}}: connessione TCP rifiutata o scaduta",
+      "tcpConnectFailedHint": "Disabilitare questa interfaccia nell'elenco sottostante o confermare che l'hub remoto sia in esecuzione.",
+      "txQueueDrops": "{{name}}: pacchetti in uscita scartati ({{count}} in coda)",
+      "txQueueDropsHint": "Di solito causato da un'interfaccia TCP morta ancora abilitata. Disabilita gli hub non raggiungibili per interrompere l'overflow della coda.",
+      "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "L'interfaccia {{type}} \"{{name}}\" è abilitata ma {{status}}",
         "noPeers": "Nessun peer noto ancora nella tabella dei percorsi",
         "autoBeaconTunnelOnly": "Il beacon AutoInterface TX non funziona sulle interfaccedel tunnel VPN {{ifaces}}. Ricostruisci il sidecar Reticulum o disabilita temporaneamente l'interfaccia automatica se i registri sono allagati.",
-        "autoBeaconPhysicalFailures": "AutoInterface beacon TX non funziona su {{ifaces}} — il rilevamento della LAN locale potrebbe non funzionare fino a quando questo problema non viene risolto."
+        "autoBeaconPhysicalFailures": "AutoInterface beacon TX non funziona su {{ifaces}} — il rilevamento della LAN locale potrebbe non funzionare fino a quando questo problema non viene risolto.",
+        "tcpUnreachable": "L'hub TCP \"{{name}}\" non è raggiungibile ({{host}}:{{port}})",
+        "tcpConnectFailed": "Connessione TCP hub \"{{name}}\" rifiutata o scaduta",
+        "txQueueDrops": "L'interfaccia \"{{name}}\" ha rilasciato {{count}} pacchetti in uscita (coda TX piena)"
       }
     },
     "routingPort": {

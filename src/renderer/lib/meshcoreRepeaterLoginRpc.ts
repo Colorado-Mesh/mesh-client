@@ -4,8 +4,8 @@ import {
   MC_PUSH_LOGIN_SUCCESS,
   MC_RESP_ERR,
   MC_RESP_SENT,
+  type MeshcoreRadioConnection,
   type MeshcoreRepeaterLoginResponse,
-  type MeshcoreRepeaterRpcConnection,
   normalizePubKeyPrefix,
   prefixToHex,
   pubKeyPrefixesEqual,
@@ -20,7 +20,7 @@ export const MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS = 10_000;
  * Replaces meshcore.js `login()` which uses `once(LoginSuccess)` and drops mismatched pushes.
  */
 export function runMeshcoreRepeaterLogin(
-  conn: MeshcoreRepeaterRpcConnection,
+  conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   password: string,
   extraTimeoutMs: number = MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS,

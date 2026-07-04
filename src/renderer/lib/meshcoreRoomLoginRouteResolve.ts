@@ -7,7 +7,7 @@ import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import {
-  type MeshcoreTracePathMuxConnection,
+  type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
 import {
@@ -62,7 +62,7 @@ async function traceRouteForRoomLogin(
     );
     const result = await withTimeout(
       runMeshcoreTracePathMultiplexed(
-        conn as unknown as MeshcoreTracePathMuxConnection,
+        conn as unknown as MeshcoreTracePathConnection,
         seed,
         Math.min(traceTimeoutMs, traceCapMs),
         runSerialized,

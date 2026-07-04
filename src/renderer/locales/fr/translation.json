@@ -847,11 +847,18 @@
       "pickerScanFailed": "L'analyse BLE a échoué. Réessayez ou saisissez une adresse manuellement.",
       "pickerBleFeatureDisabled": "Bluetooth n'est pas disponible dans cette version de Reticulum (fonctionnalité rns-ble manquante).",
       "pickerScanFailedDetail": "Erreur de numérisation : {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Saisissez un nom d'hôte ou une adresse IP valide (utilisez [brackets] pour IPv6).",
+      "primaryLocalSummary": "RNode local principal : {{name}}",
+      "primaryLocalBadge": "Primaire",
+      "setPrimaryLocal": "Définir comme principal",
+      "setPrimaryLocalAria": "Définir {{name}} comme RNode local principal",
+      "setPrimarySuccess": "RNode local principal mis à jour.",
+      "setPrimaryFailed": "Impossible de définir le RNode local principal."
     },
     "reticulumPeers": {
       "hops": "Hops",
-      "actions": "Actions",
+      "actions": "Opérations",
       "path": "Chemin",
       "probe": "Sonde"
     },
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}} : connexion via Bluetooth",
       "connectingHintBle": "Les liens BLE RNode peuvent prendre jusqu'à 30 secondes après le démarrage de la pile. Saisissez un code PIN de couplage si votre système d'exploitation vous y invite : c'est normal, ce n'est pas une erreur.",
       "offlineHintBle": "Votre système d'exploitation peut vous demander un code PIN Bluetooth à 6 chiffres (macOS, Windows ou Linux). RNode génère un nouveau code à chaque appariement — il n'y a pas de code PIN par défaut. Radios sans tête : connectez USB → Reticulum Admin → Bluetooth → Démarrer l'appairage → entrez le code PIN affiché dans la boîte de dialogue du système d'exploitation. Radios avec écran : maintenez le bouton enfoncé pendant environ 7 s sur les appareils Heltec (le temps varie ; environ 10 s sur de nombreuses cartes activent le Wi-Fi AP à la place), lisez le code PIN à l'écran, puis saisissez-le dans la boîte de dialogue du système d'exploitation. Effacez les liaisons ayant échoué dans les paramètres Bluetooth de votre système d'exploitation avant de réessayer.",
-      "offlineHintWifi": "Vérifiez que le RNode est sur votre réseau local, sous tension et accessible à l'adresse IP configurée (port TCP par défaut 7633, pas 4242). Mettez à jour l'hôte ci-dessous si DHCP a attribué une nouvelle adresse ou réapprovisionnez le Wi-Fi dans Reticulum → Admin."
+      "offlineHintWifi": "Vérifiez que le RNode est sur votre réseau local, sous tension et accessible à l'adresse IP configurée (port TCP par défaut 7633, pas 4242). Mettez à jour l'hôte ci-dessous si DHCP a attribué une nouvelle adresse ou réapprovisionnez le Wi-Fi dans Reticulum → Admin.",
+      "tcpUnreachable": "{{name}} : concentrateur TCP inaccessible ({{host}} :{{port}})",
+      "tcpUnreachableHint": "L'instance Reticulum distante peut être hors ligne ou bloquer les connexions. Désactivez cette interface ou vérifiez l'hôte et le port."
     },
     "autoConnectingTo": "Connexion automatique à {{deviceName}}…",
     "autoReconnectInProgress": "Reconnexion automatique en cours…",
@@ -931,7 +940,15 @@
       "label": "Enregistreur de paquets — lorsqu'il est connecté à votre radio et à MQTT, transférez les résumés des paquets RX à {{topic}} dans la même forme JSON que meshcoretomqtt. Désactivé par défaut ; activez-la uniquement si vous avez l'intention de partager le trafic aérien entendu avec un analyseur de paquets."
     },
     "hintAdaDfuBle": "Sur macOS, si un appareil s'affiche comme « AdaDFU », associez-le d'abord dans Paramètres système → Bluetooth pour voir son nom Meshtastic.",
-    "authTokenFailed": "Échec de la génération du jeton d'authentification : {{message}}"
+    "authTokenFailed": "Échec de la génération du jeton d'authentification : {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} problème(s) d'interface side-car détecté (s)",
+      "tcpConnectFailed": "{{name}} : connexion TCP refusée ou dépassée",
+      "tcpConnectFailedHint": "Désactivez cette interface dans la liste ci-dessous ou confirmez que le concentrateur distant est en cours d'exécution.",
+      "txQueueDrops": "{{name}} : paquets sortants abandonnés ({{count}} en file d'attente)",
+      "txQueueDropsHint": "Généralement causé par une interface TCP morte toujours activée. Désactivez les concentrateurs inaccessibles pour arrêter le débordement de la file d'attente.",
+      "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "L'interface {{type}} \"{{name}}\" est activée mais {{status}}",
         "noPeers": "Aucun homologue connu dans la table des chemins pour l'instant",
         "autoBeaconTunnelOnly": "La balise AutoInterface TX échoue sur les interfaces de tunnel VPN {{ifaces}}. Reconstruisez le sidecar Reticulum ou désactivez temporairement AutoInterface si les journaux sont inondés.",
-        "autoBeaconPhysicalFailures": "La balise AutoInterface TX échoue sur {{ifaces}} — la découverte du LAN local peut ne pas fonctionner tant que cela n'est pas corrigé."
+        "autoBeaconPhysicalFailures": "La balise AutoInterface TX échoue sur {{ifaces}} — la découverte du LAN local peut ne pas fonctionner tant que cela n'est pas corrigé.",
+        "tcpUnreachable": "Le concentrateur TCP « {{name}} » est inaccessible ({{host}} :{{port}})",
+        "tcpConnectFailed": "La connexion du concentrateur TCP « {{name}} » a été refusée ou a expiré",
+        "txQueueDrops": "L'interface « {{name}} » a supprimé {{count}} paquets sortants (file d'attente TX pleine)"
       }
     },
     "routingPort": {

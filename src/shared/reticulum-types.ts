@@ -6,6 +6,7 @@ export interface ReticulumSidecarStatus {
   pid: number | null;
   lastError?: string;
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
+  interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
 }
 
 export type ReticulumAutoBeaconAlertKind = 'tunnel_only' | 'physical_failures';
@@ -13,6 +14,19 @@ export type ReticulumAutoBeaconAlertKind = 'tunnel_only' | 'physical_failures';
 export interface ReticulumAutoBeaconAlert {
   kind: ReticulumAutoBeaconAlertKind;
   ifaceNames: string[];
+  suppressedCount: number;
+  lastAtMs: number;
+}
+
+export interface ReticulumInterfaceTxQueueDrop {
+  name: string;
+  dropCount: number;
+}
+
+/** Parsed from sidecar stdout when TCP peers are unreachable or TX queues overflow. */
+export interface ReticulumInterfaceIssueAlert {
+  tcpConnectFailed: string[];
+  txQueueDrops: ReticulumInterfaceTxQueueDrop[];
   suppressedCount: number;
   lastAtMs: number;
 }

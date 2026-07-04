@@ -1,5 +1,5 @@
 import {
-  collectReticulumLocalInterfaceAlerts,
+  collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
   type ReticulumLocalInterfaceHealthOptions,
   type ReticulumLocalInterfaceInput,
@@ -25,7 +25,7 @@ export function reticulumLocalHealthNeedsFastPoll(
   options?: ReticulumLocalInterfaceHealthOptions,
 ): boolean {
   return (
-    collectReticulumLocalInterfaceAlerts(interfaces, osSerialPorts, options).length > 0 ||
+    collectReticulumInterfaceAlerts(interfaces, osSerialPorts, options).length > 0 ||
     collectReticulumLocalInterfaceConnecting(interfaces, osSerialPorts, options).length > 0
   );
 }

@@ -79,6 +79,7 @@ describe('ReticulumSidecarManager', () => {
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
   });
 
@@ -109,12 +110,14 @@ describe('ReticulumSidecarManager', () => {
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
     expect(statusListener).toHaveBeenCalledWith({
       running: false,
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
   });
 
@@ -130,12 +133,14 @@ describe('ReticulumSidecarManager', () => {
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
     expect(statusListener).toHaveBeenCalledWith({
       running: false,
       port: 0,
       pid: null,
       autoBeaconAlert: null,
+      interfaceIssueAlert: null,
     });
   });
 
@@ -162,5 +167,93 @@ describe('ReticulumSidecarManager', () => {
 
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
+  });
+
+  it('surfaces interface issue alert from sidecar stdout lines', () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = (
+      manager as unknown as {
+        interfaceIssueTracker: {
+          recordLine: (line: string, nowMs?: number) => void;
+        };
+      }
+    ).interfaceIssueTracker;
+    const line = 'TCP connect failed name = RNS HAM RADIO error = Connection refused (os error 61)';
+    tracker.recordLine(line, Date.now());
+    expect(manager.getStatus().interfaceIssueAlert?.tcpConnectFailed).toEqual(['RNS HAM RADIO']);
+  });
+
+  function setRunning(manager: ReticulumSidecarManager, port = 59477): void {
+    (
+      manager as unknown as { _status: { running: boolean; port: number; pid: number | null } }
+    )._status = { running: true, port, pid: 4242 };
+  }
+
+  it('proxyGet rejects when sidecar is not running', async () => {
+    const manager = new ReticulumSidecarManager();
+    await expect(manager.proxyGet('/api/v1/status')).rejects.toThrow('not running');
+  });
+
+  it('proxyGet fetches normalized path when running', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: () => Promise.resolve({ status: 'ok' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    setRunning(manager, 59477);
+    const body = await manager.proxyGet('/api/v1/interfaces');
+    expect(body).toEqual({ status: 'ok' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://127.0.0.1:59477/api/v1/interfaces',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('proxyPost rejects oversized JSON bodies', async () => {
+    const manager = new ReticulumSidecarManager();
+    setRunning(manager);
+    const huge = { data: 'x'.repeat(5 * 1024 * 1024) };
+    await expect(manager.proxyPost('/api/v1/interfaces', huge)).rejects.toThrow('body too large');
+  });
+
+  it('proxyPost sends JSON when running', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    setRunning(manager, 59477);
+    const payload = { name: 'test-if' };
+    await manager.proxyPost('/api/v1/interfaces', payload);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://127.0.0.1:59477/api/v1/interfaces',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    );
+  });
+
+  it('proxyDelete issues DELETE to sidecar', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: () => Promise.resolve({ deleted: true }),
+      text: () => Promise.resolve(''),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    setRunning(manager, 59477);
+    await manager.proxyDelete('/api/v1/interfaces/abc');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://127.0.0.1:59477/api/v1/interfaces/abc',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
   });
 });

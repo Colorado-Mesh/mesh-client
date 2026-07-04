@@ -44,7 +44,16 @@ describe('hostFromAddressInput / isMeshtasticLocalAddress', () => {
     expect(hostFromAddressInput('http://meshtastic.local')).toBe('meshtastic.local');
     expect(isMeshtasticLocalAddress('meshtastic.local')).toBe(true);
     expect(isMeshtasticLocalAddress('node.meshtastic.local')).toBe(true);
-    expect(isMeshtasticLocalAddress('192.168.1.10')).toBe(false);
+    expect(isMeshtasticLocalAddress('192.168.1.10')).toBe(true);
+    expect(isMeshtasticLocalAddress('fd00::1')).toBe(true);
+    expect(isMeshtasticLocalAddress('fe80::1')).toBe(true);
+    expect(isMeshtasticLocalAddress('::1')).toBe(true);
+    expect(isMeshtasticLocalAddress('8.8.8.8')).toBe(false);
+    expect(isMeshtasticLocalAddress('2001:db8::1')).toBe(false);
+  });
+
+  it('parses IPv6 from bracketed host:port input', () => {
+    expect(hostFromAddressInput('[fd00::1]:8080')).toBe('fd00::1');
   });
 });
 
@@ -83,7 +92,8 @@ describe('humanizeHttpError', () => {
       'timeoutMdnsWindows',
     ],
     ['mdns non-windows timeout', 'linux', 'meshtastic.local', 'timeout', 'timeoutMdnsNonWindows'],
-    ['ip timeout', 'linux', '192.168.1.10', 'aborted', 'timeoutGeneric'],
+    ['local private ip timeout', 'linux', '192.168.1.10', 'aborted', 'timeoutMdnsNonWindows'],
+    ['public ip timeout', 'linux', '8.8.8.8', 'aborted', 'timeoutGeneric'],
     ['unauthorized', 'linux', '192.168.1.10', '401 unauthorized', 'unauthorizedHint'],
     ['refused', 'linux', '192.168.1.10', 'ECONNREFUSED', 'econnrefusedHint'],
   ] as const)('%s', (_label, platform, address, message, hintKey) => {
@@ -93,15 +103,15 @@ describe('humanizeHttpError', () => {
     expect(result).toContain(`connectionPanel.humanize.http.${hintKey}`);
   });
 
-  it('adds mdns suffix on non-timeout errors for mdns addresses', () => {
+  it('adds local-network suffix on non-timeout errors for LAN addresses', () => {
     mockPlatform('win32');
-    const result = humanizeHttpError('meshtastic.local', new Error('weird failure'), t);
+    const result = humanizeHttpError('192.168.1.10', new Error('weird failure'), t);
     expect(result).toContain('suffixMdnsWindows');
   });
 
-  it('returns raw message for generic IP errors', () => {
+  it('returns raw message for generic public IP errors', () => {
     mockPlatform('linux');
-    expect(humanizeHttpError('192.168.1.10', new Error('weird failure'), t)).toBe('weird failure');
+    expect(humanizeHttpError('8.8.8.8', new Error('weird failure'), t)).toBe('weird failure');
   });
 });
 

@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  buildSendLogoutFrame,
-  type MeshcoreRoomLogoutRpcConnection,
-  runMeshcoreRoomLogout,
-} from './meshcoreRoomLogoutRpc';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { buildSendLogoutFrame, runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 import {
   MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS,
   MESHCORE_ROOM_LOGIN_SENT_WAIT_MS,
@@ -23,7 +20,7 @@ function makePubKey(seed: number): Uint8Array {
   return key;
 }
 
-function createMockConn(): MeshcoreRoomLogoutRpcConnection & {
+function createMockConn(): MeshcoreRadioConnection & {
   emit(event: string | number, payload?: unknown): void;
   sentFrames: Uint8Array[];
 } {
@@ -31,7 +28,7 @@ function createMockConn(): MeshcoreRoomLogoutRpcConnection & {
   const onceHandlers = new Map<string | number, Set<(...args: unknown[]) => void>>();
   const sentFrames: Uint8Array[] = [];
 
-  const conn: MeshcoreRoomLogoutRpcConnection & {
+  const conn: MeshcoreRadioConnection & {
     emit(event: string | number, payload?: unknown): void;
     sentFrames: Uint8Array[];
   } = {

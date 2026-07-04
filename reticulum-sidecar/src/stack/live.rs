@@ -25,6 +25,7 @@ use tokio::sync::{RwLock, broadcast};
 
 use super::StackHandle;
 use super::config;
+use super::local_rnode_primary;
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_timeouts;
 use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
@@ -32,7 +33,7 @@ use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow};
 use super::via::{
-    classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via,
+    classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via_with_primary,
     resolve_peer_sent_via,
 };
 use lxmf_outbound::LxmfOutboundDriver;
@@ -66,6 +67,19 @@ pub struct LiveBridge {
     event_tx: broadcast::Sender<String>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
+}
+
+impl LiveBridge {
+    fn resolve_egress_via_for_interfaces(&self, ifaces: &[InterfaceRow]) -> &'static str {
+        let state = PersistedState::load(&self.config_dir, &self.storage_dir);
+        let config_ifaces =
+            config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
+        let effective = local_rnode_primary::resolve_effective_primary_local_serial_interface_id(
+            &config_ifaces,
+            state.primary_local_serial_interface_id.as_deref(),
+        );
+        resolve_outbound_sent_via_with_primary(ifaces, effective.as_deref())
+    }
 }
 
 impl LiveBridge {
@@ -750,7 +764,7 @@ impl LiveBridge {
         };
 
         let egress_via = match self.fetch_interfaces().await {
-            Ok(ifaces) if !ifaces.is_empty() => resolve_outbound_sent_via(&ifaces),
+            Ok(ifaces) if !ifaces.is_empty() => self.resolve_egress_via_for_interfaces(&ifaces),
             _ => {
                 let peer_iface = self
                     .peer_via_cache
@@ -867,7 +881,7 @@ impl LiveBridge {
         };
 
         let egress_via = match self.fetch_interfaces().await {
-            Ok(ifaces) if !ifaces.is_empty() => resolve_outbound_sent_via(&ifaces),
+            Ok(ifaces) if !ifaces.is_empty() => self.resolve_egress_via_for_interfaces(&ifaces),
             _ => {
                 let peer_iface = self
                     .peer_via_cache

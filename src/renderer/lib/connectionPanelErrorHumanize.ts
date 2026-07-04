@@ -1,5 +1,10 @@
 import type { TFunction } from 'i18next';
 
+import {
+  isLocalConnectHost,
+  parseConnectHostPort,
+  stripConnectHostBrackets,
+} from '@/shared/connectHost';
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
 import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
@@ -14,16 +19,18 @@ export function hostFromAddressInput(address: string): string {
   const raw = address.trim();
   if (!raw) return '';
   try {
-    return new URL(raw.includes('://') ? raw : `http://${raw}`).hostname.toLowerCase();
+    return stripConnectHostBrackets(
+      new URL(raw.includes('://') ? raw : `http://${raw}`).hostname,
+    ).toLowerCase();
   } catch {
     // catch-no-log-ok user-typed host/IP without scheme
-    return raw.split('/')[0]?.split(':')[0]?.toLowerCase() ?? '';
+    return stripConnectHostBrackets(parseConnectHostPort(raw, 80).host).toLowerCase();
   }
 }
 
 export function isMeshtasticLocalAddress(address: string): boolean {
   const host = hostFromAddressInput(address);
-  return host === 'meshtastic.local' || host.endsWith('.meshtastic.local');
+  return isLocalConnectHost(host);
 }
 
 type RuntimePlatform = 'linux' | 'darwin' | 'win32' | 'unknown';

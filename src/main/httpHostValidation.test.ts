@@ -12,11 +12,21 @@ describe('isValidHttpHostname', () => {
     expect(isValidHttpHostname('sub.domain.example.org')).toBe(true);
   });
 
+  it('accepts IPv6 bare and bracketed', () => {
+    expect(isValidHttpHostname('::1')).toBe(true);
+    expect(isValidHttpHostname('[::1]')).toBe(true);
+    expect(isValidHttpHostname('fd00::1')).toBe(true);
+    expect(isValidHttpHostname('[2001:db8::1]')).toBe(true);
+    expect(isValidHttpHostname('fe80::1')).toBe(true);
+  });
+
   it('rejects invalid hostnames', () => {
     expect(isValidHttpHostname('host with spaces')).toBe(false);
     expect(isValidHttpHostname('-leading-hyphen.com')).toBe(false);
     expect(isValidHttpHostname('trailing-hyphen-.com')).toBe(false);
     expect(isValidHttpHostname('')).toBe(false);
     expect(isValidHttpHostname('has..double.dot')).toBe(false);
+    expect(isValidHttpHostname('999.999.999.999')).toBe(false);
+    expect(isValidHttpHostname('gggg::1')).toBe(false);
   });
 });

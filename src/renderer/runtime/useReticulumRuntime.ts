@@ -43,6 +43,7 @@ import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
   fetchReticulumSerialPorts,
+  getCachedReticulumEffectivePrimaryLocalSerialInterfaceId,
   invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
@@ -259,6 +260,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         osSerialPorts,
         auditIssues,
         autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
+        interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
       });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
@@ -449,6 +451,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
+      if (status.interfaceIssueAlert || status.autoBeaconAlert) {
+        void syncDiagnosticsFromSidecar();
+      }
       if (status.running) return;
       if (connectInFlightRef.current) return;
       const wasActive =
@@ -470,7 +475,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     return () => {
       unsubStatus();
     };
-  }, [tearDownFromSidecarStop]);
+  }, [tearDownFromSidecarStop, syncDiagnosticsFromSidecar]);
 
   useEffect(() => {
     return () => {
@@ -651,6 +656,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     const tick = async () => {
       const health = await refreshLocalInterfacesFromSidecar();
       if (cancelled) return;
+      void syncDiagnosticsFromSidecar();
       scheduleNextPoll(pickReticulumLocalHealthPollMs(health.interfaces, health.osSerialPorts));
     };
 
@@ -665,14 +671,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
       localInterfaceBurstCancelRef.current?.();
       localInterfaceBurstCancelRef.current = null;
     };
-  }, [state.status, refreshLocalInterfacesFromSidecar]);
+  }, [state.status, refreshLocalInterfacesFromSidecar, syncDiagnosticsFromSidecar]);
 
   const connectAutomatic = useCallback(async () => {
     await connect();
   }, [connect]);
 
   const resolveOutboundVia = useCallback(() => {
-    return resolveReticulumOutboundViaFromInterfaces(localInterfacesRef.current);
+    return resolveReticulumOutboundViaFromInterfaces(
+      localInterfacesRef.current,
+      getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
+    );
   }, []);
 
   const sendMessage = useCallback(

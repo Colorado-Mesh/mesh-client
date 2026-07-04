@@ -763,7 +763,7 @@
       "serialPort": "Serielle Schnittstelle",
       "preset": "Vorwahlen",
       "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen).",
-      "host": "Host",
+      "host": "Rechner",
       "port": "Port",
       "delete": "Löschen",
       "deleteConfirmTitle": "Schnittstelle löschen",
@@ -847,7 +847,14 @@
       "pickerScanFailed": "BLE-Scan fehlgeschlagen. Versuchen Sie es erneut oder geben Sie manuell eine Adresse ein.",
       "pickerBleFeatureDisabled": "Bluetooth ist in diesem Reticulum-Build nicht verfügbar (rns-ble-Funktion fehlt).",
       "pickerScanFailedDetail": "Scanfehler: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Geben Sie einen gültigen Hostnamen oder eine gültige IP-Adresse ein (verwenden Sie [Klammern] für IPv6).",
+      "primaryLocalSummary": "Primärer lokaler RNode: {{name}}",
+      "primaryLocalBadge": "Primär",
+      "setPrimaryLocal": "Als Primär verwenden",
+      "setPrimaryLocalAria": "Legen Sie {{name}} als primären lokalen RNode fest",
+      "setPrimarySuccess": "Primärer lokaler RNode aktualisiert.",
+      "setPrimaryFailed": "Fehler beim Festlegen des primären lokalen RNode."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}}: Verbindung über Bluetooth",
       "connectingHintBle": "BLE-RNode-Links können bis zu 30 Sekunden nach dem Start des Stapels dauern. Geben Sie eine Kopplungs-PIN ein, wenn Ihr Betriebssystem Sie dazu auffordert – das ist normal und kein Fehler.",
       "offlineHintBle": "Ihr Betriebssystem fordert möglicherweise zur Eingabe einer 6-stelligen Bluetooth-PIN auf (macOS, Windows oder Linux). RNode generiert bei jedem Pairing einen neuen Code – es gibt keine Standard-PIN. Headless-Radios: USB anschließen → Reticulum Admin → Bluetooth → Kopplung starten → die angezeigte PIN in den OS-Dialog eingeben. Funkgeräte mit Display: Halten Sie die Taste bei Heltec-Geräten etwa 7 Sekunden lang gedrückt (die Zeitspanne variiert; bei vielen Karten wird stattdessen etwa 10 Sekunden lang Wi-Fi AP aktiviert), lesen Sie die PIN auf dem Bildschirm ab und geben Sie sie dann in das Betriebssystemdialogfeld ein. Löschen Sie fehlgeschlagene Verbindungen in den Bluetooth-Einstellungen Ihres Betriebssystems, bevor Sie es erneut versuchen.",
-      "offlineHintWifi": "Überprüfen Sie, ob sich der RNode in Ihrem LAN befindet, eingeschaltet ist und über die konfigurierte IP erreichbar ist (Standard-TCP-Port 7633, nicht 4242). Aktualisieren Sie den Host unten, wenn DHCP eine neue Adresse zugewiesen hat, oder stellen Sie Wi-Fi im Reticulum → Admin erneut bereit."
+      "offlineHintWifi": "Überprüfen Sie, ob sich der RNode in Ihrem LAN befindet, eingeschaltet ist und über die konfigurierte IP erreichbar ist (Standard-TCP-Port 7633, nicht 4242). Aktualisieren Sie den Host unten, wenn DHCP eine neue Adresse zugewiesen hat, oder stellen Sie Wi-Fi im Reticulum → Admin erneut bereit.",
+      "tcpUnreachable": "{{name}}: TCP-Hub nicht erreichbar ({{host}}:{{port}})",
+      "tcpUnreachableHint": "Die Remote-Reticulum-Instanz kann offline sein oder Verbindungen blockieren. Deaktivieren Sie diese Schnittstelle oder überprüfen Sie den Host und den Port."
     },
     "autoConnectingTo": "Automatische Verbindung mit {{deviceName}}…",
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
@@ -931,7 +940,15 @@
       "label": "Paketlogger – wenn Sie mit Ihrem Radio und MQTT verbunden sind, leiten Sie RX-Paketzusammenfassungen an {{topic}} in derselben JSON-Form wie meshcoretomqtt weiter. Standardmäßig deaktiviert; Aktivieren Sie diese Funktion nur, wenn Sie den abgehörten Flugverkehr mit einem Paketanalysator teilen möchten."
     },
     "hintAdaDfuBle": "Wenn ein Gerät unter macOS als „AdaDFU“ angezeigt wird, koppeln Sie es zunächst unter Systemeinstellungen → Bluetooth, um seinen Meshtastic-Namen anzuzeigen.",
-    "authTokenFailed": "Generierung des Authentifizierungstokens fehlgeschlagen: {{message}}"
+    "authTokenFailed": "Generierung des Authentifizierungstokens fehlgeschlagen: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} Sidecar-Schnittstellenproblem (e) erkannt",
+      "tcpConnectFailed": "{{name}}: TCP-Verbindung abgelehnt oder Zeitüberschreitung",
+      "tcpConnectFailedHint": "Deaktivieren Sie diese Schnittstelle in der folgenden Liste oder bestätigen Sie, dass der Remote-Hub ausgeführt wird.",
+      "txQueueDrops": "{{name}}: ausgehende Pakete abgelegt ({{count}} in der Warteschlange)",
+      "txQueueDropsHint": "In der Regel verursacht durch eine tote TCP-Schnittstelle, die immer noch aktiviert ist. Deaktivieren Sie nicht erreichbare Hubs, um den Warteschlangenüberlauf zu stoppen.",
+      "suppressed": "{{count}} ähnliche Sidecar-Log-Linien wurden kürzlich unterdrückt."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "{{type}}-Schnittstelle „{{name}}“ ist aktiviert, aber {{status}}",
         "noPeers": "Noch keine bekannten Peers in der Pfadtabelle",
         "autoBeaconTunnelOnly": "AutoInterface-Beacon TX schlägt auf VPN-Tunnelschnittstelle (n) {{ifaces}} fehl. Bauen Sie den Reticulum Sidecar wieder auf oder deaktivieren Sie die AutoInterface vorübergehend, wenn die Protokolle überflutet sind.",
-        "autoBeaconPhysicalFailures": "AutoInterface-Beacon TX schlägt auf {{ifaces}} fehl — die lokale LAN-Erkennung funktioniert möglicherweise nicht, bis dies behoben ist."
+        "autoBeaconPhysicalFailures": "AutoInterface-Beacon TX schlägt auf {{ifaces}} fehl — die lokale LAN-Erkennung funktioniert möglicherweise nicht, bis dies behoben ist.",
+        "tcpUnreachable": "TCP-Hub „{{name}}“ ist nicht erreichbar ({{host}}:{{port}})",
+        "tcpConnectFailed": "TCP Hub \"{{name}}\" Verbindung abgelehnt oder Zeitüberschreitung",
+        "txQueueDrops": "Schnittstelle „{{name}}“ abgeworfen {{count}} ausgehende Pakete (TX-Warteschlange voll)"
       }
     },
     "routingPort": {

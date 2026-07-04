@@ -68,7 +68,7 @@ function collectSourceFiles(dir) {
 }
 
 const T_STATIC_RE = /\b(?:t|i18n\.t)\(\s*['"]([^'"]+)['"]\s*[),]/g;
-const T_TEMPLATE_RE = /\bt\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
+const T_TEMPLATE_RE = /\b(?:t|i18n\.t)\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
 const QUOTED_LITERAL_RE = /['"]([^'"]+)['"]/g;
 const I18N_OK_RE = /\/\/\s*i18n-ok\b/;
 

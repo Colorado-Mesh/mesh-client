@@ -1,24 +1,12 @@
 import { MESHCORE_TXT_TYPE_PLAIN } from './meshcoreChannelText';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { meshcoreRoomPostRadioErrStored } from './meshcoreRoomSentWait';
+import { MC_CMD_SEND_TXT_MSG, MC_RESP_ERR, MC_RESP_SENT } from './meshcoreWireCodes';
 import {
   computeRoomLoginExtraTimeoutMs,
   computeRoomLoginSentWaitMs,
   type MeshcoreCompanionTransport,
 } from './timeConstants';
-
-/** meshcore.js CommandCodes.SendTxtMsg */
-const MC_CMD_SEND_TXT_MSG = 2;
-
-/** meshcore.js ResponseCodes */
-const MC_RESP_ERR = 1;
-const MC_RESP_SENT = 6;
-
-export interface MeshcoreRoomPostRpcConnection {
-  on(event: string | number, cb: (...args: unknown[]) => void): void;
-  off(event: string | number, cb: (...args: unknown[]) => void): void;
-  once(event: string | number, cb: (...args: unknown[]) => void): void;
-  sendToRadioFrame(data: Uint8Array): Promise<void>;
-}
 
 /** SignedPlain wire body: 4-byte author pubkey prefix + UTF-8 post text. */
 export function meshcoreRoomPostWireBytes(authorPubKey: Uint8Array, text: string): Uint8Array {
@@ -74,7 +62,7 @@ export interface MeshcoreRoomPostSentResult {
  * reactions), align UX with Chat but confirm room-server wire before reusing chat prefixes.
  */
 export function runMeshcoreRoomPostSend(
-  conn: MeshcoreRoomPostRpcConnection,
+  conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   text: string,
   opts?: { hopsAway?: number; companionTransport?: MeshcoreCompanionTransport },

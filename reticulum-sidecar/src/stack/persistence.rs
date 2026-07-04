@@ -21,6 +21,7 @@ pub struct PersistedState {
     pub rns_ready: bool,
     pub lxmf_ready: bool,
     pub preferred_propagation_id: Option<String>,
+    pub primary_local_serial_interface_id: Option<String>,
     pub propagation_sync: serde_json::Value,
     pub auto_sync_interval_sec: u32,
     pub nomad_nodes: Vec<NomadNodeRow>,
@@ -52,6 +53,7 @@ impl PersistedState {
             rns_ready: false,
             lxmf_ready: false,
             preferred_propagation_id: None,
+            primary_local_serial_interface_id: None,
             propagation_sync: serde_json::Value::Null,
             auto_sync_interval_sec: 3600,
             nomad_nodes: Vec::new(),
@@ -543,7 +545,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 12)?;
+        let mut s = serializer.serialize_struct("PersistedState", 13)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -553,6 +555,10 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("rns_ready", &self.rns_ready)?;
         s.serialize_field("lxmf_ready", &self.lxmf_ready)?;
         s.serialize_field("preferred_propagation_id", &self.preferred_propagation_id)?;
+        s.serialize_field(
+            "primary_local_serial_interface_id",
+            &self.primary_local_serial_interface_id,
+        )?;
         s.serialize_field("propagation_sync", &self.propagation_sync)?;
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
@@ -578,6 +584,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             #[serde(default)]
             preferred_propagation_id: Option<String>,
             #[serde(default)]
+            primary_local_serial_interface_id: Option<String>,
+            #[serde(default)]
             propagation_sync: serde_json::Value,
             #[serde(default)]
             auto_sync_interval_sec: u32,
@@ -595,6 +603,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             rns_ready: raw.rns_ready,
             lxmf_ready: raw.lxmf_ready,
             preferred_propagation_id: raw.preferred_propagation_id,
+            primary_local_serial_interface_id: raw.primary_local_serial_interface_id,
             propagation_sync: if raw.propagation_sync.is_null() {
                 serde_json::Value::Null
             } else {

@@ -5,8 +5,18 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {
       if (opts && 'count' in opts) return `${key}:${opts.count}`;
+      if (opts && 'name' in opts && 'port' in opts && 'host' in opts) {
+        const host =
+          typeof opts.host === 'string' || typeof opts.host === 'number' ? String(opts.host) : '';
+        const port =
+          typeof opts.port === 'string' || typeof opts.port === 'number' ? String(opts.port) : '';
+        return host ? `${key}:${opts.name}:${host}:${port}` : `${key}:${opts.name}:${port}`;
+      }
       if (opts && 'name' in opts && 'port' in opts) {
         return `${key}:${opts.name}:${opts.port}`;
+      }
+      if (opts && 'name' in opts) {
+        return `${key}:${opts.name}`;
       }
       return key;
     },
@@ -27,6 +37,7 @@ describe('ReticulumStackPanel', () => {
       running: true,
       port: 19437,
       pid: 1,
+      interfaceIssueAlert: null,
     });
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/interfaces') {
@@ -174,5 +185,95 @@ describe('ReticulumStackPanel', () => {
     ).not.toBeInTheDocument();
 
     vi.useRealTimers();
+  });
+
+  it('shows TCP hub unreachable alert when enabled tcp interface is down', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'ham',
+              name: 'RNS HAM RADIO',
+              type: 'tcp',
+              enabled: true,
+              status: 'down',
+              host: '135.125.238.229',
+              port: 4242,
+            },
+          ],
+        });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({ ports: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('connectionPanel.reticulumLocalInterfaces.needsAttention:1'),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(
+        'connectionPanel.reticulumLocalInterfaces.tcpUnreachable:RNS HAM RADIO:135.125.238.229:4242',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows sidecar issue alert when interfaceIssueAlert is present', async () => {
+    const issueAlert = {
+      tcpConnectFailed: ['RNS HAM RADIO'],
+      txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 128 }],
+      suppressedCount: 0,
+      lastAtMs: Date.now(),
+    };
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+      interfaceIssueAlert: issueAlert,
+    });
+    let statusCb:
+      ((status: { running: boolean; port: number; pid: number | null }) => void) | null = null;
+    window.electronAPI.reticulum.onStatus = vi.fn((cb) => {
+      statusCb = cb;
+      return () => {};
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    act(() => {
+      statusCb?.({
+        running: true,
+        port: 19437,
+        pid: 1,
+        interfaceIssueAlert: issueAlert,
+      } as never);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('connectionPanel.reticulumSidecarIssues.heading:2'),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.tcpConnectFailed:RNS HAM RADIO'),
+    ).toBeInTheDocument();
   });
 });

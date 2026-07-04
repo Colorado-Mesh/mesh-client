@@ -13,14 +13,25 @@ export function classifyReticulumVia(nameOrType: string): ReticulumVia {
 
 /** Minimal sidecar interface row for outbound transport resolution. */
 export interface ReticulumSidecarInterfaceRow {
+  id?: string;
   type: string;
   enabled: boolean;
 }
 
 /** Outbound LXMF transport from local enabled egress interfaces (matches sidecar via.rs). */
 export function resolveReticulumOutboundViaFromInterfaces(
-  interfaces: readonly Pick<ReticulumSidecarInterfaceRow, 'type' | 'enabled'>[],
+  interfaces: readonly Pick<ReticulumSidecarInterfaceRow, 'type' | 'enabled' | 'id'>[],
+  primaryLocalSerialInterfaceId?: string | null,
 ): ReticulumVia {
+  if (primaryLocalSerialInterfaceId) {
+    const primary = interfaces.find(
+      (iface) => iface.id === primaryLocalSerialInterfaceId && iface.enabled,
+    );
+    if (primary && classifyReticulumVia(primary.type) === 'rf') {
+      return 'rf';
+    }
+  }
+
   let fallback: ReticulumVia = 'network';
   for (const iface of interfaces) {
     if (!iface.enabled) continue;

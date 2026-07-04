@@ -847,7 +847,14 @@
       "pickerScanFailed": "BLE-scan mislukt. Probeer het opnieuw of voer handmatig een adres in.",
       "pickerBleFeatureDisabled": "Bluetooth is niet beschikbaar in deze Reticulum-build (rns-ble-functie ontbreekt).",
       "pickerScanFailedDetail": "Scanfout: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Voer een geldige hostnaam of IP-adres in (gebruik [haakjes] voor IPv6).",
+      "primaryLocalSummary": "Primaire lokale RNode: {{name}}",
+      "primaryLocalBadge": "Primaire",
+      "setPrimaryLocal": "Instellen als belangrijkste",
+      "setPrimaryLocalAria": "Stel {{name}} in als primaire lokale RNode",
+      "setPrimarySuccess": "Primaire lokale RNode bijgewerkt.",
+      "setPrimaryFailed": "Kan primaire lokale RNode niet instellen."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}}: verbinden via Bluetooth",
       "connectingHintBle": "BLE RNode-koppelingen kunnen tot 30 seconden duren nadat de stapel is gestart. Voer een koppelingspincode in als uw besturingssysteem daarom vraagt. Dit is normaal en geen fout.",
       "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert.",
-      "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin."
+      "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin.",
+      "tcpUnreachable": "{{name}}: TCP-hub onbereikbaar ({{host}}:{{port}})",
+      "tcpUnreachableHint": "De externe Reticulum-instantie kan offline zijn of verbindingen blokkeren. Schakel deze interface uit of verifieer de host en poort."
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
@@ -931,7 +940,15 @@
       "label": "Pakketlogger: wanneer verbonden met uw radio en MQTT, stuurt u RX-pakketsamenvattingen door naar {{topic}} in dezelfde JSON-vorm als meshcoretomqtt. Standaard uitgeschakeld; alleen inschakelen als u van plan bent om gehoord luchtverkeer te delen met een pakketanalysator."
     },
     "hintAdaDfuBle": "Als een apparaat op macOS wordt weergegeven als \"AdaDFU\", koppelt u het eerst in Systeeminstellingen → Bluetooth om de Meshtastic-naam te zien.",
-    "authTokenFailed": "Genereren van authenticatietoken mislukt: {{message}}"
+    "authTokenFailed": "Genereren van authenticatietoken mislukt: {{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "{{count}} probleem(EN) met zijspaninterface gedetecteerd",
+      "tcpConnectFailed": "{{name}}: TCP-verbinding geweigerd of er is een time-out opgetreden",
+      "tcpConnectFailedHint": "Schakel deze interface uit in de onderstaande lijst of bevestig dat de externe hub actief is.",
+      "txQueueDrops": "{{name}}: uitgaande pakketten verwijderd ({{count}} in de wachtrij)",
+      "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
+      "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "{{type}}-interface \"{{name}}\" is ingeschakeld, maar {{status}}",
         "noPeers": "Nog geen bekende peers in de padtabel",
         "autoBeaconTunnelOnly": "AutoInterface-beacon TX faalt op VPN-tunnelinterface(s) {{ifaces}}. Herbouw de Reticulum sidecar of schakel AutoInterface tijdelijk uit als logboeken worden overstroomd.",
-        "autoBeaconPhysicalFailures": "AutoInterface-baken TX faalt op {{ifaces}} — lokale LAN-detectie werkt mogelijk niet totdat dit is opgelost."
+        "autoBeaconPhysicalFailures": "AutoInterface-baken TX faalt op {{ifaces}} — lokale LAN-detectie werkt mogelijk niet totdat dit is opgelost.",
+        "tcpUnreachable": "TCP-hub \"{{name}}\" is onbereikbaar ({{host}}:{{port}})",
+        "tcpConnectFailed": "TCP-hub \"{{name}}\" -verbinding geweigerd of er is een time-out opgetreden",
+        "txQueueDrops": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol)"
       }
     },
     "routingPort": {

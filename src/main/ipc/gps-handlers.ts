@@ -2,10 +2,12 @@ import { ipcMain } from 'electron';
 
 import { getGpsFix } from '../gps';
 import { sanitizeLogMessage } from '../log-service';
+import { assertIpcSender } from '../validate-ipc-sender';
 
 /** Register GPS IPC handlers (`gps:*`). */
 export function registerGpsIpcHandlers(): void {
-  ipcMain.handle('gps:getFix', async () => {
+  ipcMain.handle('gps:getFix', async (event) => {
+    assertIpcSender(event, 'gps:getFix');
     try {
       return await getGpsFix();
     } catch (err) {

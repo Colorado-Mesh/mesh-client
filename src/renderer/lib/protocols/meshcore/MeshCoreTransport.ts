@@ -6,6 +6,7 @@ import {
 } from '@liamcottle/meshcore.js';
 
 import { isPairingRelatedError } from '@/shared/blePairingError';
+import { formatHostForSocket } from '@/shared/connectHost';
 
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
@@ -170,7 +171,8 @@ class IpcTcpConnection {
 
 async function connectTcp(hostAddr: string): Promise<Connection> {
   const { host, port } = parseTcpAddress(hostAddr);
-  const tcp = new IpcTcpConnection(host, port);
+  const socketHost = formatHostForSocket(host);
+  const tcp = new IpcTcpConnection(socketHost, port);
   await tcp.connect();
   return tcp.connection;
 }

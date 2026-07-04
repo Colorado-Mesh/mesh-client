@@ -112,12 +112,12 @@ Adding a cross-boundary feature:
 
 **Local Linux CI (optional):** Container mode — `act:ci`, `act:tests`, `act:pr`, … (needs Docker + act). Host mode — `act:ci:native`, `act:tests:native`, … (no Docker). See [docs/ci-cd.md](docs/ci-cd.md). macOS/Windows packaging uses native `dist:mac` / `dist:win`.
 
-> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:205-213`, keep `WATCH_ENTRIES` in `scripts/update.sh:59-69` in sync so the script warns on version changes to every patched dependency. `pnpm run update` also runs `rustup update` (or Homebrew `rust` on macOS without rustup) and `cargo build` in `reticulum-sidecar/` when `cargo` is on `PATH`.
+> **Update script sync:** When adding or removing packages from `patchedDependencies` in `package.json:230-237`, keep `WATCH_ENTRIES` in `scripts/update.sh:129-137` in sync so the script warns on version changes to every patched dependency. `pnpm run update` also runs `rustup update` (or Homebrew `rust` on macOS without rustup) and `cargo build` in `reticulum-sidecar/` when `cargo` is on `PATH`.
 
 **Pre-commit hook order:**
 
-1. `pnpm run format`: Prettier writes fixes
-2. `pnpm run lint:md`: Markdown fixes
+1. `pnpm run format` on **staged** files only (Prettier via pre-commit; not whole-tree unless run manually)
+2. markdownlint on **staged** `.md` files (not full `lint:md` unless run manually)
 3. Re-stage staged files
 4. `pnpm run i18n:auto-translate`: fills missing translation keys; re-stages `src/renderer/locales/`
 5. `pnpm run lint`

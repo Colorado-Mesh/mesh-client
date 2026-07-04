@@ -71,10 +71,15 @@ export interface ReticulumSidecarInterfaceRow {
 
 const RETICULUM_INTERFACES_CACHE_MS = 5_000;
 let cachedReticulumInterfaces: ReticulumSidecarInterfaceRow[] = [];
+let cachedEffectivePrimaryLocalSerialInterfaceId: string | null = null;
 let cachedReticulumInterfacesAt = 0;
 
 export function invalidateReticulumInterfacesCache(): void {
   cachedReticulumInterfacesAt = 0;
+}
+
+export function getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(): string | null {
+  return cachedEffectivePrimaryLocalSerialInterfaceId;
 }
 
 /** Fetch OS serial port paths from the sidecar (for local interface health checks). */
@@ -99,6 +104,7 @@ export async function fetchReticulumSerialPorts(): Promise<string[]> {
 export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterfaceRow[]> {
   if (!(await isReticulumSidecarRunning())) {
     cachedReticulumInterfaces = [];
+    cachedEffectivePrimaryLocalSerialInterfaceId = null;
     cachedReticulumInterfacesAt = 0;
     return [];
   }
@@ -112,9 +118,12 @@ export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterf
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
       interfaces?: ReticulumSidecarInterfaceRow[];
+      effective_primary_local_serial_interface_id?: string | null;
     };
     const interfaces = body.interfaces ?? [];
     cachedReticulumInterfaces = interfaces;
+    cachedEffectivePrimaryLocalSerialInterfaceId =
+      body.effective_primary_local_serial_interface_id ?? null;
     cachedReticulumInterfacesAt = now;
     return interfaces;
   } catch (e) {

@@ -763,7 +763,7 @@
       "serialPort": "串口",
       "preset": "预置",
       "bleAvailable": "BLE对等可在此平台上使用（配置后通过sidecar添加）。",
-      "host": "Host",
+      "host": "主机",
       "port": "端口",
       "delete": "删除",
       "deleteConfirmTitle": "刪除介面",
@@ -847,7 +847,14 @@
       "pickerScanFailed": "BLE 扫描失败。请重试或手动输入地址。",
       "pickerBleFeatureDisabled": "蓝牙在此 Reticulum 版本中不可用（缺少 rns-ble 功能）。",
       "pickerScanFailedDetail": "扫描错误：{{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "输入有效的主机名或IP地址（ IPv6使用[括号] ）。",
+      "primaryLocalSummary": "主要本地RNode ： {{name}}",
+      "primaryLocalBadge": "一级",
+      "setPrimaryLocal": "设为主要",
+      "setPrimaryLocalAria": "将{{name}}设置为主要本地RNode",
+      "setPrimarySuccess": "主本地RNode已更新。",
+      "setPrimaryFailed": "设置主本地RNode失败。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -874,7 +881,9 @@
       "connectingRow": "{{name}}：通过蓝牙连接",
       "connectingHintBle": "堆栈启动后，BLE RNode 链接最多可能需要 30 秒。如果操作系统出现提示，请输入配对 PIN — 这是正常现象，不是错误。",
       "offlineHintBle": "您的操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。 RNode 每次配对都会生成一个新代码 - 没有默认 PIN。无头无线电：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 输入操作系统对话框中显示的 PIN。带显示屏的无线电：在 Heltec 设备上按住按钮约 7 秒（时间各不相同；许多板上约 10 秒启用 Wi-Fi AP），读取屏幕上的 PIN，然后将其输入到操作系统对话框中。重试之前，请清除操作系统蓝牙设置中失败的绑定。",
-      "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。"
+      "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
+      "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
+      "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -931,7 +940,15 @@
       "label": "数据包记录器 — 当连接到无线电和 MQTT 时，将 RX 数据包摘要转发到 {{topic}}，其 JSON 形状与 meshcoretomqtt 相同。默认关闭；仅当您打算与数据包分析器共享听到的空中交通时才启用。"
     },
     "hintAdaDfuBle": "在 macOS 上，如果设备显示为“AdaDFU”，请首先在“系统设置”→“蓝牙”中将其配对以查看其 Meshtastic 名称。",
-    "authTokenFailed": "身份验证令牌生成失败：{{message}}"
+    "authTokenFailed": "身份验证令牌生成失败：{{message}}",
+    "reticulumSidecarIssues": {
+      "heading": "检测到{{count}} sidecar接口问题",
+      "tcpConnectFailed": "{{name}} ： TCP连接被拒绝或超时",
+      "tcpConnectFailedHint": "在下面的列表中禁用此接口，或确认远程集线器正在运行。",
+      "txQueueDrops": "{{name}} ：出站数据包已丢弃（ {{count}}已排队）",
+      "txQueueDropsHint": "通常是由死TCP接口仍处于启用状态引起的。禁用无法访问的集线器以停止队列溢出。",
+      "suppressed": "{{count}}最近取消了类似的侧车日志行。"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1221,7 +1238,10 @@
         "interfaceDown": "{{type}} 接口“{{name}}”已启用，但 {{status}}",
         "noPeers": "路径表中还没有已知的对等点",
         "autoBeaconTunnelOnly": "自动接口信标TX在VPN隧道接口{{ifaces}}上失败。如果日志被洪水淹没，请重建Reticulum侧车或暂时禁用自动接口。",
-        "autoBeaconPhysicalFailures": "自动接口信标TX在{{ifaces}}失败—在修复此问题之前，本地局域网发现可能无法正常工作。"
+        "autoBeaconPhysicalFailures": "自动接口信标TX在{{ifaces}}失败—在修复此问题之前，本地局域网发现可能无法正常工作。",
+        "tcpUnreachable": "无法访问TCP集线器「{{name}}」（ {{host}} ： {{port}} ）",
+        "tcpConnectFailed": "TCP集线器“{{name}}”连接被拒绝或超时",
+        "txQueueDrops": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满）"
       }
     },
     "routingPort": {
