@@ -295,7 +295,7 @@ for (const file of files) {
 
 // ── 1b. Meshtastic SDK routing-error i18n keys (dynamic i18n.t(i18nKey)) ───
 const routingErrorFile = join(SRC_DIR, 'lib/meshtastic/meshtasticSdkRoutingErrorLog.ts');
-if (statSync(routingErrorFile).isFile()) {
+try {
   const routingSrc = readFileSync(routingErrorFile, 'utf8');
   const routingKeys = [
     ...new Set(
@@ -310,6 +310,8 @@ if (statSync(routingErrorFile).isFile()) {
       errors++;
     }
   }
+} catch (err) {
+  if (err?.code !== 'ENOENT') throw err;
 }
 
 // ── 2. Unused English keys (no static/dynamic/literal usage in src/) ─────────
