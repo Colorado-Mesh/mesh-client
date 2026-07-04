@@ -763,7 +763,7 @@
       "serialPort": "Serielle Schnittstelle",
       "preset": "Vorwahlen",
       "bleAvailable": "BLE-Peering ist auf dieser Plattform verfügbar (bei Konfiguration über Beiwagen hinzufügen).",
-      "host": "Host",
+      "host": "Rechner",
       "port": "Port",
       "delete": "Löschen",
       "deleteConfirmTitle": "Schnittstelle löschen",

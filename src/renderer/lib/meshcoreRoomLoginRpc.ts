@@ -1,4 +1,18 @@
 import {
+  buildSendLoginFrame,
+  type MeshcoreRadioConnection,
+  normalizePubKeyPrefix,
+  prefixToHex,
+  pubKeyPrefixesEqual,
+  unknownToError,
+} from './meshcoreRepeaterRpcCommon';
+import {
+  MC_PUSH_LOGIN_FAIL,
+  MC_PUSH_LOGIN_SUCCESS,
+  MC_RESP_ERR,
+  MC_RESP_SENT,
+} from './meshcoreWireCodes';
+import {
   computeRoomLoginExtraTimeoutMs,
   computeRoomLoginResponseWaitMs,
   computeRoomLoginSentWaitMs,
@@ -8,90 +22,19 @@ import {
 /** DOMException.message when user cancels an in-flight room login. */
 export const MESHCORE_ROOM_LOGIN_ABORT_MESSAGE = 'Room login cancelled';
 
-/** meshcore.js CommandCodes.SendLogin */
-const MC_CMD_SEND_LOGIN = 26;
-
-/** meshcore.js ResponseCodes */
-const MC_RESP_ERR = 1;
-const MC_RESP_SENT = 6;
-
-/** meshcore.js PushCodes.LoginSuccess */
-const MC_PUSH_LOGIN_SUCCESS = 0x85;
-
-/** meshcore.js PushCodes.LoginFail — wrong password / ACL denied (emitted after patch). */
-const MC_PUSH_LOGIN_FAIL = 0x86;
-
 export interface MeshcoreRoomLoginResponse {
   reserved?: number;
   pubKeyPrefix?: Uint8Array;
   permissions?: number;
 }
 
-/** Minimal connection surface for room SendLogin RPC. */
-export interface MeshcoreRoomLoginRpcConnection {
-  on(event: string | number, cb: (...args: unknown[]) => void): void;
-  off(event: string | number, cb: (...args: unknown[]) => void): void;
-  once(event: string | number, cb: (...args: unknown[]) => void): void;
-  sendToRadioFrame(data: Uint8Array): Promise<void>;
-}
-
-/** Build SendLogin radio frame (matches patched meshcore.js sendCommandSendLogin). */
-export function buildSendLoginFrame(publicKey: Uint8Array, password: string): Uint8Array {
-  if (publicKey.length !== 32) {
-    throw new Error('Room login requires a 32-byte public key');
-  }
-  // Empty password = read-only ACL login; official Android sends 0 password bytes (writeString('')).
-  const passwordField =
-    password.length === 0 ? new Uint8Array(0) : new TextEncoder().encode(password);
-  const frame = new Uint8Array(1 + 32 + passwordField.length);
-  frame[0] = MC_CMD_SEND_LOGIN;
-  frame.set(publicKey, 1);
-  frame.set(passwordField, 33);
-  return frame;
-}
-
 /** Accept Uint8Array and other array-likes from meshcore.js push payloads. */
-export function normalizeLoginPubKeyPrefix(prefix: unknown): Uint8Array | null {
-  if (prefix instanceof Uint8Array && prefix.length === 6) {
-    return prefix;
-  }
-  if (ArrayBuffer.isView(prefix) && prefix.byteLength === 6) {
-    return new Uint8Array(prefix.buffer, prefix.byteOffset, 6);
-  }
-  if (Array.isArray(prefix) && prefix.length === 6) {
-    return Uint8Array.from(prefix);
-  }
-  return null;
-}
+export const normalizeLoginPubKeyPrefix = normalizePubKeyPrefix;
 
-function pubKeyPrefixesEqual(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== 6 || b.length !== 6) return false;
-  let diff = 0;
-  for (let i = 0; i < 6; i++) {
-    diff |= a[i] ^ b[i];
-  }
-  return diff === 0;
-}
+export { buildSendLoginFrame } from './meshcoreRepeaterRpcCommon';
 
-function prefixToHex(prefix: Uint8Array): string {
-  return Array.from(prefix)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-function unknownToError(e: unknown, fallback: string): Error {
-  if (e instanceof Error) return e;
-  if (e === null || e === undefined) return new Error(fallback);
-  if (typeof e === 'string') return new Error(e);
-  return new Error(fallback);
-}
-
-/**
- * Resilient room server login: keeps listening for LoginSuccess until prefix matches or timeout.
- * Replaces meshcore.js `login()` which uses `once(LoginSuccess)` and drops mismatched pushes.
- */
 export function runMeshcoreRoomLogin(
-  conn: MeshcoreRoomLoginRpcConnection,
+  conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   password: string,
   opts?: {

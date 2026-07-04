@@ -763,7 +763,7 @@
       "serialPort": "串口",
       "preset": "预置",
       "bleAvailable": "BLE对等可在此平台上使用（配置后通过sidecar添加）。",
-      "host": "Host",
+      "host": "主机",
       "port": "端口",
       "delete": "删除",
       "deleteConfirmTitle": "刪除介面",

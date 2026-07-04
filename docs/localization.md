@@ -12,7 +12,7 @@ The following languages are currently supported:
 - **Spanish** (Español)
 - **Ukrainian** (Українська)
 - **German** (Deutsch)
-- **Chinese (Simplified)** (简体中文)
+- **Chinese (Simplified)** (中文)
 - **Portuguese (Brazilian)** (Português do Brasil)
 - **French** (Français)
 - **Italian** (Italiano)
@@ -51,7 +51,7 @@ If you find a mistranslation or an awkward phrasing:
 2. Open a new [Translation Error](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) issue.
 3. Provide the current text and your suggested correction.
 
-CI also runs `scripts/check-i18n-quality.mjs` (mojibake, protected brand names, false friends, and feature-specific rules such as untranslated remote-admin or Store & Forward strings). See [AGENTS.md](../AGENTS.md) (i18n / Localization) for maintainer commands (`pnpm run check:i18n`, `pnpm run i18n:auto-translate`).
+CI does **not** run `check:i18n` as a standalone workflow step. Quality rules run via **pre-commit** (`pnpm run check:i18n`) and indirectly in CI through Vitest (`locale-quality.test.ts` subprocess). See [AGENTS.md](../AGENTS.md) (i18n / Localization) for maintainer commands (`pnpm run check:i18n`, `pnpm run i18n:auto-translate`).
 
 ### Adding a New Language
 

@@ -763,7 +763,7 @@
       "serialPort": "Porte Serial",
       "preset": "Predefinição",
       "bleAvailable": "O peering BLE está disponível nesta plataforma (adicionar via sidecar quando configurado).",
-      "host": "Host",
+      "host": "Servidor",
       "port": "Porta",
       "delete": "Excluir",
       "deleteConfirmTitle": "Excluir interface?",

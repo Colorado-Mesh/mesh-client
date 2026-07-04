@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { MeshcoreRepeaterRpcConnection } from './meshcoreRepeaterRpcCommon';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { MC_PUSH_LOGIN_SUCCESS, MC_RESP_SENT } from './meshcoreRepeaterRpcCommon';
 import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -8,7 +8,7 @@ import {
   meshcoreClearRepeaterRemoteSessionAuth,
 } from './meshcoreUtils';
 
-type MockMeshcoreRepeaterConn = MeshcoreRepeaterRpcConnection & {
+type MockMeshcoreRepeaterConn = MeshcoreRadioConnection & {
   emit: (event: string | number, payload?: unknown) => void;
   sendToRadioFrame: ReturnType<typeof vi.fn<(data: Uint8Array) => Promise<void>>>;
 };
@@ -26,6 +26,18 @@ function createMockConn(): MockMeshcoreRepeaterConn {
     },
     off(event, cb) {
       handlers.get(event)?.delete(cb);
+    },
+    once(event, cb) {
+      const wrapper = (...args: unknown[]) => {
+        handlers.get(event)?.delete(wrapper);
+        cb(...args);
+      };
+      let set = handlers.get(event);
+      if (!set) {
+        set = new Set();
+        handlers.set(event, set);
+      }
+      set.add(wrapper);
     },
     sendToRadioFrame: vi.fn<(data: Uint8Array) => Promise<void>>().mockResolvedValue(undefined),
     emit(event, payload) {

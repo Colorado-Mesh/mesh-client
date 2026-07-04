@@ -241,7 +241,7 @@ import {
   packMeshcoreTelemetryModesByte,
 } from '../lib/meshcoreTelemetryPrivacy';
 import {
-  type MeshcoreTracePathMuxConnection,
+  type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from '../lib/meshcoreTracePathMultiplex';
 import {
@@ -3670,7 +3670,7 @@ export function useMeshcoreRuntime() {
         try {
           result = await withTimeout(
             runMeshcoreTracePathMultiplexed(
-              conn as unknown as MeshcoreTracePathMuxConnection,
+              conn as unknown as MeshcoreTracePathConnection,
               tracePathInUse,
               MESHCORE_TRACE_TIMEOUT_MS,
               repeaterRemoteRpcRef.current,
@@ -3687,7 +3687,7 @@ export function useMeshcoreRuntime() {
           usePathHistoryStore.getState().recordPathUpdated(nodeId, retryPathBytes, 0, false);
           result = await withTimeout(
             runMeshcoreTracePathMultiplexed(
-              conn as unknown as MeshcoreTracePathMuxConnection,
+              conn as unknown as MeshcoreTracePathConnection,
               tracePathInUse,
               MESHCORE_TRACE_TIMEOUT_MS,
               repeaterRemoteRpcRef.current,

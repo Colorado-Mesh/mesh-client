@@ -1,24 +1,31 @@
-/** meshcore.js ResponseCodes */
-export const MC_RESP_ERR = 1;
-export const MC_RESP_SENT = 6;
+import {
+  MC_CMD_SEND_LOGIN,
+  MC_CMD_SEND_STATUS_REQ,
+  MC_CMD_SEND_TELEMETRY_REQ,
+} from './meshcoreWireCodes';
 
-/** meshcore.js PushCodes */
-export const MC_PUSH_LOGIN_SUCCESS = 0x85;
-export const MC_PUSH_LOGIN_FAIL = 0x86;
-export const MC_PUSH_STATUS_RESPONSE = 0x87;
-export const MC_PUSH_TELEMETRY_RESPONSE = 0x8b;
-
-/** meshcore.js CommandCodes */
-export const MC_CMD_SEND_LOGIN = 26;
-export const MC_CMD_SEND_STATUS_REQ = 27;
-export const MC_CMD_SEND_TELEMETRY_REQ = 39;
-
-/** Minimal connection surface for prefix-matched repeater RPCs. */
-export interface MeshcoreRepeaterRpcConnection {
+/** Shared minimal radio connection surface for MeshCore RPC modules. */
+export interface MeshcoreRadioConnection {
   on(event: string | number, cb: (...args: unknown[]) => void): void;
   off(event: string | number, cb: (...args: unknown[]) => void): void;
+  once(event: string | number, cb: (...args: unknown[]) => void): void;
   sendToRadioFrame(data: Uint8Array): Promise<void>;
 }
+
+/** @deprecated Use MeshcoreRadioConnection */
+export type MeshcoreRepeaterRpcConnection = MeshcoreRadioConnection;
+
+export {
+  MC_CMD_SEND_LOGIN,
+  MC_CMD_SEND_STATUS_REQ,
+  MC_CMD_SEND_TELEMETRY_REQ,
+  MC_PUSH_LOGIN_FAIL,
+  MC_PUSH_LOGIN_SUCCESS,
+  MC_PUSH_STATUS_RESPONSE,
+  MC_PUSH_TELEMETRY_RESPONSE,
+  MC_RESP_ERR,
+  MC_RESP_SENT,
+} from './meshcoreWireCodes';
 
 export interface MeshcoreRepeaterLoginResponse {
   reserved?: number;

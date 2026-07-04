@@ -139,7 +139,9 @@ impl StackHandle {
             inner.interfaces = ifaces;
             drop(inner);
         }
-        let _ = self.ensure_primary_local_serial_order().await;
+        if let Err(e) = self.ensure_primary_local_serial_order().await {
+            tracing::warn!("primary local serial order sync failed: {e}");
+        }
     }
 
     async fn ensure_primary_local_serial_order(&self) -> Result<(), String> {
@@ -156,10 +158,15 @@ impl StackHandle {
             stored.as_deref(),
         );
         if let Some(effective_id) = effective {
-            let _ = local_rnode_primary::ensure_primary_local_serial_order(
+            if let Err(e) = local_rnode_primary::ensure_primary_local_serial_order(
                 &self.config_dir,
                 &effective_id,
-            );
+            ) {
+                tracing::warn!(
+                    interface_id = %effective_id,
+                    "primary local serial reorder failed: {e}"
+                );
+            }
         }
         Ok(())
     }
@@ -179,13 +186,19 @@ impl StackHandle {
         );
         let mut inner = self.inner.write().await;
         inner.primary_local_serial_interface_id = effective.clone();
-        let _ = inner.save(&self.config_dir, &self.storage_dir);
+        if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+            tracing::warn!("failed to save stack config after primary reconcile: {e}");
+        }
         drop(inner);
         if let Some(effective_id) = effective {
-            let _ = local_rnode_primary::ensure_primary_local_serial_order(
-                &self.config_dir,
-                &effective_id,
-            );
+            if let Err(e) =
+                local_rnode_primary::ensure_primary_local_serial_order(&self.config_dir, &effective_id)
+            {
+                tracing::warn!(
+                    interface_id = %effective_id,
+                    "primary local serial reorder failed: {e}"
+                );
+            }
         }
     }
 

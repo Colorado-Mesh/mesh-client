@@ -11,49 +11,10 @@ import {
 } from './meshcoreRepeaterRpcCommon';
 import { runMeshcoreRepeaterStatusRequest } from './meshcoreRepeaterStatusRpc';
 import { runMeshcoreRepeaterTelemetryRequest } from './meshcoreRepeaterTelemetryRpc';
+import { createMockMeshcoreConn, makePubKey } from './meshcoreTestHelpers';
 
-function makePubKey(seed: number): Uint8Array {
-  const key = new Uint8Array(32);
-  key[0] = seed & 0xff;
-  for (let i = 1; i < 32; i++) {
-    key[i] = (seed + i) & 0xff;
-  }
-  return key;
-}
-
-function createMockConn(): {
-  on: (event: string | number, cb: (...args: unknown[]) => void) => void;
-  off: (event: string | number, cb: (...args: unknown[]) => void) => void;
-  sendToRadioFrame: (data: Uint8Array) => Promise<void>;
-  emit: (event: string | number, payload?: unknown) => void;
-  sentFrames: Uint8Array[];
-} {
-  const handlers = new Map<string | number, Set<(...args: unknown[]) => void>>();
-  const sentFrames: Uint8Array[] = [];
-
-  return {
-    sentFrames,
-    on(event, cb) {
-      let set = handlers.get(event);
-      if (!set) {
-        set = new Set();
-        handlers.set(event, set);
-      }
-      set.add(cb);
-    },
-    off(event, cb) {
-      handlers.get(event)?.delete(cb);
-    },
-    sendToRadioFrame(data) {
-      sentFrames.push(data);
-      return Promise.resolve();
-    },
-    emit(event, payload) {
-      for (const cb of handlers.get(event) ?? []) {
-        cb(payload);
-      }
-    },
-  };
+function createMockConn() {
+  return createMockMeshcoreConn();
 }
 
 function buildStatusData(): Uint8Array {

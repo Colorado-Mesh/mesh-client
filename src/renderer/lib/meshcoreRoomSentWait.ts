@@ -4,11 +4,12 @@ import {
   serializeMeshcoreUserMessage,
 } from './meshcore/meshcoreMessageI18n';
 import { meshcoreRadioErrMessage } from './meshcoreRadioErr';
-import { type MeshcoreRoomPostRpcConnection, runMeshcoreRoomPostSend } from './meshcoreRoomPostRpc';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { runMeshcoreRoomPostSend } from './meshcoreRoomPostRpc';
 import type { MeshcoreCompanionTransport } from './timeConstants';
 import type { DiagnosticTextI18n } from './types';
 
-export type MeshcoreRoomPostSendConn = MeshcoreRoomPostRpcConnection;
+export type MeshcoreRoomPostSendConn = MeshcoreRadioConnection;
 
 function unknownToRoomPostError(e: unknown): Error {
   if (e instanceof Error) return e;

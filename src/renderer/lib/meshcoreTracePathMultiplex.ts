@@ -1,6 +1,13 @@
 import { meshcoreTraceDataHashLayout } from '@/shared/meshcorePathHash';
 
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { MC_RESP_ERR, MC_RESP_SENT } from './meshcoreWireCodes';
 import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
+
+/** Trace path RPC surface: radio connection plus meshcore.js sendCommandSendTracePath. */
+export type MeshcoreTracePathConnection = MeshcoreRadioConnection & {
+  sendCommandSendTracePath(tag: number, auth: number, path: Uint8Array): Promise<void>;
+};
 
 /** Same shape as meshcore.js `tracePath` resolve value. */
 export interface MeshcoreTracePathResult {
@@ -13,14 +20,6 @@ export interface MeshcoreTracePathResult {
   pathSnrs: number[];
   lastSnr: number;
   tag: number;
-}
-
-/** Minimal connection surface for multiplexed trace (see meshcore `Connection`). */
-export interface MeshcoreTracePathMuxConnection {
-  on(event: string | number, cb: (...args: unknown[]) => void): void;
-  off(event: string | number, cb: (...args: unknown[]) => void): void;
-  once(event: string | number, cb: (...args: unknown[]) => void): void;
-  sendCommandSendTracePath(tag: number, auth: number, path: Uint8Array): Promise<void>;
 }
 
 interface PendingTrace {
@@ -36,9 +35,6 @@ interface MuxState {
 
 const muxByConn = new WeakMap<object, MuxState>();
 
-/** Mirror `@liamcottle/meshcore.js` `constants.js` ResponseCodes / PushCodes (avoid incomplete .d.ts). */
-const MC_RESP_ERR = 1;
-const MC_RESP_SENT = 6;
 const MC_PUSH_TRACE_DATA = 0x89;
 
 function getMuxState(conn: object): MuxState {
@@ -78,7 +74,7 @@ function getMuxState(conn: object): MuxState {
       p.reject(unknownToError(err, 'invalid trace response'));
     }
   };
-  (conn as MeshcoreTracePathMuxConnection).on(MC_PUSH_TRACE_DATA, onTraceData);
+  (conn as MeshcoreTracePathConnection).on(MC_PUSH_TRACE_DATA, onTraceData);
   s = { pendingByTag, onTraceData };
   muxByConn.set(conn, s);
   return s;
@@ -167,7 +163,7 @@ function unknownToError(e: unknown, fallback: string): Error {
  * are matched by the 32-bit tag (same as meshcore.js `tracePath`, but shared `TraceData` listener).
  */
 export function runMeshcoreTracePathMultiplexed(
-  conn: MeshcoreTracePathMuxConnection,
+  conn: MeshcoreTracePathConnection,
   path: Uint8Array,
   extraTimeoutMillis: number,
   runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,

@@ -1,21 +1,6 @@
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { MC_CMD_LOGOUT, MC_RESP_ERR, MC_RESP_OK } from './meshcoreWireCodes';
 import { computeRoomLoginSentWaitMs, type MeshcoreCompanionTransport } from './timeConstants';
-
-/** meshcore.js CommandCodes.LOGOUT (meshcore_py CommandType.LOGOUT) */
-const MC_CMD_LOGOUT = 29;
-
-/** meshcore.js ResponseCodes.Ok */
-const MC_RESP_OK = 0;
-
-/** meshcore.js ResponseCodes.Err */
-const MC_RESP_ERR = 1;
-
-/** Minimal connection surface for room SendLogout RPC. */
-export interface MeshcoreRoomLogoutRpcConnection {
-  on(event: string | number, cb: (...args: unknown[]) => void): void;
-  off(event: string | number, cb: (...args: unknown[]) => void): void;
-  once(event: string | number, cb: (...args: unknown[]) => void): void;
-  sendToRadioFrame(data: Uint8Array): Promise<void>;
-}
 
 /** Build SendLogout radio frame (cmd 29 + 32-byte room server pubkey). */
 export function buildSendLogoutFrame(publicKey: Uint8Array): Uint8Array {
@@ -40,7 +25,7 @@ function unknownToError(e: unknown, fallback: string): Error {
  * Failure point: radio timeout or Err — rejects; caller shows UI error.
  */
 export function runMeshcoreRoomLogout(
-  conn: MeshcoreRoomLogoutRpcConnection,
+  conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   opts?: {
     companionTransport?: MeshcoreCompanionTransport;

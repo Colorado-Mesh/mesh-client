@@ -15,13 +15,15 @@ export interface ReticulumIdentityIpcDeps {
 
 const MAX_VAULT_SECRET_BYTES = 512 * 1024;
 
-function validateVaultPasscodeInput(passcode: unknown): string | null {
+/** @internal Exported for IPC validation unit tests. */
+export function validateVaultPasscodeInput(passcode: unknown): string | null {
   if (typeof passcode !== 'string') return 'passcode must be a string';
   if (passcode.length < 8 || passcode.length > 256) return 'passcode length out of range';
   return null;
 }
 
-function validateVaultSecretInput(secret: unknown): string | null {
+/** @internal Exported for IPC validation unit tests. */
+export function validateVaultSecretInput(secret: unknown): string | null {
   if (typeof secret !== 'string') return 'secret must be a string';
   if (Buffer.byteLength(secret, 'utf8') > MAX_VAULT_SECRET_BYTES) return 'secret too large';
   return null;

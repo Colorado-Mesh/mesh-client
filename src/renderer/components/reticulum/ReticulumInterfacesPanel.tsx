@@ -8,6 +8,7 @@ import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulum
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
   fetchReticulumConfigAudit,
   repairReticulumConfig,
@@ -38,7 +39,6 @@ import type {
   ReticulumInterfaceRow,
   ReticulumSerialPortOption,
 } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
-import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import { useReticulumUiStore } from '@/renderer/stores/reticulumUiStore';
 import {
   formatConnectHostLiteral,
@@ -215,25 +215,25 @@ export function ReticulumInterfacesPanel({
   }, [pendingInterfaceEditId, interfaces, clearPendingInterfaceEdit]);
 
   const restartStackForInterfaceChange = useCallback(async () => {
-    const session = tryGetReticulumSession();
-    if (!session?.restartStack) {
+    const result = await restartReticulumStack({
+      onBeginBleConnectGrace,
+      onRefresh,
+      logTag: 'ReticulumInterfacesPanel',
+    });
+    if (result.ok && !result.restarted && result.unavailable) {
       setRestartStackHint(true);
       return;
     }
-    try {
-      await session.restartStack();
-      onBeginBleConnectGrace();
-      setRestartStackHint(false);
-      await onRefresh();
-    } catch (e) {
-      console.error('[ReticulumInterfacesPanel] restart stack failed ' + errLikeToLogString(e));
+    if (!result.ok) {
       setInterfaceError(
         t('connectionPanel.reticulumInterfaces.restartStackFailed', {
-          message: errLikeToLogString(e),
+          message: result.message,
         }),
       );
       setRestartStackHint(true);
+      return;
     }
+    setRestartStackHint(false);
   }, [onBeginBleConnectGrace, onRefresh, t]);
 
   const handleSetPrimaryLocalSerial = useCallback(

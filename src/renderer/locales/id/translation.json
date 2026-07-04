@@ -859,8 +859,8 @@
     "reticulumPeers": {
       "hops": "Hops",
       "actions": "Aksi",
-      "path": "Path",
-      "probe": "Probe"
+      "path": "Jalur",
+      "probe": "Sonda"
     },
     "reticulumPropagation": {
       "title": "Node propagasi",

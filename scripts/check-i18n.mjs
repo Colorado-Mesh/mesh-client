@@ -10,8 +10,7 @@
  * 5. Fails on CAT/XLIFF/Memsource residue in non-English strings; fails if {{placeholder}}
  *    name sets differ from English for the same key.
  * 6. Fails on locale quality issues (mojibake, broken meshtastic://, false friends, etc.)
- *    via check-i18n-quality.mjs — including modulePanel.* strings still identical to English,
- *    appPanel.reduceMotionDesc loading-spinner false friends, appPanel.debugSnapshot*
+ *    via check-i18n-quality.mjs — including appPanel.reduceMotionDesc loading-spinner false friends, appPanel.debugSnapshot*
  *    copied-toast false friends and mixed EN "snapshot" residue, rawPacketLog protocol tokens,
  *    flood/zero-hop advert commercial false friends on branch advert UI keys, MeshCore Open
  *    wire / g: GIF composer strings (protocol tokens, companion-wire false friends, Open-aware),
@@ -172,11 +171,11 @@ function collectFiles(dir) {
   return results;
 }
 
-// Match t('some.key') or t("some.key") — only static string literals.
-const T_STATIC_RE = /\bt\(\s*['"]([^'"]+)['"]\s*[),]/g;
+// Match t('some.key') / i18n.t('some.key') — only static string literals.
+const T_STATIC_RE = /\b(?:t|i18n\.t)\(\s*['"]([^'"]+)['"]\s*[),]/g;
 
-// Match t(`prefix.${expr}`) or t(`prefix.${expr}.suffix`) — dynamic keys with registered prefixes.
-const T_TEMPLATE_RE = /\bt\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
+// Match t(`prefix.${expr}`) or i18n.t(`prefix.${expr}`) — dynamic keys with registered prefixes.
+const T_TEMPLATE_RE = /\b(?:t|i18n\.t)\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
 
 const en = flatten(readJson(EN_FILE));
 const enKeys = new Set(Object.keys(en));
@@ -292,6 +291,25 @@ for (const file of files) {
       }
     }
   });
+}
+
+// ── 1b. Meshtastic SDK routing-error i18n keys (dynamic i18n.t(i18nKey)) ───
+const routingErrorFile = join(SRC_DIR, 'lib/meshtastic/meshtasticSdkRoutingErrorLog.ts');
+if (statSync(routingErrorFile).isFile()) {
+  const routingSrc = readFileSync(routingErrorFile, 'utf8');
+  const routingKeys = [
+    ...new Set(
+      [...routingSrc.matchAll(/return '([^']+)'/g)]
+        .map((m) => m[1])
+        .filter((k) => k.startsWith('chatPanel.routingErrors.')),
+    ),
+  ];
+  for (const key of routingKeys) {
+    if (!keyExists(key)) {
+      console.error(`Missing key: "${key}" referenced in meshtasticSdkRoutingErrorLog.ts`);
+      errors++;
+    }
+  }
 }
 
 // ── 2. Unused English keys (no static/dynamic/literal usage in src/) ─────────

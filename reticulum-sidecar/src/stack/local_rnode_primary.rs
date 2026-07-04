@@ -301,14 +301,17 @@ mod tests {
     }
 
     #[test]
-    fn is_local_connect_host_matches_ts_cases() {
-        assert!(is_local_connect_host("192.168.1.10"));
-        assert!(is_local_connect_host("fd00::1"));
-        assert!(is_local_connect_host("fe80::1"));
-        assert!(is_local_connect_host("::1"));
-        assert!(is_local_connect_host("meshtastic.local"));
-        assert!(!is_local_connect_host("8.8.8.8"));
-        assert!(!is_local_connect_host("2001:db8::1"));
+    fn is_local_connect_host_matches_shared_fixture() {
+        let json = include_str!("../../../src/shared/fixtures/localConnectHostClassification.json");
+        let fixture: serde_json::Value = serde_json::from_str(json).expect("fixture json");
+        for host in fixture["local"].as_array().expect("local array") {
+            let h = host.as_str().expect("host string");
+            assert!(is_local_connect_host(h), "expected local: {h}");
+        }
+        for host in fixture["remote"].as_array().expect("remote array") {
+            let h = host.as_str().expect("host string");
+            assert!(!is_local_connect_host(h), "expected remote: {h}");
+        }
     }
 
     #[test]

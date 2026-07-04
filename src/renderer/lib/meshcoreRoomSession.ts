@@ -1,6 +1,7 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -9,15 +10,8 @@ import {
   enqueueMeshcoreRoomLogin,
   resetMeshcoreRoomLoginQueue,
 } from './meshcoreRoomLoginQueue';
-import {
-  MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
-  type MeshcoreRoomLoginRpcConnection,
-  runMeshcoreRoomLogin,
-} from './meshcoreRoomLoginRpc';
-import {
-  type MeshcoreRoomLogoutRpcConnection,
-  runMeshcoreRoomLogout,
-} from './meshcoreRoomLogoutRpc';
+import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, runMeshcoreRoomLogin } from './meshcoreRoomLoginRpc';
+import { runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
@@ -41,7 +35,7 @@ export interface MeshcoreRoomSession {
 }
 
 /** Minimal connection surface for room server login. */
-export type MeshcoreRoomLoginConn = MeshcoreRoomLoginRpcConnection;
+export type MeshcoreRoomLoginConn = MeshcoreRadioConnection;
 
 /** Firmware PERM_ACL_ROLE_MASK values (CommonCLI / room server ACL). */
 export const MESHCORE_ROOM_PERM_GUEST = 0;
@@ -332,7 +326,7 @@ export async function meshcoreRoomLogin(
 }
 
 /** Minimal connection surface for room server logout. */
-export type MeshcoreRoomLogoutConn = MeshcoreRoomLogoutRpcConnection;
+export type MeshcoreRoomLogoutConn = MeshcoreRadioConnection;
 
 export function meshcoreRoomLogoutFailureMessage(err: unknown): DiagnosticTextI18n {
   const msg = errLikeToLogString(err).toLowerCase();
@@ -413,7 +407,7 @@ export async function meshcoreRoomTryAdminLogin(
 }
 
 /** Repeater admin login or room server admin login depending on contact type. */
-export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn & MeshcoreRoomLoginConn;
+export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn;
 
 export async function meshcoreTryRemoteServerLogin(
   conn: MeshcoreRemoteServerLoginConn,

@@ -12,11 +12,11 @@ import {
 import { isReticulumDiagnosticRow } from '@/renderer/lib/diagnostics/ReticulumDiagnosticEngine';
 import { translateReticulumDiagnosticCause } from '@/renderer/lib/diagnostics/reticulumDiagnosticLabels';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
   repairReticulumConfig,
   type ReticulumConfigRepairKind,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
-import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import type { DiagnosticRow, RfDiagnosticRow } from '@/renderer/lib/types';
 import { useReticulumUiStore } from '@/renderer/stores/reticulumUiStore';
 
@@ -98,12 +98,11 @@ export function ReticulumDiagnosticsSection({
         }
         addToast(t('diagnosticsPanel.reticulum.repairSuccess'), 'success');
         if (res.restart_required) {
-          const session = tryGetReticulumSession();
-          if (session?.restartStack) {
-            await session.restartStack();
-            onRefreshDiagnostics?.();
-            return;
-          }
+          await restartReticulumStack({
+            onRefresh: () => Promise.resolve(onRefreshDiagnostics?.()),
+            logTag: 'ReticulumDiagnosticsSection',
+          });
+          return;
         }
         onRefreshDiagnostics?.();
       } catch (e) {
@@ -150,11 +149,10 @@ export function ReticulumDiagnosticsSection({
       if (kind === 'restart_stack') {
         setBusyKey(row.id);
         try {
-          const session = tryGetReticulumSession();
-          if (session?.restartStack) {
-            await session.restartStack();
-          }
-          onRefreshDiagnostics?.();
+          await restartReticulumStack({
+            onRefresh: () => Promise.resolve(onRefreshDiagnostics?.()),
+            logTag: 'ReticulumDiagnosticsSection',
+          });
         } finally {
           setBusyKey(null);
         }

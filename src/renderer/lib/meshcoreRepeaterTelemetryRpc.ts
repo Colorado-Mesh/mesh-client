@@ -3,7 +3,7 @@ import {
   MC_PUSH_TELEMETRY_RESPONSE,
   MC_RESP_ERR,
   MC_RESP_SENT,
-  type MeshcoreRepeaterRpcConnection,
+  type MeshcoreRadioConnection,
   type MeshcoreRepeaterTelemetryPush,
   normalizePubKeyPrefix,
   prefixToHex,
@@ -16,7 +16,7 @@ import {
  * Replaces meshcore.js `getTelemetry()` which uses `once(TelemetryResponse)` and drops mismatched pushes.
  */
 export function runMeshcoreRepeaterTelemetryRequest(
-  conn: MeshcoreRepeaterRpcConnection,
+  conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   extraTimeoutMs: number,
 ): Promise<MeshcoreRepeaterTelemetryPush> {
