@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} odskakuje",
     "openNode": "Przeglądaj {{name}}",
     "pagePath": "Ścieżka strony",
-    "pagePathAria": "Ścieżka strony Nomada",
     "homePage": "Strona główna",
     "reloadPage": "Załaduj ponownie stronę",
     "closeViewer": "Zamknij przeglądarkę stron",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Nie udało się pobrać pliku: {{error}}",
     "fileDownloadInProgress": "Pobieranie pliku już trwa.",
     "sendMessage": "Wiadomość",
-    "sendMessageAria": "Wyślij wiadomość do {{name}}"
+    "sendMessageAria": "Wyślij wiadomość do {{name}}",
+    "urlBarAria": "Adres strony Nomada",
+    "back": "Z powrotem",
+    "forward": "Do przodu",
+    "invalidUrl": "Nieprawidłowy adres strony Nomada"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

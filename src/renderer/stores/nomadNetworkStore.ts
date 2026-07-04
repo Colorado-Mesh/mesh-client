@@ -12,7 +12,12 @@ import {
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { NomadFileResponse, NomadNodeRow, NomadPageResponse } from '@/shared/nomad-types';
+import type {
+  NomadFileResponse,
+  NomadNodeRow,
+  NomadPageRequestData,
+  NomadPageResponse,
+} from '@/shared/nomad-types';
 
 const NOMAD_EGRESS_CACHE_MS = 60_000;
 
@@ -51,7 +56,11 @@ interface NomadNetworkStoreState {
   lastRefreshAt: number | null;
   nomadApiAvailable: boolean;
   refreshFromSidecar: () => Promise<void>;
-  fetchNomadPage: (hash: string, path: string) => Promise<NomadPageResponse>;
+  fetchNomadPage: (
+    hash: string,
+    path: string,
+    requestData?: NomadPageRequestData,
+  ) => Promise<NomadPageResponse>;
   fetchNomadFile: (hash: string, path: string) => Promise<NomadFileResponse>;
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   getNode: (hash: string) => NomadNodeRow | undefined;
@@ -84,7 +93,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
     }
   },
 
-  fetchNomadPage: async (hash, path) => {
+  fetchNomadPage: async (hash, path, requestData) => {
     if (!(await isReticulumSidecarRunning())) {
       return { ok: false, error: 'sidecar_not_running' };
     }
@@ -97,6 +106,9 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
         hops: String(hops),
         egress,
       });
+      if (requestData && Object.keys(requestData).length > 0) {
+        qs.set('data', btoa(JSON.stringify(requestData)));
+      }
       const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '');
       return (await window.electronAPI.reticulum.proxyGet(
         `/api/v1/nomadnetwork/page/${cleanHash}?${qs.toString()}`,

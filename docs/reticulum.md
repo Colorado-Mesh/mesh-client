@@ -16,7 +16,7 @@ Related docs: [README — Reticulum Features](../README.md#reticulum-features), 
 2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
 3. **Network** → generate or import your LXMF identity (stack must be running).
 4. **Connection → Interfaces** → add and enable transports (TCP hub, Auto, or RNode over USB / BLE / Wi‑Fi).
-5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** for announce favourites.
+5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
 
 After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
 
@@ -33,7 +33,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                           |
 | Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                |
 | Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                        |
-| Nomad Network   | Favourites / announces list (MeshChat-style search and favourite toggle)                                                                                                        |
+| Nomad Network   | Favourites / announces list; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links            |
 | Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                           |
 | Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped) |
 | Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                        |
@@ -50,7 +50,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, **Pick device** (serial / BLE)                                             |
 | Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                     |
-| Nomad Network   | Favourites and announces                                                                                                                    |
+| Nomad Network   | Favourites, announces, and Micron page browser (navigation, cache, file downloads)                                                          |
 | Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                             |
 | Network         | Identity, stack settings, announces, propagation, config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**) |
 | Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                         |

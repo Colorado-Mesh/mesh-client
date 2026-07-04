@@ -33,6 +33,7 @@ pub async fn favorite_nomad_node(
 #[derive(Debug, Deserialize)]
 pub struct NomadPageQuery {
     pub path: String,
+    pub data: Option<String>,
 }
 
 pub async fn get_nomad_page(
@@ -40,7 +41,7 @@ pub async fn get_nomad_page(
     Path(hash): Path<String>,
     Query(query): Query<NomadPageQuery>,
 ) -> Json<serde_json::Value> {
-    Json(stack.nomad_page(&hash, &query.path).await)
+    Json(stack.nomad_page(&hash, &query.path, query.data.as_deref()).await)
 }
 
 #[derive(Debug, Deserialize)]

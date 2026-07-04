@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} 跳开",
     "openNode": "浏览{{name}}",
     "pagePath": "页面路径",
-    "pagePathAria": "游牧页面路径",
     "homePage": "主页",
     "reloadPage": "重新加载页面",
     "closeViewer": "关闭页面查看器",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "下载文件失败：{{error}}",
     "fileDownloadInProgress": "文件下载已在进行中。",
     "sendMessage": "信息",
-    "sendMessageAria": "发送消息至 {{name}}"
+    "sendMessageAria": "发送消息至 {{name}}",
+    "urlBarAria": "游牧页面地址",
+    "back": "后退",
+    "forward": "向前",
+    "invalidUrl": "Nomad 页面地址无效"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

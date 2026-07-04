@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} стрибає геть",
     "openNode": "Огляд {{name}}",
     "pagePath": "Шлях сторінки",
-    "pagePathAria": "Шлях сторінки Nomad",
     "homePage": "Домашня сторінка",
     "reloadPage": "Перезавантажити сторінку",
     "closeViewer": "Закрити засіб перегляду сторінок",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Не вдалося завантажити файл: {{error}}",
     "fileDownloadInProgress": "Завантаження файлу вже триває.",
     "sendMessage": "повідомлення",
-    "sendMessageAria": "Надіслати повідомлення до {{name}}"
+    "sendMessageAria": "Надіслати повідомлення до {{name}}",
+    "urlBarAria": "Адреса сторінки Nomad",
+    "back": "Назад",
+    "forward": "вперед",
+    "invalidUrl": "Недійсна адреса сторінки Nomad"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

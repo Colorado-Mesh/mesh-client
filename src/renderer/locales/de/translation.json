@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} hüpft davon",
     "openNode": "Durchsuchen {{name}}",
     "pagePath": "Seitenpfad",
-    "pagePathAria": "Nomad-Seitenpfad",
     "homePage": "Startseite",
     "reloadPage": "Seite neu laden",
     "closeViewer": "Schließen Sie den Seitenbetrachter",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Datei konnte nicht heruntergeladen werden: {{error}}",
     "fileDownloadInProgress": "Ein Datei-Download ist bereits im Gange.",
     "sendMessage": "Nachricht",
-    "sendMessageAria": "Nachricht an {{name}} senden"
+    "sendMessageAria": "Nachricht an {{name}} senden",
+    "urlBarAria": "Nomad-Seitenadresse",
+    "back": "Zurück",
+    "forward": "Nach vorne",
+    "invalidUrl": "Ungültige Nomad-Seitenadresse"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

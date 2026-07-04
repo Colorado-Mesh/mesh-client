@@ -79,6 +79,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/letsMeshJwt.test.ts',
   'src/renderer/lib/messageRetention.test.ts',
   'src/renderer/lib/nomad/micronParser.test.ts',
+  'src/renderer/lib/nomad/nomadPageCache.test.ts',
   'src/renderer/lib/meshtasticBacklogUtils.test.ts',
   'src/renderer/lib/meshtasticDmKeyBackupStorage.test.ts',
   'src/renderer/lib/meshtasticMqttIdentity.test.ts',

@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} 깡충깡충 뛰다",
     "openNode": "{{name}} 찾아보기",
     "pagePath": "페이지 경로",
-    "pagePathAria": "노매드 페이지 경로",
     "homePage": "홈페이지",
     "reloadPage": "페이지 새로고침",
     "closeViewer": "페이지 뷰어 닫기",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "파일 다운로드 실패: {{error}}",
     "fileDownloadInProgress": "파일 다운로드가 이미 진행 중입니다.",
     "sendMessage": "메시지",
-    "sendMessageAria": "{{name}}에 메시지 보내기"
+    "sendMessageAria": "{{name}}에 메시지 보내기",
+    "urlBarAria": "노마드 페이지 주소",
+    "back": "뒤쪽에",
+    "forward": "앞으로",
+    "invalidUrl": "잘못된 Nomad 페이지 주소"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

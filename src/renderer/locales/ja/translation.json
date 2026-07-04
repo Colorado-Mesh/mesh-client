@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} が飛び降りる",
     "openNode": "{{name}}を参照",
     "pagePath": "ページパス",
-    "pagePathAria": "ノマドページのパス",
     "homePage": "ホームページ",
     "reloadPage": "ページをリロードする",
     "closeViewer": "ページビューアを閉じる",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "ファイルのダウンロードに失敗しました: {{error}}",
     "fileDownloadInProgress": "ファイルのダウンロードはすでに進行中です。",
     "sendMessage": "メッセージ",
-    "sendMessageAria": "{{name}} にメッセージを送信"
+    "sendMessageAria": "{{name}} にメッセージを送信",
+    "urlBarAria": "ノマドページのアドレス",
+    "back": "戻る",
+    "forward": "フォワード",
+    "invalidUrl": "Nomad ページのアドレスが無効です"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

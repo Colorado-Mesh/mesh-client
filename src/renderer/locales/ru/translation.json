@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} упрыгивает",
     "openNode": "Просмотр {{name}}",
     "pagePath": "Путь к странице",
-    "pagePathAria": "Путь к странице Nomad",
     "homePage": "Домашняя страница",
     "reloadPage": "Обновить страницу",
     "closeViewer": "Закрыть просмотрщик страниц",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Не удалось загрузить файл: {{error}}.",
     "fileDownloadInProgress": "Загрузка файла уже идет.",
     "sendMessage": "Сообщение",
-    "sendMessageAria": "Отправить сообщение {{name}}"
+    "sendMessageAria": "Отправить сообщение {{name}}",
+    "urlBarAria": "Адрес страницы кочевника",
+    "back": "Назад",
+    "forward": "Вперед",
+    "invalidUrl": "Неверный адрес страницы Nomad"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

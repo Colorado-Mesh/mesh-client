@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} springt weg",
     "openNode": "Blader door {{name}}",
     "pagePath": "Paginapad",
-    "pagePathAria": "Nomadenpaginapad",
     "homePage": "Startpagina",
     "reloadPage": "Pagina opnieuw laden",
     "closeViewer": "Paginaviewer sluiten",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Kan bestand niet downloaden: {{error}}",
     "fileDownloadInProgress": "Er wordt al een bestand gedownload.",
     "sendMessage": "Bericht",
-    "sendMessageAria": "Stuur bericht naar {{name}}"
+    "sendMessageAria": "Stuur bericht naar {{name}}",
+    "urlBarAria": "Adres van de nomadenpagina",
+    "back": "Rug",
+    "forward": "Vooruit",
+    "invalidUrl": "Ongeldig Nomad-paginaadres"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

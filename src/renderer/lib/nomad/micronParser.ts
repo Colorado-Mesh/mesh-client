@@ -87,3 +87,138 @@ export function isExternalHttpUrl(url: string): boolean {
   const trimmed = url.trim();
   return trimmed.startsWith('http://') || trimmed.startsWith('https://');
 }
+
+export interface ParsedNomadLinkFieldsSpec {
+  /** Named fields to submit, or `*` for all inputs in the page. */
+  fieldNames: string[] | '*';
+  /** Static request variables (`var_*` on the NomadNet wire). */
+  requestVars: Record<string, string>;
+}
+
+/** Split a Micron link destination into base URL and optional backtick field spec. */
+export function splitNomadLinkDestination(destination: string): {
+  baseDestination: string;
+  embeddedFieldsSpec: string;
+} {
+  const idx = destination.indexOf('`');
+  if (idx === -1) {
+    return { baseDestination: destination, embeddedFieldsSpec: '' };
+  }
+  return {
+    baseDestination: destination.slice(0, idx),
+    embeddedFieldsSpec: destination.slice(idx + 1),
+  };
+}
+
+/** Parse `data-fields` or embedded backtick field metadata from Micron links. */
+export function parseNomadLinkFieldsSpec(fieldsSpec: string): ParsedNomadLinkFieldsSpec {
+  const trimmed = fieldsSpec.trim();
+  if (!trimmed) {
+    return { fieldNames: [], requestVars: {} };
+  }
+
+  const fieldNames: string[] = [];
+  const requestVars: Record<string, string> = {};
+  let allFields = false;
+
+  for (const entry of trimmed.split('|')) {
+    if (entry === '*') {
+      allFields = true;
+    } else if (entry.includes('=')) {
+      const eqIdx = entry.indexOf('=');
+      const key = entry.slice(0, eqIdx);
+      const value = entry.slice(eqIdx + 1);
+      if (key) requestVars[key] = value;
+    } else if (entry) {
+      fieldNames.push(entry);
+    }
+  }
+
+  return {
+    fieldNames: allFields ? '*' : fieldNames,
+    requestVars,
+  };
+}
+
+function mergeNomadRequestVars(
+  target: Record<string, string>,
+  source: Record<string, string>,
+): void {
+  for (const [key, value] of Object.entries(source)) {
+    target[`var_${key}`] = value;
+  }
+}
+
+/** Collect Micron form field values for a Nomad link request (NomadNet `field_*` keys). */
+export function collectNomadFormFieldValues(
+  container: HTMLElement,
+  fieldsSpec: ParsedNomadLinkFieldsSpec,
+): Record<string, string> {
+  const requestData: Record<string, string> = {};
+  mergeNomadRequestVars(requestData, fieldsSpec.requestVars);
+
+  const allFields = fieldsSpec.fieldNames === '*';
+  const namedFields = fieldsSpec.fieldNames === '*' ? null : new Set(fieldsSpec.fieldNames);
+
+  const inputs = container.querySelectorAll<HTMLInputElement>('input[name]');
+  for (const input of inputs) {
+    const name = input.name;
+    if (!name) continue;
+    if (!allFields && namedFields && !namedFields.has(name)) continue;
+
+    const fieldKey = `field_${name}`;
+
+    if (input.type === 'checkbox') {
+      if (!input.checked) continue;
+      const value = input.value || '1';
+      const existing = requestData[fieldKey];
+      requestData[fieldKey] = existing ? `${existing},${value}` : value;
+      continue;
+    }
+
+    if (input.type === 'radio') {
+      if (!input.checked) continue;
+      requestData[fieldKey] = input.value;
+      continue;
+    }
+
+    requestData[fieldKey] = input.value;
+  }
+
+  return requestData;
+}
+
+/** Build request payload for a Micron link activation (path + optional form data). */
+export function buildNomadLinkRequest(
+  destination: string,
+  dataFieldsAttr: string | null | undefined,
+  container: HTMLElement | null,
+): { destination: string; requestData: Record<string, string> } {
+  const { baseDestination, embeddedFieldsSpec } = splitNomadLinkDestination(destination);
+  const attrSpec = dataFieldsAttr?.trim() ? parseNomadLinkFieldsSpec(dataFieldsAttr) : null;
+  const embeddedSpec = embeddedFieldsSpec
+    ? parseNomadLinkFieldsSpec(embeddedFieldsSpec)
+    : { fieldNames: [] as string[], requestVars: {} };
+
+  const mergedSpec: ParsedNomadLinkFieldsSpec = {
+    fieldNames:
+      attrSpec?.fieldNames === '*' || embeddedSpec.fieldNames === '*'
+        ? '*'
+        : [...(attrSpec?.fieldNames ?? []), ...embeddedSpec.fieldNames],
+    requestVars: { ...embeddedSpec.requestVars, ...(attrSpec?.requestVars ?? {}) },
+  };
+
+  const requestData =
+    container &&
+    (mergedSpec.fieldNames === '*' ||
+      mergedSpec.fieldNames.length > 0 ||
+      Object.keys(mergedSpec.requestVars).length > 0)
+      ? collectNomadFormFieldValues(container, mergedSpec)
+      : {
+          ...Object.fromEntries(
+            Object.entries(mergedSpec.requestVars).map(([k, v]) => [`var_${k}`, v]),
+          ),
+        };
+
+  return { destination: baseDestination, requestData };
+}

@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} melompat menjauh",
     "openNode": "Telusuri {{name}}",
     "pagePath": "Jalur halaman",
-    "pagePathAria": "Jalur halaman pengembara",
     "homePage": "Halaman beranda",
     "reloadPage": "Muat ulang halaman",
     "closeViewer": "Tutup penampil halaman",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Gagal mengunduh file: {{error}}",
     "fileDownloadInProgress": "Pengunduhan file sedang berlangsung.",
     "sendMessage": "Pesan",
-    "sendMessageAria": "Kirim pesan ke {{name}}"
+    "sendMessageAria": "Kirim pesan ke {{name}}",
+    "urlBarAria": "Alamat halaman pengembara",
+    "back": "Kembali",
+    "forward": "Maju",
+    "invalidUrl": "Alamat halaman Nomad tidak valid"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

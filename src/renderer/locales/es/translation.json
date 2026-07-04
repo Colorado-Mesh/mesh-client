@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} se aleja saltando",
     "openNode": "Explorar {{name}}",
     "pagePath": "Ruta de la página",
-    "pagePathAria": "Ruta de la página nómada",
     "homePage": "pagina de inicio",
     "reloadPage": "Recargar página",
     "closeViewer": "Cerrar visor de páginas",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "No se pudo descargar el archivo: {{error}}",
     "fileDownloadInProgress": "Ya hay una descarga de archivos en curso.",
     "sendMessage": "Mensaje",
-    "sendMessageAria": "Enviar mensaje a {{name}}"
+    "sendMessageAria": "Enviar mensaje a {{name}}",
+    "urlBarAria": "Dirección de la página nómada",
+    "back": "Atrás",
+    "forward": "Adelante",
+    "invalidUrl": "Dirección de página de Nomad no válida"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} odskočí pryč",
     "openNode": "Procházet {{name}}",
     "pagePath": "Cesta ke stránce",
-    "pagePathAria": "Cesta stránky Nomád",
     "homePage": "Domovská stránka",
     "reloadPage": "Znovu načíst stránku",
     "closeViewer": "Zavřít prohlížeč stránek",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Nepodařilo se stáhnout soubor: {{error}}",
     "fileDownloadInProgress": "Stahování souboru již probíhá.",
     "sendMessage": "Zpráva",
-    "sendMessageAria": "Odeslat zprávu na {{name}}"
+    "sendMessageAria": "Odeslat zprávu na {{name}}",
+    "urlBarAria": "Adresa stránky Nomád",
+    "back": "Zadní",
+    "forward": "Vpřed",
+    "invalidUrl": "Neplatná adresa stránky Nomad"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

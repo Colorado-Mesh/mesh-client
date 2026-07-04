@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} atlayarak uzaklaşır",
     "openNode": "{{name}}'a göz atın",
     "pagePath": "Sayfa yolu",
-    "pagePathAria": "Göçebe sayfa yolu",
     "homePage": "Ana sayfa",
     "reloadPage": "Sayfayı yeniden yükle",
     "closeViewer": "Sayfa görüntüleyiciyi kapat",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Dosya indirilemedi: {{error}}",
     "fileDownloadInProgress": "Bir dosya indirme işlemi zaten devam ediyor.",
     "sendMessage": "Mesaj",
-    "sendMessageAria": "{{name}} adresine mesaj gönder"
+    "sendMessageAria": "{{name}} adresine mesaj gönder",
+    "urlBarAria": "Göçebe sayfa adresi",
+    "back": "Geri",
+    "forward": "İleri",
+    "invalidUrl": "Geçersiz Göçebe sayfa adresi"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

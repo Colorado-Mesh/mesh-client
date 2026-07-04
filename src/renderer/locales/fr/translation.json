@@ -2342,7 +2342,6 @@
     "hopsAway_other": "{{count}} saute",
     "openNode": "Parcourir {{name}}",
     "pagePath": "Chemin de la page",
-    "pagePathAria": "Chemin de la page nomade",
     "homePage": "Page d'accueil",
     "reloadPage": "Recharger la page",
     "closeViewer": "Fermer la visionneuse de page",
@@ -2355,7 +2354,11 @@
     "fileDownloadFailed": "Échec du téléchargement du fichier : {{error}}",
     "fileDownloadInProgress": "Un téléchargement de fichier est déjà en cours.",
     "sendMessage": "Message",
-    "sendMessageAria": "Envoyer un message à {{name}}"
+    "sendMessageAria": "Envoyer un message à {{name}}",
+    "urlBarAria": "Adresse de la page nomade",
+    "back": "Dos",
+    "forward": "Avant",
+    "invalidUrl": "Adresse de la page Nomad invalide"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",
