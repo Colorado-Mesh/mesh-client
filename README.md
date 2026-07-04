@@ -58,8 +58,17 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
       <img src="docs/images/chat.png" height="200" alt="Chat"/>
       <img src="docs/images/connection.png" height="200" alt="Connection"/>
       <img src="docs/images/repeaters.png" height="200" alt="Repeaters"/>
-      <img src="docs/images/node-detail-1.png" height="200" alt="Node Detail"/>
-      <img src="docs/images/node-detail-2.png" height="200" alt="Node Detail"/>
+      <img src="docs/images/node-detail.png" height="200" alt="Node Detail"/>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4" align="center">
+      <img src="docs/images/peers.png" height="200" alt="Peers"/>
+      <img src="docs/images/nomad.png" height="200" alt="Nomad Network"/>
+      <img src="docs/images/RF.png" height="200" alt="RF"/>
+      <img src="docs/images/graph.png" height="200" alt="Graph"/>
+      <img src="docs/images/sniffer.png" height="200" alt="Sniffer"/>
+      <img src="docs/images/language-selection.png" height="200" alt="Language selector"/>
     </td>
   </tr>
 </table>
@@ -151,7 +160,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 - **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (green / cyan / amber); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
-- **Accessibility**: keyboard navigation, modal focus trap, screen reader labels, reduce-motion toggle — see [Accessibility Checklist](docs/accessibility-checklist.md)
+- **Accessibility**: modal focus trap, screen reader labels, reduce-motion toggle — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
 - **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab
 - **Updates & tray**: footer update status; system tray unread badge when the window is backgrounded

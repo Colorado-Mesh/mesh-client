@@ -4,19 +4,6 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 
 ---
 
-## Keyboard Navigation
-
-- [ ] Tab through every interactive element in order (no skips, no traps outside modals)
-- [ ] Shift+Tab reverses correctly
-- [ ] Modals: Tab cycles only within modal; Escape closes
-- [ ] Dropdown menus: arrow keys navigate options
-- [ ] Chat inline actions (reply/react/DM) reachable without mouse (focus-within visible)
-- [ ] Sortable table columns activatable with Enter/Space
-- [ ] Slider (hop limit) adjustable with arrow keys
-- [ ] Focus indicator visible at all times (no invisible focus)
-
----
-
 ## Screen Reader Compatibility
 
 - [ ] App title announced on launch

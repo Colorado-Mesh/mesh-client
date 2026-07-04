@@ -2,9 +2,187 @@
 
 Setup (clone, prerequisites, Flatpak build steps) is in [development-environment.md](development-environment.md). This page covers runtime failures, connections, and packaged installs.
 
+## Contents
+
+- [Quick reference](#quick-reference)
+- [Development and building](#development-and-building)
+- [Installation and packaged apps](#installation-and-packaged-apps)
+- [Database and local data](#database-and-local-data)
+- [Bluetooth (BLE)](#bluetooth-ble)
+- [USB serial](#usb-serial)
+- [Wi-Fi, HTTP, and TCP](#wi-fi-http-and-tcp)
+- [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions)
+- [MQTT](#mqtt)
+- [Meshtastic](#meshtastic)
+- [MeshCore](#meshcore)
+- [Reticulum](#reticulum)
+- [Chat, nodes, and notifications](#chat-nodes-and-notifications)
+- [Diagnostics and map](#diagnostics-and-map)
+- [App, updates, and localization](#app-updates-and-localization)
+
+## Quick reference
+
+Start here for log analysis, bug reports, and general connection debugging.
+
+### Connection or transport issues: use Log **Analyze**
+
+Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.
+
+### Reporting bugs: **Copy Debug Snapshot** (App tab)
+
+For Chat, unread badges, or “connected but UI looks stale” reports, use **App → Data Management → Copy Debug Snapshot** before opening a GitHub issue. The button copies a JSON support bundle to the clipboard (via Electron clipboard IPC, not the browser API).
+
+**What to read first (ignore misleading `offline-*` ids):**
+
+| Field                                    | Healthy connected example | Meaning                           |
+| ---------------------------------------- | ------------------------- | --------------------------------- |
+| `sessionSummary.<protocol>.liveSession`  | `true`                    | RF/MQTT session is live           |
+| `sessionSummary.<protocol>.sessionState` | `"live"`                  | Not DB-hydrated-only              |
+| `activeTab.liveSession`                  | `true`                    | Active protocol tab is connected  |
+| `warnings`                               | `[]`                      | No stuck-chat signatures detected |
+
+The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
+
+**Per-protocol bucket fields** (under `meshtastic` / `meshcore`):
+
+- `hydrationSlotId` — pre-connect DB hydration bucket (`offline-meshtastic` / `offline-meshcore`).
+- `connectIdentityId` — connected radio/MQTT identity.
+- `uiStoreIdentityId` — bucket Chat and Nodes read from.
+- `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
+- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — Chat list may be frozen while messages still arrive.
+
+**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen`, `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
+
+Attach the JSON (redact `myNodeNum` if you prefer) alongside **Log → Export** when possible.
+
+## Development and building
+
+Clone, compile, and local packaging issues. Setup prerequisites live in [development-environment.md](development-environment.md).
+
 ### `pnpm install` fails on native module compilation
 
 See [development-environment.md](development-environment.md) for OS-specific prerequisite installation.
+
+### Windows: "Could not find any Visual Studio installation to use"
+
+See [development-environment.md](development-environment.md#windows) for required build tools and the full recovery steps.
+
+### Windows: "Could not find any Python installation to use" (e.g. when building `@serialport/bindings-cpp`)
+
+See [development-environment.md](development-environment.md#windows) for Python setup and npm/node-gyp troubleshooting.
+
+### Linux development: SIGILL during `pnpm install`
+
+**Symptom**: `electron exited with signal SIGILL` during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).
+
+**Fix**:
+
+```bash
+MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
+pnpm run rebuild
+```
+
+Run `pnpm run rebuild` on a host where the bundled Electron binary executes correctly.
+
+### Linux development: SIGSEGV on startup
+
+**Symptom**: `electron exited with signal SIGSEGV` when running from source (GPU process; see [electron#41980](https://github.com/electron/electron/issues/41980)).
+
+**Fix**:
+
+```bash
+pnpm run build && pnpm dlx electron . --disable-gpu
+```
+
+Or:
+
+```bash
+pnpm run electron:open -- --disable-gpu
+```
+
+Optional persistent mitigation:
+
+- `export MESH_CLIENT_DISABLE_GPU=1`
+- `ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open`
+
+### "A native module failed to load" dialog on startup
+
+**Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
+
+**Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
+
+- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `pnpm install`.
+- **Windows**: Also ensure the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) is installed.
+
+### `pnpm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
+
+electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `pnpm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set; see `.github/workflows/release.yaml`.
+
+### `[DEP0190]` when running electron-builder
+
+Node deprecates `spawn(..., { shell: true })` with an args array. This project carries the packaging workaround via pnpm `patchedDependencies` on transitive packages used by the Electron build path. Re-run `pnpm install` if you upgrade `electron-builder` or its transitive packaging deps and the warning returns.
+
+### `duplicate dependency references` during dist
+
+npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder pnpm dlx electron-builder --mac` (or your usual dist command).
+
+### `dist:win` fails with "space in the path" or `EPERM` on native modules
+
+**Symptoms**
+
+- `Attempting to build a module with a space in the path` during `pnpm run dist:win` (or `pnpm run rebuild`).
+- `EPERM: operation not permitted` when the rebuild tries to replace a locked `.node` file.
+
+**Cause**
+
+1. **Spaces in the project path**: node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\mesh-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
+2. **EPERM on unlink**: Something on Windows still has the `.node` file open (another `node`/`electron` process, antivirus/Windows Defender scanning the file, or a stuck handle).
+
+**Fix**
+
+1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `pnpm install` and `pnpm run dist:win` from there.
+2. **Clear the lock before rebuild**: quit any running Mesh-Client/Electron dev instances, then delete the affected `build` folder under `node_modules` and retry.
+3. **Rebuild then dist**: `pnpm run rebuild`; if that succeeds, run `pnpm run dist:win`.
+
+CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.
+
+### Windows: `0x80010135` / "Path too long" (e.g. `bluetooth_hci_socket.lastbuildstate`)
+
+**Symptoms**
+
+- Explorer or the compiler shows **error 0x80010135** with **Path too long**, often on a **`*.lastbuildstate`** file under `node_modules`.
+- **`bluetooth_hci_socket`** in the name points at **`@stoprocent/bluetooth-hci-socket`** (a native dependency of **`@stoprocent/noble`**). MSBuild writes build state under very deep paths; together with a long clone directory, the full path can exceed the legacy **~260 character** Win32 limit.
+
+**Fix** (use one or more)
+
+1. **Shorten the repo path** (most reliable): clone or copy the project to a shallow path such as `C:\dev\mesh-client` instead of e.g. `C:\Users\…\Documents\GitHub\org\mesh-client`.
+2. **Enable long paths in Git** (helps clones/checkouts): `git config --global core.longpaths true`, then re-clone or ensure no stuck long paths in the worktree.
+3. **Enable Win32 long paths in Windows** (Windows 10 1607+): this option is **not** available as a normal toggle in **Settings**; enable it via **Local Group Policy** → _Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths_, or set the registry DWORD **`LongPathsEnabled = 1`** under `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (admin rights; reboot may be required). See [Microsoft: Maximum Path Length Limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
+4. **`pnpm run dist:win`** already runs a **hoisted** `pnpm install` to shorten `node_modules` depth before packaging; if **`pnpm install`** / **`pnpm run rebuild`** fails earlier with this error, try the short path and long-path OS settings first, or temporarily: `pnpm install --config.node-linker=hoisted` from a short root path.
+
+### Linux packaged app: `Cannot find module 'readable-stream'`
+
+**Symptom**: On Linux, the installed or AppImage build shows a main-process error when loading MQTT (`bl` → `mqtt-packet` → `mqtt` require stack).
+
+**Cause**: pnpm 10.29.3+ marks some `pnpm list --json` nodes as deduped; electron-builder can omit those transitive packages from `app.asar` unless a full copy exists at a predictable path. `mqtt` is loaded from `node_modules` at runtime (not bundled into the main esbuild output).
+
+**Fix in this repo**: `readable-stream@^4.7.0` is a **direct** production dependency (with the existing `patches/readable-stream@4.7.0.patch` for Windows `process/` resolution). Do not remove it when bumping `mqtt` or pnpm. After `pnpm run dist:linux`, verify the asar contains `node_modules/readable-stream`, `node_modules/bl`, and `node_modules/mqtt`. See [electron-builder#9603](https://github.com/electron-userland/electron-builder/issues/9603) and [pnpm#10601](https://github.com/pnpm/pnpm/issues/10601).
+
+### `[DEP0169]` / `url.parse()` deprecation warning
+
+The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:
+
+```bash
+pnpm run trace-deprecation
+```
+
+### Permission messages in the console
+
+`[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation**; media and web-app-installation are intentionally denied.
+
+## Installation and packaged apps
+
+Installers, Flatpak, Gatekeeper, and first-launch failures.
 
 ### Windows: installed files present but `Mesh-client.exe` is missing (Windows 11 ARM)
 
@@ -48,139 +226,28 @@ Capture this before opening a GitHub issue — it helps isolate NSIS extract vs 
 
 Download a CI or release artifact's `win-arm64-unpacked` folder and run `Mesh-client.exe` directly (portable, no installer).
 
-### Windows: "Could not find any Visual Studio installation to use"
+### macOS: File is damaged and cannot be opened
 
-See [development-environment.md](development-environment.md#windows) for required build tools and the full recovery steps.
+**Cause:** macOS tags downloads with the **`com.apple.quarantine`** extended attribute. For apps that are **not signed with a Developer ID** and **not notarized**, Gatekeeper may show **"File is damaged and cannot be opened"** (or **"Mesh-client" is damaged and can't be opened**) instead of the usual unidentified-developer prompt. This is a **security / quarantine** behavior and is **common on Apple silicon** for community-built Electron binaries.
 
-### Windows: "Could not find any Python installation to use" (e.g. when building `@serialport/bindings-cpp`)
+**Fix:**
 
-See [development-environment.md](development-environment.md#windows) for Python setup and npm/node-gyp troubleshooting.
+1. Open **System Settings → Privacy & Security** and scroll to the bottom. If you see "Mesh-client was blocked from use", click **Allow** to run the app.
+2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, strip the quarantine attribute; adjust the path if the app is still under **Downloads** or another folder:
 
-### BLE connection fails with "Connection attempt failed"
+```bash
+xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
+```
 
-- Make sure your device has Bluetooth enabled and is in pairing mode
-- On macOS: check **System Settings > Privacy & Security > Bluetooth**
-- Try disconnecting fully first, then reconnecting
-- If the device picker never appears, restart the app
+After running xattr, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
 
-### BLE known issues
+**Right-click → Open** on first launch can also help in some cases. Background and discussion: [jeffvli/feishin#104 (comment)](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 
-- **Bluetooth adapter not found**: ensure Bluetooth is enabled at the OS level. On Linux: `systemctl status bluetooth` and `rfkill list`. On macOS: check **System Settings > Bluetooth**. On Windows: **Settings → Bluetooth & devices**.
-- **Device not discovered**: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
-- If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
+### App crashes on launch (macOS distributable)
 
-#### BLE debug: `mtu=null` and `MTU updated: …` in logs
-
-- After **Noble** `connectAsync`, **`mtu=null`** is common until the stack finishes ATT MTU negotiation.
-- A line like **`MTU updated: 20`** comes from the Noble `mtu` event. ATT_MTU must be **≥ 23** per spec; the client **coerces reported values below 23 to 23** for write sizing (treating odd values such as **20** as a Noble/binding quirk, not a literal 20-octet ATT MTU). A **one-time debug** line may note the raw value when that happens (not a warning).
-- **Slow NodeDB / large config sync over BLE** can still be limited by **`@meshtastic/core`** queue timing (hundreds of ms between queued packets), not only GATT MTU. Use **Log → Analyze** for hints, or try **USB serial** / **TCP** if throughput matters.
-
-**Windows-specific:**
-
-- Before connecting to a MeshCore device over BLE, pair it first in **Settings → Bluetooth & devices → Add device**. Without pairing, the connection appears to succeed but no data is exchanged.
-
-**Linux-specific:**
-
-- The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
-- Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
-- If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
-- **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).
-- If device pairing fails with "Connection attempt failed", try the **"Remove & Re-pair Device"** button in the app, or manually remove via `bluetoothctl`:
-  ```bash
-  bluetoothctl
-  # Inside bluetoothctl:
-  remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
-  # Then re-pair from the app
-  ```
-- For **Meshtastic** devices, the first Chromium pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).
-- If devices won't pair or connect, power-cycle Bluetooth:
-  ```bash
-  bluetoothctl power off
-  bluetoothctl power on
-  ```
-- MeshCore devices must be in Bluetooth Companion mode. If you still see bonds without a PIN, remove the device in `bluetoothctl` or use **Remove & Re-pair Device**, then connect again.
-
-### macOS sleep / wake and auto-reconnect
-
-After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE).
-
-- **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
-- **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
-- **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
-- **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
-
-### Long-running sessions (multi-day uptime)
-
-If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
-
-- **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
-- **MeshCore:** enable **contact cap** (~500) and **auto-prune by age** in App settings; avoid bulk repeater status/neighbors refresh when not needed.
-- **Meshtastic:** enable **node cap** and **auto-prune** in App settings.
-- **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
-- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
-
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and BLE session state.
-
-### Windows sleep / wake and auto-reconnect
-
-After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE over Noble IPC).
-
-- **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
-- **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
-- **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
-- **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
-- **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
-
-**Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
-
-### MeshCore contact age prune and favorites
-
-Startup maintenance can delete stale MeshCore contacts by age. Important details:
-
-- **`last_advert` is Unix seconds**, not milliseconds. Invalid retention day counts are ignored (they previously caused mass deletes).
-- **Favorited contacts are exempt** from age-based deletion.
-- Contacts with **`NULL last_advert`** are never age-pruned (only count-based limits apply).
-- If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (`patchNodeFavorited` on the active connection identity).
-
-### MeshCore reply misquote / duplicate chat messages
-
-**Reply misquote cause:** The official MeshCore companion firmware sends unkeyed replies — `@[Display Name] body` — without identifying the parent message. The receiving client makes a best-guess match using the most recent message from that sender, which is wrong when the user replies to an older message. This is a wire protocol limitation, not a bug in any single client.
-
-The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cross-transport and channel RF replay). Room posts and tapbacks use a **60 second** window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.
-
-**Reactions on other clients:** By default mesh-client sends tapbacks and text replies as keyless `@[Display Name] …` (official companion wire). Inbound keyed `@[Name#key]` and emoji-only replies render locally as tapback badges via [`meshcorePromoteEmojiOnlyReplyToTapback`](../src/renderer/lib/meshcoreChannelText.ts). Inbound MeshCore Open wire (`r:HASH:INDEX`, `g:GIFID`) is always parsed for display.
-
-**MeshCore Open compatibility (optional):** In **App → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
-
-### Meshtastic Modules tab: “waiting for settings”
-
-If a module section stays on **Waiting for … settings from the device** with Apply disabled:
-
-- The connected firmware may not expose that module key.
-- **Remote configure** may still be loading module slices; retry the configure load or check the local radio link.
-- **Apply stays disabled** until the device slice hydrates — this prevents overwriting device config with form defaults.
-
-### Serial port not detected
-
-See [development-environment.md](development-environment.md) for OS-specific serial setup and driver guidance.
-
-### Linux: serial port access denied
-
-**Symptom**: `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
-
-**Fix**:
-
-1. Ensure your user is in the `dialout` group (see [development-environment.md — Linux serial permissions](development-environment.md#serial-permissions)).
-2. Log out and back in after changing groups.
-3. Verify with `groups`.
-4. If the group is missing:
-   ```bash
-   sudo groupadd dialout
-   sudo usermod -a -G dialout $USER
-   newgrp dialout
-   ```
+- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
+- This may also be a native module signing issue; try rebuilding: `pnpm run dist:mac`
+- If building from source: make sure `pnpm install` completed without errors
 
 ### Flatpak: `vmwgfx: driver missing` (VMware on macOS)
 
@@ -255,67 +322,105 @@ flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak
 flatpak run org.coloradomesh.MeshClient
 ```
 
-### Linux development: SIGILL during `pnpm install`
+## Database and local data
 
-**Symptom**: `electron exited with signal SIGILL` during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).
+### Database schema newer than this app (downgrade blocked)
 
-**Fix**:
+**Symptom**: On launch, a **Startup Error** dialog says the database was upgraded by a newer Mesh-Client, or **Import blocked** when merging a `.db` file.
 
-```bash
-MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
-pnpm run rebuild
-```
-
-Run `pnpm run rebuild` on a host where the bundled Electron binary executes correctly.
-
-### Linux development: SIGSEGV on startup
-
-**Symptom**: `electron exited with signal SIGSEGV` when running from source (GPU process; see [electron#41980](https://github.com/electron/electron/issues/41980)).
+**Cause**: The local SQLite database `user_version` is higher than this build supports — usually after installing a **newer** release, then opening an **older** build against the same profile.
 
 **Fix**:
 
-```bash
-pnpm run build && pnpm dlx electron . --disable-gpu
-```
+1. Install the **latest** Mesh-Client release from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (do not downgrade the app after your database has been migrated).
+2. If you must use an older build, restore a `.db` backup exported **before** the upgrade, or start with a fresh profile (export first if you need data from the newer schema).
 
-Or:
+**Log**: Details are in `mesh-client.log` under the app `userData` folder (macOS `~/Library/Application Support/mesh-client/`, Windows `%APPDATA%\mesh-client\`, Linux `~/.config/mesh-client/`).
 
-```bash
-pnpm run electron:open -- --disable-gpu
-```
+### Database directory is not writable
 
-Optional persistent mitigation:
+**Error**: `"Database directory is not writable: <path>"`
 
-- `export MESH_CLIENT_DISABLE_GPU=1`
-- `ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open`
+**Cause**: File permissions on the app's `userData` directory are too restrictive.
 
-### macOS: File is damaged and cannot be opened
+**Fix**:
 
-**Cause:** macOS tags downloads with the **`com.apple.quarantine`** extended attribute. For apps that are **not signed with a Developer ID** and **not notarized**, Gatekeeper may show **"File is damaged and cannot be opened"** (or **"Mesh-client" is damaged and can't be opened**) instead of the usual unidentified-developer prompt. This is a **security / quarantine** behavior and is **common on Apple silicon** for community-built Electron binaries.
+- **Mac/Linux**: `chmod 755 ~/Library/Application\ Support/mesh-client` (or `~/.config/mesh-client` on Linux)
+- **Windows**: Right-click `%APPDATA%\mesh-client` → Properties → Security → grant your user Full Control
 
-**Fix:**
+## Bluetooth (BLE)
 
-1. Open **System Settings → Privacy & Security** and scroll to the bottom. If you see "Mesh-client was blocked from use", click **Allow** to run the app.
-2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, strip the quarantine attribute; adjust the path if the app is still under **Downloads** or another folder:
+### BLE connection fails with "Connection attempt failed"
 
-```bash
-xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
-```
+- Make sure your device has Bluetooth enabled and is in pairing mode
+- On macOS: check **System Settings > Privacy & Security > Bluetooth**
+- Try disconnecting fully first, then reconnecting
+- If the device picker never appears, restart the app
 
-After running xattr, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
+### BLE known issues
 
-**Right-click → Open** on first launch can also help in some cases. Background and discussion: [jeffvli/feishin#104 (comment)](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
+- **Bluetooth adapter not found**: ensure Bluetooth is enabled at the OS level. On Linux: `systemctl status bluetooth` and `rfkill list`. On macOS: check **System Settings > Bluetooth**. On Windows: **Settings → Bluetooth & devices**.
+- **Device not discovered**: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
+- If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
 
-### App crashes on launch (macOS distributable)
+#### BLE debug: `mtu=null` and `MTU updated: …` in logs
 
-- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
-- This may also be a native module signing issue; try rebuilding: `pnpm run dist:mac`
-- If building from source: make sure `pnpm install` completed without errors
+- After **Noble** `connectAsync`, **`mtu=null`** is common until the stack finishes ATT MTU negotiation.
+- A line like **`MTU updated: 20`** comes from the Noble `mtu` event. ATT_MTU must be **≥ 23** per spec; the client **coerces reported values below 23 to 23** for write sizing (treating odd values such as **20** as a Noble/binding quirk, not a literal 20-octet ATT MTU). A **one-time debug** line may note the raw value when that happens (not a warning).
+- **Slow NodeDB / large config sync over BLE** can still be limited by **`@meshtastic/core`** queue timing (hundreds of ms between queued packets), not only GATT MTU. Use **Log → Analyze** for hints, or try **USB serial** / **TCP** if throughput matters.
 
-### App shows "disconnected" but device is still on
+**Windows-specific:**
 
-- The Bluetooth connection can drop silently; click Disconnect, then Connect again
-- For serial: the USB cable may have been bumped; reconnect
+- Before connecting to a MeshCore device over BLE, pair it first in **Settings → Bluetooth & devices → Add device**. Without pairing, the connection appears to succeed but no data is exchanged.
+
+**Linux-specific:**
+
+- The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
+- Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
+- If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
+- **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).
+- If device pairing fails with "Connection attempt failed", try the **"Remove & Re-pair Device"** button in the app, or manually remove via `bluetoothctl`:
+  ```bash
+  bluetoothctl
+  # Inside bluetoothctl:
+  remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
+  # Then re-pair from the app
+  ```
+- For **Meshtastic** devices, the first Chromium pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).
+- If devices won't pair or connect, power-cycle Bluetooth:
+  ```bash
+  bluetoothctl power off
+  bluetoothctl power on
+  ```
+- MeshCore devices must be in Bluetooth Companion mode. If you still see bonds without a PIN, remove the device in `bluetoothctl` or use **Remove & Re-pair Device**, then connect again.
+
+### BLE auto-reconnect: "No previously connected BLE device found"
+
+**Cause**: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.
+
+**Fix**: Click **Forget this device** on the reconnect card and pair fresh using the Bluetooth picker.
+
+## USB serial
+
+### Serial port not detected
+
+See [development-environment.md](development-environment.md) for OS-specific serial setup and driver guidance.
+
+### Linux: serial port access denied
+
+**Symptom**: `Serial: serial_io_handler.cc:147 Failed to open serial port: FILE_ERROR_ACCESS_DENIED`
+
+**Fix**:
+
+1. Ensure your user is in the `dialout` group (see [development-environment.md — Linux serial permissions](development-environment.md#serial-permissions)).
+2. Log out and back in after changing groups.
+3. Verify with `groups`.
+4. If the group is missing:
+   ```bash
+   sudo groupadd dialout
+   sudo usermod -a -G dialout $USER
+   newgrp dialout
+   ```
 
 ### Meshtastic USB serial: reconnect fails with "port is already open"
 
@@ -346,233 +451,7 @@ If auto-recovery does not help:
 
 This applies on **Windows, macOS, and Linux** (same Web Serial stack). Linux **permission denied** before the first connect is a separate issue — see [Linux: serial port access denied](#linux-serial-port-access-denied).
 
-### Connection or transport issues: use Log **Analyze**
-
-Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.
-
-### Reporting bugs: **Copy Debug Snapshot** (App tab)
-
-For Chat, unread badges, or “connected but UI looks stale” reports, use **App → Data Management → Copy Debug Snapshot** before opening a GitHub issue. The button copies a JSON support bundle to the clipboard (via Electron clipboard IPC, not the browser API).
-
-**What to read first (ignore misleading `offline-*` ids):**
-
-| Field                                    | Healthy connected example | Meaning                           |
-| ---------------------------------------- | ------------------------- | --------------------------------- |
-| `sessionSummary.<protocol>.liveSession`  | `true`                    | RF/MQTT session is live           |
-| `sessionSummary.<protocol>.sessionState` | `"live"`                  | Not DB-hydrated-only              |
-| `activeTab.liveSession`                  | `true`                    | Active protocol tab is connected  |
-| `warnings`                               | `[]`                      | No stuck-chat signatures detected |
-
-The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
-
-**Per-protocol bucket fields** (under `meshtastic` / `meshcore`):
-
-- `hydrationSlotId` — pre-connect DB hydration bucket (`offline-meshtastic` / `offline-meshcore`).
-- `connectIdentityId` — connected radio/MQTT identity.
-- `uiStoreIdentityId` — bucket Chat and Nodes read from.
-- `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
-- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — Chat list may be frozen while messages still arrive.
-
-**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen`, `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
-
-Attach the JSON (redact `myNodeNum` if you prefer) alongside **Log → Export** when possible.
-
-### Phantom chat unread on channels not on the radio
-
-**Symptoms**
-
-- Sidebar **Chat** badge or channel pills show unread counts on MeshCore channels you did not configure (zero PSK / not on the radio).
-- Badge counts disagree between the sidebar and Chat channel pills after upgrade or protocol switch.
-- **Copy Debug Snapshot** shows messages on `ch:1` (or higher) while the radio only has channel 0 configured.
-
-**Cause**
-
-Stale `mesh-client:lastRead:<protocol>` watermarks (including legacy merged keys) or DB messages on channel indices the radio no longer uses. MeshCore unread badges intentionally ignore zero-PSK slots; poisoned last-read values can still inflate counts until sanitized.
-
-**Fix**
-
-1. Open **Chat**, visit each configured channel once (marks last-read), or use **App → Data Management → Copy Debug Snapshot** to confirm channel indices vs runtime channels.
-2. If counts persist after visiting channels, clear last-read for the protocol in browser devtools (`localStorage.removeItem('mesh-client:lastRead:meshcore')` or `meshtastic`) and reload — you will lose per-channel read state.
-3. For stuck sidebar totals with live traffic in logs, see [Chat stuck](#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) and attach a debug snapshot when filing an issue.
-
-### Chat stuck: new traffic in logs/DB but messages do not appear
-
-**Symptoms**
-
-- BLE/MQTT show connected; **Log** or SQLite still records new messages.
-- Chat scroll area jumps or unread badges move, but **message list stops updating** (often after reconnect or protocol switch).
-- A **Copy Debug Snapshot** may show `identitySplit: true`, `staleResolvedBucket`, or `connectMessageCount` newer than `uiStoreMessageCount`.
-
-**Cause**
-
-Live packets were written to the **connected identity** store bucket while Chat read the **offline hydration** bucket (`offline-meshcore` / `offline-meshtastic`). This could happen when the connected identity was empty on reconnect and the UI fell back to the hydration slot even though ingress had resumed on the live id.
-
-**Fix**
-
-1. Update to a build that includes the identity-bucket fix (merge on connect, stricter offline fallback, reactive identity resolution).
-2. **Disconnect and reconnect**, or quit and reopen the app so offline slices merge into the connected identity.
-3. If Chat is still stale: **App → Copy Debug Snapshot** and attach to your issue; check `warnings` and `sessionSummary`.
-4. As a last resort before clearing data: **App → Export Database**, then try **Import (merge)** after updating — do not downgrade the app after migrations.
-
-This is **not** SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.
-
-### Chat or Rooms: scroll jumps when switching tabs
-
-**Symptoms**
-
-- Leaving **Chat** or **Rooms** and returning jumps to the bottom, or scroll position is lost, even when you were reading older messages.
-
-**Cause**
-
-Older builds remounted panel content on tab switch. Recent fixes restore scroll position on re-entry and only auto-scroll to latest when you were already pinned to the bottom.
-
-**Fix**
-
-- Update to the latest release.
-- If you were scrolled up reading history, the panel should return to the same position after tab switch.
-- If you were at the bottom, new messages should still scroll into view on return.
-
-### Nodes list shows wrong protocol labels or mixed Meshtastic/MeshCore rows
-
-**Symptoms**
-
-- Meshtastic **Nodes** includes MeshCore-only contacts (or vice versa) after upgrading from an older database.
-- Room-server rows appear under the wrong protocol tab.
-
-**Cause**
-
-Legacy SQLite rows could cross-contaminate the shared `nodes` table before protocol-scoped identity stores. Startup maintenance now repairs and guards ingest on current builds.
-
-**Fix**
-
-- Update to the latest release and **restart once** so idempotent startup repairs run (`db-schema-sync`).
-- If the list is still wrong, export the DB, note your app version, and file an issue with **Copy Debug Snapshot** + **Log → Export**.
-
-### Chat notification sounds when the window is minimized
-
-**Symptoms**
-
-- No sound for DMs/replies when the app is in the background, or only a single tone for all message types.
-
-**Fix**
-
-- Check **App** notification mute and per-channel/DM mute in Chat.
-- Recent builds use distinct Web Audio tones (channel vs DM/reply) and resume audio when the window is hidden or minimized. Ensure the app is not globally muted (`mesh-client:notifMuted` in localStorage clears when you re-enable sounds in UI).
-
-**Meshtastic desktop notifications** remain visual-only (`silent: true`); typed sounds come from the app’s Web Audio path.
-
-### Permission messages in the console
-
-`[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation**; media and web-app-installation are intentionally denied.
-
-### `pnpm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
-
-electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag releases use `pnpm run dist:mac:publish` (and `:linux:publish` / `:win:publish`) with `GH_TOKEN` set; see `.github/workflows/release.yaml`.
-
-### `[DEP0190]` when running electron-builder
-
-Node deprecates `spawn(..., { shell: true })` with an args array. This project carries the packaging workaround via pnpm `patchedDependencies` on transitive packages used by the Electron build path. Re-run `pnpm install` if you upgrade `electron-builder` or its transitive packaging deps and the warning returns.
-
-### `duplicate dependency references` during dist
-
-npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder pnpm dlx electron-builder --mac` (or your usual dist command).
-
-### Linux packaged app: `Cannot find module 'readable-stream'`
-
-**Symptom**: On Linux, the installed or AppImage build shows a main-process error when loading MQTT (`bl` → `mqtt-packet` → `mqtt` require stack).
-
-**Cause**: pnpm 10.29.3+ marks some `pnpm list --json` nodes as deduped; electron-builder can omit those transitive packages from `app.asar` unless a full copy exists at a predictable path. `mqtt` is loaded from `node_modules` at runtime (not bundled into the main esbuild output).
-
-**Fix in this repo**: `readable-stream@^4.7.0` is a **direct** production dependency (with the existing `patches/readable-stream@4.7.0.patch` for Windows `process/` resolution). Do not remove it when bumping `mqtt` or pnpm. After `pnpm run dist:linux`, verify the asar contains `node_modules/readable-stream`, `node_modules/bl`, and `node_modules/mqtt`. See [electron-builder#9603](https://github.com/electron-userland/electron-builder/issues/9603) and [pnpm#10601](https://github.com/pnpm/pnpm/issues/10601).
-
-### `[DEP0169]` / `url.parse()` deprecation warning
-
-The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:
-
-```bash
-pnpm run trace-deprecation
-```
-
-### "A native module failed to load" dialog on startup
-
-**Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
-
-**Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
-
-- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `pnpm install`.
-- **Windows**: Also ensure the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) is installed.
-
-### `dist:win` fails with "space in the path" or `EPERM` on native modules
-
-**Symptoms**
-
-- `Attempting to build a module with a space in the path` during `pnpm run dist:win` (or `pnpm run rebuild`).
-- `EPERM: operation not permitted` when the rebuild tries to replace a locked `.node` file.
-
-**Cause**
-
-1. **Spaces in the project path**: node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\mesh-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
-2. **EPERM on unlink**: Something on Windows still has the `.node` file open (another `node`/`electron` process, antivirus/Windows Defender scanning the file, or a stuck handle).
-
-**Fix**
-
-1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `pnpm install` and `pnpm run dist:win` from there.
-2. **Clear the lock before rebuild**: quit any running Mesh-Client/Electron dev instances, then delete the affected `build` folder under `node_modules` and retry.
-3. **Rebuild then dist**: `pnpm run rebuild`; if that succeeds, run `pnpm run dist:win`.
-
-CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.
-
-### Windows: `0x80010135` / "Path too long" (e.g. `bluetooth_hci_socket.lastbuildstate`)
-
-**Symptoms**
-
-- Explorer or the compiler shows **error 0x80010135** with **Path too long**, often on a **`*.lastbuildstate`** file under `node_modules`.
-- **`bluetooth_hci_socket`** in the name points at **`@stoprocent/bluetooth-hci-socket`** (a native dependency of **`@stoprocent/noble`**). MSBuild writes build state under very deep paths; together with a long clone directory, the full path can exceed the legacy **~260 character** Win32 limit.
-
-**Fix** (use one or more)
-
-1. **Shorten the repo path** (most reliable): clone or copy the project to a shallow path such as `C:\dev\mesh-client` instead of e.g. `C:\Users\…\Documents\GitHub\org\mesh-client`.
-2. **Enable long paths in Git** (helps clones/checkouts): `git config --global core.longpaths true`, then re-clone or ensure no stuck long paths in the worktree.
-3. **Enable Win32 long paths in Windows** (Windows 10 1607+): this option is **not** available as a normal toggle in **Settings**; enable it via **Local Group Policy** → _Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths_, or set the registry DWORD **`LongPathsEnabled = 1`** under `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (admin rights; reboot may be required). See [Microsoft: Maximum Path Length Limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
-4. **`pnpm run dist:win`** already runs a **hoisted** `pnpm install` to shorten `node_modules` depth before packaging; if **`pnpm install`** / **`pnpm run rebuild`** fails earlier with this error, try the short path and long-path OS settings first, or temporarily: `pnpm install --config.node-linker=hoisted` from a short root path.
-
-### Database schema newer than this app (downgrade blocked)
-
-**Symptom**: On launch, a **Startup Error** dialog says the database was upgraded by a newer Mesh-Client, or **Import blocked** when merging a `.db` file.
-
-**Cause**: The local SQLite database `user_version` is higher than this build supports — usually after installing a **newer** release, then opening an **older** build against the same profile.
-
-**Fix**:
-
-1. Install the **latest** Mesh-Client release from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (do not downgrade the app after your database has been migrated).
-2. If you must use an older build, restore a `.db` backup exported **before** the upgrade, or start with a fresh profile (export first if you need data from the newer schema).
-
-**Log**: Details are in `mesh-client.log` under the app `userData` folder (macOS `~/Library/Application Support/mesh-client/`, Windows `%APPDATA%\mesh-client\`, Linux `~/.config/mesh-client/`).
-
-### Database directory is not writable
-
-**Error**: `"Database directory is not writable: <path>"`
-
-**Cause**: File permissions on the app's `userData` directory are too restrictive.
-
-**Fix**:
-
-- **Mac/Linux**: `chmod 755 ~/Library/Application\ Support/mesh-client` (or `~/.config/mesh-client` on Linux)
-- **Windows**: Right-click `%APPDATA%\mesh-client` → Properties → Security → grant your user Full Control
-
-### Language and Translations
-
-**How do I change the language?**
-
-Click the **globe icon** in the header to select from the 16 supported languages. Your preference is saved across restarts.
-
-**A translation is incorrect or missing.**
-
-Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
-
-**Why are some strings still in English?**
-
-The app falls back to English for any key that hasn't been translated into your selected language yet. Translations are bundled statically at build time; new translations will appear in the next app update.
+## Wi-Fi, HTTP, and TCP
 
 ### HTTP / WiFi connection issues
 
@@ -592,6 +471,50 @@ Alternatively, enter the device's **IP address** directly instead of its `.local
 IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi‑Fi. Use bracket form when a port is included: `[fe80::1]:4403` or `[fd00::1]:7633`. Bare IPv6 (e.g. `::1` or `fd00::1`) is accepted; the app normalizes bracket form for HTTP URLs automatically.
 
 Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`), RFC4193 ULA (`fd00::/8`), link-local IPv6 (`fe80::/10`), loopback, and `.local` mDNS names.
+
+## Sleep, wake, and long-running sessions
+
+### macOS sleep / wake and auto-reconnect
+
+After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE).
+
+- **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
+- **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
+- **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
+- **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
+
+### Windows sleep / wake and auto-reconnect
+
+After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE over Noble IPC).
+
+- **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
+- **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
+- **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
+- **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
+- **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
+
+**Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
+
+### Long-running sessions (multi-day uptime)
+
+If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
+
+- **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
+- **MeshCore:** enable **contact cap** (~500) and **auto-prune by age** in App settings; avoid bulk repeater status/neighbors refresh when not needed.
+- **Meshtastic:** enable **node cap** and **auto-prune** in App settings.
+- **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
+- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
+
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and BLE session state.
+
+### App shows "disconnected" but device is still on
+
+- The Bluetooth connection can drop silently; click Disconnect, then Connect again
+- For serial: the USB cable may have been bumped; reconnect
+
+## MQTT
 
 ### MQTT: "Connection lost after N reconnect attempts"
 
@@ -647,6 +570,29 @@ Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`
 - In the Connection tab **Channel PSKs** field, enter base64 keys (16 bytes for AES-128, 32 bytes for AES-256), one per line; use `ChannelName=base64` for MQTT-only channel names. LongFast default is always tried; connect your radio so Radio-tab keys sync automatically.
 - Enable **Enable TLS (mqtts / wss)** when the broker requires TLS but you are not on port 8883/443. Use **Allow insecure TLS** only for self-signed or private CA certificates.
 
+### Can't see RF packets on custom MQTT broker
+
+**Cause**: The packet logger publishes to `{prefix}/{pubKey}/packets`, but you're viewing the packets somewhere that doesn't receive published MQTT messages.
+
+**Fix**:
+
+- The app publishes to `meshcore/{IATA}/{pubKey}/packets` (e.g., `meshcore/DEN/AABBCCDDEEFF001122/packets`)
+- Use an external MQTT client (like MQTT Explorer, mosquitto_sub, or your broker's dashboard) to subscribe and view the packets
+- For Colorado Mesh, subscribe to `meshcore/DEN/+/packets/#`
+- For LetsMesh/MeshMapper, subscribe to `meshcore/test/+/packets/#`
+- Verify your broker ACL allows publishing to `packets/` topics
+- Check the Log panel for "Published RF packet" entries to confirm packets are being sent
+
+## Meshtastic
+
+### Meshtastic Modules tab: “waiting for settings”
+
+If a module section stays on **Waiting for … settings from the device** with Apply disabled:
+
+- The connected firmware may not expose that module key.
+- **Remote configure** may still be loading module slices; retry the configure load or check the local radio link.
+- **Apply stays disabled** until the device slice hydrates — this prevents overwriting device config with form defaults.
+
 ### Meshtastic: Configure node remotely does nothing or is disabled
 
 **Cause**: PKC remote administration (firmware 2.5+) requires a **connected local Meshtastic radio** as the admin path. MQTT-only connections cannot administer remote nodes. The target node must be reachable through your radio, and trust may require a one-time public-key exchange. `ADMIN_PUBLIC_KEY_UNAUTHORIZED` means the client has no trusted public key for that node (NodeDB and saved admin key both missing or wrong).
@@ -680,91 +626,26 @@ Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`
 - Confirm **Channel PSKs** on the Connection tab match the channel (16- or 32-byte base64 per line; `ChannelName=base64` for MQTT-only names).
 - Enable **Enable TLS (mqtts / wss)** when the broker requires TLS on a non-standard port.
 
-### BLE auto-reconnect: "No previously connected BLE device found"
+## MeshCore
 
-**Cause**: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.
+### MeshCore contact age prune and favorites
 
-**Fix**: Click **Forget this device** on the reconnect card and pair fresh using the Bluetooth picker.
+Startup maintenance can delete stale MeshCore contacts by age. Important details:
 
-### GPS "Location unavailable" or stuck on the map
+- **`last_advert` is Unix seconds**, not milliseconds. Invalid retention day counts are ignored (they previously caused mass deletes).
+- **Favorited contacts are exempt** from age-based deletion.
+- Contacts with **`NULL last_advert`** are never age-pruned (only count-based limits apply).
+- If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (`patchNodeFavorited` on the active connection identity).
 
-**Cause**: Browser geolocation was denied, or the device has no GPS fix yet.
+### MeshCore reply misquote / duplicate chat messages
 
-**Fix**:
+**Reply misquote cause:** The official MeshCore companion firmware sends unkeyed replies — `@[Display Name] body` — without identifying the parent message. The receiving client makes a best-guess match using the most recent message from that sender, which is wrong when the user replies to an older message. This is a wire protocol limitation, not a bug in any single client.
 
-- Grant location permission when prompted by the app.
-- Or set coordinates manually via the **Radio** tab → Fixed Position.
-- Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only; not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.
+The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cross-transport and channel RF replay). Room posts and tapbacks use a **60 second** window. A second MQTT-only copy may still appear if both hears arrive via MQTT without RF — that can be expected.
 
-### "Something went wrong" blank screen
+**Reactions on other clients:** By default mesh-client sends tapbacks and text replies as keyless `@[Display Name] …` (official companion wire). Inbound keyed `@[Name#key]` and emoji-only replies render locally as tapback badges via [`meshcorePromoteEmojiOnlyReplyToTapback`](../src/renderer/lib/meshcoreChannelText.ts). Inbound MeshCore Open wire (`r:HASH:INDEX`, `g:GIFID`) is always parsed for display.
 
-**Cause**: An unhandled React render error, usually from a corrupt or unexpected database value.
-
-**Fix**: Open the **App** tab → **Clear Database**, then restart. If the window never loads at all, delete the SQLite file manually:
-
-- **Mac**: `~/Library/Application Support/mesh-client/`
-- **Windows**: `%APPDATA%\mesh-client\`
-- **Linux**: `~/.config/mesh-client/`
-
-### macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat
-
-**Cause**: Known Electron/Chromium quirk on macOS when the first responder is a text field (e.g. the chat input). The native menu bridge logs this; it does not affect behavior.
-
-**Fix**: None required; safe to ignore. Copy/paste and other edit actions still work.
-
-### Update check fails / footer update status
-
-The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
-
-### Map tab without internet (offline / no WAN)
-
-**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). **Without internet access, new tiles cannot be fetched**, so the basemap may look **blank, gray, or incomplete**, or show only **tiles previously cached** by the embedded browser (caching is best-effort and not guaranteed).
-
-**Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
-
-**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. See **GPS "Location unavailable" or stuck on the map** above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.
-
-### Verifying offline behavior (manual QA)
-
-With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if possible:
-
-1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
-2. Open the **Map** tab: expect **missing or stale basemap tiles** as described above; **markers and trails** may still appear when position data exists.
-3. A non-fatal **update check** message in the console is expected without WAN; see **Update check fails / footer update status** above.
-
-### Diagnostics panel: "restored from last session" banner
-
-**Cause**: Diagnostic rows (routing + RF) are snapshotted to `localStorage` so a restart doesn't wipe the table.
-
-**Fix**: This is expected; rows refresh as new packets arrive. Use **Stop restoring on next launch** on the banner to clear the snapshot, or use **App** tab → **Reset Diagnostics** to clear in-memory rows and related state.
-
-**Note**: On startup, restored rows stay visible until the node list hydrates from SQLite. An early `runReanalysis` with an empty node map no longer clears the snapshot (fixed in `diagnosticsStore.runReanalysis`). Rows still refresh once live telemetry arrives.
-
-### Diagnostics look stale or overcrowded
-
-**Cause**: RF rows age out faster (default 1 h) than routing rows (default 24 h); very old rows are pruned by timestamp.
-
-**Fix**: In **Network Diagnostics** → Display Settings, adjust **diagnostic row max age** (hours). Or reset diagnostics from the App tab and let the mesh repopulate.
-
-### Diagnostics: health band OK but anomaly table empty
-
-**Symptoms**: Network health shows **Healthy** (or low warning count) and foreign-LoRa / settings sections render, but the main routing/RF anomaly table has no rows.
-
-**Cause**: Often expected when the mesh has no active hop or RF findings for the **current protocol tab**. LoRa rows are recomputed from that tab's nodes only; switching tabs clears routing/RF state and re-runs analysis. Reticulum interface rows do not appear on Meshtastic/MeshCore tabs (and vice versa).
-
-**Fix**: Confirm you are on the protocol tab that owns the finding (e.g. Reticulum interface-down on **Reticulum**). For Meshtastic CU timeline / connected-node RF rows, ensure the radio is configured and sending LocalStats telemetry. See [Diagnostics Reference](diagnostics.md#multi-protocol-tab-scoping).
-
-### Diagnostics: foreign LoRa only on Meshtastic tab
-
-**Symptoms**: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.
-
-**Fix**: By design — foreign-LoRa overhear tables render on the **Meshtastic** Diagnostics tab only. MeshCore may still record overhear internally when raw RX bytes are available. Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
-
-### No signal bars on some nodes
-
-**Cause**: Signal strength is only available for **direct (0-hop) RF** neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.
-
-**Fix**: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.
+**MeshCore Open compatibility (optional):** In **App → MeshCore Open wire (experimental)**, enable **MeshCore Open compatibility** to send keyed text replies (`@[Name#key] body`), compact `r:` reactions (fallback to keyless tapback when the emoji is not in the Open index), and `g:` Giphy GIFs (paste URL/ID or use the **GIF** button in Chat). Default off — use only when other nodes on your mesh run MeshCore Open-aware clients. Details: [meshcore-meshtastic-parity.md — MeshCore emoji reactions](meshcore-meshtastic-parity.md#meshcore-emoji-reactions-tapbacks) and [GIF wire](meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid).
 
 ### MeshCore: "Get Telemetry" returns timeout
 
@@ -872,6 +753,10 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 **Cause**: Nodes you only **hear** on the mesh; but that do **not** have **your** node in **their** contact list; are sometimes called foreign or one-way contacts. MeshCore firmware may not answer **Trace Route** (node detail) or **Ping trace** (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see **Trace route timed out** in the node detail modal or an error toast from **Ping trace**.
 
 **Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
+
+## Reticulum
+
+AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, and RNode Wi‑Fi. See also [reticulum.md](reticulum.md) and [Reticulum sidecar IPC](reticulum-sidecar-ipc.md).
 
 ### Reticulum sidecar won't start or health poll times out
 
@@ -1011,15 +896,186 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 
 See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
-### Can't see RF packets on custom MQTT broker
+## Chat, nodes, and notifications
 
-**Cause**: The packet logger publishes to `{prefix}/{pubKey}/packets`, but you're viewing the packets somewhere that doesn't receive published MQTT messages.
+### Phantom chat unread on channels not on the radio
+
+**Symptoms**
+
+- Sidebar **Chat** badge or channel pills show unread counts on MeshCore channels you did not configure (zero PSK / not on the radio).
+- Badge counts disagree between the sidebar and Chat channel pills after upgrade or protocol switch.
+- **Copy Debug Snapshot** shows messages on `ch:1` (or higher) while the radio only has channel 0 configured.
+
+**Cause**
+
+Stale `mesh-client:lastRead:<protocol>` watermarks (including legacy merged keys) or DB messages on channel indices the radio no longer uses. MeshCore unread badges intentionally ignore zero-PSK slots; poisoned last-read values can still inflate counts until sanitized.
+
+**Fix**
+
+1. Open **Chat**, visit each configured channel once (marks last-read), or use **App → Data Management → Copy Debug Snapshot** to confirm channel indices vs runtime channels.
+2. If counts persist after visiting channels, clear last-read for the protocol in browser devtools (`localStorage.removeItem('mesh-client:lastRead:meshcore')` or `meshtastic`) and reload — you will lose per-channel read state.
+3. For stuck sidebar totals with live traffic in logs, see [Chat stuck](#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) and attach a debug snapshot when filing an issue.
+
+### Chat stuck: new traffic in logs/DB but messages do not appear
+
+**Symptoms**
+
+- BLE/MQTT show connected; **Log** or SQLite still records new messages.
+- Chat scroll area jumps or unread badges move, but **message list stops updating** (often after reconnect or protocol switch).
+- A **Copy Debug Snapshot** may show `identitySplit: true`, `staleResolvedBucket`, or `connectMessageCount` newer than `uiStoreMessageCount`.
+
+**Cause**
+
+Live packets were written to the **connected identity** store bucket while Chat read the **offline hydration** bucket (`offline-meshcore` / `offline-meshtastic`). This could happen when the connected identity was empty on reconnect and the UI fell back to the hydration slot even though ingress had resumed on the live id.
+
+**Fix**
+
+1. Update to a build that includes the identity-bucket fix (merge on connect, stricter offline fallback, reactive identity resolution).
+2. **Disconnect and reconnect**, or quit and reopen the app so offline slices merge into the connected identity.
+3. If Chat is still stale: **App → Copy Debug Snapshot** and attach to your issue; check `warnings` and `sessionSummary`.
+4. As a last resort before clearing data: **App → Export Database**, then try **Import (merge)** after updating — do not downgrade the app after migrations.
+
+This is **not** SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.
+
+### Chat or Rooms: scroll jumps when switching tabs
+
+**Symptoms**
+
+- Leaving **Chat** or **Rooms** and returning jumps to the bottom, or scroll position is lost, even when you were reading older messages.
+
+**Cause**
+
+Older builds remounted panel content on tab switch. Recent fixes restore scroll position on re-entry and only auto-scroll to latest when you were already pinned to the bottom.
+
+**Fix**
+
+- Update to the latest release.
+- If you were scrolled up reading history, the panel should return to the same position after tab switch.
+- If you were at the bottom, new messages should still scroll into view on return.
+
+### Nodes list shows wrong protocol labels or mixed Meshtastic/MeshCore rows
+
+**Symptoms**
+
+- Meshtastic **Nodes** includes MeshCore-only contacts (or vice versa) after upgrading from an older database.
+- Room-server rows appear under the wrong protocol tab.
+
+**Cause**
+
+Legacy SQLite rows could cross-contaminate the shared `nodes` table before protocol-scoped identity stores. Startup maintenance now repairs and guards ingest on current builds.
+
+**Fix**
+
+- Update to the latest release and **restart once** so idempotent startup repairs run (`db-schema-sync`).
+- If the list is still wrong, export the DB, note your app version, and file an issue with **Copy Debug Snapshot** + **Log → Export**.
+
+### Chat notification sounds when the window is minimized
+
+**Symptoms**
+
+- No sound for DMs/replies when the app is in the background, or only a single tone for all message types.
+
+**Fix**
+
+- Check **App** notification mute and per-channel/DM mute in Chat.
+- Recent builds use distinct Web Audio tones (channel vs DM/reply) and resume audio when the window is hidden or minimized. Ensure the app is not globally muted (`mesh-client:notifMuted` in localStorage clears when you re-enable sounds in UI).
+
+**Meshtastic desktop notifications** remain visual-only (`silent: true`); typed sounds come from the app’s Web Audio path.
+
+## Diagnostics and map
+
+### Diagnostics panel: "restored from last session" banner
+
+**Cause**: Diagnostic rows (routing + RF) are snapshotted to `localStorage` so a restart doesn't wipe the table.
+
+**Fix**: This is expected; rows refresh as new packets arrive. Use **Stop restoring on next launch** on the banner to clear the snapshot, or use **App** tab → **Reset Diagnostics** to clear in-memory rows and related state.
+
+**Note**: On startup, restored rows stay visible until the node list hydrates from SQLite. An early `runReanalysis` with an empty node map no longer clears the snapshot (fixed in `diagnosticsStore.runReanalysis`). Rows still refresh once live telemetry arrives.
+
+### Diagnostics look stale or overcrowded
+
+**Cause**: RF rows age out faster (default 1 h) than routing rows (default 24 h); very old rows are pruned by timestamp.
+
+**Fix**: In **Network Diagnostics** → Display Settings, adjust **diagnostic row max age** (hours). Or reset diagnostics from the App tab and let the mesh repopulate.
+
+### Diagnostics: health band OK but anomaly table empty
+
+**Symptoms**: Network health shows **Healthy** (or low warning count) and foreign-LoRa / settings sections render, but the main routing/RF anomaly table has no rows.
+
+**Cause**: Often expected when the mesh has no active hop or RF findings for the **current protocol tab**. LoRa rows are recomputed from that tab's nodes only; switching tabs clears routing/RF state and re-runs analysis. Reticulum interface rows do not appear on Meshtastic/MeshCore tabs (and vice versa).
+
+**Fix**: Confirm you are on the protocol tab that owns the finding (e.g. Reticulum interface-down on **Reticulum**). For Meshtastic CU timeline / connected-node RF rows, ensure the radio is configured and sending LocalStats telemetry. See [Diagnostics Reference](diagnostics.md#multi-protocol-tab-scoping).
+
+### Diagnostics: foreign LoRa only on Meshtastic tab
+
+**Symptoms**: MeshCore-heard or Reticulum traffic tables missing on MeshCore or Reticulum tabs.
+
+**Fix**: By design — foreign-LoRa overhear tables render on the **Meshtastic** Diagnostics tab only. MeshCore may still record overhear internally when raw RX bytes are available. Reticulum RNode promiscuous foreign LoRa is not implemented (sidecar tap exposes parsed RNS frames only).
+
+### No signal bars on some nodes
+
+**Cause**: Signal strength is only available for **direct (0-hop) RF** neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.
+
+**Fix**: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.
+
+### Map tab without internet (offline / no WAN)
+
+**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). **Without internet access, new tiles cannot be fetched**, so the basemap may look **blank, gray, or incomplete**, or show only **tiles previously cached** by the embedded browser (caching is best-effort and not guaranteed).
+
+**Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
+
+**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. See **GPS "Location unavailable" or stuck on the map** above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.
+
+### Verifying offline behavior (manual QA)
+
+With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if possible:
+
+1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
+2. Open the **Map** tab: expect **missing or stale basemap tiles** as described above; **markers and trails** may still appear when position data exists.
+3. A non-fatal **update check** message in the console is expected without WAN; see **Update check fails / footer update status** above.
+
+## App, updates, and localization
+
+### GPS "Location unavailable" or stuck on the map
+
+**Cause**: Browser geolocation was denied, or the device has no GPS fix yet.
 
 **Fix**:
 
-- The app publishes to `meshcore/{IATA}/{pubKey}/packets` (e.g., `meshcore/DEN/AABBCCDDEEFF001122/packets`)
-- Use an external MQTT client (like MQTT Explorer, mosquitto_sub, or your broker's dashboard) to subscribe and view the packets
-- For Colorado Mesh, subscribe to `meshcore/DEN/+/packets/#`
-- For LetsMesh/MeshMapper, subscribe to `meshcore/test/+/packets/#`
-- Verify your broker ACL allows publishing to `packets/` topics
-- Check the Log panel for "Published RF packet" entries to confirm packets are being sent
+- Grant location permission when prompted by the app.
+- Or set coordinates manually via the **Radio** tab → Fixed Position.
+- Note: The IP-geolocation fallback (ipwho.is) provides city-level accuracy only; not suitable for position broadcasting. If the service is unreachable, "Location unavailable" is shown.
+
+### "Something went wrong" blank screen
+
+**Cause**: An unhandled React render error, usually from a corrupt or unexpected database value.
+
+**Fix**: Open the **App** tab → **Clear Database**, then restart. If the window never loads at all, delete the SQLite file manually:
+
+- **Mac**: `~/Library/Application Support/mesh-client/`
+- **Windows**: `%APPDATA%\mesh-client\`
+- **Linux**: `~/.config/mesh-client/`
+
+### macOS: "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" when typing in chat
+
+**Cause**: Known Electron/Chromium quirk on macOS when the first responder is a text field (e.g. the chat input). The native menu bridge logs this; it does not affect behavior.
+
+**Fix**: None required; safe to ignore. Copy/paste and other edit actions still work.
+
+### Update check fails / footer update status
+
+The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
+
+### Language and Translations
+
+**How do I change the language?**
+
+Click the **globe icon** in the header to select from the 16 supported languages. Your preference is saved across restarts.
+
+**A translation is incorrect or missing.**
+
+Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
+
+**Why are some strings still in English?**
+
+The app falls back to English for any key that hasn't been translated into your selected language yet. Translations are bundled statically at build time; new translations will appear in the next app update.

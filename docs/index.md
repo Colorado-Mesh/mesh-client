@@ -1,27 +1,21 @@
 # Mesh-Client
 
-Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)**
-on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**,
-**MQTT** (Meshtastic/MeshCore), local **SQLite** history, **routing diagnostics**, and **keyboard-first**
-workflows.
+Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
 
-This page is the docs landing view based on the project README. For the full
-repository version, see [README on GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
+This page is the docs landing view. The full repository README (badges, feature reference, usage) lives on [GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
 
 ---
 
 ## Why
 
-Mesh-Client provides one desktop workflow for **Meshtastic**, **MeshCore**, and **Reticulum** (LXMF via AGPL sidecar)
-with persistent local storage, keyboard-first UX, and protocol-specific
-diagnostic tooling.
+Mesh-Client provides one desktop workflow for **Meshtastic**, **MeshCore**, and **Reticulum** (LXMF via AGPL sidecar) with persistent local storage and protocol-specific diagnostic tooling.
 
 Key outcomes:
 
 - True message persistence with SQLite-backed history.
 - Unified interface across Meshtastic, MeshCore, and Reticulum (tri-protocol switcher: green / cyan / amber).
 - Advanced mesh visibility via diagnostics, map/topology overlays, and routing insights.
-- Multi-language support (16+ languages) with offline static bundles.
+- Multi-language support (16 languages) with offline static bundles.
 - Cross-platform desktop support for macOS, Linux, and Windows.
 
 ---
@@ -31,6 +25,19 @@ Key outcomes:
 ![Nodes](images/nodes.png)
 ![Map](images/map.png)
 ![Diagnostics](images/diagnostics.png)
+![Stats](images/stats.png)
+
+![Chat](images/chat.png)
+![Connection](images/connection.png)
+![Repeaters](images/repeaters.png)
+![Node Detail](images/node-detail.png)
+
+![Peers](images/peers.png)
+![Nomad Network](images/nomad.png)
+![RF](images/RF.png)
+![Graph](images/graph.png)
+![Sniffer](images/sniffer.png)
+![Language selector](images/language-selection.png)
 
 ---
 
@@ -38,9 +45,10 @@ Key outcomes:
 
 Pre-built binaries are available in [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases).
 
-For development setup and local build/test workflow, see:
+For development setup, scripts, test harness, and git hooks, see [Development Guide](development-environment.md).
 
-- [Development Guide](development-environment.md)
+Also useful:
+
 - [Troubleshooting](troubleshooting.md)
 - [Contributing](contributing.md)
 
@@ -51,10 +59,10 @@ For development setup and local build/test workflow, see:
 ## Docs Guide
 
 - **Engineering**
-  - [Development Guide](development-environment.md)
+  - [Development Guide](development-environment.md) — prerequisites, all `pnpm` scripts, pre-commit hook, i18n workflow
   - [Accessibility Checklist](accessibility-checklist.md)
   - [Contributing](contributing.md)
-  - Renderer hook/runtime/store boundaries — see [AGENTS.md](../AGENTS.md#renderer-hook-architecture-multi-protocol) and [ARCHITECTURE.md](../ARCHITECTURE.md)
+  - Renderer hook/runtime/store boundaries — [AGENTS.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/AGENTS.md#renderer-hook-architecture-multi-protocol) and [ARCHITECTURE.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/ARCHITECTURE.md)
 - **Meshtastic & MeshCore**
   - [Feature Parity](meshcore-meshtastic-parity.md) (includes **Rooms** BBS and shared **ChatComposer**)
   - [MQTT Auth](letsmesh-mqtt-auth.md)
@@ -62,6 +70,7 @@ For development setup and local build/test workflow, see:
 - **Reticulum**
   - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, propagation)
   - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
+  - [Reticulum troubleshooting](troubleshooting.md#reticulum) (sidecar, interfaces, Nomad, RNode Wi‑Fi)
   - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 - **Support**
   - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic tab), Reticulum interface audit; protocol-scoped row filtering
