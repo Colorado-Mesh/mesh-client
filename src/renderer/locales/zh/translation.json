@@ -847,7 +847,8 @@
       "pickerScanFailed": "BLE 扫描失败。请重试或手动输入地址。",
       "pickerBleFeatureDisabled": "蓝牙在此 Reticulum 版本中不可用（缺少 rns-ble 功能）。",
       "pickerScanFailedDetail": "扫描错误：{{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "输入有效的主机名或IP地址（ IPv6使用[括号] ）。"
     },
     "reticulumPeers": {
       "hops": "Hops",

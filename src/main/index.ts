@@ -26,6 +26,7 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { formatHostForSocket } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
@@ -5467,12 +5468,13 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
       meshcoreTcpSocket.destroy();
       meshcoreTcpSocket = null;
     }
+    const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
     meshcoreTcpSocket = socket;
-    socket.connect(p, host, () => {
-      console.debug('[IPC] meshcore:tcp-connect connected to', sanitizeLogMessage(host), p);
+    socket.connect(p, socketHost, () => {
+      console.debug('[IPC] meshcore:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
       logDeviceConnection(
-        `transport=tcp stack=meshcore host=${sanitizeLogMessage(host)} port=${p}`,
+        `transport=tcp stack=meshcore host=${sanitizeLogMessage(socketHost)} port=${p}`,
       );
       if (!settled) {
         settled = true;

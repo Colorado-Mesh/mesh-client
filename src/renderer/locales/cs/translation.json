@@ -847,7 +847,8 @@
       "pickerScanFailed": "Skenování BLE se nezdařilo. Zkuste to znovu nebo zadejte adresu ručně.",
       "pickerBleFeatureDisabled": "Bluetooth není v této sestavě Reticulum k dispozici (chybí funkce rns-ble).",
       "pickerScanFailedDetail": "Chyba skenování: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Zadejte platný název hostitele nebo adresu IP (pro IPv6 použijte [závorky])."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -847,7 +847,8 @@
       "pickerScanFailed": "L'analyse BLE a échoué. Réessayez ou saisissez une adresse manuellement.",
       "pickerBleFeatureDisabled": "Bluetooth n'est pas disponible dans cette version de Reticulum (fonctionnalité rns-ble manquante).",
       "pickerScanFailedDetail": "Erreur de numérisation : {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Saisissez un nom d'hôte ou une adresse IP valide (utilisez [brackets] pour IPv6)."
     },
     "reticulumPeers": {
       "hops": "Hops",

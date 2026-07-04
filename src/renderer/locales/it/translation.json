@@ -847,7 +847,8 @@
       "pickerScanFailed": "Scansione BLE non riuscita. Riprova o inserisci un indirizzo manualmente.",
       "pickerBleFeatureDisabled": "Il Bluetooth non è disponibile in questa build di Reticulum (manca la funzionalità rns-ble).",
       "pickerScanFailedDetail": "Errore di scansione: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Immettere un nome host o un indirizzo IP valido (utilizzare [parentesi] per IPv6)."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -847,7 +847,8 @@
       "pickerScanFailed": "Сканирование BLE не удалось. Попробуйте еще раз или введите адрес вручную.",
       "pickerBleFeatureDisabled": "Bluetooth недоступен в этой сборке Reticulum (отсутствует функция rns-ble).",
       "pickerScanFailedDetail": "Ошибка сканирования: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Введите допустимое имя хоста или IP-адрес (используйте [скобки] для IPv6)."
     },
     "reticulumPeers": {
       "hops": "Hops",

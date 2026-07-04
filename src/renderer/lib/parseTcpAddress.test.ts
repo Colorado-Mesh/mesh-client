@@ -42,8 +42,8 @@ describe('parseTcpAddress', () => {
     expect(parseTcpAddress('2001:db8::1')).toEqual({ host: '2001:db8::1', port: 5000 });
   });
 
-  it('parses bracketed IPv6 with port', () => {
-    expect(parseTcpAddress('[::1]:5000')).toEqual({ host: '[::1]', port: 5000 });
-    expect(parseTcpAddress('[::1]:4403')).toEqual({ host: '[::1]', port: 4403 });
+  it('parses bracketed IPv6 with port and returns unbracketed host', () => {
+    expect(parseTcpAddress('[::1]:5000')).toEqual({ host: '::1', port: 5000 });
+    expect(parseTcpAddress('[::1]:4403')).toEqual({ host: '::1', port: 4403 });
   });
 });

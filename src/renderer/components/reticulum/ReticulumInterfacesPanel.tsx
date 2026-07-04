@@ -39,7 +39,13 @@ import type {
 } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import { useReticulumUiStore } from '@/renderer/stores/reticulumUiStore';
+import {
+  formatConnectHostLiteral,
+  isValidConnectHost,
+  stripConnectHostBrackets,
+} from '@/shared/connectHost';
 import { forceApplyReticulumRnodePresetDefaults } from '@/shared/reticulumRnodeRfProfiles';
+import { clampTcpPort } from '@/shared/tcpPort';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { HelpTooltip } from '../HelpTooltip';
@@ -79,6 +85,17 @@ function parseRnodePresetWire(body: unknown): ReticulumRnodePresetGroups {
   const legacy = wire.legacy ?? [];
   const flat = wire.presets ?? [...coordinated, ...fallback, ...legacy];
   return { flat, coordinated, fallback, legacy };
+}
+
+const RETICULUM_TCP_CLIENT_DEFAULT_PORT = 4242;
+
+function normalizeReticulumConnectHost(host: string): string {
+  return formatConnectHostLiteral(stripConnectHostBrackets(host.trim()));
+}
+
+function reticulumConnectHostIsInvalid(host: string): boolean {
+  const trimmed = host.trim();
+  return trimmed.length === 0 || !isValidConnectHost(trimmed);
 }
 
 type ReticulumIfaceUiType =
@@ -244,16 +261,28 @@ export function ReticulumInterfacesPanel({
     try {
       const body: Record<string, unknown> = { type: ifaceType };
       if (ifaceType === 'tcp' || ifaceType === 'udp' || ifaceType === 'i2p') {
-        body.host = ifaceHost.trim();
+        if (ifaceType === 'tcp' || ifaceType === 'udp') {
+          if (reticulumConnectHostIsInvalid(ifaceHost)) {
+            setInterfaceError(t('connectionPanel.reticulumInterfaces.invalidHost'));
+            return;
+          }
+          body.host = normalizeReticulumConnectHost(ifaceHost);
+        } else {
+          body.host = ifaceHost.trim();
+        }
         if (ifaceType !== 'i2p') {
-          body.port = Number.parseInt(ifacePort, 10) || 4242;
+          body.port = clampTcpPort(ifacePort, RETICULUM_TCP_CLIENT_DEFAULT_PORT);
         }
       }
       if (ifaceType === 'rnode' || ifaceType === 'rnode_multi' || ifaceType === 'kiss') {
         if (ifaceType === 'rnode' && rnodeTransport === 'wifi') {
+          if (reticulumConnectHostIsInvalid(rnodeWifiHost)) {
+            setInterfaceError(t('connectionPanel.reticulumInterfaces.invalidHost'));
+            return;
+          }
           body.serial_port = buildReticulumRnodeTcpPort(
             rnodeWifiHost,
-            Number.parseInt(rnodeWifiPort, 10) || RNODE_DEFAULT_TCP_PORT,
+            clampTcpPort(rnodeWifiPort, RNODE_DEFAULT_TCP_PORT),
           );
         } else {
           body.serial_port = serialPort.trim();
@@ -337,6 +366,21 @@ export function ReticulumInterfacesPanel({
 
   const saveEditInterface = async (id: string, patch: Record<string, unknown>) => {
     setInterfaceError(null);
+    const patchType = typeof patch.type === 'string' ? patch.type : '';
+    const patchHost = typeof patch.host === 'string' ? patch.host : '';
+    const patchSerialPort = typeof patch.serial_port === 'string' ? patch.serial_port : '';
+    if (patchType === 'tcp' || patchType === 'udp') {
+      if (reticulumConnectHostIsInvalid(patchHost)) {
+        setInterfaceError(t('connectionPanel.reticulumInterfaces.invalidHost'));
+        return;
+      }
+    } else if (patchType === 'rnode' && isReticulumTcpRnodeSerialPort(patchSerialPort)) {
+      const parsed = parseReticulumRnodeTcpPort(patchSerialPort);
+      if (!parsed || reticulumConnectHostIsInvalid(parsed.host)) {
+        setInterfaceError(t('connectionPanel.reticulumInterfaces.invalidHost'));
+        return;
+      }
+    }
     try {
       const res = (await window.electronAPI.reticulum.proxyPut(
         `/api/v1/interfaces/${id}`,
@@ -494,9 +538,13 @@ function buildInterfaceEditPatch(draft: {
 }): Record<string, unknown> {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
   if (draft.type === 'tcp' || draft.type === 'udp' || draft.type === 'i2p') {
-    body.host = draft.host.trim();
+    if (draft.type === 'tcp' || draft.type === 'udp') {
+      body.host = normalizeReticulumConnectHost(draft.host);
+    } else {
+      body.host = draft.host.trim();
+    }
     if (draft.type !== 'i2p') {
-      body.port = Number.parseInt(draft.port, 10) || 4242;
+      body.port = clampTcpPort(draft.port, RETICULUM_TCP_CLIENT_DEFAULT_PORT);
     }
   }
   if (draft.type === 'rnode' || draft.type === 'rnode_multi' || draft.type === 'kiss') {
@@ -840,10 +888,7 @@ function InterfaceEditPanel({
           disabled={!name.trim()}
           onClick={() => {
             const resolvedSerialPort = editUsesWifiRnode
-              ? buildReticulumRnodeTcpPort(
-                  wifiHost,
-                  Number.parseInt(wifiPort, 10) || RNODE_DEFAULT_TCP_PORT,
-                )
+              ? buildReticulumRnodeTcpPort(wifiHost, clampTcpPort(wifiPort, RNODE_DEFAULT_TCP_PORT))
               : serialPort;
             onSave(
               buildInterfaceEditPatch({

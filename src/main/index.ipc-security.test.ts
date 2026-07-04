@@ -43,6 +43,12 @@ describe('validateHttpHost (source contract)', () => {
     expect(isValidHttpHostname('')).toBe(false);
     expect(isValidHttpHostname('has..double.dot')).toBe(false);
   });
+
+  it('accepts IPv6 bare and bracketed hosts', () => {
+    expect(isValidHttpHostname('::1')).toBe(true);
+    expect(isValidHttpHostname('[::1]')).toBe(true);
+    expect(isValidHttpHostname('fd00::1')).toBe(true);
+  });
 });
 
 // ─── meshcore:tcp-write byte element validation ──────────────────────
@@ -152,6 +158,13 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
     // The old pattern was: typeof host !== 'string' || host.length === 0 || host.length > MAX_TCP_HOST_LENGTH
     // It should now delegate entirely to validateHttpHost which applies isValidHttpHostname
     expect(INDEX_SOURCE).not.toContain('MAX_TCP_HOST_LENGTH');
+  });
+
+  it('normalizes bracketed IPv6 before net.Socket.connect', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshcore:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
+    expect(handlerBody).toContain('formatHostForSocket(');
   });
 });
 

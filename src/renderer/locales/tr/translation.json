@@ -847,7 +847,8 @@
       "pickerScanFailed": "BLE taraması başarısız oldu. Tekrar deneyin veya adresi manuel olarak girin.",
       "pickerBleFeatureDisabled": "Bu Reticulum yapısında Bluetooth mevcut değil (rns-ble özelliği eksik).",
       "pickerScanFailedDetail": "Tarama hatası: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Geçerli bir ana bilgisayar adı veya IP adresi girin (IPv6 için [parantez] kullanın)."
     },
     "reticulumPeers": {
       "hops": "Hops",

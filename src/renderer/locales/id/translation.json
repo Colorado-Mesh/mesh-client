@@ -847,7 +847,8 @@
       "pickerScanFailed": "Pemindaian BLE gagal. Coba lagi atau masukkan alamat secara manual.",
       "pickerBleFeatureDisabled": "Bluetooth tidak tersedia di Reticulum build ini (fitur rns-ble tidak ada).",
       "pickerScanFailedDetail": "Kesalahan pemindaian: {{detail}}",
-      "pickerDeviceAria": "{{name}} {{address}}"
+      "pickerDeviceAria": "{{name}} {{address}}",
+      "invalidHost": "Masukkan nama host atau alamat IP yang valid (gunakan [tanda kurung] untuk IPv6)."
     },
     "reticulumPeers": {
       "hops": "Hops",
