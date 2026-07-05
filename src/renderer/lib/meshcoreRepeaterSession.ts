@@ -29,6 +29,13 @@ export function clearMeshcoreRepeaterEphemeralPassword(nodeId: number): void {
   ephemeralPasswords.delete(nodeId >>> 0);
 }
 
+/** True when a persisted or session-only password can satisfy repeater admin login. */
+export function meshcoreRepeaterHasResolvablePassword(nodeId: number): boolean {
+  if (getMeshcoreRepeaterCredential(nodeId) != null) return true;
+  const ephemeral = ephemeralPasswords.get(nodeId >>> 0);
+  return !!ephemeral?.trim();
+}
+
 export function meshcoreRepeaterLoginErrorIsAuthFailure(error: unknown): boolean {
   return meshcoreLoginErrorIsAuthFailure(error);
 }

@@ -385,6 +385,44 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
 
+  it('invokes requestRepeaterStatus after repeater auth Continue with password', async () => {
+    const user = userEvent.setup();
+    const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
+    renderMeshcoreModal({ onRequestRepeaterStatus });
+
+    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.type(screen.getByLabelText('Repeater admin password (optional)'), 'repeater-secret');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
+  });
+
+  it('invokes requestRepeaterStatus after repeater auth Continue without remembering', async () => {
+    const user = userEvent.setup();
+    const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
+    renderMeshcoreModal({ onRequestRepeaterStatus });
+
+    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.type(screen.getByLabelText('Repeater admin password (optional)'), 'session-only');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
+  });
+
+  it('invokes requestRepeaterStatus after Continue when Remember persist fails', async () => {
+    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('ipc down'));
+    const user = userEvent.setup();
+    const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
+    renderMeshcoreModal({ onRequestRepeaterStatus });
+
+    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.type(screen.getByLabelText('Repeater admin password (optional)'), 'repeater-secret');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
+  });
+
   it('invokes requestTelemetry after repeater auth is skipped', async () => {
     const user = userEvent.setup();
     const onRequestTelemetry = vi.fn().mockResolvedValue(undefined);

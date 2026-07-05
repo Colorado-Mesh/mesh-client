@@ -13,6 +13,7 @@ import {
 import {
   assertMeshcoreRepeaterLoginOk,
   clearAllMeshcoreRepeaterEphemeralPasswords,
+  meshcoreRepeaterHasResolvablePassword,
   meshcoreRepeaterTryLogin,
   setMeshcoreRepeaterEphemeralPassword,
 } from './meshcoreRepeaterSession';
@@ -56,6 +57,22 @@ function createMockConn(): MockMeshcoreRepeaterConn {
     sendToRadioFrame: vi.fn(async () => {}),
   };
 }
+
+describe('meshcoreRepeaterHasResolvablePassword', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    clearAllMeshcoreRepeaterEphemeralPasswords();
+  });
+
+  it('returns true for persisted and ephemeral passwords', async () => {
+    expect(meshcoreRepeaterHasResolvablePassword(0x42)).toBe(false);
+    setMeshcoreRepeaterEphemeralPassword(0x42, 'session');
+    expect(meshcoreRepeaterHasResolvablePassword(0x42)).toBe(true);
+    clearAllMeshcoreRepeaterEphemeralPasswords();
+    await setMeshcoreRepeaterCredential(0x42, { password: 'saved' });
+    expect(meshcoreRepeaterHasResolvablePassword(0x42)).toBe(true);
+  });
+});
 
 describe('meshcoreRepeaterTryLogin', () => {
   beforeEach(() => {

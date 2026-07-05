@@ -3841,7 +3841,6 @@ export function useMeshcoreRuntime() {
               radioContactPathLen,
               pathFromHistory,
             });
-            storedPath = tracePlan.storedPath;
             const uiSaysMultiHop = tracePlan.uiSaysMultiHop;
             const radioSaysMultiHop = tracePlan.radioSaysMultiHop;
             const pathTooShortAfterSynth = tracePlan.pathTooShort;

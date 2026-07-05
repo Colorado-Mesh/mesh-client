@@ -6,6 +6,7 @@ import {
   setMeshcoreRepeaterCredential,
 } from '@/renderer/lib/meshcoreRepeaterCredentialStorage';
 import { setMeshcoreRepeaterEphemeralSecret } from '@/renderer/lib/meshcoreRepeaterSavedSecrets';
+import { meshcoreRepeaterHasResolvablePassword } from '@/renderer/lib/meshcoreRepeaterSession';
 import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
 
 export interface RepeaterAuthResult {
@@ -23,11 +24,13 @@ interface PendingRepeaterAuth {
 function RepeaterRemoteAuthFields({
   password,
   onPasswordChange,
+  onSubmit,
   disabled,
   passwordInputId,
 }: {
   password: string;
   onPasswordChange: (v: string) => void;
+  onSubmit: () => void;
   disabled?: boolean;
   passwordInputId: string;
 }) {
@@ -45,6 +48,12 @@ function RepeaterRemoteAuthFields({
           value={password}
           onChange={(e) => {
             onPasswordChange(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onSubmit();
+            }
           }}
           disabled={disabled}
           placeholder={t('repeatersPanel.remoteAuthPlaceholder')}
@@ -95,20 +104,17 @@ export function useMeshcoreRepeaterRemoteAuth() {
       }
       const trimmed = password.trim();
       let saved = false;
+      // Store session password first so the awaiting admin RPC can login immediately.
+      if (trimmed) {
+        setMeshcoreRepeaterEphemeralSecret(nodeId, trimmed);
+      }
       if (trimmed && rememberPassword) {
         try {
           await setMeshcoreRepeaterCredential(nodeId, { password: trimmed });
           saved = true;
         } catch {
           // catch-no-log-ok meshcoreRepeaterCredentialStorage already logs persist failures
-          resolverRef.current?.({ ok: false });
-          resolverRef.current = null;
-          setModalOpen(false);
-          setPending(null);
-          return;
         }
-      } else if (trimmed) {
-        setMeshcoreRepeaterEphemeralSecret(nodeId, trimmed);
       }
       resolverRef.current?.({ ok: true, saved });
       resolverRef.current = null;
@@ -120,7 +126,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
 
   const openAuthModal = useCallback(
     (nodeId: number, repeaterName: string, forcePrompt: boolean): Promise<RepeaterAuthResult> => {
-      if (!forcePrompt && getMeshcoreRepeaterCredential(nodeId) != null) {
+      if (!forcePrompt && meshcoreRepeaterHasResolvablePassword(nodeId)) {
         return Promise.resolve({ ok: true });
       }
       return new Promise((resolve) => {
@@ -217,12 +223,16 @@ function ModalAuthBody({
   const existing = getMeshcoreRepeaterCredential(nodeId);
   const [password, setPassword] = useState(existing?.password ?? '');
   const [rememberPassword, setRememberPassword] = useState(true);
+  const submitPassword = () => {
+    onSave(password, rememberPassword);
+  };
 
   return (
     <>
       <RepeaterRemoteAuthFields
         password={password}
         onPasswordChange={setPassword}
+        onSubmit={submitPassword}
         passwordInputId={passwordId}
       />
       <label className="flex items-center gap-2 text-xs text-gray-400">
@@ -252,9 +262,7 @@ function ModalAuthBody({
         </button>
         <button
           type="button"
-          onClick={() => {
-            onSave(password, rememberPassword);
-          }}
+          onClick={submitPassword}
           className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium"
         >
           {continueLabel}
