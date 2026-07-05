@@ -2,11 +2,23 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  meshcoreApplyRepeaterSessionAuth,
-  meshcoreApplyRepeaterSessionAuthSkip,
-  meshcoreIsRepeaterRemoteAuthTouched,
-} from '@/renderer/lib/meshcoreUtils';
+  getMeshcoreRepeaterCredential,
+  setMeshcoreRepeaterCredential,
+} from '@/renderer/lib/meshcoreRepeaterCredentialStorage';
+import { setMeshcoreRepeaterEphemeralSecret } from '@/renderer/lib/meshcoreRepeaterSavedSecrets';
 import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
+
+export interface RepeaterAuthResult {
+  ok: boolean;
+  saved?: boolean;
+}
+
+interface PendingRepeaterAuth {
+  nodeId: number;
+  repeaterName: string;
+  /** When true, show modal even if a saved credential exists (change password). */
+  forcePrompt: boolean;
+}
 
 function RepeaterRemoteAuthFields({
   password,
@@ -43,142 +55,148 @@ function RepeaterRemoteAuthFields({
   );
 }
 
-/** Inline banner: complete once per session before auto Status fetch and remote RPCs. */
-export function MeshcoreRepeaterRemoteAuthBanner({ onConfigured }: { onConfigured: () => void }) {
-  const { t } = useTranslation();
-  const [password, setPassword] = useState('');
-  const passwordId = useId();
-
-  if (meshcoreIsRepeaterRemoteAuthTouched()) return null;
-
-  return (
-    <div
-      className="space-y-3 rounded-lg border border-amber-700/50 bg-amber-950/30 px-3 py-3"
-      role="region"
-      aria-label={t('repeatersPanel.remoteAccessAriaLabel')}
-    >
-      <p className="text-sm text-amber-100/90">{t('repeatersPanel.remoteAuthHelp')}</p>
-      <RepeaterRemoteAuthFields
-        password={password}
-        onPasswordChange={setPassword}
-        passwordInputId={passwordId}
-      />
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            meshcoreApplyRepeaterSessionAuthSkip();
-            onConfigured();
-          }}
-          className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:bg-gray-600"
-        >
-          {t('repeatersPanel.remoteAuthContinueWithoutPassword')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            meshcoreApplyRepeaterSessionAuth(password);
-            onConfigured();
-          }}
-          className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium transition-colors"
-        >
-          {t('repeatersPanel.remoteAuthSaveForSession')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function useMeshcoreRepeaterRemoteAuth() {
   const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
-  const resolverRef = useRef<((ok: boolean) => void) | null>(null);
+  const [pending, setPending] = useState<PendingRepeaterAuth | null>(null);
+  const resolverRef = useRef<((result: RepeaterAuthResult) => void) | null>(null);
   const passwordId = useId();
 
   useEffect(() => {
     return () => {
       if (resolverRef.current) {
-        resolverRef.current(false);
+        resolverRef.current({ ok: false });
         resolverRef.current = null;
       }
     };
   }, []);
 
-  const ensureConfigured = useCallback((): Promise<boolean> => {
-    if (meshcoreIsRepeaterRemoteAuthTouched()) return Promise.resolve(true);
-    return new Promise((resolve) => {
-      resolverRef.current = resolve;
-      setModalOpen(true);
-    });
-  }, []);
-
   const finishModal = useCallback(
-    (ok: boolean, mode: 'cancel' | 'skip' | 'save', password: string) => {
+    async (
+      ok: boolean,
+      mode: 'cancel' | 'skip' | 'save',
+      password: string,
+      rememberPassword: boolean,
+      nodeId: number,
+    ) => {
       if (!ok || mode === 'cancel') {
-        resolverRef.current?.(false);
+        resolverRef.current?.({ ok: false });
         resolverRef.current = null;
         setModalOpen(false);
+        setPending(null);
         return;
       }
       if (mode === 'skip') {
-        meshcoreApplyRepeaterSessionAuthSkip();
-      } else {
-        meshcoreApplyRepeaterSessionAuth(password);
+        resolverRef.current?.({ ok: true });
+        resolverRef.current = null;
+        setModalOpen(false);
+        setPending(null);
+        return;
       }
-      resolverRef.current?.(true);
+      const trimmed = password.trim();
+      let saved = false;
+      if (trimmed && rememberPassword) {
+        try {
+          await setMeshcoreRepeaterCredential(nodeId, { password: trimmed });
+          saved = true;
+        } catch {
+          // catch-no-log-ok meshcoreRepeaterCredentialStorage already logs persist failures
+          resolverRef.current?.({ ok: false });
+          resolverRef.current = null;
+          setModalOpen(false);
+          setPending(null);
+          return;
+        }
+      } else if (trimmed) {
+        setMeshcoreRepeaterEphemeralSecret(nodeId, trimmed);
+      }
+      resolverRef.current?.({ ok: true, saved });
       resolverRef.current = null;
       setModalOpen(false);
+      setPending(null);
     },
     [],
   );
 
-  const RemoteAuthModal = modalOpen ? (
-    <div
-      className="fixed inset-0 flex items-center justify-center p-4"
-      style={{ zIndex: Z_NESTED_AUTH_OVERLAY }}
-    >
-      <button
-        type="button"
-        className="absolute inset-0 cursor-default border-0 bg-black/60 p-0"
-        aria-label={t('repeatersPanel.remoteAuthCancelDialog')}
-        onClick={() => {
-          finishModal(false, 'cancel', '');
-        }}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="repeater-remote-auth-title"
-        className="relative z-10 w-full max-w-md space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4 shadow-xl"
-      >
-        <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
-          {t('repeatersPanel.remoteAuthTitle')}
-        </h2>
-        <p className="text-sm text-gray-400">{t('repeatersPanel.remoteAuthModalHelp')}</p>
-        <ModalAuthBody
-          passwordId={passwordId}
-          onCancel={() => {
-            finishModal(false, 'cancel', '');
-          }}
-          onSkip={() => {
-            finishModal(true, 'skip', '');
-          }}
-          onSave={(pwd) => {
-            finishModal(true, 'save', pwd);
-          }}
-          cancelLabel={t('common.cancel')}
-          skipLabel={t('repeatersPanel.remoteAuthNoPassword')}
-          continueLabel={t('repeatersPanel.remoteAuthContinue')}
-        />
-      </div>
-    </div>
-  ) : null;
+  const openAuthModal = useCallback(
+    (nodeId: number, repeaterName: string, forcePrompt: boolean): Promise<RepeaterAuthResult> => {
+      if (!forcePrompt && getMeshcoreRepeaterCredential(nodeId) != null) {
+        return Promise.resolve({ ok: true });
+      }
+      return new Promise((resolve) => {
+        resolverRef.current = resolve;
+        setPending({ nodeId, repeaterName, forcePrompt });
+        setModalOpen(true);
+      });
+    },
+    [],
+  );
 
-  return { ensureConfigured, RemoteAuthModal };
+  const ensureRepeaterAuth = useCallback(
+    (nodeId: number, repeaterName: string): Promise<RepeaterAuthResult> => {
+      return openAuthModal(nodeId, repeaterName, false);
+    },
+    [openAuthModal],
+  );
+
+  const promptRepeaterPassword = useCallback(
+    (nodeId: number, repeaterName: string): Promise<RepeaterAuthResult> => {
+      return openAuthModal(nodeId, repeaterName, true);
+    },
+    [openAuthModal],
+  );
+
+  const RemoteAuthModal =
+    modalOpen && pending != null ? (
+      <div
+        className="fixed inset-0 flex items-center justify-center p-4"
+        style={{ zIndex: Z_NESTED_AUTH_OVERLAY }}
+      >
+        <button
+          type="button"
+          className="absolute inset-0 cursor-default border-0 bg-black/60 p-0"
+          aria-label={t('repeatersPanel.remoteAuthCancelDialog')}
+          onClick={() => {
+            void finishModal(false, 'cancel', '', true, pending.nodeId);
+          }}
+        />
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="repeater-remote-auth-title"
+          className="relative z-10 w-full max-w-md space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4 shadow-xl"
+        >
+          <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
+            {t('repeatersPanel.remoteAuthTitle')}
+          </h2>
+          <p className="text-sm text-gray-400">{pending.repeaterName}</p>
+          <p className="text-sm text-gray-400">{t('repeatersPanel.remoteAuthModalHelp')}</p>
+          <ModalAuthBody
+            passwordId={passwordId}
+            nodeId={pending.nodeId}
+            onCancel={() => {
+              void finishModal(false, 'cancel', '', true, pending.nodeId);
+            }}
+            onSkip={() => {
+              void finishModal(true, 'skip', '', true, pending.nodeId);
+            }}
+            onSave={(pwd, remember) => {
+              void finishModal(true, 'save', pwd, remember, pending.nodeId);
+            }}
+            cancelLabel={t('common.cancel')}
+            skipLabel={t('repeatersPanel.remoteAuthNoPassword')}
+            continueLabel={t('repeatersPanel.remoteAuthContinue')}
+          />
+        </div>
+      </div>
+    ) : null;
+
+  return { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal };
 }
 
 function ModalAuthBody({
   passwordId,
+  nodeId,
   onCancel,
   onSkip,
   onSave,
@@ -187,14 +205,19 @@ function ModalAuthBody({
   continueLabel,
 }: {
   passwordId: string;
+  nodeId: number;
   onCancel: () => void;
   onSkip: () => void;
-  onSave: (password: string) => void;
+  onSave: (password: string, rememberPassword: boolean) => void;
   cancelLabel: string;
   skipLabel: string;
   continueLabel: string;
 }) {
-  const [password, setPassword] = useState('');
+  const { t } = useTranslation();
+  const existing = getMeshcoreRepeaterCredential(nodeId);
+  const [password, setPassword] = useState(existing?.password ?? '');
+  const [rememberPassword, setRememberPassword] = useState(true);
+
   return (
     <>
       <RepeaterRemoteAuthFields
@@ -202,6 +225,16 @@ function ModalAuthBody({
         onPasswordChange={setPassword}
         passwordInputId={passwordId}
       />
+      <label className="flex items-center gap-2 text-xs text-gray-400">
+        <input
+          type="checkbox"
+          checked={rememberPassword}
+          onChange={(e) => {
+            setRememberPassword(e.target.checked);
+          }}
+        />
+        {t('repeatersPanel.rememberPassword')}
+      </label>
       <div className="flex flex-wrap justify-end gap-2 pt-2">
         <button
           type="button"
@@ -220,7 +253,7 @@ function ModalAuthBody({
         <button
           type="button"
           onClick={() => {
-            onSave(password);
+            onSave(password, rememberPassword);
           }}
           className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium"
         >

@@ -181,7 +181,6 @@ import {
   setMeshcorePathHashModeOnRadio,
 } from '../lib/meshcorePathHashMode';
 import { runMeshcoreRepeaterRpcOnce } from '../lib/meshcoreRepeaterRpcInFlight';
-import { meshcoreRepeaterTryLogin } from '../lib/meshcoreRepeaterSession';
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
 import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
@@ -4135,7 +4134,12 @@ export function useMeshcoreRuntime() {
             if (!conn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
-            await meshcoreRepeaterTryLogin(conn, pubKey);
+            await meshcoreTryRemoteServerLogin(
+              conn,
+              nodeId,
+              pubKey,
+              nodesRef.current.get(nodeId)?.hw_model,
+            );
             const neighbourPrefixLen = 6;
             const reqBytes = buildMeshcoreGetNeighboursRequest({
               count: 10,

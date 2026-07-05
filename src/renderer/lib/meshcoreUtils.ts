@@ -696,38 +696,6 @@ export function mergeHwModelOnContactUpdate(
   return incomingHwModel;
 }
 
-// In-memory only — never written to any persistent or inspectable storage.
-let _repeaterAuthTouched = false;
-let _repeaterPassword = '';
-
-/** True after the user completed the Repeaters remote-auth step for this session (password or skip). */
-export function meshcoreIsRepeaterRemoteAuthTouched(): boolean {
-  return _repeaterAuthTouched;
-}
-
-/** Session-only repeater admin password (for `login` before status/telemetry/neighbors). */
-export function meshcoreGetRepeaterSessionPassword(): string {
-  return _repeaterPassword;
-}
-
-/** Store password and mark session auth as configured. */
-export function meshcoreApplyRepeaterSessionAuth(password: string): void {
-  _repeaterPassword = password;
-  _repeaterAuthTouched = true;
-}
-
-/** Mark session auth as configured with no password (repeaters without admin password). */
-export function meshcoreApplyRepeaterSessionAuthSkip(): void {
-  _repeaterPassword = '';
-  _repeaterAuthTouched = true;
-}
-
-/** Clear session repeater auth so the user can re-enter or skip again. */
-export function meshcoreClearRepeaterRemoteSessionAuth(): void {
-  _repeaterAuthTouched = false;
-  _repeaterPassword = '';
-}
-
 /**
  * Normalizes the value resolved by meshcore.js `exportPrivateKey()` — typically
  * `{ privateKey: Uint8Array }` from `onPrivateKeyResponse`. Call sites must not assume a bare `Uint8Array`.

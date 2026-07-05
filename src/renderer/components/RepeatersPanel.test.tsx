@@ -39,9 +39,9 @@ vi.mock('./Toast', () => ({
 }));
 
 vi.mock('../hooks/useMeshcoreRepeaterRemoteAuth', () => ({
-  MeshcoreRepeaterRemoteAuthBanner: () => null,
   useMeshcoreRepeaterRemoteAuth: () => ({
-    ensureConfigured: vi.fn().mockResolvedValue(true),
+    ensureRepeaterAuth: vi.fn().mockResolvedValue({ ok: true }),
+    promptRepeaterPassword: vi.fn().mockResolvedValue({ ok: true, saved: true }),
     RemoteAuthModal: null,
   }),
 }));

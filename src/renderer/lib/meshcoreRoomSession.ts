@@ -419,5 +419,5 @@ export async function meshcoreTryRemoteServerLogin(
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }
-  await meshcoreRepeaterTryLogin(conn, pubKey);
+  await meshcoreRepeaterTryLogin(conn, pubKey, nodeId);
 }

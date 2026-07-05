@@ -7,10 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
-import {
-  MeshcoreRepeaterRemoteAuthBanner,
-  useMeshcoreRepeaterRemoteAuth,
-} from '../hooks/useMeshcoreRepeaterRemoteAuth';
+import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import type {
   CliHistoryEntry,
@@ -19,11 +16,9 @@ import type {
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
-import {
-  meshcoreClearRepeaterRemoteSessionAuth,
-  meshcoreIsRepeaterRemoteAuthTouched,
-  meshcoreTracePathLenToHops,
-} from '../lib/meshcoreUtils';
+import { listMeshcoreRepeaterCredentialNodeIds } from '../lib/meshcoreRepeaterCredentialStorage';
+import { forgetMeshcoreRepeaterSavedSecret } from '../lib/meshcoreRepeaterSavedSecrets';
+import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
   effectiveLastHeardMs,
   getNodeStatus,
@@ -220,11 +215,29 @@ export default function RepeatersPanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
-  const { ensureConfigured, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
-  const [, setRemoteAuthEpoch] = useState(0);
-  const bumpRemoteAuthEpoch = useCallback(() => {
-    setRemoteAuthEpoch((n) => n + 1);
+  const { ensureRepeaterAuth, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
+  const [storedRepeaterIds, setStoredRepeaterIds] = useState(
+    () => new Set(listMeshcoreRepeaterCredentialNodeIds()),
+  );
+  const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
+  const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
+  const refreshStoredRepeaters = useCallback(() => {
+    setStoredRepeaterIds(new Set(listMeshcoreRepeaterCredentialNodeIds()));
   }, []);
+  const savedCredentialNodeIds = useMemo(
+    () => [...storedRepeaterIds].sort((a, b) => a - b),
+    [storedRepeaterIds],
+  );
+  const resolveRepeaterDisplayName = useCallback(
+    (nodeId: number): string => {
+      const n = nodes.get(nodeId);
+      if (n?.long_name) return n.long_name;
+      return t('repeatersPanel.savedPasswordOrphanLabel', {
+        nodeId: nodeId.toString(16).padStart(8, '0'),
+      });
+    },
+    [nodes, t],
+  );
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const signalHistory = useRepeaterSignalStore((s) => s.history);
   const pathHistory = usePathHistoryStore((s) => s.records);
@@ -354,10 +367,30 @@ export default function RepeatersPanel({
     repeaterRowVirtualizer,
   ]);
 
-  const remoteAuthReady = meshcoreIsRepeaterRemoteAuthTouched();
+  const handleForgetSavedPassword = async (nodeId: number) => {
+    if (forgetConfirmNodeId !== nodeId) {
+      setForgetConfirmNodeId(nodeId);
+      return;
+    }
+    setForgetConfirmNodeId(null);
+    try {
+      await forgetMeshcoreRepeaterSavedSecret(nodeId);
+      refreshStoredRepeaters();
+      addToast(t('repeatersPanel.passwordForgotten'), 'success');
+    } catch (e) {
+      console.warn('[RepeatersPanel] forget saved password failed ' + errLikeToLogString(e));
+    }
+  };
 
   const handleStatus = async (nodeId: number) => {
-    if (!(await ensureConfigured())) return;
+    const node = nodes.get(nodeId);
+    const auth = await ensureRepeaterAuth(
+      nodeId,
+      node?.long_name ??
+        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+    );
+    if (!auth.ok) return;
+    if (auth.saved) refreshStoredRepeaters();
     setStatusLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestRepeaterStatus(nodeId);
@@ -436,7 +469,13 @@ export default function RepeatersPanel({
       });
       return;
     }
-    if (!(await ensureConfigured())) return;
+    const auth = await ensureRepeaterAuth(
+      nodeId,
+      node?.long_name ??
+        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+    );
+    if (!auth.ok) return;
+    if (auth.saved) refreshStoredRepeaters();
     setNeighborsLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestNeighbors?.(nodeId);
@@ -453,6 +492,7 @@ export default function RepeatersPanel({
   };
 
   const handleTelemetry = async (nodeId: number) => {
+    const node = nodes.get(nodeId);
     if (expandedTelemetry.has(nodeId)) {
       setExpandedTelemetry((prev) => {
         const n = new Set(prev);
@@ -461,7 +501,13 @@ export default function RepeatersPanel({
       });
       return;
     }
-    if (!(await ensureConfigured())) return;
+    const auth = await ensureRepeaterAuth(
+      nodeId,
+      node?.long_name ??
+        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+    );
+    if (!auth.ok) return;
+    if (auth.saved) refreshStoredRepeaters();
     setTelemetryLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestTelemetry?.(nodeId);
@@ -503,6 +549,14 @@ export default function RepeatersPanel({
 
   const handleCliCommand = async (nodeId: number, command: string) => {
     if (!onSendCliCommand || !command.trim()) return;
+    const node = nodes.get(nodeId);
+    const auth = await ensureRepeaterAuth(
+      nodeId,
+      node?.long_name ??
+        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+    );
+    if (!auth.ok) return;
+    if (auth.saved) refreshStoredRepeaters();
     const useSavedPath = cliUseSavedPath.get(nodeId) ?? false;
     setCliLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
@@ -573,21 +627,52 @@ export default function RepeatersPanel({
         </div>
         <p className="max-w-2xl text-xs text-gray-500">{t('repeatersPanel.columnsDataHint')}</p>
 
-        <MeshcoreRepeaterRemoteAuthBanner onConfigured={bumpRemoteAuthEpoch} />
-        {remoteAuthReady ? (
-          <div className="flex justify-end">
+        {savedCredentialNodeIds.length > 0 && (
+          <div className="rounded-lg border border-gray-700/80 bg-gray-900/40">
             <button
               type="button"
               onClick={() => {
-                meshcoreClearRepeaterRemoteSessionAuth();
-                bumpRemoteAuthEpoch();
+                setSavedPasswordsOpen((open) => !open);
               }}
-              className="text-xs text-amber-400/90 underline decoration-dotted hover:text-amber-300"
+              className="flex w-full items-center gap-1 px-3 py-2 text-left text-xs font-medium text-gray-300 hover:bg-gray-800/50"
+              aria-expanded={savedPasswordsOpen}
             >
-              {t('repeatersPanel.changeSessionRepeaterPassword')}
+              <span className="text-gray-500" aria-hidden>
+                {savedPasswordsOpen ? '▾' : '▸'}
+              </span>
+              {t('repeatersPanel.savedPasswordsCount', { count: savedCredentialNodeIds.length })}
             </button>
+            {savedPasswordsOpen && (
+              <ul className="max-h-40 overflow-y-auto border-t border-gray-800/80 pb-1">
+                {savedCredentialNodeIds.map((nodeId) => (
+                  <li
+                    key={nodeId}
+                    className="flex items-center justify-between gap-2 border-b border-gray-800/60 px-3 py-1.5 last:border-b-0"
+                  >
+                    <span className="truncate text-xs text-gray-200">
+                      {resolveRepeaterDisplayName(nodeId)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleForgetSavedPassword(nodeId);
+                      }}
+                      onBlur={() => {
+                        if (forgetConfirmNodeId === nodeId) setForgetConfirmNodeId(null);
+                      }}
+                      className="shrink-0 rounded border border-red-900/50 bg-red-950/40 px-1.5 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30"
+                      aria-label={t('repeatersPanel.forgetPasswordAria')}
+                    >
+                      {forgetConfirmNodeId === nodeId
+                        ? t('repeatersPanel.buttonConfirmRemove')
+                        : t('repeatersPanel.forgetPassword')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        ) : null}
+        )}
 
         {repeaters.length === 0 ? (
           <div className="mt-8 text-center text-sm text-gray-400">
@@ -759,6 +844,15 @@ export default function RepeatersPanel({
                             >
                               {node.long_name}
                             </button>
+                            {storedRepeaterIds.has(node.node_id) ? (
+                              <span
+                                className="text-sky-400/90"
+                                title={t('repeatersPanel.passwordSavedIndicator')}
+                                aria-label={t('repeatersPanel.passwordSavedIndicator')}
+                              >
+                                🔑
+                              </span>
+                            ) : null}
                           </span>
                         </td>
                         <td className="py-2 pr-4 text-xs text-gray-400">

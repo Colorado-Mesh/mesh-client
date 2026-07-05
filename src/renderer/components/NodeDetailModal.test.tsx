@@ -7,10 +7,9 @@ import { axe } from 'vitest-axe';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 
-import {
-  meshcoreApplyRepeaterSessionAuthSkip,
-  meshcoreClearRepeaterRemoteSessionAuth,
-} from '../lib/meshcoreUtils';
+import { mergeAppSetting } from '../lib/appSettingsStorage';
+import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
+import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
 import { Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import {
   ensureOfflineProtocolIdentities,
@@ -53,6 +52,14 @@ const meshcoreRepeaterNode: MeshNode = {
   node_id: 0xabc123,
   hw_model: 'Repeater',
 };
+
+function seedRepeaterSavedCredential(): void {
+  mergeAppSetting(
+    meshcoreRepeaterCredentialSettingForNode(meshcoreRepeaterNode.node_id),
+    JSON.stringify({ password: 'test' }),
+    'NodeDetailModal.test',
+  );
+}
 
 function renderMeshcoreModal(
   overrides: Partial<React.ComponentProps<typeof NodeDetailModal>> = {},
@@ -264,7 +271,8 @@ function seedMeshcoreContactPubkey(pubKey = new Uint8Array(32).fill(0xab)) {
 
 describe('NodeDetailModal MeshCore actions', () => {
   beforeEach(() => {
-    meshcoreClearRepeaterRemoteSessionAuth();
+    localStorage.clear();
+    clearAllMeshcoreRepeaterEphemeralPasswords();
     ensureOfflineProtocolIdentities();
     vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue(null);
     vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(1);
@@ -312,7 +320,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('shows success status when shareContact resolves true', async () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
+    seedRepeaterSavedCredential();
     const user = userEvent.setup();
     const onShareContact = vi.fn().mockResolvedValue(true);
     renderMeshcoreModal({ onShareContact });
@@ -324,7 +332,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('shows failure status when shareContact resolves false', async () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
+    seedRepeaterSavedCredential();
     const user = userEvent.setup();
     renderMeshcoreModal({ onShareContact: vi.fn().mockResolvedValue(false) });
 
@@ -334,7 +342,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('shows no public key message when exportContact returns null', async () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
+    seedRepeaterSavedCredential();
     const user = userEvent.setup();
     renderMeshcoreModal({ onExportContact: vi.fn().mockResolvedValue(null) });
 
@@ -367,34 +375,34 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('invokes requestRepeaterStatus after repeater auth is skipped', async () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
     const user = userEvent.setup();
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
     await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
 
   it('invokes requestTelemetry after repeater auth is skipped', async () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
     const user = userEvent.setup();
     const onRequestTelemetry = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestTelemetry });
 
     await user.click(screen.getByRole('button', { name: 'Sensor telemetry LPP' }));
+    await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestTelemetry).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
 
   it('invokes requestNeighbors for repeater nodes after auth is skipped', async () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
     const user = userEvent.setup();
     const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestNeighbors });
 
     await user.click(screen.getByRole('button', { name: '🔗 Get Neighbors' }));
+    await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestNeighbors).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
