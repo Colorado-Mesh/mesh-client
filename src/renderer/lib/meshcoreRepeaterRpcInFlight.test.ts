@@ -5,6 +5,7 @@ import {
   resetMeshcoreRepeaterRpcInFlightForTests,
   runMeshcoreRepeaterRpcOnce,
 } from './meshcoreRepeaterRpcInFlight';
+import * as traceMultiplex from './meshcoreTracePathMultiplex';
 
 describe('runMeshcoreRepeaterRpcOnce', () => {
   it('returns the same promise for duplicate neighbors requests on one node', async () => {
@@ -123,5 +124,11 @@ describe('meshcoreCompanionRepeaterRfBusy', () => {
     release();
     await pending;
     expect(meshcoreCompanionRepeaterRfBusy()).toBe(false);
+  });
+
+  it('is true while trace responses are in flight', () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    vi.spyOn(traceMultiplex, 'meshcoreTraceResponsesInFlightCount').mockReturnValue(1);
+    expect(meshcoreCompanionRepeaterRfBusy()).toBe(true);
   });
 });

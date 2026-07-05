@@ -3,7 +3,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { MESHCORE_TELEMETRY_TIMEOUT_MS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { getMeshcoreRepeaterCredential } from './meshcoreRepeaterCredentialStorage';
 import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
-import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import {
+  meshcoreLoginErrorIsAuthFailure,
+  type MeshcoreRadioConnection,
+} from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import { awaitMeshcoreRepeaterAdminRfIdle } from './meshcoreTraceRadioIdle';
 
@@ -27,8 +30,7 @@ export function clearMeshcoreRepeaterEphemeralPassword(nodeId: number): void {
 }
 
 export function meshcoreRepeaterLoginErrorIsAuthFailure(error: unknown): boolean {
-  const msg = errLikeToLogString(error).toLowerCase();
-  return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied');
+  return meshcoreLoginErrorIsAuthFailure(error);
 }
 
 /** Throw when a saved/ephemeral password login was attempted but failed (do not continue RPC). */

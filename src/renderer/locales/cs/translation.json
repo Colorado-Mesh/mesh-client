@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "Poslední požadavek senzoru se nezdařil: {{error}}",
     "cliLastFailedTooltip": "Poslední příkaz CLI se nezdařil: {{error}}",
     "telemetryError": "Chyba snímače: {{error}}",
-    "neighborsFailedToast": "Sousedé selhali: {{message}}"
+    "neighborsFailedToast": "Sousedé selhali: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "Vymazat historii",
+    "cliNoCommandsYet": "Zatím žádné příkazy",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

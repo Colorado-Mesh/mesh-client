@@ -6,6 +6,7 @@ import {
   MESHCORE_ERR_AUTH_FAILED,
   MESHCORE_REPEATER_AUTH_HINT_KEY,
   meshcoreAppendRepeaterAuthHint,
+  meshcoreRepeaterAdminRpcErrorBudgetMs,
   meshcoreRepeaterRpcErrorMessage,
   meshcoreStoredUserMessage,
   meshcoreUserMessageKey,
@@ -45,6 +46,12 @@ describe('meshcoreMessageI18n', () => {
     if (isDiagnosticTextI18n(ref)) {
       expect(ref.params?.seconds).toBe(120);
     }
+  });
+
+  it('meshcoreRepeaterAdminRpcErrorBudgetMs uses ping-settle budget for ping wait errors', () => {
+    expect(meshcoreRepeaterAdminRpcErrorBudgetMs('timeout waiting for ping', 120_000)).toBe(
+      360_000,
+    );
   });
 
   it('meshcoreStoredUserMessage round-trips prefixed refs', () => {

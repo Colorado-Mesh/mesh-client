@@ -1,8 +1,7 @@
 import { meshcoreTraceDataHashLayout } from '@/shared/meshcorePathHash';
 
+import { waitForMeshcoreRadioSentAck } from './meshcoreRadioSentWait';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
-import { MC_RESP_ERR, MC_RESP_SENT } from './meshcoreWireCodes';
-import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
 
 /** Trace path RPC surface: radio connection plus meshcore.js sendCommandSendTracePath. */
 export type MeshcoreTracePathConnection = MeshcoreRadioConnection & {
@@ -47,6 +46,25 @@ export function meshcoreTracePendingRouteCount(): number {
 
 /** @internal Test hook */
 export function resetMeshcoreTraceResponsesInFlightForTests(): void {
+  traceResponsesInFlight = 0;
+  tracePendingRouteCount = 0;
+}
+
+/** Cancel pending traces and reset counters when the radio disconnects. */
+export function resetMeshcoreTracePathMultiplexOnDisconnect(conn?: object): void {
+  if (conn) {
+    const state = muxByConn.get(conn);
+    if (state) {
+      for (const pending of state.pendingByTag.values()) {
+        if (pending.traceTimeoutId !== undefined) {
+          clearTimeout(pending.traceTimeoutId);
+        }
+        pending.reject(new Error('disconnect'));
+      }
+      state.pendingByTag.clear();
+      muxByConn.delete(conn);
+    }
+  }
   traceResponsesInFlight = 0;
   tracePendingRouteCount = 0;
 }
@@ -255,41 +273,14 @@ export function startMeshcoreTracePathMultiplexed(
 
     void runSerialized(async () => {
       try {
-        let estTimeoutMs = 0;
-        await new Promise<void>((resolveSent, rejectSent) => {
-          let sentWaitTimer: ReturnType<typeof setTimeout> | undefined;
-          const clearSentWait = () => {
-            if (sentWaitTimer !== undefined) {
-              clearTimeout(sentWaitTimer);
-              sentWaitTimer = undefined;
-            }
-          };
-          const offListeners = () => {
-            clearSentWait();
-            conn.off(MC_RESP_SENT, onSent);
-            conn.off(MC_RESP_ERR, onErr);
-          };
-          const onSent = (response: unknown) => {
-            offListeners();
-            const r = response as { estTimeout?: number };
-            estTimeoutMs = r.estTimeout ?? 0;
-            resolveSent();
-          };
-          const onErr = () => {
-            offListeners();
-            rejectSent(new Error('radio rejected trace'));
-          };
-          sentWaitTimer = setTimeout(() => {
-            offListeners();
-            rejectSent(new Error('timeout waiting for trace acknowledgment'));
-          }, MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
-          conn.once(MC_RESP_SENT, onSent);
-          conn.once(MC_RESP_ERR, onErr);
-          void conn.sendCommandSendTracePath(tag, 0, path).catch((err: unknown) => {
-            offListeners();
-            rejectSent(unknownToError(err, 'send trace path failed'));
-          });
-        });
+        const { estTimeoutMs } = await waitForMeshcoreRadioSentAck(
+          conn,
+          () => conn.sendCommandSendTracePath(tag, 0, path),
+          {
+            rejectErrMsg: 'radio rejected trace',
+            rejectSentMsg: 'timeout waiting for trace acknowledgment',
+          },
+        );
 
         traceTimeoutId = setTimeout(() => {
           fail(new Error('timeout'));

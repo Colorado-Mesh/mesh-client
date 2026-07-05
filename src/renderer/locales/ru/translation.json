@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "Не удалось выполнить последний запрос датчика: {{error}}",
     "cliLastFailedTooltip": "Не удалось выполнить последнюю команду CLI: {{error}}",
     "telemetryError": "Ошибка датчика: {{error}}",
-    "neighborsFailedToast": "Ошибка соседей: {{message}}"
+    "neighborsFailedToast": "Ошибка соседей: {{message}}",
+    "columnSnr": "ОСШ",
+    "columnRssi": "РССИ",
+    "buttonCli": "интерфейс командной строки",
+    "cliClearHistory": "Очистить историю",
+    "cliNoCommandsYet": "Команд пока нет",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}м"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Объявить интервал (секунды)",

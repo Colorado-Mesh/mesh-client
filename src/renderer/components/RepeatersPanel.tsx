@@ -109,14 +109,19 @@ function formatRelativeTime(t: TFunction, lastHeard: number | null | undefined):
   return t('common.daysAgo', { count: Math.floor(ageHr / 24) });
 }
 
-function formatUptime(secs: number | undefined): string {
+function formatUptime(t: TFunction, secs: number | undefined): string {
   if (!secs) return '—';
   const days = Math.floor(secs / 86400);
   const hours = Math.floor((secs % 86400) / 3600);
   const mins = Math.floor((secs % 3600) / 60);
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${mins}m`;
-  return `${mins}m`;
+  if (days > 0) return t('repeatersPanel.uptimeDaysHours', { days, hours });
+  if (hours > 0) return t('repeatersPanel.uptimeHoursMinutes', { hours, minutes: mins });
+  return t('repeatersPanel.uptimeMinutes', { minutes: mins });
+}
+
+function meshcoreErrorToastMessage(t: TFunction, e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  return translateMeshcoreUserMessage(t, raw);
 }
 
 interface SignalPoint {
@@ -397,7 +402,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] requestRepeaterStatus error ' + errLikeToLogString(e));
       addToast(
         t('repeatersPanel.statusFailedToast', {
-          message: e instanceof Error ? e.message : String(e),
+          message: meshcoreErrorToastMessage(t, e),
         }),
         'error',
       );
@@ -411,7 +416,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] ping error ' + errLikeToLogString(e));
       addToast(
         t('repeatersPanel.pingFailedToast', {
-          message: e instanceof Error ? e.message : String(e),
+          message: meshcoreErrorToastMessage(t, e),
         }),
         'error',
       );
@@ -431,7 +436,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] deleteRepeater failed:', e instanceof Error ? e.message : e);
       addToast(
         t('repeatersPanel.removeFailedToast', {
-          message: e instanceof Error ? e.message : String(e),
+          message: meshcoreErrorToastMessage(t, e),
         }),
         'error',
       );
@@ -469,7 +474,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] requestNeighbors error ' + errLikeToLogString(e));
       addToast(
         t('repeatersPanel.neighborsFailedToast', {
-          message: e instanceof Error ? e.message : String(e),
+          message: meshcoreErrorToastMessage(t, e),
         }),
         'error',
       );
@@ -500,7 +505,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] requestTelemetry error ' + errLikeToLogString(e));
       addToast(
         t('nodeDetailModal.telemetryFailed', {
-          message: e instanceof Error ? e.message : String(e),
+          message: meshcoreErrorToastMessage(t, e),
         }),
         'error',
       );
@@ -669,10 +674,10 @@ export default function RepeatersPanel({
                   <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnName')}</th>
                   <th className="py-2 pr-4 font-medium">{t('repeatersPanel.columnLastHeard')}</th>
                   <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.snrDbTooltip')}>
-                    SNR
+                    {t('repeatersPanel.columnSnr')}
                   </th>
                   <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.rssiDbmTooltip')}>
-                    RSSI
+                    {t('repeatersPanel.columnRssi')}
                   </th>
                   <th className="py-2 pr-4 font-medium" title={t('repeatersPanel.hopCountTooltip')}>
                     {t('repeatersPanel.columnHops')}
@@ -900,7 +905,7 @@ export default function RepeatersPanel({
                             <span className="text-gray-500">—</span>
                           )}
                         </td>
-                        <td className="py-2 pr-4">{formatUptime(status?.totalUpTimeSecs)}</td>
+                        <td className="py-2 pr-4">{formatUptime(t, status?.totalUpTimeSecs)}</td>
                         <td className="py-2 pr-4">{airPct != null ? `${airPct}%` : '—'}</td>
                         <td className="py-2 pr-4">{reliabilityText}</td>
                         <td className="py-2">
@@ -1135,7 +1140,7 @@ export default function RepeatersPanel({
                                       : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
                                   }`}
                                 >
-                                  CLI
+                                  {t('repeatersPanel.buttonCli')}
                                 </button>
                               ))}
                             <button
@@ -1440,13 +1445,13 @@ export default function RepeatersPanel({
                                   }}
                                   className="text-xs text-gray-500 underline hover:text-gray-300"
                                 >
-                                  Clear history
+                                  {t('repeatersPanel.cliClearHistory')}
                                 </button>
                               </div>
                               <div className="max-h-40 overflow-y-auto rounded border border-gray-700 bg-gray-950/50">
                                 {cliHistory.length === 0 ? (
                                   <div className="px-2 py-1 text-xs text-gray-500 italic">
-                                    No commands yet
+                                    {t('repeatersPanel.cliNoCommandsYet')}
                                   </div>
                                 ) : (
                                   cliHistory.map((entry, idx) => (

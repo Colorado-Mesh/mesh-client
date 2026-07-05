@@ -71,22 +71,25 @@ export function runMeshcoreRepeaterBinaryRequest(
 
     conn.on(MC_PUSH_BINARY_RESPONSE, onBinaryResponsePush);
 
+    const armResponseWait = (estTimeoutMs: number, expectedAckCrc: number | undefined): void => {
+      if (expectedAckCrc === undefined) {
+        fail(new Error('binary request missing expectedAckCrc tag'));
+        return;
+      }
+      expectedTag = expectedAckCrc >>> 0;
+      responseTimeoutId = setTimeout(() => {
+        fail('timeout');
+      }, estTimeoutMs + extraTimeoutMs);
+    };
+
     void runMeshcoreRepeaterQueuedSend(
       conn,
       runSerialized,
       () => conn.sendToRadioFrame(buildSendBinaryReqFrame(contactPublicKey, requestCodeAndParams)),
       beforeSend,
-    )
-      .then(({ estTimeoutMs, expectedAckCrc }) => {
-        if (expectedAckCrc === undefined) {
-          fail(new Error('binary request missing expectedAckCrc tag'));
-          return;
-        }
-        expectedTag = expectedAckCrc >>> 0;
-        responseTimeoutId = setTimeout(() => {
-          fail('timeout');
-        }, estTimeoutMs + extraTimeoutMs);
-      })
-      .catch(fail);
+      ({ estTimeoutMs, expectedAckCrc }) => {
+        armResponseWait(estTimeoutMs, expectedAckCrc);
+      },
+    ).catch(fail);
   });
 }

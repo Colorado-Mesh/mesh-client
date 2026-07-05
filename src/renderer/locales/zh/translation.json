@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "上次传感器请求失败： {{error}}",
     "cliLastFailedTooltip": "上次CLI命令失败： {{error}}",
     "telemetryError": "传感器错误： {{error}}",
-    "neighborsFailedToast": "邻居失败： {{message}}"
+    "neighborsFailedToast": "邻居失败： {{message}}",
+    "columnSnr": "信噪比",
+    "columnRssi": "接收信号强度指数",
+    "buttonCli": "命令行界面",
+    "cliClearHistory": "清除历史记录",
+    "cliNoCommandsYet": "还没有命令",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}米"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

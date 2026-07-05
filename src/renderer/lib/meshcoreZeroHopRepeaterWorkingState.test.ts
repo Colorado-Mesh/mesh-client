@@ -31,6 +31,11 @@ const QUEUED_SEND_SOURCE = readFileSync(
   join(__dirname, 'meshcoreRepeaterRpcQueuedSend.ts'),
   'utf-8',
 );
+const RADIO_SENT_WAIT_SOURCE = readFileSync(join(__dirname, 'meshcoreRadioSentWait.ts'), 'utf-8');
+const PREFIX_PUSH_SOURCE = readFileSync(
+  join(__dirname, 'meshcoreRepeaterPrefixPushRpc.ts'),
+  'utf-8',
+);
 const STATUS_RPC_SOURCE = readFileSync(join(__dirname, 'meshcoreRepeaterStatusRpc.ts'), 'utf-8');
 const TELEMETRY_RPC_SOURCE = readFileSync(
   join(__dirname, 'meshcoreRepeaterTelemetryRpc.ts'),
@@ -60,15 +65,16 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
   it('queued send releases companion queue at RESP_SENT (response wait is outside queue)', () => {
     expect(QUEUED_SEND_SOURCE).toContain('Hold the companion RPC queue only until `RESP_SENT`');
     expect(QUEUED_SEND_SOURCE).toContain('Response waits must run outside this helper');
-    expect(QUEUED_SEND_SOURCE).toContain('MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS');
+    expect(QUEUED_SEND_SOURCE).toContain('waitForMeshcoreRadioSentAck');
+    expect(RADIO_SENT_WAIT_SOURCE).toContain('MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS');
   });
 
   it('status, telemetry, and neighbors use pubkey-framed RPCs with beforeSend idle hook', () => {
-    expect(STATUS_RPC_SOURCE).toContain('runMeshcoreRepeaterQueuedSend');
-    expect(TELEMETRY_RPC_SOURCE).toContain('runMeshcoreRepeaterQueuedSend');
+    expect(STATUS_RPC_SOURCE).toContain('runMeshcoreRepeaterPrefixPushRequest');
+    expect(TELEMETRY_RPC_SOURCE).toContain('runMeshcoreRepeaterPrefixPushRequest');
+    expect(PREFIX_PUSH_SOURCE).toContain('runMeshcoreRepeaterQueuedSend');
     expect(BINARY_RPC_SOURCE).toContain('runMeshcoreRepeaterQueuedSend');
-    expect(STATUS_RPC_SOURCE).toContain('beforeSend');
-    expect(TELEMETRY_RPC_SOURCE).toContain('beforeSend');
+    expect(PREFIX_PUSH_SOURCE).toContain('beforeSend');
     expect(BINARY_RPC_SOURCE).toContain('beforeSend');
   });
 

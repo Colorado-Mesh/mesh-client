@@ -81,9 +81,13 @@ MeshCore companion firmware handles **one `SendTracePath` / TraceData cycle at a
 mesh-client enforces this in two layers:
 
 1. **Per-radio trace queue** (`meshcoreRepeaterRpcInFlight.ts`) — ping clicks for different repeaters run **one after another**, not concurrently. Duplicate clicks on the same repeater share one in-flight promise.
-2. **Companion RPC queue** (`repeaterRemoteRpcQueue.ts`) — Status, Sensors (LPP), Neighbors, and the trace **send** share one serialized USB/BLE companion channel. Trace **results** are matched by tag so only the send must be serialized; however, Status with a 30s timeout will fail if it starts while a ping is still awaiting TraceData unless the client waits (see `awaitMeshcoreTraceRadioIdle` in `meshcoreTraceRadioIdle.ts`).
+2. **Companion RPC queue** (`repeaterRemoteRpcQueue.ts`) — serializes **sends** only. After `RESP_SENT`, status/neighbors/telemetry/binary responses are matched by pubkey prefix or `expectedAckCrc` tag while the queue serves other work (`runMeshcoreRepeaterQueuedSend`).
+3. **Admin deferral** — before admin sends: wait for active TraceData (`awaitMeshcoreRepeaterAdminRfIdle`); before admin on the **same** repeater: wait for that node's ping wrapper to finish (`awaitMeshcoreRepeaterPingSettleForNode`, up to 360s).
+4. **0-hop ping** — first attempt uses 1-byte pubkey prefix; failure triggers cancel + full-pubkey direct retry (0-hop only). Multi-hop requires hash-segment outPath (≥2 bytes).
 
-**Practical guidance:** Run **one ping at a time** when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queuing a second ping while the first runs is supported but may take several minutes if both time out (up to ~3 minutes per hop attempt).
+**Practical guidance:** Run **one ping at a time** when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queued pings may take up to **180s** each (including 0-hop direct retry). Status/Neighbors/Telemetry use **120s** flat timeouts.
+
+**Repeater admin RPC wire shape:** Status and Telemetry use pubkey-framed companion commands (`meshcoreRepeaterStatusRpc.ts`, `meshcoreRepeaterTelemetryRpc.ts`). Neighbors uses `runMeshcoreRepeaterBinaryRequest` with queued send. Login is optional for CLI/telemetry when a password is saved; Status/Neighbors typically work without login on direct (0-hop) repeaters.
 
 Implementation reference: `runMeshcoreTracePathMultiplexed` in [`meshcoreTracePathMultiplex.ts`](../src/renderer/lib/meshcoreTracePathMultiplex.ts), `traceRoute` in [`useMeshcoreRuntime.ts`](../src/renderer/runtime/useMeshcoreRuntime.ts).
 

@@ -82,6 +82,10 @@ export function resetMeshcoreRepeaterRpcInFlightForTests(): void {
   traceQueueTail = Promise.resolve();
 }
 
+/** Reset in-flight admin/trace queues when the radio disconnects. */
+export const resetMeshcoreRepeaterRpcInFlightOnDisconnect =
+  resetMeshcoreRepeaterRpcInFlightForTests;
+
 /** Repeater pings/traces queued or running (MeshCore allows one trace at a time on the radio). */
 export function meshcoreRepeaterTraceInFlightCount(): number {
   return traceInFlightByNode.size;

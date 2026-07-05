@@ -188,3 +188,16 @@ export function parseRepeaterStatsFromStatusData(statusData: Uint8Array): Meshco
     n_flood_dups: readU16(),
   };
 }
+
+export function meshcoreLoginErrorIsAuthFailure(err: unknown): boolean {
+  let msg = '';
+  if (err instanceof Error) {
+    msg = err.message;
+  } else if (typeof err === 'string') {
+    msg = err;
+  }
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes('rejected') || lower.includes('wrong password') || lower.includes('acl denied')
+  );
+}

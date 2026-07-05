@@ -2,6 +2,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
 import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
@@ -214,8 +215,7 @@ function sleepMs(ms: number): Promise<void> {
 }
 
 export function meshcoreRoomLoginErrorIsAuthFailure(err: unknown): boolean {
-  const msg = errLikeToLogString(err).toLowerCase();
-  return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied');
+  return meshcoreLoginErrorIsAuthFailure(err);
 }
 
 export function meshcoreRoomLoginErrorIsNoRoute(err: unknown): boolean {

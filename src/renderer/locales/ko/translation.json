@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "마지막 센서 요청 실패: {{error}}",
     "cliLastFailedTooltip": "마지막 CLI 명령 실패: {{error}}",
     "telemetryError": "센서 오류: {{error}}",
-    "neighborsFailedToast": "Neighbors failed: {{message}}"
+    "neighborsFailedToast": "Neighbors failed: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "기록 지우기",
+    "cliNoCommandsYet": "아직 명령이 없습니다.",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

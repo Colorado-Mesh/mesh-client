@@ -1643,7 +1643,7 @@
   },
   "meshcore": {
     "errors": {
-      "repeaterAuthHint": "Set or change the repeater admin password from the Repeaters panel (session only).",
+      "repeaterAuthHint": "Set or change the repeater admin password from the Repeaters panel. Use Remember to save across app restarts.",
       "connectionFailed": "Connection failed",
       "notConnected": "Not connected to device",
       "nodeNotFound": "Node not found (no encryption key)",
@@ -3288,6 +3288,8 @@
     "mapPositionFromAdvert": "Map position comes from advert/contact data, not this sensor request.",
     "mapPositionFromTelemetry": "Map position comes from advert/contact data, not sensor telemetry.",
     "columnStatus": "Status",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
     "columnName": "Name",
     "columnLastHeard": "Last Heard",
     "columnHops": "Hops",
@@ -3319,6 +3321,7 @@
     "statusStale": "Stale",
     "statusOffline": "Offline",
     "buttonPing": "Ping",
+    "buttonCli": "CLI",
     "buttonStatus": "Status",
     "buttonNeighbors": "Neighbors",
     "buttonRemove": "Remove",
@@ -3356,7 +3359,12 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": " alt {{altitude}}m",
     "cliSend": "Send",
-    "cliQuick": "Quick:"
+    "cliQuick": "Quick:",
+    "cliClearHistory": "Clear history",
+    "cliNoCommandsYet": "No commands yet",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Announce interval (seconds)",

@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "前回のセンサーリクエストに失敗しました： {{error}}",
     "cliLastFailedTooltip": "最後のCLIコマンドが失敗しました： {{error}}",
     "telemetryError": "センサーエラー： {{error}}",
-    "neighborsFailedToast": "Neighbors failed: {{message}}"
+    "neighborsFailedToast": "Neighbors failed: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "履歴をクリアする",
+    "cliNoCommandsYet": "まだコマンドがありません",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}分"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

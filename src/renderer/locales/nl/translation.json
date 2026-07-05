@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "Laatste sensorverzoek mislukt: {{error}}",
     "cliLastFailedTooltip": "Laatste CLI-opdracht mislukt: {{error}}",
     "telemetryError": "Sensorfout: {{error}}",
-    "neighborsFailedToast": "Buren mislukt: {{message}}"
+    "neighborsFailedToast": "Buren mislukt: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "Geschiedenis wissen",
+    "cliNoCommandsYet": "Nog geen opdrachten",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

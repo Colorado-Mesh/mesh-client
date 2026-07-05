@@ -648,7 +648,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
 - **Queued public messages (Sync now)** — MsgWaiting backlog is drained **silently in the background** after connect and when the radio pushes event 131 (including after you send). The amber progress banner appears only when you click **Sync now** in Chat and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
-- **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for tens of seconds.
+- **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
 **Fix**:
@@ -773,7 +773,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Cause**: Nodes you only **hear** on the mesh; but that do **not** have **your** node in **their** contact list; are sometimes called foreign or one-way contacts. MeshCore firmware may not answer **Trace Route** (node detail) or **Ping trace** (Repeaters panel) for those peers, so the app waits until the trace/ping timeout with no TraceData response. You may see **Trace route timed out** in the node detail modal or an error toast from **Ping trace**.
 
-**Parallel pings**: MeshCore does **not** allow parallel traceroutes on one radio. mesh-client queues them, but two back-to-back pings can take up to ~3 minutes each (including 0-hop direct-retry). **Status** with a 30s timeout used to fail if clicked while pings were running; current builds wait for the active trace to finish first. Prefer **one ping at a time** when troubleshooting. See [meshcore-meshtastic-parity.md — Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
+**Parallel pings**: MeshCore does **not** allow parallel traceroutes on one radio. mesh-client queues them, but two back-to-back pings can take up to **180s** each (including 0-hop direct-retry). **Status/Neighbors/Telemetry** use **120s** timeouts and wait for the active trace (TraceData) and same-node ping wrapper to finish first. Prefer **one ping at a time** when troubleshooting. See [meshcore-meshtastic-parity.md — Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
 
 **Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
 

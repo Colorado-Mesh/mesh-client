@@ -3317,7 +3317,15 @@
     "telemetryLastFailedTooltip": "Ultima richiesta sensore non riuscita: {{error}}",
     "cliLastFailedTooltip": "Ultimo comando CLI non riuscito: {{error}}",
     "telemetryError": "Errore del sensore: {{error}}",
-    "neighborsFailedToast": "Non sono riusciti i vicini: {{message}}"
+    "neighborsFailedToast": "Non sono riusciti i vicini: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "Cancella cronologia",
+    "cliNoCommandsYet": "Nessun comando ancora",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

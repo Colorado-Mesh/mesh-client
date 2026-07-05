@@ -7,7 +7,7 @@ import {
   startMeshcoreTracePathMultiplexed,
   traceDataPayloadToResult,
 } from './meshcoreTracePathMultiplex';
-import { MC_RESP_SENT } from './meshcoreWireCodes';
+import { MC_RESP_ERR, MC_RESP_SENT } from './meshcoreWireCodes';
 import { createRepeaterRemoteRpcQueue } from './repeaterRemoteRpcQueue';
 
 function createTraceConn() {
@@ -42,7 +42,10 @@ function createTraceConn() {
       });
     },
     sendToRadioFrame: vi.fn(async () => {}),
-    sendCommandSendTracePath: vi.fn(async () => {}),
+    sendCommandSendTracePath: vi.fn((...args: unknown[]) => {
+      void args;
+      return Promise.resolve();
+    }),
   };
 }
 
@@ -63,6 +66,67 @@ describe('meshcoreTracePathMultiplex multibyte', () => {
     expect(result.pathHashes).toHaveLength(10);
     expect(result.pathSnrs).toHaveLength(5);
     expect(result.lastSnr).toBe(11.25);
+  });
+});
+
+const MC_PUSH_TRACE_DATA = 0x89;
+
+describe('startMeshcoreTracePathMultiplexed success', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    resetMeshcoreTraceResponsesInFlightForTests();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    resetMeshcoreTraceResponsesInFlightForTests();
+  });
+
+  it('resolves when TraceData arrives after RESP_SENT', async () => {
+    const conn = createTraceConn();
+    let capturedTag = 0;
+    vi.mocked(conn.sendCommandSendTracePath).mockImplementation((...args: unknown[]) => {
+      capturedTag = args[0] as number;
+      return Promise.resolve();
+    });
+    const runSerialized = createRepeaterRemoteRpcQueue();
+    const handle = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0xab]),
+      1000,
+      runSerialized,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    conn.emit(MC_RESP_SENT, { estTimeout: 200 });
+    await Promise.resolve();
+    expect(meshcoreTraceResponsesInFlightCount()).toBe(1);
+
+    conn.emit(MC_PUSH_TRACE_DATA, {
+      tag: capturedTag,
+      pathLen: 2,
+      flags: 0,
+      pathHashes: [1, 2],
+      pathSnrs: [40, 41],
+      lastSnr: 5,
+    });
+    const result = await handle.promise;
+    expect(result.pathLen).toBe(2);
+    expect(result.pathLenByte).toBe(2);
+    expect(meshcoreTraceResponsesInFlightCount()).toBe(0);
+  });
+
+  it('rejects on RESP_ERR during send', async () => {
+    const conn = createTraceConn();
+    const runSerialized = createRepeaterRemoteRpcQueue();
+    const handle = startMeshcoreTracePathMultiplexed(
+      conn,
+      new Uint8Array([0xcd]),
+      1000,
+      runSerialized,
+    );
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR);
+    await expect(handle.promise).rejects.toThrow(/rejected trace/i);
   });
 });
 

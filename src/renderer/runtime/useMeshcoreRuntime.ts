@@ -126,6 +126,7 @@ import {
   MESHCORE_ERR_NODE_NOT_FOUND,
   MESHCORE_ERR_NOT_CONNECTED,
   MESHCORE_ERR_REQUEST_FAILED,
+  meshcoreRepeaterAdminRpcErrorBudgetMs,
   meshcoreRepeaterRpcErrorMessage,
   meshcoreStoredUserMessage,
   type MeshcoreUserMessage,
@@ -194,6 +195,7 @@ import {
 import { runMeshcoreRepeaterBinaryRequest } from '../lib/meshcoreRepeaterBinaryRequestRpc';
 import {
   meshcoreCompanionRepeaterRfBusy,
+  resetMeshcoreRepeaterRpcInFlightOnDisconnect,
   runMeshcoreRepeaterRpcOnce,
 } from '../lib/meshcoreRepeaterRpcInFlight';
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
@@ -263,7 +265,10 @@ import {
   enrichMeshCoreSelfInfo,
   packMeshcoreTelemetryModesByte,
 } from '../lib/meshcoreTelemetryPrivacy';
-import { startMeshcoreTracePathMultiplexed } from '../lib/meshcoreTracePathMultiplex';
+import {
+  resetMeshcoreTracePathMultiplexOnDisconnect,
+  startMeshcoreTracePathMultiplexed,
+} from '../lib/meshcoreTracePathMultiplex';
 import {
   awaitMeshcoreRepeaterAdminRfIdle,
   awaitMeshcoreRepeaterPingSettleForNode,
@@ -538,6 +543,7 @@ export function useMeshcoreRuntime() {
   const repeaterRemoteRpcRef = useRef(createRepeaterRemoteRpcQueue());
   const lastMeshcoreRoomSyncTxAtRef = useRef(0);
   const roomSyncSchedulerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const roomAutoLoginRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomSyncSchedulerInFlightRef = useRef(false);
   /** NodeIds that already logged a scheduler no-route warn this session (subsequent → debug). */
   const roomSyncSchedulerWarnedNodesRef = useRef(new Set<number>());
@@ -2372,6 +2378,21 @@ export function useMeshcoreRuntime() {
       repeaterCommandServiceRef.current?.clear();
 
       const usedDriverConnect = meshcoreDriverConnectedRef.current;
+      const disconnectConn = connRef.current;
+      if (disconnectConn) {
+        resetMeshcoreTracePathMultiplexOnDisconnect(disconnectConn);
+      }
+      resetMeshcoreRepeaterRpcInFlightOnDisconnect();
+      repeaterRemoteRpcRef.current = createRepeaterRemoteRpcQueue();
+      setMeshcoreRepeaterRpcPending(new Map());
+      setMeshcorePingErrors(new Map());
+      setMeshcoreStatusErrors(new Map());
+      setMeshcoreNeighborErrors(new Map());
+      setMeshcoreTelemetryErrors(new Map());
+      if (roomAutoLoginRetryTimerRef.current) {
+        clearTimeout(roomAutoLoginRetryTimerRef.current);
+        roomAutoLoginRetryTimerRef.current = null;
+      }
       teardownMeshcoreConnEventListeners({ driverDisconnect: disconnectDriver });
       if (!usedDriverConnect) {
         try {
@@ -4104,7 +4125,10 @@ export function useMeshcoreRuntime() {
             const rawErr = e instanceof Error ? e.message : String(e);
             const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
             const friendlyErr = meshcoreStoredUserMessage(
-              meshcoreRepeaterRpcErrorMessage(errMsg, timeoutMs),
+              meshcoreRepeaterRpcErrorMessage(
+                errMsg,
+                meshcoreRepeaterAdminRpcErrorBudgetMs(errMsg, timeoutMs),
+              ),
             );
             setMeshcoreStatusErrors((prev) => {
               const next = new Map(prev);
@@ -4251,7 +4275,10 @@ export function useMeshcoreRuntime() {
             const rawErr = e instanceof Error ? e.message : String(e);
             const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
             const friendlyErr = meshcoreStoredUserMessage(
-              meshcoreRepeaterRpcErrorMessage(errMsg, timeoutMs),
+              meshcoreRepeaterRpcErrorMessage(
+                errMsg,
+                meshcoreRepeaterAdminRpcErrorBudgetMs(errMsg, timeoutMs),
+              ),
             );
             setMeshcoreTelemetryErrors((prev) => {
               const next = new Map(prev);
@@ -4359,7 +4386,10 @@ export function useMeshcoreRuntime() {
             const rawErr = e instanceof Error ? e.message : String(e);
             const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
             const friendlyErr = meshcoreStoredUserMessage(
-              meshcoreRepeaterRpcErrorMessage(errMsg, timeoutMs),
+              meshcoreRepeaterRpcErrorMessage(
+                errMsg,
+                meshcoreRepeaterAdminRpcErrorBudgetMs(errMsg, timeoutMs),
+              ),
             );
             setMeshcoreNeighborErrors((prev) => {
               const next = new Map(prev);
@@ -4909,6 +4939,10 @@ export function useMeshcoreRuntime() {
     if (!connRef.current) return;
     if (meshcoreCompanionRepeaterRfBusy()) {
       console.debug('[useMeshcoreRuntime] room auto-login deferred (repeater RF busy)');
+      roomAutoLoginRetryTimerRef.current ??= setTimeout(() => {
+        roomAutoLoginRetryTimerRef.current = null;
+        triggerRoomAutoLoginRef.current();
+      }, MESHCORE_ROOM_SYNC_TICK_MS);
       return;
     }
     const configuredIds = listMeshcoreRoomAutoLoginOnConnectNodeIds();

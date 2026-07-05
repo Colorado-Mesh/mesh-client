@@ -1,17 +1,12 @@
 import {
-  MC_RESP_ERR,
-  MC_RESP_SENT,
-  type MeshcoreRadioConnection,
-  unknownToError,
-} from './meshcoreRepeaterRpcCommon';
-import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
+  type MeshcoreRepeaterQueuedSendResult,
+  waitForMeshcoreRadioSentAck,
+} from './meshcoreRadioSentWait';
+import { type MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 
 export type MeshcoreRepeaterRunSerialized = <T>(fn: () => Promise<T>) => Promise<T>;
 
-export interface MeshcoreRepeaterQueuedSendResult {
-  estTimeoutMs: number;
-  expectedAckCrc?: number;
-}
+export type { MeshcoreRepeaterQueuedSendResult };
 
 /**
  * Hold the companion RPC queue only until `RESP_SENT` (or `RESP_ERR`).
@@ -24,43 +19,13 @@ export async function runMeshcoreRepeaterQueuedSend(
   runSerialized: MeshcoreRepeaterRunSerialized,
   sendFrame: () => Promise<void>,
   beforeSend?: () => Promise<void>,
+  /** Invoked synchronously when RESP_SENT arrives, before the returned promise resolves. */
+  onSentAck?: (result: MeshcoreRepeaterQueuedSendResult) => void,
 ): Promise<MeshcoreRepeaterQueuedSendResult> {
   return runSerialized(async () => {
     if (beforeSend) {
       await beforeSend();
     }
-    return new Promise<MeshcoreRepeaterQueuedSendResult>((resolve, reject) => {
-      let sentWaitTimer: ReturnType<typeof setTimeout> | undefined;
-      const cleanup = (): void => {
-        if (sentWaitTimer !== undefined) {
-          clearTimeout(sentWaitTimer);
-          sentWaitTimer = undefined;
-        }
-        conn.off(MC_RESP_SENT, onSent);
-        conn.off(MC_RESP_ERR, onErr);
-      };
-      const onSent = (response: unknown): void => {
-        cleanup();
-        const r = response as { estTimeout?: number; expectedAckCrc?: number };
-        resolve({
-          estTimeoutMs: r.estTimeout ?? 0,
-          expectedAckCrc: r.expectedAckCrc,
-        });
-      };
-      const onErr = (): void => {
-        cleanup();
-        reject(new Error('radio rejected request'));
-      };
-      sentWaitTimer = setTimeout(() => {
-        cleanup();
-        reject(new Error('timeout waiting for sent acknowledgment'));
-      }, MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
-      conn.once(MC_RESP_SENT, onSent);
-      conn.once(MC_RESP_ERR, onErr);
-      void sendFrame().catch((err: unknown) => {
-        cleanup();
-        reject(unknownToError(err, 'send request failed'));
-      });
-    });
+    return waitForMeshcoreRadioSentAck(conn, sendFrame, { onSentAck });
   });
 }
