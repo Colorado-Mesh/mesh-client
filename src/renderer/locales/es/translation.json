@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} mensajes en cola en la radio",
     "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} desde la radio...",
-    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensajes en cola de radio..."
+    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensajes en cola de radio...",
+    "waitingMessagesSilentDrain": "Recuperando mensajes en cola en la radio...",
+    "waitingMessagesDrainDeferred": "Sincronización de mensajes en pausa mientras la radio está ocupada (administrador/rastreo)...",
+    "waitingMessagesSerialHint": "El USB serial maneja un comando a la vez; Los mensajes pueden llegar en pequeños lotes."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -166,6 +166,12 @@ export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
 export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 /** Fail-fast timeout for silent auto-drains (event 131, connect, poll). */
 export const MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS = 45 * MS_PER_SECOND;
+/** Shorter silent timeout on USB serial (single companion RPC lane). */
+export const MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS = 15 * MS_PER_SECOND;
+/** Per-item timeout for silent syncNextMessage incremental drain. */
+export const MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS = 12 * MS_PER_SECOND;
+/** Cap silent incremental drains per event-131 trigger (safety valve). */
+export const MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN = 200;
 /** Coalesce rapid MsgWaiting (131) pushes into one drain. */
 export const MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS = 1_500;
 /** Defer auto-drain after companion TX so syncNextMessage is not issued mid-send. */

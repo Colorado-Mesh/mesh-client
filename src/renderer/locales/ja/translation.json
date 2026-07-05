@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}}は無線でメッセージをキューに入れました",
     "waitingMessagesSyncProgress": "ラジオから{{processed}}/{{total}}を同期しています…",
-    "waitingMessagesSyncProgressIndeterminate": "無線からの待機中のメッセージを同期しています…"
+    "waitingMessagesSyncProgressIndeterminate": "無線からの待機中のメッセージを同期しています…",
+    "waitingMessagesSilentDrain": "無線のキューにあるメッセージを取得しています…",
+    "waitingMessagesDrainDeferred": "無線がビジー状態 (管理/トレース) の間、メッセージの同期が一時停止されました…",
+    "waitingMessagesSerialHint": "USB シリアルは一度に 1 つのコマンドを処理します。メッセージは小さなバッチで届く場合があります。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

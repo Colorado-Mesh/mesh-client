@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} повідомлення в черзі на радіо",
     "waitingMessagesSyncProgress": "Синхронізація {{processed}} / {{total}} з радіо…",
-    "waitingMessagesSyncProgressIndeterminate": "Синхронізація чергових повідомлень з радіо…"
+    "waitingMessagesSyncProgressIndeterminate": "Синхронізація чергових повідомлень з радіо…",
+    "waitingMessagesSilentDrain": "Отримання повідомлень із черги на радіо…",
+    "waitingMessagesDrainDeferred": "Синхронізацію повідомлень призупинено, коли радіостанція зайнята (адмін/трасування)…",
+    "waitingMessagesSerialHint": "Послідовний USB обробляє одну команду за раз; повідомлення можуть надходити невеликими партіями."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

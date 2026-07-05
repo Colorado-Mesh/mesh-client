@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}}在无线电上排队的消息",
     "waitingMessagesSyncProgress": "正在从收音机同步{{processed}}/{{total}} …",
-    "waitingMessagesSyncProgressIndeterminate": "正在同步来自无线电的排队消息……"
+    "waitingMessagesSyncProgressIndeterminate": "正在同步来自无线电的排队消息……",
+    "waitingMessagesSilentDrain": "正在获取无线电中排队的消息...",
+    "waitingMessagesDrainDeferred": "无线电繁忙时消息同步暂停（管理/跟踪）...",
+    "waitingMessagesSerialHint": "USB串行一次处理一个命令；消息可能会小批量到达。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

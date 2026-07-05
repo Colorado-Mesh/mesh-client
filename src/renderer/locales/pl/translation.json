@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} wiadomościw kolejce w radiu",
     "waitingMessagesSyncProgress": "Synchronizowanie {{processed}} / {{total}} z radiem…",
-    "waitingMessagesSyncProgressIndeterminate": "Synchronizowanie wiadomości w kolejce z radia…"
+    "waitingMessagesSyncProgressIndeterminate": "Synchronizowanie wiadomości w kolejce z radia…",
+    "waitingMessagesSilentDrain": "Pobieram wiadomości oczekujące w kolejce w radiu…",
+    "waitingMessagesDrainDeferred": "Synchronizacja wiadomości została wstrzymana, gdy radio jest zajęte (admin/trace)…",
+    "waitingMessagesSerialHint": "Port szeregowy USB obsługuje jedno polecenie na raz; wiadomości mogą docierać w małych partiach."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

@@ -34,6 +34,7 @@ export interface MeshcoreLegacyConnEventsCtx {
   meshcorePathUpdatePendingRef: RefObject<Set<number>>;
   meshcoreSessionPathUpdatedNodeIdsRef: RefObject<Set<number>>;
   meshcoreWaitingMessagesPollRef: RefObject<ReturnType<typeof setInterval> | null>;
+  meshcoreConnectTypeRef: RefObject<'ble' | 'serial' | 'tcp'>;
   messagesRef: RefObject<ChatMessage[]>;
   mqttStatusRef: RefObject<MQTTStatus>;
   myNodeNumRef: RefObject<number>;
@@ -75,6 +76,8 @@ export interface MeshcoreLegacyConnEventsCtx {
   setWaitingMessagesSyncProgress: Dispatch<
     SetStateAction<{ processed: number; total: number } | null>
   >;
+  setWaitingMessagesSilentDrainActive: Dispatch<SetStateAction<boolean>>;
+  setWaitingMessagesDrainDeferred: Dispatch<SetStateAction<boolean>>;
   addMessagesBatch: (msgs: ChatMessage[]) => void;
   addMessage: (msg: ChatMessage) => void;
   addCliHistoryEntry: (nodeId: number, entry: CliHistoryEntry) => void;

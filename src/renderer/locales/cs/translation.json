@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} zprávy ve frontě v rádiu",
     "waitingMessagesSyncProgress": "Synchronizace {{processed}} / {{total}} z rádia…",
-    "waitingMessagesSyncProgressIndeterminate": "Synchronizace zpráv ve frontě z rádia..."
+    "waitingMessagesSyncProgressIndeterminate": "Synchronizace zpráv ve frontě z rádia...",
+    "waitingMessagesSilentDrain": "Načítání zpráv ve frontě v rádiu…",
+    "waitingMessagesDrainDeferred": "Synchronizace zpráv byla pozastavena, když je rádio zaneprázdněné (admin/trace)…",
+    "waitingMessagesSerialHint": "Sériové rozhraní USB zpracovává jeden příkaz najednou; zprávy mohou dorazit v malých dávkách."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

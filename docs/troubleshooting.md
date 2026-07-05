@@ -660,7 +660,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 **Common causes**:
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
-- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **silently in the background** after connect and when the radio pushes event 131 (including after you send). The amber progress banner appears only when you click **Sync now** in Chat and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
+- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). Chat and Rooms show an **amber status strip** while silent auto-drain runs or when drain is deferred behind repeater admin/trace work. The determinate progress banner appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
@@ -973,6 +973,44 @@ Live packets were written to the **connected identity** store bucket while Chat 
 4. As a last resort before clearing data: **App → Export Database**, then try **Import (merge)** after updating — do not downgrade the app after migrations.
 
 This is **not** SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.
+
+### Chat freeze burst: unread badges move but list jumps when opening Chat (fixed in newer builds)
+
+**Symptoms**
+
+- While on **Connection**, **Nodes**, or **Log**, sidebar unread badges update for new traffic.
+- Opening **Chat** shows several missed messages at once ("flood in"), even though RF/MQTT delivery was fine on another radio.
+
+**Cause (5.20.x and earlier)**
+
+Chat used a freeze-on-leave snapshot: `messagesForUnread` stayed live for badges, but the scroll list kept a stale snapshot until you returned to Chat.
+
+**Fix**
+
+- Update to a build that passes **live** messages to Chat at all times (`ChatPanel` `isActive` guards prevent scroll/read side effects while hidden).
+- **Workaround on older builds:** stay on the **Chat** tab while monitoring live traffic.
+
+### MeshCore USB serial: messages arrive in batches (waiting-queue drain)
+
+**Symptoms**
+
+- On **USB serial**, inbound MeshCore messages may appear several at a time after a short delay, even while **Chat** or **Rooms** is active.
+- **Log → debug** may show repeated `getWaitingMessages timed out` or `processWaitingMessages skipped (in flight)`.
+
+**Cause**
+
+The companion radio queues public messages behind a **single serialized USB serial lane** shared with repeater admin, init RPCs, and MsgWaiting drains. Older builds bulk-fetched the whole queue before updating the UI.
+
+**In-app status**
+
+Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching messages queued on the radio…") or when drain is **deferred** behind admin/trace work. On serial, a hint explains that messages may arrive in small batches.
+
+**Fix / workaround**
+
+1. Pause repeater **Status / Neighbors / ping** while monitoring live chat on serial.
+2. Prefer **BLE** or **TCP** when available for lower-latency chat.
+3. If drains stall, **Disconnect → Connect** or quit and reopen after repeated timeouts in the log.
+4. Use **Sync now** in Chat for a large backlog (determinate progress banner).
 
 ### Chat or Rooms: scroll jumps when switching tabs
 

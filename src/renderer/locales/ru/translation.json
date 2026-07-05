@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} сообщенийв очереди по радио",
     "waitingMessagesSyncProgress": "Синхронизация {{processed}} / {{total}} с радио…",
-    "waitingMessagesSyncProgressIndeterminate": "Синхронизация сообщений в очереди с радио..."
+    "waitingMessagesSyncProgressIndeterminate": "Синхронизация сообщений в очереди с радио...",
+    "waitingMessagesSilentDrain": "Получение сообщений из очереди на радио…",
+    "waitingMessagesDrainDeferred": "Синхронизация сообщений приостановлена, пока радиостанция занята (admin/trace)…",
+    "waitingMessagesSerialHint": "Последовательный порт USB обрабатывает одну команду за раз; Сообщения могут приходить небольшими партиями."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

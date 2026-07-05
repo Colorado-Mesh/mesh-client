@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} antrean pesan di radio",
     "waitingMessagesSyncProgress": "Menyinkronkan {{processed}} / {{total}} dari radio…",
-    "waitingMessagesSyncProgressIndeterminate": "Menyinkronkan pesan antrian dari radio…"
+    "waitingMessagesSyncProgressIndeterminate": "Menyinkronkan pesan antrian dari radio…",
+    "waitingMessagesSilentDrain": "Mengambil pesan yang antri di radio…",
+    "waitingMessagesDrainDeferred": "Sinkronisasi pesan dijeda saat radio sedang sibuk (admin/pelacakan)…",
+    "waitingMessagesSerialHint": "Serial USB menangani satu perintah dalam satu waktu; pesan mungkin tiba dalam jumlah kecil."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

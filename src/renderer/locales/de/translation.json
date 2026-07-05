@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} in der Warteschlange stehende Nachricht(en) im Funk",
     "waitingMessagesSyncProgress": "{{processed}}/{{total}} wird vom Funkgerät synchronisiert...",
-    "waitingMessagesSyncProgressIndeterminate": "In die Warteschlange gestellte Nachrichten vom Funkgerät werden synchronisiert..."
+    "waitingMessagesSyncProgressIndeterminate": "In die Warteschlange gestellte Nachrichten vom Funkgerät werden synchronisiert...",
+    "waitingMessagesSilentDrain": "Nachrichten aus der Warteschlange im Radio werden abgerufen …",
+    "waitingMessagesDrainDeferred": "Nachrichtensynchronisierung angehalten, während das Funkgerät beschäftigt ist (Administrator/Trace)…",
+    "waitingMessagesSerialHint": "USB seriell verarbeitet jeweils einen Befehl; Nachrichten können in kleinen Mengen eingehen."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

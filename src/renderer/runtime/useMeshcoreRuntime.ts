@@ -465,6 +465,8 @@ export function useMeshcoreRuntime() {
     processed: number;
     total: number;
   } | null>(null);
+  const [waitingMessagesSilentDrainActive, setWaitingMessagesSilentDrainActive] = useState(false);
+  const [waitingMessagesDrainDeferred, setWaitingMessagesDrainDeferred] = useState(false);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
@@ -1644,6 +1646,7 @@ export function useMeshcoreRuntime() {
       meshcorePathUpdatePendingRef,
       meshcoreSessionPathUpdatedNodeIdsRef,
       meshcoreWaitingMessagesPollRef,
+      meshcoreConnectTypeRef,
       messagesRef,
       mqttStatusRef,
       myNodeNumRef,
@@ -1671,6 +1674,8 @@ export function useMeshcoreRuntime() {
       setWaitingMessagesCount,
       setWaitingMessagesSyncActive,
       setWaitingMessagesSyncProgress,
+      setWaitingMessagesSilentDrainActive,
+      setWaitingMessagesDrainDeferred,
       addMessage,
       addMessagesBatch,
       addCliHistoryEntry,
@@ -2211,7 +2216,10 @@ export function useMeshcoreRuntime() {
             );
           }
         },
-        { isMounted: () => meshcoreHookMountedRef.current },
+        {
+          isMounted: () => meshcoreHookMountedRef.current,
+          onDeferredChange: setWaitingMessagesDrainDeferred,
+        },
       );
 
       // Periodic safety-net poll in case the device never re-sends event 131.
@@ -2228,7 +2236,10 @@ export function useMeshcoreRuntime() {
               logMeshcoreWaitingMessagesDrainError('periodic getWaitingMessages failed', e, false);
             }
           },
-          { isMounted: () => meshcoreHookMountedRef.current },
+          {
+            isMounted: () => meshcoreHookMountedRef.current,
+            onDeferredChange: setWaitingMessagesDrainDeferred,
+          },
         );
       }, MESHCORE_WAITING_MESSAGES_POLL_MS);
 
@@ -6442,6 +6453,8 @@ export function useMeshcoreRuntime() {
       waitingMessagesCount,
       waitingMessagesSyncActive,
       waitingMessagesSyncProgress,
+      waitingMessagesSilentDrainActive,
+      waitingMessagesDrainDeferred,
       selfNodeId: state.myNodeNum,
       identityId: meshcoreIdentityId,
       getNodes,
@@ -6590,6 +6603,8 @@ export function useMeshcoreRuntime() {
       waitingMessagesCount,
       waitingMessagesSyncActive,
       waitingMessagesSyncProgress,
+      waitingMessagesSilentDrainActive,
+      waitingMessagesDrainDeferred,
       queueStatus,
       telemetry,
       signalTelemetry,

@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} 라디오에서 대기 중인 메시지",
     "waitingMessagesSyncProgress": "라디오에서 {{processed}}/{{total}} 동기화 중…",
-    "waitingMessagesSyncProgressIndeterminate": "라디오에서 대기 중인 메시지 동기화 중..."
+    "waitingMessagesSyncProgressIndeterminate": "라디오에서 대기 중인 메시지 동기화 중...",
+    "waitingMessagesSilentDrain": "라디오에 대기 중인 메시지를 가져오는 중…",
+    "waitingMessagesDrainDeferred": "라디오가 사용 중인 동안 메시지 동기화가 일시 중지되었습니다(관리/추적)…",
+    "waitingMessagesSerialHint": "USB 직렬은 한 번에 하나의 명령을 처리합니다. 메시지는 작은 배치로 도착할 수 있습니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

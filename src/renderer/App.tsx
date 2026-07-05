@@ -1231,7 +1231,6 @@ function AppContent() {
   );
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
-  const prevPanelIndexForChatFreezeRef = useRef(activePanelIndex);
 
   useEffect(() => {
     void useMapLayerStore.getState().hydrateFromDatabase();
@@ -1606,43 +1605,19 @@ function AppContent() {
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
-  const [chatPanelFreeze, setChatPanelFreeze] = useState<{
-    messages: typeof activeRuntime.messages;
-    channels: typeof chatChannels;
-    nodes: typeof nodesForUi;
-  } | null>(null);
 
-  // Chat tab freeze: run BEFORE protocol reset on the same commit so protocol clear wins when both fire.
   useEffect(() => {
-    const was = prevPanelIndexForChatFreezeRef.current;
-    const now = activePanelIndex;
-    prevPanelIndexForChatFreezeRef.current = now;
-
-    if (now === 1) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Chat tab visit for freeze-on-leave
+    if (activePanelIndex === 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Chat tab visit for keep-alive mount
       setChatTabVisited(true);
     }
-
-    if (was === 1 && now !== 1) {
-      setChatPanelFreeze({
-        messages: activeUiMessages,
-        channels: chatChannels,
-        nodes: nodesForUi,
-      });
-    }
-    // Intentionally only activePanelIndex: snapshot is taken on tab transition, not on every
-    // messages/nodes identity change (that caused an infinite setState loop on Chat).
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- freeze capture uses render snapshot at leave
   }, [activePanelIndex]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears chat/rooms visit and freeze state
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
     setChatTabVisited(false);
-    setChatPanelFreeze(null);
     setRoomsTabVisited(false);
     setAppTabVisited(false);
-    prevPanelIndexForChatFreezeRef.current = activePanelIndex;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- protocol-only reset; capture current panel for ref sync
   }, [protocol]);
 
   useEffect(() => {
@@ -1666,29 +1641,31 @@ function AppContent() {
     }
   }, [activePanelIndex]);
 
-  const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
-  const freeze = chatPanelFreeze;
-  const chatMessagesForPanel = isChatPanelFrozen && freeze ? freeze.messages : activeUiMessages;
-  const chatNodesForPanel = isChatPanelFrozen && freeze ? freeze.nodes : nodesForUi;
-  const chatChannelsForPanel = isChatPanelFrozen && freeze ? freeze.channels : chatChannels;
+  const chatMessagesForPanel = activeUiMessages;
+  const chatNodesForPanel = nodesForUi;
+  const chatChannelsForPanel = chatChannels;
 
   useEffect(() => {
     const liveResolvedMessageCount = selectByProtocol(storeMessageCountByProtocol, protocol);
     setDebugSnapshotUiContext({
       activePanelIndex,
       chatTabVisited,
-      chatPanelFrozen: isChatPanelFrozen,
-      frozenMessageCount: isChatPanelFrozen && freeze ? freeze.messages.length : null,
+      chatPanelFrozen: false,
+      frozenMessageCount: null,
       liveResolvedMessageCount,
       activeProtocol: protocol,
+      waitingMessagesSilentDrainActive:
+        protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesSilentDrainActive : false,
+      waitingMessagesDrainDeferred:
+        protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesDrainDeferred : false,
     });
   }, [
     activePanelIndex,
     chatTabVisited,
-    isChatPanelFrozen,
-    freeze,
     protocol,
     storeMessageCountByProtocol,
+    meshcoreRuntime.waitingMessagesSilentDrainActive,
+    meshcoreRuntime.waitingMessagesDrainDeferred,
   ]);
 
   const handleDmTargetConsumed = useCallback(() => {
@@ -2615,6 +2592,16 @@ function AppContent() {
                                 ? meshcoreRuntime.waitingMessagesSyncProgress
                                 : null
                             }
+                            waitingMessagesSilentDrainActive={
+                              capabilities.hasCompanionContactManagementConfig
+                                ? meshcoreRuntime.waitingMessagesSilentDrainActive
+                                : false
+                            }
+                            waitingMessagesDrainDeferred={
+                              capabilities.hasCompanionContactManagementConfig
+                                ? meshcoreRuntime.waitingMessagesDrainDeferred
+                                : false
+                            }
                           />
                         </Suspense>
                       </div>
@@ -3186,6 +3173,22 @@ function AppContent() {
                                 scrollToTopRef={scrollToTopRoomsRef}
                                 outerScrollMetricsRootRef={mainViewportRef}
                                 compactMode={chatCompactMode}
+                                waitingMessagesCount={meshcoreRuntime.waitingMessagesCount}
+                                onSyncWaitingMessages={() =>
+                                  void meshcoreRuntime.syncWaitingMessages()
+                                }
+                                waitingMessagesSyncActive={
+                                  meshcoreRuntime.waitingMessagesSyncActive
+                                }
+                                waitingMessagesSyncProgress={
+                                  meshcoreRuntime.waitingMessagesSyncProgress
+                                }
+                                waitingMessagesSilentDrainActive={
+                                  meshcoreRuntime.waitingMessagesSilentDrainActive
+                                }
+                                waitingMessagesDrainDeferred={
+                                  meshcoreRuntime.waitingMessagesDrainDeferred
+                                }
                               />
                             </div>
                           </Suspense>

@@ -7,6 +7,8 @@ export interface DebugSnapshotUiContext {
   frozenMessageCount: number | null;
   liveResolvedMessageCount: number;
   activeProtocol: MeshProtocol;
+  waitingMessagesSilentDrainActive: boolean;
+  waitingMessagesDrainDeferred: boolean;
 }
 
 const defaultUiContext: DebugSnapshotUiContext = {
@@ -16,6 +18,8 @@ const defaultUiContext: DebugSnapshotUiContext = {
   frozenMessageCount: null,
   liveResolvedMessageCount: 0,
   activeProtocol: 'meshtastic',
+  waitingMessagesSilentDrainActive: false,
+  waitingMessagesDrainDeferred: false,
 };
 
 let uiContext: DebugSnapshotUiContext = { ...defaultUiContext };

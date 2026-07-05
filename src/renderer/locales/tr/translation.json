@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} radyoda kuyrukta bekleyen mesaj(lar)",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} radyodan senkronize ediliyor…",
-    "waitingMessagesSyncProgressIndeterminate": "Kuyruktaki mesajlar radyodan senkronize ediliyor…"
+    "waitingMessagesSyncProgressIndeterminate": "Kuyruktaki mesajlar radyodan senkronize ediliyor…",
+    "waitingMessagesSilentDrain": "Radyoda sıraya alınan mesajlar getiriliyor…",
+    "waitingMessagesDrainDeferred": "Telsiz meşgulken mesaj senkronizasyonu duraklatıldı (yönetici/izleme)…",
+    "waitingMessagesSerialHint": "USB seri, aynı anda bir komutu işler; mesajlar küçük gruplar halinde gelebilir."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

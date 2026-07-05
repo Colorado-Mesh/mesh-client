@@ -512,7 +512,10 @@
     },
     "waitingMessagesQueued": "{{count}} bericht(en) in de wachtrij op de radio",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} synchroniseren vanaf radio...",
-    "waitingMessagesSyncProgressIndeterminate": "Berichten in de wachtrij van de radio worden gesynchroniseerd..."
+    "waitingMessagesSyncProgressIndeterminate": "Berichten in de wachtrij van de radio worden gesynchroniseerd...",
+    "waitingMessagesSilentDrain": "Berichten ophalen die in de wachtrij staan ​​op de radio…",
+    "waitingMessagesDrainDeferred": "Berichtensynchronisatie gepauzeerd terwijl de radio bezet is (admin/trace)…",
+    "waitingMessagesSerialHint": "USB-serieel verwerkt één opdracht tegelijk; berichten kunnen in kleine batches aankomen."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
