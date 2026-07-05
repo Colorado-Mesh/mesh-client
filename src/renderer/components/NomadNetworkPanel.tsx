@@ -499,7 +499,7 @@ export default function NomadNetworkPanel({
       <div className="flex min-h-0 flex-1 gap-3">
         <div
           className={`bg-secondary-dark flex min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700 transition-[width] duration-300 ${
-            nodeListCollapsed ? 'w-16' : 'w-[22rem]'
+            nodeListCollapsed ? 'w-16' : 'w-72'
           }`}
         >
           {!nodeListCollapsed && (
