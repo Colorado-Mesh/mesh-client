@@ -64,7 +64,10 @@ import {
   attachMeshcoreLegacyConnEvents,
   syncMeshcoreDmAckToMessageStore,
 } from '../hooks/meshcore/meshcoreLegacyConnEvents';
-import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
+import type {
+  MeshcoreLegacyConnEventsCtx,
+  ProcessWaitingMessagesOptions,
+} from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
@@ -522,7 +525,9 @@ export function useMeshcoreRuntime() {
   /** Periodic poll for waiting messages when event 131 may have been missed. */
   const meshcoreWaitingMessagesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Stable ref to the current connection's processWaitingMessages fn (set by setupEventListeners). */
-  const processWaitingMessagesRef = useRef<(() => Promise<void>) | null>(null);
+  const processWaitingMessagesRef = useRef<
+    ((options?: ProcessWaitingMessagesOptions) => Promise<void>) | null
+  >(null);
   /** Previous txAirSecs value for calculating channel utilization delta. */
   const prevTxAirSecsRef = useRef<number | null>(null);
   /** Previous timestamp for calculating channel utilization delta. */
@@ -2148,23 +2153,20 @@ export function useMeshcoreRuntime() {
       }
       maybeAutoLaunchMeshcoreMqttAfterIdentity();
 
-      // Proactively fetch any messages that queued while disconnected.
-      // Mirrors what event 131 does, but covers reconnects where the event was missed.
-      try {
-        await processWaitingMessagesRef.current?.();
-      } catch (e) {
+      // Proactively fetch any messages that queued while disconnected (no Chat banner).
+      void processWaitingMessagesRef.current?.({ showSyncBanner: false }).catch((e: unknown) => {
         console.warn(
           '[useMeshcoreRuntime] initConn: proactive getWaitingMessages failed ' +
             errLikeToLogString(e),
         );
-      }
+      });
 
       // Periodic safety-net poll in case the device never re-sends event 131.
       if (meshcoreWaitingMessagesPollRef.current)
         clearInterval(meshcoreWaitingMessagesPollRef.current);
       meshcoreWaitingMessagesPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
-        void processWaitingMessagesRef.current?.().catch((e: unknown) => {
+        void processWaitingMessagesRef.current?.({ showSyncBanner: false }).catch((e: unknown) => {
           console.warn(
             '[useMeshcoreRuntime] periodic getWaitingMessages failed ' + errLikeToLogString(e),
           );
@@ -5797,7 +5799,7 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const syncWaitingMessages = useCallback(async (): Promise<void> => {
-    await processWaitingMessagesRef.current?.();
+    await processWaitingMessagesRef.current?.({ showSyncBanner: true });
   }, []);
 
   const syncNextMessage = useCallback(async (): Promise<unknown> => {

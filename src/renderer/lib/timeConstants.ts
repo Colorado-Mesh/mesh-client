@@ -154,6 +154,8 @@ export const MESHCORE_STATS_POLL_MS = 30_000;
 
 /** Safety-net poll for queued waiting messages when event 131 may have been missed. */
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
+/** Max wait for companion `getWaitingMessages` / `syncNextMessage` drain (empty queue should finish quickly). */
+export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 /** Yield the event loop while ingesting queued companion messages. */
 export const MESHCORE_WAITING_MESSAGES_BATCH_YIELD = 25;
 

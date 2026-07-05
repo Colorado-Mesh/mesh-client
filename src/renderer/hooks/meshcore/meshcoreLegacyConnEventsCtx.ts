@@ -18,6 +18,11 @@ import type {
 } from '../../lib/types';
 import type { PendingDmAckEntry } from './meshcoreHookPreamble';
 
+export interface ProcessWaitingMessagesOptions {
+  /** When false, drain the radio queue without the ChatPanel sync spinner (proactive/periodic). */
+  showSyncBanner?: boolean;
+}
+
 export interface MeshcoreLegacyConnEventsCtx {
   meshcoreIdentityIdRef: RefObject<string | null>;
   meshcoreDriverConnectedRef: RefObject<boolean>;
@@ -36,7 +41,9 @@ export interface MeshcoreLegacyConnEventsCtx {
   nodesRef: RefObject<Map<number, MeshNode>>;
   outPathMapRef: RefObject<Map<number, Uint8Array>>;
   pendingAcksRef: RefObject<Map<number, PendingDmAckEntry>>;
-  processWaitingMessagesRef: RefObject<(() => Promise<void>) | null>;
+  processWaitingMessagesRef: RefObject<
+    ((options?: ProcessWaitingMessagesOptions) => Promise<void>) | null
+  >;
   pubKeyMapRef: RefObject<Map<number, Uint8Array>>;
   pubKeyPrefixMapRef: RefObject<Map<string, number>>;
   rawPacketsRef: RefObject<RxPacketEntry[]>;
