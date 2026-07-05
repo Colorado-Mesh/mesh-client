@@ -12,6 +12,25 @@ function isLinuxPlatform(): boolean {
   return typeof window !== 'undefined' && window.electronAPI.getPlatform() === 'linux';
 }
 
+function isLinuxWebBluetoothPlatform(): boolean {
+  return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
+}
+
+/** Verify Noble BLE GATT is still connected after configure (macOS/Windows). */
+export async function verifyNobleBleRfLink(
+  rfType: 'ble' | 'serial' | 'tcp' | 'http',
+  sessionId: NobleBleSessionId,
+): Promise<boolean> {
+  if (rfType !== 'ble') return true;
+  if (isLinuxWebBluetoothPlatform()) return true;
+  try {
+    return await window.electronAPI.isNobleBleConnected(sessionId);
+  } catch {
+    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
+    return false;
+  }
+}
+
 /**
  * Noble macOS/Windows: connect immediately (main process uses knownPeripherals cache),
  * then scan until the peripheral appears if connect fails, then retry connect.

@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "启动时自动修剪仓位历史记录，早于 {{days}} 天",
     "capTotalNodesCountAria": "限制节点总数，保留最新的 {{count}} 节点",
     "limitMessagesLoadedCountAria": "限制加载的消息 {{count}} 消息",
-    "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息"
+    "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息",
+    "maxDistanceAria": "最大距离： {{value}}",
+    "unitAria": "单位： {{unit}}"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "已排队—连接后将发送",
+    "queuedLabel": "已在队列中",
+    "blockedDefault": "已拦截—没有可用的加密密钥",
+    "blockedLabel": "封锁",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "铜级",
+    "noAck": "no ACK",
+    "sending": "发送中…",
+    "delivered": "已交付",
+    "posted": "已发布",
+    "failedPost": "发布失败",
+    "noAckTooltip": "无确认（消息可能仍已广播；范围内没有其他节点需要确认）",
+    "failed": "失败",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "设备"
+  },
+  "bootSequence": {
+    "booting": "正在引导网格堆栈...",
+    "meshtasticLora": "LoRa ： {{model}}",
+    "meshtasticScanningChannelsCount": "正在扫描通道…… {{count}}",
+    "meshtasticScanningChannels": "正在扫描已配置的频道...",
+    "databaseNodes_one": "数据库： {{count}}节点已同步",
+    "databaseNodes_other": "数据库： {{count}}节点已同步",
+    "syncingDatabase": "正在同步网格数据库...",
+    "interfaceReady": "{{iface}}接口就绪",
+    "freqMhz": "频率： {{mhz}} MHz",
+    "freqMhzBw": "频率： {{mhz}} MHz |黑白： {{bw}} kHz",
+    "configuringRadio": "正在配置无线电参数...",
+    "contacts_one": "联系人： {{count}}联系人已加载",
+    "contacts_other": "联系人： {{count}}个联系人已加载",
+    "loadingContacts": "正在加载联系人数据库...",
+    "routes_one": "路由：网格中的{{count}}节点",
+    "routes_other": "路由：网格中的{{count}}节点",
+    "routesEstablished": "已建立路线",
+    "meshActive": "网络启用"
   }
 }

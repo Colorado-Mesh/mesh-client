@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Автоматичне видалення історії позицій під час запуску, старше {{days}} днів",
     "capTotalNodesCountAria": "Обмежити загальну кількість вузлів, зберегти найновіші вузли {{count}}",
     "limitMessagesLoadedCountAria": "Обмеження завантажених повідомлень: {{count}} повідомлень",
-    "capStoredMessagesCountAria": "Обмежити збережені повідомлення, зберегти найновіші {{count}} повідомлення"
+    "capStoredMessagesCountAria": "Обмежити збережені повідомлення, зберегти найновіші {{count}} повідомлення",
+    "maxDistanceAria": "Максимальна відстань: {{value}}",
+    "unitAria": "Одиниця: {{unit}}"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Доступне оновлення",
     "menuToastAvailableBody": "Доступна версія {{version}}.",
     "menuToastErrorTitle": "Помилка перевірки оновлення"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "Поставлено в чергу — надсилатиметься після підключення",
+    "queuedLabel": "В черзі",
+    "blockedDefault": "Заблоковано — ключ шифрування недоступний",
+    "blockedLabel": "Блоковано",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "МП",
+    "noAck": "немає ACK",
+    "sending": "Заклад,",
+    "delivered": "Delivered",
+    "posted": "Розміщено",
+    "failedPost": "Не вдалося опублікувати",
+    "noAckTooltip": "Немає ACK (повідомлення, можливо, все ще транслювалося; немає іншого вузла в діапазоні для підтвердження)",
+    "failed": "Помилка",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Пристрій"
+  },
+  "bootSequence": {
+    "booting": "Завантаження стека сіті...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Сканування каналів... {{count}}",
+    "meshtasticScanningChannels": "Сканування налаштованих каналів...",
+    "databaseNodes_one": "База даних: вузол {{count}} синхронізовано",
+    "databaseNodes_other": "База даних: синхронізовано {{count}} вузлів",
+    "syncingDatabase": "Синхронізація бази даних сіті...",
+    "interfaceReady": "{{iface}} інтерфейс готовий",
+    "freqMhz": "Частота: {{mhz}} МГц",
+    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
+    "configuringRadio": "Налаштування радіопараметрів...",
+    "contacts_one": "Контакти: {{count}} контакт завантажено",
+    "contacts_other": "Контакти: завантажено {{count}} контакти",
+    "loadingContacts": "Завантаження бази даних контактів...",
+    "routes_one": "Маршрути: {{count}} вузол у сітці",
+    "routes_other": "Маршрути: {{count}} вузлів у сітці",
+    "routesEstablished": "Встановлені маршрути",
+    "meshActive": "Мережева мережа активна"
   }
 }

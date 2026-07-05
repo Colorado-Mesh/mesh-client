@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Başlangıçta konum geçmişini otomatik olarak buda, {{days}} günden eski",
     "capTotalNodesCountAria": "Toplam düğüm sayısını sınırlayın, en yeni {{count}} düğümleri koruyun",
     "limitMessagesLoadedCountAria": "Yüklenen mesajları sınırla {{count}} mesajları",
-    "capStoredMessagesCountAria": "Saklanan mesajları sınırlandırın, en yeni {{count}} mesajlarını saklayın"
+    "capStoredMessagesCountAria": "Saklanan mesajları sınırlandırın, en yeni {{count}} mesajlarını saklayın",
+    "maxDistanceAria": "Maksimum mesafe: {{value}}",
+    "unitAria": "Birim: {{unit}}"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "Sıraya alındı — bağlandığında gönderilecek",
+    "queuedLabel": "Sırada Sırada",
+    "blockedDefault": "Engellendi — şifreleme anahtarı mevcut değil",
+    "blockedLabel": "Engellendi",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "TÖ",
+    "noAck": "aCK yok",
+    "sending": "Gönderiliyor...",
+    "delivered": "Teslim Edildi",
+    "posted": "Gönderildi",
+    "failedPost": "Gönderilemedi",
+    "noAckTooltip": "ACK yok (mesaj hala yayınlanmış olabilir; onaylanacak başka bir düğüm yok)",
+    "failed": "Başarısız",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Cihaz"
+  },
+  "bootSequence": {
+    "booting": "Örgü yığını önyükleniyor...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanallar taranıyor... {{count}}",
+    "meshtasticScanningChannels": "Yapılandırılmış kanallar taranıyor...",
+    "databaseNodes_one": "Veritabanı: {{count}} düğüm senkronize edildi",
+    "databaseNodes_other": "Veritabanı: {{count}} düğüm senkronize edildi",
+    "syncingDatabase": "Mesh veritabanı senkronize ediliyor...",
+    "interfaceReady": "{{iface}} arayüz hazır",
+    "freqMhz": "Frekans: {{mhz}} MHz",
+    "freqMhzBw": "Frekans: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Radyo parametreleri yapılandırılıyor...",
+    "contacts_one": "İletişim: {{count}} kişi yüklendi",
+    "contacts_other": "Kişiler: {{count}} kişi yüklendi",
+    "loadingContacts": "Kişi veritabanı yükleniyor...",
+    "routes_one": "Güzergahlar: {{count}} mesh düğüm",
+    "routes_other": "Rotalar: {{count}} mesh içindeki düğümler",
+    "routesEstablished": "Belirlenen rotalar",
+    "meshActive": "Mesh ağı etkin"
   }
 }

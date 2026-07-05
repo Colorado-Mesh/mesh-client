@@ -384,7 +384,9 @@ class IpcNobleConnection {
       fn();
     });
     this.cleanupFns = [];
-    void window.electronAPI.disconnectNobleBle(this.sessionId).catch(() => {});
+    void window.electronAPI.disconnectNobleBle(this.sessionId).catch((e: unknown) => {
+      console.debug('[MeshCoreTransport] Noble cleanup disconnect ' + String(e));
+    });
   }
 }
 

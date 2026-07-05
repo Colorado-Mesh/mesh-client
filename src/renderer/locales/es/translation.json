@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Historial de posición de poda automática al inicio, anterior a {{days}} días",
     "capTotalNodesCountAria": "Limitar el total de nodos, mantener los nodos {{count}} más nuevos",
     "limitMessagesLoadedCountAria": "Limitar mensajes cargados {{count}} mensajes",
-    "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes"
+    "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes",
+    "maxDistanceAria": "Distancia máxima: {{value}}",
+    "unitAria": "Unidad: {{unit}}"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "En cola: se enviará cuando esté conectado",
+    "queuedLabel": "En cola",
+    "blockedDefault": "Bloqueado: no hay clave de cifrado disponible",
+    "blockedLabel": "Bloqueado",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WIFI",
+    "transportBt": "BT",
+    "noAck": "sin ACK",
+    "sending": "Enviando",
+    "delivered": "Entregado",
+    "posted": "Publicado",
+    "failedPost": "Fallo al publicar",
+    "noAckTooltip": "Sin ACK (es posible que el mensaje aún se haya transmitido; no hay otro nodo en el rango para reconocer)",
+    "failed": "Error",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Dispositivo"
+  },
+  "bootSequence": {
+    "booting": "Arrancando pila de malla...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Escaneando canales... {{count}}",
+    "meshtasticScanningChannels": "Escaneando canales configurados...",
+    "databaseNodes_one": "Base de datos: {{count}} nodo sincronizado",
+    "databaseNodes_other": "Base de datos: {{count}} nodos sincronizados",
+    "syncingDatabase": "Sincronizando base de datos de malla...",
+    "interfaceReady": "{{iface}} interfaz lista",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Configurando parámetros de radio...",
+    "contacts_one": "Contactos: {{count}} contacto cargado",
+    "contacts_other": "Contactos: {{count}} contactos cargados",
+    "loadingContacts": "Cargando base de datos de contactos...",
+    "routes_one": "Rutas: {{count}} nodo en malla",
+    "routes_other": "Rutas: nodos {{count}} en malla",
+    "routesEstablished": "Rutas establecidas",
+    "meshActive": "Red Activa"
   }
 }

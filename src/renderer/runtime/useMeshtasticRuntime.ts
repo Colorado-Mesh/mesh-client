@@ -67,6 +67,7 @@ import {
   mergeAppSetting,
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
+import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { getSerialPortFromMeshTransport, safeDisconnect } from '../lib/connection';
 import { validateCoords } from '../lib/coordUtils';
@@ -80,7 +81,7 @@ import type { OurPosition } from '../lib/gpsSource';
 import { readStoredStaticGps, resolveOurPosition } from '../lib/gpsSource';
 import {
   hydrateMeshtasticMessagesFromDb,
-  syncMeshtasticNodesMapToIdentityStore,
+  syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
@@ -230,19 +231,6 @@ const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
 const MAX_RECONNECT_ATTEMPTS = 5;
-
-async function verifyMeshtasticRfLink(type: ConnectionType): Promise<boolean> {
-  if (type !== 'ble') return true;
-  if (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux')) {
-    return true;
-  }
-  try {
-    return await window.electronAPI.isNobleBleConnected('meshtastic');
-  } catch {
-    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
-    return false;
-  }
-}
 
 function getOrCreateVirtualNodeId(): number {
   const key = 'mesh-client:mqttVirtualNodeId';
@@ -560,7 +548,7 @@ export function useMeshtasticRuntime() {
   useEffect(() => {
     const storeId = meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
     if (!storeId) return;
-    syncMeshtasticNodesMapToIdentityStore(storeId, nodes);
+    syncNodesMapToIdentityStore(storeId, nodes);
   }, [nodes, meshtasticIdentityId]);
 
   const ensureNodeExists = useCallback(
@@ -1952,7 +1940,7 @@ export function useMeshtasticRuntime() {
       if (reconnectGenerationRef.current !== generation) {
         throw new Error('Reconnect superseded during configure');
       }
-      if (!(await verifyMeshtasticRfLink(params.type))) {
+      if (!(await verifyNobleBleRfLink(params.type, 'meshtastic'))) {
         throw new Error('RF link lost after reconnect configure');
       }
 
@@ -2117,13 +2105,14 @@ export function useMeshtasticRuntime() {
     (driverIdentityId: string, nodeMap: Map<number, MeshNode>) => {
       nodesRef.current = nodeMap;
       setNodes(nodeMap);
-      syncMeshtasticNodesMapToIdentityStore(driverIdentityId, nodeMap);
+      syncNodesMapToIdentityStore(driverIdentityId, nodeMap);
     },
     [],
   );
 
   const attachRfSession = useCallback(
     async (driverIdentityId: string, type: ConnectionType, device?: MeshDevice): Promise<void> => {
+      const generation = reconnectGenerationRef.current;
       meshtasticDriverConnectedRef.current = true;
       meshtasticPendingDriverIdentityRef.current = driverIdentityId;
       const activeDevice =
@@ -2181,6 +2170,10 @@ export function useMeshtasticRuntime() {
       await configureMeshtasticDeviceWithRetry(activeDevice, {
         logTag: 'useMeshtasticRuntime attachRfSession',
       });
+
+      if (reconnectGenerationRef.current !== generation) {
+        throw new Error('Attach superseded during configure');
+      }
     },
     [applyMeshtasticNodesToUi, wireSubscriptions],
   );
@@ -3442,7 +3435,7 @@ export function useMeshtasticRuntime() {
         setNodes(nodeMap);
         const storeId =
           meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-        if (storeId) syncMeshtasticNodesMapToIdentityStore(storeId, nodeMap);
+        if (storeId) syncNodesMapToIdentityStore(storeId, nodeMap);
       })
       .catch((err: unknown) => {
         console.error('[useMeshtasticRuntime] Failed to refresh nodes: ' + errLikeToLogString(err));

@@ -20,6 +20,7 @@ import type { PendingDmAckEntry } from './meshcoreHookPreamble';
 
 export interface MeshcoreLegacyConnEventsCtx {
   meshcoreIdentityIdRef: RefObject<string | null>;
+  meshcoreDriverConnectedRef: RefObject<boolean>;
   connRef: RefObject<MeshCoreConnection | null>;
   lastPacketLogAtRef: RefObject<number>;
   lastPacketLogPublishFailureLogAtRef: RefObject<number>;

@@ -469,7 +469,7 @@ export default function NodeDetailModal({
     };
   }, [protocol, node, storeContactPublicKey]);
 
-  // Align with MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS (queue + tracePath in useMeshCore)
+  // Align with MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS (queue + tracePath in useMeshcoreRuntime)
   useEffect(() => {
     if (!traceRoutePending) return;
     const timer = setTimeout(

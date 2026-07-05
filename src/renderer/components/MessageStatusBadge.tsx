@@ -23,15 +23,19 @@ export function MessageStatusBadge({
   const displayError = error ? translateMeshcoreUserMessage(t, error) : undefined;
   if (status === 'queued') {
     return (
-      <HelpTooltip text="Queued \u2014 will send when connected">
-        <span className="text-muted text-[10px]">\u23F3 Queued</span>
+      <HelpTooltip text={t('messageStatusBadge.queuedTooltip')}>
+        <span className="text-muted text-[10px]">
+          {'\u23F3'} {t('messageStatusBadge.queuedLabel')}
+        </span>
       </HelpTooltip>
     );
   }
   if (status === 'blocked') {
     return (
-      <HelpTooltip text={displayError ?? 'Blocked \u2014 no encryption key available'}>
-        <span className="text-[10px] text-amber-400">\uD83D\uDD12 Blocked</span>
+      <HelpTooltip text={displayError ?? t('messageStatusBadge.blockedDefault')}>
+        <span className="text-[10px] text-amber-400">
+          {'\uD83D\uDD12'} {t('messageStatusBadge.blockedLabel')}
+        </span>
       </HelpTooltip>
     );
   }
@@ -43,7 +47,7 @@ export function MessageStatusBadge({
         : context === 'room'
           ? '\u2717'
           : transport === 'device'
-            ? 'no ACK'
+            ? t('messageStatusBadge.noAck')
             : '\u2717';
   const colorClass =
     status === 'sending'
@@ -55,25 +59,29 @@ export function MessageStatusBadge({
           : 'text-yellow-400';
   const label =
     transport === 'mqtt'
-      ? 'MQTT'
+      ? t('messageStatusBadge.transportMqtt')
       : connectionType === 'serial'
-        ? 'USB'
+        ? t('messageStatusBadge.transportUsb')
         : connectionType === 'http'
-          ? 'WiFi'
-          : 'BT';
+          ? t('messageStatusBadge.transportWifi')
+          : t('messageStatusBadge.transportBt');
   const failedReason =
     status === 'failed' && context === 'room'
-      ? (displayError ?? 'Failed to post')
+      ? (displayError ?? t('messageStatusBadge.failedPost'))
       : status === 'failed' && transport === 'device'
-        ? 'No ACK (message may still have been broadcast; no other node in range to acknowledge)'
-        : displayError || 'Failed';
-  const tooltip = `${transport === 'mqtt' ? 'MQTT' : 'Device'}: ${
+        ? t('messageStatusBadge.noAckTooltip')
+        : displayError || t('messageStatusBadge.failed');
+  const tooltipPrefix =
+    transport === 'mqtt'
+      ? t('messageStatusBadge.tooltipPrefixMqtt')
+      : t('messageStatusBadge.tooltipPrefixDevice');
+  const tooltip = `${tooltipPrefix}: ${
     status === 'sending'
-      ? 'Sending...'
+      ? t('messageStatusBadge.sending')
       : status === 'acked'
         ? context === 'room'
-          ? 'Posted'
-          : 'Delivered'
+          ? t('messageStatusBadge.posted')
+          : t('messageStatusBadge.delivered')
         : failedReason
   }`;
   return (

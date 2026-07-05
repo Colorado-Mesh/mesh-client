@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "{{days}} 日より古い、起動時のポジション履歴の自動プルーニング",
     "capTotalNodesCountAria": "合計ノード数を制限し、最新の {{count}} ノードを保持",
     "limitMessagesLoadedCountAria": "読み込まれるメッセージを制限する {{count}} メッセージ",
-    "capStoredMessagesCountAria": "保存されたメッセージを制限し、最新の {{count}} メッセージを保持します"
+    "capStoredMessagesCountAria": "保存されたメッセージを制限し、最新の {{count}} メッセージを保持します",
+    "maxDistanceAria": "最大距離： {{value}}",
+    "unitAria": "単位： {{unit}}"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "待機中—接続時に送信されます",
+    "queuedLabel": "待機リストに追加済み",
+    "blockedDefault": "ブロック済み—利用可能な暗号化キーがありません",
+    "blockedLabel": "ブロック済",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "aCKなし",
+    "sending": "送信中・・・",
+    "delivered": "配達済み",
+    "posted": "投稿",
+    "failedPost": "投稿に失敗しました",
+    "noAckTooltip": "ACKなし（メッセージはまだブロードキャストされている可能性があります。確認応答する範囲内の他のノードはありません）",
+    "failed": "失敗しました",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "デバイス"
+  },
+  "bootSequence": {
+    "booting": "メッシュスタックを起動しています...",
+    "meshtasticLora": "LoRa ： {{model}}",
+    "meshtasticScanningChannelsCount": "チャンネルをスキャンしています... {{count}}",
+    "meshtasticScanningChannels": "設定されたチャンネルをスキャンしています...",
+    "databaseNodes_one": "データベース： {{count}}ノードが同期されました",
+    "databaseNodes_other": "データベース： {{count}}ノードが同期されました",
+    "syncingDatabase": "メッシュデータベースを同期しています...",
+    "interfaceReady": "{{iface}}インターフェース準備完了",
+    "freqMhz": "周波数： {{mhz}} MHz",
+    "freqMhzBw": "周波数： {{mhz}} MHz | BW ： {{bw}} kHz",
+    "configuringRadio": "無線パラメータを設定しています...",
+    "contacts_one": "連絡先： {{count}}連絡先が読み込まれました",
+    "contacts_other": "Contacts: {{count}}件の連絡先が読み込まれました",
+    "loadingContacts": "連絡先データベースを読み込んでいます...",
+    "routes_one": "ルート：メッシュ内の{{count}}ノード",
+    "routes_other": "ルート：メッシュ内の{{count}}ノード",
+    "routesEstablished": "ルートが確立されました",
+    "meshActive": "サイトネットワークで有効"
   }
 }

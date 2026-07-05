@@ -730,6 +730,8 @@ function validateMqttSettings(settings: unknown): void {
   const s = settings as Record<string, unknown>;
   if (typeof s.server !== 'string' || !s.server.trim())
     throw new Error('mqtt:connect: server must be a non-empty string');
+  if (!isValidHttpHostname(s.server.trim()))
+    throw new Error('mqtt:connect: server hostname invalid');
   const port = Number(s.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error('mqtt:connect: port must be 1–65535');
@@ -2609,7 +2611,8 @@ ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
   return bleCoexistenceCoordinator.getState();
 });
 
-ipcMain.handle('noble-ble-start-scan', async (_event, sessionId: unknown) => {
+ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'noble-ble-start-scan');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-start-scan: sessionId must be meshtastic or meshcore');
   }
@@ -2624,13 +2627,15 @@ ipcMain.handle('noble-ble-start-scan', async (_event, sessionId: unknown) => {
   }
   await nobleBleManager.startScanning(sessionId);
 });
-ipcMain.handle('noble-ble-stop-scan', async (_event, sessionId: unknown) => {
+ipcMain.handle('noble-ble-stop-scan', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'noble-ble-stop-scan');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-stop-scan: sessionId must be meshtastic or meshcore');
   }
   await nobleBleManager.stopScanning(sessionId);
 });
-ipcMain.handle('noble-ble-connect', async (_event, sessionId: unknown, peripheralId: unknown) => {
+ipcMain.handle('noble-ble-connect', async (event, sessionId: unknown, peripheralId: unknown) => {
+  assertIpcSender(event, 'noble-ble-connect');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-connect: sessionId must be meshtastic or meshcore');
   }
@@ -2651,19 +2656,22 @@ ipcMain.handle('noble-ble-connect', async (_event, sessionId: unknown, periphera
     return { ok: false as const, error: sanitizeLogMessage(message) };
   }
 });
-ipcMain.handle('noble-ble-disconnect', async (_event, sessionId: unknown) => {
+ipcMain.handle('noble-ble-disconnect', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'noble-ble-disconnect');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-disconnect: sessionId must be meshtastic or meshcore');
   }
   await nobleBleManager.disconnect(sessionId);
 });
-ipcMain.handle('noble-ble-is-connected', (_event, sessionId: unknown) => {
+ipcMain.handle('noble-ble-is-connected', (event, sessionId: unknown) => {
+  assertIpcSender(event, 'noble-ble-is-connected');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-is-connected: sessionId must be meshtastic or meshcore');
   }
   return nobleBleManager.isConnected(sessionId);
 });
-ipcMain.handle('noble-ble-to-radio', async (_event, sessionId: unknown, bytes: unknown) => {
+ipcMain.handle('noble-ble-to-radio', async (event, sessionId: unknown, bytes: unknown) => {
+  assertIpcSender(event, 'noble-ble-to-radio');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
     throw new Error('noble-ble-to-radio: sessionId must be meshtastic or meshcore');
   }
@@ -2805,7 +2813,8 @@ meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, (serverHo
 });
 
 // ─── IPC: MQTT connect/disconnect ───────────────────────────────────
-ipcMain.handle('mqtt:connect', (_event, settings) => {
+ipcMain.handle('mqtt:connect', (event, settings) => {
+  assertIpcSender(event, 'mqtt:connect');
   try {
     console.debug('[IPC] mqtt:connect');
     validateMqttSettings(settings);
@@ -2831,7 +2840,8 @@ ipcMain.handle('mqtt:connect', (_event, settings) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:disconnect', (_event, protocol?: MeshProtocol) => {
+ipcMain.handle('mqtt:disconnect', (event, protocol?: MeshProtocol) => {
+  assertIpcSender(event, 'mqtt:disconnect');
   try {
     console.debug('[IPC] mqtt:disconnect', protocol ?? 'both');
     if (!protocol || protocol === 'meshtastic') mqttManager.disconnect();
@@ -2927,7 +2937,8 @@ ipcMain.handle('mqtt:updateChannelKeys', (_event, args) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:publish', (_event, args) => {
+ipcMain.handle('mqtt:publish', (event, args) => {
+  assertIpcSender(event, 'mqtt:publish');
   try {
     console.debug('[IPC] mqtt:publish');
     validateMqttPublishArgs(args);
@@ -2962,7 +2973,8 @@ ipcMain.handle('mqtt:publish', (_event, args) => {
   }
 });
 
-ipcMain.handle('mqtt:publishProxy', (_event, args) => {
+ipcMain.handle('mqtt:publishProxy', (event, args) => {
+  assertIpcSender(event, 'mqtt:publishProxy');
   try {
     console.debug('[IPC] mqtt:publishProxy');
     validateMqttPublishProxyArgs(args);
@@ -2987,7 +2999,8 @@ ipcMain.handle('mqtt:publishProxy', (_event, args) => {
   }
 });
 
-ipcMain.handle('mqtt:publishMeshcore', (_event, args) => {
+ipcMain.handle('mqtt:publishMeshcore', (event, args) => {
+  assertIpcSender(event, 'mqtt:publishMeshcore');
   try {
     console.debug('[IPC] mqtt:publishMeshcore');
     validateMqttPublishMeshcoreArgs(args);
@@ -3015,7 +3028,8 @@ ipcMain.handle('mqtt:publishMeshcore', (_event, args) => {
   }
 });
 
-ipcMain.handle('mqtt:publishMeshcorePacketLog', (_event, args) => {
+ipcMain.handle('mqtt:publishMeshcorePacketLog', (event, args) => {
+  assertIpcSender(event, 'mqtt:publishMeshcorePacketLog');
   try {
     console.debug('[IPC] mqtt:publishMeshcorePacketLog');
     validateMqttPublishMeshcorePacketLogArgs(args);
@@ -3194,7 +3208,8 @@ registerGpsIpcHandlers();
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
-ipcMain.handle('notify:message', (_event, title: unknown, body: unknown) => {
+ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
+  assertIpcSender(event, 'notify:message');
   if (typeof title !== 'string' || title.length > 128) return;
   if (typeof body !== 'string' || body.length > 512) return;
   try {
@@ -3222,7 +3237,8 @@ ipcMain.handle('storage:isAvailable', () => {
   }
 });
 
-ipcMain.handle('storage:encrypt', (_event, plaintext: unknown) => {
+ipcMain.handle('storage:encrypt', (event, plaintext: unknown) => {
+  assertIpcSender(event, 'storage:encrypt');
   if (typeof plaintext !== 'string' || plaintext.length > 4096)
     throw new Error('storage:encrypt: invalid input');
   try {
@@ -3237,7 +3253,8 @@ ipcMain.handle('storage:encrypt', (_event, plaintext: unknown) => {
   }
 });
 
-ipcMain.handle('storage:decrypt', (_event, ciphertext: unknown) => {
+ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
+  assertIpcSender(event, 'storage:decrypt');
   if (typeof ciphertext !== 'string' || ciphertext.length > 8192)
     throw new Error('storage:decrypt: invalid input');
   try {
@@ -3543,9 +3560,16 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
   }
 });
 
-ipcMain.handle('db:saveNode', (_event, node) => {
+ipcMain.handle('db:saveNode', (event, node) => {
+  if (!validateIpcSender(event)) throw new Error('db:saveNode: unauthorized sender');
   try {
     validateSaveNode(node);
+    if (node.path != null) {
+      const pathJson = JSON.stringify(node.path);
+      if (pathJson.length > DB_SAVE_NODE_PATH_MAX_BYTES) {
+        throw new Error('db:saveNode: path too large');
+      }
+    }
     const db = getDbForIpc('db:saveNode');
     if (!db) return { changes: 0 };
     const stmt = db.prepareOnce(`
@@ -3614,7 +3638,8 @@ ipcMain.handle('db:saveNode', (_event, node) => {
   }
 });
 
-ipcMain.handle('db:saveNodePath', (_event, nodeId: number, lastHeard: number, buffer: Buffer) => {
+ipcMain.handle('db:saveNodePath', (event, nodeId: number, lastHeard: number, buffer: Buffer) => {
+  if (!validateIpcSender(event)) throw new Error('db:saveNodePath: unauthorized sender');
   try {
     if (!getDbForIpc('db:saveNodePath')) return undefined;
     if (!isPathPacket(buffer)) {
@@ -4286,6 +4311,9 @@ ipcMain.handle('log:export', async (event) => {
 ipcMain.handle('chat:export', async (event, messages: unknown) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   if (!Array.isArray(messages)) throw new Error('messages must be an array');
+  if (messages.length > CHAT_EXPORT_MAX_MESSAGES) {
+    throw new Error(`chat:export: too many messages (max ${CHAT_EXPORT_MAX_MESSAGES})`);
+  }
   if (!mainWindow) return { success: false };
   try {
     const result = await dialog.showSaveDialog(mainWindow, {
@@ -4423,7 +4451,8 @@ ipcMain.handle('chat:fetchLinkPreview', async (event, url: unknown) => {
 const OUTBOX_VALID_PROTOCOLS = MESH_PROTOCOL_SET;
 const OUTBOX_VALID_STATUSES = new Set(['queued', 'sending', 'blocked', 'failed']);
 
-ipcMain.handle('chat:outbox:list', (_event, protocol: unknown) => {
+ipcMain.handle('chat:outbox:list', (event, protocol: unknown) => {
+  assertIpcSender(event, 'chat:outbox:list');
   if (typeof protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(protocol)) {
     throw new Error('chat:outbox:list: invalid protocol');
   }
@@ -4434,7 +4463,8 @@ ipcMain.handle('chat:outbox:list', (_event, protocol: unknown) => {
   return rows.map(rowToOutboxEntry);
 });
 
-ipcMain.handle('chat:outbox:add', (_event, entry: unknown) => {
+ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
+  assertIpcSender(event, 'chat:outbox:add');
   if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
   const e = entry as Record<string, unknown>;
   if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
@@ -4477,13 +4507,14 @@ ipcMain.handle('chat:outbox:add', (_event, entry: unknown) => {
 ipcMain.handle(
   'chat:outbox:updateStatus',
   (
-    _event,
+    event,
     id: unknown,
     status: unknown,
     error?: unknown,
     nextRetryAt?: unknown,
     attemptCount?: unknown,
   ) => {
+    assertIpcSender(event, 'chat:outbox:updateStatus');
     if (typeof id !== 'number' || !Number.isInteger(id))
       throw new Error('chat:outbox:updateStatus: invalid id');
     if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
@@ -4514,7 +4545,8 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('chat:outbox:remove', (_event, id: unknown) => {
+ipcMain.handle('chat:outbox:remove', (event, id: unknown) => {
+  assertIpcSender(event, 'chat:outbox:remove');
   if (typeof id !== 'number' || !Number.isInteger(id))
     throw new Error('chat:outbox:remove: invalid id');
   getDatabase().prepareOnce('DELETE FROM chat_outbox WHERE id = ?').run(id);
@@ -5476,7 +5508,8 @@ ipcMain.handle('db:deleteAllMeshcorePathHistory', () => {
 // ─── MeshCore TCP bridge ───────────────────────────────────────────
 let meshcoreTcpSocket: net.Socket | null = null;
 
-ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
+ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
+  assertIpcSender(event, 'meshcore:tcp-connect');
   return new Promise<void>((resolve, reject) => {
     let settled = false;
     const p = port;
@@ -5498,7 +5531,15 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
     const socketHost = formatHostForSocket(host);
     const socket = new net.Socket();
     meshcoreTcpSocket = socket;
+    const connectTimeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
+      reject(new Error('meshcore:tcp-connect: connection timeout'));
+    }, MESHCORE_TCP_CONNECT_TIMEOUT_MS);
     socket.connect(p, socketHost, () => {
+      clearTimeout(connectTimeout);
       console.debug('[IPC] meshcore:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
       logDeviceConnection(
         `transport=tcp stack=meshcore host=${sanitizeLogMessage(socketHost)} port=${p}`,
@@ -5513,11 +5554,13 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
       mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
     });
     socket.on('close', (hadError) => {
+      clearTimeout(connectTimeout);
       console.debug('[IPC] meshcore:tcp socket closed', hadError ? '(hadError)' : '(clean)');
       mainWindow?.webContents.send('meshcore:tcp-disconnected');
       if (meshcoreTcpSocket === socket) meshcoreTcpSocket = null;
     });
     socket.on('error', (err) => {
+      clearTimeout(connectTimeout);
       console.error('[IPC] meshcore:tcp-connect error:', sanitizeLogMessage(err.message));
       if (!settled) {
         settled = true;
@@ -5528,7 +5571,8 @@ ipcMain.handle('meshcore:tcp-connect', (_event, host: string, port: number) => {
   });
 });
 
-ipcMain.handle('meshcore:tcp-write', (_event, bytes: number[]) => {
+ipcMain.handle('meshcore:tcp-write', (event, bytes: number[]) => {
+  assertIpcSender(event, 'meshcore:tcp-write');
   if (!Array.isArray(bytes) || bytes.length > MESHCORE_TCP_WRITE_MAX_BYTES) {
     return Promise.reject(
       new Error(
@@ -5558,7 +5602,8 @@ ipcMain.handle('meshcore:tcp-write', (_event, bytes: number[]) => {
   });
 });
 
-ipcMain.handle('meshcore:tcp-disconnect', () => {
+ipcMain.handle('meshcore:tcp-disconnect', (event) => {
+  assertIpcSender(event, 'meshcore:tcp-disconnect');
   if (meshcoreTcpSocket) {
     console.debug('[IPC] meshcore:tcp-disconnect');
     meshcoreTcpSocket.destroy();
@@ -5575,6 +5620,10 @@ let httpDevice: {
 } | null = null;
 
 const HTTP_FETCH_INTERVAL_MS = 3000;
+const HTTP_FETCH_TIMEOUT_MS = 10_000;
+const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
+const CHAT_EXPORT_MAX_MESSAGES = 10_000;
+const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
 const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024;
 const MAX_HOST_LENGTH = 253;
@@ -5642,6 +5691,7 @@ ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
             headers: {
               Accept: 'application/x-protobuf',
             },
+            signal: AbortSignal.timeout(HTTP_FETCH_TIMEOUT_MS),
           });
           readBuffer = await response.arrayBuffer();
           if (readBuffer.byteLength > 0) {
@@ -5665,7 +5715,8 @@ ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
   );
 });
 
-ipcMain.handle('http:write', async (_event, data: number[]) => {
+ipcMain.handle('http:write', async (event, data: number[]) => {
+  assertIpcSender(event, 'http:write');
   if (!httpDevice) {
     throw new Error('http:write: no active connection');
   }
@@ -5680,7 +5731,8 @@ ipcMain.handle('http:write', async (_event, data: number[]) => {
   await httpWriteToRadio(httpDevice.host, httpDevice.tls, new Uint8Array(data));
 });
 
-ipcMain.handle('http:disconnect', () => {
+ipcMain.handle('http:disconnect', (event) => {
+  assertIpcSender(event, 'http:disconnect');
   if (httpDevice) {
     console.debug('[IPC] http:disconnect');
     clearInterval(httpDevice.intervalId);

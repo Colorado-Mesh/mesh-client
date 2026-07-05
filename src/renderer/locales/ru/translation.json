@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Автоматическое удаление истории позиций при запуске, старше {{days}} дней.",
     "capTotalNodesCountAria": "Ограничить общее количество узлов, сохранить новейшие узлы {{count}}",
     "limitMessagesLoadedCountAria": "Ограничить количество загруженных сообщений {{count}}.",
-    "capStoredMessagesCountAria": "Ограничивать сохраненные сообщения, сохранять новейшие сообщения {{count}}"
+    "capStoredMessagesCountAria": "Ограничивать сохраненные сообщения, сохранять новейшие сообщения {{count}}",
+    "maxDistanceAria": "Максимальное расстояние: {{value}}",
+    "unitAria": "Единица измерения: {{unit}}"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Доступны обновления",
     "menuToastAvailableBody": "Доступна версия {{version}}.",
     "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "В очереди — отправит при подключении",
+    "queuedLabel": "В очереди",
+    "blockedDefault": "Заблокировано — нет ключа шифрования",
+    "blockedLabel": "Заблокирован",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB-",
+    "transportWifi": "Wi-Fi",
+    "transportBt": "БТ",
+    "noAck": "нет ACK",
+    "sending": "отправка…",
+    "delivered": "Доставлено",
+    "posted": "Размещено",
+    "failedPost": "Не удалось опубликовать",
+    "noAckTooltip": "Нет ACK (сообщение, возможно, все еще было передано; нет другого узла в диапазоне для подтверждения)",
+    "failed": "Не удалось",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Устройство"
+  },
+  "bootSequence": {
+    "booting": "Загрузка стека сеток...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Сканирование каналов... {{count}}",
+    "meshtasticScanningChannels": "Сканирование настроенных каналов...",
+    "databaseNodes_one": "База данных: синхронизирован узел {{count}}",
+    "databaseNodes_other": "База данных: синхронизировано {{count}} узлов",
+    "syncingDatabase": "Синхронизация базы данных сети...",
+    "interfaceReady": "{{iface}} интерфейс готов",
+    "freqMhz": "Частота: {{mhz}} МГц",
+    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
+    "configuringRadio": "Настройка радиопараметров...",
+    "contacts_one": "Контакты: {{count}} контакт загружен",
+    "contacts_other": "Контакты: {{count}} контакты загружены",
+    "loadingContacts": "Загрузка базы данных контактов...",
+    "routes_one": "Маршруты: {{count}} узел в сетке",
+    "routes_other": "Маршруты: {{count}} узлов в сетке",
+    "routesEstablished": "Установленные маршруты",
+    "meshActive": "Сеть активна"
   }
 }

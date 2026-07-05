@@ -142,6 +142,7 @@ export function attachMeshcoreLegacyConnEvents(
   const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 129, 138, 'rx']);
   const {
     meshcoreIdentityIdRef,
+    meshcoreDriverConnectedRef,
     connRef,
     lastPacketLogAtRef,
     lastPacketLogPublishFailureLogAtRef,
@@ -1415,10 +1416,14 @@ export function attachMeshcoreLegacyConnEvents(
             payloadLen: mqttPayloadLen,
             hash: mqttHash,
           })
-          .catch(() => {
+          .catch((e: unknown) => {
             const t = Date.now();
             if (t - lastPacketLogPublishFailureLogAtRef.current >= 30_000) {
               lastPacketLogPublishFailureLogAtRef.current = t;
+              console.warn(
+                '[meshcoreLegacyConnEvents] MQTT packet-log publish failed ' +
+                  errLikeToLogString(e),
+              );
             }
           });
       }
@@ -1437,9 +1442,10 @@ export function attachMeshcoreLegacyConnEvents(
         connectionLoss: wasOperational,
       };
     });
+    const usedDriverConnect = meshcoreDriverConnectedRef.current;
     const staleConn = connRef.current;
     connRef.current = null;
-    teardownMeshcoreConnEventListeners({ driverDisconnect: false });
+    teardownMeshcoreConnEventListeners({ driverDisconnect: usedDriverConnect });
     queueMicrotask(() => {
       meshcoreSessionPathUpdatedNodeIdsRef.current = new Set();
       setMeshcorePingRouteReadyEpoch((e) => e + 1);
@@ -1452,8 +1458,10 @@ export function attachMeshcoreLegacyConnEvents(
         clearInterval(meshcoreWaitingMessagesPollRef.current);
         meshcoreWaitingMessagesPollRef.current = null;
       }
-      if (staleConn) {
-        void staleConn.close().catch(() => {});
+      if (staleConn && !usedDriverConnect) {
+        void staleConn.close().catch((e: unknown) => {
+          console.debug('[meshcoreLegacyConnEvents] stale conn close ' + errLikeToLogString(e));
+        });
       }
       if (shouldReconnect) {
         handleConnectionLostRef.current();

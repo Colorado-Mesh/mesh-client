@@ -31,7 +31,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 ## Multi-protocol (Meshtastic + MeshCore + Reticulum)
 
-All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`, no Noble/MQTT on that tab). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, Topology). Sidebar tab slots are fixed in `App.tsx` (`TAB_SLOT_IDS`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
+All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`, no Noble/MQTT on that tab). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, Topology). Sidebar tab slots are fixed in `src/renderer/lib/tabSlotIds.ts`; visibility is computed in `src/renderer/lib/appTabMappings.ts` (`computeTabMappings()` consumed from `App.tsx`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
 
 **Feature gating:** use `ProtocolCapabilities` via `useRadioProvider(protocol)` from `src/renderer/lib/radio/providerFactory.ts`; do not branch on raw `protocol === 'meshcore'` strings.
 
@@ -70,7 +70,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 2. Search errors under `src/main/` or `src/renderer/`.
 3. Add `console.debug` only when needed.
 4. Minimal fix + co-located tests.
-5. `pnpm dlx vitest run <file>` and `pnpm run lint`.
+5. `pnpm run test:run -- path/to/file.test.ts` and `pnpm run lint`.
 
 **First places to look:** `runtime/useMeshtasticRuntime.ts` / `runtime/useMeshcoreRuntime.ts` (protocol side effects); `hooks/useProtocolConnection.ts` (connect); `stores/*` (UI state); `src/main/index.ts` (IPC).
 
@@ -89,7 +89,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### BLE and serial
 
-- Meshtastic BLE: `lib/connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Reticulum BLE: sidecar `btleplug` (RNode `ble://`, BLE Peer mesh) — coexistence via `ble-coexistence-coordinator.ts` (different MACs only; scan mutex). Serial: `lib/connection.ts`, `serialPortSignature.ts`. Errors: `humanize*` in `lib/connection.ts`. Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
+- Meshtastic BLE: `lib/connection.ts` / `TransportManager`. MeshCore BLE: `noble-ble-manager.ts` (macOS/Windows), Web Bluetooth IPC on Linux. Reticulum BLE: sidecar `btleplug` (RNode `ble://`, BLE Peer mesh) — coexistence via `ble-coexistence-coordinator.ts` (different MACs only; scan mutex). Serial: `lib/connection.ts`, `serialPortSignature.ts`. Connection panel errors: `lib/connectionPanelErrorHumanize.ts`. Reconnect watchdog: `runtime/useMeshtasticRuntime.ts`.
 - **ATT MTU:** Noble sessions chunk `toRadio` writes from `peripheral.mtu` / `mtu` events (`bleAttWriteLimit.ts` for spec-safe defaults). Web Bluetooth (Linux) chunks only when Chromium exposes `BluetoothRemoteGATTCharacteristic.maximumWriteValueLength`; otherwise a single `writeValue` per payload (no portable negotiated-MTU API in the web spec).
 
 ### MQTT
@@ -106,7 +106,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### UI
 
-- Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + `TAB_CAPABILITY_REQUIREMENTS` in `App.tsx`. **Administration:** `AdminPanel.tsx` (device commands / Danger Zone; Meshtastic OTA/DFU). **Config apply feedback:** `ConfigApplyNotice.tsx`. Stores: module defaults; persist vs SQLite IPC as elsewhere.
+- Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capability requirements in `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()`). **Administration:** `AdminPanel.tsx` (device commands / Danger Zone; Meshtastic OTA/DFU). **Config apply feedback:** `ConfigApplyNotice.tsx`. Stores: module defaults; persist vs SQLite IPC as elsewhere.
 
 ### Common issues
 

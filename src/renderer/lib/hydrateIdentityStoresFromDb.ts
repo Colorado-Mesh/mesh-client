@@ -101,7 +101,7 @@ export interface MessageClearRefreshOptions {
 
 export async function hydrateMeshtasticNodesFromDb(identityId: IdentityId): Promise<void> {
   const nodeMap = await loadMeshtasticNodeMapFromDb();
-  syncMeshtasticNodesMapToIdentityStore(identityId, nodeMap);
+  syncNodesMapToIdentityStore(identityId, nodeMap);
 }
 
 export async function hydrateMeshtasticMessagesFromDb(
@@ -171,29 +171,34 @@ export async function hydrateMeshcoreNodesFromDb(identityId: IdentityId): Promis
   const dbMsgs = await loadMeshcoreMessagesForHydration();
   const mapped = mapMeshcoreDbRowsToChatMessages(dbMsgs);
   const nodeMap = buildMeshcoreNodeMapFromDb(rows as MeshcoreContactDbRow[], savedNodes, mapped);
-  syncMeshcoreNodesMapToIdentityStore(identityId, nodeMap);
+  syncNodesMapToIdentityStore(identityId, nodeMap);
 }
 
-/** Push an in-memory MeshCore node map into identity-scoped Zustand (e.g. after radio contact sync). */
+/** Push an in-memory node map into identity-scoped Zustand (e.g. after radio contact sync). */
+export function syncNodesMapToIdentityStore(
+  identityId: IdentityId,
+  nodes: Map<number, MeshNode>,
+): void {
+  upsertNodeRecordsForIdentity(
+    identityId,
+    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
+  );
+}
+
+/** @deprecated Use {@link syncNodesMapToIdentityStore} */
 export function syncMeshcoreNodesMapToIdentityStore(
   identityId: IdentityId,
   nodes: Map<number, MeshNode>,
 ): void {
-  upsertNodeRecordsForIdentity(
-    identityId,
-    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
-  );
+  syncNodesMapToIdentityStore(identityId, nodes);
 }
 
-/** Push an in-memory Meshtastic node map into identity-scoped Zustand (e.g. connect-time DB cache). */
+/** @deprecated Use {@link syncNodesMapToIdentityStore} */
 export function syncMeshtasticNodesMapToIdentityStore(
   identityId: IdentityId,
   nodes: Map<number, MeshNode>,
 ): void {
-  upsertNodeRecordsForIdentity(
-    identityId,
-    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
-  );
+  syncNodesMapToIdentityStore(identityId, nodes);
 }
 
 export async function hydrateMeshcoreMessagesFromDb(

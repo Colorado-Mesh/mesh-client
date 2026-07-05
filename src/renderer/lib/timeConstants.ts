@@ -8,7 +8,7 @@ export {
   MS_PER_SECOND,
 } from '../../shared/timeConstants';
 
-/** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); matches `useMeshCore` `withTimeout`. */
+/** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
 
 /**

@@ -2,7 +2,7 @@
  * REQ_TYPE_GET_NEIGHBOURS wire format matches @liamcottle/meshcore.js Connection#getNeighbours.
  * That method does not forward an extra timeout to sendBinaryRequest; we build the same payload
  * and call sendBinaryRequest(..., extraTimeoutMillis) from the renderer so multi-hop repeaters
- * can respond within the repeater RPC timeout (see MESHCORE_REPEATER_RPC_TIMEOUT_MS in useMeshCore).
+ * can respond within the repeater RPC timeout (see `MESHCORE_REPEATER_RPC_TIMEOUT_MS`).
  *
  * @see https://github.com/meshcore-dev/MeshCore/pull/833
  */

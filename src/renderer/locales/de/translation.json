@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Positionsverlauf beim Start automatisch bereinigen, älter als {{days}} Tage",
     "capTotalNodesCountAria": "Begrenzen Sie die Gesamtzahl der Knoten und behalten Sie die neuesten {{count}}-Knoten bei",
     "limitMessagesLoadedCountAria": "Begrenzen Sie die Anzahl der geladenen Nachrichten: {{count}} Nachrichten",
-    "capStoredMessagesCountAria": "Gespeicherte Nachrichten begrenzen, neueste {{count}}-Nachrichten behalten"
+    "capStoredMessagesCountAria": "Gespeicherte Nachrichten begrenzen, neueste {{count}}-Nachrichten behalten",
+    "maxDistanceAria": "Max. Entfernung: {{value}}",
+    "unitAria": "Einheit: {{unit}}"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "In der Warteschlange — sendet, wenn eine Verbindung besteht",
+    "queuedLabel": "In Warteschlange",
+    "blockedDefault": "Gesperrt — kein Verschlüsselungsschlüssel verfügbar",
+    "blockedLabel": "Blockiert",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "kein ACK",
+    "sending": "Senden…",
+    "delivered": "Übermittelt",
+    "posted": "am",
+    "failedPost": "Nicht veröffentlicht",
+    "noAckTooltip": "Kein ACK (Nachricht darf noch gesendet worden sein; kein anderer Knoten in Reichweite zu quittieren)",
+    "failed": "Nicht bestanden",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Vorrichtung"
+  },
+  "bootSequence": {
+    "booting": "Mesh-Stack wird gestartet...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanäle werden gescannt... {{count}}",
+    "meshtasticScanningChannels": "Konfigurierte Kanäle werden gescannt...",
+    "databaseNodes_one": "Datenbank: {{count}} Knoten synchronisiert",
+    "databaseNodes_other": "Datenbank: {{count}} Knoten synchronisiert",
+    "syncingDatabase": "Mesh-Datenbank wird synchronisiert...",
+    "interfaceReady": "{{iface}} schnittstellenfertig",
+    "freqMhz": "Frequenz: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Funkparameter werden konfiguriert...",
+    "contacts_one": "Kontakte: {{count}} Kontakt geladen",
+    "contacts_other": "Kontakte: {{count}} Kontakte geladen",
+    "loadingContacts": "Kontaktdatenbank wird geladen...",
+    "routes_one": "Routen: {{count}} Knoten im Netz",
+    "routes_other": "Routen: {{count}} Knoten im Netz",
+    "routesEstablished": "Etablierte Routen",
+    "meshActive": "Netzwerk aktiv"
   }
 }

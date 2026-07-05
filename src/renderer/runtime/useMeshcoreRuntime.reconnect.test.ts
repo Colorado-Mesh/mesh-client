@@ -28,7 +28,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreConnectionParamsRef');
     expect(RUNTIME_SOURCE).toMatch(/rfType: 'serial'/);
     expect(RUNTIME_SOURCE).toMatch(/rfType === 'tcp'/);
-    expect(RUNTIME_SOURCE).toContain('verifyMeshcoreRfLink');
+    expect(RUNTIME_SOURCE).toContain('verifyNobleBleRfLink');
     expect(RUNTIME_SOURCE).toContain('RF link lost after MeshCore reconnect attach');
     expect(RUNTIME_SOURCE).not.toContain('RF link not ready before MeshCore reconnect open');
   });
@@ -75,7 +75,29 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
 describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
   it('triggers handleConnectionLost when an operational session drops', () => {
     expect(CONN_EVENTS_SOURCE).toMatch(
-      /onMeshcoreConn\('disconnected'[\s\S]{0,1200}handleConnectionLostRef\.current\(\)/,
+      /onMeshcoreConn\('disconnected'[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
+    );
+  });
+
+  it('tears down ConnectionDriver on disconnect when driver path was active', () => {
+    expect(CONN_EVENTS_SOURCE).toContain('meshcoreDriverConnectedRef.current');
+    expect(CONN_EVENTS_SOURCE).toMatch(
+      /teardownMeshcoreConnEventListeners\(\{ driverDisconnect: usedDriverConnect \}\)/,
+    );
+    expect(CONN_EVENTS_SOURCE).toMatch(/staleConn && !usedDriverConnect/);
+  });
+
+  it('logs rate-limited MQTT packet-log publish failures', () => {
+    expect(CONN_EVENTS_SOURCE).toMatch(
+      /publishMeshcorePacketLog[\s\S]{0,800}MQTT packet-log publish failed/,
+    );
+  });
+});
+
+describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () => {
+  it('awaits ConnectionDriver.disconnect before starting a new connect', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /prepareRfConnect[\s\S]{0,2500}await connectionDriver\.disconnect\(driverIdentity\)/,
     );
   });
 });

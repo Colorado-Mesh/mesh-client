@@ -12,8 +12,7 @@ import {
   hydrateMeshtasticNodesFromDb,
   mergeMeshcoreDbMessageRowsForHydration,
   MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
-  syncMeshcoreNodesMapToIdentityStore,
-  syncMeshtasticNodesMapToIdentityStore,
+  syncNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
 import { resetIdentityHydrationCoordinatorForTests } from './identityHydrationCoordinator';
 import { buildMeshcoreRoomIncomingMessage } from './meshcoreChannelText';
@@ -260,7 +259,7 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(getMeshcoreContacts).toHaveBeenCalled();
   });
 
-  it('syncMeshcoreNodesMapToIdentityStore upserts runtime node map into Zustand', () => {
+  it('syncNodesMapToIdentityStore upserts MeshCore runtime node map into Zustand', () => {
     const nodes = new Map([
       [
         0xabc,
@@ -295,7 +294,7 @@ describe('hydrateIdentityStoresFromDb', () => {
       ],
     ]);
 
-    syncMeshcoreNodesMapToIdentityStore(ID_MC, nodes);
+    syncNodesMapToIdentityStore(ID_MC, nodes);
 
     const byId = useNodeStore.getState().nodes[ID_MC];
     expect(Object.keys(byId ?? {})).toHaveLength(2);
@@ -304,7 +303,7 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(byId?.[0xdef]?.longName).toBe('Chat-B');
   });
 
-  it('syncMeshtasticNodesMapToIdentityStore upserts runtime node map into Zustand', () => {
+  it('syncNodesMapToIdentityStore upserts Meshtastic runtime node map into Zustand', () => {
     const nodes = new Map([
       [
         0x11,
@@ -322,7 +321,7 @@ describe('hydrateIdentityStoresFromDb', () => {
         },
       ],
     ]);
-    syncMeshtasticNodesMapToIdentityStore(ID_MT, nodes);
+    syncNodesMapToIdentityStore(ID_MT, nodes);
     expect(useNodeStore.getState().nodes[ID_MT]?.[0x11]?.longName).toBe('Node-A');
   });
 

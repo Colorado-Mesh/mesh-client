@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Élaguer automatiquement l'historique des positions au démarrage, datant de plus de {{days}} jours",
     "capTotalNodesCountAria": "Limiter le nombre total de nœuds, conserver les nœuds {{count}} les plus récents",
     "limitMessagesLoadedCountAria": "Limiter les messages chargés {{count}} messages",
-    "capStoredMessagesCountAria": "Limiter les messages stockés, conserver les messages {{count}} les plus récents"
+    "capStoredMessagesCountAria": "Limiter les messages stockés, conserver les messages {{count}} les plus récents",
+    "maxDistanceAria": "Distance max. : {{value}}",
+    "unitAria": "Unité : {{unit}}"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",
     "menuToastErrorTitle": "Échec de la vérification de"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "En file d'attente — enverra lorsqu'il sera connecté",
+    "queuedLabel": "En file d'attente",
+    "blockedDefault": "Bloqué — aucune clé de chiffrement disponible",
+    "blockedLabel": "Bloqué",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "Wi-Fi",
+    "transportBt": "BT",
+    "noAck": "no ACK",
+    "sending": "Envoi en cours...",
+    "delivered": "Livré",
+    "posted": "Posté",
+    "failedPost": "Échec de publication",
+    "noAckTooltip": "Aucun ACK (le message peut encore avoir été diffusé ; aucun autre nœud à portée pour accuser réception)",
+    "failed": "Échec",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Dispositif"
+  },
+  "bootSequence": {
+    "booting": "Démarrage de la pile de mailles...",
+    "meshtasticLora": "LoRa : {{model}}",
+    "meshtasticScanningChannelsCount": "Numérisation des canaux... {{count}}",
+    "meshtasticScanningChannels": "Analyse des canaux configurés...",
+    "databaseNodes_one": "Base de données : {{count}} nœud synchronisé",
+    "databaseNodes_other": "Base de données : {{count}} nœuds synchronisés",
+    "syncingDatabase": "Synchronisation de la base de données maillée...",
+    "interfaceReady": "{{iface}} interface prête",
+    "freqMhz": "Fréquence : {{mhz}} MHz",
+    "freqMhzBw": "Freq : {{mhz}} MHz | BW : {{bw}} kHz",
+    "configuringRadio": "Configuration des paramètres radio...",
+    "contacts_one": "Contacts : {{count}} contact chargé",
+    "contacts_other": "Contacts : {{count}} contacts chargés",
+    "loadingContacts": "Chargement de la base de données de contacts...",
+    "routes_one": "Routes : nœud {{count}} dans le maillage",
+    "routes_other": "Itinéraires : {{count}} nœuds dans le maillage",
+    "routesEstablished": "Itinéraires établis",
+    "meshActive": "Actif sur le réseau"
   }
 }

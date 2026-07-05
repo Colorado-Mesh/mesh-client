@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Automatické prořezávání historie pozic při spuštění, starší než {{days}} dnů",
     "capTotalNodesCountAria": "Omezte celkový počet uzlů, ponechte nejnovější {{count}} uzly",
     "limitMessagesLoadedCountAria": "Omezit počet načtených zpráv: {{count}} zpráv",
-    "capStoredMessagesCountAria": "Uzavřít uložené zprávy, ponechat nejnovější {{count}} zprávy"
+    "capStoredMessagesCountAria": "Uzavřít uložené zprávy, ponechat nejnovější {{count}} zprávy",
+    "maxDistanceAria": "Maximální vzdálenost: {{value}}",
+    "unitAria": "Jednotka: {{unit}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "Ve frontě — bude odesláno po připojení",
+    "queuedLabel": "Ve frontě",
+    "blockedDefault": "Blokováno — šifrovací klíč není k dispozici",
+    "blockedLabel": "Blokován",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "ne ACK",
+    "sending": "Odesílání...",
+    "delivered": "Dodané",
+    "posted": "Zveřejněno",
+    "failedPost": "Zveřejnění se nezdařilo",
+    "noAckTooltip": "Žádný ACK (zpráva mohla být stále vysílána; žádný jiný uzel v dosahu k potvrzení)",
+    "failed": "Nezdařilo se",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Zařízení"
+  },
+  "bootSequence": {
+    "booting": "Zaváděcí síťový zásobník...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Skenování kanálů... {{count}}",
+    "meshtasticScanningChannels": "Skenování nakonfigurovaných kanálů...",
+    "databaseNodes_one": "Databáze: {{count}} uzel synchronizován",
+    "databaseNodes_other": "Databáze: {{count}} uzly synchronizovány",
+    "syncingDatabase": "Synchronizuje se síťová databáze...",
+    "interfaceReady": "{{iface}} rozhraní připraveno",
+    "freqMhz": "Frekvence: {{mhz}} MHz",
+    "freqMhzBw": "Frekvence: {{mhz}} MHz | ČB: {{bw}} kHz",
+    "configuringRadio": "Konfigurace parametrů rádia...",
+    "contacts_one": "Kontakty: {{count}} kontakt načten",
+    "contacts_other": "Kontakty: {{count}} načteny kontakty",
+    "loadingContacts": "Načítání databáze kontaktů...",
+    "routes_one": "Trasy: Uzel {{count}} v síti",
+    "routes_other": "Trasy: {{count}} uzly v síti",
+    "routesEstablished": "Trasy vytvořeny",
+    "meshActive": "Síť Mesh aktivní"
   }
 }

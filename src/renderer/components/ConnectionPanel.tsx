@@ -31,6 +31,12 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
+import {
+  flushPendingMqttSave,
+  getMqttSettingsStorageKey,
+  loadProtocolMqttSettings,
+  persistMqttSettingsIfChanged,
+} from '../hooks/useProtocolMqttSettings';
 import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
@@ -58,17 +64,13 @@ import {
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
-import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
   formatChannelPskInput,
   parseChannelPskInput,
   validateChannelPskEntries,
 } from '../lib/meshtasticChannelPskInput';
-import {
-  MESHTASTIC_MQTT_SETTINGS_KEY,
-  readMeshtasticMqttSettingsFromStorage,
-} from '../lib/meshtasticMqttSettingsStorage';
+import { MESHTASTIC_MQTT_SETTINGS_KEY } from '../lib/meshtasticMqttSettingsStorage';
 import {
   isLiamBrokerSettings,
   isMeshtasticOfficialBrokerSettings,
@@ -284,34 +286,14 @@ function MqttGlobeStatusIcon({ status }: { status: MQTTStatus }) {
   return <MqttGlobeIcon className={`h-5 w-5 ${color}`} />;
 }
 
-const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
-
 const LETS_MESH_USERNAME_SYNC_DEBOUNCE_MS = 100;
 
-function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings): void {
-  const serialized = JSON.stringify(settings);
-  if (localStorage.getItem(key) === serialized) return;
-  localStorage.setItem(key, serialized);
-}
-
-function flushPendingMqttSave(
-  timerRef: { current: ReturnType<typeof setTimeout> | null },
-  key: string,
-  settings: MQTTSettings,
-): void {
-  if (timerRef.current) {
-    clearTimeout(timerRef.current);
-    timerRef.current = null;
-  }
-  persistMqttSettingsIfChanged(key, settings);
-}
-
 function loadMqttSettings(): MQTTSettings {
-  return readMeshtasticMqttSettingsFromStorage();
+  return loadProtocolMqttSettings('meshtastic');
 }
 
 function loadMeshcoreMqttSettings(): MQTTSettings {
-  return readMeshcoreMqttSettingsFromStorage();
+  return loadProtocolMqttSettings('meshcore');
 }
 
 interface Props {
@@ -468,7 +450,10 @@ export default function ConnectionPanel({
   useEffect(() => {
     if (meshcoreMqttSaveTimerRef.current) clearTimeout(meshcoreMqttSaveTimerRef.current);
     meshcoreMqttSaveTimerRef.current = setTimeout(() => {
-      persistMqttSettingsIfChanged(MESHCORE_MQTT_SETTINGS_KEY, meshcoreMqttSettingsRef.current);
+      persistMqttSettingsIfChanged(
+        getMqttSettingsStorageKey('meshcore'),
+        meshcoreMqttSettingsRef.current,
+      );
       meshcoreMqttSaveTimerRef.current = null;
     }, 300);
     return () => {
@@ -483,7 +468,7 @@ export default function ConnectionPanel({
     const flushMeshcoreMqtt = () => {
       flushPendingMqttSave(
         meshcoreMqttSaveTimerRef,
-        MESHCORE_MQTT_SETTINGS_KEY,
+        getMqttSettingsStorageKey('meshcore'),
         meshcoreMqttSettingsRef.current,
       );
     };
@@ -492,7 +477,7 @@ export default function ConnectionPanel({
       window.removeEventListener('beforeunload', flushMeshcoreMqtt);
       flushPendingMqttSave(
         meshcoreMqttSaveTimerRef,
-        MESHCORE_MQTT_SETTINGS_KEY,
+        getMqttSettingsStorageKey('meshcore'),
         meshcoreMqttSettingsRef.current,
       );
     };
@@ -593,10 +578,7 @@ export default function ConnectionPanel({
     setActiveMqttSettings((prev) => {
       const next = { ...prev, [key]: value };
       if (key === 'autoLaunch') {
-        persistMqttSettingsIfChanged(
-          protocol === 'meshcore' ? MESHCORE_MQTT_SETTINGS_KEY : MESHTASTIC_MQTT_SETTINGS_KEY,
-          next,
-        );
+        persistMqttSettingsIfChanged(getMqttSettingsStorageKey(protocol), next);
       }
       return next;
     });

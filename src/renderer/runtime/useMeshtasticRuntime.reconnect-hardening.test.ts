@@ -35,10 +35,9 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('verifies Noble BLE link after configure, not before open (disconnect must allow fresh connect)', () => {
-    expect(SOURCE).toContain('verifyMeshtasticRfLink');
+    expect(SOURCE).toContain('verifyNobleBleRfLink');
     expect(SOURCE).toContain('RF link lost after reconnect configure');
     expect(SOURCE).not.toContain('RF link not ready before reconnect open');
-    expect(SOURCE).toMatch(/if \(type !== 'ble'\) return true/);
   });
 
   it('cleans up device and watchdog when reconnect budget is exhausted', () => {
@@ -74,6 +73,12 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('onNobleBleDisconnected');
     expect(SOURCE).toMatch(
       /onNobleBleDisconnected[\s\S]*?rehydrateMeshtasticConnectionParamsFromStorage[\s\S]*?handleConnectionLostRef\.current\(\)/,
+    );
+  });
+
+  it('guards attachRfSession configure against reconnect generation supersession', () => {
+    expect(SOURCE).toMatch(
+      /attachRfSession[\s\S]{0,3500}reconnectGenerationRef\.current !== generation[\s\S]{0,200}Attach superseded during configure/,
     );
   });
 });

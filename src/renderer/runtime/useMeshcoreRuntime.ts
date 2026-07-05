@@ -75,6 +75,7 @@ import {
   classifyMeshcoreBleTimeoutStage,
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
+import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -83,7 +84,7 @@ import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../
 import {
   loadMeshcoreMessagesForHydration,
   loadMeshcoreSavedHopRowsForHydration,
-  syncMeshcoreNodesMapToIdentityStore,
+  syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
@@ -362,19 +363,6 @@ export type {
 export type { CliHistoryEntry } from '../lib/repeaterCommandService';
 
 const MESHCORE_MAX_RECONNECT_ATTEMPTS = 5;
-
-async function verifyMeshcoreRfLink(rfType: 'ble' | 'serial' | 'tcp'): Promise<boolean> {
-  if (rfType !== 'ble') return true;
-  if (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux')) {
-    return true;
-  }
-  try {
-    return await window.electronAPI.isNobleBleConnected('meshcore');
-  } catch {
-    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
-    return false;
-  }
-}
 
 export function useMeshcoreRuntime() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
@@ -743,7 +731,7 @@ export function useMeshcoreRuntime() {
     const storeId =
       meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null;
     if (!storeId) return;
-    syncMeshcoreNodesMapToIdentityStore(storeId, nodes);
+    syncNodesMapToIdentityStore(storeId, nodes);
   }, [nodes, meshcoreIdentityId]);
 
   useEffect(() => {
@@ -901,7 +889,7 @@ export function useMeshcoreRuntime() {
         meshcorePendingDriverIdentityRef.current ??
         getOfflineIdentityIdForProtocol('meshcore');
       if (storeId) {
-        syncMeshcoreNodesMapToIdentityStore(storeId, mergedInitial);
+        syncNodesMapToIdentityStore(storeId, mergedInitial);
       }
       if (opts?.hydrateMessages && mapped.length > 0) {
         setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
@@ -1410,7 +1398,7 @@ export function useMeshcoreRuntime() {
       nodesRef.current = mergedForStore;
       setNodes(mergedForStore);
       const storeId = resolveMeshcoreStoreIdentityId();
-      if (storeId) syncMeshcoreNodesMapToIdentityStore(storeId, mergedForStore);
+      if (storeId) syncNodesMapToIdentityStore(storeId, mergedForStore);
     },
     [resolveMeshcoreStoreIdentityId],
   );
@@ -1598,6 +1586,7 @@ export function useMeshcoreRuntime() {
   const meshcoreLegacyConnEventsCtx = useMemo<MeshcoreLegacyConnEventsCtx>(
     () => ({
       meshcoreIdentityIdRef,
+      meshcoreDriverConnectedRef,
       connRef,
       lastPacketLogAtRef,
       lastPacketLogPublishFailureLogAtRef,
@@ -2216,8 +2205,13 @@ export function useMeshcoreRuntime() {
         meshcoreDriverConnectedRef.current = false;
         meshcorePendingDriverIdentityRef.current = null;
         teardownMeshcoreConnEventListeners({
-          driverDisconnect: true,
+          driverDisconnect: false,
           driverIdentityId: driverIdentity,
+        });
+        await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          console.debug(
+            '[useMeshcoreRuntime] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
+          );
         });
       } else if (staleConn) {
         teardownMeshcoreConnEventListeners({ driverDisconnect: false });
@@ -2474,7 +2468,7 @@ export function useMeshcoreRuntime() {
       if (meshcoreReconnectGenerationRef.current !== generation) {
         throw new Error('MeshCore reconnect superseded during attach');
       }
-      if (!(await verifyMeshcoreRfLink(params.rfType))) {
+      if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
         throw new Error('RF link lost after MeshCore reconnect attach');
       }
       console.debug(
@@ -4333,7 +4327,12 @@ export function useMeshcoreRuntime() {
           ? MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS
           : MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
         'meshcoreRoomLoginRouteResolve',
-      ).catch(() => undefined);
+      ).catch((e: unknown) => {
+        console.debug(
+          '[useMeshcoreRuntime] meshcoreRoomLoginRouteResolve ' + errLikeToLogString(e),
+        );
+        return undefined;
+      });
       if (resolved && resolved.length > 0) {
         outPathMapRef.current.set(nodeId, resolved);
       }
@@ -5361,7 +5360,7 @@ export function useMeshcoreRuntime() {
         }
         const storeId = meshcoreIdentityIdRef.current;
         if (storeId) {
-          syncMeshcoreNodesMapToIdentityStore(storeId, next);
+          syncNodesMapToIdentityStore(storeId, next);
         }
         return next;
       });
@@ -5965,7 +5964,7 @@ export function useMeshcoreRuntime() {
       });
       const storeId = resolveMeshcoreStoreIdentityId();
       if (storeId && nextMap) {
-        syncMeshcoreNodesMapToIdentityStore(storeId, nextMap);
+        syncNodesMapToIdentityStore(storeId, nextMap);
       }
     } catch (e) {
       console.warn('[useMeshcoreRuntime] refreshNodesFromDb error ' + errLikeToLogString(e));

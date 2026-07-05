@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Pangkas riwayat posisi secara otomatis saat startup, lebih lama dari {{days}} hari",
     "capTotalNodesCountAria": "Batasi total node, pertahankan node {{count}} terbaru",
     "limitMessagesLoadedCountAria": "Batasi pesan yang dimuat {{count}} pesan",
-    "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru"
+    "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru",
+    "maxDistanceAria": "Jarak maksimum: {{value}}",
+    "unitAria": "Unit: {{unit}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "Diantrekan — akan dikirim saat terhubung",
+    "queuedLabel": "Diantrekan",
+    "blockedDefault": "Diblokir — tidak ada kunci enkripsi yang tersedia",
+    "blockedLabel": "Diblokir",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "tidak ada ack",
+    "sending": "Mengirim...",
+    "delivered": "Terkirim",
+    "posted": "Diposting",
+    "failedPost": "Gagal Memposting",
+    "noAckTooltip": "Tidak ada ack (pesan mungkin masih disiarkan; tidak ada simpul lain dalam jangkauan untuk dikenali)",
+    "failed": "Gagal",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Perangkat"
+  },
+  "bootSequence": {
+    "booting": "Booting mesh stack...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Memindai saluran... {{count}}",
+    "meshtasticScanningChannels": "Memindai saluran yang dikonfigurasi...",
+    "databaseNodes_one": "Database: {{count}} node disinkronkan",
+    "databaseNodes_other": "Database: {{count}} node disinkronkan",
+    "syncingDatabase": "Menyinkronkan basis data mesh...",
+    "interfaceReady": "{{iface}} antarmuka siap",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Mengkonfigurasi parameter radio...",
+    "contacts_one": "Kontak: {{count}} kontak dimuat",
+    "contacts_other": "Kontak: {{count}} kontak dimuat",
+    "loadingContacts": "Memuat basis data kontak...",
+    "routes_one": "Rute: {{count}} simpul di mesh",
+    "routes_other": "Rute: {{count}} node dalam mesh",
+    "routesEstablished": "Rute ditetapkan",
+    "meshActive": "Jaringan mesh aktif"
   }
 }

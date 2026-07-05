@@ -917,7 +917,7 @@ export default function AppPanel({
                 updateSetting('distanceFilterMax', Math.max(1, parseInt(e.target.value) || 1));
               }}
               disabled={!settings.distanceFilterEnabled}
-              aria-label={`Max distance: ${settings.distanceFilterMax}`}
+              aria-label={t('appPanel.maxDistanceAria', { value: settings.distanceFilterMax })}
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
@@ -930,7 +930,12 @@ export default function AppPanel({
                 updateSetting('distanceUnit', e.target.value as 'miles' | 'km');
               }}
               disabled={!settings.distanceFilterEnabled}
-              aria-label={`Unit: ${settings.distanceUnit}`}
+              aria-label={t('appPanel.unitAria', {
+                unit:
+                  settings.distanceUnit === 'km'
+                    ? t('appPanel.distanceUnitKm')
+                    : t('appPanel.distanceUnitMiles'),
+              })}
               className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             >
               <option value="miles">{t('appPanel.distanceUnitMiles')}</option>

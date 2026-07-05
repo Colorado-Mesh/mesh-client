@@ -13,7 +13,10 @@ export function validateIpcSender(event: IpcMainInvokeEvent): boolean {
         url.protocol === 'mesh-client:' ||
         (url.protocol === 'http:' &&
           (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) ||
-        url.protocol === 'https:'
+        (url.protocol === 'https:' &&
+          (url.hostname === 'localhost' ||
+            url.hostname === '127.0.0.1' ||
+            url.hostname === '[::1]'))
       );
     }
     return url.protocol === 'file:' || url.protocol === 'mesh-client:';

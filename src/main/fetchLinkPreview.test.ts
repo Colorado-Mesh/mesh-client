@@ -1,17 +1,30 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('node:dns/promises', () => ({
+  default: {
+    lookup: vi.fn(),
+  },
+  lookup: vi.fn(),
+}));
+
+import dns from 'node:dns/promises';
+
 import {
   clearLinkPreviewCachesForTests,
   fetchLinkPreview,
   isBlockedHostname,
+  isBlockedHostnameResolved,
   shouldProxyPreviewImageUrl,
 } from './fetchLinkPreview';
 
+const mockDnsLookup = vi.mocked(dns.lookup);
 const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.stubGlobal('fetch', mockFetch);
+  mockDnsLookup.mockReset();
+  mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
 });
 
 afterEach(() => {
@@ -70,6 +83,23 @@ describe('isBlockedHostname', () => {
   it('allows public hostnames', () => {
     expect(isBlockedHostname('example.com')).toBe(false);
     expect(isBlockedHostname('sub.example.org')).toBe(false);
+  });
+});
+
+describe('isBlockedHostnameResolved', () => {
+  it('blocks hostnames that resolve to private IPv4', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '10.0.0.5', family: 4 });
+    await expect(isBlockedHostnameResolved('metadata.example.internal')).resolves.toBe(true);
+  });
+
+  it('allows hostnames that resolve to public IPv4', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
+    await expect(isBlockedHostnameResolved('example.com')).resolves.toBe(false);
+  });
+
+  it('blocks when DNS lookup fails', async () => {
+    mockDnsLookup.mockRejectedValue(new Error('ENOTFOUND'));
+    await expect(isBlockedHostnameResolved('missing.example.com')).resolves.toBe(true);
   });
 });
 

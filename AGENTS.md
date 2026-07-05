@@ -232,7 +232,7 @@ Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, Meshtastic nonce layout, channel
 
 ### UI
 
-Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Stores: module defaults; persist vs SQLite IPC as elsewhere.
+Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Tab visibility: `src/renderer/lib/tabSlotIds.ts` (`TAB_SLOT_IDS`) → `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()` in `App.tsx`). Stores: module defaults; persist vs SQLite IPC as elsewhere.
 
 ### i18n / Localization
 

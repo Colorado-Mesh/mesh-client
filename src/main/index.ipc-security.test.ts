@@ -244,6 +244,57 @@ describe('MeshCore clear-by-channel validation (source contract)', () => {
   });
 });
 
+describe('privileged IPC sender validation (source contract)', () => {
+  const privilegedChannels = [
+    'mqtt:connect',
+    'mqtt:disconnect',
+    'mqtt:publish',
+    'storage:encrypt',
+    'storage:decrypt',
+    'http:write',
+    'http:disconnect',
+    'meshcore:tcp-connect',
+    'meshcore:tcp-write',
+    'noble-ble-connect',
+    'chat:outbox:add',
+  ] as const;
+
+  it.each(privilegedChannels)('%s calls assertIpcSender or validateIpcSender', (channel) => {
+    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(
+      handlerBody.includes('assertIpcSender(event') ||
+        handlerBody.includes('validateIpcSender(event)'),
+    ).toBe(true);
+  });
+
+  it('http fromradio poll uses AbortSignal.timeout', () => {
+    expect(INDEX_SOURCE).toContain('HTTP_FETCH_TIMEOUT_MS');
+    expect(INDEX_SOURCE).toMatch(
+      /fromradio\?all=false[\s\S]{0,400}AbortSignal\.timeout\(HTTP_FETCH_TIMEOUT_MS\)/,
+    );
+  });
+
+  it('meshcore tcp-connect uses connect timeout', () => {
+    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_CONNECT_TIMEOUT_MS');
+    expect(INDEX_SOURCE).toMatch(
+      /meshcore:tcp-connect[\s\S]{0,1200}meshcore:tcp-connect: connection timeout/,
+    );
+  });
+
+  it('validateMqttSettings rejects invalid broker hostnames', () => {
+    const fnIdx = INDEX_SOURCE.indexOf('function validateMqttSettings(');
+    expect(fnIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(fnIdx, fnIdx + 500);
+    expect(body).toContain('isValidHttpHostname(s.server.trim())');
+  });
+
+  it('chat:export caps message array length', () => {
+    expect(INDEX_SOURCE).toContain('CHAT_EXPORT_MAX_MESSAGES');
+  });
+});
+
 describe('navigation security (source contract)', () => {
   it('blocks non-http(s) schemes in parseHttpOrHttpsUrl', () => {
     expect(INDEX_SOURCE).toContain('function parseHttpOrHttpsUrl');

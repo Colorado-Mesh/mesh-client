@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Remoção automática do histórico de posições na inicialização, com mais de {{days}} dias",
     "capTotalNodesCountAria": "Limite o total de nós, mantenha os nós {{count}} mais recentes",
     "limitMessagesLoadedCountAria": "Limitar mensagens carregadas {{count}} mensagens",
-    "capStoredMessagesCountAria": "Limite as mensagens armazenadas, mantenha as mensagens {{count}} mais recentes"
+    "capStoredMessagesCountAria": "Limite as mensagens armazenadas, mantenha as mensagens {{count}} mais recentes",
+    "maxDistanceAria": "Distância máxima: {{value}}",
+    "unitAria": "Unidade: {{unit}}"
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
     "menuToastErrorTitle": "verificação de atualização falhou"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "Na fila — será enviado quando conectado",
+    "queuedLabel": "Na fila",
+    "blockedDefault": "Bloqueado — nenhuma chave de criptografia disponível",
+    "blockedLabel": "Bloqueado",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "Nenhuma Confirm",
+    "sending": "Enviando…",
+    "delivered": "Entregue",
+    "posted": "Postado",
+    "failedPost": "Erro ao publicar",
+    "noAckTooltip": "Sem ACK (a mensagem ainda pode ter sido transmitida; nenhum outro nó no intervalo para confirmar)",
+    "failed": "Falha",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Dispositivo"
+  },
+  "bootSequence": {
+    "booting": "Iniciando pilha de malha...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Verificando canais... {{count}}",
+    "meshtasticScanningChannels": "Verificando canais configurados...",
+    "databaseNodes_one": "Banco de dados: {{count}} nó sincronizado",
+    "databaseNodes_other": "Banco de dados: {{count}} nós sincronizados",
+    "syncingDatabase": "Sincronizando banco de dados de malha...",
+    "interfaceReady": "Interface {{iface}} pronta",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Configurando parâmetros de rádio...",
+    "contacts_one": "Contatos: {{count}} contato carregado",
+    "contacts_other": "Contatos: {{count}} contatos carregados",
+    "loadingContacts": "Carregando banco de dados de contatos...",
+    "routes_one": "Rotas: nó {{count}} na malha",
+    "routes_other": "Rotas: {{count}} nós na malha",
+    "routesEstablished": "Rotas estabelecidas",
+    "meshActive": "Ativo na Rede"
   }
 }

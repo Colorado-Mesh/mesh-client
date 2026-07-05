@@ -1339,7 +1339,12 @@ export class NobleBleManager extends EventEmitter {
       }
       this.clearSessionState(session);
       if (connected) {
-        await peripheral.disconnectAsync().catch(() => {});
+        await peripheral.disconnectAsync().catch((e: unknown) => {
+          console.debug(
+            '[noble-ble] connect error cleanup disconnect ' +
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+        });
       }
       throw err;
     } finally {

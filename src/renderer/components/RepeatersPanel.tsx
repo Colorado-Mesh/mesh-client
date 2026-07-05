@@ -468,7 +468,12 @@ export default function RepeatersPanel({
       setExpandedTelemetry((prev) => new Set([...prev, nodeId]));
     } catch (e) {
       console.warn('[RepeatersPanel] requestTelemetry error ' + errLikeToLogString(e));
-      addToast(`Telemetry failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      addToast(
+        t('nodeDetailModal.telemetryFailed', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+        'error',
+      );
     } finally {
       setTelemetryLoadingSet((prev) => {
         const n = new Set(prev);

@@ -327,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Automatyczne czyszczenie historii pozycji przy uruchomieniu, starszej niż {{days}} dni",
     "capTotalNodesCountAria": "Ogranicz wszystkie węzły, zachowaj najnowsze węzły {{count}}",
     "limitMessagesLoadedCountAria": "Ogranicz ładowanie wiadomości {{count}}",
-    "capStoredMessagesCountAria": "Ogranicz zapisane wiadomości, zachowaj najnowsze wiadomości {{count}}"
+    "capStoredMessagesCountAria": "Ogranicz zapisane wiadomości, zachowaj najnowsze wiadomości {{count}}",
+    "maxDistanceAria": "Maksymalna odległość: {{value}}",
+    "unitAria": "Jednostka: {{unit}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -3775,5 +3777,44 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "W kolejce — wyśle po połączeniu",
+    "queuedLabel": "W kolejce",
+    "blockedDefault": "Zablokowany — brak dostępnego klucza szyfrowania",
+    "blockedLabel": "Zablokowane",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WIFI",
+    "transportBt": "BT",
+    "noAck": "brak ACK",
+    "sending": "Wysyłanie…",
+    "delivered": "Dostarczono",
+    "posted": "Przesłane",
+    "failedPost": "Nie można opublikować",
+    "noAckTooltip": "Brak ACK (komunikat mógł nadal zostać wyemitowany; brak innego węzła w zasięgu do potwierdzenia)",
+    "failed": "Zakończone niepowodzeniem",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Urządzenie"
+  },
+  "bootSequence": {
+    "booting": "Uruchamianie stosu siatek...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Skanowanie kanałów... {{count}}",
+    "meshtasticScanningChannels": "Skanowanie skonfigurowanych kanałów...",
+    "databaseNodes_one": "Baza danych: zsynchronizowano węzeł {{count}}",
+    "databaseNodes_other": "Baza danych: węzły {{count}} zsynchronizowane",
+    "syncingDatabase": "Synchronizowanie bazy danych siatki...",
+    "interfaceReady": "Interfejs {{iface}} gotowy",
+    "freqMhz": "Częstotliwość: {{mhz}} MHz",
+    "freqMhzBw": "Częstotliwość: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Konfigurowanie parametrów radiowych...",
+    "contacts_one": "Kontakty: {{count}} kontakt załadowany",
+    "contacts_other": "Wczytano kontakty: {{count}}",
+    "loadingContacts": "Trwa ładowanie bazy danych kontaktów...",
+    "routes_one": "Trasy: węzeł {{count}} w siatce",
+    "routes_other": "Trasy: węzły {{count}} w siatce",
+    "routesEstablished": "Ustalone trasy",
+    "meshActive": "Aktywna sieć siatkowa"
   }
 }

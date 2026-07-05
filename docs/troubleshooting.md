@@ -532,12 +532,13 @@ After **24 hours** of uptime, the main process logs periodic **long-session heal
 
 ### MQTT keeps disconnecting
 
-**Cause**: Wireless interference, broker downtime, or token issues (LetsMesh/Colorado Mesh).
+**Cause**: Wireless interference, broker downtime, token issues (LetsMesh/Colorado Mesh), or normal reconnect backoff after a failed attempt.
 
 **Fix**:
 
 - Check your WiFi/signal strength
 - Verify the broker is online
+- Expect **exponential reconnect backoff** (60s base, capped at 45 minutes per `src/shared/mqttReconnectSchedule.ts`); connack timeouts retry faster (~250ms)
 - For LetsMesh/Colorado Mesh: mesh-client refreshes JWT automatically when MeshCore identity is already cached (including after a successful MeshCore radio session). If you never imported identity and have not connected a MeshCore radio yet, import under **Radio** or use **Custom** credentials; if refresh still fails, try re-importing MeshCore config JSON to replace a corrupt cache
 - Enable debug logs to see the disconnect reason
 
@@ -850,7 +851,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 
-**Symptoms**: After saving a file in `pnpm run dev`, many `[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running` lines appear; Nomad/Propagation/Radio panels fail until you restart the stack.
+**Symptoms**: After saving a file in `pnpm run dev`, many `[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running` lines appear; Nomad Network / Network (propagation, identity) panels fail until you restart the stack.
 
 **Cause**: Hot module reload remounted the Reticulum runtime, which previously called `reticulum:stop` on every unmount.
 

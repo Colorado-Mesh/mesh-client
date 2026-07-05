@@ -249,7 +249,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
           Parameters<typeof buildReticulumDiagnosticRows>[0]
         >,
         refreshLocalInterfacesFromSidecar(),
-        fetchReticulumConfigAudit().catch(() => []),
+        fetchReticulumConfigAudit().catch((e: unknown) => {
+          console.debug('[useReticulumRuntime] config audit failed ' + String(e));
+          return [];
+        }),
         window.electronAPI.reticulum.getStatus(),
       ]);
       const { interfaces, osSerialPorts } = health;
