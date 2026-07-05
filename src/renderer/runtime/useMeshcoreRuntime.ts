@@ -293,6 +293,7 @@ import {
   pubkeyToNodeId,
   resolveMeshcoreRoomLoginHopsAway,
 } from '../lib/meshcoreUtils';
+import { markMeshcoreCompanionTx } from '../lib/meshcoreWaitingMessagesDrain';
 import {
   bindMeshcoreIngress,
   finalizeMeshcoreDriverIdentity,
@@ -2923,6 +2924,7 @@ export function useMeshcoreRuntime() {
 
         try {
           const result = await connRef.current.sendTextMessage(pubKey, textToSend);
+          markMeshcoreCompanionTx();
           void fetchAndUpdateLocalStats().catch((e: unknown) => {
             console.warn(
               '[useMeshcoreRuntime] fetchAndUpdateLocalStats (DM send) error ' +
@@ -3070,6 +3072,7 @@ export function useMeshcoreRuntime() {
           const channelConn = connRef.current;
           if (channelConn) {
             await channelConn.sendChannelTextMessage(channelIdx, textToSend);
+            markMeshcoreCompanionTx();
             void fetchAndUpdateLocalStats().catch((e: unknown) => {
               console.warn(
                 '[useMeshcoreRuntime] fetchAndUpdateLocalStats (channel send) error ' +
@@ -4403,6 +4406,7 @@ export function useMeshcoreRuntime() {
               nodesRef.current.get(nodeId)?.hw_model,
             );
             await conn.sendTextMessage(pubKey, commandWithToken, MESHCORE_TXT_TYPE_CLI_DATA);
+            markMeshcoreCompanionTx();
 
             const response = await promise;
             addCliHistoryEntry(nodeId, {
@@ -5653,6 +5657,7 @@ export function useMeshcoreRuntime() {
         }
         // Tapbacks are fire-and-forget; no ACK tracking or status UI for reactions
         await conn.sendTextMessage(pubKey, tapbackText);
+        markMeshcoreCompanionTx();
         const tapbackTs = Date.now();
         const tapbackMsg: ChatMessage = {
           sender_id: me,
@@ -5675,6 +5680,7 @@ export function useMeshcoreRuntime() {
               : channel;
         // Tapbacks are fire-and-forget; no ACK tracking or status UI for reactions
         await conn.sendChannelTextMessage(outboundChannel, tapbackText);
+        markMeshcoreCompanionTx();
         publishTapback({
           sender_id: me,
           sender_name: selfInfo?.name ?? 'Me',
@@ -5879,6 +5885,7 @@ export function useMeshcoreRuntime() {
       if (!conn) return false;
       try {
         await conn.sendChannelData(channelIdx, pathLen, path, dataType, payload);
+        markMeshcoreCompanionTx();
         return true;
       } catch (e: unknown) {
         console.warn('[useMeshcoreRuntime] sendChannelData error ' + errLikeToLogString(e));

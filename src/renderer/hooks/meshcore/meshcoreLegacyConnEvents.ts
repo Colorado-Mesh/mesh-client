@@ -62,6 +62,12 @@ import {
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
+import {
+  resetMeshcoreWaitingMessagesDrainSchedule,
+  scheduleMeshcoreWaitingMessagesDrain,
+  shouldActivateWaitingMessagesBanner,
+  waitingMessagesDrainTimeoutMs,
+} from '../../lib/meshcoreWaitingMessagesDrain';
 import { getMeshtasticConnectedMyNodeNum } from '../../lib/meshtasticConnectedNodeRef';
 import {
   effectiveMessageTimestampMs,
@@ -72,7 +78,6 @@ import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
 import {
   MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
   MESHCORE_WAITING_MESSAGES_BATCH_YIELD,
-  MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
 } from '../../lib/timeConstants';
 import type { ChatMessage, IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
@@ -598,10 +603,7 @@ export function attachMeshcoreLegacyConnEvents(
     const showSyncBanner = options?.showSyncBanner !== false;
     const inFlight = (async () => {
       const startedAt = Date.now();
-      if (showSyncBanner) {
-        setWaitingMessagesSyncActive(true);
-        setWaitingMessagesSyncProgress(null);
-      }
+      let bannerActive = false;
       let processed = 0;
       let pendingMessages: ChatMessage[] = [];
       const workingNodes = new Map(nodesRef.current);
@@ -623,7 +625,7 @@ export function attachMeshcoreLegacyConnEvents(
       try {
         const msgs = await withTimeout(
           conn.getWaitingMessages(),
-          MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
+          waitingMessagesDrainTimeoutMs(showSyncBanner),
           'MeshCore getWaitingMessages',
         );
         if (!meshcoreHookMountedRef.current) return;
@@ -637,9 +639,15 @@ export function attachMeshcoreLegacyConnEvents(
           channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
         }[];
         const total = arr.length;
-        if (showSyncBanner) {
+        if (shouldActivateWaitingMessagesBanner(showSyncBanner, total)) {
+          bannerActive = true;
+          setWaitingMessagesSyncActive(true);
+          setWaitingMessagesSyncProgress(null);
           setWaitingMessagesCount(total);
           setWaitingMessagesSyncProgress({ processed: 0, total });
+        } else if (showSyncBanner && total === 0) {
+          console.debug('[useMeshcoreRuntime] processWaitingMessages empty queue (manual sync)');
+          return;
         }
         console.debug('[useMeshcoreRuntime] processWaitingMessages start', {
           count: total,
@@ -787,7 +795,7 @@ export function attachMeshcoreLegacyConnEvents(
             pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
           ) {
             flushBatch();
-            if (showSyncBanner) {
+            if (bannerActive) {
               setWaitingMessagesSyncProgress({ processed, total });
             }
             await yieldToEventLoop();
@@ -800,7 +808,7 @@ export function attachMeshcoreLegacyConnEvents(
           durationMs: Date.now() - startedAt,
         });
       } finally {
-        if (showSyncBanner) {
+        if (bannerActive) {
           setWaitingMessagesCount(0);
           setWaitingMessagesSyncActive(false);
           setWaitingMessagesSyncProgress(null);
@@ -813,26 +821,26 @@ export function attachMeshcoreLegacyConnEvents(
   };
   processWaitingMessagesRef.current = processWaitingMessages;
   onMeshcoreConn(131, () => {
-    void (async () => {
-      try {
-        await processWaitingMessages({ showSyncBanner: true });
-      } catch (e) {
-        const errMsg = errLikeToLogString(e);
-        console.warn('[useMeshcoreRuntime] getWaitingMessages error ' + errMsg);
-        if (errMsg.includes('timed out')) {
-          return;
-        }
-        // Single retry — device may be busy during BLE reconnect
-        setTimeout(() => {
-          if (!meshcoreHookMountedRef.current) return;
-          void processWaitingMessages({ showSyncBanner: true }).catch((e2: unknown) => {
-            console.warn(
-              '[useMeshcoreRuntime] getWaitingMessages retry failed ' + errLikeToLogString(e2),
-            );
+    scheduleMeshcoreWaitingMessagesDrain(
+      async () => {
+        try {
+          await processWaitingMessages({ showSyncBanner: false });
+        } catch (e) {
+          const errMsg = errLikeToLogString(e);
+          console.warn('[useMeshcoreRuntime] getWaitingMessages error ' + errMsg);
+          if (errMsg.includes('timed out')) {
+            return;
+          }
+          // Single retry — device may be busy during BLE reconnect
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 2_000);
           });
-        }, 2_000);
-      }
-    })();
+          if (!meshcoreHookMountedRef.current) return;
+          await processWaitingMessages({ showSyncBanner: false });
+        }
+      },
+      { isMounted: () => meshcoreHookMountedRef.current },
+    );
   });
 
   // Incoming DM — event 7
@@ -1493,6 +1501,7 @@ export function attachMeshcoreLegacyConnEvents(
         setWaitingMessagesSyncActive,
         setWaitingMessagesSyncProgress,
       );
+      resetMeshcoreWaitingMessagesDrainSchedule();
       if (staleConn && !usedDriverConnect) {
         void staleConn.close().catch((e: unknown) => {
           console.debug('[meshcoreLegacyConnEvents] stale conn close ' + errLikeToLogString(e));
@@ -1519,6 +1528,7 @@ export function attachMeshcoreLegacyConnEvents(
       setWaitingMessagesSyncActive,
       setWaitingMessagesSyncProgress,
     );
+    resetMeshcoreWaitingMessagesDrainSchedule();
     processWaitingMessagesRef.current = null;
   };
 }
