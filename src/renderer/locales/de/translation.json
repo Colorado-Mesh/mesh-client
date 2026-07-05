@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Status fehlgeschlagen: {{message}}",
     "pingFailedToast": "Ping fehlgeschlagen: {{message}}",
     "removeFailedToast": "Entfernen fehlgeschlagen: {{message}}",
-    "actionErrorStatus": "Status: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Nachbarn: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR vom Repeater-Status",
     "snrContactTooltip": "SNR kontaktieren — Status für Live-Lesung verwenden",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Gespeichertes Repeater-Passwort entfernt.",
     "passwordSavedIndicator": "Passwort für diesen Repeater gespeichert",
     "savedPasswordsCount": "Gespeicherte Repeater-Passwörter ({{count}})",
-    "savedPasswordOrphanLabel": "Repeater {{nodeId}}"
+    "savedPasswordOrphanLabel": "Repeater {{nodeId}}",
+    "pingQueuedBehindOther": "Warteschlange — ein weiterer Ping verwendet das Radio (MeshCore ermöglicht eine Spur nach der anderen).",
+    "waitForPingBeforeStatus": "Warten, bis der Ping in Bearbeitung abgeschlossen ist, bevor die Statusanforderung erfolgt.",
+    "statusLastFailedTooltip": "Letzte Statusanfrage fehlgeschlagen: {{error}}",
+    "neighborsLastFailedTooltip": "Anfrage des letzten Nachbarn fehlgeschlagen: {{error}}",
+    "telemetryLastFailedTooltip": "Letzte Sensoranforderung fehlgeschlagen: {{error}}",
+    "cliLastFailedTooltip": "Letzter CLI-Befehl fehlgeschlagen: {{error}}",
+    "telemetryError": "Sensorfehler: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",

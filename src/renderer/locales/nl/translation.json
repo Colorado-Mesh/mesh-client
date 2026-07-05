@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Status mislukt: {{message}}",
     "pingFailedToast": "Ping mislukt: {{message}}",
     "removeFailedToast": "Verwijderen mislukt: {{message}}",
-    "actionErrorStatus": "Status: {{error}}",
-    "actionErrorPing": "Pingen: {{error}}",
-    "actionErrorNeighbors": "Buren: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR van repeaterstatus",
     "snrContactTooltip": "Neem contact op met SNR - gebruik Status voor live lezen",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Opgeslagen repeaterwachtwoord verwijderd.",
     "passwordSavedIndicator": "Wachtwoord opgeslagen voor deze repeater",
     "savedPasswordsCount": "Opgeslagen herhaalwachtwoorden ({{count}})",
-    "savedPasswordOrphanLabel": "Repeater {{nodeId}}"
+    "savedPasswordOrphanLabel": "Repeater {{nodeId}}",
+    "pingQueuedBehindOther": "In wachtrij — een andere ping gebruikt de radio (MeshCore staat één spoor tegelijk toe).",
+    "waitForPingBeforeStatus": "Wachten op in uitvoering zijnde ping om te voltooien voor statusaanvraag.",
+    "statusLastFailedTooltip": "Laatste statusverzoek mislukt: {{error}}",
+    "neighborsLastFailedTooltip": "Verzoek laatste buren mislukt: {{error}}",
+    "telemetryLastFailedTooltip": "Laatste sensorverzoek mislukt: {{error}}",
+    "cliLastFailedTooltip": "Laatste CLI-opdracht mislukt: {{error}}",
+    "telemetryError": "Sensorfout: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

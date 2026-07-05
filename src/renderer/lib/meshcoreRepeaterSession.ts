@@ -24,8 +24,24 @@ export function clearMeshcoreRepeaterEphemeralPassword(nodeId: number): void {
 }
 
 export function meshcoreRepeaterLoginErrorIsAuthFailure(error: unknown): boolean {
-  const msg = error instanceof Error ? error.message : String(error);
-  return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('ACL denied');
+  const msg = errLikeToLogString(error).toLowerCase();
+  return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied');
+}
+
+/** Throw when a saved/ephemeral password login was attempted but failed (do not continue RPC). */
+export function assertMeshcoreRepeaterLoginOk(result: MeshcoreRepeaterTryLoginResult): void {
+  if (!result.attempted || result.ok) return;
+  if (meshcoreRepeaterLoginErrorIsAuthFailure(result.error)) {
+    throw new Error('authentication failed');
+  }
+  const msg = errLikeToLogString(result.error).toLowerCase();
+  if (msg.includes('timeout') || msg.includes('timed out')) {
+    throw new Error('timeout');
+  }
+  if (result.error instanceof Error) {
+    throw result.error;
+  }
+  throw new Error(errLikeToLogString(result.error));
 }
 
 function resolveRepeaterPassword(nodeId: number): { password: string; fromPersisted: boolean } {

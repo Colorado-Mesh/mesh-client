@@ -3028,6 +3028,9 @@ function AppContent() {
                               meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                               onClearCliHistory={meshcorePanelActions.clearCliHistory}
                               onToggleFavorite={meshcorePanelActions.setNodeFavorited}
+                              meshcoreRepeaterRpcPending={
+                                meshcoreRuntime.meshcoreRepeaterRpcPending
+                              }
                             />
                           </Suspense>
                         </ErrorBoundary>

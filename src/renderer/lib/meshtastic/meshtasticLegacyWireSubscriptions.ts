@@ -97,6 +97,7 @@ import { recordMeshtasticClientNotification } from './meshtasticClientNotificati
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
+import { installMeshtasticSdkRoutingErrorConsoleHook } from './meshtasticSdkRoutingErrorConsoleHook';
 import { applyMeshtasticOutboundRoutingErrorFromLog } from './meshtasticSdkRoutingErrorLog';
 
 const MAX_TELEMETRY_POINTS = 50;
@@ -200,6 +201,7 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
   myNodeNumRef: RefObject<number>;
   nodesRef: RefObject<Map<number, MeshNode>>;
   pendingTempIdRef: RefObject<number | undefined>;
+  ackMeshPacketIdByTempIdRef: RefObject<Map<number, number>>;
   pendingTracePacketIdToTargetRef: RefObject<Map<number, number>>;
   pendingTraceRequestsRef: RefObject<Map<number, number>>;
   refreshOurPositionRef: RefObject<() => Promise<OurPosition | null>>;
@@ -364,6 +366,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     myNodeNumRef,
     nodesRef,
     pendingTempIdRef,
+    ackMeshPacketIdByTempIdRef,
     pendingTracePacketIdToTargetRef,
     pendingTraceRequestsRef,
     refreshOurPositionRef,
@@ -1866,15 +1869,20 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // Queue status → connectionStore via MeshtasticProtocol + PacketRouter (no legacy handler).
 
-  // Device logs → deviceStore via protocol; legacy handler only for foreign LoRa parsing.
-  const unsubLog = device.events.onLogRecord.subscribe((record) => {
-    applyMeshtasticForeignLoraFromLog(record.message);
-    applyMeshtasticOutboundRoutingErrorFromLog(record.message, {
+  const applySdkRoutingErrorFromLog = (logMessage: string): void => {
+    applyMeshtasticOutboundRoutingErrorFromLog(logMessage, {
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
       messagesRef,
       setMessages,
+      tempIdToWirePacketId: ackMeshPacketIdByTempIdRef.current,
     });
+  };
+
+  // Device logs → deviceStore via protocol; legacy handler only for foreign LoRa parsing.
+  const unsubLog = device.events.onLogRecord.subscribe((record) => {
+    applyMeshtasticForeignLoraFromLog(record.message);
+    applySdkRoutingErrorFromLog(record.message);
   });
   unsubscribesRef.current.push(unsubLog);
 
@@ -1882,14 +1890,13 @@ export function attachMeshtasticLegacyWireSubscriptions(
     if (isForeignLoraLogCandidate(entry.message)) {
       applyMeshtasticForeignLoraFromLog(entry.message);
     }
-    applyMeshtasticOutboundRoutingErrorFromLog(entry.message, {
-      myNodeNum: myNodeNumRef.current,
-      identityId: meshtasticIdentityIdRef.current,
-      messagesRef,
-      setMessages,
-    });
+    applySdkRoutingErrorFromLog(entry.message);
   });
   unsubscribesRef.current.push(unsubForeignLoraLogLine);
+
+  unsubscribesRef.current.push(
+    installMeshtasticSdkRoutingErrorConsoleHook(applySdkRoutingErrorFromLog),
+  );
 
   // Neighbor info → nodeStore via protocol ingress.
 

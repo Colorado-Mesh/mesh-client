@@ -5,6 +5,7 @@ import { setMeshcoreRepeaterCredential } from './meshcoreRepeaterCredentialStora
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { MC_PUSH_LOGIN_SUCCESS, MC_RESP_SENT } from './meshcoreRepeaterRpcCommon';
 import {
+  assertMeshcoreRepeaterLoginOk,
   clearAllMeshcoreRepeaterEphemeralPasswords,
   meshcoreRepeaterTryLogin,
   setMeshcoreRepeaterEphemeralPassword,
@@ -96,5 +97,30 @@ describe('meshcoreRepeaterTryLogin', () => {
     expect(result.attempted).toBe(true);
     expect(result.ok).toBe(true);
     expect(result.fromPersisted).toBe(false);
+  });
+
+  it('assertMeshcoreRepeaterLoginOk throws auth failure for rejected login', async () => {
+    const conn = createMockConn();
+    const pubKey = new Uint8Array(32);
+    setMeshcoreRepeaterEphemeralPassword(0x77, 'bad');
+    const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x77);
+    conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+    const { MC_PUSH_LOGIN_FAIL } = await import('./meshcoreRepeaterRpcCommon');
+    conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
+    const result = await loginPromise;
+    expect(() => {
+      assertMeshcoreRepeaterLoginOk(result);
+    }).toThrow(/authentication failed/i);
+  });
+
+  it('assertMeshcoreRepeaterLoginOk maps login timeout to timeout (not auth)', () => {
+    expect(() => {
+      assertMeshcoreRepeaterLoginOk({
+        attempted: true,
+        ok: false,
+        fromPersisted: true,
+        error: new Error('timeout'),
+      });
+    }).toThrow(/^timeout$/i);
   });
 });

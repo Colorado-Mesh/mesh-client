@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Помилка статусу: {{message}}",
     "pingFailedToast": "Помилка зв'язку: {{message}}",
     "removeFailedToast": "Не вдалося видалити: {{message}}",
-    "actionErrorStatus": "Статус: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Сусіди: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR зі статусу ретранслятора",
     "snrContactTooltip": "SNR контакту — для читання в реальному часі використовуйте Статус",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Збережений пароль повторювача видалено.",
     "passwordSavedIndicator": "Пароль збережено для цього повторювача",
     "savedPasswordsCount": "Збережені паролі повторювача ({{count}})",
-    "savedPasswordOrphanLabel": "Повторювач {{nodeId}}"
+    "savedPasswordOrphanLabel": "Повторювач {{nodeId}}",
+    "pingQueuedBehindOther": "Поставлений в чергу — інший пінг використовує радіо (MeshCore дозволяє один трас за раз).",
+    "waitForPingBeforeStatus": "Очікується завершення ping перед запитом статусу.",
+    "statusLastFailedTooltip": "Не вдалося виконати останній запит на отримання статусу: {{error}}",
+    "neighborsLastFailedTooltip": "Не вдалося здійснити останній запит від сусідів: {{error}}",
+    "telemetryLastFailedTooltip": "Не вдалося виконати останній запит датчика: {{error}}",
+    "cliLastFailedTooltip": "Не вдалося виконати останню команду CLI: {{error}}",
+    "telemetryError": "Помилка датчика: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",

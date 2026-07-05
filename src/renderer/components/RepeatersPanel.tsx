@@ -16,6 +16,8 @@ import type {
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
+import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { listMeshcoreRepeaterCredentialNodeIds } from '../lib/meshcoreRepeaterCredentialStorage';
 import { forgetMeshcoreRepeaterSavedSecret } from '../lib/meshcoreRepeaterSavedSecrets';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
@@ -45,6 +47,8 @@ interface Props {
     { pathLen: number; pathHashes: number[]; pathSnrs: number[]; lastSnr: number; tag: number }
   >;
   meshcorePingErrors?: Map<number, string>;
+  /** Survives panel unmount — in-flight status/ping/neighbors/telemetry/CLI RPCs. */
+  meshcoreRepeaterRpcPending?: MeshcoreRepeaterRpcPendingMap;
   onRequestRepeaterStatus: (nodeId: number) => Promise<void>;
   onPing: (nodeId: number) => Promise<void>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
@@ -196,6 +200,7 @@ export default function RepeatersPanel({
   meshcoreStatusErrors,
   meshcoreTraceResults,
   meshcorePingErrors,
+  meshcoreRepeaterRpcPending,
   onRequestRepeaterStatus,
   onPing,
   onDeleteRepeater,
@@ -241,18 +246,13 @@ export default function RepeatersPanel({
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const signalHistory = useRepeaterSignalStore((s) => s.history);
   const pathHistory = usePathHistoryStore((s) => s.records);
-  const [statusLoadingSet, setStatusLoadingSet] = useState<Set<number>>(new Set());
-  const [pingLoadingSet, setPingLoadingSet] = useState<Set<number>>(new Set());
   const [deleteLoadingSet, setDeleteLoadingSet] = useState<Set<number>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [neighborsLoadingSet, setNeighborsLoadingSet] = useState<Set<number>>(new Set());
-  const [telemetryLoadingSet, setTelemetryLoadingSet] = useState<Set<number>>(new Set());
   const [expandedNeighbors, setExpandedNeighbors] = useState<Set<number>>(new Set());
   const [expandedTelemetry, setExpandedTelemetry] = useState<Set<number>>(new Set());
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
   const [cliInputValues, setCliInputValues] = useState<Map<number, string>>(new Map());
-  const [cliLoadingSet, setCliLoadingSet] = useState<Set<number>>(new Set());
   const [cliUseSavedPath, setCliUseSavedPath] = useState<Map<number, boolean>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
   const [meshcoreContactsDb, setMeshcoreContactsDb] = useState<
@@ -391,7 +391,6 @@ export default function RepeatersPanel({
     );
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
-    setStatusLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestRepeaterStatus(nodeId);
     } catch (e) {
@@ -402,17 +401,10 @@ export default function RepeatersPanel({
         }),
         'error',
       );
-    } finally {
-      setStatusLoadingSet((prev) => {
-        const next = new Set(prev);
-        next.delete(nodeId);
-        return next;
-      });
     }
   };
 
   const handlePing = async (nodeId: number) => {
-    setPingLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onPing(nodeId);
     } catch (e) {
@@ -423,12 +415,6 @@ export default function RepeatersPanel({
         }),
         'error',
       );
-    } finally {
-      setPingLoadingSet((prev) => {
-        const next = new Set(prev);
-        next.delete(nodeId);
-        return next;
-      });
     }
   };
 
@@ -476,18 +462,11 @@ export default function RepeatersPanel({
     );
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
-    setNeighborsLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestNeighbors?.(nodeId);
       setExpandedNeighbors((prev) => new Set([...prev, nodeId]));
     } catch (e) {
       console.warn('[RepeatersPanel] requestNeighbors error ' + errLikeToLogString(e));
-    } finally {
-      setNeighborsLoadingSet((prev) => {
-        const n = new Set(prev);
-        n.delete(nodeId);
-        return n;
-      });
     }
   };
 
@@ -508,7 +487,6 @@ export default function RepeatersPanel({
     );
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
-    setTelemetryLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onRequestTelemetry?.(nodeId);
       setExpandedTelemetry((prev) => new Set([...prev, nodeId]));
@@ -520,12 +498,6 @@ export default function RepeatersPanel({
         }),
         'error',
       );
-    } finally {
-      setTelemetryLoadingSet((prev) => {
-        const n = new Set(prev);
-        n.delete(nodeId);
-        return n;
-      });
     }
   };
 
@@ -558,17 +530,10 @@ export default function RepeatersPanel({
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
     const useSavedPath = cliUseSavedPath.get(nodeId) ?? false;
-    setCliLoadingSet((prev) => new Set([...prev, nodeId]));
     try {
       await onSendCliCommand(nodeId, command.trim(), useSavedPath);
     } catch (e) {
       console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
-    } finally {
-      setCliLoadingSet((prev) => {
-        const n = new Set(prev);
-        n.delete(nodeId);
-        return n;
-      });
     }
   };
 
@@ -740,44 +705,77 @@ export default function RepeatersPanel({
                     status?.totalAirTimeSecs && status?.totalUpTimeSecs
                       ? ((status.totalAirTimeSecs / status.totalUpTimeSecs) * 100).toFixed(1)
                       : null;
-                  const isStatusLoading = statusLoadingSet.has(node.node_id);
-                  const isPingLoading = pingLoadingSet.has(node.node_id);
-                  const statusError = meshcoreStatusErrors?.get(node.node_id);
-                  const pingError = meshcorePingErrors?.get(node.node_id);
+                  const isStatusLoading = isRepeaterAdminRpcPending(
+                    meshcoreRepeaterRpcPending,
+                    node.node_id,
+                    'status',
+                  );
+                  const isPingLoading = isRepeaterAdminRpcPending(
+                    meshcoreRepeaterRpcPending,
+                    node.node_id,
+                    'ping',
+                  );
+                  const statusErrorRaw = meshcoreStatusErrors?.get(node.node_id);
+                  const pingErrorRaw = meshcorePingErrors?.get(node.node_id);
                   const isDeleteLoading = deleteLoadingSet.has(node.node_id);
                   const isDeleteConfirm = deleteConfirmId === node.node_id;
-                  const isNeighborsLoading = neighborsLoadingSet.has(node.node_id);
-                  const isTelemetryLoading = telemetryLoadingSet.has(node.node_id);
+                  const isNeighborsLoading = isRepeaterAdminRpcPending(
+                    meshcoreRepeaterRpcPending,
+                    node.node_id,
+                    'neighbors',
+                  );
+                  const isTelemetryLoading = isRepeaterAdminRpcPending(
+                    meshcoreRepeaterRpcPending,
+                    node.node_id,
+                    'telemetry',
+                  );
                   const isNeighborsExpanded = expandedNeighbors.has(node.node_id);
                   const isTelemetryExpanded = expandedTelemetry.has(node.node_id);
                   const isPathExpanded = expandedPath.has(node.node_id);
                   const isCliExpanded = expandedCli.has(node.node_id);
-                  const isCliLoading = cliLoadingSet.has(node.node_id);
+                  const isCliLoading = isRepeaterAdminRpcPending(
+                    meshcoreRepeaterRpcPending,
+                    node.node_id,
+                    'cli',
+                  );
                   const cliHistory = meshcoreCliHistories?.get(node.node_id) ?? [];
-                  const cliError = meshcoreCliErrors?.get(node.node_id);
+                  const cliErrorRaw = meshcoreCliErrors?.get(node.node_id);
                   const cliUseAutoPath = cliUseSavedPath.get(node.node_id) ?? false;
-                  const neighborError = meshcoreNeighborErrors?.get(node.node_id);
-                  const actionErrorSummary = [
-                    statusError && t('repeatersPanel.actionErrorStatus', { error: statusError }),
-                    pingError && t('repeatersPanel.actionErrorPing', { error: pingError }),
-                    neighborError &&
-                      !isNeighborsExpanded &&
-                      t('repeatersPanel.actionErrorNeighbors', { error: neighborError }),
-                    cliError &&
-                      !isCliExpanded &&
-                      t('repeatersPanel.actionErrorCli', { error: cliError }),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ');
+                  const neighborErrorRaw = meshcoreNeighborErrors?.get(node.node_id);
+                  const statusErrorText = statusErrorRaw
+                    ? translateMeshcoreUserMessage(t, statusErrorRaw)
+                    : undefined;
+                  const pingErrorText = pingErrorRaw
+                    ? translateMeshcoreUserMessage(t, pingErrorRaw)
+                    : undefined;
+                  const neighborErrorText = neighborErrorRaw
+                    ? translateMeshcoreUserMessage(t, neighborErrorRaw)
+                    : undefined;
+                  const cliErrorText = cliErrorRaw
+                    ? translateMeshcoreUserMessage(t, cliErrorRaw)
+                    : undefined;
                   const neighborData = meshcoreNeighbors?.get(node.node_id);
                   const telemetryData = meshcoreTelemetry?.get(node.node_id);
-                  const telemetryError = meshcoreTelemetryErrors?.get(node.node_id);
+                  const telemetryErrorRaw = meshcoreTelemetryErrors?.get(node.node_id);
+                  const telemetryErrorText = telemetryErrorRaw
+                    ? translateMeshcoreUserMessage(t, telemetryErrorRaw)
+                    : undefined;
                   const pingHardDisabled = !isConnected || isPingLoading;
+                  const anyPingPendingElsewhere =
+                    meshcoreRepeaterRpcPending &&
+                    [...meshcoreRepeaterRpcPending.entries()].some(
+                      ([id, kinds]) => kinds.has('ping') && id !== node.node_id,
+                    );
                   const pingBlockReason = !isConnected
                     ? t('repeatersPanel.connectRadioFirst')
-                    : isPingLoading
-                      ? t('repeatersPanel.pingInProgress')
-                      : null;
+                    : isPingLoading && anyPingPendingElsewhere
+                      ? t('repeatersPanel.pingQueuedBehindOther')
+                      : isPingLoading
+                        ? t('repeatersPanel.pingInProgress')
+                        : null;
+                  const anyPingPending =
+                    meshcoreRepeaterRpcPending &&
+                    [...meshcoreRepeaterRpcPending.values()].some((kinds) => kinds.has('ping'));
                   const neighborHopBlocked = isMeshcoreNeighborsHopBlocked(node);
                   return (
                     <Fragment key={node.node_id}>
@@ -909,19 +907,19 @@ export default function RepeatersPanel({
                                     onClick={() => void handlePing(node.node_id)}
                                     disabled
                                     aria-label={
-                                      pingError
-                                        ? t('repeatersPanel.pingError', { error: pingError })
+                                      pingErrorText
+                                        ? t('repeatersPanel.pingError', { error: pingErrorText })
                                         : t('repeatersPanel.pingTrace')
                                     }
                                     className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                      pingError
+                                      pingErrorText
                                         ? 'border border-red-700 bg-red-900/60 text-red-300'
                                         : 'border border-blue-700 bg-blue-900/60 text-blue-300 hover:bg-blue-800/60'
                                     }`}
                                   >
                                     {isPingLoading ? (
                                       <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
-                                    ) : pingError ? (
+                                    ) : pingErrorText ? (
                                       t('repeatersPanel.buttonErrorShort')
                                     ) : (
                                       t('repeatersPanel.buttonPing')
@@ -929,18 +927,21 @@ export default function RepeatersPanel({
                                   </button>
                                 </span>
                               </HelpTooltip>
-                            ) : pingError ? (
+                            ) : pingErrorText ? (
                               <HelpTooltip
                                 text={t('repeatersPanel.pingLastFailedTooltip', {
-                                  error: pingError,
+                                  error: pingErrorText,
                                 })}
                               >
                                 <span className="inline-flex">
                                   <button
                                     type="button"
                                     onClick={() => void handlePing(node.node_id)}
-                                    aria-label={t('repeatersPanel.pingError', { error: pingError })}
-                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60"
+                                    disabled={!isConnected}
+                                    aria-label={t('repeatersPanel.pingError', {
+                                      error: pingErrorText,
+                                    })}
+                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
                                   >
                                     {t('repeatersPanel.buttonErrorShort')}
                                   </button>
@@ -960,102 +961,177 @@ export default function RepeatersPanel({
                                 )}
                               </button>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => void handleStatus(node.node_id)}
-                              disabled={!isConnected || isStatusLoading}
-                              title={statusError ?? undefined}
-                              aria-label={
-                                statusError
-                                  ? t('repeatersPanel.statusError', { error: statusError })
-                                  : t('repeatersPanel.requestStatus')
-                              }
-                              className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                statusError
-                                  ? 'border border-red-700 bg-red-900/60 text-red-300'
-                                  : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                              }`}
-                            >
-                              {isStatusLoading ? (
-                                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                              ) : statusError ? (
-                                t('repeatersPanel.buttonErrorShort')
-                              ) : (
-                                t('repeatersPanel.buttonStatus')
-                              )}
-                            </button>
-                            {onRequestNeighbors && (
+                            {statusErrorText && !isStatusLoading ? (
+                              <HelpTooltip
+                                text={t('repeatersPanel.statusLastFailedTooltip', {
+                                  error: statusErrorText,
+                                })}
+                              >
+                                <span className="inline-flex">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleStatus(node.node_id)}
+                                    disabled={!isConnected}
+                                    aria-label={t('repeatersPanel.statusError', {
+                                      error: statusErrorText,
+                                    })}
+                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
+                                  >
+                                    {t('repeatersPanel.buttonErrorShort')}
+                                  </button>
+                                </span>
+                              </HelpTooltip>
+                            ) : (
                               <button
                                 type="button"
-                                onClick={() => void handleNeighbors(node.node_id)}
-                                disabled={!isConnected || isNeighborsLoading || neighborHopBlocked}
+                                onClick={() => void handleStatus(node.node_id)}
+                                disabled={!isConnected || isStatusLoading}
                                 title={
-                                  neighborHopBlocked
-                                    ? t('repeatersPanel.neighborsHopTooFar', {
-                                        hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
-                                      })
-                                    : (neighborError ?? undefined)
+                                  isStatusLoading && anyPingPending
+                                    ? t('repeatersPanel.waitForPingBeforeStatus')
+                                    : undefined
                                 }
-                                aria-label={
-                                  neighborError && !isNeighborsExpanded
-                                    ? t('repeatersPanel.neighborsError', { error: neighborError })
-                                    : t('repeatersPanel.repeaterNeighbors')
-                                }
-                                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                  neighborError && !isNeighborsExpanded
-                                    ? 'border border-red-700 bg-red-900/60 text-red-300'
-                                    : isNeighborsExpanded
+                                aria-label={t('repeatersPanel.requestStatus')}
+                                className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-40"
+                              >
+                                {isStatusLoading ? (
+                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+                                ) : (
+                                  t('repeatersPanel.buttonStatus')
+                                )}
+                              </button>
+                            )}
+                            {onRequestNeighbors &&
+                              (neighborErrorText && !isNeighborsExpanded && !isNeighborsLoading ? (
+                                <HelpTooltip
+                                  text={t('repeatersPanel.neighborsLastFailedTooltip', {
+                                    error: neighborErrorText,
+                                  })}
+                                >
+                                  <span className="inline-flex">
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleNeighbors(node.node_id)}
+                                      disabled={!isConnected || neighborHopBlocked}
+                                      aria-label={t('repeatersPanel.neighborsError', {
+                                        error: neighborErrorText,
+                                      })}
+                                      className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
+                                    >
+                                      {t('repeatersPanel.buttonErrorShort')}
+                                    </button>
+                                  </span>
+                                </HelpTooltip>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleNeighbors(node.node_id)}
+                                  disabled={
+                                    !isConnected || isNeighborsLoading || neighborHopBlocked
+                                  }
+                                  title={
+                                    neighborHopBlocked
+                                      ? t('repeatersPanel.neighborsHopTooFar', {
+                                          hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                                        })
+                                      : undefined
+                                  }
+                                  aria-label={t('repeatersPanel.repeaterNeighbors')}
+                                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+                                    isNeighborsExpanded
                                       ? 'border border-purple-700 bg-purple-900/60 text-purple-300'
                                       : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                }`}
-                              >
-                                {isNeighborsLoading ? (
-                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                                ) : neighborError && !isNeighborsExpanded ? (
-                                  t('repeatersPanel.buttonErrorShort')
-                                ) : (
-                                  t('repeatersPanel.buttonNeighbors')
-                                )}
-                              </button>
-                            )}
-                            {onRequestTelemetry && (
-                              <button
-                                type="button"
-                                onClick={() => void handleTelemetry(node.node_id)}
-                                disabled={!isConnected || isTelemetryLoading}
-                                title={t('repeatersPanel.cayenneLppTooltip')}
-                                aria-label={t('repeatersPanel.sensorTelemetryLpp')}
-                                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                  isTelemetryExpanded
-                                    ? 'border border-amber-700 bg-amber-900/60 text-amber-300'
-                                    : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                }`}
-                              >
-                                {isTelemetryLoading ? (
-                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                                ) : (
-                                  t('repeatersPanel.sensorLppButton')
-                                )}
-                              </button>
-                            )}
-                            {onSendCliCommand && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  toggleCli(node.node_id);
-                                }}
-                                disabled={!isConnected}
-                                title={t('repeatersPanel.openCliInterface')}
-                                aria-label={t('repeatersPanel.cliInterface')}
-                                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                  isCliExpanded
-                                    ? 'border border-cyan-700 bg-cyan-900/60 text-cyan-300'
-                                    : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                }`}
-                              >
-                                CLI
-                              </button>
-                            )}
+                                  }`}
+                                >
+                                  {isNeighborsLoading ? (
+                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+                                  ) : (
+                                    t('repeatersPanel.buttonNeighbors')
+                                  )}
+                                </button>
+                              ))}
+                            {onRequestTelemetry &&
+                              (telemetryErrorText && !isTelemetryLoading && !isTelemetryExpanded ? (
+                                <HelpTooltip
+                                  text={t('repeatersPanel.telemetryLastFailedTooltip', {
+                                    error: telemetryErrorText,
+                                  })}
+                                >
+                                  <span className="inline-flex">
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleTelemetry(node.node_id)}
+                                      disabled={!isConnected}
+                                      aria-label={t('repeatersPanel.telemetryError', {
+                                        error: telemetryErrorText,
+                                      })}
+                                      className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
+                                    >
+                                      {t('repeatersPanel.buttonErrorShort')}
+                                    </button>
+                                  </span>
+                                </HelpTooltip>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleTelemetry(node.node_id)}
+                                  disabled={!isConnected || isTelemetryLoading}
+                                  title={t('repeatersPanel.cayenneLppTooltip')}
+                                  aria-label={t('repeatersPanel.sensorTelemetryLpp')}
+                                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+                                    isTelemetryExpanded
+                                      ? 'border border-amber-700 bg-amber-900/60 text-amber-300'
+                                      : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                  }`}
+                                >
+                                  {isTelemetryLoading ? (
+                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+                                  ) : (
+                                    t('repeatersPanel.sensorLppButton')
+                                  )}
+                                </button>
+                              ))}
+                            {onSendCliCommand &&
+                              (cliErrorText && !isCliExpanded ? (
+                                <HelpTooltip
+                                  text={t('repeatersPanel.cliLastFailedTooltip', {
+                                    error: cliErrorText,
+                                  })}
+                                >
+                                  <span className="inline-flex">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        toggleCli(node.node_id);
+                                      }}
+                                      disabled={!isConnected}
+                                      aria-label={t('repeatersPanel.actionErrorCli', {
+                                        error: cliErrorText,
+                                      })}
+                                      className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
+                                    >
+                                      {t('repeatersPanel.buttonErrorShort')}
+                                    </button>
+                                  </span>
+                                </HelpTooltip>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    toggleCli(node.node_id);
+                                  }}
+                                  disabled={!isConnected}
+                                  title={t('repeatersPanel.openCliInterface')}
+                                  aria-label={t('repeatersPanel.cliInterface')}
+                                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+                                    isCliExpanded
+                                      ? 'border border-cyan-700 bg-cyan-900/60 text-cyan-300'
+                                      : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                  }`}
+                                >
+                                  CLI
+                                </button>
+                              ))}
                             <button
                               onClick={() => void handleDelete(node.node_id)}
                               disabled={isDeleteLoading}
@@ -1073,11 +1149,6 @@ export default function RepeatersPanel({
                               )}
                             </button>
                           </div>
-                          {actionErrorSummary ? (
-                            <div className="mt-1 text-xs text-red-400" title={actionErrorSummary}>
-                              {actionErrorSummary}
-                            </div>
-                          ) : null}
                         </td>
                       </tr>
 
@@ -1224,10 +1295,10 @@ export default function RepeatersPanel({
                               </div>
                             ) : (
                               <div className="space-y-1 text-xs">
-                                {telemetryError ? (
+                                {telemetryErrorRaw ? (
                                   <p className="text-red-400">
                                     {t('nodeDetailModal.telemetryFailed', {
-                                      message: translateMeshcoreUserMessage(t, telemetryError),
+                                      message: translateMeshcoreUserMessage(t, telemetryErrorRaw),
                                     })}
                                   </p>
                                 ) : (

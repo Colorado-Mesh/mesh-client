@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Stav se nezdařil: {{message}}",
     "pingFailedToast": "Ping se nezdařil: {{message}}",
     "removeFailedToast": "Odebrání se nezdařilo: {{message}}",
-    "actionErrorStatus": "Stav: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Sousedé: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR ze stavu opakovače",
     "snrContactTooltip": "Contact SNR — pro živé čtení použijte Status",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Uložené heslo opakovače bylo odstraněno.",
     "passwordSavedIndicator": "Heslo uložené pro tento opakovač",
     "savedPasswordsCount": "Uložená hesla opakovače ({{count}})",
-    "savedPasswordOrphanLabel": "Opakovač {{nodeId}}"
+    "savedPasswordOrphanLabel": "Opakovač {{nodeId}}",
+    "pingQueuedBehindOther": "Fronta — další ping používá rádio (MeshCore umožňuje jednu stopu najednou).",
+    "waitForPingBeforeStatus": "Čekání na dokončení probíhajícího pingu před žádostí o stav.",
+    "statusLastFailedTooltip": "Poslední žádost o status se nezdařila: {{error}}",
+    "neighborsLastFailedTooltip": "Poslední žádost sousedů se nezdařila: {{error}}",
+    "telemetryLastFailedTooltip": "Poslední požadavek senzoru se nezdařil: {{error}}",
+    "cliLastFailedTooltip": "Poslední příkaz CLI se nezdařil: {{error}}",
+    "telemetryError": "Chyba snímače: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

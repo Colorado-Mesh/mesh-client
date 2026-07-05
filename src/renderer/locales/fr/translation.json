@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Échec du statut : {{message}}",
     "pingFailedToast": "Échec du ping : {{message}}",
     "removeFailedToast": "Échec de la suppression : {{message}}",
-    "actionErrorStatus": "Statut : {{error}}",
-    "actionErrorPing": "Ping : {{error}}",
-    "actionErrorNeighbors": "Voisins : {{error}}",
     "actionErrorCli": "CLI : {{error}}",
     "snrFromStatusTooltip": "RSB à partir de l'état du répéteur",
     "snrContactTooltip": "Contacter SNR — utiliser l'état pour la lecture en direct",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Mot de passe du répéteur enregistré supprimé.",
     "passwordSavedIndicator": "Mot de passe enregistré pour ce répéteur",
     "savedPasswordsCount": "Mots de passe de répéteur enregistrés ({{count}})",
-    "savedPasswordOrphanLabel": "Répéteur {{nodeId}}"
+    "savedPasswordOrphanLabel": "Répéteur {{nodeId}}",
+    "pingQueuedBehindOther": "En file d'attente — un autre ping utilise la radio (MeshCore permet une trace à la fois).",
+    "waitForPingBeforeStatus": "Attendre que le ping en cours se termine avant la demande d'état.",
+    "statusLastFailedTooltip": "Échec de la dernière demande d'état : {{error}}",
+    "neighborsLastFailedTooltip": "Échec de la dernière demande des voisins : {{error}}",
+    "telemetryLastFailedTooltip": "Échec de la dernière demande de capteur : {{error}}",
+    "cliLastFailedTooltip": "Échec de la dernière commande CLI : {{error}}",
+    "telemetryError": "Erreur de capteur : {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

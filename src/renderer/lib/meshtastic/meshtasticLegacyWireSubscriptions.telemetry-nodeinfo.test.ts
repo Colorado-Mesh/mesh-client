@@ -66,6 +66,7 @@ function makeDeps() {
       myNodeNumRef: { current: 0 },
       nodesRef,
       pendingTempIdRef: { current: undefined },
+      ackMeshPacketIdByTempIdRef: { current: new Map() },
       pendingTracePacketIdToTargetRef: noopMapRef,
       pendingTraceRequestsRef: noopMapRef,
       refreshOurPositionRef: { current: vi.fn().mockResolvedValue(null) },

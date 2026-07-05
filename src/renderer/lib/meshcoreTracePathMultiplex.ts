@@ -26,6 +26,28 @@ interface PendingTrace {
   resolve: (r: MeshcoreTracePathResult) => void;
   reject: (e: unknown) => void;
   traceTimeoutId?: ReturnType<typeof setTimeout>;
+  awaitingResponse?: boolean;
+}
+
+/** TraceData responses in flight (send passed the companion queue; radio may still be tracing). */
+let traceResponsesInFlight = 0;
+
+/** Count of traces awaiting TraceData after the companion accepted SendTracePath. */
+export function meshcoreTraceResponsesInFlightCount(): number {
+  return traceResponsesInFlight;
+}
+
+/** @internal Test hook */
+export function resetMeshcoreTraceResponsesInFlightForTests(): void {
+  traceResponsesInFlight = 0;
+}
+
+function incrementTraceResponsesInFlight(): void {
+  traceResponsesInFlight += 1;
+}
+
+function decrementTraceResponsesInFlight(): void {
+  traceResponsesInFlight = Math.max(0, traceResponsesInFlight - 1);
 }
 
 interface MuxState {
@@ -177,10 +199,18 @@ export function runMeshcoreTracePathMultiplexed(
 
     let settled = false;
     let traceTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    const releaseAwaitingResponse = () => {
+      if (pending.awaitingResponse) {
+        pending.awaitingResponse = false;
+        decrementTraceResponsesInFlight();
+      }
+    };
+
     const fail = (e: unknown) => {
       if (settled) return;
       settled = true;
       if (traceTimeoutId !== undefined) clearTimeout(traceTimeoutId);
+      releaseAwaitingResponse();
       state.pendingByTag.delete(tag);
       reject(unknownToError(e, 'trace failed'));
     };
@@ -189,6 +219,7 @@ export function runMeshcoreTracePathMultiplexed(
       if (settled) return;
       settled = true;
       if (traceTimeoutId !== undefined) clearTimeout(traceTimeoutId);
+      releaseAwaitingResponse();
       state.pendingByTag.delete(tag);
       resolve(r);
     };
@@ -241,6 +272,8 @@ export function runMeshcoreTracePathMultiplexed(
           fail(new Error('timeout'));
         }, estTimeoutMs + extraTimeoutMillis);
         pending.traceTimeoutId = traceTimeoutId;
+        pending.awaitingResponse = true;
+        incrementTraceResponsesInFlight();
       } catch (e) {
         // catch-no-log-ok trace send/Sent path; fail() rejects the multiplex Promise
         fail(e);

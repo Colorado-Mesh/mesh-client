@@ -74,6 +74,19 @@ Operational troubleshooting: [troubleshooting.md](troubleshooting.md#meshcore-ro
 
 **Trace Route** (node detail) and **Ping trace** (Repeaters panel) use the firmware `tracePath` flow. Remote nodes often answer only when they have **your** node in **their** contact list. Heard-only or one-way peers may produce no response until the client times out. See [troubleshooting.md](troubleshooting.md#meshcore-trace-route-or-ping-trace-times-out).
 
+### Serialized traceroutes (protocol requirement)
+
+MeshCore companion firmware handles **one `SendTracePath` / TraceData cycle at a time** on a given RF link. Parallel traceroutes are **not permitted** — the radio will not reliably accept overlapping trace commands.
+
+mesh-client enforces this in two layers:
+
+1. **Per-radio trace queue** (`meshcoreRepeaterRpcInFlight.ts`) — ping clicks for different repeaters run **one after another**, not concurrently. Duplicate clicks on the same repeater share one in-flight promise.
+2. **Companion RPC queue** (`repeaterRemoteRpcQueue.ts`) — Status, Sensors (LPP), Neighbors, and the trace **send** share one serialized USB/BLE companion channel. Trace **results** are matched by tag so only the send must be serialized; however, Status with a 30s timeout will fail if it starts while a ping is still awaiting TraceData unless the client waits (see `awaitMeshcoreTraceRadioIdle` in `meshcoreTraceRadioIdle.ts`).
+
+**Practical guidance:** Run **one ping at a time** when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queuing a second ping while the first runs is supported but may take several minutes if both time out (up to ~3 minutes per hop attempt).
+
+Implementation reference: `runMeshcoreTracePathMultiplexed` in [`meshcoreTracePathMultiplex.ts`](../src/renderer/lib/meshcoreTracePathMultiplex.ts), `traceRoute` in [`useMeshcoreRuntime.ts`](../src/renderer/runtime/useMeshcoreRuntime.ts).
+
 ## Windows: MeshCore over BLE
 
 Pair the radio in **Settings → Bluetooth & devices** before connecting from the app; WinRT is much more reliable with a bonded device. The client may **retry once** after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in [CONTRIBUTING.md](../CONTRIBUTING.md) (MeshCore internals, BLE) and [README.md](../README.md) (MeshCore Transport Notes).

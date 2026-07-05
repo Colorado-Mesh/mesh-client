@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Status gagal: {{message}}",
     "pingFailedToast": "Ping gagal: {{message}}",
     "removeFailedToast": "Gagal menghapus: {{message}}",
-    "actionErrorStatus": "Status: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Tetangga: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR dari status pengulang",
     "snrContactTooltip": "Hubungi SNR — gunakan Status untuk membaca langsung",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Kata sandi pengulang yang disimpan dihapus.",
     "passwordSavedIndicator": "Kata sandi disimpan untuk pengulang ini",
     "savedPasswordsCount": "Kata sandi pengulang yang disimpan ({{count}})",
-    "savedPasswordOrphanLabel": "Pengulang {{nodeId}}"
+    "savedPasswordOrphanLabel": "Pengulang {{nodeId}}",
+    "pingQueuedBehindOther": "Diantrekan — ping lain menggunakan radio (MeshCore memungkinkan satu jejak pada satu waktu).",
+    "waitForPingBeforeStatus": "Menunggu ping yang sedang berlangsung selesai sebelum permintaan status.",
+    "statusLastFailedTooltip": "Permohonan status terakhir gagal: {{error}}",
+    "neighborsLastFailedTooltip": "Permohonan tetangga terakhir gagal: {{error}}",
+    "telemetryLastFailedTooltip": "Permintaan sensor terakhir gagal: {{error}}",
+    "cliLastFailedTooltip": "Perintah CLI terakhir gagal: {{error}}",
+    "telemetryError": "Kesalahan sensor: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

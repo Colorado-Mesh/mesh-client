@@ -2,10 +2,14 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import i18n from '@/renderer/lib/i18n';
 import { meshtasticPacketIdsEqual } from '@/renderer/lib/meshtasticMessageDedup';
+import { resolveMeshtasticOutboundStoreKey } from '@/renderer/lib/sessions/meshtasticSession';
+import { messageRecordsToChatMessages } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage } from '@/renderer/lib/types';
-import { updateMessageStatus } from '@/renderer/stores/messageStore';
+import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
 
 const SDK_ROUTING_ERROR_RE = /Error received for packet (\d+): ([A-Z0-9_]+)/;
+const SDK_PACKET_TIMEOUT_RE = /Packet (\d+) of type \w+ timed out/;
+const FALLBACK_SENDING_WINDOW_MS = 90_000;
 
 export interface MeshtasticSdkRoutingErrorLog {
   packetId: number;
@@ -15,14 +19,21 @@ export interface MeshtasticSdkRoutingErrorLog {
 export function parseMeshtasticSdkRoutingErrorLog(
   message: string,
 ): MeshtasticSdkRoutingErrorLog | null {
-  const match = SDK_ROUTING_ERROR_RE.exec(message);
-  if (!match) {
-    return null;
+  const errorMatch = SDK_ROUTING_ERROR_RE.exec(message);
+  if (errorMatch) {
+    return {
+      packetId: Number(errorMatch[1]),
+      errorName: errorMatch[2],
+    };
   }
-  return {
-    packetId: Number(match[1]),
-    errorName: match[2],
-  };
+  const timeoutMatch = SDK_PACKET_TIMEOUT_RE.exec(message);
+  if (timeoutMatch) {
+    return {
+      packetId: Number(timeoutMatch[1]),
+      errorName: 'TIMEOUT',
+    };
+  }
+  return null;
 }
 
 export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | null {
@@ -48,13 +59,84 @@ export interface ApplyMeshtasticOutboundRoutingErrorContext {
   identityId: string | null;
   messagesRef: RefObject<ChatMessage[]>;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
+  /** tempId → wire packet id assigned by the SDK (may differ from optimistic id). */
+  tempIdToWirePacketId?: ReadonlyMap<number, number>;
 }
 
-function isSelfOutboundMessage(msg: ChatMessage, myNodeNum: number, packetId: number): boolean {
-  if (myNodeNum <= 0 || msg.sender_id !== myNodeNum) {
+function outboundMatchesWirePacketId(
+  msg: ChatMessage,
+  myNodeNum: number,
+  wirePacketId: number,
+  tempIdToWirePacketId?: ReadonlyMap<number, number>,
+): boolean {
+  if (myNodeNum <= 0 || msg.sender_id !== myNodeNum || msg.packetId == null) {
     return false;
   }
-  return msg.packetId != null && meshtasticPacketIdsEqual(msg.packetId, packetId);
+  if (meshtasticPacketIdsEqual(msg.packetId, wirePacketId)) {
+    return true;
+  }
+  if (tempIdToWirePacketId) {
+    const mapped = tempIdToWirePacketId.get(msg.packetId >>> 0);
+    if (mapped != null && meshtasticPacketIdsEqual(mapped, wirePacketId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findFallbackSendingOutbound(
+  messages: readonly ChatMessage[],
+  myNodeNum: number,
+): ChatMessage | undefined {
+  const cutoff = Date.now() - FALLBACK_SENDING_WINDOW_MS;
+  const candidates = messages.filter(
+    (m) =>
+      m.sender_id === myNodeNum &&
+      m.status === 'sending' &&
+      m.timestamp >= cutoff &&
+      m.packetId != null,
+  );
+  return candidates.length === 1 ? candidates[0] : undefined;
+}
+
+function findOutboundTargetForWirePacketId(
+  wirePacketId: number,
+  ctx: ApplyMeshtasticOutboundRoutingErrorContext,
+): ChatMessage | undefined {
+  const { myNodeNum, messagesRef, identityId, tempIdToWirePacketId } = ctx;
+  const fromLegacy = messagesRef.current.find((m) =>
+    outboundMatchesWirePacketId(m, myNodeNum, wirePacketId, tempIdToWirePacketId),
+  );
+  if (fromLegacy) return fromLegacy;
+
+  if (identityId) {
+    const storeMsgs = messageRecordsToChatMessages(
+      Object.values(useMessageStore.getState().messages[identityId] ?? {}),
+    );
+    const fromStore = storeMsgs.find((m) =>
+      outboundMatchesWirePacketId(m, myNodeNum, wirePacketId, tempIdToWirePacketId),
+    );
+    if (fromStore) return fromStore;
+  }
+
+  return findFallbackSendingOutbound(messagesRef.current, myNodeNum);
+}
+
+function messageMatchesTarget(
+  msg: ChatMessage,
+  target: ChatMessage,
+  myNodeNum: number,
+  wirePacketId: number,
+  tempIdToWirePacketId?: ReadonlyMap<number, number>,
+): boolean {
+  if (msg === target) return true;
+  if (target.packetId == null) return false;
+  return outboundMatchesWirePacketId(msg, myNodeNum, wirePacketId, tempIdToWirePacketId);
+}
+
+function resolveStoreMessageId(target: ChatMessage, wirePacketId: number): string {
+  const packetId = target.packetId ?? wirePacketId;
+  return resolveMeshtasticOutboundStoreKey(packetId >>> 0, String(packetId));
 }
 
 /** Apply SDK console routing errors to outbound chat rows (async post-send failures). */
@@ -71,18 +153,19 @@ export function applyMeshtasticOutboundRoutingErrorFromLog(
     return false;
   }
   const errorText = i18n.t(i18nKey);
-  const { myNodeNum, identityId, messagesRef, setMessages } = ctx;
-  const target = messagesRef.current.find((m) =>
-    isSelfOutboundMessage(m, myNodeNum, parsed.packetId),
-  );
+  const { myNodeNum, identityId, setMessages, tempIdToWirePacketId } = ctx;
+  const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx);
   if (!target) {
     return false;
   }
-  const storeMessageId = String(target.packetId ?? parsed.packetId);
+  const storeMessageId = resolveStoreMessageId(target, parsed.packetId);
+  const matches = (m: ChatMessage) =>
+    messageMatchesTarget(m, target, myNodeNum, parsed.packetId, tempIdToWirePacketId);
+
   setMessages((prev) =>
     prev.map((m) =>
-      isSelfOutboundMessage(m, myNodeNum, parsed.packetId)
-        ? { ...m, status: 'failed' as const, error: errorText }
+      matches(m)
+        ? { ...m, status: 'failed' as const, error: errorText, packetId: parsed.packetId }
         : m,
     ),
   );

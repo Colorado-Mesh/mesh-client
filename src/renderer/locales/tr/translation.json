@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Durum başarısız oldu: {{message}}",
     "pingFailedToast": "Ping başarısız oldu: {{message}}",
     "removeFailedToast": "Kaldırma başarısız oldu: {{message}}",
-    "actionErrorStatus": "Durum: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Komşular: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "Tekrarlayıcı durumundan SNR",
     "snrContactTooltip": "SNR ile iletişime geçin — canlı okuma için Durumu kullanın",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Kaydedilen tekrarlayıcı şifresi kaldırıldı.",
     "passwordSavedIndicator": "Bu yineleyici için şifre kaydedildi",
     "savedPasswordsCount": "Kaydedilen tekrarlayıcı şifreleri ({{count}})",
-    "savedPasswordOrphanLabel": "Tekrarlayıcı {{nodeId}}"
+    "savedPasswordOrphanLabel": "Tekrarlayıcı {{nodeId}}",
+    "pingQueuedBehindOther": "Kuyrukta — başka bir ping radyo kullanıyor (MeshCore her seferinde bir ize izin verir).",
+    "waitForPingBeforeStatus": "Durum isteğinden önce devam eden ping'in bitmesi bekleniyor.",
+    "statusLastFailedTooltip": "Son durum isteği başarısız oldu: {{error}}",
+    "neighborsLastFailedTooltip": "Son komşu isteği başarısız oldu: {{error}}",
+    "telemetryLastFailedTooltip": "Son sensör isteği başarısız oldu: {{error}}",
+    "cliLastFailedTooltip": "Son CLI komutu başarısız oldu: {{error}}",
+    "telemetryError": "Sensör hatası: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

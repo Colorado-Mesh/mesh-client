@@ -26,6 +26,7 @@ import type {
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
+import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   forgetMeshcoreRepeaterSavedSecret,
   getMeshcoreRepeaterSavedSecretsSummary,
@@ -765,14 +766,14 @@ export default function NodeDetailModal({
                 meshcoreNeighborError &&
                 !showMeshcoreNeighbors && (
                   <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-                    {meshcoreNeighborError}
+                    {translateMeshcoreUserMessage(t, meshcoreNeighborError)}
                   </div>
                 )}
 
               {/* MeshCore: trace error */}
               {protocol === 'meshcore' && !isOurNode && meshcorePingError && (
                 <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-                  {meshcorePingError}
+                  {translateMeshcoreUserMessage(t, meshcorePingError)}
                 </div>
               )}
 
@@ -781,7 +782,7 @@ export default function NodeDetailModal({
                 meshcoreStatusError &&
                 !showRepeaterStats && (
                   <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-                    {meshcoreStatusError}
+                    {translateMeshcoreUserMessage(t, meshcoreStatusError)}
                   </div>
                 )}
 
@@ -790,7 +791,7 @@ export default function NodeDetailModal({
                 meshcoreTelemetryError &&
                 !showTelemetry && (
                   <div className="mt-3 rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-                    {meshcoreTelemetryError}
+                    {translateMeshcoreUserMessage(t, meshcoreTelemetryError)}
                   </div>
                 )}
 

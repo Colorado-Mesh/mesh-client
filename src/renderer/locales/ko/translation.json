@@ -3275,9 +3275,6 @@
     "statusFailedToast": "상태 실패: {{message}}",
     "pingFailedToast": "핑 실패: {{message}}",
     "removeFailedToast": "제거 실패: {{message}}",
-    "actionErrorStatus": "상태: {{error}}",
-    "actionErrorPing": "핑: {{error}}",
-    "actionErrorNeighbors": "이웃: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "중계기 상태의 SNR",
     "snrContactTooltip": "SNR에 문의 - 실시간 읽기에 상태 사용",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "저장된 반복자 암호가 제거되었습니다.",
     "passwordSavedIndicator": "이 반복자를 위해 저장된 비밀번호",
     "savedPasswordsCount": "저장된 반복기 비밀번호 ({{count}})",
-    "savedPasswordOrphanLabel": "리피터 {{nodeId}}"
+    "savedPasswordOrphanLabel": "리피터 {{nodeId}}",
+    "pingQueuedBehindOther": "대기 중 — 다른 핑이 라디오를 사용하고 있습니다 (MeshCore는 한 번에 하나의 추적을 허용합니다).",
+    "waitForPingBeforeStatus": "상태 요청 전에 진행 중인 ping이 완료되기를 기다리는 중입니다.",
+    "statusLastFailedTooltip": "마지막 상태 요청 실패: {{error}}",
+    "neighborsLastFailedTooltip": "마지막 이웃 요청 실패: {{error}}",
+    "telemetryLastFailedTooltip": "마지막 센서 요청 실패: {{error}}",
+    "cliLastFailedTooltip": "마지막 CLI 명령 실패: {{error}}",
+    "telemetryError": "센서 오류: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

@@ -258,6 +258,10 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 
+### MeshCore Repeaters admin (Ping / trace)
+
+MeshCore firmware **serializes traceroutes** — parallel pings on one radio are not permitted. mesh-client queues multi-repeater pings and defers Status/Sensors/Neighbors until the active trace finishes (`meshcoreTraceRadioIdle.ts`). See [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
+
 ### MeshCore Rooms (BBS)
 
 - **UI:** `RoomsPanel.tsx` — login overlay, post composer (`ChatComposer`), admin CLI, auto-sync toggles; sidebar badge via `meshcoreRoomsUnread.ts` (`mesh-client:meshcoreRoomsUnread`).

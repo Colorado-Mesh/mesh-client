@@ -3275,9 +3275,6 @@
     "statusFailedToast": "状态失败： {{message}}",
     "pingFailedToast": "Ping失败： {{message}}",
     "removeFailedToast": "删除失败： {{message}}",
-    "actionErrorStatus": "状态： {{error}}",
-    "actionErrorPing": "Ping ： {{error}}",
-    "actionErrorNeighbors": "邻居： {{error}}",
     "actionErrorCli": "CLI ： {{error}}",
     "snrFromStatusTooltip": "来自中继器状态的信噪比",
     "snrContactTooltip": "联系SNR —使用状态进行实时阅读",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "已删除保存的重复者密码。",
     "passwordSavedIndicator": "已为此中继器保存密码",
     "savedPasswordsCount": "已保存中继器密码（ {{count}} ）",
-    "savedPasswordOrphanLabel": "中继器{{nodeId}}"
+    "savedPasswordOrphanLabel": "中继器{{nodeId}}",
+    "pingQueuedBehindOther": "排队—另一个ping正在使用无线电（ MeshCore一次允许一个跟踪）。",
+    "waitForPingBeforeStatus": "等待正在进行的ping在状态请求之前完成。",
+    "statusLastFailedTooltip": "上次状态请求失败： {{error}}",
+    "neighborsLastFailedTooltip": "最后一个邻居请求失败： {{error}}",
+    "telemetryLastFailedTooltip": "上次传感器请求失败： {{error}}",
+    "cliLastFailedTooltip": "上次CLI命令失败： {{error}}",
+    "telemetryError": "传感器错误： {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

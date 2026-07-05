@@ -1,8 +1,10 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import RepeatersPanel from './RepeatersPanel';
@@ -77,7 +79,7 @@ function mockRepeaterNodeWithFavorited(id: number, favorited: boolean): MeshNode
   };
 }
 
-function makeBaseProps() {
+function makeBaseProps(): ComponentProps<typeof RepeatersPanel> {
   return {
     nodes: new Map([[repeater.node_id, repeater]]),
     meshcoreNodeStatus: new Map(),
@@ -136,6 +138,33 @@ describe('RepeatersPanel', () => {
 
     expect(warnSpy).toHaveBeenCalled();
     expect(mockAddToast).toHaveBeenCalledWith(expect.stringContaining('ping timeout'), 'error');
+  });
+
+  it('renders translated meshcore action errors instead of raw i18n keys', () => {
+    const props = makeBaseProps();
+    props.meshcoreStatusErrors = new Map([
+      [
+        repeater.node_id,
+        meshcoreStoredUserMessage({
+          key: 'meshcore.errors.requestTimedOutApprox',
+          params: { seconds: 45 },
+        }),
+      ],
+    ]);
+    props.meshcorePingErrors = new Map([
+      [repeater.node_id, meshcoreStoredUserMessage('meshcore.errors.pingNoRoute')],
+    ]);
+
+    render(<RepeatersPanel {...props} />);
+
+    expect(
+      screen.getByRole('button', { name: /Status error:.*Request timed out/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Ping error:.*No route from radio yet/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('meshcore.errors.pingNoRoute')).not.toBeInTheDocument();
+    expect(screen.queryByText(/MC_I18N:/)).not.toBeInTheDocument();
   });
 
   it('requires a confirmation click before deleting a repeater', async () => {

@@ -3275,9 +3275,6 @@
     "statusFailedToast": "ステータスが失敗しました: {{message}}",
     "pingFailedToast": "Ping が失敗しました: {{message}}",
     "removeFailedToast": "削除に失敗しました: {{message}}",
-    "actionErrorStatus": "ステータス: {{error}}",
-    "actionErrorPing": "ピン: {{error}}",
-    "actionErrorNeighbors": "隣人: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "リピータステータスからのSNR",
     "snrContactTooltip": "連絡先 SNR — ライブ読み取りにステータスを使用します",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "保存されたリピーターパスワードが削除されました。",
     "passwordSavedIndicator": "このリピーターのパスワードが保存されました",
     "savedPasswordsCount": "保存されたリピーターパスワード（ {{count}} ）",
-    "savedPasswordOrphanLabel": "リピーター{{nodeId}}"
+    "savedPasswordOrphanLabel": "リピーター{{nodeId}}",
+    "pingQueuedBehindOther": "キューイング—別のpingが無線を使用しています（ MeshCoreは一度に1つのトレースを許可します）。",
+    "waitForPingBeforeStatus": "ステータスリクエストの前に進行中のpingが完了するのを待っています。",
+    "statusLastFailedTooltip": "前回のステータスリクエストは失敗しました： {{error}}",
+    "neighborsLastFailedTooltip": "前回の近隣住民リクエストは失敗しました： {{error}}",
+    "telemetryLastFailedTooltip": "前回のセンサーリクエストに失敗しました： {{error}}",
+    "cliLastFailedTooltip": "最後のCLIコマンドが失敗しました： {{error}}",
+    "telemetryError": "センサーエラー： {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

@@ -3,7 +3,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
-import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
+import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomLoginQueue,
   dequeueMeshcoreRoomLogin,
@@ -419,5 +419,6 @@ export async function meshcoreTryRemoteServerLogin(
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }
-  await meshcoreRepeaterTryLogin(conn, pubKey, nodeId);
+  const login = await meshcoreRepeaterTryLogin(conn, pubKey, nodeId);
+  assertMeshcoreRepeaterLoginOk(login);
 }

@@ -3275,9 +3275,6 @@
     "statusFailedToast": "Status nie powiódł się: {{message}}",
     "pingFailedToast": "Ping nie powiódł się: {{message}}",
     "removeFailedToast": "Usunięcie nie powiodło się: {{message}}",
-    "actionErrorStatus": "Stan: {{error}}",
-    "actionErrorPing": "Sygnał: {{error}}",
-    "actionErrorNeighbors": "Sąsiedzi: {{error}}",
     "actionErrorCli": "Interfejs wiersza polecenia: {{error}}",
     "snrFromStatusTooltip": "SNR ze statusu przemiennika",
     "snrContactTooltip": "Skontaktuj się z SNR — użyj statusu do odczytu na żywo",
@@ -3312,7 +3309,14 @@
     "passwordForgotten": "Usunięto zapisane hasło przemiennika.",
     "passwordSavedIndicator": "Hasło zapisane dla tego powtarzacza",
     "savedPasswordsCount": "Zapisane hasła przemiennika ({{count}})",
-    "savedPasswordOrphanLabel": "Repeater {{nodeId}}"
+    "savedPasswordOrphanLabel": "Repeater {{nodeId}}",
+    "pingQueuedBehindOther": "W kolejce — inny ping korzysta z radia (MeshCore pozwala na jeden ślad na raz).",
+    "waitForPingBeforeStatus": "Oczekiwanie na zakończenie trwającego pingowania przed żądaniem statusu.",
+    "statusLastFailedTooltip": "Ostatnie żądanie statusu nie powiodło się: {{error}}",
+    "neighborsLastFailedTooltip": "Ostatnie żądanie sąsiadów nie powiodło się: {{error}}",
+    "telemetryLastFailedTooltip": "Ostatnie żądanie czujnika nie powiodło się: {{error}}",
+    "cliLastFailedTooltip": "Ostatnie polecenie CLI nie powiodło się: {{error}}",
+    "telemetryError": "Błąd czujnika: {{error}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
