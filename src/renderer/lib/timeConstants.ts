@@ -1,4 +1,10 @@
-import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
+import {
+  CHAT_COMPACT_CONTINUATION_TIME_GAP_MS,
+  MS_PER_DAY,
+  MS_PER_HOUR,
+  MS_PER_MINUTE,
+  MS_PER_SECOND,
+} from '../../shared/timeConstants';
 
 export {
   CHAT_COMPACT_CONTINUATION_TIME_GAP_MS,
@@ -6,7 +12,7 @@ export {
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_SECOND,
-} from '../../shared/timeConstants';
+};
 
 /** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
