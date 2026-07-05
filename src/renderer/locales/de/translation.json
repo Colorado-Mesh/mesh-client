@@ -2165,7 +2165,8 @@
       "dataSize": "Datengröße",
       "dataSizeBytes": "{{count}} Bytes",
       "rawDataHex": "Rohdaten (hex)"
-    }
+    },
+    "neighborsHopTooFar": "Nachbarn sind für Repeater nicht verfügbar. {{hops}}+ springt über USB-Seriell weg"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Schicken",
-    "cliQuick": "Schnell:"
+    "cliQuick": "Schnell:",
+    "neighborsHopTooFar": "Nachbarn sind für Repeater nicht verfügbar. {{hops}}+ springt über USB-Seriell weg"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
@@ -3759,7 +3761,8 @@
         "timedOut": "Zeitüberschreitung beim Abmelden des Raums. Der Raum befindet sich möglicherweise außerhalb der Reichweite oder reagiert nicht.",
         "rejected": "Raumabmeldung per Funk abgelehnt.",
         "failed": "Konnte den Raum nicht verlassen"
-      }
+      },
+      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung"
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",

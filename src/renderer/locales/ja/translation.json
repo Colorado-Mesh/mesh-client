@@ -2165,7 +2165,8 @@
       "dataSize": "データサイズ",
       "dataSizeBytes": "{{count}}バイト",
       "rawDataHex": "生データ (16 進数)"
-    }
+    },
+    "neighborsHopTooFar": "ネイバーはリピーターに利用できません {{hops}}+ は USB シリアルでホップします"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "送信",
-    "cliQuick": "素早い："
+    "cliQuick": "素早い：",
+    "neighborsHopTooFar": "ネイバーはリピーターに利用できません {{hops}}+ は USB シリアルでホップします"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -3759,7 +3761,8 @@
         "timedOut": "ルームのログアウトがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
         "rejected": "ルームのログアウトが無線によって拒否されました。",
         "failed": "部屋から出られませんでした"
-      }
+      },
+      "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",

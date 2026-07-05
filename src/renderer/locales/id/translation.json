@@ -2165,7 +2165,8 @@
       "dataSize": "Ukuran Data",
       "dataSizeBytes": "{{count}} byte",
       "rawDataHex": "Data Mentah (hex)"
-    }
+    },
+    "neighborsHopTooFar": "Tetangga tidak tersedia untuk repeater {{hops}}+ melompat ke serial USB"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Mengirim",
-    "cliQuick": "Cepat:"
+    "cliQuick": "Cepat:",
+    "neighborsHopTooFar": "Tetangga tidak tersedia untuk repeater {{hops}}+ melompat ke serial USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -3759,7 +3761,8 @@
         "timedOut": "Waktu keluar ruangan telah habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
         "rejected": "Logout ruangan ditolak oleh radio.",
         "failed": "Tidak bisa meninggalkan ruangan"
-      }
+      },
+      "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses"
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",

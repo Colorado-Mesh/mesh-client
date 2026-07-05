@@ -2165,7 +2165,8 @@
       "dataSize": "Rozmiar danych",
       "dataSizeBytes": "{{count}} bajtów",
       "rawDataHex": "Surowe dane (szesnastkowo)"
-    }
+    },
+    "neighborsHopTooFar": "Sąsiedzi niedostępni dla przemienników {{hops}}+ przeskakuje przez port szeregowy USB"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Wysłać",
-    "cliQuick": "Szybki:"
+    "cliQuick": "Szybki:",
+    "neighborsHopTooFar": "Sąsiedzi niedostępni dla przemienników {{hops}}+ przeskakuje przez port szeregowy USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -3759,7 +3761,8 @@
         "timedOut": "Upłynął limit czasu wylogowania z pokoju. Pokój może być poza zasięgiem lub nie odpowiadać.",
         "rejected": "Wylogowanie z pokoju odrzucone przez radio.",
         "failed": "Nie można było opuścić pokoju"
-      }
+      },
+      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku"
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",

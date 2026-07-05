@@ -8,6 +8,7 @@ export const MESHCORE_ERR_NODE_NOT_FOUND = 'meshcore.errors.nodeNotFound';
 export const MESHCORE_ERR_NOT_CONNECTED = 'meshcore.errors.notConnected';
 export const MESHCORE_ERR_AUTH_FAILED = 'meshcore.errors.authenticationFailed';
 export const MESHCORE_ERR_REQUEST_FAILED = 'meshcore.errors.requestFailed';
+export const MESHCORE_ERR_RPC_IN_PROGRESS = 'meshcore.errors.repeaterRpcInProgress';
 
 export interface MeshcorePrefixedHint {
   type: 'prefixed';

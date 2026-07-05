@@ -2165,7 +2165,8 @@
       "dataSize": "Velikost dat",
       "dataSizeBytes": "{{count}} bajtů",
       "rawDataHex": "Nezpracovaná data (hexadecimální)"
-    }
+    },
+    "neighborsHopTooFar": "Neighbors nedostupní pro opakovače {{hops}}+ přeskakuje na sériovém USB"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Poslat",
-    "cliQuick": "Rychlý:"
+    "cliQuick": "Rychlý:",
+    "neighborsHopTooFar": "Neighbors nedostupní pro opakovače {{hops}}+ přeskakuje na sériovém USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -3759,7 +3761,8 @@
         "timedOut": "Odhlášení z místnosti vypršelo. Místnost může být mimo dosah nebo nereaguje.",
         "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
         "failed": "Nelze opustit místnost"
-      }
+      },
+      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá"
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",

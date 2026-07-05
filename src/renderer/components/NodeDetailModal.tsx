@@ -15,6 +15,7 @@ import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { isDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
+import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { useMeshcoreRoomAuth } from '../hooks/useMeshcoreRoomAuth';
 import { formatCoordPair } from '../lib/coordUtils';
@@ -1609,6 +1610,12 @@ export default function NodeDetailModal({
                 {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
                   <button
                     onClick={async () => {
+                      if (
+                        node.hops_away != null &&
+                        node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+                      ) {
+                        return;
+                      }
                       if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
                         return;
                       setNeighborsPending(true);
@@ -1629,7 +1636,20 @@ export default function NodeDetailModal({
                         setNeighborsPending(false);
                       }
                     }}
-                    disabled={!isConnected || neighborsPending}
+                    disabled={
+                      !isConnected ||
+                      neighborsPending ||
+                      (node.hops_away != null &&
+                        node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
+                    }
+                    title={
+                      node.hops_away != null &&
+                      node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+                        ? t('nodeDetailModal.neighborsHopTooFar', {
+                            hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                          })
+                        : undefined
+                    }
                     className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {neighborsPending

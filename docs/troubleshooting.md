@@ -637,6 +637,22 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 - Contacts with **`NULL last_advert`** are never age-pruned (only count-based limits apply).
 - If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (`patchNodeFavorited` on the active connection identity).
 
+### MeshCore: UI slow or frozen with large repeater lists (USB serial)
+
+**Symptoms**: Repeaters tab stutters or the whole window stops responding; USB serial sessions feel stuck after Neighbors / Status / Sensor (LPP) actions.
+
+**Common causes**:
+
+- **500+ repeaters** in the contact book — the Repeaters tab renders a large table; prefer **Nodes → search** for a specific repeater when you have a dense mesh.
+- **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for tens of seconds.
+
+**Fix**:
+
+1. Stay on **Nodes** or **Chat** for day-to-day use; open **Repeaters** only when you need bulk repeater admin.
+2. Avoid repeated **Neighbors** / **Status** clicks on the same repeater while a request is in progress.
+3. After **sleep or hibernate**, if MeshCore does not reconnect automatically, use **Disconnect → Connect** on the Connection panel.
+4. If the UI freezes completely on USB serial, **quit mesh-client** (not only Disconnect), unplug/replug USB if needed, reopen, and **Select serial port**. See also [USB serial frozen](#meshcore--meshtastic-usb-serial-app-frozen-or-stuck-on-reconnecting).
+
 ### MeshCore reply misquote / duplicate chat messages
 
 **Reply misquote cause:** The official MeshCore companion firmware sends unkeyed replies — `@[Display Name] body` — without identifying the parent message. The receiving client makes a best-guess match using the most recent message from that sender, which is wrong when the user replies to an older message. This is a wire protocol limitation, not a bug in any single client.

@@ -2165,7 +2165,8 @@
       "dataSize": "Veri Boyutu",
       "dataSizeBytes": "{{count}} bayt",
       "rawDataHex": "Ham Veri (onaltılık)"
-    }
+    },
+    "neighborsHopTooFar": "Tekrarlayıcılar için komşular mevcut değil {{hops}}+ USB seri üzerinden atlıyor"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Göndermek",
-    "cliQuick": "Hızlı:"
+    "cliQuick": "Hızlı:",
+    "neighborsHopTooFar": "Tekrarlayıcılar için komşular mevcut değil {{hops}}+ USB seri üzerinden atlıyor"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -3759,7 +3761,8 @@
         "timedOut": "Odadan çıkış zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
         "rejected": "Odadan çıkış radyo tarafından reddedildi.",
         "failed": "Odadan çıkılamadı"
-      }
+      },
+      "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor"
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",

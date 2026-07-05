@@ -1,9 +1,12 @@
+/* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import {
   MeshcoreRepeaterRemoteAuthBanner,
   useMeshcoreRepeaterRemoteAuth,
@@ -68,6 +71,14 @@ interface Props {
 }
 
 const SIGNAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const REPEATER_ROW_ESTIMATE_PX = 48;
+const REPEATER_ROW_EXPANDED_EXTRA_PX = 160;
+const REPEATER_VIRTUALIZE_THRESHOLD = 100;
+
+function isMeshcoreNeighborsHopBlocked(node: MeshNode): boolean {
+  const hops = node.hops_away;
+  return hops != null && hops >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS;
+}
 
 function effectiveRepeaterLastAdvert(
   dbAdvert: number | null | undefined,
@@ -205,7 +216,6 @@ export default function RepeatersPanel({
   meshcoreCliHistories,
   meshcoreCliErrors,
   onClearCliHistory,
-  meshcoreCanPingTrace,
   onToggleFavorite,
 }: Props) {
   const { addToast } = useToast();
@@ -270,20 +280,22 @@ export default function RepeatersPanel({
       .catch(() => {
         // catch-no-log-ok database error - contacts will show as unavailable
       });
-  }, [isConnected, nodes.size]);
+  }, []);
 
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider('meshcore');
 
-  const repeaters = Array.from(nodes.values())
-    .filter((n) => n.hw_model === 'Repeater')
-    .sort((a, b) => {
-      // Favorites pinned above non-favorites
-      const aFav = a.favorited ? 1 : 0;
-      const bFav = b.favorited ? 1 : 0;
-      if (aFav !== bFav) return bFav - aFav;
-      // Then by last heard
-      return normalizeLastHeardMs(b.last_heard ?? 0) - normalizeLastHeardMs(a.last_heard ?? 0);
-    });
+  const repeaters = useMemo(
+    () =>
+      Array.from(nodes.values())
+        .filter((n) => n.hw_model === 'Repeater')
+        .sort((a, b) => {
+          const aFav = a.favorited ? 1 : 0;
+          const bFav = b.favorited ? 1 : 0;
+          if (aFav !== bFav) return bFav - aFav;
+          return normalizeLastHeardMs(b.last_heard ?? 0) - normalizeLastHeardMs(a.last_heard ?? 0);
+        }),
+    [nodes],
+  );
 
   useEffect(() => {
     if (nodes.size === 0) return;
@@ -299,18 +311,48 @@ export default function RepeatersPanel({
     );
   }, [repeaters, searchQuery]);
 
-  useEffect(() => {
-    for (const n of repeatersFiltered) {
-      void usePathHistoryStore.getState().ensureBestPathLoaded(n.node_id);
-    }
-  }, [pathHistory, repeatersFiltered]);
+  const repeaterTableScrollRef = useRef<HTMLDivElement>(null);
+  const shouldVirtualizeRepeaterRows = repeatersFiltered.length > REPEATER_VIRTUALIZE_THRESHOLD;
+  const repeaterRowVirtualizer = useVirtualizer({
+    count: repeatersFiltered.length,
+    getScrollElement: () => repeaterTableScrollRef.current,
+    estimateSize: (index) => {
+      const node = repeatersFiltered[index];
+      if (!node) return REPEATER_ROW_ESTIMATE_PX;
+      const expanded =
+        expandedNeighbors.has(node.node_id) ||
+        expandedTelemetry.has(node.node_id) ||
+        expandedPath.has(node.node_id) ||
+        expandedCli.has(node.node_id);
+      return REPEATER_ROW_ESTIMATE_PX + (expanded ? REPEATER_ROW_EXPANDED_EXTRA_PX : 0);
+    },
+    overscan: 8,
+    enabled: shouldVirtualizeRepeaterRows,
+  });
+  const virtualRepeaterRows = repeaterRowVirtualizer.getVirtualItems();
+  const repeaterRowsForRender =
+    shouldVirtualizeRepeaterRows && virtualRepeaterRows.length > 0
+      ? virtualRepeaterRows
+      : repeatersFiltered.map((node, index) => ({
+          index,
+          start: index * REPEATER_ROW_ESTIMATE_PX,
+          end: (index + 1) * REPEATER_ROW_ESTIMATE_PX,
+          size: REPEATER_ROW_ESTIMATE_PX,
+          key: node.node_id,
+          lane: 0 as const,
+        }));
 
   useEffect(() => {
-    if (!isConnected || meshcoreCanPingTrace == null) return;
-    for (const n of repeatersFiltered) {
-      void usePathHistoryStore.getState().ensureBestPathLoaded(n.node_id);
-    }
-  }, [isConnected, repeatersFiltered, meshcoreCanPingTrace]);
+    if (!shouldVirtualizeRepeaterRows) return;
+    repeaterRowVirtualizer.measure();
+  }, [
+    expandedNeighbors,
+    expandedTelemetry,
+    expandedPath,
+    expandedCli,
+    shouldVirtualizeRepeaterRows,
+    repeaterRowVirtualizer,
+  ]);
 
   const remoteAuthReady = meshcoreIsRepeaterRemoteAuthTouched();
 
@@ -384,6 +426,8 @@ export default function RepeatersPanel({
   };
 
   const handleNeighbors = async (nodeId: number) => {
+    const node = nodes.get(nodeId);
+    if (node && isMeshcoreNeighborsHopBlocked(node)) return;
     if (expandedNeighbors.has(nodeId)) {
       setExpandedNeighbors((prev) => {
         const n = new Set(prev);
@@ -556,7 +600,7 @@ export default function RepeatersPanel({
             {t('repeatersPanel.noRepeatersMatch')}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div ref={repeaterTableScrollRef} className="max-h-[min(70vh,48rem)] overflow-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-700 text-left text-gray-400">
@@ -579,7 +623,19 @@ export default function RepeatersPanel({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {repeatersFiltered.map((node) => {
+                {shouldVirtualizeRepeaterRows &&
+                  virtualRepeaterRows.length > 0 &&
+                  virtualRepeaterRows[0].start > 0 && (
+                    <tr aria-hidden="true">
+                      <td
+                        colSpan={10}
+                        style={{ height: virtualRepeaterRows[0].start, padding: 0, border: 0 }}
+                      />
+                    </tr>
+                  )}
+                {repeaterRowsForRender.map((virtualRow) => {
+                  const node = repeatersFiltered[virtualRow.index];
+                  if (!node) return null;
                   const status = meshcoreNodeStatus.get(node.node_id);
                   const traceResult = meshcoreTraceResults.get(node.node_id);
                   const repeaterStatus = getNodeStatus(
@@ -632,9 +688,18 @@ export default function RepeatersPanel({
                     : isPingLoading
                       ? t('repeatersPanel.pingInProgress')
                       : null;
+                  const neighborHopBlocked = isMeshcoreNeighborsHopBlocked(node);
                   return (
                     <Fragment key={node.node_id}>
-                      <tr className="text-gray-300 hover:bg-gray-800/30">
+                      <tr
+                        className="text-gray-300 hover:bg-gray-800/30"
+                        data-index={shouldVirtualizeRepeaterRows ? virtualRow.index : undefined}
+                        ref={
+                          shouldVirtualizeRepeaterRows
+                            ? repeaterRowVirtualizer.measureElement
+                            : undefined
+                        }
+                      >
                         <td className="py-2 pr-4">
                           <span className="flex items-center gap-1.5">
                             <span
@@ -824,8 +889,14 @@ export default function RepeatersPanel({
                               <button
                                 type="button"
                                 onClick={() => void handleNeighbors(node.node_id)}
-                                disabled={!isConnected || isNeighborsLoading}
-                                title={neighborError ?? undefined}
+                                disabled={!isConnected || isNeighborsLoading || neighborHopBlocked}
+                                title={
+                                  neighborHopBlocked
+                                    ? t('repeatersPanel.neighborsHopTooFar', {
+                                        hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                                      })
+                                    : (neighborError ?? undefined)
+                                }
                                 aria-label={
                                   neighborError && !isNeighborsExpanded
                                     ? t('repeatersPanel.neighborsError', { error: neighborError })
@@ -1221,6 +1292,22 @@ export default function RepeatersPanel({
                     </Fragment>
                   );
                 })}
+                {shouldVirtualizeRepeaterRows && virtualRepeaterRows.length > 0 && (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={10}
+                      style={{
+                        height: Math.max(
+                          0,
+                          repeaterRowVirtualizer.getTotalSize() -
+                            virtualRepeaterRows[virtualRepeaterRows.length - 1].end,
+                        ),
+                        padding: 0,
+                        border: 0,
+                      }}
+                    />
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

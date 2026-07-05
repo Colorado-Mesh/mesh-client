@@ -2165,7 +2165,8 @@
       "dataSize": "Tamanho dos dados",
       "dataSizeBytes": "{{count}} bytes",
       "rawDataHex": "Dados brutos (hexadecimal)"
-    }
+    },
+    "neighborsHopTooFar": "Vizinhos indisponíveis para repetidores {{hops}}+ pula na serial USB"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt{{altitude}}m",
     "cliSend": "Enviar",
-    "cliQuick": "Rápido:"
+    "cliQuick": "Rápido:",
+    "neighborsHopTooFar": "Vizinhos indisponíveis para repetidores {{hops}}+ pula na serial USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
@@ -3759,7 +3761,8 @@
         "timedOut": "O logout da sala expirou. A sala pode estar fora de alcance ou não responder.",
         "rejected": "Logout da sala rejeitado pelo rádio.",
         "failed": "Não foi possível sair do quarto"
-      }
+      },
+      "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento"
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",

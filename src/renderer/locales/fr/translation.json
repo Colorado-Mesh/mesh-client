@@ -2165,7 +2165,8 @@
       "dataSize": "Taille des données",
       "dataSizeBytes": "{{count}} octets",
       "rawDataHex": "Données brutes (hexadécimales)"
-    }
+    },
+    "neighborsHopTooFar": "Voisins indisponibles pour les répéteurs {{hops}}+ saute sur la série USB"
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -3172,7 +3173,8 @@
     "telemetryGps": "GPS : {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt{{altitude}}m",
     "cliSend": "Envoyer",
-    "cliQuick": "Rapide:"
+    "cliQuick": "Rapide:",
+    "neighborsHopTooFar": "Voisins indisponibles pour les répéteurs {{hops}}+ saute sur la série USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
@@ -3759,7 +3761,8 @@
         "timedOut": "Le délai de déconnexion de la salle a expiré. La pièce est peut-être hors de portée ou ne répond pas.",
         "rejected": "Déconnexion de la salle refusée par radio.",
         "failed": "Impossible de quitter la chambre"
-      }
+      },
+      "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours"
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
