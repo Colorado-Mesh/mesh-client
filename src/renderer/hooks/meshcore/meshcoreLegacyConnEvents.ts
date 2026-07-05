@@ -68,7 +68,10 @@ import {
 } from '../../lib/nodeStatus';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
-import { MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS } from '../../lib/timeConstants';
+import {
+  MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
+  MESHCORE_WAITING_MESSAGES_BATCH_YIELD,
+} from '../../lib/timeConstants';
 import type { ChatMessage, IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { renameMessageId, updateMessageStatus, useMessageStore } from '../../stores/messageStore';
@@ -84,6 +87,14 @@ import {
   type PendingDmAckEntry,
 } from './meshcoreHookPreamble';
 import type { MeshcoreLegacyConnEventsCtx } from './meshcoreLegacyConnEventsCtx';
+
+let processWaitingMessagesInFlight: Promise<void> | null = null;
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
 
 function isOutboundMeshcoreDmRecord(rec: { from: number; to: number; status?: string }): boolean {
   return rec.to !== 0xffffffff && !isMeshtasticBroadcastNodeNum(rec.to) && rec.to > 0;
@@ -164,7 +175,10 @@ export function attachMeshcoreLegacyConnEvents(
     setSignalTelemetry,
     setState,
     setWaitingMessagesCount,
+    setWaitingMessagesSyncActive,
+    setWaitingMessagesSyncProgress,
     addMessage,
+    addMessagesBatch,
     addCliHistoryEntry,
     teardownMeshcoreConnEventListeners,
     meshcorePreviousNodesBaselineForBuild,
@@ -565,161 +579,208 @@ export function attachMeshcoreLegacyConnEvents(
 
   // Push: message waiting — event 0x83 = 131; fetch all queued messages
   const processWaitingMessages = async () => {
-    const msgs = await conn.getWaitingMessages();
-    if (!meshcoreHookMountedRef.current) return;
-    const arr = msgs as {
-      contactMessage?: {
-        pubKeyPrefix: Uint8Array;
-        senderTimestamp: number;
-        text: string;
-        txtType?: number;
+    if (processWaitingMessagesInFlight) {
+      console.debug('[useMeshcoreRuntime] processWaitingMessages skipped (in flight)');
+      return processWaitingMessagesInFlight;
+    }
+    processWaitingMessagesInFlight = (async () => {
+      const startedAt = Date.now();
+      setWaitingMessagesSyncActive(true);
+      setWaitingMessagesSyncProgress(null);
+      let processed = 0;
+      let pendingMessages: ChatMessage[] = [];
+      const workingNodes = new Map(nodesRef.current);
+      let nodesDirty = false;
+      const storePriorForBatch = storePriorForIngest;
+
+      const flushBatch = () => {
+        if (pendingMessages.length > 0) {
+          addMessagesBatch(pendingMessages);
+          pendingMessages = [];
+        }
+        if (nodesDirty) {
+          nodesRef.current = workingNodes;
+          setNodes(workingNodes);
+          nodesDirty = false;
+        }
       };
-      channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
-    }[];
-    setWaitingMessagesCount(arr.length);
-    try {
-      for (const m of arr) {
-        if (m.contactMessage) {
-          const d = m.contactMessage;
-          const prefix = Array.from(d.pubKeyPrefix)
-            .map((b) => b.toString(16).padStart(2, '0'))
-            .join('');
-          const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
-          if (senderId === 0) {
-            console.warn(
-              '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
-              prefix,
-            );
-          }
-          const sender = nodesRef.current.get(senderId);
-          if (senderId !== 0) {
-            setNodes((prev) => {
-              const node = prev.get(senderId);
-              if (!node) return prev;
-              const next = new Map(prev);
-              next.set(senderId, {
-                ...node,
-                last_heard: Math.max(node.last_heard ?? 0, d.senderTimestamp),
-              });
-              return next;
-            });
-          }
-          if (isMeshcoreTransportStatusChatLine(d.text)) {
-            logTransportLineAsDevice(d.text);
-          } else if (sender?.hw_model === 'Room') {
-            const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-            if (!legacyOwnsRoomPosts()) {
-              const identityId = meshcoreIdentityIdRef.current;
-              if (identityId) {
-                const roomNodeIds = new Set<number>();
-                for (const [nodeId, node] of nodesRef.current) {
-                  if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+
+      try {
+        const msgs = await conn.getWaitingMessages();
+        if (!meshcoreHookMountedRef.current) return;
+        const arr = msgs as {
+          contactMessage?: {
+            pubKeyPrefix: Uint8Array;
+            senderTimestamp: number;
+            text: string;
+            txtType?: number;
+          };
+          channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
+        }[];
+        const total = arr.length;
+        setWaitingMessagesCount(total);
+        setWaitingMessagesSyncProgress({ processed: 0, total });
+        console.debug('[useMeshcoreRuntime] processWaitingMessages start', { count: total });
+
+        for (const m of arr) {
+          if (!meshcoreHookMountedRef.current) break;
+          if (m.contactMessage) {
+            const d = m.contactMessage;
+            const prefix = Array.from(d.pubKeyPrefix)
+              .map((b) => b.toString(16).padStart(2, '0'))
+              .join('');
+            const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
+            if (senderId === 0) {
+              console.warn(
+                '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
+                prefix,
+              );
+            }
+            const sender = workingNodes.get(senderId);
+            if (senderId !== 0) {
+              const existing = workingNodes.get(senderId);
+              if (existing) {
+                workingNodes.set(senderId, {
+                  ...existing,
+                  last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+                });
+                nodesDirty = true;
+              }
+            }
+            if (isMeshcoreTransportStatusChatLine(d.text)) {
+              logTransportLineAsDevice(d.text);
+            } else if (sender?.hw_model === 'Room') {
+              const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
+              if (!legacyOwnsRoomPosts()) {
+                const identityId = meshcoreIdentityIdRef.current;
+                if (identityId) {
+                  const roomNodeIds = new Set<number>();
+                  for (const [nodeId, node] of workingNodes) {
+                    if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+                  }
+                  dispatchMeshcoreWaitingContactMessage(
+                    identityId,
+                    {
+                      pubKeyPrefix: d.pubKeyPrefix,
+                      text: d.text,
+                      senderTimestamp: d.senderTimestamp,
+                      ...(d.txtType != null ? { txtType: d.txtType } : {}),
+                    },
+                    pubKeyPrefixMapRef.current,
+                    roomNodeIds,
+                    (event, id) => {
+                      packetRouter.dispatch(event, id);
+                    },
+                    logTransportLineAsDevice,
+                  );
                 }
-                dispatchMeshcoreWaitingContactMessage(
-                  identityId,
-                  {
-                    pubKeyPrefix: d.pubKeyPrefix,
-                    text: d.text,
-                    senderTimestamp: d.senderTimestamp,
-                    ...(d.txtType != null ? { txtType: d.txtType } : {}),
-                  },
+                void setMeshcoreRoomLastPostAt(senderId, postTs);
+              } else {
+                const { authorId, payload } = meshcoreRoomPostBodyFromWire(
+                  d.text,
+                  d.txtType,
                   pubKeyPrefixMapRef.current,
-                  roomNodeIds,
-                  (event, id) => {
-                    packetRouter.dispatch(event, id);
-                  },
-                  logTransportLineAsDevice,
+                  { isKnownRoomNode: true },
+                );
+                const authorNode = authorId !== 0 ? workingNodes.get(authorId) : undefined;
+                const authorName =
+                  authorNode?.long_name ??
+                  (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+                pendingMessages.push(
+                  buildMeshcoreRoomIncomingMessage({
+                    rawText: payload,
+                    roomServerId: senderId,
+                    authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
+                    authorName,
+                    timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+                    receivedVia: 'rf',
+                  }),
                 );
               }
-              void setMeshcoreRoomLastPostAt(senderId, postTs);
             } else {
-              const { authorId, payload } = meshcoreRoomPostBodyFromWire(
-                d.text,
-                d.txtType,
-                pubKeyPrefixMapRef.current,
-                { isKnownRoomNode: true },
-              );
-              const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
-              const authorName =
-                authorNode?.long_name ??
-                (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-              addMessage(
-                buildMeshcoreRoomIncomingMessage({
-                  rawText: payload,
-                  roomServerId: senderId,
-                  authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
-                  authorName,
+              pendingMessages.push({
+                ...parseMeshcoreDmIncomingFromThread(storePriorForBatch(), {
+                  rawText: d.text,
+                  senderId,
+                  displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
+                  timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+                  receivedVia: 'rf',
+                  peerNodeId: senderId,
+                  myNodeId: myNodeNumRef.current || 0,
+                  to: myNodeNumRef.current || undefined,
+                }),
+                isHistory: true,
+              });
+            }
+          }
+          if (m.channelMessage) {
+            const d = m.channelMessage;
+            if (isMeshcoreTransportStatusChatLine(d.text)) {
+              logTransportLineAsDevice(d.text);
+            } else {
+              const resolved = resolveMeshcoreChannelMessageSender({
+                rawText: d.text,
+                nodes: workingNodes,
+              });
+              if (resolved.senderId !== 0) {
+                const existing = workingNodes.get(resolved.senderId);
+                workingNodes.set(
+                  resolved.senderId,
+                  existing
+                    ? meshcoreMergeChannelDisplayNameOntoNode(
+                        {
+                          ...existing,
+                          last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+                        },
+                        resolved.displayName,
+                      )
+                    : minimalMeshcoreChatNode(
+                        resolved.senderId,
+                        resolved.displayName,
+                        d.senderTimestamp,
+                        'rf',
+                      ),
+                );
+                nodesDirty = true;
+              }
+              pendingMessages.push({
+                ...parseMeshcoreChannelIncomingFromThread(storePriorForBatch(), {
+                  rawText: d.text,
+                  senderId: resolved.senderId,
+                  displayName: resolved.displayName,
+                  channel: d.channelIdx,
                   timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
                   receivedVia: 'rf',
                 }),
-              );
+                isHistory: true,
+              });
             }
-          } else {
-            addMessage({
-              ...parseMeshcoreDmIncomingFromThread(storePriorForIngest(), {
-                rawText: d.text,
-                senderId,
-                displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-                timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-                receivedVia: 'rf',
-                peerNodeId: senderId,
-                myNodeId: myNodeNumRef.current || 0,
-                to: myNodeNumRef.current || undefined,
-              }),
-              isHistory: true,
-            });
+          }
+
+          processed += 1;
+          if (
+            processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
+            pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
+          ) {
+            flushBatch();
+            setWaitingMessagesSyncProgress({ processed, total });
+            await yieldToEventLoop();
           }
         }
-        if (m.channelMessage) {
-          const d = m.channelMessage;
-          if (isMeshcoreTransportStatusChatLine(d.text)) {
-            logTransportLineAsDevice(d.text);
-            continue;
-          }
-          const resolved = resolveMeshcoreChannelMessageSender({
-            rawText: d.text,
-            nodes: nodesRef.current,
-          });
-          if (resolved.senderId !== 0) {
-            setNodes((prev) => {
-              const next = new Map(prev);
-              const existing = next.get(resolved.senderId);
-              next.set(
-                resolved.senderId,
-                existing
-                  ? meshcoreMergeChannelDisplayNameOntoNode(
-                      {
-                        ...existing,
-                        last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-                      },
-                      resolved.displayName,
-                    )
-                  : minimalMeshcoreChatNode(
-                      resolved.senderId,
-                      resolved.displayName,
-                      d.senderTimestamp,
-                      'rf',
-                    ),
-              );
-              return next;
-            });
-          }
-          addMessage({
-            ...parseMeshcoreChannelIncomingFromThread(storePriorForIngest(), {
-              rawText: d.text,
-              senderId: resolved.senderId,
-              displayName: resolved.displayName,
-              channel: d.channelIdx,
-              timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-              receivedVia: 'rf',
-            }),
-            isHistory: true,
-          });
-        }
+
+        flushBatch();
+        console.debug('[useMeshcoreRuntime] processWaitingMessages done', {
+          count: total,
+          durationMs: Date.now() - startedAt,
+        });
+      } finally {
+        setWaitingMessagesCount(0);
+        setWaitingMessagesSyncActive(false);
+        setWaitingMessagesSyncProgress(null);
+        processWaitingMessagesInFlight = null;
       }
-    } finally {
-      setWaitingMessagesCount(0);
-    }
+    })();
+    return processWaitingMessagesInFlight;
   };
   processWaitingMessagesRef.current = processWaitingMessages;
   onMeshcoreConn(131, () => {

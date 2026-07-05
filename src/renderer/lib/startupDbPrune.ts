@@ -4,6 +4,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { fetchMessageRetention } from './messageRetention';
 import { parseStoredJson } from './parseStoredJson';
 import {
+  MAX_MESH_ENTITY_CAP,
   RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT,
   SESSION_DB_PRUNE_INTERVAL_MS,
 } from './sessionMemoryCaps';
@@ -59,7 +60,10 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
       );
     }
     if (s.nodeCapEnabled) {
-      const cap = typeof s.nodeCapCount === 'number' && s.nodeCapCount > 0 ? s.nodeCapCount : 10000;
+      const cap =
+        typeof s.nodeCapCount === 'number' && s.nodeCapCount > 0
+          ? s.nodeCapCount
+          : MAX_MESH_ENTITY_CAP;
       ops.push(
         window.electronAPI.db.pruneNodesByCount(cap).catch((e: unknown) => {
           console.warn('[App] startup pruneNodesByCount failed ' + errLikeToLogString(e));
@@ -112,7 +116,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
       const cap =
         typeof s.meshcoreContactCapCount === 'number' && s.meshcoreContactCapCount > 0
           ? s.meshcoreContactCapCount
-          : 5000;
+          : MAX_MESH_ENTITY_CAP;
       ops.push(
         window.electronAPI.db.pruneMeshcoreContactsByCount(cap).catch((e: unknown) => {
           console.warn(

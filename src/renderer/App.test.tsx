@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
@@ -218,6 +218,11 @@ const {
     setNodeFavorited: vi.fn().mockResolvedValue(undefined),
     getRemoteAdminKeyForNode: vi.fn(),
     setRemoteAdminKeyForNode: vi.fn(),
+    getWaitingMessages: vi.fn().mockResolvedValue([]),
+    syncWaitingMessages: vi.fn().mockResolvedValue(undefined),
+    waitingMessagesCount: 0,
+    waitingMessagesSyncActive: false,
+    waitingMessagesSyncProgress: null,
   }),
   getStoredMeshProtocolMock: vi.fn(() => 'meshtastic'),
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
@@ -716,6 +721,32 @@ describe('App accessibility', () => {
         { index: 2, name: 'Ops' },
       ]);
     });
+  });
+
+  it('wires Chat Sync now to syncWaitingMessages, not getWaitingMessages', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    const syncWaitingMessages = vi.fn().mockResolvedValue(undefined);
+    const getWaitingMessages = vi.fn().mockResolvedValue([]);
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: 0x12345678, connectionType: 'serial' },
+      waitingMessagesCount: 3,
+      syncWaitingMessages,
+      getWaitingMessages,
+    });
+
+    renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    expect(lastChatPanelProps.current?.onSyncWaitingMessages).toBeDefined();
+    act(() => {
+      (lastChatPanelProps.current?.onSyncWaitingMessages as () => void)();
+    });
+    expect(syncWaitingMessages).toHaveBeenCalledTimes(1);
+    expect(getWaitingMessages).not.toHaveBeenCalled();
   });
 
   it('keeps MeshCore node detail remote-admin props protocol-gated after node click', async () => {

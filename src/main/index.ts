@@ -285,6 +285,27 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
+const RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS = 30_000;
+let lastRendererHeartbeatAt = 0;
+let rendererResumeWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearRendererResumeWatchdog(): void {
+  if (rendererResumeWatchdogTimer) {
+    clearTimeout(rendererResumeWatchdogTimer);
+    rendererResumeWatchdogTimer = null;
+  }
+}
+
+function startRendererResumeWatchdog(): void {
+  clearRendererResumeWatchdog();
+  const resumeAt = Date.now();
+  rendererResumeWatchdogTimer = setTimeout(() => {
+    rendererResumeWatchdogTimer = null;
+    if (lastRendererHeartbeatAt >= resumeAt) return;
+    console.warn('[main] renderer unresponsive after system resume (no heartbeat within 30s)');
+  }, RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+  rendererResumeWatchdogTimer.unref?.();
+}
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -3296,6 +3317,12 @@ function isAppSettingsKeyAllowed(key: string): boolean {
   );
 }
 
+ipcMain.handle('app:rendererHeartbeat', (_event, payload?: { ts?: number }) => {
+  if (!mainWindow) return;
+  lastRendererHeartbeatAt = typeof payload?.ts === 'number' ? payload.ts : Date.now();
+  clearRendererResumeWatchdog();
+});
+
 ipcMain.handle('appSettings:get', () => {
   try {
     const rows = getDatabase().prepareOnce('SELECT key, value FROM app_settings').all() as {
@@ -5772,12 +5799,14 @@ void app.whenReady().then(() => {
     // ─── Power monitor: notify renderer on suspend/resume ──────────
     powerMonitor.on('suspend', () => {
       console.debug('[main] System suspending');
+      clearRendererResumeWatchdog();
       mqttManager.handlePowerSuspend();
       meshcoreMqttAdapter.handlePowerSuspend();
       mainWindow?.webContents.send('power:suspend');
     });
     powerMonitor.on('resume', () => {
       console.debug('[main] System resumed');
+      startRendererResumeWatchdog();
       mainWindow?.webContents.send('power:resume');
     });
   } catch (error) {

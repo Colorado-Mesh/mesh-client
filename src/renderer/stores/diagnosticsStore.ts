@@ -47,6 +47,37 @@ import { rfRowId } from '../lib/types';
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 const FIFTEEN_MIN = 15 * 60 * 1000;
+const DIAGNOSTICS_REANALYSIS_CHUNK_SIZE = 500;
+
+type RemoteNodeEntry = [number, MeshNode];
+
+function runDiagnosticsInChunks<T>(
+  items: T[],
+  chunkSize: number,
+  processItem: (item: T) => void,
+  onComplete: () => void,
+): void {
+  if (items.length === 0) {
+    onComplete();
+    return;
+  }
+  let offset = 0;
+  const step = () => {
+    const end = Math.min(offset + chunkSize, items.length);
+    for (let i = offset; i < end; i++) {
+      const item = items[i];
+      if (item === undefined) continue;
+      processItem(item);
+    }
+    offset = end;
+    if (offset < items.length) {
+      setTimeout(step, 0);
+    } else {
+      onComplete();
+    }
+  };
+  step();
+}
 
 /** `path_snrs` column is JSON array of numbers; tolerate legacy or corrupt DB values. */
 function meshcoreTracePathSnrsFromDbJson(raw: string | null | undefined): number[] {
@@ -1325,109 +1356,128 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           newAnomalies.set(id, anomaly);
         }
       }
+      const remoteEntries: RemoteNodeEntry[] = [];
       for (const [nodeId, node] of nodes) {
-        if (nodeId === myNodeNum) continue;
-        const history = state.hopHistory.get(nodeId) ?? [];
-        const stats = state.packetStats.get(nodeId);
-        const ignoreMqtt = state.ignoreMqttEnabled || state.mqttIgnoredNodes.has(nodeId);
-        const noiseData = getNoiseStatsForNode(state.noiseRateStats, nodeId);
-        const traceHistory = state.meshcoreTraceHistory.get(nodeId);
-        const tracePathSnrs = traceHistory?.at(-1)?.pathSnrs;
-        const pathUpdatedTs = state.pathUpdatedTimestamps.get(nodeId);
-        const anomaly = analyzeNode(
-          node,
-          stats,
-          homeNode,
-          history,
-          ignoreMqtt,
-          distanceMultiplier,
-          0,
-          hopsThreshold,
-          capabilities,
-          noiseData,
-          tracePathSnrs,
-          pathUpdatedTs,
-        );
-        if (anomaly) newAnomalies.set(nodeId, anomaly);
-        else newAnomalies.delete(nodeId);
+        if (nodeId !== myNodeNum) remoteEntries.push([nodeId, node]);
       }
-      let diagnosticRows = replaceRoutingRowsFromMap(state.diagnosticRows, newAnomalies);
-      const preserveRestoredRf = restoredAt != null;
-      const selfNode = nodes.get(myNodeNum);
-      if (selfNode && (hasLocalStatsData(selfNode) || selfNode.channel_utilization != null)) {
-        const baseline =
-          state.localStatsBaselines.get(myNodeNum) ??
-          (() => {
-            const next = new Map(state.localStatsBaselines);
-            next.set(myNodeNum, {
-              rxTotal: selfNode.num_packets_rx ?? 0,
-              rxDupe: selfNode.num_rx_dupe ?? 0,
-              rxBad: selfNode.num_packets_rx_bad ?? 0,
-              capturedAt: Date.now(),
+      runDiagnosticsInChunks(
+        remoteEntries,
+        DIAGNOSTICS_REANALYSIS_CHUNK_SIZE,
+        ([nodeId, node]) => {
+          const history = state.hopHistory.get(nodeId) ?? [];
+          const stats = state.packetStats.get(nodeId);
+          const ignoreMqtt = state.ignoreMqttEnabled || state.mqttIgnoredNodes.has(nodeId);
+          const noiseData = getNoiseStatsForNode(state.noiseRateStats, nodeId);
+          const traceHistory = state.meshcoreTraceHistory.get(nodeId);
+          const tracePathSnrs = traceHistory?.at(-1)?.pathSnrs;
+          const pathUpdatedTs = state.pathUpdatedTimestamps.get(nodeId);
+          const anomaly = analyzeNode(
+            node,
+            stats,
+            homeNode,
+            history,
+            ignoreMqtt,
+            distanceMultiplier,
+            0,
+            hopsThreshold,
+            capabilities,
+            noiseData,
+            tracePathSnrs,
+            pathUpdatedTs,
+          );
+          if (anomaly) newAnomalies.set(nodeId, anomaly);
+          else newAnomalies.delete(nodeId);
+        },
+        () => {
+          let diagnosticRows = replaceRoutingRowsFromMap(state.diagnosticRows, newAnomalies);
+          const preserveRestoredRf = restoredAt != null;
+          const selfNode = nodes.get(myNodeNum);
+          if (selfNode && (hasLocalStatsData(selfNode) || selfNode.channel_utilization != null)) {
+            const baseline =
+              state.localStatsBaselines.get(myNodeNum) ??
+              (() => {
+                const next = new Map(state.localStatsBaselines);
+                next.set(myNodeNum, {
+                  rxTotal: selfNode.num_packets_rx ?? 0,
+                  rxDupe: selfNode.num_rx_dupe ?? 0,
+                  rxBad: selfNode.num_packets_rx_bad ?? 0,
+                  capturedAt: Date.now(),
+                });
+                set({ localStatsBaselines: next });
+                return next.get(myNodeNum)!;
+              })();
+            let baselineValue = baseline;
+            if (Date.now() - baselineValue.capturedAt > LOCAL_STATS_BASELINE_RESET_MS) {
+              const refreshed = {
+                rxTotal: selfNode.num_packets_rx ?? 0,
+                rxDupe: selfNode.num_rx_dupe ?? 0,
+                rxBad: selfNode.num_packets_rx_bad ?? 0,
+                capturedAt: Date.now(),
+              };
+              baselineValue = refreshed;
+              const nextBaselines = new Map(state.localStatsBaselines);
+              nextBaselines.set(myNodeNum, refreshed);
+              set({ localStatsBaselines: nextBaselines });
+            }
+            const adjustedSelfNode: MeshNode = {
+              ...selfNode,
+              num_packets_rx: Math.max(0, (selfNode.num_packets_rx ?? 0) - baselineValue.rxTotal),
+              num_rx_dupe: Math.max(0, (selfNode.num_rx_dupe ?? 0) - baselineValue.rxDupe),
+              num_packets_rx_bad: Math.max(
+                0,
+                (selfNode.num_packets_rx_bad ?? 0) - baselineValue.rxBad,
+              ),
+            };
+            const cuStats24h = get().getCuStats24h(myNodeNum);
+            const findings = diagnoseConnectedNode(adjustedSelfNode, {
+              cuStats24h: cuStats24h ?? undefined,
+              capabilities,
             });
-            set({ localStatsBaselines: next });
-            return next.get(myNodeNum)!;
-          })();
-        let baselineValue = baseline;
-        if (Date.now() - baselineValue.capturedAt > LOCAL_STATS_BASELINE_RESET_MS) {
-          const refreshed = {
-            rxTotal: selfNode.num_packets_rx ?? 0,
-            rxDupe: selfNode.num_rx_dupe ?? 0,
-            rxBad: selfNode.num_packets_rx_bad ?? 0,
-            capturedAt: Date.now(),
-          };
-          baselineValue = refreshed;
-          const nextBaselines = new Map(state.localStatsBaselines);
-          nextBaselines.set(myNodeNum, refreshed);
-          set({ localStatsBaselines: nextBaselines });
-        }
-        const adjustedSelfNode: MeshNode = {
-          ...selfNode,
-          num_packets_rx: Math.max(0, (selfNode.num_packets_rx ?? 0) - baselineValue.rxTotal),
-          num_rx_dupe: Math.max(0, (selfNode.num_rx_dupe ?? 0) - baselineValue.rxDupe),
-          num_packets_rx_bad: Math.max(0, (selfNode.num_packets_rx_bad ?? 0) - baselineValue.rxBad),
-        };
-        const cuStats24h = get().getCuStats24h(myNodeNum);
-        const findings = diagnoseConnectedNode(adjustedSelfNode, {
-          cuStats24h: cuStats24h ?? undefined,
-          capabilities,
-        });
-        if (findings.length > 0) {
-          diagnosticRows = replaceRfRowsForNode(diagnosticRows, myNodeNum, findings);
-        } else if (!preserveRestoredRf) {
-          diagnosticRows = diagnosticRows.filter(
-            (r) =>
-              r.kind !== 'rf' ||
-              r.nodeId !== myNodeNum ||
-              FOREIGN_LORA_RF_CONDITIONS.has(r.condition),
+            if (findings.length > 0) {
+              diagnosticRows = replaceRfRowsForNode(diagnosticRows, myNodeNum, findings);
+            } else if (!preserveRestoredRf) {
+              diagnosticRows = diagnosticRows.filter(
+                (r) =>
+                  r.kind !== 'rf' ||
+                  r.nodeId !== myNodeNum ||
+                  FOREIGN_LORA_RF_CONDITIONS.has(r.condition),
+              );
+            }
+          }
+          runDiagnosticsInChunks(
+            remoteEntries,
+            DIAGNOSTICS_REANALYSIS_CHUNK_SIZE,
+            ([nodeId, node]) => {
+              const cuStats24h = get().getCuStats24h(nodeId);
+              const findings = diagnoseOtherNode(node, {
+                cuStats24h: cuStats24h ?? undefined,
+                capabilities,
+              });
+              if (findings && findings.length > 0) {
+                diagnosticRows = replaceRfRowsForNode(diagnosticRows, nodeId, findings);
+              } else if (!preserveRestoredRf) {
+                diagnosticRows = diagnosticRows.filter(
+                  (r) =>
+                    r.kind !== 'rf' ||
+                    r.nodeId !== nodeId ||
+                    FOREIGN_LORA_RF_CONDITIONS.has(r.condition),
+                );
+              }
+            },
+            () => {
+              const now = Date.now();
+              diagnosticRows = pruneDiagnosticRowsByAge(
+                diagnosticRows,
+                now,
+                loadRoutingDiagnosticMaxAgeMs(),
+                DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
+              );
+              set({ diagnosticRows, diagnosticRowsRestoredAt: null });
+              schedulePersistDiagnosticRows(() => get().diagnosticRows);
+            },
           );
-        }
-      }
-      for (const [nodeId, node] of nodes) {
-        if (nodeId === myNodeNum) continue;
-        const cuStats24h = get().getCuStats24h(nodeId);
-        const findings = diagnoseOtherNode(node, {
-          cuStats24h: cuStats24h ?? undefined,
-          capabilities,
-        });
-        if (findings && findings.length > 0) {
-          diagnosticRows = replaceRfRowsForNode(diagnosticRows, nodeId, findings);
-        } else if (!preserveRestoredRf) {
-          diagnosticRows = diagnosticRows.filter(
-            (r) =>
-              r.kind !== 'rf' || r.nodeId !== nodeId || FOREIGN_LORA_RF_CONDITIONS.has(r.condition),
-          );
-        }
-      }
-      const now = Date.now();
-      diagnosticRows = pruneDiagnosticRowsByAge(
-        diagnosticRows,
-        now,
-        loadRoutingDiagnosticMaxAgeMs(),
-        DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
+        },
       );
-      set({ diagnosticRows, diagnosticRowsRestoredAt: null });
-      schedulePersistDiagnosticRows(() => get().diagnosticRows);
     }, reanalysisDelayMs);
   },
 

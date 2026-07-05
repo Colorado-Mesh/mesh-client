@@ -213,6 +213,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     },
     onPowerSuspend: noopUnsub,
     onPowerResume: noopUnsub,
+    sendRendererHeartbeat: async () => {},
     onSpellcheckReplace: noopUnsub,
     meshcore: {
       tcp: {

@@ -12,6 +12,7 @@ export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
 export const RADIO_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Radio');
 export const MODULES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Modules');
 export const SECURITY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Security');
+export const APP_PANEL_INDEX = TAB_SLOT_IDS.indexOf('App');
 
 type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
 

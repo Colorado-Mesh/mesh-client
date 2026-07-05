@@ -9,7 +9,7 @@ import { ToastProvider } from './Toast';
 describe('AppPanel accessibility', () => {
   const defaultProps = {
     protocol: 'meshtastic' as const,
-    nodes: new Map(),
+    nodeCount: 0,
     messageCount: 0,
     channels: [] as { index: number; name: string }[],
     myNodeNum: null as number | null,
@@ -30,7 +30,7 @@ describe('AppPanel accessibility', () => {
 
 describe('AppPanel: DB-backed message retention card (issue #387)', () => {
   const defaultProps = {
-    nodes: new Map(),
+    nodeCount: 0,
     messageCount: 0,
     channels: [] as { index: number; name: string }[],
     myNodeNum: null as number | null,
@@ -136,7 +136,7 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
 describe('AppPanel: sound notification toggle', () => {
   const defaultProps = {
     protocol: 'meshtastic' as const,
-    nodes: new Map(),
+    nodeCount: 0,
     messageCount: 0,
     channels: [] as { index: number; name: string }[],
     myNodeNum: null as number | null,
@@ -200,7 +200,7 @@ describe('AppPanel: sound notification toggle', () => {
 
 describe('AppPanel: MeshCore Open wire toggle', () => {
   const defaultProps = {
-    nodes: new Map(),
+    nodeCount: 0,
     messageCount: 0,
     channels: [] as { index: number; name: string }[],
     myNodeNum: null as number | null,

@@ -173,7 +173,10 @@ import {
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
-import { MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS } from '../lib/timeConstants';
+import {
+  MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
+  RF_SERIAL_OPEN_RETRY_DELAY_MS,
+} from '../lib/timeConstants';
 import { TransportManager } from '../lib/transport/TransportManager';
 import type { StatusUpdateEvent } from '../lib/transport/types';
 import type {
@@ -2322,12 +2325,7 @@ export function useMeshtasticRuntime() {
     ) => {
       await prepareRfConnect(type, httpAddress, blePeripheralId, lastSerialPortId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
-      try {
-        console.debug(
-          '[useMeshtasticRuntime] connectAutomatic',
-          type,
-          httpAddress ?? blePeripheralId,
-        );
+      const openAndAttach = async () => {
         opened =
           type === 'ble' && isRendererNobleBlePlatform()
             ? await withNobleBleConnectMutex('meshtastic', () =>
@@ -2343,6 +2341,28 @@ export function useMeshtasticRuntime() {
                 lastSerialPortId,
               });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
+      };
+      try {
+        console.debug(
+          '[useMeshtasticRuntime] connectAutomatic',
+          type,
+          httpAddress ?? blePeripheralId,
+        );
+        try {
+          await openAndAttach();
+        } catch (firstErr) {
+          if (type !== 'serial' || opened) {
+            throw firstErr;
+          }
+          console.debug(
+            '[useMeshtasticRuntime] connectAutomatic serial open failed — retrying once',
+          );
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, RF_SERIAL_OPEN_RETRY_DELAY_MS);
+          });
+          opened = undefined;
+          await openAndAttach();
+        }
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;

@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "工場出荷時設定にリセット",
+      "hint": "ID、連絡先、メッセージをサイドカー スタックからクリアします。インターフェイス設定は保存されます。",
+      "button": "スタックデータをリセット",
+      "confirmTitle": "Reticulumスタックをリセットしますか？",
+      "confirmBody": "これにより、サイドカーから ID、連絡先、ローカル メッセージが削除されます。インターフェイス設定ファイルは保持されます。",
+      "confirm": "リセット"
+    }
+  },
   "app": {
     "loadingPanel": "ローディングパネル",
     "loadingDialog": "読み込みダイアログ",
@@ -430,7 +440,6 @@
     "emptyNoDmMessages": "{{name}}さんとのメッセージはまだありません。",
     "emptyNoMessagesYet": "メッセージはまだありません。メッセージを送信するか、受信メッセージを待ちます。",
     "emptyConnectFirst": "デバイスに接続してチャットを開始してください。",
-    "waitingMessagesBadge": "無線からの{{count}}キューに入れられたメッセージを同期しています…",
     "waitingMessagesSyncNow": "今すぐ同期",
     "jumpToUnread": "未読へジャンプ",
     "jumpToLatest": "最新へジャンプ",
@@ -489,7 +498,10 @@
       "pkiFailed": "このメッセージのPKI暗号化に失敗しました。",
       "noChannel": "このメッセージをルーティングするチャンネルはありません。",
       "timeout": "ラジオでメッセージがタイムアウトしました。"
-    }
+    },
+    "waitingMessagesQueued": "{{count}}は無線でメッセージをキューに入れました",
+    "waitingMessagesSyncProgress": "ラジオから{{processed}}/{{total}}を同期しています…",
+    "waitingMessagesSyncProgressIndeterminate": "無線からの待機中のメッセージを同期しています…"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1262,6 +1274,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "連続ping",
+    "reticulumHint": "スタックが実行されている間、各インターバルでping （ RTT ）およびパスプローブ（ホップ）を実行します。",
+    "hashLabel": "宛先ハッシュ",
+    "hashPlaceholder": "32文字の宛先ハッシュ…",
+    "hashAria": "Pingする宛先ハッシュ",
+    "intervalLabel": "間隔",
+    "intervalAria": "Ping試行間隔（秒）",
+    "start": "開始",
+    "stop": "停止",
+    "runOnce": "Pingを1回実行する",
+    "colSeq": "#",
+    "colRtt": "Rett症候群",
+    "colHops": "ホップ",
+    "colStatus": "ステータス",
+    "rttMs": "{{ms}}ミリ秒",
+    "statusOk": "OK",
+    "statusFailed": "失敗： {{error}}"
+  },
   "errorBoundary": {
     "title": "何か問題が発生しました",
     "unexpectedError": "予期しないエラーが発生しました",
@@ -1383,6 +1414,25 @@
     "wifiStationSuccess": "ステーションモードが保存されました。ボードを再起動し、そのIP （ディスプレイ、ルーターDHCP、または設定の読み取り）を見つけて、接続→インターフェースにtcp ://...を追加します。",
     "wifiConfigEmpty": "設定データが返されませんでした。",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "アイデンティティ保管庫",
+    "hint": "Vaultパスコードを使用して、IDバックアップのローカルコピーを暗号化します。ロックを解除して、保護されたID操作にアクセスします。",
+    "passcode": "Vaultのパスコード",
+    "confirmPasscode": "パスコードを確認",
+    "setPasscode": "ボールトを有効にする",
+    "unlock": "貯蔵庫のロックを解除",
+    "lock": "保管庫のロック",
+    "statusNotConfigured": "Not configured",
+    "statusLocked": "ロック",
+    "statusUnlocked": "ロック解除",
+    "passcodeTooShort": "少なくとも 4 文字必要です。",
+    "passcodeMismatch": "パスコードが一致しません。",
+    "setSuccess": "Vaultのパスコードが保存されました。",
+    "setFailed": "Vaultパスコードを保存できませんでした。",
+    "unlockSuccess": "ボールトがアンロックされました。",
+    "unlockFailed": "パスコードが正しくないか、Vaultエラーが発生しました。",
+    "lockSuccess": "ボールトがロックされています。"
   },
   "logAnalyzeModal": {
     "title": "ログ分析",
@@ -1549,6 +1599,60 @@
     "extraRfReceptions": "追加のRF受信",
     "originatorPacket": "パケット",
     "originatorPackets": "パケット"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "[リピーター] パネルからリピーター管理者パスワードを設定または変更します (セッションのみ)。",
+      "connectionFailed": "接続に失敗しました",
+      "notConnected": "デバイスに接続されていません",
+      "nodeNotFound": "ノードが見つかりません (暗号化キーがありません)",
+      "authenticationFailed": "認証に失敗しました",
+      "requestFailed": "失敗しました: {{detail}}",
+      "requestTimedOut": "リクエストがタイムアウトしました (最大 ~{{seconds}}s)",
+      "requestTimedOutApprox": "リクエストがタイムアウトしました (~{{seconds}}s)",
+      "pingNoRoute": "無線からのルートはまだありません。マルチホップ トレースには同期されたパスが必要です。連絡先の更新を待つか、再接続してください。",
+      "bleNoDetails": "BLE 接続に失敗しました (デバイスからエラーの詳細はありません)。もう一度試すか、シリアル/USB を使用してください。",
+      "bleAlreadyInProgress": "Bluetooth 接続はすでに進行中です。完了するまで待つか、代わりにシリアル/USB を試してください。",
+      "bleMissingServices": "デバイスは MeshCore BLE プロトコルをサポートしていません。デバイスが MeshCore ファームウェアを実行していることを確認してください。",
+      "blePeripheralInUse": "このデバイスはすでに Meshtastic BLE 経由で接続されています。 MeshCore として接続する前に、まず切断してください。",
+      "bleTimeoutWebBtHandshake": "MeshCore ハンドシェイクがタイムアウトしました (Web Bluetooth)。無線機では、最初に Linux とペアリングする PIN が必要な場合があります。[デバイスの削除と再ペアリング] を使用して、デバイスに表示されている PIN を入力するか、bluetoothctl とペアリングして、[接続] を再度タップします。",
+      "bleTimeoutWebBt": "Web Bluetooth 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスを起動したままにするか、無線で BLE の電源を入れ直すか、シリアル/TCP を使用します。",
+      "bleTimeoutHandshake": "Bluetooth は接続されましたが、切断/タイムアウトになる前に MeshCore プロトコルのハンドシェイクが完了しませんでした。再試行するか、デバイスを起動した状態で近くに置くか、BLE の電源を入れ直すか、シリアル/TCP を使用してください。",
+      "bleTimeoutNoble": "Noble IPC 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。",
+      "roomPost": {
+        "badState": "ルームの投稿が拒否されました (ラジオにログインしていません)。ログアウトし、再度ログインして、再試行してください。",
+        "illegalArg": "ルームの投稿が拒否されました (無効なメッセージ形式)。",
+        "notFound": "ルームの投稿が拒否されました (ルームの連絡先が無線で見つかりません)。",
+        "unsupportedCmd": "ルームの投稿が拒否されました (ラジオでサポートされていないメッセージ タイプ)。ルームにログインしてから再試行してください。",
+        "default": "部屋の投稿が無線で拒否されました。ログアウトし、再度ログインして、再試行してください。",
+        "timeout": "ラジオを待っている間に部屋の投稿がタイムアウトになりました。範囲を確認するか、再試行してください。"
+      },
+      "roomLogin": {
+        "noRoute": "このルームサーバーへのルートがありません。マップからノードをトレースするか、パスの通知を待ってから再試行してください。",
+        "pathSyncFailed": "ログインする前にラジオでルートをプログラムできませんでした。デバイスを再接続して、もう一度試してください。",
+        "pathSyncFailedDetail": "ログインする前にラジオでルートをプログラムできませんでした。デバイスを再接続して、もう一度試してください。{{detail}}",
+        "rejectedBlankGuest": "ルームへのログインが拒否されました。空のゲスト パスワードの場合は読み取り専用で続行を使用するか、ゲスト パスワード「hello」を試してください。",
+        "rejectedDefaultGuest": "ルームへのログインが拒否されました。このサーバーにゲスト パスワードがない場合は、ログインの代わりに読み取り専用で続行を使用します。それ以外の場合は、ゲストまたは管理者のパスワードを確認してください。",
+        "rejectedCheckPassword": "ルームへのログインが拒否されました。このルーム サーバーのゲスト パスワードまたは管理者パスワードを確認してください。",
+        "timedOutBlankGuest": "ルームへのログインがタイムアウトしました。空のゲスト パスワードの場合は読み取り専用で続行を使用するか、ゲスト パスワード「hello」を試してください。",
+        "timedOutDefaultGuest": "ルームへのログインがタイムアウトしました。このサーバーにゲスト パスワードがない場合は、ログインの代わりに読み取り専用で続行を使用します。",
+        "timedOut": "ルームへのログインがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
+        "failed": "ルームへのログインに失敗しました"
+      },
+      "roomLogout": {
+        "timedOut": "ルームのログアウトがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
+        "rejected": "ルームのログアウトが無線によって拒否されました。",
+        "failed": "部屋から出られませんでした"
+      },
+      "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です"
+    },
+    "mqttHints": {
+      "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
+      "network": "ネットワーク、DNS、ファイアウォール、VPN を確認してください。",
+      "connackTimeout": "前に「クライアント エラー」行が表示されない場合は、TLS/WebSocket ハンドシェイクが停止している可能性があります (別のネットワークを試してください。アプリは WSS に IPv4 を優先します)。",
+      "subscribeFailed": "ブローカーは、このトピックに対するワイルドカード サブスクライブを拒否する場合があります。ブローカーが許可している場合、メッセージは引き続き到着する可能性があります。",
+      "keepalive": "サーバーが MQTT ping に応答しなくなりました (アイドル タイムアウト、ネットワーク ドロップ、またはブローカーがセッションを閉じた)。再接続するか、リンクを確認してください。"
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "すべての連絡先が消去されました。",
@@ -2005,6 +2109,31 @@
         "label": "K9"
       }
     }
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "スタック設定",
+      "enableTransport": "トランスポート (他のピアへのルート) を有効にする",
+      "shareInstance": "Reticulum インスタンスを共有する",
+      "logLevel": "ログレベル",
+      "save": "スタック設定の保存",
+      "saveFailed": "スタック設定の保存に失敗しました。"
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum 構成をインポートする",
+      "hint": "rnsd スタイルの構成ファイルを貼り付けるか、ディスクからインポートします。 Merge はインターフェイス ブロックを名前で追加/更新します。 replace はすべてのインターフェイスを上書きします。",
+      "pasteLabel": "設定ファイルの内容",
+      "fromFile": "ファイルからインポート…",
+      "fromSystem": "システムのデフォルトをインポートする",
+      "merge": "マージインポート",
+      "replace": "インターフェースを置き換える",
+      "confirmTitle": "Reticulum 構成をインポートする",
+      "confirmMerge": "インポートされたインターフェイスを現在の構成にマージしますか?",
+      "confirmReplace": "すべてのインターフェイスをインポートされた構成で置き換えますか?これを元に戻すことはできません。",
+      "confirm": "輸入"
+    },
+    "reticulumConfigImportFailed": "構成のインポートに失敗しました。",
+    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。"
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",
@@ -3187,6 +3316,20 @@
     "clearAnnouncesDone": "クリアをお知らせします。",
     "clearAnnouncesFailed": "アナウンスをクリアできませんでした。"
   },
+  "reticulumIdentitySwitcher": {
+    "label": "アクティブなアイデンティティ",
+    "active": "アクティブアイデンティティ： {{name}}",
+    "activeBadge": "活動中"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "プレイヤーアイコンを見る",
+    "iconNameAria": "ピアアバターアイコン",
+    "iconCircle": "円",
+    "iconStar": "スター",
+    "iconHeart": "ハートマーク",
+    "iconShield": "シールド",
+    "iconUser": "ユーザー"
+  },
   "reticulumPropagation": {
     "preferred": "推奨",
     "setPreferred": "優先を設定",
@@ -3216,6 +3359,17 @@
     "autoSyncOption24h": "24時間ごと",
     "lastSynced": "最終同期: {{time}}",
     "lastRefreshed": "最終更新日 {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "伝播モード",
+    "modeAria": "伝播同期モード",
+    "modeAuto": "自動",
+    "modeManual": "手動",
+    "modeOff": "OFF",
+    "sync": "同期",
+    "syncAria": "伝播メッセージを同期",
+    "cancelSync": "取り消す",
+    "cancelSyncAria": "伝播の同期をキャンセル"
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
@@ -3621,157 +3775,5 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
-  },
-  "diagnosticsPing": {
-    "title": "連続ping",
-    "reticulumHint": "スタックが実行されている間、各インターバルでping （ RTT ）およびパスプローブ（ホップ）を実行します。",
-    "hashLabel": "宛先ハッシュ",
-    "hashPlaceholder": "32文字の宛先ハッシュ…",
-    "hashAria": "Pingする宛先ハッシュ",
-    "intervalLabel": "間隔",
-    "intervalAria": "Ping試行間隔（秒）",
-    "start": "開始",
-    "stop": "停止",
-    "runOnce": "Pingを1回実行する",
-    "colSeq": "#",
-    "colRtt": "Rett症候群",
-    "colHops": "ホップ",
-    "colStatus": "ステータス",
-    "rttMs": "{{ms}}ミリ秒",
-    "statusOk": "OK",
-    "statusFailed": "失敗： {{error}}"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "アクティブなアイデンティティ",
-    "active": "アクティブアイデンティティ： {{name}}",
-    "activeBadge": "活動中"
-  },
-  "identityVault": {
-    "title": "アイデンティティ保管庫",
-    "hint": "Vaultパスコードを使用して、IDバックアップのローカルコピーを暗号化します。ロックを解除して、保護されたID操作にアクセスします。",
-    "passcode": "Vaultのパスコード",
-    "confirmPasscode": "パスコードを確認",
-    "setPasscode": "ボールトを有効にする",
-    "unlock": "貯蔵庫のロックを解除",
-    "lock": "保管庫のロック",
-    "statusNotConfigured": "Not configured",
-    "statusLocked": "ロック",
-    "statusUnlocked": "ロック解除",
-    "passcodeTooShort": "少なくとも 4 文字必要です。",
-    "passcodeMismatch": "パスコードが一致しません。",
-    "setSuccess": "Vaultのパスコードが保存されました。",
-    "setFailed": "Vaultパスコードを保存できませんでした。",
-    "unlockSuccess": "ボールトがアンロックされました。",
-    "unlockFailed": "パスコードが正しくないか、Vaultエラーが発生しました。",
-    "lockSuccess": "ボールトがロックされています。"
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "伝播モード",
-    "modeAria": "伝播同期モード",
-    "modeAuto": "自動",
-    "modeManual": "手動",
-    "modeOff": "OFF",
-    "sync": "同期",
-    "syncAria": "伝播メッセージを同期",
-    "cancelSync": "取り消す",
-    "cancelSyncAria": "伝播の同期をキャンセル"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "プレイヤーアイコンを見る",
-    "iconNameAria": "ピアアバターアイコン",
-    "iconCircle": "円",
-    "iconStar": "スター",
-    "iconHeart": "ハートマーク",
-    "iconShield": "シールド",
-    "iconUser": "ユーザー"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "スタック設定",
-      "enableTransport": "トランスポート (他のピアへのルート) を有効にする",
-      "shareInstance": "Reticulum インスタンスを共有する",
-      "logLevel": "ログレベル",
-      "save": "スタック設定の保存",
-      "saveFailed": "スタック設定の保存に失敗しました。"
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum 構成をインポートする",
-      "hint": "rnsd スタイルの構成ファイルを貼り付けるか、ディスクからインポートします。 Merge はインターフェイス ブロックを名前で追加/更新します。 replace はすべてのインターフェイスを上書きします。",
-      "pasteLabel": "設定ファイルの内容",
-      "fromFile": "ファイルからインポート…",
-      "fromSystem": "システムのデフォルトをインポートする",
-      "merge": "マージインポート",
-      "replace": "インターフェースを置き換える",
-      "confirmTitle": "Reticulum 構成をインポートする",
-      "confirmMerge": "インポートされたインターフェイスを現在の構成にマージしますか?",
-      "confirmReplace": "すべてのインターフェイスをインポートされた構成で置き換えますか?これを元に戻すことはできません。",
-      "confirm": "輸入"
-    },
-    "reticulumConfigImportFailed": "構成のインポートに失敗しました。",
-    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。"
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "工場出荷時設定にリセット",
-      "hint": "ID、連絡先、メッセージをサイドカー スタックからクリアします。インターフェイス設定は保存されます。",
-      "button": "スタックデータをリセット",
-      "confirmTitle": "Reticulumスタックをリセットしますか？",
-      "confirmBody": "これにより、サイドカーから ID、連絡先、ローカル メッセージが削除されます。インターフェイス設定ファイルは保持されます。",
-      "confirm": "リセット"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "[リピーター] パネルからリピーター管理者パスワードを設定または変更します (セッションのみ)。",
-      "connectionFailed": "接続に失敗しました",
-      "notConnected": "デバイスに接続されていません",
-      "nodeNotFound": "ノードが見つかりません (暗号化キーがありません)",
-      "authenticationFailed": "認証に失敗しました",
-      "requestFailed": "失敗しました: {{detail}}",
-      "requestTimedOut": "リクエストがタイムアウトしました (最大 ~{{seconds}}s)",
-      "requestTimedOutApprox": "リクエストがタイムアウトしました (~{{seconds}}s)",
-      "pingNoRoute": "無線からのルートはまだありません。マルチホップ トレースには同期されたパスが必要です。連絡先の更新を待つか、再接続してください。",
-      "bleNoDetails": "BLE 接続に失敗しました (デバイスからエラーの詳細はありません)。もう一度試すか、シリアル/USB を使用してください。",
-      "bleAlreadyInProgress": "Bluetooth 接続はすでに進行中です。完了するまで待つか、代わりにシリアル/USB を試してください。",
-      "bleMissingServices": "デバイスは MeshCore BLE プロトコルをサポートしていません。デバイスが MeshCore ファームウェアを実行していることを確認してください。",
-      "blePeripheralInUse": "このデバイスはすでに Meshtastic BLE 経由で接続されています。 MeshCore として接続する前に、まず切断してください。",
-      "bleTimeoutWebBtHandshake": "MeshCore ハンドシェイクがタイムアウトしました (Web Bluetooth)。無線機では、最初に Linux とペアリングする PIN が必要な場合があります。[デバイスの削除と再ペアリング] を使用して、デバイスに表示されている PIN を入力するか、bluetoothctl とペアリングして、[接続] を再度タップします。",
-      "bleTimeoutWebBt": "Web Bluetooth 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスを起動したままにするか、無線で BLE の電源を入れ直すか、シリアル/TCP を使用します。",
-      "bleTimeoutHandshake": "Bluetooth は接続されましたが、切断/タイムアウトになる前に MeshCore プロトコルのハンドシェイクが完了しませんでした。再試行するか、デバイスを起動した状態で近くに置くか、BLE の電源を入れ直すか、シリアル/TCP を使用してください。",
-      "bleTimeoutNoble": "Noble IPC 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。",
-      "roomPost": {
-        "badState": "ルームの投稿が拒否されました (ラジオにログインしていません)。ログアウトし、再度ログインして、再試行してください。",
-        "illegalArg": "ルームの投稿が拒否されました (無効なメッセージ形式)。",
-        "notFound": "ルームの投稿が拒否されました (ルームの連絡先が無線で見つかりません)。",
-        "unsupportedCmd": "ルームの投稿が拒否されました (ラジオでサポートされていないメッセージ タイプ)。ルームにログインしてから再試行してください。",
-        "default": "部屋の投稿が無線で拒否されました。ログアウトし、再度ログインして、再試行してください。",
-        "timeout": "ラジオを待っている間に部屋の投稿がタイムアウトになりました。範囲を確認するか、再試行してください。"
-      },
-      "roomLogin": {
-        "noRoute": "このルームサーバーへのルートがありません。マップからノードをトレースするか、パスの通知を待ってから再試行してください。",
-        "pathSyncFailed": "ログインする前にラジオでルートをプログラムできませんでした。デバイスを再接続して、もう一度試してください。",
-        "pathSyncFailedDetail": "ログインする前にラジオでルートをプログラムできませんでした。デバイスを再接続して、もう一度試してください。{{detail}}",
-        "rejectedBlankGuest": "ルームへのログインが拒否されました。空のゲスト パスワードの場合は読み取り専用で続行を使用するか、ゲスト パスワード「hello」を試してください。",
-        "rejectedDefaultGuest": "ルームへのログインが拒否されました。このサーバーにゲスト パスワードがない場合は、ログインの代わりに読み取り専用で続行を使用します。それ以外の場合は、ゲストまたは管理者のパスワードを確認してください。",
-        "rejectedCheckPassword": "ルームへのログインが拒否されました。このルーム サーバーのゲスト パスワードまたは管理者パスワードを確認してください。",
-        "timedOutBlankGuest": "ルームへのログインがタイムアウトしました。空のゲスト パスワードの場合は読み取り専用で続行を使用するか、ゲスト パスワード「hello」を試してください。",
-        "timedOutDefaultGuest": "ルームへのログインがタイムアウトしました。このサーバーにゲスト パスワードがない場合は、ログインの代わりに読み取り専用で続行を使用します。",
-        "timedOut": "ルームへのログインがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
-        "failed": "ルームへのログインに失敗しました"
-      },
-      "roomLogout": {
-        "timedOut": "ルームのログアウトがタイムアウトしました。部屋が圏外か、応答していない可能性があります。",
-        "rejected": "ルームのログアウトが無線によって拒否されました。",
-        "failed": "部屋から出られませんでした"
-      },
-      "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です"
-    },
-    "mqttHints": {
-      "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
-      "network": "ネットワーク、DNS、ファイアウォール、VPN を確認してください。",
-      "connackTimeout": "前に「クライアント エラー」行が表示されない場合は、TLS/WebSocket ハンドシェイクが停止している可能性があります (別のネットワークを試してください。アプリは WSS に IPv4 を優先します)。",
-      "subscribeFailed": "ブローカーは、このトピックに対するワイルドカード サブスクライブを拒否する場合があります。ブローカーが許可している場合、メッセージは引き続き到着する可能性があります。",
-      "keepalive": "サーバーが MQTT ping に応答しなくなりました (アイドル タイムアウト、ネットワーク ドロップ、またはブローカーがセッションを閉じた)。再接続するか、リンクを確認してください。"
-    }
   }
 }

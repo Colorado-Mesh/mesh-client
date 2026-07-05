@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Redefinição de fábrica",
+      "hint": "Limpa identidade, contatos e mensagens da pilha secundária. A configuração da interface é preservada.",
+      "button": "Redefinir dados da pilha",
+      "confirmTitle": "Redefinir stack Reticulum?",
+      "confirmBody": "Isso remove identidade, contatos e mensagens locais do arquivo secundário. Seu arquivo de configuração da interface é mantido.",
+      "confirm": "Reiniciar"
+    }
+  },
   "app": {
     "loadingPanel": "Painel de carregamento",
     "loadingDialog": "Carregando diálogo...",
@@ -430,7 +440,6 @@
     "emptyNoDmMessages": "Ainda não há mensagens com {{name}}.",
     "emptyNoMessagesYet": "Ainda não há mensagens. Envie uma ou aguarde as mensagens recebidas.",
     "emptyConnectFirst": "Conecte-se a um dispositivo para começar a conversar.",
-    "waitingMessagesBadge": "Sincronizando {{count}} mensagem(ns) na fila do rádio...",
     "waitingMessagesSyncNow": "Sincronizar agora",
     "jumpToUnread": "Pular para Não Lido",
     "jumpToLatest": "Ir para as últimas",
@@ -489,7 +498,10 @@
       "pkiFailed": "A criptografia PKI falhou para esta mensagem.",
       "noChannel": "Nenhum canal disponível para encaminhar esta mensagem.",
       "timeout": "Mensagem expirou no rádio."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} mensagem(ões) na fila no rádio",
+    "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} do rádio...",
+    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensagens na fila do rádio..."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1262,6 +1274,25 @@
     "rssiDbm": "RSSI{{rssi}}dBm",
     "snrDb": "SNR{{snr}}dB"
   },
+  "diagnosticsPing": {
+    "title": "Ping contínuo",
+    "reticulumHint": "Executa ping (RTT) e sonda de caminho (Hops) em cada intervalo enquanto a pilha está em execução.",
+    "hashLabel": "Hash de destino",
+    "hashPlaceholder": "Hash de destino de 32 caracteres…",
+    "hashAria": "Hash de destino para ping",
+    "intervalLabel": "(Intervalo(s))",
+    "intervalAria": "Segundos entre tentativas de ping",
+    "start": "Iniciar",
+    "stop": "Parar",
+    "runOnce": "Fazer ping uma vez",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Saltos",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Reprovado: {{error}}"
+  },
   "errorBoundary": {
     "title": "Algo deu errado",
     "unexpectedError": "Ocorreu um erro inesperado",
@@ -1383,6 +1414,25 @@
     "wifiStationSuccess": "Modo de estação salvo. Reinicie a placa, encontre seu IP (exibição, DHCP do roteador ou configuração de leitura) e adicione tcp://… em → Interfaces de conexão.",
     "wifiConfigEmpty": "Nenhum dado de configuração retornado.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Identity Vault",
+    "hint": "Criptografe uma cópia local do seu backup de identidade com uma senha do cofre. Desbloqueie para acessar operações de identidade protegida.",
+    "passcode": "Senha do cofre",
+    "confirmPasscode": "Confirmar código",
+    "setPasscode": "Ativar cofre",
+    "unlock": "Desbloquear cofre",
+    "lock": "Cofre de fechadura",
+    "statusNotConfigured": "Não configurado",
+    "statusLocked": "Locked",
+    "statusUnlocked": "Desbloqueado",
+    "passcodeTooShort": "A senha deve ter pelo menos 4 caracteres.",
+    "passcodeMismatch": "As senhas não correspondem.",
+    "setSuccess": "Senha do cofre salva.",
+    "setFailed": "Não foi possível salvar a senha do cofre.",
+    "unlockSuccess": "Cofre desbloqueado.",
+    "unlockFailed": "Senha incorreta ou erro no cofre.",
+    "lockSuccess": "Cofre bloqueado."
   },
   "logAnalyzeModal": {
     "title": "Análise de registro",
@@ -1549,6 +1599,60 @@
     "extraRfReceptions": "recepções extras de RF",
     "originatorPacket": "pacote",
     "originatorPackets": "pacotes"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Defina ou altere a senha de administrador do repetidor no painel Repetidores (somente sessão).",
+      "connectionFailed": "Falha na conexão",
+      "notConnected": "Não conectado ao dispositivo",
+      "nodeNotFound": "Nó não encontrado (sem chave de criptografia)",
+      "authenticationFailed": "Falha na autenticação",
+      "requestFailed": "Falha: {{detail}}",
+      "requestTimedOut": "A solicitação expirou (até ~{{seconds}}s)",
+      "requestTimedOutApprox": "A solicitação expirou (~{{seconds}}s)",
+      "pingNoRoute": "Nenhuma rota do rádio ainda — o rastreamento multi-hop precisa de um caminho sincronizado. Aguarde atualizações de contato ou reconecte.",
+      "bleNoDetails": "Falha na conexão BLE (nenhum detalhe de erro do dispositivo). Tente novamente ou use Serial/USB.",
+      "bleAlreadyInProgress": "Conexão Bluetooth já em andamento. Aguarde a conclusão ou tente Serial/USB.",
+      "bleMissingServices": "O dispositivo não oferece suporte ao protocolo MeshCore BLE. Certifique-se de que o dispositivo esteja executando o firmware MeshCore.",
+      "blePeripheralInUse": "Este dispositivo já está conectado via Meshtastic BLE. Desconecte-o primeiro antes de conectar como MeshCore.",
+      "bleTimeoutWebBtHandshake": "O handshake do MeshCore expirou (Web Bluetooth). O rádio pode precisar primeiro de um PIN emparelhado com Linux: use Remover e reemparelhar dispositivo e insira o PIN mostrado no dispositivo ou emparelhe com bluetoothctl e toque em Conectar novamente.",
+      "bleTimeoutWebBt": "A conexão Bluetooth expirou ao abrir o MeshCore via Web Bluetooth. Tente novamente, mantenha o dispositivo ativado, desligue e ligue o BLE no rádio ou use Serial/TCP.",
+      "bleTimeoutHandshake": "Bluetooth conectado, mas o handshake do protocolo MeshCore não foi concluído antes da desconexão/tempo limite. Tente novamente, mantenha o dispositivo ativo e próximo, desligue e ligue o BLE ou use Serial/TCP.",
+      "bleTimeoutNoble": "A conexão Bluetooth expirou ao abrir o MeshCore no Noble IPC. Tente novamente, desligue e ligue o BLE no dispositivo ou use Serial/TCP.",
+      "roomPost": {
+        "badState": "Postagem da sala rejeitada (não logado na rádio). Saia, faça login novamente e tente novamente.",
+        "illegalArg": "Postagem da sala rejeitada (formato de mensagem inválido).",
+        "notFound": "Postagem da sala rejeitada (contato da sala não encontrado no rádio).",
+        "unsupportedCmd": "Postagem da sala rejeitada (tipo de mensagem não compatível no rádio). Faça login na sala e tente novamente.",
+        "default": "Postagem da sala rejeitada pela rádio. Saia, faça login novamente e tente novamente.",
+        "timeout": "A postagem da sala expirou aguardando o rádio. Verifique o intervalo ou tente novamente."
+      },
+      "roomLogin": {
+        "noRoute": "Nenhuma rota para este servidor de sala. Rastreie o nó no mapa ou aguarde anúncios de caminho e tente novamente.",
+        "pathSyncFailed": "Não foi possível programar a rota no seu rádio antes do login. Reconecte o dispositivo e tente novamente.",
+        "pathSyncFailedDetail": "Não foi possível programar a rota no seu rádio antes do login. Reconecte o dispositivo e tente novamente.{{detail}}",
+        "rejectedBlankGuest": "Login da sala rejeitado. Use Continuar somente leitura para senha de convidado em branco ou tente a senha de convidado \"olá\".",
+        "rejectedDefaultGuest": "Login da sala rejeitado. Se este servidor não tiver senha de convidado, use Continuar somente leitura em vez de Login. Caso contrário, verifique a senha do convidado ou do administrador.",
+        "rejectedCheckPassword": "Login da sala rejeitado. Verifique a senha de convidado ou administrador deste servidor de sala.",
+        "timedOutBlankGuest": "O login da sala expirou. Use Continuar somente leitura para senha de convidado em branco ou tente a senha de convidado \"olá\".",
+        "timedOutDefaultGuest": "O login da sala expirou. Se este servidor não tiver senha de convidado, use Continuar somente leitura em vez de Login.",
+        "timedOut": "O login da sala expirou. A sala pode estar fora de alcance ou não responder.",
+        "failed": "Falha no login da sala"
+      },
+      "roomLogout": {
+        "timedOut": "O logout da sala expirou. A sala pode estar fora de alcance ou não responder.",
+        "rejected": "Logout da sala rejeitado pelo rádio.",
+        "failed": "Não foi possível sair do quarto"
+      },
+      "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento"
+    },
+    "mqttHints": {
+      "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
+      "network": "Verifique rede, DNS, firewall e VPN.",
+      "connackTimeout": "Se você não vir nenhuma linha anterior de “erro do cliente”, o handshake TLS/WebSocket pode estar paralisado (tente outra rede; o aplicativo prefere IPv4 para WSS).",
+      "subscribeFailed": "O corretor pode negar assinatura curinga neste tópico; as mensagens ainda podem chegar se o corretor permitir.",
+      "keepalive": "O servidor parou de responder aos pings MQTT (tempo limite de inatividade, queda de rede ou corretor fechou a sessão). Reconecte ou verifique seu link."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Todos os contatos apagados.",
@@ -2005,6 +2109,31 @@
         "label": "K9"
       }
     }
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Configurações de pilha",
+      "enableTransport": "Habilitar transporte (rota para outros peers)",
+      "shareInstance": "Compartilhar instância do Reticulum",
+      "logLevel": "Nível de registro",
+      "save": "Salvar configurações de pilha",
+      "saveFailed": "Falha ao salvar as configurações da pilha."
+    },
+    "reticulumConfigImport": {
+      "title": "Importar config Reticulum",
+      "hint": "Cole um arquivo de configuração estilo rnsd ou importe do disco. Mesclar adiciona/atualiza blocos de interface por nome; substituir substitui todas as interfaces.",
+      "pasteLabel": "Conteúdo do arquivo de configuração",
+      "fromFile": "Importar do arquivo…",
+      "fromSystem": "Importar padrão do sistema",
+      "merge": "Mesclar importação",
+      "replace": "Substituir interfaces",
+      "confirmTitle": "Importar config Reticulum",
+      "confirmMerge": "Mesclar interfaces importadas na configuração atual?",
+      "confirmReplace": "Substituir todas as interfaces pela configuração importada? Isto não pode ser desfeito.",
+      "confirm": "Importar"
+    },
+    "reticulumConfigImportFailed": "Falha na importação de configuração.",
+    "reticulumConfigNotFound": "Nenhuma configuração do Reticulum do sistema encontrada nos caminhos padrão."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",
@@ -3187,6 +3316,20 @@
     "clearAnnouncesDone": "Anúncios liberados.",
     "clearAnnouncesFailed": "Falha ao limpar anúncios."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "identidade ativa",
+    "active": "Identidade ativa: {{name}}",
+    "activeBadge": "Ativo"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ícone de avatar",
+    "iconNameAria": "Ícone de avatar de pares",
+    "iconCircle": "Círculo",
+    "iconStar": "Estrela",
+    "iconHeart": "Coração",
+    "iconShield": "Blindagem",
+    "iconUser": "Usuário"
+  },
   "reticulumPropagation": {
     "preferred": "Preferencialmente",
     "setPreferred": "Definir como preferencial",
@@ -3216,6 +3359,17 @@
     "autoSyncOption24h": "A cada 24 horas",
     "lastSynced": "Última sincronização: {{time}}",
     "lastRefreshed": "Última atualização {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Modo de propagação",
+    "modeAria": "Modo de sincronização de propagação",
+    "modeAuto": "Automático",
+    "modeManual": "Manual",
+    "modeOff": "Desligado",
+    "sync": "Sincronizar",
+    "syncAria": "Sincronizar mensagens de propagação",
+    "cancelSync": "Cancelar",
+    "cancelSyncAria": "Cancelar sincronização de propagação"
   },
   "reticulumTopology": {
     "title": "Topologia de rede",
@@ -3621,157 +3775,5 @@
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
     "menuToastErrorTitle": "verificação de atualização falhou"
-  },
-  "diagnosticsPing": {
-    "title": "Ping contínuo",
-    "reticulumHint": "Executa ping (RTT) e sonda de caminho (Hops) em cada intervalo enquanto a pilha está em execução.",
-    "hashLabel": "Hash de destino",
-    "hashPlaceholder": "Hash de destino de 32 caracteres…",
-    "hashAria": "Hash de destino para ping",
-    "intervalLabel": "(Intervalo(s))",
-    "intervalAria": "Segundos entre tentativas de ping",
-    "start": "Iniciar",
-    "stop": "Parar",
-    "runOnce": "Fazer ping uma vez",
-    "colSeq": "#",
-    "colRtt": "RTT",
-    "colHops": "Saltos",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Reprovado: {{error}}"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "identidade ativa",
-    "active": "Identidade ativa: {{name}}",
-    "activeBadge": "Ativo"
-  },
-  "identityVault": {
-    "title": "Identity Vault",
-    "hint": "Criptografe uma cópia local do seu backup de identidade com uma senha do cofre. Desbloqueie para acessar operações de identidade protegida.",
-    "passcode": "Senha do cofre",
-    "confirmPasscode": "Confirmar código",
-    "setPasscode": "Ativar cofre",
-    "unlock": "Desbloquear cofre",
-    "lock": "Cofre de fechadura",
-    "statusNotConfigured": "Não configurado",
-    "statusLocked": "Locked",
-    "statusUnlocked": "Desbloqueado",
-    "passcodeTooShort": "A senha deve ter pelo menos 4 caracteres.",
-    "passcodeMismatch": "As senhas não correspondem.",
-    "setSuccess": "Senha do cofre salva.",
-    "setFailed": "Não foi possível salvar a senha do cofre.",
-    "unlockSuccess": "Cofre desbloqueado.",
-    "unlockFailed": "Senha incorreta ou erro no cofre.",
-    "lockSuccess": "Cofre bloqueado."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "Modo de propagação",
-    "modeAria": "Modo de sincronização de propagação",
-    "modeAuto": "Automático",
-    "modeManual": "Manual",
-    "modeOff": "Desligado",
-    "sync": "Sincronizar",
-    "syncAria": "Sincronizar mensagens de propagação",
-    "cancelSync": "Cancelar",
-    "cancelSyncAria": "Cancelar sincronização de propagação"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Ícone de avatar",
-    "iconNameAria": "Ícone de avatar de pares",
-    "iconCircle": "Círculo",
-    "iconStar": "Estrela",
-    "iconHeart": "Coração",
-    "iconShield": "Blindagem",
-    "iconUser": "Usuário"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Configurações de pilha",
-      "enableTransport": "Habilitar transporte (rota para outros peers)",
-      "shareInstance": "Compartilhar instância do Reticulum",
-      "logLevel": "Nível de registro",
-      "save": "Salvar configurações de pilha",
-      "saveFailed": "Falha ao salvar as configurações da pilha."
-    },
-    "reticulumConfigImport": {
-      "title": "Importar config Reticulum",
-      "hint": "Cole um arquivo de configuração estilo rnsd ou importe do disco. Mesclar adiciona/atualiza blocos de interface por nome; substituir substitui todas as interfaces.",
-      "pasteLabel": "Conteúdo do arquivo de configuração",
-      "fromFile": "Importar do arquivo…",
-      "fromSystem": "Importar padrão do sistema",
-      "merge": "Mesclar importação",
-      "replace": "Substituir interfaces",
-      "confirmTitle": "Importar config Reticulum",
-      "confirmMerge": "Mesclar interfaces importadas na configuração atual?",
-      "confirmReplace": "Substituir todas as interfaces pela configuração importada? Isto não pode ser desfeito.",
-      "confirm": "Importar"
-    },
-    "reticulumConfigImportFailed": "Falha na importação de configuração.",
-    "reticulumConfigNotFound": "Nenhuma configuração do Reticulum do sistema encontrada nos caminhos padrão."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Redefinição de fábrica",
-      "hint": "Limpa identidade, contatos e mensagens da pilha secundária. A configuração da interface é preservada.",
-      "button": "Redefinir dados da pilha",
-      "confirmTitle": "Redefinir stack Reticulum?",
-      "confirmBody": "Isso remove identidade, contatos e mensagens locais do arquivo secundário. Seu arquivo de configuração da interface é mantido.",
-      "confirm": "Reiniciar"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Defina ou altere a senha de administrador do repetidor no painel Repetidores (somente sessão).",
-      "connectionFailed": "Falha na conexão",
-      "notConnected": "Não conectado ao dispositivo",
-      "nodeNotFound": "Nó não encontrado (sem chave de criptografia)",
-      "authenticationFailed": "Falha na autenticação",
-      "requestFailed": "Falha: {{detail}}",
-      "requestTimedOut": "A solicitação expirou (até ~{{seconds}}s)",
-      "requestTimedOutApprox": "A solicitação expirou (~{{seconds}}s)",
-      "pingNoRoute": "Nenhuma rota do rádio ainda — o rastreamento multi-hop precisa de um caminho sincronizado. Aguarde atualizações de contato ou reconecte.",
-      "bleNoDetails": "Falha na conexão BLE (nenhum detalhe de erro do dispositivo). Tente novamente ou use Serial/USB.",
-      "bleAlreadyInProgress": "Conexão Bluetooth já em andamento. Aguarde a conclusão ou tente Serial/USB.",
-      "bleMissingServices": "O dispositivo não oferece suporte ao protocolo MeshCore BLE. Certifique-se de que o dispositivo esteja executando o firmware MeshCore.",
-      "blePeripheralInUse": "Este dispositivo já está conectado via Meshtastic BLE. Desconecte-o primeiro antes de conectar como MeshCore.",
-      "bleTimeoutWebBtHandshake": "O handshake do MeshCore expirou (Web Bluetooth). O rádio pode precisar primeiro de um PIN emparelhado com Linux: use Remover e reemparelhar dispositivo e insira o PIN mostrado no dispositivo ou emparelhe com bluetoothctl e toque em Conectar novamente.",
-      "bleTimeoutWebBt": "A conexão Bluetooth expirou ao abrir o MeshCore via Web Bluetooth. Tente novamente, mantenha o dispositivo ativado, desligue e ligue o BLE no rádio ou use Serial/TCP.",
-      "bleTimeoutHandshake": "Bluetooth conectado, mas o handshake do protocolo MeshCore não foi concluído antes da desconexão/tempo limite. Tente novamente, mantenha o dispositivo ativo e próximo, desligue e ligue o BLE ou use Serial/TCP.",
-      "bleTimeoutNoble": "A conexão Bluetooth expirou ao abrir o MeshCore no Noble IPC. Tente novamente, desligue e ligue o BLE no dispositivo ou use Serial/TCP.",
-      "roomPost": {
-        "badState": "Postagem da sala rejeitada (não logado na rádio). Saia, faça login novamente e tente novamente.",
-        "illegalArg": "Postagem da sala rejeitada (formato de mensagem inválido).",
-        "notFound": "Postagem da sala rejeitada (contato da sala não encontrado no rádio).",
-        "unsupportedCmd": "Postagem da sala rejeitada (tipo de mensagem não compatível no rádio). Faça login na sala e tente novamente.",
-        "default": "Postagem da sala rejeitada pela rádio. Saia, faça login novamente e tente novamente.",
-        "timeout": "A postagem da sala expirou aguardando o rádio. Verifique o intervalo ou tente novamente."
-      },
-      "roomLogin": {
-        "noRoute": "Nenhuma rota para este servidor de sala. Rastreie o nó no mapa ou aguarde anúncios de caminho e tente novamente.",
-        "pathSyncFailed": "Não foi possível programar a rota no seu rádio antes do login. Reconecte o dispositivo e tente novamente.",
-        "pathSyncFailedDetail": "Não foi possível programar a rota no seu rádio antes do login. Reconecte o dispositivo e tente novamente.{{detail}}",
-        "rejectedBlankGuest": "Login da sala rejeitado. Use Continuar somente leitura para senha de convidado em branco ou tente a senha de convidado \"olá\".",
-        "rejectedDefaultGuest": "Login da sala rejeitado. Se este servidor não tiver senha de convidado, use Continuar somente leitura em vez de Login. Caso contrário, verifique a senha do convidado ou do administrador.",
-        "rejectedCheckPassword": "Login da sala rejeitado. Verifique a senha de convidado ou administrador deste servidor de sala.",
-        "timedOutBlankGuest": "O login da sala expirou. Use Continuar somente leitura para senha de convidado em branco ou tente a senha de convidado \"olá\".",
-        "timedOutDefaultGuest": "O login da sala expirou. Se este servidor não tiver senha de convidado, use Continuar somente leitura em vez de Login.",
-        "timedOut": "O login da sala expirou. A sala pode estar fora de alcance ou não responder.",
-        "failed": "Falha no login da sala"
-      },
-      "roomLogout": {
-        "timedOut": "O logout da sala expirou. A sala pode estar fora de alcance ou não responder.",
-        "rejected": "Logout da sala rejeitado pelo rádio.",
-        "failed": "Não foi possível sair do quarto"
-      },
-      "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento"
-    },
-    "mqttHints": {
-      "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
-      "network": "Verifique rede, DNS, firewall e VPN.",
-      "connackTimeout": "Se você não vir nenhuma linha anterior de “erro do cliente”, o handshake TLS/WebSocket pode estar paralisado (tente outra rede; o aplicativo prefere IPv4 para WSS).",
-      "subscribeFailed": "O corretor pode negar assinatura curinga neste tópico; as mensagens ainda podem chegar se o corretor permitir.",
-      "keepalive": "O servidor parou de responder aos pings MQTT (tempo limite de inatividade, queda de rede ou corretor fechou a sessão). Reconecte ou verifique seu link."
-    }
   }
 }

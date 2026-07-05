@@ -13,7 +13,7 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreAutoPruneEnabled: true,
   meshcoreAutoPruneDays: 30,
   meshcoreContactCapEnabled: true,
-  meshcoreContactCapCount: 5000,
+  meshcoreContactCapCount: 10000,
   meshcoreDeleteNeverAdvertised: true,
   distanceFilterEnabled: false,
   distanceFilterMax: 500,

@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "공장 초기화",
+      "hint": "사이드카 스택에서 ID, 연락처 및 메시지를 지웁니다. 인터페이스 구성이 유지됩니다.",
+      "button": "스택 데이터 재설정",
+      "confirmTitle": "Reticulum stack을 재설정하시겠습니까?",
+      "confirmBody": "이렇게 하면 사이드카에서 ID, 연락처 및 로컬 메시지가 제거됩니다. 인터페이스 구성 파일은 유지됩니다.",
+      "confirm": "다시 놓기"
+    }
+  },
   "app": {
     "loadingPanel": "로딩 패널",
     "loadingDialog": "로딩 대화상자",
@@ -430,7 +440,6 @@
     "emptyNoDmMessages": "{{name}}님과의 메시지가 아직 없습니다.",
     "emptyNoMessagesYet": "아직 메시지가 없습니다. 메시지를 보내거나 수신을 기다리세요.",
     "emptyConnectFirst": "채팅을 시작하려면 기기에 연결하세요.",
-    "waitingMessagesBadge": "라디오에서 {{count}} 대기 중인 메시지 동기화 중...",
     "waitingMessagesSyncNow": "지금 동기화",
     "jumpToUnread": "읽지 않음으로 이동",
     "jumpToLatest": "최신으로 이동",
@@ -489,7 +498,10 @@
       "pkiFailed": "이 메시지에 대한 PKI 암호화에 실패했습니다.",
       "noChannel": "이 메시지를 라우팅할 수 있는 채널이 없습니다.",
       "timeout": "라디오에서 메시지가 시간 초과되었습니다."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} 라디오에서 대기 중인 메시지",
+    "waitingMessagesSyncProgress": "라디오에서 {{processed}}/{{total}} 동기화 중…",
+    "waitingMessagesSyncProgressIndeterminate": "라디오에서 대기 중인 메시지 동기화 중..."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1262,6 +1274,25 @@
     "rssiDbm": "RSSI {{rssi}}dBm",
     "snrDb": "SNR {{snr}}dB"
   },
+  "diagnosticsPing": {
+    "title": "연속 핑",
+    "reticulumHint": "스택이 실행되는 동안 각 간격에서 ping (RTT) 및 경로 프로브 (홉) 를 실행합니다.",
+    "hashLabel": "대상 해시",
+    "hashPlaceholder": "32자 대상 해시…",
+    "hashAria": "대상 해시에서 핑까지",
+    "intervalLabel": "간격",
+    "intervalAria": "핑 시도 사이의 시간 (초)",
+    "start": "시작",
+    "stop": "정지",
+    "runOnce": "핑 한 번",
+    "colSeq": "#",
+    "colRtt": "레트 증후군",
+    "colHops": "홉",
+    "colStatus": "상태",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "확인",
+    "statusFailed": "실패: {{error}}"
+  },
   "errorBoundary": {
     "title": "문제가 발생했습니다.",
     "unexpectedError": "예상치 못한 오류가 발생했습니다.",
@@ -1383,6 +1414,25 @@
     "wifiStationSuccess": "스테이션 모드가 저장되었습니다. 보드를 재부팅한 다음 해당 IP (디스플레이, 라우터 DHCP 또는 읽기 구성) 를 찾아 연결 → 인터페이스에 tcp://… 를 추가하십시오.",
     "wifiConfigEmpty": "반환된 구성 데이터가 없습니다.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "신원 정보 보관소",
+    "hint": "Vault 암호를 사용하여 ID 백업의 로컬 복사본을 암호화합니다. 잠금 해제하여 보호된 ID 작업에 액세스하세요.",
+    "passcode": "Vault 암호",
+    "confirmPasscode": "새 암호를 확인",
+    "setPasscode": "볼트 활성화",
+    "unlock": "금고 잠금 해제",
+    "lock": "금고 잠금",
+    "statusNotConfigured": "구성되지 않음",
+    "statusLocked": "잠김",
+    "statusUnlocked": "잠금 해제",
+    "passcodeTooShort": "최소한 4자 이상이어야 합니다",
+    "passcodeMismatch": "비밀번호가 일치하지 않습니다.",
+    "setSuccess": "Vault 암호가 저장되었습니다.",
+    "setFailed": "볼트 암호를 저장할 수 없습니다.",
+    "unlockSuccess": "금고가 잠금 해제되었습니다.",
+    "unlockFailed": "잘못된 암호 또는 볼트 오류입니다.",
+    "lockSuccess": "금고가 잠겼습니다."
   },
   "logAnalyzeModal": {
     "title": "로그 분석",
@@ -1549,6 +1599,60 @@
     "extraRfReceptions": "추가 RF 수신",
     "originatorPacket": "패킷",
     "originatorPackets": "패킷"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "리피터 패널에서 리피터 관리자 비밀번호를 설정하거나 변경하십시오(세션에만 해당).",
+      "connectionFailed": "연결 실패",
+      "notConnected": "기기에 연결되지 않음",
+      "nodeNotFound": "노드를 찾을 수 없음(암호화 키 없음)",
+      "authenticationFailed": "인증 실패",
+      "requestFailed": "실패: {{detail}}",
+      "requestTimedOut": "요청 시간이 초과되었습니다(최대 ~{{seconds}}s).",
+      "requestTimedOutApprox": "요청 시간 초과(~{{seconds}}s)",
+      "pingNoRoute": "아직 무선으로부터의 경로가 없습니다. 다중 홉 추적에는 동기화된 경로가 필요합니다. 연락처 업데이트를 기다리거나 다시 연결하세요.",
+      "bleNoDetails": "BLE 연결에 실패했습니다(장치의 오류 세부정보 없음). 다시 시도하거나 직렬/USB를 사용하십시오.",
+      "bleAlreadyInProgress": "블루투스 연결이 이미 진행 중입니다. 완료될 때까지 기다리거나 대신 직렬/USB를 사용해 보세요.",
+      "bleMissingServices": "장치가 MeshCore BLE 프로토콜을 지원하지 않습니다. 장치가 MeshCore 펌웨어를 실행하고 있는지 확인하십시오.",
+      "blePeripheralInUse": "이 장치는 이미 Meshtastic BLE를 통해 연결되어 있습니다. MeshCore로 연결하기 전에 먼저 연결을 끊으세요.",
+      "bleTimeoutWebBtHandshake": "MeshCore 핸드셰이크 시간이 초과되었습니다(웹 블루투스). 라디오에는 먼저 Linux와 페어링된 PIN이 필요할 수 있습니다. 장치 제거 및 재페어링을 사용하고 장치에 표시된 PIN을 입력하거나 bluetoothctl과 페어링한 다음 연결을 다시 탭하세요.",
+      "bleTimeoutWebBt": "웹 블루투스를 통해 MeshCore를 여는 동안 블루투스 연결 시간이 초과되었습니다. 다시 시도하고, 장치를 깨운 상태로 유지하고, 라디오에서 BLE의 전원을 껐다 켜거나, 직렬/TCP를 사용하세요.",
+      "bleTimeoutHandshake": "Bluetooth가 연결되었지만 연결 해제/시간 초과 전에 MeshCore 프로토콜 핸드셰이크가 완료되지 않았습니다. 다시 시도하고 장치를 활성화된 상태로 근처에 두거나 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
+      "bleTimeoutNoble": "Noble IPC를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
+      "roomPost": {
+        "badState": "방 게시물이 거부되었습니다(라디오에 로그인되지 않음). 로그아웃했다가 다시 로그인한 후 다시 시도하세요.",
+        "illegalArg": "회의실 게시물이 거부되었습니다(잘못된 메시지 형식).",
+        "notFound": "방 게시물이 거부되었습니다(라디오에서 방 연락처를 찾을 수 없음).",
+        "unsupportedCmd": "방 게시물이 거부되었습니다(라디오에서 지원되지 않는 메시지 유형). 회의실에 로그인한 후 다시 시도하세요.",
+        "default": "라디오에서 방 게시물을 거부했습니다. 로그아웃했다가 다시 로그인한 후 다시 시도하세요.",
+        "timeout": "라디오를 기다리는 동안 방 게시물의 시간이 초과되었습니다. 범위를 확인하거나 다시 시도하세요."
+      },
+      "roomLogin": {
+        "noRoute": "이 룸 서버에 대한 경로가 없습니다. 지도에서 노드를 추적하거나 경로 광고를 기다린 후 다시 시도하세요.",
+        "pathSyncFailed": "로그인하기 전에 라디오에서 경로를 프로그래밍할 수 없습니다. 장치를 다시 연결하고 다시 시도하십시오.",
+        "pathSyncFailedDetail": "로그인하기 전에 라디오에서 경로를 프로그래밍할 수 없습니다. 기기를 다시 연결하고 다시 시도해 보세요.{{detail}}",
+        "rejectedBlankGuest": "회의실 로그인이 거부되었습니다. 게스트 비밀번호가 비어 있는 경우 계속 읽기 전용을 사용하거나 게스트 비밀번호 \"hello\"를 사용해 보세요.",
+        "rejectedDefaultGuest": "회의실 로그인이 거부되었습니다. 이 서버에 게스트 비밀번호가 없으면 로그인 대신 계속 읽기 전용을 사용하십시오. 그렇지 않은 경우 게스트 또는 관리자 비밀번호를 확인하세요.",
+        "rejectedCheckPassword": "회의실 로그인이 거부되었습니다. 이 룸 서버의 게스트 또는 관리자 비밀번호를 확인하세요.",
+        "timedOutBlankGuest": "회의실 로그인 시간이 초과되었습니다. 게스트 비밀번호가 비어 있는 경우 계속 읽기 전용을 사용하거나 게스트 비밀번호 \"hello\"를 사용해 보세요.",
+        "timedOutDefaultGuest": "회의실 로그인 시간이 초과되었습니다. 이 서버에 게스트 비밀번호가 없으면 로그인 대신 계속 읽기 전용을 사용하십시오.",
+        "timedOut": "회의실 로그인 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
+        "failed": "회의실 로그인 실패"
+      },
+      "roomLogout": {
+        "timedOut": "회의실 로그아웃 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
+        "rejected": "무선으로 룸 로그아웃이 거부되었습니다.",
+        "failed": "회의실에서 나갈 수 없습니다."
+      },
+      "repeaterRpcInProgress": "이 중계기에 대한 요청이 이미 진행 중입니다."
+    },
+    "mqttHints": {
+      "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
+      "network": "네트워크, DNS, 방화벽, VPN을 확인하세요.",
+      "connackTimeout": "이전의 \"클라이언트 오류\" 줄이 표시되지 않으면 TLS/WebSocket 핸드셰이크가 중단된 것일 수 있습니다(다른 네트워크를 사용해 보십시오. 앱은 WSS에 대해 IPv4를 선호합니다).",
+      "subscribeFailed": "브로커는 이 주제에 대한 와일드카드 구독을 거부할 수 있습니다. 브로커가 허용하는 경우 메시지가 계속 도착할 수 있습니다.",
+      "keepalive": "서버가 MQTT 핑(유휴 시간 초과, 네트워크 중단 또는 브로커가 세션을 닫음)에 대한 응답을 중지했습니다. 링크를 다시 연결하거나 확인하세요."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "모든 연락처가 삭제되었습니다.",
@@ -2005,6 +2109,31 @@
         "label": "K9"
       }
     }
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "스택 설정",
+      "enableTransport": "전송 활성화(다른 피어에 대한 경로)",
+      "shareInstance": "Reticulum 인스턴스 공유",
+      "logLevel": "로그 수준",
+      "save": "스택 설정 저장",
+      "saveFailed": "스택 설정을 저장하지 못했습니다."
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum config 가져오기",
+      "hint": "rnsd 스타일 구성 파일을 붙여넣거나 디스크에서 가져옵니다. 병합은 이름별로 인터페이스 블록을 추가/업데이트합니다. 교체는 모든 인터페이스를 덮어씁니다.",
+      "pasteLabel": "구성 파일 내용",
+      "fromFile": "파일에서 가져오기…",
+      "fromSystem": "가져오기 시스템 기본값",
+      "merge": "병합 가져오기",
+      "replace": "인터페이스 교체",
+      "confirmTitle": "Reticulum config 가져오기",
+      "confirmMerge": "가져온 인터페이스를 현재 구성에 병합하시겠습니까?",
+      "confirmReplace": "모든 인터페이스를 가져온 구성으로 바꾸시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "confirm": "수입"
+    },
+    "reticulumConfigImportFailed": "구성 가져오기에 실패했습니다.",
+    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "즐겨찾기에서 제거",
@@ -3187,6 +3316,20 @@
     "clearAnnouncesDone": "공지가 지워졌습니다.",
     "clearAnnouncesFailed": "공지 지우기에 실패했습니다."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "활성 신원",
+    "active": "활성 ID: {{name}}",
+    "activeBadge": "활성화"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "아바타 아이콘",
+    "iconNameAria": "피어 아바타 아이콘",
+    "iconCircle": "원형",
+    "iconStar": "스타",
+    "iconHeart": "심장",
+    "iconShield": "실드",
+    "iconUser": "사용자"
+  },
   "reticulumPropagation": {
     "preferred": "선호",
     "setPreferred": "선호 사항 설정",
@@ -3216,6 +3359,17 @@
     "autoSyncOption24h": "24시간마다",
     "lastSynced": "마지막 동기화: {{time}}",
     "lastRefreshed": "마지막 업데이트: {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "전파 모드",
+    "modeAria": "전파 동기화 모드",
+    "modeAuto": "자동",
+    "modeManual": "수동",
+    "modeOff": "해제",
+    "sync": "동기화",
+    "syncAria": "전파 메시지 동기화",
+    "cancelSync": "취소",
+    "cancelSyncAria": "전파 동기화 취소"
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
@@ -3621,157 +3775,5 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
-  },
-  "diagnosticsPing": {
-    "title": "연속 핑",
-    "reticulumHint": "스택이 실행되는 동안 각 간격에서 ping (RTT) 및 경로 프로브 (홉) 를 실행합니다.",
-    "hashLabel": "대상 해시",
-    "hashPlaceholder": "32자 대상 해시…",
-    "hashAria": "대상 해시에서 핑까지",
-    "intervalLabel": "간격",
-    "intervalAria": "핑 시도 사이의 시간 (초)",
-    "start": "시작",
-    "stop": "정지",
-    "runOnce": "핑 한 번",
-    "colSeq": "#",
-    "colRtt": "레트 증후군",
-    "colHops": "홉",
-    "colStatus": "상태",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "확인",
-    "statusFailed": "실패: {{error}}"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "활성 신원",
-    "active": "활성 ID: {{name}}",
-    "activeBadge": "활성화"
-  },
-  "identityVault": {
-    "title": "신원 정보 보관소",
-    "hint": "Vault 암호를 사용하여 ID 백업의 로컬 복사본을 암호화합니다. 잠금 해제하여 보호된 ID 작업에 액세스하세요.",
-    "passcode": "Vault 암호",
-    "confirmPasscode": "새 암호를 확인",
-    "setPasscode": "볼트 활성화",
-    "unlock": "금고 잠금 해제",
-    "lock": "금고 잠금",
-    "statusNotConfigured": "구성되지 않음",
-    "statusLocked": "잠김",
-    "statusUnlocked": "잠금 해제",
-    "passcodeTooShort": "최소한 4자 이상이어야 합니다",
-    "passcodeMismatch": "비밀번호가 일치하지 않습니다.",
-    "setSuccess": "Vault 암호가 저장되었습니다.",
-    "setFailed": "볼트 암호를 저장할 수 없습니다.",
-    "unlockSuccess": "금고가 잠금 해제되었습니다.",
-    "unlockFailed": "잘못된 암호 또는 볼트 오류입니다.",
-    "lockSuccess": "금고가 잠겼습니다."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "전파 모드",
-    "modeAria": "전파 동기화 모드",
-    "modeAuto": "자동",
-    "modeManual": "수동",
-    "modeOff": "해제",
-    "sync": "동기화",
-    "syncAria": "전파 메시지 동기화",
-    "cancelSync": "취소",
-    "cancelSyncAria": "전파 동기화 취소"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "아바타 아이콘",
-    "iconNameAria": "피어 아바타 아이콘",
-    "iconCircle": "원형",
-    "iconStar": "스타",
-    "iconHeart": "심장",
-    "iconShield": "실드",
-    "iconUser": "사용자"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "스택 설정",
-      "enableTransport": "전송 활성화(다른 피어에 대한 경로)",
-      "shareInstance": "Reticulum 인스턴스 공유",
-      "logLevel": "로그 수준",
-      "save": "스택 설정 저장",
-      "saveFailed": "스택 설정을 저장하지 못했습니다."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum config 가져오기",
-      "hint": "rnsd 스타일 구성 파일을 붙여넣거나 디스크에서 가져옵니다. 병합은 이름별로 인터페이스 블록을 추가/업데이트합니다. 교체는 모든 인터페이스를 덮어씁니다.",
-      "pasteLabel": "구성 파일 내용",
-      "fromFile": "파일에서 가져오기…",
-      "fromSystem": "가져오기 시스템 기본값",
-      "merge": "병합 가져오기",
-      "replace": "인터페이스 교체",
-      "confirmTitle": "Reticulum config 가져오기",
-      "confirmMerge": "가져온 인터페이스를 현재 구성에 병합하시겠습니까?",
-      "confirmReplace": "모든 인터페이스를 가져온 구성으로 바꾸시겠습니까? 이 작업은 취소할 수 없습니다.",
-      "confirm": "수입"
-    },
-    "reticulumConfigImportFailed": "구성 가져오기에 실패했습니다.",
-    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "공장 초기화",
-      "hint": "사이드카 스택에서 ID, 연락처 및 메시지를 지웁니다. 인터페이스 구성이 유지됩니다.",
-      "button": "스택 데이터 재설정",
-      "confirmTitle": "Reticulum stack을 재설정하시겠습니까?",
-      "confirmBody": "이렇게 하면 사이드카에서 ID, 연락처 및 로컬 메시지가 제거됩니다. 인터페이스 구성 파일은 유지됩니다.",
-      "confirm": "다시 놓기"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "리피터 패널에서 리피터 관리자 비밀번호를 설정하거나 변경하십시오(세션에만 해당).",
-      "connectionFailed": "연결 실패",
-      "notConnected": "기기에 연결되지 않음",
-      "nodeNotFound": "노드를 찾을 수 없음(암호화 키 없음)",
-      "authenticationFailed": "인증 실패",
-      "requestFailed": "실패: {{detail}}",
-      "requestTimedOut": "요청 시간이 초과되었습니다(최대 ~{{seconds}}s).",
-      "requestTimedOutApprox": "요청 시간 초과(~{{seconds}}s)",
-      "pingNoRoute": "아직 무선으로부터의 경로가 없습니다. 다중 홉 추적에는 동기화된 경로가 필요합니다. 연락처 업데이트를 기다리거나 다시 연결하세요.",
-      "bleNoDetails": "BLE 연결에 실패했습니다(장치의 오류 세부정보 없음). 다시 시도하거나 직렬/USB를 사용하십시오.",
-      "bleAlreadyInProgress": "블루투스 연결이 이미 진행 중입니다. 완료될 때까지 기다리거나 대신 직렬/USB를 사용해 보세요.",
-      "bleMissingServices": "장치가 MeshCore BLE 프로토콜을 지원하지 않습니다. 장치가 MeshCore 펌웨어를 실행하고 있는지 확인하십시오.",
-      "blePeripheralInUse": "이 장치는 이미 Meshtastic BLE를 통해 연결되어 있습니다. MeshCore로 연결하기 전에 먼저 연결을 끊으세요.",
-      "bleTimeoutWebBtHandshake": "MeshCore 핸드셰이크 시간이 초과되었습니다(웹 블루투스). 라디오에는 먼저 Linux와 페어링된 PIN이 필요할 수 있습니다. 장치 제거 및 재페어링을 사용하고 장치에 표시된 PIN을 입력하거나 bluetoothctl과 페어링한 다음 연결을 다시 탭하세요.",
-      "bleTimeoutWebBt": "웹 블루투스를 통해 MeshCore를 여는 동안 블루투스 연결 시간이 초과되었습니다. 다시 시도하고, 장치를 깨운 상태로 유지하고, 라디오에서 BLE의 전원을 껐다 켜거나, 직렬/TCP를 사용하세요.",
-      "bleTimeoutHandshake": "Bluetooth가 연결되었지만 연결 해제/시간 초과 전에 MeshCore 프로토콜 핸드셰이크가 완료되지 않았습니다. 다시 시도하고 장치를 활성화된 상태로 근처에 두거나 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
-      "bleTimeoutNoble": "Noble IPC를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
-      "roomPost": {
-        "badState": "방 게시물이 거부되었습니다(라디오에 로그인되지 않음). 로그아웃했다가 다시 로그인한 후 다시 시도하세요.",
-        "illegalArg": "회의실 게시물이 거부되었습니다(잘못된 메시지 형식).",
-        "notFound": "방 게시물이 거부되었습니다(라디오에서 방 연락처를 찾을 수 없음).",
-        "unsupportedCmd": "방 게시물이 거부되었습니다(라디오에서 지원되지 않는 메시지 유형). 회의실에 로그인한 후 다시 시도하세요.",
-        "default": "라디오에서 방 게시물을 거부했습니다. 로그아웃했다가 다시 로그인한 후 다시 시도하세요.",
-        "timeout": "라디오를 기다리는 동안 방 게시물의 시간이 초과되었습니다. 범위를 확인하거나 다시 시도하세요."
-      },
-      "roomLogin": {
-        "noRoute": "이 룸 서버에 대한 경로가 없습니다. 지도에서 노드를 추적하거나 경로 광고를 기다린 후 다시 시도하세요.",
-        "pathSyncFailed": "로그인하기 전에 라디오에서 경로를 프로그래밍할 수 없습니다. 장치를 다시 연결하고 다시 시도하십시오.",
-        "pathSyncFailedDetail": "로그인하기 전에 라디오에서 경로를 프로그래밍할 수 없습니다. 기기를 다시 연결하고 다시 시도해 보세요.{{detail}}",
-        "rejectedBlankGuest": "회의실 로그인이 거부되었습니다. 게스트 비밀번호가 비어 있는 경우 계속 읽기 전용을 사용하거나 게스트 비밀번호 \"hello\"를 사용해 보세요.",
-        "rejectedDefaultGuest": "회의실 로그인이 거부되었습니다. 이 서버에 게스트 비밀번호가 없으면 로그인 대신 계속 읽기 전용을 사용하십시오. 그렇지 않은 경우 게스트 또는 관리자 비밀번호를 확인하세요.",
-        "rejectedCheckPassword": "회의실 로그인이 거부되었습니다. 이 룸 서버의 게스트 또는 관리자 비밀번호를 확인하세요.",
-        "timedOutBlankGuest": "회의실 로그인 시간이 초과되었습니다. 게스트 비밀번호가 비어 있는 경우 계속 읽기 전용을 사용하거나 게스트 비밀번호 \"hello\"를 사용해 보세요.",
-        "timedOutDefaultGuest": "회의실 로그인 시간이 초과되었습니다. 이 서버에 게스트 비밀번호가 없으면 로그인 대신 계속 읽기 전용을 사용하십시오.",
-        "timedOut": "회의실 로그인 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
-        "failed": "회의실 로그인 실패"
-      },
-      "roomLogout": {
-        "timedOut": "회의실 로그아웃 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
-        "rejected": "무선으로 룸 로그아웃이 거부되었습니다.",
-        "failed": "회의실에서 나갈 수 없습니다."
-      },
-      "repeaterRpcInProgress": "이 중계기에 대한 요청이 이미 진행 중입니다."
-    },
-    "mqttHints": {
-      "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
-      "network": "네트워크, DNS, 방화벽, VPN을 확인하세요.",
-      "connackTimeout": "이전의 \"클라이언트 오류\" 줄이 표시되지 않으면 TLS/WebSocket 핸드셰이크가 중단된 것일 수 있습니다(다른 네트워크를 사용해 보십시오. 앱은 WSS에 대해 IPv4를 선호합니다).",
-      "subscribeFailed": "브로커는 이 주제에 대한 와일드카드 구독을 거부할 수 있습니다. 브로커가 허용하는 경우 메시지가 계속 도착할 수 있습니다.",
-      "keepalive": "서버가 MQTT 핑(유휴 시간 초과, 네트워크 중단 또는 브로커가 세션을 닫음)에 대한 응답을 중지했습니다. 링크를 다시 연결하거나 확인하세요."
-    }
   }
 }

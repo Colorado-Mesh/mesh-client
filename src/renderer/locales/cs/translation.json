@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Obnovení továrního nastavení",
+      "hint": "Vymaže identitu, kontakty a zprávy ze zásobníku postranního vozíku. Konfigurace rozhraní je zachována.",
+      "button": "Resetovat data zásobníku",
+      "confirmTitle": "Resetovat Reticulum stack?",
+      "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
+      "confirm": "Resetovat"
+    }
+  },
   "app": {
     "loadingPanel": "Nakládací panel",
     "loadingDialog": "Dialog načítání",
@@ -430,7 +440,6 @@
     "emptyNoDmMessages": "Zatím žádné zprávy s {{name}}.",
     "emptyNoMessagesYet": "Zatím žádné zprávy. Jednu odešlete nebo počkejte na příchozí zprávy.",
     "emptyConnectFirst": "Připojte se k zařízení a začněte chatovat.",
-    "waitingMessagesBadge": "Synchronizace {{count}} zpráv ve frontě z rádia…",
     "waitingMessagesSyncNow": "Synchronizovat nyní",
     "jumpToUnread": "Přejít na nepřečtené",
     "jumpToLatest": "Přejít na nejnovější",
@@ -489,7 +498,10 @@
       "pkiFailed": "Šifrování PKI pro tuto zprávu selhalo.",
       "noChannel": "Pro směrování této zprávy není k dispozici žádný kanál.",
       "timeout": "Časový limit zprávy v rádiu vypršel."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} zprávy ve frontě v rádiu",
+    "waitingMessagesSyncProgress": "Synchronizace {{processed}} / {{total}} z rádia…",
+    "waitingMessagesSyncProgressIndeterminate": "Synchronizace zpráv ve frontě z rádia..."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1262,6 +1274,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Kontinuální ping",
+    "reticulumHint": "Spustí ping (RTT) a dráhovou sondu (hops) v každém intervalu, když je zásobník spuštěn.",
+    "hashLabel": "Cílová hodnota hash",
+    "hashPlaceholder": "32znakový cílový hash…",
+    "hashAria": "Cílový hash na ping",
+    "intervalLabel": "Interval (y)",
+    "intervalAria": "Sekundy mezi pokusy o ping",
+    "start": "Začít",
+    "stop": "Zastavit",
+    "runOnce": "Ping jednou",
+    "colSeq": "č.",
+    "colRtt": "Rettova choroba",
+    "colHops": "Chmel",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Nezdařilo se: {{error}}"
+  },
   "errorBoundary": {
     "title": "Něco se pokazilo",
     "unexpectedError": "Došlo k neočekávané chybě",
@@ -1383,6 +1414,25 @@
     "wifiStationSuccess": "Režim stanice uložen. Restartujte desku, najděte její IP (displej, směrovač DHCP nebo Read config) a přidejte tcp://… na Připojovací → rozhraní.",
     "wifiConfigEmpty": "Nebyla vrácena žádná konfigurační data.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Trezor identity",
+    "hint": "Zašifrujte místní kopii zálohy své identity pomocí hesla do trezoru. Odemkněte pro přístup k chráněným operacím identity.",
+    "passcode": "Heslo trezoru",
+    "confirmPasscode": "Potvrdit přístupový kód",
+    "setPasscode": "Povolit trezor",
+    "unlock": "Odemknout trezor",
+    "lock": "Uzamknout trezor",
+    "statusNotConfigured": "Nenastaveno",
+    "statusLocked": "Uzamčeno",
+    "statusUnlocked": "Odemčeno",
+    "passcodeTooShort": "Heslo musí mít alespoň 4 znaky.",
+    "passcodeMismatch": "Hesla se neshodují.",
+    "setSuccess": "Heslo trezoru uloženo.",
+    "setFailed": "Heslo trezoru se nepodařilo uložit.",
+    "unlockSuccess": "Trezor odemčen.",
+    "unlockFailed": "Nesprávný přístupový kód nebo chyba trezoru.",
+    "lockSuccess": "Trezor je uzamčen."
   },
   "logAnalyzeModal": {
     "title": "Analýza protokolu",
@@ -1549,6 +1599,60 @@
     "extraRfReceptions": "extra RF příjem",
     "originatorPacket": "paket",
     "originatorPackets": "pakety"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Nastavte nebo změňte heslo správce opakovače z panelu opakovače (pouze relace).",
+      "connectionFailed": "Připojení se nezdařilo",
+      "notConnected": "Není připojeno k zařízení",
+      "nodeNotFound": "Uzel nenalezen (žádný šifrovací klíč)",
+      "authenticationFailed": "Ověření se nezdařilo",
+      "requestFailed": "Selhalo: {{detail}}",
+      "requestTimedOut": "Časový limit požadavku vypršel (až ~{{seconds}}s)",
+      "requestTimedOutApprox": "Časový limit požadavku vypršel (~{{seconds}}s)",
+      "pingNoRoute": "Zatím žádná trasa z rádia — multi-hop trasování potřebuje synchronizovanou cestu. Počkejte na aktualizace kontaktů nebo se znovu připojte.",
+      "bleNoDetails": "Připojení BLE se nezdařilo (žádné podrobnosti o chybě ze zařízení). Zkuste to znovu nebo použijte sériové/USB.",
+      "bleAlreadyInProgress": "Připojení Bluetooth již probíhá. Počkejte na dokončení nebo zkuste místo toho sériové/USB.",
+      "bleMissingServices": "Zařízení nepodporuje protokol MeshCore BLE. Ujistěte se, že v zařízení běží firmware MeshCore.",
+      "blePeripheralInUse": "Toto zařízení je již připojeno přes Meshtastic BLE. Před připojením jako MeshCore jej nejprve odpojte.",
+      "bleTimeoutWebBtHandshake": "Vypršel časový limit pro navázání spojení MeshCore (Web Bluetooth). Rádio může nejprve potřebovat PIN spárovaný s Linuxem: použijte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený na zařízení, nebo spárujte s bluetoothctl a poté znovu klepněte na Připojit.",
+      "bleTimeoutWebBt": "Při otevírání MeshCore přes Web Bluetooth vypršel časový limit připojení Bluetooth. Zkuste to znovu, nechte zařízení v bdělém stavu, vypněte a zapněte BLE na rádiu nebo použijte sériové/TCP.",
+      "bleTimeoutHandshake": "Bluetooth je připojeno, ale před odpojením/vypršením časového limitu nebylo dokončeno navázání spojení protokolu MeshCore. Zkuste to znovu, udržujte zařízení v bdělém stavu a poblíž, vypněte a zapněte BLE nebo použijte sériové/TCP.",
+      "bleTimeoutNoble": "Při otevírání MeshCore přes Noble IPC vypršel časový limit připojení Bluetooth. Zkuste to znovu, vypněte a zapněte BLE na zařízení nebo použijte sériové/TCP.",
+      "roomPost": {
+        "badState": "Pokojový příspěvek zamítnut (nepřihlášen do rádia). Odhlaste se, přihlaste se znovu a zkuste to znovu.",
+        "illegalArg": "Příspěvek do místnosti zamítnut (neplatný formát zprávy).",
+        "notFound": "Příspěvek na pokoj zamítnut (kontakt na pokoj nebyl v rádiu nalezen).",
+        "unsupportedCmd": "Příspěvek do místnosti zamítnut (nepodporovaný typ zprávy v rádiu). Přihlaste se do místnosti a zkuste to znovu.",
+        "default": "Příspěvek na pokoj rádiem zamítnut. Odhlaste se, přihlaste se znovu a zkuste to znovu.",
+        "timeout": "Vypršel časový limit při čekání na rádio. Zkontrolujte dosah nebo to zkuste znovu."
+      },
+      "roomLogin": {
+        "noRoute": "Žádná cesta k tomuto pokojovému serveru. Vyhledejte uzel z mapy nebo počkejte na inzeráty cesty a zkuste to znovu.",
+        "pathSyncFailed": "Před přihlášením nebylo možné naprogramovat trasu na vašem rádiu. Znovu připojte zařízení a zkuste to znovu.",
+        "pathSyncFailedDetail": "Před přihlášením nebylo možné naprogramovat trasu na vašem rádiu. Znovu připojte zařízení a zkuste to znovu.{{detail}}",
+        "rejectedBlankGuest": "Přihlášení do místnosti zamítnuto. Pro prázdné heslo hosta použijte možnost Pokračovat pouze pro čtení nebo zkuste heslo hosta „ahoj“.",
+        "rejectedDefaultGuest": "Přihlášení do místnosti zamítnuto. Pokud tento server nemá heslo hosta, použijte místo přihlášení Pokračovat pouze pro čtení. Jinak zkontrolujte heslo hosta nebo správce.",
+        "rejectedCheckPassword": "Přihlášení do místnosti zamítnuto. Zkontrolujte heslo hosta nebo správce pro tento pokojový server.",
+        "timedOutBlankGuest": "Časový limit přihlášení do místnosti vypršel. Pro prázdné heslo hosta použijte možnost Pokračovat pouze pro čtení nebo zkuste heslo hosta „ahoj“.",
+        "timedOutDefaultGuest": "Časový limit přihlášení do místnosti vypršel. Pokud tento server nemá heslo hosta, použijte místo přihlášení Pokračovat pouze pro čtení.",
+        "timedOut": "Časový limit přihlášení do místnosti vypršel. Místnost může být mimo dosah nebo nereaguje.",
+        "failed": "Přihlášení do místnosti se nezdařilo"
+      },
+      "roomLogout": {
+        "timedOut": "Odhlášení z místnosti vypršelo. Místnost může být mimo dosah nebo nereaguje.",
+        "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
+        "failed": "Nelze opustit místnost"
+      },
+      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá"
+    },
+    "mqttHints": {
+      "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
+      "network": "Zkontrolujte síť, DNS, firewall a VPN.",
+      "connackTimeout": "Pokud nevidíte žádný předchozí řádek „chyba klienta“, může se stát, že se navázání spojení TLS/WebSocket zasekává (zkuste jinou síť; aplikace preferuje IPv4 pro WSS).",
+      "subscribeFailed": "Makléř může odmítnout odběr zástupných znaků na toto téma; zprávy mohou stále docházet, pokud to broker dovolí.",
+      "keepalive": "Server přestal reagovat na pingy MQTT (časový limit nečinnosti, výpadek sítě nebo zprostředkovatel ukončil relaci). Znovu se připojte nebo zkontrolujte svůj odkaz."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Všechny kontakty vymazány.",
@@ -2005,6 +2109,31 @@
         "label": "K9"
       }
     }
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Nastavení zásobníku",
+      "enableTransport": "Povolit přenos (trasa pro ostatní protějšky)",
+      "shareInstance": "Sdílet instanci Reticulum",
+      "logLevel": "Úroveň protokolu",
+      "save": "Uložte nastavení zásobníku",
+      "saveFailed": "Nastavení zásobníku se nepodařilo uložit."
+    },
+    "reticulumConfigImport": {
+      "title": "Import konfigurace Reticulum",
+      "hint": "Vložte konfigurační soubor ve stylu rnsd nebo importujte z disku. Merge přidává/aktualizuje bloky rozhraní podle názvu; nahradit přepíše všechna rozhraní.",
+      "pasteLabel": "Obsah konfiguračního souboru",
+      "fromFile": "Importovat ze souboru…",
+      "fromSystem": "Výchozí nastavení systému importu",
+      "merge": "Sloučit import",
+      "replace": "Vyměňte rozhraní",
+      "confirmTitle": "Import konfigurace Reticulum",
+      "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
+      "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Toto nelze vrátit zpět.",
+      "confirm": "Importovat"
+    },
+    "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
+    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",
@@ -3187,6 +3316,20 @@
     "clearAnnouncesDone": "Oznámení vymazána.",
     "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktivní identita",
+    "active": "Aktivní identita: {{name}}",
+    "activeBadge": "aktivní"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikona avatara",
+    "iconNameAria": "Ikona avatara protějšku",
+    "iconCircle": "Kruh",
+    "iconStar": "Hvězdička",
+    "iconHeart": "Srdce",
+    "iconShield": "Štít",
+    "iconUser": "Uživatel"
+  },
   "reticulumPropagation": {
     "preferred": "Preference",
     "setPreferred": "Nastavit preferované",
@@ -3216,6 +3359,17 @@
     "autoSyncOption24h": "Každých 24 hodin",
     "lastSynced": "Poslední synchronizace: {{time}}",
     "lastRefreshed": "Poslední aktualizace {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Režim propagace",
+    "modeAria": "Režim synchronizace propagace",
+    "modeAuto": "Auto",
+    "modeManual": "Manuální",
+    "modeOff": "Vypnuto",
+    "sync": "Synchronizace",
+    "syncAria": "Synchronizovat propagační zprávy",
+    "cancelSync": "Zrušit",
+    "cancelSyncAria": "Zrušit synchronizaci propagace"
   },
   "reticulumTopology": {
     "title": "topologie sítě",
@@ -3621,157 +3775,5 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
-  },
-  "diagnosticsPing": {
-    "title": "Kontinuální ping",
-    "reticulumHint": "Spustí ping (RTT) a dráhovou sondu (hops) v každém intervalu, když je zásobník spuštěn.",
-    "hashLabel": "Cílová hodnota hash",
-    "hashPlaceholder": "32znakový cílový hash…",
-    "hashAria": "Cílový hash na ping",
-    "intervalLabel": "Interval (y)",
-    "intervalAria": "Sekundy mezi pokusy o ping",
-    "start": "Začít",
-    "stop": "Zastavit",
-    "runOnce": "Ping jednou",
-    "colSeq": "č.",
-    "colRtt": "Rettova choroba",
-    "colHops": "Chmel",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Nezdařilo se: {{error}}"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Aktivní identita",
-    "active": "Aktivní identita: {{name}}",
-    "activeBadge": "aktivní"
-  },
-  "identityVault": {
-    "title": "Trezor identity",
-    "hint": "Zašifrujte místní kopii zálohy své identity pomocí hesla do trezoru. Odemkněte pro přístup k chráněným operacím identity.",
-    "passcode": "Heslo trezoru",
-    "confirmPasscode": "Potvrdit přístupový kód",
-    "setPasscode": "Povolit trezor",
-    "unlock": "Odemknout trezor",
-    "lock": "Uzamknout trezor",
-    "statusNotConfigured": "Nenastaveno",
-    "statusLocked": "Uzamčeno",
-    "statusUnlocked": "Odemčeno",
-    "passcodeTooShort": "Heslo musí mít alespoň 4 znaky.",
-    "passcodeMismatch": "Hesla se neshodují.",
-    "setSuccess": "Heslo trezoru uloženo.",
-    "setFailed": "Heslo trezoru se nepodařilo uložit.",
-    "unlockSuccess": "Trezor odemčen.",
-    "unlockFailed": "Nesprávný přístupový kód nebo chyba trezoru.",
-    "lockSuccess": "Trezor je uzamčen."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "Režim propagace",
-    "modeAria": "Režim synchronizace propagace",
-    "modeAuto": "Auto",
-    "modeManual": "Manuální",
-    "modeOff": "Vypnuto",
-    "sync": "Synchronizace",
-    "syncAria": "Synchronizovat propagační zprávy",
-    "cancelSync": "Zrušit",
-    "cancelSyncAria": "Zrušit synchronizaci propagace"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Ikona avatara",
-    "iconNameAria": "Ikona avatara protějšku",
-    "iconCircle": "Kruh",
-    "iconStar": "Hvězdička",
-    "iconHeart": "Srdce",
-    "iconShield": "Štít",
-    "iconUser": "Uživatel"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Nastavení zásobníku",
-      "enableTransport": "Povolit přenos (trasa pro ostatní protějšky)",
-      "shareInstance": "Sdílet instanci Reticulum",
-      "logLevel": "Úroveň protokolu",
-      "save": "Uložte nastavení zásobníku",
-      "saveFailed": "Nastavení zásobníku se nepodařilo uložit."
-    },
-    "reticulumConfigImport": {
-      "title": "Import konfigurace Reticulum",
-      "hint": "Vložte konfigurační soubor ve stylu rnsd nebo importujte z disku. Merge přidává/aktualizuje bloky rozhraní podle názvu; nahradit přepíše všechna rozhraní.",
-      "pasteLabel": "Obsah konfiguračního souboru",
-      "fromFile": "Importovat ze souboru…",
-      "fromSystem": "Výchozí nastavení systému importu",
-      "merge": "Sloučit import",
-      "replace": "Vyměňte rozhraní",
-      "confirmTitle": "Import konfigurace Reticulum",
-      "confirmMerge": "Sloučit importovaná rozhraní do aktuální konfigurace?",
-      "confirmReplace": "Nahradit všechna rozhraní importovanou konfigurací? Toto nelze vrátit zpět.",
-      "confirm": "Importovat"
-    },
-    "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
-    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Obnovení továrního nastavení",
-      "hint": "Vymaže identitu, kontakty a zprávy ze zásobníku postranního vozíku. Konfigurace rozhraní je zachována.",
-      "button": "Resetovat data zásobníku",
-      "confirmTitle": "Resetovat Reticulum stack?",
-      "confirmBody": "Tím se z postranního vozíku odstraní identita, kontakty a místní zprávy. Váš konfigurační soubor rozhraní je zachován.",
-      "confirm": "Resetovat"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Nastavte nebo změňte heslo správce opakovače z panelu opakovače (pouze relace).",
-      "connectionFailed": "Připojení se nezdařilo",
-      "notConnected": "Není připojeno k zařízení",
-      "nodeNotFound": "Uzel nenalezen (žádný šifrovací klíč)",
-      "authenticationFailed": "Ověření se nezdařilo",
-      "requestFailed": "Selhalo: {{detail}}",
-      "requestTimedOut": "Časový limit požadavku vypršel (až ~{{seconds}}s)",
-      "requestTimedOutApprox": "Časový limit požadavku vypršel (~{{seconds}}s)",
-      "pingNoRoute": "Zatím žádná trasa z rádia — multi-hop trasování potřebuje synchronizovanou cestu. Počkejte na aktualizace kontaktů nebo se znovu připojte.",
-      "bleNoDetails": "Připojení BLE se nezdařilo (žádné podrobnosti o chybě ze zařízení). Zkuste to znovu nebo použijte sériové/USB.",
-      "bleAlreadyInProgress": "Připojení Bluetooth již probíhá. Počkejte na dokončení nebo zkuste místo toho sériové/USB.",
-      "bleMissingServices": "Zařízení nepodporuje protokol MeshCore BLE. Ujistěte se, že v zařízení běží firmware MeshCore.",
-      "blePeripheralInUse": "Toto zařízení je již připojeno přes Meshtastic BLE. Před připojením jako MeshCore jej nejprve odpojte.",
-      "bleTimeoutWebBtHandshake": "Vypršel časový limit pro navázání spojení MeshCore (Web Bluetooth). Rádio může nejprve potřebovat PIN spárovaný s Linuxem: použijte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený na zařízení, nebo spárujte s bluetoothctl a poté znovu klepněte na Připojit.",
-      "bleTimeoutWebBt": "Při otevírání MeshCore přes Web Bluetooth vypršel časový limit připojení Bluetooth. Zkuste to znovu, nechte zařízení v bdělém stavu, vypněte a zapněte BLE na rádiu nebo použijte sériové/TCP.",
-      "bleTimeoutHandshake": "Bluetooth je připojeno, ale před odpojením/vypršením časového limitu nebylo dokončeno navázání spojení protokolu MeshCore. Zkuste to znovu, udržujte zařízení v bdělém stavu a poblíž, vypněte a zapněte BLE nebo použijte sériové/TCP.",
-      "bleTimeoutNoble": "Při otevírání MeshCore přes Noble IPC vypršel časový limit připojení Bluetooth. Zkuste to znovu, vypněte a zapněte BLE na zařízení nebo použijte sériové/TCP.",
-      "roomPost": {
-        "badState": "Pokojový příspěvek zamítnut (nepřihlášen do rádia). Odhlaste se, přihlaste se znovu a zkuste to znovu.",
-        "illegalArg": "Příspěvek do místnosti zamítnut (neplatný formát zprávy).",
-        "notFound": "Příspěvek na pokoj zamítnut (kontakt na pokoj nebyl v rádiu nalezen).",
-        "unsupportedCmd": "Příspěvek do místnosti zamítnut (nepodporovaný typ zprávy v rádiu). Přihlaste se do místnosti a zkuste to znovu.",
-        "default": "Příspěvek na pokoj rádiem zamítnut. Odhlaste se, přihlaste se znovu a zkuste to znovu.",
-        "timeout": "Vypršel časový limit při čekání na rádio. Zkontrolujte dosah nebo to zkuste znovu."
-      },
-      "roomLogin": {
-        "noRoute": "Žádná cesta k tomuto pokojovému serveru. Vyhledejte uzel z mapy nebo počkejte na inzeráty cesty a zkuste to znovu.",
-        "pathSyncFailed": "Před přihlášením nebylo možné naprogramovat trasu na vašem rádiu. Znovu připojte zařízení a zkuste to znovu.",
-        "pathSyncFailedDetail": "Před přihlášením nebylo možné naprogramovat trasu na vašem rádiu. Znovu připojte zařízení a zkuste to znovu.{{detail}}",
-        "rejectedBlankGuest": "Přihlášení do místnosti zamítnuto. Pro prázdné heslo hosta použijte možnost Pokračovat pouze pro čtení nebo zkuste heslo hosta „ahoj“.",
-        "rejectedDefaultGuest": "Přihlášení do místnosti zamítnuto. Pokud tento server nemá heslo hosta, použijte místo přihlášení Pokračovat pouze pro čtení. Jinak zkontrolujte heslo hosta nebo správce.",
-        "rejectedCheckPassword": "Přihlášení do místnosti zamítnuto. Zkontrolujte heslo hosta nebo správce pro tento pokojový server.",
-        "timedOutBlankGuest": "Časový limit přihlášení do místnosti vypršel. Pro prázdné heslo hosta použijte možnost Pokračovat pouze pro čtení nebo zkuste heslo hosta „ahoj“.",
-        "timedOutDefaultGuest": "Časový limit přihlášení do místnosti vypršel. Pokud tento server nemá heslo hosta, použijte místo přihlášení Pokračovat pouze pro čtení.",
-        "timedOut": "Časový limit přihlášení do místnosti vypršel. Místnost může být mimo dosah nebo nereaguje.",
-        "failed": "Přihlášení do místnosti se nezdařilo"
-      },
-      "roomLogout": {
-        "timedOut": "Odhlášení z místnosti vypršelo. Místnost může být mimo dosah nebo nereaguje.",
-        "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
-        "failed": "Nelze opustit místnost"
-      },
-      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá"
-    },
-    "mqttHints": {
-      "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
-      "network": "Zkontrolujte síť, DNS, firewall a VPN.",
-      "connackTimeout": "Pokud nevidíte žádný předchozí řádek „chyba klienta“, může se stát, že se navázání spojení TLS/WebSocket zasekává (zkuste jinou síť; aplikace preferuje IPv4 pro WSS).",
-      "subscribeFailed": "Makléř může odmítnout odběr zástupných znaků na toto téma; zprávy mohou stále docházet, pokud to broker dovolí.",
-      "keepalive": "Server přestal reagovat na pingy MQTT (časový limit nečinnosti, výpadek sítě nebo zprostředkovatel ukončil relaci). Znovu se připojte nebo zkontrolujte svůj odkaz."
-    }
   }
 }

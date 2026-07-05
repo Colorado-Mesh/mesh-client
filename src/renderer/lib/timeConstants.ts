@@ -154,6 +154,11 @@ export const MESHCORE_STATS_POLL_MS = 30_000;
 
 /** Safety-net poll for queued waiting messages when event 131 may have been missed. */
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
+/** Yield the event loop while ingesting queued companion messages. */
+export const MESHCORE_WAITING_MESSAGES_BATCH_YIELD = 25;
+
+/** One retry delay after USB serial open failure during auto-connect (MeshCore + Meshtastic). */
+export const RF_SERIAL_OPEN_RETRY_DELAY_MS = 2_000;
 
 /** Minimum spacing between mesh TX operations used by room sync (login counts as TX). */
 export const MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS = 60_000;

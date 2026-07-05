@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Reset do ustawień fabrycznych",
+      "hint": "Usuwa tożsamość, kontakty i wiadomości ze stosu przyczepki. Konfiguracja interfejsu została zachowana.",
+      "button": "Zresetuj dane stosu",
+      "confirmTitle": "Zresetować stack Reticulum?",
+      "confirmBody": "Spowoduje to usunięcie tożsamości, kontaktów i wiadomości lokalnych z przyczepki. Twój plik konfiguracyjny interfejsu zostanie zachowany.",
+      "confirm": "Nastawić"
+    }
+  },
   "app": {
     "loadingPanel": "Panel ładowania",
     "loadingDialog": "Ładowanie okna dialogowego",
@@ -430,7 +440,6 @@
     "emptyNoDmMessages": "Nie ma jeszcze wiadomości z {{name}}.",
     "emptyNoMessagesYet": "Brak wiadomości. Wyślij jedną lub poczekaj na przychodzące wiadomości.",
     "emptyConnectFirst": "Połącz się z urządzeniem, aby rozpocząć rozmowę.",
-    "waitingMessagesBadge": "Synchronizowanie wiadomości oczekujących {{count}} z radia…",
     "waitingMessagesSyncNow": "Synchronizuj teraz",
     "jumpToUnread": "Przejdź do nieprzeczytanych",
     "jumpToLatest": "Przejdź do najnowszych",
@@ -489,7 +498,10 @@
       "pkiFailed": "Szyfrowanie PKI dla tej wiadomości nie powiodło się.",
       "noChannel": "Brak dostępnego kanału do przekierowania tej wiadomości.",
       "timeout": "Upłynął limit czasu wiadomości w radiu."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} wiadomościw kolejce w radiu",
+    "waitingMessagesSyncProgress": "Synchronizowanie {{processed}} / {{total}} z radiem…",
+    "waitingMessagesSyncProgressIndeterminate": "Synchronizowanie wiadomości w kolejce z radia…"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1262,6 +1274,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Ciągły ping",
+    "reticulumHint": "Uruchamia ping (RTT) i sondę ścieżki (przeskoki) na każdym interwale podczas pracy stosu.",
+    "hashLabel": "Skrót miejsca docelowego",
+    "hashPlaceholder": "32-znakowy hasz miejsca docelowego…",
+    "hashAria": "Skrót miejsca docelowego do polecenia ping",
+    "intervalLabel": "przedział czasu (s)",
+    "intervalAria": "Sekundy między próbami ping",
+    "start": "Początek",
+    "stop": "Przestań",
+    "runOnce": "Jednokrotny ping",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Skoki",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Niepowodzenie: {{error}}"
+  },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
     "unexpectedError": "Wystąpił nieoczekiwany błąd",
@@ -1383,6 +1414,25 @@
     "wifiStationSuccess": "Tryb stacji zapisany. Uruchom ponownie płytę, a następnie znajdź jej adres IP (wyświetlacz, router DHCP lub Read config) i dodaj tcp://… na → interfejsach połączeń.",
     "wifiConfigEmpty": "Nie zwrócono danych konfiguracyjnych.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Skarbiec tożsamości",
+    "hint": "Zaszyfruj lokalną kopię kopii zapasowej tożsamości za pomocą kodu dostępu do skarbca. Odblokuj, aby uzyskać dostęp do chronionych operacji tożsamości.",
+    "passcode": "Kod dostępu do skarbca",
+    "confirmPasscode": "Potwierdź kod dostępu",
+    "setPasscode": "Włącz repozytorium",
+    "unlock": "Odblokuj skarbiec",
+    "lock": "Zablokuj skarbiec",
+    "statusNotConfigured": "Brak konfiguracji",
+    "statusLocked": "Zablokowany",
+    "statusUnlocked": "Odblokowany",
+    "passcodeTooShort": "Kod dostępu musi składać się z co najmniej 4 znaków.",
+    "passcodeMismatch": "Kody dostępu nie są zgodne.",
+    "setSuccess": "Zapisano kod dostępu do skarbca.",
+    "setFailed": "Nie można zapisać kodu dostępu do skarbca.",
+    "unlockSuccess": "Skarbiec odblokowany.",
+    "unlockFailed": "Nieprawidłowy kod dostępu lub błąd skarbca.",
+    "lockSuccess": "Skarbiec zablokowany."
   },
   "logAnalyzeModal": {
     "title": "Analiza dziennika",
@@ -1549,6 +1599,60 @@
     "extraRfReceptions": "dodatkowe odbiory RF",
     "originatorPacket": "paczka",
     "originatorPackets": "pakiety"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Ustaw lub zmień hasło administratora wzmacniaka z panelu Wzmacniacze (tylko sesja).",
+      "connectionFailed": "Połączenie nie powiodło się",
+      "notConnected": "Brak połączenia z urządzeniem",
+      "nodeNotFound": "Nie znaleziono węzła (brak klucza szyfrowania)",
+      "authenticationFailed": "Uwierzytelnienie nie powiodło się",
+      "requestFailed": "Niepowodzenie: {{detail}}",
+      "requestTimedOut": "Upłynął limit czasu żądania (do ~{{seconds}}s)",
+      "requestTimedOutApprox": "Upłynął limit czasu żądania (~{{seconds}}s)",
+      "pingNoRoute": "Nie ma jeszcze trasy z radia — śledzenie wielu przeskoków wymaga zsynchronizowanej ścieżki. Poczekaj na aktualizacje kontaktów lub połącz się ponownie.",
+      "bleNoDetails": "Połączenie BLE nie powiodło się (brak szczegółów błędu z urządzenia). Spróbuj ponownie lub użyj portu szeregowego/USB.",
+      "bleAlreadyInProgress": "Połączenie Bluetooth już trwa. Poczekaj na zakończenie lub spróbuj zamiast tego skorzystać z portu szeregowego/USB.",
+      "bleMissingServices": "Urządzenie nie obsługuje protokołu MeshCore BLE. Upewnij się, że na urządzeniu działa oprogramowanie układowe MeshCore.",
+      "blePeripheralInUse": "To urządzenie jest już połączone poprzez Meshtastic BLE. Najpierw odłącz go przed podłączeniem jako MeshCore.",
+      "bleTimeoutWebBtHandshake": "Upłynął limit czasu uzgadniania MeshCore (Web Bluetooth). Radio może wymagać najpierw sparowania kodu PIN z systemem Linux: użyj opcji Usuń i ponownie sparuj urządzenie i wprowadź kod PIN widoczny na urządzeniu lub sparuj z bluetoothctl, a następnie ponownie dotknij Połącz.",
+      "bleTimeoutWebBt": "Przekroczono limit czasu połączenia Bluetooth podczas otwierania MeshCore przez Internet Bluetooth. Spróbuj ponownie, nie wyłączaj urządzenia, wyłącz i wyłącz BLE w radiu lub użyj portu szeregowego/TCP.",
+      "bleTimeoutHandshake": "Połączenie Bluetooth, ale uzgadnianie protokołu MeshCore nie zostało zakończone przed rozłączeniem/przekroczeniem limitu czasu. Spróbuj ponownie, nie wyłączaj urządzenia i nie wyłączaj go, wyłącz BLE lub użyj portu szeregowego/TCP.",
+      "bleTimeoutNoble": "Przekroczono limit czasu połączenia Bluetooth podczas otwierania MeshCore przez Noble IPC. Spróbuj ponownie, wyłącz i włącz zasilanie BLE na urządzeniu lub użyj portu szeregowego/TCP.",
+      "roomPost": {
+        "badState": "Wiadomość o pokoju odrzucona (niezalogowany w radiu). Wyloguj się, zaloguj ponownie i spróbuj ponownie.",
+        "illegalArg": "Wiadomość o pokoju odrzucona (nieprawidłowy format wiadomości).",
+        "notFound": "Wiadomość o pokoju odrzucona (w radiu nie znaleziono kontaktu z pokojem).",
+        "unsupportedCmd": "Wiadomość o pokoju odrzucona (nieobsługiwany typ wiadomości w radiu). Zaloguj się do pokoju i spróbuj ponownie.",
+        "default": "Wiadomość o pokoju odrzucona przez radio. Wyloguj się, zaloguj ponownie i spróbuj ponownie.",
+        "timeout": "Upłynął limit czasu wysyłania wiadomości o pokoju w oczekiwaniu na radio. Sprawdź zasięg lub spróbuj ponownie."
+      },
+      "roomLogin": {
+        "noRoute": "Brak trasy do tego serwera pokoju. Śledź węzeł na mapie lub poczekaj na reklamy ścieżki i spróbuj ponownie.",
+        "pathSyncFailed": "Nie można zaprogramować trasy w radiu przed zalogowaniem. Podłącz ponownie urządzenie i spróbuj ponownie.",
+        "pathSyncFailedDetail": "Nie można zaprogramować trasy w radiu przed zalogowaniem. Podłącz ponownie urządzenie i spróbuj ponownie.{{detail}}",
+        "rejectedBlankGuest": "Logowanie do pokoju odrzucone. W przypadku pustego hasła gościa użyj opcji Kontynuuj tylko do odczytu lub użyj hasła gościa „witaj”.",
+        "rejectedDefaultGuest": "Logowanie do pokoju odrzucone. Jeśli ten serwer nie ma hasła gościa, użyj opcji Kontynuuj tylko do odczytu zamiast opcji Zaloguj. W przeciwnym razie sprawdź hasło gościa lub administratora.",
+        "rejectedCheckPassword": "Logowanie do pokoju odrzucone. Sprawdź hasło gościa lub administratora dla tego serwera pokoju.",
+        "timedOutBlankGuest": "Upłynął limit czasu logowania do pokoju. W przypadku pustego hasła gościa użyj opcji Kontynuuj tylko do odczytu lub użyj hasła gościa „witaj”.",
+        "timedOutDefaultGuest": "Upłynął limit czasu logowania do pokoju. Jeśli ten serwer nie ma hasła gościa, użyj opcji Kontynuuj tylko do odczytu zamiast opcji Zaloguj.",
+        "timedOut": "Upłynął limit czasu logowania do pokoju. Pokój może być poza zasięgiem lub nie odpowiadać.",
+        "failed": "Logowanie do pokoju nie powiodło się"
+      },
+      "roomLogout": {
+        "timedOut": "Upłynął limit czasu wylogowania z pokoju. Pokój może być poza zasięgiem lub nie odpowiadać.",
+        "rejected": "Wylogowanie z pokoju odrzucone przez radio.",
+        "failed": "Nie można było opuścić pokoju"
+      },
+      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku"
+    },
+    "mqttHints": {
+      "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
+      "network": "Sprawdź sieć, DNS, zaporę sieciową i VPN.",
+      "connackTimeout": "Jeśli nie widzisz wcześniej wiersza „błąd klienta”, uzgadnianie TLS/WebSocket może się zawieszać (spróbuj innej sieci; aplikacja preferuje protokół IPv4 dla WSS).",
+      "subscribeFailed": "Broker może odmówić subskrypcji symboli wieloznacznych w tym temacie; wiadomości mogą nadal przychodzić, jeśli broker na to pozwala.",
+      "keepalive": "Serwer przestał odpowiadać na pingi MQTT (przekroczenie limitu czasu bezczynności, przerwa w działaniu sieci lub zamknięcie sesji przez brokera). Połącz się ponownie lub sprawdź łącze."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Wszystkie kontakty zostały usunięte.",
@@ -2005,6 +2109,31 @@
         "label": "K9"
       }
     }
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Ustawienia stosu",
+      "enableTransport": "Włącz transport (trasa dla innych urządzeń równorzędnych)",
+      "shareInstance": "Udostępnij instancję Reticulum",
+      "logLevel": "Poziom dziennika",
+      "save": "Zapisz ustawienia stosu",
+      "saveFailed": "Nie udało się zapisać ustawień stosu."
+    },
+    "reticulumConfigImport": {
+      "title": "Importuj config Reticulum",
+      "hint": "Wklej plik konfiguracyjny w stylu rnsd lub zaimportuj z dysku. Merge dodaje/aktualizuje bloki interfejsu według nazwy; zamień zastępuje wszystkie interfejsy.",
+      "pasteLabel": "Skonfiguruj zawartość pliku",
+      "fromFile": "Importuj z pliku…",
+      "fromSystem": "Importuj ustawienia domyślne systemu",
+      "merge": "Połącz import",
+      "replace": "Wymień interfejsy",
+      "confirmTitle": "Importuj config Reticulum",
+      "confirmMerge": "Scalić zaimportowane interfejsy z bieżącą konfiguracją?",
+      "confirmReplace": "Zamienić wszystkie interfejsy zaimportowaną konfiguracją? Tego nie można cofnąć.",
+      "confirm": "Importuj"
+    },
+    "reticulumConfigImportFailed": "Import konfiguracji nie powiódł się.",
+    "reticulumConfigNotFound": "Nie znaleziono config Reticulum systemu w domyślnych ścieżkach."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Usuń z ulubionych",
@@ -3187,6 +3316,20 @@
     "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
     "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "Tożsamość aktywna",
+    "active": "Aktywna tożsamość: {{name}}",
+    "activeBadge": "aktywne"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikona awatara",
+    "iconNameAria": "Ikona awatara rówieśniczego",
+    "iconCircle": "Koło",
+    "iconStar": "Ocena",
+    "iconHeart": "Serce",
+    "iconShield": "Tarcza",
+    "iconUser": "Użytkownik"
+  },
   "reticulumPropagation": {
     "preferred": "Preferowane",
     "setPreferred": "Ustaw jako preferowany",
@@ -3216,6 +3359,17 @@
     "autoSyncOption24h": "Co 24 godziny",
     "lastSynced": "Ostatnia synchronizacja: {{time}}",
     "lastRefreshed": "Ostatnia aktualizacja {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Tryb propagacji:",
+    "modeAria": "Tryb synchronizacji propagacji",
+    "modeAuto": "Automatyczne",
+    "modeManual": "Instrukcja obsługi",
+    "modeOff": "Wył.",
+    "sync": "Synchronizuj",
+    "syncAria": "Synchronizuj komunikaty propagacji",
+    "cancelSync": "Anuluj",
+    "cancelSyncAria": "Anuluj synchronizację propagacji"
   },
   "reticulumTopology": {
     "title": "Topologia sieci",
@@ -3621,157 +3775,5 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
-  },
-  "diagnosticsPing": {
-    "title": "Ciągły ping",
-    "reticulumHint": "Uruchamia ping (RTT) i sondę ścieżki (przeskoki) na każdym interwale podczas pracy stosu.",
-    "hashLabel": "Skrót miejsca docelowego",
-    "hashPlaceholder": "32-znakowy hasz miejsca docelowego…",
-    "hashAria": "Skrót miejsca docelowego do polecenia ping",
-    "intervalLabel": "przedział czasu (s)",
-    "intervalAria": "Sekundy między próbami ping",
-    "start": "Początek",
-    "stop": "Przestań",
-    "runOnce": "Jednokrotny ping",
-    "colSeq": "#",
-    "colRtt": "RTT",
-    "colHops": "Skoki",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Niepowodzenie: {{error}}"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Tożsamość aktywna",
-    "active": "Aktywna tożsamość: {{name}}",
-    "activeBadge": "aktywne"
-  },
-  "identityVault": {
-    "title": "Skarbiec tożsamości",
-    "hint": "Zaszyfruj lokalną kopię kopii zapasowej tożsamości za pomocą kodu dostępu do skarbca. Odblokuj, aby uzyskać dostęp do chronionych operacji tożsamości.",
-    "passcode": "Kod dostępu do skarbca",
-    "confirmPasscode": "Potwierdź kod dostępu",
-    "setPasscode": "Włącz repozytorium",
-    "unlock": "Odblokuj skarbiec",
-    "lock": "Zablokuj skarbiec",
-    "statusNotConfigured": "Brak konfiguracji",
-    "statusLocked": "Zablokowany",
-    "statusUnlocked": "Odblokowany",
-    "passcodeTooShort": "Kod dostępu musi składać się z co najmniej 4 znaków.",
-    "passcodeMismatch": "Kody dostępu nie są zgodne.",
-    "setSuccess": "Zapisano kod dostępu do skarbca.",
-    "setFailed": "Nie można zapisać kodu dostępu do skarbca.",
-    "unlockSuccess": "Skarbiec odblokowany.",
-    "unlockFailed": "Nieprawidłowy kod dostępu lub błąd skarbca.",
-    "lockSuccess": "Skarbiec zablokowany."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "Tryb propagacji:",
-    "modeAria": "Tryb synchronizacji propagacji",
-    "modeAuto": "Automatyczne",
-    "modeManual": "Instrukcja obsługi",
-    "modeOff": "Wył.",
-    "sync": "Synchronizuj",
-    "syncAria": "Synchronizuj komunikaty propagacji",
-    "cancelSync": "Anuluj",
-    "cancelSyncAria": "Anuluj synchronizację propagacji"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Ikona awatara",
-    "iconNameAria": "Ikona awatara rówieśniczego",
-    "iconCircle": "Koło",
-    "iconStar": "Ocena",
-    "iconHeart": "Serce",
-    "iconShield": "Tarcza",
-    "iconUser": "Użytkownik"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Ustawienia stosu",
-      "enableTransport": "Włącz transport (trasa dla innych urządzeń równorzędnych)",
-      "shareInstance": "Udostępnij instancję Reticulum",
-      "logLevel": "Poziom dziennika",
-      "save": "Zapisz ustawienia stosu",
-      "saveFailed": "Nie udało się zapisać ustawień stosu."
-    },
-    "reticulumConfigImport": {
-      "title": "Importuj config Reticulum",
-      "hint": "Wklej plik konfiguracyjny w stylu rnsd lub zaimportuj z dysku. Merge dodaje/aktualizuje bloki interfejsu według nazwy; zamień zastępuje wszystkie interfejsy.",
-      "pasteLabel": "Skonfiguruj zawartość pliku",
-      "fromFile": "Importuj z pliku…",
-      "fromSystem": "Importuj ustawienia domyślne systemu",
-      "merge": "Połącz import",
-      "replace": "Wymień interfejsy",
-      "confirmTitle": "Importuj config Reticulum",
-      "confirmMerge": "Scalić zaimportowane interfejsy z bieżącą konfiguracją?",
-      "confirmReplace": "Zamienić wszystkie interfejsy zaimportowaną konfiguracją? Tego nie można cofnąć.",
-      "confirm": "Importuj"
-    },
-    "reticulumConfigImportFailed": "Import konfiguracji nie powiódł się.",
-    "reticulumConfigNotFound": "Nie znaleziono config Reticulum systemu w domyślnych ścieżkach."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Reset do ustawień fabrycznych",
-      "hint": "Usuwa tożsamość, kontakty i wiadomości ze stosu przyczepki. Konfiguracja interfejsu została zachowana.",
-      "button": "Zresetuj dane stosu",
-      "confirmTitle": "Zresetować stack Reticulum?",
-      "confirmBody": "Spowoduje to usunięcie tożsamości, kontaktów i wiadomości lokalnych z przyczepki. Twój plik konfiguracyjny interfejsu zostanie zachowany.",
-      "confirm": "Nastawić"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Ustaw lub zmień hasło administratora wzmacniaka z panelu Wzmacniacze (tylko sesja).",
-      "connectionFailed": "Połączenie nie powiodło się",
-      "notConnected": "Brak połączenia z urządzeniem",
-      "nodeNotFound": "Nie znaleziono węzła (brak klucza szyfrowania)",
-      "authenticationFailed": "Uwierzytelnienie nie powiodło się",
-      "requestFailed": "Niepowodzenie: {{detail}}",
-      "requestTimedOut": "Upłynął limit czasu żądania (do ~{{seconds}}s)",
-      "requestTimedOutApprox": "Upłynął limit czasu żądania (~{{seconds}}s)",
-      "pingNoRoute": "Nie ma jeszcze trasy z radia — śledzenie wielu przeskoków wymaga zsynchronizowanej ścieżki. Poczekaj na aktualizacje kontaktów lub połącz się ponownie.",
-      "bleNoDetails": "Połączenie BLE nie powiodło się (brak szczegółów błędu z urządzenia). Spróbuj ponownie lub użyj portu szeregowego/USB.",
-      "bleAlreadyInProgress": "Połączenie Bluetooth już trwa. Poczekaj na zakończenie lub spróbuj zamiast tego skorzystać z portu szeregowego/USB.",
-      "bleMissingServices": "Urządzenie nie obsługuje protokołu MeshCore BLE. Upewnij się, że na urządzeniu działa oprogramowanie układowe MeshCore.",
-      "blePeripheralInUse": "To urządzenie jest już połączone poprzez Meshtastic BLE. Najpierw odłącz go przed podłączeniem jako MeshCore.",
-      "bleTimeoutWebBtHandshake": "Upłynął limit czasu uzgadniania MeshCore (Web Bluetooth). Radio może wymagać najpierw sparowania kodu PIN z systemem Linux: użyj opcji Usuń i ponownie sparuj urządzenie i wprowadź kod PIN widoczny na urządzeniu lub sparuj z bluetoothctl, a następnie ponownie dotknij Połącz.",
-      "bleTimeoutWebBt": "Przekroczono limit czasu połączenia Bluetooth podczas otwierania MeshCore przez Internet Bluetooth. Spróbuj ponownie, nie wyłączaj urządzenia, wyłącz i wyłącz BLE w radiu lub użyj portu szeregowego/TCP.",
-      "bleTimeoutHandshake": "Połączenie Bluetooth, ale uzgadnianie protokołu MeshCore nie zostało zakończone przed rozłączeniem/przekroczeniem limitu czasu. Spróbuj ponownie, nie wyłączaj urządzenia i nie wyłączaj go, wyłącz BLE lub użyj portu szeregowego/TCP.",
-      "bleTimeoutNoble": "Przekroczono limit czasu połączenia Bluetooth podczas otwierania MeshCore przez Noble IPC. Spróbuj ponownie, wyłącz i włącz zasilanie BLE na urządzeniu lub użyj portu szeregowego/TCP.",
-      "roomPost": {
-        "badState": "Wiadomość o pokoju odrzucona (niezalogowany w radiu). Wyloguj się, zaloguj ponownie i spróbuj ponownie.",
-        "illegalArg": "Wiadomość o pokoju odrzucona (nieprawidłowy format wiadomości).",
-        "notFound": "Wiadomość o pokoju odrzucona (w radiu nie znaleziono kontaktu z pokojem).",
-        "unsupportedCmd": "Wiadomość o pokoju odrzucona (nieobsługiwany typ wiadomości w radiu). Zaloguj się do pokoju i spróbuj ponownie.",
-        "default": "Wiadomość o pokoju odrzucona przez radio. Wyloguj się, zaloguj ponownie i spróbuj ponownie.",
-        "timeout": "Upłynął limit czasu wysyłania wiadomości o pokoju w oczekiwaniu na radio. Sprawdź zasięg lub spróbuj ponownie."
-      },
-      "roomLogin": {
-        "noRoute": "Brak trasy do tego serwera pokoju. Śledź węzeł na mapie lub poczekaj na reklamy ścieżki i spróbuj ponownie.",
-        "pathSyncFailed": "Nie można zaprogramować trasy w radiu przed zalogowaniem. Podłącz ponownie urządzenie i spróbuj ponownie.",
-        "pathSyncFailedDetail": "Nie można zaprogramować trasy w radiu przed zalogowaniem. Podłącz ponownie urządzenie i spróbuj ponownie.{{detail}}",
-        "rejectedBlankGuest": "Logowanie do pokoju odrzucone. W przypadku pustego hasła gościa użyj opcji Kontynuuj tylko do odczytu lub użyj hasła gościa „witaj”.",
-        "rejectedDefaultGuest": "Logowanie do pokoju odrzucone. Jeśli ten serwer nie ma hasła gościa, użyj opcji Kontynuuj tylko do odczytu zamiast opcji Zaloguj. W przeciwnym razie sprawdź hasło gościa lub administratora.",
-        "rejectedCheckPassword": "Logowanie do pokoju odrzucone. Sprawdź hasło gościa lub administratora dla tego serwera pokoju.",
-        "timedOutBlankGuest": "Upłynął limit czasu logowania do pokoju. W przypadku pustego hasła gościa użyj opcji Kontynuuj tylko do odczytu lub użyj hasła gościa „witaj”.",
-        "timedOutDefaultGuest": "Upłynął limit czasu logowania do pokoju. Jeśli ten serwer nie ma hasła gościa, użyj opcji Kontynuuj tylko do odczytu zamiast opcji Zaloguj.",
-        "timedOut": "Upłynął limit czasu logowania do pokoju. Pokój może być poza zasięgiem lub nie odpowiadać.",
-        "failed": "Logowanie do pokoju nie powiodło się"
-      },
-      "roomLogout": {
-        "timedOut": "Upłynął limit czasu wylogowania z pokoju. Pokój może być poza zasięgiem lub nie odpowiadać.",
-        "rejected": "Wylogowanie z pokoju odrzucone przez radio.",
-        "failed": "Nie można było opuścić pokoju"
-      },
-      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku"
-    },
-    "mqttHints": {
-      "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
-      "network": "Sprawdź sieć, DNS, zaporę sieciową i VPN.",
-      "connackTimeout": "Jeśli nie widzisz wcześniej wiersza „błąd klienta”, uzgadnianie TLS/WebSocket może się zawieszać (spróbuj innej sieci; aplikacja preferuje protokół IPv4 dla WSS).",
-      "subscribeFailed": "Broker może odmówić subskrypcji symboli wieloznacznych w tym temacie; wiadomości mogą nadal przychodzić, jeśli broker na to pozwala.",
-      "keepalive": "Serwer przestał odpowiadać na pingi MQTT (przekroczenie limitu czasu bezczynności, przerwa w działaniu sieci lub zamknięcie sesji przez brokera). Połącz się ponownie lub sprawdź łącze."
-    }
   }
 }

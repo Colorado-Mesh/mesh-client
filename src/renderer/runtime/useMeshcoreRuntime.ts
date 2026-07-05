@@ -320,6 +320,7 @@ import {
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   meshcoreRepeaterRpcTimeoutMs,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
+  RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
 import type {
   ChatMessage,
@@ -434,6 +435,11 @@ export function useMeshcoreRuntime() {
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
   const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
   const [waitingMessagesCount, setWaitingMessagesCount] = useState(0);
+  const [waitingMessagesSyncActive, setWaitingMessagesSyncActive] = useState(false);
+  const [waitingMessagesSyncProgress, setWaitingMessagesSyncProgress] = useState<{
+    processed: number;
+    total: number;
+  } | null>(null);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
@@ -1035,6 +1041,63 @@ export function useMeshcoreRuntime() {
     return storeId ? result.canonicalId : undefined;
   }, []);
 
+  const addMessagesBatch = useCallback((batch: ChatMessage[]) => {
+    if (batch.length === 0) return;
+    const storeId = meshcoreIdentityIdRef.current;
+    const uiMessages: ChatMessage[] = [];
+    for (const msg of batch) {
+      if (storeId) {
+        const result = upsertMeshcoreMessageWithDedup(storeId, msg);
+        if (result.inserted || result.storeUpdated) {
+          uiMessages.push(result.message);
+          const skipSendingRoomPersist =
+            result.message.status === 'sending' && isMeshcoreRoomChatMessage(result.message);
+          if (!skipSendingRoomPersist) {
+            void window.electronAPI.db
+              .saveMeshcoreMessage(messageToDbRow(result.message))
+              .catch((e: unknown) => {
+                console.warn(
+                  '[useMeshcoreRuntime] saveMeshcoreMessage (batch) error ' + errLikeToLogString(e),
+                );
+              });
+          }
+        }
+      } else {
+        uiMessages.push(msg);
+      }
+    }
+    if (uiMessages.length === 0) return;
+    flushSync(() => {
+      setMessages((prev) => {
+        let next = prev;
+        for (const msg of uiMessages) {
+          const incomingKey = meshcoreMessageDedupeKey(msg);
+          const exactDup = next.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+          if (exactDup) {
+            if (storeId) {
+              next = next.map((m) =>
+                meshcoreMessageDedupeKey(m) === incomingKey
+                  ? { ...m, receivedVia: msg.receivedVia ?? m.receivedVia }
+                  : m,
+              );
+            }
+            continue;
+          }
+          const crossTransportDup = findMeshcoreCrossTransportDuplicate(next, msg);
+          if (crossTransportDup) {
+            const { messages: merged, matched } = upgradeMeshcoreCrossTransportMessage(next, msg);
+            if (matched) {
+              next = merged;
+              continue;
+            }
+          }
+          next = trimChatMessagesToMax([...next, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+        }
+        return next;
+      });
+    });
+  }, []);
+
   useEffect(() => {
     return window.electronAPI.mqtt.onMeshcoreChat((raw: unknown) => {
       const m = raw as {
@@ -1568,7 +1631,10 @@ export function useMeshcoreRuntime() {
       setSignalTelemetry,
       setState,
       setWaitingMessagesCount,
+      setWaitingMessagesSyncActive,
+      setWaitingMessagesSyncProgress,
       addMessage,
+      addMessagesBatch,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
@@ -1577,6 +1643,7 @@ export function useMeshcoreRuntime() {
     }),
     [
       addMessage,
+      addMessagesBatch,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
@@ -2692,7 +2759,7 @@ export function useMeshcoreRuntime() {
       if (type === 'serial') {
         await prepareRfConnect('serial');
         let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
-        try {
+        const attachSerialSession = async () => {
           opened = await openMeshCoreTransport('serial', {
             portSignature: lastSerialPortId,
           });
@@ -2705,6 +2772,27 @@ export function useMeshcoreRuntime() {
           meshcoreExplicitDisconnectRef.current = false;
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;
+        };
+        try {
+          try {
+            await attachSerialSession();
+          } catch (firstErr) {
+            const firstSetupAbort =
+              firstErr instanceof DOMException &&
+              firstErr.name === 'AbortError' &&
+              firstErr.message === MESHCORE_SETUP_ABORT_MESSAGE;
+            if (firstSetupAbort || opened) {
+              throw firstErr;
+            }
+            console.debug(
+              '[useMeshcoreRuntime] connectAutomatic serial open failed — retrying once',
+            );
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, RF_SERIAL_OPEN_RETRY_DELAY_MS);
+            });
+            opened = undefined;
+            await attachSerialSession();
+          }
         } catch (err) {
           const isSetupAbort =
             err instanceof DOMException &&
@@ -5709,6 +5797,10 @@ export function useMeshcoreRuntime() {
     }
   }, []);
 
+  const syncWaitingMessages = useCallback(async (): Promise<void> => {
+    await processWaitingMessagesRef.current?.();
+  }, []);
+
   const syncNextMessage = useCallback(async (): Promise<unknown> => {
     const conn = connRef.current;
     if (!conn) return null;
@@ -6095,6 +6187,8 @@ export function useMeshcoreRuntime() {
       mqttStatus,
       mqttConnectionLoss,
       waitingMessagesCount,
+      waitingMessagesSyncActive,
+      waitingMessagesSyncProgress,
       selfNodeId: state.myNodeNum,
       identityId: meshcoreIdentityId,
       getNodes,
@@ -6166,6 +6260,7 @@ export function useMeshcoreRuntime() {
       importPrivateKey,
       ensureMeshcoreMqttIdentity,
       getWaitingMessages,
+      syncWaitingMessages,
       syncNextMessage,
       getRemoteAdminKeyForNode,
       setRemoteAdminKeyForNode,
@@ -6239,6 +6334,8 @@ export function useMeshcoreRuntime() {
       mqttStatus,
       mqttConnectionLoss,
       waitingMessagesCount,
+      waitingMessagesSyncActive,
+      waitingMessagesSyncProgress,
       queueStatus,
       telemetry,
       signalTelemetry,
@@ -6275,6 +6372,7 @@ export function useMeshcoreRuntime() {
       importPrivateKey,
       ensureMeshcoreMqttIdentity,
       getWaitingMessages,
+      syncWaitingMessages,
       syncNextMessage,
       getRemoteAdminKeyForNode,
       setRemoteAdminKeyForNode,

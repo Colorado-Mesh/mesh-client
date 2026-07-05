@@ -63,6 +63,11 @@ export interface MeshcoreLegacyConnEventsCtx {
   setSignalTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;
   setState: Dispatch<SetStateAction<DeviceState>>;
   setWaitingMessagesCount: Dispatch<SetStateAction<number>>;
+  setWaitingMessagesSyncActive: Dispatch<SetStateAction<boolean>>;
+  setWaitingMessagesSyncProgress: Dispatch<
+    SetStateAction<{ processed: number; total: number } | null>
+  >;
+  addMessagesBatch: (msgs: ChatMessage[]) => void;
   addMessage: (msg: ChatMessage) => void;
   addCliHistoryEntry: (nodeId: number, entry: CliHistoryEntry) => void;
   teardownMeshcoreConnEventListeners: (opts?: { driverDisconnect?: boolean }) => void;

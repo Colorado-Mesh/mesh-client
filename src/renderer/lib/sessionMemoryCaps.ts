@@ -1,11 +1,14 @@
 /** Shared in-memory retention limits for long-running sessions. */
 
+/** Product cap for Meshtastic nodes, MeshCore contacts, and Reticulum destinations. */
+export const MAX_MESH_ENTITY_CAP = 10_000;
+
 export const MAX_TRACE_ROUTES_PER_IDENTITY = 100;
 export const MAX_MESHCORE_CLI_HISTORY_ENTRIES = 50;
 export const MAX_MESHTASTIC_TRACE_ROUTE_RESULTS = 100;
-export const MAX_DIAGNOSTICS_TRACKED_NODES = 2000;
-export const MAX_RETICULUM_IDENTITY_DESTINATIONS = 2000;
-export const LARGE_MESH_NODE_THRESHOLD = 400;
+export const MAX_DIAGNOSTICS_TRACKED_NODES = MAX_MESH_ENTITY_CAP;
+export const MAX_RETICULUM_IDENTITY_DESTINATIONS = MAX_MESH_ENTITY_CAP;
+export const LARGE_MESH_NODE_THRESHOLD = 2000;
 export const LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS = 10_000;
 export const SESSION_DB_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT = 4000;

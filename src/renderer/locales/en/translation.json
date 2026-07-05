@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Factory reset",
+      "hint": "Clears identity, contacts, and messages from the sidecar stack. Interface config is preserved.",
+      "button": "Reset stack data",
+      "confirmTitle": "Reset Reticulum stack?",
+      "confirmBody": "This removes identity, contacts, and local messages from the sidecar. Your interface config file is kept.",
+      "confirm": "Reset"
+    }
+  },
   "app": {
     "loadingPanel": "Loading panel",
     "loadingDialog": "Loading dialog",
@@ -358,7 +368,9 @@
     "sendButton": "Send",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
-    "waitingMessagesBadge": "Syncing {{count}} queued message(s) from radio…",
+    "waitingMessagesQueued": "{{count}} queued message(s) on radio",
+    "waitingMessagesSyncProgress": "Syncing {{processed}} / {{total}} from radio…",
+    "waitingMessagesSyncProgressIndeterminate": "Syncing queued messages from radio…",
     "waitingMessagesSyncNow": "Sync now",
     "reticulumPropagationSyncActive": "Syncing messages from propagation node…",
     "receivedViaRf": "Received via RF",
@@ -1262,6 +1274,25 @@
       }
     }
   },
+  "diagnosticsPing": {
+    "title": "Continuous ping",
+    "reticulumHint": "Runs ping (RTT) and path probe (hops) on each interval while the stack is running.",
+    "hashLabel": "Destination hash",
+    "hashPlaceholder": "32-character destination hash…",
+    "hashAria": "Destination hash to ping",
+    "intervalLabel": "Interval (s)",
+    "intervalAria": "Seconds between ping attempts",
+    "start": "Start",
+    "stop": "Stop",
+    "runOnce": "Ping once",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Hops",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Failed: {{error}}"
+  },
   "errorBoundary": {
     "title": "Something went wrong",
     "unexpectedError": "An unexpected error occurred",
@@ -1383,6 +1414,25 @@
       "flashTransferTooSmall": "Firmware transfer did not complete — almost no data was written. Confirm you selected the correct USB port and that the board entered bootloader mode.",
       "flashMd5Mismatch": "Firmware verification failed after writing. Try again with a different USB cable or port; if it persists, re-download the firmware zip."
     }
+  },
+  "identityVault": {
+    "title": "Identity vault",
+    "hint": "Encrypt a local copy of your identity backup with a vault passcode. Unlock to access protected identity operations.",
+    "passcode": "Vault passcode",
+    "confirmPasscode": "Confirm passcode",
+    "setPasscode": "Enable vault",
+    "unlock": "Unlock vault",
+    "lock": "Lock vault",
+    "statusNotConfigured": "Not configured",
+    "statusLocked": "Locked",
+    "statusUnlocked": "Unlocked",
+    "passcodeTooShort": "Passcode must be at least 4 characters.",
+    "passcodeMismatch": "Passcodes do not match.",
+    "setSuccess": "Vault passcode saved.",
+    "setFailed": "Could not save vault passcode.",
+    "unlockSuccess": "Vault unlocked.",
+    "unlockFailed": "Incorrect passcode or vault error.",
+    "lockSuccess": "Vault locked."
   },
   "logAnalyzeModal": {
     "title": "Log Analysis",
@@ -1916,53 +1966,135 @@
       "rgbComponents": "R:{{red}} G:{{green}} B:{{blue}}"
     },
     "inputEvents": {
-      "0": { "label": "None" },
-      "10": { "label": "Select (Enter)" },
-      "17": { "label": "Up" },
-      "18": { "label": "Down" },
-      "19": { "label": "Left" },
-      "20": { "label": "Right" },
-      "27": { "label": "Back (Esc)" },
-      "24": { "label": "Cancel" }
+      "0": {
+        "label": "None"
+      },
+      "10": {
+        "label": "Select (Enter)"
+      },
+      "17": {
+        "label": "Up"
+      },
+      "18": {
+        "label": "Down"
+      },
+      "19": {
+        "label": "Left"
+      },
+      "20": {
+        "label": "Right"
+      },
+      "24": {
+        "label": "Cancel"
+      },
+      "27": {
+        "label": "Back (Esc)"
+      }
     },
     "serialModes": {
-      "0": { "label": "Default" },
-      "1": { "label": "Simple" },
-      "2": { "label": "Proto" },
-      "3": { "label": "Text message" },
-      "4": { "label": "NMEA" },
-      "5": { "label": "CalTopo" },
-      "6": { "label": "WS85" },
-      "7": { "label": "VE.Direct" },
-      "8": { "label": "MeshSolar config" },
-      "9": { "label": "Log (all packets)" },
-      "10": { "label": "Log (text only)" }
+      "0": {
+        "label": "Default"
+      },
+      "1": {
+        "label": "Simple"
+      },
+      "2": {
+        "label": "Proto"
+      },
+      "3": {
+        "label": "Text message"
+      },
+      "4": {
+        "label": "NMEA"
+      },
+      "5": {
+        "label": "CalTopo"
+      },
+      "6": {
+        "label": "WS85"
+      },
+      "7": {
+        "label": "VE.Direct"
+      },
+      "8": {
+        "label": "MeshSolar config"
+      },
+      "9": {
+        "label": "Log (all packets)"
+      },
+      "10": {
+        "label": "Log (text only)"
+      }
     },
     "takTeamColors": {
-      "1": { "label": "White" },
-      "2": { "label": "Yellow" },
-      "3": { "label": "Orange" },
-      "4": { "label": "Magenta" },
-      "5": { "label": "Red" },
-      "6": { "label": "Maroon" },
-      "7": { "label": "Purple" },
-      "8": { "label": "Dark Blue" },
-      "9": { "label": "Blue" },
-      "10": { "label": "Cyan" },
-      "11": { "label": "Teal" },
-      "12": { "label": "Green" },
-      "13": { "label": "Dark Green" },
-      "14": { "label": "Brown" }
+      "1": {
+        "label": "White"
+      },
+      "2": {
+        "label": "Yellow"
+      },
+      "3": {
+        "label": "Orange"
+      },
+      "4": {
+        "label": "Magenta"
+      },
+      "5": {
+        "label": "Red"
+      },
+      "6": {
+        "label": "Maroon"
+      },
+      "7": {
+        "label": "Purple"
+      },
+      "8": {
+        "label": "Dark Blue"
+      },
+      "9": {
+        "label": "Blue"
+      },
+      "10": {
+        "label": "Cyan"
+      },
+      "11": {
+        "label": "Teal"
+      },
+      "12": {
+        "label": "Green"
+      },
+      "13": {
+        "label": "Dark Green"
+      },
+      "14": {
+        "label": "Brown"
+      }
     },
     "teamRoles": {
-      "1": { "label": "Team Member" },
-      "2": { "label": "Team Lead" },
-      "3": { "label": "HQ" },
-      "4": { "label": "Sniper" },
-      "5": { "label": "Medic" },
-      "6": { "label": "Forward Observer" },
-      "7": { "label": "RTO" },
-      "8": { "label": "K9" }
+      "1": {
+        "label": "Team Member"
+      },
+      "2": {
+        "label": "Team Lead"
+      },
+      "3": {
+        "label": "HQ"
+      },
+      "4": {
+        "label": "Sniper"
+      },
+      "5": {
+        "label": "Medic"
+      },
+      "6": {
+        "label": "Forward Observer"
+      },
+      "7": {
+        "label": "RTO"
+      },
+      "8": {
+        "label": "K9"
+      }
     },
     "statusLabels": {
       "serial": "Serial",
@@ -1977,6 +2109,31 @@
     "debugSimulatorPackets": "Simulator packets",
     "debugPrivateAppMessages": "Private app messages",
     "debugPingResponses": "Ping responses"
+  },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Stack settings",
+      "enableTransport": "Enable transport (route for other peers)",
+      "shareInstance": "Share Reticulum instance",
+      "logLevel": "Log level",
+      "save": "Save stack settings",
+      "saveFailed": "Failed to save stack settings."
+    },
+    "reticulumConfigImport": {
+      "title": "Import Reticulum config",
+      "hint": "Paste an rnsd-style config file or import from disk. Merge adds/updates interface blocks by name; replace overwrites all interfaces.",
+      "pasteLabel": "Config file contents",
+      "fromFile": "Import from file…",
+      "fromSystem": "Import system default",
+      "merge": "Merge import",
+      "replace": "Replace interfaces",
+      "confirmTitle": "Import Reticulum config",
+      "confirmMerge": "Merge imported interfaces into the current config?",
+      "confirmReplace": "Replace all interfaces with the imported config? This cannot be undone.",
+      "confirm": "Import"
+    },
+    "reticulumConfigImportFailed": "Config import failed.",
+    "reticulumConfigNotFound": "No system Reticulum config found at default paths."
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",
@@ -2426,41 +2583,6 @@
     "allGroups": "All groups",
     "manageGroups": "Manage groups"
   },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Stack settings",
-      "enableTransport": "Enable transport (route for other peers)",
-      "shareInstance": "Share Reticulum instance",
-      "logLevel": "Log level",
-      "save": "Save stack settings",
-      "saveFailed": "Failed to save stack settings."
-    },
-    "reticulumConfigImport": {
-      "title": "Import Reticulum config",
-      "hint": "Paste an rnsd-style config file or import from disk. Merge adds/updates interface blocks by name; replace overwrites all interfaces.",
-      "pasteLabel": "Config file contents",
-      "fromFile": "Import from file…",
-      "fromSystem": "Import system default",
-      "merge": "Merge import",
-      "replace": "Replace interfaces",
-      "confirmTitle": "Import Reticulum config",
-      "confirmMerge": "Merge imported interfaces into the current config?",
-      "confirmReplace": "Replace all interfaces with the imported config? This cannot be undone.",
-      "confirm": "Import"
-    },
-    "reticulumConfigImportFailed": "Config import failed.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Factory reset",
-      "hint": "Clears identity, contacts, and messages from the sidecar stack. Interface config is preserved.",
-      "button": "Reset stack data",
-      "confirmTitle": "Reset Reticulum stack?",
-      "confirmBody": "This removes identity, contacts, and local messages from the sidecar. Your interface config file is kept.",
-      "confirm": "Reset"
-    }
-  },
   "radioPanel": {
     "offloadedContacts": "Offloaded {{count}} contacts to database.",
     "offloadReconcileStillFull": "Offload completed but radio still reports full contacts ({{count}}/350). Reconnect and retry.",
@@ -2768,34 +2890,86 @@
     "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
     "tzdefPlaceholder": "e.g. EST5EDT,M3.2.0,M11.1.0",
     "regions": {
-      "0": { "label": "Unset" },
-      "1": { "label": "US" },
-      "2": { "label": "EU_433" },
-      "3": { "label": "EU_868" },
-      "4": { "label": "CN" },
-      "5": { "label": "JP" },
-      "6": { "label": "ANZ" },
-      "7": { "label": "KR" },
-      "8": { "label": "TW" },
-      "9": { "label": "RU" },
-      "10": { "label": "IN" },
-      "11": { "label": "NZ_865" },
-      "12": { "label": "TH" },
-      "13": { "label": "UA_433" },
-      "14": { "label": "UA_868" },
-      "15": { "label": "MY_433" },
-      "16": { "label": "MY_919" },
-      "17": { "label": "SG_923" },
-      "18": { "label": "LORA_24" }
+      "0": {
+        "label": "Unset"
+      },
+      "1": {
+        "label": "US"
+      },
+      "2": {
+        "label": "EU_433"
+      },
+      "3": {
+        "label": "EU_868"
+      },
+      "4": {
+        "label": "CN"
+      },
+      "5": {
+        "label": "JP"
+      },
+      "6": {
+        "label": "ANZ"
+      },
+      "7": {
+        "label": "KR"
+      },
+      "8": {
+        "label": "TW"
+      },
+      "9": {
+        "label": "RU"
+      },
+      "10": {
+        "label": "IN"
+      },
+      "11": {
+        "label": "NZ_865"
+      },
+      "12": {
+        "label": "TH"
+      },
+      "13": {
+        "label": "UA_433"
+      },
+      "14": {
+        "label": "UA_868"
+      },
+      "15": {
+        "label": "MY_433"
+      },
+      "16": {
+        "label": "MY_919"
+      },
+      "17": {
+        "label": "SG_923"
+      },
+      "18": {
+        "label": "LORA_24"
+      }
     },
     "modemPresets": {
-      "0": { "label": "Long Fast" },
-      "1": { "label": "Long Slow" },
-      "2": { "label": "Long Moderate" },
-      "3": { "label": "Short Fast" },
-      "4": { "label": "Short Slow" },
-      "5": { "label": "Medium Fast" },
-      "6": { "label": "Medium Slow" }
+      "0": {
+        "label": "Long Fast"
+      },
+      "1": {
+        "label": "Long Slow"
+      },
+      "2": {
+        "label": "Long Moderate"
+      },
+      "3": {
+        "label": "Short Fast"
+      },
+      "4": {
+        "label": "Short Slow"
+      },
+      "5": {
+        "label": "Medium Fast"
+      },
+      "6": {
+        "label": "Medium Slow"
+      }
     },
     "rebroadcastModes": {
       "0": {
@@ -3142,48 +3316,19 @@
     "clearAnnouncesDone": "Announces cleared.",
     "clearAnnouncesFailed": "Failed to clear announces."
   },
-  "diagnosticsPing": {
-    "title": "Continuous ping",
-    "reticulumHint": "Runs ping (RTT) and path probe (hops) on each interval while the stack is running.",
-    "hashLabel": "Destination hash",
-    "hashPlaceholder": "32-character destination hash…",
-    "hashAria": "Destination hash to ping",
-    "intervalLabel": "Interval (s)",
-    "intervalAria": "Seconds between ping attempts",
-    "start": "Start",
-    "stop": "Stop",
-    "runOnce": "Ping once",
-    "colSeq": "#",
-    "colRtt": "RTT",
-    "colHops": "Hops",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Failed: {{error}}"
-  },
   "reticulumIdentitySwitcher": {
     "label": "Active identity",
     "active": "Active identity: {{name}}",
     "activeBadge": "active"
   },
-  "identityVault": {
-    "title": "Identity vault",
-    "hint": "Encrypt a local copy of your identity backup with a vault passcode. Unlock to access protected identity operations.",
-    "passcode": "Vault passcode",
-    "confirmPasscode": "Confirm passcode",
-    "setPasscode": "Enable vault",
-    "unlock": "Unlock vault",
-    "lock": "Lock vault",
-    "statusNotConfigured": "Not configured",
-    "statusLocked": "Locked",
-    "statusUnlocked": "Unlocked",
-    "passcodeTooShort": "Passcode must be at least 4 characters.",
-    "passcodeMismatch": "Passcodes do not match.",
-    "setSuccess": "Vault passcode saved.",
-    "setFailed": "Could not save vault passcode.",
-    "unlockSuccess": "Vault unlocked.",
-    "unlockFailed": "Incorrect passcode or vault error.",
-    "lockSuccess": "Vault locked."
+  "reticulumProfileIcon": {
+    "iconName": "Avatar icon",
+    "iconNameAria": "Peer avatar icon",
+    "iconCircle": "Circle",
+    "iconStar": "Star",
+    "iconHeart": "Heart",
+    "iconShield": "Shield",
+    "iconUser": "User"
   },
   "reticulumPropagation": {
     "preferred": "Preferred",
@@ -3225,15 +3370,6 @@
     "syncAria": "Sync propagation messages",
     "cancelSync": "Cancel",
     "cancelSyncAria": "Cancel propagation sync"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Avatar icon",
-    "iconNameAria": "Peer avatar icon",
-    "iconCircle": "Circle",
-    "iconStar": "Star",
-    "iconHeart": "Heart",
-    "iconShield": "Shield",
-    "iconUser": "User"
   },
   "reticulumTopology": {
     "title": "Network topology",

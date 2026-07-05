@@ -167,11 +167,75 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
   };
 }
 
+/** Module cache for structural sharing across consecutive exports (App.tsx node map). */
+let prevNodeMapExport: Map<number, MeshNode> | null = null;
+let prevNodeRecordSnapshot: Map<number, NodeRecord> | null = null;
+
+function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
+  return (
+    a.nodeId === b.nodeId &&
+    a.longName === b.longName &&
+    a.shortName === b.shortName &&
+    a.hwModel === b.hwModel &&
+    a.snr === b.snr &&
+    a.rssi === b.rssi &&
+    a.batteryLevel === b.batteryLevel &&
+    a.lastHeardAt === b.lastHeardAt &&
+    a.latitude === b.latitude &&
+    a.longitude === b.longitude &&
+    a.role === b.role &&
+    a.hopsAway === b.hopsAway &&
+    a.viaMqtt === b.viaMqtt &&
+    a.hops === b.hops &&
+    a.path === b.path &&
+    a.heardViaMqttOnly === b.heardViaMqttOnly &&
+    a.heardViaMqtt === b.heardViaMqtt &&
+    a.source === b.source &&
+    a.onRadio === b.onRadio &&
+    a.favorited === b.favorited &&
+    a.voltage === b.voltage &&
+    a.channelUtilization === b.channelUtilization &&
+    a.airUtilTx === b.airUtilTx &&
+    a.meshcoreLocalStats === b.meshcoreLocalStats &&
+    a.reticulumDestinationHash === b.reticulumDestinationHash
+  );
+}
+
+/** Reset export cache (tests only). */
+export function resetNodeRecordsToMeshNodeMapCacheForTests(): void {
+  prevNodeMapExport = null;
+  prevNodeRecordSnapshot = null;
+}
+
 export function nodeRecordsToMeshNodeMap(records: NodeRecord[]): Map<number, MeshNode> {
+  const prevMap = prevNodeMapExport;
+  const prevSnapshot = prevNodeRecordSnapshot;
+  if (prevMap && prevSnapshot && prevMap.size === records.length) {
+    let reuseEntireMap = true;
+    const next = new Map<number, MeshNode>();
+    for (const record of records) {
+      const prevRecord = prevSnapshot.get(record.nodeId);
+      const prevNode = prevMap.get(record.nodeId);
+      if (prevRecord && prevNode && nodeRecordsShallowEqual(prevRecord, record)) {
+        next.set(record.nodeId, prevNode);
+      } else {
+        reuseEntireMap = false;
+        next.set(record.nodeId, nodeRecordToMeshNode(record));
+      }
+    }
+    if (reuseEntireMap) {
+      return prevMap;
+    }
+    prevNodeMapExport = next;
+    prevNodeRecordSnapshot = new Map(records.map((r) => [r.nodeId, r]));
+    return next;
+  }
   const map = new Map<number, MeshNode>();
   for (const record of records) {
     map.set(record.nodeId, nodeRecordToMeshNode(record));
   }
+  prevNodeMapExport = map;
+  prevNodeRecordSnapshot = new Map(records.map((r) => [r.nodeId, r]));
   return map;
 }
 
