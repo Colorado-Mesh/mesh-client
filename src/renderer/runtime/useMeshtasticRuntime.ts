@@ -1697,6 +1697,7 @@ export function useMeshtasticRuntime() {
       myNodeNumRef,
       nodesRef,
       pendingTempIdRef,
+      ackMeshPacketIdByTempIdRef,
       pendingTracePacketIdToTargetRef,
       pendingTraceRequestsRef,
       refreshOurPositionRef,

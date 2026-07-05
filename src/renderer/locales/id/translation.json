@@ -329,7 +329,7 @@
     "limitMessagesLoadedCountAria": "Batasi pesan yang dimuat {{count}} pesan",
     "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru",
     "maxDistanceAria": "Jarak maksimum: {{value}}",
-    "unitAria": "Unit: {{unit}}"
+    "unitAria": "Satuan: {{unit}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -389,7 +389,7 @@
     "filteringBySender": "Memfilter menurut {{name}}",
     "jumpToDate": "Langsung ke tanggal",
     "exportChat": "Ekspor Obrolan",
-    "exportChatFailed": "Export failed",
+    "exportChatFailed": "Ekspor gagal",
     "dmNodeLastHeard": "Terakhir didengar {{time}}",
     "dmNodeBattery": "{{pct}}% baterai",
     "dmNodeSignal": "SNR {{snr}} dB",
@@ -471,7 +471,7 @@
     "reticulumSendDelivered": "Terkirim",
     "reticulumSendFailed": "Gagal mengirim",
     "reticulumImageAttachment": "Gambar: {{name}}",
-    "reticulumFileAttachment": "File: {{name}}",
+    "reticulumFileAttachment": "Berkas: {{name}}",
     "reticulumShowInFolder": "Tampilkan dalam Folder",
     "reticulumSendPropagated": "Mengantri di node propagasi",
     "reticulumNoPropagationNode": "Tidak ada node propagasi yang dikonfigurasi. Tetapkan node propagasi pilihan pada tab Reticulum Radio.",
@@ -546,7 +546,7 @@
     "saving": "Menyimpan...",
     "peers": "Peer",
     "colorGreen": "Hijau",
-    "colorCyan": "Cyan",
+    "colorCyan": "Sian",
     "colorAmber": "Kuning sawo",
     "colorRed": "Merah",
     "colorPurple": "Ungu",
@@ -650,7 +650,7 @@
     "hintMeshtasticHttp2": "Jika koneksi tidak dapat diandalkan (misalnya dengan meshtastic.local), coba gunakan alamat IP perangkat — mDNS desktop mungkin tidak stabil.",
     "hintMeshcoreHttp": "Masukkan nama host atau alamat IP radio pendamping MeshCore Anda. Itu harus dapat dijangkau pada port 5000.",
     "stageLinuxUnpaired": "Perangkat yang disimpan tidak dipasangkan di Linux Bluetooth — pilih di bawah untuk memasukkan PIN dan menghubungkan.",
-    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
+    "liamServerNote": "Liam's server hanya uplink — node Anda muncul di petanya tetapi Anda tidak akan menerima pesan darinya.",
     "connectButton": "Menghubungkan",
     "mqttStatusConnected": "terhubung",
     "mqttStatusConnecting": "menghubungkan",
@@ -730,7 +730,7 @@
     },
     "cancelMqttConnect": "Membatalkan",
     "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",
-    "meshcorePort": "Port",
+    "meshcorePort": "Pelabuhan",
     "channelPsksHelp": "Tombol base64 AES -128 (16 - byte) atau AES -256 (32 - byte), satu per baris. Nama Saluran Opsional=base64 hanya untuk MQTT. LongFast default selalu dicoba. Tombol dari tab Radio disinkronkan secara otomatis saat radio terhubung.",
     "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
     "channelPsksInvalidLength": "Setiap kunci harus diterjemahkan menjadi 16 byte (AES -128) atau 32 byte (AES -256).",
@@ -775,21 +775,21 @@
       "enable": "Fungsikan",
       "disable": "Nonaktifkan",
       "serialPort": "Port Serial",
-      "preset": "Preset",
+      "preset": "Prasetel",
       "bleAvailable": "Pengintipan BLE tersedia di platform ini (tambahkan melalui sidecar saat dikonfigurasi).",
       "host": "Pemandu Acara",
-      "port": "Port",
+      "port": "Pelabuhan",
       "delete": "Hapus",
       "deleteConfirmTitle": "Hapus antarmuka?",
       "deleteConfirmBody": "Hapus \"{{name}}\" dari konfigurasi tumpukan? Ini tidak dapat diurungkan.",
       "deleteConfirm": "Hapus",
       "deleteFailed": "Gagal menghapus antarmuka.",
-      "edit": "Edit",
+      "edit": "Sunting",
       "editTitle": "Edit antarmuka",
       "saveEdit": "Simpan perubahan",
       "cancelEdit": "Batal",
       "name": "Nama",
-      "callsign": "Callsign",
+      "callsign": "tanda panggilan",
       "editFailed": "Gagal menyimpan antarmuka.",
       "pipeCommand": "Perintah pipa",
       "addFailed": "Gagal menambahkan antarmuka.",
@@ -1380,7 +1380,7 @@
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",
     "noSerialPortsHint": "Hubungkan papan Anda melalui USB. Perangkat Bluetooth di log diabaikan; hanya port serial USB yang dapat digunakan untuk berkedip.",
-    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "stackStoppedHint": "Tumpukan Reticulum dihentikan — port serial bebas untuk flashing. Mulai tumpukan lagi pada tab Koneksi setelah Anda selesai.",
     "lastUsedPort": "Terakhir digunakan",
     "downloadFirmware": "Unduh firmware",
     "downloadLatestFirmware": "{{filename}} (rilis terbaru)",
@@ -1492,11 +1492,11 @@
       },
       "database-chmod": {
         "label": "Chmod basis data (tidak fatal)",
-        "recommendation": "Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory."
+        "recommendation": "Perubahan izin file database gagal (seringkali tidak berbahaya di Windows). Jika Anda melihat kesalahan DB nyata di tempat lain, periksa antivirus dan izin folder untuk direktori userData mesh-client."
       },
       "database-writable": {
         "label": "Basis Data Tidak Dapat Ditulis",
-        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
+        "recommendation": "Aplikasi tidak dapat menulis folder database-nya. Perbaiki izin pada direktori userData mesh-client (lihat pemecahan masalah: Direktori database tidak dapat ditulis)."
       },
       "tak-server": {
         "label": "Masalah Server TAK",
@@ -2898,78 +2898,78 @@
     "offloadReconcileStillFull": "Offload selesai tetapi radio masih melaporkan kontak penuh ({{count}}/350). Sambungkan kembali dan coba lagi.",
     "offloadReconcileStillNearFull": "Offload selesai tetapi radio masih melaporkan penggunaan kontak yang tinggi ({{count}}/350).",
     "offloadReconcileRefreshFailed": "Pembongkaran muatan selesai, tetapi penyegaran kontak gagal. Sambungkan kembali dan segarkan kontak.",
-    "txEnabledLabel": "TX Enabled",
-    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
-    "channelNumLabel": "Channel Number",
-    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
-    "overrideFrequencyLabel": "Override Frequency",
-    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
-    "ignoreMqttLabel": "Ignore MQTT",
-    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
-    "configOkToMqttLabel": "OK to MQTT",
-    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
-    "overrideDutyCycleLabel": "Override Duty Cycle",
-    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
-    "paFanDisabledLabel": "Disable PA Fan",
-    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
-    "rebroadcastModeLabel": "Rebroadcast Mode",
-    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
-    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
-    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
-    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
-    "disableTripleClickLabel": "Disable Triple-click",
-    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
-    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
-    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
-    "buttonGpioLabel": "Button GPIO",
-    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
-    "buzzerGpioLabel": "Buzzer GPIO",
-    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
-    "tzdefLabel": "Timezone (POSIX)",
-    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "txEnabledLabel": "TX Diaktifkan",
+    "txEnabledDesc": "Izinkan node ini untuk melakukan transmisi. Nonaktifkan untuk pengoperasian hanya penerimaan.",
+    "channelNumLabel": "Nomor Saluran",
+    "channelNumDesc": "Pilih saluran secara manual (0 = otomatis). Harus cocok dengan semua node di jaringan.",
+    "overrideFrequencyLabel": "Ganti Frekuensi",
+    "overrideFrequencyDesc": "Ganti frekuensi dalam MHz (0 = gunakan default wilayah). Pastikan kepatuhan terhadap peraturan setempat.",
+    "ignoreMqttLabel": "Abaikan MQTT",
+    "ignoreMqttDesc": "Jangan menyiarkan ulang paket yang datang melalui MQTT. Mengurangi kemacetan mesh dari lalu lintas gateway.",
+    "configOkToMqttLabel": "Oke untuk MQTT",
+    "configOkToMqttDesc": "Memberi sinyal ke gateway bahwa paket node ini dapat diteruskan ke MQTT.",
+    "overrideDutyCycleLabel": "Ganti Siklus Tugas",
+    "overrideDutyCycleDesc": "Lewati batas siklus tugas regional. Hanya untuk pengujian — mungkin ilegal untuk digunakan di udara.",
+    "paFanDisabledLabel": "Nonaktifkan Kipas PA",
+    "paFanDisabledDesc": "Nonaktifkan kipas pendingin power amplifier (tergantung perangkat keras).",
+    "rebroadcastModeLabel": "Mode Siaran Ulang",
+    "nodeInfoBroadcastSecsLabel": "Interval Siaran Info Node",
+    "nodeInfoBroadcastSecsDesc": "Seberapa sering menyiarkan info node dalam hitungan detik (0 = firmware default ~15 menit).",
+    "doubleTapAsButtonPressLabel": "Ketuk dua kali sebagai Tekan Tombol",
+    "doubleTapAsButtonPressDesc": "Perlakukan ketukan dua kali akselerometer sebagai penekanan tombol pengguna (tergantung perangkat keras).",
+    "disableTripleClickLabel": "Nonaktifkan Klik tiga kali",
+    "disableTripleClickDesc": "Nonaktifkan tindakan klik tiga kali pada tombol pengguna.",
+    "ledHeartbeatDisabledLabel": "Nonaktifkan Detak Jantung LED",
+    "ledHeartbeatDisabledDesc": "Hentikan LED agar tidak berkedip untuk menandakan node masih hidup.",
+    "buttonGpioLabel": "Tombol GPIO",
+    "buttonGpioDesc": "Pin GPIO untuk tombol pengguna (0 = default perangkat keras).",
+    "buzzerGpioLabel": "GPIO bel",
+    "buzzerGpioDesc": "Pin GPIO untuk bel (0 = default perangkat keras).",
+    "tzdefLabel": "Zona Waktu (POSIX)",
+    "tzdefDesc": "String zona waktu POSIX mis. EST5EDT,M3.2.0,M11.1.0. Lihat https://github.com/nayarsystems/posix_tz_db untuk daftar referensi.",
     "rebroadcastModes": {
       "0": {
         "label": "All",
-        "description": "Rebroadcast all packets (default)."
+        "description": "Siarkan ulang semua paket (default)."
       },
       "1": {
-        "label": "All Skip Decoding",
-        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+        "label": "Semua Lewati Decoding",
+        "description": "Siarkan ulang semua tanpa decoding. Mengurangi CPU pada router khusus."
       },
       "2": {
-        "label": "Local Only",
-        "description": "Only rebroadcast packets from nodes heard directly on RF."
+        "label": "Hanya Lokal",
+        "description": "Hanya paket yang disiarkan ulang dari node yang didengar langsung di RF."
       },
       "3": {
-        "label": "Known Only",
-        "description": "Only rebroadcast from nodes in the local node database."
+        "label": "Hanya Diketahui",
+        "description": "Hanya disiarkan ulang dari node di database node lokal."
       },
       "4": {
-        "label": "None",
-        "description": "Do not rebroadcast any packets."
+        "label": "Tidak ada",
+        "description": "Jangan menyiarkan ulang paket apa pun."
       },
       "5": {
-        "label": "Core Portnums Only",
-        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+        "label": "Hanya Portnum Inti",
+        "description": "Hanya menyiarkan ulang portnum penting (teks, info node, posisi, telemetri)."
       }
     },
-    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
-    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
-    "oledTypeLabel": "OLED Type",
-    "flipScreenLabel": "Flip Screen",
-    "flipScreenDesc": "Rotate the display 180 degrees.",
-    "displayModeLabel": "Display Mode",
-    "headingBoldLabel": "Bold Heading",
-    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
-    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
-    "use12hClockLabel": "12-Hour Clock",
-    "useLongNodeNameLabel": "Use Long Node Name",
-    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
-    "enableMessageBubblesLabel": "Message Bubbles",
-    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "autoScreenCarouselSecsLabel": "Interval Korsel Layar",
+    "autoScreenCarouselSecsDesc": "Detik antara perubahan halaman layar otomatis. 0 untuk menonaktifkan.",
+    "oledTypeLabel": "Tipe OLED",
+    "flipScreenLabel": "Layar Balik",
+    "flipScreenDesc": "Putar layar 180 derajat.",
+    "displayModeLabel": "Modus Tampilan",
+    "headingBoldLabel": "Judul Tebal",
+    "wakeOnTapOrMotionLabel": "Bangun dengan Ketukan atau Gerakan",
+    "wakeOnTapOrMotionDesc": "Bangunkan layar saat perangkat diketuk atau dipindahkan.",
+    "use12hClockLabel": "Jam 12 Jam",
+    "useLongNodeNameLabel": "Gunakan Nama Node Panjang",
+    "useLongNodeNameDesc": "Tampilkan nama simpul lengkap, bukan nama pendek di layar.",
+    "enableMessageBubblesLabel": "Gelembung Pesan",
+    "enableMessageBubblesDesc": "Tampilkan pesan masuk dalam gelembung di layar.",
     "oledTypes": {
       "0": {
-        "label": "Auto"
+        "label": "Mobil"
       },
       "1": {
         "label": "SSD1306"
@@ -2984,33 +2984,33 @@
         "label": "SH1107 (128x128)"
       },
       "5": {
-        "label": "SH1107 Rotated"
+        "label": "SH1107 Diputar"
       }
     },
     "displayModes": {
       "0": {
-        "label": "Default"
+        "label": "Bawaan"
       },
       "1": {
-        "label": "Two Color"
+        "label": "Dua Warna"
       },
       "2": {
-        "label": "Inverted"
+        "label": "Terbalik"
       },
       "3": {
-        "label": "Color"
+        "label": "Warna"
       }
     },
-    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModeLabel": "Mode Berpasangan",
     "btPairingModes": {
       "0": {
-        "label": "Random PIN"
+        "label": "PIN acak"
       },
       "1": {
-        "label": "Fixed PIN"
+        "label": "PIN tetap"
       },
       "2": {
-        "label": "No PIN"
+        "label": "Tidak ada PIN"
       }
     },
     "tzdefPlaceholder": "misalnya EST5EDT,M3.2.0,M11.1.0",
@@ -3043,7 +3043,7 @@
     "floodScopePreset": "Hashtag prasetel",
     "floodScopePresetSelect": "Hashtag wilayah prasetel",
     "floodScopeCustom": "Tagar kustom",
-    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeCustomPlaceholder": "#wilayahku",
     "floodScopeApply": "Terapkan cakupan banjir",
     "floodScopeApplySuccess": "Ruang lingkup banjir diterapkan",
     "floodScopeApplyFailed": "Ruang lingkup banjir gagal: {{message}}",
@@ -3168,12 +3168,12 @@
     "transportRegionMismatch": "Tidak cocok dengan lingkup banjir yang dikonfigurasi",
     "transportLegendHint": "Buka baris: rute dan transport ada di atas. Kode ruang lingkup/pengembalian regional hanya muncul pada paket TRANSPORT_FLOOD dan TRANSPORT_DIRECT (bukan FLOOD/DIRECT biasa).",
     "routeLabel": "Rute",
-    "payloadLabel": "Payload",
-    "transportHeading": "Transport",
+    "payloadLabel": "Muatan",
+    "transportHeading": "Mengangkut",
     "transportCodesAbsent": "Tidak ada kode transport regional (rute {{route}} — hanya TRANSPORT_FLOOD / TRANSPORT_DIRECT yang membawa scope/return).",
     "transportCodesAbsentTooltip": "Paket FLOOD dan DIRECT biasa tidak menyertakan bidang scope/return transport regional di header RF MeshCore.",
     "meshtasticLegendHint": "Perluas baris: detail port dan hop ada di bagian atas. Jumlah hop menggunakan hopStart − hopLimit pada paket RF (bukan MQTT).",
-    "portLabel": "Port",
+    "portLabel": "Pelabuhan",
     "transportSourceLabel": "Pengangkutan",
     "hopsAbsentMqtt": "Tidak ada jumlah hop RF (jalur MQTT).",
     "reticulum": {
@@ -3181,7 +3181,7 @@
       "direction": "Arah",
       "interface": "Antarmuka",
       "packetType": "Jenis paket",
-      "headerType": "Header",
+      "headerType": "Tajuk",
       "destination": "Destinasi",
       "rx": "RX",
       "tx": "TX"
@@ -3252,15 +3252,10 @@
     "columnReliability": "Keandalan",
     "columnActions": "Tindakan",
     "nodesTabName": "Node",
-    "changeSessionRepeaterPassword": "Ubah kata sandi pengulang sesi",
     "title": "Repeater",
     "columnsDataHint": "SNR, RSSI, uptime, dan airtime berasal dari tindakan Status (atau pengambilan otomatis saat panel ini terbuka). Hop dan riwayat jalur memerlukan Ping. MeshCore tidak mengisi kolom tersebut hanya dari iklan.",
-    "remoteAccessAriaLabel": "Akses jarak jauh pengulang",
     "remoteAuthLabel": "Kata sandi admin pengulang (opsional)",
     "remoteAuthPlaceholder": "Biarkan kosong jika repeater tidak memiliki kata sandi admin",
-    "remoteAuthHelp": "Status pengulang jarak jauh, Tetangga, dan telemetri sensor mungkin memerlukan kata sandi admin. Pilih sekali per sesi — hanya disimpan di memori untuk jendela ini.",
-    "remoteAuthContinueWithoutPassword": "Lanjutkan tanpa kata sandi",
-    "remoteAuthSaveForSession": "Simpan untuk sesi ini",
     "remoteAuthCancelDialog": "Batalkan dialog kata sandi pengulang",
     "remoteAuthTitle": "Kata sandi admin pengulang",
     "remoteAuthModalHelp": "Kata sandi opsional untuk perintah pengulang jarak jauh. Disimpan untuk sesi ini hanya di jendela ini.",
@@ -3280,9 +3275,6 @@
     "statusFailedToast": "Status gagal: {{message}}",
     "pingFailedToast": "Ping gagal: {{message}}",
     "removeFailedToast": "Gagal menghapus: {{message}}",
-    "actionErrorStatus": "Status: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Tetangga: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR dari status pengulang",
     "snrContactTooltip": "Hubungi SNR — gunakan Status untuk membaca langsung",
@@ -3307,7 +3299,33 @@
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Mengirim",
     "cliQuick": "Cepat:",
-    "neighborsHopTooFar": "Tetangga tidak tersedia untuk repeater {{hops}}+ melompat ke serial USB"
+    "neighborsHopTooFar": "Tetangga tidak tersedia untuk repeater {{hops}}+ melompat ke serial USB",
+    "rememberPassword": "Ingat kata sandi untuk pengulang ini",
+    "savePassword": "Simpan kata sandi",
+    "changePassword": "Ubah kata sandi",
+    "forgetPassword": "Lupa",
+    "forgetPasswordAria": "Lupa kata sandi pengulang yang disimpan",
+    "passwordSaved": "Kata sandi pengulang disimpan.",
+    "passwordForgotten": "Kata sandi pengulang yang disimpan dihapus.",
+    "passwordSavedIndicator": "Kata sandi disimpan untuk pengulang ini",
+    "savedPasswordsCount": "Kata sandi pengulang yang disimpan ({{count}})",
+    "savedPasswordOrphanLabel": "Pengulang {{nodeId}}",
+    "pingQueuedBehindOther": "Diantrekan — ping lain menggunakan radio (MeshCore memungkinkan satu jejak pada satu waktu).",
+    "waitForPingBeforeStatus": "Menunggu ping yang sedang berlangsung selesai sebelum permintaan status.",
+    "statusLastFailedTooltip": "Permohonan status terakhir gagal: {{error}}",
+    "neighborsLastFailedTooltip": "Permohonan tetangga terakhir gagal: {{error}}",
+    "telemetryLastFailedTooltip": "Permintaan sensor terakhir gagal: {{error}}",
+    "cliLastFailedTooltip": "Perintah CLI terakhir gagal: {{error}}",
+    "telemetryError": "Kesalahan sensor: {{error}}",
+    "neighborsFailedToast": "Tetangga gagal: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "Hapus riwayat",
+    "cliNoCommandsYet": "Belum ada perintah",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -3327,7 +3345,7 @@
     "iconName": "Ikon avatar",
     "iconNameAria": "Ikon avatar sejawat",
     "iconCircle": "Lingkaran",
-    "iconStar": "Star",
+    "iconStar": "Bintang",
     "iconHeart": "Hati",
     "iconShield": "Perisai",
     "iconUser": "Pengguna"
@@ -3392,12 +3410,12 @@
     "unassignedInterface": "Jalur lainnya",
     "legendInterfaceOnline": "Antarmuka online",
     "legendInterfaceOffline": "Antarmuka offline",
-    "legendPeerUser": "LXMF peer",
-    "legendPeerServer": "Nomad node",
+    "legendPeerUser": "Rekan LXMF",
+    "legendPeerServer": "simpul pengembara",
     "interfaceLink": "Tautan antarmuka",
     "peerLink": "Tautan sejawat",
     "interfaceTooltip": "{{name}} — {{status}}",
-    "interfaceStatusOnline": "online",
+    "interfaceStatusOnline": "on line",
     "interfaceStatusOffline": "luring",
     "glyphWifi": "Antarmuka Wi-Fi",
     "glyphLora": "Antarmuka LoRa",
@@ -3676,7 +3694,7 @@
     "app": "Aplikasi",
     "diagnostics": "Diagnostik",
     "stats": "Statistik",
-    "sniffer": "Sniffer",
+    "sniffer": "Sapu tangan",
     "repeaters": "Repeater",
     "rf": "RF",
     "graph": "Grafik",
@@ -3798,7 +3816,7 @@
     "tooltipPrefixDevice": "Perangkat"
   },
   "bootSequence": {
-    "booting": "Booting mesh stack...",
+    "booting": "Mem-boot tumpukan mesh...",
     "meshtasticLora": "LoRa: {{model}}",
     "meshtasticScanningChannelsCount": "Memindai saluran... {{count}}",
     "meshtasticScanningChannels": "Memindai saluran yang dikonfigurasi...",
@@ -3806,8 +3824,8 @@
     "databaseNodes_other": "Database: {{count}} node disinkronkan",
     "syncingDatabase": "Menyinkronkan basis data mesh...",
     "interfaceReady": "{{iface}} antarmuka siap",
-    "freqMhz": "Freq: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "freqMhz": "Frekuensi: {{mhz}} MHz",
+    "freqMhzBw": "Frekuensi: {{mhz}} MHz | BW: {{bw}} kHz",
     "configuringRadio": "Mengkonfigurasi parameter radio...",
     "contacts_one": "Kontak: {{count}} kontak dimuat",
     "contacts_other": "Kontak: {{count}} kontak dimuat",

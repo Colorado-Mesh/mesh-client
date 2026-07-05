@@ -1,17 +1,13 @@
+import { runMeshcoreRepeaterPrefixPushRequest } from './meshcoreRepeaterPrefixPushRpc';
 import {
   buildSendStatusReqFrame,
   MC_PUSH_STATUS_RESPONSE,
-  MC_RESP_ERR,
-  MC_RESP_SENT,
   type MeshcoreRadioConnection,
   type MeshcoreRepeaterStats,
   type MeshcoreRepeaterStatusPush,
-  normalizePubKeyPrefix,
   parseRepeaterStatsFromStatusData,
-  prefixToHex,
-  pubKeyPrefixesEqual,
-  unknownToError,
 } from './meshcoreRepeaterRpcCommon';
+import { type MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 
 /**
  * Resilient repeater status request: keeps listening for StatusResponse until prefix matches or timeout.
@@ -21,79 +17,27 @@ export function runMeshcoreRepeaterStatusRequest(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   extraTimeoutMs: number,
+  runSerialized?: MeshcoreRepeaterRunSerialized,
+  beforeSend?: () => Promise<void>,
 ): Promise<MeshcoreRepeaterStats> {
-  const expectedPrefix = contactPublicKey.subarray(0, 6);
-
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
-
-    const cleanup = (): void => {
-      if (responseTimeoutId !== undefined) {
-        clearTimeout(responseTimeoutId);
-        responseTimeoutId = undefined;
-      }
-      conn.off(MC_RESP_SENT, onSent);
-      conn.off(MC_RESP_ERR, onErr);
-      conn.off(MC_PUSH_STATUS_RESPONSE, onStatusResponsePush);
-    };
-
-    const fail = (e: unknown): void => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      if (e === 'timeout') {
-        reject(new Error('timeout'));
-        return;
-      }
-      reject(unknownToError(e, 'repeater status request failed'));
-    };
-
-    const succeed = (stats: MeshcoreRepeaterStats): void => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(stats);
-    };
-
-    const onStatusResponsePush = (response: unknown): void => {
+  return runMeshcoreRepeaterPrefixPushRequest({
+    conn,
+    contactPublicKey,
+    extraTimeoutMs,
+    runSerialized,
+    beforeSend,
+    pushEvent: MC_PUSH_STATUS_RESPONSE,
+    logTag: 'meshcoreRepeaterStatusRpc',
+    buildFrame: () => buildSendStatusReqFrame(contactPublicKey),
+    rejectSentMessage: 'radio rejected status request',
+    rejectFailureMessage: 'repeater status request failed',
+    parseMatchedPush: (response) => {
       const r = response as MeshcoreRepeaterStatusPush;
-      const prefix = normalizePubKeyPrefix(r.pubKeyPrefix);
-      if (!prefix) return;
-      if (!pubKeyPrefixesEqual(expectedPrefix, prefix)) {
-        console.debug(
-          `[meshcoreRepeaterStatusRpc] StatusResponse prefix mismatch expected=${prefixToHex(expectedPrefix)} got=${prefixToHex(prefix)}`,
-        );
-        return;
-      }
       const statusData = r.statusData;
       if (!(statusData instanceof Uint8Array) || statusData.length < 48) {
-        fail(new Error('invalid status response payload'));
-        return;
+        throw new Error('invalid status response payload');
       }
-      succeed(parseRepeaterStatsFromStatusData(statusData));
-    };
-
-    const onSent = (response: unknown): void => {
-      conn.off(MC_RESP_SENT, onSent);
-      conn.off(MC_RESP_ERR, onErr);
-      const r = response as { estTimeout?: number };
-      const estTimeout = (r.estTimeout ?? 0) + extraTimeoutMs;
-      responseTimeoutId = setTimeout(() => {
-        fail('timeout');
-      }, estTimeout);
-    };
-
-    const onErr = (): void => {
-      fail(new Error('radio rejected status request'));
-    };
-
-    conn.on(MC_PUSH_STATUS_RESPONSE, onStatusResponsePush);
-    conn.on(MC_RESP_SENT, onSent);
-    conn.on(MC_RESP_ERR, onErr);
-
-    void conn.sendToRadioFrame(buildSendStatusReqFrame(contactPublicKey)).catch((err: unknown) => {
-      fail(err);
-    });
+      return parseRepeaterStatsFromStatusData(statusData);
+    },
   });
 }

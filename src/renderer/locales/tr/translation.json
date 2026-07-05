@@ -650,7 +650,7 @@
     "hintMeshtasticHttp2": "Bağlantı güvenilir değilse (ör. meshtastic.local ile), bunun yerine cihazın IP adresini deneyin; masaüstü mDNS kesintili olabilir.",
     "hintMeshcoreHttp": "MeshCore yardımcı radyonuzun ana bilgisayar adını veya IP adresini girin. 5000 numaralı bağlantı noktasından ulaşılabilir olması gerekir.",
     "stageLinuxUnpaired": "Kaydedilen cihaz Linux Bluetooth'ta eşleştirilmemiş; PIN'i girmek ve bağlanmak için aşağıdan seçin.",
-    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
+    "liamServerNote": "Liam's sunucusu yalnızca yukarı bağlantıya yöneliktir; düğümünüz onun haritasında görünür ancak ondan mesaj almazsınız.",
     "connectButton": "Bağlamak",
     "mqttStatusConnected": "bağlı",
     "mqttStatusConnecting": "bağlanıyor",
@@ -684,7 +684,7 @@
         "accessDeniedLinuxHint": "Linux'ta kullanıcınızı arama grubuna ekleyin: sudo usermod -aG dialout $USER (sonra oturumu kapatıp tekrar açın)",
         "disconnectedHint": "USB kablosunun bağlı olduğundan ve cihazın açık olduğundan emin olun.",
         "timeoutHint": "Bağlantı noktası kısa süreliğine belirirse USB kablosunu yeniden bağlamayı deneyin.",
-        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
+        "portStillOpenHint": "USB seri bağlantı noktası temiz bir şekilde serbest bırakılmadı. mesh-client'ten tamamen çıkın ve yeniden açın veya USB kablosunu çıkarıp yeniden takın ve ardından tekrar bağlayın."
       },
       "http": {
         "timeoutMdnsWindows": "Windows'ta meshtastic.local, Bonjour'u (iTunes ile birlikte yüklenir) gerektirir. Bunun yerine cihazın IP adresini kullanın.",
@@ -712,7 +712,7 @@
         "connectionAttemptFailedLinuxHint": "Linux'ta eşleştirmeleri sistem Bluetooth ayarları veya 'bluetoothctl' aracı aracılığıyla yönetebilirsiniz.",
         "meshcoreHandshakeHint": "MeshCore cihazınızın Bluetooth Companion modunda olduğundan ve bir PIN kullanarak bilgisayarınızla eşleştirildiğinden emin olun. Bağlantı sorunları devam ederse mevcut tüm eşleştirmeleri kaldırın ve yeniden eşleştirin.",
         "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin.",
-        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
+        "macWakeRecoveryHint": "Uykudan sonra mesh-client'ten çıkın (Cmd+Q), Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar bağlanın. İki radyoyla MeshCore'u Meshtastic'ten önce bağlayın.",
         "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin.",
         "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
         "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı."
@@ -761,7 +761,7 @@
       "importLabel": "12 kelimelik kurtarma ifadesi",
       "mnemonic": "Bu ifadeyi yazın ve güvenli bir şekilde saklayın.",
       "confirmSaved": "Kurtarma cümlemi kaydettim",
-      "hashLabel": "LXMF hash:",
+      "hashLabel": "LXMF karması:",
       "nameLabel": "Ad Soyad:",
       "failed": "Kimlik kurulumu başarısız oldu",
       "export": "Yedeklemeyi dışa aktar",
@@ -818,7 +818,7 @@
       "restartStackFailed": "Yığın yeniden başlatma başarısız oldu: {{message}}",
       "restartStackUnavailable": "Reticulum çalışma zamanı hazır olana kadar yığının yeniden başlatılması kullanılamaz.",
       "localOfflineRowBle": "Bluetooth RNode çevrimdışı — cihazın açık ve kapsama alanı içinde olduğundan emin olun, ardından yığını yeniden başlatın.",
-      "rnodeTransportWifi": "Wi-Fi",
+      "rnodeTransportWifi": "Wifi",
       "rnodeWifiHost": "Sunucu adı veya IP",
       "rnodeWifiHostPlaceholder": "192.168.1.42 veya rnode.local",
       "rnodeWifiPort": "TCP bağlantı noktası",
@@ -1192,7 +1192,7 @@
       }
     },
     "cuHistoryHeading": "Kanal Kullanımı (son 24 saat)",
-    "cuHistoryTooltipLabel": "Channel Util",
+    "cuHistoryTooltipLabel": "Kanal Kullanımı",
     "meshcoreUnknownForeignNode": "Bilinmeyen MeshCore düğümü",
     "meshcoreRepeaterConflictBanner": "Yüksek MeshCore paket hızı (>5/dak) — yakındaki bir tekrarlayıcı Meshtastic kanalınızda çarpışmalara neden olabilir.",
     "meshcoreHeardByMeshtasticHeading": "Meshtastic telsiziniz tarafından duyulan MeshCore düğümleri ({{count}})",
@@ -1396,9 +1396,9 @@
     "firmwareHashDone": "Aygıt yazılımı karma kümesi",
     "flashDone": "Aygıt yazılımı yanıp söndü",
     "bluetoothHint": "Cihazda Bluetooth'u etkinleştirin ve ardından Eşleştirmeyi başlat seçeneğini kullanın. 6 basamaklı PIN burada USB seri üzerinden görünür; Reticulum BLE üzerinden bağlandığında aynı PIN'i işletim sisteminizin Bluetooth iletişim kutusuna (macOS, Windows veya Linux) girin. USB'si olmayan başsız cihazlar ekranda PIN gösteremez.",
-    "wifiTitle": "Wi-Fi",
+    "wifiTitle": "Wifi",
     "wifiHint": "Wi-Fi yanıp söndükten sonra devre dışı bırakılır. İstasyon modunu buradan yapılandırın (USB seri numarası), ardından tcp :// ana bilgisayar ile bağlantı (bağlantı noktası 7633) üzerine bir Wi-Fi RNode arayüzü ekleyin. ESP32 - S3 Wi-Fi özellikli ürün yazılımı gerektirir. Değişiklikleri uyguladıktan sonra kartı yeniden başlatın.",
-    "wifiSsidLabel": "Wi-Fi SSID",
+    "wifiSsidLabel": "Wi-Fi SSID'si",
     "wifiPskLabel": "Wi-Fi parolası",
     "wifiChannelLabel": "Kanal (isteğe bağlı)",
     "wifiStaticIpLabel": "Statik IP (isteğe bağlı)",
@@ -1496,7 +1496,7 @@
       },
       "database-writable": {
         "label": "Veritabanı Yazılabilir Değil",
-        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
+        "recommendation": "Uygulama, veritabanı klasörünü yazamıyor. mesh-client userData dizinindeki izinleri düzeltin (bkz. sorun giderme: Veritabanı dizini yazılabilir değil)."
       },
       "tak-server": {
         "label": "TAK Sunucu Sorunları",
@@ -2898,78 +2898,78 @@
     "offloadReconcileStillFull": "Boşaltma tamamlandı, ancak telsiz hala tam temaslıları bildiriyor ({{count}}/350). Yeniden bağlanın ve yeniden deneyin.",
     "offloadReconcileStillNearFull": "Boşaltma tamamlandı, ancak telsiz hala yüksek temas kullanımı bildiriyor ({{count}}/350).",
     "offloadReconcileRefreshFailed": "Boşaltma tamamlandı, ancak kişi yenileme başarısız oldu. Kişileri yeniden bağlayın ve yenileyin.",
-    "txEnabledLabel": "TX Enabled",
-    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
-    "channelNumLabel": "Channel Number",
-    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
-    "overrideFrequencyLabel": "Override Frequency",
-    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
-    "ignoreMqttLabel": "Ignore MQTT",
-    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
-    "configOkToMqttLabel": "OK to MQTT",
-    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
-    "overrideDutyCycleLabel": "Override Duty Cycle",
-    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
-    "paFanDisabledLabel": "Disable PA Fan",
-    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
-    "rebroadcastModeLabel": "Rebroadcast Mode",
-    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
-    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
-    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
-    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
-    "disableTripleClickLabel": "Disable Triple-click",
-    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
-    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
-    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
-    "buttonGpioLabel": "Button GPIO",
-    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
-    "buzzerGpioLabel": "Buzzer GPIO",
-    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
-    "tzdefLabel": "Timezone (POSIX)",
-    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "txEnabledLabel": "Teksas Etkin",
+    "txEnabledDesc": "Bu düğümün iletilmesine izin verin. Yalnızca alma işlemi için devre dışı bırakın.",
+    "channelNumLabel": "Kanal Numarası",
+    "channelNumDesc": "Kanalı manuel olarak seçin (0 = otomatik). Ağdaki tüm düğümlerle eşleşmelidir.",
+    "overrideFrequencyLabel": "Geçersiz Kılma Frekansı",
+    "overrideFrequencyDesc": "MHz cinsinden frekansı geçersiz kılın (0 = bölge varsayılanını kullan). Yerel düzenlemelere uygunluğu sağlayın.",
+    "ignoreMqttLabel": "MQTT'yi yoksay",
+    "ignoreMqttDesc": "MQTT aracılığıyla gelen paketleri yeniden yayınlamayın. Ağ geçidi trafiğinden kaynaklanan ağ tıkanıklığını azaltır.",
+    "configOkToMqttLabel": "MQTT'ye tamam",
+    "configOkToMqttDesc": "Bu düğümün paketlerinin MQTT'ye iletilebileceğine dair ağ geçitlerine sinyal verin.",
+    "overrideDutyCycleLabel": "Görev Döngüsünü Geçersiz Kıl",
+    "overrideDutyCycleDesc": "Bölgesel görev döngüsü sınırlarını aşın. Yalnızca test amaçlıdır; yayında kullanılması yasa dışı olabilir.",
+    "paFanDisabledLabel": "PA Fanını Devre Dışı Bırak",
+    "paFanDisabledDesc": "Güç amplifikatörü soğutma fanını devre dışı bırakın (donanımdan bağımsız).",
+    "rebroadcastModeLabel": "Yeniden Yayın Modu",
+    "nodeInfoBroadcastSecsLabel": "Düğüm Bilgisi Yayın Aralığı",
+    "nodeInfoBroadcastSecsDesc": "Düğüm bilgilerinin saniye cinsinden yayınlanma sıklığı (0 = donanım yazılımı varsayılanı ~15 dakika).",
+    "doubleTapAsButtonPressLabel": "Düğmeye Basarken iki kez hafifçe vurun",
+    "doubleTapAsButtonPressDesc": "İvme ölçere çift dokunmayı kullanıcı düğmesine basmak gibi değerlendirin (donanımdan bağımsız).",
+    "disableTripleClickLabel": "Üç Tıklamayı Devre Dışı Bırak",
+    "disableTripleClickDesc": "Kullanıcı düğmesindeki üç tıklama eylemini devre dışı bırakın.",
+    "ledHeartbeatDisabledLabel": "LED Kalp Atışını Devre Dışı Bırak",
+    "ledHeartbeatDisabledDesc": "Düğümün canlı olduğunu belirtmek için LED'in yanıp sönmesini durdurun.",
+    "buttonGpioLabel": "Düğme GPIO",
+    "buttonGpioDesc": "Kullanıcı düğmesi için GPIO pini (0 = varsayılan donanım).",
+    "buzzerGpioLabel": "Buzzer GPIO'su",
+    "buzzerGpioDesc": "Zil sesi için GPIO pini (0 = varsayılan donanım).",
+    "tzdefLabel": "Saat Dilimi (POSIX)",
+    "tzdefDesc": "POSIX saat dilimi dizesi ör. EST5EDT,M3.2.0,M11.1.0. Referans listesi için https://github.com/nayarsystems/posix_tz_db adresine bakın.",
     "rebroadcastModes": {
       "0": {
         "label": "All",
-        "description": "Rebroadcast all packets (default)."
+        "description": "Tüm paketleri yeniden yayınlayın (varsayılan)."
       },
       "1": {
-        "label": "All Skip Decoding",
-        "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
+        "label": "Hepsi Kod Çözmeyi Atla",
+        "description": "Tümünü kod çözmeden yeniden yayınlayın. Özel yönlendiricilerdeki CPU'yu azaltır."
       },
       "2": {
-        "label": "Local Only",
-        "description": "Only rebroadcast packets from nodes heard directly on RF."
+        "label": "Yalnızca Yerel",
+        "description": "Yalnızca doğrudan RF üzerinden duyulan düğümlerden gelen paketleri yeniden yayınlayın."
       },
       "3": {
-        "label": "Known Only",
-        "description": "Only rebroadcast from nodes in the local node database."
+        "label": "Yalnızca Bilinen",
+        "description": "Yalnızca yerel düğüm veritabanındaki düğümlerden yeniden yayın."
       },
       "4": {
-        "label": "None",
-        "description": "Do not rebroadcast any packets."
+        "label": "Hiçbiri",
+        "description": "Hiçbir paketi yeniden yayınlamayın."
       },
       "5": {
-        "label": "Core Portnums Only",
-        "description": "Only rebroadcast essential portnums (text, nodeinfo, position, telemetry)."
+        "label": "Yalnızca Çekirdek Portnumları",
+        "description": "Yalnızca temel portnumları (metin, düğüm bilgisi, konum, telemetri) yeniden yayınlayın."
       }
     },
-    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
-    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
-    "oledTypeLabel": "OLED Type",
-    "flipScreenLabel": "Flip Screen",
-    "flipScreenDesc": "Rotate the display 180 degrees.",
-    "displayModeLabel": "Display Mode",
-    "headingBoldLabel": "Bold Heading",
-    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
-    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
-    "use12hClockLabel": "12-Hour Clock",
-    "useLongNodeNameLabel": "Use Long Node Name",
-    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
-    "enableMessageBubblesLabel": "Message Bubbles",
-    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "autoScreenCarouselSecsLabel": "Ekran Karusel Aralığı",
+    "autoScreenCarouselSecsDesc": "Otomatik ekran sayfası değişiklikleri arasındaki saniyeler. Devre dışı bırakmak için 0.",
+    "oledTypeLabel": "OLED Tipi",
+    "flipScreenLabel": "Ekranı Çevir",
+    "flipScreenDesc": "Ekranı 180 derece döndürün.",
+    "displayModeLabel": "Ekran Modu",
+    "headingBoldLabel": "Kalın Başlık",
+    "wakeOnTapOrMotionLabel": "Dokunarak veya Hareketle Uyandırma",
+    "wakeOnTapOrMotionDesc": "Cihaza dokunulduğunda veya cihaz hareket ettirildiğinde ekranı uyandırın.",
+    "use12hClockLabel": "12 Saatlik Saat",
+    "useLongNodeNameLabel": "Uzun Düğüm Adı Kullan",
+    "useLongNodeNameDesc": "Ekranda kısa ad yerine tam düğüm adını gösterin.",
+    "enableMessageBubblesLabel": "Mesaj Balonları",
+    "enableMessageBubblesDesc": "Gelen mesajları ekranda bir baloncuk içinde gösterin.",
     "oledTypes": {
       "0": {
-        "label": "Auto"
+        "label": "Otomatik"
       },
       "1": {
         "label": "SSD1306"
@@ -2984,33 +2984,33 @@
         "label": "SH1107 (128x128)"
       },
       "5": {
-        "label": "SH1107 Rotated"
+        "label": "SH1107 Döndürülmüş"
       }
     },
     "displayModes": {
       "0": {
-        "label": "Default"
+        "label": "Varsayılan"
       },
       "1": {
-        "label": "Two Color"
+        "label": "İki Renk"
       },
       "2": {
-        "label": "Inverted"
+        "label": "Ters çevrilmiş"
       },
       "3": {
-        "label": "Color"
+        "label": "Renk"
       }
     },
-    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModeLabel": "Eşleştirme Modu",
     "btPairingModes": {
       "0": {
-        "label": "Random PIN"
+        "label": "Rastgele PIN"
       },
       "1": {
-        "label": "Fixed PIN"
+        "label": "Sabit PIN"
       },
       "2": {
-        "label": "No PIN"
+        "label": "PIN yok"
       }
     },
     "tzdefPlaceholder": "örn. EST5EDT,M3.2.0,M11.1.0",
@@ -3029,7 +3029,7 @@
     "xmodemSection": "XMODEM dosya aktarımı",
     "xmodemSectionHint": "Dosyaları bağlı radyo donanım yazılımına/yazılımından aktarın (yalnızca yerel bağlantı).",
     "xmodemFilenameLabel": "Uzak dosya adı",
-    "xmodemFilenamePlaceholder": "config.txt",
+    "xmodemFilenamePlaceholder": "yapılandırma.txt",
     "xmodemUpload": "Dosya yükle",
     "xmodemDownload": "Dosyayı İndirin",
     "xmodemUploadSuccess": "Yüklendi {{name}}",
@@ -3043,7 +3043,7 @@
     "floodScopePreset": "Önceden ayarlanmış hashtag",
     "floodScopePresetSelect": "Önceden ayarlanmış bölge etiketi",
     "floodScopeCustom": "Özel hashtag",
-    "floodScopeCustomPlaceholder": "#myregion",
+    "floodScopeCustomPlaceholder": "#bölgem",
     "floodScopeApply": "Taşkın kapsamını uygula",
     "floodScopeApplySuccess": "Taşkın kapsamı uygulandı",
     "floodScopeApplyFailed": "Taşkın kapsamı başarısız oldu: {{message}}",
@@ -3168,8 +3168,8 @@
     "transportRegionMismatch": "Yapılandırılan taşkın kapsamıyla eşleşmiyor",
     "transportLegendHint": "Bir satırı genişletin: rota ve transport üstte görünür. Bölgesel scope/return kodları yalnızca TRANSPORT_FLOOD ve TRANSPORT_DIRECT paketlerinde görünür (düz FLOOD/DIRECT değil).",
     "routeLabel": "Rota",
-    "payloadLabel": "Payload",
-    "transportHeading": "Transport",
+    "payloadLabel": "Yük",
+    "transportHeading": "Taşıma",
     "transportCodesAbsent": "Bölgesel transport kodu yok ({{route}} rotası — yalnızca TRANSPORT_FLOOD / TRANSPORT_DIRECT scope/return taşır).",
     "transportCodesAbsentTooltip": "Düz FLOOD ve DIRECT paketleri, MeshCore RF başlığında bölgesel transport scope/return alanlarını içermez.",
     "meshtasticLegendHint": "Bir satırı genişletin: bağlantı noktası ve atlama noktası ayrıntıları en üsttedir. Hop sayımları RF paketlerinde hopStart − hopLimit kullanır (MQTT değil).",
@@ -3181,7 +3181,7 @@
       "direction": "Yön",
       "interface": "Arayüz",
       "packetType": "Paket türü",
-      "headerType": "Header",
+      "headerType": "Başlık",
       "destination": "Hedef",
       "rx": "RX",
       "tx": "TX"
@@ -3252,15 +3252,10 @@
     "columnReliability": "Güvenilirlik",
     "columnActions": "Eylemler",
     "nodesTabName": "Düğümler",
-    "changeSessionRepeaterPassword": "Oturum tekrarlayıcı şifresini değiştirin",
     "title": "Tekrarlayıcılar",
     "columnsDataHint": "SNR, RSSI, çalışma süresi ve yayın süresi Durum işleminden (veya bu panel açıkken otomatik getirme) gelir. Hop ve yol geçmişinin Ping'e ihtiyacı var. MeshCore bu sütunları yalnızca reklamlardan doldurmaz.",
-    "remoteAccessAriaLabel": "Tekrarlayıcı uzaktan erişim",
     "remoteAuthLabel": "Tekrarlayıcı yönetici şifresi (isteğe bağlı)",
     "remoteAuthPlaceholder": "Tekrarlayıcıların yönetici şifresi yoksa boş bırakın",
-    "remoteAuthHelp": "Uzak tekrarlayıcı Durumu, Komşular ve sensör telemetrisi için yönetici şifresi gerekebilir. Oturum başına bir kez seçin; yalnızca bu pencerenin belleğinde saklanır.",
-    "remoteAuthContinueWithoutPassword": "Şifre olmadan devam et",
-    "remoteAuthSaveForSession": "Bu oturum için kaydet",
     "remoteAuthCancelDialog": "Tekrarlayıcı şifre iletişim kutusunu iptal et",
     "remoteAuthTitle": "Tekrarlayıcı yönetici şifresi",
     "remoteAuthModalHelp": "Uzaktan tekrarlayıcı komutları için isteğe bağlı şifre. Bu oturum için yalnızca bu pencerede saklanır.",
@@ -3280,9 +3275,6 @@
     "statusFailedToast": "Durum başarısız oldu: {{message}}",
     "pingFailedToast": "Ping başarısız oldu: {{message}}",
     "removeFailedToast": "Kaldırma başarısız oldu: {{message}}",
-    "actionErrorStatus": "Durum: {{error}}",
-    "actionErrorPing": "Ping: {{error}}",
-    "actionErrorNeighbors": "Komşular: {{error}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "Tekrarlayıcı durumundan SNR",
     "snrContactTooltip": "SNR ile iletişime geçin — canlı okuma için Durumu kullanın",
@@ -3307,7 +3299,33 @@
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Göndermek",
     "cliQuick": "Hızlı:",
-    "neighborsHopTooFar": "Tekrarlayıcılar için komşular mevcut değil {{hops}}+ USB seri üzerinden atlıyor"
+    "neighborsHopTooFar": "Tekrarlayıcılar için komşular mevcut değil {{hops}}+ USB seri üzerinden atlıyor",
+    "rememberPassword": "Bu yineleyicinin şifresini hatırla",
+    "savePassword": "Şifreyi kaydedin",
+    "changePassword": "Şifre değiştirme",
+    "forgetPassword": "Sıfırla",
+    "forgetPasswordAria": "Kaydedilen tekrarlayıcı şifresini unut",
+    "passwordSaved": "Tekrarlayıcı şifresi kaydedildi.",
+    "passwordForgotten": "Kaydedilen tekrarlayıcı şifresi kaldırıldı.",
+    "passwordSavedIndicator": "Bu yineleyici için şifre kaydedildi",
+    "savedPasswordsCount": "Kaydedilen tekrarlayıcı şifreleri ({{count}})",
+    "savedPasswordOrphanLabel": "Tekrarlayıcı {{nodeId}}",
+    "pingQueuedBehindOther": "Kuyrukta — başka bir ping radyo kullanıyor (MeshCore her seferinde bir ize izin verir).",
+    "waitForPingBeforeStatus": "Durum isteğinden önce devam eden ping'in bitmesi bekleniyor.",
+    "statusLastFailedTooltip": "Son durum isteği başarısız oldu: {{error}}",
+    "neighborsLastFailedTooltip": "Son komşu isteği başarısız oldu: {{error}}",
+    "telemetryLastFailedTooltip": "Son sensör isteği başarısız oldu: {{error}}",
+    "cliLastFailedTooltip": "Son CLI komutu başarısız oldu: {{error}}",
+    "telemetryError": "Sensör hatası: {{error}}",
+    "neighborsFailedToast": "Komşular başarısız oldu: {{message}}",
+    "columnSnr": "SNR",
+    "columnRssi": "RSSI",
+    "buttonCli": "CLI",
+    "cliClearHistory": "Geçmişi temizle",
+    "cliNoCommandsYet": "Henüz komut yok",
+    "uptimeDaysHours": "{{days}}d {{hours}}h",
+    "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
+    "uptimeMinutes": "{{minutes}}m"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -3397,7 +3415,7 @@
     "interfaceLink": "Arayüz bağlantısı",
     "peerLink": "Akran bağlantısı",
     "interfaceTooltip": "{{name}} — {{status}}",
-    "interfaceStatusOnline": "online",
+    "interfaceStatusOnline": "çevrimiçi",
     "interfaceStatusOffline": "çevrim dışı",
     "glyphWifi": "Wi-Fi arayüzü",
     "glyphLora": "LoRa arayüzü",

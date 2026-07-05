@@ -1,5 +1,9 @@
 import type { TFunction } from 'i18next';
 
+import {
+  MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
+  MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
+} from '../timeConstants';
 import type { DiagnosticTextI18n } from '../types';
 
 export const MESHCORE_REPEATER_AUTH_HINT_KEY = 'meshcore.errors.repeaterAuthHint';
@@ -119,6 +123,21 @@ export function meshcoreAppendRepeaterAuthHint(message: MeshcoreUserMessage): Me
 
 export function meshcoreStoredUserMessage(ref: MeshcoreUserMessage): string {
   return serializeMeshcoreUserMessage(meshcoreAppendRepeaterAuthHint(ref));
+}
+
+/** Map admin RPC wait errors to the timeout budget shown in UI copy. */
+export function meshcoreRepeaterAdminRpcErrorBudgetMs(
+  errMsg: string,
+  rpcTimeoutMs: number,
+): number {
+  const lower = errMsg.toLowerCase();
+  if (lower.includes('timeout waiting for ping')) {
+    return MESHCORE_REPEATER_PING_SETTLE_MAX_MS;
+  }
+  if (lower.includes('timeout waiting for trace')) {
+    return MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS;
+  }
+  return rpcTimeoutMs;
 }
 
 export function meshcoreRepeaterRpcErrorMessage(

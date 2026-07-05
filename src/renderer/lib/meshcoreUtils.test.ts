@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import {
   coerceMeshcoreExportPrivateKeyResult,
@@ -11,19 +11,14 @@ import {
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
   meshcoreAppendRepeaterAuthHint,
-  meshcoreApplyRepeaterSessionAuth,
-  meshcoreApplyRepeaterSessionAuthSkip,
   meshcoreChatStubNodeIdFromDisplayName,
-  meshcoreClearRepeaterRemoteSessionAuth,
   meshcoreConnectionImpliesUsbPower,
   meshcoreContactToMeshNode,
   meshcoreContactTypeFromHwModel,
   meshcoreDeriveChannelKeyHexFromName,
-  meshcoreGetRepeaterSessionPassword,
   meshcoreHwModelIsContactTypeLabel,
   meshcoreInferHopsFromOutPath,
   meshcoreIsPlaceholderNodeLongName,
-  meshcoreIsRepeaterRemoteAuthTouched,
   meshcoreManufacturerModelFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
@@ -337,42 +332,6 @@ describe('meshcoreDeriveChannelKeyHexFromName', () => {
 
   it('exports firmware channel name max length', () => {
     expect(MESHCORE_CHANNEL_NAME_MAX_LEN).toBe(31);
-  });
-});
-
-describe('repeater session auth (in-memory)', () => {
-  beforeEach(() => {
-    meshcoreClearRepeaterRemoteSessionAuth();
-  });
-
-  it('starts untouched with empty password', () => {
-    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(false);
-    expect(meshcoreGetRepeaterSessionPassword()).toBe('');
-  });
-
-  it('apply sets password and marks touched', () => {
-    meshcoreApplyRepeaterSessionAuth('s3cr3t');
-    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(true);
-    expect(meshcoreGetRepeaterSessionPassword()).toBe('s3cr3t');
-  });
-
-  it('skip marks touched with empty password', () => {
-    meshcoreApplyRepeaterSessionAuthSkip();
-    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(true);
-    expect(meshcoreGetRepeaterSessionPassword()).toBe('');
-  });
-
-  it('clear resets both touched and password', () => {
-    meshcoreApplyRepeaterSessionAuth('s3cr3t');
-    meshcoreClearRepeaterRemoteSessionAuth();
-    expect(meshcoreIsRepeaterRemoteAuthTouched()).toBe(false);
-    expect(meshcoreGetRepeaterSessionPassword()).toBe('');
-  });
-
-  it('password is never written to sessionStorage', () => {
-    meshcoreApplyRepeaterSessionAuth('topsecret');
-    expect(sessionStorage.getItem('meshclient:meshcoreRepeaterPassword')).toBeNull();
-    expect(sessionStorage.getItem('meshclient:meshcoreRepeaterAuthTouched')).toBeNull();
   });
 });
 

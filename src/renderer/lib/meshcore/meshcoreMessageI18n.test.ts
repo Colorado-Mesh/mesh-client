@@ -6,6 +6,7 @@ import {
   MESHCORE_ERR_AUTH_FAILED,
   MESHCORE_REPEATER_AUTH_HINT_KEY,
   meshcoreAppendRepeaterAuthHint,
+  meshcoreRepeaterAdminRpcErrorBudgetMs,
   meshcoreRepeaterRpcErrorMessage,
   meshcoreStoredUserMessage,
   meshcoreUserMessageKey,
@@ -37,6 +38,20 @@ describe('meshcoreMessageI18n', () => {
   it('meshcoreRepeaterRpcErrorMessage maps timeout to timedOutApprox key', () => {
     const ref = meshcoreRepeaterRpcErrorMessage('login timeout', 10_000);
     expect(isDiagnosticTextI18n(ref) && ref.key).toBe('meshcore.errors.requestTimedOutApprox');
+  });
+
+  it('meshcoreRepeaterRpcErrorMessage maps trace-idle timeout to timedOutApprox key', () => {
+    const ref = meshcoreRepeaterRpcErrorMessage('timeout waiting for trace', 120_000);
+    expect(isDiagnosticTextI18n(ref) && ref.key).toBe('meshcore.errors.requestTimedOutApprox');
+    if (isDiagnosticTextI18n(ref)) {
+      expect(ref.params?.seconds).toBe(120);
+    }
+  });
+
+  it('meshcoreRepeaterAdminRpcErrorBudgetMs uses ping-settle budget for ping wait errors', () => {
+    expect(meshcoreRepeaterAdminRpcErrorBudgetMs('timeout waiting for ping', 120_000)).toBe(
+      360_000,
+    );
   });
 
   it('meshcoreStoredUserMessage round-trips prefixed refs', () => {

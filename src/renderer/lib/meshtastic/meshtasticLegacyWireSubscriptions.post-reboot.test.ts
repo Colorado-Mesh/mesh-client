@@ -61,6 +61,7 @@ function makeDeps() {
     myNodeNumRef: { current: 0 },
     nodesRef: { current: new Map() },
     pendingTempIdRef: { current: undefined },
+    ackMeshPacketIdByTempIdRef: { current: new Map() },
     pendingTracePacketIdToTargetRef: noopMapRef,
     pendingTraceRequestsRef: noopMapRef,
     refreshOurPositionRef: { current: refreshOurPosition },

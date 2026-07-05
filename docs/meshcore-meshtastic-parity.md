@@ -74,6 +74,23 @@ Operational troubleshooting: [troubleshooting.md](troubleshooting.md#meshcore-ro
 
 **Trace Route** (node detail) and **Ping trace** (Repeaters panel) use the firmware `tracePath` flow. Remote nodes often answer only when they have **your** node in **their** contact list. Heard-only or one-way peers may produce no response until the client times out. See [troubleshooting.md](troubleshooting.md#meshcore-trace-route-or-ping-trace-times-out).
 
+### Serialized traceroutes (protocol requirement)
+
+MeshCore companion firmware handles **one `SendTracePath` / TraceData cycle at a time** on a given RF link. Parallel traceroutes are **not permitted** — the radio will not reliably accept overlapping trace commands.
+
+mesh-client enforces this in two layers:
+
+1. **Per-radio trace queue** (`meshcoreRepeaterRpcInFlight.ts`) — ping clicks for different repeaters run **one after another**, not concurrently. Duplicate clicks on the same repeater share one in-flight promise.
+2. **Companion RPC queue** (`repeaterRemoteRpcQueue.ts`) — serializes **sends** only. After `RESP_SENT`, status/neighbors/telemetry/binary responses are matched by pubkey prefix or `expectedAckCrc` tag while the queue serves other work (`runMeshcoreRepeaterQueuedSend`).
+3. **Admin deferral** — before admin sends: wait for active TraceData (`awaitMeshcoreRepeaterAdminRfIdle`); before admin on the **same** repeater: wait for that node's ping wrapper to finish (`awaitMeshcoreRepeaterPingSettleForNode`, up to 360s).
+4. **0-hop ping** — first attempt uses 1-byte pubkey prefix; failure triggers cancel + full-pubkey direct retry (0-hop only). Multi-hop requires hash-segment outPath (≥2 bytes).
+
+**Practical guidance:** Run **one ping at a time** when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queued pings may take up to **180s** each (including 0-hop direct retry). Status/Neighbors/Telemetry use **120s** flat timeouts.
+
+**Repeater admin RPC wire shape:** Status and Telemetry use pubkey-framed companion commands (`meshcoreRepeaterStatusRpc.ts`, `meshcoreRepeaterTelemetryRpc.ts`). Neighbors uses `runMeshcoreRepeaterBinaryRequest` with queued send. Login is optional for CLI/telemetry when a password is saved; Status/Neighbors typically work without login on direct (0-hop) repeaters.
+
+Implementation reference: `runMeshcoreTracePathMultiplexed` in [`meshcoreTracePathMultiplex.ts`](../src/renderer/lib/meshcoreTracePathMultiplex.ts), `traceRoute` in [`useMeshcoreRuntime.ts`](../src/renderer/runtime/useMeshcoreRuntime.ts).
+
 ## Windows: MeshCore over BLE
 
 Pair the radio in **Settings → Bluetooth & devices** before connecting from the app; WinRT is much more reliable with a bonded device. The client may **retry once** after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in [CONTRIBUTING.md](../CONTRIBUTING.md) (MeshCore internals, BLE) and [README.md](../README.md) (MeshCore Transport Notes).

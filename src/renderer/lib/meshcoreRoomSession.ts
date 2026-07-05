@@ -2,8 +2,9 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import { meshcoreLoginErrorIsAuthFailure } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterLoginConn } from './meshcoreRepeaterSession';
-import { meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
+import { assertMeshcoreRepeaterLoginOk, meshcoreRepeaterTryLogin } from './meshcoreRepeaterSession';
 import {
   clearMeshcoreRoomLoginQueue,
   dequeueMeshcoreRoomLogin,
@@ -214,8 +215,7 @@ function sleepMs(ms: number): Promise<void> {
 }
 
 export function meshcoreRoomLoginErrorIsAuthFailure(err: unknown): boolean {
-  const msg = errLikeToLogString(err).toLowerCase();
-  return msg.includes('rejected') || msg.includes('wrong password') || msg.includes('acl denied');
+  return meshcoreLoginErrorIsAuthFailure(err);
 }
 
 export function meshcoreRoomLoginErrorIsNoRoute(err: unknown): boolean {
@@ -406,6 +406,8 @@ export async function meshcoreRoomTryAdminLogin(
   });
 }
 
+import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
+
 /** Repeater admin login or room server admin login depending on contact type. */
 export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn;
 
@@ -414,10 +416,12 @@ export async function meshcoreTryRemoteServerLogin(
   nodeId: number,
   pubKey: Uint8Array,
   hwModel: string | undefined,
+  runSerialized?: MeshcoreRepeaterRunSerialized,
 ): Promise<void> {
   if (hwModel === 'Room') {
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }
-  await meshcoreRepeaterTryLogin(conn, pubKey);
+  const login = await meshcoreRepeaterTryLogin(conn, pubKey, nodeId, runSerialized);
+  assertMeshcoreRepeaterLoginOk(login);
 }

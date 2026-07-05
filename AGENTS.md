@@ -258,6 +258,21 @@ Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanel
 - **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 
+### MeshCore Repeaters admin (Ping / trace)
+
+MeshCore firmware **serializes traceroutes** — one active trace cycle per RF link. mesh-client enforces:
+
+- **Trace queue** (`meshcoreRepeaterRpcInFlight.ts`): global ping queue; duplicate clicks coalesce per node.
+- **Companion queue** (`repeaterRemoteRpcQueue.ts`): serializes RPC _sends_ (Status, Telemetry, Neighbors binary req, trace SendTracePath, CLI login).
+- **Queued send** (`meshcoreRepeaterRpcQueuedSend.ts`): queue slot ends at `RESP_SENT`; response listeners run outside the slot.
+- **Admin idle** (`meshcoreTraceRadioIdle.ts`): `beforeSend` waits for TraceData in flight only (not pending route registration). Same-node admin awaits ping wrapper settle (`MESHCORE_REPEATER_PING_SETTLE_MAX_MS` = 2× ping cap).
+- **0-hop contract** (`meshcoreRepeaterTracePath.ts`, `meshcoreZeroHopRepeaterWorkingState.test.ts`): Status/Telemetry/Neighbors use pubkey-framed frames (no contact-list gate). Ping seeds 1-byte prefix; direct retry escalates to full pubkey only when `hopsAway === 0`. Multi-hop ping requires hash-segment path (≥2 bytes), never full destination pubkey.
+- **Timeouts**: Status/Telemetry/Neighbors = 120s flat; ping end-to-end = 180s; SENT wait = 45s.
+- **Login**: Optional for CLI/telemetry when password saved; Status/Neighbors do not require login RPC. LoginFail under congestion defers to timeout (not auth failure).
+- **Cross-traffic**: Room sync/auto-login defer while `meshcoreCompanionRepeaterRfBusy()`; waiting-messages drain defers during TraceData.
+
+Do not change behavior guarded by `meshcoreZeroHopRepeaterWorkingState.test.ts` without explicit user request. See [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
+
 ### MeshCore Rooms (BBS)
 
 - **UI:** `RoomsPanel.tsx` — login overlay, post composer (`ChatComposer`), admin CLI, auto-sync toggles; sidebar badge via `meshcoreRoomsUnread.ts` (`mesh-client:meshcoreRoomsUnread`).
