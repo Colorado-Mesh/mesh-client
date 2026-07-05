@@ -3779,9 +3779,9 @@ export function useMeshcoreRuntime() {
               radioContactPathLen,
               pathFromHistory,
             });
-            storedPath = tracePlan.storedPath;
-            if (storedPath && storedPath.length > 1) {
-              outPathMapRef.current.set(nodeId, storedPath);
+            let routeStoredPath = tracePlan.storedPath;
+            if (routeStoredPath && routeStoredPath.length > 1) {
+              outPathMapRef.current.set(nodeId, routeStoredPath);
             }
             const needsRoutePrime = tracePlan.needsRoutePrime;
             if (needsRoutePrime) {
@@ -3804,14 +3804,14 @@ export function useMeshcoreRuntime() {
                 const snapPrime = meshcoreSnapshotContactPathFromContacts(
                   nodeId,
                   contactsPrime,
-                  storedPath,
+                  routeStoredPath,
                 );
                 if (snapPrime.radioContactPathLen != null) {
                   radioContactPathLen = snapPrime.radioContactPathLen;
                 }
                 if (snapPrime.path && snapPrime.path.length > 0) {
                   outPathMapRef.current.set(nodeId, snapPrime.path);
-                  storedPath = snapPrime.path;
+                  routeStoredPath = snapPrime.path;
                 }
               } catch (e: unknown) {
                 console.warn(
@@ -3819,7 +3819,7 @@ export function useMeshcoreRuntime() {
                     errLikeToLogString(e),
                 );
               }
-              if (!storedPath || storedPath.length <= 1) {
+              if (!routeStoredPath || routeStoredPath.length <= 1) {
                 try {
                   const selPrime = await usePathHistoryStore
                     .getState()
@@ -3827,7 +3827,7 @@ export function useMeshcoreRuntime() {
                   if (selPrime?.pathBytes?.length !== undefined && selPrime.pathBytes.length > 1) {
                     const fromHistPrime = new Uint8Array(selPrime.pathBytes);
                     outPathMapRef.current.set(nodeId, fromHistPrime);
-                    storedPath = fromHistPrime;
+                    routeStoredPath = fromHistPrime;
                   }
                 } catch {
                   // catch-no-log-ok path history optional
@@ -3835,7 +3835,7 @@ export function useMeshcoreRuntime() {
               }
             }
             tracePlan = planMeshcoreRepeaterTraceRoute({
-              storedPath,
+              storedPath: routeStoredPath,
               hopsAway,
               pubKey,
               radioContactPathLen,
