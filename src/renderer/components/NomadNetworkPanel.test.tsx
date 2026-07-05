@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
@@ -22,6 +23,11 @@ import { clearNomadPageCache } from '@/renderer/lib/nomad/nomadPageCache';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import NomadNetworkPanel from './NomadNetworkPanel';
+
+async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+  await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+}
 
 describe('NomadNetworkPanel', () => {
   beforeEach(() => {
@@ -56,18 +62,25 @@ describe('NomadNetworkPanel', () => {
     });
   });
 
-  it('filters favourites tab and search query', async () => {
+  it('defaults to favourites tab and filters search query', async () => {
     const user = userEvent.setup();
     render(<NomadNetworkPanel />);
 
-    expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
-    expect(screen.getByText('Announce only')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.favourites' }));
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.favourites' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+    expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
+    expect(screen.getByText('Announce only')).toBeInTheDocument();
+
     const search = screen.getByRole('searchbox');
     await user.type(search, 'topics');
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
@@ -96,7 +109,7 @@ describe('NomadNetworkPanel', () => {
     });
 
     render(<NomadNetworkPanel />);
-    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+    await openAnnouncesNode(user);
 
     await waitFor(() => {
       const micronRoot = document.querySelector('.nomad-micron-page');
@@ -154,7 +167,7 @@ describe('NomadNetworkPanel', () => {
     });
 
     render(<NomadNetworkPanel onOpenDm={onOpenDm} />);
-    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+    await openAnnouncesNode(user);
 
     await waitFor(() => {
       expect(
@@ -187,7 +200,7 @@ describe('NomadNetworkPanel', () => {
     });
 
     render(<NomadNetworkPanel />);
-    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+    await openAnnouncesNode(user);
     await waitFor(() => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Hello Nomad');
     });
@@ -228,7 +241,7 @@ describe('NomadNetworkPanel', () => {
     });
 
     render(<NomadNetworkPanel />);
-    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+    await openAnnouncesNode(user);
     await waitFor(() => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Hello Nomad');
     });
@@ -268,7 +281,7 @@ describe('NomadNetworkPanel', () => {
     });
 
     render(<NomadNetworkPanel />);
-    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+    await openAnnouncesNode(user);
     await waitFor(() => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Hello Nomad');
     });
@@ -288,5 +301,100 @@ describe('NomadNetworkPanel', () => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Hello Nomad');
     });
     expect(fetchNomadPage).toHaveBeenCalledTimes(2);
+  });
+
+  it('resets to favourites when becoming active without an open page', async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [isActive, setIsActive] = useState(true);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setIsActive((prev) => !prev);
+            }}
+          >
+            toggle-active
+          </button>
+          <NomadNetworkPanel isActive={isActive} />
+        </>
+      );
+    }
+
+    render(<Harness />);
+    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'toggle-active' }));
+    await user.click(screen.getByRole('button', { name: 'toggle-active' }));
+
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.favourites' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+  });
+
+  it('keeps announces tab when becoming active with an open page', async () => {
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: 'hello',
+      content_type: 'text/plain',
+    });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'def1234567890',
+          {
+            destination_hash: 'def1234567890',
+            display_name: 'Announce only',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    function Harness() {
+      const [isActive, setIsActive] = useState(true);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setIsActive((prev) => !prev);
+            }}
+          >
+            toggle-active
+          </button>
+          <NomadNetworkPanel isActive={isActive} />
+        </>
+      );
+    }
+
+    render(<Harness />);
+    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('hello');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'toggle-active' }));
+    await user.click(screen.getByRole('button', { name: 'toggle-active' }));
+
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('hello');
   });
 });

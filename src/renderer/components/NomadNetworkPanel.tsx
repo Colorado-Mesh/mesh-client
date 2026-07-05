@@ -63,8 +63,10 @@ function matchesSearch(node: NomadNodeRow, query: string): boolean {
 
 export default function NomadNetworkPanel({
   onOpenDm,
+  isActive = true,
 }: {
   onOpenDm?: (destinationHash: string) => void;
+  isActive?: boolean;
 }) {
   const { t } = useTranslation();
   const nodes = useNomadNetworkStore((s) => s.nodes);
@@ -75,7 +77,7 @@ export default function NomadNetworkPanel({
   const fetchNomadFile = useNomadNetworkStore((s) => s.fetchNomadFile);
   const toggleFavorite = useNomadNetworkStore((s) => s.toggleFavorite);
 
-  const [activeTab, setActiveTab] = useState<NomadListTab>('announces');
+  const [activeTab, setActiveTab] = useState<NomadListTab>('favourites');
   const [searchQuery, setSearchQuery] = useState('');
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
@@ -98,6 +100,13 @@ export default function NomadNetworkPanel({
   useEffect(() => {
     historyIndexRef.current = historyIndex;
   }, [historyIndex]);
+
+  useEffect(() => {
+    if (isActive && selectedHash == null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset list tab when panel becomes visible without a page open
+      setActiveTab('favourites');
+    }
+  }, [isActive, selectedHash]);
 
   const pushHistoryEntry = useCallback((hash: string, path: string) => {
     const normalizedPath = normalizeNomadPagePath(path);
@@ -287,6 +296,7 @@ export default function NomadNetworkPanel({
     setHistoryStack([]);
     historyIndexRef.current = -1;
     setHistoryIndex(-1);
+    setActiveTab('favourites');
     clearNomadPageCache();
   }, []);
 

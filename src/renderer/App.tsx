@@ -1601,6 +1601,7 @@ function AppContent() {
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
+  const [nomadTabVisited, setNomadTabVisited] = useState(false);
   const [chatPanelFreeze, setChatPanelFreeze] = useState<{
     messages: typeof activeRuntime.messages;
     channels: typeof chatChannels;
@@ -1645,6 +1646,13 @@ function AppContent() {
       setRoomsTabVisited(true);
     }
   }, [activePanelIndex, capabilities.hasRoomServersPanel]);
+
+  useEffect(() => {
+    if (activePanelIndex === NOMAD_NETWORK_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Nomad tab visit for keep-alive mount
+      setNomadTabVisited(true);
+    }
+  }, [activePanelIndex]);
 
   const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
   const freeze = chatPanelFreeze;
@@ -2596,14 +2604,27 @@ function AppContent() {
                       hidden={activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
-                      capabilities.hasNomadNetworkPanel ? (
+                      {(activePanelIndex === NOMAD_NETWORK_PANEL_INDEX || nomadTabVisited) && (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <NomadNetworkPanel onOpenDm={handleOpenReticulumDmByHash} />
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={
+                                activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX ||
+                                !capabilities.hasNomadNetworkPanel
+                              }
+                            >
+                              <NomadNetworkPanel
+                                isActive={
+                                  activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
+                                  capabilities.hasNomadNetworkPanel
+                                }
+                                onOpenDm={handleOpenReticulumDmByHash}
+                              />
+                            </div>
                           </Suspense>
                         </ErrorBoundary>
-                      ) : null}
+                      )}
                     </div>
                     <div
                       id="panel-3"
